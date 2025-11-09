@@ -118,21 +118,21 @@
 		</div>
 
 		<!-- Payment Summary -->
-		<div class="rounded-lg bg-gray-100 p-6">
-			<h3 class="mb-2 text-xl font-bold">Payment Summary</h3>
-			<p class="mb-1 text-gray-700">{description}</p>
-			<p class="text-2xl font-bold">${amount}</p>
+		<div class="rounded-lg bg-[hsl(var(--muted))] border border-[hsl(var(--border))] p-6">
+			<h3 class="mb-2 text-xl font-bold text-[hsl(var(--foreground))]">Payment Summary</h3>
+			<p class="mb-1 text-[hsl(var(--foreground))] opacity-80">{description}</p>
+			<p class="text-2xl font-bold text-[hsl(var(--foreground))]">${amount}</p>
 			{#if isSubscription}
-				<p class="text-sm text-gray-600">Billed monthly</p>
+				<p class="text-sm text-[hsl(var(--muted-foreground))]">Billed monthly</p>
 			{/if}
 		</div>
 
 		<!-- Card Information -->
 		<div class="space-y-4">
-			<h3 class="text-xl font-bold">Card Information</h3>
+			<h3 class="text-xl font-bold text-[hsl(var(--foreground))]">Card Information</h3>
 
 			<div>
-				<label for="cardNumber" class="mb-1 block text-sm font-medium">Card Number</label>
+				<label for="cardNumber" class="mb-1 block text-sm font-medium text-[hsl(var(--foreground))]">Card Number</label>
 				<input
 					id="cardNumber"
 					type="text"
@@ -142,19 +142,19 @@
 					bind:value={formData.cardNumber}
 					on:input={formatCardNumber}
 					placeholder="4007 0000 0002 7"
-					class="w-full rounded-md border border-gray-300 px-4 py-2"
+					class="w-full rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
 				/>
-				<p class="mt-1 text-xs text-gray-500">Test card: 4007 0000 0002 7</p>
+				<p class="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Test card: 4007 0000 0002 7</p>
 			</div>
 
 			<div class="grid grid-cols-3 gap-4">
 				<div>
-					<label for="expMonth" class="mb-1 block text-sm font-medium">Exp. Month</label>
+					<label for="expMonth" class="mb-1 block text-sm font-medium text-[hsl(var(--foreground))]">Exp. Month</label>
 					<select
 						id="expMonth"
 						required
 						bind:value={formData.expirationMonth}
-						class="w-full rounded-md border border-gray-300 px-4 py-2"
+						class="w-full rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
 					>
 						<option value="">MM</option>
 						{#each Array(12) as _, i}
@@ -164,12 +164,12 @@
 				</div>
 
 				<div>
-					<label for="expYear" class="mb-1 block text-sm font-medium">Exp. Year</label>
+					<label for="expYear" class="mb-1 block text-sm font-medium text-[hsl(var(--foreground))]">Exp. Year</label>
 					<select
 						id="expYear"
 						required
 						bind:value={formData.expirationYear}
-						class="w-full rounded-md border border-gray-300 px-4 py-2"
+						class="w-full rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
 					>
 						<option value="">YYYY</option>
 						{#each years as year}
@@ -179,7 +179,7 @@
 				</div>
 
 				<div>
-					<label for="cardCode" class="mb-1 block text-sm font-medium">CVV</label>
+					<label for="cardCode" class="mb-1 block text-sm font-medium text-[hsl(var(--foreground))]">CVV</label>
 					<input
 						id="cardCode"
 						type="text"
@@ -189,7 +189,7 @@
 						required
 						bind:value={formData.cardCode}
 						placeholder="123"
-						class="w-full rounded-md border border-gray-300 px-4 py-2"
+						class="w-full rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
 					/>
 				</div>
 			</div>
@@ -197,57 +197,57 @@
 
 		<!-- Billing Information -->
 		<div class="space-y-4">
-			<h3 class="text-xl font-bold">Billing Information</h3>
+			<h3 class="text-xl font-bold text-[hsl(var(--foreground))]">Billing Information</h3>
 
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-					<label for="firstName" class="mb-1 block text-sm font-medium">First Name</label>
+					<label for="firstName" class="mb-1 block text-sm font-medium text-[hsl(var(--foreground))]">First Name</label>
 					<input
 						id="firstName"
 						type="text"
 						required
 						bind:value={formData.firstName}
-						class="w-full rounded-md border border-gray-300 px-4 py-2"
+						class="w-full rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
 					/>
 				</div>
 
 				<div>
-					<label for="lastName" class="mb-1 block text-sm font-medium">Last Name</label>
+					<label for="lastName" class="mb-1 block text-sm font-medium text-[hsl(var(--foreground))]">Last Name</label>
 					<input
 						id="lastName"
 						type="text"
 						required
 						bind:value={formData.lastName}
-						class="w-full rounded-md border border-gray-300 px-4 py-2"
+						class="w-full rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
 					/>
 				</div>
 			</div>
 
 			<div>
-				<label for="address" class="mb-1 block text-sm font-medium">Address</label>
+				<label for="address" class="mb-1 block text-sm font-medium text-[hsl(var(--foreground))]">Address</label>
 				<input
 					id="address"
 					type="text"
 					required
 					bind:value={formData.address}
-					class="w-full rounded-md border border-gray-300 px-4 py-2"
+					class="w-full rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
 				/>
 			</div>
 
 			<div class="grid grid-cols-3 gap-4">
 				<div>
-					<label for="city" class="mb-1 block text-sm font-medium">City</label>
+					<label for="city" class="mb-1 block text-sm font-medium text-[hsl(var(--foreground))]">City</label>
 					<input
 						id="city"
 						type="text"
 						required
 						bind:value={formData.city}
-						class="w-full rounded-md border border-gray-300 px-4 py-2"
+						class="w-full rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
 					/>
 				</div>
 
 				<div>
-					<label for="state" class="mb-1 block text-sm font-medium">State</label>
+					<label for="state" class="mb-1 block text-sm font-medium text-[hsl(var(--foreground))]">State</label>
 					<input
 						id="state"
 						type="text"
@@ -262,7 +262,7 @@
 				</div>
 
 				<div>
-					<label for="zip" class="mb-1 block text-sm font-medium">ZIP Code</label>
+					<label for="zip" class="mb-1 block text-sm font-medium text-[hsl(var(--foreground))]">ZIP Code</label>
 					<input
 						id="zip"
 						type="text"
@@ -271,7 +271,7 @@
 						maxlength="10"
 						bind:value={formData.zip}
 						placeholder="12345"
-						class="w-full rounded-md border border-gray-300 px-4 py-2"
+						class="w-full rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]"
 					/>
 				</div>
 			</div>
@@ -281,12 +281,12 @@
 		<button
 			type="submit"
 			disabled={loading}
-			class="w-full rounded-lg bg-blue-600 px-6 py-3 text-lg font-semibold text-white hover:bg-blue-700 disabled:bg-gray-400"
+			class="w-full rounded-lg bg-[hsl(var(--primary))] px-6 py-3 text-lg font-semibold text-[hsl(var(--primary-foreground))] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
 		>
 			{loading ? 'Processing...' : submitText}
 		</button>
 
-		<p class="text-center text-sm text-gray-600">
+		<p class="text-center text-sm text-[hsl(var(--muted-foreground))]">
 			Your payment information is securely processed by Authorize.net
 		</p>
 	</form>

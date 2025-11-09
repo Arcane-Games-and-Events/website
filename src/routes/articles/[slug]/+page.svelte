@@ -85,23 +85,39 @@
 </script>
 
 <svelte:head>
-	<title>{data.article.title}</title>
+	<title>{data.article.title} - Arcane Games and Events</title>
 	{#if data.article.excerpt}
 		<meta name="description" content={data.article.excerpt} />
 	{/if}
 </svelte:head>
 
-<article class="container mx-auto px-4 py-8 max-w-3xl">
-	<header class="mb-8">
-		<h1 class="text-4xl font-bold mb-4">
+<article class="container mx-auto px-4 py-12 max-w-4xl">
+	<!-- Back Link -->
+	<div class="mb-8">
+		<a href="/articles" class="inline-flex items-center gap-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] transition-colors text-sm font-medium">
+			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+			</svg>
+			Back to Articles
+		</a>
+	</div>
+
+	<!-- Article Header -->
+	<header class="mb-8 pb-8 border-b border-[hsl(var(--border))]">
+		{#if data.isPremium}
+			<div class="flex gap-2 mb-4">
+				<span class="px-3 py-1 text-xs rounded-full bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] font-medium">
+					Premium Content
+				</span>
+			</div>
+		{/if}
+
+		<h1 class="text-4xl sm:text-5xl font-bold mb-4 text-[hsl(var(--foreground))]">
 			{data.article.title}
-			{#if data.isPremium}
-				<span class="text-yellow-500 text-2xl ml-2" title="Premium content">🔒</span>
-			{/if}
 		</h1>
 
 		{#if data.article.publishedAt}
-			<time class="text-gray-600" datetime={data.article.publishedAt}>
+			<time class="text-sm text-[hsl(var(--muted-foreground))]" datetime={data.article.publishedAt}>
 				{new Date(data.article.publishedAt).toLocaleDateString('en-US', {
 					year: 'numeric',
 					month: 'long',
@@ -111,22 +127,29 @@
 		{/if}
 	</header>
 
+	<!-- Article Content -->
 	<div class="prose prose-lg max-w-none">
 		{#if data.article.content}
 			{@html renderContent(data.article.content)}
 		{:else}
-			<p class="text-gray-500">No content available.</p>
+			<p class="text-[hsl(var(--muted-foreground))]">No content available.</p>
 		{/if}
 	</div>
 
-	<footer class="mt-12 pt-6 border-t border-gray-200">
-		<a href="/articles" class="text-blue-600 hover:underline">&larr; Back to all articles</a>
+	<!-- Article Footer -->
+	<footer class="mt-12 pt-8 border-t border-[hsl(var(--border))]">
+		<a href="/articles" class="inline-flex items-center gap-2 text-[hsl(var(--primary))] hover:underline font-medium">
+			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+			</svg>
+			Back to all articles
+		</a>
 	</footer>
 </article>
 
 <style>
 	:global(.prose) {
-		color: #374151;
+		color: hsl(var(--foreground));
 		line-height: 1.75;
 	}
 
@@ -135,6 +158,7 @@
 		font-weight: 700;
 		margin-top: 0;
 		margin-bottom: 0.8888889em;
+		color: hsl(var(--foreground));
 	}
 
 	:global(.prose h2) {
@@ -142,6 +166,7 @@
 		font-weight: 600;
 		margin-top: 2em;
 		margin-bottom: 1em;
+		color: hsl(var(--foreground));
 	}
 
 	:global(.prose h3) {
@@ -149,6 +174,7 @@
 		font-weight: 600;
 		margin-top: 1.6em;
 		margin-bottom: 0.6em;
+		color: hsl(var(--foreground));
 	}
 
 	:global(.prose p) {
@@ -157,7 +183,7 @@
 	}
 
 	:global(.prose a) {
-		color: #2563eb;
+		color: hsl(var(--primary));
 		text-decoration: underline;
 	}
 
@@ -174,17 +200,18 @@
 	}
 
 	:global(.prose code) {
-		background-color: #f3f4f6;
+		background-color: hsl(var(--muted));
 		padding: 0.2em 0.4em;
-		border-radius: 0.25rem;
+		border-radius: var(--radius);
 		font-size: 0.875em;
+		color: hsl(var(--foreground));
 	}
 
 	:global(.prose pre) {
-		background-color: #1f2937;
-		color: #f9fafb;
+		background-color: hsl(var(--primary));
+		color: hsl(var(--primary-foreground));
 		padding: 1em;
-		border-radius: 0.5rem;
+		border-radius: var(--radius);
 		overflow-x: auto;
 		margin-top: 1.5em;
 		margin-bottom: 1.5em;
@@ -197,10 +224,10 @@
 	}
 
 	:global(.prose blockquote) {
-		border-left: 4px solid #e5e7eb;
+		border-left: 4px solid hsl(var(--border));
 		padding-left: 1em;
 		font-style: italic;
-		color: #6b7280;
+		color: hsl(var(--muted-foreground));
 		margin-top: 1.5em;
 		margin-bottom: 1.5em;
 	}
@@ -208,7 +235,7 @@
 	:global(.prose img) {
 		max-width: 100%;
 		height: auto;
-		border-radius: 0.5rem;
+		border-radius: var(--radius);
 		margin-top: 2em;
 		margin-bottom: 2em;
 	}
