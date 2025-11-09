@@ -12,7 +12,7 @@
 		<!-- role-specific links on the right -->
 		<div class="ml-auto flex items-center gap-4">
 			{#if user.role === 'writer' || user.role === 'admin'}
-				<a href="/writer" class="hover:underline">Writer</a>
+				<a href="http://localhost:1337/admin" target="_blank" class="hover:underline">Writer</a>
 			{/if}
 			{#if user.role === 'admin'}
 				<a href="/admin" class="hover:underline">Admin</a>

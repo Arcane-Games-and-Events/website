@@ -9,6 +9,9 @@ export const user = pgTable('user', {
 
 	role: text('role').notNull().default('free'), // Options: 'free', 'premium', 'admin', etc.
 
+	// Subscription tracking
+	subscriptionId: text('subscription_id'), // Authorize.net subscription ID for premium users
+
 	createdAt: timestamp('created_at', {
 		withTimezone: true,
 		mode: 'date'
@@ -33,7 +36,7 @@ export const session = pgTable('session', {
 export const event = pgTable('event', {
 	id: text('id').primaryKey(), // if you want human slugs like 'fall-fest-2025'
 	title: text('title').notNull(),
-	paddlePriceId: text('paddle_price_id').notNull(),
+	price: text('price').notNull(),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
@@ -48,7 +51,7 @@ export const ticket = pgTable('ticket', {
 	voidedAt: timestamp('voided_at', { withTimezone: true, mode: 'date' })
 });
 
-// ENTITLEMENTS (for the simple Paddle product/courses)
+// ENTITLEMENTS (for courses and digital products)
 export const entitlement = pgTable('entitlement', {
 	id: uuid('id').defaultRandom().primaryKey(), // <-- uuid + defaultRandom
 	userId: text('user_id'),
@@ -59,7 +62,7 @@ export const entitlement = pgTable('entitlement', {
 // ORDERS (audit)
 export const order = pgTable('order', {
 	id: uuid('id').defaultRandom().primaryKey(), // <-- uuid + defaultRandom
-	provider: text('provider').notNull(), // 'paddle' | 'authnet'
+	provider: text('provider').notNull(), // 'authnet'
 	providerRef: text('provider_ref').notNull(),
 	userEmail: text('user_email'),
 	amount: text('amount'),
@@ -70,7 +73,7 @@ export const order = pgTable('order', {
 
 // WEBHOOK IDEMPOTENCY
 export const webhookEvent = pgTable('webhook_event', {
-	id: text('id').primaryKey(), // Paddle/Auth.Net event id as text (no default)
+	id: text('id').primaryKey(), // Auth.Net event id as text (no default)
 	provider: text('provider').notNull(),
 	receivedAt: timestamp('received_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });

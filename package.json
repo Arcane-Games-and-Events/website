@@ -42,6 +42,7 @@
 	},
 	"dependencies": {
 		"@lucia-auth/adapter-drizzle": "^1.1.0",
+		"authorizenet": "^1.0.10",
 		"bcryptjs": "^3.0.2",
 		"dotenv": "^17.2.2",
 		"oslo": "^1.2.1",

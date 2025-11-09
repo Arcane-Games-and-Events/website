@@ -1,8 +1,5 @@
 // src/routes/premium/+layout.server.js
-import { requireRole } from '$lib/server/guards';
-
 export const load = async ({ locals }) => {
-	// allow 'premium' and (optionally) 'admin'
-	requireRole(locals, ['premium', 'admin']);
+	// Allow all users - we'll show different content based on their role
 	return { user: locals.user };
 };
