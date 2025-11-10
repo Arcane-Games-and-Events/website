@@ -338,6 +338,153 @@ class AuthNetClient {
 			});
 		});
 	}
+
+	/**
+	 * Void a transaction (for unsettled transactions)
+	 * @param {string} transactionId - Transaction ID to void
+	 * @returns {Promise<Object>} Void result
+	 */
+	async voidTransaction(transactionId) {
+		return new Promise((resolve, reject) => {
+			const merchantAuth = this.getMerchantAuth();
+
+			// Create transaction request
+			const transactionRequest = new ApiContracts.TransactionRequestType();
+			transactionRequest.setTransactionType(ApiContracts.TransactionTypeEnum.VOIDTRANSACTION);
+			transactionRequest.setRefTransId(transactionId);
+
+			// Create request
+			const request = new ApiContracts.CreateTransactionRequest();
+			request.setMerchantAuthentication(merchantAuth);
+			request.setTransactionRequest(transactionRequest);
+
+			// Execute transaction
+			const ctrl = new ApiControllers.CreateTransactionController(request.getJSON());
+
+			// Explicitly set the environment
+			if (this.environment === 'production') {
+				ctrl.setEnvironment(Constants.constants.endpoint.production);
+			} else {
+				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
+			}
+
+			ctrl.execute(() => {
+				const apiResponse = ctrl.getResponse();
+				const response = new ApiContracts.CreateTransactionResponse(apiResponse);
+
+				if (response !== null) {
+					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
+						const transactionResponse = response.getTransactionResponse();
+
+						if (transactionResponse.getMessages() !== null) {
+							resolve({
+								success: true,
+								transactionId: transactionResponse.getTransId(),
+								responseCode: transactionResponse.getResponseCode(),
+								messageCode: transactionResponse.getMessages().getMessage()[0].getCode(),
+								description: transactionResponse.getMessages().getMessage()[0].getDescription()
+							});
+						} else {
+							if (transactionResponse.getErrors() !== null) {
+								reject(new Error(
+									transactionResponse.getErrors().getError()[0].getErrorText()
+								));
+							} else {
+								reject(new Error('Void failed with unknown error'));
+							}
+						}
+					} else {
+						const errors = response.getTransactionResponse().getErrors();
+						reject(new Error(
+							errors.getError()[0].getErrorText()
+						));
+					}
+				} else {
+					reject(new Error('No response from Authorize.net'));
+				}
+			});
+		});
+	}
+
+	/**
+	 * Refund a transaction (for settled transactions)
+	 * @param {Object} options - Refund options
+	 * @param {string} options.transactionId - Original transaction ID to refund
+	 * @param {string} options.amount - Amount to refund
+	 * @param {string} options.cardNumber - Last 4 digits of card (e.g., "1111")
+	 * @returns {Promise<Object>} Refund result
+	 */
+	async refundTransaction(options) {
+		return new Promise((resolve, reject) => {
+			const merchantAuth = this.getMerchantAuth();
+
+			// Create credit card object with last 4 digits
+			const creditCard = new ApiContracts.CreditCardType();
+			creditCard.setCardNumber(options.cardNumber);
+			creditCard.setExpirationDate('XXXX'); // Not required for refund
+
+			const payment = new ApiContracts.PaymentType();
+			payment.setCreditCard(creditCard);
+
+			// Create transaction request
+			const transactionRequest = new ApiContracts.TransactionRequestType();
+			transactionRequest.setTransactionType(ApiContracts.TransactionTypeEnum.REFUNDTRANSACTION);
+			transactionRequest.setAmount(options.amount);
+			transactionRequest.setPayment(payment);
+			transactionRequest.setRefTransId(options.transactionId);
+
+			// Create request
+			const request = new ApiContracts.CreateTransactionRequest();
+			request.setMerchantAuthentication(merchantAuth);
+			request.setTransactionRequest(transactionRequest);
+
+			// Execute transaction
+			const ctrl = new ApiControllers.CreateTransactionController(request.getJSON());
+
+			// Explicitly set the environment
+			if (this.environment === 'production') {
+				ctrl.setEnvironment(Constants.constants.endpoint.production);
+			} else {
+				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
+			}
+
+			ctrl.execute(() => {
+				const apiResponse = ctrl.getResponse();
+				const response = new ApiContracts.CreateTransactionResponse(apiResponse);
+
+				if (response !== null) {
+					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
+						const transactionResponse = response.getTransactionResponse();
+
+						if (transactionResponse.getMessages() !== null) {
+							resolve({
+								success: true,
+								transactionId: transactionResponse.getTransId(),
+								responseCode: transactionResponse.getResponseCode(),
+								messageCode: transactionResponse.getMessages().getMessage()[0].getCode(),
+								description: transactionResponse.getMessages().getMessage()[0].getDescription()
+							});
+						} else {
+							if (transactionResponse.getErrors() !== null) {
+								reject(new Error(
+									transactionResponse.getErrors().getError()[0].getErrorText()
+								));
+							} else {
+								reject(new Error('Refund failed with unknown error'));
+							}
+						}
+					} else {
+						const errors = response.getTransactionResponse().getErrors();
+						reject(new Error(
+							errors.getError()[0].getErrorText()
+						));
+					}
+				} else {
+					reject(new Error('No response from Authorize.net'));
+				}
+			});
+		});
+	}
 }
 
 export const authnet = new AuthNetClient();

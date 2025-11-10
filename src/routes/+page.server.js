@@ -1,8 +1,12 @@
 import { strapi } from '$lib/server/strapi/client.js';
 import { isPremiumNow } from '$lib/server/articles/access.js';
+import { db } from '$lib/server/db/index.js';
+import { event } from '$lib/server/db/schema.js';
+import { asc, gte } from 'drizzle-orm';
 
 export async function load() {
 	try {
+		// Fetch articles
 		const posts = await strapi.getPosts();
 
 		// Transform Strapi response to match our expected format
@@ -28,13 +32,24 @@ export async function load() {
 			.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
 			.slice(0, 3);
 
+		// Fetch upcoming events (limit to 3)
+		const now = new Date();
+		const upcomingEvents = await db
+			.select()
+			.from(event)
+			.where(gte(event.eventDate, now))
+			.orderBy(asc(event.eventDate))
+			.limit(3);
+
 		return {
-			articles
+			articles,
+			events: upcomingEvents
 		};
 	} catch (error) {
-		console.error('Error fetching articles for homepage:', error);
+		console.error('Error fetching data for homepage:', error);
 		return {
-			articles: []
+			articles: [],
+			events: []
 		};
 	}
 }

@@ -1,29 +1,45 @@
-import { error } from '@sveltejs/kit';
+import { redirect, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { event } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 
-export async function load({ params, url }) {
-	const { eventId } = params;
-	const quantity = parseInt(url.searchParams.get('quantity') || '1', 10);
-
-	// Fetch event from database
-	const events = await db.select().from(event).where(eq(event.id, eventId));
-
-	if (events.length === 0) {
-		throw error(404, 'Event not found');
+export async function load({ params, locals }) {
+	// Require authentication
+	if (!locals.user) {
+		throw redirect(302, `/login?redirect=/events/${params.eventId}/checkout`);
 	}
 
-	const eventData = events[0];
+	try {
+		// Fetch event details
+		const [eventData] = await db
+			.select()
+			.from(event)
+			.where(eq(event.id, params.eventId))
+			.limit(1);
 
-	// You'll need to add a price field to your event schema
-	// For now, we'll use a placeholder
-	return {
-		event: {
-			id: eventData.id,
-			title: eventData.title,
-			price: '25.00' // This should come from the database
-		},
-		quantity
-	};
+		if (!eventData) {
+			throw error(404, 'Event not found');
+		}
+
+		// Calculate price (with premium discount if applicable)
+		let finalPrice = parseFloat(eventData.price);
+		const isPremium = locals.user.role === 'premium' || locals.user.role === 'admin';
+
+		if (eventData.premiumDiscount && isPremium) {
+			finalPrice = finalPrice * 0.9; // 10% discount
+		}
+
+		return {
+			user: locals.user,
+			event: eventData,
+			finalPrice: finalPrice.toFixed(2),
+			hasPremiumDiscount: eventData.premiumDiscount && isPremium
+		};
+	} catch (err) {
+		if (err.status === 404) {
+			throw err;
+		}
+		console.error('Error loading event:', err);
+		throw error(500, 'Failed to load event details');
+	}
 }

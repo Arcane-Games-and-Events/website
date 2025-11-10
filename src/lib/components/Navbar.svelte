@@ -58,6 +58,14 @@
 							Writer
 						</a>
 					{/if}
+					{#if user.role === 'tournament_staff'}
+						<a
+							href="/staff"
+							class="text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] transition-colors"
+						>
+							Staff Dashboard
+						</a>
+					{/if}
 					{#if user.role === 'admin'}
 						<a
 							href="/admin"
@@ -187,6 +195,15 @@
 									class="block text-base font-medium text-[hsl(var(--foreground))] hover:text-[hsl(var(--primary))] transition-colors px-2 py-2"
 								>
 									Writer
+								</a>
+							{/if}
+							{#if user.role === 'tournament_staff'}
+								<a
+									href="/staff"
+									on:click={closeMobileMenu}
+									class="block text-base font-medium text-[hsl(var(--foreground))] hover:text-[hsl(var(--primary))] transition-colors px-2 py-2"
+								>
+									Staff Dashboard
 								</a>
 							{/if}
 							{#if user.role === 'admin'}

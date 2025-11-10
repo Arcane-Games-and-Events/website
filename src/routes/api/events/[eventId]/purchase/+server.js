@@ -13,13 +13,36 @@ export async function POST({ params, request, locals }) {
 		const { eventId } = params;
 		const currentUser = locals.user;
 
+		// Require authentication
+		if (!currentUser) {
+			return json({ error: 'Authentication required' }, { status: 401 });
+		}
+
 		const body = await request.json();
-		const { amount, cardNumber, expirationDate, cardCode, description, billTo } = body;
+		const { amount, cardNumber, expirationDate, cardCode, description, billTo, gemId } = body;
 
 		// Verify event exists
-		const events = await db.select().from(eventTable).where(eq(eventTable.id, eventId));
-		if (events.length === 0) {
+		const [eventData] = await db.select().from(eventTable).where(eq(eventTable.id, eventId));
+		if (!eventData) {
 			return json({ error: 'Event not found' }, { status: 404 });
+		}
+
+		// Validate Gem ID if required
+		if (eventData.gemIdRequired && !gemId) {
+			return json({ error: 'Gem ID is required for this event' }, { status: 400 });
+		}
+
+		// Calculate expected price with premium discount
+		let expectedPrice = parseFloat(eventData.price);
+		const isPremium = currentUser.role === 'premium' || currentUser.role === 'admin';
+
+		if (eventData.premiumDiscount && isPremium) {
+			expectedPrice = expectedPrice * 0.9; // 10% discount
+		}
+
+		// Validate amount matches expected price
+		if (Math.abs(parseFloat(amount) - expectedPrice) > 0.01) {
+			return json({ error: 'Invalid payment amount' }, { status: 400 });
 		}
 
 		// Process one-time payment
@@ -28,7 +51,7 @@ export async function POST({ params, request, locals }) {
 			cardNumber,
 			expirationDate,
 			cardCode,
-			description,
+			description: description || `Ticket for ${eventData.title}`,
 			billTo
 		});
 
@@ -36,27 +59,36 @@ export async function POST({ params, request, locals }) {
 			// Generate unique ticket code
 			const ticketCode = crypto.randomBytes(8).toString('hex').toUpperCase();
 
-			// Create ticket record
+			// Create ticket record with new fields
 			const [newTicket] = await db.insert(ticket).values({
-				userId: currentUser?.id || null,
+				userId: currentUser.id,
 				eventId,
 				code: ticketCode,
-				quantity: 1 // You can enhance this to support multiple quantities
+				quantity: 1,
+				firstName: billTo?.firstName || null,
+				lastName: billTo?.lastName || null,
+				gemId: gemId || null,
+				amountPaid: parseFloat(amount).toFixed(2),
+				transactionId: result.transactionId,
+				enteredIntoGem: false
 			}).returning();
 
 			// Record the order
 			await db.insert(order).values({
 				provider: 'authnet',
 				providerRef: result.transactionId,
-				userEmail: currentUser?.email || billTo.firstName + '@example.com',
+				userEmail: currentUser.email,
 				amount,
 				currency: 'USD',
 				meta: {
 					type: 'ticket',
 					eventId,
+					eventTitle: eventData.title,
 					ticketId: newTicket.id,
 					ticketCode,
-					transactionId: result.transactionId
+					gemId: gemId || null,
+					transactionId: result.transactionId,
+					premiumDiscount: eventData.premiumDiscount && isPremium
 				}
 			});
 
@@ -64,10 +96,10 @@ export async function POST({ params, request, locals }) {
 				success: true,
 				ticketCode,
 				ticketId: newTicket.id,
-				redirectUrl: `/tickets/${newTicket.id}`
+				redirectUrl: `/events/${eventId}/ticket/${newTicket.id}`
 			});
 		} else {
-			return json({ error: 'Payment failed' }, { status: 500 });
+			return json({ error: result.error || 'Payment failed' }, { status: 500 });
 		}
 	} catch (err) {
 		console.error('Ticket purchase error:', err);

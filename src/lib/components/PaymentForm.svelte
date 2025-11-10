@@ -4,6 +4,7 @@
 	export let submitUrl = '';
 	export let submitText = 'Pay Now';
 	export let isSubscription = false;
+	export let gemId = '';
 
 	let loading = false;
 	let error = '';
@@ -47,6 +48,7 @@
 					cardCode: formData.cardCode,
 					description,
 					isSubscription,
+					gemId: gemId || undefined,
 					billTo: {
 						firstName: formData.firstName,
 						lastName: formData.lastName,

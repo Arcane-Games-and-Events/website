@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, integer, jsonb, boolean, decimal } from 'drizzle-orm/pg-core';
 
 // User table with auth and role support
 export const user = pgTable('user', {
@@ -7,10 +7,13 @@ export const user = pgTable('user', {
 	email: text('email').notNull().unique(),
 	hashedPassword: text('hashed_password').notNull(), // hashed_password is the DB column, but use camelCase in code
 
-	role: text('role').notNull().default('free'), // Options: 'free', 'premium', 'admin', etc.
+	role: text('role').notNull().default('free'), // Options: 'free', 'premium', 'admin', 'writer', 'tournament_staff'
 
 	// Subscription tracking
 	subscriptionId: text('subscription_id'), // Authorize.net subscription ID for premium users
+
+	// User preferences
+	theme: text('theme').default('light'), // 'light' or 'dark'
 
 	createdAt: timestamp('created_at', {
 		withTimezone: true,
@@ -34,19 +37,43 @@ export const session = pgTable('session', {
 
 // EVENTS
 export const event = pgTable('event', {
-	id: text('id').primaryKey(), // if you want human slugs like 'fall-fest-2025'
+	id: text('id').primaryKey(), // UUID or slug
 	title: text('title').notNull(),
-	price: text('price').notNull(),
+	location: text('location'), // Nullable for migration compatibility
+	price: decimal('price', { precision: 10, scale: 2 }).notNull(),
+	format: text('format'), // e.g., "Standard", "Modern", "Draft" - nullable for migration
+	gemIdRequired: boolean('gem_id_required').default(false),
+	circuit: text('circuit'), // e.g., "Los Angeles", "New England"
+	eventDate: timestamp('event_date', { withTimezone: true, mode: 'date' }), // Nullable for migration
+	description: text('description'),
+	premiumDiscount: boolean('premium_discount').default(false), // 10% discount for premium users
+	createdBy: text('created_by').references(() => user.id),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
 // TICKETS
 export const ticket = pgTable('ticket', {
-	id: uuid('id').defaultRandom().primaryKey(), // <-- uuid + defaultRandom
-	userId: text('user_id'),
-	eventId: text('event_id').notNull(),
+	id: uuid('id').defaultRandom().primaryKey(),
+	userId: text('user_id').references(() => user.id),
+	eventId: text('event_id').notNull().references(() => event.id),
 	code: text('code').notNull(),
 	quantity: integer('quantity').default(1),
+
+	// Player information
+	firstName: text('first_name'), // Player's first name
+	lastName: text('last_name'), // Player's last name
+	gemId: text('gem_id'), // Gem ID if required by event
+
+	// Payment information
+	amountPaid: decimal('amount_paid', { precision: 10, scale: 2 }), // Actual amount paid (with discount if applicable)
+	transactionId: text('transaction_id'), // Authorize.net transaction ID
+
+	// Status tracking
+	refunded: boolean('refunded').default(false),
+	refundedAt: timestamp('refunded_at', { withTimezone: true, mode: 'date' }),
+	enteredIntoGem: boolean('entered_into_gem').default(false), // Whether player has been entered into tournament software
+
+	// Timestamps
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
 	voidedAt: timestamp('voided_at', { withTimezone: true, mode: 'date' })
 });
@@ -76,4 +103,13 @@ export const webhookEvent = pgTable('webhook_event', {
 	id: text('id').primaryKey(), // Auth.Net event id as text (no default)
 	provider: text('provider').notNull(),
 	receivedAt: timestamp('received_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// EVENT STAFF ASSIGNMENTS (for tournament staff)
+export const eventStaff = pgTable('event_staff', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	userId: text('user_id').notNull().references(() => user.id),
+	eventId: text('event_id').notNull().references(() => event.id),
+	assignedBy: text('assigned_by').references(() => user.id), // Admin who assigned the staff
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
