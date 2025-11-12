@@ -1,5 +1,125 @@
 <script>
+	import CardHover from '$lib/components/CardHover.svelte';
+	import Decklist from '$lib/components/Decklist.svelte';
+
 	export let data;
+
+	// Separate content into regular blocks and decklist blocks
+	let contentBlocks = [];
+	let decklistBlocks = [];
+
+	$: {
+		if (data.article.content) {
+			const { regular, decklists } = parseContent(data.article.content);
+			contentBlocks = regular;
+			decklistBlocks = decklists;
+		}
+	}
+
+	/**
+	 * Parse content and separate regular blocks from decklist blocks
+	 */
+	function parseContent(content) {
+		if (!content) return { regular: [], decklists: [] };
+
+		// If content is a string, return it as a single block
+		if (typeof content === 'string') {
+			return { regular: [{ html: content, index: 0 }], decklists: [] };
+		}
+
+		// If content is an array of blocks (Strapi v5 format)
+		if (Array.isArray(content)) {
+			const regular = [];
+			const decklists = [];
+			let currentHtml = '';
+			let blockIndex = 0;
+
+			// Strapi splits code blocks line-by-line, so we need to accumulate consecutive JSON code blocks
+			let accumulatedJsonLines = [];
+
+			const processAccumulatedJson = () => {
+				if (accumulatedJsonLines.length > 0) {
+					const fullJson = accumulatedJsonLines.join('\n');
+					try {
+						const parsed = JSON.parse(fullJson);
+
+						// Check if this looks like a decklist (has a 'cards' array)
+						if (parsed.cards && Array.isArray(parsed.cards)) {
+							// Save current HTML if any
+							if (currentHtml) {
+								regular.push({ html: currentHtml, index: blockIndex++ });
+								currentHtml = '';
+							}
+
+							decklists.push({ ...parsed, index: blockIndex++ });
+						} else {
+							// Not a decklist, render as code block
+							currentHtml += `<pre><code>${escapeHtml(fullJson)}</code></pre>`;
+						}
+					} catch (e) {
+						// Invalid JSON, render as code block
+						currentHtml += `<pre><code>${escapeHtml(fullJson)}</code></pre>`;
+					}
+
+					accumulatedJsonLines = [];
+				}
+			};
+
+			content.forEach((block, idx) => {
+				// Check if this is a decklist block
+				if (block.type === 'decklist') {
+					// Process any accumulated JSON first
+					processAccumulatedJson();
+
+					// Custom decklist block type
+					try {
+						let decklistData = {};
+						if (typeof block.data === 'string') {
+							decklistData = JSON.parse(block.data);
+						} else {
+							decklistData = block.data || {};
+						}
+
+						if (currentHtml) {
+							regular.push({ html: currentHtml, index: blockIndex++ });
+							currentHtml = '';
+						}
+
+						decklists.push({ ...decklistData, index: blockIndex++ });
+					} catch (e) {
+						console.error('Failed to parse decklist data:', e);
+					}
+				} else if (block.type === 'code' && block.language === 'json') {
+					// Accumulate JSON code block lines
+					const codeContent = block.code || block.children?.[0]?.text || block.content || '';
+					accumulatedJsonLines.push(codeContent);
+				} else {
+					// Non-JSON block - process any accumulated JSON first
+					processAccumulatedJson();
+
+					// Regular block - add to current HTML
+					currentHtml += renderBlock(block);
+				}
+			});
+
+			// Process any remaining accumulated JSON at the end
+			processAccumulatedJson();
+
+			// Add remaining HTML
+			if (currentHtml) {
+				regular.push({ html: currentHtml, index: blockIndex });
+			}
+
+			return { regular, decklists };
+		}
+
+		// If content is an object, try to extract text
+		if (typeof content === 'object') {
+			return { regular: [{ html: JSON.stringify(content, null, 2), index: 0 }], decklists: [] };
+		}
+
+		return { regular: [], decklists: [] };
+	}
 
 	// Render Strapi rich text content as HTML
 	// Strapi v5 uses blocks-based format (similar to Portable Text)
@@ -13,7 +133,7 @@
 
 		// If content is an array of blocks (Strapi v5 format)
 		if (Array.isArray(content)) {
-			return content.map(block => renderBlock(block)).join('');
+			return content.map((block) => renderBlock(block)).join('');
 		}
 
 		// If content is an object, try to extract text
@@ -42,6 +162,15 @@
 				return `<blockquote>${renderChildren(block.children)}</blockquote>`;
 			case 'code':
 				return `<pre><code>${escapeHtml(block.children?.[0]?.text || '')}</code></pre>`;
+			case 'image':
+				const imageUrl = block.image?.url || '';
+				const altText = block.image?.alternativeText || block.image?.name || '';
+				const caption = block.image?.caption || '';
+				let imageHtml = `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(altText)}" />`;
+				if (caption) {
+					imageHtml = `<figure>${imageHtml}<figcaption>${escapeHtml(caption)}</figcaption></figure>`;
+				}
+				return imageHtml;
 			default:
 				return renderChildren(block.children);
 		}
@@ -50,27 +179,54 @@
 	function renderChildren(children) {
 		if (!children || !Array.isArray(children)) return '';
 
-		return children.map(child => {
-			if (child.type === 'text' || typeof child.text === 'string') {
-				let text = escapeHtml(child.text);
-
-				// Apply formatting
-				if (child.bold) text = `<strong>${text}</strong>`;
-				if (child.italic) text = `<em>${text}</em>`;
-				if (child.underline) text = `<u>${text}</u>`;
-				if (child.strikethrough) text = `<s>${text}</s>`;
-				if (child.code) text = `<code>${text}</code>`;
-
-				// Handle links
+		return children
+			.map((child) => {
+				// Handle links first
 				if (child.type === 'link') {
-					text = `<a href="${child.url}">${renderChildren(child.children)}</a>`;
+					// Check if this is a card link (has card: prefix)
+					const cardMatch = child.url?.match(/^card:(.+)$/);
+					if (cardMatch) {
+						// Format: card:CARDID or card:CARDID|URL
+						// Use | as delimiter to avoid conflicts with : in URLs
+						const fullString = cardMatch[1];
+						const pipeIndex = fullString.indexOf('|');
+
+						let cardId, customUrl;
+						if (pipeIndex !== -1) {
+							cardId = fullString.substring(0, pipeIndex);
+							customUrl = fullString.substring(pipeIndex + 1);
+						} else {
+							cardId = fullString;
+							customUrl = null;
+						}
+
+						// If custom URL provided, use it; otherwise generate cards.fabtcg.com URL
+						const linkUrl =
+							customUrl || `https://cards.fabtcg.com/?search=${encodeURIComponent(cardId)}`;
+
+						return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}" class="card-link">${renderChildren(child.children)}</a>`;
+					} else {
+						return `<a href="${escapeHtml(child.url || '#')}">${renderChildren(child.children)}</a>`;
+					}
 				}
 
-				return text;
-			}
+				// Handle text nodes
+				if (child.type === 'text' || typeof child.text === 'string') {
+					let text = escapeHtml(child.text);
 
-			return renderBlock(child);
-		}).join('');
+					// Apply formatting
+					if (child.bold) text = `<strong>${text}</strong>`;
+					if (child.italic) text = `<em>${text}</em>`;
+					if (child.underline) text = `<u>${text}</u>`;
+					if (child.strikethrough) text = `<s>${text}</s>`;
+					if (child.code) text = `<code>${text}</code>`;
+
+					return text;
+				}
+
+				return renderBlock(child);
+			})
+			.join('');
 	}
 
 	function escapeHtml(text) {
@@ -91,61 +247,134 @@
 	{/if}
 </svelte:head>
 
-<article class="container mx-auto px-4 py-12 max-w-4xl">
+<!-- Cover Image Banner (Full Width) -->
+{#if data.article.coverImage}
+	<div class="relative h-[800px] w-full overflow-hidden bg-[hsl(var(--muted))] sm:h-[700px]">
+		<!-- Cover Image -->
+		<img
+			src={data.article.coverImage}
+			alt={data.article.title}
+			class="h-full w-full object-cover"
+		/>
+
+		<!-- Gradient Overlay for better text visibility -->
+		<div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+
+		<!-- Title Overlay (Bottom Left) -->
+		<div class="absolute right-0 bottom-0 left-0 p-8 sm:p-12">
+			<div class="container mx-auto max-w-4xl">
+				{#if data.isPremium}
+					<div class="mb-4 flex gap-2">
+						<span
+							class="rounded-full bg-[hsl(var(--accent))] px-3 py-1 text-xs font-medium text-[hsl(var(--accent-foreground))]"
+						>
+							Premium Content
+						</span>
+					</div>
+				{/if}
+
+				<h1 class="mb-3 text-3xl font-bold text-white drop-shadow-lg sm:text-4xl md:text-5xl">
+					{data.article.title}
+				</h1>
+
+				{#if data.article.publishedAt}
+					<time class="text-sm text-white/90 drop-shadow" datetime={data.article.publishedAt}>
+						{new Date(data.article.publishedAt).toLocaleDateString('en-US', {
+							year: 'numeric',
+							month: 'long',
+							day: 'numeric'
+						})}
+					</time>
+				{/if}
+			</div>
+		</div>
+	</div>
+{/if}
+
+<article class="container mx-auto max-w-4xl px-4 py-12">
 	<!-- Back Link -->
 	<div class="mb-8">
-		<a href="/articles" class="inline-flex items-center gap-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] transition-colors text-sm font-medium">
-			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<a
+			href="/articles"
+			class="inline-flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+		>
+			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
 			</svg>
 			Back to Articles
 		</a>
 	</div>
 
-	<!-- Article Header -->
-	<header class="mb-8 pb-8 border-b border-[hsl(var(--border))]">
-		{#if data.isPremium}
-			<div class="flex gap-2 mb-4">
-				<span class="px-3 py-1 text-xs rounded-full bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] font-medium">
-					Premium Content
-				</span>
-			</div>
-		{/if}
+	<!-- Article Header (only shown if no cover image) -->
+	{#if !data.article.coverImage}
+		<header class="mb-8 border-b border-[hsl(var(--border))] pb-8">
+			{#if data.isPremium}
+				<div class="mb-4 flex gap-2">
+					<span
+						class="rounded-full bg-[hsl(var(--accent))] px-3 py-1 text-xs font-medium text-[hsl(var(--accent-foreground))]"
+					>
+						Premium Content
+					</span>
+				</div>
+			{/if}
 
-		<h1 class="text-4xl sm:text-5xl font-bold mb-4 text-[hsl(var(--foreground))]">
-			{data.article.title}
-		</h1>
+			<h1 class="mb-4 text-4xl font-bold text-[hsl(var(--foreground))] sm:text-5xl">
+				{data.article.title}
+			</h1>
 
-		{#if data.article.publishedAt}
-			<time class="text-sm text-[hsl(var(--muted-foreground))]" datetime={data.article.publishedAt}>
-				{new Date(data.article.publishedAt).toLocaleDateString('en-US', {
-					year: 'numeric',
-					month: 'long',
-					day: 'numeric'
-				})}
-			</time>
-		{/if}
-	</header>
+			{#if data.article.publishedAt}
+				<time
+					class="text-sm text-[hsl(var(--muted-foreground))]"
+					datetime={data.article.publishedAt}
+				>
+					{new Date(data.article.publishedAt).toLocaleDateString('en-US', {
+						year: 'numeric',
+						month: 'long',
+						day: 'numeric'
+					})}
+				</time>
+			{/if}
+		</header>
+	{/if}
 
 	<!-- Article Content -->
 	<div class="prose prose-lg max-w-none">
 		{#if data.article.content}
-			{@html renderContent(data.article.content)}
+			{#if contentBlocks.length > 0 || decklistBlocks.length > 0}
+				<!-- Render blocks in order -->
+				{#each [...contentBlocks, ...decklistBlocks].sort((a, b) => a.index - b.index) as block}
+					{#if block.html !== undefined}
+						<!-- Regular content block -->
+						{@html block.html}
+					{:else}
+						<!-- Decklist block -->
+						<Decklist decklist={block} />
+					{/if}
+				{/each}
+			{:else}
+				{@html renderContent(data.article.content)}
+			{/if}
 		{:else}
 			<p class="text-[hsl(var(--muted-foreground))]">No content available.</p>
 		{/if}
 	</div>
 
 	<!-- Article Footer -->
-	<footer class="mt-12 pt-8 border-t border-[hsl(var(--border))]">
-		<a href="/articles" class="inline-flex items-center gap-2 text-[hsl(var(--primary))] hover:underline font-medium">
-			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+	<footer class="mt-12 border-t border-[hsl(var(--border))] pt-8">
+		<a
+			href="/articles"
+			class="inline-flex items-center gap-2 font-medium text-[hsl(var(--primary))] hover:underline"
+		>
+			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
 			</svg>
 			Back to all articles
 		</a>
 	</footer>
 </article>
+
+<!-- Card Hover Component -->
+<CardHover />
 
 <style>
 	:global(.prose) {
@@ -185,6 +414,17 @@
 	:global(.prose a) {
 		color: hsl(var(--primary));
 		text-decoration: underline;
+	}
+
+	:global(.prose a.card-link) {
+		color: hsl(var(--primary));
+		text-decoration: underline;
+		cursor: pointer;
+		font-weight: 500;
+	}
+
+	:global(.prose a.card-link:hover) {
+		color: hsl(var(--accent));
 	}
 
 	:global(.prose ul),
@@ -238,5 +478,18 @@
 		border-radius: var(--radius);
 		margin-top: 2em;
 		margin-bottom: 2em;
+	}
+
+	:global(.prose figure) {
+		margin-top: 2em;
+		margin-bottom: 2em;
+	}
+
+	:global(.prose figcaption) {
+		text-align: center;
+		font-size: 0.875em;
+		color: hsl(var(--muted-foreground));
+		margin-top: 0.5em;
+		font-style: italic;
 	}
 </style>

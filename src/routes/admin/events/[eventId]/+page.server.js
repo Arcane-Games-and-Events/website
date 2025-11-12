@@ -14,12 +14,6 @@ export async function load({ params, locals }) {
 
 	// If tournament staff, check if they're assigned to this event
 	if (isTournamentStaff) {
-		console.log('Tournament staff access attempt:', {
-			userId: locals.user.id,
-			userEmail: locals.user.email,
-			eventId: params.eventId
-		});
-
 		const assignment = await db
 			.select()
 			.from(eventStaff)
@@ -29,17 +23,9 @@ export async function load({ params, locals }) {
 			))
 			.limit(1);
 
-		console.log('Assignment check result:', {
-			found: assignment.length > 0,
-			assignmentCount: assignment.length
-		});
-
 		if (assignment.length === 0) {
-			console.log('Access denied: Tournament staff not assigned to this event');
 			throw error(403, 'You are not assigned to this event. Please contact an administrator to be assigned to this event.');
 		}
-
-		console.log('Access granted: Tournament staff assigned to event');
 	} else if (!isAdmin) {
 		// Not admin and not tournament staff
 		throw redirect(302, '/login');

@@ -13,7 +13,7 @@ export const user = pgTable('user', {
 	subscriptionId: text('subscription_id'), // Authorize.net subscription ID for premium users
 
 	// User preferences
-	theme: text('theme').default('light'), // 'light' or 'dark'
+	theme: text('theme').default('dark'), // Site is permanently in dark mode
 
 	createdAt: timestamp('created_at', {
 		withTimezone: true,

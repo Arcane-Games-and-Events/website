@@ -400,6 +400,7 @@ export interface ApiPostPost extends Struct.CollectionTypeSchema {
 	attributes: {
 		accessMode: Schema.Attribute.Enumeration<['free', 'premium', 'premium_window']>;
 		content: Schema.Attribute.Blocks;
+		coverImage: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
 		createdAt: Schema.Attribute.DateTime;
 		createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> & Schema.Attribute.Private;
 		excerpt: Schema.Attribute.Text;

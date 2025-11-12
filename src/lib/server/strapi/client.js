@@ -73,6 +73,23 @@ class StrapiClient {
 		const posts = response.data || [];
 		return posts.length > 0 ? posts[0] : null;
 	}
+
+	/**
+	 * Convert a relative URL to absolute URL using Strapi base URL
+	 * @param {string} url - URL to convert (can be relative or absolute)
+	 * @returns {string} Absolute URL
+	 */
+	getAbsoluteUrl(url) {
+		if (!url) return null;
+
+		// If already absolute, return as-is
+		if (url.startsWith('http://') || url.startsWith('https://')) {
+			return url;
+		}
+
+		// Convert relative URL to absolute
+		return new URL(url, this.baseURL).toString();
+	}
 }
 
 // Export singleton instance

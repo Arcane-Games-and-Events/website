@@ -2,6 +2,50 @@ import { error, redirect } from '@sveltejs/kit';
 import { strapi } from '$lib/server/strapi/client.js';
 import { isPremiumNow } from '$lib/server/articles/access.js';
 
+/**
+ * Process content blocks to convert relative image URLs to absolute
+ */
+function processContentImages(content) {
+	if (!content) return content;
+
+	// If content is a string, return as-is
+	if (typeof content === 'string') return content;
+
+	// If content is an array of blocks (Strapi v5 format)
+	if (Array.isArray(content)) {
+		return content.map(block => {
+			if (!block) return block;
+
+			// Handle image blocks
+			if (block.type === 'image') {
+				const processedBlock = { ...block };
+
+				// Process image URL
+				if (block.image?.url) {
+					processedBlock.image = {
+						...block.image,
+						url: strapi.getAbsoluteUrl(block.image.url)
+					};
+				}
+
+				return processedBlock;
+			}
+
+			// Recursively process children
+			if (block.children && Array.isArray(block.children)) {
+				return {
+					...block,
+					children: processContentImages(block.children)
+				};
+			}
+
+			return block;
+		});
+	}
+
+	return content;
+}
+
 export async function load({ params, locals }) {
 	const { slug } = params;
 
@@ -20,13 +64,35 @@ export async function load({ params, locals }) {
 			throw error(404, 'Article not found');
 		}
 
+		// Extract cover image URL
+		let coverImageUrl = null;
+		if (attrs.coverImage) {
+			// Strapi v4: coverImage.data.attributes.url
+			// Strapi v5: coverImage.url or coverImage[0].url (if multiple)
+			let relativeUrl = null;
+			if (attrs.coverImage.data?.attributes?.url) {
+				relativeUrl = attrs.coverImage.data.attributes.url;
+			} else if (attrs.coverImage.url) {
+				relativeUrl = attrs.coverImage.url;
+			} else if (Array.isArray(attrs.coverImage) && attrs.coverImage[0]?.url) {
+				relativeUrl = attrs.coverImage[0].url;
+			}
+
+			// Convert relative URL to absolute
+			coverImageUrl = strapi.getAbsoluteUrl(relativeUrl);
+		}
+
+		// Process content to convert relative image URLs to absolute
+		const processedContent = processContentImages(attrs.content);
+
 		const article = {
 			slug: attrs.slug,
 			title: attrs.title,
 			excerpt: attrs.excerpt,
-			content: attrs.content,
+			content: processedContent,
 			publishedAt: attrs.published || attrs.publishedAt,
-			accessMode: attrs.accessMode
+			accessMode: attrs.accessMode,
+			coverImage: coverImageUrl
 		};
 
 		// Check premium access
