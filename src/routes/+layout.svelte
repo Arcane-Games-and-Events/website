@@ -1,11 +1,13 @@
 <script>
 	import '../app.css';
-	import Navbar from '$lib/components/Navbar.svelte';
+	import Sidebar from '$lib/components/Sidebar.svelte';
 	export let data;
 </script>
 
-<Navbar user={data.user} />
-
-<main class="p-8">
-	<slot />
-</main>
+<Sidebar user={data.user}>
+	<main class="py-10">
+		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+			<slot />
+		</div>
+	</main>
+</Sidebar>
