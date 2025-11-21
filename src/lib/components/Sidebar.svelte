@@ -33,6 +33,8 @@
 	$: isHomeActive = $page.url.pathname === '/';
 	$: isReadActive = $page.url.pathname.startsWith('/read');
 	$: isPlayActive = $page.url.pathname.startsWith('/play');
+	$: isLiveActive = $page.url.pathname.startsWith('/live');
+	$: isAcademyActive = $page.url.pathname.startsWith('/academy');
 	$: isPremiumActive = $page.url.pathname.startsWith('/premium');
 	$: isDashboardActive = $page.url.pathname.startsWith('/dashboard');
 	$: isAdminActive = $page.url.pathname.startsWith('/admin');
@@ -98,7 +100,7 @@
 										<a
 											href="/"
 											class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isHomeActive
-												? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-[hsl(var(--secondary))] dark:bg-white/5 dark:text-white'
+												? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
 												: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
 											on:click={closeSidebar}
 										>
@@ -124,7 +126,7 @@
 										<a
 											href="/read"
 											class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isReadActive
-												? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-[hsl(var(--secondary))] dark:bg-white/5 dark:text-white'
+												? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
 												: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
 											on:click={closeSidebar}
 										>
@@ -150,7 +152,7 @@
 										<a
 											href="/play"
 											class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isPlayActive
-												? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-[hsl(var(--secondary))] dark:bg-white/5 dark:text-white'
+												? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
 												: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
 											on:click={closeSidebar}
 										>
@@ -172,13 +174,65 @@
 											Play
 										</a>
 									</li>
+									<li>
+										<a
+											href="/academy"
+											class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isAcademyActive
+												? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
+												: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
+											on:click={closeSidebar}
+										>
+											<svg
+												class="h-6 w-6 shrink-0 {isAcademyActive
+													? 'text-indigo-600 dark:text-white'
+													: 'text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-white'}"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="1.5"
+												viewBox="0 0 24 24"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+												/>
+											</svg>
+											Academy
+										</a>
+									</li>
+									<li>
+										<a
+											href="/live"
+											class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isLiveActive
+												? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
+												: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
+											on:click={closeSidebar}
+										>
+											<svg
+												class="h-6 w-6 shrink-0 {isLiveActive
+													? 'text-indigo-600 dark:text-white'
+													: 'text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-white'}"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="1.5"
+												viewBox="0 0 24 24"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+												/>
+											</svg>
+											AGE Live
+										</a>
+									</li>
 									<!-- Only show Premium link for free users -->
 									{#if !user || (user.role !== 'premium' && user.role !== 'admin')}
 										<li>
 											<a
 												href="/premium"
 												class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isPremiumActive
-													? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-[hsl(var(--secondary))] dark:bg-white/5 dark:text-white'
+													? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
 													: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
 												on:click={closeSidebar}
 											>
@@ -212,7 +266,7 @@
 											<a
 												href="/dashboard"
 												class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isDashboardActive
-													? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-[hsl(var(--secondary))] dark:bg-white/5 dark:text-white'
+													? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
 													: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
 												on:click={closeSidebar}
 											>
@@ -240,7 +294,7 @@
 												<a
 													href="/admin"
 													class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isAdminActive
-														? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-[hsl(var(--secondary))] dark:bg-white/5 dark:text-white'
+														? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
 														: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
 													on:click={closeSidebar}
 												>
@@ -277,7 +331,7 @@
 													class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isTeamActive(
 														membership.team.slug
 													)
-														? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-[hsl(var(--secondary))] dark:bg-white/5 dark:text-white'
+														? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
 														: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
 													on:click={closeSidebar}
 												>
@@ -309,7 +363,7 @@
 										class="relative -mx-2 mb-4 overflow-hidden rounded-lg bg-gradient-to-r from-gray-900 to-gray-800"
 									>
 										<div
-											class="absolute inset-0 bg-gradient-to-r from-[hsl(var(--secondary))]/20 to-transparent"
+											class="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-transparent"
 										></div>
 										<div class="relative p-4">
 											<h3 class="mb-2 text-lg font-bold text-white">
@@ -318,7 +372,7 @@
 											<p class="mb-3 text-xs text-gray-300">Discover the best content anywhere.</p>
 											<a
 												href="/premium"
-												class="block rounded-lg bg-[hsl(var(--secondary))] px-4 py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-[hsl(var(--secondary))]/90"
+												class="block rounded-lg bg-blue-500 px-4 py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-blue-500/90"
 												on:click={closeSidebar}
 											>
 												Join Now
@@ -351,7 +405,7 @@
 							<a
 								href="/"
 								class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isHomeActive
-									? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-[hsl(var(--secondary))] dark:bg-white/5 dark:text-white'
+									? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
 									: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
 							>
 								<svg
@@ -376,7 +430,7 @@
 							<a
 								href="/read"
 								class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isReadActive
-									? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-[hsl(var(--secondary))] dark:bg-white/5 dark:text-white'
+									? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
 									: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
 							>
 								<svg
@@ -401,7 +455,7 @@
 							<a
 								href="/play"
 								class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isPlayActive
-									? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-[hsl(var(--secondary))] dark:bg-white/5 dark:text-white'
+									? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
 									: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
 							>
 								<svg
@@ -422,13 +476,63 @@
 								Play
 							</a>
 						</li>
+						<li>
+							<a
+								href="/academy"
+								class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isAcademyActive
+									? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
+									: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
+							>
+								<svg
+									class="h-6 w-6 shrink-0 {isAcademyActive
+										? 'text-indigo-600 dark:text-white'
+										: 'text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-white'}"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.5"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+									/>
+								</svg>
+								Academy
+							</a>
+						</li>
+						<li>
+							<a
+								href="/live"
+								class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isLiveActive
+									? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
+									: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
+							>
+								<svg
+									class="h-6 w-6 shrink-0 {isLiveActive
+										? 'text-indigo-600 dark:text-white'
+										: 'text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-white'}"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.5"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+									/>
+								</svg>
+								AGE Live
+							</a>
+						</li>
 						<!-- Only show Premium link for free users -->
 						{#if !user || (user.role !== 'premium' && user.role !== 'admin')}
 							<li>
 								<a
 									href="/premium"
 									class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isPremiumActive
-										? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-[hsl(var(--secondary))] dark:bg-white/5 dark:text-white'
+										? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
 										: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
 								>
 									<svg
@@ -461,7 +565,7 @@
 								<a
 									href="/dashboard"
 									class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isDashboardActive
-										? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-[hsl(var(--secondary))] dark:bg-white/5 dark:text-white'
+										? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
 										: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
 								>
 									<svg
@@ -488,7 +592,7 @@
 									<a
 										href="/admin"
 										class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isAdminActive
-											? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-[hsl(var(--secondary))] dark:bg-white/5 dark:text-white'
+											? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
 											: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
 									>
 										<svg
@@ -524,7 +628,7 @@
 										class="group relative flex gap-x-3 px-8 py-2 text-sm/6 font-semibold {isTeamActive(
 											membership.team.slug
 										)
-											? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-[hsl(var(--secondary))] dark:bg-white/5 dark:text-white'
+											? 'bg-gray-50 text-indigo-600 before:absolute before:top-0 before:bottom-0 before:left-0 before:w-1 before:bg-blue-500 dark:bg-white/5 dark:text-white'
 											: 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white'}"
 									>
 										<span
@@ -554,9 +658,7 @@
 						<div
 							class="relative -mx-2 mb-4 overflow-hidden rounded-lg bg-gradient-to-r from-gray-900 to-gray-800"
 						>
-							<div
-								class="absolute inset-0 bg-gradient-to-r from-[hsl(var(--secondary))]/20 to-transparent"
-							></div>
+							<div class="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-transparent"></div>
 							<div class="relative p-4">
 								<h3 class="mb-2 text-lg font-bold text-white">
 									Join AGE<br />Premium
@@ -564,7 +666,7 @@
 								<p class="mb-3 text-xs text-gray-300">Discover the best content anywhere.</p>
 								<a
 									href="/premium"
-									class="block rounded-lg bg-[hsl(var(--secondary))] px-4 py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-[hsl(var(--secondary))]/90"
+									class="block rounded-lg bg-blue-500 px-4 py-2 text-center text-sm font-semibold text-white transition-colors hover:bg-blue-500/90"
 								>
 									Join Now
 								</a>
@@ -654,7 +756,7 @@
 						<button type="button" class="flex items-center" on:click={toggleProfileDropdown}>
 							<span class="sr-only">Open user menu</span>
 							<div
-								class="flex h-8 w-8 items-center justify-center rounded-full bg-[hsl(var(--secondary))] font-semibold text-white"
+								class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 font-semibold text-white"
 							>
 								{getUserInitials(user?.firstName)}
 							</div>
@@ -708,7 +810,7 @@
 						</a>
 						<a
 							href="/signup"
-							class="rounded-[var(--radius)] bg-[hsl(var(--primary))] px-4 py-2 text-sm font-medium text-[hsl(var(--primary-foreground))] transition-opacity hover:opacity-90"
+							class="rounded-[var(--radius)] bg-white px-4 py-2 text-sm font-medium text-gray-900 transition-opacity hover:opacity-90"
 						>
 							Sign Up
 						</a>

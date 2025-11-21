@@ -10,15 +10,21 @@
 	let sortColumn = 'createdAt'; // Default sort by purchase date
 	let sortDirection = 'desc'; // 'asc' or 'desc'
 
-	const circuits = [
-		'Los Angeles',
-		'New England',
-		'Mid-Atlantic',
-		'Southeast',
-		'Midwest',
-		'Southwest',
-		'Northwest',
-		'Other'
+	const circuits = ['West', 'East', 'Central'];
+
+	const months = [
+		'January',
+		'February',
+		'March',
+		'April',
+		'May',
+		'June',
+		'July',
+		'August',
+		'September',
+		'October',
+		'November',
+		'December'
 	];
 
 	const formats = [
@@ -136,19 +142,19 @@
 		<div class="flex items-center gap-4 mb-4">
 			<a
 				href="/admin"
-				class="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] transition-colors"
+				class="text-gray-400 hover:text-white transition-colors"
 			>
 				← Back to Admin
 			</a>
 		</div>
 		<div class="flex items-center justify-between">
 			<div>
-				<h1 class="text-4xl font-bold text-[hsl(var(--foreground))]">{data.event.title}</h1>
-				<p class="text-[hsl(var(--muted-foreground))] mt-2">Event Management</p>
+				<h1 class="text-4xl font-bold text-gray-100">{data.event.title}</h1>
+				<p class="text-gray-400 mt-2">Event Management</p>
 			</div>
 			<button
 				on:click={() => (isEditMode = !isEditMode)}
-				class="rounded-[var(--radius)] bg-[hsl(var(--primary))] px-6 py-2.5 text-sm font-medium text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity"
+				class="rounded-[var(--radius)] bg-white px-6 py-2.5 text-sm font-medium text-gray-900 hover:opacity-90 transition-opacity"
 			>
 				{isEditMode ? 'Cancel Edit' : 'Edit Event'}
 			</button>
@@ -163,8 +169,8 @@
 	{/if}
 
 	{#if form?.error}
-		<div class="rounded-[var(--radius)] bg-[hsl(var(--destructive))] bg-opacity-10 border border-[hsl(var(--destructive))] p-4 mb-6">
-			<p class="text-sm text-[hsl(var(--destructive))]">{form.error}</p>
+		<div class="rounded-[var(--radius)] bg-red-700 bg-opacity-10 border border-red-700 p-4 mb-6">
+			<p class="text-sm text-red-700">{form.error}</p>
 		</div>
 	{/if}
 
@@ -172,11 +178,11 @@
 	<div class="grid grid-cols-1 {data.isAdmin ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-6 mb-8">
 		<!-- Total Revenue - Admin Only -->
 		{#if data.isAdmin}
-			<div class="rounded-[var(--radius)] bg-[hsl(var(--card))] border shadow-md p-6">
+			<div class="rounded-[var(--radius)] bg-gray-950 border shadow-md p-6">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Total Revenue</p>
-						<p class="text-3xl font-bold text-[hsl(var(--foreground))] mt-2">${data.stats.totalRevenue}</p>
+						<p class="text-sm font-medium text-gray-400">Total Revenue</p>
+						<p class="text-3xl font-bold text-gray-100 mt-2">${data.stats.totalRevenue}</p>
 					</div>
 					<div class="p-3 rounded-full bg-green-100 dark:bg-green-900/20">
 						<svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,11 +193,11 @@
 			</div>
 		{/if}
 
-		<div class="rounded-[var(--radius)] bg-[hsl(var(--card))] border shadow-md p-6">
+		<div class="rounded-[var(--radius)] bg-gray-950 border shadow-md p-6">
 			<div class="flex items-center justify-between">
 				<div>
-					<p class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Tickets Sold</p>
-					<p class="text-3xl font-bold text-[hsl(var(--foreground))] mt-2">{data.stats.totalTickets}</p>
+					<p class="text-sm font-medium text-gray-400">Tickets Sold</p>
+					<p class="text-3xl font-bold text-gray-100 mt-2">{data.stats.totalTickets}</p>
 				</div>
 				<div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900/20">
 					<svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -201,11 +207,11 @@
 			</div>
 		</div>
 
-		<div class="rounded-[var(--radius)] bg-[hsl(var(--card))] border shadow-md p-6">
+		<div class="rounded-[var(--radius)] bg-gray-950 border shadow-md p-6">
 			<div class="flex items-center justify-between">
 				<div>
-					<p class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Refunds</p>
-					<p class="text-3xl font-bold text-[hsl(var(--foreground))] mt-2">{data.stats.totalRefunded}</p>
+					<p class="text-sm font-medium text-gray-400">Refunds</p>
+					<p class="text-3xl font-bold text-gray-100 mt-2">{data.stats.totalRefunded}</p>
 				</div>
 				<div class="p-3 rounded-full bg-red-100 dark:bg-red-900/20">
 					<svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,13 +228,13 @@
 			{#if isEditMode}
 				<!-- Edit Event Form -->
 				<form method="POST" action="?/updateEvent" class="space-y-6">
-					<div class="rounded-[var(--radius)] bg-[hsl(var(--card))] border shadow-md p-6">
-						<h2 class="text-xl font-semibold text-[hsl(var(--foreground))] mb-4">Edit Event Details</h2>
+					<div class="rounded-[var(--radius)] bg-gray-950 border shadow-md p-6">
+						<h2 class="text-xl font-semibold text-gray-100 mb-4">Edit Event Details</h2>
 
 						<div class="space-y-4">
 							<!-- Title -->
 							<div>
-								<label for="title" class="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+								<label for="title" class="block text-sm font-medium text-gray-100 mb-2">
 									Event Name *
 								</label>
 								<input
@@ -237,14 +243,14 @@
 									name="title"
 									required
 									value={data.event.title}
-									class="w-full rounded-[var(--radius)] border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-2.5 text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent"
+									class="w-full rounded-[var(--radius)] border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
 								/>
 							</div>
 
 							<!-- Location -->
 							<div>
-								<label for="location" class="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
-									Location *
+								<label for="location" class="block text-sm font-medium text-gray-100 mb-2">
+									Venue Name *
 								</label>
 								<input
 									type="text"
@@ -252,20 +258,34 @@
 									name="location"
 									required
 									value={data.event.location}
-									class="w-full rounded-[var(--radius)] border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-2.5 text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent"
+									class="w-full rounded-[var(--radius)] border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+								/>
+							</div>
+
+							<!-- Address -->
+							<div>
+								<label for="address" class="block text-sm font-medium text-gray-100 mb-2">
+									Address
+								</label>
+								<input
+									type="text"
+									id="address"
+									name="address"
+									value={data.event.address || ''}
+									class="w-full rounded-[var(--radius)] border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
 								/>
 							</div>
 
 							<!-- Format -->
 							<div>
-								<label for="format" class="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+								<label for="format" class="block text-sm font-medium text-gray-100 mb-2">
 									Format *
 								</label>
 								<select
 									id="format"
 									name="format"
 									required
-									class="w-full rounded-[var(--radius)] border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-2.5 text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent"
+									class="w-full rounded-[var(--radius)] border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
 								>
 									{#each formats as format}
 										<option value={format} selected={data.event.format === format}>{format}</option>
@@ -275,13 +295,13 @@
 
 							<!-- Circuit -->
 							<div>
-								<label for="circuit" class="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+								<label for="circuit" class="block text-sm font-medium text-gray-100 mb-2">
 									Circuit
 								</label>
 								<select
 									id="circuit"
 									name="circuit"
-									class="w-full rounded-[var(--radius)] border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-2.5 text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent"
+									class="w-full rounded-[var(--radius)] border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
 								>
 									<option value="">No circuit</option>
 									{#each circuits as circuit}
@@ -290,9 +310,26 @@
 								</select>
 							</div>
 
+							<!-- Month -->
+							<div>
+								<label for="month" class="block text-sm font-medium text-gray-100 mb-2">
+									Month
+								</label>
+								<select
+									id="month"
+									name="month"
+									class="w-full rounded-[var(--radius)] border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+								>
+									<option value="">Select month</option>
+									{#each months as month}
+										<option value={month} selected={data.event.month === month}>{month}</option>
+									{/each}
+								</select>
+							</div>
+
 							<!-- Event Date -->
 							<div>
-								<label for="eventDate" class="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+								<label for="eventDate" class="block text-sm font-medium text-gray-100 mb-2">
 									Event Date & Time *
 								</label>
 								<input
@@ -301,16 +338,16 @@
 									name="eventDate"
 									required
 									value={formatDateForInput(data.event.eventDate)}
-									class="w-full rounded-[var(--radius)] border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-2.5 text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent"
+									class="w-full rounded-[var(--radius)] border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
 								/>
 							</div>
 
 							<!-- Price -->
 							<div>
-								<label for="price" class="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+								<label for="price" class="block text-sm font-medium text-gray-100 mb-2">
 									Entry Fee ($) *
 									{#if data.isTournamentStaff}
-										<span class="text-xs text-[hsl(var(--muted-foreground))]">(Read-only)</span>
+										<span class="text-xs text-gray-400">(Read-only)</span>
 									{/if}
 								</label>
 								<input
@@ -322,13 +359,13 @@
 									step="0.01"
 									value={data.event.price}
 									disabled={data.isTournamentStaff}
-									class="w-full rounded-[var(--radius)] border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-2.5 text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent {data.isTournamentStaff ? 'opacity-60 cursor-not-allowed' : ''}"
+									class="w-full rounded-[var(--radius)] border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent {data.isTournamentStaff ? 'opacity-60 cursor-not-allowed' : ''}"
 								/>
 							</div>
 
 							<!-- Description -->
 							<div>
-								<label for="description" class="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+								<label for="description" class="block text-sm font-medium text-gray-100 mb-2">
 									Description
 								</label>
 								<textarea
@@ -336,7 +373,7 @@
 									name="description"
 									rows="4"
 									value={data.event.description || ''}
-									class="w-full rounded-[var(--radius)] border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-2.5 text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent"
+									class="w-full rounded-[var(--radius)] border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent"
 								></textarea>
 							</div>
 
@@ -348,9 +385,9 @@
 										id="gemIdRequired"
 										name="gemIdRequired"
 										bind:checked={gemIdRequired}
-										class="w-4 h-4 rounded border-[hsl(var(--input))] text-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--ring))]"
+										class="w-4 h-4 rounded border-gray-700 text-white focus:ring-2 focus:ring-gray-300"
 									/>
-									<label for="gemIdRequired" class="text-sm font-medium text-[hsl(var(--foreground))] cursor-pointer">
+									<label for="gemIdRequired" class="text-sm font-medium text-gray-100 cursor-pointer">
 										Require Gem ID
 									</label>
 								</div>
@@ -361,9 +398,9 @@
 										id="premiumDiscount"
 										name="premiumDiscount"
 										bind:checked={premiumDiscount}
-										class="w-4 h-4 rounded border-[hsl(var(--input))] text-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--ring))]"
+										class="w-4 h-4 rounded border-gray-700 text-white focus:ring-2 focus:ring-gray-300"
 									/>
-									<label for="premiumDiscount" class="text-sm font-medium text-[hsl(var(--foreground))] cursor-pointer">
+									<label for="premiumDiscount" class="text-sm font-medium text-gray-100 cursor-pointer">
 										10% Premium Discount
 									</label>
 								</div>
@@ -374,13 +411,13 @@
 							<button
 								type="button"
 								on:click={() => (isEditMode = false)}
-								class="flex-1 rounded-[var(--radius)] bg-[hsl(var(--secondary))] px-4 py-2.5 text-sm font-medium text-[hsl(var(--secondary-foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+								class="flex-1 rounded-[var(--radius)] bg-blue-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
 							>
 								Cancel
 							</button>
 							<button
 								type="submit"
-								class="flex-1 rounded-[var(--radius)] bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-medium text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity"
+								class="flex-1 rounded-[var(--radius)] bg-white px-4 py-2.5 text-sm font-medium text-gray-900 hover:opacity-90 transition-opacity"
 							>
 								Save Changes
 							</button>
@@ -389,53 +426,53 @@
 				</form>
 			{:else}
 				<!-- Event Details View -->
-				<div class="rounded-[var(--radius)] bg-[hsl(var(--card))] border shadow-md p-6 space-y-4">
-					<h2 class="text-xl font-semibold text-[hsl(var(--foreground))] mb-4">Event Details</h2>
+				<div class="rounded-[var(--radius)] bg-gray-950 border shadow-md p-6 space-y-4">
+					<h2 class="text-xl font-semibold text-gray-100 mb-4">Event Details</h2>
 
 					<div>
-						<p class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Location</p>
-						<p class="text-[hsl(var(--foreground))] font-medium">{data.event.location || 'N/A'}</p>
+						<p class="text-sm font-medium text-gray-400">Location</p>
+						<p class="text-gray-100 font-medium">{data.event.location || 'N/A'}</p>
 					</div>
 
 					<div>
-						<p class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Date & Time</p>
-						<p class="text-[hsl(var(--foreground))] font-medium">{formatDate(data.event.eventDate)}</p>
+						<p class="text-sm font-medium text-gray-400">Date & Time</p>
+						<p class="text-gray-100 font-medium">{formatDate(data.event.eventDate)}</p>
 					</div>
 
 					<div>
-						<p class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Format</p>
-						<p class="text-[hsl(var(--foreground))] font-medium">{data.event.format || 'N/A'}</p>
+						<p class="text-sm font-medium text-gray-400">Format</p>
+						<p class="text-gray-100 font-medium">{data.event.format || 'N/A'}</p>
 					</div>
 
 					{#if data.event.circuit}
 						<div>
-							<p class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Circuit</p>
-							<p class="text-[hsl(var(--foreground))] font-medium">{data.event.circuit}</p>
+							<p class="text-sm font-medium text-gray-400">Circuit</p>
+							<p class="text-gray-100 font-medium">{data.event.circuit}</p>
 						</div>
 					{/if}
 
 					<div>
-						<p class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Entry Fee</p>
-						<p class="text-[hsl(var(--foreground))] font-medium">${parseFloat(data.event.price).toFixed(2)}</p>
+						<p class="text-sm font-medium text-gray-400">Entry Fee</p>
+						<p class="text-gray-100 font-medium">${parseFloat(data.event.price).toFixed(2)}</p>
 					</div>
 
 					{#if data.event.description}
-						<div class="pt-4 border-t border-[hsl(var(--border))]">
-							<p class="text-sm font-medium text-[hsl(var(--muted-foreground))] mb-2">Description</p>
-							<p class="text-[hsl(var(--foreground))]">{data.event.description}</p>
+						<div class="pt-4 border-t border-gray-700">
+							<p class="text-sm font-medium text-gray-400 mb-2">Description</p>
+							<p class="text-gray-100">{data.event.description}</p>
 						</div>
 					{/if}
 
-					<div class="pt-4 border-t border-[hsl(var(--border))] space-y-2">
+					<div class="pt-4 border-t border-gray-700 space-y-2">
 						<div class="flex items-center gap-2">
-							<span class="text-sm text-[hsl(var(--muted-foreground))]">Gem ID Required:</span>
-							<span class="text-sm font-medium text-[hsl(var(--foreground))]">
+							<span class="text-sm text-gray-400">Gem ID Required:</span>
+							<span class="text-sm font-medium text-gray-100">
 								{data.event.gemIdRequired ? 'Yes' : 'No'}
 							</span>
 						</div>
 						<div class="flex items-center gap-2">
-							<span class="text-sm text-[hsl(var(--muted-foreground))]">Premium Discount:</span>
-							<span class="text-sm font-medium text-[hsl(var(--foreground))]">
+							<span class="text-sm text-gray-400">Premium Discount:</span>
+							<span class="text-sm font-medium text-gray-100">
 								{data.event.premiumDiscount ? 'Yes' : 'No'}
 							</span>
 						</div>
@@ -446,24 +483,24 @@
 
 		<!-- Tickets Column -->
 		<div class="lg:col-span-2">
-			<div class="rounded-[var(--radius)] bg-[hsl(var(--card))] border shadow-md p-6">
-				<h2 class="text-xl font-semibold text-[hsl(var(--foreground))] mb-6">Registered Players</h2>
+			<div class="rounded-[var(--radius)] bg-gray-950 border shadow-md p-6">
+				<h2 class="text-xl font-semibold text-gray-100 mb-6">Registered Players</h2>
 
 				{#if data.tickets.length === 0}
 					<div class="text-center py-12">
-						<svg class="mx-auto h-12 w-12 text-[hsl(var(--muted-foreground))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
 						</svg>
-						<p class="mt-4 text-[hsl(var(--muted-foreground))]">No tickets sold yet</p>
+						<p class="mt-4 text-gray-400">No tickets sold yet</p>
 					</div>
 				{:else}
 					<!-- Sortable Table -->
 					<div class="overflow-x-auto">
 						<table class="w-full text-sm">
 							<thead>
-								<tr class="border-b border-[hsl(var(--border))]">
-									<th class="text-left p-3 font-semibold text-[hsl(var(--foreground))]">
-										<button on:click={() => sortBy('firstName')} class="flex items-center gap-1 hover:text-[hsl(var(--primary))]">
+								<tr class="border-b border-gray-700">
+									<th class="text-left p-3 font-semibold text-gray-100">
+										<button on:click={() => sortBy('firstName')} class="flex items-center gap-1 hover:text-white">
 											First Name
 											{#if sortColumn === 'firstName'}
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -476,8 +513,8 @@
 											{/if}
 										</button>
 									</th>
-									<th class="text-left p-3 font-semibold text-[hsl(var(--foreground))]">
-										<button on:click={() => sortBy('lastName')} class="flex items-center gap-1 hover:text-[hsl(var(--primary))]">
+									<th class="text-left p-3 font-semibold text-gray-100">
+										<button on:click={() => sortBy('lastName')} class="flex items-center gap-1 hover:text-white">
 											Last Name
 											{#if sortColumn === 'lastName'}
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -490,8 +527,8 @@
 											{/if}
 										</button>
 									</th>
-									<th class="text-left p-3 font-semibold text-[hsl(var(--foreground))]">
-										<button on:click={() => sortBy('gemId')} class="flex items-center gap-1 hover:text-[hsl(var(--primary))]">
+									<th class="text-left p-3 font-semibold text-gray-100">
+										<button on:click={() => sortBy('gemId')} class="flex items-center gap-1 hover:text-white">
 											Gem ID
 											{#if sortColumn === 'gemId'}
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -504,8 +541,8 @@
 											{/if}
 										</button>
 									</th>
-									<th class="text-left p-3 font-semibold text-[hsl(var(--foreground))]">
-										<button on:click={() => sortBy('createdAt')} class="flex items-center gap-1 hover:text-[hsl(var(--primary))]">
+									<th class="text-left p-3 font-semibold text-gray-100">
+										<button on:click={() => sortBy('createdAt')} class="flex items-center gap-1 hover:text-white">
 											Purchase Date
 											{#if sortColumn === 'createdAt'}
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -518,8 +555,8 @@
 											{/if}
 										</button>
 									</th>
-									<th class="text-left p-3 font-semibold text-[hsl(var(--foreground))]">
-										<button on:click={() => sortBy('status')} class="flex items-center gap-1 hover:text-[hsl(var(--primary))]">
+									<th class="text-left p-3 font-semibold text-gray-100">
+										<button on:click={() => sortBy('status')} class="flex items-center gap-1 hover:text-white">
 											Status
 											{#if sortColumn === 'status'}
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -532,8 +569,8 @@
 											{/if}
 										</button>
 									</th>
-									<th class="text-left p-3 font-semibold text-[hsl(var(--foreground))]">
-										<button on:click={() => sortBy('enteredIntoGem')} class="flex items-center gap-1 hover:text-[hsl(var(--primary))]">
+									<th class="text-left p-3 font-semibold text-gray-100">
+										<button on:click={() => sortBy('enteredIntoGem')} class="flex items-center gap-1 hover:text-white">
 											Entered into Gem?
 											{#if sortColumn === 'enteredIntoGem'}
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -546,16 +583,16 @@
 											{/if}
 										</button>
 									</th>
-									<th class="text-right p-3 font-semibold text-[hsl(var(--foreground))]">Actions</th>
+									<th class="text-right p-3 font-semibold text-gray-100">Actions</th>
 								</tr>
 							</thead>
 							<tbody>
 								{#each sortedTickets as ticket}
-									<tr class="border-b border-[hsl(var(--border))] {ticket.refunded ? 'bg-red-500/5' : ''} hover:bg-[hsl(var(--muted))] transition-colors">
-										<td class="p-3 text-[hsl(var(--foreground))]">{ticket.firstName || 'N/A'}</td>
-										<td class="p-3 text-[hsl(var(--foreground))]">{ticket.lastName || 'N/A'}</td>
-										<td class="p-3 text-[hsl(var(--foreground))]">{ticket.gemId || 'N/A'}</td>
-										<td class="p-3 text-[hsl(var(--muted-foreground))] text-xs">{formatShortDate(ticket.createdAt)}</td>
+									<tr class="border-b border-gray-700 {ticket.refunded ? 'bg-red-500/5' : ''} hover:bg-gray-800 transition-colors">
+										<td class="p-3 text-gray-100">{ticket.firstName || 'N/A'}</td>
+										<td class="p-3 text-gray-100">{ticket.lastName || 'N/A'}</td>
+										<td class="p-3 text-gray-100">{ticket.gemId || 'N/A'}</td>
+										<td class="p-3 text-gray-400 text-xs">{formatShortDate(ticket.createdAt)}</td>
 										<td class="p-3">
 											{#if ticket.refunded}
 												<span class="inline-flex items-center gap-1.5 rounded-full bg-red-500/20 px-2.5 py-0.5 text-xs font-semibold text-red-600 dark:text-red-400">

@@ -11,35 +11,47 @@
 	}
 </script>
 
-<nav class="sticky top-0 z-50 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+<nav class="sticky top-0 z-50 border-b border-gray-700 bg-gray-950">
 	<div class="container mx-auto max-w-7xl px-4">
 		<div class="flex h-16 items-center justify-between">
 			<div class="flex items-center gap-8">
-				<a href="/" class="text-xl font-bold text-[hsl(var(--primary))]"> Arcane </a>
+				<a href="/" class="text-xl font-bold text-white"> Arcane </a>
 				<!-- Desktop Navigation -->
 				<div class="hidden items-center gap-6 md:flex">
 					<a
 						href="/"
-						class="text-sm font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+						class="text-sm font-medium text-gray-100 transition-colors hover:text-white"
 					>
 						Home
 					</a>
 					<a
 						href="/read"
-						class="text-sm font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+						class="text-sm font-medium text-gray-100 transition-colors hover:text-white"
 					>
 						Learn
 					</a>
 					<a
 						href="/play"
-						class="text-sm font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+						class="text-sm font-medium text-gray-100 transition-colors hover:text-white"
 					>
 						Play
+					</a>
+					<a
+						href="/live"
+						class="text-sm font-medium text-gray-100 transition-colors hover:text-white"
+					>
+						AGE Live
+					</a>
+					<a
+						href="/academy"
+						class="text-sm font-medium text-gray-100 transition-colors hover:text-white"
+					>
+						Academy
 					</a>
 					{#if !user || (user.role !== 'premium' && user.role !== 'admin')}
 						<a
 							href="/premium"
-							class="text-sm font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+							class="text-sm font-medium text-gray-100 transition-colors hover:text-white"
 						>
 							Premium
 						</a>
@@ -52,7 +64,7 @@
 				{#if user}
 					<a
 						href="/account"
-						class="text-sm font-medium text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+						class="text-sm font-medium text-gray-400 transition-colors hover:text-white"
 					>
 						Account
 					</a>
@@ -60,7 +72,7 @@
 						<a
 							href="http://localhost:1337/admin"
 							target="_blank"
-							class="text-sm font-medium text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+							class="text-sm font-medium text-gray-400 transition-colors hover:text-white"
 						>
 							Writer
 						</a>
@@ -68,7 +80,7 @@
 					{#if user.role === 'tournament_staff'}
 						<a
 							href="/staff"
-							class="text-sm font-medium text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+							class="text-sm font-medium text-gray-400 transition-colors hover:text-white"
 						>
 							Staff Dashboard
 						</a>
@@ -76,25 +88,25 @@
 					{#if user.role === 'admin'}
 						<a
 							href="/admin"
-							class="text-sm font-medium text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+							class="text-sm font-medium text-gray-400 transition-colors hover:text-white"
 						>
 							Admin
 						</a>
 					{/if}
 					<div
-						class="hidden items-center gap-2 rounded-full bg-[hsl(var(--muted))] px-3 py-1.5 lg:flex"
+						class="hidden items-center gap-2 rounded-full bg-gray-800 px-3 py-1.5 lg:flex"
 					>
-						<span class="text-xs font-medium text-[hsl(var(--muted-foreground))]">
+						<span class="text-xs font-medium text-gray-400">
 							{user.role}
 						</span>
-						<span class="text-xs text-[hsl(var(--muted-foreground))]">
+						<span class="text-xs text-gray-400">
 							{user.email}
 						</span>
 					</div>
 					<form method="POST" action="/logout" data-sveltekit-preload-data="off">
 						<button
 							type="submit"
-							class="rounded-[var(--radius)] bg-[hsl(var(--secondary))] px-4 py-2 text-sm font-medium text-[hsl(var(--secondary-foreground))] transition-colors hover:bg-[hsl(var(--muted))]"
+							class="rounded-[var(--radius)] bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
 						>
 							Log out
 						</button>
@@ -102,13 +114,13 @@
 				{:else}
 					<a
 						href="/login"
-						class="text-sm font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+						class="text-sm font-medium text-gray-100 transition-colors hover:text-white"
 					>
 						Login
 					</a>
 					<a
 						href="/signup"
-						class="rounded-[var(--radius)] bg-[hsl(var(--primary))] px-4 py-2 text-sm font-medium text-[hsl(var(--primary-foreground))] transition-opacity hover:opacity-90"
+						class="rounded-[var(--radius)] bg-white px-4 py-2 text-sm font-medium text-gray-900 transition-opacity hover:opacity-90"
 					>
 						Sign Up
 					</a>
@@ -118,7 +130,7 @@
 			<!-- Mobile Menu Button -->
 			<button
 				on:click={toggleMobileMenu}
-				class="rounded-[var(--radius)] p-2 transition-colors hover:bg-[hsl(var(--muted))] md:hidden"
+				class="rounded-[var(--radius)] p-2 transition-colors hover:bg-gray-800 md:hidden"
 				aria-label="Toggle menu"
 			>
 				{#if mobileMenuOpen}
@@ -145,49 +157,63 @@
 
 		<!-- Mobile Menu -->
 		{#if mobileMenuOpen}
-			<div class="border-t border-[hsl(var(--border))] py-4 md:hidden">
+			<div class="border-t border-gray-700 py-4 md:hidden">
 				<div class="flex flex-col space-y-4">
 					<a
 						href="/"
 						on:click={closeMobileMenu}
-						class="px-2 py-2 text-base font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+						class="px-2 py-2 text-base font-medium text-gray-100 transition-colors hover:text-white"
 					>
 						Home
 					</a>
 					<a
 						href="/read"
 						on:click={closeMobileMenu}
-						class="px-2 py-2 text-base font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+						class="px-2 py-2 text-base font-medium text-gray-100 transition-colors hover:text-white"
 					>
 						Learn
 					</a>
 					<a
 						href="/play"
 						on:click={closeMobileMenu}
-						class="px-2 py-2 text-base font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+						class="px-2 py-2 text-base font-medium text-gray-100 transition-colors hover:text-white"
 					>
 						Play
+					</a>
+					<a
+						href="/live"
+						on:click={closeMobileMenu}
+						class="px-2 py-2 text-base font-medium text-gray-100 transition-colors hover:text-white"
+					>
+						AGE Live
+					</a>
+					<a
+						href="/academy"
+						on:click={closeMobileMenu}
+						class="px-2 py-2 text-base font-medium text-gray-100 transition-colors hover:text-white"
+					>
+						Academy
 					</a>
 					{#if !user || (user.role !== 'premium' && user.role !== 'admin')}
 						<a
 							href="/premium"
 							on:click={closeMobileMenu}
-							class="px-2 py-2 text-base font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+							class="px-2 py-2 text-base font-medium text-gray-100 transition-colors hover:text-white"
 						>
 							Premium
 						</a>
 					{/if}
 
 					{#if user}
-						<div class="border-t border-[hsl(var(--border))] pt-4">
+						<div class="border-t border-gray-700 pt-4">
 							<div class="mb-3 px-2 py-2">
-								<div class="mb-1 text-xs text-[hsl(var(--muted-foreground))]">{user.role}</div>
-								<div class="text-sm font-medium text-[hsl(var(--foreground))]">{user.email}</div>
+								<div class="mb-1 text-xs text-gray-400">{user.role}</div>
+								<div class="text-sm font-medium text-gray-100">{user.email}</div>
 							</div>
 							<a
 								href="/account"
 								on:click={closeMobileMenu}
-								class="block px-2 py-2 text-base font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+								class="block px-2 py-2 text-base font-medium text-gray-100 transition-colors hover:text-white"
 							>
 								Account
 							</a>
@@ -196,7 +222,7 @@
 									href="http://localhost:1337/admin"
 									target="_blank"
 									on:click={closeMobileMenu}
-									class="block px-2 py-2 text-base font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+									class="block px-2 py-2 text-base font-medium text-gray-100 transition-colors hover:text-white"
 								>
 									Writer
 								</a>
@@ -205,7 +231,7 @@
 								<a
 									href="/staff"
 									on:click={closeMobileMenu}
-									class="block px-2 py-2 text-base font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+									class="block px-2 py-2 text-base font-medium text-gray-100 transition-colors hover:text-white"
 								>
 									Staff Dashboard
 								</a>
@@ -214,7 +240,7 @@
 								<a
 									href="/admin"
 									on:click={closeMobileMenu}
-									class="block px-2 py-2 text-base font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+									class="block px-2 py-2 text-base font-medium text-gray-100 transition-colors hover:text-white"
 								>
 									Admin
 								</a>
@@ -222,25 +248,25 @@
 							<form method="POST" action="/logout" data-sveltekit-preload-data="off" class="mt-3">
 								<button
 									type="submit"
-									class="w-full rounded-[var(--radius)] bg-[hsl(var(--secondary))] px-4 py-2.5 text-sm font-medium text-[hsl(var(--secondary-foreground))] transition-colors hover:bg-[hsl(var(--muted))]"
+									class="w-full rounded-[var(--radius)] bg-blue-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-gray-800"
 								>
 									Log out
 								</button>
 							</form>
 						</div>
 					{:else}
-						<div class="space-y-3 border-t border-[hsl(var(--border))] pt-4">
+						<div class="space-y-3 border-t border-gray-700 pt-4">
 							<a
 								href="/login"
 								on:click={closeMobileMenu}
-								class="block rounded-[var(--radius)] border border-[hsl(var(--border))] px-4 py-2.5 text-center text-sm font-medium text-[hsl(var(--foreground))] transition-colors hover:bg-[hsl(var(--muted))]"
+								class="block rounded-[var(--radius)] border border-gray-700 px-4 py-2.5 text-center text-sm font-medium text-gray-100 transition-colors hover:bg-gray-800"
 							>
 								Login
 							</a>
 							<a
 								href="/signup"
 								on:click={closeMobileMenu}
-								class="block rounded-[var(--radius)] bg-[hsl(var(--primary))] px-4 py-2.5 text-center text-sm font-medium text-[hsl(var(--primary-foreground))] transition-opacity hover:opacity-90"
+								class="block rounded-[var(--radius)] bg-white px-4 py-2.5 text-center text-sm font-medium text-gray-900 transition-opacity hover:opacity-90"
 							>
 								Sign Up
 							</a>

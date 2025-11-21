@@ -17,9 +17,6 @@ export const user = pgTable('user', {
 	// Subscription tracking
 	subscriptionId: text('subscription_id'), // Authorize.net subscription ID for premium users
 
-	// User preferences
-	theme: text('theme').default('dark'), // Site is permanently in dark mode
-
 	createdAt: timestamp('created_at', {
 		withTimezone: true,
 		mode: 'date'
@@ -44,11 +41,13 @@ export const session = pgTable('session', {
 export const event = pgTable('event', {
 	id: text('id').primaryKey(), // UUID or slug
 	title: text('title').notNull(),
-	location: text('location'), // Nullable for migration compatibility
+	location: text('location'), // Venue name - nullable for migration compatibility
+	address: text('address'), // Physical address of venue
 	price: decimal('price', { precision: 10, scale: 2 }).notNull(),
 	format: text('format'), // e.g., "Standard", "Modern", "Draft" - nullable for migration
 	gemIdRequired: boolean('gem_id_required').default(false),
-	circuit: text('circuit'), // e.g., "Los Angeles", "New England"
+	circuit: text('circuit'), // e.g., "West", "East", "Central"
+	month: text('month'), // e.g., "January", "February", etc.
 	eventDate: timestamp('event_date', { withTimezone: true, mode: 'date' }), // Nullable for migration
 	description: text('description'),
 	premiumDiscount: boolean('premium_discount').default(false), // 10% discount for premium users

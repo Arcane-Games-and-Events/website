@@ -170,9 +170,11 @@ export const actions = {
 		const formData = await request.formData();
 		const title = formData.get('title');
 		const location = formData.get('location');
+		const address = formData.get('address');
 		const price = formData.get('price');
 		const format = formData.get('format');
 		const circuit = formData.get('circuit');
+		const month = formData.get('month');
 		const eventDate = formData.get('eventDate');
 		const description = formData.get('description');
 		const gemIdRequired = formData.get('gemIdRequired') === 'on';
@@ -183,8 +185,10 @@ export const actions = {
 			const updateData = {
 				title,
 				location,
+				address: address || null,
 				format,
 				circuit: circuit || null,
+				month: month || null,
 				eventDate: new Date(eventDate),
 				description: description || null,
 				gemIdRequired,

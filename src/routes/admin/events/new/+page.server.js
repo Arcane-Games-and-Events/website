@@ -25,9 +25,11 @@ export const actions = {
 
 		const title = formData.get('title');
 		const location = formData.get('location');
+		const address = formData.get('address');
 		const price = formData.get('price');
 		const format = formData.get('format');
 		const circuit = formData.get('circuit');
+		const month = formData.get('month');
 		const eventDate = formData.get('eventDate');
 		const description = formData.get('description');
 		const gemIdRequired = formData.get('gemIdRequired') === 'on';
@@ -40,9 +42,11 @@ export const actions = {
 				values: {
 					title,
 					location,
+					address,
 					price,
 					format,
 					circuit,
+					month,
 					eventDate,
 					description
 				}
@@ -57,9 +61,11 @@ export const actions = {
 				values: {
 					title,
 					location,
+					address,
 					price,
 					format,
 					circuit,
+					month,
 					eventDate,
 					description
 				}
@@ -74,9 +80,11 @@ export const actions = {
 				id: eventId,
 				title,
 				location,
+				address: address || null,
 				price: priceNum.toFixed(2),
 				format,
 				circuit: circuit || null,
+				month: month || null,
 				eventDate: new Date(eventDate),
 				description: description || null,
 				gemIdRequired,
@@ -90,9 +98,11 @@ export const actions = {
 				values: {
 					title,
 					location,
+					address,
 					price,
 					format,
 					circuit,
+					month,
 					eventDate,
 					description
 				}
