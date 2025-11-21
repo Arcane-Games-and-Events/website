@@ -35,7 +35,7 @@
 		<!-- Back Link -->
 		<div class="mb-6">
 			<a
-				href="/events"
+				href="/play"
 				class="inline-flex items-center text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] transition-colors"
 			>
 				<svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

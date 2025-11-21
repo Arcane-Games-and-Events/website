@@ -130,7 +130,7 @@
 	<title>{data.event.title} - Event Management</title>
 </svelte:head>
 
-<div class="container mx-auto px-4 py-8 max-w-7xl">
+<div class="container mx-auto px-2 py-8 max-w-7xl">
 	<!-- Header -->
 	<div class="mb-8">
 		<div class="flex items-center gap-4 mb-4">

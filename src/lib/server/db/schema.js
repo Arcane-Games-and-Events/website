@@ -7,6 +7,11 @@ export const user = pgTable('user', {
 	email: text('email').notNull().unique(),
 	hashedPassword: text('hashed_password').notNull(), // hashed_password is the DB column, but use camelCase in code
 
+	// User profile
+	firstName: text('first_name').notNull(),
+	lastName: text('last_name').notNull(),
+	gemId: text('gem_id'), // Optional GEM ID for tournament registration
+
 	role: text('role').notNull().default('free'), // Options: 'free', 'premium', 'admin', 'writer', 'tournament_staff'
 
 	// Subscription tracking

@@ -31,7 +31,7 @@
 	<title>Create Event - Admin</title>
 </svelte:head>
 
-<div class="container mx-auto px-4 py-8 max-w-4xl">
+<div class="container mx-auto px-2 py-8 max-w-4xl">
 	<!-- Header -->
 	<div class="mb-8">
 		<div class="flex items-center gap-4 mb-4">

@@ -30,7 +30,7 @@
 	<title>Tournament Staff Dashboard</title>
 </svelte:head>
 
-<div class="container mx-auto px-4 py-8 max-w-6xl">
+<div class="container mx-auto px-2 py-8 max-w-6xl">
 	<h1 class="text-4xl font-bold mb-8 text-[hsl(var(--foreground))]">Tournament Staff Dashboard</h1>
 	<p class="mb-8 text-[hsl(var(--muted-foreground))]">Hi {data.user.email}. Here are your assigned events.</p>
 
@@ -134,7 +134,7 @@
 		<h2 class="mb-4 text-2xl font-bold text-[hsl(var(--foreground))]">Quick Actions</h2>
 		<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
 			<a
-				href="/events"
+				href="/play"
 				class="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 text-center text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
 			>
 				View All Events

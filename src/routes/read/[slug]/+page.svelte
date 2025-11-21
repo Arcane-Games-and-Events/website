@@ -291,11 +291,11 @@
 	</div>
 {/if}
 
-<article class="container mx-auto max-w-4xl px-4 py-12">
+<article class="container mx-auto max-w-4xl px-2 py-12">
 	<!-- Back Link -->
 	<div class="mb-8">
 		<a
-			href="/articles"
+			href="/read"
 			class="inline-flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--primary))]"
 		>
 			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -362,7 +362,7 @@
 	<!-- Article Footer -->
 	<footer class="mt-12 border-t border-[hsl(var(--border))] pt-8">
 		<a
-			href="/articles"
+			href="/read"
 			class="inline-flex items-center gap-2 font-medium text-[hsl(var(--primary))] hover:underline"
 		>
 			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

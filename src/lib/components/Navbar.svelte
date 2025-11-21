@@ -25,16 +25,16 @@
 						Home
 					</a>
 					<a
-						href="/articles"
+						href="/read"
 						class="text-sm font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
 					>
-						Articles
+						Learn
 					</a>
 					<a
-						href="/events"
+						href="/play"
 						class="text-sm font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
 					>
-						Events
+						Play
 					</a>
 					{#if !user || (user.role !== 'premium' && user.role !== 'admin')}
 						<a
@@ -155,18 +155,18 @@
 						Home
 					</a>
 					<a
-						href="/articles"
+						href="/read"
 						on:click={closeMobileMenu}
 						class="px-2 py-2 text-base font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
 					>
-						Articles
+						Learn
 					</a>
 					<a
-						href="/events"
+						href="/play"
 						on:click={closeMobileMenu}
 						class="px-2 py-2 text-base font-medium text-[hsl(var(--foreground))] transition-colors hover:text-[hsl(var(--primary))]"
 					>
-						Events
+						Play
 					</a>
 					{#if !user || (user.role !== 'premium' && user.role !== 'admin')}
 						<a

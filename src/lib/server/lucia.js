@@ -16,8 +16,12 @@ export const auth = new Lucia(adapter, {
 	},
 	getUserAttributes: (data) => ({
 		email: data.email,
+		firstName: data.firstName,
+		lastName: data.lastName,
+		gemId: data.gemId,
 		role: data.role,
 		subscriptionId: data.subscriptionId,
-		theme: data.theme
+		theme: data.theme,
+		createdAt: data.createdAt
 	})
 });

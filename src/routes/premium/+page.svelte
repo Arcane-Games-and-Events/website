@@ -46,7 +46,7 @@
 	<title>Premium Membership - Arcane Games and Events</title>
 </svelte:head>
 
-<div class="container mx-auto px-4 py-12 max-w-6xl">
+<div class="container mx-auto px-2 py-12 max-w-6xl">
 	{#if isPremium}
 		<!-- Premium User Dashboard -->
 		<div class="mb-8">
@@ -58,7 +58,7 @@
 			<div class="rounded-[var(--radius)] border bg-[hsl(var(--card))] shadow-md p-6 hover:shadow-lg transition-shadow">
 				<h3 class="text-lg font-semibold mb-2 text-[hsl(var(--foreground))]">Premium Articles</h3>
 				<p class="text-[hsl(var(--muted-foreground))] mb-4">Access exclusive content and early releases</p>
-				<a href="/articles" class="text-[hsl(var(--primary))] hover:underline font-medium">Browse Articles →</a>
+				<a href="/read" class="text-[hsl(var(--primary))] hover:underline font-medium">Browse Articles →</a>
 			</div>
 
 			<div class="rounded-[var(--radius)] border bg-[hsl(var(--card))] shadow-md p-6 hover:shadow-lg transition-shadow">
@@ -70,7 +70,7 @@
 			<div class="rounded-[var(--radius)] border bg-[hsl(var(--card))] shadow-md p-6 hover:shadow-lg transition-shadow">
 				<h3 class="text-lg font-semibold mb-2 text-[hsl(var(--foreground))]">Events</h3>
 				<p class="text-[hsl(var(--muted-foreground))] mb-4">Get early access to event tickets</p>
-				<a href="/events" class="text-[hsl(var(--primary))] hover:underline font-medium">See Events →</a>
+				<a href="/play" class="text-[hsl(var(--primary))] hover:underline font-medium">See Events →</a>
 			</div>
 
 			<div class="rounded-[var(--radius)] border bg-[hsl(var(--card))] shadow-md p-6 hover:shadow-lg transition-shadow">

@@ -21,7 +21,7 @@
 </script>
 
 <svelte:head>
-	<title>Events - Arcane Games and Events</title>
+	<title>Play - Arcane Games and Events</title>
 </svelte:head>
 
 <!-- Page Header -->
@@ -29,7 +29,7 @@
 	<div class="container mx-auto max-w-7xl px-4">
 		<div class="text-center">
 			<h1 class="text-4xl font-bold tracking-tight sm:text-5xl mb-4">
-				Events
+				Play
 			</h1>
 			<p class="text-lg text-[hsl(var(--muted-foreground))] max-w-2xl mx-auto">
 				Join us for tournaments, meetups, and special gaming events
@@ -133,7 +133,7 @@
 								</div>
 
 								<a
-									href="/events/{evt.id}/checkout"
+									href="/play/{evt.id}/checkout"
 									class="rounded-[var(--radius)] bg-[hsl(var(--primary))] px-5 py-2.5 text-sm font-medium text-[hsl(var(--primary-foreground))] hover:opacity-90 transition-opacity"
 								>
 									Register

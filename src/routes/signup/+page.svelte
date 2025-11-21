@@ -21,6 +21,36 @@
 		<!-- Sign Up Card -->
 		<div class="rounded-[var(--radius)] bg-[hsl(var(--card))] border shadow-lg p-8">
 			<form method="POST" class="space-y-6">
+				<!-- First Name Field -->
+				<div>
+					<label for="firstName" class="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+						First Name
+					</label>
+					<input
+						type="text"
+						id="firstName"
+						name="firstName"
+						required
+						class="w-full rounded-[var(--radius)] border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-2.5 text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent"
+						placeholder="John"
+					/>
+				</div>
+
+				<!-- Last Name Field -->
+				<div>
+					<label for="lastName" class="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+						Last Name
+					</label>
+					<input
+						type="text"
+						id="lastName"
+						name="lastName"
+						required
+						class="w-full rounded-[var(--radius)] border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-2.5 text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent"
+						placeholder="Doe"
+					/>
+				</div>
+
 				<!-- Email Field -->
 				<div>
 					<label for="email" class="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
@@ -34,6 +64,23 @@
 						class="w-full rounded-[var(--radius)] border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-2.5 text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent"
 						placeholder="you@example.com"
 					/>
+				</div>
+
+				<!-- GEM ID Field (Optional) -->
+				<div>
+					<label for="gemId" class="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+						GEM ID <span class="text-[hsl(var(--muted-foreground))]">(Optional)</span>
+					</label>
+					<input
+						type="text"
+						id="gemId"
+						name="gemId"
+						class="w-full rounded-[var(--radius)] border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-2.5 text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent"
+						placeholder="12345678"
+					/>
+					<p class="mt-1.5 text-xs text-[hsl(var(--muted-foreground))]">
+						Your GEM Player ID for tournament registration
+					</p>
 				</div>
 
 				<!-- Password Field -->
