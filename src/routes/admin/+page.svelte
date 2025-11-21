@@ -82,39 +82,39 @@
 
 			{#if form?.error}
 				<div
-					class="mb-6 rounded-lg border border-[hsl(var(--destructive))] bg-[hsl(var(--destructive))]/10 p-4 shadow-sm"
+					class="mb-6 rounded-lg border border-red-700 bg-red-700/10 p-4 shadow-sm"
 				>
-					<p class="text-sm text-[hsl(var(--destructive))]">{form.error}</p>
+					<p class="text-sm text-red-700">{form.error}</p>
 				</div>
 			{/if}
 
 			<!-- Stats Cards -->
 			<div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
 				<div
-					class="overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-sm"
+					class="overflow-hidden rounded-lg border border-gray-700 bg-gray-950 p-6 shadow-sm"
 				>
-					<h3 class="mb-2 text-sm font-medium text-[hsl(var(--muted-foreground))]">Total Events</h3>
-					<p class="text-3xl font-bold text-[hsl(var(--foreground))]">
+					<h3 class="mb-2 text-sm font-medium text-gray-400">Total Events</h3>
+					<p class="text-3xl font-bold text-gray-100">
 						{data.stats.totalEvents}
 					</p>
 				</div>
 
 				<div
-					class="overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-sm"
+					class="overflow-hidden rounded-lg border border-gray-700 bg-gray-950 p-6 shadow-sm"
 				>
-					<h3 class="mb-2 text-sm font-medium text-[hsl(var(--muted-foreground))]">Total Orders</h3>
-					<p class="text-3xl font-bold text-[hsl(var(--foreground))]">
+					<h3 class="mb-2 text-sm font-medium text-gray-400">Total Orders</h3>
+					<p class="text-3xl font-bold text-gray-100">
 						{data.stats.totalOrders}
 					</p>
 				</div>
 
 				<div
-					class="overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-sm"
+					class="overflow-hidden rounded-lg border border-gray-700 bg-gray-950 p-6 shadow-sm"
 				>
-					<h3 class="mb-2 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+					<h3 class="mb-2 text-sm font-medium text-gray-400">
 						Premium Members
 					</h3>
-					<p class="text-3xl font-bold text-[hsl(var(--foreground))]">
+					<p class="text-3xl font-bold text-gray-100">
 						{data.stats.premiumUsers}
 					</p>
 				</div>
@@ -122,63 +122,63 @@
 
 			<!-- Tab Content -->
 			<div
-				class="overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-sm"
+				class="overflow-hidden rounded-lg border border-gray-700 bg-gray-950 shadow-sm"
 			>
 				<!-- Events Tab -->
 				{#if activeTab === 'events'}
 					<div class="p-6">
 						<div class="mb-6 flex items-center justify-between">
-							<h2 class="text-2xl font-bold text-[hsl(var(--foreground))]">Events Management</h2>
+							<h2 class="text-2xl font-bold text-gray-100">Events Management</h2>
 							<a
 								href="/admin/events/new"
-								class="rounded-lg bg-[hsl(var(--primary))] px-4 py-2 text-sm font-medium text-[hsl(var(--primary-foreground))] transition-opacity hover:opacity-90"
+								class="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-900 transition-opacity hover:opacity-90"
 							>
 								Create Event
 							</a>
 						</div>
 
-						<div class="overflow-x-auto rounded-lg border border-[hsl(var(--border))]">
+						<div class="overflow-x-auto rounded-lg border border-gray-700">
 							<table class="w-full">
-								<thead class="bg-[hsl(var(--muted))]">
+								<thead class="bg-gray-800">
 									<tr>
 										<th
-											class="px-6 py-3 text-left text-sm font-semibold text-[hsl(var(--foreground))]"
+											class="px-6 py-3 text-left text-sm font-semibold text-gray-100"
 											>Event Name</th
 										>
 										<th
-											class="px-6 py-3 text-left text-sm font-semibold text-[hsl(var(--foreground))]"
+											class="px-6 py-3 text-left text-sm font-semibold text-gray-100"
 											>Date</th
 										>
 										<th
-											class="px-6 py-3 text-left text-sm font-semibold text-[hsl(var(--foreground))]"
+											class="px-6 py-3 text-left text-sm font-semibold text-gray-100"
 											>Format</th
 										>
 										<th
-											class="px-6 py-3 text-left text-sm font-semibold text-[hsl(var(--foreground))]"
+											class="px-6 py-3 text-left text-sm font-semibold text-gray-100"
 											>Location</th
 										>
 										<th
-											class="px-6 py-3 text-left text-sm font-semibold text-[hsl(var(--foreground))]"
+											class="px-6 py-3 text-left text-sm font-semibold text-gray-100"
 											>Price</th
 										>
 										<th
-											class="px-6 py-3 text-left text-sm font-semibold text-[hsl(var(--foreground))]"
+											class="px-6 py-3 text-left text-sm font-semibold text-gray-100"
 											>Actions</th
 										>
 									</tr>
 								</thead>
-								<tbody class="divide-y divide-[hsl(var(--border))]">
+								<tbody class="divide-y divide-gray-700">
 									{#each data.events as event}
-										<tr class="transition-colors hover:bg-[hsl(var(--muted))]">
+										<tr class="transition-colors hover:bg-gray-800">
 											<td class="px-6 py-4">
-												<div class="font-medium text-[hsl(var(--foreground))]">{event.title}</div>
+												<div class="font-medium text-gray-100">{event.title}</div>
 												{#if event.circuit}
-													<div class="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+													<div class="mt-1 text-xs text-gray-400">
 														{event.circuit}
 													</div>
 												{/if}
 											</td>
-											<td class="px-6 py-4 text-sm text-[hsl(var(--foreground))]">
+											<td class="px-6 py-4 text-sm text-gray-100">
 												{#if event.eventDate}
 													{new Date(event.eventDate).toLocaleDateString('en-US', {
 														month: 'short',
@@ -189,19 +189,19 @@
 													TBA
 												{/if}
 											</td>
-											<td class="px-6 py-4 text-sm text-[hsl(var(--foreground))]">
+											<td class="px-6 py-4 text-sm text-gray-100">
 												{event.format || 'N/A'}
 											</td>
-											<td class="px-6 py-4 text-sm text-[hsl(var(--muted-foreground))]">
+											<td class="px-6 py-4 text-sm text-gray-400">
 												{event.location || 'TBA'}
 											</td>
-											<td class="px-6 py-4 text-sm font-medium text-[hsl(var(--foreground))]">
+											<td class="px-6 py-4 text-sm font-medium text-gray-100">
 												${parseFloat(event.price).toFixed(2)}
 											</td>
 											<td class="px-6 py-4">
 												<a
 													href="/admin/events/{event.id}"
-													class="inline-flex items-center rounded-md bg-[hsl(var(--primary))] px-3 py-1.5 text-sm font-medium text-[hsl(var(--primary-foreground))] transition-opacity hover:opacity-90"
+													class="inline-flex items-center rounded-md bg-white px-3 py-1.5 text-sm font-medium text-gray-900 transition-opacity hover:opacity-90"
 												>
 													Manage
 												</a>
@@ -211,7 +211,7 @@
 										<tr>
 											<td
 												colspan="6"
-												class="px-6 py-8 text-center text-[hsl(var(--muted-foreground))]"
+												class="px-6 py-8 text-center text-gray-400"
 											>
 												No events yet. Create your first event!
 											</td>
@@ -226,45 +226,45 @@
 				<!-- Orders Tab -->
 				{#if activeTab === 'orders'}
 					<div class="p-6">
-						<h2 class="mb-6 text-2xl font-bold text-[hsl(var(--foreground))]">Recent Orders</h2>
+						<h2 class="mb-6 text-2xl font-bold text-gray-100">Recent Orders</h2>
 
-						<div class="overflow-x-auto rounded-lg border border-[hsl(var(--border))]">
+						<div class="overflow-x-auto rounded-lg border border-gray-700">
 							<table class="w-full">
-								<thead class="bg-[hsl(var(--muted))]">
+								<thead class="bg-gray-800">
 									<tr>
 										<th
-											class="px-6 py-3 text-left text-sm font-semibold text-[hsl(var(--foreground))]"
+											class="px-6 py-3 text-left text-sm font-semibold text-gray-100"
 											>Email</th
 										>
 										<th
-											class="px-6 py-3 text-left text-sm font-semibold text-[hsl(var(--foreground))]"
+											class="px-6 py-3 text-left text-sm font-semibold text-gray-100"
 											>Amount</th
 										>
 										<th
-											class="px-6 py-3 text-left text-sm font-semibold text-[hsl(var(--foreground))]"
+											class="px-6 py-3 text-left text-sm font-semibold text-gray-100"
 											>Type</th
 										>
 										<th
-											class="px-6 py-3 text-left text-sm font-semibold text-[hsl(var(--foreground))]"
+											class="px-6 py-3 text-left text-sm font-semibold text-gray-100"
 											>Date</th
 										>
 									</tr>
 								</thead>
-								<tbody class="divide-y divide-[hsl(var(--border))]">
+								<tbody class="divide-y divide-gray-700">
 									{#each data.recentOrders as order}
-										<tr class="transition-colors hover:bg-[hsl(var(--muted))]">
-											<td class="px-6 py-4 text-[hsl(var(--foreground))]">{order.userEmail}</td>
-											<td class="px-6 py-4 font-semibold text-[hsl(var(--foreground))]">
+										<tr class="transition-colors hover:bg-gray-800">
+											<td class="px-6 py-4 text-gray-100">{order.userEmail}</td>
+											<td class="px-6 py-4 font-semibold text-gray-100">
 												${order.amount}
 											</td>
 											<td class="px-6 py-4">
 												<span
-													class="rounded-full bg-[hsl(var(--accent))] px-2 py-1 text-xs font-medium text-[hsl(var(--foreground))]"
+													class="rounded-full bg-blue-500 px-2 py-1 text-xs font-medium text-gray-100"
 												>
 													{order.meta?.type || 'payment'}
 												</span>
 											</td>
-											<td class="px-6 py-4 text-sm text-[hsl(var(--muted-foreground))]">
+											<td class="px-6 py-4 text-sm text-gray-400">
 												{new Date(order.createdAt).toLocaleDateString()}
 											</td>
 										</tr>
@@ -272,7 +272,7 @@
 										<tr>
 											<td
 												colspan="4"
-												class="px-6 py-8 text-center text-[hsl(var(--muted-foreground))]"
+												class="px-6 py-8 text-center text-gray-400"
 											>
 												No orders yet.
 											</td>
@@ -287,54 +287,54 @@
 				<!-- Tournament Staff Tab -->
 				{#if activeTab === 'staff'}
 					<div class="p-6">
-						<h2 class="mb-6 text-2xl font-bold text-[hsl(var(--foreground))]">
+						<h2 class="mb-6 text-2xl font-bold text-gray-100">
 							Tournament Staff Management
 						</h2>
 
 						{#if data.tournamentStaff.length === 0}
 							<div
-								class="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] p-8 text-center"
+								class="rounded-lg border border-gray-700 bg-gray-950 p-8 text-center"
 							>
-								<p class="text-[hsl(var(--muted-foreground))]">
+								<p class="text-gray-400">
 									No tournament staff members yet. Assign the "tournament_staff" role to users in
 									the User Management section.
 								</p>
 							</div>
 						{:else}
 							<div
-								class="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] p-6"
+								class="rounded-lg border border-gray-700 bg-gray-950 p-6"
 							>
 								<div class="space-y-6">
 									{#each data.tournamentStaff as staff}
-										<div class="border-b border-[hsl(var(--border))] pb-6 last:border-0 last:pb-0">
+										<div class="border-b border-gray-700 pb-6 last:border-0 last:pb-0">
 											<div class="mb-4 flex items-center justify-between">
 												<div>
-													<h3 class="font-semibold text-[hsl(var(--foreground))]">{staff.email}</h3>
-													<p class="text-sm text-[hsl(var(--muted-foreground))]">
+													<h3 class="font-semibold text-gray-100">{staff.email}</h3>
+													<p class="text-sm text-gray-400">
 														Tournament Staff
 													</p>
 												</div>
 											</div>
 
 											<div class="space-y-2">
-												<p class="text-sm font-medium text-[hsl(var(--foreground))]">
+												<p class="text-sm font-medium text-gray-100">
 													Assigned Events:
 												</p>
 												<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
 													{#each data.events as event}
 														{@const isAssigned = isStaffAssigned(staff.id, event.id)}
 														<div
-															class="flex items-center justify-between rounded-lg border border-[hsl(var(--border))] p-3 {isAssigned
+															class="flex items-center justify-between rounded-lg border border-gray-700 p-3 {isAssigned
 																? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/10'
-																: 'bg-[hsl(var(--background))]'}"
+																: 'bg-gray-950'}"
 														>
 															<div class="min-w-0 flex-1">
 																<p
-																	class="truncate text-sm font-medium text-[hsl(var(--foreground))]"
+																	class="truncate text-sm font-medium text-gray-100"
 																>
 																	{event.title}
 																</p>
-																<p class="text-xs text-[hsl(var(--muted-foreground))]">
+																<p class="text-xs text-gray-400">
 																	{event.eventDate
 																		? new Date(event.eventDate).toLocaleDateString()
 																		: 'TBA'}
@@ -378,13 +378,13 @@
 				<!-- User Management Tab -->
 				{#if activeTab === 'users'}
 					<div class="p-6">
-						<h2 class="mb-6 text-2xl font-bold text-[hsl(var(--foreground))]">User Management</h2>
+						<h2 class="mb-6 text-2xl font-bold text-gray-100">User Management</h2>
 
 						<!-- Search Bar -->
 						<div class="mb-6">
 							<label
 								for="user-search"
-								class="mb-2 block text-sm font-medium text-[hsl(var(--foreground))]"
+								class="mb-2 block text-sm font-medium text-gray-100"
 							>
 								Search Users by Email
 							</label>
@@ -393,30 +393,30 @@
 								type="text"
 								bind:value={userSearchQuery}
 								placeholder="Enter email address..."
-								class="w-full rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-2 text-[hsl(var(--foreground))] focus:ring-2 focus:ring-[hsl(var(--ring))] focus:outline-none"
+								class="w-full rounded-md border border-gray-700 bg-gray-950 px-4 py-2 text-gray-100 focus:ring-2 focus:ring-gray-300 focus:outline-none"
 							/>
 						</div>
 
 						<!-- Users Table -->
-						<div class="overflow-x-auto rounded-lg border border-[hsl(var(--border))]">
+						<div class="overflow-x-auto rounded-lg border border-gray-700">
 							<table class="w-full text-sm">
-								<thead class="bg-[hsl(var(--muted))]">
+								<thead class="bg-gray-800">
 									<tr>
-										<th class="p-3 text-left font-semibold text-[hsl(var(--foreground))]">Email</th>
-										<th class="p-3 text-left font-semibold text-[hsl(var(--foreground))]">
+										<th class="p-3 text-left font-semibold text-gray-100">Email</th>
+										<th class="p-3 text-left font-semibold text-gray-100">
 											Current Role
 										</th>
-										<th class="p-3 text-left font-semibold text-[hsl(var(--foreground))]">Joined</th
+										<th class="p-3 text-left font-semibold text-gray-100">Joined</th
 										>
-										<th class="p-3 text-right font-semibold text-[hsl(var(--foreground))]">
+										<th class="p-3 text-right font-semibold text-gray-100">
 											Actions
 										</th>
 									</tr>
 								</thead>
-								<tbody class="divide-y divide-[hsl(var(--border))]">
+								<tbody class="divide-y divide-gray-700">
 									{#each filteredUsers.slice(0, 20) as user}
-										<tr class="transition-colors hover:bg-[hsl(var(--muted))]">
-											<td class="p-3 text-[hsl(var(--foreground))]">{user.email}</td>
+										<tr class="transition-colors hover:bg-gray-800">
+											<td class="p-3 text-gray-100">{user.email}</td>
 											<td class="p-3">
 												<span
 													class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize
@@ -435,7 +435,7 @@
 													{user.role.replace('_', ' ')}
 												</span>
 											</td>
-											<td class="p-3 text-xs text-[hsl(var(--muted-foreground))]">
+											<td class="p-3 text-xs text-gray-400">
 												{new Date(user.createdAt).toLocaleDateString()}
 											</td>
 											<td class="p-3 text-right">
@@ -449,7 +449,7 @@
 														<input type="hidden" name="userId" value={user.id} />
 														<select
 															name="role"
-															class="rounded-md border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-2 py-1 text-xs text-[hsl(var(--foreground))] focus:ring-2 focus:ring-[hsl(var(--ring))] focus:outline-none"
+															class="rounded-md border border-gray-700 bg-gray-950 px-2 py-1 text-xs text-gray-100 focus:ring-2 focus:ring-gray-300 focus:outline-none"
 														>
 															<option value="free" selected={user.role === 'free'}>Free</option>
 															<option value="premium" selected={user.role === 'premium'}
@@ -466,13 +466,13 @@
 														</select>
 														<button
 															type="submit"
-															class="rounded-md bg-[hsl(var(--primary))] px-3 py-1 text-xs font-medium text-[hsl(var(--primary-foreground))] transition-opacity hover:opacity-90"
+															class="rounded-md bg-white px-3 py-1 text-xs font-medium text-gray-900 transition-opacity hover:opacity-90"
 														>
 															Update
 														</button>
 													</form>
 												{:else}
-													<span class="text-xs text-[hsl(var(--muted-foreground))]">You</span>
+													<span class="text-xs text-gray-400">You</span>
 												{/if}
 											</td>
 										</tr>
@@ -480,15 +480,15 @@
 								</tbody>
 							</table>
 							{#if filteredUsers.length > 20}
-								<div class="border-t border-[hsl(var(--border))] p-4 text-center">
-									<p class="text-sm text-[hsl(var(--muted-foreground))]">
+								<div class="border-t border-gray-700 p-4 text-center">
+									<p class="text-sm text-gray-400">
 										Showing first 20 of {filteredUsers.length} users. Use search to find more.
 									</p>
 								</div>
 							{/if}
 							{#if filteredUsers.length === 0}
-								<div class="border-t border-[hsl(var(--border))] p-8 text-center">
-									<p class="text-[hsl(var(--muted-foreground))]">
+								<div class="border-t border-gray-700 p-8 text-center">
+									<p class="text-gray-400">
 										No users found matching "{userSearchQuery}"
 									</p>
 								</div>

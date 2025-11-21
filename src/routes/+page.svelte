@@ -59,7 +59,7 @@
 	<meta name="description" content="Your hub for gaming events, premium content, and community" />
 </svelte:head>
 
-<div class="min-h-screen bg-[hsl(var(--background))]">
+<div class="min-h-screen bg-gray-950">
 	<!-- Main Content Container -->
 	<div class="flex gap-6 py-4">
 		<!-- Left Column - Main Content -->
@@ -99,7 +99,7 @@
 
 						<div class="absolute inset-0 z-20 flex flex-col justify-center px-16 sm:px-20 md:px-24">
 							<p
-								class="mb-2 text-sm font-semibold tracking-wide text-[hsl(var(--secondary))] uppercase"
+								class="mb-2 text-sm font-semibold tracking-wide text-blue-500 uppercase"
 							>
 								{slide.subtitle}
 							</p>
@@ -110,7 +110,7 @@
 								{slide.description}
 							</p>
 							<button
-								class="w-fit rounded-lg bg-[hsl(var(--secondary))] px-6 py-3 font-semibold text-white transition-colors hover:bg-[hsl(var(--secondary))]/90"
+								class="w-fit rounded-lg bg-blue-500 px-6 py-3 font-semibold text-white transition-colors hover:bg-blue-500/90"
 							>
 								Learn More
 							</button>
@@ -154,7 +154,7 @@
 						<button
 							on:click={() => goToSlide(i)}
 							class="h-2 w-2 rounded-full transition-all"
-							class:bg-[hsl(var(--secondary))]={currentSlide === i}
+							class:bg-blue-500={currentSlide === i}
 							class:bg-gray-500={currentSlide !== i}
 							aria-label="Go to slide {i + 1}"
 						></button>
@@ -167,7 +167,7 @@
 				<div class="mb-4 flex items-center justify-between">
 					<h2 class="text-2xl font-bold text-white">Latest Articles</h2>
 					<select
-						class="rounded border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-1.5 text-sm text-white"
+						class="rounded border border-gray-700 bg-gray-950 px-3 py-1.5 text-sm text-white"
 					>
 						<option>Popular</option>
 						<option>Recent</option>
@@ -180,7 +180,7 @@
 						{#each data.articles as article}
 							<a href="/read/{article.slug}" class="group block">
 								<article
-									class="overflow-hidden rounded-lg transition-all hover:ring-2 hover:ring-[hsl(var(--secondary))]"
+									class="overflow-hidden rounded-lg transition-all hover:ring-2 hover:ring-blue-500"
 								>
 									<!-- Article Image -->
 									{#if article.coverImage}
@@ -232,7 +232,7 @@
 									<!-- Article Content -->
 									<div class="p-4">
 										<h3
-											class="mb-2 line-clamp-2 font-semibold text-white transition-colors group-hover:text-[hsl(var(--secondary))]"
+											class="mb-2 line-clamp-2 font-semibold text-white transition-colors group-hover:text-blue-500"
 										>
 											{article.title}
 										</h3>
@@ -249,7 +249,7 @@
 												</time>
 											{/if}
 											<button
-												class="rounded bg-[hsl(var(--secondary))] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[hsl(var(--secondary))]/90"
+												class="rounded bg-blue-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-500/90"
 											>
 												Read Now
 											</button>
@@ -260,7 +260,7 @@
 						{/each}
 					</div>
 				{:else}
-					<div class="rounded-lg bg-[hsl(var(--card))] p-12 text-center">
+					<div class="rounded-lg bg-gray-950 p-12 text-center">
 						<p class="text-gray-400">No articles available yet. Check back soon!</p>
 					</div>
 				{/if}

@@ -249,7 +249,7 @@
 
 <!-- Cover Image Banner (Full Width) -->
 {#if data.article.coverImage}
-	<div class="relative h-[800px] w-full overflow-hidden bg-[hsl(var(--muted))] sm:h-[700px]">
+	<div class="relative h-[800px] w-full overflow-hidden bg-gray-800 sm:h-[700px]">
 		<!-- Cover Image -->
 		<img
 			src={data.article.coverImage}
@@ -266,7 +266,7 @@
 				{#if data.isPremium}
 					<div class="mb-4 flex gap-2">
 						<span
-							class="rounded-full bg-[hsl(var(--accent))] px-3 py-1 text-xs font-medium text-[hsl(var(--accent-foreground))]"
+							class="rounded-full bg-blue-500 px-3 py-1 text-xs font-medium text-white"
 						>
 							Premium Content
 						</span>
@@ -296,7 +296,7 @@
 	<div class="mb-8">
 		<a
 			href="/read"
-			class="inline-flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--primary))]"
+			class="inline-flex items-center gap-2 text-sm font-medium text-gray-400 transition-colors hover:text-white"
 		>
 			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -307,24 +307,24 @@
 
 	<!-- Article Header (only shown if no cover image) -->
 	{#if !data.article.coverImage}
-		<header class="mb-8 border-b border-[hsl(var(--border))] pb-8">
+		<header class="mb-8 border-b border-gray-700 pb-8">
 			{#if data.isPremium}
 				<div class="mb-4 flex gap-2">
 					<span
-						class="rounded-full bg-[hsl(var(--accent))] px-3 py-1 text-xs font-medium text-[hsl(var(--accent-foreground))]"
+						class="rounded-full bg-blue-500 px-3 py-1 text-xs font-medium text-white"
 					>
 						Premium Content
 					</span>
 				</div>
 			{/if}
 
-			<h1 class="mb-4 text-4xl font-bold text-[hsl(var(--foreground))] sm:text-5xl">
+			<h1 class="mb-4 text-4xl font-bold text-gray-100 sm:text-5xl">
 				{data.article.title}
 			</h1>
 
 			{#if data.article.publishedAt}
 				<time
-					class="text-sm text-[hsl(var(--muted-foreground))]"
+					class="text-sm text-gray-400"
 					datetime={data.article.publishedAt}
 				>
 					{new Date(data.article.publishedAt).toLocaleDateString('en-US', {
@@ -355,15 +355,15 @@
 				{@html renderContent(data.article.content)}
 			{/if}
 		{:else}
-			<p class="text-[hsl(var(--muted-foreground))]">No content available.</p>
+			<p class="text-gray-400">No content available.</p>
 		{/if}
 	</div>
 
 	<!-- Article Footer -->
-	<footer class="mt-12 border-t border-[hsl(var(--border))] pt-8">
+	<footer class="mt-12 border-t border-gray-700 pt-8">
 		<a
 			href="/read"
-			class="inline-flex items-center gap-2 font-medium text-[hsl(var(--primary))] hover:underline"
+			class="inline-flex items-center gap-2 font-medium text-white hover:underline"
 		>
 			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -378,7 +378,7 @@
 
 <style>
 	:global(.prose) {
-		color: hsl(var(--foreground));
+		color: rgb(243 244 246);
 		line-height: 1.75;
 	}
 
@@ -387,7 +387,7 @@
 		font-weight: 700;
 		margin-top: 0;
 		margin-bottom: 0.8888889em;
-		color: hsl(var(--foreground));
+		color: rgb(243 244 246);
 	}
 
 	:global(.prose h2) {
@@ -395,7 +395,7 @@
 		font-weight: 600;
 		margin-top: 2em;
 		margin-bottom: 1em;
-		color: hsl(var(--foreground));
+		color: rgb(243 244 246);
 	}
 
 	:global(.prose h3) {
@@ -403,7 +403,7 @@
 		font-weight: 600;
 		margin-top: 1.6em;
 		margin-bottom: 0.6em;
-		color: hsl(var(--foreground));
+		color: rgb(243 244 246);
 	}
 
 	:global(.prose p) {
@@ -412,19 +412,19 @@
 	}
 
 	:global(.prose a) {
-		color: hsl(var(--primary));
+		color: white;
 		text-decoration: underline;
 	}
 
 	:global(.prose a.card-link) {
-		color: hsl(var(--primary));
+		color: white;
 		text-decoration: underline;
 		cursor: pointer;
 		font-weight: 500;
 	}
 
 	:global(.prose a.card-link:hover) {
-		color: hsl(var(--accent));
+		color: rgb(59 130 246);
 	}
 
 	:global(.prose ul),
@@ -440,16 +440,16 @@
 	}
 
 	:global(.prose code) {
-		background-color: hsl(var(--muted));
+		background-color: rgb(31 41 55);
 		padding: 0.2em 0.4em;
 		border-radius: var(--radius);
 		font-size: 0.875em;
-		color: hsl(var(--foreground));
+		color: rgb(243 244 246);
 	}
 
 	:global(.prose pre) {
-		background-color: hsl(var(--primary));
-		color: hsl(var(--primary-foreground));
+		background-color: white;
+		color: rgb(17 24 39);
 		padding: 1em;
 		border-radius: var(--radius);
 		overflow-x: auto;
@@ -464,10 +464,10 @@
 	}
 
 	:global(.prose blockquote) {
-		border-left: 4px solid hsl(var(--border));
+		border-left: 4px solid rgb(55 65 81);
 		padding-left: 1em;
 		font-style: italic;
-		color: hsl(var(--muted-foreground));
+		color: rgb(156 163 175);
 		margin-top: 1.5em;
 		margin-bottom: 1.5em;
 	}
@@ -488,7 +488,7 @@
 	:global(.prose figcaption) {
 		text-align: center;
 		font-size: 0.875em;
-		color: hsl(var(--muted-foreground));
+		color: rgb(156 163 175);
 		margin-top: 0.5em;
 		font-style: italic;
 	}

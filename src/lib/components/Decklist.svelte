@@ -102,8 +102,8 @@
 
 <style>
 	.decklist-container {
-		background-color: hsl(var(--card));
-		border: 1px solid hsl(var(--border));
+		background-color: rgb(3 7 18);
+		border: 1px solid rgb(55 65 81);
 		border-radius: var(--radius);
 		padding: 1.5rem;
 		margin: 2rem 0;
@@ -113,10 +113,10 @@
 	.decklist-title {
 		font-size: 1.5rem;
 		font-weight: 700;
-		color: hsl(var(--foreground));
+		color: rgb(243 244 246);
 		margin-bottom: 1.5rem;
 		padding-bottom: 0.75rem;
-		border-bottom: 2px solid hsl(var(--border));
+		border-bottom: 2px solid rgb(55 65 81);
 	}
 
 	.decklist-content {
@@ -132,12 +132,12 @@
 	.section-title {
 		font-size: 1rem;
 		font-weight: 600;
-		color: hsl(var(--muted-foreground));
+		color: rgb(156 163 175);
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		margin-bottom: 0.75rem;
 		padding-bottom: 0.5rem;
-		border-bottom: 1px solid hsl(var(--border));
+		border-bottom: 1px solid rgb(55 65 81);
 	}
 
 	.card-list {
@@ -156,20 +156,20 @@
 
 	.card-quantity {
 		font-weight: 600;
-		color: hsl(var(--muted-foreground));
+		color: rgb(156 163 175);
 		min-width: 1.5rem;
 		text-align: right;
 	}
 
 	.card-link {
-		color: hsl(var(--primary));
+		color: white;
 		text-decoration: none;
 		cursor: pointer;
 		transition: color 0.2s;
 	}
 
 	.card-link:hover {
-		color: hsl(var(--accent));
+		color: rgb(59 130 246);
 		text-decoration: underline;
 	}
 
@@ -177,12 +177,12 @@
 		grid-column: 1 / -1;
 		padding-top: 1rem;
 		margin-top: 1rem;
-		border-top: 1px solid hsl(var(--border));
+		border-top: 1px solid rgb(55 65 81);
 	}
 
 	.total-cards {
 		font-weight: 600;
-		color: hsl(var(--foreground));
+		color: rgb(243 244 246);
 		font-size: 0.95rem;
 	}
 

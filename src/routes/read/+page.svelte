@@ -8,12 +8,12 @@
 
 <!-- Page Header -->
 <section
-	class="relative overflow-hidden bg-gradient-to-b from-[hsl(var(--muted))] to-[hsl(var(--background))] py-12 sm:py-16"
+	class="relative overflow-hidden bg-gradient-to-b from-gray-800 to-gray-950 py-12 sm:py-16"
 >
 	<div class="container mx-auto max-w-7xl px-4">
 		<div class="text-center">
 			<h1 class="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">Learn</h1>
-			<p class="mx-auto max-w-2xl text-lg text-[hsl(var(--muted-foreground))]">
+			<p class="mx-auto max-w-2xl text-lg text-gray-400">
 				Strategy guides, game analysis, and exclusive content from our expert writers
 			</p>
 		</div>
@@ -25,18 +25,18 @@
 	<div class="container mx-auto max-w-7xl px-4">
 		{#if data.articles.length === 0}
 			<div class="py-12 text-center">
-				<p class="text-lg text-[hsl(var(--muted-foreground))]">No articles available yet.</p>
+				<p class="text-lg text-gray-400">No articles available yet.</p>
 			</div>
 		{:else}
 			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
 				{#each data.articles as article}
 					<article
-						class="overflow-hidden rounded-[var(--radius)] border bg-[hsl(var(--card))] shadow-md transition-shadow hover:shadow-lg"
+						class="overflow-hidden rounded-[var(--radius)] border bg-gray-950 shadow-md transition-shadow hover:shadow-lg"
 					>
 						<a href="/read/{article.slug}" class="block">
 							<!-- Cover Image -->
 							{#if article.coverImage}
-								<div class="h-48 w-full overflow-hidden bg-[hsl(var(--muted))]">
+								<div class="h-48 w-full overflow-hidden bg-gray-800">
 									<img
 										src={article.coverImage}
 										alt={article.title}
@@ -46,7 +46,7 @@
 							{:else}
 								<!-- Image Placeholder -->
 								<div
-									class="flex h-48 w-full items-center justify-center bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"
+									class="flex h-48 w-full items-center justify-center bg-gray-800 text-gray-400"
 								>
 									<svg class="h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path
@@ -65,7 +65,7 @@
 								{#if article.isPremium}
 									<div class="mb-2 flex gap-2">
 										<span
-											class="rounded-full bg-[hsl(var(--accent))] px-2 py-1 text-xs font-medium text-[hsl(var(--accent-foreground))]"
+											class="rounded-full bg-blue-500 px-2 py-1 text-xs font-medium text-white"
 										>
 											Premium
 										</span>
@@ -74,14 +74,14 @@
 
 								<!-- Title -->
 								<h2
-									class="mb-2 line-clamp-2 text-xl font-semibold text-[hsl(var(--foreground))] transition-colors group-hover:text-[hsl(var(--primary))]"
+									class="mb-2 line-clamp-2 text-xl font-semibold text-gray-100 transition-colors group-hover:text-white"
 								>
 									{article.title}
 								</h2>
 
 								<!-- Excerpt -->
 								{#if article.excerpt}
-									<p class="mb-4 line-clamp-3 text-[hsl(var(--muted-foreground))]">
+									<p class="mb-4 line-clamp-3 text-gray-400">
 										{article.excerpt}
 									</p>
 								{/if}
@@ -90,7 +90,7 @@
 								{#if article.publishedAt}
 									<div class="flex items-center justify-between">
 										<time
-											class="text-sm text-[hsl(var(--muted-foreground))]"
+											class="text-sm text-gray-400"
 											datetime={article.publishedAt}
 										>
 											{new Date(article.publishedAt).toLocaleDateString('en-US', {
@@ -99,7 +99,7 @@
 												day: 'numeric'
 											})}
 										</time>
-										<span class="text-sm font-medium text-[hsl(var(--primary))] hover:underline">
+										<span class="text-sm font-medium text-white hover:underline">
 											Read More →
 										</span>
 									</div>

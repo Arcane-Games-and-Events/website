@@ -36,13 +36,13 @@
 	<title>Order Details - Arcane Games and Events</title>
 </svelte:head>
 
-<div class="min-h-screen bg-[hsl(var(--background))] py-8">
+<div class="min-h-screen bg-gray-950 py-8">
 	<div class="mx-auto max-w-4xl px-2">
 		<!-- Back Button -->
 		<div class="mb-6">
 			<a
 				href="/account?tab=order-history"
-				class="inline-flex items-center text-sm text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+				class="inline-flex items-center text-sm text-gray-400 hover:text-gray-100 transition-colors"
 			>
 				<svg
 					class="mr-2 h-4 w-4"
@@ -63,8 +63,8 @@
 
 		<!-- Page Header -->
 		<div class="mb-8">
-			<h1 class="text-3xl font-bold text-[hsl(var(--foreground))]">Order Details</h1>
-			<p class="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+			<h1 class="text-3xl font-bold text-gray-100">Order Details</h1>
+			<p class="mt-2 text-sm text-gray-400">
 				View and manage your order
 			</p>
 		</div>
@@ -80,20 +80,20 @@
 
 		{#if form?.error}
 			<div
-				class="mb-6 rounded-lg border border-[hsl(var(--destructive))] bg-[hsl(var(--destructive))]/10 p-4"
+				class="mb-6 rounded-lg border border-red-700 bg-red-700/10 p-4"
 			>
-				<p class="text-sm text-[hsl(var(--destructive))]">{form.error}</p>
+				<p class="text-sm text-red-700">{form.error}</p>
 			</div>
 		{/if}
 
 		<!-- Order Information Card -->
 		<div
-			class="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] shadow-sm overflow-hidden"
+			class="rounded-lg border border-gray-700 bg-gray-950 shadow-sm overflow-hidden"
 		>
 			<!-- Header with Status -->
-			<div class="border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-6 py-4">
+			<div class="border-b border-gray-700 bg-gray-800 px-6 py-4">
 				<div class="flex items-center justify-between">
-					<h2 class="text-xl font-semibold text-[hsl(var(--foreground))]">
+					<h2 class="text-xl font-semibold text-gray-100">
 						{getOrderTypeName(data.order.meta?.type)}
 					</h2>
 					{#if data.additionalData?.ticket?.refunded}
@@ -122,19 +122,19 @@
 			<div class="p-6 space-y-6">
 				<!-- Basic Order Info -->
 				<div>
-					<h3 class="mb-4 text-lg font-semibold text-[hsl(var(--foreground))]">
+					<h3 class="mb-4 text-lg font-semibold text-gray-100">
 						Order Information
 					</h3>
 					<dl class="space-y-3">
 						<div class="flex justify-between">
-							<dt class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Order ID</dt>
-							<dd class="text-sm font-mono text-[hsl(var(--foreground))]">
+							<dt class="text-sm font-medium text-gray-400">Order ID</dt>
+							<dd class="text-sm font-mono text-gray-100">
 								{data.order.id.substring(0, 13)}...
 							</dd>
 						</div>
 						<div class="flex justify-between">
-							<dt class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Date</dt>
-							<dd class="text-sm text-[hsl(var(--foreground))]">
+							<dt class="text-sm font-medium text-gray-400">Date</dt>
+							<dd class="text-sm text-gray-100">
 								{new Date(data.order.createdAt).toLocaleDateString('en-US', {
 									year: 'numeric',
 									month: 'long',
@@ -145,16 +145,16 @@
 							</dd>
 						</div>
 						<div class="flex justify-between">
-							<dt class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Amount</dt>
-							<dd class="text-lg font-semibold text-[hsl(var(--foreground))]">
+							<dt class="text-sm font-medium text-gray-400">Amount</dt>
+							<dd class="text-lg font-semibold text-gray-100">
 								${parseFloat(data.order.amount).toFixed(2)} {data.order.currency}
 							</dd>
 						</div>
 						<div class="flex justify-between">
-							<dt class="text-sm font-medium text-[hsl(var(--muted-foreground))]">
+							<dt class="text-sm font-medium text-gray-400">
 								Transaction ID
 							</dt>
-							<dd class="text-sm font-mono text-[hsl(var(--muted-foreground))]">
+							<dd class="text-sm font-mono text-gray-400">
 								{data.order.providerRef}
 							</dd>
 						</div>
@@ -163,31 +163,31 @@
 
 				<!-- Type-Specific Details -->
 				{#if data.order.meta?.type === 'ticket' && data.additionalData?.ticket}
-					<div class="border-t border-[hsl(var(--border))] pt-6">
-						<h3 class="mb-4 text-lg font-semibold text-[hsl(var(--foreground))]">
+					<div class="border-t border-gray-700 pt-6">
+						<h3 class="mb-4 text-lg font-semibold text-gray-100">
 							Ticket Details
 						</h3>
 						<dl class="space-y-3">
 							<div class="flex justify-between">
-								<dt class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Event</dt>
-								<dd class="text-sm text-[hsl(var(--foreground))]">
+								<dt class="text-sm font-medium text-gray-400">Event</dt>
+								<dd class="text-sm text-gray-100">
 									{data.order.meta.eventTitle}
 								</dd>
 							</div>
 							<div class="flex justify-between">
-								<dt class="text-sm font-medium text-[hsl(var(--muted-foreground))]">
+								<dt class="text-sm font-medium text-gray-400">
 									Ticket Code
 								</dt>
-								<dd class="text-sm font-mono font-semibold text-[hsl(var(--foreground))]">
+								<dd class="text-sm font-mono font-semibold text-gray-100">
 									{data.additionalData.ticket.code}
 								</dd>
 							</div>
 							{#if data.additionalData.ticket.firstName}
 								<div class="flex justify-between">
-									<dt class="text-sm font-medium text-[hsl(var(--muted-foreground))]">
+									<dt class="text-sm font-medium text-gray-400">
 										Player Name
 									</dt>
-									<dd class="text-sm text-[hsl(var(--foreground))]">
+									<dd class="text-sm text-gray-100">
 										{data.additionalData.ticket.firstName}
 										{data.additionalData.ticket.lastName}
 									</dd>
@@ -195,20 +195,20 @@
 							{/if}
 							{#if data.additionalData.ticket.gemId}
 								<div class="flex justify-between">
-									<dt class="text-sm font-medium text-[hsl(var(--muted-foreground))]">
+									<dt class="text-sm font-medium text-gray-400">
 										GEM ID
 									</dt>
-									<dd class="text-sm text-[hsl(var(--foreground))]">
+									<dd class="text-sm text-gray-100">
 										{data.additionalData.ticket.gemId}
 									</dd>
 								</div>
 							{/if}
 							{#if data.additionalData.ticket.refunded}
 								<div class="flex justify-between">
-									<dt class="text-sm font-medium text-[hsl(var(--muted-foreground))]">
+									<dt class="text-sm font-medium text-gray-400">
 										Refunded On
 									</dt>
-									<dd class="text-sm text-[hsl(var(--foreground))]">
+									<dd class="text-sm text-gray-100">
 										{new Date(data.additionalData.ticket.refundedAt).toLocaleDateString('en-US', {
 											year: 'numeric',
 											month: 'long',
@@ -220,27 +220,27 @@
 						</dl>
 					</div>
 				{:else if data.order.meta?.type === 'course'}
-					<div class="border-t border-[hsl(var(--border))] pt-6">
-						<h3 class="mb-4 text-lg font-semibold text-[hsl(var(--foreground))]">
+					<div class="border-t border-gray-700 pt-6">
+						<h3 class="mb-4 text-lg font-semibold text-gray-100">
 							Course Details
 						</h3>
 						<dl class="space-y-3">
 							<div class="flex justify-between">
-								<dt class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Course ID</dt>
-								<dd class="text-sm font-mono text-[hsl(var(--foreground))]">
+								<dt class="text-sm font-medium text-gray-400">Course ID</dt>
+								<dd class="text-sm font-mono text-gray-100">
 									{data.order.meta.courseId}
 								</dd>
 							</div>
 							{#if data.additionalData?.entitlement}
 								<div class="flex justify-between">
-									<dt class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Status</dt>
+									<dt class="text-sm font-medium text-gray-400">Status</dt>
 									<dd class="text-sm text-green-600 dark:text-green-400 font-medium">
 										Active Access
 									</dd>
 								</div>
 							{:else}
 								<div class="flex justify-between">
-									<dt class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Status</dt>
+									<dt class="text-sm font-medium text-gray-400">Status</dt>
 									<dd class="text-sm text-red-600 dark:text-red-400 font-medium">
 										Access Revoked
 									</dd>
@@ -249,22 +249,22 @@
 						</dl>
 					</div>
 				{:else if data.order.meta?.type === 'subscription'}
-					<div class="border-t border-[hsl(var(--border))] pt-6">
-						<h3 class="mb-4 text-lg font-semibold text-[hsl(var(--foreground))]">
+					<div class="border-t border-gray-700 pt-6">
+						<h3 class="mb-4 text-lg font-semibold text-gray-100">
 							Subscription Details
 						</h3>
 						<dl class="space-y-3">
 							<div class="flex justify-between">
-								<dt class="text-sm font-medium text-[hsl(var(--muted-foreground))]">
+								<dt class="text-sm font-medium text-gray-400">
 									Subscription ID
 								</dt>
-								<dd class="text-sm font-mono text-[hsl(var(--foreground))]">
+								<dd class="text-sm font-mono text-gray-100">
 									{data.order.meta.subscriptionId}
 								</dd>
 							</div>
 							<div class="flex justify-between">
-								<dt class="text-sm font-medium text-[hsl(var(--muted-foreground))]">Type</dt>
-								<dd class="text-sm text-[hsl(var(--foreground))]">Monthly Recurring</dd>
+								<dt class="text-sm font-medium text-gray-400">Type</dt>
+								<dd class="text-sm text-gray-100">Monthly Recurring</dd>
 							</div>
 						</dl>
 						<div class="mt-4 rounded-lg bg-blue-50 dark:bg-blue-900/10 p-4">
@@ -281,11 +281,11 @@
 
 				<!-- Refund Action -->
 				{#if canRefund && !form?.success}
-					<div class="border-t border-[hsl(var(--border))] pt-6">
-						<h3 class="mb-4 text-lg font-semibold text-[hsl(var(--foreground))]">
+					<div class="border-t border-gray-700 pt-6">
+						<h3 class="mb-4 text-lg font-semibold text-gray-100">
 							Refund Request
 						</h3>
-						<p class="mb-4 text-sm text-[hsl(var(--muted-foreground))]">
+						<p class="mb-4 text-sm text-gray-400">
 							If you need to refund this order, click the button below. This action cannot be
 							undone and will revoke any access granted by this purchase.
 						</p>
@@ -293,7 +293,7 @@
 							<button
 								type="submit"
 								disabled={refunding}
-								class="rounded-md bg-[hsl(var(--destructive))] px-6 py-2 text-sm font-medium text-[hsl(var(--destructive-foreground))] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+								class="rounded-md bg-red-700 px-6 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{refunding ? 'Processing...' : 'Request Refund'}
 							</button>
