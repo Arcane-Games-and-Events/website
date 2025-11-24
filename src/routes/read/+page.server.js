@@ -1,44 +1,59 @@
-import { strapi } from '$lib/server/strapi/client.js';
+import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow } from '$lib/server/articles/access.js';
 
 export async function load() {
 	try {
-		const posts = await strapi.getPosts();
+		const posts = await payload.getPosts();
 
-		// Transform Strapi response to match our expected format
-		// Handle both Strapi v4 (attributes) and v5 (flat) formats
+		// Transform Payload response to match our expected format
 		const articles = posts.map((post) => {
-			// Strapi v4 uses post.attributes, v5 might be flat
-			const attrs = post.attributes || post;
-
 			// Extract cover image URL
 			let coverImageUrl = null;
-			if (attrs.coverImage) {
-				// Strapi v4: coverImage.data.attributes.url
-				// Strapi v5: coverImage.url or coverImage[0].url (if multiple)
-				let relativeUrl = null;
-				if (attrs.coverImage.data?.attributes?.url) {
-					relativeUrl = attrs.coverImage.data.attributes.url;
-				} else if (attrs.coverImage.url) {
-					relativeUrl = attrs.coverImage.url;
-				} else if (Array.isArray(attrs.coverImage) && attrs.coverImage[0]?.url) {
-					relativeUrl = attrs.coverImage[0].url;
+			if (post.coverImage && typeof post.coverImage === 'object') {
+				coverImageUrl = payload.getAbsoluteUrl(post.coverImage.url);
+			}
+
+			// Extract author information
+			let author = null;
+			if (post.author && typeof post.author === 'object') {
+				let profilePictureUrl = null;
+				if (post.author.profilePicture && typeof post.author.profilePicture === 'object') {
+					profilePictureUrl = payload.getAbsoluteUrl(post.author.profilePicture.url);
 				}
 
-				// Convert relative URL to absolute
-				coverImageUrl = strapi.getAbsoluteUrl(relativeUrl);
+				author = {
+					name: post.author.name,
+					slug: post.author.slug,
+					profilePicture: profilePictureUrl
+				};
+			}
+
+			// Extract tags
+			let tags = [];
+			if (post.tags && Array.isArray(post.tags)) {
+				tags = post.tags.map((tag) => {
+					if (typeof tag === 'object') {
+						return {
+							name: tag.name,
+							slug: tag.slug
+						};
+					}
+					return null;
+				}).filter(Boolean);
 			}
 
 			return {
-				slug: attrs.slug,
-				title: attrs.title,
-				excerpt: attrs.excerpt,
-				publishedAt: attrs.published || attrs.publishedAt,
-				accessMode: attrs.accessMode,
+				slug: post.slug,
+				title: post.title,
+				excerpt: post.excerpt,
+				publishedAt: post.publishedDate,
+				accessMode: post.accessMode,
 				coverImage: coverImageUrl,
+				author,
+				tags,
 				isPremium: isPremiumNow({
-					accessMode: attrs.accessMode,
-					publishedAt: attrs.published || attrs.publishedAt
+					accessMode: post.accessMode,
+					publishedAt: post.publishedDate
 				})
 			};
 		});

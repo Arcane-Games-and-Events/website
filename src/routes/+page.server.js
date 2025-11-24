@@ -1,4 +1,4 @@
-import { strapi } from '$lib/server/strapi/client.js';
+import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow } from '$lib/server/articles/access.js';
 import { db } from '$lib/server/db/index.js';
 import { event } from '$lib/server/db/schema.js';
@@ -6,50 +6,32 @@ import { asc, gte } from 'drizzle-orm';
 
 export async function load() {
 	try {
-		// Fetch articles
-		const posts = await strapi.getPosts();
+		// Fetch latest 3 articles from Payload CMS
+		const posts = await payload.getPosts({ limit: 3 });
 
-		// Transform Strapi response to match our expected format
-		// Handle both Strapi v4 (attributes) and v5 (flat) formats
-		const articles = posts
-			.map((post) => {
-				// Strapi v4 uses post.attributes, v5 might be flat
-				const attrs = post.attributes || post;
+		const articles = posts.map((post) => {
+			// Extract cover image URL
+			let coverImageUrl = null;
+			if (post.coverImage && typeof post.coverImage === 'object') {
+				coverImageUrl = payload.getAbsoluteUrl(post.coverImage.url);
+			}
 
-				// Extract cover image URL
-				let coverImageUrl = null;
-				if (attrs.coverImage) {
-					// Strapi v4: coverImage.data.attributes.url
-					// Strapi v5: coverImage.url or coverImage[0].url (if multiple)
-					let relativeUrl = null;
-					if (attrs.coverImage.data?.attributes?.url) {
-						relativeUrl = attrs.coverImage.data.attributes.url;
-					} else if (attrs.coverImage.url) {
-						relativeUrl = attrs.coverImage.url;
-					} else if (Array.isArray(attrs.coverImage) && attrs.coverImage[0]?.url) {
-						relativeUrl = attrs.coverImage[0].url;
-					}
-
-					// Convert relative URL to absolute
-					coverImageUrl = strapi.getAbsoluteUrl(relativeUrl);
-				}
-
-				return {
-					slug: attrs.slug,
-					title: attrs.title,
-					excerpt: attrs.excerpt,
-					publishedAt: attrs.published || attrs.publishedAt,
-					accessMode: attrs.accessMode,
-					coverImage: coverImageUrl,
-					isPremium: isPremiumNow({
-						accessMode: attrs.accessMode,
-						publishedAt: attrs.published || attrs.publishedAt
-					})
-				};
-			})
-			// Sort by published date (newest first) and take only 3
-			.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
-			.slice(0, 3);
+			return {
+				slug: post.slug,
+				title: post.title,
+				excerpt: post.excerpt,
+				publishedAt: post.publishedDate,
+				accessMode: post.accessMode,
+				coverImage: coverImageUrl,
+				isPremium: isPremiumNow({
+					accessMode: post.accessMode,
+					publishedAt: post.publishedDate
+				})
+			};
+		})
+		// Sort by published date (newest first)
+		.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
+		.slice(0, 3);
 
 		// Fetch upcoming events (limit to 3)
 		const now = new Date();

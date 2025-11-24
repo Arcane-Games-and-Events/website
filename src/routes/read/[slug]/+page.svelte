@@ -1,128 +1,183 @@
 <script>
+	import { onMount } from 'svelte';
 	import CardHover from '$lib/components/CardHover.svelte';
 	import Decklist from '$lib/components/Decklist.svelte';
 
 	export let data;
 
-	// Separate content into regular blocks and decklist blocks
-	let contentBlocks = [];
-	let decklistBlocks = [];
+	// Process content blocks for inline decklists
+	let renderBlocks = [];
+	let tableOfContents = [];
+	let activeSection = '';
 
 	$: {
 		if (data.article.content) {
-			const { regular, decklists } = parseContent(data.article.content);
-			contentBlocks = regular;
-			decklistBlocks = decklists;
+			renderBlocks = processInlineDecklists(data.article.content, data.article.decklists);
+			tableOfContents = extractHeadings(data.article.content);
 		}
 	}
 
-	/**
-	 * Parse content and separate regular blocks from decklist blocks
-	 */
-	function parseContent(content) {
-		if (!content) return { regular: [], decklists: [] };
+	// Extract headings for table of contents
+	function extractHeadings(content) {
+		const headings = [];
+		if (!content) return headings;
 
-		// If content is a string, return it as a single block
-		if (typeof content === 'string') {
-			return { regular: [{ html: content, index: 0 }], decklists: [] };
+		// Handle Lexical format
+		if (content.root && content.root.type === 'root') {
+			extractLexicalHeadings(content.root, headings);
+		}
+		// Handle array format
+		else if (Array.isArray(content)) {
+			content.forEach((block) => {
+				if (block.type === 'heading' && block.children) {
+					const text = extractText(block.children);
+					const id = slugify(text);
+					headings.push({
+						text,
+						id,
+						level: block.level || 2
+					});
+				}
+			});
 		}
 
-		// If content is an array of blocks (Strapi v5 format)
-		if (Array.isArray(content)) {
-			const regular = [];
-			const decklists = [];
-			let currentHtml = '';
-			let blockIndex = 0;
+		return headings;
+	}
 
-			// Strapi splits code blocks line-by-line, so we need to accumulate consecutive JSON code blocks
-			let accumulatedJsonLines = [];
+	function extractLexicalHeadings(node, headings) {
+		if (!node) return;
 
-			const processAccumulatedJson = () => {
-				if (accumulatedJsonLines.length > 0) {
-					const fullJson = accumulatedJsonLines.join('\n');
-					try {
-						const parsed = JSON.parse(fullJson);
+		if (node.type === 'heading') {
+			const text = extractLexicalText(node.children);
+			const id = slugify(text);
+			const level = parseInt(node.tag?.replace('h', '')) || 2;
+			headings.push({ text, id, level });
+		}
 
-						// Check if this looks like a decklist (has a 'cards' array)
-						if (parsed.cards && Array.isArray(parsed.cards)) {
-							// Save current HTML if any
-							if (currentHtml) {
-								regular.push({ html: currentHtml, index: blockIndex++ });
-								currentHtml = '';
-							}
+		if (node.children) {
+			node.children.forEach(child => extractLexicalHeadings(child, headings));
+		}
+	}
 
-							decklists.push({ ...parsed, index: blockIndex++ });
-						} else {
-							// Not a decklist, render as code block
-							currentHtml += `<pre><code>${escapeHtml(fullJson)}</code></pre>`;
-						}
-					} catch (e) {
-						// Invalid JSON, render as code block
-						currentHtml += `<pre><code>${escapeHtml(fullJson)}</code></pre>`;
-					}
+	function extractText(children) {
+		if (!children) return '';
+		return children.map(child => child.text || '').join('');
+	}
 
-					accumulatedJsonLines = [];
-				}
-			};
+	function extractLexicalText(children) {
+		if (!children) return '';
+		return children.map(child => child.text || extractLexicalText(child.children)).join('');
+	}
 
-			content.forEach((block, idx) => {
-				// Check if this is a decklist block
-				if (block.type === 'decklist') {
-					// Process any accumulated JSON first
-					processAccumulatedJson();
+	function slugify(text) {
+		return text
+			.toLowerCase()
+			.replace(/[^\w\s-]/g, '')
+			.replace(/\s+/g, '-')
+			.replace(/-+/g, '-')
+			.trim();
+	}
 
-					// Custom decklist block type
-					try {
-						let decklistData = {};
-						if (typeof block.data === 'string') {
-							decklistData = JSON.parse(block.data);
-						} else {
-							decklistData = block.data || {};
-						}
+	// Scroll spy for active section
+	onMount(() => {
+		const handleScroll = () => {
+			const headings = document.querySelectorAll('h1[id], h2[id], h3[id], h4[id]');
+			let currentSection = '';
 
-						if (currentHtml) {
-							regular.push({ html: currentHtml, index: blockIndex++ });
-							currentHtml = '';
-						}
-
-						decklists.push({ ...decklistData, index: blockIndex++ });
-					} catch (e) {
-						console.error('Failed to parse decklist data:', e);
-					}
-				} else if (block.type === 'code' && block.language === 'json') {
-					// Accumulate JSON code block lines
-					const codeContent = block.code || block.children?.[0]?.text || block.content || '';
-					accumulatedJsonLines.push(codeContent);
-				} else {
-					// Non-JSON block - process any accumulated JSON first
-					processAccumulatedJson();
-
-					// Regular block - add to current HTML
-					currentHtml += renderBlock(block);
+			headings.forEach((heading) => {
+				const rect = heading.getBoundingClientRect();
+				if (rect.top <= 150) {
+					currentSection = heading.id;
 				}
 			});
 
-			// Process any remaining accumulated JSON at the end
-			processAccumulatedJson();
+			activeSection = currentSection;
+		};
 
-			// Add remaining HTML
-			if (currentHtml) {
-				regular.push({ html: currentHtml, index: blockIndex });
-			}
+		window.addEventListener('scroll', handleScroll);
+		return () => window.removeEventListener('scroll', handleScroll);
+	});
 
-			return { regular, decklists };
-		}
-
-		// If content is an object, try to extract text
-		if (typeof content === 'object') {
-			return { regular: [{ html: JSON.stringify(content, null, 2), index: 0 }], decklists: [] };
-		}
-
-		return { regular: [], decklists: [] };
+	function copyLink() {
+		navigator.clipboard.writeText(window.location.href);
 	}
 
-	// Render Strapi rich text content as HTML
-	// Strapi v5 uses blocks-based format (similar to Portable Text)
+	function shareTwitter() {
+		const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(data.article.title)}`;
+		window.open(url, '_blank', 'width=550,height=420');
+	}
+
+	function shareFacebook() {
+		const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`;
+		window.open(url, '_blank', 'width=550,height=420');
+	}
+
+	function shareLinkedIn() {
+		const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`;
+		window.open(url, '_blank', 'width=550,height=420');
+	}
+
+	/**
+	 * Process content blocks and replace [DECKLIST:n] markers with actual decklists
+	 */
+	function processInlineDecklists(content, decklists) {
+		if (!content || !Array.isArray(content)) {
+			return [{ type: 'html', content: renderContent(content) }];
+		}
+
+		const blocks = [];
+		let htmlBuffer = '';
+
+		content.forEach(block => {
+			const renderedBlock = renderBlock(block);
+
+			// Check if this block contains decklist markers
+			const decklistPattern = /\[DECKLIST:(\d+)\]/g;
+			const matches = [...renderedBlock.matchAll(decklistPattern)];
+
+			if (matches.length > 0) {
+				// Split the content at decklist markers
+				let lastIndex = 0;
+				matches.forEach(match => {
+					// Add HTML before the marker
+					const beforeMarker = renderedBlock.substring(lastIndex, match.index);
+					htmlBuffer += beforeMarker;
+
+					// Flush HTML buffer if there's content
+					if (htmlBuffer.trim()) {
+						blocks.push({ type: 'html', content: htmlBuffer });
+						htmlBuffer = '';
+					}
+
+					// Add decklist component
+					const decklistIndex = parseInt(match[1]);
+					if (decklists && decklists[decklistIndex]) {
+						blocks.push({
+							type: 'decklist',
+							data: decklists[decklistIndex]
+						});
+					}
+
+					lastIndex = match.index + match[0].length;
+				});
+
+				// Add remaining HTML after last marker
+				htmlBuffer += renderedBlock.substring(lastIndex);
+			} else {
+				// No markers, add to HTML buffer
+				htmlBuffer += renderedBlock;
+			}
+		});
+
+		// Flush remaining HTML
+		if (htmlBuffer.trim()) {
+			blocks.push({ type: 'html', content: htmlBuffer });
+		}
+
+		return blocks;
+	}
+
+	// Render rich text content as HTML
 	function renderContent(content) {
 		if (!content) return '';
 
@@ -131,7 +186,12 @@
 			return content;
 		}
 
-		// If content is an array of blocks (Strapi v5 format)
+		// Check if this is Lexical format (Payload v3)
+		if (content.root && content.root.type === 'root') {
+			return renderLexicalNode(content.root);
+		}
+
+		// If content is an array of blocks
 		if (Array.isArray(content)) {
 			return content.map((block) => renderBlock(block)).join('');
 		}
@@ -144,6 +204,114 @@
 		return '';
 	}
 
+	// Render Lexical JSON to HTML (Payload v3 format)
+	function renderLexicalNode(node) {
+		if (!node) return '';
+
+		// Handle text nodes
+		if (node.type === 'text') {
+			let text = escapeHtml(node.text || '');
+
+			// Apply formatting based on format bitmask
+			if (node.format) {
+				const format = typeof node.format === 'number' ? node.format : 0;
+				if (format & 1 || node.bold) text = `<strong>${text}</strong>`;
+				if (format & 2 || node.italic) text = `<em>${text}</em>`;
+				if (format & 4 || node.strikethrough) text = `<s>${text}</s>`;
+				if (format & 8 || node.underline) text = `<u>${text}</u>`;
+				if (format & 16 || node.code) text = `<code>${text}</code>`;
+			}
+
+			return text;
+		}
+
+		// Handle paragraph
+		if (node.type === 'paragraph') {
+			const children = renderLexicalChildren(node.children);
+			return `<p>${children}</p>`;
+		}
+
+		// Handle headings with ID for table of contents
+		if (node.type === 'heading') {
+			const tag = node.tag || 'h2';
+			const children = renderLexicalChildren(node.children);
+			const text = extractLexicalText(node.children);
+			const id = slugify(text);
+			return `<${tag} id="${id}">${children}</${tag}>`;
+		}
+
+		// Handle lists
+		if (node.type === 'list') {
+			const tag = node.listType === 'number' ? 'ol' : 'ul';
+			const children = renderLexicalChildren(node.children);
+			return `<${tag}>${children}</${tag}>`;
+		}
+
+		if (node.type === 'listitem') {
+			const children = renderLexicalChildren(node.children);
+			return `<li>${children}</li>`;
+		}
+
+		// Handle quotes
+		if (node.type === 'quote') {
+			const children = renderLexicalChildren(node.children);
+			return `<blockquote>${children}</blockquote>`;
+		}
+
+		// Handle code blocks
+		if (node.type === 'code') {
+			const code = node.children?.map(c => c.text || '').join('') || '';
+			return `<pre><code>${escapeHtml(code)}</code></pre>`;
+		}
+
+		// Handle links
+		if (node.type === 'link' || node.type === 'autolink') {
+			const children = renderLexicalChildren(node.children);
+			const rawUrl = node.url || node.fields?.url || '#';
+
+			// Check if this is a card link
+			const cardMatch = rawUrl.match(/^card:(.+)$/);
+			if (cardMatch) {
+				const fullString = cardMatch[1];
+				const pipeIndex = fullString.indexOf('|');
+
+				let cardId, customUrl;
+				if (pipeIndex !== -1) {
+					cardId = fullString.substring(0, pipeIndex);
+					customUrl = fullString.substring(pipeIndex + 1);
+				} else {
+					cardId = fullString;
+					customUrl = null;
+				}
+
+				try {
+					cardId = decodeURIComponent(cardId);
+				} catch (e) {
+					console.warn('Failed to decode card ID:', cardId);
+				}
+
+				const linkUrl = customUrl || `https://cards.fabtcg.com/?search=${encodeURIComponent(cardId)}`;
+
+				return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}" class="card-link">${children}</a>`;
+			} else {
+				const url = escapeHtml(rawUrl);
+				return `<a href="${url}" target="_blank" rel="noopener noreferrer">${children}</a>`;
+			}
+		}
+
+		// Handle root and other container nodes
+		if (node.children) {
+			return renderLexicalChildren(node.children);
+		}
+
+		return '';
+	}
+
+	function renderLexicalChildren(children) {
+		if (!children || !Array.isArray(children)) return '';
+		return children.map(child => renderLexicalNode(child)).join('');
+	}
+
 	function renderBlock(block) {
 		if (!block || !block.type) return '';
 
@@ -152,7 +320,9 @@
 				return `<p>${renderChildren(block.children)}</p>`;
 			case 'heading':
 				const level = block.level || 2;
-				return `<h${level}>${renderChildren(block.children)}</h${level}>`;
+				const text = extractText(block.children);
+				const id = slugify(text);
+				return `<h${level} id="${id}">${renderChildren(block.children)}</h${level}>`;
 			case 'list':
 				const tag = block.format === 'ordered' ? 'ol' : 'ul';
 				return `<${tag}>${renderChildren(block.children)}</${tag}>`;
@@ -181,13 +351,10 @@
 
 		return children
 			.map((child) => {
-				// Handle links first
+				// Handle links
 				if (child.type === 'link') {
-					// Check if this is a card link (has card: prefix)
 					const cardMatch = child.url?.match(/^card:(.+)$/);
 					if (cardMatch) {
-						// Format: card:CARDID or card:CARDID|URL
-						// Use | as delimiter to avoid conflicts with : in URLs
 						const fullString = cardMatch[1];
 						const pipeIndex = fullString.indexOf('|');
 
@@ -200,13 +367,17 @@
 							customUrl = null;
 						}
 
-						// If custom URL provided, use it; otherwise generate cards.fabtcg.com URL
-						const linkUrl =
-							customUrl || `https://cards.fabtcg.com/?search=${encodeURIComponent(cardId)}`;
+						try {
+							cardId = decodeURIComponent(cardId);
+						} catch (e) {
+							console.warn('Failed to decode card ID:', cardId);
+						}
+
+						const linkUrl = customUrl || `https://cards.fabtcg.com/?search=${encodeURIComponent(cardId)}`;
 
 						return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}" class="card-link">${renderChildren(child.children)}</a>`;
 					} else {
-						return `<a href="${escapeHtml(child.url || '#')}">${renderChildren(child.children)}</a>`;
+						return `<a href="${escapeHtml(child.url || '#')}" target="_blank" rel="noopener noreferrer">${renderChildren(child.children)}</a>`;
 					}
 				}
 
@@ -214,7 +385,6 @@
 				if (child.type === 'text' || typeof child.text === 'string') {
 					let text = escapeHtml(child.text);
 
-					// Apply formatting
 					if (child.bold) text = `<strong>${text}</strong>`;
 					if (child.italic) text = `<em>${text}</em>`;
 					if (child.underline) text = `<u>${text}</u>`;
@@ -247,86 +417,90 @@
 	{/if}
 </svelte:head>
 
-<!-- Cover Image Banner (Full Width) -->
-{#if data.article.coverImage}
-	<div class="relative h-[800px] w-full overflow-hidden bg-gray-800 sm:h-[700px]">
-		<!-- Cover Image -->
-		<img
-			src={data.article.coverImage}
-			alt={data.article.title}
-			class="h-full w-full object-cover"
-		/>
-
-		<!-- Gradient Overlay for better text visibility -->
-		<div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
-
-		<!-- Title Overlay (Bottom Left) -->
-		<div class="absolute right-0 bottom-0 left-0 p-8 sm:p-12">
-			<div class="container mx-auto max-w-4xl">
-				{#if data.isPremium}
-					<div class="mb-4 flex gap-2">
-						<span
-							class="rounded-full bg-blue-500 px-3 py-1 text-xs font-medium text-white"
-						>
-							Premium Content
-						</span>
-					</div>
-				{/if}
-
-				<h1 class="mb-3 text-3xl font-bold text-white drop-shadow-lg sm:text-4xl md:text-5xl">
-					{data.article.title}
-				</h1>
-
-				{#if data.article.publishedAt}
-					<time class="text-sm text-white/90 drop-shadow" datetime={data.article.publishedAt}>
-						{new Date(data.article.publishedAt).toLocaleDateString('en-US', {
-							year: 'numeric',
-							month: 'long',
-							day: 'numeric'
-						})}
-					</time>
-				{/if}
-			</div>
+<!-- Hero Section with Gradient Overlay -->
+<div class="relative min-h-[500px] w-full overflow-hidden bg-gradient-to-br from-orange-900/20 via-gray-900 to-black">
+	{#if data.article.coverImage}
+		<div class="absolute inset-0">
+			<img
+				src={data.article.coverImage}
+				alt={data.article.title}
+				class="h-full w-full object-cover opacity-40"
+			/>
+			<div class="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/60"></div>
 		</div>
-	</div>
-{/if}
+	{/if}
 
-<article class="container mx-auto max-w-4xl px-2 py-12">
-	<!-- Back Link -->
-	<div class="mb-8">
-		<a
-			href="/read"
-			class="inline-flex items-center gap-2 text-sm font-medium text-gray-400 transition-colors hover:text-white"
-		>
-			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-			</svg>
-			Back to Articles
-		</a>
-	</div>
+	<!-- Hero Content -->
+	<div class="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+		<!-- Back Link -->
+		<div class="mb-8">
+			<a
+				href="/read"
+				class="inline-flex items-center gap-2 text-sm font-medium text-gray-400 transition-colors hover:text-white"
+			>
+				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+				</svg>
+				Back to Articles
+			</a>
+		</div>
 
-	<!-- Article Header (only shown if no cover image) -->
-	{#if !data.article.coverImage}
-		<header class="mb-8 border-b border-gray-700 pb-8">
+		<!-- Tags & Premium Badge -->
+		<div class="mb-6 flex flex-wrap items-center gap-3">
 			{#if data.isPremium}
-				<div class="mb-4 flex gap-2">
-					<span
-						class="rounded-full bg-blue-500 px-3 py-1 text-xs font-medium text-white"
-					>
-						Premium Content
-					</span>
-				</div>
+				<span class="rounded-full bg-orange-500 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white">
+					Premium
+				</span>
 			{/if}
+			{#if data.article.tags && data.article.tags.length > 0}
+				{#each data.article.tags as tag}
+					<span class="rounded-md border border-gray-700 bg-gray-800/50 px-3 py-1 text-xs font-medium text-gray-300 backdrop-blur-sm">
+						{tag.name}
+					</span>
+				{/each}
+			{/if}
+		</div>
 
-			<h1 class="mb-4 text-4xl font-bold text-gray-100 sm:text-5xl">
-				{data.article.title}
-			</h1>
+		<!-- Title -->
+		<h1 class="mb-6 max-w-4xl text-4xl font-bold leading-tight text-white drop-shadow-lg sm:text-5xl md:text-6xl">
+			{data.article.title}
+		</h1>
 
-			{#if data.article.publishedAt}
-				<time
-					class="text-sm text-gray-400"
-					datetime={data.article.publishedAt}
-				>
+		<!-- Author & Date -->
+		<div class="flex items-center gap-4">
+			{#if data.article.author}
+				<div class="flex items-center gap-3">
+					{#if data.article.author.profilePicture}
+						<img
+							src={data.article.author.profilePicture}
+							alt={data.article.author.name}
+							class="h-12 w-12 rounded-full object-cover ring-2 ring-white/20"
+						/>
+					{:else}
+						<div class="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 ring-2 ring-white/20">
+							<span class="text-base font-semibold text-white">
+								{data.article.author.name.charAt(0).toUpperCase()}
+							</span>
+						</div>
+					{/if}
+					<div>
+						<div class="text-sm font-semibold text-white">
+							{data.article.author.name}
+						</div>
+						{#if data.article.publishedAt}
+							<time class="text-sm text-gray-400" datetime={data.article.publishedAt}>
+								{new Date(data.article.publishedAt).toLocaleDateString('en-US', {
+									year: 'numeric',
+									month: 'long',
+									day: 'numeric'
+								})}
+								· 5 min read
+							</time>
+						{/if}
+					</div>
+				</div>
+			{:else if data.article.publishedAt}
+				<time class="text-sm text-gray-400" datetime={data.article.publishedAt}>
 					{new Date(data.article.publishedAt).toLocaleDateString('en-US', {
 						year: 'numeric',
 						month: 'long',
@@ -334,162 +508,124 @@
 					})}
 				</time>
 			{/if}
-		</header>
-	{/if}
-
-	<!-- Article Content -->
-	<div class="prose prose-lg max-w-none">
-		{#if data.article.content}
-			{#if contentBlocks.length > 0 || decklistBlocks.length > 0}
-				<!-- Render blocks in order -->
-				{#each [...contentBlocks, ...decklistBlocks].sort((a, b) => a.index - b.index) as block}
-					{#if block.html !== undefined}
-						<!-- Regular content block -->
-						{@html block.html}
-					{:else}
-						<!-- Decklist block -->
-						<Decklist decklist={block} />
-					{/if}
-				{/each}
-			{:else}
-				{@html renderContent(data.article.content)}
-			{/if}
-		{:else}
-			<p class="text-gray-400">No content available.</p>
-		{/if}
+		</div>
 	</div>
+</div>
 
-	<!-- Article Footer -->
-	<footer class="mt-12 border-t border-gray-700 pt-8">
-		<a
-			href="/read"
-			class="inline-flex items-center gap-2 font-medium text-white hover:underline"
-		>
-			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-			</svg>
-			Back to all articles
-		</a>
-	</footer>
-</article>
+<!-- Main Content Area with Sidebar -->
+<div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+	<div class="grid grid-cols-1 gap-12 lg:grid-cols-[220px_1fr]">
+		<!-- Left Sidebar - Table of Contents & Share -->
+		<aside class="hidden lg:block">
+			<div class="sticky top-8 space-y-8">
+				<!-- Table of Contents -->
+				{#if tableOfContents.length > 0}
+					<nav>
+						<h2 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">On this page</h2>
+						<div class="space-y-1.5 border-l border-gray-800 pl-4">
+							{#each tableOfContents as heading}
+								<a
+									href="#{heading.id}"
+									class="block text-xs leading-relaxed transition-colors {activeSection === heading.id ? 'font-medium text-orange-400' : 'text-gray-500 hover:text-gray-300'}"
+									style="padding-left: {(heading.level - 2) * 10}px"
+								>
+									{heading.text}
+								</a>
+							{/each}
+						</div>
+					</nav>
+				{/if}
+
+				<!-- Share Buttons -->
+				<div>
+					<h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Share</h3>
+					<div class="flex gap-2">
+						<button
+							on:click={copyLink}
+							class="flex h-9 w-9 items-center justify-center rounded-md border border-gray-800 bg-gray-900/50 text-gray-400 transition-all hover:border-gray-700 hover:bg-gray-800 hover:text-white"
+							title="Copy link"
+						>
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+							</svg>
+						</button>
+						<button
+							on:click={shareLinkedIn}
+							class="flex h-9 w-9 items-center justify-center rounded-md border border-gray-800 bg-gray-900/50 text-gray-400 transition-all hover:border-gray-700 hover:bg-gray-800 hover:text-white"
+							title="Share on LinkedIn"
+						>
+							<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+							</svg>
+						</button>
+						<button
+							on:click={shareTwitter}
+							class="flex h-9 w-9 items-center justify-center rounded-md border border-gray-800 bg-gray-900/50 text-gray-400 transition-all hover:border-gray-700 hover:bg-gray-800 hover:text-white"
+							title="Share on Twitter"
+						>
+							<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+							</svg>
+						</button>
+						<button
+							on:click={shareFacebook}
+							class="flex h-9 w-9 items-center justify-center rounded-md border border-gray-800 bg-gray-900/50 text-gray-400 transition-all hover:border-gray-700 hover:bg-gray-800 hover:text-white"
+							title="Share on Facebook"
+						>
+							<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+							</svg>
+						</button>
+					</div>
+				</div>
+			</div>
+		</aside>
+
+		<!-- Main Content -->
+		<article class="min-w-0">
+			<!-- Constrained readable width for optimal line length -->
+			<div class="mx-auto max-w-[680px]">
+				<div class="prose prose-lg prose-invert max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-white prose-headings:scroll-mt-24 prose-h1:text-4xl prose-h1:leading-tight prose-h2:mt-16 prose-h2:mb-6 prose-h2:text-3xl prose-h2:leading-snug prose-h3:mt-12 prose-h3:mb-4 prose-h3:text-2xl prose-h3:leading-snug prose-h4:mt-8 prose-h4:mb-3 prose-h4:text-xl prose-p:mb-6 prose-p:text-[19px] prose-p:leading-[1.7] prose-p:text-gray-300 prose-a:font-medium prose-a:text-orange-400 prose-a:no-underline prose-a:transition-colors hover:prose-a:text-orange-300 hover:prose-a:underline prose-strong:font-semibold prose-strong:text-white prose-em:text-gray-200 prose-code:rounded prose-code:bg-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-[0.9em] prose-code:text-orange-400 prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-lg prose-pre:border prose-pre:border-gray-800 prose-pre:bg-gray-900 prose-pre:leading-relaxed prose-blockquote:border-l-4 prose-blockquote:border-orange-500 prose-blockquote:bg-gray-900/30 prose-blockquote:py-4 prose-blockquote:pl-6 prose-blockquote:not-italic prose-blockquote:text-gray-300 prose-ul:my-6 prose-ul:text-gray-300 prose-ol:my-6 prose-ol:text-gray-300 prose-li:my-2 prose-li:leading-[1.7] prose-li:marker:text-orange-500 prose-img:rounded-lg prose-img:border prose-img:border-gray-800">
+					{#if data.article.content}
+						{#if renderBlocks.length > 0}
+							{#each renderBlocks as block}
+								{#if block.type === 'html'}
+									{@html block.content}
+								{:else if block.type === 'decklist'}
+									<Decklist
+										deckName={block.data.deckName}
+										creator={block.data.creator}
+										hero={block.data.hero}
+										format={block.data.format}
+										fabraryUrl={block.data.fabraryUrl}
+										parsedCards={block.data.parsedCards}
+									/>
+								{/if}
+							{/each}
+						{:else}
+							{@html renderContent(data.article.content)}
+						{/if}
+					{:else}
+						<p class="text-gray-400">No content available.</p>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Article Footer -->
+			<footer class="mx-auto mt-16 max-w-[680px] border-t border-gray-800 pt-8">
+				<a
+					href="/read"
+					class="inline-flex items-center gap-2 text-sm font-medium text-gray-400 transition-colors hover:text-white"
+				>
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+					</svg>
+					Back to all articles
+				</a>
+			</footer>
+		</article>
+	</div>
+</div>
 
 <!-- Card Hover Component -->
 <CardHover />
-
-<style>
-	:global(.prose) {
-		color: rgb(243 244 246);
-		line-height: 1.75;
-	}
-
-	:global(.prose h1) {
-		font-size: 2.25em;
-		font-weight: 700;
-		margin-top: 0;
-		margin-bottom: 0.8888889em;
-		color: rgb(243 244 246);
-	}
-
-	:global(.prose h2) {
-		font-size: 1.5em;
-		font-weight: 600;
-		margin-top: 2em;
-		margin-bottom: 1em;
-		color: rgb(243 244 246);
-	}
-
-	:global(.prose h3) {
-		font-size: 1.25em;
-		font-weight: 600;
-		margin-top: 1.6em;
-		margin-bottom: 0.6em;
-		color: rgb(243 244 246);
-	}
-
-	:global(.prose p) {
-		margin-top: 1.25em;
-		margin-bottom: 1.25em;
-	}
-
-	:global(.prose a) {
-		color: white;
-		text-decoration: underline;
-	}
-
-	:global(.prose a.card-link) {
-		color: white;
-		text-decoration: underline;
-		cursor: pointer;
-		font-weight: 500;
-	}
-
-	:global(.prose a.card-link:hover) {
-		color: rgb(59 130 246);
-	}
-
-	:global(.prose ul),
-	:global(.prose ol) {
-		margin-top: 1.25em;
-		margin-bottom: 1.25em;
-		padding-left: 1.625em;
-	}
-
-	:global(.prose li) {
-		margin-top: 0.5em;
-		margin-bottom: 0.5em;
-	}
-
-	:global(.prose code) {
-		background-color: rgb(31 41 55);
-		padding: 0.2em 0.4em;
-		border-radius: var(--radius);
-		font-size: 0.875em;
-		color: rgb(243 244 246);
-	}
-
-	:global(.prose pre) {
-		background-color: white;
-		color: rgb(17 24 39);
-		padding: 1em;
-		border-radius: var(--radius);
-		overflow-x: auto;
-		margin-top: 1.5em;
-		margin-bottom: 1.5em;
-	}
-
-	:global(.prose pre code) {
-		background-color: transparent;
-		padding: 0;
-		color: inherit;
-	}
-
-	:global(.prose blockquote) {
-		border-left: 4px solid rgb(55 65 81);
-		padding-left: 1em;
-		font-style: italic;
-		color: rgb(156 163 175);
-		margin-top: 1.5em;
-		margin-bottom: 1.5em;
-	}
-
-	:global(.prose img) {
-		max-width: 100%;
-		height: auto;
-		border-radius: var(--radius);
-		margin-top: 2em;
-		margin-bottom: 2em;
-	}
-
-	:global(.prose figure) {
-		margin-top: 2em;
-		margin-bottom: 2em;
-	}
-
-	:global(.prose figcaption) {
-		text-align: center;
-		font-size: 0.875em;
-		color: rgb(156 163 175);
-		margin-top: 0.5em;
-		font-style: italic;
-	}
-</style>

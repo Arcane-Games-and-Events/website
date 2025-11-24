@@ -41,10 +41,12 @@
 		"vite": "^7.0.4"
 	},
 	"dependencies": {
+		"@flesh-and-blood/cards": "^3.6.158",
 		"@lucia-auth/adapter-drizzle": "^1.1.0",
 		"authorizenet": "^1.0.10",
 		"bcryptjs": "^3.0.2",
 		"dotenv": "^17.2.2",
+		"fab-cards": "^8.0.147",
 		"oslo": "^1.2.1",
 		"postgres": "^3.4.5"
 	}

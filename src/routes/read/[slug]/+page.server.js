@@ -1,98 +1,63 @@
 import { error, redirect } from '@sveltejs/kit';
-import { strapi } from '$lib/server/strapi/client.js';
+import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow } from '$lib/server/articles/access.js';
-
-/**
- * Process content blocks to convert relative image URLs to absolute
- */
-function processContentImages(content) {
-	if (!content) return content;
-
-	// If content is a string, return as-is
-	if (typeof content === 'string') return content;
-
-	// If content is an array of blocks (Strapi v5 format)
-	if (Array.isArray(content)) {
-		return content.map(block => {
-			if (!block) return block;
-
-			// Handle image blocks
-			if (block.type === 'image') {
-				const processedBlock = { ...block };
-
-				// Process image URL
-				if (block.image?.url) {
-					processedBlock.image = {
-						...block.image,
-						url: strapi.getAbsoluteUrl(block.image.url)
-					};
-				}
-
-				return processedBlock;
-			}
-
-			// Recursively process children
-			if (block.children && Array.isArray(block.children)) {
-				return {
-					...block,
-					children: processContentImages(block.children)
-				};
-			}
-
-			return block;
-		});
-	}
-
-	return content;
-}
 
 export async function load({ params, locals }) {
 	const { slug } = params;
 
 	try {
-		const post = await strapi.getPostBySlug(slug);
+		const post = await payload.getPostBySlug(slug);
 
 		if (!post) {
 			throw error(404, 'Article not found');
 		}
 
-		// Handle both Strapi v4 (attributes) and v5 (flat) formats
-		const attrs = post.attributes || post;
-
-		// Check if article is published
-		if (!attrs.isPublished) {
-			throw error(404, 'Article not found');
-		}
-
 		// Extract cover image URL
 		let coverImageUrl = null;
-		if (attrs.coverImage) {
-			// Strapi v4: coverImage.data.attributes.url
-			// Strapi v5: coverImage.url or coverImage[0].url (if multiple)
-			let relativeUrl = null;
-			if (attrs.coverImage.data?.attributes?.url) {
-				relativeUrl = attrs.coverImage.data.attributes.url;
-			} else if (attrs.coverImage.url) {
-				relativeUrl = attrs.coverImage.url;
-			} else if (Array.isArray(attrs.coverImage) && attrs.coverImage[0]?.url) {
-				relativeUrl = attrs.coverImage[0].url;
-			}
-
-			// Convert relative URL to absolute
-			coverImageUrl = strapi.getAbsoluteUrl(relativeUrl);
+		if (post.coverImage && typeof post.coverImage === 'object') {
+			coverImageUrl = payload.getAbsoluteUrl(post.coverImage.url);
 		}
 
-		// Process content to convert relative image URLs to absolute
-		const processedContent = processContentImages(attrs.content);
+		// Extract author information
+		let author = null;
+		if (post.author && typeof post.author === 'object') {
+			let profilePictureUrl = null;
+			if (post.author.profilePicture && typeof post.author.profilePicture === 'object') {
+				profilePictureUrl = payload.getAbsoluteUrl(post.author.profilePicture.url);
+			}
+
+			author = {
+				name: post.author.name,
+				slug: post.author.slug,
+				bio: post.author.bio,
+				profilePicture: profilePictureUrl
+			};
+		}
+
+		// Extract tags
+		let tags = [];
+		if (post.tags && Array.isArray(post.tags)) {
+			tags = post.tags.map((tag) => {
+				if (typeof tag === 'object') {
+					return {
+						name: tag.name,
+						slug: tag.slug
+					};
+				}
+				return null;
+			}).filter(Boolean);
+		}
 
 		const article = {
-			slug: attrs.slug,
-			title: attrs.title,
-			excerpt: attrs.excerpt,
-			content: processedContent,
-			publishedAt: attrs.published || attrs.publishedAt,
-			accessMode: attrs.accessMode,
-			coverImage: coverImageUrl
+			slug: post.slug,
+			title: post.title,
+			excerpt: post.excerpt,
+			content: post.content,
+			publishedAt: post.publishedDate,
+			accessMode: post.accessMode,
+			coverImage: coverImageUrl,
+			author,
+			tags
 		};
 
 		// Check premium access
@@ -107,7 +72,7 @@ export async function load({ params, locals }) {
 
 			// If not logged in, redirect to login
 			if (!user) {
-				throw redirect(302, `/login?redirect=/articles/${slug}`);
+				throw redirect(302, `/login?redirect=/read/${slug}`);
 			}
 
 			// Check if user has premium access (role: premium or admin)
