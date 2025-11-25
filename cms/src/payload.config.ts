@@ -22,6 +22,11 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
+  cors: [
+    'http://localhost:5173', // Local dev
+    'https://arcanegamesandevents.com', // Production domain (update this)
+    process.env.FRONTEND_URL || '', // Vercel preview URLs
+  ].filter(Boolean),
   collections: [Users, Posts, Authors, Tags, Media],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
