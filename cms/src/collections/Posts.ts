@@ -243,9 +243,12 @@ export const Posts: CollectionConfig = {
       relationTo: 'users',
       required: true,
       admin: {
-        readOnly: true,
         position: 'sidebar',
         description: 'User who created this post',
+      },
+      access: {
+        // Only admins and editors can change the createdBy field
+        update: isEditorOrAdminField,
       },
     },
     {
