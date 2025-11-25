@@ -3,6 +3,8 @@
  * Handles communication with Payload CMS REST API
  */
 
+import { parseFabraryExport, toComponentFormat } from '$lib/utils/decklist-parser.js';
+
 const PAYLOAD_URL = process.env.PAYLOAD_URL || 'http://localhost:3000';
 const PAYLOAD_SECRET = process.env.PAYLOAD_SECRET;
 
@@ -24,17 +26,32 @@ class PayloadClient {
 		// Convert params to Payload's bracket notation format
 		this.addParamsToURL(url, params);
 
-		const response = await fetch(url.toString(), {
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		});
+		// Add timeout to prevent hanging when CMS is down
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-		if (!response.ok) {
-			throw new Error(`Payload API error: ${response.status} ${response.statusText}`);
+		try {
+			const response = await fetch(url.toString(), {
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				signal: controller.signal,
+			});
+
+			clearTimeout(timeout);
+
+			if (!response.ok) {
+				throw new Error(`Payload API error: ${response.status} ${response.statusText}`);
+			}
+
+			return response.json();
+		} catch (error) {
+			clearTimeout(timeout);
+			if (error.name === 'AbortError') {
+				throw new Error('Payload CMS request timed out - is the CMS server running?');
+			}
+			throw error;
 		}
-
-		return response.json();
 	}
 
 	/**
@@ -143,6 +160,26 @@ class PayloadClient {
 			return url;
 		}
 		return `${this.baseURL}${url}`;
+	}
+
+	/**
+	 * Parse decklists from post data
+	 * @param {Array} rawDecklists - Array of decklist objects with rawText
+	 * @returns {Array} Parsed decklists ready for component rendering
+	 */
+	parseDecklists(rawDecklists) {
+		if (!rawDecklists || !Array.isArray(rawDecklists)) {
+			return [];
+		}
+
+		return rawDecklists.map((decklist) => {
+			if (!decklist.rawText) {
+				return null;
+			}
+
+			const parsed = parseFabraryExport(decklist.rawText);
+			return toComponentFormat(parsed);
+		}).filter(Boolean);
 	}
 }
 

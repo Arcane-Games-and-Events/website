@@ -224,6 +224,18 @@ export interface Post {
    */
   createdBy: number | User;
   tags?: (number | Tag)[] | null;
+  /**
+   * Add FaB decklists to embed in the article. Use [DECKLIST:0], [DECKLIST:1], etc. in the content to place them.
+   */
+  decklists?:
+    | {
+        /**
+         * Copy the full deck text from Fabrary and paste it here. The parser will automatically extract deck name, hero, format, cards, and URL.
+         */
+        rawText: string;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -425,6 +437,12 @@ export interface PostsSelect<T extends boolean = true> {
   author?: T;
   createdBy?: T;
   tags?: T;
+  decklists?:
+    | T
+    | {
+        rawText?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

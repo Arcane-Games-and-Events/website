@@ -250,6 +250,27 @@ export const Posts: CollectionConfig = {
       relationTo: 'tags',
       hasMany: true,
     },
+    {
+      name: 'decklists',
+      type: 'array',
+      label: 'Decklists',
+      admin: {
+        description: 'Add FaB decklists to embed in the article. Use [DECKLIST:0], [DECKLIST:1], etc. in the content to place them.',
+        initCollapsed: true,
+      },
+      fields: [
+        {
+          name: 'rawText',
+          type: 'textarea',
+          required: true,
+          label: 'Fabrary Export',
+          admin: {
+            description: 'Copy the full deck text from Fabrary and paste it here. The parser will automatically extract deck name, hero, format, cards, and URL.',
+            rows: 20,
+          },
+        },
+      ],
+    },
   ],
   hooks: {
     beforeChange: [

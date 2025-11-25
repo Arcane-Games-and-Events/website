@@ -235,7 +235,9 @@
 
 	onMount(() => {
 		// Detect if mobile device
-		isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+		isMobile =
+			/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+			window.innerWidth < 768;
 
 		// Add event listeners to all card links
 		if (!isMobile) {
@@ -262,18 +264,22 @@
 {#if showCard && cardImage && !isMobile}
 	{@const position = getCardPosition()}
 	<div
-		class="fixed z-[9999] pointer-events-none"
+		class="pointer-events-none fixed z-[9999]"
 		style="left: {position.left}px; top: {position.top}px;"
 		transition:fade={{ duration: 200 }}
 	>
-		<img src={cardImage} alt="Card preview" class="w-[250px] h-auto rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.6)] border-2 border-white/15" />
+		<img
+			src={cardImage}
+			alt="Card preview"
+			class="h-auto w-[250px] rounded-xl border-2 border-white/15 shadow-[0_10px_40px_rgba(0,0,0,0.6)]"
+		/>
 	</div>
 {/if}
 
 <!-- Mobile Card Preview (Tap) -->
 {#if mobileCardImage}
 	<div
-		class="fixed inset-0 bg-black/85 z-[9999] flex items-center justify-center p-5 backdrop-blur-sm"
+		class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-5 backdrop-blur-sm"
 		role="button"
 		tabindex="0"
 		on:click={closeMobilePreview}
@@ -281,7 +287,7 @@
 		transition:fade={{ duration: 200 }}
 	>
 		<div
-			class="relative max-w-[90%] max-h-[90%]"
+			class="relative max-h-[90%] max-w-[90%]"
 			role="dialog"
 			tabindex="-1"
 			aria-modal="true"
@@ -290,19 +296,40 @@
 			on:keydown|stopPropagation
 			transition:scale={{ duration: 200, start: 0.9 }}
 		>
-			<button class="absolute -top-3 -right-3 w-9 h-9 rounded-full bg-white/95 text-black border-0 cursor-pointer flex items-center justify-center shadow-[0_4px_12px_rgba(0,0,0,0.4)] transition-all duration-200 hover:bg-white hover:scale-110 active:scale-95 z-[1]" on:click={closeMobilePreview} aria-label="Close card preview">
+			<button
+				class="absolute -top-3 -right-3 z-[1] flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-0 bg-white/95 text-black shadow-[0_4px_12px_rgba(0,0,0,0.4)] transition-all duration-200 hover:scale-110 hover:bg-white active:scale-95"
+				on:click={closeMobilePreview}
+				aria-label="Close card preview"
+			>
 				<svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M6 18L18 6M6 6l12 12"
+					/>
 				</svg>
 			</button>
-			<img src={mobileCardImage} alt="Card preview" class="w-full max-w-[350px] h-auto rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] border-[3px] border-white/20" />
-			<button class="mt-4 p-3 px-6 bg-white/95 text-black border-0 rounded-lg font-semibold text-[15px] cursor-pointer flex items-center justify-center gap-2 transition-all duration-200 shadow-[0_4px_12px_rgba(0,0,0,0.3)] w-full max-w-[350px] hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(0,0,0,0.4)] active:translate-y-0" on:click={navigateToCard}>
+			<img
+				src={mobileCardImage}
+				alt="Card preview"
+				class="h-auto w-full max-w-[350px] rounded-2xl border-[3px] border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.8)]"
+			/>
+			<button
+				class="mt-4 flex w-full max-w-[350px] cursor-pointer items-center justify-center gap-2 rounded-lg border-0 bg-white/95 p-3 px-6 text-[15px] font-semibold text-black shadow-[0_4px_12px_rgba(0,0,0,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_6px_16px_rgba(0,0,0,0.4)] active:translate-y-0"
+				on:click={navigateToCard}
+			>
 				<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+					/>
 				</svg>
 				{hasCustomPurchaseLink() ? 'Buy this card' : 'View Full Card'}
 			</button>
-			<p class="text-center text-white/80 text-sm mt-3 font-medium">Tap outside to close</p>
+			<p class="mt-3 text-center text-xs font-medium text-white/80">Tap outside to close</p>
 		</div>
 	</div>
 {/if}

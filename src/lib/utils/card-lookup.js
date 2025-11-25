@@ -1,15 +1,19 @@
 /**
  * Card Lookup Utility
- * Interface with fab-cards package for card data and images
+ * Uses local card data from the-fab-cube/flesh-and-blood-cards repository
+ * for up-to-date card information including newer sets
  */
 
-import { cards } from 'fab-cards';
+import cardData from '$lib/data/cards.json';
 
-// FAB TCG image CDN base URL
-const IMAGE_CDN_BASE = 'https://storage.googleapis.com/fabmaster/media/images';
+// Sets to exclude from printing selection
+const EXCLUDED_SETS = new Set(['1HP']);
 
-// Cache for card lookups to improve performance
-const cardCache = new Map();
+// Rarities to exclude from printing selection
+const EXCLUDED_RARITIES = new Set(['P', 'V']);
+
+// Cache for card lookups
+let cardIndexByName = null;
 
 /**
  * Normalize card name for lookup
@@ -17,16 +21,62 @@ const cardCache = new Map();
  */
 function normalizeCardName(name) {
 	if (!name) return '';
-
 	// Remove color suffix if present (e.g., "(red)", "(yellow)", "(blue)")
 	const normalized = name.replace(/\s*\((?:red|yellow|blue)\)\s*$/i, '').trim();
-
-	// Convert to lowercase for case-insensitive matching
 	return normalized.toLowerCase();
 }
 
 /**
- * Find a card by name in the fab-cards database
+ * Filter printings to exclude certain sets and rarities
+ * @param {Array} printings - Array of printing objects
+ * @returns {Array} Filtered printings
+ */
+function filterPrintings(printings) {
+	if (!printings) return [];
+	return printings.filter(p => {
+		// Exclude specific sets
+		if (EXCLUDED_SETS.has(p.set_id)) return false;
+		// Exclude specific rarities
+		if (EXCLUDED_RARITIES.has(p.rarity)) return false;
+		return true;
+	});
+}
+
+/**
+ * Get best printing for image display
+ * Prefers standard (non-foil) printings
+ * @param {Array} printings - Filtered array of printing objects
+ * @returns {Object|null} Best printing or null
+ */
+function getBestPrinting(printings) {
+	if (!printings || printings.length === 0) return null;
+	// Prefer standard foiling (S), then any other
+	return printings.find(p => p.foiling === 'S') || printings[0];
+}
+
+/**
+ * Build index of cards by normalized name for fast lookups
+ */
+function buildCardIndex() {
+	if (cardIndexByName) return;
+
+	cardIndexByName = new Map();
+
+	for (const card of cardData) {
+		const normalizedName = normalizeCardName(card.name);
+
+		if (!cardIndexByName.has(normalizedName)) {
+			cardIndexByName.set(normalizedName, []);
+		}
+		cardIndexByName.get(normalizedName).push(card);
+	}
+}
+
+// Build index on module load
+buildCardIndex();
+
+/**
+ * Find a card by name in the database
  * @param {string} cardName - Card name to look up
  * @param {string} color - Optional color (red, yellow, blue)
  * @returns {Object|null} Card data or null if not found
@@ -34,49 +84,32 @@ function normalizeCardName(name) {
 export function findCard(cardName, color = null) {
 	if (!cardName) return null;
 
+	if (!cardIndexByName) buildCardIndex();
+
 	const normalized = normalizeCardName(cardName);
-	const cacheKey = `${normalized}_${color || 'any'}`;
+	const matches = cardIndexByName.get(normalized);
 
-	// Check cache first
-	if (cardCache.has(cacheKey)) {
-		return cardCache.get(cacheKey);
+	if (!matches || matches.length === 0) {
+		return null;
 	}
 
-	// Search through all cards
-	let foundCard = null;
-
-	for (const card of cards) {
-		const cardNameNormalized = card.name?.toLowerCase();
-
-		if (cardNameNormalized === normalized) {
-			// Exact match found
-			// If color specified, try to match it
-			if (color) {
-				const cardPitch = card.pitch;
-				const colorLower = color.toLowerCase();
-				// Match pitch value: 1=red, 2=yellow, 3=blue
-				if ((cardPitch === 1 && colorLower === 'red') ||
-					(cardPitch === 2 && colorLower === 'yellow') ||
-					(cardPitch === 3 && colorLower === 'blue')) {
-					foundCard = card;
-					break;
-				}
-			} else {
-				// No color specified, return first match
-				foundCard = card;
-				break;
-			}
-		}
+	// If color specified, find matching color variant
+	if (color) {
+		const colorLower = color.toLowerCase();
+		const colorMatch = matches.find(card => {
+			const cardColor = card.color?.toLowerCase();
+			return cardColor === colorLower;
+		});
+		if (colorMatch) return colorMatch;
 	}
 
-	// Cache the result (even if null)
-	cardCache.set(cacheKey, foundCard);
-
-	return foundCard;
+	// Return first match (or only match for non-colored cards)
+	return matches[0];
 }
 
 /**
  * Get card image URL
+ * Uses image_url from filtered printings (excludes 1HP, P, V)
  * @param {string} cardName - Card name
  * @param {string} color - Optional color
  * @returns {string|null} Image URL or null
@@ -85,24 +118,16 @@ export function getCardImage(cardName, color = null) {
 	const card = findCard(cardName, color);
 	if (!card) return null;
 
-	// Get image identifier from card data
-	let imageIdentifier = null;
+	// Filter printings and get best one
+	const validPrintings = filterPrintings(card.printings);
+	const printing = getBestPrinting(validPrintings);
 
-	// Try to get the most appropriate image
-	if (card.defaultImage) {
-		imageIdentifier = card.defaultImage;
-	} else if (card.printings && card.printings.length > 0) {
-		// Use the first printing's image
-		const firstPrinting = card.printings[0];
-		imageIdentifier = firstPrinting.image || firstPrinting.identifier;
+	// Use the image_url from the JSON data
+	if (printing && printing.image_url) {
+		return printing.image_url;
 	}
 
-	if (!imageIdentifier) return null;
-
-	// Construct the full CDN URL
-	// Handle both formats: "WTR006" and "WTR006.width-450"
-	const cleanIdentifier = imageIdentifier.replace(/\.width-\d+$/, '');
-	return `${IMAGE_CDN_BASE}/${cleanIdentifier}.width-450.webp`;
+	return null;
 }
 
 /**
@@ -114,13 +139,16 @@ export function getCardImage(cardName, color = null) {
 export function getCardUrl(cardName, color = null) {
 	const card = findCard(cardName, color);
 
-	if (card && card.cardIdentifier) {
-		// Use official FAB TCG card database with cardIdentifier
-		return `https://cards.fabtcg.com/card/${card.cardIdentifier}`;
+	if (card) {
+		const validPrintings = filterPrintings(card.printings);
+		const printing = getBestPrinting(validPrintings);
+		if (printing && printing.id) {
+			return `https://cards.fabtcg.com/?search=${encodeURIComponent(printing.id)}`;
+		}
 	}
 
 	// Fallback: construct search URL from card name
-	return `https://cards.fabtcg.com/search?q=${encodeURIComponent(cardName)}`;
+	return `https://cards.fabtcg.com/?search=${encodeURIComponent(cardName)}`;
 }
 
 /**
@@ -131,41 +159,33 @@ export function getCardUrl(cardName, color = null) {
  */
 export function getCardData(cardName, color = null) {
 	const card = findCard(cardName, color);
+	const image = getCardImage(cardName, color);
+	const url = getCardUrl(cardName, color);
 
 	return {
 		name: cardName,
 		color,
 		found: !!card,
-		image: getCardImage(cardName, color),
-		url: getCardUrl(cardName, color),
+		image,
+		url,
 		rawData: card
 	};
 }
 
 /**
- * Preload card images for a decklist
- * Useful for improving hover performance
- * @param {Array} cards - Array of card objects with {name, color}
+ * Get total number of cards in database
+ * @returns {number}
  */
-export function preloadCardImages(cards) {
-	if (!cards || !Array.isArray(cards)) return;
-
-	for (const card of cards) {
-		const imageUrl = getCardImage(card.name, card.color);
-		if (imageUrl) {
-			// Create image element to trigger browser preload
-			const img = new Image();
-			img.src = imageUrl;
-		}
-	}
+export function getCardCount() {
+	return cardData.length;
 }
 
 /**
- * Clear the card lookup cache
- * Useful when fab-cards package is updated
+ * Check if card data is loaded
+ * @returns {boolean}
  */
-export function clearCardCache() {
-	cardCache.clear();
+export function isCardDataLoaded() {
+	return cardData && cardData.length > 0;
 }
 
 export default {
@@ -173,6 +193,6 @@ export default {
 	getCardImage,
 	getCardUrl,
 	getCardData,
-	preloadCardImages,
-	clearCardCache
+	getCardCount,
+	isCardDataLoaded
 };

@@ -48,6 +48,9 @@ export async function load({ params, locals }) {
 			}).filter(Boolean);
 		}
 
+		// Parse decklists
+		const decklists = payload.parseDecklists(post.decklists);
+
 		const article = {
 			slug: post.slug,
 			title: post.title,
@@ -57,7 +60,8 @@ export async function load({ params, locals }) {
 			accessMode: post.accessMode,
 			coverImage: coverImageUrl,
 			author,
-			tags
+			tags,
+			decklists
 		};
 
 		// Check premium access
