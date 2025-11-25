@@ -262,7 +262,7 @@
 			const imageUrl = media.url || '';
 			const altText = media.alt || media.filename || '';
 
-			return `<figure class="my-8"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(altText)}" class="rounded-lg" /></figure>`;
+			return `<figure class="my-8"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(altText)}" loading="lazy" decoding="async" class="rounded-lg" /></figure>`;
 		}
 
 		// Handle links
@@ -337,7 +337,7 @@
 				const imageUrl = block.image?.url || '';
 				const altText = block.image?.alternativeText || block.image?.name || '';
 				const caption = block.image?.caption || '';
-				let imageHtml = `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(altText)}" />`;
+				let imageHtml = `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(altText)}" loading="lazy" decoding="async" />`;
 				if (caption) {
 					imageHtml = `<figure>${imageHtml}<figcaption>${escapeHtml(caption)}</figcaption></figure>`;
 				}

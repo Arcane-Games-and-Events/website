@@ -271,6 +271,8 @@
 		<img
 			src={cardImage}
 			alt="Card preview"
+			loading="lazy"
+			decoding="async"
 			class="h-auto w-[250px] rounded-xl border-2 border-white/15 shadow-[0_10px_40px_rgba(0,0,0,0.6)]"
 		/>
 	</div>
@@ -313,6 +315,8 @@
 			<img
 				src={mobileCardImage}
 				alt="Card preview"
+				loading="lazy"
+				decoding="async"
 				class="h-auto w-full max-w-[350px] rounded-2xl border-[3px] border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.8)]"
 			/>
 			<button

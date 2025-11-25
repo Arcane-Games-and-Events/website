@@ -276,6 +276,8 @@
 									<img
 										src={article.coverImage}
 										alt={article.title}
+										loading="lazy"
+										decoding="async"
 										class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
 									/>
 								</div>
@@ -345,6 +347,8 @@
 											<img
 												src={article.author.profilePicture}
 												alt={article.author.name}
+												loading="lazy"
+												decoding="async"
 												class="h-8 w-8 rounded-full object-cover"
 											/>
 										{:else}

@@ -379,6 +379,7 @@
 					src={cardData.image}
 					alt={hoveredCard.name}
 					loading="lazy"
+					decoding="async"
 					on:load={handleImageLoad}
 					class="w-[250px] rounded-lg border border-gray-700 shadow-2xl transition-opacity duration-200 {imageLoaded
 						? 'opacity-100'
@@ -433,6 +434,8 @@
 				<img
 					src={mobileCard.data.image}
 					alt="Card preview"
+					loading="lazy"
+					decoding="async"
 					class="h-auto w-full max-w-[350px] rounded-2xl border-[3px] border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.8)]"
 				/>
 			{:else}
