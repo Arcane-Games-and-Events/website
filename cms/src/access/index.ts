@@ -21,6 +21,11 @@ export const isEditorOrAdmin: Access = ({ req: { user } }) => {
   return hasRole(user as User, ['editor', 'admin'])
 }
 
+// Field-level: Check if user is editor or admin (returns boolean only)
+export const isEditorOrAdminField: FieldAccess = ({ req: { user } }) => {
+  return hasRole(user as User, ['editor', 'admin'])
+}
+
 // Check if user is writer, editor, or admin (any authenticated user)
 export const isAuthenticated: Access = ({ req: { user } }) => {
   return Boolean(user)

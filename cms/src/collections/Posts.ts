@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { isAdminEditorOrSelf, canPublish, isEditorOrAdmin } from '../access'
+import { isAdminEditorOrSelf, canPublish, isEditorOrAdminField } from '../access'
 
 export const Posts: CollectionConfig = {
   slug: 'posts',
@@ -9,10 +9,10 @@ export const Posts: CollectionConfig = {
   },
   access: {
     // Public can read published posts, authenticated users see filtered based on role
-    read: ({ req: { user } }) => {
+    read: ({ req }) => {
       // If user is authenticated (in admin panel)
-      if (user) {
-        return isAdminEditorOrSelf({ req: { user } })
+      if (req.user) {
+        return isAdminEditorOrSelf({ req })
       }
 
       // Public (frontend) can only see published posts
@@ -80,6 +80,10 @@ export const Posts: CollectionConfig = {
     {
       name: '_status',
       type: 'select',
+      options: [
+        { label: 'Draft', value: 'draft' },
+        { label: 'Published', value: 'published' },
+      ],
       access: {
         create: canPublish,
         update: canPublish,
@@ -126,7 +130,7 @@ export const Posts: CollectionConfig = {
       },
       access: {
         // Only editors/admins can create/delete notes
-        create: isEditorOrAdmin,
+        create: isEditorOrAdminField,
         update: ({ req: { user } }) => {
           // Writers can update (to mark resolved), but field-level control below limits them
           return Boolean(user)
@@ -140,7 +144,7 @@ export const Posts: CollectionConfig = {
           label: 'Note Content',
           access: {
             // Only editors/admins can edit note content
-            update: isEditorOrAdmin,
+            update: isEditorOrAdminField,
           },
         },
         {
@@ -172,7 +176,7 @@ export const Posts: CollectionConfig = {
           ],
           access: {
             // Only editors/admins can change note type
-            update: isEditorOrAdmin,
+            update: isEditorOrAdminField,
           },
         },
         {
@@ -282,12 +286,13 @@ export const Posts: CollectionConfig = {
 
         // Automatically set createdBy for new editor notes
         if (data.editorNotes && Array.isArray(data.editorNotes) && req.user) {
+          const userId = req.user.id
           data.editorNotes = data.editorNotes.map((note: any) => {
             // If note doesn't have createdBy or has an empty createdBy, set it to current user
             if (!note.createdBy || (typeof note.createdBy === 'object' && !note.createdBy.id)) {
               return {
                 ...note,
-                createdBy: req.user.id,
+                createdBy: userId,
               }
             }
             return note
