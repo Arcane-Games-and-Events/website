@@ -2,7 +2,7 @@ import type { Access, FieldAccess } from 'payload'
 
 // Type for user with role
 type User = {
-  id: string
+  id: string | number
   role: 'admin' | 'editor' | 'writer'
 }
 
