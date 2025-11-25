@@ -165,7 +165,7 @@
 		<div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
 			<!-- Access Type Filter -->
 			<div class="flex flex-col gap-3">
-				<label class="text-sm font-medium text-gray-400">Content Type</label>
+				<span class="text-sm font-medium text-gray-400">Content Type</span>
 				<div class="flex gap-2">
 					<button
 						on:click={() => selectedAccessType = 'all'}
@@ -197,7 +197,7 @@
 			<!-- Tags Filter -->
 			{#if allTags.length > 0}
 				<div class="flex flex-col gap-3">
-					<label class="text-sm font-medium text-gray-400">Filter by Tags</label>
+					<span class="text-sm font-medium text-gray-400">Filter by Tags</span>
 					<div class="flex flex-wrap gap-2">
 						{#each allTags as tag}
 							<button
@@ -269,8 +269,8 @@
 					<article
 						class="group overflow-hidden rounded-[var(--radius)] border border-gray-800 bg-gray-950 shadow-md transition-all hover:border-gray-700 hover:shadow-xl"
 					>
+						<!-- Cover Image (clickable) -->
 						<a href="/read/{article.slug}" class="block">
-							<!-- Cover Image -->
 							{#if article.coverImage}
 								<div class="h-48 w-full overflow-hidden bg-gray-900">
 									<img
@@ -294,102 +294,104 @@
 									</svg>
 								</div>
 							{/if}
+						</a>
 
-							<!-- Content -->
-							<div class="p-6">
-								<!-- Premium Badge & Tags -->
-								<div class="mb-3 flex flex-wrap items-center gap-2">
-									{#if article.isPremium}
+						<!-- Content -->
+						<div class="p-6">
+							<!-- Premium Badge & Tags -->
+							<div class="mb-3 flex flex-wrap items-center gap-2">
+								{#if article.isPremium}
+									<span
+										class="rounded-full bg-yellow-500 px-2.5 py-0.5 text-xs font-bold text-gray-900"
+									>
+										Premium
+									</span>
+								{/if}
+								{#if article.tags && article.tags.length > 0}
+									{#each article.tags.slice(0, 2) as tag}
 										<span
-											class="rounded-full bg-yellow-500 px-2.5 py-0.5 text-xs font-bold text-gray-900"
+											class="rounded-md bg-gray-800 border border-gray-700 px-2 py-0.5 text-xs font-medium text-gray-300"
 										>
-											Premium
+											{tag.name}
 										</span>
+									{/each}
+									{#if article.tags.length > 2}
+										<span class="text-xs text-gray-500">+{article.tags.length - 2}</span>
 									{/if}
-									{#if article.tags && article.tags.length > 0}
-										{#each article.tags.slice(0, 2) as tag}
-											<span
-												class="rounded-md bg-gray-800 border border-gray-700 px-2 py-0.5 text-xs font-medium text-gray-300"
-											>
-												{tag.name}
-											</span>
-										{/each}
-										{#if article.tags.length > 2}
-											<span class="text-xs text-gray-500">+{article.tags.length - 2}</span>
-										{/if}
-									{/if}
-								</div>
+								{/if}
+							</div>
 
-								<!-- Title -->
+							<!-- Title (clickable) -->
+							<a href="/read/{article.slug}" class="block">
 								<h2
 									class="mb-2 line-clamp-2 text-xl font-semibold text-gray-100 transition-colors group-hover:text-white"
 								>
 									{article.title}
 								</h2>
+							</a>
 
-								<!-- Excerpt -->
-								{#if article.excerpt}
-									<p class="mb-4 line-clamp-3 text-sm text-gray-400">
-										{article.excerpt}
-									</p>
-								{/if}
+							<!-- Excerpt -->
+							{#if article.excerpt}
+								<p class="mb-4 line-clamp-3 text-sm text-gray-400">
+									{article.excerpt}
+								</p>
+							{/if}
 
-								<!-- Author & Date -->
-								<div class="flex items-center justify-between border-t border-gray-800 pt-4">
-									<div class="flex items-center gap-2">
-										{#if article.author}
-											{#if article.author.profilePicture}
-												<img
-													src={article.author.profilePicture}
-													alt={article.author.name}
-													class="h-8 w-8 rounded-full object-cover"
-												/>
-											{:else}
-												<div class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-800">
-													<span class="text-xs font-semibold text-gray-300">
-														{article.author.name.charAt(0).toUpperCase()}
-													</span>
-												</div>
-											{/if}
-											<div class="flex flex-col">
-												<a
-													href="/read/author/{article.author.slug}"
-													class="text-sm font-medium text-gray-100 hover:text-white transition-colors"
-												>
-													{article.author.name}
-												</a>
-												{#if article.publishedAt}
-													<time
-														class="text-xs text-gray-500"
-														datetime={article.publishedAt}
-													>
-														{new Date(article.publishedAt).toLocaleDateString('en-US', {
-															year: 'numeric',
-															month: 'short',
-															day: 'numeric'
-														})}
-													</time>
-												{/if}
+							<!-- Author & Date -->
+							<div class="flex items-center justify-between border-t border-gray-800 pt-4">
+								<div class="flex items-center gap-2">
+									{#if article.author}
+										{#if article.author.profilePicture}
+											<img
+												src={article.author.profilePicture}
+												alt={article.author.name}
+												class="h-8 w-8 rounded-full object-cover"
+											/>
+										{:else}
+											<div class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-800">
+												<span class="text-xs font-semibold text-gray-300">
+													{article.author.name.charAt(0).toUpperCase()}
+												</span>
 											</div>
-										{:else if article.publishedAt}
-											<time
-												class="text-sm text-gray-400"
-												datetime={article.publishedAt}
-											>
-												{new Date(article.publishedAt).toLocaleDateString('en-US', {
-													year: 'numeric',
-													month: 'short',
-													day: 'numeric'
-												})}
-											</time>
 										{/if}
-									</div>
-									<span class="text-sm font-medium text-orange-400 group-hover:text-orange-300">
-										Read →
-									</span>
+										<div class="flex flex-col">
+											<a
+												href="/read/author/{article.author.slug}"
+												class="text-sm font-medium text-gray-100 hover:text-white transition-colors"
+											>
+												{article.author.name}
+											</a>
+											{#if article.publishedAt}
+												<time
+													class="text-xs text-gray-500"
+													datetime={article.publishedAt}
+												>
+													{new Date(article.publishedAt).toLocaleDateString('en-US', {
+														year: 'numeric',
+														month: 'short',
+														day: 'numeric'
+													})}
+												</time>
+											{/if}
+										</div>
+									{:else if article.publishedAt}
+										<time
+											class="text-sm text-gray-400"
+											datetime={article.publishedAt}
+										>
+											{new Date(article.publishedAt).toLocaleDateString('en-US', {
+												year: 'numeric',
+												month: 'short',
+												day: 'numeric'
+											})}
+										</time>
+									{/if}
 								</div>
+								<a href="/read/{article.slug}" class="text-sm font-medium text-orange-400 hover:text-orange-300">
+									Read →
+								</a>
 							</div>
-						</a>
+						</div>
 					</article>
 				{/each}
 			</div>

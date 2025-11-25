@@ -2,6 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { user, order, ticket } from '$lib/server/db/schema';
 import { eq, desc } from 'drizzle-orm';
+import { Argon2id } from 'oslo/password';
 
 export async function load({ locals }) {
 	// Require authentication
@@ -81,6 +82,78 @@ export const actions = {
 		} catch (error) {
 			console.error('Error updating profile:', error);
 			return fail(500, { error: 'Failed to update profile. Please try again.' });
+		}
+	},
+
+	changePassword: async ({ request, locals }) => {
+		// Require authentication
+		if (!locals.user) {
+			throw redirect(302, '/login');
+		}
+
+		const formData = await request.formData();
+		const currentPassword = formData.get('currentPassword');
+		const newPassword = formData.get('newPassword');
+		const confirmPassword = formData.get('confirmPassword');
+
+		// Validate required fields
+		if (
+			typeof currentPassword !== 'string' ||
+			typeof newPassword !== 'string' ||
+			typeof confirmPassword !== 'string' ||
+			!currentPassword ||
+			!newPassword ||
+			!confirmPassword
+		) {
+			return fail(400, { passwordError: 'All password fields are required.' });
+		}
+
+		// Validate new password length
+		if (newPassword.length < 8) {
+			return fail(400, { passwordError: 'New password must be at least 8 characters.' });
+		}
+
+		// Validate passwords match
+		if (newPassword !== confirmPassword) {
+			return fail(400, { passwordError: 'New passwords do not match.' });
+		}
+
+		try {
+			// Fetch user with password hash
+			const [userData] = await db
+				.select({ hashedPassword: user.hashedPassword })
+				.from(user)
+				.where(eq(user.id, locals.user.id))
+				.limit(1);
+
+			if (!userData || !userData.hashedPassword) {
+				return fail(400, { passwordError: 'Unable to verify current password.' });
+			}
+
+			// Verify current password
+			const argon2id = new Argon2id();
+			const validPassword = await argon2id.verify(userData.hashedPassword, currentPassword);
+
+			if (!validPassword) {
+				return fail(400, { passwordError: 'Current password is incorrect.' });
+			}
+
+			// Hash new password
+			const newHashedPassword = await argon2id.hash(newPassword);
+
+			// Update password in database
+			await db
+				.update(user)
+				.set({ hashedPassword: newHashedPassword })
+				.where(eq(user.id, locals.user.id));
+
+			return {
+				passwordSuccess: true,
+				passwordMessage: 'Password changed successfully!'
+			};
+		} catch (error) {
+			console.error('Error changing password:', error);
+			return fail(500, { passwordError: 'Failed to change password. Please try again.' });
 		}
 	}
 };

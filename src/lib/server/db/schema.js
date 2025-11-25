@@ -109,6 +109,14 @@ export const webhookEvent = pgTable('webhook_event', {
 	receivedAt: timestamp('received_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
+// PASSWORD RESET TOKENS
+export const passwordResetToken = pgTable('password_reset_token', {
+	id: text('id').primaryKey(), // Token hash
+	userId: text('user_id').notNull().references(() => user.id),
+	expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
 // EVENT STAFF ASSIGNMENTS (for tournament staff)
 export const eventStaff = pgTable('event_staff', {
 	id: uuid('id').defaultRandom().primaryKey(),

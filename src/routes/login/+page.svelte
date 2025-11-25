@@ -1,5 +1,11 @@
 <script>
+	import { page } from '$app/stores';
+	import '../../app.css';
+
 	export let form;
+
+	// Check for password reset success
+	$: resetSuccess = $page.url.searchParams.get('reset') === 'success';
 </script>
 
 <svelte:head>
@@ -20,6 +26,13 @@
 
 		<!-- Login Card -->
 		<div class="rounded-[var(--radius)] bg-gray-950 border shadow-lg p-8">
+			<!-- Password Reset Success Message -->
+			{#if resetSuccess}
+				<div class="rounded-[var(--radius)] bg-green-700 bg-opacity-10 border border-green-700 p-4 mb-6">
+					<p class="text-sm text-green-500">Your password has been reset successfully. Please sign in with your new password.</p>
+				</div>
+			{/if}
+
 			<form method="POST" class="space-y-6">
 				<!-- Email Field -->
 				<div>
@@ -38,9 +51,14 @@
 
 				<!-- Password Field -->
 				<div>
-					<label for="password" class="block text-sm font-medium text-gray-100 mb-2">
-						Password
-					</label>
+					<div class="flex items-center justify-between mb-2">
+						<label for="password" class="block text-sm font-medium text-gray-100">
+							Password
+						</label>
+						<a href="/forgot-password" class="text-sm text-gray-400 hover:text-white transition-colors">
+							Forgot password?
+						</a>
+					</div>
 					<input
 						type="password"
 						id="password"

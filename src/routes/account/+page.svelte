@@ -222,6 +222,99 @@
 									</button>
 								</div>
 							</form>
+
+							<!-- Change Password Section -->
+							<div class="mt-10 border-t border-gray-700 pt-10">
+								<h2 class="mb-6 text-2xl font-bold text-gray-100">Change Password</h2>
+
+								<!-- Password Change Success/Error Messages -->
+								{#if form?.passwordSuccess}
+									<div
+										class="mb-6 rounded-lg border border-green-400 bg-green-100 p-4 dark:border-green-800 dark:bg-green-900/20"
+									>
+										<p class="text-sm text-green-800 dark:text-green-400">{form.passwordMessage}</p>
+									</div>
+								{/if}
+
+								{#if form?.passwordError}
+									<div
+										class="mb-6 rounded-lg border border-red-700 bg-red-700/10 p-4"
+									>
+										<p class="text-sm text-red-700">{form.passwordError}</p>
+									</div>
+								{/if}
+
+								<form method="POST" action="?/changePassword" use:enhance class="space-y-6">
+									<!-- Current Password -->
+									<div>
+										<label
+											for="currentPassword"
+											class="block text-sm font-medium text-gray-100"
+										>
+											Current Password
+										</label>
+										<input
+											type="password"
+											id="currentPassword"
+											name="currentPassword"
+											required
+											class="mt-2 w-full rounded-md border border-gray-700 bg-gray-950 px-4 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
+											placeholder="Enter your current password"
+										/>
+									</div>
+
+									<!-- New Password -->
+									<div>
+										<label
+											for="newPassword"
+											class="block text-sm font-medium text-gray-100"
+										>
+											New Password
+										</label>
+										<input
+											type="password"
+											id="newPassword"
+											name="newPassword"
+											required
+											minlength="8"
+											class="mt-2 w-full rounded-md border border-gray-700 bg-gray-950 px-4 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
+											placeholder="Enter your new password"
+										/>
+										<p class="mt-1 text-xs text-gray-400">
+											Minimum 8 characters
+										</p>
+									</div>
+
+									<!-- Confirm New Password -->
+									<div>
+										<label
+											for="confirmPassword"
+											class="block text-sm font-medium text-gray-100"
+										>
+											Confirm New Password
+										</label>
+										<input
+											type="password"
+											id="confirmPassword"
+											name="confirmPassword"
+											required
+											minlength="8"
+											class="mt-2 w-full rounded-md border border-gray-700 bg-gray-950 px-4 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
+											placeholder="Confirm your new password"
+										/>
+									</div>
+
+									<!-- Submit Button -->
+									<div class="flex items-center justify-end gap-4 border-t border-gray-700 pt-6">
+										<button
+											type="submit"
+											class="rounded-md bg-white px-6 py-2 text-sm font-medium text-gray-900 transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-gray-300"
+										>
+											Update Password
+										</button>
+									</div>
+								</form>
+							</div>
 						</div>
 					{/if}
 
