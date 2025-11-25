@@ -143,6 +143,7 @@
 					alt={cardData.name}
 					class="w-[300px] h-auto block rounded-lg"
 					loading="lazy"
+					decoding="async"
 				/>
 			{:else}
 				<div class="w-[300px] h-[400px] bg-gray-800 rounded-lg flex flex-col items-center justify-center text-gray-500">
@@ -170,6 +171,8 @@
 						src={cardData.imageUrl}
 						alt={cardData.name}
 						class="w-full h-auto rounded-lg mb-4"
+						loading="lazy"
+						decoding="async"
 					/>
 				{:else}
 					<div class="w-full aspect-[3/4] bg-gray-800 rounded-lg flex flex-col items-center justify-center text-gray-500 mb-4">

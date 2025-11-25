@@ -366,32 +366,25 @@
 		style="left: {hoverPosition.x}px; top: {hoverPosition.y}px;"
 		transition:fade={{ duration: 150 }}
 	>
-		{#if cardData?.image}
-			<div class="relative">
-				{#if !imageLoaded}
-					<div
-						class="flex h-[350px] w-[250px] animate-pulse items-center justify-center rounded-lg border border-gray-700 bg-gray-800"
-					>
-						<span class="text-sm text-gray-500">Loading...</span>
-					</div>
-				{/if}
+		<div class="relative">
+			<!-- Subtle placeholder - shows immediately -->
+			<div
+				class="h-[350px] w-[250px] rounded-lg border border-gray-800/50 bg-gray-900/80 shadow-xl transition-opacity duration-200 {imageLoaded ? 'opacity-0' : 'opacity-100'}"
+			></div>
+			<!-- Actual card image - fades in when loaded -->
+			{#if cardData?.image}
 				<img
 					src={cardData.image}
 					alt={hoveredCard.name}
 					loading="lazy"
+					decoding="async"
 					on:load={handleImageLoad}
-					class="w-[250px] rounded-lg border border-gray-700 shadow-2xl transition-opacity duration-200 {imageLoaded
+					class="absolute top-0 left-0 w-[250px] rounded-lg border border-gray-700 shadow-2xl transition-opacity duration-200 {imageLoaded
 						? 'opacity-100'
-						: 'absolute top-0 left-0 opacity-0'}"
+						: 'opacity-0'}"
 				/>
-			</div>
-		{:else}
-			<div
-				class="flex h-[80px] w-[250px] items-center justify-center rounded-lg border border-gray-700 bg-gray-800 shadow-xl"
-			>
-				<span class="text-xs text-gray-500">Image not available</span>
-			</div>
-		{/if}
+			{/if}
+		</div>
 	</div>
 {/if}
 
@@ -433,6 +426,8 @@
 				<img
 					src={mobileCard.data.image}
 					alt="Card preview"
+					loading="lazy"
+					decoding="async"
 					class="h-auto w-full max-w-[350px] rounded-2xl border-[3px] border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.8)]"
 				/>
 			{:else}
