@@ -256,6 +256,15 @@
 			return `<pre><code>${escapeHtml(code)}</code></pre>`;
 		}
 
+		// Handle inline images (upload blocks)
+		if (node.type === 'upload') {
+			const media = node.value || node;
+			const imageUrl = media.url || '';
+			const altText = media.alt || media.filename || '';
+
+			return `<figure class="my-8"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(altText)}" class="rounded-lg" /></figure>`;
+		}
+
 		// Handle links
 		if (node.type === 'link' || node.type === 'autolink') {
 			const children = renderLexicalChildren(node.children);

@@ -2,6 +2,42 @@ import { error, redirect } from '@sveltejs/kit';
 import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow } from '$lib/server/articles/access.js';
 
+/**
+ * Recursively process Lexical content to convert relative URLs to absolute
+ */
+function processContentUrls(node) {
+	if (!node) return node;
+
+	// Handle upload nodes (inline images)
+	if (node.type === 'upload' && node.value) {
+		return {
+			...node,
+			value: {
+				...node.value,
+				url: payload.getAbsoluteUrl(node.value.url)
+			}
+		};
+	}
+
+	// Recursively process children
+	if (node.children && Array.isArray(node.children)) {
+		return {
+			...node,
+			children: node.children.map(child => processContentUrls(child))
+		};
+	}
+
+	// Handle root node
+	if (node.root) {
+		return {
+			...node,
+			root: processContentUrls(node.root)
+		};
+	}
+
+	return node;
+}
+
 export async function load({ params, locals }) {
 	const { slug } = params;
 
@@ -51,11 +87,14 @@ export async function load({ params, locals }) {
 		// Parse decklists
 		const decklists = payload.parseDecklists(post.decklists);
 
+		// Process content to convert relative URLs to absolute
+		const processedContent = processContentUrls(post.content);
+
 		const article = {
 			slug: post.slug,
 			title: post.title,
 			excerpt: post.excerpt,
-			content: post.content,
+			content: processedContent,
 			publishedAt: post.publishedDate,
 			accessMode: post.accessMode,
 			coverImage: coverImageUrl,
