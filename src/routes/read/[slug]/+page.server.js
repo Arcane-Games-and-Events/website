@@ -38,7 +38,7 @@ function processContentUrls(node) {
 	return node;
 }
 
-export async function load({ params, locals }) {
+export async function load({ params, locals, setHeaders }) {
 	const { slug } = params;
 
 	try {
@@ -127,6 +127,19 @@ export async function load({ params, locals }) {
 					'This is premium content. Please upgrade your account to access this article.'
 				);
 			}
+		}
+
+		// Cache free articles for 5 minutes at the edge
+		// Premium content is not cached publicly since it requires auth
+		if (!isPremium) {
+			setHeaders({
+				'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
+			});
+		} else {
+			// Private cache only for authenticated premium users
+			setHeaders({
+				'cache-control': 'private, max-age=0'
+			});
 		}
 
 		return {

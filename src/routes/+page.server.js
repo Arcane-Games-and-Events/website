@@ -4,7 +4,12 @@ import { db } from '$lib/server/db/index.js';
 import { event } from '$lib/server/db/schema.js';
 import { asc, gte } from 'drizzle-orm';
 
-export async function load() {
+export async function load({ setHeaders }) {
+	// Cache homepage data for 5 minutes, allow stale for 1 hour while revalidating
+	setHeaders({
+		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
+	});
+
 	try {
 		// Fetch latest 3 articles from Payload CMS
 		const posts = await payload.getPosts({ limit: 3 });
