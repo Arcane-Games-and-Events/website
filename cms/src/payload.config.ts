@@ -36,9 +36,10 @@ export default buildConfig({
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
-      max: 20, // Maximum pool size
-      idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-      connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection not available
+      max: 10, // Reduced pool size for Supabase pooler
+      idleTimeoutMillis: 20000, // Close idle clients after 20 seconds
+      connectionTimeoutMillis: 5000, // Return an error after 5 seconds if connection not available
+      allowExitOnIdle: true, // Allow pool to close when idle
       ssl: {
         rejectUnauthorized: false, // Accept self-signed certificates (for Supabase)
       },
