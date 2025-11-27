@@ -1,4 +1,5 @@
 <script>
+	import FadeImage from '$lib/components/FadeImage.svelte';
 	export let data;
 
 	// Social media icons and URLs
@@ -57,10 +58,11 @@
 		<div class="flex flex-col items-center text-center sm:flex-row sm:text-left sm:items-start gap-6">
 			<!-- Profile Picture -->
 			{#if data.author.profilePicture}
-				<img
+				<FadeImage
 					src={data.author.profilePicture}
 					alt={data.author.name}
 					class="h-32 w-32 rounded-full object-cover ring-4 ring-gray-700 sm:h-40 sm:w-40"
+					loading="eager"
 				/>
 			{:else}
 				<div class="flex h-32 w-32 items-center justify-center rounded-full bg-gray-700 ring-4 ring-gray-600 sm:h-40 sm:w-40">
@@ -139,11 +141,9 @@
 							<!-- Cover Image -->
 							{#if article.coverImage}
 								<div class="h-48 w-full overflow-hidden bg-gray-900">
-									<img
+									<FadeImage
 										src={article.coverImage}
 										alt={article.title}
-										loading="lazy"
-										decoding="async"
 										class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
 									/>
 								</div>

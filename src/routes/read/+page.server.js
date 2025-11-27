@@ -1,7 +1,12 @@
 import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow } from '$lib/server/articles/access.js';
 
-export async function load() {
+export async function load({ setHeaders }) {
+	// Cache articles list for 5 minutes, allow stale for 1 hour while revalidating
+	setHeaders({
+		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
+	});
+
 	try {
 		const posts = await payload.getPosts();
 

@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import FadeImage from '$lib/components/FadeImage.svelte';
 	export let data;
 
 	let currentSlide = 0;
@@ -185,11 +186,9 @@
 									<!-- Article Image -->
 									{#if article.coverImage}
 										<div class="relative h-48 overflow-hidden">
-											<img
+											<FadeImage
 												src={article.coverImage}
 												alt={article.title}
-												loading="lazy"
-												decoding="async"
 												class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
 											/>
 											<div class="absolute top-2 left-2">

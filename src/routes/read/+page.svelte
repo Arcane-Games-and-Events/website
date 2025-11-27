@@ -1,4 +1,5 @@
 <script>
+	import FadeImage from '$lib/components/FadeImage.svelte';
 	export let data;
 
 	// Get unique tags from all articles
@@ -55,10 +56,11 @@
 		<!-- Background Image with Overlay -->
 		{#if featuredArticle.coverImage}
 			<div class="absolute inset-0">
-				<img
+				<FadeImage
 					src={featuredArticle.coverImage}
 					alt={featuredArticle.title}
 					class="h-full w-full object-cover"
+					loading="eager"
 				/>
 				<div class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/30"></div>
 			</div>
@@ -273,11 +275,9 @@
 						<a href="/read/{article.slug}" class="block">
 							{#if article.coverImage}
 								<div class="h-48 w-full overflow-hidden bg-gray-900">
-									<img
+									<FadeImage
 										src={article.coverImage}
 										alt={article.title}
-										loading="lazy"
-										decoding="async"
 										class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
 									/>
 								</div>
