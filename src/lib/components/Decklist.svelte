@@ -41,10 +41,25 @@
 	// Process cards for new format
 	$: processedCards = isNewFormat
 		? {
-				arena: parsedCards.arenaCards || [],
+				arena: groupArenaCards(parsedCards.arenaCards || []),
 				deck: groupDeckCardsByColor(parsedCards.deckCards || [])
 			}
 		: null;
+
+	// Group arena cards by name to show quantities
+	function groupArenaCards(arenaCards) {
+		const grouped = {};
+		arenaCards.forEach((card) => {
+			const key = card.name;
+			const cardQty = card.quantity || 1;
+			if (!grouped[key]) {
+				grouped[key] = { ...card, quantity: cardQty };
+			} else {
+				grouped[key].quantity += cardQty;
+			}
+		});
+		return Object.values(grouped);
+	}
 
 	// Group cards by type (legacy format)
 	$: groupedCards = isNewFormat
@@ -113,7 +128,7 @@
 
 	// Calculate total cards
 	$: totalCards = isNewFormat
-		? (parsedCards?.arenaCards?.length || 0) +
+		? (parsedCards?.arenaCards?.reduce((sum, card) => sum + (card.quantity || 1), 0) || 0) +
 			(parsedCards?.deckCards?.reduce((sum, card) => sum + card.quantity, 0) || 0)
 		: (decklist.cards || []).reduce((sum, card) => sum + card.quantity, 0);
 
@@ -221,13 +236,17 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<div class="relative my-6 rounded-lg border border-gray-700 bg-gray-950 p-4 shadow-md">
+<div
+	class="relative my-8 overflow-hidden rounded-2xl border border-white/10 bg-gray-900/50 shadow-xl"
+>
 	<!-- Header with custom deck name and creator -->
 	{#if isNewFormat}
 		{#if deckName || hero || format}
-			<div class="mb-3 border-b border-gray-700 pb-2">
+			<div
+				class="border-b border-white/10 bg-gradient-to-r from-blue-600/20 via-purple-600/10 to-transparent px-5 py-3"
+			>
 				{#if deckName}
-					<h3 class="text-lg leading-tight font-bold text-gray-100">
+					<h3 class="text-base leading-tight font-bold text-white">
 						{deckName}
 						{#if creator}
 							<span class="ml-2 text-sm font-normal text-gray-400">by {creator}</span>
@@ -235,122 +254,161 @@
 					</h3>
 				{/if}
 				{#if hero || format}
-					<div class="mt-1 flex items-center gap-2 text-xs text-gray-400">
-						{#if hero}<span class="font-semibold text-gray-300">{hero}</span>{/if}
-						{#if hero && format}<span class="text-gray-600">|</span>{/if}
-						{#if format}<span class="italic">{format}</span>{/if}
+					<div class="mt-1 flex items-center gap-2 text-xs">
+						{#if hero}
+							<span class="font-medium text-gray-300">{hero}</span>
+						{/if}
+						{#if hero && format}
+							<span class="text-gray-600">·</span>
+						{/if}
+						{#if format}
+							<span class="text-blue-400">{format}</span>
+						{/if}
 					</div>
 				{/if}
 			</div>
 		{/if}
 	{:else if decklist.title}
-		<h3 class="mb-3 border-b border-gray-700 pb-2 text-lg font-bold text-gray-100">
-			{decklist.title}
-		</h3>
+		<div
+			class="border-b border-white/10 bg-gradient-to-r from-blue-600/20 via-purple-600/10 to-transparent px-5 py-3"
+		>
+			<h3 class="text-base font-bold text-white">
+				{decklist.title}
+			</h3>
+		</div>
 	{/if}
 
-	{#if isNewFormat}
-		<!-- New Format: Arena Cards as inline list -->
-		{#if processedCards.arena && processedCards.arena.length > 0}
-			<div class="mb-3">
-				<span class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Arena: </span>
-				<span class="text-sm text-gray-300">
-					{#each processedCards.arena as card, i}
-						<button
-							type="button"
-							class="font-inherit inline cursor-pointer border-0 bg-transparent p-0 text-white transition-colors duration-150 hover:text-blue-400"
-							on:mouseenter={(e) => handleCardHover(e, card.name, card.color)}
-							on:mouseleave={handleCardLeave}
-							on:click={(e) => handleCardTap(e, card.name, card.color)}>{card.name}</button
-						>{#if i < processedCards.arena.length - 1}<span class="mx-1 text-gray-600">|</span>{/if}
-					{/each}
-				</span>
+	<div class="p-5">
+		{#if isNewFormat}
+			<!-- New Format: Arena Cards as inline list -->
+			{#if processedCards.arena && processedCards.arena.length > 0}
+				<div class="mb-5 rounded-xl bg-white/5 p-4">
+					<div class="mb-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">Arena</div>
+					<div class="flex flex-wrap gap-2">
+						{#each processedCards.arena as card}
+							<button
+								type="button"
+								class="font-inherit cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white transition-all duration-150 hover:border-yellow-500/50 hover:bg-yellow-500/10 hover:text-yellow-300"
+								on:mouseenter={(e) => handleCardHover(e, card.name, card.color)}
+								on:mouseleave={handleCardLeave}
+								on:click={(e) => handleCardTap(e, card.name, card.color)}
+								>{#if card.quantity > 1}<span class="mr-1 text-gray-400">{card.quantity}×</span
+									>{/if}{card.name}</button
+							>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			<!-- Deck Cards grouped by color -->
+			<div class="space-y-5">
+				{#each colorOrder as color}
+					{#if processedCards.deck[color] && processedCards.deck[color].length > 0}
+						<div>
+							<!-- Full-width color header with fading gradient -->
+							<div
+								class="-mx-5 mb-3 px-5 py-2 bg-gradient-to-r {color === 'red'
+									? 'from-red-500/25 via-red-500/10 to-transparent'
+									: color === 'yellow'
+										? 'from-yellow-500/25 via-yellow-500/10 to-transparent'
+										: color === 'blue'
+											? 'from-blue-500/25 via-blue-500/10 to-transparent'
+											: 'from-gray-500/25 via-gray-500/10 to-transparent'}"
+							>
+								<span
+									class="text-sm font-semibold {color === 'red'
+										? 'text-red-400'
+										: color === 'yellow'
+											? 'text-yellow-300'
+											: color === 'blue'
+												? 'text-blue-400'
+												: 'text-gray-400'}"
+								>
+									{colorLabels[color]}
+									<span class="ml-2 font-normal text-gray-400">
+										— <span class="font-medium text-white/70">{processedCards.deck[color].reduce((sum, c) => sum + c.quantity, 0)}</span> cards
+									</span>
+								</span>
+							</div>
+							<div class="grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2 md:grid-cols-3">
+								{#each processedCards.deck[color] as card}
+									<div class="flex min-w-0 items-baseline gap-2">
+										<span class="w-5 shrink-0 text-right text-xs font-medium text-gray-500"
+											>{card.quantity}×</span
+										>
+										<button
+											type="button"
+											class="font-inherit cursor-pointer truncate border-0 bg-transparent p-0 text-left text-gray-300 transition-colors duration-150 hover:text-yellow-400"
+											on:mouseenter={(e) => handleCardHover(e, card.name, card.color)}
+											on:mouseleave={handleCardLeave}
+											on:click={(e) => handleCardTap(e, card.name, card.color)}
+											title={card.name}>{card.name}</button
+										>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+				{/each}
+			</div>
+		{:else}
+			<!-- Legacy Format: Cards grouped by type in compact grid -->
+			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+				{#each sortedTypes as type}
+					{#if groupedCards[type] && groupedCards[type].length > 0}
+						<div class="min-w-0">
+							<h4 class="mb-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">
+								{typeLabels[type] || type}
+							</h4>
+							<div class="space-y-1 text-sm">
+								{#each groupedCards[type] as card}
+									<div class="flex items-baseline gap-2">
+										<span class="w-5 shrink-0 text-right text-xs font-medium text-gray-500"
+											>{card.quantity}×</span
+										>
+										<a
+											href={card.url ||
+												`https://cards.fabtcg.com/?search=${encodeURIComponent(card.id || card.name)}`}
+											target="_blank"
+											rel="noopener noreferrer"
+											data-card-name={card.id || card.name}
+											class="cursor-pointer truncate text-gray-300 no-underline transition-colors duration-150 hover:text-yellow-400"
+											title={card.name}>{card.name}</a
+										>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+				{/each}
 			</div>
 		{/if}
+	</div>
 
-		<!-- Deck Cards grouped by color in compact grid -->
-		<div class="space-y-2">
-			{#each colorOrder as color}
-				{#if processedCards.deck[color] && processedCards.deck[color].length > 0}
-					<div>
-						<div class="mb-1 flex items-center gap-2">
-							<span
-								class="rounded px-1.5 py-0.5 text-xs font-semibold tracking-wider uppercase {color ===
-								'red'
-									? 'bg-red-500/20 text-red-400'
-									: color === 'yellow'
-										? 'bg-yellow-500/20 text-yellow-300'
-										: color === 'blue'
-											? 'bg-blue-500/20 text-blue-400'
-											: 'bg-gray-500/20 text-gray-400'}">{colorLabels[color]}</span
-							>
-							<span class="text-xs text-gray-500"
-								>({processedCards.deck[color].reduce((sum, c) => sum + c.quantity, 0)})</span
-							>
-						</div>
-						<div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-sm md:grid-cols-3 lg:grid-cols-4">
-							{#each processedCards.deck[color] as card}
-								<div class="flex min-w-0 items-baseline gap-1">
-									<span class="shrink-0 text-xs text-gray-500">{card.quantity}x</span>
-									<button
-										type="button"
-										class="font-inherit cursor-pointer truncate border-0 bg-transparent p-0 text-left text-gray-200 transition-colors duration-150 hover:text-blue-400"
-										on:mouseenter={(e) => handleCardHover(e, card.name, card.color)}
-										on:mouseleave={handleCardLeave}
-										on:click={(e) => handleCardTap(e, card.name, card.color)}
-										title={card.name}>{card.name}</button
-									>
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/if}
-			{/each}
-		</div>
-	{:else}
-		<!-- Legacy Format: Cards grouped by type in compact grid -->
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-			{#each sortedTypes as type}
-				{#if groupedCards[type] && groupedCards[type].length > 0}
-					<div class="min-w-0">
-						<h4 class="mb-1 text-xs font-semibold tracking-wider text-gray-500 uppercase">
-							{typeLabels[type] || type}
-						</h4>
-						<div class="space-y-0.5 text-sm">
-							{#each groupedCards[type] as card}
-								<div class="flex items-baseline gap-1">
-									<span class="shrink-0 text-xs text-gray-500">{card.quantity}x</span>
-									<a
-										href={card.url ||
-											`https://cards.fabtcg.com/?search=${encodeURIComponent(card.id || card.name)}`}
-										target="_blank"
-										rel="noopener noreferrer"
-										data-card-name={card.id || card.name}
-										class="cursor-pointer truncate text-gray-200 no-underline transition-colors duration-150 hover:text-blue-400"
-										title={card.name}>{card.name}</a
-									>
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/if}
-			{/each}
-		</div>
-	{/if}
-
-	{#if totalCards > 0}
+	<!-- Footer -->
+	{#if totalCards > 0 || fabraryUrl}
 		<div
-			class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-gray-800 pt-2 text-xs"
+			class="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-gray-800/30 px-5 py-3"
 		>
-			<span class="text-gray-400">{totalCards} cards</span>
+			<span class="text-sm text-gray-400">
+				<span class="font-semibold text-white">{totalCards}</span> cards
+			</span>
 			{#if fabraryUrl}
 				<a
 					href={fabraryUrl}
 					target="_blank"
 					rel="noopener noreferrer"
-					class="font-medium text-blue-400 no-underline transition-colors duration-150 hover:text-blue-300"
+					class="inline-flex items-center gap-1.5 text-sm font-medium text-yellow-400 no-underline transition-colors duration-150 hover:text-yellow-300"
 				>
-					View on FaBrary →
+					View on FaBrary
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+						/>
+					</svg>
 				</a>
 			{/if}
 		</div>
@@ -369,7 +427,9 @@
 		<div class="relative">
 			<!-- Subtle placeholder - shows immediately -->
 			<div
-				class="h-[350px] w-[250px] rounded-lg border border-gray-800/50 bg-gray-900/80 shadow-xl transition-opacity duration-200 {imageLoaded ? 'opacity-0' : 'opacity-100'}"
+				class="h-[350px] w-[250px] rounded-xl border border-white/10 bg-gray-900/90 shadow-2xl transition-opacity duration-200 {imageLoaded
+					? 'opacity-0'
+					: 'opacity-100'}"
 			></div>
 			<!-- Actual card image - fades in when loaded -->
 			{#if cardData?.image}
@@ -379,7 +439,7 @@
 					loading="lazy"
 					decoding="async"
 					on:load={handleImageLoad}
-					class="absolute top-0 left-0 w-[250px] rounded-lg border border-gray-700 shadow-2xl transition-opacity duration-200 {imageLoaded
+					class="absolute top-0 left-0 w-[250px] rounded-xl border border-white/20 shadow-2xl transition-opacity duration-200 {imageLoaded
 						? 'opacity-100'
 						: 'opacity-0'}"
 				/>
@@ -391,7 +451,7 @@
 <!-- Mobile Card Modal (Tap) -->
 {#if showMobileModal && mobileCard}
 	<div
-		class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-5 backdrop-blur-sm"
+		class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-5 backdrop-blur-md"
 		role="button"
 		tabindex="0"
 		on:click={closeMobileModal}
@@ -409,11 +469,11 @@
 			transition:scale={{ duration: 200, start: 0.9 }}
 		>
 			<button
-				class="absolute -top-3 -right-3 z-[1] flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-0 bg-white/95 text-black shadow-[0_4px_12px_rgba(0,0,0,0.4)] transition-all duration-200 hover:scale-110 hover:bg-white active:scale-95"
+				class="absolute -top-3 -right-3 z-[1] flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-gray-900 text-white shadow-xl transition-all duration-200 hover:bg-gray-800 active:scale-95"
 				on:click={closeMobileModal}
 				aria-label="Close card preview"
 			>
-				<svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"
@@ -428,20 +488,20 @@
 					alt="Card preview"
 					loading="lazy"
 					decoding="async"
-					class="h-auto w-full max-w-[350px] rounded-2xl border-[3px] border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.8)]"
+					class="h-auto w-full max-w-[350px] rounded-2xl border-2 border-white/20 shadow-2xl"
 				/>
 			{:else}
 				<div
-					class="flex h-[490px] w-[350px] items-center justify-center rounded-2xl border-[3px] border-white/20 bg-gray-800"
+					class="flex h-[490px] w-[350px] items-center justify-center rounded-2xl border-2 border-white/20 bg-gray-900"
 				>
 					<span class="text-gray-500">Image not available</span>
 				</div>
 			{/if}
 			<button
-				class="mt-4 flex w-full max-w-[350px] cursor-pointer items-center justify-center gap-2 rounded-lg border-0 bg-white/95 p-3 px-6 text-[15px] font-semibold text-black shadow-[0_4px_12px_rgba(0,0,0,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_6px_16px_rgba(0,0,0,0.4)] active:translate-y-0"
+				class="mt-4 flex w-full max-w-[350px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/20 bg-white p-3 px-6 text-sm font-semibold text-gray-900 shadow-xl transition-all duration-200 hover:bg-gray-100 active:scale-[0.98]"
 				on:click={navigateToCard}
 			>
-				<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"
@@ -451,7 +511,7 @@
 				</svg>
 				View Full Card
 			</button>
-			<p class="mt-2 text-center text-white/50" style="font-size: 10px; line-height: 1.2;">Tap outside to close</p>
+			<p class="mt-3 text-center text-xs text-gray-500">Tap outside to close</p>
 		</div>
 	</div>
 {/if}

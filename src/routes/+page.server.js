@@ -21,6 +21,21 @@ export async function load({ setHeaders }) {
 				coverImageUrl = payload.getAbsoluteUrl(post.coverImage.url);
 			}
 
+			// Extract author information
+			let author = null;
+			if (post.author && typeof post.author === 'object') {
+				let profilePictureUrl = null;
+				if (post.author.profilePicture && typeof post.author.profilePicture === 'object') {
+					profilePictureUrl = payload.getAbsoluteUrl(post.author.profilePicture.url);
+				}
+
+				author = {
+					name: post.author.name,
+					slug: post.author.slug,
+					profilePicture: profilePictureUrl
+				};
+			}
+
 			return {
 				slug: post.slug,
 				title: post.title,
@@ -28,6 +43,8 @@ export async function load({ setHeaders }) {
 				publishedAt: post.publishedDate,
 				accessMode: post.accessMode,
 				coverImage: coverImageUrl,
+				author,
+				readTime: post.readTime || null,
 				isPremium: isPremiumNow({
 					accessMode: post.accessMode,
 					publishedAt: post.publishedDate

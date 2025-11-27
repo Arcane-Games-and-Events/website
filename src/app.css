@@ -4,6 +4,8 @@
 
 @theme {
 	--radius: 0.5rem;
+	--font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+	--font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
 }
 
 html,
@@ -13,14 +15,20 @@ body {
 
 body {
 	@apply bg-gray-950 text-gray-100;
+	font-family: var(--font-sans);
 	font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Headings use Space Grotesk */
+h1, h2, h3, h4, h5, h6 {
+	font-family: var(--font-display);
 }
 
 /* Article prose styles */
 .prose a.card-link {
-	@apply text-white underline cursor-pointer font-medium;
+	@apply text-yellow-600 underline cursor-pointer font-medium;
 }
 
 .prose a.card-link:hover {
-	@apply text-blue-500;
+	@apply text-yellow-500;
 }

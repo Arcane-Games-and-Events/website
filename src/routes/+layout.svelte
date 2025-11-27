@@ -2,6 +2,7 @@
 	import '../app.css';
 	import { page } from '$app/stores';
 	import Sidebar from '$lib/components/Sidebar.svelte';
+	import Footer from '$lib/components/Footer.svelte';
 	export let data;
 
 	// Auth pages that should not show the sidebar
@@ -13,10 +14,11 @@
 	<slot />
 {:else}
 	<Sidebar user={data.user}>
-		<main class="py-10">
-			<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+		<div class="flex min-h-screen flex-col bg-gray-950">
+			<main class="flex-1 pb-16">
 				<slot />
-			</div>
-		</main>
+			</main>
+			<Footer />
+		</div>
 	</Sidebar>
 {/if}

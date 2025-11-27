@@ -33,7 +33,7 @@
 </script>
 
 <svelte:head>
-	<title>Order Details - Arcane Games and Events</title>
+	<title>Order Details - AGE</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gray-950 py-8">

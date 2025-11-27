@@ -56,6 +56,7 @@ export async function load({ setHeaders }) {
 				coverImage: coverImageUrl,
 				author,
 				tags,
+				readTime: post.readTime || null,
 				isPremium: isPremiumNow({
 					accessMode: post.accessMode,
 					publishedAt: post.publishedDate

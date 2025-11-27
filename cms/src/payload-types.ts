@@ -225,6 +225,10 @@ export interface Post {
   createdBy: number | User;
   tags?: (number | Tag)[] | null;
   /**
+   * Estimated read time in minutes (auto-calculated)
+   */
+  readTime?: number | null;
+  /**
    * Add FaB decklists to embed in the article. Use [DECKLIST:0], [DECKLIST:1], etc. in the content to place them.
    */
   decklists?:
@@ -438,6 +442,7 @@ export interface PostsSelect<T extends boolean = true> {
   author?: T;
   createdBy?: T;
   tags?: T;
+  readTime?: T;
   decklists?:
     | T
     | {

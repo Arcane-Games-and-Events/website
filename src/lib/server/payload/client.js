@@ -150,6 +150,43 @@ class PayloadClient {
 	}
 
 	/**
+	 * Get tag by slug
+	 * @param {string} slug - Tag slug
+	 * @returns {Promise<Object|null>}
+	 */
+	async getTagBySlug(slug) {
+		const params = {
+			depth: 1,
+			where: {
+				slug: { equals: slug },
+			},
+			limit: 1,
+		};
+
+		const response = await this.get('/api/tags', params);
+		const tags = response.docs || [];
+		return tags.length > 0 ? tags[0] : null;
+	}
+
+	/**
+	 * Get posts by tag
+	 * @param {string} tagId - Tag ID
+	 * @returns {Promise<Array>}
+	 */
+	async getPostsByTag(tagId) {
+		const params = {
+			depth: 2,
+			where: {
+				tags: { contains: tagId },
+				_status: { equals: 'published' },
+			},
+		};
+
+		const response = await this.get('/api/posts', params);
+		return response.docs || [];
+	}
+
+	/**
 	 * Convert relative URL to absolute URL
 	 * @param {string} url - Relative URL
 	 * @returns {string} - Absolute URL

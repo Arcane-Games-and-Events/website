@@ -107,16 +107,6 @@
 		window.open(url, '_blank', 'width=550,height=420');
 	}
 
-	function shareFacebook() {
-		const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`;
-		window.open(url, '_blank', 'width=550,height=420');
-	}
-
-	function shareLinkedIn() {
-		const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`;
-		window.open(url, '_blank', 'width=550,height=420');
-	}
-
 	/**
 	 * Process content blocks and replace [DECKLIST:n] markers with actual decklists
 	 */
@@ -412,185 +402,198 @@
 </script>
 
 <svelte:head>
-	<title>{data.article.title} - Arcane Games and Events</title>
+	<title>{data.article.title} - AGE</title>
 	{#if data.article.excerpt}
 		<meta name="description" content={data.article.excerpt} />
 	{/if}
 </svelte:head>
 
-<!-- Hero Section with Gradient Overlay -->
-<div class="relative min-h-[500px] w-full overflow-hidden bg-gradient-to-br from-orange-900/20 via-gray-900 to-black">
-	{#if data.article.coverImage}
-		<div class="absolute inset-0">
-			<img
-				src={data.article.coverImage}
-				alt={data.article.title}
-				class="h-full w-full object-cover opacity-40"
-			/>
-			<div class="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/60"></div>
-		</div>
-	{/if}
-
-	<!-- Hero Content -->
-	<div class="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-		<!-- Back Link -->
-		<div class="mb-8">
-			<a
-				href="/read"
-				class="inline-flex items-center gap-2 text-sm font-medium text-gray-400 transition-colors hover:text-white"
-			>
-				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+<div class="min-h-screen">
+	<!-- Header Bar -->
+	<div class="border-b border-white/10 bg-gray-900/50">
+		<div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+			<a href="/read" class="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
 				</svg>
-				Back to Articles
+				Back to all articles
 			</a>
 		</div>
+	</div>
 
-		<!-- Tags & Premium Badge -->
-		<div class="mb-6 flex flex-wrap items-center gap-3">
-			{#if data.isPremium}
-				<span class="rounded-full bg-orange-500 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white">
-					Premium
-				</span>
+	<!-- Hero Section with Cover Image and Title Overlay -->
+	<header class="relative">
+		<!-- Cover Image Container - Taller on mobile for better visual impact -->
+		<div class="relative aspect-[3/4] w-full overflow-hidden bg-gray-900 sm:aspect-[16/9] lg:aspect-[21/9]">
+			{#if data.article.coverImage}
+				<img
+					src={data.article.coverImage}
+					alt={data.article.title}
+					class="h-full w-full object-cover"
+					loading="eager"
+				/>
+				<!-- Gradient Overlay for text readability - stronger on mobile -->
+				<div class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/20 sm:from-black/90 sm:via-black/50 sm:to-transparent"></div>
+			{:else}
+				<!-- Fallback gradient when no cover image -->
+				<div class="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900"></div>
 			{/if}
-			{#if data.article.tags && data.article.tags.length > 0}
-				{#each data.article.tags as tag}
-					<span class="rounded-md border border-gray-700 bg-gray-800/50 px-3 py-1 text-xs font-medium text-gray-300 backdrop-blur-sm">
-						{tag.name}
-					</span>
-				{/each}
-			{/if}
-		</div>
 
-		<!-- Title -->
-		<h1 class="mb-6 max-w-4xl text-4xl font-bold leading-tight text-white drop-shadow-lg sm:text-5xl md:text-6xl">
-			{data.article.title}
-		</h1>
-
-		<!-- Author & Date -->
-		<div class="flex items-center gap-4">
-			{#if data.article.author}
-				<div class="flex items-center gap-3">
-					{#if data.article.author.profilePicture}
-						<img
-							src={data.article.author.profilePicture}
-							alt={data.article.author.name}
-							class="h-12 w-12 rounded-full object-cover ring-2 ring-white/20"
-						/>
-					{:else}
-						<div class="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 ring-2 ring-white/20">
-							<span class="text-base font-semibold text-white">
-								{data.article.author.name.charAt(0).toUpperCase()}
+			<!-- Text Content Overlay -->
+			<div class="absolute inset-0 flex items-end">
+				<div class="w-full px-4 pb-6 sm:px-6 sm:pb-12 lg:px-8 lg:pb-16">
+					<div class="mx-auto max-w-7xl">
+						<!-- Tags & Premium Badge -->
+						<div class="mb-3 flex flex-wrap items-center gap-2 sm:mb-4 sm:gap-3">
+							{#if data.article.tags && data.article.tags.length > 0}
+								<a
+									href="/read/tag/{data.article.tags[0].slug}"
+									class="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-400 backdrop-blur-sm hover:bg-blue-500/30 hover:text-blue-300 transition-colors sm:bg-transparent sm:px-0 sm:py-0 sm:text-sm"
+								>
+									{data.article.tags[0].name}
+								</a>
+							{/if}
+							<span class="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold backdrop-blur-sm sm:bg-transparent sm:px-0 sm:py-0 sm:text-sm {data.isPremium ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-gray-200 sm:text-blue-400'}">
+								{#if data.isPremium}
+									<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 24 24">
+										<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+									</svg>
+									Premium
+								{:else}
+									Free
+								{/if}
 							</span>
 						</div>
-					{/if}
-					<div>
-						<div class="text-sm font-semibold text-white">
-							{data.article.author.name}
-						</div>
-						{#if data.article.publishedAt}
-							<time class="text-sm text-gray-400" datetime={data.article.publishedAt}>
-								{new Date(data.article.publishedAt).toLocaleDateString('en-US', {
-									year: 'numeric',
-									month: 'long',
-									day: 'numeric'
-								})}
-								· 5 min read
-							</time>
-						{/if}
+
+						<!-- Title - Better sizing for mobile -->
+						<h1 class="max-w-4xl text-2xl font-bold leading-tight tracking-tight text-white drop-shadow-lg sm:text-3xl md:text-4xl lg:text-5xl">
+							{data.article.title}
+						</h1>
 					</div>
 				</div>
-			{:else if data.article.publishedAt}
-				<time class="text-sm text-gray-400" datetime={data.article.publishedAt}>
-					{new Date(data.article.publishedAt).toLocaleDateString('en-US', {
-						year: 'numeric',
-						month: 'long',
-						day: 'numeric'
-					})}
-				</time>
-			{/if}
+			</div>
 		</div>
-	</div>
-</div>
+	</header>
 
-<!-- Main Content Area with Sidebar -->
-<div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-	<div class="grid grid-cols-1 gap-12 lg:grid-cols-[220px_1fr]">
-		<!-- Left Sidebar - Table of Contents & Share -->
-		<aside class="hidden lg:block">
-			<div class="sticky top-8 space-y-8">
-				<!-- Table of Contents -->
-				{#if tableOfContents.length > 0}
-					<nav>
-						<h2 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">On this page</h2>
-						<div class="space-y-1.5 border-l border-gray-800 pl-4">
-							{#each tableOfContents as heading}
-								<a
-									href="#{heading.id}"
-									class="block text-xs leading-relaxed transition-colors {activeSection === heading.id ? 'font-medium text-orange-400' : 'text-gray-500 hover:text-gray-300'}"
-									style="padding-left: {(heading.level - 2) * 10}px"
-								>
-									{heading.text}
-								</a>
-							{/each}
-						</div>
-					</nav>
-				{/if}
+	<!-- Author Byline Section -->
+	<div class="border-b border-white/10 bg-gray-900/30">
+		<div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+			<!-- Mobile Layout: Stack author and meta vertically -->
+			<div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+				<!-- Author Info -->
+				<div class="flex items-center justify-between sm:justify-start sm:gap-4">
+					{#if data.article.author}
+						<a href="/read/author/{data.article.author.slug}" class="flex items-center gap-3 group">
+							{#if data.article.author.profilePicture}
+								<img
+									src={data.article.author.profilePicture}
+									alt={data.article.author.name}
+									class="h-11 w-11 rounded-full object-cover ring-2 ring-white/10 transition-all group-hover:ring-blue-400/50 sm:h-10 sm:w-10"
+								/>
+							{:else}
+								<div class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 ring-2 ring-white/10 transition-all group-hover:ring-blue-400/50 sm:h-10 sm:w-10">
+									<span class="text-sm font-bold text-white">
+										{data.article.author.name.charAt(0).toUpperCase()}
+									</span>
+								</div>
+							{/if}
+							<div>
+								<span class="block text-sm font-semibold text-white group-hover:text-blue-400 transition-colors">
+									{data.article.author.name}
+								</span>
+								<!-- Date and read time on mobile only - below author name -->
+								<div class="flex items-center gap-2 text-xs text-gray-400 sm:hidden">
+									{#if data.article.publishedAt}
+										<time datetime={data.article.publishedAt}>
+											{new Date(data.article.publishedAt).toLocaleDateString('en-US', {
+												month: 'short',
+												day: 'numeric',
+												year: 'numeric'
+											})}
+										</time>
+									{/if}
+									{#if data.article.readTime}
+										<span class="text-gray-600">·</span>
+										<span>{data.article.readTime} min read</span>
+									{/if}
+								</div>
+							</div>
+						</a>
+					{/if}
 
-				<!-- Share Buttons -->
-				<div>
-					<h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Share</h3>
-					<div class="flex gap-2">
+					<!-- Share Buttons - Visible on mobile inline with author -->
+					<div class="flex items-center gap-1 sm:hidden">
 						<button
 							on:click={copyLink}
-							class="flex h-9 w-9 items-center justify-center rounded-md border border-gray-800 bg-gray-900/50 text-gray-400 transition-all hover:border-gray-700 hover:bg-gray-800 hover:text-white"
+							class="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
 							title="Copy link"
-							aria-label="Copy link"
 						>
 							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
 							</svg>
 						</button>
 						<button
-							on:click={shareLinkedIn}
-							class="flex h-9 w-9 items-center justify-center rounded-md border border-gray-800 bg-gray-900/50 text-gray-400 transition-all hover:border-gray-700 hover:bg-gray-800 hover:text-white"
-							title="Share on LinkedIn"
-							aria-label="Share on LinkedIn"
-						>
-							<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-								<path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-							</svg>
-						</button>
-						<button
 							on:click={shareTwitter}
-							class="flex h-9 w-9 items-center justify-center rounded-md border border-gray-800 bg-gray-900/50 text-gray-400 transition-all hover:border-gray-700 hover:bg-gray-800 hover:text-white"
+							class="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
 							title="Share on Twitter"
-							aria-label="Share on Twitter"
 						>
 							<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
 								<path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
 							</svg>
 						</button>
+					</div>
+				</div>
+
+				<!-- Date, read time, and share - Desktop only -->
+				<div class="hidden sm:flex sm:items-center sm:gap-4">
+					{#if data.article.publishedAt}
+						<time class="text-sm text-gray-400" datetime={data.article.publishedAt}>
+							{new Date(data.article.publishedAt).toLocaleDateString('en-US', {
+								year: 'numeric',
+								month: 'long',
+								day: 'numeric'
+							})}
+						</time>
+					{/if}
+					{#if data.article.readTime}
+						<span class="text-gray-500">·</span>
+						<span class="text-sm text-gray-400">{data.article.readTime} min read</span>
+					{/if}
+
+					<!-- Share Buttons - Desktop -->
+					<div class="flex items-center gap-2 ml-4 pl-4 border-l border-white/10">
+						<span class="text-xs text-gray-500 uppercase tracking-wider mr-1">Share</span>
 						<button
-							on:click={shareFacebook}
-							class="flex h-9 w-9 items-center justify-center rounded-md border border-gray-800 bg-gray-900/50 text-gray-400 transition-all hover:border-gray-700 hover:bg-gray-800 hover:text-white"
-							title="Share on Facebook"
-							aria-label="Share on Facebook"
+							on:click={copyLink}
+							class="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+							title="Copy link"
+						>
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+							</svg>
+						</button>
+						<button
+							on:click={shareTwitter}
+							class="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+							title="Share on Twitter"
 						>
 							<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-								<path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+								<path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
 							</svg>
 						</button>
 					</div>
 				</div>
 			</div>
-		</aside>
+		</div>
+	</div>
 
-		<!-- Main Content -->
-		<article class="min-w-0">
-			<!-- Constrained readable width for optimal line length -->
-			<div class="mx-auto max-w-[680px]">
-				<div class="prose prose-lg prose-invert max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-white prose-headings:scroll-mt-24 prose-h1:text-4xl prose-h1:leading-tight prose-h2:mt-16 prose-h2:mb-6 prose-h2:text-3xl prose-h2:leading-snug prose-h3:mt-12 prose-h3:mb-4 prose-h3:text-2xl prose-h3:leading-snug prose-h4:mt-8 prose-h4:mb-3 prose-h4:text-xl prose-p:mb-6 prose-p:text-[19px] prose-p:leading-[1.7] prose-p:text-gray-300 prose-a:font-medium prose-a:text-orange-400 prose-a:no-underline prose-a:transition-colors hover:prose-a:text-orange-300 hover:prose-a:underline prose-strong:font-semibold prose-strong:text-white prose-em:text-gray-200 prose-code:rounded prose-code:bg-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-[0.9em] prose-code:text-orange-400 prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-lg prose-pre:border prose-pre:border-gray-800 prose-pre:bg-gray-900 prose-pre:leading-relaxed prose-blockquote:border-l-4 prose-blockquote:border-orange-500 prose-blockquote:bg-gray-900/30 prose-blockquote:py-4 prose-blockquote:pl-6 prose-blockquote:not-italic prose-blockquote:text-gray-300 prose-ul:my-6 prose-ul:text-gray-300 prose-ol:my-6 prose-ol:text-gray-300 prose-li:my-2 prose-li:leading-[1.7] prose-li:marker:text-orange-500 prose-img:rounded-lg prose-img:border prose-img:border-gray-800">
+	<!-- Main Content Area with Sidebar -->
+	<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
+		<div class="lg:grid lg:grid-cols-[5fr_3fr] lg:gap-12">
+			<!-- Main Content -->
+			<article class="min-w-0">
+				<!-- Article content using Tailwind Typography - Optimized for mobile readability -->
+				<div class="prose prose-invert prose-base mx-auto max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-headings:scroll-mt-24 prose-h2:mt-8 prose-h2:mb-3 prose-h2:text-xl prose-h3:mt-6 prose-h3:mb-2 prose-h3:text-lg prose-h4:mt-5 prose-h4:mb-2 prose-h4:text-base prose-p:text-gray-300 prose-p:leading-relaxed prose-a:text-yellow-600 prose-a:no-underline hover:prose-a:text-yellow-500 hover:prose-a:underline prose-strong:text-white prose-em:text-gray-200 prose-code:rounded prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-orange-400 prose-code:text-sm prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-xl prose-pre:border prose-pre:border-white/10 prose-pre:bg-gray-900 prose-blockquote:rounded-r-lg prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:bg-blue-500/10 prose-blockquote:not-italic prose-blockquote:pl-4 prose-li:marker:text-blue-500 prose-img:rounded-xl prose-hr:border-white/10 sm:prose-lg sm:max-w-[34em] sm:prose-h2:mt-10 sm:prose-h2:mb-4 sm:prose-h2:text-3xl sm:prose-h3:mt-8 sm:prose-h3:mb-3 sm:prose-h3:text-2xl sm:prose-h4:mt-6 sm:prose-h4:mb-3 sm:prose-h4:text-xl lg:prose-xl">
 					{#if data.article.content}
 						{#if renderBlocks.length > 0}
 							{#each renderBlocks as block}
@@ -614,21 +617,88 @@
 						<p class="text-gray-400">No content available.</p>
 					{/if}
 				</div>
-			</div>
 
-			<!-- Article Footer -->
-			<footer class="mx-auto mt-16 max-w-[680px] border-t border-gray-800 pt-8">
-				<a
-					href="/read"
-					class="inline-flex items-center gap-2 text-sm font-medium text-gray-400 transition-colors hover:text-white"
-				>
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-					</svg>
-					Back to all articles
-				</a>
-			</footer>
-		</article>
+				<!-- Tags Footer -->
+				{#if data.article.tags && data.article.tags.length > 1}
+					<div class="mx-auto mt-8 max-w-none border-t border-white/10 pt-6 sm:mt-12 sm:max-w-[34em] sm:pt-8">
+						<h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 sm:mb-4">Topics</h3>
+						<div class="flex flex-wrap gap-2">
+							{#each data.article.tags as tag}
+								<a
+									href="/read/tag/{tag.slug}"
+									class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-gray-300 transition-colors hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-300 sm:px-4 sm:py-1.5"
+								>
+									{tag.name}
+								</a>
+							{/each}
+						</div>
+					</div>
+				{/if}
+
+				<!-- Author Card Footer -->
+				{#if data.article.author}
+					<div class="mx-auto mt-8 max-w-none rounded-xl border border-white/10 bg-gray-900/50 p-4 sm:mt-12 sm:max-w-[34em] sm:rounded-2xl sm:p-6">
+						<a href="/read/author/{data.article.author.slug}" class="flex items-center gap-3 group sm:items-start sm:gap-4">
+							{#if data.article.author.profilePicture}
+								<img
+									src={data.article.author.profilePicture}
+									alt={data.article.author.name}
+									class="h-12 w-12 shrink-0 rounded-lg object-cover ring-2 ring-white/10 transition-all group-hover:ring-blue-400/50 sm:h-16 sm:w-16 sm:rounded-xl"
+								/>
+							{:else}
+								<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 ring-2 ring-white/10 transition-all group-hover:ring-blue-400/50 sm:h-16 sm:w-16 sm:rounded-xl">
+									<span class="text-lg font-bold text-white sm:text-xl">
+										{data.article.author.name.charAt(0).toUpperCase()}
+									</span>
+								</div>
+							{/if}
+							<div class="min-w-0 flex-1">
+								<div class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 sm:text-xs">Written by</div>
+								<div class="mt-0.5 text-base font-bold text-white group-hover:text-blue-400 transition-colors sm:mt-1 sm:text-lg">
+									{data.article.author.name}
+								</div>
+								<p class="mt-0.5 text-xs text-gray-400 sm:mt-1 sm:text-sm">View all articles by this author →</p>
+							</div>
+						</a>
+					</div>
+				{/if}
+
+				<!-- Back Link Footer -->
+				<footer class="mx-auto mt-8 max-w-none border-t border-white/10 pt-6 sm:mt-12 sm:max-w-[34em] sm:pt-8">
+					<a
+						href="/read"
+						class="inline-flex items-center gap-2 text-sm font-medium text-gray-400 transition-colors hover:text-white"
+					>
+						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+						</svg>
+						Back to all articles
+					</a>
+				</footer>
+			</article>
+
+			<!-- Right Sidebar - Table of Contents -->
+			<aside class="hidden lg:block">
+				<div class="sticky top-8">
+					{#if tableOfContents.length > 0}
+						<nav class="rounded-xl border border-white/10 bg-gray-900/30 p-5">
+							<h2 class="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-400">On this page</h2>
+							<div class="space-y-2.5">
+								{#each tableOfContents as heading}
+									<a
+										href="#{heading.id}"
+										class="block text-sm leading-snug transition-colors {activeSection === heading.id ? 'font-medium text-white' : 'text-gray-500 hover:text-gray-300'}"
+										style="padding-left: {(heading.level - 2) * 12}px"
+									>
+										{heading.text}
+									</a>
+								{/each}
+							</div>
+						</nav>
+					{/if}
+				</div>
+			</aside>
+		</div>
 	</div>
 </div>
 

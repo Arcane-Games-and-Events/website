@@ -43,7 +43,7 @@
 </script>
 
 <svelte:head>
-	<title>Premium Membership - Arcane Games and Events</title>
+	<title>Premium Membership - AGE</title>
 </svelte:head>
 
 <div class="container mx-auto px-2 py-12 max-w-6xl">

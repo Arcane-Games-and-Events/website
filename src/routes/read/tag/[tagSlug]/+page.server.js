@@ -1,40 +1,31 @@
 import { error } from '@sveltejs/kit';
 import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow } from '$lib/server/articles/access.js';
-import { lexicalToHtml } from '$lib/utils/lexical-to-html.js';
 
 export async function load({ params, setHeaders }) {
-	// Cache author pages for 5 minutes, allow stale for 1 hour while revalidating
+	// Cache tag pages for 5 minutes, allow stale for 1 hour while revalidating
 	setHeaders({
 		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
 	});
 
-	const { authorSlug } = params;
+	const { tagSlug } = params;
 
 	try {
-		// Fetch author by slug
-		const author = await payload.getAuthorBySlug(authorSlug);
+		// Fetch tag by slug
+		const tag = await payload.getTagBySlug(tagSlug);
 
-		if (!author) {
-			throw error(404, 'Author not found');
+		if (!tag) {
+			throw error(404, 'Tag not found');
 		}
 
-		// Extract author information
-		let profilePictureUrl = null;
-		if (author.profilePicture && typeof author.profilePicture === 'object') {
-			profilePictureUrl = payload.getAbsoluteUrl(author.profilePicture.url);
-		}
-
-		const authorData = {
-			name: author.name,
-			slug: author.slug,
-			bio: lexicalToHtml(author.bio),
-			profilePicture: profilePictureUrl,
-			socialMedia: author.socialMedia || {}
+		const tagData = {
+			name: tag.name,
+			slug: tag.slug,
+			description: tag.description || null
 		};
 
-		// Fetch all posts by this author
-		const posts = await payload.getPostsByAuthor(author.id);
+		// Fetch all posts with this tag
+		const posts = await payload.getPostsByTag(tag.id);
 
 		// Transform posts
 		const articles = posts.map((post) => {
@@ -44,14 +35,28 @@ export async function load({ params, setHeaders }) {
 				coverImageUrl = payload.getAbsoluteUrl(post.coverImage.url);
 			}
 
+			// Extract author
+			let author = null;
+			if (post.author && typeof post.author === 'object') {
+				let authorImageUrl = null;
+				if (post.author.profilePicture && typeof post.author.profilePicture === 'object') {
+					authorImageUrl = payload.getAbsoluteUrl(post.author.profilePicture.url);
+				}
+				author = {
+					name: post.author.name,
+					slug: post.author.slug,
+					profilePicture: authorImageUrl
+				};
+			}
+
 			// Extract tags
 			let tags = [];
 			if (post.tags && Array.isArray(post.tags)) {
-				tags = post.tags.map((tag) => {
-					if (typeof tag === 'object') {
+				tags = post.tags.map((t) => {
+					if (typeof t === 'object') {
 						return {
-							name: tag.name,
-							slug: tag.slug
+							name: t.name,
+							slug: t.slug
 						};
 					}
 					return null;
@@ -65,6 +70,7 @@ export async function load({ params, setHeaders }) {
 				publishedAt: post.publishedDate,
 				accessMode: post.accessMode,
 				coverImage: coverImageUrl,
+				author,
 				tags,
 				readTime: post.readTime || null,
 				isPremium: isPremiumNow({
@@ -75,7 +81,7 @@ export async function load({ params, setHeaders }) {
 		});
 
 		return {
-			author: authorData,
+			tag: tagData,
 			articles
 		};
 	} catch (err) {
@@ -83,7 +89,7 @@ export async function load({ params, setHeaders }) {
 			throw err;
 		}
 
-		console.error('Error fetching author:', err);
-		throw error(500, 'Failed to load author');
+		console.error('Error fetching tag:', err);
+		throw error(500, 'Failed to load tag');
 	}
 }

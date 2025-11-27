@@ -1,6 +1,41 @@
 import type { CollectionConfig } from 'payload'
 import { isAdminEditorOrSelf, canPublish, isEditorOrAdminField } from '../access'
 
+/**
+ * Extract plain text from Lexical richText content
+ */
+function extractTextFromLexical(content: any): string {
+  if (!content || !content.root) return ''
+
+  const extractText = (node: any): string => {
+    if (!node) return ''
+
+    // Text node
+    if (node.type === 'text' && node.text) {
+      return node.text
+    }
+
+    // Node with children
+    if (node.children && Array.isArray(node.children)) {
+      return node.children.map(extractText).join(' ')
+    }
+
+    return ''
+  }
+
+  return extractText(content.root)
+}
+
+/**
+ * Calculate read time from word count (200 words per minute)
+ */
+function calculateReadTime(content: any): number {
+  const text = extractTextFromLexical(content)
+  const wordCount = text.split(/\s+/).filter(word => word.length > 0).length
+  const minutes = Math.ceil(wordCount / 200)
+  return Math.max(1, minutes) // Minimum 1 minute
+}
+
 export const Posts: CollectionConfig = {
   slug: 'posts',
   admin: {
@@ -258,6 +293,15 @@ export const Posts: CollectionConfig = {
       hasMany: true,
     },
     {
+      name: 'readTime',
+      type: 'number',
+      admin: {
+        position: 'sidebar',
+        description: 'Estimated read time in minutes (auto-calculated)',
+        readOnly: true,
+      },
+    },
+    {
       name: 'decklists',
       type: 'array',
       label: 'Decklists',
@@ -300,6 +344,11 @@ export const Posts: CollectionConfig = {
             }
             return note
           })
+        }
+
+        // Calculate read time from content
+        if (data.content) {
+          data.readTime = calculateReadTime(data.content)
         }
 
         return data

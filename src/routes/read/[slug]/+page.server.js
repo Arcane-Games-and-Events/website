@@ -100,7 +100,8 @@ export async function load({ params, locals, setHeaders }) {
 			coverImage: coverImageUrl,
 			author,
 			tags,
-			decklists
+			decklists,
+			readTime: post.readTime || null
 		};
 
 		// Check premium access

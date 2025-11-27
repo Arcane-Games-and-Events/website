@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-	<title>Dashboard - Arcane Games and Events</title>
+	<title>Dashboard - AGE</title>
 </svelte:head>
 
 <div class="space-y-8">
