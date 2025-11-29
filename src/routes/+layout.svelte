@@ -8,9 +8,14 @@
 	// Auth pages that should not show the sidebar
 	const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
 	$: isAuthPage = authRoutes.some(route => $page.url.pathname.startsWith(route));
+
+	// Admin pages have their own layout
+	$: isAdminPage = $page.url.pathname.startsWith('/admin');
 </script>
 
 {#if isAuthPage}
+	<slot />
+{:else if isAdminPage}
 	<slot />
 {:else}
 	<Sidebar user={data.user}>

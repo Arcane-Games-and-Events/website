@@ -46,11 +46,17 @@ export const event = pgTable('event', {
 	price: decimal('price', { precision: 10, scale: 2 }).notNull(),
 	format: text('format'), // e.g., "Standard", "Modern", "Draft" - nullable for migration
 	gemIdRequired: boolean('gem_id_required').default(false),
-	circuit: text('circuit'), // e.g., "West", "East", "Central"
+	circuit: text('circuit'), // e.g., "Los Angeles", "St. Louis", "New England"
 	month: text('month'), // e.g., "January", "February", etc.
 	eventDate: timestamp('event_date', { withTimezone: true, mode: 'date' }), // Nullable for migration
 	description: text('description'),
 	premiumDiscount: boolean('premium_discount').default(false), // 10% discount for premium users
+
+	// Event status for closeout workflow
+	status: text('status').default('upcoming'), // 'upcoming', 'in_progress', 'completed', 'cancelled'
+	closedAt: timestamp('closed_at', { withTimezone: true, mode: 'date' }),
+	closedBy: text('closed_by').references(() => user.id),
+
 	createdBy: text('created_by').references(() => user.id),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
@@ -123,5 +129,86 @@ export const eventStaff = pgTable('event_staff', {
 	userId: text('user_id').notNull().references(() => user.id),
 	eventId: text('event_id').notNull().references(() => event.id),
 	assignedBy: text('assigned_by').references(() => user.id), // Admin who assigned the staff
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// EVENT RESULTS (tournament placements after event closeout)
+export const eventResult = pgTable('event_result', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	eventId: text('event_id').notNull().references(() => event.id),
+
+	// Player identification
+	userId: text('user_id').references(() => user.id), // Optional - may not have account
+	gemId: text('gem_id'), // GEM ID from tournament software
+	playerName: text('player_name').notNull(), // Display name
+
+	// Tournament results
+	placement: integer('placement').notNull(), // 1st, 2nd, 3rd, etc.
+	wins: integer('wins').default(0),
+	losses: integer('losses').default(0),
+	draws: integer('draws').default(0),
+
+	// Rewards
+	agePoints: integer('age_points').default(0), // Points toward Player's Championship
+	prizeAmount: decimal('prize_amount', { precision: 10, scale: 2 }), // Cash prize if any
+
+	// Decklist reference (optional - some players may not submit)
+	decklistId: uuid('decklist_id'),
+
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// EVENT DECKLISTS (player deck submissions)
+export const eventDecklist = pgTable('event_decklist', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	eventId: text('event_id').notNull().references(() => event.id),
+
+	// Player identification
+	userId: text('user_id').references(() => user.id),
+	gemId: text('gem_id'),
+	playerName: text('player_name').notNull(),
+
+	// Deck information
+	deckName: text('deck_name'), // Optional deck name/archetype
+	hero: text('hero'), // Hero card for the deck
+	format: text('format'), // Format the deck was played in
+
+	// Deck contents - stored as JSON array of card objects
+	// Each card: { name: string, quantity: number, type?: string }
+	cards: jsonb('cards').notNull(),
+
+	// Visibility
+	isPublic: boolean('is_public').default(true), // Whether to show on public results
+
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// SEASON STANDINGS (circuit leaderboards)
+export const seasonStanding = pgTable('season_standing', {
+	id: uuid('id').defaultRandom().primaryKey(),
+
+	// Season and circuit info
+	season: text('season').notNull(), // e.g., "2025", "2024-2025"
+	circuit: text('circuit').notNull(), // "Los Angeles", "St. Louis", "New England"
+
+	// Player identification
+	userId: text('user_id').references(() => user.id),
+	gemId: text('gem_id'),
+	playerName: text('player_name').notNull(),
+
+	// Standing data
+	rank: integer('rank'), // Current rank in circuit
+	totalPoints: integer('total_points').default(0), // Total AGE points
+	eventsPlayed: integer('events_played').default(0),
+
+	// Best finishes
+	firstPlaceFinishes: integer('first_place_finishes').default(0),
+	top4Finishes: integer('top_4_finishes').default(0),
+	top8Finishes: integer('top_8_finishes').default(0),
+
+	// Qualification status
+	qualifiedForChampionship: boolean('qualified_for_championship').default(false),
+
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow(),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });

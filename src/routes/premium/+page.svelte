@@ -70,7 +70,7 @@
 			<div class="rounded-[var(--radius)] border bg-gray-950 shadow-md p-6 hover:shadow-lg transition-shadow">
 				<h3 class="text-lg font-semibold mb-2 text-gray-100">Events</h3>
 				<p class="text-gray-400 mb-4">Get early access to event tickets</p>
-				<a href="/play" class="text-white hover:underline font-medium">See Events →</a>
+				<a href="/age-open" class="text-white hover:underline font-medium">See Events →</a>
 			</div>
 
 			<div class="rounded-[var(--radius)] border bg-gray-950 shadow-md p-6 hover:shadow-lg transition-shadow">

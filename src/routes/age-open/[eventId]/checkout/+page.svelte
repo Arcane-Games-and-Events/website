@@ -35,7 +35,7 @@
 		<!-- Back Link -->
 		<div class="mb-6">
 			<a
-				href="/play"
+				href="/age-open"
 				class="inline-flex items-center text-sm font-medium text-gray-400 hover:text-white transition-colors"
 			>
 				<svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

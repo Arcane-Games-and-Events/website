@@ -134,7 +134,7 @@
 			</a>
 
 			<a
-				href="/play"
+				href="/age-open"
 				class="flex items-center gap-3 rounded-lg border border-gray-700 bg-gray-950 p-4 transition-colors hover:bg-gray-800"
 			>
 				<svg

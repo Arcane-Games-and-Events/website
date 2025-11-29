@@ -134,7 +134,7 @@
 		<h2 class="mb-4 text-2xl font-bold text-gray-100">Quick Actions</h2>
 		<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
 			<a
-				href="/play"
+				href="/age-open"
 				class="rounded-lg border border-gray-700 bg-gray-950 p-4 text-center text-gray-100 hover:bg-gray-800 transition-colors"
 			>
 				View All Events

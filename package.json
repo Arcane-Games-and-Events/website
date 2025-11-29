@@ -48,7 +48,9 @@
 		"bcryptjs": "^3.0.2",
 		"dotenv": "^17.2.2",
 		"fab-cards": "^8.0.147",
+		"leaflet": "^1.9.4",
 		"oslo": "^1.2.1",
+		"playwright": "^1.57.0",
 		"postgres": "^3.4.5",
 		"resend": "^6.5.2"
 	}

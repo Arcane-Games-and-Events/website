@@ -3,8 +3,8 @@
 </script>
 
 <footer class="mt-24 border-t border-white/10 bg-gray-900/30">
-	<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-		<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
+	<div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+		<div class="flex min-h-11 flex-col items-center justify-between gap-4 sm:flex-row">
 			<!-- Left: Brand & Copyright -->
 			<div class="flex items-center gap-4">
 				<a href="/">

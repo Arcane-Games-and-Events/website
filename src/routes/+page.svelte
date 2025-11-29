@@ -96,7 +96,7 @@
 				</p>
 
 				<div class="flex flex-wrap gap-3">
-					<a href="/play" class="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all">
+					<a href="/age-open" class="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all">
 						<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" d={icons.calendar} />
 						</svg>
@@ -248,13 +248,13 @@
 			<div class="rounded-xl border border-white/10 bg-gray-900/50 backdrop-blur-sm p-5">
 				<div class="flex items-center justify-between mb-4">
 					<h3 class="font-semibold text-white">Upcoming Events</h3>
-					<a href="/play" class="text-xs text-blue-400 hover:text-blue-300">View all</a>
+					<a href="/age-open" class="text-xs text-blue-400 hover:text-blue-300">View all</a>
 				</div>
 
 				{#if data.events && data.events.length > 0}
 					<div class="space-y-2">
 						{#each data.events.slice(0, 5) as event}
-							<a href="/play/{event.id}" class="block p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group">
+							<a href="/age-open/{event.id}" class="block p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group">
 								<div class="flex items-start justify-between gap-2">
 									<p class="font-medium text-white text-sm truncate group-hover:text-blue-400 transition-colors">{event.title}</p>
 									{#if event.format}
