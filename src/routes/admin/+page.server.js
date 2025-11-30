@@ -1,7 +1,7 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { event, order, user, eventStaff, player, playerAlias, seasonStanding } from '$lib/server/db/schema.js';
-import { desc, eq, count, and, sql } from 'drizzle-orm';
+import { event, order, user, eventStaff, player, playerAlias, seasonStanding, lssSeason } from '$lib/server/db/schema.js';
+import { desc, eq, count, and, sql, asc } from 'drizzle-orm';
 
 export async function load({ locals }) {
 	// Require admin authentication
@@ -113,6 +113,12 @@ export async function load({ locals }) {
 		// Get player count
 		const [playerCount] = await db.select({ count: count() }).from(player);
 
+		// Fetch LSS tournament seasons
+		const lssSeasons = await db
+			.select()
+			.from(lssSeason)
+			.orderBy(desc(lssSeason.startDate));
+
 		return {
 			user: locals.user,
 			events,
@@ -123,6 +129,7 @@ export async function load({ locals }) {
 			players,
 			aliases,
 			standings,
+			lssSeasons,
 			stats: {
 				totalEvents: eventCount.count,
 				totalOrders: orderCount.count,
@@ -143,6 +150,7 @@ export async function load({ locals }) {
 			players: [],
 			aliases: [],
 			standings: [],
+			lssSeasons: [],
 			stats: {
 				totalEvents: 0,
 				totalOrders: 0,
@@ -555,6 +563,130 @@ export const actions = {
 		} catch (err) {
 			console.error('Error deleting player:', err);
 			return fail(500, { error: 'Failed to delete player' });
+		}
+	},
+
+	// Create a new LSS event (season or tournament)
+	createLssSeason: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const name = formData.get('name')?.trim();
+		const description = formData.get('description')?.trim() || null;
+		const startDate = formData.get('startDate');
+		const endDate = formData.get('endDate');
+		const eventType = formData.get('eventType')?.trim() || null;
+		const formatValues = formData.getAll('format');
+		const format = formatValues.length > 0 ? formatValues.join(', ') : null;
+		const link = formData.get('link')?.trim() || null;
+
+		if (!name || !startDate || !endDate) {
+			return fail(400, { error: 'Name, start date, and end date are required' });
+		}
+
+		const start = new Date(startDate);
+		const end = new Date(endDate);
+
+		if (end <= start) {
+			return fail(400, { error: 'End date must be after start date' });
+		}
+
+		try {
+			await db.insert(lssSeason).values({
+				name,
+				description,
+				startDate: start,
+				endDate: end,
+				eventType,
+				format,
+				link,
+				isActive: true,
+				createdBy: locals.user.id
+			});
+
+			return { success: true, message: 'LSS event created successfully' };
+		} catch (err) {
+			console.error('Error creating LSS event:', err);
+			return fail(500, { error: 'Failed to create LSS event' });
+		}
+	},
+
+	// Update an LSS event (season or tournament)
+	updateLssSeason: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const seasonId = formData.get('seasonId');
+		const name = formData.get('name')?.trim();
+		const description = formData.get('description')?.trim() || null;
+		const startDate = formData.get('startDate');
+		const endDate = formData.get('endDate');
+		const eventType = formData.get('eventType')?.trim() || null;
+		const formatValues = formData.getAll('format');
+		const format = formatValues.length > 0 ? formatValues.join(', ') : null;
+		const link = formData.get('link')?.trim() || null;
+		const isActive = formData.get('isActive') === 'true';
+
+		if (!seasonId || !name || !startDate || !endDate) {
+			return fail(400, { error: 'Event ID, name, start date, and end date are required' });
+		}
+
+		const start = new Date(startDate);
+		const end = new Date(endDate);
+
+		if (end <= start) {
+			return fail(400, { error: 'End date must be after start date' });
+		}
+
+		try {
+			await db
+				.update(lssSeason)
+				.set({
+					name,
+					description,
+					startDate: start,
+					endDate: end,
+					eventType,
+					format,
+					link,
+					isActive,
+					updatedAt: new Date()
+				})
+				.where(eq(lssSeason.id, seasonId));
+
+			return { success: true, message: 'LSS event updated successfully' };
+		} catch (err) {
+			console.error('Error updating LSS event:', err);
+			return fail(500, { error: 'Failed to update LSS event' });
+		}
+	},
+
+	// Delete an LSS tournament season
+	deleteLssSeason: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const seasonId = formData.get('seasonId');
+
+		if (!seasonId) {
+			return fail(400, { error: 'Season ID is required' });
+		}
+
+		try {
+			await db
+				.delete(lssSeason)
+				.where(eq(lssSeason.id, seasonId));
+
+			return { success: true, message: 'LSS season deleted successfully' };
+		} catch (err) {
+			console.error('Error deleting LSS season:', err);
+			return fail(500, { error: 'Failed to delete LSS season' });
 		}
 	}
 };

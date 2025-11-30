@@ -74,12 +74,33 @@
 	// Tab configuration with icons
 	const tabs = [
 		{ id: 'overview', name: 'Overview', icon: 'home' },
-		{ id: 'events', name: 'Events', icon: 'calendar' },
+		{ id: 'events', name: 'Events', icon: 'ticket' },
+		{ id: 'seasons', name: 'Calendar', icon: 'calendar-days' },
 		{ id: 'orders', name: 'Orders', icon: 'receipt' },
 		{ id: 'staff', name: 'Staff', icon: 'users' },
 		{ id: 'users', name: 'Users', icon: 'user' },
 		{ id: 'players', name: 'Standings', icon: 'trophy' }
 	];
+
+	// LSS Seasons state
+	let showAddSeasonForm = false;
+	let editingSeasonId = null;
+	let calendarSubTab = 'upcoming'; // 'upcoming' or 'completed'
+
+	// Filter LSS events based on sub-tab
+	$: upcomingLssEvents = (data.lssSeasons || []).filter(s => {
+		const endDate = new Date(s.endDate);
+		const now = new Date();
+		return endDate >= now; // Include active and upcoming
+	});
+
+	$: completedLssEvents = (data.lssSeasons || []).filter(s => {
+		const endDate = new Date(s.endDate);
+		const now = new Date();
+		return endDate < now;
+	});
+
+	$: displayedLssEvents = calendarSubTab === 'upcoming' ? upcomingLssEvents : completedLssEvents;
 
 	// Stats for overview
 	$: upcomingEvents = data.events.filter(e => new Date(e.eventDate) > new Date()).length;
@@ -260,6 +281,14 @@
 						{:else if tab.icon === 'calendar'}
 							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+							</svg>
+						{:else if tab.icon === 'ticket'}
+							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+							</svg>
+						{:else if tab.icon === 'calendar-days'}
+							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
 							</svg>
 						{:else if tab.icon === 'receipt'}
 							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -728,6 +757,361 @@
 									{/each}
 								</tbody>
 							</table>
+						</div>
+					</div>
+				{/if}
+
+				<!-- LSS Seasons Tab -->
+				{#if activeTab === 'seasons'}
+					<div class="space-y-6">
+						<!-- Header -->
+						<div class="rounded-xl border border-gray-800 bg-gray-900/50 overflow-hidden">
+							<div class="flex items-center justify-between border-b border-gray-800 bg-gray-800/30 px-6 py-4">
+								<div class="flex items-center gap-3">
+									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20">
+										<svg class="h-5 w-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+										</svg>
+									</div>
+									<div>
+										<h2 class="text-lg font-semibold text-white">Calendar Events</h2>
+										<p class="text-sm text-gray-400">Manage LSS tournament seasons and competitive events</p>
+									</div>
+								</div>
+								<button
+									onclick={() => showAddSeasonForm = !showAddSeasonForm}
+									class="flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 transition-colors"
+								>
+									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+									</svg>
+									Add Event
+								</button>
+							</div>
+
+							<!-- Add Event Form -->
+							{#if showAddSeasonForm}
+								<form method="POST" action="?/createLssSeason" use:enhance={() => {
+									return async ({ result, update }) => {
+										if (result.type === 'success') {
+											showAddSeasonForm = false;
+											await invalidateAll();
+										}
+										await update();
+									};
+								}} class="border-b border-gray-800 bg-gray-800/20 p-6">
+									<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+										<div>
+											<label for="seasonName" class="block text-sm font-medium text-gray-300 mb-1">Season Name *</label>
+											<input
+												id="seasonName"
+												name="name"
+												type="text"
+												required
+												placeholder="e.g., Skirmish Season 5"
+												class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-amber-500 focus:outline-none"
+											/>
+										</div>
+										<div>
+											<label for="eventType" class="block text-sm font-medium text-gray-300 mb-1">Event Type</label>
+											<select
+												id="eventType"
+												name="eventType"
+												class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-amber-500 focus:outline-none"
+											>
+												<option value="">Select type</option>
+												<option value="Skirmish">Skirmish</option>
+												<option value="Road to Nationals">Road to Nationals</option>
+												<option value="ProQuest">ProQuest</option>
+												<option value="Pro Tour">Pro Tour</option>
+												<option value="Worlds">Worlds</option>
+												<option value="Calling">Calling</option>
+												<option value="Battle Hardened">Battle Hardened</option>
+												<option value="Other">Other</option>
+											</select>
+										</div>
+										<div>
+											<label for="startDate" class="block text-sm font-medium text-gray-300 mb-1">Start Date *</label>
+											<input
+												id="startDate"
+												name="startDate"
+												type="date"
+												required
+												class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-amber-500 focus:outline-none"
+											/>
+										</div>
+										<div>
+											<label for="endDate" class="block text-sm font-medium text-gray-300 mb-1">End Date *</label>
+											<input
+												id="endDate"
+												name="endDate"
+												type="date"
+												required
+												class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-amber-500 focus:outline-none"
+											/>
+										</div>
+									</div>
+									<div class="mt-4">
+										<label class="block text-sm font-medium text-gray-300 mb-2">Format(s)</label>
+										<div class="flex flex-wrap gap-3">
+											{#each ['Classic Constructed', 'Blitz', 'Silver Age', 'Draft', 'Sealed', 'Team Event', 'Living Legend'] as fmt}
+												<label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+													<input type="checkbox" name="format" value={fmt}
+														class="rounded border-gray-700 bg-gray-900 text-amber-500 focus:ring-amber-500" />
+													{fmt}
+												</label>
+											{/each}
+										</div>
+									</div>
+									<div class="grid gap-4 md:grid-cols-2 mt-4">
+										<div>
+											<label for="description" class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+											<textarea
+												id="description"
+												name="description"
+												rows="2"
+												placeholder="Optional description..."
+												class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-amber-500 focus:outline-none"
+											></textarea>
+										</div>
+										<div>
+											<label for="link" class="block text-sm font-medium text-gray-300 mb-1">Official Link</label>
+											<input
+												id="link"
+												name="link"
+												type="url"
+												placeholder="https://fabtcg.com/..."
+												class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-amber-500 focus:outline-none"
+											/>
+										</div>
+									</div>
+									<div class="flex justify-end gap-3 mt-4">
+										<button
+											type="button"
+											onclick={() => showAddSeasonForm = false}
+											class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+										>
+											Cancel
+										</button>
+										<button
+											type="submit"
+											class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 transition-colors"
+										>
+											Create LSS Event
+										</button>
+									</div>
+								</form>
+							{/if}
+
+							<!-- Sub-tabs -->
+							<div class="flex gap-1 px-4 py-3 border-b border-gray-800 bg-gray-800/20">
+								<button
+									onclick={() => calendarSubTab = 'upcoming'}
+									class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors {calendarSubTab === 'upcoming' ? 'bg-amber-500/20 text-amber-400' : 'text-gray-400 hover:text-white hover:bg-gray-800'}"
+								>
+									Upcoming/Active ({upcomingLssEvents.length})
+								</button>
+								<button
+									onclick={() => calendarSubTab = 'completed'}
+									class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors {calendarSubTab === 'completed' ? 'bg-amber-500/20 text-amber-400' : 'text-gray-400 hover:text-white hover:bg-gray-800'}"
+								>
+									Completed ({completedLssEvents.length})
+								</button>
+							</div>
+
+							<!-- Events Table -->
+							{#if displayedLssEvents.length > 0}
+								<div class="overflow-x-auto">
+									<table class="w-full text-sm">
+										<thead class="bg-gray-800/50 text-gray-400">
+											<tr>
+												<th class="text-left px-4 py-2 font-medium">Name</th>
+												<th class="text-left px-4 py-2 font-medium hidden sm:table-cell">Type</th>
+												<th class="text-left px-4 py-2 font-medium hidden lg:table-cell">Format</th>
+												<th class="text-left px-4 py-2 font-medium">Dates</th>
+												<th class="text-left px-4 py-2 font-medium hidden md:table-cell">Status</th>
+												<th class="text-right px-4 py-2 font-medium">Actions</th>
+											</tr>
+										</thead>
+										<tbody class="divide-y divide-gray-800">
+											{#each displayedLssEvents as season}
+												{@const startDate = new Date(season.startDate)}
+												{@const endDate = new Date(season.endDate)}
+												{@const now = new Date()}
+												{@const isActive = now >= startDate && now <= endDate}
+												{@const isPast = now > endDate}
+												{@const isEditing = editingSeasonId === season.id}
+
+												{#if isEditing}
+													<tr>
+														<td colspan="6" class="p-0">
+															<form method="POST" action="?/updateLssSeason" use:enhance={() => {
+																return async ({ result, update }) => {
+																	if (result.type === 'success') {
+																		editingSeasonId = null;
+																		await invalidateAll();
+																	}
+																	await update();
+																};
+															}} class="p-4 bg-gray-800/30">
+																<input type="hidden" name="seasonId" value={season.id} />
+																<div class="grid gap-3 md:grid-cols-4">
+																	<div>
+																		<label for="edit-name-{season.id}" class="block text-xs font-medium text-gray-400 mb-1">Name</label>
+																		<input id="edit-name-{season.id}" name="name" type="text" required value={season.name}
+																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none" />
+																	</div>
+																	<div>
+																		<label for="edit-type-{season.id}" class="block text-xs font-medium text-gray-400 mb-1">Type</label>
+																		<select id="edit-type-{season.id}" name="eventType" class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none">
+																			<option value="">Select</option>
+																			<option value="Skirmish" selected={season.eventType === 'Skirmish'}>Skirmish</option>
+																			<option value="Road to Nationals" selected={season.eventType === 'Road to Nationals'}>Road to Nationals</option>
+																			<option value="ProQuest" selected={season.eventType === 'ProQuest'}>ProQuest</option>
+																			<option value="Pro Tour" selected={season.eventType === 'Pro Tour'}>Pro Tour</option>
+																			<option value="Worlds" selected={season.eventType === 'Worlds'}>Worlds</option>
+																			<option value="Calling" selected={season.eventType === 'Calling'}>Calling</option>
+																			<option value="Battle Hardened" selected={season.eventType === 'Battle Hardened'}>Battle Hardened</option>
+																			<option value="Other" selected={season.eventType === 'Other'}>Other</option>
+																		</select>
+																	</div>
+																	<div>
+																		<label for="edit-start-{season.id}" class="block text-xs font-medium text-gray-400 mb-1">Start</label>
+																		<input id="edit-start-{season.id}" name="startDate" type="date" required value={startDate.toISOString().split('T')[0]}
+																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none" />
+																	</div>
+																	<div>
+																		<label for="edit-end-{season.id}" class="block text-xs font-medium text-gray-400 mb-1">End</label>
+																		<input id="edit-end-{season.id}" name="endDate" type="date" required value={endDate.toISOString().split('T')[0]}
+																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none" />
+																	</div>
+																</div>
+																<div class="mt-3">
+																	<label class="block text-xs font-medium text-gray-400 mb-1">Format(s)</label>
+																	<div class="flex flex-wrap gap-2">
+																		{#each ['Classic Constructed', 'Blitz', 'Silver Age', 'Draft', 'Sealed', 'Team Event', 'Living Legend'] as fmt}
+																			<label class="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer">
+																				<input type="checkbox" name="format" value={fmt} checked={(season.format || '').includes(fmt)}
+																					class="rounded border-gray-700 bg-gray-900 text-amber-500 focus:ring-amber-500" />
+																				{fmt}
+																			</label>
+																		{/each}
+																	</div>
+																</div>
+																<div class="grid gap-3 md:grid-cols-2 mt-3">
+																	<div>
+																		<label for="edit-desc-{season.id}" class="block text-xs font-medium text-gray-400 mb-1">Description</label>
+																		<input id="edit-desc-{season.id}" name="description" type="text" value={season.description || ''} placeholder="Optional..."
+																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:border-amber-500 focus:outline-none" />
+																	</div>
+																	<div>
+																		<label for="edit-link-{season.id}" class="block text-xs font-medium text-gray-400 mb-1">Official Link</label>
+																		<input id="edit-link-{season.id}" name="link" type="url" value={season.link || ''} placeholder="https://..."
+																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:border-amber-500 focus:outline-none" />
+																	</div>
+																</div>
+																<div class="flex items-center justify-between mt-3">
+																	<label class="flex items-center gap-2 text-xs text-gray-400">
+																		<input type="checkbox" name="isActive" value="true" checked={season.isActive}
+																			class="rounded border-gray-700 bg-gray-900 text-amber-500 focus:ring-amber-500" />
+																		Show on calendar
+																	</label>
+																	<div class="flex gap-2">
+																		<button type="button" onclick={() => editingSeasonId = null}
+																			class="px-3 py-1 text-xs text-gray-400 hover:text-white transition-colors">Cancel</button>
+																		<button type="submit"
+																			class="rounded bg-amber-500 px-3 py-1 text-xs font-medium text-white hover:bg-amber-600 transition-colors">Save</button>
+																	</div>
+																</div>
+															</form>
+														</td>
+													</tr>
+												{:else}
+													<tr class="hover:bg-gray-800/30 transition-colors">
+														<td class="px-4 py-2">
+															<div class="flex items-center gap-2">
+																<span class="text-white font-medium truncate max-w-[200px]">{season.name}</span>
+																{#if season.link}
+																	<a href={season.link} target="_blank" rel="noopener noreferrer" class="text-amber-400 hover:text-amber-300 flex-shrink-0" aria-label="View official page">
+																		<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+																		</svg>
+																	</a>
+																{/if}
+																{#if !season.isActive}
+																	<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-500/20 text-red-400">Hidden</span>
+																{/if}
+															</div>
+														</td>
+														<td class="px-4 py-2 hidden sm:table-cell">
+															{#if season.eventType}
+																<span class="px-2 py-0.5 rounded text-xs bg-gray-700 text-gray-300">{season.eventType}</span>
+															{:else}
+																<span class="text-gray-500">-</span>
+															{/if}
+														</td>
+														<td class="px-4 py-2 hidden lg:table-cell">
+															{#if season.format}
+																<span class="text-xs text-gray-300" title={season.format}>{season.format.length > 25 ? season.format.substring(0, 25) + '...' : season.format}</span>
+															{:else}
+																<span class="text-gray-500">-</span>
+															{/if}
+														</td>
+														<td class="px-4 py-2 text-gray-400 whitespace-nowrap">
+															{startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+														</td>
+														<td class="px-4 py-2 hidden md:table-cell">
+															{#if isActive}
+																<span class="px-2 py-0.5 rounded text-xs bg-emerald-500/20 text-emerald-400">Active</span>
+															{:else if isPast}
+																<span class="px-2 py-0.5 rounded text-xs bg-gray-500/20 text-gray-400">Completed</span>
+															{:else}
+																<span class="px-2 py-0.5 rounded text-xs bg-blue-500/20 text-blue-400">Upcoming</span>
+															{/if}
+														</td>
+														<td class="px-4 py-2">
+															<div class="flex items-center justify-end gap-1">
+																<button onclick={() => editingSeasonId = season.id}
+																	class="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-800 transition-colors" title="Edit" aria-label="Edit event">
+																	<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+																	</svg>
+																</button>
+																<form method="POST" action="?/deleteLssSeason" use:enhance={() => {
+																	return async ({ result, update }) => {
+																		if (result.type === 'success') { await invalidateAll(); }
+																		await update();
+																	};
+																}}>
+																	<input type="hidden" name="seasonId" value={season.id} />
+																	<button type="submit" onclick={(e) => { if (!confirm('Delete this event?')) e.preventDefault(); }}
+																		class="p-1.5 rounded text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete" aria-label="Delete event">
+																		<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+																		</svg>
+																	</button>
+																</form>
+															</div>
+														</td>
+													</tr>
+												{/if}
+											{/each}
+										</tbody>
+									</table>
+								</div>
+							{:else}
+								<div class="p-8 text-center">
+									<div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-800">
+										<svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+										</svg>
+									</div>
+									<p class="text-gray-400">No {calendarSubTab === 'upcoming' ? 'upcoming' : 'completed'} events</p>
+									{#if calendarSubTab === 'upcoming'}
+										<p class="text-sm text-gray-500 mt-1">Click "Add Event" to create a new tournament season</p>
+									{/if}
+								</div>
+							{/if}
 						</div>
 					</div>
 				{/if}
@@ -1261,6 +1645,7 @@
 																	onclick={(e) => { if (!confirm('Delete this standing record?')) e.preventDefault(); }}
 																	class="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
 																	title="Delete standing"
+																	aria-label="Delete standing"
 																>
 																	<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 																		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1299,6 +1684,7 @@
 												onclick={() => adminStandingsPage = Math.max(1, adminStandingsPage - 1)}
 												disabled={adminStandingsPage === 1}
 												class="px-3 py-1.5 rounded-lg border border-gray-600 text-sm font-medium transition-all {adminStandingsPage === 1 ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}"
+												aria-label="Previous page"
 											>
 												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -1327,6 +1713,7 @@
 												onclick={() => adminStandingsPage = Math.min(totalAdminStandingsPages, adminStandingsPage + 1)}
 												disabled={adminStandingsPage === totalAdminStandingsPages}
 												class="px-3 py-1.5 rounded-lg border border-gray-600 text-sm font-medium transition-all {adminStandingsPage === totalAdminStandingsPages ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}"
+												aria-label="Next page"
 											>
 												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />

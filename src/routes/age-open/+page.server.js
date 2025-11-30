@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db/index.js';
-import { event, eventResult, eventDecklist, seasonStanding } from '$lib/server/db/schema.js';
-import { asc, desc, eq, and, sql, gt } from 'drizzle-orm';
+import { event, eventResult, eventDecklist, seasonStanding, lssSeason } from '$lib/server/db/schema.js';
+import { asc, desc, eq, and, sql, gt, gte } from 'drizzle-orm';
 
 /**
  * Compare two standings using tiebreaker rules:
@@ -196,12 +196,20 @@ export async function load({ url }) {
 			.where(eq(eventDecklist.isPublic, true))
 			.orderBy(desc(eventDecklist.createdAt));
 
+		// Get LSS tournament seasons (active ones, ordered by start date)
+		const lssSeasons = await db
+			.select()
+			.from(lssSeason)
+			.where(eq(lssSeason.isActive, true))
+			.orderBy(asc(lssSeason.startDate));
+
 		return {
 			events,
 			completedEvents,
 			eventResults: allResults,
 			standings,
 			decklists,
+			lssSeasons,
 			currentYear,
 			selectedSeason,
 			selectedCircuit,
@@ -216,6 +224,7 @@ export async function load({ url }) {
 			eventResults: [],
 			standings: [],
 			decklists: [],
+			lssSeasons: [],
 			currentYear,
 			selectedSeason: currentYear,
 			selectedCircuit,

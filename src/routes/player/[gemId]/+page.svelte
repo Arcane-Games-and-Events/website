@@ -333,16 +333,18 @@
 															}
 														};
 													}} class="space-y-1">
-														<label class="text-xs text-gray-500">Total Points</label>
 														<input type="hidden" name="standingId" value={standing.id} />
 														<input type="hidden" name="field" value="totalPoints" />
-														<input
-															type="number"
-															name="value"
-															value={standing.totalPoints || 0}
-															onchange={(e) => e.target.form.requestSubmit()}
-															class="w-full bg-gray-800 text-emerald-400 font-bold text-center rounded-lg px-3 py-2 border border-gray-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-														/>
+														<label class="block text-xs text-gray-500">
+															Total Points
+															<input
+																type="number"
+																name="value"
+																value={standing.totalPoints || 0}
+																onchange={(e) => e.target.form.requestSubmit()}
+																class="mt-1 w-full bg-gray-800 text-emerald-400 font-bold text-center rounded-lg px-3 py-2 border border-gray-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+															/>
+														</label>
 													</form>
 													<form method="POST" action="?/updateStanding" use:enhance={() => {
 														return async ({ result, update }) => {
@@ -352,18 +354,20 @@
 															}
 														};
 													}} class="space-y-1">
-														<label class="text-xs text-gray-500">Win %</label>
 														<input type="hidden" name="standingId" value={standing.id} />
 														<input type="hidden" name="field" value="winPercentage" />
-														<input
-															type="number"
-															step="0.01"
-															name="value"
-															value={standing.winPercentage || ''}
-															placeholder="-"
-															onchange={(e) => e.target.form.requestSubmit()}
-															class="w-full bg-gray-800 text-gray-300 text-center rounded-lg px-3 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-														/>
+														<label class="block text-xs text-gray-500">
+															Win %
+															<input
+																type="number"
+																step="0.01"
+																name="value"
+																value={standing.winPercentage || ''}
+																placeholder="-"
+																onchange={(e) => e.target.form.requestSubmit()}
+																class="mt-1 w-full bg-gray-800 text-gray-300 text-center rounded-lg px-3 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+															/>
+														</label>
 													</form>
 													<form method="POST" action="?/updateStanding" use:enhance={() => {
 														return async ({ result, update }) => {
@@ -373,16 +377,18 @@
 															}
 														};
 													}} class="space-y-1">
-														<label class="text-xs text-gray-500">Events Played</label>
 														<input type="hidden" name="standingId" value={standing.id} />
 														<input type="hidden" name="field" value="eventsPlayed" />
-														<input
-															type="number"
-															name="value"
-															value={standing.eventsPlayed || 0}
-															onchange={(e) => e.target.form.requestSubmit()}
-															class="w-full bg-gray-800 text-gray-300 text-center rounded-lg px-3 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-														/>
+														<label class="block text-xs text-gray-500">
+															Events Played
+															<input
+																type="number"
+																name="value"
+																value={standing.eventsPlayed || 0}
+																onchange={(e) => e.target.form.requestSubmit()}
+																class="mt-1 w-full bg-gray-800 text-gray-300 text-center rounded-lg px-3 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+															/>
+														</label>
 													</form>
 													<form method="POST" action="?/updateStanding" use:enhance={() => {
 														return async ({ result, update }) => {
@@ -392,16 +398,18 @@
 															}
 														};
 													}} class="space-y-1">
-														<label class="text-xs text-gray-500">Matches Won</label>
 														<input type="hidden" name="standingId" value={standing.id} />
 														<input type="hidden" name="field" value="matchesWon" />
-														<input
-															type="number"
-															name="value"
-															value={standing.matchesWon || 0}
-															onchange={(e) => e.target.form.requestSubmit()}
-															class="w-full bg-gray-800 text-green-400 text-center rounded-lg px-3 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-														/>
+														<label class="block text-xs text-gray-500">
+															Matches Won
+															<input
+																type="number"
+																name="value"
+																value={standing.matchesWon || 0}
+																onchange={(e) => e.target.form.requestSubmit()}
+																class="mt-1 w-full bg-gray-800 text-green-400 text-center rounded-lg px-3 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+															/>
+														</label>
 													</form>
 													<form method="POST" action="?/updateStanding" use:enhance={() => {
 														return async ({ result, update }) => {
@@ -411,16 +419,18 @@
 															}
 														};
 													}} class="space-y-1">
-														<label class="text-xs text-gray-500">Matches Played</label>
 														<input type="hidden" name="standingId" value={standing.id} />
 														<input type="hidden" name="field" value="matchesPlayed" />
-														<input
-															type="number"
-															name="value"
-															value={standing.matchesPlayed || 0}
-															onchange={(e) => e.target.form.requestSubmit()}
-															class="w-full bg-gray-800 text-gray-300 text-center rounded-lg px-3 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-														/>
+														<label class="block text-xs text-gray-500">
+															Matches Played
+															<input
+																type="number"
+																name="value"
+																value={standing.matchesPlayed || 0}
+																onchange={(e) => e.target.form.requestSubmit()}
+																class="mt-1 w-full bg-gray-800 text-gray-300 text-center rounded-lg px-3 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+															/>
+														</label>
 													</form>
 												</div>
 											{/if}
@@ -573,8 +583,8 @@
 						}
 					};
 				}} class="p-6 space-y-4">
-					<div>
-						<label class="block text-sm font-medium text-gray-400 mb-2">Season</label>
+					<label class="block">
+						<span class="block text-sm font-medium text-gray-400 mb-2">Season</span>
 						<input
 							type="text"
 							name="season"
@@ -582,9 +592,9 @@
 							required
 							class="w-full bg-gray-800 text-white rounded-lg px-4 py-3 border border-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
 						/>
-					</div>
-					<div>
-						<label class="block text-sm font-medium text-gray-400 mb-2">Circuit</label>
+					</label>
+					<label class="block">
+						<span class="block text-sm font-medium text-gray-400 mb-2">Circuit</span>
 						<select
 							name="circuit"
 							required
@@ -595,9 +605,9 @@
 							<option value="New England">New England</option>
 							<option value="St. Louis">St. Louis</option>
 						</select>
-					</div>
-					<div>
-						<label class="block text-sm font-medium text-gray-400 mb-2">Player Name</label>
+					</label>
+					<label class="block">
+						<span class="block text-sm font-medium text-gray-400 mb-2">Player Name</span>
 						<input
 							type="text"
 							name="playerName"
@@ -605,7 +615,7 @@
 							required
 							class="w-full bg-gray-800 text-white rounded-lg px-4 py-3 border border-gray-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
 						/>
-					</div>
+					</label>
 					<div class="flex gap-3 pt-4">
 						<button
 							type="button"

@@ -2,17 +2,16 @@
 	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import CircuitMap from '$lib/components/CircuitMap.svelte';
 
 	export let data;
 
 	const tabs = [
 		{ id: 'overview', name: 'Overview', icon: 'home' },
-		{ id: 'events', name: 'Events', icon: 'calendar' },
-		{ id: 'map', name: 'Map', icon: 'map' },
+		{ id: 'events', name: 'Events', icon: 'ticket' },
+		{ id: 'calendar', name: 'Calendar', icon: 'calendar-days' },
 		{ id: 'standings', name: 'Standings', icon: 'trophy' },
 		{ id: 'decklists', name: 'Decklists', icon: 'cards' },
-		{ id: 'results', name: 'Results', icon: 'chart' },
+		{ id: 'results', name: 'Tournament Archive', icon: 'chart' },
 		{ id: 'rules', name: 'Rules & Info', icon: 'info' }
 	];
 
@@ -30,124 +29,242 @@
 		goto(url.toString(), { replaceState: false, noScroll: true });
 	}
 
-	// Map state
-	let selectedMapCircuit = null;
+	// Calendar state
+	let calendarMonth = new Date().getMonth();
+	let calendarYear = new Date().getFullYear();
 
-	// FAB Event Search state
-	let searchZipcode = '';
-	let searchDistance = '50';
-	let searchTimeframe = 'month';
-	let fabEvents = [];
-	let searchCenter = null;
-	let isSearching = false;
-	let searchError = '';
-	let fabSortBy = 'distance'; // 'distance', 'date', 'name'
+	// Get calendar data for current month view
+	$: calendarDays = getCalendarDays(calendarYear, calendarMonth);
+	$: monthName = new Date(calendarYear, calendarMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-	// Sorted FAB events based on current sort option
-	$: sortedFabEvents = [...fabEvents].sort((a, b) => {
-		switch (fabSortBy) {
-			case 'date':
-				if (!a.startTime) return 1;
-				if (!b.startTime) return -1;
-				return new Date(a.startTime) - new Date(b.startTime);
-			case 'name':
-				return (a.title || '').localeCompare(b.title || '');
-			case 'distance':
-			default:
-				return (a.distance || 999) - (b.distance || 999);
-		}
-	});
+	function getCalendarDays(year, month) {
+		const firstDay = new Date(year, month, 1);
+		const lastDay = new Date(year, month + 1, 0);
+		const startPadding = firstDay.getDay();
+		const daysInMonth = lastDay.getDate();
 
-	async function searchFabEvents() {
-		if (!searchZipcode || !/^\d{5}$/.test(searchZipcode)) {
-			searchError = 'Please enter a valid 5-digit zipcode';
-			return;
+		const days = [];
+
+		// Previous month padding
+		const prevMonth = new Date(year, month, 0);
+		for (let i = startPadding - 1; i >= 0; i--) {
+			days.push({ day: prevMonth.getDate() - i, isCurrentMonth: false, date: new Date(year, month - 1, prevMonth.getDate() - i) });
 		}
 
-		isSearching = true;
-		searchError = '';
-		fabEvents = [];
-		searchCenter = null;
+		// Current month
+		for (let i = 1; i <= daysInMonth; i++) {
+			days.push({ day: i, isCurrentMonth: true, date: new Date(year, month, i) });
+		}
 
-		try {
-			// Call the FAB events API
-			const response = await fetch('/api/fab-events', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					zipcode: searchZipcode,
-					distance: parseInt(searchDistance),
-					timeframe: searchTimeframe
-				})
-			});
+		// Next month padding
+		const remaining = 42 - days.length; // 6 rows of 7 days
+		for (let i = 1; i <= remaining; i++) {
+			days.push({ day: i, isCurrentMonth: false, date: new Date(year, month + 1, i) });
+		}
 
-			const result = await response.json();
+		return days;
+	}
 
-			if (result.error) {
-				searchError = result.error;
-			} else if (result.events && result.events.length > 0) {
-				fabEvents = result.events;
-				searchCenter = result.searchCenter;
-			} else {
-				searchError = 'No events found for your search criteria. Try expanding your distance or timeframe.';
-				// Still set searchCenter for map centering
-				if (result.searchCenter) {
-					searchCenter = result.searchCenter;
+	function previousMonth() {
+		if (calendarMonth === 0) {
+			calendarMonth = 11;
+			calendarYear--;
+		} else {
+			calendarMonth--;
+		}
+	}
+
+	function nextMonth() {
+		if (calendarMonth === 11) {
+			calendarMonth = 0;
+			calendarYear++;
+		} else {
+			calendarMonth++;
+		}
+	}
+
+	function goToToday() {
+		calendarMonth = new Date().getMonth();
+		calendarYear = new Date().getFullYear();
+	}
+
+	// Get events for a specific date
+	function getEventsForDate(date) {
+		return (data.events || []).filter(event => {
+			if (!event.eventDate) return false;
+			const eventDate = new Date(event.eventDate);
+			return eventDate.getFullYear() === date.getFullYear() &&
+				eventDate.getMonth() === date.getMonth() &&
+				eventDate.getDate() === date.getDate();
+		});
+	}
+
+	// Get LSS seasons for a specific date
+	function getSeasonsForDate(date) {
+		return (data.lssSeasons || []).filter(season => {
+			const start = new Date(season.startDate);
+			const end = new Date(season.endDate);
+			return date >= start && date <= end;
+		});
+	}
+
+	// Color palette for season bars
+	const seasonColors = [
+		{ bg: 'bg-amber-500/30', border: 'border-amber-500/50', text: 'text-amber-300' },
+		{ bg: 'bg-purple-500/30', border: 'border-purple-500/50', text: 'text-purple-300' },
+		{ bg: 'bg-emerald-500/30', border: 'border-emerald-500/50', text: 'text-emerald-300' },
+		{ bg: 'bg-blue-500/30', border: 'border-blue-500/50', text: 'text-blue-300' },
+		{ bg: 'bg-rose-500/30', border: 'border-rose-500/50', text: 'text-rose-300' },
+		{ bg: 'bg-cyan-500/30', border: 'border-cyan-500/50', text: 'text-cyan-300' },
+	];
+
+	function getSeasonColor(index) {
+		return seasonColors[index % seasonColors.length];
+	}
+
+	// Get season bars for a week row (returns array of {season, startCol, span, isStart, isEnd})
+	function getSeasonBarsForWeek(weekDays, seasonIndex) {
+		const seasons = data.lssSeasons || [];
+		if (seasonIndex >= seasons.length) return [];
+
+		const season = seasons[seasonIndex];
+		const seasonStart = new Date(season.startDate);
+		const seasonEnd = new Date(season.endDate);
+
+		// Normalize dates for comparison (remove time component)
+		seasonStart.setHours(0, 0, 0, 0);
+		seasonEnd.setHours(23, 59, 59, 999);
+
+		const weekStart = new Date(weekDays[0].date);
+		const weekEnd = new Date(weekDays[6].date);
+		weekStart.setHours(0, 0, 0, 0);
+		weekEnd.setHours(23, 59, 59, 999);
+
+		// Check if season overlaps with this week
+		if (seasonEnd < weekStart || seasonStart > weekEnd) {
+			return null;
+		}
+
+		// Calculate start column (0-6)
+		let startCol = 0;
+		if (seasonStart > weekStart) {
+			for (let i = 0; i < 7; i++) {
+				const dayDate = new Date(weekDays[i].date);
+				dayDate.setHours(0, 0, 0, 0);
+				if (dayDate >= seasonStart) {
+					startCol = i;
+					break;
 				}
 			}
-		} catch (error) {
-			console.error('Search error:', error);
-			searchError = 'Failed to search for events. Please try again.';
-		} finally {
-			isSearching = false;
 		}
+
+		// Calculate end column (0-6)
+		let endCol = 6;
+		if (seasonEnd < weekEnd) {
+			for (let i = 6; i >= 0; i--) {
+				const dayDate = new Date(weekDays[i].date);
+				dayDate.setHours(0, 0, 0, 0);
+				if (dayDate <= seasonEnd) {
+					endCol = i;
+					break;
+				}
+			}
+		}
+
+		const span = endCol - startCol + 1;
+		const isStart = seasonStart >= weekStart && seasonStart <= weekEnd;
+		const isEnd = seasonEnd >= weekStart && seasonEnd <= weekEnd;
+
+		return { season, startCol, span, isStart, isEnd };
 	}
 
-	function clearFabSearch() {
-		fabEvents = [];
-		searchCenter = null;
-		searchError = '';
-		searchZipcode = '';
-	}
+	// Split calendar days into weeks
+	$: calendarWeeks = calendarDays ? [
+		calendarDays.slice(0, 7),
+		calendarDays.slice(7, 14),
+		calendarDays.slice(14, 21),
+		calendarDays.slice(21, 28),
+		calendarDays.slice(28, 35),
+		calendarDays.slice(35, 42)
+	] : [];
 
-	// Circuit location data (coordinates match SVG viewBox 0 0 960 600)
-	const circuitLocations = {
-		'Los Angeles': {
-			name: 'Los Angeles',
-			region: 'Southern California',
-			venues: ['Top Deck Keep, Riverside, CA'],
-			coordinates: { x: 145, y: 390 },
-			color: 'blue',
-			description: 'The Los Angeles circuit covers Southern California, featuring events at premier gaming venues in the Riverside and greater LA area.'
-		},
-		'St. Louis': {
-			name: 'St. Louis',
-			region: 'Midwest',
-			venues: ['TBA'],
-			coordinates: { x: 480, y: 280 },
-			color: 'green',
-			description: 'The St. Louis circuit serves the Midwest region, bringing competitive Flesh and Blood to the heart of America.'
-		},
-		'New England': {
-			name: 'New England',
-			region: 'Northeast',
-			venues: ['TBA'],
-			coordinates: { x: 820, y: 200 },
-			color: 'purple',
-			description: 'The New England circuit covers the Northeast, with events throughout Massachusetts, Connecticut, and surrounding states.'
-		}
-	};
-
-	// Get events for a specific circuit
-	function getCircuitEvents(circuit) {
-		return (data.events || []).filter(e => e.circuit === circuit);
+	// Check if date is today
+	function isToday(date) {
+		const today = new Date();
+		return date.getFullYear() === today.getFullYear() &&
+			date.getMonth() === today.getMonth() &&
+			date.getDate() === today.getDate();
 	}
 
 	// Circuit colors for badges
 	const circuitColors = {
-		'Los Angeles': { bg: 'bg-blue-500', text: 'text-blue-400', bgLight: 'bg-blue-500/10' },
-		'St. Louis': { bg: 'bg-green-500', text: 'text-green-400', bgLight: 'bg-green-500/10' },
-		'New England': { bg: 'bg-purple-500', text: 'text-purple-400', bgLight: 'bg-purple-500/10' }
+		'Los Angeles': {
+			bg: 'bg-blue-500',
+			text: 'text-blue-400',
+			bgLight: 'bg-blue-500/10',
+			// Calendar-specific classes
+			ping: 'bg-blue-400',
+			dot: 'bg-blue-500',
+			ring: 'ring-blue-500/30',
+			cellBg: 'bg-blue-950/30',
+			cellBorder: 'border-blue-500/20',
+			eventGradient: 'from-blue-600/30 to-blue-500/20',
+			eventGradientHover: 'hover:from-blue-600/50 hover:to-blue-500/40',
+			eventText: 'text-blue-300',
+			eventBorder: 'border-blue-500/30',
+			eventBorderHover: 'hover:border-blue-400/50',
+			eventShadow: 'hover:shadow-blue-500/20'
+		},
+		'St. Louis': {
+			bg: 'bg-green-500',
+			text: 'text-green-400',
+			bgLight: 'bg-green-500/10',
+			ping: 'bg-green-400',
+			dot: 'bg-green-500',
+			ring: 'ring-green-500/30',
+			cellBg: 'bg-green-950/30',
+			cellBorder: 'border-green-500/20',
+			eventGradient: 'from-green-600/30 to-green-500/20',
+			eventGradientHover: 'hover:from-green-600/50 hover:to-green-500/40',
+			eventText: 'text-green-300',
+			eventBorder: 'border-green-500/30',
+			eventBorderHover: 'hover:border-green-400/50',
+			eventShadow: 'hover:shadow-green-500/20'
+		},
+		'New England': {
+			bg: 'bg-purple-500',
+			text: 'text-purple-400',
+			bgLight: 'bg-purple-500/10',
+			ping: 'bg-purple-400',
+			dot: 'bg-purple-500',
+			ring: 'ring-purple-500/30',
+			cellBg: 'bg-purple-950/30',
+			cellBorder: 'border-purple-500/20',
+			eventGradient: 'from-purple-600/30 to-purple-500/20',
+			eventGradientHover: 'hover:from-purple-600/50 hover:to-purple-500/40',
+			eventText: 'text-purple-300',
+			eventBorder: 'border-purple-500/30',
+			eventBorderHover: 'hover:border-purple-400/50',
+			eventShadow: 'hover:shadow-purple-500/20'
+		}
+	};
+
+	// Default colors for events without a circuit
+	const defaultCircuitColor = {
+		bg: 'bg-gray-500',
+		text: 'text-gray-400',
+		bgLight: 'bg-gray-500/10',
+		ping: 'bg-gray-400',
+		dot: 'bg-gray-500',
+		ring: 'ring-gray-500/30',
+		cellBg: 'bg-gray-950/30',
+		cellBorder: 'border-gray-500/20',
+		eventGradient: 'from-gray-600/30 to-gray-500/20',
+		eventGradientHover: 'hover:from-gray-600/50 hover:to-gray-500/40',
+		eventText: 'text-gray-300',
+		eventBorder: 'border-gray-500/30',
+		eventBorderHover: 'hover:border-gray-400/50',
+		eventShadow: 'hover:shadow-gray-500/20'
 	};
 
 	// Standings search and filter
@@ -260,46 +377,359 @@
 	// FAQ accordion state
 	let openFaqIndex = null;
 
+	// Comprehensive rulebook sections
+	const rulebookSections = [
+		{
+			id: 'registration',
+			title: 'Registration & Entry',
+			icon: 'ticket',
+			items: [
+				{
+					question: 'How do I register for an AGE Open?',
+					answer: 'Register online through our website by selecting your desired event from the Events tab and completing payment. On-site registration may be available if capacity permits, but online pre-registration is strongly recommended as events can sell out. Premium members receive a 10% discount on all event registrations.'
+				},
+				{
+					question: 'Is a GEM ID required?',
+					answer: 'Yes, a valid GEM ID is required to participate in all AGE Open events. Your GEM ID ensures accurate tracking of match results, standings, and AGE Points. You can register for a free GEM ID through Legend Story Studios at fabtcg.com. Please have your GEM ID ready at check-in.'
+				},
+				{
+					question: 'What is the refund policy?',
+					answer: 'Full refunds are available up until 24 hours before the event start time. Refunds are processed back to the original credit card used for purchase. No refunds are available within 24 hours of the event. Exceptions may be made for documented emergencies at the Tournament Organizer\'s discretion. Contact us directly for refund requests.'
+				},
+				{
+					question: 'Can I transfer my registration to another player?',
+					answer: 'Registration transfers are permitted up to 24 hours before the event start time. Contact the Tournament Organizer with both the original registrant\'s and new player\'s information. The new player must meet all registration requirements including having a valid GEM ID.'
+				},
+				{
+					question: 'What time should I arrive?',
+					answer: 'Players should arrive at least 30 minutes before the posted start time to complete check-in. Late arrivals may receive a Round 1 game loss or match loss at the Head Judge\'s discretion. Players who are not checked in by the start of Round 1 pairings may be dropped from the event.'
+				},
+				{
+					question: 'What do I need to bring?',
+					answer: 'Required: Your registered and sleeved deck, hero card, equipment, weapons, tokens/counters, a method to track life totals, your GEM ID, and valid photo ID. Recommended: Playmat, dice, pen and paper, water bottle, and snacks. All cards must be in tournament-legal condition (not marked, bent, or identifiable from the back).'
+				}
+			]
+		},
+		{
+			id: 'deck-rules',
+			title: 'Deck Registration & Legality',
+			icon: 'cards',
+			items: [
+				{
+					question: 'Do I need to submit a decklist?',
+					answer: 'Yes, all players must submit a decklist before the start of Round 1. Decklists can be submitted online during registration or on paper at check-in. Players who fail to submit a decklist by the deadline will receive a game loss in Round 1. Decklists are confidential during the event and may be published afterward at the Tournament Organizer\'s discretion.'
+				},
+				{
+					question: 'Can I change my deck after submitting?',
+					answer: 'No changes to your registered decklist are permitted once submitted, except to correct illegal configurations discovered before Round 1. If an illegal deck is discovered after the event begins, penalties will be assessed. Players are responsible for verifying their deck matches their submitted list.'
+				},
+				{
+					question: 'What happens if my deck is illegal?',
+					answer: 'If an illegal deck (wrong card count, banned cards, unregistered cards, etc.) is discovered before Round 1, you may correct it without penalty. If discovered during the tournament, penalties range from a game loss to disqualification depending on severity and whether advantage was gained. Deck checks may occur at any time during the event.'
+				},
+				{
+					question: 'What card conditions are allowed?',
+					answer: 'All cards must be genuine Flesh and Blood cards in Near Mint to Lightly Played condition. Cards must be sleeved in opaque sleeves that make card backs indistinguishable. Marked, bent, or damaged cards that could allow identification must be replaced. Judges may require sleeve or card replacement at any time.'
+				},
+				{
+					question: 'Are proxy cards allowed?',
+					answer: 'No proxy cards are permitted in AGE Open events. All cards must be genuine Flesh and Blood cards. Players may request to borrow cards from other participants or spectators before the event, but all cards must be authentic during play.'
+				},
+				{
+					question: 'What format is played at AGE Opens?',
+					answer: 'AGE Opens use Classic Constructed format unless otherwise specified. The current banned and restricted list as published by Legend Story Studios applies. Check the specific event listing for format details and any additional restrictions.'
+				}
+			]
+		},
+		{
+			id: 'tournament-structure',
+			title: 'Tournament Structure',
+			icon: 'bracket',
+			items: [
+				{
+					question: 'How many Swiss rounds are played?',
+					answer: 'Swiss rounds are determined by attendance: 8 players = 3 rounds, 9-16 players = 4 rounds, 17-32 players = 5 rounds, 33-64 players = 6 rounds, 65-128 players = 7 rounds, 129-226 players = 8 rounds, 227-409 players = 9 rounds, 410+ players = 10 rounds. The Head Judge reserves the right to adjust round count based on time constraints.'
+				},
+				{
+					question: 'Is there a Top 8 cut?',
+					answer: 'Yes, after Swiss rounds, the Top 8 players by standings advance to a single-elimination playoff bracket. Quarterfinals and Semifinals are best-of-one matches. The Finals may be best-of-three at the Tournament Organizer\'s discretion. Draws are not permitted in Top 8 matches.'
+				},
+				{
+					question: 'How are tiebreakers calculated?',
+					answer: 'Following official FAB tournament policy, standings are determined by: 1) Match Points (3 for win, 0 for draw/loss), 2) CTB (Cumulative Tiebreaker) - the player whose wins came later in the tournament has the advantage, 3) PML (Player Match Loss) - fewer match losses is better, 4) OML% (Opponent Match Loss %) - lower percentage is better, 5) OCTB (Opponent Cumulative Tiebreaker) - higher is better, 6) Random if still tied. In Top 8, the player with better tiebreakers receives the higher seed.'
+				},
+				{
+					question: 'What happens if there is an odd number of players?',
+					answer: 'The lowest-ranked player without a bye receives a bye each round. A bye counts as a 2-0 match win (3 match points). Players cannot receive more than one bye during Swiss rounds unless all other players have already received one. Byes earned through other means (e.g., promotional byes) are applied first.'
+				},
+				{
+					question: 'Can I intentionally draw with my opponent?',
+					answer: 'Per FAB Tournament Rules and Policy: Players may intentionally draw games and/or matches by mutual agreement at any time, EXCEPT during elimination rounds (Top 8). Draws award 0 match points. For concessions: Players may concede at any time during Swiss rounds, but in timed rounds, once you take an in-game action after time is called, you may no longer concede and must play to conclusion. IMPORTANT: Players may NOT ask their opponent for a concession at any time - doing so results in a match loss in the next round. Players may not concede in exchange for any consideration (prizes, money, etc.) as this constitutes bribery.'
+				},
+				{
+					question: 'What if I need to drop from the tournament?',
+					answer: 'Players may drop from the tournament at any time through GEM (the tournament software) or by notifying a judge. Dropped players receive a match loss for the current round if in progress. Players who drop during Top 8 forfeit all prizes associated with their finishing position. Re-entry is not permitted after dropping.'
+				}
+			]
+		},
+		{
+			id: 'match-procedures',
+			title: 'Match & Round Procedures',
+			icon: 'clock',
+			items: [
+				{
+					question: 'How long are rounds?',
+					answer: 'Swiss rounds are 55 minutes. All rounds are Best of 1 (single game). Per FAB Tournament Rules and Policy End-of-Game Procedure: When time is called, if the turn player has no decisions remaining or clearly indicates they intend to end their turn, the opponent gets a full turn, then 1 additional turn occurs. If neither player has won after extra turns, the player with the higher life total wins the game. If life totals are tied after extra turns, the game is a draw. Top 8 matches have no time limit but are subject to slow play enforcement.'
+				},
+				{
+					question: 'Who goes first?',
+					answer: 'All AGE Open rounds are Best of 1 (single game per round). At the start of each game, players roll dice or use another random method to determine who chooses to go first or second. In Top 8, the higher-seeded player chooses whether to go first or second.'
+				},
+				{
+					question: 'Can I take notes during a match?',
+					answer: 'Yes, you may take notes during your match about the current game state, life totals, and publicly known information. You may NOT reference outside notes or information brought into the match. Notes must be taken in view of your opponent and judges may request to see your notes at any time. Per FAB rules, electronic devices may be used for note-taking as long as they are visible and accessible to all players, and you are not receiving outside assistance.'
+				},
+				{
+					question: 'What about electronic devices during matches?',
+					answer: 'Per FAB Tournament Rules and Policy, electronic devices may be used during matches if they are visible and accessible to all players in the match. However, electronic devices cannot be used to receive strategic advice from external sources during a match. Players may use devices for life tracking or timers. Using electronic devices to receive outside assistance during a match (coaching, strategy tips, etc.) is considered Outside Assistance and may result in penalties. Feature match players may have additional restrictions on device use.'
+				},
+				{
+					question: 'Can I get an extension for a judge call?',
+					answer: 'Yes, time extensions are granted for judge calls that significantly interrupt play. Extensions are typically 2-3 minutes per call and are added to the end of the round. The table judge or Head Judge determines appropriate extensions. Players should not exploit judge calls to gain extra time.'
+				},
+				{
+					question: 'What happens if I need a bathroom break?',
+					answer: 'Players may request a bathroom break once per match by calling a judge. The match clock continues during breaks. Breaks longer than 5 minutes may result in slow play penalties. Plan accordingly and use breaks between rounds when possible. Top 8 players may request judge supervision during breaks.'
+				}
+			]
+		},
+		{
+			id: 'penalties',
+			title: 'Penalties & Infractions',
+			icon: 'warning',
+			items: [
+				{
+					question: 'What is the penalty structure?',
+					answer: 'Penalties escalate in severity: Caution (verbal reminder, no penalty), Warning (documented, no game impact), Game Loss (lose current or next game), Match Loss (lose the match), Disqualification (removed from event, forfeits prizes). Repeated warnings of the same type upgrade to game losses. Severe or intentional infractions may skip directly to harsher penalties.'
+				},
+				{
+					question: 'What counts as slow play?',
+					answer: 'Per FAB Tournament Rules and Policy, slow play is taking more time than reasonably necessary to make game decisions. The start-of-game procedure (including hero reveal, equipment selection, and shuffling) should take no more than 5 minutes for the first game and 3 minutes for subsequent games. During gameplay, factors considered include: game complexity, time remaining, and whether the pace is unreasonable. First offense is typically a Warning. Continued slow play results in a Game Loss. Stalling (intentionally playing slowly to benefit from time) is Unsporting Conduct - Cheating and results in Disqualification.'
+				},
+				{
+					question: 'What is considered cheating?',
+					answer: 'Cheating includes: marked cards or sleeves, drawing extra cards, misrepresenting game state, stacking decks, bribery, improperly determining match outcome, and any intentional rule violation to gain advantage. Cheating results in immediate Disqualification and may include bans from future events. Suspected cheating should be reported to a judge immediately.'
+				},
+				{
+					question: 'What happens if I make a game error?',
+					answer: 'Game Rule Violations (GRV) occur when rules are broken unintentionally. Judges will correct the game state if possible and issue a Warning. Repeated GRVs upgrade to Game Loss. If both players commit errors, both receive penalties. Players are expected to know the game rules; ignorance is not an excuse.'
+				},
+				{
+					question: 'Can I be penalized for my opponent\'s mistake?',
+					answer: 'Failure to Maintain Game State (FTMGS) occurs when you allow your opponent to commit an error without catching it. This includes missing mandatory triggers and not correcting illegal plays. FTMGS results in a Warning. You are expected to help maintain correct game state at all times.'
+				},
+				{
+					question: 'What is Unsporting Conduct?',
+					answer: 'Unsporting Conduct includes: profanity, aggressive behavior, harassment, arguing with officials, damaging property, theft, or any behavior that creates a hostile environment. Minor offenses result in Warnings. Major offenses result in Game/Match Loss or Disqualification. Harassment or discrimination results in immediate Disqualification and potential ban from future events.'
+				},
+				{
+					question: 'What happens if I\'m late to a round?',
+					answer: 'Per FAB Procedure and Penalty Guide, tardiness occurs when a player is not at their assigned table when the round timer begins. Penalties: Less than 1 minute late = Warning (downgrade), 1-10 minutes late = IP2 (Intellect Penalty - Minor), More than 10 minutes late = Game Loss (upgrade). The table\'s round time is extended by the total time delayed. If a player is more than 10 minutes tardy, they should be dropped before the next round unless they report to the scorekeeper. Time is measured from when the round timer begins (or scheduled end of previous round if matches finished early). Tardiness infractions do not escalate - each is handled individually.'
+				}
+			]
+		},
+		{
+			id: 'judges',
+			title: 'Judges & Rulings',
+			icon: 'gavel',
+			items: [
+				{
+					question: 'How do I call a judge?',
+					answer: 'Raise your hand and clearly say "Judge!" to summon a floor judge. Pause the game while waiting (do not continue play). Either player may call a judge at any time for any reason. Do not attempt to resolve disputes without a judge. Judge calls are free and encouraged - never hesitate to call a judge.'
+				},
+				{
+					question: 'Can I appeal a ruling?',
+					answer: 'Per FAB Tournament Rules and Policy: After a judge makes a ruling, but before the procedure or penalty is applied, either player may appeal by stating "I would like to appeal." The floor judge will explain their ruling to the Head Judge, who makes the final decision. If the Head Judge is the first responder, you may still request an appeal - the Head Judge will consult with another judge before affirming or modifying their ruling. At events with only one judge present, that judge\'s ruling is final. Players may appeal to the Tournament Organizer, who will discuss the ruling privately and issue a final decision. After the event, players may contact the TO to leave feedback about rulings, judges, or situations.'
+				},
+				{
+					question: 'What if I disagree with the Head Judge?',
+					answer: 'Head Judge rulings are final during the event. After the event, you may submit feedback to the Tournament Organizer. Arguing with officials after a ruling is made is Unsporting Conduct and may result in penalties. Maintain professionalism even when you disagree with a ruling.'
+				},
+				{
+					question: 'Can judges give strategic advice?',
+					answer: 'No, judges cannot provide strategic advice or suggest plays. They can only answer rules questions, clarify card interactions, and resolve disputes. Judges will not tell you the "correct" play in a situation. If you ask "what should I do?", a judge can only explain your legal options.'
+				},
+				{
+					question: 'What if there\'s a language barrier?',
+					answer: 'Players who speak different languages may request a judge to facilitate communication. English is the official tournament language for card text and rules disputes. Players may bring a translator (who is not a current participant) with Head Judge approval. All official announcements will be made in English.'
+				}
+			]
+		},
+		{
+			id: 'conduct',
+			title: 'Player Conduct',
+			icon: 'user',
+			items: [
+				{
+					question: 'What behavior is expected at AGE Opens?',
+					answer: 'Players are expected to: treat opponents, judges, and staff with respect; maintain good hygiene; keep play areas clean; play in a timely manner; represent the game state accurately; and accept judge rulings gracefully. AGE Opens are competitive but friendly events - good sportsmanship is paramount.'
+				},
+				{
+					question: 'What about hygiene standards?',
+					answer: 'Players must maintain reasonable hygiene standards. This includes wearing clean clothing, using deodorant, and washing hands. Players with hygiene issues that impact opponents may be asked to address the issue, and failure to comply may result in removal from the event. This policy ensures a comfortable environment for all participants.'
+				},
+				{
+					question: 'Can I eat or drink during matches?',
+					answer: 'Non-alcoholic beverages in spill-proof containers are permitted at tables. Light snacks are acceptable but should not delay play or create mess. Keep food and drink away from cards and play areas. Clean up after yourself. Alcohol is not permitted during competition regardless of venue policies.'
+				},
+				{
+					question: 'What about spectators and coaching?',
+					answer: 'Spectators must remain silent during matches and may not communicate with players by any means. Coaching from spectators is strictly prohibited during matches and in Top 8. Between rounds, players may discuss games with others. Spectators who interfere with matches may be asked to leave the event.'
+				},
+				{
+					question: 'What if I observe cheating or misconduct?',
+					answer: 'Report suspected cheating or misconduct to a judge immediately. You may request to speak privately if sensitive. Provide as much detail as possible: what you saw, when, and who was involved. Reports are taken seriously and investigated confidentially. Retaliation against reporters is prohibited.'
+				},
+				{
+					question: 'Can I concede a match to help a friend?',
+					answer: 'Per FAB Tournament Rules and Policy: Players may concede games and/or matches at any time during Swiss rounds. However, in timed rounds, once you take an in-game action after time is called (or acknowledge your opponent\'s action), you may no longer concede and must play to conclusion. IMPORTANT: You may NOT ask your opponent for a concession at any time - doing so results in a match loss in the next round. You may NOT concede in exchange for any consideration (prizes, money, etc.) as this constitutes bribery. If players discuss considerations dependent on match outcome, they may no longer concede. Coordinating concessions to manipulate standings is collusion and results in Disqualification.'
+				}
+			]
+		},
+		{
+			id: 'streaming',
+			title: 'Stream & Coverage',
+			icon: 'camera',
+			items: [
+				{
+					question: 'Can I be selected for feature match or stream?',
+					answer: 'Yes, by registering for an AGE Open, you consent to being selected for feature matches and live stream coverage. Matches may be recorded, photographed, and broadcast on official AGE channels. This footage may be used for promotional purposes. Players who are uncomfortable appearing on camera should notify the Tournament Organizer before the event.'
+				},
+				{
+					question: 'Can I refuse to be on stream?',
+					answer: 'Players may request not to be featured on stream by notifying the Tournament Organizer before the event. However, in Top 8, being featured on stream may be mandatory. If you refuse to participate in Top 8 coverage after being selected, you may be required to forfeit your match. Accommodations for legitimate concerns (safety, privacy) will be considered on a case-by-case basis.'
+				},
+				{
+					question: 'Is there a stream delay?',
+					answer: 'Our official broadcast has a minimal stream delay. Players in feature matches may not access electronic devices except in extraneous circumstances (emergency situations, being on call for work or other obligations). Using electronic devices to view the stream during a match is considered cheating and will be dealt with appropriately. Communication with spectators is prohibited during matches. Attempting to receive outside information during a feature match results in Disqualification.'
+				},
+				{
+					question: 'What about content creation and recording?',
+					answer: 'Personal recording of your own matches is generally permitted with opponent consent. Recording other players\' matches requires their permission. Commercial recording or streaming requires Tournament Organizer approval. Decklists, standings, and official coverage are property of Arcane Games & Events.'
+				}
+			]
+		},
+		{
+			id: 'prizes',
+			title: 'Prizes & Standings',
+			icon: 'trophy',
+			items: [
+				{
+					question: 'How do I collect my prizes?',
+					answer: 'Cash prizes are distributed at the end of the event to Top 8 finishers. Bring valid photo ID matching your registration. Prizes not claimed within 30 days of the event may be forfeited. For players who must leave early, contact the Tournament Organizer to arrange pickup or alternative arrangements.'
+				},
+				{
+					question: 'Can prize payouts be split?',
+					answer: 'Prize splits among Top 8 finishers are permitted if agreed upon before matches begin. Players must still play out matches to determine standings and AGE Points. Split agreements cannot involve players outside Top 8, and the tournament structure must still be followed. Report all splits to the Head Judge.'
+				},
+				{
+					question: 'Are prizes taxable?',
+					answer: 'Prizes may be subject to local tax laws. Players who win $600 or more in a calendar year will receive appropriate tax documentation. International players should consult their local tax regulations. AGE is not responsible for tax obligations of prize winners.'
+				},
+				{
+					question: 'How are AGE Points awarded?',
+					answer: 'AGE Points are awarded based on final standings: 1st = 30 pts, 2nd = 25 pts, 3rd-4th = 20 pts, 5th-8th = 15 pts, 9th-12th = 12 pts, 13th-16th = 8 pts, All participants = 1 pt. Points are tracked per circuit and accumulate throughout the season. Disqualified players do not receive AGE Points.'
+				},
+				{
+					question: 'How are Player\'s Championship invites determined?',
+					answer: 'The top 16 players by total AGE Points in each circuit at the end of the season receive invitations. Tiebreakers for qualification are: 1) Most Top 8 finishes, 2) Most match wins, 3) Most events attended. Players must accept their invitation within 14 days or the next eligible player is invited.'
+				},
+				{
+					question: 'What happens if a qualified player can\'t attend the Championship?',
+					answer: 'Players who decline or cannot attend the Player\'s Championship should notify AGE as soon as possible. Their spot will pass down to the next qualified player. Invitations are non-transferable to specific players. Players who withdraw with proper notice will not face any penalties or future restrictions. However, failure to show up to the Player\'s Championship without warning or notice may result in penalties or restrictions from future AGE events.'
+				}
+			]
+		},
+		{
+			id: 'dq-bans',
+			title: 'Disqualifications & Bans',
+			icon: 'ban',
+			items: [
+				{
+					question: 'What results in automatic Disqualification?',
+					answer: 'Automatic DQ offenses include: Cheating of any kind, bribery or collusion, aggressive or threatening behavior, theft, harassment or discrimination, severe Unsporting Conduct, physical altercation, or impersonating another player. DQ\'d players must leave the venue immediately and forfeit all prizes. DQs are reported to and may be investigated by Legend Story Studios.'
+				},
+				{
+					question: 'What happens after a Disqualification?',
+					answer: 'The disqualified player will be dropped from the tournament immediately. No prizing will be awarded. All information will be documented and submitted to Legend Story Studios (LSS). AGE will conduct its own investigation and hand out appropriate penalties as we see fit. Players may be asked to leave the venue entirely. Further action (suspension or ban from future AGE events) may follow investigation.'
+				},
+				{
+					question: 'How do event bans work?',
+					answer: 'Players may be banned from future AGE events for serious infractions. Ban lengths range from a single event to lifetime depending on severity. Bans may be issued immediately at an event or following investigation. Banned players who attempt to register or attend events may be removed without refund and reported to authorities if trespassing.'
+				},
+				{
+					question: 'Can I appeal a Disqualification or ban?',
+					answer: 'You may submit a written appeal to Arcane Games & Events within 30 days of the DQ or ban. Include your full account of events and any supporting evidence. Appeals are reviewed by TO staff not involved in the original decision. You will receive a written response within 14 days. Appeal decisions are final.'
+				},
+				{
+					question: 'What about LSS suspensions?',
+					answer: 'Players suspended by Legend Story Studios are not permitted to participate in AGE Open events for the duration of their suspension. AGE reserves the right to independently ban players regardless of LSS status. Participation in events while suspended results in immediate removal and extended ban.'
+				}
+			]
+		}
+	];
+
+	// Track which rulebook sections are expanded
+	let openRulebookSection = null;
+	let openRulebookItem = null;
+
+	function toggleRulebookSection(sectionId) {
+		openRulebookSection = openRulebookSection === sectionId ? null : sectionId;
+		openRulebookItem = null; // Close any open item when changing sections
+	}
+
+	function toggleRulebookItem(itemIndex) {
+		openRulebookItem = openRulebookItem === itemIndex ? null : itemIndex;
+	}
+
+	// Section icons
+	const sectionIcons = {
+		ticket: 'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z',
+		cards: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
+		bracket: 'M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm12 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z',
+		clock: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+		warning: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
+		gavel: 'M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3',
+		user: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
+		camera: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z',
+		trophy: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z',
+		ban: 'M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636'
+	};
+
 	const faqItems = [
 		{
 			question: 'What is the AGE Open Series?',
-			answer: 'The AGE Open Series is a year-long competitive Flesh and Blood tournament circuit featuring 8 monthly $1,000 Opens across Los Angeles, St. Louis, and New England. Players earn AGE Points based on their performance, with the top 16 players qualifying for the Player\'s Championship with a $3,000 prize pool.'
+			answer: 'The AGE Open Series is a year-long competitive Flesh and Blood tournament circuit featuring monthly $1,000 Opens across multiple circuits. Players earn AGE Points based on their performance, with the top 16 players in each circuit qualifying for the Player\'s Championship. In 2026, the series expands to 24 Opens, a $30,000 total prize pool, and 3 AGE Championships across our circuits.'
 		},
 		{
 			question: 'How do I register for an event?',
-			answer: 'You can register for any AGE Open event directly on this website. Browse the Events tab, select the event you want to attend, and complete the online registration with payment. Premium members receive a 10% discount on all event registrations.'
+			answer: 'Register online through this website by selecting your desired event from the Events tab. Pre-registration is strongly recommended as events can sell out. Premium members receive a 10% discount on all registrations. A valid GEM ID is required for all events.'
 		},
 		{
-			question: 'What formats are played at AGE Opens?',
-			answer: 'AGE Opens typically feature Classic Constructed as the primary format. Each event listing will specify the exact format being played. Check the event details page for format-specific rules and banned/restricted lists in effect for that tournament.'
+			question: 'What format is played at AGE Opens?',
+			answer: 'AGE Opens use Classic Constructed format unless otherwise specified in the event listing. The current LSS banned and restricted list applies. Check individual event pages for format-specific details.'
 		},
 		{
 			question: 'How do AGE Points work?',
-			answer: 'AGE Points are earned based on tournament placement. 1st place earns 30 points, 2nd place 25 points, 3rd-4th 20 points, 5th-8th 15 points, 9th-12th 12 points, 13th-16th 8 points, and all participants receive 1 point. Points accumulate throughout the season to determine Player\'s Championship qualifiers.'
+			answer: 'AGE Points are earned based on final placement: 1st = 30 pts, 2nd = 25 pts, 3rd-4th = 20 pts, 5th-8th = 15 pts, 9th-12th = 12 pts, 13th-16th = 8 pts, all participants = 1 pt. Points accumulate throughout the season to determine Player\'s Championship qualifiers.'
 		},
 		{
 			question: 'How do I qualify for the Player\'s Championship?',
-			answer: 'The top 16 players by total AGE Points accumulated throughout the season receive automatic invitations to the Player\'s Championship. Points are tracked per circuit (Los Angeles, St. Louis, New England), and you can view current standings in the Standings tab.'
-		},
-		{
-			question: 'What is the prize structure for AGE Opens?',
-			answer: 'Each AGE Open has a $1,000 cash prize pool: 1st place receives $400, 2nd place $200, 3rd-4th $100 each, and 5th-8th $50 each. Additionally, all players in Top 16 earn AGE Points toward Player\'s Championship qualification.'
-		},
-		{
-			question: 'Do I need a GEM ID to participate?',
-			answer: 'While a GEM ID is not always required, we strongly recommend having one for accurate tracking of your results and AGE Points. Some events may require GEM ID for registration. You can register for a free GEM ID through Legend Story Studios.'
-		},
-		{
-			question: 'What should I bring to an AGE Open?',
-			answer: 'Bring your registered deck (sleeved), dice/counters, a playmat (optional), pen and paper for life tracking, your GEM ID, and a valid photo ID. Arrive at least 30 minutes before the event start time to complete check-in.'
+			answer: 'The top 16 players by AGE Points in each circuit receive automatic invitations. Tiebreakers are: 1) Most Top 8 finishes, 2) Most match wins, 3) Most events attended. Check the Standings tab to view current rankings.'
 		},
 		{
 			question: 'Can I get a refund if I can\'t attend?',
-			answer: 'Refund policies vary by event. Generally, refunds are available up to 48 hours before the event start time. Contact us directly for refund requests or special circumstances. Last-minute cancellations may not be eligible for refunds.'
-		},
-		{
-			question: 'How can I follow event coverage?',
-			answer: 'Live coverage and results are posted on our social media channels and this website. After events conclude, full standings, decklists (when made public), and coverage highlights are available in the Results and Decklists tabs.'
+			answer: 'Full refunds are available up until 24 hours before the event. Refunds are processed back to the original credit card used for purchase. No refunds within 24 hours of the event. Contact us for special circumstances or emergencies.'
 		}
 	];
 
@@ -345,7 +775,7 @@
 
 	// Get circuit color classes
 	function getCircuitColor(circuit) {
-		return circuitColors[circuit] || { bg: 'bg-gray-500', text: 'text-gray-400', bgLight: 'bg-gray-500/10' };
+		return circuitColors[circuit] || defaultCircuitColor;
 	}
 
 	// Filter standings by circuit and search query (explicitly reference sort state for reactivity)
@@ -452,9 +882,13 @@
 							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 							</svg>
-						{:else if tab.icon === 'map'}
+						{:else if tab.icon === 'ticket'}
 							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+							</svg>
+						{:else if tab.icon === 'calendar-days'}
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
 							</svg>
 						{:else if tab.icon === 'trophy'}
 							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -484,518 +918,294 @@
 	<div class="mx-auto max-w-7xl px-2 py-8">
 		<!-- Overview Tab -->
 		{#if activeTab === 'overview'}
-			<div class="space-y-8">
-				<!-- Animated Stats Row -->
-				<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-					<!-- Upcoming Events Card -->
-					<div class="group relative overflow-hidden rounded-xl border border-blue-500/30 bg-gradient-to-br from-blue-950/50 via-gray-900 to-gray-950 p-5 transition-all duration-300 hover:border-blue-500/60 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-1">
-						<div class="absolute top-0 right-0 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl group-hover:bg-blue-500/30 transition-colors"></div>
-						<div class="absolute -bottom-4 -left-4 w-16 h-16 bg-blue-600/10 rounded-full blur-xl"></div>
-						<div class="relative flex items-center gap-4">
-							<div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
-								<svg class="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-								</svg>
-							</div>
-							<div>
-								<div class="text-3xl font-bold text-white">{upcomingEvents.length}</div>
-								<div class="text-sm text-blue-300/80">Upcoming Events</div>
-							</div>
-						</div>
+			<div class="space-y-10">
+				<!-- Hero Section - Get Hyped -->
+				<div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950 border border-gray-800">
+					<!-- Animated background -->
+					<div class="absolute inset-0">
+						<div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-green-500/10"></div>
+						<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
+						<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
 					</div>
 
-					<!-- Circuits Card -->
-					<div class="group relative overflow-hidden rounded-xl border border-green-500/30 bg-gradient-to-br from-green-950/50 via-gray-900 to-gray-950 p-5 transition-all duration-300 hover:border-green-500/60 hover:shadow-lg hover:shadow-green-500/10 hover:-translate-y-1">
-						<div class="absolute top-0 right-0 w-24 h-24 bg-green-500/20 rounded-full blur-2xl group-hover:bg-green-500/30 transition-colors"></div>
-						<div class="absolute -bottom-4 -left-4 w-16 h-16 bg-green-600/10 rounded-full blur-xl"></div>
-						<div class="relative flex items-center gap-4">
-							<div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform">
-								<svg class="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-								</svg>
+					<div class="relative px-8 py-8 md:py-10 text-center">
+						<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 backdrop-blur-sm border border-amber-500/30 text-sm font-medium text-amber-300 mb-5">
+							<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+							2026 Season Now Open
+						</div>
+
+						<h2 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 tracking-tight">
+							Compete. Climb. <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-500">Win.</span>
+						</h2>
+
+						<p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-8">
+							Join the premier independent Flesh and Blood tournament circuit. $1,000 prize pools, AGE Points, and your shot at the Player's Championship.
+						</p>
+
+						<!-- Minimal Stats Inline -->
+						<div class="flex flex-wrap justify-center gap-8 mb-10 text-sm">
+							<div class="flex items-center gap-2">
+								<span class="text-3xl font-bold text-white">{upcomingEvents.length}</span>
+								<span class="text-gray-500">upcoming events</span>
 							</div>
-							<div>
-								<div class="text-3xl font-bold text-white">3</div>
-								<div class="text-sm text-green-300/80">Active Circuits</div>
+							<div class="flex items-center gap-2">
+								<span class="text-3xl font-bold text-white">3</span>
+								<span class="text-gray-500">circuits nationwide</span>
+							</div>
+							<div class="flex items-center gap-2">
+								<span class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">$30K</span>
+								<span class="text-gray-500">2026 prize pool</span>
 							</div>
 						</div>
-					</div>
 
-					<!-- Players Card -->
-					<div class="group relative overflow-hidden rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-950/50 via-gray-900 to-gray-950 p-5 transition-all duration-300 hover:border-purple-500/60 hover:shadow-lg hover:shadow-purple-500/10 hover:-translate-y-1">
-						<div class="absolute top-0 right-0 w-24 h-24 bg-purple-500/20 rounded-full blur-2xl group-hover:bg-purple-500/30 transition-colors"></div>
-						<div class="absolute -bottom-4 -left-4 w-16 h-16 bg-purple-600/10 rounded-full blur-xl"></div>
-						<div class="relative flex items-center gap-4">
-							<div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-transform">
-								<svg class="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-								</svg>
-							</div>
-							<div>
-								<div class="text-3xl font-bold text-white">{(data.standings || []).length}</div>
-								<div class="text-sm text-purple-300/80">Ranked Players</div>
-							</div>
-						</div>
-					</div>
-
-					<!-- Prize Pool Card -->
-					<div class="group relative overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-950/50 via-gray-900 to-gray-950 p-5 transition-all duration-300 hover:border-amber-500/60 hover:shadow-lg hover:shadow-amber-500/10 hover:-translate-y-1">
-						<div class="absolute top-0 right-0 w-24 h-24 bg-amber-500/20 rounded-full blur-2xl group-hover:bg-amber-500/30 transition-colors"></div>
-						<div class="absolute -bottom-4 -left-4 w-16 h-16 bg-amber-600/10 rounded-full blur-xl"></div>
-						<div class="relative flex items-center gap-4">
-							<div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform">
-								<svg class="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-								</svg>
-							</div>
-							<div>
-								<div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">$1,000</div>
-								<div class="text-sm text-amber-300/80">Per Event Prize Pool</div>
-							</div>
+						<!-- Primary CTAs -->
+						<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+							{#if upcomingEvents.length > 0}
+								<a href="/age-open/{upcomingEvents[0].id}" class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-4 text-lg font-semibold text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-105 transition-all">
+									Register for Next Event
+									<svg class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+									</svg>
+								</a>
+							{/if}
+							<button onclick={() => switchTab('events')} class="inline-flex items-center gap-2 rounded-xl bg-white/10 backdrop-blur-sm px-6 py-4 font-medium text-white border border-white/20 hover:bg-white/20 transition-all">
+								Browse All Events
+							</button>
 						</div>
 					</div>
 				</div>
 
 				<!-- Main Content Grid -->
 				<div class="grid gap-8 lg:grid-cols-3">
-					<!-- Left Column: Featured Event + Upcoming Events -->
-					<div class="lg:col-span-2 space-y-6">
-						<!-- Featured Next Event - Enhanced -->
-						{#if upcomingEvents.length > 0}
-							{@const nextEvent = upcomingEvents[0]}
-							{@const colors = getCircuitColor(nextEvent.circuit)}
-							<div class="group relative overflow-hidden rounded-2xl border-2 {colors.bg.replace('bg-', 'border-')}/40 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950 transition-all duration-500 hover:border-opacity-80 hover:shadow-2xl hover:shadow-blue-500/10">
-								<!-- Animated background effects -->
-								<div class="absolute inset-0 bg-gradient-to-br {colors.bgLight} opacity-30"></div>
-								<div class="absolute top-0 right-0 w-96 h-96 {colors.bgLight} rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 opacity-40 group-hover:opacity-60 transition-opacity"></div>
-								<div class="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3 opacity-40"></div>
-
-								<!-- Decorative grid pattern -->
-								<div class="absolute inset-0 opacity-5" style="background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 0); background-size: 24px 24px;"></div>
-
-								<!-- Animated corner accent -->
-								<div class="absolute top-0 right-0 w-32 h-32">
-									<div class="absolute top-4 right-4 w-2 h-16 {colors.bg} rounded-full opacity-60"></div>
-									<div class="absolute top-4 right-4 w-16 h-2 {colors.bg} rounded-full opacity-60"></div>
-								</div>
-
-								<div class="relative p-8">
-									<div class="flex items-center gap-3 mb-5">
-										<span class="relative px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-sm text-white text-xs font-bold uppercase tracking-widest border border-white/20">
-											<span class="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-											<span class="ml-2">Next Event</span>
-										</span>
-										{#if nextEvent.circuit}
-											<span class="rounded-full {colors.bg} px-4 py-1.5 text-xs font-semibold text-white shadow-lg {colors.bg.replace('bg-', 'shadow-')}/30">
-												{nextEvent.circuit}
-											</span>
-										{/if}
-									</div>
-									<h3 class="text-3xl md:text-4xl font-bold text-white mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-gray-300 transition-all">{nextEvent.title}</h3>
-									<div class="flex flex-wrap gap-6 mb-6">
-										{#if nextEvent.eventDate}
-											<div class="flex items-center gap-3 bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/10">
-												<div class="flex h-10 w-10 items-center justify-center rounded-lg {colors.bgLight}">
-													<svg class="h-5 w-5 {colors.text}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-													</svg>
-												</div>
-												<span class="text-gray-200 font-medium">{formatDate(nextEvent.eventDate)}</span>
-											</div>
-										{/if}
-										{#if nextEvent.location}
-											<div class="flex items-center gap-3 bg-black/20 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/10">
-												<div class="flex h-10 w-10 items-center justify-center rounded-lg {colors.bgLight}">
-													<svg class="h-5 w-5 {colors.text}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-													</svg>
-												</div>
-												<span class="text-gray-200 font-medium">{nextEvent.location}</span>
-											</div>
-										{/if}
-									</div>
-									<div class="flex items-center gap-5">
-										<a href="/age-open/{nextEvent.id}" class="group/btn inline-flex items-center gap-2 rounded-xl {colors.bg} px-6 py-3 font-semibold text-white shadow-lg {colors.bg.replace('bg-', 'shadow-')}/40 hover:shadow-xl hover:scale-105 transition-all duration-300">
-											View Event
-											<svg class="h-5 w-5 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-											</svg>
-										</a>
-										<div class="flex items-center gap-2">
-											<span class="text-sm text-gray-400">Entry:</span>
-											<span class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">${formatPrice(nextEvent.price)}</span>
-										</div>
-									</div>
-								</div>
-							</div>
-						{/if}
-
-						<!-- Upcoming Events List - Enhanced -->
-						<div class="rounded-2xl border border-gray-800 bg-gradient-to-b from-gray-900 to-gray-950 overflow-hidden shadow-xl">
-							<div class="flex items-center justify-between px-6 py-5 border-b border-gray-800/80 bg-gradient-to-r from-blue-500/5 to-transparent">
-								<h3 class="font-bold text-white text-lg flex items-center gap-3">
-									<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30">
-										<svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-										</svg>
-									</div>
-									Upcoming Events
-								</h3>
-								<button onclick={() => switchTab('events')} class="flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium text-blue-400 hover:text-white hover:bg-blue-500/20 transition-all">
-									View All
-									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-									</svg>
-								</button>
-							</div>
-							{#if upcomingEvents.length > 1}
-								<div class="divide-y divide-gray-800/60">
-									{#each upcomingEvents.slice(1, 5) as evt, i}
-										{@const colors = getCircuitColor(evt.circuit)}
-										<a href="/age-open/{evt.id}" class="group flex items-center gap-4 p-5 hover:bg-gradient-to-r hover:from-gray-800/50 hover:to-transparent transition-all duration-300">
-											<!-- Event number badge -->
-											<div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gray-800/80 font-bold text-gray-400 group-hover:bg-gradient-to-br group-hover:from-blue-500/20 group-hover:to-purple-500/20 group-hover:text-white transition-all">
-												{i + 2}
-											</div>
-											<div class="flex-1 min-w-0">
-												<div class="flex items-center gap-2 mb-1.5">
-													{#if evt.circuit}
-														<span class="h-2.5 w-2.5 rounded-full {colors.bg} ring-2 {colors.bg.replace('bg-', 'ring-')}/30"></span>
-													{/if}
-													<span class="font-semibold text-white group-hover:text-blue-400 transition-colors truncate">{evt.title}</span>
-												</div>
-												<div class="flex flex-wrap items-center gap-4 text-sm text-gray-400">
-													{#if evt.eventDate}
-														<span class="flex items-center gap-1.5">
-															<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-															</svg>
-															{formatDate(evt.eventDate)}
-														</span>
-													{/if}
-													{#if evt.location}
-														<span class="hidden sm:flex items-center gap-1.5 truncate">
-															<svg class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-															</svg>
-															{evt.location}
-														</span>
-													{/if}
-												</div>
-											</div>
-											<div class="flex-shrink-0 text-right">
-												<span class="text-lg font-bold text-white">${formatPrice(evt.price)}</span>
-												<div class="mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-													<span class="text-xs text-blue-400">View →</span>
-												</div>
-											</div>
-										</a>
-									{/each}
-								</div>
-							{:else}
-								<div class="p-8 text-center">
-									<p class="text-gray-400">No additional upcoming events at this time.</p>
-								</div>
-							{/if}
+					<!-- Left Column: Upcoming Events -->
+					<div class="lg:col-span-2 space-y-4">
+						<div class="flex items-center justify-between mb-2">
+							<h3 class="text-lg font-semibold text-white">Upcoming Events</h3>
+							<button onclick={() => switchTab('events')} class="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+								View All →
+							</button>
 						</div>
 
-						<!-- Recent Results -->
-						{#if (data.eventResults || []).length > 0}
-							<div class="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
-								<div class="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-gray-900/80">
-									<h3 class="font-semibold text-white flex items-center gap-2">
-										<svg class="h-5 w-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-										</svg>
-										Recent Results
-									</h3>
-									<button onclick={() => switchTab('results')} class="text-sm text-blue-400 hover:text-blue-300 transition-colors">
-										View All →
-									</button>
-								</div>
-								<div class="divide-y divide-gray-800">
-									{#each (data.eventResults || []).slice(0, 3) as eventResult}
-										{@const colors = getCircuitColor(eventResult.event.circuit)}
-										<div class="p-4">
-											<div class="flex items-center gap-2 mb-3">
-												{#if eventResult.event.circuit}
-													<span class="h-2 w-2 rounded-full {colors.bg}"></span>
-												{/if}
-												<h4 class="font-medium text-white">{eventResult.event.title}</h4>
-											</div>
-											<div class="space-y-2">
-												{#each eventResult.results.slice(0, 3) as result, i}
-													<div class="flex items-center justify-between text-sm">
-														<div class="flex items-center gap-3">
-															<span class="flex h-6 w-6 items-center justify-center rounded-full {i === 0 ? 'bg-yellow-500/20 text-yellow-400' : i === 1 ? 'bg-gray-400/20 text-gray-300' : 'bg-amber-700/20 text-amber-600'} text-xs font-bold">
-																{result.placement}
+						<!-- Event Cards Stack -->
+						{#if upcomingEvents.length > 0}
+							<div class="space-y-3">
+								{#each upcomingEvents.slice(0, 4) as evt, i}
+									{@const colors = getCircuitColor(evt.circuit)}
+									<a href="/age-open/{evt.id}" class="group block rounded-xl border border-gray-800 bg-gray-900 overflow-hidden hover:border-gray-600 transition-all hover:shadow-lg">
+										<!-- Circuit Color Bar -->
+										<div class="{colors.bg} h-1.5 w-full"></div>
+
+										<div class="p-4 sm:p-5">
+											<div class="flex items-start gap-4">
+												<!-- Date Block -->
+												<div class="flex-shrink-0 w-14 text-center py-1">
+													{#if evt.eventDate}
+														<div class="text-2xl font-bold text-white leading-none">{new Date(evt.eventDate).getDate()}</div>
+														<div class="text-xs font-medium text-gray-400 uppercase mt-1">{new Date(evt.eventDate).toLocaleDateString('en-US', { month: 'short' })}</div>
+													{/if}
+												</div>
+
+												<!-- Event Details -->
+												<div class="flex-1 min-w-0">
+													<div class="flex items-center gap-2 mb-1">
+														{#if i === 0}
+															<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-green-500/20 text-green-400">
+																<span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+																Next
 															</span>
-															<span class="text-gray-300">{result.playerName}</span>
-														</div>
-														{#if result.hero}
-															<span class="text-gray-500 text-xs">{result.hero}</span>
+														{/if}
+														<span class="{colors.text} text-xs font-semibold">{evt.circuit || 'TBD'}</span>
+													</div>
+													<h4 class="text-lg font-bold text-white group-hover:{colors.text} transition-colors line-clamp-1">{evt.title}</h4>
+													<div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-400">
+														{#if evt.location}
+															<span class="flex items-center gap-1.5">
+																<svg class="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+																</svg>
+																<span class="truncate">{evt.location}</span>
+															</span>
+														{/if}
+														{#if evt.format}
+															<span class="flex items-center gap-1.5">
+																<svg class="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h10M7 12h10m-7 5h4" />
+																</svg>
+																{evt.format}
+															</span>
 														{/if}
 													</div>
-												{/each}
+												</div>
+
+												<!-- Price & CTA -->
+												<div class="flex-shrink-0 text-right">
+													<div class="text-xl font-bold text-white">${formatPrice(evt.price)}</div>
+													<div class="mt-2">
+														<span class="inline-flex items-center gap-1 rounded-lg {colors.bg} px-3 py-1.5 text-xs font-semibold text-white group-hover:opacity-90 transition-opacity">
+															Register
+															<svg class="h-3 w-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+															</svg>
+														</span>
+													</div>
+												</div>
 											</div>
 										</div>
-									{/each}
-								</div>
+									</a>
+								{/each}
+							</div>
+						{:else}
+							<div class="rounded-xl border border-gray-800 bg-gray-900 p-8 text-center">
+								<p class="text-gray-400">No upcoming events scheduled</p>
 							</div>
 						{/if}
+
+						<!-- How It Works - Simple Steps -->
+						<div class="rounded-xl border border-gray-800 bg-gray-900 p-6 mt-6">
+							<h3 class="font-semibold text-white mb-4">How to Play</h3>
+							<div class="grid gap-4 sm:grid-cols-3">
+								<div class="flex gap-3">
+									<div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">1</div>
+									<div>
+										<div class="font-medium text-white text-sm">Sign Up</div>
+										<div class="text-xs text-gray-500">Register for an event</div>
+									</div>
+								</div>
+								<div class="flex gap-3">
+									<div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-purple-500/20 text-purple-400 text-sm font-bold">2</div>
+									<div>
+										<div class="font-medium text-white text-sm">Compete</div>
+										<div class="text-xs text-gray-500">Play in Swiss rounds</div>
+									</div>
+								</div>
+								<div class="flex gap-3">
+									<div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-green-500/20 text-green-400 text-sm font-bold">3</div>
+									<div>
+										<div class="font-medium text-white text-sm">Earn Points</div>
+										<div class="text-xs text-gray-500">Climb the leaderboard</div>
+									</div>
+								</div>
+							</div>
+						</div>
 					</div>
 
-					<!-- Right Column: Standings + Decklists -->
+					<!-- Right Column: Compact Sidebar -->
 					<div class="space-y-6">
-						<!-- Top Standings - Enhanced -->
-						<div class="relative rounded-2xl border border-purple-500/30 bg-gradient-to-b from-purple-950/30 via-gray-900 to-gray-950 overflow-hidden shadow-xl">
-							<div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl"></div>
-							<div class="relative flex items-center justify-between px-5 py-4 border-b border-purple-500/20 bg-gradient-to-r from-purple-500/10 to-transparent">
-								<h3 class="font-bold text-white flex items-center gap-3">
-									<div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-500/30">
-										<svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+						<!-- Leaderboard - Styled -->
+						<div class="rounded-xl border border-purple-500/30 bg-gradient-to-b from-purple-500/10 to-gray-900 overflow-hidden">
+							<div class="flex items-center justify-between px-5 py-4 border-b border-purple-500/20 bg-purple-500/5">
+								<div class="flex items-center gap-2">
+									<div class="h-6 w-6 rounded-lg bg-purple-500/30 flex items-center justify-center">
+										<svg class="h-3.5 w-3.5 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+											<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
 										</svg>
 									</div>
-									Leaderboard
-								</h3>
-								<button onclick={() => switchTab('standings')} class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-purple-400 hover:text-white hover:bg-purple-500/20 transition-all">
-									Full Standings
-									<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-									</svg>
+									<h3 class="font-semibold text-white">Leaderboard</h3>
+								</div>
+								<button onclick={() => switchTab('standings')} class="text-sm text-purple-400 hover:text-purple-300 transition-colors">
+									View All →
 								</button>
 							</div>
 							{#if (data.standings || []).length > 0}
-								<div class="divide-y divide-gray-800/50">
-									{#each (data.standings || []).slice(0, 8) as player, i}
+								<div class="divide-y divide-gray-800">
+									{#each (data.standings || []).slice(0, 5) as player, i}
 										{@const colors = getCircuitColor(player.circuit)}
-										<div class="group flex items-center gap-3 px-4 py-3 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-transparent transition-all">
-											<!-- Rank badge with special styling for top 3 -->
-											{#if i === 0}
-												<div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 text-white font-bold text-sm shadow-lg shadow-yellow-500/30">
-													<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-														<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-													</svg>
-												</div>
-											{:else if i === 1}
-												<div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-gray-300 to-gray-400 text-gray-700 font-bold text-sm shadow-lg">
-													2
-												</div>
-											{:else if i === 2}
-												<div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-600 to-orange-700 text-white font-bold text-sm shadow-lg">
-													3
-												</div>
-											{:else}
-												<div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-800/80 text-gray-400 font-medium text-sm group-hover:bg-gray-700 transition-colors">
-													{i + 1}
-												</div>
-											{/if}
+										<div class="flex items-center gap-3 px-5 py-3">
+											<div class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold
+												{i === 0 ? 'bg-yellow-500/20 text-yellow-400' : i === 1 ? 'bg-gray-400/20 text-gray-300' : i === 2 ? 'bg-amber-600/20 text-amber-500' : 'bg-gray-800 text-gray-500'}">
+												{i + 1}
+											</div>
 											<div class="flex-1 min-w-0">
-												<div class="font-medium text-white truncate group-hover:text-purple-300 transition-colors">{player.playerName}</div>
-												<div class="flex items-center gap-2 text-xs text-gray-500">
-													<span class="h-2 w-2 rounded-full {colors.bg} ring-1 {colors.bg.replace('bg-', 'ring-')}/30"></span>
-													{player.circuit}
+												<div class="flex items-center gap-2">
+													<span class="h-2 w-2 rounded-full {colors.bg}"></span>
+													<span class="text-sm font-medium text-white truncate">{player.playerName}</span>
 												</div>
 											</div>
-											<div class="text-right">
-												<span class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">{player.totalPoints || 0}</span>
-												<div class="text-xs text-gray-500">pts</div>
-											</div>
+											<div class="text-sm font-bold text-purple-400">{player.totalPoints || 0} pts</div>
 										</div>
 									{/each}
 								</div>
 							{:else}
-								<div class="p-8 text-center">
-									<div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-800/50">
-										<svg class="h-7 w-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-										</svg>
-									</div>
-									<p class="text-gray-400 text-sm">No standings data yet</p>
+								<div class="p-6 text-center text-gray-500 text-sm">
+									No standings data yet
 								</div>
 							{/if}
 						</div>
 
-						<!-- Latest Decklists - Enhanced -->
-						<div class="relative rounded-2xl border border-green-500/30 bg-gradient-to-b from-green-950/30 via-gray-900 to-gray-950 overflow-hidden shadow-xl">
-							<div class="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-2xl"></div>
-							<div class="relative flex items-center justify-between px-5 py-4 border-b border-green-500/20 bg-gradient-to-r from-green-500/10 to-transparent">
-								<h3 class="font-bold text-white flex items-center gap-3">
-									<div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg shadow-green-500/30">
-										<svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+						<!-- Circuits - Styled -->
+						<div class="rounded-xl border border-amber-500/30 bg-gradient-to-b from-amber-500/10 to-gray-900 overflow-hidden">
+							<div class="px-5 py-4 border-b border-amber-500/20 bg-amber-500/5">
+								<div class="flex items-center gap-2">
+									<div class="h-6 w-6 rounded-lg bg-amber-500/30 flex items-center justify-center">
+										<svg class="h-3.5 w-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+											<path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
 										</svg>
 									</div>
-									Decklists
-								</h3>
-								<button onclick={() => switchTab('decklists')} class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-green-400 hover:text-white hover:bg-green-500/20 transition-all">
-									View All
-									<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+									<h3 class="font-semibold text-white">Our Circuits</h3>
+								</div>
+							</div>
+							<div class="p-4 space-y-2">
+								<button onclick={() => switchTab('events')} class="group w-full flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/40 hover:bg-blue-500/20 transition-all text-left">
+									<div class="h-8 w-8 rounded-lg bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-blue-500/30">LA</div>
+									<div class="flex-1">
+										<div class="text-sm font-medium text-white">Los Angeles</div>
+									</div>
+									<span class="text-xs text-blue-400 font-medium">{laCount} events</span>
+								</button>
+								<button onclick={() => switchTab('events')} class="group w-full flex items-center gap-3 p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20 hover:border-purple-500/40 hover:bg-purple-500/20 transition-all text-left">
+									<div class="h-8 w-8 rounded-lg bg-purple-500 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-purple-500/30">NE</div>
+									<div class="flex-1">
+										<div class="text-sm font-medium text-white">New England</div>
+									</div>
+									<span class="text-xs text-purple-400 font-medium">{neCount} events</span>
+								</button>
+								<button onclick={() => switchTab('events')} class="group w-full flex items-center gap-3 p-2.5 rounded-lg bg-green-500/10 border border-green-500/20 hover:border-green-500/40 hover:bg-green-500/20 transition-all text-left">
+									<div class="h-8 w-8 rounded-lg bg-green-500 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-green-500/30">STL</div>
+									<div class="flex-1">
+										<div class="text-sm font-medium text-white">St. Louis</div>
+									</div>
+									<span class="text-xs text-green-400 font-medium">{stlCount} events</span>
+								</button>
+							</div>
+						</div>
+
+						<!-- Why Play - Benefits -->
+						<div class="rounded-xl border border-green-500/30 bg-gradient-to-b from-green-500/10 to-gray-900 p-5">
+							<div class="flex items-center gap-2 mb-4">
+								<div class="h-6 w-6 rounded-lg bg-green-500/30 flex items-center justify-center">
+									<svg class="h-3.5 w-3.5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+										<path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
 									</svg>
-								</button>
-							</div>
-							{#if (data.decklists || []).length > 0}
-								<div class="divide-y divide-gray-800/50">
-									{#each (data.decklists || []).slice(0, 5) as deck}
-										{@const colors = getCircuitColor(deck.circuit)}
-										<a href="/age-open/{deck.eventId}/decklist/{deck.id}" class="group block px-4 py-3 hover:bg-gradient-to-r hover:from-green-500/10 hover:to-transparent transition-all">
-											<div class="flex items-start gap-3">
-												<!-- Player initial avatar -->
-												<div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-gray-700 to-gray-800 text-sm font-bold text-white group-hover:from-green-500/30 group-hover:to-emerald-500/30 transition-colors">
-													{deck.playerName.split(' ').map(n => n[0]).join('').slice(0, 2)}
-												</div>
-												<div class="flex-1 min-w-0">
-													<div class="flex items-center gap-2">
-														<span class="font-medium text-white group-hover:text-green-300 transition-colors truncate">{deck.playerName}</span>
-														{#if deck.circuit}
-															<span class="h-2 w-2 rounded-full {colors.bg}"></span>
-														{/if}
-													</div>
-													{#if deck.hero}
-														<div class="text-sm text-green-400/80 truncate">{deck.hero}</div>
-													{/if}
-													<div class="text-xs text-gray-500 mt-0.5 truncate">{deck.eventTitle}</div>
-												</div>
-												<svg class="h-4 w-4 text-gray-600 group-hover:text-green-400 group-hover:translate-x-1 transition-all flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-												</svg>
-											</div>
-										</a>
-									{/each}
 								</div>
-							{:else}
-								<div class="p-8 text-center">
-									<div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-800/50">
-										<svg class="h-7 w-7 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+								<h3 class="font-semibold text-white">Why Play AGE Open?</h3>
+							</div>
+							<div class="space-y-3">
+								<div class="flex items-start gap-3">
+									<div class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-400">
+										<svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+											<path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+											<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
 										</svg>
 									</div>
-									<p class="text-gray-400 text-sm">No public decklists yet</p>
+									<div class="text-sm text-gray-300">$1,000 prize pools at every event</div>
 								</div>
-							{/if}
-						</div>
-
-						<!-- Circuit Summary - Enhanced -->
-						<div class="relative rounded-2xl border border-blue-500/30 bg-gradient-to-b from-blue-950/30 via-gray-900 to-gray-950 overflow-hidden shadow-xl">
-							<div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl"></div>
-							<div class="relative px-5 py-4 border-b border-blue-500/20 bg-gradient-to-r from-blue-500/10 to-transparent">
-								<h3 class="font-bold text-white flex items-center gap-3">
-									<div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30">
-										<svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+								<div class="flex items-start gap-3">
+									<div class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-purple-500/20 text-purple-400">
+										<svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+											<path fill-rule="evenodd" d="M6 3a1 1 0 011-1h.01a1 1 0 010 2H7a1 1 0 01-1-1zm2 3a1 1 0 00-2 0v1a2 2 0 00-2 2v1a2 2 0 00-2 2v.683a3.7 3.7 0 011.055.485 1.704 1.704 0 001.89 0 3.704 3.704 0 014.11 0 1.704 1.704 0 001.89 0 3.704 3.704 0 014.11 0 1.704 1.704 0 001.89 0A3.7 3.7 0 0118 12.683V12a2 2 0 00-2-2V9a2 2 0 00-2-2V6a1 1 0 10-2 0v1h-1V6a1 1 0 10-2 0v1H8V6zm10 8.868a3.704 3.704 0 01-4.055-.036 1.704 1.704 0 00-1.89 0 3.704 3.704 0 01-4.11 0 1.704 1.704 0 00-1.89 0A3.704 3.704 0 012 14.868V17a1 1 0 001 1h14a1 1 0 001-1v-2.132zM9 3a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zm3 0a1 1 0 011-1h.01a1 1 0 110 2H13a1 1 0 01-1-1z" clip-rule="evenodd"/>
 										</svg>
 									</div>
-									Our Circuits
-								</h3>
-							</div>
-							<div class="p-3">
-								<div class="space-y-2">
-									<!-- Los Angeles -->
-									<button onclick={() => switchTab('map')} class="group w-full flex items-center gap-4 p-3 rounded-xl bg-gradient-to-r from-blue-500/5 to-transparent hover:from-blue-500/15 border border-transparent hover:border-blue-500/30 transition-all text-left">
-										<div class="relative">
-											<div class="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30 flex items-center justify-center">
-												<span class="text-white font-bold">LA</span>
-											</div>
-											<div class="absolute -top-1 -right-1 h-4 w-4 bg-blue-400 rounded-full flex items-center justify-center text-[10px] font-bold text-white ring-2 ring-gray-900">
-												{laCount}
-											</div>
-										</div>
-										<div class="flex-1">
-											<div class="font-semibold text-white group-hover:text-blue-300 transition-colors">Los Angeles</div>
-											<div class="text-xs text-gray-500">Southern California</div>
-										</div>
-										<svg class="h-5 w-5 text-gray-600 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+									<div class="text-sm text-gray-300">Qualify for Player's Championship</div>
+								</div>
+								<div class="flex items-start gap-3">
+									<div class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-blue-400">
+										<svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+											<path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
 										</svg>
-									</button>
-
-									<!-- St. Louis -->
-									<button onclick={() => switchTab('map')} class="group w-full flex items-center gap-4 p-3 rounded-xl bg-gradient-to-r from-green-500/5 to-transparent hover:from-green-500/15 border border-transparent hover:border-green-500/30 transition-all text-left">
-										<div class="relative">
-											<div class="h-12 w-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg shadow-green-500/30 flex items-center justify-center">
-												<span class="text-white font-bold">STL</span>
-											</div>
-											<div class="absolute -top-1 -right-1 h-4 w-4 bg-green-400 rounded-full flex items-center justify-center text-[10px] font-bold text-white ring-2 ring-gray-900">
-												{stlCount}
-											</div>
-										</div>
-										<div class="flex-1">
-											<div class="font-semibold text-white group-hover:text-green-300 transition-colors">St. Louis</div>
-											<div class="text-xs text-gray-500">Midwest</div>
-										</div>
-										<svg class="h-5 w-5 text-gray-600 group-hover:text-green-400 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-										</svg>
-									</button>
-
-									<!-- New England -->
-									<button onclick={() => switchTab('map')} class="group w-full flex items-center gap-4 p-3 rounded-xl bg-gradient-to-r from-purple-500/5 to-transparent hover:from-purple-500/15 border border-transparent hover:border-purple-500/30 transition-all text-left">
-										<div class="relative">
-											<div class="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg shadow-purple-500/30 flex items-center justify-center">
-												<span class="text-white font-bold">NE</span>
-											</div>
-											<div class="absolute -top-1 -right-1 h-4 w-4 bg-purple-400 rounded-full flex items-center justify-center text-[10px] font-bold text-white ring-2 ring-gray-900">
-												{neCount}
-											</div>
-										</div>
-										<div class="flex-1">
-											<div class="font-semibold text-white group-hover:text-purple-300 transition-colors">New England</div>
-											<div class="text-xs text-gray-500">Northeast</div>
-										</div>
-										<svg class="h-5 w-5 text-gray-600 group-hover:text-purple-400 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-										</svg>
-									</button>
+									</div>
+									<div class="text-sm text-gray-300">Competitive local community</div>
 								</div>
 							</div>
-							<div class="p-3 pt-0">
-								<button onclick={() => switchTab('map')} class="w-full rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-[1.02] transition-all">
-									Explore Circuit Map
-								</button>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Quick Info Banner - Enhanced -->
-				<div class="relative overflow-hidden rounded-2xl border border-blue-500/30 bg-gradient-to-r from-blue-950/50 via-purple-950/50 to-pink-950/50 p-8">
-					<!-- Animated background elements -->
-					<div class="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5"></div>
-					<div class="absolute top-0 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-					<div class="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
-
-					<!-- Decorative elements -->
-					<div class="absolute top-4 left-4 w-2 h-12 bg-gradient-to-b from-blue-500 to-transparent rounded-full opacity-60"></div>
-					<div class="absolute top-4 left-4 w-12 h-2 bg-gradient-to-r from-blue-500 to-transparent rounded-full opacity-60"></div>
-					<div class="absolute bottom-4 right-4 w-2 h-12 bg-gradient-to-t from-pink-500 to-transparent rounded-full opacity-60"></div>
-					<div class="absolute bottom-4 right-4 w-12 h-2 bg-gradient-to-l from-pink-500 to-transparent rounded-full opacity-60"></div>
-
-					<div class="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-						<div class="flex items-center gap-5">
-							<div class="hidden sm:flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-xl shadow-purple-500/30">
-								<svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-								</svg>
-							</div>
-							<div>
-								<h3 class="text-2xl font-bold text-white mb-2">Ready to compete?</h3>
-								<p class="text-gray-300 max-w-xl">Join the AGE Open Series and compete for <span class="text-amber-400 font-semibold">$1,000</span> prizes and AGE Points toward the <span class="text-purple-400 font-semibold">Player's Championship</span>.</p>
-							</div>
-						</div>
-						<div class="flex flex-col sm:flex-row gap-3">
-							<button onclick={() => switchTab('events')} class="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3.5 font-semibold text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:scale-105 transition-all duration-300">
-								Browse All Events
-								<svg class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-								</svg>
-							</button>
-							<button onclick={() => switchTab('rules')} class="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 backdrop-blur-sm px-6 py-3.5 font-medium text-white border border-white/20 hover:bg-white/20 transition-all">
-								Learn More
-							</button>
 						</div>
 					</div>
 				</div>
@@ -1224,436 +1434,294 @@
 			</div>
 		{/if}
 
-		<!-- Map Tab -->
-		{#if activeTab === 'map'}
-			<div class="space-y-8">
+		<!-- Calendar Tab -->
+		{#if activeTab === 'calendar'}
+			<div class="space-y-6">
 				<!-- Header -->
-				<div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-600/20 via-gray-900 to-gray-900 border border-blue-500/20 p-8">
-					<div class="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+				<div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-600/20 via-gray-900 to-gray-900 border border-emerald-500/20 p-8">
+					<div class="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
 					<div class="relative">
 						<div class="flex items-center gap-3 mb-3">
-							<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/20 ring-1 ring-blue-500/30">
-								<svg class="h-6 w-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+							<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/20 ring-1 ring-emerald-500/30">
+								<svg class="h-6 w-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 								</svg>
 							</div>
 							<div>
-								<h2 class="text-2xl font-bold text-white">Event Finder</h2>
-								<p class="text-gray-400">Find AGE Open circuits and FAB TCG events near you</p>
+								<h2 class="text-2xl font-bold text-white">Event Calendar</h2>
+								<p class="text-gray-400">View upcoming AGE Open events and LSS tournament seasons</p>
 							</div>
 						</div>
 					</div>
 				</div>
 
-				<!-- FAB Event Search Form -->
-				<div class="rounded-xl border border-gray-800 bg-gray-900/80 p-6">
-					<div class="flex items-center gap-3 mb-5">
-						<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20 ring-1 ring-amber-500/30">
-							<svg class="h-5 w-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+				<!-- Legend -->
+				<div class="flex flex-wrap items-center gap-4 text-sm">
+					<span class="text-gray-500 font-medium">AGE Opens:</span>
+					<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30">
+						<div class="relative flex h-3 w-3">
+							<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+							<span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+						</div>
+						<span class="text-blue-300 font-medium">Los Angeles</span>
+					</div>
+					<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/30">
+						<div class="relative flex h-3 w-3">
+							<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+							<span class="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+						</div>
+						<span class="text-purple-300 font-medium">New England</span>
+					</div>
+					<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30">
+						<div class="relative flex h-3 w-3">
+							<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+							<span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+						</div>
+						<span class="text-green-300 font-medium">St. Louis</span>
+					</div>
+					<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+						<div class="h-3 w-3 rounded-full bg-amber-500"></div>
+						<span class="text-amber-300/80">LSS Event</span>
+					</div>
+				</div>
+
+				<!-- Calendar -->
+				<div class="rounded-xl border border-gray-800 bg-gray-900/80 overflow-hidden">
+					<!-- Calendar Header -->
+					<div class="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-gray-900">
+						<button
+							onclick={previousMonth}
+							class="flex items-center justify-center h-10 w-10 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+							aria-label="Previous month"
+						>
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
 							</svg>
+						</button>
+						<div class="flex items-center gap-4">
+							<h3 class="text-xl font-bold text-white">{monthName}</h3>
+							<button
+								onclick={goToToday}
+								class="px-3 py-1 text-sm rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
+							>
+								Today
+							</button>
 						</div>
-						<div>
-							<h3 class="text-lg font-semibold text-white">Search FAB TCG Events</h3>
-							<p class="text-sm text-gray-400">Find official Flesh and Blood events near your location</p>
-						</div>
+						<button
+							onclick={nextMonth}
+							class="flex items-center justify-center h-10 w-10 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+							aria-label="Next month"
+						>
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+							</svg>
+						</button>
 					</div>
 
-					<form onsubmit={(e) => { e.preventDefault(); searchFabEvents(); }} class="flex flex-col gap-4">
-						<div class="grid gap-4 sm:grid-cols-4">
-							<div>
-								<label for="zipcode" class="block text-sm font-medium text-gray-300 mb-1">Zipcode</label>
-								<input
-									id="zipcode"
-									type="text"
-									bind:value={searchZipcode}
-									placeholder="e.g. 92503"
-									maxlength="5"
-									inputmode="numeric"
-									class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-white placeholder-gray-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
-								/>
-							</div>
-							<div>
-								<label for="distance" class="block text-sm font-medium text-gray-300 mb-1">Distance</label>
-								<select
-									id="distance"
-									bind:value={searchDistance}
-									class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
-								>
-									<option value="10">10 miles</option>
-									<option value="25">25 miles</option>
-									<option value="50">50 miles</option>
-									<option value="100">100 miles</option>
-								</select>
-							</div>
-							<div>
-								<label for="timeframe" class="block text-sm font-medium text-gray-300 mb-1">Timeframe</label>
-								<select
-									id="timeframe"
-									bind:value={searchTimeframe}
-									class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
-								>
-									<option value="week">This Week</option>
-									<option value="2weeks">Next 2 Weeks</option>
-									<option value="month">This Month</option>
-									<option value="3months">Next 3 Months</option>
-								</select>
-							</div>
-							<div class="flex items-end gap-2">
-								<button
-									type="submit"
-									disabled={isSearching}
-									class="flex-1 rounded-lg bg-amber-500 px-4 py-2.5 font-medium text-white hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-								>
-									{#if isSearching}
-										<span class="flex items-center justify-center gap-2">
-											<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-												<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-												<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-											</svg>
-											Searching...
-										</span>
-									{:else}
-										Search
-									{/if}
-								</button>
-								{#if fabEvents.length > 0 || searchError}
-									<button
-										type="button"
-										onclick={clearFabSearch}
-										class="rounded-lg bg-gray-800 px-3 py-2.5 text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
-										title="Clear search"
-									>
-										<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-										</svg>
-									</button>
-								{/if}
-							</div>
-						</div>
-
-						{#if searchError}
-							<div class="flex items-center gap-2 text-sm text-amber-400 bg-amber-500/10 rounded-lg px-4 py-2">
-								<svg class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-								</svg>
-								{searchError}
-							</div>
-						{/if}
-					</form>
-
-					<p class="mt-3 text-xs text-gray-500">
-						Data sourced from fabtcg.com event locator. Results are fetched in real-time and not stored.
-					</p>
-				</div>
-
-				<div class="grid gap-6 lg:grid-cols-3">
-					<!-- Interactive Map -->
-					<div class="lg:col-span-2">
-						<div class="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden shadow-xl shadow-black/20">
-							<!-- Map Header -->
-							<div class="px-5 py-4 border-b border-gray-800 bg-gray-900/80">
-								<div class="flex items-center justify-between">
-									<h3 class="font-semibold text-white">Circuit Map</h3>
-									<div class="flex items-center gap-2 text-xs text-gray-500">
-										<span class="flex items-center gap-1.5">
-											<span class="h-2 w-2 rounded-full bg-blue-500"></span>
-											AGE Circuits
-										</span>
-										{#if fabEvents.length > 0}
-											<span class="flex items-center gap-1.5">
-												<span class="h-2 w-2 rounded-full bg-amber-500"></span>
-												FAB Events
-											</span>
-										{/if}
-									</div>
-								</div>
-							</div>
-
-							<!-- Leaflet Map -->
-							<div class="h-[500px]">
-								{#if browser}
-									<CircuitMap
-										circuits={Object.values(circuitLocations)}
-										selectedCircuit={selectedMapCircuit}
-										onCircuitSelect={(name) => selectedMapCircuit = selectedMapCircuit === name ? null : name}
-										{fabEvents}
-										{searchCenter}
-									/>
-								{:else}
-									<div class="w-full h-full flex items-center justify-center bg-gray-800">
-										<div class="flex flex-col items-center gap-3">
-											<svg class="animate-spin h-8 w-8 text-blue-500" fill="none" viewBox="0 0 24 24">
-												<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-												<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-											</svg>
-											<p class="text-gray-400">Loading map...</p>
-										</div>
-									</div>
-								{/if}
-							</div>
-
-							<!-- Circuit Selector -->
-							<div class="p-4 border-t border-gray-800 bg-gray-950/50">
-								<div class="flex flex-wrap items-center justify-center gap-2">
-									{#each Object.entries(circuitLocations) as [name, location]}
-										{@const colors = circuitColors[name]}
-										<button
-											onclick={() => selectedMapCircuit = selectedMapCircuit === name ? null : name}
-											class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all
-												{selectedMapCircuit === name
-													? colors.bg + ' text-white shadow-lg'
-													: 'bg-gray-800/80 text-gray-300 hover:bg-gray-700 ring-1 ring-gray-700'}"
-										>
-											<span class="h-2 w-2 rounded-full {colors.bg}"></span>
-											{name}
-										</button>
-									{/each}
-								</div>
-							</div>
-						</div>
+					<!-- Day Headers -->
+					<div class="grid grid-cols-7 border-b border-gray-800 bg-gray-950/50">
+						{#each ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as day}
+							<div class="py-3 text-center text-sm font-medium text-gray-500">{day}</div>
+						{/each}
 					</div>
 
-					<!-- Circuit Details Panel -->
-					<div class="space-y-4">
-						{#if selectedMapCircuit}
-							{@const circuit = circuitLocations[selectedMapCircuit]}
-							{@const colors = circuitColors[selectedMapCircuit]}
-							{@const circuitEvents = getCircuitEvents(selectedMapCircuit)}
-
-							<div class="rounded-lg border-2 {colors.bg.replace('bg-', 'border-')}/50 bg-gray-900 p-6">
-								<div class="flex items-center gap-3 mb-4">
-									<div class="flex h-12 w-12 items-center justify-center rounded-full {colors.bgLight}">
-										<svg class="h-6 w-6 {colors.text}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-										</svg>
-									</div>
-									<div>
-										<h3 class="text-xl font-bold text-white">{circuit.name}</h3>
-										<p class="text-sm {colors.text}">{circuit.region}</p>
-									</div>
-								</div>
-
-								<p class="text-sm text-gray-400 mb-4">{circuit.description}</p>
-
-								<div class="border-t border-gray-800 pt-4">
-									<h4 class="text-sm font-semibold text-gray-300 mb-2">Venues</h4>
-									{#each circuit.venues as venue}
-										<div class="flex items-start gap-2 text-sm text-gray-400">
-											<svg class="h-4 w-4 mt-0.5 flex-shrink-0 {colors.text}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-											</svg>
-											<span>{venue}</span>
-										</div>
-									{/each}
-								</div>
-
-								<!-- Upcoming Events for this circuit -->
-								{#if circuitEvents.length > 0}
-									<div class="border-t border-gray-800 pt-4 mt-4">
-										<h4 class="text-sm font-semibold text-gray-300 mb-3">Upcoming Events ({circuitEvents.length})</h4>
-										<div class="space-y-2">
-											{#each circuitEvents.slice(0, 3) as evt}
-												<a
-													href="/age-open/{evt.id}"
-													class="block rounded-lg bg-gray-800/50 p-3 hover:bg-gray-800 transition-colors"
-												>
-													<div class="font-medium text-white text-sm">{evt.title}</div>
-													<div class="text-xs text-gray-500 mt-1">
-														{evt.eventDate ? formatDate(evt.eventDate) : 'Date TBA'}
-													</div>
-												</a>
-											{/each}
-											{#if circuitEvents.length > 3}
-												<button
-													onclick={() => switchTab('events')}
-													class="w-full text-center text-sm {colors.text} hover:underline py-2"
-												>
-													View all {circuitEvents.length} events →
-												</button>
-											{/if}
-										</div>
-									</div>
-								{:else}
-									<div class="border-t border-gray-800 pt-4 mt-4">
-										<p class="text-sm text-gray-500">No upcoming events scheduled for this circuit.</p>
-									</div>
-								{/if}
-							</div>
-						{:else}
-							<!-- No circuit selected -->
-							<div class="rounded-lg border border-gray-800 bg-gray-900 p-6 text-center">
-								<div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-800">
-									<svg class="h-8 w-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-									</svg>
-								</div>
-								<h3 class="text-lg font-semibold text-white mb-2">Select a Circuit</h3>
-								<p class="text-sm text-gray-400">Click on a circuit marker or button to view details and upcoming events.</p>
-							</div>
-
-							<!-- Quick Stats -->
-							<div class="grid gap-3">
-								{#each Object.entries(circuitLocations) as [name, location]}
-									{@const colors = circuitColors[name]}
-									{@const eventCount = getCircuitEvents(name).length}
-									<button
-										onclick={() => selectedMapCircuit = name}
-										class="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-900 p-4 hover:border-gray-700 transition-colors text-left"
-									>
-										<div class="flex items-center gap-3">
-											<div class="h-3 w-3 rounded-full {colors.bg}"></div>
-											<span class="font-medium text-white">{name}</span>
-										</div>
-										<span class="text-sm text-gray-400">{eventCount} event{eventCount !== 1 ? 's' : ''}</span>
-									</button>
-								{/each}
-							</div>
-						{/if}
-					</div>
-				</div>
-
-				<!-- Circuit Summary Cards -->
-				<div class="grid gap-4 md:grid-cols-3">
-					{#each Object.entries(circuitLocations) as [name, location]}
-						{@const colors = circuitColors[name]}
-						{@const eventCount = getCircuitEvents(name).length}
-						<div class="rounded-lg border border-gray-800 bg-gradient-to-br from-gray-900 to-gray-950 p-6 {selectedMapCircuit === name ? 'ring-2 ' + colors.bg.replace('bg-', 'ring-') + '/50' : ''}">
-							<div class="flex items-center gap-3 mb-4">
-								<div class="h-4 w-4 rounded-full {colors.bg}"></div>
-								<h3 class="text-lg font-semibold text-white">{name}</h3>
-							</div>
-							<div class="grid grid-cols-2 gap-4 text-center">
-								<div>
-									<div class="text-2xl font-bold {colors.text}">{eventCount}</div>
-									<div class="text-xs text-gray-500">Events</div>
-								</div>
-								<div>
-									<div class="text-2xl font-bold text-white">{location.venues.length}</div>
-									<div class="text-xs text-gray-500">Venues</div>
-								</div>
-							</div>
-						</div>
-					{/each}
-				</div>
-
-				<!-- FAB Events List (when search results exist) -->
-				{#if fabEvents.length > 0}
-					<div class="rounded-lg border border-amber-800/50 bg-gray-900 overflow-hidden">
-						<div class="bg-gradient-to-r from-amber-500/10 to-gray-900 px-6 py-4 border-b border-amber-800/30">
-							<div class="flex items-center justify-between flex-wrap gap-4">
-								<div class="flex items-center gap-3">
-									<div class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/20">
-										<svg class="h-4 w-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-										</svg>
-									</div>
-									<div>
-										<h3 class="text-lg font-semibold text-white">FAB TCG Events Near You</h3>
-										<p class="text-sm text-gray-400">Found {fabEvents.length} event{fabEvents.length !== 1 ? 's' : ''} within {searchDistance} miles of {searchZipcode}</p>
-									</div>
-								</div>
-								<div class="flex items-center gap-3">
-									<div class="flex items-center gap-2">
-										<span class="text-xs text-gray-400">Sort by:</span>
-										<select
-											bind:value={fabSortBy}
-											class="rounded-md border border-gray-700 bg-gray-800 px-2 py-1 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
-										>
-											<option value="distance">Distance</option>
-											<option value="date">Date</option>
-											<option value="name">Name</option>
-										</select>
-									</div>
-									<button
-										onclick={clearFabSearch}
-										class="text-gray-400 hover:text-white transition-colors"
-										title="Clear results"
-									>
-										<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-										</svg>
-									</button>
-								</div>
-							</div>
-						</div>
-						<div class="divide-y divide-gray-800">
-							{#each sortedFabEvents as event, index}
-								<div class="p-4 hover:bg-gray-800/50 transition-colors">
-									<div class="flex items-start gap-4">
-										<div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500 font-bold text-sm">
-											{index + 1}
-										</div>
-										<div class="flex-1 min-w-0">
-											<div class="flex items-start justify-between gap-4">
-												<div>
-													<h4 class="font-medium text-white">{event.title || 'FAB Event'}</h4>
-													{#if event.store}
-														<p class="text-sm text-gray-400 mt-0.5">{event.store}</p>
-													{/if}
-												</div>
-												{#if event.format}
-													<span class="flex-shrink-0 rounded-full bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-300">
-														{event.format}
+					<!-- Calendar Grid - Week by Week -->
+					<div>
+						{#each calendarWeeks as week, weekIndex}
+							<div class="relative">
+								<!-- Season bars layer -->
+								<div class="absolute inset-0 pointer-events-none" style="z-index: 10;">
+									{#each (data.lssSeasons || []) as season, seasonIndex}
+										{@const bar = getSeasonBarsForWeek(week, seasonIndex)}
+										{#if bar}
+											{@const colors = getSeasonColor(seasonIndex)}
+											{@const leftPercent = (bar.startCol / 7) * 100}
+											{@const widthPercent = (bar.span / 7) * 100}
+											<div
+												class="absolute h-5 flex items-center pointer-events-auto cursor-pointer {colors.bg} {colors.text} border-y {colors.border}
+													{bar.isStart ? 'rounded-l-md border-l ml-1' : ''}
+													{bar.isEnd ? 'rounded-r-md border-r mr-1' : ''}"
+												style="left: {leftPercent}%; width: calc({widthPercent}% - {bar.isStart ? 4 : 0}px - {bar.isEnd ? 4 : 0}px); top: 28px;"
+												title="{season.name}{season.eventType ? ` (${season.eventType})` : ''}"
+											>
+												{#if bar.isStart || bar.startCol === 0}
+													<span class="text-[10px] font-medium truncate px-2 whitespace-nowrap">
+														{season.name}
 													</span>
 												{/if}
 											</div>
-											<div class="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-500">
-												{#if event.date}
-													<div class="flex items-center gap-1.5">
-														<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-														</svg>
-														<span>{event.date}</span>
-													</div>
-												{/if}
-												{#if event.distance}
-													<div class="flex items-center gap-1.5 text-amber-500">
-														<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-														</svg>
-														<span>{event.distance} mi</span>
-													</div>
-												{/if}
-												{#if event.location}
-													<div class="flex items-center gap-1.5">
-														<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-														</svg>
-														<span class="truncate">{event.location}</span>
-													</div>
-												{/if}
-											</div>
-											<div class="flex flex-wrap items-center gap-3 mt-3">
-												{#if event.tournamentType}
-													<span class="text-xs text-gray-500">{event.tournamentType}</span>
-												{/if}
-												{#if event.storeUrl}
-													<a
-														href={event.storeUrl}
-														target="_blank"
-														rel="noopener noreferrer"
-														class="inline-flex items-center gap-1 text-xs text-amber-500 hover:text-amber-400 transition-colors"
-													>
-														<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-														</svg>
-														View Store
-													</a>
+										{/if}
+									{/each}
+								</div>
+
+								<!-- Days grid -->
+								<div class="grid grid-cols-7">
+									{#each week as day, dayIndex}
+										{@const dayEvents = getEventsForDate(day.date)}
+										{@const hasEvents = dayEvents.length > 0}
+										{@const hasSeasons = getSeasonsForDate(day.date).length > 0}
+										{@const firstEventColor = hasEvents ? getCircuitColor(dayEvents[0].circuit) : null}
+										<div
+											class="min-h-[100px] border-b border-r border-gray-800 p-2 transition-colors
+												{day.isCurrentMonth ? 'bg-gray-900/50' : 'bg-gray-950/50'}
+												{isToday(day.date) ? 'ring-2 ring-inset ring-emerald-500/50' : ''}
+												{hasEvents ? firstEventColor.cellBg + ' ' + firstEventColor.cellBorder : ''}
+												{dayIndex === 6 ? 'border-r-0' : ''}"
+										>
+											<div class="flex items-start justify-between mb-1">
+												<span class="text-sm font-medium {day.isCurrentMonth ? (isToday(day.date) ? 'text-emerald-400' : 'text-white') : 'text-gray-600'}">
+													{day.day}
+												</span>
+												{#if hasEvents}
+													{@const dotColor = getCircuitColor(dayEvents[0].circuit)}
+													<span class="relative flex h-3 w-3">
+														<span class="animate-ping absolute inline-flex h-full w-full rounded-full {dotColor.ping} opacity-75"></span>
+														<span class="relative inline-flex rounded-full h-3 w-3 {dotColor.dot} ring-2 {dotColor.ring}"></span>
+													</span>
 												{/if}
 											</div>
+
+											<!-- Spacer for season bars -->
+											{#if hasSeasons}
+												<div class="h-6"></div>
+											{/if}
+
+											<!-- Event indicators -->
+											{#each dayEvents.slice(0, hasSeasons ? 1 : 2) as event}
+												{@const eventColor = getCircuitColor(event.circuit)}
+												<a
+													href="/age-open/{event.id}"
+													class="group block mb-1 px-2 py-1 rounded-md text-[11px] font-semibold bg-gradient-to-r {eventColor.eventGradient} {eventColor.eventText} {eventColor.eventGradientHover} hover:text-white border {eventColor.eventBorder} {eventColor.eventBorderHover} truncate transition-all shadow-sm {eventColor.eventShadow}"
+													title="{event.title} ({event.circuit || 'TBA'})"
+												>
+													<span class="flex items-center gap-1">
+														<span class="w-1.5 h-1.5 rounded-full {eventColor.dot} flex-shrink-0"></span>
+														<span class="truncate">{event.title}</span>
+													</span>
+												</a>
+											{/each}
+											{#if dayEvents.length > (hasSeasons ? 1 : 2)}
+												<div class="text-[10px] text-gray-500 px-1">+{dayEvents.length - (hasSeasons ? 1 : 2)} more</div>
+											{/if}
 										</div>
+									{/each}
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Upcoming AGE Opens - Featured Section -->
+				<div class="rounded-xl border border-gray-700 bg-gray-900 overflow-hidden shadow-lg">
+					<div class="px-6 py-5 border-b border-gray-700 bg-gradient-to-r from-gray-800/50 to-transparent">
+						<div class="flex items-center gap-3">
+							<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 via-purple-500 to-green-500 shadow-lg">
+								<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+								</svg>
+							</div>
+							<div>
+								<h3 class="text-xl font-bold text-white">Upcoming AGE Opens</h3>
+								<p class="text-sm text-gray-400">Register now for upcoming tournaments</p>
+							</div>
+						</div>
+					</div>
+					<div class="divide-y divide-gray-800">
+						{#each (data.events || []).filter(e => e.eventDate && new Date(e.eventDate) >= new Date()).slice(0, 5) as event}
+							{@const eventDate = new Date(event.eventDate)}
+							{@const colors = getCircuitColor(event.circuit)}
+							<a href="/age-open/{event.id}" class="block p-5 {colors.bgLight} hover:brightness-125 transition-all group border-l-4 {colors.eventBorder}">
+								<div class="flex items-center gap-5">
+									<div class="flex-shrink-0 text-center {colors.bgLight} rounded-lg p-3 min-w-[70px] group-hover:brightness-125 transition-all ring-1 {colors.eventBorder}">
+										<div class="text-3xl font-bold text-white">{eventDate.getDate()}</div>
+										<div class="text-xs {colors.text} uppercase font-medium">{eventDate.toLocaleDateString('en-US', { month: 'short' })}</div>
+									</div>
+									<div class="flex-1 min-w-0">
+										<div class="font-semibold text-lg text-white group-hover:{colors.text} transition-colors">{event.title}</div>
+										<div class="flex items-center gap-2 mt-2">
+											<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {colors.bg} text-white shadow-sm">
+												{event.circuit || 'TBA'}
+											</span>
+											{#if event.format}
+												<span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-700 text-gray-200">
+													{event.format}
+												</span>
+											{/if}
+											{#if event.location}
+												<span class="text-sm text-gray-400">{event.location}</span>
+											{/if}
+										</div>
+									</div>
+									<div class="flex items-center gap-2">
+										<span class="text-sm font-medium {colors.text}">View Details</span>
+										<svg class="h-5 w-5 {colors.text} group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+										</svg>
+									</div>
+								</div>
+							</a>
+						{:else}
+							<div class="p-10 text-center">
+								<div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-500/20">
+									<svg class="h-8 w-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+									</svg>
+								</div>
+								<p class="text-gray-400">No upcoming events scheduled</p>
+								<p class="text-sm text-gray-500 mt-1">Check back soon for new tournaments!</p>
+							</div>
+						{/each}
+					</div>
+				</div>
+
+				<!-- LSS Events Section - Minimalistic with subtle accent -->
+				{#if data.lssSeasons && data.lssSeasons.length > 0}
+					<div class="mt-8 rounded-lg border border-amber-500/20 bg-gradient-to-r from-amber-950/20 to-transparent p-4">
+						<div class="flex items-center gap-2 mb-3">
+							<svg class="h-4 w-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+								<path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd" />
+							</svg>
+							<h3 class="text-sm font-medium text-amber-400/80 uppercase tracking-wider">Official LSS Events</h3>
+							<div class="flex-1 h-px bg-amber-500/20"></div>
+						</div>
+						<div class="space-y-1">
+							{#each data.lssSeasons as season}
+								{@const startDate = new Date(season.startDate)}
+								{@const endDate = new Date(season.endDate)}
+								{@const now = new Date()}
+								{@const isActive = now >= startDate && now <= endDate}
+								{@const isPast = now > endDate}
+								<div class="flex items-center justify-between gap-4 py-2.5 px-3 rounded-md hover:bg-amber-500/10 transition-colors group">
+									<div class="flex items-center gap-3 min-w-0 flex-1">
+										<div class="flex items-center gap-2 flex-wrap min-w-0">
+											<span class="text-sm text-gray-200 group-hover:text-white truncate transition-colors">{season.name}</span>
+											{#if season.link}
+												<a href={season.link} target="_blank" rel="noopener noreferrer" class="text-gray-500 hover:text-amber-400 transition-colors" aria-label="View official page">
+													<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+													</svg>
+												</a>
+											{/if}
+										</div>
+										<div class="flex items-center gap-1.5 flex-shrink-0">
+											{#if season.eventType}
+												<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/20 text-amber-300/80">{season.eventType}</span>
+											{/if}
+											{#if season.format}
+												<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-700/50 text-gray-400">{season.format}</span>
+											{/if}
+											{#if isActive}
+												<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+											{:else if !isPast}
+												<span class="w-2 h-2 rounded-full bg-amber-400/60"></span>
+											{/if}
+										</div>
+									</div>
+									<div class="text-xs text-gray-500 flex-shrink-0">
+										{startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
 									</div>
 								</div>
 							{/each}
-						</div>
-						<div class="px-6 py-3 bg-gray-800/50 border-t border-gray-800">
-							<p class="text-xs text-gray-500 text-center">
-								Events sourced from fabtcg.com. Visit the official site for registration and more details.
-							</p>
 						</div>
 					</div>
 				{/if}
@@ -2073,6 +2141,7 @@
 									onclick={() => standingsPage = Math.max(1, standingsPage - 1)}
 									disabled={standingsPage === 1}
 									class="px-3 py-1.5 rounded-lg border border-gray-700 text-sm font-medium transition-all {standingsPage === 1 ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'}"
+									aria-label="Previous page"
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -2101,6 +2170,7 @@
 									onclick={() => standingsPage = Math.min(totalStandingsPages, standingsPage + 1)}
 									disabled={standingsPage === totalStandingsPages}
 									class="px-3 py-1.5 rounded-lg border border-gray-700 text-sm font-medium transition-all {standingsPage === totalStandingsPages ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'}"
+									aria-label="Next page"
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -2276,117 +2346,120 @@
 					<div class="rounded-lg border border-gray-800 bg-gray-900 p-8">
 						<p class="mb-4 text-lg text-gray-300">
 							The AGE Open Circuit is a year-long competitive Flesh and Blood tournament series
-							with an $11,000 prize pool. Compete in 8 AGE $1,000 Opens throughout the year to earn
+							across multiple circuits. Compete in AGE $1,000 Opens throughout the year to earn
 							cash prizes and AGE Points. At the end of the season, the top 16 players by AGE Open
-							points will be invited to compete in the Player's Championship for a $3,000 prize
-							pool.
+							points in each circuit will be invited to compete in their circuit's Player's Championship.
+							In 2026, the series expands to 24 Opens, a $30,000 total prize pool, and 3 AGE Championships.
 						</p>
-						<div class="grid gap-6 md:grid-cols-3">
+						<div class="grid gap-6 md:grid-cols-4">
 							<div class="rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5 p-6">
-								<div class="mb-2 text-3xl font-bold text-blue-500">$11,000</div>
-								<div class="text-sm text-gray-400">Total Prize Pool</div>
+								<div class="mb-2 text-3xl font-bold text-blue-500">$30,000</div>
+								<div class="text-sm text-gray-400">2026 Total Prize Pool</div>
 							</div>
 							<div class="rounded-lg bg-gradient-to-br from-green-500/10 to-green-500/5 p-6">
-								<div class="mb-2 text-3xl font-bold text-green-500">8 Opens</div>
-								<div class="text-sm text-gray-400">Monthly Tournaments</div>
+								<div class="mb-2 text-3xl font-bold text-green-500">24 Opens</div>
+								<div class="text-sm text-gray-400">2026 Tournaments</div>
 							</div>
 							<div class="rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-500/5 p-6">
-								<div class="mb-2 text-3xl font-bold text-purple-500">Top 16</div>
+								<div class="mb-2 text-3xl font-bold text-purple-500">3</div>
+								<div class="text-sm text-gray-400">AGE Championships</div>
+							</div>
+							<div class="rounded-lg bg-gradient-to-br from-amber-500/10 to-amber-500/5 p-6">
+								<div class="mb-2 text-3xl font-bold text-amber-500">Top 16</div>
 								<div class="text-sm text-gray-400">Championship Invites</div>
 							</div>
 						</div>
 					</div>
 				</section>
 
-				<!-- 2025 Event Schedule -->
+				<!-- Comprehensive Tournament Rules -->
 				<section>
-					<h2 class="mb-6 text-3xl font-bold text-white">2025 Event Schedule</h2>
-					<div class="rounded-lg border border-gray-800 bg-gray-900 overflow-hidden">
-						<div class="overflow-x-auto">
-							<table class="w-full">
-								<thead class="bg-gray-800">
-									<tr>
-										<th class="px-6 py-4 text-left text-sm font-semibold text-gray-100">
-											Event
-										</th>
-										<th class="px-6 py-4 text-left text-sm font-semibold text-gray-100">Date</th>
-										<th class="px-6 py-4 text-left text-sm font-semibold text-gray-100">
-											Location
-										</th>
-									</tr>
-								</thead>
-								<tbody class="divide-y divide-gray-800">
-									<tr class="hover:bg-gray-800/50">
-										<td class="px-6 py-4 text-sm text-white">AGE $1,000 Open #1</td>
-										<td class="px-6 py-4 text-sm text-gray-300">January 4, 2025</td>
-										<td class="px-6 py-4 text-sm text-gray-300">
-											Top Deck Keep, Riverside, CA
-										</td>
-									</tr>
-									<tr class="hover:bg-gray-800/50">
-										<td class="px-6 py-4 text-sm text-white">AGE $1,000 Open #2</td>
-										<td class="px-6 py-4 text-sm text-gray-300">February 1, 2025</td>
-										<td class="px-6 py-4 text-sm text-gray-300">
-											Top Deck Keep, Riverside, CA
-										</td>
-									</tr>
-									<tr class="hover:bg-gray-800/50">
-										<td class="px-6 py-4 text-sm text-white">AGE $1,000 Open #3</td>
-										<td class="px-6 py-4 text-sm text-gray-300">March 1, 2025</td>
-										<td class="px-6 py-4 text-sm text-gray-300">
-											Top Deck Keep, Riverside, CA
-										</td>
-									</tr>
-									<tr class="hover:bg-gray-800/50">
-										<td class="px-6 py-4 text-sm text-white">AGE $1,000 Open #4</td>
-										<td class="px-6 py-4 text-sm text-gray-300">April 5, 2025</td>
-										<td class="px-6 py-4 text-sm text-gray-300">
-											Top Deck Keep, Riverside, CA
-										</td>
-									</tr>
-									<tr class="hover:bg-gray-800/50">
-										<td class="px-6 py-4 text-sm text-white">AGE $1,000 Open #5</td>
-										<td class="px-6 py-4 text-sm text-gray-300">May 3, 2025</td>
-										<td class="px-6 py-4 text-sm text-gray-300">
-											Top Deck Keep, Riverside, CA
-										</td>
-									</tr>
-									<tr class="hover:bg-gray-800/50">
-										<td class="px-6 py-4 text-sm text-white">AGE $1,000 Open #6</td>
-										<td class="px-6 py-4 text-sm text-gray-300">June 7, 2025</td>
-										<td class="px-6 py-4 text-sm text-gray-300">
-											Top Deck Keep, Riverside, CA
-										</td>
-									</tr>
-									<tr class="hover:bg-gray-800/50">
-										<td class="px-6 py-4 text-sm text-white">AGE $1,000 Open #7</td>
-										<td class="px-6 py-4 text-sm text-gray-300">July 5, 2025</td>
-										<td class="px-6 py-4 text-sm text-gray-300">
-											Top Deck Keep, Riverside, CA
-										</td>
-									</tr>
-									<tr class="hover:bg-gray-800/50">
-										<td class="px-6 py-4 text-sm text-white">AGE $1,000 Open #8</td>
-										<td class="px-6 py-4 text-sm text-gray-300">August 2, 2025</td>
-										<td class="px-6 py-4 text-sm text-gray-300">
-											Top Deck Keep, Riverside, CA
-										</td>
-									</tr>
-									<tr class="bg-blue-500/10">
-										<td class="px-6 py-4 text-sm font-semibold text-blue-400">
-											Player's Championship
-										</td>
-										<td class="px-6 py-4 text-sm text-blue-300">TBA</td>
-										<td class="px-6 py-4 text-sm text-blue-300">TBA</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-						<div class="border-t border-gray-800 bg-gray-800/50 p-4">
-							<p class="text-sm text-gray-400">
-								<span class="font-semibold text-gray-300">Venue Address:</span> Top Deck Keep, 10128
-								Indiana Ave, Riverside, CA 92503
-							</p>
+					<div class="mb-6 flex items-center gap-3">
+						<h2 class="text-3xl font-bold text-white">Tournament Rules & Policies</h2>
+						<span class="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-semibold text-blue-400">Official Rulebook</span>
+					</div>
+					<p class="mb-6 text-gray-400">
+						This comprehensive guide covers all rules, policies, and procedures for AGE Open events.
+						Click on any section to expand and view detailed information.
+					</p>
+
+					<div class="space-y-3">
+						{#each rulebookSections as section}
+							<div class="rounded-lg border border-gray-800 bg-gray-900 overflow-hidden">
+								<!-- Section Header -->
+								<button
+									onclick={() => toggleRulebookSection(section.id)}
+									class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-800/50 transition-colors"
+								>
+									<div class="flex items-center gap-3">
+										<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20">
+											<svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={sectionIcons[section.icon]} />
+											</svg>
+										</div>
+										<div>
+											<span class="font-semibold text-white">{section.title}</span>
+											<span class="ml-2 text-xs text-gray-500">({section.items.length} topics)</span>
+										</div>
+									</div>
+									<svg
+										class="h-5 w-5 flex-shrink-0 text-gray-400 transition-transform duration-200 {openRulebookSection === section.id ? 'rotate-180' : ''}"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+									</svg>
+								</button>
+
+								<!-- Section Items -->
+								{#if openRulebookSection === section.id}
+									<div class="border-t border-gray-800 bg-gray-950/50">
+										{#each section.items as item, itemIndex}
+											<div class="border-b border-gray-800/50 last:border-b-0">
+												<button
+													onclick={() => toggleRulebookItem(itemIndex)}
+													class="w-full flex items-center justify-between px-6 py-3 text-left hover:bg-gray-800/30 transition-colors"
+												>
+													<span class="text-sm text-gray-300 pr-4">{item.question}</span>
+													<svg
+														class="h-4 w-4 flex-shrink-0 text-gray-500 transition-transform duration-200 {openRulebookItem === itemIndex ? 'rotate-180' : ''}"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+													</svg>
+												</button>
+												{#if openRulebookItem === itemIndex}
+													<div class="px-6 pb-4">
+														<p class="text-sm text-gray-400 leading-relaxed bg-gray-900/50 rounded-lg p-4 border-l-2 border-blue-500/50">
+															{item.answer}
+														</p>
+													</div>
+												{/if}
+											</div>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						{/each}
+					</div>
+
+					<!-- Rules Summary Note -->
+					<div class="mt-6 rounded-lg border border-yellow-800/50 bg-yellow-500/10 p-4">
+						<div class="flex items-start gap-3">
+							<svg class="h-5 w-5 flex-shrink-0 text-yellow-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+							</svg>
+							<div>
+								<p class="text-sm font-medium text-yellow-400">Important Notice</p>
+								<p class="text-sm text-yellow-300/80 mt-1">
+									These rules supplement the official Flesh and Blood Tournament Rules and Policy by Legend Story Studios.
+									In case of conflict, LSS official rules take precedence unless specifically stated otherwise by AGE.
+									The Head Judge has final authority on all rulings during events.
+								</p>
+							</div>
 						</div>
 					</div>
 				</section>
@@ -2483,31 +2556,6 @@
 								</p>
 							</div>
 						</div>
-					</div>
-				</section>
-
-				<!-- 2024 Champion -->
-				<section
-					class="rounded-lg border border-yellow-700/50 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 p-8"
-				>
-					<div class="text-center">
-						<div class="mb-3 inline-flex items-center justify-center">
-							<svg
-								class="h-12 w-12 text-yellow-500"
-								fill="currentColor"
-								viewBox="0 0 20 20"
-								xmlns="http://www.w3.org/2000/svg"
-							>
-								<path
-									d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-								/>
-							</svg>
-						</div>
-						<h2 class="mb-2 text-2xl font-bold text-white">2024 Champion</h2>
-						<p class="mb-4 text-3xl font-bold text-yellow-500">Zachary Wallach</p>
-						<p class="text-gray-400">
-							Congratulations to Zachary Wallach, our 2024 AGE Open Series Champion!
-						</p>
 					</div>
 				</section>
 

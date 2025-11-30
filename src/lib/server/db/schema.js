@@ -286,3 +286,19 @@ export const seasonStanding = pgTable('season_standing', {
 }, (table) => ({
 	uniqueSeasonCircuitPlayer: unique().on(table.season, table.circuit, table.playerName)
 }));
+
+// LSS EVENTS (official Legend Story Studios competitive events/seasons)
+export const lssSeason = pgTable('lss_season', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	name: text('name').notNull(), // e.g., "Skirmish Season 5", "Road to Nationals 2025", "Pro Tour: Los Angeles"
+	description: text('description'), // Optional description
+	startDate: timestamp('start_date', { withTimezone: true, mode: 'date' }).notNull(),
+	endDate: timestamp('end_date', { withTimezone: true, mode: 'date' }).notNull(),
+	eventType: text('event_type'), // e.g., "Skirmish", "Road to Nationals", "ProQuest", "Pro Tour", "Worlds"
+	format: text('format'), // e.g., "Classic Constructed", "Blitz", "Draft", "Living Legend"
+	link: text('link'), // Link to official LSS page for this event
+	isActive: boolean('is_active').default(true), // Whether to show on calendar
+	createdBy: text('created_by').references(() => user.id),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
