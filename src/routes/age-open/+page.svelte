@@ -765,6 +765,26 @@
 	// All upcoming events sorted by date
 	$: upcomingEvents = (data.events || []).filter((e) => new Date(e.eventDate) >= new Date());
 
+	// Circuit slots configuration (8 guaranteed opens per circuit)
+	const SLOTS_PER_CIRCUIT = 8;
+
+	// Get circuit slots - sorted by date, fill slots 1-8
+	function getCircuitSlots(events, circuit) {
+		const circuitEvents = events
+			.filter(e => e.circuit === circuit)
+			.sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
+
+		const slots = [];
+		for (let i = 0; i < SLOTS_PER_CIRCUIT; i++) {
+			slots.push(circuitEvents[i] || null);
+		}
+		return slots;
+	}
+
+	$: laSlots = getCircuitSlots(data.events || [], 'Los Angeles');
+	$: neSlots = getCircuitSlots(data.events || [], 'New England');
+	$: stlSlots = getCircuitSlots(data.events || [], 'St. Louis');
+
 	// Circuit filter state
 	let selectedCircuit = 'all';
 
@@ -843,22 +863,59 @@
 
 <div class="min-h-screen bg-gray-950">
 	<!-- Hero Section -->
-	<section class="relative overflow-hidden bg-gradient-to-b from-gray-900 to-gray-950 py-16">
-		<div class="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10"></div>
-		<div class="relative mx-auto max-w-7xl px-2">
+	<section class="relative overflow-hidden bg-gradient-to-b from-gray-900 to-gray-950 py-8">
+		<!-- Animated background -->
+		<div class="absolute inset-0">
+			<div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-green-500/10"></div>
+			<div class="absolute top-1/2 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+			<div class="absolute top-1/2 right-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl"></div>
+		</div>
+
+		<div class="relative mx-auto max-w-7xl px-4">
 			<div class="text-center">
-				<div class="mb-4 inline-block rounded-full bg-blue-500/10 px-4 py-1.5">
-					<span class="text-sm font-semibold text-blue-400"
-						>The Premier Independent Flesh and Blood Series</span
-					>
+				<!-- Season Badge -->
+				<div class="mb-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-sm font-medium text-amber-300">
+					<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+					2026 Season Now Open
 				</div>
-				<h1 class="mb-4 text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl">
+
+				<!-- Title -->
+				<h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2 tracking-tight">
 					AGE Open Series
 				</h1>
-				<p class="mx-auto max-w-3xl text-lg text-gray-400">
-					Premier competitive Flesh and Blood events featuring top-tier competition, professional
-					coverage, and opportunities to qualify for premier events.
+
+				<!-- Tagline -->
+				<p class="text-xl sm:text-2xl font-semibold text-white mb-3">
+					Compete. Climb. <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-500">Win.</span>
 				</p>
+
+				<!-- Description -->
+				<p class="text-gray-300 max-w-2xl mx-auto mb-4 text-sm sm:text-base">
+					Join the premier <span class="text-white font-medium">independent</span> Flesh and Blood tournament circuit.
+					<span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400 font-semibold">$1,000 prize pools</span>,
+					<span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 font-semibold">AGE Points</span>, and your shot at the
+					<span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 font-semibold">Player's Championship</span>.
+				</p>
+
+				<!-- Stats -->
+				<div class="flex flex-wrap items-center justify-center gap-x-2 sm:gap-x-3 gap-y-1 text-sm sm:text-base mb-5">
+					<span><span class="font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">$30K</span> <span class="text-gray-400">Prize Pool</span></span>
+					<span class="text-gray-600">·</span>
+					<span><span class="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">24</span> <span class="text-gray-400">Events</span></span>
+					<span class="text-gray-600">·</span>
+					<span><span class="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">3</span> <span class="text-gray-400">AGE Champions</span></span>
+				</div>
+
+				<!-- CTA Button -->
+				<button
+					onclick={() => switchTab('events')}
+					class="group inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-105 transition-all"
+				>
+					Play in an AGE Open
+					<svg class="h-4 w-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+					</svg>
+				</button>
 			</div>
 		</div>
 	</section>
@@ -866,50 +923,58 @@
 	<!-- Tab Navigation -->
 	<nav class="sticky top-0 z-10 border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm">
 		<div class="mx-auto max-w-7xl px-4">
-			<div class="flex space-x-1 overflow-x-auto py-2 scrollbar-hide">
-				{#each tabs as tab}
-					<button
-						onclick={() => switchTab(tab.id)}
-						class="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-all {activeTab === tab.id
-							? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/50'
-							: 'text-gray-400 hover:bg-gray-800 hover:text-gray-100'}"
-					>
-						{#if tab.icon === 'home'}
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-							</svg>
-						{:else if tab.icon === 'calendar'}
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-							</svg>
-						{:else if tab.icon === 'ticket'}
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-							</svg>
-						{:else if tab.icon === 'calendar-days'}
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
-							</svg>
-						{:else if tab.icon === 'trophy'}
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-							</svg>
-						{:else if tab.icon === 'cards'}
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-							</svg>
-						{:else if tab.icon === 'chart'}
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-							</svg>
-						{:else if tab.icon === 'info'}
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-							</svg>
-						{/if}
-						{tab.name}
-					</button>
-				{/each}
+			<div class="relative">
+				<div class="flex space-x-1 overflow-x-auto py-2 scrollbar-hide">
+					{#each tabs as tab}
+						<button
+							onclick={() => switchTab(tab.id)}
+							class="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-all {activeTab === tab.id
+								? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/50'
+								: 'text-gray-400 hover:bg-gray-800 hover:text-gray-100'}"
+						>
+							{#if tab.icon === 'home'}
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+								</svg>
+							{:else if tab.icon === 'calendar'}
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+								</svg>
+							{:else if tab.icon === 'ticket'}
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+								</svg>
+							{:else if tab.icon === 'calendar-days'}
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
+								</svg>
+							{:else if tab.icon === 'trophy'}
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+								</svg>
+							{:else if tab.icon === 'cards'}
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+								</svg>
+							{:else if tab.icon === 'chart'}
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+								</svg>
+							{:else if tab.icon === 'info'}
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+								</svg>
+							{/if}
+							{tab.name}
+						</button>
+					{/each}
+				</div>
+				<!-- Mobile scroll indicator - gradient fade on right -->
+				<div class="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-gray-900 to-transparent pointer-events-none sm:hidden flex items-center justify-end pr-1">
+					<svg class="h-4 w-4 text-gray-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+					</svg>
+				</div>
 			</div>
 		</div>
 	</nav>
@@ -918,208 +983,422 @@
 	<div class="mx-auto max-w-7xl px-2 py-8">
 		<!-- Overview Tab -->
 		{#if activeTab === 'overview'}
-			<div class="space-y-10">
-				<!-- Hero Section - Get Hyped -->
-				<div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950 border border-gray-800">
-					<!-- Animated background -->
-					<div class="absolute inset-0">
-						<div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-green-500/10"></div>
-						<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
-						<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+			<div class="space-y-12">
+
+				<!-- Featured Next Event - Hero Card -->
+				{#if upcomingEvents.length > 0}
+					{@const nextEvent = upcomingEvents[0]}
+					{@const nextColors = getCircuitColor(nextEvent.circuit)}
+					<div class="relative overflow-hidden rounded-2xl border border-gray-700 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950">
+						<!-- Gradient overlay -->
+						<div class="absolute inset-0 bg-gradient-to-r {nextColors.bg.replace('bg-', 'from-')}/20 to-transparent"></div>
+						<div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-gray-900/80 to-transparent"></div>
+
+						<div class="relative p-6 sm:p-8">
+							<div class="flex flex-col lg:flex-row lg:items-center gap-6">
+								<!-- Left: Event Info -->
+								<div class="flex-1">
+									<div class="flex items-center gap-3 mb-4">
+										<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide bg-green-500/20 text-green-400 border border-green-500/30">
+											<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+											Next Event
+										</span>
+										<span class="{nextColors.bg} px-3 py-1 rounded-full text-xs font-semibold text-white">{nextEvent.circuit}</span>
+									</div>
+									<h2 class="text-2xl sm:text-3xl font-bold text-white mb-3">{nextEvent.title}</h2>
+									<div class="flex flex-wrap items-center gap-4 text-gray-400 mb-4">
+										{#if nextEvent.eventDate}
+											<span class="flex items-center gap-2">
+												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+												</svg>
+												{new Date(nextEvent.eventDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+											</span>
+										{/if}
+										{#if nextEvent.location}
+											<span class="flex items-center gap-2">
+												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+												</svg>
+												{nextEvent.location}
+											</span>
+										{/if}
+										{#if nextEvent.format}
+											<span class="flex items-center gap-2">
+												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h10M7 12h10m-7 5h4" />
+												</svg>
+												{nextEvent.format}
+											</span>
+										{/if}
+									</div>
+									<p class="text-gray-400 text-sm mb-6">Earn AGE Points, compete for prizes, and take your first step toward becoming an AGE Champion.</p>
+								</div>
+
+								<!-- Right: CTA -->
+								<div class="flex flex-col items-center lg:items-end gap-3">
+									<div class="text-center lg:text-right">
+										<div class="text-3xl font-bold text-white">${formatPrice(nextEvent.price)}</div>
+										<div class="text-sm text-gray-500">Entry Fee</div>
+									</div>
+									<a href="/age-open/{nextEvent.id}" class="group inline-flex items-center gap-2 rounded-xl {nextColors.bg} px-8 py-4 font-semibold text-white shadow-lg hover:opacity-90 transition-all hover:scale-105">
+										Register Now
+										<svg class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+										</svg>
+									</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				{/if}
+
+				<!-- Your Path to Championship - Premium Section -->
+				<div class="relative overflow-hidden rounded-2xl border border-gray-800 bg-gradient-to-b from-gray-900/80 to-gray-950 p-5 sm:p-6">
+					<!-- Decorative background elements -->
+					<div class="absolute inset-0 overflow-hidden">
+						<div class="absolute -top-24 -left-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+						<div class="absolute -bottom-24 -right-24 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl"></div>
 					</div>
 
-					<div class="relative px-8 py-8 md:py-10 text-center">
-						<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 backdrop-blur-sm border border-amber-500/30 text-sm font-medium text-amber-300 mb-5">
-							<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-							2026 Season Now Open
+					<!-- Section Header -->
+					<div class="relative text-center mb-6">
+						<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 text-xs font-medium text-blue-300 mb-3">
+							<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+							</svg>
+							The Journey
 						</div>
-
-						<h2 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 tracking-tight">
-							Compete. Climb. <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-500">Win.</span>
+						<h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">
+							Your Path to Becoming an <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500">AGE Champion</span>
 						</h2>
-
-						<p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-8">
-							Join the premier independent Flesh and Blood tournament circuit. $1,000 prize pools, AGE Points, and your shot at the Player's Championship.
+						<p class="text-gray-400 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
+							Every legend has an origin story — yours starts here. Battle your way through local events,
+							rack up <span class="text-blue-400 font-medium">AGE Points</span>, and rise through the ranks.
+							The top players earn their spot at <span class="text-amber-400 font-medium">The Player's Championship</span>.
 						</p>
+					</div>
 
-						<!-- Minimal Stats Inline -->
-						<div class="flex flex-wrap justify-center gap-8 mb-10 text-sm">
-							<div class="flex items-center gap-2">
-								<span class="text-3xl font-bold text-white">{upcomingEvents.length}</span>
-								<span class="text-gray-500">upcoming events</span>
+					<!-- Journey Steps with Connecting Line -->
+					<div class="relative">
+						<!-- Connecting line (desktop) -->
+						<div class="hidden md:block absolute top-8 left-[12.5%] right-[12.5%] h-0.5 bg-gradient-to-r from-blue-500 via-purple-500 via-green-500 to-amber-500 opacity-30"></div>
+
+						<div class="grid gap-4 md:gap-3 md:grid-cols-4">
+							<!-- Step 1: Register -->
+							<div class="relative group">
+								<div class="relative flex flex-col items-center text-center">
+									<!-- Icon Circle -->
+									<div class="relative mb-3">
+										<div class="absolute inset-0 bg-blue-500/20 rounded-full blur-lg group-hover:bg-blue-500/40 transition-all duration-500"></div>
+										<div class="relative w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-all duration-300">
+											<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+											</svg>
+										</div>
+										<div class="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-gray-900 border-2 border-blue-500 flex items-center justify-center">
+											<span class="text-[10px] font-bold text-blue-400">1</span>
+										</div>
+									</div>
+									<!-- Content -->
+									<h3 class="text-sm font-bold text-white mb-1 group-hover:text-blue-400 transition-colors">Register</h3>
+									<p class="text-xs text-gray-500 leading-relaxed max-w-[160px]">Sign up for any AGE Open event in your region</p>
+								</div>
 							</div>
-							<div class="flex items-center gap-2">
-								<span class="text-3xl font-bold text-white">3</span>
-								<span class="text-gray-500">circuits nationwide</span>
+
+							<!-- Step 2: Compete -->
+							<div class="relative group">
+								<div class="relative flex flex-col items-center text-center">
+									<!-- Icon Circle -->
+									<div class="relative mb-3">
+										<div class="absolute inset-0 bg-purple-500/20 rounded-full blur-lg group-hover:bg-purple-500/40 transition-all duration-500"></div>
+										<div class="relative w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-all duration-300">
+											<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
+											</svg>
+										</div>
+										<div class="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-gray-900 border-2 border-purple-500 flex items-center justify-center">
+											<span class="text-[10px] font-bold text-purple-400">2</span>
+										</div>
+									</div>
+									<!-- Content -->
+									<h3 class="text-sm font-bold text-white mb-1 group-hover:text-purple-400 transition-colors">Compete</h3>
+									<p class="text-xs text-gray-500 leading-relaxed max-w-[160px]">Battle through Swiss rounds and Top 8 playoffs</p>
+								</div>
 							</div>
-							<div class="flex items-center gap-2">
-								<span class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">$30K</span>
-								<span class="text-gray-500">2026 prize pool</span>
+
+							<!-- Step 3: Earn Points -->
+							<div class="relative group">
+								<div class="relative flex flex-col items-center text-center">
+									<!-- Icon Circle -->
+									<div class="relative mb-3">
+										<div class="absolute inset-0 bg-green-500/20 rounded-full blur-lg group-hover:bg-green-500/40 transition-all duration-500"></div>
+										<div class="relative w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30 group-hover:scale-110 transition-all duration-300">
+											<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+											</svg>
+										</div>
+										<div class="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-gray-900 border-2 border-green-500 flex items-center justify-center">
+											<span class="text-[10px] font-bold text-green-400">3</span>
+										</div>
+									</div>
+									<!-- Content -->
+									<h3 class="text-sm font-bold text-white mb-1 group-hover:text-green-400 transition-colors">Earn Points</h3>
+									<p class="text-xs text-gray-500 leading-relaxed max-w-[160px]">Accumulate AGE Points and climb the rankings</p>
+								</div>
+							</div>
+
+							<!-- Step 4: Become Champion -->
+							<div class="relative group">
+								<div class="relative flex flex-col items-center text-center">
+									<!-- Icon Circle -->
+									<div class="relative mb-3">
+										<div class="absolute inset-0 bg-amber-500/20 rounded-full blur-lg group-hover:bg-amber-500/40 transition-all duration-500"></div>
+										<div class="relative w-14 h-14 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-all duration-300">
+											<svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+												<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+											</svg>
+										</div>
+										<div class="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-gray-900 border-2 border-amber-500 flex items-center justify-center">
+											<span class="text-[10px] font-bold text-amber-400">4</span>
+										</div>
+									</div>
+									<!-- Content -->
+									<h3 class="text-sm font-bold text-white mb-1 group-hover:text-amber-400 transition-colors">Become Champion</h3>
+									<p class="text-xs text-gray-500 leading-relaxed max-w-[160px]">Top the leaderboard and qualify for the Championship</p>
+								</div>
 							</div>
 						</div>
+					</div>
 
-						<!-- Primary CTAs -->
-						<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-							{#if upcomingEvents.length > 0}
-								<a href="/age-open/{upcomingEvents[0].id}" class="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-4 text-lg font-semibold text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-105 transition-all">
-									Register for Next Event
-									<svg class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-									</svg>
-								</a>
-							{/if}
-							<button onclick={() => switchTab('events')} class="inline-flex items-center gap-2 rounded-xl bg-white/10 backdrop-blur-sm px-6 py-4 font-medium text-white border border-white/20 hover:bg-white/20 transition-all">
-								Browse All Events
-							</button>
-						</div>
+					<!-- Bottom CTA -->
+					<div class="relative mt-5 pt-4 border-t border-gray-800/50 flex flex-col sm:flex-row items-center justify-center gap-3">
+						<p class="text-gray-400 text-sm">Ready to begin?</p>
+						<button onclick={() => switchTab('events')} class="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105 transition-all">
+							Find Your First Event
+							<svg class="h-4 w-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+							</svg>
+						</button>
 					</div>
 				</div>
 
-				<!-- Main Content Grid -->
+				<!-- Three Circuits Section -->
+				<div class="relative overflow-hidden rounded-2xl border border-gray-800 bg-gradient-to-b from-gray-900/80 to-gray-950 p-5 sm:p-6">
+					<!-- Background decoration -->
+					<div class="absolute inset-0 overflow-hidden">
+						<div class="absolute top-0 left-1/4 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl"></div>
+						<div class="absolute top-0 left-1/2 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl"></div>
+						<div class="absolute top-0 right-1/4 w-64 h-64 bg-green-500/5 rounded-full blur-3xl"></div>
+					</div>
+
+					<div class="relative text-center mb-6">
+						<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-green-500/20 border border-gray-700 text-xs font-medium text-gray-300 mb-3">
+							<span class="w-2 h-2 rounded-full bg-blue-400"></span>
+							<span class="w-2 h-2 rounded-full bg-purple-400"></span>
+							<span class="w-2 h-2 rounded-full bg-green-400"></span>
+							Regional Competition
+						</div>
+						<h2 class="text-2xl sm:text-3xl font-bold text-white mb-2">Three Circuits. <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">Three Champions.</span></h2>
+						<p class="text-gray-400 max-w-xl mx-auto text-sm sm:text-base">Each circuit crowns its own AGE Champion at the end of the season. Dominate your region and etch your name into AGE Open history.</p>
+					</div>
+
+					<div class="relative grid gap-4 md:grid-cols-3">
+						<!-- Los Angeles -->
+						<button onclick={() => switchTab('events')} class="group relative overflow-hidden rounded-xl border border-blue-500/30 p-5 text-left hover:border-blue-500/60 transition-all h-full">
+							<!-- Background Image -->
+							<img
+								src="/images/circuits/los-angeles.jpg"
+								alt="Los Angeles skyline"
+								class="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500"
+							/>
+							<!-- Dark overlay with blue tint -->
+							<div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-gray-900/60"></div>
+							<div class="absolute inset-0 bg-blue-500/10 group-hover:bg-blue-500/15 transition-colors"></div>
+							<div class="relative" style="text-shadow: 0 1px 3px rgba(0,0,0,0.5);">
+								<!-- Header -->
+								<div class="flex items-center gap-3 mb-3">
+									<div class="h-11 w-11 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-blue-500/30">LA</div>
+									<div>
+										<h3 class="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Los Angeles</h3>
+										<p class="text-xs text-blue-400/80">West Coast Circuit</p>
+									</div>
+								</div>
+								<!-- Description -->
+								<p class="text-sm text-gray-300 mb-3 leading-relaxed">The original AGE Open circuit and birthplace of our competitive series. Home to some of the most skilled FaB players on the West Coast, LA events are known for their fierce competition and electric atmosphere.</p>
+								<!-- Highlights -->
+								<div class="flex flex-wrap gap-2 mb-3">
+									<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-xs text-blue-300 backdrop-blur-sm">
+										<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+										Flagship Circuit
+									</span>
+									<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-xs text-blue-300 backdrop-blur-sm">
+										Est. 2023
+									</span>
+								</div>
+								<span class="inline-flex items-center gap-1 text-sm text-blue-400 font-medium group-hover:gap-2 transition-all">
+									Explore LA Events <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+								</span>
+							</div>
+						</button>
+
+						<!-- New England -->
+						<button onclick={() => switchTab('events')} class="group relative overflow-hidden rounded-xl border border-purple-500/30 p-5 text-left hover:border-purple-500/60 transition-all h-full">
+							<!-- Background Image -->
+							<img
+								src="/images/circuits/new-england.jpg"
+								alt="Boston skyline"
+								class="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500"
+							/>
+							<!-- Dark overlay with purple tint -->
+							<div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-gray-900/60"></div>
+							<div class="absolute inset-0 bg-purple-500/10 group-hover:bg-purple-500/15 transition-colors"></div>
+							<div class="relative" style="text-shadow: 0 1px 3px rgba(0,0,0,0.5);">
+								<!-- Header -->
+								<div class="flex items-center gap-3 mb-3">
+									<div class="h-11 w-11 rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-purple-500/30">NE</div>
+									<div>
+										<h3 class="text-lg font-bold text-white group-hover:text-purple-400 transition-colors">New England</h3>
+										<p class="text-xs text-purple-400/80">East Coast Circuit</p>
+									</div>
+								</div>
+								<!-- Description -->
+								<p class="text-sm text-gray-300 mb-3 leading-relaxed">Bringing high-stakes competitive Flesh and Blood to the East Coast. New England's passionate community has quickly established itself as a force to be reckoned with, producing rising stars and memorable matches.</p>
+								<!-- Highlights -->
+								<div class="flex flex-wrap gap-2 mb-3">
+									<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/30 text-xs text-purple-300 backdrop-blur-sm">
+										<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"/></svg>
+										Rising Scene
+									</span>
+									<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/30 text-xs text-purple-300 backdrop-blur-sm">
+										Est. 2025
+									</span>
+								</div>
+								<span class="inline-flex items-center gap-1 text-sm text-purple-400 font-medium group-hover:gap-2 transition-all">
+									Explore NE Events <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+								</span>
+							</div>
+						</button>
+
+						<!-- St. Louis -->
+						<button onclick={() => switchTab('events')} class="group relative overflow-hidden rounded-xl border border-green-500/30 p-5 text-left hover:border-green-500/60 transition-all h-full">
+							<!-- Background Image -->
+							<img
+								src="/images/circuits/st-louis.jpg"
+								alt="St. Louis Gateway Arch"
+								class="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-50 group-hover:scale-105 transition-all duration-500"
+							/>
+							<!-- Dark overlay with green tint -->
+							<div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-gray-900/60"></div>
+							<div class="absolute inset-0 bg-green-500/10 group-hover:bg-green-500/15 transition-colors"></div>
+							<div class="relative" style="text-shadow: 0 1px 3px rgba(0,0,0,0.5);">
+								<!-- Header -->
+								<div class="flex items-center gap-3 mb-3">
+									<div class="h-11 w-11 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-green-500/30">STL</div>
+									<div>
+										<h3 class="text-lg font-bold text-white group-hover:text-green-400 transition-colors">St. Louis</h3>
+										<p class="text-xs text-green-400/80">Midwest Circuit</p>
+									</div>
+								</div>
+								<!-- Description -->
+								<p class="text-sm text-gray-300 mb-3 leading-relaxed">The newest addition to the AGE Open family, bringing premier competitive play to the heart of America. St. Louis represents the Midwest's growing FaB community and hunger for high-level competition.</p>
+								<!-- Highlights -->
+								<div class="flex flex-wrap gap-2 mb-3">
+									<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 text-xs text-green-300 backdrop-blur-sm">
+										<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd"/></svg>
+										Newest Circuit
+									</span>
+									<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 text-xs text-green-300 backdrop-blur-sm">
+										Est. 2026
+									</span>
+								</div>
+								<span class="inline-flex items-center gap-1 text-sm text-green-400 font-medium group-hover:gap-2 transition-all">
+									Explore STL Events <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+								</span>
+							</div>
+						</button>
+					</div>
+				</div>
+
+				<!-- Two Column: Events + Leaderboard -->
 				<div class="grid gap-8 lg:grid-cols-3">
-					<!-- Left Column: Upcoming Events -->
-					<div class="lg:col-span-2 space-y-4">
-						<div class="flex items-center justify-between mb-2">
-							<h3 class="text-lg font-semibold text-white">Upcoming Events</h3>
+					<!-- Upcoming Events List -->
+					<div class="lg:col-span-2">
+						<div class="flex items-center justify-between mb-4">
+							<h2 class="text-xl font-bold text-white">Upcoming Events</h2>
 							<button onclick={() => switchTab('events')} class="text-sm text-blue-400 hover:text-blue-300 transition-colors">
 								View All →
 							</button>
 						</div>
 
-						<!-- Event Cards Stack -->
 						{#if upcomingEvents.length > 0}
 							<div class="space-y-3">
-								{#each upcomingEvents.slice(0, 4) as evt, i}
+								{#each upcomingEvents as evt}
 									{@const colors = getCircuitColor(evt.circuit)}
-									<a href="/age-open/{evt.id}" class="group block rounded-xl border border-gray-800 bg-gray-900 overflow-hidden hover:border-gray-600 transition-all hover:shadow-lg">
-										<!-- Circuit Color Bar -->
-										<div class="{colors.bg} h-1.5 w-full"></div>
+									<a href="/age-open/{evt.id}" class="group flex items-center gap-4 p-4 rounded-xl border border-gray-800 bg-gray-900/50 hover:border-gray-600 transition-all">
+										<!-- Date -->
+										<div class="flex-shrink-0 w-14 text-center">
+											{#if evt.eventDate}
+												<div class="text-2xl font-bold text-white">{new Date(evt.eventDate).getDate()}</div>
+												<div class="text-xs text-gray-500 uppercase">{new Date(evt.eventDate).toLocaleDateString('en-US', { month: 'short' })}</div>
+											{/if}
+										</div>
 
-										<div class="p-4 sm:p-5">
-											<div class="flex items-start gap-4">
-												<!-- Date Block -->
-												<div class="flex-shrink-0 w-14 text-center py-1">
-													{#if evt.eventDate}
-														<div class="text-2xl font-bold text-white leading-none">{new Date(evt.eventDate).getDate()}</div>
-														<div class="text-xs font-medium text-gray-400 uppercase mt-1">{new Date(evt.eventDate).toLocaleDateString('en-US', { month: 'short' })}</div>
-													{/if}
-												</div>
+										<!-- Divider -->
+										<div class="{colors.bg} w-1 h-12 rounded-full"></div>
 
-												<!-- Event Details -->
-												<div class="flex-1 min-w-0">
-													<div class="flex items-center gap-2 mb-1">
-														{#if i === 0}
-															<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-green-500/20 text-green-400">
-																<span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-																Next
-															</span>
-														{/if}
-														<span class="{colors.text} text-xs font-semibold">{evt.circuit || 'TBD'}</span>
-													</div>
-													<h4 class="text-lg font-bold text-white group-hover:{colors.text} transition-colors line-clamp-1">{evt.title}</h4>
-													<div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-400">
-														{#if evt.location}
-															<span class="flex items-center gap-1.5">
-																<svg class="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-																</svg>
-																<span class="truncate">{evt.location}</span>
-															</span>
-														{/if}
-														{#if evt.format}
-															<span class="flex items-center gap-1.5">
-																<svg class="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h10M7 12h10m-7 5h4" />
-																</svg>
-																{evt.format}
-															</span>
-														{/if}
-													</div>
-												</div>
-
-												<!-- Price & CTA -->
-												<div class="flex-shrink-0 text-right">
-													<div class="text-xl font-bold text-white">${formatPrice(evt.price)}</div>
-													<div class="mt-2">
-														<span class="inline-flex items-center gap-1 rounded-lg {colors.bg} px-3 py-1.5 text-xs font-semibold text-white group-hover:opacity-90 transition-opacity">
-															Register
-															<svg class="h-3 w-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-															</svg>
-														</span>
-													</div>
-												</div>
+										<!-- Info -->
+										<div class="flex-1 min-w-0">
+											<div class="flex items-center gap-2 mb-1">
+												<span class="{colors.text} text-xs font-semibold">{evt.circuit}</span>
 											</div>
+											<h3 class="font-semibold text-white truncate group-hover:{colors.text} transition-colors">{evt.title}</h3>
+											<p class="text-sm text-gray-500">{evt.location} · {evt.format}</p>
+										</div>
+
+										<!-- Price & CTA -->
+										<div class="flex-shrink-0 text-right">
+											<div class="font-bold text-white">${formatPrice(evt.price)}</div>
+											<span class="text-xs {colors.text}">Register →</span>
 										</div>
 									</a>
 								{/each}
 							</div>
 						{:else}
-							<div class="rounded-xl border border-gray-800 bg-gray-900 p-8 text-center">
-								<p class="text-gray-400">No upcoming events scheduled</p>
+							<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-8 text-center">
+								<p class="text-gray-400">More events coming soon!</p>
 							</div>
 						{/if}
-
-						<!-- How It Works - Simple Steps -->
-						<div class="rounded-xl border border-gray-800 bg-gray-900 p-6 mt-6">
-							<h3 class="font-semibold text-white mb-4">How to Play</h3>
-							<div class="grid gap-4 sm:grid-cols-3">
-								<div class="flex gap-3">
-									<div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">1</div>
-									<div>
-										<div class="font-medium text-white text-sm">Sign Up</div>
-										<div class="text-xs text-gray-500">Register for an event</div>
-									</div>
-								</div>
-								<div class="flex gap-3">
-									<div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-purple-500/20 text-purple-400 text-sm font-bold">2</div>
-									<div>
-										<div class="font-medium text-white text-sm">Compete</div>
-										<div class="text-xs text-gray-500">Play in Swiss rounds</div>
-									</div>
-								</div>
-								<div class="flex gap-3">
-									<div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-green-500/20 text-green-400 text-sm font-bold">3</div>
-									<div>
-										<div class="font-medium text-white text-sm">Earn Points</div>
-										<div class="text-xs text-gray-500">Climb the leaderboard</div>
-									</div>
-								</div>
-							</div>
-						</div>
 					</div>
 
-					<!-- Right Column: Compact Sidebar -->
+					<!-- Leaderboard & Why Play -->
 					<div class="space-y-6">
-						<!-- Leaderboard - Styled -->
-						<div class="rounded-xl border border-purple-500/30 bg-gradient-to-b from-purple-500/10 to-gray-900 overflow-hidden">
-							<div class="flex items-center justify-between px-5 py-4 border-b border-purple-500/20 bg-purple-500/5">
+						<!-- Leaderboard -->
+						<div class="rounded-2xl border border-purple-500/30 bg-gradient-to-b from-purple-500/10 to-gray-900 overflow-hidden">
+							<div class="flex items-center justify-between px-5 py-4 border-b border-purple-500/20">
 								<div class="flex items-center gap-2">
-									<div class="h-6 w-6 rounded-lg bg-purple-500/30 flex items-center justify-center">
-										<svg class="h-3.5 w-3.5 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
-											<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-										</svg>
-									</div>
-									<h3 class="font-semibold text-white">Leaderboard</h3>
+									<svg class="h-5 w-5 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+										<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+									</svg>
+									<h3 class="font-semibold text-white">Current Leaders</h3>
 								</div>
-								<button onclick={() => switchTab('standings')} class="text-sm text-purple-400 hover:text-purple-300 transition-colors">
-									View All →
+								<button onclick={() => switchTab('standings')} class="text-sm text-purple-400 hover:text-purple-300">
+									Full Standings →
 								</button>
 							</div>
 							{#if (data.standings || []).length > 0}
-								<div class="divide-y divide-gray-800">
+								<div class="divide-y divide-gray-800/50">
 									{#each (data.standings || []).slice(0, 5) as player, i}
 										{@const colors = getCircuitColor(player.circuit)}
-										<div class="flex items-center gap-3 px-5 py-3">
-											<div class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold
-												{i === 0 ? 'bg-yellow-500/20 text-yellow-400' : i === 1 ? 'bg-gray-400/20 text-gray-300' : i === 2 ? 'bg-amber-600/20 text-amber-500' : 'bg-gray-800 text-gray-500'}">
+										<div class="flex items-center gap-3 px-5 py-3 {i === 0 ? 'bg-yellow-500/5' : ''}">
+											<div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold
+												{i === 0 ? 'bg-yellow-500/20 text-yellow-400 ring-2 ring-yellow-500/30' : i === 1 ? 'bg-gray-400/20 text-gray-300' : i === 2 ? 'bg-amber-600/20 text-amber-500' : 'bg-gray-800 text-gray-500'}">
 												{i + 1}
 											</div>
 											<div class="flex-1 min-w-0">
-												<div class="flex items-center gap-2">
-													<span class="h-2 w-2 rounded-full {colors.bg}"></span>
-													<span class="text-sm font-medium text-white truncate">{player.playerName}</span>
-												</div>
+												<span class="text-sm font-medium text-white truncate block">{player.playerName}</span>
+												<span class="text-xs {colors.text}">{player.circuit}</span>
 											</div>
 											<div class="text-sm font-bold text-purple-400">{player.totalPoints || 0} pts</div>
 										</div>
@@ -1127,86 +1406,67 @@
 								</div>
 							{:else}
 								<div class="p-6 text-center text-gray-500 text-sm">
-									No standings data yet
+									Be the first on the leaderboard!
 								</div>
 							{/if}
 						</div>
 
-						<!-- Circuits - Styled -->
-						<div class="rounded-xl border border-amber-500/30 bg-gradient-to-b from-amber-500/10 to-gray-900 overflow-hidden">
-							<div class="px-5 py-4 border-b border-amber-500/20 bg-amber-500/5">
-								<div class="flex items-center gap-2">
-									<div class="h-6 w-6 rounded-lg bg-amber-500/30 flex items-center justify-center">
-										<svg class="h-3.5 w-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-											<path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+						<!-- Why Play Card -->
+						<div class="rounded-2xl border border-amber-500/30 bg-gradient-to-b from-amber-500/10 to-gray-900 p-5">
+							<h3 class="font-semibold text-white mb-4 flex items-center gap-2">
+								<svg class="h-5 w-5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+									<path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+								</svg>
+								Why AGE Open?
+							</h3>
+							<div class="space-y-3 text-sm">
+								<div class="flex items-center gap-3">
+									<div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+										<span class="text-amber-400 font-bold">$</span>
+									</div>
+									<span class="text-gray-300"><span class="text-white font-medium">$1,000</span> prize pool at every event</span>
+								</div>
+								<div class="flex items-center gap-3">
+									<div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+										<svg class="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+											<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
 										</svg>
 									</div>
-									<h3 class="font-semibold text-white">Our Circuits</h3>
+									<span class="text-gray-300">Earn <span class="text-white font-medium">AGE Points</span> toward championship</span>
 								</div>
-							</div>
-							<div class="p-4 space-y-2">
-								<button onclick={() => switchTab('events')} class="group w-full flex items-center gap-3 p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/40 hover:bg-blue-500/20 transition-all text-left">
-									<div class="h-8 w-8 rounded-lg bg-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-blue-500/30">LA</div>
-									<div class="flex-1">
-										<div class="text-sm font-medium text-white">Los Angeles</div>
-									</div>
-									<span class="text-xs text-blue-400 font-medium">{laCount} events</span>
-								</button>
-								<button onclick={() => switchTab('events')} class="group w-full flex items-center gap-3 p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/20 hover:border-purple-500/40 hover:bg-purple-500/20 transition-all text-left">
-									<div class="h-8 w-8 rounded-lg bg-purple-500 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-purple-500/30">NE</div>
-									<div class="flex-1">
-										<div class="text-sm font-medium text-white">New England</div>
-									</div>
-									<span class="text-xs text-purple-400 font-medium">{neCount} events</span>
-								</button>
-								<button onclick={() => switchTab('events')} class="group w-full flex items-center gap-3 p-2.5 rounded-lg bg-green-500/10 border border-green-500/20 hover:border-green-500/40 hover:bg-green-500/20 transition-all text-left">
-									<div class="h-8 w-8 rounded-lg bg-green-500 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-green-500/30">STL</div>
-									<div class="flex-1">
-										<div class="text-sm font-medium text-white">St. Louis</div>
-									</div>
-									<span class="text-xs text-green-400 font-medium">{stlCount} events</span>
-								</button>
-							</div>
-						</div>
-
-						<!-- Why Play - Benefits -->
-						<div class="rounded-xl border border-green-500/30 bg-gradient-to-b from-green-500/10 to-gray-900 p-5">
-							<div class="flex items-center gap-2 mb-4">
-								<div class="h-6 w-6 rounded-lg bg-green-500/30 flex items-center justify-center">
-									<svg class="h-3.5 w-3.5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-										<path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-									</svg>
-								</div>
-								<h3 class="font-semibold text-white">Why Play AGE Open?</h3>
-							</div>
-							<div class="space-y-3">
-								<div class="flex items-start gap-3">
-									<div class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-400">
-										<svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
-											<path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-											<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
-										</svg>
-									</div>
-									<div class="text-sm text-gray-300">$1,000 prize pools at every event</div>
-								</div>
-								<div class="flex items-start gap-3">
-									<div class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-purple-500/20 text-purple-400">
-										<svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
-											<path fill-rule="evenodd" d="M6 3a1 1 0 011-1h.01a1 1 0 010 2H7a1 1 0 01-1-1zm2 3a1 1 0 00-2 0v1a2 2 0 00-2 2v1a2 2 0 00-2 2v.683a3.7 3.7 0 011.055.485 1.704 1.704 0 001.89 0 3.704 3.704 0 014.11 0 1.704 1.704 0 001.89 0 3.704 3.704 0 014.11 0 1.704 1.704 0 001.89 0A3.7 3.7 0 0118 12.683V12a2 2 0 00-2-2V9a2 2 0 00-2-2V6a1 1 0 10-2 0v1h-1V6a1 1 0 10-2 0v1H8V6zm10 8.868a3.704 3.704 0 01-4.055-.036 1.704 1.704 0 00-1.89 0 3.704 3.704 0 01-4.11 0 1.704 1.704 0 00-1.89 0A3.704 3.704 0 012 14.868V17a1 1 0 001 1h14a1 1 0 001-1v-2.132zM9 3a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zm3 0a1 1 0 011-1h.01a1 1 0 110 2H13a1 1 0 01-1-1z" clip-rule="evenodd"/>
-										</svg>
-									</div>
-									<div class="text-sm text-gray-300">Qualify for Player's Championship</div>
-								</div>
-								<div class="flex items-start gap-3">
-									<div class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-blue-400">
-										<svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+								<div class="flex items-center gap-3">
+									<div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+										<svg class="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
 											<path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
 										</svg>
 									</div>
-									<div class="text-sm text-gray-300">Competitive local community</div>
+									<span class="text-gray-300">Join a <span class="text-white font-medium">competitive community</span></span>
+								</div>
+								<div class="flex items-center gap-3">
+									<div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
+										<svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+											<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+										</svg>
+									</div>
+									<span class="text-gray-300"><span class="text-white font-medium">Independent</span> & player-focused</span>
 								</div>
 							</div>
 						</div>
+					</div>
+				</div>
+
+				<!-- Final CTA -->
+				<div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 p-8 text-center">
+					<div class="absolute inset-0 bg-[url('/grid.svg')] opacity-20"></div>
+					<div class="relative">
+						<h2 class="text-2xl sm:text-3xl font-bold text-white mb-3">Ready to Start Your Journey?</h2>
+						<p class="text-blue-100 mb-6 max-w-xl mx-auto">Join hundreds of players competing in the AGE Open Series. Your path to becoming an AGE Champion starts with a single event.</p>
+						<button onclick={() => switchTab('events')} class="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 font-semibold text-gray-900 shadow-xl hover:bg-gray-100 transition-all hover:scale-105">
+							Find an Event Near You
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+							</svg>
+						</button>
 					</div>
 				</div>
 			</div>
@@ -1214,41 +1474,255 @@
 		<!-- Events Tab -->
 		{:else if activeTab === 'events'}
 			<div class="space-y-8">
-				<!-- Circuit Filter -->
+				<!-- Circuit Season Tracker -->
+				<div class="rounded-2xl border border-gray-800 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950 p-6 overflow-hidden">
+					<div class="flex items-center justify-between mb-6">
+						<div>
+							<h2 class="text-xl font-bold text-white mb-1">2026 Season Circuit Tracker</h2>
+							<p class="text-sm text-gray-400">8 guaranteed opens per circuit · Events fill slots by date</p>
+						</div>
+						<div class="hidden sm:flex items-center gap-4 text-sm">
+							<div class="flex items-center gap-2">
+								<div class="w-3 h-3 rounded-full bg-gradient-to-r from-amber-400 to-orange-500"></div>
+								<span class="text-gray-400">Scheduled</span>
+							</div>
+							<div class="flex items-center gap-2">
+								<div class="w-3 h-3 rounded-full bg-gray-700 border border-dashed border-gray-600"></div>
+								<span class="text-gray-400">TBA</span>
+							</div>
+						</div>
+					</div>
+
+					<div class="space-y-6">
+						<!-- Los Angeles Circuit -->
+						<div class="group">
+							<div class="flex items-center gap-3 mb-3">
+								<div class="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-blue-500/20">LA</div>
+								<div class="flex-1">
+									<div class="flex items-center justify-between">
+										<span class="font-semibold text-white">Los Angeles</span>
+										<span class="text-xs text-blue-400">{laCount}/8 Opens</span>
+									</div>
+									<div class="h-1.5 mt-1.5 bg-gray-800 rounded-full overflow-hidden">
+										<div class="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-500" style="width: {(laCount / 8) * 100}%"></div>
+									</div>
+								</div>
+							</div>
+							<div class="grid grid-cols-4 sm:grid-cols-8 gap-2">
+								{#each laSlots as slot, i}
+									{#if slot}
+										<a href="/age-open/{slot.id}" class="group/slot relative flex flex-col items-center p-2 rounded-lg bg-blue-500/10 border border-blue-500/30 hover:border-blue-400 hover:bg-blue-500/20 transition-all">
+											<div class="text-lg font-bold text-blue-400">{i + 1}</div>
+											<div class="text-[10px] text-gray-400 text-center truncate w-full">{new Date(slot.eventDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+											<div class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30"></div>
+										</a>
+									{:else}
+										<div class="flex flex-col items-center p-2 rounded-lg bg-gray-800/50 border border-dashed border-gray-700">
+											<div class="text-lg font-bold text-gray-600">{i + 1}</div>
+											<div class="text-[10px] text-gray-600">TBA</div>
+										</div>
+									{/if}
+								{/each}
+							</div>
+						</div>
+
+						<!-- New England Circuit -->
+						<div class="group">
+							<div class="flex items-center gap-3 mb-3">
+								<div class="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-purple-500/20">NE</div>
+								<div class="flex-1">
+									<div class="flex items-center justify-between">
+										<span class="font-semibold text-white">New England</span>
+										<span class="text-xs text-purple-400">{neCount}/8 Opens</span>
+									</div>
+									<div class="h-1.5 mt-1.5 bg-gray-800 rounded-full overflow-hidden">
+										<div class="h-full bg-gradient-to-r from-purple-400 to-purple-600 rounded-full transition-all duration-500" style="width: {(neCount / 8) * 100}%"></div>
+									</div>
+								</div>
+							</div>
+							<div class="grid grid-cols-4 sm:grid-cols-8 gap-2">
+								{#each neSlots as slot, i}
+									{#if slot}
+										<a href="/age-open/{slot.id}" class="group/slot relative flex flex-col items-center p-2 rounded-lg bg-purple-500/10 border border-purple-500/30 hover:border-purple-400 hover:bg-purple-500/20 transition-all">
+											<div class="text-lg font-bold text-purple-400">{i + 1}</div>
+											<div class="text-[10px] text-gray-400 text-center truncate w-full">{new Date(slot.eventDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+											<div class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30"></div>
+										</a>
+									{:else}
+										<div class="flex flex-col items-center p-2 rounded-lg bg-gray-800/50 border border-dashed border-gray-700">
+											<div class="text-lg font-bold text-gray-600">{i + 1}</div>
+											<div class="text-[10px] text-gray-600">TBA</div>
+										</div>
+									{/if}
+								{/each}
+							</div>
+						</div>
+
+						<!-- St. Louis Circuit -->
+						<div class="group">
+							<div class="flex items-center gap-3 mb-3">
+								<div class="h-8 w-8 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-green-500/20">STL</div>
+								<div class="flex-1">
+									<div class="flex items-center justify-between">
+										<span class="font-semibold text-white">St. Louis</span>
+										<span class="text-xs text-green-400">{stlCount}/8 Opens</span>
+									</div>
+									<div class="h-1.5 mt-1.5 bg-gray-800 rounded-full overflow-hidden">
+										<div class="h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-500" style="width: {(stlCount / 8) * 100}%"></div>
+									</div>
+								</div>
+							</div>
+							<div class="grid grid-cols-4 sm:grid-cols-8 gap-2">
+								{#each stlSlots as slot, i}
+									{#if slot}
+										<a href="/age-open/{slot.id}" class="group/slot relative flex flex-col items-center p-2 rounded-lg bg-green-500/10 border border-green-500/30 hover:border-green-400 hover:bg-green-500/20 transition-all">
+											<div class="text-lg font-bold text-green-400">{i + 1}</div>
+											<div class="text-[10px] text-gray-400 text-center truncate w-full">{new Date(slot.eventDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+											<div class="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 shadow-lg shadow-amber-500/30"></div>
+										</a>
+									{:else}
+										<div class="flex flex-col items-center p-2 rounded-lg bg-gray-800/50 border border-dashed border-gray-700">
+											<div class="text-lg font-bold text-gray-600">{i + 1}</div>
+											<div class="text-[10px] text-gray-600">TBA</div>
+										</div>
+									{/if}
+								{/each}
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Defending Champions Section -->
+				<div class="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-gray-900 to-gray-950 p-6 overflow-hidden">
+					<div class="flex items-center gap-3 mb-6">
+						<div class="h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+							<svg class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+								<path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd"/>
+							</svg>
+						</div>
+						<div>
+							<h2 class="text-xl font-bold text-white">2025 Defending Champions</h2>
+							<p class="text-sm text-gray-400">Can you dethrone them in 2026?</p>
+						</div>
+					</div>
+
+					<div class="grid gap-4 sm:grid-cols-2">
+						<!-- LA Champion -->
+						<div class="relative overflow-hidden rounded-xl border border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-gray-900 p-5">
+							<div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-400/20 to-transparent rounded-bl-full"></div>
+							<div class="relative">
+								<div class="flex items-center gap-3 mb-3">
+									<div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30 ring-2 ring-amber-400 ring-offset-2 ring-offset-gray-900">
+										<svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
+											<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+										</svg>
+									</div>
+									<div>
+										<div class="text-xs text-blue-400 font-semibold uppercase tracking-wide">Los Angeles Champion</div>
+										<h3 class="text-lg font-bold text-white">Peter Buddensiek</h3>
+									</div>
+								</div>
+								<div class="flex items-center justify-between">
+									<div class="flex items-center gap-2 text-sm text-gray-400">
+										<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-xs text-blue-300">
+											2025 Season
+										</span>
+										<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-xs text-amber-300">
+											<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+											Champion
+										</span>
+									</div>
+									<a href="/player/61767867" class="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors">
+										View Profile
+										<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+										</svg>
+									</a>
+								</div>
+							</div>
+						</div>
+
+						<!-- NE Champion -->
+						<div class="relative overflow-hidden rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-gray-900 p-5">
+							<div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-400/20 to-transparent rounded-bl-full"></div>
+							<div class="relative">
+								<div class="flex items-center gap-3 mb-3">
+									<div class="h-12 w-12 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/30 ring-2 ring-amber-400 ring-offset-2 ring-offset-gray-900">
+										<svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
+											<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+										</svg>
+									</div>
+									<div>
+										<div class="text-xs text-purple-400 font-semibold uppercase tracking-wide">New England Champion</div>
+										<h3 class="text-lg font-bold text-white">Noah Beygelman</h3>
+									</div>
+								</div>
+								<div class="flex items-center justify-between">
+									<div class="flex items-center gap-2 text-sm text-gray-400">
+										<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/30 text-xs text-purple-300">
+											2025 Season
+										</span>
+										<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-xs text-amber-300">
+											<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+											Champion
+										</span>
+									</div>
+									<a href="/player/56952555" class="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 transition-colors">
+										View Profile
+										<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+										</svg>
+									</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Circuit Filter Pills -->
 				<div class="flex flex-wrap items-center gap-3">
-					<span class="text-sm font-medium text-gray-400">Filter by Circuit:</span>
+					<span class="text-sm font-medium text-gray-400">Browse Events:</span>
 					<div class="flex flex-wrap gap-2">
 						<button
 							onclick={() => (selectedCircuit = 'all')}
-							class="rounded-full px-4 py-2 text-sm font-medium transition-colors {selectedCircuit === 'all'
-								? 'bg-white text-gray-900'
+							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'all'
+								? 'bg-white text-gray-900 shadow-lg'
 								: 'bg-gray-800 text-gray-300 hover:bg-gray-700'}"
 						>
-							All Events
+							All Circuits
 						</button>
 						<button
 							onclick={() => (selectedCircuit = 'Los Angeles')}
-							class="rounded-full px-4 py-2 text-sm font-medium transition-colors {selectedCircuit === 'Los Angeles'
-								? 'bg-blue-500 text-white'
-								: 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'}"
+							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'Los Angeles'
+								? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+								: 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/30'}"
 						>
-							Los Angeles ({laCount})
-						</button>
-						<button
-							onclick={() => (selectedCircuit = 'St. Louis')}
-							class="rounded-full px-4 py-2 text-sm font-medium transition-colors {selectedCircuit === 'St. Louis'
-								? 'bg-green-500 text-white'
-								: 'bg-green-500/10 text-green-400 hover:bg-green-500/20'}"
-						>
-							St. Louis ({stlCount})
+							<span class="flex items-center gap-1.5">
+								<span class="w-2 h-2 rounded-full bg-blue-400"></span>
+								Los Angeles
+							</span>
 						</button>
 						<button
 							onclick={() => (selectedCircuit = 'New England')}
-							class="rounded-full px-4 py-2 text-sm font-medium transition-colors {selectedCircuit === 'New England'
-								? 'bg-purple-500 text-white'
-								: 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'}"
+							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'New England'
+								? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
+								: 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/30'}"
 						>
-							New England ({neCount})
+							<span class="flex items-center gap-1.5">
+								<span class="w-2 h-2 rounded-full bg-purple-400"></span>
+								New England
+							</span>
+						</button>
+						<button
+							onclick={() => (selectedCircuit = 'St. Louis')}
+							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'St. Louis'
+								? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
+								: 'bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/30'}"
+						>
+							<span class="flex items-center gap-1.5">
+								<span class="w-2 h-2 rounded-full bg-green-400"></span>
+								St. Louis
+							</span>
 						</button>
 					</div>
 				</div>
@@ -1257,100 +1731,83 @@
 				{#if filteredEvents.length > 0}
 					<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
 						{#each filteredEvents as evt}
-							<article
-								class="group overflow-hidden rounded-lg border border-gray-800 bg-gray-900 shadow-sm transition-all hover:border-gray-700 hover:shadow-lg"
-							>
+							{@const colors = getCircuitColor(evt.circuit)}
+							<article class="group relative overflow-hidden rounded-xl border {colors.border || 'border-gray-800'} bg-gradient-to-b from-gray-900 to-gray-950 shadow-lg transition-all hover:shadow-xl hover:scale-[1.02]">
+								<!-- Circuit Color Bar -->
+								<div class="absolute top-0 left-0 right-0 h-1 {colors.bg}"></div>
+
 								<div class="p-6">
-									<!-- Badges -->
-									<div class="mb-3 flex flex-wrap gap-2">
-										{#if evt.format}
-											<span
-												class="rounded-full bg-gray-700 px-2.5 py-1 text-xs font-medium text-gray-200"
-											>
-												{evt.format}
-											</span>
-										{/if}
-										{#if evt.circuit}
-											{@const colors = getCircuitColor(evt.circuit)}
-											<span
-												class="rounded-full {colors.bg} px-2.5 py-1 text-xs font-medium text-white"
-											>
-												{evt.circuit}
-											</span>
-										{/if}
-										{#if evt.premiumDiscount}
-											<span
-												class="rounded-full bg-amber-500 px-2.5 py-1 text-xs font-medium text-white"
-											>
-												Premium: 10% Off
-											</span>
+									<!-- Header with Date Badge -->
+									<div class="flex items-start justify-between mb-4">
+										<div class="flex flex-wrap gap-2">
+											{#if evt.circuit}
+												<span class="inline-flex items-center gap-1.5 rounded-full {colors.bg}/20 px-2.5 py-1 text-xs font-semibold {colors.text} border {colors.border}">
+													<span class="w-1.5 h-1.5 rounded-full {colors.bg}"></span>
+													{evt.circuit}
+												</span>
+											{/if}
+											{#if evt.format}
+												<span class="rounded-full bg-gray-800 px-2.5 py-1 text-xs font-medium text-gray-300">
+													{evt.format}
+												</span>
+											{/if}
+										</div>
+										{#if evt.eventDate}
+											<div class="flex-shrink-0 text-center bg-gray-800/80 rounded-lg px-3 py-1.5 border border-gray-700">
+												<div class="text-lg font-bold text-white leading-tight">{new Date(evt.eventDate).getDate()}</div>
+												<div class="text-[10px] text-gray-400 uppercase">{new Date(evt.eventDate).toLocaleDateString('en-US', { month: 'short' })}</div>
+											</div>
 										{/if}
 									</div>
 
 									<!-- Title -->
-									<h3 class="mb-3 text-xl font-semibold text-white group-hover:text-blue-400 transition-colors">
+									<h3 class="mb-3 text-xl font-bold text-white group-hover:{colors.text} transition-colors">
 										{evt.title}
 									</h3>
 
 									<!-- Event Details -->
 									<div class="mb-4 space-y-2">
 										{#if evt.eventDate}
-											<div class="flex items-start gap-2 text-sm text-gray-400">
-												<svg
-													class="mt-0.5 h-4 w-4 flex-shrink-0"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-													/>
+											<div class="flex items-center gap-2 text-sm text-gray-400">
+												<svg class="h-4 w-4 flex-shrink-0 {colors.text}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 												</svg>
 												<span>{formatDate(evt.eventDate)}</span>
 											</div>
 										{/if}
 
 										{#if evt.location}
-											<div class="flex items-start gap-2 text-sm text-gray-400">
-												<svg
-													class="mt-0.5 h-4 w-4 flex-shrink-0"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-													/>
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-													/>
+											<div class="flex items-center gap-2 text-sm text-gray-400">
+												<svg class="h-4 w-4 flex-shrink-0 {colors.text}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
 												</svg>
 												<span>{evt.location}</span>
 											</div>
 										{/if}
 									</div>
 
-									<!-- Footer -->
-									<div class="flex items-center justify-between border-t border-gray-800 pt-4">
-										<div class="flex items-center gap-2">
-											<span class="text-lg font-bold text-white">
-												${formatPrice(evt.price)}
-											</span>
+									<!-- Premium Badge -->
+									{#if evt.premiumDiscount}
+										<div class="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30">
+											<svg class="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+												<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+											</svg>
+											<span class="text-xs font-medium text-amber-300">Premium Members Save 10%</span>
 										</div>
-										<a
-											href="/age-open/{evt.id}"
-											class="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
-										>
-											View Details
+									{/if}
+
+									<!-- Footer -->
+									<div class="flex items-center justify-between pt-4 border-t border-gray-800">
+										<div>
+											<div class="text-xs text-gray-500 mb-0.5">Entry Fee</div>
+											<span class="text-xl font-bold text-white">${formatPrice(evt.price)}</span>
+										</div>
+										<a href="/age-open/{evt.id}" class="inline-flex items-center gap-2 rounded-lg {colors.bg} px-4 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 hover:gap-3 shadow-lg {colors.bg === 'bg-blue-500' ? 'shadow-blue-500/30' : colors.bg === 'bg-purple-500' ? 'shadow-purple-500/30' : 'shadow-green-500/30'}">
+											Register
+											<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+											</svg>
 										</a>
 									</div>
 								</div>

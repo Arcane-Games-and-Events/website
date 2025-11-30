@@ -143,13 +143,13 @@
 		<!-- Subtle glow effect -->
 		<div class="absolute -right-px top-0 bottom-0 w-px bg-gradient-to-b from-blue-500/20 via-purple-500/10 to-blue-500/20"></div>
 		<!-- Header -->
-		<div class="relative z-10 flex h-16 items-center justify-between px-4 border-b border-white/10 bg-white/[0.02]">
+		<div class="relative z-10 flex h-16 items-center justify-center px-4 border-b border-white/10 bg-white/[0.02]">
 			<a href="/" class="flex items-center" on:click={closeMobile}>
 				<img src="/logo.svg" alt="AGE" class="h-8 w-auto" />
 			</a>
 			<button
 				on:click={closeMobile}
-				class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+				class="absolute right-4 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
 			aria-label="Close menu"
 			>
 				<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -357,11 +357,11 @@
 		<!-- Subtle glow effect on border -->
 		<div class="absolute -right-px top-0 bottom-0 w-px bg-gradient-to-b from-blue-500/20 via-purple-500/10 to-blue-500/20"></div>
 		<!-- Header -->
-		<div class="relative z-10 flex h-16 items-center {collapsed ? 'justify-center px-2' : 'justify-between px-4'} border-b border-white/10 bg-white/[0.02]">
+		<div class="relative z-10 flex h-16 items-center {collapsed ? 'justify-center' : 'justify-between'} px-4 border-b border-white/10 bg-white/[0.02]">
 			<a href="/" class="flex items-center">
 				{#if collapsed}
-					<!-- Icon only when collapsed - placeholder until icon provided -->
-					<div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex-shrink-0 shadow-lg shadow-blue-500/25">
+					<!-- Icon only when collapsed -->
+					<div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-800 border border-gray-700 flex-shrink-0">
 						<span class="text-lg font-bold text-white">A</span>
 					</div>
 				{:else}

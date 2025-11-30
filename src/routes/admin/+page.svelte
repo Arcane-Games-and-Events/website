@@ -111,6 +111,34 @@
 	let standingsSeasonFilter = 'all';
 	let standingsCircuitFilter = 'all';
 
+	// Create Standing Modal state
+	let showCreateStandingModal = false;
+	let newStanding = {
+		season: '2026',
+		circuit: 'Los Angeles',
+		playerName: '',
+		gemId: '',
+		totalPoints: 0,
+		eventsPlayed: 0,
+		matchesPlayed: 0,
+		matchesWon: 0,
+		top8Finishes: 0
+	};
+
+	function resetNewStanding() {
+		newStanding = {
+			season: '2026',
+			circuit: 'Los Angeles',
+			playerName: '',
+			gemId: '',
+			totalPoints: 0,
+			eventsPlayed: 0,
+			matchesPlayed: 0,
+			matchesWon: 0,
+			top8Finishes: 0
+		};
+	}
+
 	// Sorting state for standings
 	let sortColumn = 'points'; // 'points', 'winPct', 'record', 'events', 'top8'
 	let sortDirection = 'desc'; // 'asc' or 'desc'
@@ -1458,6 +1486,15 @@
 										<p class="text-sm text-gray-400">{data.standings?.length || 0} standings records - Click any cell to edit</p>
 									</div>
 								</div>
+								<button
+									onclick={() => showCreateStandingModal = true}
+									class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 hover:bg-emerald-600 hover:shadow-emerald-500/40 transition-all"
+								>
+									<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+									</svg>
+									Add Standing
+								</button>
 							</div>
 
 							<div class="p-6">
@@ -1743,3 +1780,209 @@
 		</main>
 	</div>
 </div>
+
+<!-- Create Standing Modal -->
+{#if showCreateStandingModal}
+	<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+		<!-- Backdrop -->
+		<button
+			class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+			onclick={() => { showCreateStandingModal = false; resetNewStanding(); }}
+			aria-label="Close modal"
+		></button>
+
+		<!-- Modal -->
+		<div class="relative w-full max-w-lg rounded-2xl border border-gray-700 bg-gray-900 shadow-2xl">
+			<!-- Header -->
+			<div class="flex items-center justify-between border-b border-gray-700 px-6 py-4">
+				<div class="flex items-center gap-3">
+					<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20">
+						<svg class="h-5 w-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+						</svg>
+					</div>
+					<div>
+						<h2 class="text-lg font-semibold text-white">Create New Standing</h2>
+						<p class="text-sm text-gray-400">Add a new player to the standings</p>
+					</div>
+				</div>
+				<button
+					onclick={() => { showCreateStandingModal = false; resetNewStanding(); }}
+					class="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+					aria-label="Close modal"
+				>
+					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
+			</div>
+
+			<!-- Form -->
+			<form
+				method="POST"
+				action="?/createStanding"
+				use:enhance={() => {
+					return async ({ result, update }) => {
+						if (result.type === 'success') {
+							showCreateStandingModal = false;
+							resetNewStanding();
+							await update();
+						}
+					};
+				}}
+				class="p-6 space-y-5"
+			>
+				<!-- Season and Circuit -->
+				<div class="grid grid-cols-2 gap-4">
+					<div>
+						<label for="season" class="block text-sm font-medium text-gray-300 mb-1.5">Season *</label>
+						<select
+							id="season"
+							name="season"
+							bind:value={newStanding.season}
+							required
+							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+						>
+							<option value="2026">2026</option>
+							<option value="2025">2025</option>
+							<option value="2024">2024</option>
+							<option value="2023">2023</option>
+						</select>
+					</div>
+					<div>
+						<label for="circuit" class="block text-sm font-medium text-gray-300 mb-1.5">Circuit *</label>
+						<select
+							id="circuit"
+							name="circuit"
+							bind:value={newStanding.circuit}
+							required
+							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+						>
+							<option value="Los Angeles">Los Angeles</option>
+							<option value="New England">New England</option>
+							<option value="St. Louis">St. Louis</option>
+						</select>
+					</div>
+				</div>
+
+				<!-- Player Name -->
+				<div>
+					<label for="playerName" class="block text-sm font-medium text-gray-300 mb-1.5">Player Name *</label>
+					<input
+						type="text"
+						id="playerName"
+						name="playerName"
+						bind:value={newStanding.playerName}
+						required
+						placeholder="Enter player name"
+						class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 placeholder-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+					/>
+				</div>
+
+				<!-- GEM ID -->
+				<div>
+					<label for="gemId" class="block text-sm font-medium text-gray-300 mb-1.5">GEM ID</label>
+					<input
+						type="text"
+						id="gemId"
+						name="gemId"
+						bind:value={newStanding.gemId}
+						placeholder="Optional - for linking to player profile"
+						class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 placeholder-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+					/>
+				</div>
+
+				<!-- Points and Events -->
+				<div class="grid grid-cols-2 gap-4">
+					<div>
+						<label for="totalPoints" class="block text-sm font-medium text-gray-300 mb-1.5">Total Points</label>
+						<input
+							type="number"
+							id="totalPoints"
+							name="totalPoints"
+							bind:value={newStanding.totalPoints}
+							min="0"
+							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+						/>
+					</div>
+					<div>
+						<label for="eventsPlayed" class="block text-sm font-medium text-gray-300 mb-1.5">Events Played</label>
+						<input
+							type="number"
+							id="eventsPlayed"
+							name="eventsPlayed"
+							bind:value={newStanding.eventsPlayed}
+							min="0"
+							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+						/>
+					</div>
+				</div>
+
+				<!-- Match Stats -->
+				<div class="grid grid-cols-2 gap-4">
+					<div>
+						<label for="matchesWon" class="block text-sm font-medium text-gray-300 mb-1.5">Matches Won</label>
+						<input
+							type="number"
+							id="matchesWon"
+							name="matchesWon"
+							bind:value={newStanding.matchesWon}
+							min="0"
+							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+						/>
+					</div>
+					<div>
+						<label for="matchesPlayed" class="block text-sm font-medium text-gray-300 mb-1.5">Matches Played</label>
+						<input
+							type="number"
+							id="matchesPlayed"
+							name="matchesPlayed"
+							bind:value={newStanding.matchesPlayed}
+							min="0"
+							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+						/>
+					</div>
+				</div>
+
+				<!-- Top 8 Finishes -->
+				<div>
+					<label for="top8Finishes" class="block text-sm font-medium text-gray-300 mb-1.5">Top 8 Finishes</label>
+					<input
+						type="number"
+						id="top8Finishes"
+						name="top8Finishes"
+						bind:value={newStanding.top8Finishes}
+						min="0"
+						class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+					/>
+				</div>
+
+				<!-- Win Percentage Preview -->
+				{#if newStanding.matchesPlayed > 0}
+					<div class="rounded-lg border border-gray-700 bg-gray-800/50 p-3">
+						<p class="text-sm text-gray-400">
+							Win Percentage: <span class="font-semibold text-emerald-400">{((newStanding.matchesWon / newStanding.matchesPlayed) * 100).toFixed(1)}%</span>
+						</p>
+					</div>
+				{/if}
+
+				<!-- Actions -->
+				<div class="flex items-center justify-end gap-3 pt-2">
+					<button
+						type="button"
+						onclick={() => { showCreateStandingModal = false; resetNewStanding(); }}
+						class="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+					>
+						Cancel
+					</button>
+					<button
+						type="submit"
+						class="rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600 transition-colors"
+					>
+						Create Standing
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}

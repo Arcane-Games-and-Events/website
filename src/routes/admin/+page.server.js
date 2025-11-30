@@ -688,5 +688,57 @@ export const actions = {
 			console.error('Error deleting LSS season:', err);
 			return fail(500, { error: 'Failed to delete LSS season' });
 		}
+	},
+
+	// Create a new player standing
+	createStanding: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const season = formData.get('season')?.trim();
+		const circuit = formData.get('circuit')?.trim();
+		const playerName = formData.get('playerName')?.trim();
+		const gemId = formData.get('gemId')?.trim() || null;
+		const totalPoints = parseInt(formData.get('totalPoints')) || 0;
+		const eventsPlayed = parseInt(formData.get('eventsPlayed')) || 0;
+		const matchesPlayed = parseInt(formData.get('matchesPlayed')) || 0;
+		const matchesWon = parseInt(formData.get('matchesWon')) || 0;
+		const top8Finishes = parseInt(formData.get('top8Finishes')) || 0;
+
+		if (!season || !circuit || !playerName) {
+			return fail(400, { error: 'Season, circuit, and player name are required' });
+		}
+
+		// Calculate win percentage
+		const winPercentage = matchesPlayed > 0
+			? Math.round((matchesWon / matchesPlayed) * 100 * 100) / 100
+			: null;
+
+		try {
+			await db.insert(seasonStanding).values({
+				season,
+				circuit,
+				playerName,
+				gemId,
+				totalPoints,
+				eventsPlayed,
+				matchesPlayed,
+				matchesWon,
+				top8Finishes,
+				winPercentage,
+				qualifiedForChampionship: false
+			});
+
+			return { success: true, message: 'Standing created successfully' };
+		} catch (err) {
+			console.error('Error creating standing:', err);
+			// Check for unique constraint violation
+			if (err.code === '23505') {
+				return fail(400, { error: 'A standing for this player in this season/circuit already exists' });
+			}
+			return fail(500, { error: 'Failed to create standing' });
+		}
 	}
 };
