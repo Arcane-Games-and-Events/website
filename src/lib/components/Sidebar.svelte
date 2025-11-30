@@ -150,6 +150,7 @@
 			<button
 				on:click={closeMobile}
 				class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+			aria-label="Close menu"
 			>
 				<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" d={icons.close} />
@@ -315,6 +316,7 @@
 							type="submit"
 							class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
 							title="Logout"
+							aria-label="Logout"
 						>
 							<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" d={icons.logout} />
@@ -371,6 +373,7 @@
 					on:click={toggleCollapse}
 					class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
 					title="Collapse sidebar"
+					aria-label="Collapse sidebar"
 				>
 					<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" d={icons.collapse} />
@@ -386,6 +389,7 @@
 					on:click={toggleCollapse}
 					class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
 					title="Expand sidebar"
+					aria-label="Expand sidebar"
 				>
 					<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" d={icons.expand} />
@@ -528,6 +532,7 @@
 						href="/premium"
 						class="p-2.5 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 text-purple-400 hover:text-white hover:from-purple-500/40 hover:to-blue-500/40 transition-all border border-purple-500/30"
 						title="Join Premium"
+						aria-label="Join Premium"
 					>
 						<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" d={icons.sparkles} />
@@ -564,6 +569,7 @@
 								type="submit"
 								class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
 								title="Logout"
+								aria-label="Logout"
 							>
 								<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" d={icons.logout} />
@@ -609,6 +615,7 @@
 								type="submit"
 								class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
 								title="Logout"
+								aria-label="Logout"
 							>
 								<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" d={icons.logout} />
@@ -624,6 +631,7 @@
 							href="/login"
 							class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
 							title="Login"
+							aria-label="Login"
 						>
 							<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
@@ -660,6 +668,7 @@
 		<button
 			on:click={toggleMobile}
 			class="absolute left-4 z-10 p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+			aria-label="Open menu"
 		>
 			<svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" d={icons.menu} />

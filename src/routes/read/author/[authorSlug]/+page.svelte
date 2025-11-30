@@ -191,6 +191,7 @@
 											rel="noopener noreferrer"
 											class="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 transition-all hover:bg-white/10 hover:border-white/20 {social.color}"
 											title={social.label}
+											aria-label={social.label}
 										>
 											<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
 												<path d={social.icon} />
@@ -342,7 +343,7 @@
 								</div>
 
 								<!-- Arrow (hidden on mobile) -->
-								<a href="/read/{article.slug}" class="hidden items-center sm:flex">
+								<a href="/read/{article.slug}" class="hidden items-center sm:flex" aria-label="Read {article.title}">
 									<svg class="h-5 w-5 text-gray-600 transition-colors group-hover:text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
 									</svg>

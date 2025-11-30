@@ -1,7 +1,8 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { event, ticket, user, eventStaff, eventResult, eventDecklist, seasonStanding } from '$lib/server/db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { event, ticket, user, eventStaff, eventResult, eventDecklist, seasonStanding, player, playerAlias } from '$lib/server/db/schema.js';
+import { eq, and, sql } from 'drizzle-orm';
+import { processTournamentResults, AGE_POINTS, PARTICIPATION_POINTS } from '$lib/server/tournament-processor.js';
 
 export async function load({ params, locals }) {
 	// Require authentication (admin or tournament staff)
@@ -241,6 +242,77 @@ export const actions = {
 		}
 	},
 
+	// Process CSV files to import tournament results
+	processCSV: async ({ params, request, locals }) => {
+		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament_staff')) {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const swissStandingsFile = formData.get('swissStandings');
+		const pairingsFile = formData.get('pairings');
+
+		if (!swissStandingsFile || !pairingsFile) {
+			return fail(400, { error: 'Both Swiss Standings and Pairings CSV files are required' });
+		}
+
+		try {
+			// Read CSV files
+			const swissStandingsCsv = await swissStandingsFile.text();
+			const pairingsCsv = await pairingsFile.text();
+
+			// Fetch event info
+			const [eventData] = await db
+				.select()
+				.from(event)
+				.where(eq(event.id, params.eventId))
+				.limit(1);
+
+			if (!eventData) {
+				return fail(404, { error: 'Event not found' });
+			}
+
+			// Process tournament results
+			const processedResults = await processTournamentResults(
+				swissStandingsCsv,
+				pairingsCsv,
+				{
+					eventId: params.eventId,
+					circuit: eventData.circuit,
+					month: eventData.month,
+					eventDate: eventData.eventDate
+				}
+			);
+
+			// Clear existing results for this event
+			await db.delete(eventResult).where(eq(eventResult.eventId, params.eventId));
+
+			// Insert new results
+			for (const result of processedResults.results) {
+				await db.insert(eventResult).values({
+					eventId: params.eventId,
+					playerName: result.name,
+					gemId: result.playerId || null,
+					placement: result.placement,
+					wins: result.matchesWon || 0,
+					losses: result.matchesPlayed - result.matchesWon || 0,
+					draws: 0,
+					agePoints: result.points,
+					prizeAmount: result.prize > 0 ? result.prize.toFixed(2) : null
+				});
+			}
+
+			return {
+				success: true,
+				message: `Processed ${processedResults.results.length} players. Winner: ${processedResults.summary.winner?.name || 'Unknown'}`,
+				processedResults: processedResults.summary
+			};
+		} catch (err) {
+			console.error('Error processing CSV:', err);
+			return fail(500, { error: `Failed to process CSV: ${err.message}` });
+		}
+	},
+
 	// Close out the event
 	closeEvent: async ({ params, locals }) => {
 		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament_staff')) {
@@ -265,39 +337,85 @@ export const actions = {
 				.from(eventResult)
 				.where(eq(eventResult.eventId, params.eventId));
 
+			// Determine month column prefix from event date
+			const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
+			const monthNames = ['january', 'february', 'march', 'april', 'may', 'june',
+				'july', 'august', 'september', 'october', 'november', 'december'];
+			const eventMonth = monthNames[eventDate.getMonth()];
+			const currentYear = eventDate.getFullYear().toString();
+
 			// Update season standings for each participant with AGE points
 			if (eventData.circuit && results.length > 0) {
-				const currentYear = new Date().getFullYear().toString();
-
 				for (const result of results) {
 					if (result.agePoints > 0) {
 						// Check if player already has a standing record for this season/circuit
-						const [existingStanding] = await db
-							.select()
-							.from(seasonStanding)
-							.where(and(
-								eq(seasonStanding.season, currentYear),
-								eq(seasonStanding.circuit, eventData.circuit),
-								eq(seasonStanding.gemId, result.gemId)
-							))
-							.limit(1);
+						// First try by GEM ID, then by player name
+						let existingStanding = null;
+
+						if (result.gemId) {
+							const [byGemId] = await db
+								.select()
+								.from(seasonStanding)
+								.where(and(
+									eq(seasonStanding.season, currentYear),
+									eq(seasonStanding.circuit, eventData.circuit),
+									eq(seasonStanding.gemId, result.gemId)
+								))
+								.limit(1);
+							existingStanding = byGemId;
+						}
+
+						if (!existingStanding) {
+							const [byName] = await db
+								.select()
+								.from(seasonStanding)
+								.where(and(
+									eq(seasonStanding.season, currentYear),
+									eq(seasonStanding.circuit, eventData.circuit),
+									eq(seasonStanding.playerName, result.playerName)
+								))
+								.limit(1);
+							existingStanding = byName;
+						}
+
+						// Calculate match stats
+						const matchesWon = result.wins || 0;
+						const matchesPlayed = matchesWon + (result.losses || 0) + (result.draws || 0);
 
 						if (existingStanding) {
-							// Update existing standing
+							// Build update object with dynamic monthly column
+							const updateData = {
+								totalPoints: (existingStanding.totalPoints || 0) + result.agePoints,
+								eventsPlayed: (existingStanding.eventsPlayed || 0) + 1,
+								matchesWon: (existingStanding.matchesWon || 0) + matchesWon,
+								matchesPlayed: (existingStanding.matchesPlayed || 0) + matchesPlayed,
+								top8Finishes: (existingStanding.top8Finishes || 0) + (result.placement <= 8 ? 1 : 0),
+								updatedAt: new Date()
+							};
+
+							// Update monthly columns dynamically
+							const monthPointsCol = `${eventMonth}Points`;
+							const monthMatchesCol = `${eventMonth}MatchesWon`;
+							const monthEventsCol = `${eventMonth}Events`;
+
+							updateData[monthPointsCol] = (existingStanding[monthPointsCol] || 0) + result.agePoints;
+							updateData[monthMatchesCol] = (existingStanding[monthMatchesCol] || 0) + matchesWon;
+							updateData[monthEventsCol] = (existingStanding[monthEventsCol] || 0) + 1;
+
+							// Calculate new win percentage
+							const totalMatchesPlayed = updateData.matchesPlayed;
+							const totalMatchesWon = updateData.matchesWon;
+							if (totalMatchesPlayed > 0) {
+								updateData.winPercentage = parseFloat(((totalMatchesWon / totalMatchesPlayed) * 100).toFixed(2));
+							}
+
 							await db
 								.update(seasonStanding)
-								.set({
-									totalPoints: existingStanding.totalPoints + result.agePoints,
-									eventsPlayed: existingStanding.eventsPlayed + 1,
-									firstPlaceFinishes: existingStanding.firstPlaceFinishes + (result.placement === 1 ? 1 : 0),
-									top4Finishes: existingStanding.top4Finishes + (result.placement <= 4 ? 1 : 0),
-									top8Finishes: existingStanding.top8Finishes + (result.placement <= 8 ? 1 : 0),
-									updatedAt: new Date()
-								})
+								.set(updateData)
 								.where(eq(seasonStanding.id, existingStanding.id));
 						} else {
 							// Create new standing
-							await db.insert(seasonStanding).values({
+							const newStanding = {
 								season: currentYear,
 								circuit: eventData.circuit,
 								gemId: result.gemId,
@@ -305,10 +423,18 @@ export const actions = {
 								playerName: result.playerName,
 								totalPoints: result.agePoints,
 								eventsPlayed: 1,
-								firstPlaceFinishes: result.placement === 1 ? 1 : 0,
-								top4Finishes: result.placement <= 4 ? 1 : 0,
-								top8Finishes: result.placement <= 8 ? 1 : 0
-							});
+								matchesWon: matchesWon,
+								matchesPlayed: matchesPlayed,
+								top8Finishes: result.placement <= 8 ? 1 : 0,
+								winPercentage: matchesPlayed > 0 ? parseFloat(((matchesWon / matchesPlayed) * 100).toFixed(2)) : null
+							};
+
+							// Set monthly columns
+							newStanding[`${eventMonth}Points`] = result.agePoints;
+							newStanding[`${eventMonth}MatchesWon`] = matchesWon;
+							newStanding[`${eventMonth}Events`] = 1;
+
+							await db.insert(seasonStanding).values(newStanding);
 						}
 					}
 				}

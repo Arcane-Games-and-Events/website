@@ -2,7 +2,7 @@
 	export let data;
 	export let form;
 
-	let activeTab = 'results';
+	let activeTab = 'import';
 	let showResultForm = false;
 	let showDecklistForm = false;
 	let editingResult = null;
@@ -33,16 +33,24 @@
 		isPublic: true
 	};
 
-	// AGE points presets based on placement
+	// AGE Open points presets based on placement
 	const agePointsPresets = {
-		1: 100,
-		2: 75,
-		3: 50,
-		4: 50,
-		5: 25,
-		6: 25,
-		7: 25,
-		8: 25
+		1: 30,
+		2: 25,
+		3: 20,
+		4: 20,
+		5: 15,
+		6: 15,
+		7: 15,
+		8: 15,
+		9: 12,
+		10: 12,
+		11: 12,
+		12: 12,
+		13: 8,
+		14: 8,
+		15: 8,
+		16: 8
 	};
 
 	// Prize presets
@@ -56,6 +64,12 @@
 		7: 50,
 		8: 50
 	};
+
+	// CSV Import state
+	let swissStandingsFile = null;
+	let pairingsFile = null;
+	let csvProcessing = false;
+	let csvProcessedResults = null;
 
 	function formatDate(dateStr) {
 		if (!dateStr) return 'TBA';
@@ -239,6 +253,14 @@
 	<div class="border-b border-gray-700 mb-6">
 		<nav class="flex gap-6">
 			<button
+				on:click={() => (activeTab = 'import')}
+				class="pb-3 text-sm font-medium transition-colors {activeTab === 'import'
+					? 'text-white border-b-2 border-white'
+					: 'text-gray-400 hover:text-white'}"
+			>
+				Import CSV
+			</button>
+			<button
 				on:click={() => (activeTab = 'results')}
 				class="pb-3 text-sm font-medium transition-colors {activeTab === 'results'
 					? 'text-white border-b-2 border-white'
@@ -264,6 +286,140 @@
 			</button>
 		</nav>
 	</div>
+
+	<!-- CSV Import Tab -->
+	{#if activeTab === 'import'}
+		<div class="max-w-3xl mx-auto space-y-6">
+			<div class="rounded-[var(--radius)] bg-gray-950 border shadow-md p-8">
+				<h2 class="text-2xl font-bold text-white mb-2">Import Tournament Results</h2>
+				<p class="text-gray-400 mb-6">Upload CSV files from your tournament software to automatically calculate standings and distribute AGE points.</p>
+
+				{#if isClosed}
+					<div class="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-4 mb-6">
+						<p class="text-sm text-yellow-400">
+							This event is closed. Reopen the event to import new results.
+						</p>
+					</div>
+				{:else}
+					<form method="POST" action="?/processCSV" enctype="multipart/form-data" class="space-y-6">
+						<div>
+							<label for="swissStandings" class="block text-sm font-medium text-gray-100 mb-2">
+								Swiss Standings CSV *
+							</label>
+							<p class="text-xs text-gray-400 mb-2">Expected columns: Rank, Name, Player ID, Wins</p>
+							<input
+								type="file"
+								id="swissStandings"
+								name="swissStandings"
+								accept=".csv"
+								required
+								bind:files={swissStandingsFile}
+								class="w-full rounded-[var(--radius)] border border-gray-700 bg-gray-900 px-4 py-3 text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-white file:text-gray-900 hover:file:opacity-90"
+							/>
+						</div>
+
+						<div>
+							<label for="pairings" class="block text-sm font-medium text-gray-100 mb-2">
+								Pairings CSV *
+							</label>
+							<p class="text-xs text-gray-400 mb-2">Expected columns: Round, Table, Player 1 Name, Player 1 ID, Player 2 Name, Player 2 ID, Result</p>
+							<input
+								type="file"
+								id="pairings"
+								name="pairings"
+								accept=".csv"
+								required
+								bind:files={pairingsFile}
+								class="w-full rounded-[var(--radius)] border border-gray-700 bg-gray-900 px-4 py-3 text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-white file:text-gray-900 hover:file:opacity-90"
+							/>
+						</div>
+
+						<div class="rounded-lg bg-blue-500/10 border border-blue-500/30 p-4">
+							<h3 class="font-semibold text-blue-400 mb-2">What will be calculated:</h3>
+							<ul class="space-y-1 text-sm text-gray-300 list-disc list-inside">
+								<li>Top 8 bracket results from elimination rounds</li>
+								<li>Final standings with tiebreakers</li>
+								<li>AGE Points distribution (30, 25, 20, 15, 12, 8, 1)</li>
+								<li>Prize distribution ($400, $200, $100, $50)</li>
+							</ul>
+						</div>
+
+						<div class="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-4">
+							<p class="text-sm text-yellow-400">
+								<strong>Note:</strong> This will replace any existing results for this event. Make sure you have the correct CSV files before proceeding.
+							</p>
+						</div>
+
+						<button
+							type="submit"
+							disabled={csvProcessing}
+							class="w-full rounded-[var(--radius)] bg-white px-6 py-3 text-lg font-semibold text-gray-900 hover:opacity-90 transition-opacity disabled:opacity-50"
+						>
+							{csvProcessing ? 'Processing...' : 'Process CSV Files'}
+						</button>
+					</form>
+				{/if}
+
+				{#if form?.processedResults}
+					<div class="mt-6 rounded-lg bg-green-500/10 border border-green-500/30 p-4">
+						<h3 class="font-semibold text-green-400 mb-2">Results Processed Successfully!</h3>
+						<ul class="space-y-1 text-sm text-gray-300">
+							<li>Total Players: {form.processedResults.totalPlayers}</li>
+							<li>Swiss Rounds: {form.processedResults.swissRounds}</li>
+							<li>Top 8: {form.processedResults.top8Players} players</li>
+							{#if form.processedResults.winner}
+								<li>Winner: <span class="text-yellow-400 font-semibold">{form.processedResults.winner.name}</span></li>
+							{/if}
+							<li>Total Points Distributed: {form.processedResults.totalPointsDistributed}</li>
+							<li>Total Prize Pool: ${form.processedResults.totalPrizeDistributed}</li>
+						</ul>
+						<p class="mt-4 text-sm text-gray-400">
+							Switch to the <button on:click={() => activeTab = 'results'} class="text-blue-400 hover:underline">Results tab</button> to review and edit the imported data.
+						</p>
+					</div>
+				{/if}
+			</div>
+
+			<!-- AGE Points Structure Reference -->
+			<div class="rounded-[var(--radius)] bg-gray-950 border shadow-md p-6">
+				<h3 class="text-lg font-semibold text-white mb-4">AGE Open Points Structure</h3>
+				<div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+					<div class="bg-yellow-500/10 rounded-lg p-3 text-center">
+						<p class="text-yellow-400 font-bold text-xl">30 pts</p>
+						<p class="text-gray-400">1st Place</p>
+						<p class="text-green-400">$400</p>
+					</div>
+					<div class="bg-gray-400/10 rounded-lg p-3 text-center">
+						<p class="text-gray-300 font-bold text-xl">25 pts</p>
+						<p class="text-gray-400">2nd Place</p>
+						<p class="text-green-400">$200</p>
+					</div>
+					<div class="bg-amber-600/10 rounded-lg p-3 text-center">
+						<p class="text-amber-500 font-bold text-xl">20 pts</p>
+						<p class="text-gray-400">3rd-4th Place</p>
+						<p class="text-green-400">$100</p>
+					</div>
+					<div class="bg-gray-800 rounded-lg p-3 text-center">
+						<p class="text-gray-300 font-bold text-xl">15 pts</p>
+						<p class="text-gray-400">5th-8th Place</p>
+						<p class="text-green-400">$50</p>
+					</div>
+					<div class="bg-gray-800 rounded-lg p-3 text-center">
+						<p class="text-gray-300 font-bold text-xl">12 pts</p>
+						<p class="text-gray-400">9th-12th Place</p>
+					</div>
+					<div class="bg-gray-800 rounded-lg p-3 text-center">
+						<p class="text-gray-300 font-bold text-xl">8 pts</p>
+						<p class="text-gray-400">13th-16th Place</p>
+					</div>
+					<div class="bg-gray-800 rounded-lg p-3 text-center col-span-2">
+						<p class="text-gray-300 font-bold text-xl">1 pt</p>
+						<p class="text-gray-400">Participation</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	<!-- Results Tab -->
 	{#if activeTab === 'results'}

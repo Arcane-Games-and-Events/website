@@ -1,7 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	export let data;
 	export let form;
 
@@ -14,6 +14,23 @@
 
 	function closeSidebar() {
 		sidebarOpen = false;
+	}
+
+	/**
+	 * Compare two standings using tiebreaker rules:
+	 * 1. Total Points (primary)
+	 * 2. Number of Top 8's made
+	 * 3. Total match wins
+	 * 4. Number of events attended
+	 */
+	function compareStandings(a, b) {
+		const pointsDiff = (b.totalPoints || 0) - (a.totalPoints || 0);
+		if (pointsDiff !== 0) return pointsDiff;
+		const top8Diff = (b.top8Finishes || 0) - (a.top8Finishes || 0);
+		if (top8Diff !== 0) return top8Diff;
+		const winsDiff = (b.matchesWon || 0) - (a.matchesWon || 0);
+		if (winsDiff !== 0) return winsDiff;
+		return (b.eventsPlayed || 0) - (a.eventsPlayed || 0);
 	}
 
 	// Get active tab from URL, defaulting to 'overview'
@@ -60,12 +77,112 @@
 		{ id: 'events', name: 'Events', icon: 'calendar' },
 		{ id: 'orders', name: 'Orders', icon: 'receipt' },
 		{ id: 'staff', name: 'Staff', icon: 'users' },
-		{ id: 'users', name: 'Users', icon: 'user' }
+		{ id: 'users', name: 'Users', icon: 'user' },
+		{ id: 'players', name: 'Standings', icon: 'trophy' }
 	];
 
 	// Stats for overview
 	$: upcomingEvents = data.events.filter(e => new Date(e.eventDate) > new Date()).length;
 	$: pastEvents = data.events.filter(e => new Date(e.eventDate) <= new Date()).length;
+
+	// Standings table state
+	let standingsSearchQuery = '';
+	let standingsSeasonFilter = 'all';
+	let standingsCircuitFilter = 'all';
+
+	// Sorting state for standings
+	let sortColumn = 'points'; // 'points', 'winPct', 'record', 'events', 'top8'
+	let sortDirection = 'desc'; // 'asc' or 'desc'
+
+	function toggleSort(column) {
+		if (sortColumn === column) {
+			sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
+		} else {
+			sortColumn = column;
+			sortDirection = 'desc'; // Default to descending for new column
+		}
+		adminStandingsPage = 1; // Reset to first page when sorting
+	}
+
+	// Pagination for standings
+	let adminStandingsPage = 1;
+	const adminStandingsPerPage = 25;
+
+	// Get unique seasons and circuits
+	$: uniqueSeasons = [...new Set((data.standings || []).map(s => s.season))].sort().reverse();
+	$: uniqueCircuits = [...new Set((data.standings || []).map(s => s.circuit))].sort();
+
+	// Custom sort function based on selected column
+	function sortStandings(a, b) {
+		let aVal, bVal;
+
+		switch (sortColumn) {
+			case 'points':
+				aVal = a.totalPoints || 0;
+				bVal = b.totalPoints || 0;
+				break;
+			case 'winPct':
+				aVal = a.winPercentage || 0;
+				bVal = b.winPercentage || 0;
+				break;
+			case 'record':
+				// Sort by wins primarily
+				aVal = a.matchesWon || 0;
+				bVal = b.matchesWon || 0;
+				break;
+			case 'events':
+				aVal = a.eventsPlayed || 0;
+				bVal = b.eventsPlayed || 0;
+				break;
+			case 'top8':
+				aVal = a.top8Finishes || 0;
+				bVal = b.top8Finishes || 0;
+				break;
+			default:
+				return compareStandings(a, b);
+		}
+
+		const diff = sortDirection === 'desc' ? bVal - aVal : aVal - bVal;
+		// Use tiebreaker rules if values are equal
+		if (diff === 0) return compareStandings(a, b);
+		return diff;
+	}
+
+	// Filter standings (explicitly reference sortColumn and sortDirection for reactivity)
+	$: filteredStandings = (() => {
+		// These references ensure reactivity when sort state changes
+		const _sortCol = sortColumn;
+		const _sortDir = sortDirection;
+
+		return (data.standings || [])
+			.filter(s => {
+				// Search filter
+				if (standingsSearchQuery) {
+					const search = standingsSearchQuery.toLowerCase();
+					const matchesName = s.playerName?.toLowerCase().includes(search);
+					const matchesGemId = s.gemId?.toLowerCase().includes(search);
+					if (!matchesName && !matchesGemId) return false;
+				}
+				// Season filter
+				if (standingsSeasonFilter !== 'all' && s.season !== standingsSeasonFilter) return false;
+				// Circuit filter
+				if (standingsCircuitFilter !== 'all' && s.circuit !== standingsCircuitFilter) return false;
+				return true;
+			})
+			.sort(sortStandings);
+	})();
+
+	// Paginated standings for admin
+	$: totalAdminStandingsPages = Math.ceil(filteredStandings.length / adminStandingsPerPage);
+	$: paginatedAdminStandings = filteredStandings.slice(
+		(adminStandingsPage - 1) * adminStandingsPerPage,
+		adminStandingsPage * adminStandingsPerPage
+	);
+
+	// Reset page when filters change
+	$: if (standingsSearchQuery || standingsSeasonFilter || standingsCircuitFilter) {
+		adminStandingsPage = 1;
+	}
 </script>
 
 <svelte:head>
@@ -78,8 +195,8 @@
 		{#if sidebarOpen}
 			<div
 				class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
-				on:click={closeSidebar}
-				on:keydown={(e) => e.key === 'Escape' && closeSidebar()}
+				onclick={closeSidebar}
+				onkeydown={(e) => e.key === 'Escape' && closeSidebar()}
 				role="button"
 				tabindex="0"
 				aria-label="Close sidebar"
@@ -104,7 +221,7 @@
 				</div>
 				<!-- Close button for mobile -->
 				<button
-					on:click={closeSidebar}
+					onclick={closeSidebar}
 					class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-800 hover:text-white lg:hidden"
 					aria-label="Close menu"
 				>
@@ -114,11 +231,24 @@
 				</button>
 			</div>
 
+			<!-- Back to Site -->
+			<div class="px-3 mt-4">
+				<a
+					href="/"
+					class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-gray-400 hover:bg-gray-800/50 hover:text-white transition-colors border border-gray-800 hover:border-gray-700"
+				>
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+					</svg>
+					Back to Site
+				</a>
+			</div>
+
 			<!-- Navigation -->
-			<nav class="mt-6 px-3 space-y-1">
+			<nav class="mt-4 px-3 space-y-1">
 				{#each tabs as tab}
 					<button
-						on:click={() => switchTab(tab.id)}
+						onclick={() => switchTab(tab.id)}
 						class="group flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 {activeTab === tab.id
 							? 'bg-gradient-to-r from-blue-500/20 to-purple-500/10 text-white shadow-lg shadow-blue-500/5 border border-blue-500/30'
 							: 'text-gray-400 hover:bg-gray-800/50 hover:text-white border border-transparent'}"
@@ -143,6 +273,14 @@
 							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
 							</svg>
+						{:else if tab.icon === 'trophy'}
+							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+							</svg>
+						{:else if tab.icon === 'id-card'}
+							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V4a2 2 0 114 0v2m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+							</svg>
 						{/if}
 						{tab.name}
 						{#if activeTab === tab.id}
@@ -151,19 +289,6 @@
 					</button>
 				{/each}
 			</nav>
-
-			<!-- Quick Actions in Sidebar -->
-			<div class="absolute bottom-0 left-0 right-0 border-t border-gray-800 p-4">
-				<a
-					href="/"
-					class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-gray-400 hover:bg-gray-800/50 hover:text-white transition-colors"
-				>
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-					</svg>
-					Back to Site
-				</a>
-			</div>
 		</aside>
 
 		<!-- Main Content -->
@@ -174,7 +299,7 @@
 					<div class="flex items-center gap-3">
 						<!-- Mobile Menu Toggle -->
 						<button
-							on:click={toggleSidebar}
+							onclick={toggleSidebar}
 							class="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-700 bg-gray-800/50 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white lg:hidden"
 							aria-label="Toggle menu"
 						>
@@ -195,6 +320,7 @@
 								{:else if activeTab === 'orders'}Order History
 								{:else if activeTab === 'staff'}Tournament Staff
 								{:else if activeTab === 'users'}User Management
+								{:else if activeTab === 'players'}Standings
 								{/if}
 							</h1>
 						</div>
@@ -333,7 +459,7 @@
 									</a>
 
 									<button
-										on:click={() => switchTab('users')}
+										onclick={() => switchTab('users')}
 										class="flex w-full items-center gap-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4 transition-all hover:border-purple-500/50 hover:bg-gray-800 group text-left"
 									>
 										<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20 text-purple-400 group-hover:bg-purple-500/30 transition-colors">
@@ -348,7 +474,7 @@
 									</button>
 
 									<button
-										on:click={() => switchTab('staff')}
+										onclick={() => switchTab('staff')}
 										class="flex w-full items-center gap-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4 transition-all hover:border-green-500/50 hover:bg-gray-800 group text-left"
 									>
 										<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20 text-green-400 group-hover:bg-green-500/30 transition-colors">
@@ -376,7 +502,7 @@
 										Recent Events
 									</h3>
 									<button
-										on:click={() => switchTab('events')}
+										onclick={() => switchTab('events')}
 										class="text-sm text-blue-400 hover:text-blue-300 transition-colors"
 									>
 										View all
@@ -446,7 +572,7 @@
 								Recent Orders
 							</h3>
 							<button
-								on:click={() => switchTab('orders')}
+								onclick={() => switchTab('orders')}
 								class="text-sm text-green-400 hover:text-green-300 transition-colors"
 							>
 								View all
@@ -695,7 +821,7 @@
 								</div>
 							</div>
 							<button
-								on:click={() => switchTab('users')}
+								onclick={() => switchTab('users')}
 								class="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2 text-sm font-medium text-gray-300 transition-all hover:bg-gray-700 hover:text-white"
 							>
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -714,7 +840,7 @@
 									<p class="text-gray-400">No tournament staff members yet</p>
 									<p class="text-sm text-gray-500 mt-2">Assign the "tournament_staff" role to users in User Management</p>
 									<button
-										on:click={() => switchTab('users')}
+										onclick={() => switchTab('users')}
 										class="mt-4 inline-flex items-center gap-2 rounded-lg bg-purple-500 px-4 py-2 text-sm font-medium text-white hover:bg-purple-600 transition-colors"
 									>
 										Go to User Management
@@ -926,6 +1052,302 @@
 										<p class="text-sm text-gray-500 mt-1">Try a different search term</p>
 									</div>
 								{/if}
+							</div>
+						</div>
+					</div>
+				{/if}
+
+				<!-- Players Tab -->
+				{#if activeTab === 'players'}
+					<div class="space-y-6">
+						<!-- Standings Table with Inline Editing -->
+						<div class="rounded-xl border border-gray-800 bg-gray-900/50 overflow-hidden">
+							<div class="flex items-center justify-between border-b border-gray-800 bg-gray-800/30 px-6 py-4">
+								<div class="flex items-center gap-3">
+									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-500/20">
+										<svg class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+										</svg>
+									</div>
+									<div>
+										<h2 class="text-lg font-semibold text-white">Standings Table</h2>
+										<p class="text-sm text-gray-400">{data.standings?.length || 0} standings records - Click any cell to edit</p>
+									</div>
+								</div>
+							</div>
+
+							<div class="p-6">
+								<!-- Filters -->
+								<div class="grid gap-4 md:grid-cols-4 mb-6">
+									<div class="relative">
+										<svg class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+										</svg>
+										<input
+											type="text"
+											bind:value={standingsSearchQuery}
+											placeholder="Search by name or GEM ID..."
+											class="w-full rounded-lg border border-gray-700 bg-gray-800/50 py-2.5 pl-10 pr-4 text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+										/>
+									</div>
+									<select
+										bind:value={standingsSeasonFilter}
+										class="rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-gray-100 focus:border-blue-500 focus:outline-none"
+									>
+										<option value="all">All Seasons</option>
+										{#each uniqueSeasons as season}
+											<option value={season}>{season}</option>
+										{/each}
+									</select>
+									<select
+										bind:value={standingsCircuitFilter}
+										class="rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-gray-100 focus:border-blue-500 focus:outline-none"
+									>
+										<option value="all">All Circuits</option>
+										{#each uniqueCircuits as circuit}
+											<option value={circuit}>{circuit}</option>
+										{/each}
+									</select>
+									<div class="text-sm text-gray-400 flex items-center">
+										Showing {filteredStandings.length} of {data.standings?.length || 0}
+									</div>
+								</div>
+
+								<!-- Standings Table -->
+								<div class="overflow-x-auto rounded-xl border border-gray-700">
+									<table class="w-full text-sm">
+										<thead class="bg-gray-800/80">
+											<tr>
+												<th class="px-4 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Season</th>
+												<th class="px-4 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400 whitespace-nowrap">Circuit</th>
+												<th class="px-4 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Player</th>
+												<th class="px-4 py-4 text-center">
+													<button
+														onclick={() => toggleSort('points')}
+														class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider transition-colors {sortColumn === 'points' ? 'text-blue-400' : 'text-gray-400 hover:text-gray-200'}"
+													>
+														Points
+														{#if sortColumn === 'points'}
+															<svg class="w-3 h-3 {sortDirection === 'asc' ? 'rotate-180' : ''}" fill="currentColor" viewBox="0 0 20 20">
+																<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+															</svg>
+														{:else}
+															<svg class="w-3 h-3 opacity-0 group-hover:opacity-50" fill="currentColor" viewBox="0 0 20 20">
+																<path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+															</svg>
+														{/if}
+													</button>
+												</th>
+												<th class="px-4 py-4 text-center">
+													<button
+														onclick={() => toggleSort('winPct')}
+														class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider transition-colors {sortColumn === 'winPct' ? 'text-blue-400' : 'text-gray-400 hover:text-gray-200'}"
+													>
+														Win %
+														{#if sortColumn === 'winPct'}
+															<svg class="w-3 h-3 {sortDirection === 'asc' ? 'rotate-180' : ''}" fill="currentColor" viewBox="0 0 20 20">
+																<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+															</svg>
+														{/if}
+													</button>
+												</th>
+												<th class="px-4 py-4 text-center">
+													<button
+														onclick={() => toggleSort('record')}
+														class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider transition-colors {sortColumn === 'record' ? 'text-blue-400' : 'text-gray-400 hover:text-gray-200'}"
+													>
+														Record
+														{#if sortColumn === 'record'}
+															<svg class="w-3 h-3 {sortDirection === 'asc' ? 'rotate-180' : ''}" fill="currentColor" viewBox="0 0 20 20">
+																<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+															</svg>
+														{/if}
+													</button>
+												</th>
+												<th class="px-4 py-4 text-center">
+													<button
+														onclick={() => toggleSort('events')}
+														class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider transition-colors {sortColumn === 'events' ? 'text-blue-400' : 'text-gray-400 hover:text-gray-200'}"
+													>
+														Events
+														{#if sortColumn === 'events'}
+															<svg class="w-3 h-3 {sortDirection === 'asc' ? 'rotate-180' : ''}" fill="currentColor" viewBox="0 0 20 20">
+																<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+															</svg>
+														{/if}
+													</button>
+												</th>
+												<th class="px-4 py-4 text-center">
+													<button
+														onclick={() => toggleSort('top8')}
+														class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider transition-colors {sortColumn === 'top8' ? 'text-blue-400' : 'text-gray-400 hover:text-gray-200'}"
+													>
+														Top 8
+														{#if sortColumn === 'top8'}
+															<svg class="w-3 h-3 {sortDirection === 'asc' ? 'rotate-180' : ''}" fill="currentColor" viewBox="0 0 20 20">
+																<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+															</svg>
+														{/if}
+													</button>
+												</th>
+												<th class="px-4 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-400">Actions</th>
+											</tr>
+										</thead>
+										<tbody class="divide-y divide-gray-800/50">
+											{#each paginatedAdminStandings as standing}
+												<tr class="hover:bg-gray-800/30 transition-colors">
+													<td class="px-4 py-4 text-gray-400 text-sm font-medium">{standing.season}</td>
+													<td class="px-4 py-4">
+														<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap {standing.circuit === 'Los Angeles' ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30' : standing.circuit === 'New England' ? 'bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30' : 'bg-green-500/20 text-green-400 ring-1 ring-green-500/30'}">
+															{standing.circuit}
+														</span>
+													</td>
+													<td class="px-4 py-4">
+														<div class="flex items-center gap-3">
+															<div class="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+																{standing.playerName?.charAt(0).toUpperCase() || '?'}
+															</div>
+															<div>
+																<div class="font-medium text-white">{standing.playerName}</div>
+																{#if standing.gemId}
+																	<div class="text-xs text-blue-400 font-mono">{standing.gemId}</div>
+																{:else}
+																	<div class="text-xs text-gray-600">No GEM ID</div>
+																{/if}
+															</div>
+														</div>
+													</td>
+													<td class="px-4 py-4 text-center">
+														<span class="text-lg font-bold text-emerald-400">{standing.totalPoints || 0}</span>
+													</td>
+													<td class="px-4 py-4 text-center">
+														<span class="text-gray-300">{standing.winPercentage ? `${standing.winPercentage}%` : '-'}</span>
+													</td>
+													<td class="px-4 py-4 text-center">
+														<span class="font-medium">
+															<span class="text-green-400">{standing.matchesWon || 0}</span>
+															<span class="text-gray-600 mx-0.5">-</span>
+															<span class="text-red-400">{(standing.matchesPlayed || 0) - (standing.matchesWon || 0)}</span>
+														</span>
+													</td>
+													<td class="px-4 py-4 text-center text-gray-300">{standing.eventsPlayed || 0}</td>
+													<td class="px-4 py-4 text-center text-gray-300">{standing.top8Finishes || 0}</td>
+													<td class="px-4 py-4 text-center">
+														<div class="flex items-center justify-center gap-2">
+															{#if standing.gemId}
+																<a
+																	href="/player/{standing.gemId}"
+																	class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 transition-all"
+																	title="View & Edit Profile"
+																>
+																	<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+																	</svg>
+																	<span class="text-xs font-medium">Edit</span>
+																</a>
+															{:else}
+																<span class="text-gray-600 text-xs">No GEM ID</span>
+															{/if}
+															<form method="POST" action="?/deleteStanding" use:enhance={() => {
+																return async ({ result, update }) => {
+																	if (result.type === 'success') {
+																		await update();
+																	}
+																};
+															}}>
+																<input type="hidden" name="standingId" value={standing.id} />
+																<button
+																	type="submit"
+																	onclick={(e) => { if (!confirm('Delete this standing record?')) e.preventDefault(); }}
+																	class="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+																	title="Delete standing"
+																>
+																	<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+																	</svg>
+																</button>
+															</form>
+														</div>
+													</td>
+												</tr>
+											{:else}
+												<tr>
+													<td colspan="9" class="px-6 py-12 text-center text-gray-500">
+														No standings found. Import data from CSV to get started.
+													</td>
+												</tr>
+											{/each}
+										</tbody>
+									</table>
+								</div>
+
+								<!-- Pagination Controls -->
+								{#if totalAdminStandingsPages > 1}
+									<div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 px-4 py-3 border-t border-gray-700 bg-gray-800/30 rounded-b-xl">
+										<div class="text-sm text-gray-400">
+											Showing {(adminStandingsPage - 1) * adminStandingsPerPage + 1} to {Math.min(adminStandingsPage * adminStandingsPerPage, filteredStandings.length)} of {filteredStandings.length} standings
+										</div>
+										<div class="flex items-center gap-2">
+											<button
+												onclick={() => adminStandingsPage = 1}
+												disabled={adminStandingsPage === 1}
+												class="px-3 py-1.5 rounded-lg border border-gray-600 text-sm font-medium transition-all {adminStandingsPage === 1 ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}"
+											>
+												First
+											</button>
+											<button
+												onclick={() => adminStandingsPage = Math.max(1, adminStandingsPage - 1)}
+												disabled={adminStandingsPage === 1}
+												class="px-3 py-1.5 rounded-lg border border-gray-600 text-sm font-medium transition-all {adminStandingsPage === 1 ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}"
+											>
+												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+												</svg>
+											</button>
+											<div class="flex items-center gap-1">
+												{#each Array(Math.min(5, totalAdminStandingsPages)) as _, i}
+													{@const pageNum = adminStandingsPage <= 3
+														? i + 1
+														: adminStandingsPage >= totalAdminStandingsPages - 2
+															? totalAdminStandingsPages - 4 + i
+															: adminStandingsPage - 2 + i}
+													{#if pageNum > 0 && pageNum <= totalAdminStandingsPages}
+														<button
+															onclick={() => adminStandingsPage = pageNum}
+															class="w-8 h-8 rounded-lg text-sm font-medium transition-all {adminStandingsPage === pageNum
+																? 'bg-blue-500 text-white'
+																: 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white border border-gray-600'}"
+														>
+															{pageNum}
+														</button>
+													{/if}
+												{/each}
+											</div>
+											<button
+												onclick={() => adminStandingsPage = Math.min(totalAdminStandingsPages, adminStandingsPage + 1)}
+												disabled={adminStandingsPage === totalAdminStandingsPages}
+												class="px-3 py-1.5 rounded-lg border border-gray-600 text-sm font-medium transition-all {adminStandingsPage === totalAdminStandingsPages ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}"
+											>
+												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+												</svg>
+											</button>
+											<button
+												onclick={() => adminStandingsPage = totalAdminStandingsPages}
+												disabled={adminStandingsPage === totalAdminStandingsPages}
+												class="px-3 py-1.5 rounded-lg border border-gray-600 text-sm font-medium transition-all {adminStandingsPage === totalAdminStandingsPages ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}"
+											>
+												Last
+											</button>
+										</div>
+									</div>
+								{/if}
+
+								<!-- Player Profiles Info -->
+								<div class="mt-6 rounded-lg border border-gray-700 bg-gray-800/30 p-4">
+									<h3 class="text-sm font-medium text-gray-300 mb-3">Player Profiles</h3>
+									<p class="text-xs text-gray-500">Click the "Edit" button to open a player's profile page where you can view and edit all their standings data, including monthly breakdowns.</p>
+								</div>
 							</div>
 						</div>
 					</div>

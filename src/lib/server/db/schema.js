@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer, jsonb, boolean, decimal } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, integer, jsonb, boolean, decimal, unique } from 'drizzle-orm/pg-core';
 
 // User table with auth and role support
 export const user = pgTable('user', {
@@ -22,6 +22,27 @@ export const user = pgTable('user', {
 		mode: 'date'
 	}).defaultNow()
 });
+
+// PLAYER (canonical player identity for standings tracking)
+export const player = pgTable('player', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	displayName: text('display_name').notNull(), // Current preferred display name
+	gemId: text('gem_id').unique(), // GEM ID (nullable until linked)
+	userId: text('user_id').references(() => user.id), // Website account (optional)
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// PLAYER ALIAS (name mappings for reconciliation)
+export const playerAlias = pgTable('player_alias', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	playerId: uuid('player_id').notNull().references(() => player.id, { onDelete: 'cascade' }),
+	aliasName: text('alias_name').notNull(), // Historical name variant
+	season: text('season'), // Which season this alias was used (optional)
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+}, (table) => ({
+	uniqueAlias: unique().on(table.aliasName) // Each alias maps to exactly one player
+}));
 
 // Session table for Lucia session tracking
 export const session = pgTable('session', {
@@ -192,6 +213,7 @@ export const seasonStanding = pgTable('season_standing', {
 	circuit: text('circuit').notNull(), // "Los Angeles", "St. Louis", "New England"
 
 	// Player identification
+	playerId: uuid('player_id').references(() => player.id), // Link to canonical player
 	userId: text('user_id').references(() => user.id),
 	gemId: text('gem_id'),
 	playerName: text('player_name').notNull(),
@@ -199,16 +221,68 @@ export const seasonStanding = pgTable('season_standing', {
 	// Standing data
 	rank: integer('rank'), // Current rank in circuit
 	totalPoints: integer('total_points').default(0), // Total AGE points
+	winPercentage: decimal('win_percentage', { precision: 5, scale: 2 }), // Win % for the season
 	eventsPlayed: integer('events_played').default(0),
 
+	// Match statistics for the season
+	matchesPlayed: integer('matches_played').default(0), // Total matches played
+	matchesWon: integer('matches_won').default(0), // Total matches won
+
 	// Best finishes
-	firstPlaceFinishes: integer('first_place_finishes').default(0),
-	top4Finishes: integer('top_4_finishes').default(0),
 	top8Finishes: integer('top_8_finishes').default(0),
 
 	// Qualification status
 	qualifiedForChampionship: boolean('qualified_for_championship').default(false),
 
+	// Monthly points - flattened columns
+	januaryPoints: integer('january_points').default(0),
+	februaryPoints: integer('february_points').default(0),
+	marchPoints: integer('march_points').default(0),
+	aprilPoints: integer('april_points').default(0),
+	mayPoints: integer('may_points').default(0),
+	junePoints: integer('june_points').default(0),
+	julyPoints: integer('july_points').default(0),
+	augustPoints: integer('august_points').default(0),
+	septemberPoints: integer('september_points').default(0),
+	octoberPoints: integer('october_points').default(0),
+	novemberPoints: integer('november_points').default(0),
+	decemberPoints: integer('december_points').default(0),
+
+	// Monthly matches won
+	januaryMatchesWon: integer('january_matches_won').default(0),
+	februaryMatchesWon: integer('february_matches_won').default(0),
+	marchMatchesWon: integer('march_matches_won').default(0),
+	aprilMatchesWon: integer('april_matches_won').default(0),
+	mayMatchesWon: integer('may_matches_won').default(0),
+	juneMatchesWon: integer('june_matches_won').default(0),
+	julyMatchesWon: integer('july_matches_won').default(0),
+	augustMatchesWon: integer('august_matches_won').default(0),
+	septemberMatchesWon: integer('september_matches_won').default(0),
+	octoberMatchesWon: integer('october_matches_won').default(0),
+	novemberMatchesWon: integer('november_matches_won').default(0),
+	decemberMatchesWon: integer('december_matches_won').default(0),
+
+	// Monthly matches played
+	januaryMatches: integer('january_matches').default(0),
+	februaryMatches: integer('february_matches').default(0),
+	marchMatches: integer('march_matches').default(0),
+	aprilMatches: integer('april_matches').default(0),
+	mayMatches: integer('may_matches').default(0),
+	juneMatches: integer('june_matches').default(0),
+	julyMatches: integer('july_matches').default(0),
+	augustMatches: integer('august_matches').default(0),
+	septemberMatches: integer('september_matches').default(0),
+	octoberMatches: integer('october_matches').default(0),
+	novemberMatches: integer('november_matches').default(0),
+	decemberMatches: integer('december_matches').default(0),
+
+	// DEPRECATED: Legacy JSONB columns - now using flattened monthly columns above
+	// Kept for backwards compatibility during migration
+	monthlyData: jsonb('monthly_data'),
+	metadata: jsonb('metadata'),
+
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow(),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
-});
+}, (table) => ({
+	uniqueSeasonCircuitPlayer: unique().on(table.season, table.circuit, table.playerName)
+}));
