@@ -840,7 +840,7 @@
 								type="checkbox"
 								id="isPublicCheck"
 								bind:checked={decklistForm.isPublic}
-								class="w-4 h-4 rounded border-gray-700"
+								class="w-4 h-4 border-gray-700"
 							/>
 							<label for="isPublicCheck" class="text-sm text-gray-100">
 								Make this decklist public

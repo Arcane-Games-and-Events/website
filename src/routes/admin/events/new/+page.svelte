@@ -241,7 +241,7 @@
 							name="gemIdRequired"
 							bind:checked={gemIdRequired}
 							style="accent-color: white;"
-							class="w-5 h-5 rounded border-2 border-gray-300 cursor-pointer focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
+							class="w-5 h-5 border-2 border-gray-300 cursor-pointer focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
 						/>
 					</div>
 					<div class="flex-1">
@@ -263,7 +263,7 @@
 							name="premiumDiscount"
 							bind:checked={premiumDiscount}
 							style="accent-color: white;"
-							class="w-5 h-5 rounded border-2 border-gray-300 cursor-pointer focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
+							class="w-5 h-5 border-2 border-gray-300 cursor-pointer focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
 						/>
 					</div>
 					<div class="flex-1">

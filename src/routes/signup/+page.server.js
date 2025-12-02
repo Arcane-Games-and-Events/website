@@ -7,13 +7,16 @@ import { eq } from 'drizzle-orm';
 import { fail, redirect } from '@sveltejs/kit';
 
 export const actions = {
-	default: async ({ request, cookies }) => {
+	default: async ({ request, cookies, url }) => {
 		const form = await request.formData();
 		const firstName = form.get('firstName');
 		const lastName = form.get('lastName');
 		const email = form.get('email');
 		const gemId = form.get('gemId');
 		const password = form.get('password');
+
+		// Get redirect URL from query params (default to home)
+		const redirectTo = url.searchParams.get('redirect') || '/';
 
 		// Validate required fields
 		if (
@@ -52,6 +55,8 @@ export const actions = {
 		const cookie = auth.createSessionCookie(session.id); // ← pass session.id
 		cookies.set(cookie.name, cookie.value, { ...cookie.attributes, path: '/' });
 
-		throw redirect(302, '/');
+		// Validate redirect URL is a local path (security measure)
+		const safeRedirect = redirectTo.startsWith('/') ? redirectTo : '/';
+		throw redirect(302, safeRedirect);
 	}
 };

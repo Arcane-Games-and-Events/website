@@ -10,14 +10,20 @@
 				<a href="/">
 					<img src="/logo.svg" alt="AGE" class="h-6 w-auto" />
 				</a>
-				<span class="text-xs text-gray-500">&copy; {currentYear} AGE Software</span>
+				<span class="text-xs text-gray-500">&copy; {currentYear} Arcane Games and Events LLC</span>
 			</div>
 
 			<!-- Right: Links -->
 			<div class="flex items-center gap-6">
-				<a href="/privacy" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">Privacy</a>
-				<a href="/terms" class="text-xs text-gray-500 hover:text-gray-300 transition-colors">Terms</a>
-				<span class="hidden sm:inline text-xs text-gray-600">Flesh and Blood is a trademark of Legend Story Studios</span>
+				<a href="/privacy" class="text-xs text-gray-500 transition-colors hover:text-gray-300"
+					>Privacy</a
+				>
+				<a href="/terms" class="text-xs text-gray-500 transition-colors hover:text-gray-300"
+					>Terms</a
+				>
+				<span class="hidden text-xs text-gray-600 sm:inline"
+					>Flesh and Blood is a trademark of Legend Story Studios</span
+				>
 			</div>
 		</div>
 	</div>

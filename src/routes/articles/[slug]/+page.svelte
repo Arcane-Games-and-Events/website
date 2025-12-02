@@ -412,7 +412,7 @@
 	<!-- Header Bar -->
 	<div class="border-b border-white/10 bg-gray-900/50">
 		<div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-			<a href="/read" class="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
+			<a href="/articles" class="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
 				</svg>
@@ -447,7 +447,7 @@
 						<div class="mb-3 flex flex-wrap items-center gap-2 sm:mb-4 sm:gap-3">
 							{#if data.article.tags && data.article.tags.length > 0}
 								<a
-									href="/read/tag/{data.article.tags[0].slug}"
+									href="/articles/tag/{data.article.tags[0].slug}"
 									class="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-blue-400 backdrop-blur-sm hover:bg-blue-500/30 hover:text-blue-300 transition-colors sm:bg-transparent sm:px-0 sm:py-0 sm:text-sm"
 								>
 									{data.article.tags[0].name}
@@ -456,7 +456,7 @@
 							<span class="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold backdrop-blur-sm sm:bg-transparent sm:px-0 sm:py-0 sm:text-sm {data.isPremium ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-gray-200 sm:text-blue-400'}">
 								{#if data.isPremium}
 									<svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 24 24">
-										<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+										<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
 									</svg>
 									Premium
 								{:else}
@@ -483,7 +483,7 @@
 				<!-- Author Info -->
 				<div class="flex items-center justify-between sm:justify-start sm:gap-4">
 					{#if data.article.author}
-						<a href="/read/author/{data.article.author.slug}" class="flex items-center gap-3 group">
+						<a href="/articles/author/{data.article.author.slug}" class="flex items-center gap-3 group">
 							{#if data.article.author.profilePicture}
 								<img
 									src={data.article.author.profilePicture}
@@ -596,40 +596,123 @@
 		<div class="lg:grid lg:grid-cols-[5fr_3fr] lg:gap-12">
 			<!-- Main Content -->
 			<article class="min-w-0">
-				<!-- Article content using Tailwind Typography - Optimized for mobile readability -->
-				<div class="prose prose-invert prose-base mx-auto max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-headings:scroll-mt-24 prose-h2:mt-8 prose-h2:mb-3 prose-h2:text-xl prose-h3:mt-6 prose-h3:mb-2 prose-h3:text-lg prose-h4:mt-5 prose-h4:mb-2 prose-h4:text-base prose-p:text-gray-300 prose-p:leading-relaxed prose-a:text-yellow-600 prose-a:no-underline hover:prose-a:text-yellow-500 hover:prose-a:underline prose-strong:text-white prose-em:text-gray-200 prose-code:rounded prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-orange-400 prose-code:text-sm prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-xl prose-pre:border prose-pre:border-white/10 prose-pre:bg-gray-900 prose-blockquote:rounded-r-lg prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:bg-blue-500/10 prose-blockquote:not-italic prose-blockquote:pl-4 prose-li:marker:text-blue-500 prose-img:rounded-xl prose-hr:border-white/10 sm:prose-lg sm:max-w-[34em] sm:prose-h2:mt-10 sm:prose-h2:mb-4 sm:prose-h2:text-3xl sm:prose-h3:mt-8 sm:prose-h3:mb-3 sm:prose-h3:text-2xl sm:prose-h4:mt-6 sm:prose-h4:mb-3 sm:prose-h4:text-xl lg:prose-xl">
-					{#if data.article.content}
-						{#if renderBlocks.length > 0}
-							{#each renderBlocks as block}
-								{#if block.type === 'html'}
-									{@html block.content}
-								{:else if block.type === 'decklist'}
-									<Decklist
-										deckName={block.data.deckName}
-										creator={block.data.creator}
-										hero={block.data.hero}
-										format={block.data.format}
-										fabraryUrl={block.data.fabraryUrl}
-										parsedCards={block.data.parsedCards}
-									/>
-								{/if}
-							{/each}
+				<!-- Article content with preview overlay when not premium -->
+				<div class="relative">
+					<!-- Article content using Tailwind Typography - Optimized for mobile readability -->
+					<div class="prose prose-invert prose-base mx-auto max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-headings:scroll-mt-24 prose-h2:mt-8 prose-h2:mb-3 prose-h2:text-xl prose-h3:mt-6 prose-h3:mb-2 prose-h3:text-lg prose-h4:mt-5 prose-h4:mb-2 prose-h4:text-base prose-p:text-gray-300 prose-p:leading-relaxed prose-a:text-yellow-600 prose-a:no-underline hover:prose-a:text-yellow-500 hover:prose-a:underline prose-strong:text-white prose-em:text-gray-200 prose-code:rounded prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-orange-400 prose-code:text-sm prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-xl prose-pre:border prose-pre:border-white/10 prose-pre:bg-gray-900 prose-blockquote:rounded-r-lg prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:bg-blue-500/10 prose-blockquote:not-italic prose-blockquote:pl-4 prose-li:marker:text-blue-500 prose-img:rounded-xl prose-hr:border-white/10 sm:prose-lg sm:max-w-[34em] sm:prose-h2:mt-10 sm:prose-h2:mb-4 sm:prose-h2:text-3xl sm:prose-h3:mt-8 sm:prose-h3:mb-3 sm:prose-h3:text-2xl sm:prose-h4:mt-6 sm:prose-h4:mb-3 sm:prose-h4:text-xl lg:prose-xl">
+						{#if data.article.content}
+							{#if renderBlocks.length > 0}
+								{#each renderBlocks as block}
+									{#if block.type === 'html'}
+										{@html block.content}
+									{:else if block.type === 'decklist'}
+										<Decklist
+											deckName={block.data.deckName}
+											creator={block.data.creator}
+											hero={block.data.hero}
+											format={block.data.format}
+											fabraryUrl={block.data.fabraryUrl}
+											parsedCards={block.data.parsedCards}
+										/>
+									{/if}
+								{/each}
+							{:else}
+								{@html renderContent(data.article.content)}
+							{/if}
 						{:else}
-							{@html renderContent(data.article.content)}
+							<p class="text-gray-400">No content available.</p>
 						{/if}
-					{:else}
-						<p class="text-gray-400">No content available.</p>
+					</div>
+
+					<!-- Blur/Fade overlay for preview mode -->
+					{#if data.isPreview}
+						<div class="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-gray-950 via-gray-950/95 to-transparent pointer-events-none"></div>
 					{/if}
 				</div>
 
-				<!-- Tags Footer -->
-				{#if data.article.tags && data.article.tags.length > 1}
+				<!-- Premium Subscription CTA for preview mode -->
+				{#if data.isPreview}
+					<div class="mx-auto max-w-none sm:max-w-[34em] -mt-12 relative z-10">
+						<div class="rounded-2xl border border-purple-500/30 bg-gradient-to-b from-purple-500/10 to-gray-900/80 backdrop-blur-xl p-6 sm:p-8 text-center">
+							<!-- Premium Bolt Icon -->
+							<div class="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-600 mx-auto mb-4 shadow-lg shadow-purple-500/30">
+								<svg class="h-7 w-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+									<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
+								</svg>
+							</div>
+
+							<h3 class="text-xl sm:text-2xl font-bold text-white mb-2">
+								Continue Reading with Premium
+							</h3>
+							<p class="text-gray-400 mb-6 max-w-md mx-auto">
+								This article is exclusive to AGE Premium members. Subscribe to unlock the full article and all premium content.
+							</p>
+
+							<!-- Benefits Preview -->
+							<div class="flex flex-wrap justify-center gap-3 mb-6 text-sm">
+								<span class="flex items-center gap-1.5 text-gray-300">
+									<svg class="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+									</svg>
+									Unlimited articles
+								</span>
+								<span class="flex items-center gap-1.5 text-gray-300">
+									<svg class="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+									</svg>
+									10% off events
+								</span>
+								<span class="flex items-center gap-1.5 text-gray-300">
+									<svg class="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+									</svg>
+									Exclusive match VODs
+								</span>
+							</div>
+
+							<!-- CTA Buttons -->
+							<div class="flex flex-col sm:flex-row gap-3 justify-center">
+								{#if data.user}
+									<!-- User is logged in but not premium -->
+									<a
+										href="/premium"
+										class="rounded-xl bg-gradient-to-r from-purple-500 to-blue-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-purple-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 hover:from-purple-400 hover:to-blue-500"
+									>
+										Subscribe to Premium
+									</a>
+								{:else}
+									<!-- User is not logged in -->
+									<a
+										href="/login?redirect=/articles/{data.article.slug}"
+										class="rounded-xl bg-gradient-to-r from-purple-500 to-blue-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-purple-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 hover:from-purple-400 hover:to-blue-500"
+									>
+										Sign In to Subscribe
+									</a>
+									<a
+										href="/signup?redirect=/articles/{data.article.slug}"
+										class="rounded-xl border border-gray-700 bg-gray-800/50 px-8 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-gray-700"
+									>
+										Create Account
+									</a>
+								{/if}
+							</div>
+
+							<!-- Pricing hint -->
+							<p class="mt-4 text-xs text-gray-500">
+								Starting at $10/month · Cancel anytime
+							</p>
+						</div>
+					</div>
+				{/if}
+
+				<!-- Tags Footer (hide in preview mode) -->
+				{#if !data.isPreview && data.article.tags && data.article.tags.length > 1}
 					<div class="mx-auto mt-8 max-w-none border-t border-white/10 pt-6 sm:mt-12 sm:max-w-[34em] sm:pt-8">
 						<h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 sm:mb-4">Topics</h3>
 						<div class="flex flex-wrap gap-2">
 							{#each data.article.tags as tag}
 								<a
-									href="/read/tag/{tag.slug}"
+									href="/articles/tag/{tag.slug}"
 									class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-gray-300 transition-colors hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-300 sm:px-4 sm:py-1.5"
 								>
 									{tag.name}
@@ -639,10 +722,10 @@
 					</div>
 				{/if}
 
-				<!-- Author Card Footer -->
-				{#if data.article.author}
+				<!-- Author Card Footer (hide in preview mode) -->
+				{#if !data.isPreview && data.article.author}
 					<div class="mx-auto mt-8 max-w-none rounded-xl border border-white/10 bg-gray-900/50 p-4 sm:mt-12 sm:max-w-[34em] sm:rounded-2xl sm:p-6">
-						<a href="/read/author/{data.article.author.slug}" class="flex items-center gap-3 group sm:items-start sm:gap-4">
+						<a href="/articles/author/{data.article.author.slug}" class="flex items-center gap-3 group sm:items-start sm:gap-4">
 							{#if data.article.author.profilePicture}
 								<img
 									src={data.article.author.profilePicture}
@@ -667,24 +750,26 @@
 					</div>
 				{/if}
 
-				<!-- Back Link Footer -->
-				<footer class="mx-auto mt-8 max-w-none border-t border-white/10 pt-6 sm:mt-12 sm:max-w-[34em] sm:pt-8">
-					<a
-						href="/read"
-						class="inline-flex items-center gap-2 text-sm font-medium text-gray-400 transition-colors hover:text-white"
-					>
-						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-						</svg>
-						Back to all articles
-					</a>
-				</footer>
+				<!-- Back Link Footer (hide in preview mode) -->
+				{#if !data.isPreview}
+					<footer class="mx-auto mt-8 max-w-none border-t border-white/10 pt-6 sm:mt-12 sm:max-w-[34em] sm:pt-8">
+						<a
+							href="/articles"
+							class="inline-flex items-center gap-2 text-sm font-medium text-gray-400 transition-colors hover:text-white"
+						>
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+							</svg>
+							Back to all articles
+						</a>
+					</footer>
+				{/if}
 			</article>
 
-			<!-- Right Sidebar - Table of Contents -->
+			<!-- Right Sidebar - Table of Contents (hide in preview mode) -->
 			<aside class="hidden lg:block">
 				<div class="sticky top-8">
-					{#if tableOfContents.length > 0}
+					{#if !data.isPreview && tableOfContents.length > 0}
 						<nav class="rounded-xl border border-white/10 bg-gray-900/30 p-5">
 							<h2 class="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-400">On this page</h2>
 							<div class="space-y-2.5">

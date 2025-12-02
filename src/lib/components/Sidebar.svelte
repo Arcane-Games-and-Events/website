@@ -1,16 +1,19 @@
 <script>
 	import { page } from '$app/stores';
 	import { fly, fade } from 'svelte/transition';
+	import { sidebarCollapsed } from '$lib/stores/sidebar';
 
 	export let user;
 
 	// Sidebar state
-	let collapsed = false;
 	let mobileOpen = false;
 
 	function toggleCollapse() {
-		collapsed = !collapsed;
+		sidebarCollapsed.update(v => !v);
 	}
+
+	// Subscribe to collapsed state
+	$: collapsed = $sidebarCollapsed;
 
 	function toggleMobile() {
 		mobileOpen = !mobileOpen;
@@ -23,7 +26,7 @@
 	// Navigation items grouped by section
 	const mainNavItems = [
 		{ href: '/', label: 'Home', icon: 'home' },
-		{ href: '/read', label: 'Read', icon: 'article' },
+		{ href: '/articles', label: 'Articles', icon: 'article' },
 		{ href: '/age-open', label: 'AGE Open', icon: 'trophy' },
 		{ href: '/academy', label: 'Academy', icon: 'book' },
 		{ href: '/live', label: 'AGE Live', icon: 'video' }
@@ -81,6 +84,8 @@
 		envelope: 'M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75',
 		heart: 'M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z',
 		star: 'M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z',
+		bolt: 'M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z',
+		boltSolid: 'M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z',
 		clock: 'M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
 		mapPin: 'M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z',
 		phone: 'M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z',
@@ -162,7 +167,6 @@
 		<nav class="relative z-10 flex-1 overflow-y-auto px-3 py-4">
 			<!-- Main Section -->
 			<div class="mb-6">
-				<p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-gray-500">Main</p>
 				<ul class="space-y-1">
 					{#each mainNavItems as item}
 						<li>
@@ -202,10 +206,10 @@
 				</ul>
 			</div>
 
-			<!-- Personal Section -->
+			<!-- My AGE Section -->
 			{#if user}
 				<div class="mb-6">
-					<p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-gray-500">Personal</p>
+					<p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-gray-500">My AGE</p>
 					<ul class="space-y-1">
 						{#each personalNavItems as item}
 							{#if !item.requiresAuth || user}
@@ -252,24 +256,23 @@
 		<!-- Premium CTA Banner (for non-premium users) -->
 		{#if !user || (user.role !== 'premium' && user.role !== 'admin')}
 			<div class="relative z-10 mx-3 mb-3">
-				<div class="relative overflow-hidden rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-600/20 via-blue-600/10 to-purple-600/20 backdrop-blur-sm p-4">
+				<div class="relative overflow-hidden rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-900/30 via-gray-900 to-purple-900/20 p-4">
 					<!-- Decorative glow -->
-					<div class="absolute -top-4 -right-4 w-24 h-24 bg-purple-500/30 rounded-full blur-2xl"></div>
-					<div class="absolute -bottom-4 -left-4 w-20 h-20 bg-blue-500/20 rounded-full blur-2xl"></div>
+					<div class="absolute -top-4 -right-4 w-24 h-24 bg-emerald-500/20 rounded-full blur-2xl"></div>
 					<div class="relative">
 						<div class="flex items-center gap-2 mb-1">
-							<svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" d={icons.sparkles} />
+							<svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+								<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 							</svg>
-							<h3 class="font-semibold text-white text-sm">Join AGE Premium</h3>
+							<h3 class="font-semibold text-white text-sm">AGE Premium</h3>
 						</div>
-						<p class="text-xs text-gray-300 mb-3">Discover the best content anywhere.</p>
+						<p class="text-xs text-gray-300 mb-3">Premium articles, event discounts, and exclusive coverage.</p>
 						<a
 							href="/premium"
 							on:click={closeMobile}
-							class="block w-full rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 px-4 py-2 text-center text-sm font-medium text-white hover:from-purple-600 hover:to-blue-600 shadow-lg shadow-purple-500/25 transition-all"
+							class="block w-full rounded-lg bg-gradient-to-r from-emerald-600 to-green-700 px-4 py-2 text-center text-sm font-semibold text-white hover:from-emerald-500 hover:to-green-600 shadow-lg shadow-emerald-500/25 transition-all"
 						>
-							Join Now
+							Join Premium
 						</a>
 					</div>
 				</div>
@@ -291,7 +294,7 @@
 						{#if isPremiumUser}
 							<div class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-green-600 shadow-lg shadow-emerald-500/50">
 								<svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
-									<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+									<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 								</svg>
 							</div>
 						{/if}
@@ -302,8 +305,8 @@
 						</p>
 						{#if isPremiumUser}
 							<span class="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-emerald-500/20 to-green-600/20 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 mt-1">
-								<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" d={icons.sparkles} />
+								<svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
+									<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 								</svg>
 								PREMIUM
 							</span>
@@ -325,18 +328,18 @@
 					</form>
 				</div>
 			{:else}
-				<div class="flex flex-col gap-2">
+				<div class="flex gap-2">
 					<a
 						href="/login"
 						on:click={closeMobile}
-						class="w-full rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/5 transition-all duration-200"
+						class="flex-1 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm px-3 py-2 text-center text-sm font-medium text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200"
 					>
 						Login
 					</a>
 					<a
 						href="/signup"
 						on:click={closeMobile}
-						class="w-full rounded-lg border border-blue-400/20 bg-gradient-to-r from-blue-500/80 to-purple-500/80 backdrop-blur-sm px-4 py-2.5 text-center text-sm font-medium text-white hover:from-blue-500 hover:to-purple-500 hover:border-blue-400/40 shadow-lg shadow-blue-500/20 transition-all duration-200"
+						class="flex-1 rounded-lg border border-blue-400/20 bg-gradient-to-r from-blue-500/80 to-purple-500/80 backdrop-blur-sm px-3 py-2 text-center text-sm font-medium text-white hover:from-blue-500 hover:to-purple-500 hover:border-blue-400/40 shadow-lg shadow-blue-500/20 transition-all duration-200"
 					>
 						Sign Up
 					</a>
@@ -349,7 +352,7 @@
 <!-- Desktop sidebar -->
 <div
 	class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:flex lg:flex-col
-	{collapsed ? 'lg:w-20' : 'lg:w-72'} transition-all duration-300 ease-in-out"
+	{collapsed ? 'lg:w-16' : 'lg:w-60'} transition-all duration-300 ease-in-out"
 >
 	<div class="relative flex h-full flex-col bg-gray-900/80 backdrop-blur-2xl border-r border-white/10 shadow-2xl shadow-black/50">
 		<!-- Glassmorphic gradient overlay -->
@@ -402,9 +405,6 @@
 		<nav class="relative z-10 flex-1 overflow-y-auto {collapsed ? 'px-2' : 'px-3'} py-4">
 			<!-- Main Section -->
 			<div class="mb-6">
-				{#if !collapsed}
-					<p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-gray-500">Main</p>
-				{/if}
 				<ul class="space-y-1">
 					{#each mainNavItems as item}
 						<li>
@@ -448,11 +448,11 @@
 				</ul>
 			</div>
 
-			<!-- Personal Section -->
+			<!-- My AGE Section -->
 			{#if user}
 				<div class="mb-6">
 					{#if !collapsed}
-						<p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-gray-500">Personal</p>
+						<p class="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-gray-500">My AGE</p>
 					{/if}
 					<ul class="space-y-1">
 						{#each personalNavItems as item}
@@ -505,23 +505,22 @@
 		{#if !user || (user.role !== 'premium' && user.role !== 'admin')}
 			{#if !collapsed}
 				<div class="relative z-10 mx-3 mb-3">
-					<div class="relative overflow-hidden rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-600/20 via-blue-600/10 to-purple-600/20 backdrop-blur-sm p-4">
+					<div class="relative overflow-hidden rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-900/30 via-gray-900 to-purple-900/20 p-4">
 						<!-- Decorative glow -->
-						<div class="absolute -top-4 -right-4 w-24 h-24 bg-purple-500/30 rounded-full blur-2xl"></div>
-						<div class="absolute -bottom-4 -left-4 w-20 h-20 bg-blue-500/20 rounded-full blur-2xl"></div>
+						<div class="absolute -top-4 -right-4 w-24 h-24 bg-emerald-500/20 rounded-full blur-2xl"></div>
 						<div class="relative">
 							<div class="flex items-center gap-2 mb-1">
-								<svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" d={icons.sparkles} />
+								<svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+									<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 								</svg>
-								<h3 class="font-semibold text-white text-sm">Join AGE Premium</h3>
+								<h3 class="font-semibold text-white text-sm">AGE Premium</h3>
 							</div>
-							<p class="text-xs text-gray-300 mb-3">Discover the best content anywhere.</p>
+							<p class="text-xs text-gray-300 mb-3">Premium articles, event discounts, and exclusive coverage.</p>
 							<a
 								href="/premium"
-								class="block w-full rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 px-4 py-2 text-center text-sm font-medium text-white hover:from-purple-600 hover:to-blue-600 shadow-lg shadow-purple-500/25 transition-all"
+								class="block w-full rounded-lg bg-gradient-to-r from-emerald-600 to-green-700 px-4 py-2 text-center text-sm font-semibold text-white hover:from-emerald-500 hover:to-green-600 shadow-lg shadow-emerald-500/25 transition-all"
 							>
-								Join Now
+								Join Premium
 							</a>
 						</div>
 					</div>
@@ -530,12 +529,12 @@
 				<div class="relative z-10 flex justify-center mb-3">
 					<a
 						href="/premium"
-						class="p-2.5 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 text-purple-400 hover:text-white hover:from-purple-500/40 hover:to-blue-500/40 transition-all border border-purple-500/30"
+						class="p-2.5 rounded-lg bg-gradient-to-br from-emerald-500/20 to-green-500/20 text-emerald-400 hover:text-white hover:from-emerald-500/40 hover:to-green-500/40 transition-all border border-emerald-500/30"
 						title="Join Premium"
 						aria-label="Join Premium"
 					>
-						<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" d={icons.sparkles} />
+						<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+							<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 						</svg>
 					</a>
 				</div>
@@ -559,7 +558,7 @@
 							{#if isPremiumUser}
 								<div class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-green-600 shadow-lg shadow-emerald-500/50">
 									<svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
-										<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+										<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 									</svg>
 								</div>
 							{/if}
@@ -590,7 +589,7 @@
 							{#if isPremiumUser}
 								<div class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-green-600 shadow-lg shadow-emerald-500/50">
 									<svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
-										<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+										<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 									</svg>
 								</div>
 							{/if}
@@ -601,8 +600,8 @@
 							</p>
 							{#if isPremiumUser}
 								<span class="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-emerald-500/20 to-green-600/20 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 mt-1">
-									<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" d={icons.sparkles} />
+									<svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
+										<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 									</svg>
 									PREMIUM
 								</span>
@@ -660,7 +659,7 @@
 </div>
 
 <!-- Main content wrapper -->
-<div class="{collapsed ? 'lg:pl-20' : 'lg:pl-72'} transition-all duration-300 ease-in-out">
+<div class="{collapsed ? 'lg:pl-16' : 'lg:pl-60'} transition-all duration-300 ease-in-out">
 	<!-- Top bar for mobile -->
 	<div class="relative sticky top-0 z-30 flex h-16 items-center justify-center border-b border-white/10 bg-gray-950/80 backdrop-blur-2xl px-4 lg:hidden">
 		<!-- Subtle gradient overlay -->

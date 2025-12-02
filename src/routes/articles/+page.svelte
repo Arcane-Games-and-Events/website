@@ -146,11 +146,15 @@
 										</span>
 									{/if}
 									{#if article.isPremium}
-										<span class="flex items-center gap-1 text-[10px] md:text-sm font-semibold text-emerald-400">
-											<svg class="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 24 24">
-												<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+										<span class="flex items-center gap-1 rounded-full bg-emerald-600/80 px-2 py-0.5 text-[10px] md:text-xs font-semibold text-white backdrop-blur-sm">
+											<svg class="w-2.5 h-2.5 md:w-3 md:h-3" fill="currentColor" viewBox="0 0 24 24">
+												<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
 											</svg>
 											Premium
+										</span>
+									{:else}
+										<span class="rounded-full bg-gray-800/70 px-2 py-0.5 text-[10px] md:text-xs font-medium text-gray-300 backdrop-blur-sm">
+											Free
 										</span>
 									{/if}
 								</div>
@@ -186,7 +190,7 @@
 											{/if}
 											<div>
 												<a
-													href="/read/author/{article.author.slug}"
+													href="/articles/author/{article.author.slug}"
 													class="block text-xs md:text-sm font-semibold text-white hover:text-blue-400 transition-colors"
 													on:click|stopPropagation
 												>
@@ -202,7 +206,7 @@
 
 								<!-- Read Now Button -->
 								<a
-									href="/read/{article.slug}"
+									href="/articles/{article.slug}"
 									class="group/btn inline-flex items-center gap-1.5 md:gap-2.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 px-4 md:px-6 py-2 md:py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-105"
 								>
 									Read Now
@@ -343,7 +347,7 @@
 			{#if filteredArticles.length > 0}
 				<div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 					{#each filteredArticles as article}
-						<a href="/read/{article.slug}" class="group block">
+						<a href="/articles/{article.slug}" class="group block">
 							<article class="relative flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-gray-900/50 backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-gray-800/50 hover:shadow-xl hover:shadow-black/20">
 								<!-- Image -->
 								<div class="relative h-44 shrink-0 overflow-hidden">
@@ -363,12 +367,18 @@
 									<div class="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-transparent to-transparent"></div>
 									<!-- Access Badge -->
 									<div class="absolute top-3 left-3">
-										<span class="rounded-full px-2.5 py-1 text-xs font-semibold backdrop-blur-sm
-											{article.isPremium
-												? 'bg-emerald-500 text-white'
-												: 'border border-white/20 bg-gray-900/70 text-gray-100'}">
-											{article.isPremium ? 'Premium' : 'Free'}
-										</span>
+										{#if article.isPremium}
+											<span class="flex items-center gap-1 rounded-full bg-emerald-600/90 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+												<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+													<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
+												</svg>
+												Premium
+											</span>
+										{:else}
+											<span class="rounded-full bg-gray-800/80 px-2.5 py-1 text-xs font-medium text-gray-300 backdrop-blur-sm">
+												Free
+											</span>
+										{/if}
 									</div>
 								</div>
 

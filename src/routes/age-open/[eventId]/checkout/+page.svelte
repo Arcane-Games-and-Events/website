@@ -347,6 +347,8 @@
 							submitUrl={`/api/events/${data.event.id}/purchase`}
 							submitText="Complete Purchase"
 							gemId={gemId}
+							savedCards={data.savedCards}
+							showSaveCardOption={true}
 						/>
 					</div>
 				</div>

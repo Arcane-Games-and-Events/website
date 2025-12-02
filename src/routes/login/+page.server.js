@@ -7,10 +7,14 @@ import { eq } from 'drizzle-orm';
 import { fail, redirect } from '@sveltejs/kit';
 
 export const actions = {
-	default: async ({ request, cookies }) => {
+	default: async ({ request, cookies, url }) => {
 		const form = await request.formData();
 		const email = form.get('email');
 		const password = form.get('password');
+		const rememberMe = form.get('remember-me') === 'on';
+
+		// Get redirect URL from query params (default to home)
+		const redirectTo = url.searchParams.get('redirect') || '/';
 
 		if (typeof email !== 'string' || typeof password !== 'string') {
 			return fail(400, { error: 'Invalid input' });
@@ -27,9 +31,26 @@ export const actions = {
 		}
 
 		const session = await auth.createSession(u.id, {});
-		const cookie = auth.createSessionCookie(session.id); // ← pass session.id
-		cookies.set(cookie.name, cookie.value, { ...cookie.attributes, path: '/' });
+		const cookie = auth.createSessionCookie(session.id);
 
-		throw redirect(302, '/');
+		// Set cookie attributes based on "Remember me" checkbox
+		const cookieAttributes = {
+			...cookie.attributes,
+			path: '/'
+		};
+
+		if (rememberMe) {
+			// Remember me: Set cookie to expire in 30 days
+			cookieAttributes.maxAge = 60 * 60 * 24 * 30; // 30 days in seconds
+		} else {
+			// Don't remember: Session cookie (expires when browser closes)
+			delete cookieAttributes.maxAge;
+		}
+
+		cookies.set(cookie.name, cookie.value, cookieAttributes);
+
+		// Validate redirect URL is a local path (security measure)
+		const safeRedirect = redirectTo.startsWith('/') ? redirectTo : '/';
+		throw redirect(302, safeRedirect);
 	}
 };

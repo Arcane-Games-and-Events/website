@@ -7,6 +7,10 @@ import { eq } from 'drizzle-orm';
 
 /**
  * Cancel a premium subscription
+ *
+ * When cancelled, the user keeps premium access until the end of their current
+ * billing period (subscriptionEndDate). After that date, the access checking
+ * logic will deny premium access.
  */
 export async function POST({ locals }) {
 	console.log('=== CANCEL SUBSCRIPTION ENDPOINT CALLED ===');
@@ -20,9 +24,14 @@ export async function POST({ locals }) {
 			return json({ error: 'You must be logged in to cancel' }, { status: 401 });
 		}
 
-		// Check if user has a subscription
+		// Check if user has an active subscription
 		if (!currentUser.subscriptionId) {
 			return json({ error: 'No active subscription found' }, { status: 400 });
+		}
+
+		// Check if subscription is already cancelled
+		if (currentUser.subscriptionStatus === 'cancelled') {
+			return json({ error: 'Subscription is already cancelled' }, { status: 400 });
 		}
 
 		console.log('Cancelling subscription:', currentUser.subscriptionId);
@@ -35,17 +44,35 @@ export async function POST({ locals }) {
 			if (result.success) {
 				console.log('Subscription cancelled successfully in Authorize.net');
 
-				// Update user role to free and remove subscription ID
+				// Calculate when access should end (the next billing date is when the paid period ends)
+				// If nextBillingDate is available, use it; otherwise calculate from start date
+				let subscriptionEndDate = currentUser.nextBillingDate;
+
+				if (!subscriptionEndDate) {
+					// Fallback: Calculate based on subscription start and type
+					const startDate = currentUser.subscriptionStartDate || new Date();
+					subscriptionEndDate = new Date(startDate);
+
+					if (currentUser.subscriptionType === 'yearly') {
+						subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
+					} else {
+						subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
+					}
+				}
+
+				// Update subscription status to cancelled but KEEP role as premium
+				// Access checking logic will handle expiration based on subscriptionEndDate
 				await db.update(userTable)
 					.set({
-						role: 'free',
-						subscriptionId: null
+						subscriptionStatus: 'cancelled',
+						subscriptionEndDate,
+						nextBillingDate: null // No more billing
 					})
 					.where(eq(userTable.id, currentUser.id));
 
-				console.log('User downgraded to free and subscription ID removed');
+				console.log('Subscription marked as cancelled, access until:', subscriptionEndDate);
 
-				// Invalidate current session and create new one with updated role
+				// Invalidate current session and create new one with updated subscription status
 				if (locals.session) {
 					await auth.invalidateSession(locals.session.id);
 					console.log('Old session invalidated');
@@ -55,12 +82,13 @@ export async function POST({ locals }) {
 				const newSession = await auth.createSession(currentUser.id, {});
 				const sessionCookie = auth.createSessionCookie(newSession.id);
 
-				console.log('New session created with free role');
+				console.log('New session created');
 
 				return json(
 					{
 						success: true,
-						message: 'Subscription cancelled successfully'
+						message: 'Subscription cancelled successfully',
+						accessUntil: subscriptionEndDate.toISOString()
 					},
 					{
 						headers: {

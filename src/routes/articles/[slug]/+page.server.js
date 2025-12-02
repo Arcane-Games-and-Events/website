@@ -1,6 +1,48 @@
-import { error, redirect } from '@sveltejs/kit';
+import { error } from '@sveltejs/kit';
 import { payload } from '$lib/server/payload/client.js';
-import { isPremiumNow } from '$lib/server/articles/access.js';
+import { isPremiumNow, userHasPremiumAccess } from '$lib/server/articles/access.js';
+
+/**
+ * Truncate Lexical content to only show first few paragraphs for preview
+ * This ensures non-premium users cannot see full content even via dev tools
+ */
+function truncateContentForPreview(content, maxParagraphs = 3) {
+	if (!content || !content.root) return content;
+
+	const root = content.root;
+	if (!root.children || !Array.isArray(root.children)) return content;
+
+	// Count paragraphs and keep only the first few
+	let paragraphCount = 0;
+	const truncatedChildren = [];
+
+	for (const child of root.children) {
+		if (child.type === 'paragraph') {
+			paragraphCount++;
+			if (paragraphCount <= maxParagraphs) {
+				truncatedChildren.push(child);
+			} else {
+				break;
+			}
+		} else if (child.type === 'heading' && paragraphCount < maxParagraphs) {
+			// Include headings that come before we hit the limit
+			truncatedChildren.push(child);
+		} else if (paragraphCount >= maxParagraphs) {
+			break;
+		} else {
+			// Include other content types before limit
+			truncatedChildren.push(child);
+		}
+	}
+
+	return {
+		...content,
+		root: {
+			...root,
+			children: truncatedChildren
+		}
+	};
+}
 
 /**
  * Recursively process Lexical content to convert relative URLs to absolute
@@ -110,23 +152,22 @@ export async function load({ params, locals, setHeaders }) {
 			publishedAt: article.publishedAt
 		});
 
-		// If premium content, check user authentication
+		// Determine if user has access to full content
+		let isPreview = false;
+		let hasPremiumAccess = false;
+		const user = locals.user;
+
 		if (isPremium) {
-			const user = locals.user;
-
-			// If not logged in, redirect to login
-			if (!user) {
-				throw redirect(302, `/login?redirect=/read/${slug}`);
-			}
-
-			// Check if user has premium access (role: premium or admin)
-			const hasPremiumAccess = user.role === 'premium' || user.role === 'admin';
+			// Check if user has premium access (handles active subscriptions, cancelled but within period, etc.)
+			hasPremiumAccess = userHasPremiumAccess(user);
 
 			if (!hasPremiumAccess) {
-				throw error(
-					403,
-					'This is premium content. Please upgrade your account to access this article.'
-				);
+				// User doesn't have premium access - show preview only
+				isPreview = true;
+				// Truncate content on server side so full content never reaches client
+				article.content = truncateContentForPreview(processedContent);
+				// Don't send decklists in preview mode
+				article.decklists = [];
 			}
 		}
 
@@ -136,8 +177,13 @@ export async function load({ params, locals, setHeaders }) {
 			setHeaders({
 				'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
 			});
+		} else if (isPreview) {
+			// Preview content can be cached publicly (it's just a teaser)
+			setHeaders({
+				'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
+			});
 		} else {
-			// Private cache only for authenticated premium users
+			// Private cache only for authenticated premium users with full access
 			setHeaders({
 				'cache-control': 'private, max-age=0'
 			});
@@ -145,7 +191,9 @@ export async function load({ params, locals, setHeaders }) {
 
 		return {
 			article,
-			isPremium
+			isPremium,
+			isPreview,
+			user: user ? { role: user.role } : null
 		};
 	} catch (err) {
 		// Re-throw SvelteKit errors

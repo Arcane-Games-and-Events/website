@@ -1,6 +1,6 @@
 import { redirect, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { event } from '$lib/server/db/schema.js';
+import { event, savedCard } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 
 export async function load({ params, locals }) {
@@ -10,12 +10,19 @@ export async function load({ params, locals }) {
 	}
 
 	try {
-		// Fetch event details
-		const [eventData] = await db
-			.select()
-			.from(event)
-			.where(eq(event.id, params.eventId))
-			.limit(1);
+		// Fetch event details and saved cards in parallel
+		const [eventData, userSavedCards] = await Promise.all([
+			db
+				.select()
+				.from(event)
+				.where(eq(event.id, params.eventId))
+				.limit(1)
+				.then(rows => rows[0]),
+			db
+				.select()
+				.from(savedCard)
+				.where(eq(savedCard.userId, locals.user.id))
+		]);
 
 		if (!eventData) {
 			throw error(404, 'Event not found');
@@ -33,7 +40,8 @@ export async function load({ params, locals }) {
 			user: locals.user,
 			event: eventData,
 			finalPrice: finalPrice.toFixed(2),
-			hasPremiumDiscount: eventData.premiumDiscount && isPremium
+			hasPremiumDiscount: eventData.premiumDiscount && isPremium,
+			savedCards: userSavedCards
 		};
 	} catch (err) {
 		if (err.status === 404) {

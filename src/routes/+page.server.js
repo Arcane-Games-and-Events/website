@@ -1,14 +1,42 @@
 import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow } from '$lib/server/articles/access.js';
 import { db } from '$lib/server/db/index.js';
-import { event } from '$lib/server/db/schema.js';
-import { asc, gte } from 'drizzle-orm';
+import { event, seasonStanding } from '$lib/server/db/schema.js';
+import { asc, gte, desc } from 'drizzle-orm';
 
-export async function load({ setHeaders }) {
+/**
+ * Compare two standings using tiebreaker rules:
+ * 1. Total Points (primary)
+ * 2. Number of Top 8's made
+ * 3. Total match wins
+ * 4. Number of events attended
+ */
+function compareStandings(a, b) {
+	const pointsDiff = (b.totalPoints || 0) - (a.totalPoints || 0);
+	if (pointsDiff !== 0) return pointsDiff;
+
+	const top8Diff = (b.top8Finishes || 0) - (a.top8Finishes || 0);
+	if (top8Diff !== 0) return top8Diff;
+
+	const winsDiff = (b.matchesWon || 0) - (a.matchesWon || 0);
+	if (winsDiff !== 0) return winsDiff;
+
+	return (b.eventsPlayed || 0) - (a.eventsPlayed || 0);
+}
+
+export async function load({ setHeaders, url }) {
 	// Cache homepage data for 5 minutes, allow stale for 1 hour while revalidating
 	setHeaders({
 		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
 	});
+
+	// Get filter params for standings
+	const standingsSeason = url.searchParams.get('standings_season') || 'all';
+	const standingsCircuit = url.searchParams.get('standings_circuit') || 'all';
+
+	// Available seasons and circuits for filters
+	const availableSeasons = ['all', '2025', '2024', '2023'];
+	const availableCircuits = ['all', 'Los Angeles', 'New England', 'St. Louis'];
 
 	try {
 		// Fetch latest 3 articles from Payload CMS
@@ -64,15 +92,91 @@ export async function load({ setHeaders }) {
 			.orderBy(asc(event.eventDate))
 			.limit(3);
 
+		// Fetch standings for homepage sidebar with optional filtering
+		const allStandings = await db
+			.select()
+			.from(seasonStanding)
+			.orderBy(desc(seasonStanding.totalPoints));
+
+		// Filter standings based on selected season and circuit
+		let filteredStandings = allStandings;
+		if (standingsSeason !== 'all') {
+			filteredStandings = filteredStandings.filter(s => s.season === standingsSeason);
+		}
+		if (standingsCircuit !== 'all') {
+			filteredStandings = filteredStandings.filter(s => s.circuit === standingsCircuit);
+		}
+
+		// Aggregate stats by gemId/playerName (for career view or filtered view)
+		const statsMap = new Map();
+		for (const standing of filteredStandings) {
+			const key = standing.gemId || standing.playerName;
+			if (!statsMap.has(key)) {
+				statsMap.set(key, {
+					gemId: standing.gemId,
+					playerName: standing.playerName,
+					totalPoints: 0,
+					matchesWon: 0,
+					matchesPlayed: 0,
+					eventsPlayed: 0,
+					top8Finishes: 0
+				});
+			}
+			const stats = statsMap.get(key);
+			stats.totalPoints += standing.totalPoints || 0;
+			stats.matchesWon += standing.matchesWon || 0;
+			stats.matchesPlayed += standing.matchesPlayed || 0;
+			stats.eventsPlayed += standing.eventsPlayed || 0;
+			stats.top8Finishes += standing.top8Finishes || 0;
+		}
+
+		// Sort and take top 8 for homepage
+		const aggregatedStats = Array.from(statsMap.values());
+		aggregatedStats.sort(compareStandings);
+		const topStandings = aggregatedStats.slice(0, 8).map((player, index) => ({
+			...player,
+			rank: index + 1
+		}));
+
+		// Calculate total unique players across all standings (for series stats)
+		const uniquePlayers = new Set();
+		for (const standing of allStandings) {
+			uniquePlayers.add(standing.gemId || standing.playerName);
+		}
+
 		return {
 			articles,
-			events: upcomingEvents
+			events: upcomingEvents,
+			standings: topStandings,
+			standingsFilters: {
+				season: standingsSeason,
+				circuit: standingsCircuit,
+				availableSeasons,
+				availableCircuits
+			},
+			seriesStats: {
+				totalPlayers: uniquePlayers.size,
+				totalEvents: 24, // Total AGE Open events
+				prizePool: 30000 // 2026 prize pool
+			}
 		};
 	} catch (error) {
 		console.error('Error fetching data for homepage:', error);
 		return {
 			articles: [],
-			events: []
+			events: [],
+			standings: [],
+			standingsFilters: {
+				season: 'all',
+				circuit: 'all',
+				availableSeasons: ['all', '2025', '2024', '2023'],
+				availableCircuits: ['all', 'Los Angeles', 'New England', 'St. Louis']
+			},
+			seriesStats: {
+				totalPlayers: 0,
+				totalEvents: 24,
+				prizePool: 30000
+			}
 		};
 	}
 }

@@ -433,7 +433,7 @@
 											id="gemIdRequired"
 											name="gemIdRequired"
 											bind:checked={gemIdRequired}
-											class="h-4 w-4 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
+											class="h-4 w-4 border-gray-600 bg-gray-800 text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
 										/>
 										<span class="text-sm font-medium text-gray-300">Require Gem ID</span>
 									</label>
@@ -444,7 +444,7 @@
 											id="premiumDiscount"
 											name="premiumDiscount"
 											bind:checked={premiumDiscount}
-											class="h-4 w-4 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
+											class="h-4 w-4 border-gray-600 bg-gray-800 text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0"
 										/>
 										<span class="text-sm font-medium text-gray-300">10% Premium Discount</span>
 									</label>

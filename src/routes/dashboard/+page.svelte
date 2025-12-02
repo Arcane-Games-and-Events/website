@@ -140,7 +140,7 @@
 		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 			<!-- Browse Articles -->
 			<a
-				href="/read"
+				href="/articles"
 				class="group relative flex items-center gap-4 overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50 p-4 transition-all duration-300 hover:border-amber-500/50 hover:bg-gray-800/50"
 			>
 				<div class="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>

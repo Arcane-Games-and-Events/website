@@ -1,6 +1,6 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { order, ticket, entitlement } from '$lib/server/db/schema';
+import { order, ticket, entitlement, event } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function load({ params, locals }) {
@@ -30,16 +30,28 @@ export async function load({ params, locals }) {
 		let additionalData = null;
 
 		if (orderData.meta?.type === 'ticket' && orderData.meta.ticketId) {
-			// Fetch ticket details
+			// Fetch ticket details with event data
 			const [ticketData] = await db
 				.select()
 				.from(ticket)
 				.where(eq(ticket.id, orderData.meta.ticketId))
 				.limit(1);
 
+			// Fetch event details to get the event date for refund window calculation
+			let eventData = null;
+			if (ticketData?.eventId) {
+				const [eventResult] = await db
+					.select()
+					.from(event)
+					.where(eq(event.id, ticketData.eventId))
+					.limit(1);
+				eventData = eventResult;
+			}
+
 			additionalData = {
 				type: 'ticket',
-				ticket: ticketData
+				ticket: ticketData,
+				event: eventData
 			};
 		} else if (orderData.meta?.type === 'course' && orderData.meta.entitlementId) {
 			// Fetch entitlement details
@@ -100,6 +112,37 @@ export const actions = {
 			// Can't refund subscriptions through this endpoint
 			if (orderData.meta?.type === 'subscription') {
 				return fail(400, { error: 'Subscriptions cannot be refunded. Please cancel your subscription instead.' });
+			}
+
+			// For tickets, check the 24-hour refund window
+			if (orderData.meta?.type === 'ticket' && orderData.meta.ticketId) {
+				// Get the ticket to find the event
+				const [ticketData] = await db
+					.select()
+					.from(ticket)
+					.where(eq(ticket.id, orderData.meta.ticketId))
+					.limit(1);
+
+				if (ticketData?.eventId) {
+					// Get the event to check the date
+					const [eventData] = await db
+						.select()
+						.from(event)
+						.where(eq(event.id, ticketData.eventId))
+						.limit(1);
+
+					if (eventData?.eventDate) {
+						const eventDate = new Date(eventData.eventDate);
+						const now = new Date();
+						const hoursUntilEvent = (eventDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+						if (hoursUntilEvent <= 24) {
+							return fail(400, {
+								error: 'Self-service refunds are not available within 24 hours of the event. Please contact us at support@arcanegamesandevents.com for assistance.'
+							});
+						}
+					}
+				}
 			}
 
 			const { authnet } = await import('$lib/server/authnet/client.js');

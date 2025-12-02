@@ -14,8 +14,16 @@ export const user = pgTable('user', {
 
 	role: text('role').notNull().default('free'), // Options: 'free', 'premium', 'admin', 'writer', 'tournament_staff'
 
+	// Authorize.net Customer Profile (for saved cards)
+	customerProfileId: text('customer_profile_id'), // Authorize.net CIM customer profile ID
+
 	// Subscription tracking
 	subscriptionId: text('subscription_id'), // Authorize.net subscription ID for premium users
+	subscriptionType: text('subscription_type'), // 'monthly' or 'yearly'
+	subscriptionStatus: text('subscription_status'), // 'active', 'cancelled', 'expired'
+	subscriptionStartDate: timestamp('subscription_start_date', { withTimezone: true, mode: 'date' }),
+	subscriptionEndDate: timestamp('subscription_end_date', { withTimezone: true, mode: 'date' }), // When access expires (for cancelled subs)
+	nextBillingDate: timestamp('next_billing_date', { withTimezone: true, mode: 'date' }),
 
 	createdAt: timestamp('created_at', {
 		withTimezone: true,
@@ -286,6 +294,29 @@ export const seasonStanding = pgTable('season_standing', {
 }, (table) => ({
 	uniqueSeasonCircuitPlayer: unique().on(table.season, table.circuit, table.playerName)
 }));
+
+// SAVED PAYMENT METHODS (Authorize.net CIM tokens)
+export const savedCard = pgTable('saved_card', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+
+	// Authorize.net CIM IDs (we never store actual card numbers)
+	customerProfileId: text('customer_profile_id').notNull(), // Authorize.net customer profile ID
+	paymentProfileId: text('payment_profile_id').notNull(), // Authorize.net payment profile ID
+
+	// Display info (safe to store - no sensitive data)
+	cardType: text('card_type').notNull(), // 'Visa', 'Mastercard', 'Amex', 'Discover'
+	lastFour: text('last_four').notNull(), // Last 4 digits for display
+	expirationMonth: text('expiration_month').notNull(), // MM
+	expirationYear: text('expiration_year').notNull(), // YYYY
+
+	// User preferences
+	isDefault: boolean('is_default').default(false),
+	nickname: text('nickname'), // Optional user-defined name like "Personal Card"
+
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
 
 // LSS EVENTS (official Legend Story Studios competitive events/seasons)
 export const lssSeason = pgTable('lss_season', {
