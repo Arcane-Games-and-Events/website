@@ -172,20 +172,17 @@ export async function load({ params, locals, setHeaders }) {
 		}
 
 		// Cache free articles for 5 minutes at the edge
-		// Premium content is not cached publicly since it requires auth
+		// Premium content cannot be cached publicly since the same URL returns
+		// different content depending on user's premium status
 		if (!isPremium) {
 			setHeaders({
 				'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
 			});
-		} else if (isPreview) {
-			// Preview content can be cached publicly (it's just a teaser)
-			setHeaders({
-				'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
-			});
 		} else {
-			// Private cache only for authenticated premium users with full access
+			// Premium articles must not be cached publicly - each request needs fresh auth check
+			// Otherwise a cached preview might be served to premium users, or vice versa
 			setHeaders({
-				'cache-control': 'private, max-age=0'
+				'cache-control': 'private, no-store'
 			});
 		}
 

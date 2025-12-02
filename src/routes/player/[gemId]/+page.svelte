@@ -340,6 +340,17 @@
 		<div class="absolute top-40 right-1/4 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
 
 		<div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+			<!-- Back to Standings Link -->
+			<a
+				href="/age-open?tab=standings"
+				class="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6 group"
+			>
+				<svg class="h-4 w-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+				</svg>
+				<span class="text-sm font-medium">Back to Standings</span>
+			</a>
+
 			<div class="flex flex-col lg:flex-row items-center gap-8">
 				<!-- AGE Rating Badge (Primary) -->
 				<div class="relative group cursor-pointer">
