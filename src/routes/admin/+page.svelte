@@ -88,13 +88,13 @@
 	let calendarSubTab = 'upcoming'; // 'upcoming' or 'completed'
 
 	// Filter LSS events based on sub-tab
-	$: upcomingLssEvents = (data.lssSeasons || []).filter(s => {
+	$: upcomingLssEvents = (data.lssSeasons || []).filter((s) => {
 		const endDate = new Date(s.endDate);
 		const now = new Date();
 		return endDate >= now; // Include active and upcoming
 	});
 
-	$: completedLssEvents = (data.lssSeasons || []).filter(s => {
+	$: completedLssEvents = (data.lssSeasons || []).filter((s) => {
 		const endDate = new Date(s.endDate);
 		const now = new Date();
 		return endDate < now;
@@ -103,8 +103,8 @@
 	$: displayedLssEvents = calendarSubTab === 'upcoming' ? upcomingLssEvents : completedLssEvents;
 
 	// Stats for overview
-	$: upcomingEvents = data.events.filter(e => new Date(e.eventDate) > new Date()).length;
-	$: pastEvents = data.events.filter(e => new Date(e.eventDate) <= new Date()).length;
+	$: upcomingEvents = data.events.filter((e) => new Date(e.eventDate) > new Date()).length;
+	$: pastEvents = data.events.filter((e) => new Date(e.eventDate) <= new Date()).length;
 
 	// Standings table state
 	let standingsSearchQuery = '';
@@ -139,6 +139,37 @@
 		};
 	}
 
+	// Inline editing state for standings
+	let editingStandingId = null;
+	let editPlayerName = '';
+	let editGemId = '';
+	let isSavingStanding = false;
+
+	function startEditStanding(standing) {
+		editingStandingId = standing.id;
+		editPlayerName = standing.playerName || '';
+		editGemId = standing.gemId || '';
+	}
+
+	function cancelEditStanding() {
+		editingStandingId = null;
+		editPlayerName = '';
+		editGemId = '';
+	}
+
+	function updateStandingLocally(standingId, playerName, gemId) {
+		// Update the local data so it reflects immediately without page reload
+		const idx = data.standings.findIndex((s) => s.id === standingId);
+		if (idx !== -1) {
+			data.standings[idx] = {
+				...data.standings[idx],
+				playerName,
+				gemId
+			};
+			data.standings = [...data.standings]; // Trigger reactivity
+		}
+	}
+
 	// Sorting state for standings
 	let sortColumn = 'points'; // 'points', 'winPct', 'record', 'events', 'top8'
 	let sortDirection = 'desc'; // 'asc' or 'desc'
@@ -158,8 +189,8 @@
 	const adminStandingsPerPage = 25;
 
 	// Get unique seasons and circuits
-	$: uniqueSeasons = [...new Set((data.standings || []).map(s => s.season))].sort().reverse();
-	$: uniqueCircuits = [...new Set((data.standings || []).map(s => s.circuit))].sort();
+	$: uniqueSeasons = [...new Set((data.standings || []).map((s) => s.season))].sort().reverse();
+	$: uniqueCircuits = [...new Set((data.standings || []).map((s) => s.circuit))].sort();
 
 	// Custom sort function based on selected column
 	function sortStandings(a, b) {
@@ -204,7 +235,7 @@
 		const _sortDir = sortDirection;
 
 		return (data.standings || [])
-			.filter(s => {
+			.filter((s) => {
 				// Search filter
 				if (standingsSearchQuery) {
 					const search = standingsSearchQuery.toLowerCase();
@@ -253,19 +284,35 @@
 		{/if}
 
 		<!-- Sidebar Navigation -->
-		<aside class="fixed left-0 top-0 z-50 h-screen w-64 border-r border-gray-800 bg-gray-900/95 backdrop-blur-sm transition-transform duration-300 ease-in-out lg:translate-x-0 {sidebarOpen ? 'translate-x-0' : '-translate-x-full'}">
+		<aside
+			class="fixed top-0 left-0 z-50 h-screen w-64 border-r border-gray-800 bg-gray-900/95 backdrop-blur-sm transition-transform duration-300 ease-in-out lg:translate-x-0 {sidebarOpen
+				? 'translate-x-0'
+				: '-translate-x-full'}"
+		>
 			<!-- Logo/Brand -->
 			<div class="flex h-16 items-center justify-between border-b border-gray-800 px-4 lg:px-6">
 				<div class="flex items-center gap-3">
-					<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/20">
+					<div
+						class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/20"
+					>
 						<svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+							/>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+							/>
 						</svg>
 					</div>
 					<div>
 						<h2 class="font-bold text-white">Admin Panel</h2>
-						<p class="text-xs text-gray-400">AGE Software</p>
+						<p class="text-xs text-gray-400">AGE</p>
 					</div>
 				</div>
 				<!-- Close button for mobile -->
@@ -275,73 +322,192 @@
 					aria-label="Close menu"
 				>
 					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/>
 					</svg>
 				</button>
 			</div>
 
 			<!-- Back to Site -->
-			<div class="px-3 mt-4">
+			<div class="mt-4 px-3">
 				<a
 					href="/"
-					class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-gray-400 hover:bg-gray-800/50 hover:text-white transition-colors border border-gray-800 hover:border-gray-700"
+					class="flex items-center gap-2 rounded-lg border border-gray-800 px-4 py-2 text-sm text-gray-400 transition-colors hover:border-gray-700 hover:bg-gray-800/50 hover:text-white"
 				>
 					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M10 19l-7-7m0 0l7-7m-7 7h18"
+						/>
 					</svg>
 					Back to Site
 				</a>
 			</div>
 
 			<!-- Navigation -->
-			<nav class="mt-4 px-3 space-y-1">
+			<nav class="mt-4 space-y-1 px-3">
 				{#each tabs as tab}
 					<button
 						onclick={() => switchTab(tab.id)}
-						class="group flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 {activeTab === tab.id
-							? 'bg-gradient-to-r from-blue-500/20 to-purple-500/10 text-white shadow-lg shadow-blue-500/5 border border-blue-500/30'
-							: 'text-gray-400 hover:bg-gray-800/50 hover:text-white border border-transparent'}"
+						class="group flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 {activeTab ===
+						tab.id
+							? 'border border-blue-500/30 bg-gradient-to-r from-blue-500/20 to-purple-500/10 text-white shadow-lg shadow-blue-500/5'
+							: 'border border-transparent text-gray-400 hover:bg-gray-800/50 hover:text-white'}"
 					>
 						{#if tab.icon === 'home'}
-							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+							<svg
+								class="h-5 w-5 {activeTab === tab.id
+									? 'text-blue-400'
+									: 'text-gray-500 group-hover:text-gray-300'}"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+								/>
 							</svg>
 						{:else if tab.icon === 'calendar'}
-							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+							<svg
+								class="h-5 w-5 {activeTab === tab.id
+									? 'text-blue-400'
+									: 'text-gray-500 group-hover:text-gray-300'}"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+								/>
 							</svg>
 						{:else if tab.icon === 'ticket'}
-							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+							<svg
+								class="h-5 w-5 {activeTab === tab.id
+									? 'text-blue-400'
+									: 'text-gray-500 group-hover:text-gray-300'}"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+								/>
 							</svg>
 						{:else if tab.icon === 'calendar-days'}
-							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
+							<svg
+								class="h-5 w-5 {activeTab === tab.id
+									? 'text-blue-400'
+									: 'text-gray-500 group-hover:text-gray-300'}"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z"
+								/>
 							</svg>
 						{:else if tab.icon === 'receipt'}
-							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+							<svg
+								class="h-5 w-5 {activeTab === tab.id
+									? 'text-blue-400'
+									: 'text-gray-500 group-hover:text-gray-300'}"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+								/>
 							</svg>
 						{:else if tab.icon === 'users'}
-							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+							<svg
+								class="h-5 w-5 {activeTab === tab.id
+									? 'text-blue-400'
+									: 'text-gray-500 group-hover:text-gray-300'}"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+								/>
 							</svg>
 						{:else if tab.icon === 'user'}
-							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+							<svg
+								class="h-5 w-5 {activeTab === tab.id
+									? 'text-blue-400'
+									: 'text-gray-500 group-hover:text-gray-300'}"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+								/>
 							</svg>
 						{:else if tab.icon === 'trophy'}
-							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+							<svg
+								class="h-5 w-5 {activeTab === tab.id
+									? 'text-blue-400'
+									: 'text-gray-500 group-hover:text-gray-300'}"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+								/>
 							</svg>
 						{:else if tab.icon === 'id-card'}
-							<svg class="h-5 w-5 {activeTab === tab.id ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V4a2 2 0 114 0v2m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+							<svg
+								class="h-5 w-5 {activeTab === tab.id
+									? 'text-blue-400'
+									: 'text-gray-500 group-hover:text-gray-300'}"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V4a2 2 0 114 0v2m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"
+								/>
 							</svg>
 						{/if}
 						{tab.name}
 						{#if activeTab === tab.id}
-							<span class="ml-auto h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
+							<span class="ml-auto h-2 w-2 animate-pulse rounded-full bg-blue-400"></span>
 						{/if}
 					</button>
 				{/each}
@@ -362,11 +528,21 @@
 						>
 							{#if sidebarOpen}
 								<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M6 18L18 6M6 6l12 12"
+									/>
 								</svg>
 							{:else}
 								<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M4 6h16M4 12h16M4 18h16"
+									/>
 								</svg>
 							{/if}
 						</button>
@@ -384,11 +560,13 @@
 					</div>
 					<div class="flex items-center gap-4">
 						<div class="hidden items-center gap-2 rounded-lg bg-gray-800/50 px-3 py-1.5 sm:flex">
-							<div class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></div>
+							<div class="h-2 w-2 animate-pulse rounded-full bg-green-400"></div>
 							<span class="text-sm text-gray-300">{data.user.email}</span>
 						</div>
 						<!-- Mobile user indicator -->
-						<div class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-xs font-bold text-white sm:hidden">
+						<div
+							class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-xs font-bold text-white sm:hidden"
+						>
 							{data.user.email.charAt(0).toUpperCase()}
 						</div>
 					</div>
@@ -398,11 +576,23 @@
 			<div class="p-4 lg:p-8">
 				<!-- Success/Error Messages -->
 				{#if form?.success}
-					<div class="mb-6 rounded-xl border border-green-500/30 bg-gradient-to-r from-green-500/10 to-emerald-500/5 p-4 shadow-lg shadow-green-500/5">
+					<div
+						class="mb-6 rounded-xl border border-green-500/30 bg-gradient-to-r from-green-500/10 to-emerald-500/5 p-4 shadow-lg shadow-green-500/5"
+					>
 						<div class="flex items-center gap-3">
 							<div class="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/20">
-								<svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+								<svg
+									class="h-5 w-5 text-green-400"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M5 13l4 4L19 7"
+									/>
 								</svg>
 							</div>
 							<p class="text-sm font-medium text-green-400">{form.message}</p>
@@ -411,11 +601,23 @@
 				{/if}
 
 				{#if form?.error}
-					<div class="mb-6 rounded-xl border border-red-500/30 bg-gradient-to-r from-red-500/10 to-rose-500/5 p-4 shadow-lg shadow-red-500/5">
+					<div
+						class="mb-6 rounded-xl border border-red-500/30 bg-gradient-to-r from-red-500/10 to-rose-500/5 p-4 shadow-lg shadow-red-500/5"
+					>
 						<div class="flex items-center gap-3">
 							<div class="flex h-8 w-8 items-center justify-center rounded-full bg-red-500/20">
-								<svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+								<svg
+									class="h-5 w-5 text-red-400"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M6 18L18 6M6 6l12 12"
+									/>
 								</svg>
 							</div>
 							<p class="text-sm font-medium text-red-400">{form.error}</p>
@@ -427,12 +629,28 @@
 				{#if activeTab === 'overview'}
 					<!-- Stats Cards -->
 					<div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-						<div class="group relative overflow-hidden rounded-xl border border-blue-500/30 bg-gradient-to-br from-blue-950/50 via-gray-900 to-gray-950 p-5 transition-all duration-300 hover:border-blue-500/60 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-1">
-							<div class="absolute top-0 right-0 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl group-hover:bg-blue-500/30 transition-colors"></div>
+						<div
+							class="group relative overflow-hidden rounded-xl border border-blue-500/30 bg-gradient-to-br from-blue-950/50 via-gray-900 to-gray-950 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/60 hover:shadow-lg hover:shadow-blue-500/10"
+						>
+							<div
+								class="absolute top-0 right-0 h-24 w-24 rounded-full bg-blue-500/20 blur-2xl transition-colors group-hover:bg-blue-500/30"
+							></div>
 							<div class="relative flex items-center gap-4">
-								<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
-									<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+								<div
+									class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30 transition-transform group-hover:scale-110"
+								>
+									<svg
+										class="h-6 w-6 text-white"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+										/>
 									</svg>
 								</div>
 								<div>
@@ -442,12 +660,28 @@
 							</div>
 						</div>
 
-						<div class="group relative overflow-hidden rounded-xl border border-green-500/30 bg-gradient-to-br from-green-950/50 via-gray-900 to-gray-950 p-5 transition-all duration-300 hover:border-green-500/60 hover:shadow-lg hover:shadow-green-500/10 hover:-translate-y-1">
-							<div class="absolute top-0 right-0 w-24 h-24 bg-green-500/20 rounded-full blur-2xl group-hover:bg-green-500/30 transition-colors"></div>
+						<div
+							class="group relative overflow-hidden rounded-xl border border-green-500/30 bg-gradient-to-br from-green-950/50 via-gray-900 to-gray-950 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-green-500/60 hover:shadow-lg hover:shadow-green-500/10"
+						>
+							<div
+								class="absolute top-0 right-0 h-24 w-24 rounded-full bg-green-500/20 blur-2xl transition-colors group-hover:bg-green-500/30"
+							></div>
 							<div class="relative flex items-center gap-4">
-								<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform">
-									<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+								<div
+									class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg shadow-green-500/30 transition-transform group-hover:scale-110"
+								>
+									<svg
+										class="h-6 w-6 text-white"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
 									</svg>
 								</div>
 								<div>
@@ -457,12 +691,28 @@
 							</div>
 						</div>
 
-						<div class="group relative overflow-hidden rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-950/50 via-gray-900 to-gray-950 p-5 transition-all duration-300 hover:border-purple-500/60 hover:shadow-lg hover:shadow-purple-500/10 hover:-translate-y-1">
-							<div class="absolute top-0 right-0 w-24 h-24 bg-purple-500/20 rounded-full blur-2xl group-hover:bg-purple-500/30 transition-colors"></div>
+						<div
+							class="group relative overflow-hidden rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-950/50 via-gray-900 to-gray-950 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-purple-500/60 hover:shadow-lg hover:shadow-purple-500/10"
+						>
+							<div
+								class="absolute top-0 right-0 h-24 w-24 rounded-full bg-purple-500/20 blur-2xl transition-colors group-hover:bg-purple-500/30"
+							></div>
 							<div class="relative flex items-center gap-4">
-								<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-transform">
-									<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+								<div
+									class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 shadow-lg shadow-purple-500/30 transition-transform group-hover:scale-110"
+								>
+									<svg
+										class="h-6 w-6 text-white"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+										/>
 									</svg>
 								</div>
 								<div>
@@ -472,12 +722,28 @@
 							</div>
 						</div>
 
-						<div class="group relative overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-950/50 via-gray-900 to-gray-950 p-5 transition-all duration-300 hover:border-amber-500/60 hover:shadow-lg hover:shadow-amber-500/10 hover:-translate-y-1">
-							<div class="absolute top-0 right-0 w-24 h-24 bg-amber-500/20 rounded-full blur-2xl group-hover:bg-amber-500/30 transition-colors"></div>
+						<div
+							class="group relative overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-950/50 via-gray-900 to-gray-950 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/60 hover:shadow-lg hover:shadow-amber-500/10"
+						>
+							<div
+								class="absolute top-0 right-0 h-24 w-24 rounded-full bg-amber-500/20 blur-2xl transition-colors group-hover:bg-amber-500/30"
+							></div>
 							<div class="relative flex items-center gap-4">
-								<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform">
-									<svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+								<div
+									class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/30 transition-transform group-hover:scale-110"
+								>
+									<svg
+										class="h-6 w-6 text-white"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+										/>
 									</svg>
 								</div>
 								<div>
@@ -493,20 +759,37 @@
 						<!-- Quick Actions -->
 						<div class="lg:col-span-1">
 							<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
-								<h3 class="mb-4 text-lg font-semibold text-white flex items-center gap-2">
-									<svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+								<h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+									<svg
+										class="h-5 w-5 text-blue-400"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M13 10V3L4 14h7v7l9-11h-7z"
+										/>
 									</svg>
 									Quick Actions
 								</h3>
 								<div class="space-y-3">
 									<a
 										href="/admin/events/new"
-										class="flex items-center gap-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4 transition-all hover:border-blue-500/50 hover:bg-gray-800 group"
+										class="group flex items-center gap-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4 transition-all hover:border-blue-500/50 hover:bg-gray-800"
 									>
-										<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400 group-hover:bg-blue-500/30 transition-colors">
+										<div
+											class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400 transition-colors group-hover:bg-blue-500/30"
+										>
 											<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M12 4v16m8-8H4"
+												/>
 											</svg>
 										</div>
 										<div>
@@ -517,11 +800,18 @@
 
 									<button
 										onclick={() => switchTab('users')}
-										class="flex w-full items-center gap-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4 transition-all hover:border-purple-500/50 hover:bg-gray-800 group text-left"
+										class="group flex w-full items-center gap-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4 text-left transition-all hover:border-purple-500/50 hover:bg-gray-800"
 									>
-										<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20 text-purple-400 group-hover:bg-purple-500/30 transition-colors">
+										<div
+											class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20 text-purple-400 transition-colors group-hover:bg-purple-500/30"
+										>
 											<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+												/>
 											</svg>
 										</div>
 										<div>
@@ -532,11 +822,18 @@
 
 									<button
 										onclick={() => switchTab('staff')}
-										class="flex w-full items-center gap-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4 transition-all hover:border-green-500/50 hover:bg-gray-800 group text-left"
+										class="group flex w-full items-center gap-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4 text-left transition-all hover:border-green-500/50 hover:bg-gray-800"
 									>
-										<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20 text-green-400 group-hover:bg-green-500/30 transition-colors">
+										<div
+											class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20 text-green-400 transition-colors group-hover:bg-green-500/30"
+										>
 											<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+												/>
 											</svg>
 										</div>
 										<div>
@@ -551,16 +848,26 @@
 						<!-- Recent Events -->
 						<div class="lg:col-span-2">
 							<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
-								<div class="flex items-center justify-between mb-4">
-									<h3 class="text-lg font-semibold text-white flex items-center gap-2">
-										<svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+								<div class="mb-4 flex items-center justify-between">
+									<h3 class="flex items-center gap-2 text-lg font-semibold text-white">
+										<svg
+											class="h-5 w-5 text-blue-400"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+											/>
 										</svg>
 										Recent Events
 									</h3>
 									<button
 										onclick={() => switchTab('events')}
-										class="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+										class="text-sm text-blue-400 transition-colors hover:text-blue-300"
 									>
 										View all
 									</button>
@@ -570,14 +877,20 @@
 										{#each data.events.slice(0, 5) as event, i}
 											<a
 												href="/admin/events/{event.id}"
-												class="flex items-center justify-between rounded-lg border border-gray-700/50 bg-gray-800/30 p-4 transition-all hover:border-gray-600 hover:bg-gray-800/50 group"
+												class="group flex items-center justify-between rounded-lg border border-gray-700/50 bg-gray-800/30 p-4 transition-all hover:border-gray-600 hover:bg-gray-800/50"
 											>
 												<div class="flex items-center gap-4">
-													<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-700/50 text-sm font-bold text-gray-300">
+													<div
+														class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-700/50 text-sm font-bold text-gray-300"
+													>
 														{i + 1}
 													</div>
 													<div>
-														<div class="font-medium text-white group-hover:text-blue-400 transition-colors">{event.title}</div>
+														<div
+															class="font-medium text-white transition-colors group-hover:text-blue-400"
+														>
+															{event.title}
+														</div>
 														<div class="text-sm text-gray-400">
 															{event.eventDate
 																? new Date(event.eventDate).toLocaleDateString('en-US', {
@@ -592,24 +905,49 @@
 														</div>
 													</div>
 												</div>
-												<svg class="h-5 w-5 text-gray-500 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+												<svg
+													class="h-5 w-5 text-gray-500 transition-colors group-hover:text-blue-400"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M9 5l7 7-7 7"
+													/>
 												</svg>
 											</a>
 										{/each}
 									</div>
 								{:else}
 									<div class="rounded-lg border border-dashed border-gray-700 p-8 text-center">
-										<svg class="mx-auto h-12 w-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+										<svg
+											class="mx-auto h-12 w-12 text-gray-600"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+											/>
 										</svg>
 										<p class="mt-4 text-gray-400">No events yet</p>
 										<a
 											href="/admin/events/new"
-											class="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 transition-colors"
+											class="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
 										>
 											<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M12 4v16m8-8H4"
+												/>
 											</svg>
 											Create First Event
 										</a>
@@ -621,16 +959,26 @@
 
 					<!-- Recent Orders Section -->
 					<div class="mt-6 rounded-xl border border-gray-800 bg-gray-900/50 p-6">
-						<div class="flex items-center justify-between mb-4">
-							<h3 class="text-lg font-semibold text-white flex items-center gap-2">
-								<svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+						<div class="mb-4 flex items-center justify-between">
+							<h3 class="flex items-center gap-2 text-lg font-semibold text-white">
+								<svg
+									class="h-5 w-5 text-green-400"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+									/>
 								</svg>
 								Recent Orders
 							</h3>
 							<button
 								onclick={() => switchTab('orders')}
-								class="text-sm text-green-400 hover:text-green-300 transition-colors"
+								class="text-sm text-green-400 transition-colors hover:text-green-300"
 							>
 								View all
 							</button>
@@ -652,7 +1000,9 @@
 												<td class="py-3 text-sm text-gray-300">{order.userEmail}</td>
 												<td class="py-3 text-sm font-semibold text-green-400">${order.amount}</td>
 												<td class="py-3">
-													<span class="rounded-full bg-blue-500/20 px-2 py-1 text-xs font-medium text-blue-400">
+													<span
+														class="rounded-full bg-blue-500/20 px-2 py-1 text-xs font-medium text-blue-400"
+													>
 														{order.meta?.type || 'payment'}
 													</span>
 												</td>
@@ -674,12 +1024,24 @@
 
 				<!-- Events Tab -->
 				{#if activeTab === 'events'}
-					<div class="rounded-xl border border-gray-800 bg-gray-900/50 overflow-hidden">
-						<div class="flex items-center justify-between border-b border-gray-800 bg-gray-800/30 px-6 py-4">
+					<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
+						<div
+							class="flex items-center justify-between border-b border-gray-800 bg-gray-800/30 px-6 py-4"
+						>
 							<div class="flex items-center gap-3">
 								<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20">
-									<svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+									<svg
+										class="h-5 w-5 text-blue-400"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+										/>
 									</svg>
 								</div>
 								<div>
@@ -689,10 +1051,15 @@
 							</div>
 							<a
 								href="/admin/events/new"
-								class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:shadow-blue-500/30 hover:scale-105"
+								class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-105 hover:shadow-blue-500/30"
 							>
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M12 4v16m8-8H4"
+									/>
 								</svg>
 								Create Event
 							</a>
@@ -702,12 +1069,30 @@
 							<table class="w-full">
 								<thead class="bg-gray-800/50">
 									<tr>
-										<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Event</th>
-										<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Date</th>
-										<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Format</th>
-										<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Location</th>
-										<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Price</th>
-										<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Actions</th>
+										<th
+											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+											>Event</th
+										>
+										<th
+											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+											>Date</th
+										>
+										<th
+											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+											>Format</th
+										>
+										<th
+											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+											>Location</th
+										>
+										<th
+											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+											>Price</th
+										>
+										<th
+											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+											>Actions</th
+										>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-gray-800">
@@ -715,11 +1100,17 @@
 										<tr class="group transition-colors hover:bg-gray-800/50">
 											<td class="px-6 py-4">
 												<div class="flex items-center gap-3">
-													<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-700/50 text-sm font-bold text-gray-300">
+													<div
+														class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-700/50 text-sm font-bold text-gray-300"
+													>
 														{event.title.charAt(0)}
 													</div>
 													<div>
-														<div class="font-medium text-white group-hover:text-blue-400 transition-colors">{event.title}</div>
+														<div
+															class="font-medium text-white transition-colors group-hover:text-blue-400"
+														>
+															{event.title}
+														</div>
 														{#if event.circuit}
 															<div class="text-xs text-gray-500">{event.circuit}</div>
 														{/if}
@@ -736,11 +1127,15 @@
 														})}
 													</div>
 												{:else}
-													<span class="rounded-full bg-gray-700 px-2 py-1 text-xs text-gray-400">TBA</span>
+													<span class="rounded-full bg-gray-700 px-2 py-1 text-xs text-gray-400"
+														>TBA</span
+													>
 												{/if}
 											</td>
 											<td class="px-6 py-4">
-												<span class="rounded-full bg-blue-500/20 px-2.5 py-1 text-xs font-medium text-blue-400">
+												<span
+													class="rounded-full bg-blue-500/20 px-2.5 py-1 text-xs font-medium text-blue-400"
+												>
 													{event.format || 'N/A'}
 												</span>
 											</td>
@@ -748,7 +1143,9 @@
 												{event.location || 'TBA'}
 											</td>
 											<td class="px-6 py-4">
-												<span class="text-sm font-semibold text-green-400">${parseFloat(event.price).toFixed(2)}</span>
+												<span class="text-sm font-semibold text-green-400"
+													>${parseFloat(event.price).toFixed(2)}</span
+												>
 											</td>
 											<td class="px-6 py-4">
 												<a
@@ -756,8 +1153,18 @@
 													class="inline-flex items-center gap-1.5 rounded-lg bg-gray-700 px-3 py-1.5 text-sm font-medium text-white transition-all hover:bg-gray-600"
 												>
 													Manage
-													<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+													<svg
+														class="h-4 w-4"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M9 5l7 7-7 7"
+														/>
 													</svg>
 												</a>
 											</td>
@@ -766,16 +1173,36 @@
 										<tr>
 											<td colspan="6" class="px-6 py-12 text-center">
 												<div class="flex flex-col items-center">
-													<svg class="h-12 w-12 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+													<svg
+														class="h-12 w-12 text-gray-600 mb-4"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+														/>
 													</svg>
 													<p class="text-gray-400">No events yet</p>
 													<a
 														href="/admin/events/new"
 														class="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 transition-colors"
 													>
-														<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+														<svg
+															class="h-4 w-4"
+															fill="none"
+															stroke="currentColor"
+															viewBox="0 0 24 24"
+														>
+															<path
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																stroke-width="2"
+																d="M12 4v16m8-8H4"
+															/>
 														</svg>
 														Create First Event
 													</a>
@@ -793,25 +1220,46 @@
 				{#if activeTab === 'seasons'}
 					<div class="space-y-6">
 						<!-- Header -->
-						<div class="rounded-xl border border-gray-800 bg-gray-900/50 overflow-hidden">
-							<div class="flex items-center justify-between border-b border-gray-800 bg-gray-800/30 px-6 py-4">
+						<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
+							<div
+								class="flex items-center justify-between border-b border-gray-800 bg-gray-800/30 px-6 py-4"
+							>
 								<div class="flex items-center gap-3">
-									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20">
-										<svg class="h-5 w-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+									<div
+										class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20"
+									>
+										<svg
+											class="h-5 w-5 text-amber-400"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+											/>
 										</svg>
 									</div>
 									<div>
 										<h2 class="text-lg font-semibold text-white">Calendar Events</h2>
-										<p class="text-sm text-gray-400">Manage LSS tournament seasons and competitive events</p>
+										<p class="text-sm text-gray-400">
+											Manage LSS tournament seasons and competitive events
+										</p>
 									</div>
 								</div>
 								<button
-									onclick={() => showAddSeasonForm = !showAddSeasonForm}
-									class="flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 transition-colors"
+									onclick={() => (showAddSeasonForm = !showAddSeasonForm)}
+									class="flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-600"
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M12 4v16m8-8H4"
+										/>
 									</svg>
 									Add Event
 								</button>
@@ -819,18 +1267,25 @@
 
 							<!-- Add Event Form -->
 							{#if showAddSeasonForm}
-								<form method="POST" action="?/createLssSeason" use:enhance={() => {
-									return async ({ result, update }) => {
-										if (result.type === 'success') {
-											showAddSeasonForm = false;
-											await invalidateAll();
-										}
-										await update();
-									};
-								}} class="border-b border-gray-800 bg-gray-800/20 p-6">
+								<form
+									method="POST"
+									action="?/createLssSeason"
+									use:enhance={() => {
+										return async ({ result, update }) => {
+											if (result.type === 'success') {
+												showAddSeasonForm = false;
+												await invalidateAll();
+											}
+											await update();
+										};
+									}}
+									class="border-b border-gray-800 bg-gray-800/20 p-6"
+								>
 									<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 										<div>
-											<label for="seasonName" class="block text-sm font-medium text-gray-300 mb-1">Season Name *</label>
+											<label for="seasonName" class="mb-1 block text-sm font-medium text-gray-300"
+												>Season Name *</label
+											>
 											<input
 												id="seasonName"
 												name="name"
@@ -841,7 +1296,9 @@
 											/>
 										</div>
 										<div>
-											<label for="eventType" class="block text-sm font-medium text-gray-300 mb-1">Event Type</label>
+											<label for="eventType" class="mb-1 block text-sm font-medium text-gray-300"
+												>Event Type</label
+											>
 											<select
 												id="eventType"
 												name="eventType"
@@ -859,7 +1316,9 @@
 											</select>
 										</div>
 										<div>
-											<label for="startDate" class="block text-sm font-medium text-gray-300 mb-1">Start Date *</label>
+											<label for="startDate" class="mb-1 block text-sm font-medium text-gray-300"
+												>Start Date *</label
+											>
 											<input
 												id="startDate"
 												name="startDate"
@@ -869,7 +1328,9 @@
 											/>
 										</div>
 										<div>
-											<label for="endDate" class="block text-sm font-medium text-gray-300 mb-1">End Date *</label>
+											<label for="endDate" class="mb-1 block text-sm font-medium text-gray-300"
+												>End Date *</label
+											>
 											<input
 												id="endDate"
 												name="endDate"
@@ -880,20 +1341,26 @@
 										</div>
 									</div>
 									<div class="mt-4">
-										<label class="block text-sm font-medium text-gray-300 mb-2">Format(s)</label>
+										<label class="mb-2 block text-sm font-medium text-gray-300">Format(s)</label>
 										<div class="flex flex-wrap gap-3">
 											{#each ['Classic Constructed', 'Blitz', 'Silver Age', 'Draft', 'Sealed', 'Team Event', 'Living Legend'] as fmt}
-												<label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-													<input type="checkbox" name="format" value={fmt}
-														class="rounded border-gray-700 bg-gray-900 text-amber-500 focus:ring-amber-500" />
+												<label class="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
+													<input
+														type="checkbox"
+														name="format"
+														value={fmt}
+														class="rounded border-gray-700 bg-gray-900 text-amber-500 focus:ring-amber-500"
+													/>
 													{fmt}
 												</label>
 											{/each}
 										</div>
 									</div>
-									<div class="grid gap-4 md:grid-cols-2 mt-4">
+									<div class="mt-4 grid gap-4 md:grid-cols-2">
 										<div>
-											<label for="description" class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+											<label for="description" class="mb-1 block text-sm font-medium text-gray-300"
+												>Description</label
+											>
 											<textarea
 												id="description"
 												name="description"
@@ -903,7 +1370,9 @@
 											></textarea>
 										</div>
 										<div>
-											<label for="link" class="block text-sm font-medium text-gray-300 mb-1">Official Link</label>
+											<label for="link" class="mb-1 block text-sm font-medium text-gray-300"
+												>Official Link</label
+											>
 											<input
 												id="link"
 												name="link"
@@ -913,17 +1382,17 @@
 											/>
 										</div>
 									</div>
-									<div class="flex justify-end gap-3 mt-4">
+									<div class="mt-4 flex justify-end gap-3">
 										<button
 											type="button"
-											onclick={() => showAddSeasonForm = false}
-											class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+											onclick={() => (showAddSeasonForm = false)}
+											class="px-4 py-2 text-sm text-gray-400 transition-colors hover:text-white"
 										>
 											Cancel
 										</button>
 										<button
 											type="submit"
-											class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 transition-colors"
+											class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-600"
 										>
 											Create LSS Event
 										</button>
@@ -932,16 +1401,22 @@
 							{/if}
 
 							<!-- Sub-tabs -->
-							<div class="flex gap-1 px-4 py-3 border-b border-gray-800 bg-gray-800/20">
+							<div class="flex gap-1 border-b border-gray-800 bg-gray-800/20 px-4 py-3">
 								<button
-									onclick={() => calendarSubTab = 'upcoming'}
-									class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors {calendarSubTab === 'upcoming' ? 'bg-amber-500/20 text-amber-400' : 'text-gray-400 hover:text-white hover:bg-gray-800'}"
+									onclick={() => (calendarSubTab = 'upcoming')}
+									class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors {calendarSubTab ===
+									'upcoming'
+										? 'bg-amber-500/20 text-amber-400'
+										: 'text-gray-400 hover:bg-gray-800 hover:text-white'}"
 								>
 									Upcoming/Active ({upcomingLssEvents.length})
 								</button>
 								<button
-									onclick={() => calendarSubTab = 'completed'}
-									class="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors {calendarSubTab === 'completed' ? 'bg-amber-500/20 text-amber-400' : 'text-gray-400 hover:text-white hover:bg-gray-800'}"
+									onclick={() => (calendarSubTab = 'completed')}
+									class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors {calendarSubTab ===
+									'completed'
+										? 'bg-amber-500/20 text-amber-400'
+										: 'text-gray-400 hover:bg-gray-800 hover:text-white'}"
 								>
 									Completed ({completedLssEvents.length})
 								</button>
@@ -953,12 +1428,12 @@
 									<table class="w-full text-sm">
 										<thead class="bg-gray-800/50 text-gray-400">
 											<tr>
-												<th class="text-left px-4 py-2 font-medium">Name</th>
-												<th class="text-left px-4 py-2 font-medium hidden sm:table-cell">Type</th>
-												<th class="text-left px-4 py-2 font-medium hidden lg:table-cell">Format</th>
-												<th class="text-left px-4 py-2 font-medium">Dates</th>
-												<th class="text-left px-4 py-2 font-medium hidden md:table-cell">Status</th>
-												<th class="text-right px-4 py-2 font-medium">Actions</th>
+												<th class="px-4 py-2 text-left font-medium">Name</th>
+												<th class="hidden px-4 py-2 text-left font-medium sm:table-cell">Type</th>
+												<th class="hidden px-4 py-2 text-left font-medium lg:table-cell">Format</th>
+												<th class="px-4 py-2 text-left font-medium">Dates</th>
+												<th class="hidden px-4 py-2 text-left font-medium md:table-cell">Status</th>
+												<th class="px-4 py-2 text-right font-medium">Actions</th>
 											</tr>
 										</thead>
 										<tbody class="divide-y divide-gray-800">
@@ -973,149 +1448,338 @@
 												{#if isEditing}
 													<tr>
 														<td colspan="6" class="p-0">
-															<form method="POST" action="?/updateLssSeason" use:enhance={() => {
-																return async ({ result, update }) => {
-																	if (result.type === 'success') {
-																		editingSeasonId = null;
-																		await invalidateAll();
-																	}
-																	await update();
-																};
-															}} class="p-4 bg-gray-800/30">
+															<form
+																method="POST"
+																action="?/updateLssSeason"
+																use:enhance={() => {
+																	return async ({ result, update }) => {
+																		if (result.type === 'success') {
+																			editingSeasonId = null;
+																			await invalidateAll();
+																		}
+																		await update();
+																	};
+																}}
+																class="bg-gray-800/30 p-4"
+															>
 																<input type="hidden" name="seasonId" value={season.id} />
 																<div class="grid gap-3 md:grid-cols-4">
 																	<div>
-																		<label for="edit-name-{season.id}" class="block text-xs font-medium text-gray-400 mb-1">Name</label>
-																		<input id="edit-name-{season.id}" name="name" type="text" required value={season.name}
-																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none" />
+																		<label
+																			for="edit-name-{season.id}"
+																			class="mb-1 block text-xs font-medium text-gray-400"
+																			>Name</label
+																		>
+																		<input
+																			id="edit-name-{season.id}"
+																			name="name"
+																			type="text"
+																			required
+																			value={season.name}
+																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none"
+																		/>
 																	</div>
 																	<div>
-																		<label for="edit-type-{season.id}" class="block text-xs font-medium text-gray-400 mb-1">Type</label>
-																		<select id="edit-type-{season.id}" name="eventType" class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none">
+																		<label
+																			for="edit-type-{season.id}"
+																			class="mb-1 block text-xs font-medium text-gray-400"
+																			>Type</label
+																		>
+																		<select
+																			id="edit-type-{season.id}"
+																			name="eventType"
+																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none"
+																		>
 																			<option value="">Select</option>
-																			<option value="Skirmish" selected={season.eventType === 'Skirmish'}>Skirmish</option>
-																			<option value="Road to Nationals" selected={season.eventType === 'Road to Nationals'}>Road to Nationals</option>
-																			<option value="ProQuest" selected={season.eventType === 'ProQuest'}>ProQuest</option>
-																			<option value="Pro Tour" selected={season.eventType === 'Pro Tour'}>Pro Tour</option>
-																			<option value="Worlds" selected={season.eventType === 'Worlds'}>Worlds</option>
-																			<option value="Calling" selected={season.eventType === 'Calling'}>Calling</option>
-																			<option value="Battle Hardened" selected={season.eventType === 'Battle Hardened'}>Battle Hardened</option>
-																			<option value="Other" selected={season.eventType === 'Other'}>Other</option>
+																			<option
+																				value="Skirmish"
+																				selected={season.eventType === 'Skirmish'}>Skirmish</option
+																			>
+																			<option
+																				value="Road to Nationals"
+																				selected={season.eventType === 'Road to Nationals'}
+																				>Road to Nationals</option
+																			>
+																			<option
+																				value="ProQuest"
+																				selected={season.eventType === 'ProQuest'}>ProQuest</option
+																			>
+																			<option
+																				value="Pro Tour"
+																				selected={season.eventType === 'Pro Tour'}>Pro Tour</option
+																			>
+																			<option
+																				value="Worlds"
+																				selected={season.eventType === 'Worlds'}>Worlds</option
+																			>
+																			<option
+																				value="Calling"
+																				selected={season.eventType === 'Calling'}>Calling</option
+																			>
+																			<option
+																				value="Battle Hardened"
+																				selected={season.eventType === 'Battle Hardened'}
+																				>Battle Hardened</option
+																			>
+																			<option value="Other" selected={season.eventType === 'Other'}
+																				>Other</option
+																			>
 																		</select>
 																	</div>
 																	<div>
-																		<label for="edit-start-{season.id}" class="block text-xs font-medium text-gray-400 mb-1">Start</label>
-																		<input id="edit-start-{season.id}" name="startDate" type="date" required value={startDate.toISOString().split('T')[0]}
-																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none" />
+																		<label
+																			for="edit-start-{season.id}"
+																			class="mb-1 block text-xs font-medium text-gray-400"
+																			>Start</label
+																		>
+																		<input
+																			id="edit-start-{season.id}"
+																			name="startDate"
+																			type="date"
+																			required
+																			value={startDate.toISOString().split('T')[0]}
+																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none"
+																		/>
 																	</div>
 																	<div>
-																		<label for="edit-end-{season.id}" class="block text-xs font-medium text-gray-400 mb-1">End</label>
-																		<input id="edit-end-{season.id}" name="endDate" type="date" required value={endDate.toISOString().split('T')[0]}
-																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none" />
+																		<label
+																			for="edit-end-{season.id}"
+																			class="mb-1 block text-xs font-medium text-gray-400"
+																			>End</label
+																		>
+																		<input
+																			id="edit-end-{season.id}"
+																			name="endDate"
+																			type="date"
+																			required
+																			value={endDate.toISOString().split('T')[0]}
+																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none"
+																		/>
 																	</div>
 																</div>
 																<div class="mt-3">
-																	<label class="block text-xs font-medium text-gray-400 mb-1">Format(s)</label>
+																	<label class="mb-1 block text-xs font-medium text-gray-400"
+																		>Format(s)</label
+																	>
 																	<div class="flex flex-wrap gap-2">
 																		{#each ['Classic Constructed', 'Blitz', 'Silver Age', 'Draft', 'Sealed', 'Team Event', 'Living Legend'] as fmt}
-																			<label class="flex items-center gap-1.5 text-xs text-gray-300 cursor-pointer">
-																				<input type="checkbox" name="format" value={fmt} checked={(season.format || '').includes(fmt)}
-																					class="rounded border-gray-700 bg-gray-900 text-amber-500 focus:ring-amber-500" />
+																			<label
+																				class="flex cursor-pointer items-center gap-1.5 text-xs text-gray-300"
+																			>
+																				<input
+																					type="checkbox"
+																					name="format"
+																					value={fmt}
+																					checked={(season.format || '').includes(fmt)}
+																					class="rounded border-gray-700 bg-gray-900 text-amber-500 focus:ring-amber-500"
+																				/>
 																				{fmt}
 																			</label>
 																		{/each}
 																	</div>
 																</div>
-																<div class="grid gap-3 md:grid-cols-2 mt-3">
+																<div class="mt-3 grid gap-3 md:grid-cols-2">
 																	<div>
-																		<label for="edit-desc-{season.id}" class="block text-xs font-medium text-gray-400 mb-1">Description</label>
-																		<input id="edit-desc-{season.id}" name="description" type="text" value={season.description || ''} placeholder="Optional..."
-																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:border-amber-500 focus:outline-none" />
+																		<label
+																			for="edit-desc-{season.id}"
+																			class="mb-1 block text-xs font-medium text-gray-400"
+																			>Description</label
+																		>
+																		<input
+																			id="edit-desc-{season.id}"
+																			name="description"
+																			type="text"
+																			value={season.description || ''}
+																			placeholder="Optional..."
+																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:border-amber-500 focus:outline-none"
+																		/>
 																	</div>
 																	<div>
-																		<label for="edit-link-{season.id}" class="block text-xs font-medium text-gray-400 mb-1">Official Link</label>
-																		<input id="edit-link-{season.id}" name="link" type="url" value={season.link || ''} placeholder="https://..."
-																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:border-amber-500 focus:outline-none" />
+																		<label
+																			for="edit-link-{season.id}"
+																			class="mb-1 block text-xs font-medium text-gray-400"
+																			>Official Link</label
+																		>
+																		<input
+																			id="edit-link-{season.id}"
+																			name="link"
+																			type="url"
+																			value={season.link || ''}
+																			placeholder="https://..."
+																			class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white placeholder-gray-500 focus:border-amber-500 focus:outline-none"
+																		/>
 																	</div>
 																</div>
-																<div class="flex items-center justify-between mt-3">
+																<div class="mt-3 flex items-center justify-between">
 																	<label class="flex items-center gap-2 text-xs text-gray-400">
-																		<input type="checkbox" name="isActive" value="true" checked={season.isActive}
-																			class="rounded border-gray-700 bg-gray-900 text-amber-500 focus:ring-amber-500" />
+																		<input
+																			type="checkbox"
+																			name="isActive"
+																			value="true"
+																			checked={season.isActive}
+																			class="rounded border-gray-700 bg-gray-900 text-amber-500 focus:ring-amber-500"
+																		/>
 																		Show on calendar
 																	</label>
 																	<div class="flex gap-2">
-																		<button type="button" onclick={() => editingSeasonId = null}
-																			class="px-3 py-1 text-xs text-gray-400 hover:text-white transition-colors">Cancel</button>
-																		<button type="submit"
-																			class="rounded bg-amber-500 px-3 py-1 text-xs font-medium text-white hover:bg-amber-600 transition-colors">Save</button>
+																		<button
+																			type="button"
+																			onclick={() => (editingSeasonId = null)}
+																			class="px-3 py-1 text-xs text-gray-400 transition-colors hover:text-white"
+																			>Cancel</button
+																		>
+																		<button
+																			type="submit"
+																			class="rounded bg-amber-500 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-amber-600"
+																			>Save</button
+																		>
 																	</div>
 																</div>
 															</form>
 														</td>
 													</tr>
 												{:else}
-													<tr class="hover:bg-gray-800/30 transition-colors">
+													<tr class="transition-colors hover:bg-gray-800/30">
 														<td class="px-4 py-2">
 															<div class="flex items-center gap-2">
-																<span class="text-white font-medium truncate max-w-[200px]">{season.name}</span>
+																<span class="max-w-[200px] truncate font-medium text-white"
+																	>{season.name}</span
+																>
 																{#if season.link}
-																	<a href={season.link} target="_blank" rel="noopener noreferrer" class="text-amber-400 hover:text-amber-300 flex-shrink-0" aria-label="View official page">
-																		<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+																	<a
+																		href={season.link}
+																		target="_blank"
+																		rel="noopener noreferrer"
+																		class="flex-shrink-0 text-amber-400 hover:text-amber-300"
+																		aria-label="View official page"
+																	>
+																		<svg
+																			class="h-3.5 w-3.5"
+																			fill="none"
+																			stroke="currentColor"
+																			viewBox="0 0 24 24"
+																		>
+																			<path
+																				stroke-linecap="round"
+																				stroke-linejoin="round"
+																				stroke-width="2"
+																				d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+																			/>
 																		</svg>
 																	</a>
 																{/if}
 																{#if !season.isActive}
-																	<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-500/20 text-red-400">Hidden</span>
+																	<span
+																		class="rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-medium text-red-400"
+																		>Hidden</span
+																	>
 																{/if}
 															</div>
 														</td>
-														<td class="px-4 py-2 hidden sm:table-cell">
+														<td class="hidden px-4 py-2 sm:table-cell">
 															{#if season.eventType}
-																<span class="px-2 py-0.5 rounded text-xs bg-gray-700 text-gray-300">{season.eventType}</span>
+																<span class="rounded bg-gray-700 px-2 py-0.5 text-xs text-gray-300"
+																	>{season.eventType}</span
+																>
 															{:else}
 																<span class="text-gray-500">-</span>
 															{/if}
 														</td>
-														<td class="px-4 py-2 hidden lg:table-cell">
+														<td class="hidden px-4 py-2 lg:table-cell">
 															{#if season.format}
-																<span class="text-xs text-gray-300" title={season.format}>{season.format.length > 25 ? season.format.substring(0, 25) + '...' : season.format}</span>
+																<span class="text-xs text-gray-300" title={season.format}
+																	>{season.format.length > 25
+																		? season.format.substring(0, 25) + '...'
+																		: season.format}</span
+																>
 															{:else}
 																<span class="text-gray-500">-</span>
 															{/if}
 														</td>
-														<td class="px-4 py-2 text-gray-400 whitespace-nowrap">
-															{startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+														<td class="px-4 py-2 whitespace-nowrap text-gray-400">
+															{startDate.toLocaleDateString('en-US', {
+																month: 'short',
+																day: 'numeric'
+															})} - {endDate.toLocaleDateString('en-US', {
+																month: 'short',
+																day: 'numeric',
+																year: 'numeric'
+															})}
 														</td>
-														<td class="px-4 py-2 hidden md:table-cell">
+														<td class="hidden px-4 py-2 md:table-cell">
 															{#if isActive}
-																<span class="px-2 py-0.5 rounded text-xs bg-emerald-500/20 text-emerald-400">Active</span>
+																<span
+																	class="rounded bg-emerald-500/20 px-2 py-0.5 text-xs text-emerald-400"
+																	>Active</span
+																>
 															{:else if isPast}
-																<span class="px-2 py-0.5 rounded text-xs bg-gray-500/20 text-gray-400">Completed</span>
+																<span
+																	class="rounded bg-gray-500/20 px-2 py-0.5 text-xs text-gray-400"
+																	>Completed</span
+																>
 															{:else}
-																<span class="px-2 py-0.5 rounded text-xs bg-blue-500/20 text-blue-400">Upcoming</span>
+																<span
+																	class="rounded bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400"
+																	>Upcoming</span
+																>
 															{/if}
 														</td>
 														<td class="px-4 py-2">
 															<div class="flex items-center justify-end gap-1">
-																<button onclick={() => editingSeasonId = season.id}
-																	class="p-1.5 rounded text-gray-400 hover:text-white hover:bg-gray-800 transition-colors" title="Edit" aria-label="Edit event">
-																	<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+																<button
+																	onclick={() => (editingSeasonId = season.id)}
+																	class="rounded p-1.5 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
+																	title="Edit"
+																	aria-label="Edit event"
+																>
+																	<svg
+																		class="h-3.5 w-3.5"
+																		fill="none"
+																		stroke="currentColor"
+																		viewBox="0 0 24 24"
+																	>
+																		<path
+																			stroke-linecap="round"
+																			stroke-linejoin="round"
+																			stroke-width="2"
+																			d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+																		/>
 																	</svg>
 																</button>
-																<form method="POST" action="?/deleteLssSeason" use:enhance={() => {
-																	return async ({ result, update }) => {
-																		if (result.type === 'success') { await invalidateAll(); }
-																		await update();
-																	};
-																}}>
+																<form
+																	method="POST"
+																	action="?/deleteLssSeason"
+																	use:enhance={() => {
+																		return async ({ result, update }) => {
+																			if (result.type === 'success') {
+																				await invalidateAll();
+																			}
+																			await update();
+																		};
+																	}}
+																>
 																	<input type="hidden" name="seasonId" value={season.id} />
-																	<button type="submit" onclick={(e) => { if (!confirm('Delete this event?')) e.preventDefault(); }}
-																		class="p-1.5 rounded text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete" aria-label="Delete event">
-																		<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+																	<button
+																		type="submit"
+																		onclick={(e) => {
+																			if (!confirm('Delete this event?')) e.preventDefault();
+																		}}
+																		class="rounded p-1.5 text-gray-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
+																		title="Delete"
+																		aria-label="Delete event"
+																	>
+																		<svg
+																			class="h-3.5 w-3.5"
+																			fill="none"
+																			stroke="currentColor"
+																			viewBox="0 0 24 24"
+																		>
+																			<path
+																				stroke-linecap="round"
+																				stroke-linejoin="round"
+																				stroke-width="2"
+																				d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+																			/>
 																		</svg>
 																	</button>
 																</form>
@@ -1129,14 +1793,30 @@
 								</div>
 							{:else}
 								<div class="p-8 text-center">
-									<div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-800">
-										<svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+									<div
+										class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-800"
+									>
+										<svg
+											class="h-6 w-6 text-gray-600"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+											/>
 										</svg>
 									</div>
-									<p class="text-gray-400">No {calendarSubTab === 'upcoming' ? 'upcoming' : 'completed'} events</p>
+									<p class="text-gray-400">
+										No {calendarSubTab === 'upcoming' ? 'upcoming' : 'completed'} events
+									</p>
 									{#if calendarSubTab === 'upcoming'}
-										<p class="text-sm text-gray-500 mt-1">Click "Add Event" to create a new tournament season</p>
+										<p class="mt-1 text-sm text-gray-500">
+											Click "Add Event" to create a new tournament season
+										</p>
 									{/if}
 								</div>
 							{/if}
@@ -1146,12 +1826,24 @@
 
 				<!-- Orders Tab -->
 				{#if activeTab === 'orders'}
-					<div class="rounded-xl border border-gray-800 bg-gray-900/50 overflow-hidden">
-						<div class="flex items-center justify-between border-b border-gray-800 bg-gray-800/30 px-6 py-4">
+					<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
+						<div
+							class="flex items-center justify-between border-b border-gray-800 bg-gray-800/30 px-6 py-4"
+						>
 							<div class="flex items-center gap-3">
 								<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20">
-									<svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+									<svg
+										class="h-5 w-5 text-green-400"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+										/>
 									</svg>
 								</div>
 								<div>
@@ -1165,10 +1857,22 @@
 							<table class="w-full">
 								<thead class="bg-gray-800/50">
 									<tr>
-										<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Customer</th>
-										<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Amount</th>
-										<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Type</th>
-										<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Date</th>
+										<th
+											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+											>Customer</th
+										>
+										<th
+											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+											>Amount</th
+										>
+										<th
+											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+											>Type</th
+										>
+										<th
+											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+											>Date</th
+										>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-gray-800">
@@ -1176,7 +1880,9 @@
 										<tr class="group transition-colors hover:bg-gray-800/50">
 											<td class="px-6 py-4">
 												<div class="flex items-center gap-3">
-													<div class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700/50 text-sm font-bold text-gray-300">
+													<div
+														class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700/50 text-sm font-bold text-gray-300"
+													>
 														{order.userEmail.charAt(0).toUpperCase()}
 													</div>
 													<span class="text-sm text-gray-300">{order.userEmail}</span>
@@ -1186,7 +1892,9 @@
 												<span class="text-lg font-bold text-green-400">${order.amount}</span>
 											</td>
 											<td class="px-6 py-4">
-												<span class="rounded-full bg-blue-500/20 px-2.5 py-1 text-xs font-medium text-blue-400 capitalize">
+												<span
+													class="rounded-full bg-blue-500/20 px-2.5 py-1 text-xs font-medium text-blue-400 capitalize"
+												>
 													{order.meta?.type || 'payment'}
 												</span>
 											</td>
@@ -1202,11 +1910,23 @@
 										<tr>
 											<td colspan="4" class="px-6 py-12 text-center">
 												<div class="flex flex-col items-center">
-													<svg class="h-12 w-12 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+													<svg
+														class="h-12 w-12 text-gray-600 mb-4"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+														/>
 													</svg>
 													<p class="text-gray-400">No orders yet</p>
-													<p class="text-sm text-gray-500 mt-1">Orders will appear here when customers make purchases</p>
+													<p class="text-sm text-gray-500 mt-1">
+														Orders will appear here when customers make purchases
+													</p>
 												</div>
 											</td>
 										</tr>
@@ -1219,12 +1939,24 @@
 
 				<!-- Tournament Staff Tab -->
 				{#if activeTab === 'staff'}
-					<div class="rounded-xl border border-gray-800 bg-gray-900/50 overflow-hidden">
-						<div class="flex items-center justify-between border-b border-gray-800 bg-gray-800/30 px-6 py-4">
+					<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
+						<div
+							class="flex items-center justify-between border-b border-gray-800 bg-gray-800/30 px-6 py-4"
+						>
 							<div class="flex items-center gap-3">
 								<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20">
-									<svg class="h-5 w-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+									<svg
+										class="h-5 w-5 text-purple-400"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+										/>
 									</svg>
 								</div>
 								<div>
@@ -1237,7 +1969,12 @@
 								class="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2 text-sm font-medium text-gray-300 transition-all hover:bg-gray-700 hover:text-white"
 							>
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M12 4v16m8-8H4"
+									/>
 								</svg>
 								Add Staff
 							</button>
@@ -1246,14 +1983,26 @@
 						<div class="p-6">
 							{#if data.tournamentStaff.length === 0}
 								<div class="rounded-xl border border-dashed border-gray-700 p-12 text-center">
-									<svg class="mx-auto h-12 w-12 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+									<svg
+										class="mx-auto mb-4 h-12 w-12 text-gray-600"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+										/>
 									</svg>
 									<p class="text-gray-400">No tournament staff members yet</p>
-									<p class="text-sm text-gray-500 mt-2">Assign the "tournament_staff" role to users in User Management</p>
+									<p class="mt-2 text-sm text-gray-500">
+										Assign the "tournament staff" role to users in User Management
+									</p>
 									<button
 										onclick={() => switchTab('users')}
-										class="mt-4 inline-flex items-center gap-2 rounded-lg bg-purple-500 px-4 py-2 text-sm font-medium text-white hover:bg-purple-600 transition-colors"
+										class="mt-4 inline-flex items-center gap-2 rounded-lg bg-purple-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-600"
 									>
 										Go to User Management
 									</button>
@@ -1263,21 +2012,35 @@
 									{#each data.tournamentStaff as staff}
 										<div class="rounded-xl border border-gray-700 bg-gray-800/30 p-5">
 											<div class="mb-4 flex items-center gap-4">
-												<div class="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-violet-600 text-lg font-bold text-white">
+												<div
+													class="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-violet-600 text-lg font-bold text-white"
+												>
 													{staff.email.charAt(0).toUpperCase()}
 												</div>
 												<div>
 													<h3 class="font-semibold text-white">{staff.email}</h3>
-													<span class="inline-flex items-center rounded-full bg-purple-500/20 px-2 py-0.5 text-xs font-medium text-purple-400">
+													<span
+														class="inline-flex items-center rounded-full bg-purple-500/20 px-2 py-0.5 text-xs font-medium text-purple-400"
+													>
 														Tournament Staff
 													</span>
 												</div>
 											</div>
 
 											<div class="space-y-3">
-												<p class="text-sm font-medium text-gray-300 flex items-center gap-2">
-													<svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+												<p class="flex items-center gap-2 text-sm font-medium text-gray-300">
+													<svg
+														class="h-4 w-4 text-gray-500"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+														/>
 													</svg>
 													Event Assignments
 												</p>
@@ -1290,12 +2053,19 @@
 																: 'border-gray-700 bg-gray-800/50 hover:border-gray-600'}"
 														>
 															<div class="min-w-0 flex-1">
-																<p class="truncate text-sm font-medium {isAssigned ? 'text-green-400' : 'text-gray-300'}">
+																<p
+																	class="truncate text-sm font-medium {isAssigned
+																		? 'text-green-400'
+																		: 'text-gray-300'}"
+																>
 																	{event.title}
 																</p>
 																<p class="text-xs text-gray-500">
 																	{event.eventDate
-																		? new Date(event.eventDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+																		? new Date(event.eventDate).toLocaleDateString('en-US', {
+																				month: 'short',
+																				day: 'numeric'
+																			})
 																		: 'TBA'}
 																</p>
 															</div>
@@ -1336,12 +2106,24 @@
 
 				<!-- User Management Tab -->
 				{#if activeTab === 'users'}
-					<div class="rounded-xl border border-gray-800 bg-gray-900/50 overflow-hidden">
-						<div class="flex items-center justify-between border-b border-gray-800 bg-gray-800/30 px-6 py-4">
+					<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
+						<div
+							class="flex items-center justify-between border-b border-gray-800 bg-gray-800/30 px-6 py-4"
+						>
 							<div class="flex items-center gap-3">
 								<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20">
-									<svg class="h-5 w-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+									<svg
+										class="h-5 w-5 text-amber-400"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+										/>
 									</svg>
 								</div>
 								<div>
@@ -1355,15 +2137,25 @@
 							<!-- Search Bar -->
 							<div class="mb-6">
 								<div class="relative">
-									<svg class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+									<svg
+										class="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-gray-500"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+										/>
 									</svg>
 									<input
 										id="user-search"
 										type="text"
 										bind:value={userSearchQuery}
 										placeholder="Search users by email..."
-										class="w-full rounded-xl border border-gray-700 bg-gray-800/50 py-3 pl-10 pr-4 text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
+										class="w-full rounded-xl border border-gray-700 bg-gray-800/50 py-3 pr-4 pl-10 text-gray-100 placeholder-gray-500 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
 									/>
 								</div>
 							</div>
@@ -1373,10 +2165,22 @@
 								<table class="w-full">
 									<thead class="bg-gray-800/50">
 										<tr>
-											<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">User</th>
-											<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Role</th>
-											<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Joined</th>
-											<th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">Actions</th>
+											<th
+												class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+												>User</th
+											>
+											<th
+												class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+												>Role</th
+											>
+											<th
+												class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+												>Joined</th
+											>
+											<th
+												class="px-6 py-4 text-right text-xs font-semibold tracking-wider text-gray-400 uppercase"
+												>Actions</th
+											>
 										</tr>
 									</thead>
 									<tbody class="divide-y divide-gray-800">
@@ -1384,7 +2188,16 @@
 											<tr class="group transition-colors hover:bg-gray-800/50">
 												<td class="px-6 py-4">
 													<div class="flex items-center gap-3">
-														<div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br {user.role === 'admin' ? 'from-purple-500 to-violet-600' : user.role === 'premium' ? 'from-blue-500 to-cyan-600' : user.role === 'tournament_staff' ? 'from-green-500 to-emerald-600' : 'from-gray-500 to-gray-600'} text-sm font-bold text-white">
+														<div
+															class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br {user.role ===
+															'admin'
+																? 'from-purple-500 to-violet-600'
+																: user.role === 'premium'
+																	? 'from-blue-500 to-cyan-600'
+																	: user.role === 'tournament staff'
+																		? 'from-green-500 to-emerald-600'
+																		: 'from-gray-500 to-gray-600'} text-sm font-bold text-white"
+														>
 															{user.email.charAt(0).toUpperCase()}
 														</div>
 														<div>
@@ -1400,7 +2213,7 @@
 														class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize
 														{user.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : ''}
 														{user.role === 'premium' ? 'bg-blue-500/20 text-blue-400' : ''}
-														{user.role === 'tournament_staff' ? 'bg-green-500/20 text-green-400' : ''}
+														{user.role === 'tournament staff' ? 'bg-green-500/20 text-green-400' : ''}
 														{user.role === 'writer' ? 'bg-orange-500/20 text-orange-400' : ''}
 														{user.role === 'free' ? 'bg-gray-700 text-gray-400' : ''}"
 													>
@@ -1425,13 +2238,22 @@
 															<input type="hidden" name="userId" value={user.id} />
 															<select
 																name="role"
-																class="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs text-gray-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all"
+																class="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs text-gray-100 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
 															>
 																<option value="free" selected={user.role === 'free'}>Free</option>
-																<option value="premium" selected={user.role === 'premium'}>Premium</option>
-																<option value="writer" selected={user.role === 'writer'}>Writer</option>
-																<option value="tournament_staff" selected={user.role === 'tournament_staff'}>Tournament Staff</option>
-																<option value="admin" selected={user.role === 'admin'}>Admin</option>
+																<option value="premium" selected={user.role === 'premium'}
+																	>Premium</option
+																>
+																<option value="writer" selected={user.role === 'writer'}
+																	>Writer</option
+																>
+																<option
+																	value="tournament staff"
+																	selected={user.role === 'tournament staff'}
+																	>Tournament Staff</option
+																>
+																<option value="admin" selected={user.role === 'admin'}>Admin</option
+																>
 															</select>
 															<button
 																type="submit"
@@ -1441,7 +2263,9 @@
 															</button>
 														</form>
 													{:else}
-														<span class="rounded-full bg-gray-700 px-3 py-1 text-xs text-gray-400">Current User</span>
+														<span class="rounded-full bg-gray-700 px-3 py-1 text-xs text-gray-400"
+															>Current User</span
+														>
 													{/if}
 												</td>
 											</tr>
@@ -1457,11 +2281,21 @@
 								{/if}
 								{#if filteredUsers.length === 0}
 									<div class="border-t border-gray-800 p-12 text-center">
-										<svg class="mx-auto h-12 w-12 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+										<svg
+											class="mx-auto mb-4 h-12 w-12 text-gray-600"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+											/>
 										</svg>
 										<p class="text-gray-400">No users found matching "{userSearchQuery}"</p>
-										<p class="text-sm text-gray-500 mt-1">Try a different search term</p>
+										<p class="mt-1 text-sm text-gray-500">Try a different search term</p>
 									</div>
 								{/if}
 							</div>
@@ -1473,25 +2307,46 @@
 				{#if activeTab === 'players'}
 					<div class="space-y-6">
 						<!-- Standings Table with Inline Editing -->
-						<div class="rounded-xl border border-gray-800 bg-gray-900/50 overflow-hidden">
-							<div class="flex items-center justify-between border-b border-gray-800 bg-gray-800/30 px-6 py-4">
+						<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
+							<div
+								class="flex items-center justify-between border-b border-gray-800 bg-gray-800/30 px-6 py-4"
+							>
 								<div class="flex items-center gap-3">
-									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-500/20">
-										<svg class="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+									<div
+										class="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-500/20"
+									>
+										<svg
+											class="h-5 w-5 text-yellow-400"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+											/>
 										</svg>
 									</div>
 									<div>
 										<h2 class="text-lg font-semibold text-white">Standings Table</h2>
-										<p class="text-sm text-gray-400">{data.standings?.length || 0} standings records - Click any cell to edit</p>
+										<p class="text-sm text-gray-400">
+											{data.standings?.length || 0} standings records - Click any cell to edit
+										</p>
 									</div>
 								</div>
 								<button
-									onclick={() => showCreateStandingModal = true}
-									class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 hover:bg-emerald-600 hover:shadow-emerald-500/40 transition-all"
+									onclick={() => (showCreateStandingModal = true)}
+									class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-600 hover:shadow-emerald-500/40"
 								>
 									<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+										/>
 									</svg>
 									Add Standing
 								</button>
@@ -1499,16 +2354,26 @@
 
 							<div class="p-6">
 								<!-- Filters -->
-								<div class="grid gap-4 md:grid-cols-4 mb-6">
+								<div class="mb-6 grid gap-4 md:grid-cols-4">
 									<div class="relative">
-										<svg class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+										<svg
+											class="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-gray-500"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+											/>
 										</svg>
 										<input
 											type="text"
 											bind:value={standingsSearchQuery}
 											placeholder="Search by name or GEM ID..."
-											class="w-full rounded-lg border border-gray-700 bg-gray-800/50 py-2.5 pl-10 pr-4 text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+											class="w-full rounded-lg border border-gray-700 bg-gray-800/50 py-2.5 pr-4 pl-10 text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
 										/>
 									</div>
 									<select
@@ -1529,7 +2394,7 @@
 											<option value={circuit}>{circuit}</option>
 										{/each}
 									</select>
-									<div class="text-sm text-gray-400 flex items-center">
+									<div class="flex items-center text-sm text-gray-400">
 										Showing {filteredStandings.length} of {data.standings?.length || 0}
 									</div>
 								</div>
@@ -1539,22 +2404,50 @@
 									<table class="w-full text-sm">
 										<thead class="bg-gray-800/80">
 											<tr>
-												<th class="px-4 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Season</th>
-												<th class="px-4 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400 whitespace-nowrap">Circuit</th>
-												<th class="px-4 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Player</th>
+												<th
+													class="px-4 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+													>Season</th
+												>
+												<th
+													class="px-4 py-4 text-left text-xs font-semibold tracking-wider whitespace-nowrap text-gray-400 uppercase"
+													>Circuit</th
+												>
+												<th
+													class="px-4 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+													>Player</th
+												>
 												<th class="px-4 py-4 text-center">
 													<button
 														onclick={() => toggleSort('points')}
-														class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider transition-colors {sortColumn === 'points' ? 'text-blue-400' : 'text-gray-400 hover:text-gray-200'}"
+														class="inline-flex items-center gap-1 text-xs font-semibold tracking-wider uppercase transition-colors {sortColumn ===
+														'points'
+															? 'text-blue-400'
+															: 'text-gray-400 hover:text-gray-200'}"
 													>
 														Points
 														{#if sortColumn === 'points'}
-															<svg class="w-3 h-3 {sortDirection === 'asc' ? 'rotate-180' : ''}" fill="currentColor" viewBox="0 0 20 20">
-																<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+															<svg
+																class="h-3 w-3 {sortDirection === 'asc' ? 'rotate-180' : ''}"
+																fill="currentColor"
+																viewBox="0 0 20 20"
+															>
+																<path
+																	fill-rule="evenodd"
+																	d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+																	clip-rule="evenodd"
+																/>
 															</svg>
 														{:else}
-															<svg class="w-3 h-3 opacity-0 group-hover:opacity-50" fill="currentColor" viewBox="0 0 20 20">
-																<path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+															<svg
+																class="h-3 w-3 opacity-0 group-hover:opacity-50"
+																fill="currentColor"
+																viewBox="0 0 20 20"
+															>
+																<path
+																	fill-rule="evenodd"
+																	d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+																	clip-rule="evenodd"
+																/>
 															</svg>
 														{/if}
 													</button>
@@ -1562,12 +2455,23 @@
 												<th class="px-4 py-4 text-center">
 													<button
 														onclick={() => toggleSort('winPct')}
-														class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider transition-colors {sortColumn === 'winPct' ? 'text-blue-400' : 'text-gray-400 hover:text-gray-200'}"
+														class="inline-flex items-center gap-1 text-xs font-semibold tracking-wider uppercase transition-colors {sortColumn ===
+														'winPct'
+															? 'text-blue-400'
+															: 'text-gray-400 hover:text-gray-200'}"
 													>
 														Win %
 														{#if sortColumn === 'winPct'}
-															<svg class="w-3 h-3 {sortDirection === 'asc' ? 'rotate-180' : ''}" fill="currentColor" viewBox="0 0 20 20">
-																<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+															<svg
+																class="h-3 w-3 {sortDirection === 'asc' ? 'rotate-180' : ''}"
+																fill="currentColor"
+																viewBox="0 0 20 20"
+															>
+																<path
+																	fill-rule="evenodd"
+																	d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+																	clip-rule="evenodd"
+																/>
 															</svg>
 														{/if}
 													</button>
@@ -1575,12 +2479,23 @@
 												<th class="px-4 py-4 text-center">
 													<button
 														onclick={() => toggleSort('record')}
-														class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider transition-colors {sortColumn === 'record' ? 'text-blue-400' : 'text-gray-400 hover:text-gray-200'}"
+														class="inline-flex items-center gap-1 text-xs font-semibold tracking-wider uppercase transition-colors {sortColumn ===
+														'record'
+															? 'text-blue-400'
+															: 'text-gray-400 hover:text-gray-200'}"
 													>
 														Record
 														{#if sortColumn === 'record'}
-															<svg class="w-3 h-3 {sortDirection === 'asc' ? 'rotate-180' : ''}" fill="currentColor" viewBox="0 0 20 20">
-																<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+															<svg
+																class="h-3 w-3 {sortDirection === 'asc' ? 'rotate-180' : ''}"
+																fill="currentColor"
+																viewBox="0 0 20 20"
+															>
+																<path
+																	fill-rule="evenodd"
+																	d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+																	clip-rule="evenodd"
+																/>
 															</svg>
 														{/if}
 													</button>
@@ -1588,12 +2503,23 @@
 												<th class="px-4 py-4 text-center">
 													<button
 														onclick={() => toggleSort('events')}
-														class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider transition-colors {sortColumn === 'events' ? 'text-blue-400' : 'text-gray-400 hover:text-gray-200'}"
+														class="inline-flex items-center gap-1 text-xs font-semibold tracking-wider uppercase transition-colors {sortColumn ===
+														'events'
+															? 'text-blue-400'
+															: 'text-gray-400 hover:text-gray-200'}"
 													>
 														Events
 														{#if sortColumn === 'events'}
-															<svg class="w-3 h-3 {sortDirection === 'asc' ? 'rotate-180' : ''}" fill="currentColor" viewBox="0 0 20 20">
-																<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+															<svg
+																class="h-3 w-3 {sortDirection === 'asc' ? 'rotate-180' : ''}"
+																fill="currentColor"
+																viewBox="0 0 20 20"
+															>
+																<path
+																	fill-rule="evenodd"
+																	d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+																	clip-rule="evenodd"
+																/>
 															</svg>
 														{/if}
 													</button>
@@ -1601,91 +2527,240 @@
 												<th class="px-4 py-4 text-center">
 													<button
 														onclick={() => toggleSort('top8')}
-														class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider transition-colors {sortColumn === 'top8' ? 'text-blue-400' : 'text-gray-400 hover:text-gray-200'}"
+														class="inline-flex items-center gap-1 text-xs font-semibold tracking-wider uppercase transition-colors {sortColumn ===
+														'top8'
+															? 'text-blue-400'
+															: 'text-gray-400 hover:text-gray-200'}"
 													>
 														Top 8
 														{#if sortColumn === 'top8'}
-															<svg class="w-3 h-3 {sortDirection === 'asc' ? 'rotate-180' : ''}" fill="currentColor" viewBox="0 0 20 20">
-																<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+															<svg
+																class="h-3 w-3 {sortDirection === 'asc' ? 'rotate-180' : ''}"
+																fill="currentColor"
+																viewBox="0 0 20 20"
+															>
+																<path
+																	fill-rule="evenodd"
+																	d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+																	clip-rule="evenodd"
+																/>
 															</svg>
 														{/if}
 													</button>
 												</th>
-												<th class="px-4 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-400">Actions</th>
+												<th
+													class="px-4 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase"
+													>Actions</th
+												>
 											</tr>
 										</thead>
 										<tbody class="divide-y divide-gray-800/50">
 											{#each paginatedAdminStandings as standing}
-												<tr class="hover:bg-gray-800/30 transition-colors">
-													<td class="px-4 py-4 text-gray-400 text-sm font-medium">{standing.season}</td>
+												<tr class="transition-colors hover:bg-gray-800/30">
+													<td class="px-4 py-4 text-sm font-medium text-gray-400"
+														>{standing.season}</td
+													>
 													<td class="px-4 py-4">
-														<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap {standing.circuit === 'Los Angeles' ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30' : standing.circuit === 'New England' ? 'bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30' : 'bg-green-500/20 text-green-400 ring-1 ring-green-500/30'}">
+														<span
+															class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap {standing.circuit ===
+															'Los Angeles'
+																? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30'
+																: standing.circuit === 'New England'
+																	? 'bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30'
+																	: 'bg-green-500/20 text-green-400 ring-1 ring-green-500/30'}"
+														>
 															{standing.circuit}
 														</span>
 													</td>
 													<td class="px-4 py-4">
-														<div class="flex items-center gap-3">
-															<div class="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-																{standing.playerName?.charAt(0).toUpperCase() || '?'}
+														{#if editingStandingId === standing.id}
+															<!-- Inline Edit Mode -->
+															<div class="flex flex-col gap-2">
+																<input
+																	type="text"
+																	bind:value={editPlayerName}
+																	placeholder="Player Name"
+																	class="w-full rounded border border-gray-600 bg-gray-800 px-2 py-1 text-sm text-white focus:border-amber-500 focus:outline-none"
+																/>
+																<input
+																	type="text"
+																	bind:value={editGemId}
+																	placeholder="GEM ID (optional)"
+																	class="w-full rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs font-mono text-blue-400 focus:border-amber-500 focus:outline-none"
+																/>
+																<div class="flex gap-1">
+																	<form
+																		method="POST"
+																		action="?/updateStandingPlayerInfo"
+																		use:enhance={({ formData }) => {
+																			// Manually set the form data to ensure we get the latest values
+																			formData.set('standingId', standing.id);
+																			formData.set('playerName', editPlayerName);
+																			formData.set('gemId', editGemId || '');
+																			isSavingStanding = true;
+																			return async ({ result, update }) => {
+																				isSavingStanding = false;
+																				if (result.type === 'success') {
+																					updateStandingLocally(standing.id, editPlayerName, editGemId);
+																					cancelEditStanding();
+																				} else if (result.type === 'failure') {
+																					console.error('Failed to update standing:', result.data);
+																					alert('Failed to update: ' + (result.data?.error || 'Unknown error'));
+																				} else if (result.type === 'error') {
+																					console.error('Error updating standing:', result.error);
+																					alert('Error: ' + result.error?.message);
+																				}
+																			};
+																		}}
+																		class="inline"
+																	>
+																		<input type="hidden" name="standingId" value={standing.id} />
+																		<input type="hidden" name="playerName" value={editPlayerName} />
+																		<input type="hidden" name="gemId" value={editGemId || ''} />
+																		<button
+																			type="submit"
+																			disabled={isSavingStanding}
+																			class="rounded bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+																		>
+																			{isSavingStanding ? 'Saving...' : 'Save'}
+																		</button>
+																	</form>
+																	<button
+																		type="button"
+																		onclick={cancelEditStanding}
+																		class="rounded bg-gray-700 px-2 py-1 text-xs font-medium text-gray-300 hover:bg-gray-600"
+																	>
+																		Cancel
+																	</button>
+																</div>
 															</div>
-															<div>
-																<div class="font-medium text-white">{standing.playerName}</div>
-																{#if standing.gemId}
-																	<div class="text-xs text-blue-400 font-mono">{standing.gemId}</div>
-																{:else}
-																	<div class="text-xs text-gray-600">No GEM ID</div>
-																{/if}
+														{:else}
+															<!-- Display Mode -->
+															<div class="flex items-center gap-3">
+																<div
+																	class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-sm font-bold text-white"
+																>
+																	{standing.playerName?.charAt(0).toUpperCase() || '?'}
+																</div>
+																<div>
+																	<div class="font-medium text-white">{standing.playerName}</div>
+																	{#if standing.gemId}
+																		<div class="font-mono text-xs text-blue-400">
+																			{standing.gemId}
+																		</div>
+																	{:else}
+																		<div class="text-xs text-gray-600">No GEM ID</div>
+																	{/if}
+																</div>
 															</div>
-														</div>
+														{/if}
 													</td>
 													<td class="px-4 py-4 text-center">
-														<span class="text-lg font-bold text-emerald-400">{standing.totalPoints || 0}</span>
+														<span class="text-lg font-bold text-emerald-400"
+															>{standing.totalPoints || 0}</span
+														>
 													</td>
 													<td class="px-4 py-4 text-center">
-														<span class="text-gray-300">{standing.winPercentage ? `${standing.winPercentage}%` : '-'}</span>
+														<span class="text-gray-300"
+															>{standing.winPercentage ? `${standing.winPercentage}%` : '-'}</span
+														>
 													</td>
 													<td class="px-4 py-4 text-center">
 														<span class="font-medium">
 															<span class="text-green-400">{standing.matchesWon || 0}</span>
-															<span class="text-gray-600 mx-0.5">-</span>
-															<span class="text-red-400">{(standing.matchesPlayed || 0) - (standing.matchesWon || 0)}</span>
+															<span class="mx-0.5 text-gray-600">-</span>
+															<span class="text-red-400"
+																>{(standing.matchesPlayed || 0) - (standing.matchesWon || 0)}</span
+															>
 														</span>
 													</td>
-													<td class="px-4 py-4 text-center text-gray-300">{standing.eventsPlayed || 0}</td>
-													<td class="px-4 py-4 text-center text-gray-300">{standing.top8Finishes || 0}</td>
+													<td class="px-4 py-4 text-center text-gray-300"
+														>{standing.eventsPlayed || 0}</td
+													>
+													<td class="px-4 py-4 text-center text-gray-300"
+														>{standing.top8Finishes || 0}</td
+													>
 													<td class="px-4 py-4 text-center">
 														<div class="flex items-center justify-center gap-2">
+															<!-- Edit Player Info Button -->
+															<button
+																onclick={() => startEditStanding(standing)}
+																class="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-amber-400 transition-all hover:border-amber-500/40 hover:bg-amber-500/20 hover:text-amber-300"
+																title="Edit player name & GEM ID"
+															>
+																<svg
+																	class="h-4 w-4"
+																	fill="none"
+																	stroke="currentColor"
+																	viewBox="0 0 24 24"
+																>
+																	<path
+																		stroke-linecap="round"
+																		stroke-linejoin="round"
+																		stroke-width="2"
+																		d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+																	/>
+																</svg>
+																<span class="text-xs font-medium">Edit</span>
+															</button>
+															<!-- View Profile Link (if has GEM ID) -->
 															{#if standing.gemId}
 																<a
 																	href="/player/{standing.gemId}"
-																	class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 transition-all"
-																	title="View & Edit Profile"
+																	class="rounded-lg p-1.5 text-blue-400 transition-all hover:bg-blue-500/10 hover:text-blue-300"
+																	title="View player profile"
+																	aria-label="View profile"
 																>
-																	<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+																	<svg
+																		class="h-4 w-4"
+																		fill="none"
+																		stroke="currentColor"
+																		viewBox="0 0 24 24"
+																	>
+																		<path
+																			stroke-linecap="round"
+																			stroke-linejoin="round"
+																			stroke-width="2"
+																			d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+																		/>
 																	</svg>
-																	<span class="text-xs font-medium">Edit</span>
 																</a>
-															{:else}
-																<span class="text-gray-600 text-xs">No GEM ID</span>
 															{/if}
-															<form method="POST" action="?/deleteStanding" use:enhance={() => {
-																return async ({ result, update }) => {
-																	if (result.type === 'success') {
-																		await update();
-																	}
-																};
-															}}>
+															<!-- Delete Button -->
+															<form
+																method="POST"
+																action="?/deleteStanding"
+																use:enhance={() => {
+																	return async ({ result, update }) => {
+																		if (result.type === 'success') {
+																			await update();
+																		}
+																	};
+																}}
+															>
 																<input type="hidden" name="standingId" value={standing.id} />
 																<button
 																	type="submit"
-																	onclick={(e) => { if (!confirm('Delete this standing record?')) e.preventDefault(); }}
-																	class="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+																	onclick={(e) => {
+																		if (!confirm('Delete this standing record?'))
+																			e.preventDefault();
+																	}}
+																	class="rounded-lg p-1.5 text-gray-500 transition-all hover:bg-red-500/10 hover:text-red-400"
 																	title="Delete standing"
 																	aria-label="Delete standing"
 																>
-																	<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																		<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+																	<svg
+																		class="h-4 w-4"
+																		fill="none"
+																		stroke="currentColor"
+																		viewBox="0 0 24 24"
+																	>
+																		<path
+																			stroke-linecap="round"
+																			stroke-linejoin="round"
+																			stroke-width="2"
+																			d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+																		/>
 																	</svg>
 																</button>
 															</form>
@@ -1705,41 +2780,59 @@
 
 								<!-- Pagination Controls -->
 								{#if totalAdminStandingsPages > 1}
-									<div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 px-4 py-3 border-t border-gray-700 bg-gray-800/30 rounded-b-xl">
+									<div
+										class="mt-4 flex flex-col items-center justify-between gap-4 rounded-b-xl border-t border-gray-700 bg-gray-800/30 px-4 py-3 sm:flex-row"
+									>
 										<div class="text-sm text-gray-400">
-											Showing {(adminStandingsPage - 1) * adminStandingsPerPage + 1} to {Math.min(adminStandingsPage * adminStandingsPerPage, filteredStandings.length)} of {filteredStandings.length} standings
+											Showing {(adminStandingsPage - 1) * adminStandingsPerPage + 1} to {Math.min(
+												adminStandingsPage * adminStandingsPerPage,
+												filteredStandings.length
+											)} of {filteredStandings.length} standings
 										</div>
 										<div class="flex items-center gap-2">
 											<button
-												onclick={() => adminStandingsPage = 1}
+												onclick={() => (adminStandingsPage = 1)}
 												disabled={adminStandingsPage === 1}
-												class="px-3 py-1.5 rounded-lg border border-gray-600 text-sm font-medium transition-all {adminStandingsPage === 1 ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}"
+												class="rounded-lg border border-gray-600 px-3 py-1.5 text-sm font-medium transition-all {adminStandingsPage ===
+												1
+													? 'cursor-not-allowed bg-gray-800/30 text-gray-600'
+													: 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}"
 											>
 												First
 											</button>
 											<button
-												onclick={() => adminStandingsPage = Math.max(1, adminStandingsPage - 1)}
+												onclick={() => (adminStandingsPage = Math.max(1, adminStandingsPage - 1))}
 												disabled={adminStandingsPage === 1}
-												class="px-3 py-1.5 rounded-lg border border-gray-600 text-sm font-medium transition-all {adminStandingsPage === 1 ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}"
+												class="rounded-lg border border-gray-600 px-3 py-1.5 text-sm font-medium transition-all {adminStandingsPage ===
+												1
+													? 'cursor-not-allowed bg-gray-800/30 text-gray-600'
+													: 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}"
 												aria-label="Previous page"
 											>
 												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M15 19l-7-7 7-7"
+													/>
 												</svg>
 											</button>
 											<div class="flex items-center gap-1">
 												{#each Array(Math.min(5, totalAdminStandingsPages)) as _, i}
-													{@const pageNum = adminStandingsPage <= 3
-														? i + 1
-														: adminStandingsPage >= totalAdminStandingsPages - 2
-															? totalAdminStandingsPages - 4 + i
-															: adminStandingsPage - 2 + i}
+													{@const pageNum =
+														adminStandingsPage <= 3
+															? i + 1
+															: adminStandingsPage >= totalAdminStandingsPages - 2
+																? totalAdminStandingsPages - 4 + i
+																: adminStandingsPage - 2 + i}
 													{#if pageNum > 0 && pageNum <= totalAdminStandingsPages}
 														<button
-															onclick={() => adminStandingsPage = pageNum}
-															class="w-8 h-8 rounded-lg text-sm font-medium transition-all {adminStandingsPage === pageNum
+															onclick={() => (adminStandingsPage = pageNum)}
+															class="h-8 w-8 rounded-lg text-sm font-medium transition-all {adminStandingsPage ===
+															pageNum
 																? 'bg-blue-500 text-white'
-																: 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white border border-gray-600'}"
+																: 'border border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}"
 														>
 															{pageNum}
 														</button>
@@ -1747,19 +2840,34 @@
 												{/each}
 											</div>
 											<button
-												onclick={() => adminStandingsPage = Math.min(totalAdminStandingsPages, adminStandingsPage + 1)}
+												onclick={() =>
+													(adminStandingsPage = Math.min(
+														totalAdminStandingsPages,
+														adminStandingsPage + 1
+													))}
 												disabled={adminStandingsPage === totalAdminStandingsPages}
-												class="px-3 py-1.5 rounded-lg border border-gray-600 text-sm font-medium transition-all {adminStandingsPage === totalAdminStandingsPages ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}"
+												class="rounded-lg border border-gray-600 px-3 py-1.5 text-sm font-medium transition-all {adminStandingsPage ===
+												totalAdminStandingsPages
+													? 'cursor-not-allowed bg-gray-800/30 text-gray-600'
+													: 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}"
 												aria-label="Next page"
 											>
 												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2"
+														d="M9 5l7 7-7 7"
+													/>
 												</svg>
 											</button>
 											<button
-												onclick={() => adminStandingsPage = totalAdminStandingsPages}
+												onclick={() => (adminStandingsPage = totalAdminStandingsPages)}
 												disabled={adminStandingsPage === totalAdminStandingsPages}
-												class="px-3 py-1.5 rounded-lg border border-gray-600 text-sm font-medium transition-all {adminStandingsPage === totalAdminStandingsPages ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}"
+												class="rounded-lg border border-gray-600 px-3 py-1.5 text-sm font-medium transition-all {adminStandingsPage ===
+												totalAdminStandingsPages
+													? 'cursor-not-allowed bg-gray-800/30 text-gray-600'
+													: 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'}"
 											>
 												Last
 											</button>
@@ -1769,8 +2877,11 @@
 
 								<!-- Player Profiles Info -->
 								<div class="mt-6 rounded-lg border border-gray-700 bg-gray-800/30 p-4">
-									<h3 class="text-sm font-medium text-gray-300 mb-3">Player Profiles</h3>
-									<p class="text-xs text-gray-500">Click the "Edit" button to open a player's profile page where you can view and edit all their standings data, including monthly breakdowns.</p>
+									<h3 class="mb-3 text-sm font-medium text-gray-300">Player Profiles</h3>
+									<p class="text-xs text-gray-500">
+										Click the "Edit" button to open a player's profile page where you can view and
+										edit all their standings data, including monthly breakdowns.
+									</p>
 								</div>
 							</div>
 						</div>
@@ -1787,7 +2898,10 @@
 		<!-- Backdrop -->
 		<button
 			class="absolute inset-0 bg-black/70 backdrop-blur-sm"
-			onclick={() => { showCreateStandingModal = false; resetNewStanding(); }}
+			onclick={() => {
+				showCreateStandingModal = false;
+				resetNewStanding();
+			}}
 			aria-label="Close modal"
 		></button>
 
@@ -1797,8 +2911,18 @@
 			<div class="flex items-center justify-between border-b border-gray-700 px-6 py-4">
 				<div class="flex items-center gap-3">
 					<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20">
-						<svg class="h-5 w-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+						<svg
+							class="h-5 w-5 text-emerald-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+							/>
 						</svg>
 					</div>
 					<div>
@@ -1807,12 +2931,20 @@
 					</div>
 				</div>
 				<button
-					onclick={() => { showCreateStandingModal = false; resetNewStanding(); }}
-					class="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+					onclick={() => {
+						showCreateStandingModal = false;
+						resetNewStanding();
+					}}
+					class="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
 					aria-label="Close modal"
 				>
 					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/>
 					</svg>
 				</button>
 			</div>
@@ -1830,18 +2962,20 @@
 						}
 					};
 				}}
-				class="p-6 space-y-5"
+				class="space-y-5 p-6"
 			>
 				<!-- Season and Circuit -->
 				<div class="grid grid-cols-2 gap-4">
 					<div>
-						<label for="season" class="block text-sm font-medium text-gray-300 mb-1.5">Season *</label>
+						<label for="season" class="mb-1.5 block text-sm font-medium text-gray-300"
+							>Season *</label
+						>
 						<select
 							id="season"
 							name="season"
 							bind:value={newStanding.season}
 							required
-							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 						>
 							<option value="2026">2026</option>
 							<option value="2025">2025</option>
@@ -1850,13 +2984,15 @@
 						</select>
 					</div>
 					<div>
-						<label for="circuit" class="block text-sm font-medium text-gray-300 mb-1.5">Circuit *</label>
+						<label for="circuit" class="mb-1.5 block text-sm font-medium text-gray-300"
+							>Circuit *</label
+						>
 						<select
 							id="circuit"
 							name="circuit"
 							bind:value={newStanding.circuit}
 							required
-							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 						>
 							<option value="Los Angeles">Los Angeles</option>
 							<option value="New England">New England</option>
@@ -1867,7 +3003,9 @@
 
 				<!-- Player Name -->
 				<div>
-					<label for="playerName" class="block text-sm font-medium text-gray-300 mb-1.5">Player Name *</label>
+					<label for="playerName" class="mb-1.5 block text-sm font-medium text-gray-300"
+						>Player Name *</label
+					>
 					<input
 						type="text"
 						id="playerName"
@@ -1875,45 +3013,49 @@
 						bind:value={newStanding.playerName}
 						required
 						placeholder="Enter player name"
-						class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 placeholder-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+						class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 placeholder-gray-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 					/>
 				</div>
 
 				<!-- GEM ID -->
 				<div>
-					<label for="gemId" class="block text-sm font-medium text-gray-300 mb-1.5">GEM ID</label>
+					<label for="gemId" class="mb-1.5 block text-sm font-medium text-gray-300">GEM ID</label>
 					<input
 						type="text"
 						id="gemId"
 						name="gemId"
 						bind:value={newStanding.gemId}
 						placeholder="Optional - for linking to player profile"
-						class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 placeholder-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+						class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 placeholder-gray-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 					/>
 				</div>
 
 				<!-- Points and Events -->
 				<div class="grid grid-cols-2 gap-4">
 					<div>
-						<label for="totalPoints" class="block text-sm font-medium text-gray-300 mb-1.5">Total Points</label>
+						<label for="totalPoints" class="mb-1.5 block text-sm font-medium text-gray-300"
+							>Total Points</label
+						>
 						<input
 							type="number"
 							id="totalPoints"
 							name="totalPoints"
 							bind:value={newStanding.totalPoints}
 							min="0"
-							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 						/>
 					</div>
 					<div>
-						<label for="eventsPlayed" class="block text-sm font-medium text-gray-300 mb-1.5">Events Played</label>
+						<label for="eventsPlayed" class="mb-1.5 block text-sm font-medium text-gray-300"
+							>Events Played</label
+						>
 						<input
 							type="number"
 							id="eventsPlayed"
 							name="eventsPlayed"
 							bind:value={newStanding.eventsPlayed}
 							min="0"
-							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 						/>
 					</div>
 				</div>
@@ -1921,39 +3063,45 @@
 				<!-- Match Stats -->
 				<div class="grid grid-cols-2 gap-4">
 					<div>
-						<label for="matchesWon" class="block text-sm font-medium text-gray-300 mb-1.5">Matches Won</label>
+						<label for="matchesWon" class="mb-1.5 block text-sm font-medium text-gray-300"
+							>Matches Won</label
+						>
 						<input
 							type="number"
 							id="matchesWon"
 							name="matchesWon"
 							bind:value={newStanding.matchesWon}
 							min="0"
-							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 						/>
 					</div>
 					<div>
-						<label for="matchesPlayed" class="block text-sm font-medium text-gray-300 mb-1.5">Matches Played</label>
+						<label for="matchesPlayed" class="mb-1.5 block text-sm font-medium text-gray-300"
+							>Matches Played</label
+						>
 						<input
 							type="number"
 							id="matchesPlayed"
 							name="matchesPlayed"
 							bind:value={newStanding.matchesPlayed}
 							min="0"
-							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+							class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 						/>
 					</div>
 				</div>
 
 				<!-- Top 8 Finishes -->
 				<div>
-					<label for="top8Finishes" class="block text-sm font-medium text-gray-300 mb-1.5">Top 8 Finishes</label>
+					<label for="top8Finishes" class="mb-1.5 block text-sm font-medium text-gray-300"
+						>Top 8 Finishes</label
+					>
 					<input
 						type="number"
 						id="top8Finishes"
 						name="top8Finishes"
 						bind:value={newStanding.top8Finishes}
 						min="0"
-						class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+						class="w-full rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-gray-100 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 					/>
 				</div>
 
@@ -1961,7 +3109,9 @@
 				{#if newStanding.matchesPlayed > 0}
 					<div class="rounded-lg border border-gray-700 bg-gray-800/50 p-3">
 						<p class="text-sm text-gray-400">
-							Win Percentage: <span class="font-semibold text-emerald-400">{((newStanding.matchesWon / newStanding.matchesPlayed) * 100).toFixed(1)}%</span>
+							Win Percentage: <span class="font-semibold text-emerald-400"
+								>{((newStanding.matchesWon / newStanding.matchesPlayed) * 100).toFixed(1)}%</span
+							>
 						</p>
 					</div>
 				{/if}
@@ -1970,14 +3120,17 @@
 				<div class="flex items-center justify-end gap-3 pt-2">
 					<button
 						type="button"
-						onclick={() => { showCreateStandingModal = false; resetNewStanding(); }}
-						class="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+						onclick={() => {
+							showCreateStandingModal = false;
+							resetNewStanding();
+						}}
+						class="rounded-lg border border-gray-600 bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700 hover:text-white"
 					>
 						Cancel
 					</button>
 					<button
 						type="submit"
-						class="rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-emerald-600 transition-colors"
+						class="rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-600"
 					>
 						Create Standing
 					</button>
@@ -1986,3 +3139,4 @@
 		</div>
 	</div>
 {/if}
+

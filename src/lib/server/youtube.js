@@ -31,26 +31,22 @@ export async function getLatestStream() {
 		// First, check for upcoming/scheduled streams
 		const upcomingStream = await searchStreams('upcoming');
 		if (upcomingStream) {
-			console.log('Found upcoming stream:', upcomingStream.id);
 			return { video: upcomingStream, type: 'upcoming', error: null };
 		}
 
 		// Next, check for currently live streams
 		const liveStream = await searchStreams('live');
 		if (liveStream) {
-			console.log('Found live stream:', liveStream.id);
 			return { video: liveStream, type: 'live', error: null };
 		}
 
 		// Finally, fall back to the most recent completed livestream
 		const completedStream = await searchStreams('completed');
 		if (completedStream) {
-			console.log('Found completed stream:', completedStream.id);
 			return { video: completedStream, type: 'completed', error: null };
 		}
 
 		// If API returns nothing, use hardcoded fallback
-		console.log('No streams found via API, using fallback video');
 		return {
 			video: {
 				id: FALLBACK_VIDEO_ID,
@@ -151,7 +147,7 @@ export async function getUpcomingStreams(maxResults = 5) {
 
 		const data = await response.json();
 
-		return (data.items || []).map(item => ({
+		return (data.items || []).map((item) => ({
 			id: item.id.videoId,
 			title: item.snippet.title,
 			description: item.snippet.description,
@@ -194,7 +190,7 @@ export async function getPastBroadcasts(maxResults = 6) {
 
 		const data = await response.json();
 
-		return (data.items || []).map(item => ({
+		return (data.items || []).map((item) => ({
 			id: item.id.videoId,
 			title: item.snippet.title,
 			description: item.snippet.description,

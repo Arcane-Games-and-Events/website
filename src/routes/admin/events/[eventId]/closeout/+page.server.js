@@ -11,7 +11,7 @@ export async function load({ params, locals }) {
 	}
 
 	const isAdmin = locals.user.role === 'admin';
-	const isTournamentStaff = locals.user.role === 'tournament_staff';
+	const isTournamentStaff = locals.user.role === 'tournament staff';
 
 	// If tournament staff, check if they're assigned to this event
 	if (isTournamentStaff) {
@@ -97,7 +97,7 @@ export async function load({ params, locals }) {
 export const actions = {
 	// Save a single result
 	saveResult: async ({ params, request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament_staff')) {
+		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
@@ -151,7 +151,7 @@ export const actions = {
 
 	// Delete a result
 	deleteResult: async ({ request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament_staff')) {
+		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
@@ -169,7 +169,7 @@ export const actions = {
 
 	// Save a decklist
 	saveDecklist: async ({ params, request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament_staff')) {
+		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
@@ -226,7 +226,7 @@ export const actions = {
 
 	// Delete a decklist
 	deleteDecklist: async ({ request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament_staff')) {
+		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
@@ -244,7 +244,7 @@ export const actions = {
 
 	// Process CSV files to import tournament results
 	processCSV: async ({ params, request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament_staff')) {
+		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
@@ -315,7 +315,7 @@ export const actions = {
 
 	// Close out the event
 	closeEvent: async ({ params, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament_staff')) {
+		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
 			return fail(403, { error: 'Unauthorized' });
 		}
 

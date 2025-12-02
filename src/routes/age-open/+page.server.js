@@ -28,6 +28,76 @@ function compareStandings(a, b) {
 	return eventsDiff;
 }
 
+/**
+ * Calculate percentile rank (0-100) for a value in an array
+ * Higher percentile = better
+ */
+function calculatePercentile(value, allValues) {
+	if (allValues.length === 0) return 50;
+	const sorted = [...allValues].sort((a, b) => a - b);
+	const belowCount = sorted.filter(v => v < value).length;
+	const equalCount = sorted.filter(v => v === value).length;
+	return ((belowCount + equalCount / 2) / sorted.length) * 100;
+}
+
+/**
+ * Calculate percentile rank for rank values (lower is better)
+ */
+function calculateRankPercentile(rank, allRanks) {
+	if (allRanks.length === 0 || rank === null) return 50;
+	const sorted = [...allRanks].sort((a, b) => a - b);
+	const worseCount = sorted.filter(r => r > rank).length;
+	const equalCount = sorted.filter(r => r === rank).length;
+	return ((worseCount + equalCount / 2) / sorted.length) * 100;
+}
+
+/**
+ * Calculate AGE Rating from percentiles using harsh power curve
+ */
+function calculateAgeRating(percentiles, eventsPlayed) {
+	const harshCurve = (percentile) => Math.pow(percentile / 100, 1.4) * 100;
+
+	// Minimum events penalty
+	const minEvents = 3;
+	const eventMultiplier = Math.min(1, eventsPlayed / minEvents);
+
+	// Apply harsh curve
+	const adjustedWinRate = harshCurve(percentiles.winRate);
+	const adjustedTop8 = harshCurve(percentiles.top8Rate);
+	const adjustedPeak = harshCurve(percentiles.bestRank);
+	const adjustedEfficiency = harshCurve(percentiles.efficiency);
+	const adjustedExperience = harshCurve(percentiles.experience);
+	const adjustedChampionship = harshCurve(percentiles.championship);
+
+	// Weights (total 100)
+	const winRateScore = (adjustedWinRate / 100) * 25;
+	const top8Score = (adjustedTop8 / 100) * 25;
+	const peakScore = (adjustedPeak / 100) * 20;
+	const efficiencyScore = (adjustedEfficiency / 100) * 15;
+	const experienceScore = (adjustedExperience / 100) * 10;
+	const championshipScore = (adjustedChampionship / 100) * 5;
+
+	let total = winRateScore + top8Score + peakScore + efficiencyScore + experienceScore + championshipScore;
+	total = total * (0.6 + 0.4 * eventMultiplier);
+
+	return Math.round(Math.min(100, Math.max(0, total)));
+}
+
+/**
+ * Get rating tier info based on AGE Rating
+ */
+function getRatingTier(rating) {
+	if (rating >= 90) return { label: 'Elite', color: 'yellow' };
+	if (rating >= 80) return { label: 'Premier', color: 'purple' };
+	if (rating >= 70) return { label: 'Distinguished', color: 'cyan' };
+	if (rating >= 60) return { label: 'Competitive', color: 'teal' };
+	if (rating >= 50) return { label: 'Established', color: 'amber' };
+	if (rating >= 40) return { label: 'Rising', color: 'gray' };
+	if (rating >= 30) return { label: 'Developing', color: 'orange' };
+	if (rating >= 20) return { label: 'Newcomer', color: 'stone' };
+	return { label: 'Unranked', color: 'slate' };
+}
+
 export async function load({ url }) {
 	const currentYear = new Date().getFullYear().toString();
 	const selectedSeason = url.searchParams.get('season') || currentYear;
@@ -171,6 +241,108 @@ export async function load({ url }) {
 					...standing,
 					calculatedRank: index + 1,
 					winPercentage: standing.winPercentage || winPercentage
+				};
+			});
+		}
+
+		// === Calculate AGE Rating for each player in standings ===
+		if (standings.length > 0) {
+			// Calculate all aggregate stats for percentile calculation
+			// First, get all standings to compute global percentiles
+			const allStandingsForPercentiles = await db.select().from(seasonStanding);
+
+			// Group by gemId/playerName to get aggregate stats
+			const playerStatsMap = new Map();
+			for (const standing of allStandingsForPercentiles) {
+				const key = standing.gemId || standing.playerName;
+				if (!key) continue;
+
+				if (!playerStatsMap.has(key)) {
+					playerStatsMap.set(key, {
+						totalPoints: 0,
+						matchesWon: 0,
+						matchesPlayed: 0,
+						eventsPlayed: 0,
+						top8Finishes: 0,
+						bestRank: null,
+						championshipQualifications: 0,
+						standingsList: []
+					});
+				}
+
+				const playerData = playerStatsMap.get(key);
+				playerData.totalPoints += standing.totalPoints || 0;
+				playerData.matchesWon += standing.matchesWon || 0;
+				playerData.matchesPlayed += standing.matchesPlayed || 0;
+				playerData.eventsPlayed += standing.eventsPlayed || 0;
+				playerData.top8Finishes += standing.top8Finishes || 0;
+				playerData.standingsList.push(standing);
+			}
+
+			// Calculate ranks for best rank and championship qualifications
+			for (const [key, playerData] of playerStatsMap) {
+				for (const standing of playerData.standingsList) {
+					const circuitStandings = allStandingsForPercentiles.filter(
+						s => s.season === standing.season && s.circuit === standing.circuit
+					);
+					circuitStandings.sort(compareStandings);
+					const rank = circuitStandings.findIndex(s => (s.gemId || s.playerName) === key) + 1;
+
+					if (rank > 0) {
+						if (playerData.bestRank === null || rank < playerData.bestRank) {
+							playerData.bestRank = rank;
+						}
+						if (rank <= 16) {
+							playerData.championshipQualifications++;
+						}
+					}
+				}
+			}
+
+			// Extract arrays for percentile calculation
+			const allPlayers = Array.from(playerStatsMap.values()).filter(p => p.eventsPlayed >= 1);
+			const allWinRates = allPlayers.map(p => p.matchesPlayed > 0 ? p.matchesWon / p.matchesPlayed : 0);
+			const allTop8Rates = allPlayers.map(p => p.eventsPlayed > 0 ? p.top8Finishes / p.eventsPlayed : 0);
+			const allEventsPlayed = allPlayers.map(p => p.eventsPlayed);
+			const allBestRanks = allPlayers.filter(p => p.bestRank !== null).map(p => p.bestRank);
+			const allAvgPointsPerEvent = allPlayers.map(p => p.eventsPlayed > 0 ? p.totalPoints / p.eventsPlayed : 0);
+			const allChampionshipQuals = allPlayers.map(p => p.championshipQualifications);
+
+			// Calculate AGE Rating for each player in standings
+			standings = standings.map(standing => {
+				const key = standing.gemId || standing.playerName;
+				const playerData = playerStatsMap.get(key);
+
+				if (!playerData) {
+					return { ...standing, ageRating: null, ratingTier: null };
+				}
+
+				// Calculate metrics for this player
+				const winRate = playerData.matchesPlayed > 0 ? playerData.matchesWon / playerData.matchesPlayed : 0;
+				const top8Rate = playerData.eventsPlayed > 0 ? playerData.top8Finishes / playerData.eventsPlayed : 0;
+				const avgPtsPerEvent = playerData.eventsPlayed > 0 ? playerData.totalPoints / playerData.eventsPlayed : 0;
+
+				// Calculate percentiles
+				const percentiles = {
+					winRate: calculatePercentile(winRate, allWinRates),
+					top8Rate: calculatePercentile(top8Rate, allTop8Rates),
+					experience: calculatePercentile(playerData.eventsPlayed, allEventsPlayed),
+					bestRank: playerData.bestRank !== null
+						? calculateRankPercentile(playerData.bestRank, allBestRanks)
+						: 50,
+					efficiency: calculatePercentile(avgPtsPerEvent, allAvgPointsPerEvent),
+					championship: calculatePercentile(playerData.championshipQualifications, allChampionshipQuals)
+				};
+
+				const ageRating = calculateAgeRating(percentiles, playerData.eventsPlayed);
+				const ratingTier = getRatingTier(ageRating);
+				const isProvisional = playerData.eventsPlayed < 3;
+
+				return {
+					...standing,
+					ageRating,
+					ratingTier,
+					isProvisional
 				};
 			});
 		}

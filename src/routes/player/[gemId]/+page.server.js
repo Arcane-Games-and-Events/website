@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { player, seasonStanding, playerAlias } from '$lib/server/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, sql } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 
 /**
@@ -27,6 +27,31 @@ function compareStandings(a, b) {
 	// Tiebreaker 3: Events attended (higher is better)
 	const eventsDiff = (b.eventsPlayed || 0) - (a.eventsPlayed || 0);
 	return eventsDiff;
+}
+
+/**
+ * Calculate percentile rank (0-100) for a value in an array
+ * Higher percentile = better (e.g., 95th percentile means better than 95% of players)
+ */
+function calculatePercentile(value, allValues) {
+	if (allValues.length === 0) return 50;
+	const sorted = [...allValues].sort((a, b) => a - b);
+	const belowCount = sorted.filter(v => v < value).length;
+	const equalCount = sorted.filter(v => v === value).length;
+	// Use midpoint method for ties
+	return ((belowCount + equalCount / 2) / sorted.length) * 100;
+}
+
+/**
+ * Calculate percentile rank for rank values (lower is better)
+ */
+function calculateRankPercentile(rank, allRanks) {
+	if (allRanks.length === 0 || rank === null) return 50;
+	const sorted = [...allRanks].sort((a, b) => a - b);
+	// For ranks, lower is better, so we count how many are WORSE (higher)
+	const worseCount = sorted.filter(r => r > rank).length;
+	const equalCount = sorted.filter(r => r === rank).length;
+	return ((worseCount + equalCount / 2) / sorted.length) * 100;
 }
 
 export async function load({ params, locals }) {
@@ -103,6 +128,91 @@ export async function load({ params, locals }) {
 	// Check if user is admin
 	const isAdmin = locals.user?.role === 'admin';
 
+	// === FETCH ALL PLAYER STATS FOR PERCENTILE CALCULATION ===
+	// Get all unique players and their aggregate stats from seasonStanding
+	const allStandings = await db.select().from(seasonStanding);
+
+	// Group by gemId to get aggregate stats per player
+	const playerStatsMap = new Map();
+	for (const standing of allStandings) {
+		const playerGemId = standing.gemId;
+		if (!playerGemId) continue;
+
+		if (!playerStatsMap.has(playerGemId)) {
+			playerStatsMap.set(playerGemId, {
+				gemId: playerGemId,
+				totalPoints: 0,
+				matchesWon: 0,
+				matchesPlayed: 0,
+				eventsPlayed: 0,
+				top8Finishes: 0,
+				bestRank: null,
+				championshipQualifications: 0,
+				standings: []
+			});
+		}
+
+		const playerData = playerStatsMap.get(playerGemId);
+		playerData.totalPoints += standing.totalPoints || 0;
+		playerData.matchesWon += standing.matchesWon || 0;
+		playerData.matchesPlayed += standing.matchesPlayed || 0;
+		playerData.eventsPlayed += standing.eventsPlayed || 0;
+		playerData.top8Finishes += standing.top8Finishes || 0;
+		playerData.standings.push(standing);
+	}
+
+	// Calculate ranks for all players in their circuits
+	for (const [playerGemId, playerData] of playerStatsMap) {
+		for (const standing of playerData.standings) {
+			// Get all standings for the same circuit/season
+			const circuitStandings = allStandings.filter(
+				s => s.season === standing.season && s.circuit === standing.circuit
+			);
+			circuitStandings.sort(compareStandings);
+			const rank = circuitStandings.findIndex(s => s.gemId === playerGemId) + 1;
+
+			if (rank > 0) {
+				if (playerData.bestRank === null || rank < playerData.bestRank) {
+					playerData.bestRank = rank;
+				}
+				if (rank <= 16) {
+					playerData.championshipQualifications++;
+				}
+			}
+		}
+	}
+
+	// Extract arrays of all player metrics for percentile calculation
+	const allPlayers = Array.from(playerStatsMap.values()).filter(p => p.eventsPlayed >= 1);
+	const allWinRates = allPlayers.map(p => p.matchesPlayed > 0 ? p.matchesWon / p.matchesPlayed : 0);
+	const allTop8Rates = allPlayers.map(p => p.eventsPlayed > 0 ? p.top8Finishes / p.eventsPlayed : 0);
+	const allEventsPlayed = allPlayers.map(p => p.eventsPlayed);
+	const allBestRanks = allPlayers.filter(p => p.bestRank !== null).map(p => p.bestRank);
+	const allAvgPointsPerEvent = allPlayers.map(p => p.eventsPlayed > 0 ? p.totalPoints / p.eventsPlayed : 0);
+	const allChampionshipQuals = allPlayers.map(p => p.championshipQualifications);
+
+	// Calculate this player's metrics
+	const thisPlayerWinRate = totalStats.matchesPlayed > 0 ? totalStats.matchesWon / totalStats.matchesPlayed : 0;
+	const thisPlayerTop8Rate = totalStats.eventsPlayed > 0 ? totalStats.top8Finishes / totalStats.eventsPlayed : 0;
+	const thisPlayerBestRank = standingsWithRank.length > 0
+		? Math.min(...standingsWithRank.filter(s => s.calculatedRank).map(s => s.calculatedRank))
+		: null;
+	const thisPlayerAvgPts = totalStats.eventsPlayed > 0 ? totalStats.totalPoints / totalStats.eventsPlayed : 0;
+	const thisPlayerChampionshipQuals = standingsWithRank.filter(s => s.calculatedRank && s.calculatedRank <= 16).length;
+
+	// Calculate percentiles for this player
+	const percentiles = {
+		winRate: calculatePercentile(thisPlayerWinRate, allWinRates),
+		top8Rate: calculatePercentile(thisPlayerTop8Rate, allTop8Rates),
+		experience: calculatePercentile(totalStats.eventsPlayed, allEventsPlayed),
+		bestRank: thisPlayerBestRank !== null && thisPlayerBestRank !== Infinity
+			? calculateRankPercentile(thisPlayerBestRank, allBestRanks)
+			: 50,
+		efficiency: calculatePercentile(thisPlayerAvgPts, allAvgPointsPerEvent),
+		championship: calculatePercentile(thisPlayerChampionshipQuals, allChampionshipQuals),
+		totalPlayers: allPlayers.length
+	};
+
 	return {
 		player: playerRecord[0] || null,
 		gemId,
@@ -110,7 +220,8 @@ export async function load({ params, locals }) {
 		aliases,
 		standings: standingsWithRank,
 		totalStats,
-		isAdmin
+		isAdmin,
+		percentiles
 	};
 }
 

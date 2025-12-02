@@ -293,12 +293,22 @@
 	let standingsSeason = data.selectedSeason || data.currentYear;
 
 	// Sorting state for standings
-	let sortColumn = 'rank'; // 'rank', 'points', 'record', 'winPct', 'events', 'top8'
+	let sortColumn = 'rank'; // 'rank', 'points', 'record', 'winPct', 'events', 'top8', 'ageRating'
 	let sortDirection = 'asc'; // 'asc' or 'desc'
 
 	function toggleSort(column) {
 		if (sortColumn === column) {
-			sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
+			// Three-state toggle: desc → asc → clear (back to rank)
+			if (sortDirection === 'desc') {
+				sortDirection = 'asc';
+			} else if (sortDirection === 'asc' && column !== 'rank') {
+				// Clear sort - return to default rank sorting
+				sortColumn = 'rank';
+				sortDirection = 'asc';
+			} else {
+				// For rank column or already at asc, toggle to desc
+				sortDirection = 'desc';
+			}
 		} else {
 			sortColumn = column;
 			// Default to descending for most columns, ascending for rank
@@ -353,6 +363,10 @@
 			case 'top8':
 				aVal = a.top8Finishes || 0;
 				bVal = b.top8Finishes || 0;
+				break;
+			case 'ageRating':
+				aVal = a.ageRating || 0;
+				bVal = b.ageRating || 0;
 				break;
 			default:
 				return (a.calculatedRank || 999) - (b.calculatedRank || 999);
@@ -1710,87 +1724,83 @@
 				</div>
 
 				<!-- Defending Champions Section -->
-				<div class="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-gray-900 to-gray-950 p-6 overflow-hidden">
-					<div class="flex items-center gap-3 mb-6">
-						<div class="h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
-							<svg class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+				<div class="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-gray-900 to-gray-950 p-4 sm:p-6 overflow-hidden">
+					<div class="flex items-center gap-3 mb-4 sm:mb-6">
+						<div class="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+							<svg class="h-4 w-4 sm:h-5 sm:w-5 text-white" fill="currentColor" viewBox="0 0 20 20">
 								<path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd"/>
 							</svg>
 						</div>
 						<div>
-							<h2 class="text-xl font-bold text-white">2025 Defending Champions</h2>
-							<p class="text-sm text-gray-400">Can you dethrone them in 2026?</p>
+							<h2 class="text-lg sm:text-xl font-bold text-white">2025 Defending Champions</h2>
+							<p class="text-xs sm:text-sm text-gray-400">Can you dethrone them in 2026?</p>
 						</div>
 					</div>
 
 					<div class="grid gap-4 sm:grid-cols-2">
 						<!-- LA Champion -->
-						<div class="relative overflow-hidden rounded-xl border border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-gray-900 p-5">
-							<div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-400/20 to-transparent rounded-bl-full"></div>
+						<div class="relative overflow-hidden rounded-xl border border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-gray-900 p-4 sm:p-5">
+							<div class="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-blue-400/20 to-transparent rounded-bl-full"></div>
 							<div class="relative">
 								<div class="flex items-center gap-3 mb-3">
-									<div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30 ring-2 ring-amber-400 ring-offset-2 ring-offset-gray-900">
-										<svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
+									<div class="h-11 w-11 sm:h-12 sm:w-12 shrink-0 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30 ring-2 ring-amber-400 ring-offset-2 ring-offset-gray-900">
+										<svg class="h-5 w-5 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 20 20">
 											<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
 										</svg>
 									</div>
-									<div>
-										<div class="text-xs text-blue-400 font-semibold uppercase tracking-wide">Los Angeles Champion</div>
-										<h3 class="text-lg font-bold text-white">Peter Buddensiek</h3>
+									<div class="min-w-0">
+										<div class="text-[10px] sm:text-xs text-blue-400 font-semibold uppercase tracking-wide">Los Angeles Champion</div>
+										<h3 class="text-base sm:text-lg font-bold text-white truncate">Peter Buddensiek</h3>
 									</div>
 								</div>
-								<div class="flex items-center justify-between">
-									<div class="flex items-center gap-2 text-sm text-gray-400">
-										<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-xs text-blue-300">
-											2025 Season
-										</span>
-										<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-xs text-amber-300">
-											<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-											Champion
-										</span>
-									</div>
-									<a href="/player/61767867" class="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors">
-										View Profile
-										<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-										</svg>
-									</a>
+								<div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3">
+									<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-[10px] sm:text-xs text-blue-300">
+										2025 Season
+									</span>
+									<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-[10px] sm:text-xs text-amber-300">
+										<svg class="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+										Champion
+									</span>
 								</div>
+								<a href="/player/61767867" class="flex items-center justify-center gap-2 w-full py-2 sm:py-2.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 transition-all text-xs sm:text-sm font-medium">
+									<svg class="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+									</svg>
+									View Profile
+								</a>
 							</div>
 						</div>
 
 						<!-- NE Champion -->
-						<div class="relative overflow-hidden rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-gray-900 p-5">
-							<div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-purple-400/20 to-transparent rounded-bl-full"></div>
+						<div class="relative overflow-hidden rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-gray-900 p-4 sm:p-5">
+							<div class="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-purple-400/20 to-transparent rounded-bl-full"></div>
 							<div class="relative">
 								<div class="flex items-center gap-3 mb-3">
-									<div class="h-12 w-12 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/30 ring-2 ring-amber-400 ring-offset-2 ring-offset-gray-900">
-										<svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
+									<div class="h-11 w-11 sm:h-12 sm:w-12 shrink-0 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg shadow-purple-500/30 ring-2 ring-amber-400 ring-offset-2 ring-offset-gray-900">
+										<svg class="h-5 w-5 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 20 20">
 											<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
 										</svg>
 									</div>
-									<div>
-										<div class="text-xs text-purple-400 font-semibold uppercase tracking-wide">New England Champion</div>
-										<h3 class="text-lg font-bold text-white">Noah Beygelman</h3>
+									<div class="min-w-0">
+										<div class="text-[10px] sm:text-xs text-purple-400 font-semibold uppercase tracking-wide">New England Champion</div>
+										<h3 class="text-base sm:text-lg font-bold text-white truncate">Noah Beygelman</h3>
 									</div>
 								</div>
-								<div class="flex items-center justify-between">
-									<div class="flex items-center gap-2 text-sm text-gray-400">
-										<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/30 text-xs text-purple-300">
-											2025 Season
-										</span>
-										<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-xs text-amber-300">
-											<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-											Champion
-										</span>
-									</div>
-									<a href="/player/56952555" class="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 transition-colors">
-										View Profile
-										<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-										</svg>
-									</a>
+								<div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3">
+									<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/20 border border-purple-500/30 text-[10px] sm:text-xs text-purple-300">
+										2025 Season
+									</span>
+									<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-[10px] sm:text-xs text-amber-300">
+										<svg class="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+										Champion
+									</span>
 								</div>
+								<a href="/player/56952555" class="flex items-center justify-center gap-2 w-full py-2 sm:py-2.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300 border border-purple-500/20 hover:border-purple-500/40 transition-all text-xs sm:text-sm font-medium">
+									<svg class="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+									</svg>
+									View Profile
+								</a>
 							</div>
 						</div>
 					</div>
@@ -2266,12 +2276,12 @@
 
 				<!-- LSS Events Section - Minimalistic with subtle accent -->
 				{#if data.lssSeasons && data.lssSeasons.length > 0}
-					<div class="mt-8 rounded-lg border border-amber-500/20 bg-gradient-to-r from-amber-950/20 to-transparent p-4">
+					<div class="mt-8 rounded-lg border border-amber-500/20 bg-gradient-to-r from-amber-950/20 to-transparent p-3 sm:p-4">
 						<div class="flex items-center gap-2 mb-3">
-							<svg class="h-4 w-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+							<svg class="h-4 w-4 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
 								<path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd" />
 							</svg>
-							<h3 class="text-sm font-medium text-amber-400/80 uppercase tracking-wider">Official LSS Events</h3>
+							<h3 class="text-xs sm:text-sm font-medium text-amber-400/80 uppercase tracking-wider">Official LSS Events</h3>
 							<div class="flex-1 h-px bg-amber-500/20"></div>
 						</div>
 						<div class="space-y-1">
@@ -2281,7 +2291,41 @@
 								{@const now = new Date()}
 								{@const isActive = now >= startDate && now <= endDate}
 								{@const isPast = now > endDate}
-								<div class="flex items-center justify-between gap-4 py-2.5 px-3 rounded-md hover:bg-amber-500/10 transition-colors group">
+								<!-- Mobile Layout -->
+								<div class="sm:hidden py-2.5 px-2 rounded-md hover:bg-amber-500/10 transition-colors group">
+									<div class="flex items-start justify-between gap-2 mb-1.5">
+										<div class="flex items-center gap-2 min-w-0">
+											{#if isActive}
+												<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+											{:else if !isPast}
+												<span class="w-2 h-2 rounded-full bg-amber-400/60 shrink-0"></span>
+											{/if}
+											<span class="text-sm text-gray-200 group-hover:text-white transition-colors line-clamp-2">{season.name}</span>
+										</div>
+										{#if season.link}
+											<a href={season.link} target="_blank" rel="noopener noreferrer" class="text-gray-500 hover:text-amber-400 transition-colors shrink-0 p-1" aria-label="View official page">
+												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+												</svg>
+											</a>
+										{/if}
+									</div>
+									<div class="flex items-center justify-between gap-2">
+										<div class="flex items-center gap-1.5 flex-wrap">
+											{#if season.eventType}
+												<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/20 text-amber-300/80">{season.eventType}</span>
+											{/if}
+											{#if season.format}
+												<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-700/50 text-gray-400">{season.format}</span>
+											{/if}
+										</div>
+										<div class="text-[11px] text-gray-500 shrink-0">
+											{startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+										</div>
+									</div>
+								</div>
+								<!-- Desktop Layout -->
+								<div class="hidden sm:flex items-center justify-between gap-4 py-2.5 px-3 rounded-md hover:bg-amber-500/10 transition-colors group">
 									<div class="flex items-center gap-3 min-w-0 flex-1">
 										<div class="flex items-center gap-2 flex-wrap min-w-0">
 											<span class="text-sm text-gray-200 group-hover:text-white truncate transition-colors">{season.name}</span>
@@ -2457,21 +2501,21 @@
 
 		<!-- Standings Tab -->
 		{#if activeTab === 'standings'}
-			<div class="space-y-6">
+			<div class="space-y-4 md:space-y-6">
 				<div>
-					<h2 class="mb-2 text-3xl font-bold text-white">Circuit Standings</h2>
-					<p class="text-gray-400">
+					<h2 class="mb-1 md:mb-2 text-2xl md:text-3xl font-bold text-white">Circuit Standings</h2>
+					<p class="text-sm md:text-base text-gray-400">
 						Track player performance across AGE Open Series seasons
 					</p>
 				</div>
 
 				<!-- Season Selector -->
-				<div class="flex flex-wrap items-center gap-2">
-					<span class="text-sm font-medium text-gray-400">Season:</span>
+				<div class="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+					<span class="text-xs md:text-sm font-medium text-gray-400 shrink-0">Season:</span>
 					{#each data.availableSeasons || ['all', '2025', '2024', '2023'] as season}
 						<button
 							onclick={() => changeSeason(season)}
-							class="rounded-lg px-4 py-2 text-sm font-medium transition-colors {standingsSeason === season
+							class="shrink-0 rounded-lg px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-colors {standingsSeason === season
 								? 'bg-yellow-500 text-gray-900'
 								: 'bg-gray-800 text-gray-300 hover:bg-gray-700'}"
 						>
@@ -2481,10 +2525,10 @@
 				</div>
 
 				<!-- Search and Filters -->
-				<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-					<div class="relative flex-1 max-w-md">
+				<div class="space-y-3 md:space-y-0 md:flex md:items-center md:justify-between md:gap-4">
+					<div class="relative flex-1 md:max-w-md">
 						<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-							<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg class="h-4 w-4 md:h-5 md:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
 							</svg>
 						</div>
@@ -2492,14 +2536,14 @@
 							type="text"
 							bind:value={searchQuery}
 							placeholder="Search players..."
-							class="w-full rounded-lg border border-gray-700 bg-gray-900 py-2 pl-10 pr-4 text-sm text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+							class="w-full rounded-lg border border-gray-700 bg-gray-900 py-2 pl-9 md:pl-10 pr-4 text-sm text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 						/>
 					</div>
 
-					<div class="flex flex-wrap gap-2">
+					<div class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 md:mx-0 md:px-0 md:pb-0">
 						<button
 							onclick={() => (standingsCircuit = 'all')}
-							class="rounded-full px-4 py-2 text-sm font-medium transition-colors {standingsCircuit === 'all'
+							class="shrink-0 rounded-full px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-colors {standingsCircuit === 'all'
 								? 'bg-white text-gray-900'
 								: 'bg-gray-800 text-gray-300 hover:bg-gray-700'}"
 						>
@@ -2508,7 +2552,7 @@
 						{#if availableCircuits.includes('Los Angeles')}
 							<button
 								onclick={() => (standingsCircuit = 'Los Angeles')}
-								class="rounded-full px-4 py-2 text-sm font-medium transition-colors {standingsCircuit === 'Los Angeles'
+								class="shrink-0 rounded-full px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-colors {standingsCircuit === 'Los Angeles'
 									? 'bg-blue-500 text-white'
 									: 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'}"
 							>
@@ -2518,7 +2562,7 @@
 						{#if availableCircuits.includes('St. Louis')}
 							<button
 								onclick={() => (standingsCircuit = 'St. Louis')}
-								class="rounded-full px-4 py-2 text-sm font-medium transition-colors {standingsCircuit === 'St. Louis'
+								class="shrink-0 rounded-full px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-colors {standingsCircuit === 'St. Louis'
 									? 'bg-green-500 text-white'
 									: 'bg-green-500/10 text-green-400 hover:bg-green-500/20'}"
 							>
@@ -2528,7 +2572,7 @@
 						{#if availableCircuits.includes('New England')}
 							<button
 								onclick={() => (standingsCircuit = 'New England')}
-								class="rounded-full px-4 py-2 text-sm font-medium transition-colors {standingsCircuit === 'New England'
+								class="shrink-0 rounded-full px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-colors {standingsCircuit === 'New England'
 									? 'bg-purple-500 text-white'
 									: 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'}"
 							>
@@ -2538,8 +2582,146 @@
 					</div>
 				</div>
 
-				<!-- Standings Table -->
-				<div class="rounded-lg border border-gray-800 bg-gray-900 overflow-hidden">
+				<!-- Mobile Standings Cards -->
+				<div class="md:hidden space-y-3">
+					<!-- Mobile Sort Controls -->
+					<div class="flex items-center gap-2 overflow-x-auto pb-2">
+						<span class="text-xs text-gray-500 shrink-0">Sort:</span>
+						<button
+							onclick={() => toggleSort('rank')}
+							class="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors {sortColumn === 'rank' ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400'}"
+						>
+							Rank
+						</button>
+						<button
+							onclick={() => toggleSort('points')}
+							class="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors {sortColumn === 'points' ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400'}"
+						>
+							Points
+						</button>
+						<button
+							onclick={() => toggleSort('winPct')}
+							class="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors {sortColumn === 'winPct' ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400'}"
+						>
+							Win %
+						</button>
+						<button
+							onclick={() => toggleSort('events')}
+							class="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors {sortColumn === 'events' ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400'}"
+						>
+							Events
+						</button>
+						<button
+							onclick={() => toggleSort('ageRating')}
+							class="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors {sortColumn === 'ageRating' ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400'}"
+						>
+							Rating
+						</button>
+					</div>
+
+					{#each paginatedStandings as player}
+						{@const rank = player.calculatedRank || player.rank}
+						{@const losses = (player.matchesPlayed || 0) - (player.matchesWon || 0)}
+						{@const colors = player.circuit ? getCircuitColor(player.circuit) : null}
+						<div class="rounded-xl border border-gray-800 bg-gray-900/80 p-4 {rank <= 3 ? 'border-yellow-500/30' : rank <= 16 ? 'border-blue-500/20' : ''}">
+							<div class="flex items-start gap-3">
+								<!-- Rank Badge -->
+								<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full {rank === 1 ? 'bg-yellow-500/20 text-yellow-500 ring-2 ring-yellow-500/30' : rank === 2 ? 'bg-gray-400/20 text-gray-300 ring-2 ring-gray-400/30' : rank === 3 ? 'bg-orange-600/20 text-orange-500 ring-2 ring-orange-500/30' : rank <= 16 ? 'bg-blue-500/10 text-blue-400' : 'bg-gray-800 text-gray-400'} text-sm font-bold">
+									{rank}
+								</div>
+
+								<!-- Player Info -->
+								<div class="flex-1 min-w-0">
+									<span class="font-semibold text-white truncate block">{player.playerName}</span>
+									{#if colors}
+										<span class="inline-block rounded-full {colors.bgLight} {colors.text} px-2 py-0.5 text-[10px] font-medium mt-1">
+											{player.circuit}
+										</span>
+									{:else if player.circuitsPlayed && player.circuitsPlayed.length > 0}
+										<span class="text-[10px] text-gray-500 mt-1 block">{player.circuitsPlayed.join(', ')}</span>
+									{/if}
+								</div>
+
+								<!-- Points (prominent) -->
+								<div class="text-right shrink-0">
+									<div class="text-2xl font-bold text-emerald-400">{player.totalPoints || 0}</div>
+									<div class="text-[10px] text-gray-500 uppercase">Points</div>
+								</div>
+							</div>
+
+							<!-- Stats Row -->
+							<div class="mt-3 pt-3 border-t border-gray-800 grid grid-cols-5 gap-2 text-center">
+								<div>
+									<div class="text-sm font-medium">
+										<span class="text-green-400">{player.matchesWon || 0}</span>
+										<span class="text-gray-600">-</span>
+										<span class="text-red-400">{losses}</span>
+									</div>
+									<div class="text-[10px] text-gray-500">Record</div>
+								</div>
+								<div>
+									{#if player.winPercentage}
+										<div class="text-sm font-medium {player.winPercentage >= 60 ? 'text-green-400' : player.winPercentage >= 50 ? 'text-yellow-400' : 'text-red-400'}">
+											{player.winPercentage}%
+										</div>
+									{:else}
+										<div class="text-sm text-gray-600">-</div>
+									{/if}
+									<div class="text-[10px] text-gray-500">Win %</div>
+								</div>
+								<div>
+									<div class="text-sm font-medium text-gray-300">{player.eventsPlayed || 0}</div>
+									<div class="text-[10px] text-gray-500">Events</div>
+								</div>
+								<div>
+									<div class="text-sm font-medium text-purple-400">{player.top8Finishes || 0}</div>
+									<div class="text-[10px] text-gray-500">Top 8</div>
+								</div>
+								<div class="flex flex-col items-center">
+									{#if player.ageRating !== null && player.ageRating !== undefined}
+										<div class="flex flex-col items-center min-w-[60px] px-2 py-1 rounded border {player.isProvisional ? 'border-slate-500/40 bg-slate-700/20' : player.ratingTier?.color === 'yellow' ? 'border-yellow-500/40 bg-yellow-500/10' : player.ratingTier?.color === 'purple' ? 'border-purple-500/40 bg-purple-500/10' : player.ratingTier?.color === 'cyan' ? 'border-cyan-500/40 bg-cyan-500/10' : player.ratingTier?.color === 'teal' ? 'border-teal-500/40 bg-teal-500/10' : player.ratingTier?.color === 'amber' ? 'border-amber-500/40 bg-amber-500/10' : player.ratingTier?.color === 'orange' ? 'border-orange-500/40 bg-orange-500/10' : 'border-gray-600/40 bg-gray-700/20'}">
+											<div class="text-sm font-bold leading-tight {player.isProvisional ? 'text-slate-400' : player.ratingTier?.color === 'yellow' ? 'text-yellow-400' : player.ratingTier?.color === 'purple' ? 'text-purple-400' : player.ratingTier?.color === 'cyan' ? 'text-cyan-400' : player.ratingTier?.color === 'teal' ? 'text-teal-400' : player.ratingTier?.color === 'amber' ? 'text-amber-400' : player.ratingTier?.color === 'orange' ? 'text-orange-400' : 'text-gray-400'}">
+												{player.ageRating}
+											</div>
+											<div class="text-[9px] font-medium truncate {player.isProvisional ? 'text-slate-500' : player.ratingTier?.color === 'yellow' ? 'text-yellow-300/80' : player.ratingTier?.color === 'purple' ? 'text-purple-300/80' : player.ratingTier?.color === 'cyan' ? 'text-cyan-300/80' : player.ratingTier?.color === 'teal' ? 'text-teal-300/80' : player.ratingTier?.color === 'amber' ? 'text-amber-300/80' : player.ratingTier?.color === 'orange' ? 'text-orange-300/80' : 'text-gray-500'}">
+												{player.isProvisional ? 'Provisional' : (player.ratingTier?.label || 'Unranked')}
+											</div>
+										</div>
+									{:else}
+										<div class="text-sm text-gray-600">-</div>
+										<div class="text-[10px] text-gray-500">Rating</div>
+									{/if}
+								</div>
+							</div>
+
+							<!-- View Profile Button -->
+							{#if player.gemId}
+								<a
+									href="/player/{player.gemId}"
+									class="mt-3 flex items-center justify-center gap-2 w-full py-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-blue-500/20 hover:border-blue-500/40 transition-all text-sm font-medium"
+								>
+									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+									</svg>
+									View Profile
+								</a>
+							{/if}
+						</div>
+					{/each}
+
+					{#if filteredStandings.length === 0}
+						<div class="rounded-xl border border-gray-800 bg-gray-900/80 p-8 text-center">
+							<svg class="h-12 w-12 text-gray-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+							</svg>
+							<p class="text-gray-400">No standings data yet</p>
+							<p class="text-sm text-gray-500 mt-1">Standings will appear once events are completed</p>
+						</div>
+					{/if}
+				</div>
+
+				<!-- Desktop Standings Table -->
+				<div class="hidden md:block rounded-lg border border-gray-800 bg-gray-900 overflow-hidden">
 					<div class="overflow-x-auto">
 						<table class="w-full">
 							<thead class="bg-gray-800">
@@ -2623,6 +2805,19 @@
 											{/if}
 										</button>
 									</th>
+									<th class="px-4 py-4 text-center">
+										<button
+											onclick={() => toggleSort('ageRating')}
+											class="inline-flex items-center gap-1 text-xs font-semibold uppercase transition-colors {sortColumn === 'ageRating' ? 'text-blue-400' : 'text-gray-100 hover:text-gray-300'}"
+										>
+											Rating
+											{#if sortColumn === 'ageRating'}
+												<svg class="w-3 h-3 {sortDirection === 'asc' ? 'rotate-180' : ''}" fill="currentColor" viewBox="0 0 20 20">
+													<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+												</svg>
+											{/if}
+										</button>
+									</th>
 									<th class="px-4 py-4 text-center text-xs font-semibold text-gray-100 uppercase"></th>
 								</tr>
 							</thead>
@@ -2680,6 +2875,20 @@
 											<span class="text-sm font-medium text-purple-400">{player.top8Finishes || 0}</span>
 										</td>
 										<td class="px-4 py-4 text-center">
+											{#if player.ageRating !== null && player.ageRating !== undefined}
+												<div class="inline-flex flex-col items-center min-w-[85px] px-3 py-1.5 rounded-lg border {player.isProvisional ? 'border-slate-500/40 bg-slate-700/20' : player.ratingTier?.color === 'yellow' ? 'border-yellow-500/40 bg-yellow-500/10' : player.ratingTier?.color === 'purple' ? 'border-purple-500/40 bg-purple-500/10' : player.ratingTier?.color === 'cyan' ? 'border-cyan-500/40 bg-cyan-500/10' : player.ratingTier?.color === 'teal' ? 'border-teal-500/40 bg-teal-500/10' : player.ratingTier?.color === 'amber' ? 'border-amber-500/40 bg-amber-500/10' : player.ratingTier?.color === 'orange' ? 'border-orange-500/40 bg-orange-500/10' : 'border-gray-600/40 bg-gray-700/20'}">
+													<span class="text-lg font-bold leading-tight {player.isProvisional ? 'text-slate-400' : player.ratingTier?.color === 'yellow' ? 'text-yellow-400' : player.ratingTier?.color === 'purple' ? 'text-purple-400' : player.ratingTier?.color === 'cyan' ? 'text-cyan-400' : player.ratingTier?.color === 'teal' ? 'text-teal-400' : player.ratingTier?.color === 'amber' ? 'text-amber-400' : player.ratingTier?.color === 'orange' ? 'text-orange-400' : 'text-gray-400'}">
+														{player.ageRating}
+													</span>
+													<span class="text-[10px] font-medium {player.isProvisional ? 'text-slate-500' : player.ratingTier?.color === 'yellow' ? 'text-yellow-300/80' : player.ratingTier?.color === 'purple' ? 'text-purple-300/80' : player.ratingTier?.color === 'cyan' ? 'text-cyan-300/80' : player.ratingTier?.color === 'teal' ? 'text-teal-300/80' : player.ratingTier?.color === 'amber' ? 'text-amber-300/80' : player.ratingTier?.color === 'orange' ? 'text-orange-300/80' : 'text-gray-500'}">
+														{player.isProvisional ? 'Provisional' : (player.ratingTier?.label || 'Unranked')}
+													</span>
+												</div>
+											{:else}
+												<span class="text-gray-600 text-sm">-</span>
+											{/if}
+										</td>
+										<td class="px-4 py-4 text-center">
 											{#if player.gemId}
 												<a
 													href="/player/{player.gemId}"
@@ -2698,7 +2907,7 @@
 								{/each}
 								{#if filteredStandings.length === 0}
 									<tr>
-										<td colspan="8" class="px-6 py-12 text-center">
+										<td colspan="9" class="px-6 py-12 text-center">
 											<div class="flex flex-col items-center gap-2">
 												<svg class="h-12 w-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -2712,71 +2921,103 @@
 							</tbody>
 						</table>
 					</div>
-
-					<!-- Pagination Controls -->
-					{#if totalStandingsPages > 1}
-						<div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 px-4 py-3 border-t border-gray-800">
-							<div class="text-sm text-gray-400">
-								Showing {(standingsPage - 1) * standingsPerPage + 1} to {Math.min(standingsPage * standingsPerPage, filteredStandings.length)} of {filteredStandings.length} players
-							</div>
-							<div class="flex items-center gap-2">
-								<button
-									onclick={() => standingsPage = 1}
-									disabled={standingsPage === 1}
-									class="px-3 py-1.5 rounded-lg border border-gray-700 text-sm font-medium transition-all {standingsPage === 1 ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'}"
-								>
-									First
-								</button>
-								<button
-									onclick={() => standingsPage = Math.max(1, standingsPage - 1)}
-									disabled={standingsPage === 1}
-									class="px-3 py-1.5 rounded-lg border border-gray-700 text-sm font-medium transition-all {standingsPage === 1 ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'}"
-									aria-label="Previous page"
-								>
-									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-									</svg>
-								</button>
-								<div class="flex items-center gap-1">
-									{#each Array(Math.min(5, totalStandingsPages)) as _, i}
-										{@const pageNum = standingsPage <= 3
-											? i + 1
-											: standingsPage >= totalStandingsPages - 2
-												? totalStandingsPages - 4 + i
-												: standingsPage - 2 + i}
-										{#if pageNum > 0 && pageNum <= totalStandingsPages}
-											<button
-												onclick={() => standingsPage = pageNum}
-												class="w-8 h-8 rounded-lg text-sm font-medium transition-all {standingsPage === pageNum
-													? 'bg-blue-500 text-white'
-													: 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white border border-gray-700'}"
-											>
-												{pageNum}
-											</button>
-										{/if}
-									{/each}
-								</div>
-								<button
-									onclick={() => standingsPage = Math.min(totalStandingsPages, standingsPage + 1)}
-									disabled={standingsPage === totalStandingsPages}
-									class="px-3 py-1.5 rounded-lg border border-gray-700 text-sm font-medium transition-all {standingsPage === totalStandingsPages ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'}"
-									aria-label="Next page"
-								>
-									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-									</svg>
-								</button>
-								<button
-									onclick={() => standingsPage = totalStandingsPages}
-									disabled={standingsPage === totalStandingsPages}
-									class="px-3 py-1.5 rounded-lg border border-gray-700 text-sm font-medium transition-all {standingsPage === totalStandingsPages ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'}"
-								>
-									Last
-								</button>
-							</div>
-						</div>
-					{/if}
 				</div>
+
+				<!-- Pagination Controls (shared for mobile and desktop) -->
+				{#if totalStandingsPages > 1}
+					<!-- Mobile Pagination -->
+					<div class="md:hidden flex items-center justify-between gap-3 mt-4 px-1">
+						<button
+							onclick={() => standingsPage = Math.max(1, standingsPage - 1)}
+							disabled={standingsPage === 1}
+							class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-gray-700 text-sm font-medium transition-all {standingsPage === 1 ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'}"
+							aria-label="Previous page"
+						>
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+							</svg>
+							Prev
+						</button>
+						<div class="text-sm text-gray-400 text-center">
+							<span class="font-medium text-white">{standingsPage}</span>
+							<span class="mx-1">/</span>
+							<span>{totalStandingsPages}</span>
+						</div>
+						<button
+							onclick={() => standingsPage = Math.min(totalStandingsPages, standingsPage + 1)}
+							disabled={standingsPage === totalStandingsPages}
+							class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-gray-700 text-sm font-medium transition-all {standingsPage === totalStandingsPages ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'}"
+							aria-label="Next page"
+						>
+							Next
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+							</svg>
+						</button>
+					</div>
+
+					<!-- Desktop Pagination -->
+					<div class="hidden md:flex flex-col sm:flex-row items-center justify-between gap-4 mt-4 px-4 py-3 rounded-lg border border-gray-800 bg-gray-900">
+						<div class="text-sm text-gray-400">
+							Showing {(standingsPage - 1) * standingsPerPage + 1} to {Math.min(standingsPage * standingsPerPage, filteredStandings.length)} of {filteredStandings.length} players
+						</div>
+						<div class="flex items-center gap-2">
+							<button
+								onclick={() => standingsPage = 1}
+								disabled={standingsPage === 1}
+								class="px-3 py-1.5 rounded-lg border border-gray-700 text-sm font-medium transition-all {standingsPage === 1 ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'}"
+							>
+								First
+							</button>
+							<button
+								onclick={() => standingsPage = Math.max(1, standingsPage - 1)}
+								disabled={standingsPage === 1}
+								class="px-3 py-1.5 rounded-lg border border-gray-700 text-sm font-medium transition-all {standingsPage === 1 ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'}"
+								aria-label="Previous page"
+							>
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+								</svg>
+							</button>
+							<div class="flex items-center gap-1">
+								{#each Array(Math.min(5, totalStandingsPages)) as _, i}
+									{@const pageNum = standingsPage <= 3
+										? i + 1
+										: standingsPage >= totalStandingsPages - 2
+											? totalStandingsPages - 4 + i
+											: standingsPage - 2 + i}
+									{#if pageNum > 0 && pageNum <= totalStandingsPages}
+										<button
+											onclick={() => standingsPage = pageNum}
+											class="w-8 h-8 rounded-lg text-sm font-medium transition-all {standingsPage === pageNum
+												? 'bg-blue-500 text-white'
+												: 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white border border-gray-700'}"
+										>
+											{pageNum}
+										</button>
+									{/if}
+								{/each}
+							</div>
+							<button
+								onclick={() => standingsPage = Math.min(totalStandingsPages, standingsPage + 1)}
+								disabled={standingsPage === totalStandingsPages}
+								class="px-3 py-1.5 rounded-lg border border-gray-700 text-sm font-medium transition-all {standingsPage === totalStandingsPages ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'}"
+								aria-label="Next page"
+							>
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+								</svg>
+							</button>
+							<button
+								onclick={() => standingsPage = totalStandingsPages}
+								disabled={standingsPage === totalStandingsPages}
+								class="px-3 py-1.5 rounded-lg border border-gray-700 text-sm font-medium transition-all {standingsPage === totalStandingsPages ? 'bg-gray-800/30 text-gray-600 cursor-not-allowed' : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'}"
+							>
+								Last
+							</button>
+						</div>
+					</div>
+				{/if}
 
 				<!-- Stats Legend -->
 				<div class="rounded-lg border border-gray-800 bg-gray-900 p-6">

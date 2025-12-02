@@ -632,75 +632,81 @@
 
 				<!-- Premium Subscription CTA for preview mode -->
 				{#if data.isPreview}
-					<div class="mx-auto max-w-none sm:max-w-[34em] -mt-12 relative z-10">
-						<div class="rounded-2xl border border-purple-500/30 bg-gradient-to-b from-purple-500/10 to-gray-900/80 backdrop-blur-xl p-6 sm:p-8 text-center">
-							<!-- Premium Bolt Icon -->
-							<div class="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-600 mx-auto mb-4 shadow-lg shadow-purple-500/30">
-								<svg class="h-7 w-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-									<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
-								</svg>
-							</div>
+					<div class="-mt-12 relative z-10">
+						<div class="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-900/30 via-gray-900 to-purple-900/20 p-6 sm:p-8 text-center">
+							<!-- Decorative glow -->
+							<div class="absolute -top-8 -right-8 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl"></div>
+							<div class="absolute -bottom-8 -left-8 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
 
-							<h3 class="text-xl sm:text-2xl font-bold text-white mb-2">
-								Continue Reading with Premium
-							</h3>
-							<p class="text-gray-400 mb-6 max-w-md mx-auto">
-								This article is exclusive to AGE Premium members. Subscribe to unlock the full article and all premium content.
-							</p>
-
-							<!-- Benefits Preview -->
-							<div class="flex flex-wrap justify-center gap-3 mb-6 text-sm">
-								<span class="flex items-center gap-1.5 text-gray-300">
-									<svg class="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+							<div class="relative">
+								<!-- Premium Bolt Icon -->
+								<div class="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-green-600 mx-auto mb-4 shadow-lg shadow-emerald-500/30">
+									<svg class="h-7 w-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+										<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
 									</svg>
-									Unlimited articles
-								</span>
-								<span class="flex items-center gap-1.5 text-gray-300">
-									<svg class="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-									</svg>
-									10% off events
-								</span>
-								<span class="flex items-center gap-1.5 text-gray-300">
-									<svg class="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-									</svg>
-									Exclusive match VODs
-								</span>
-							</div>
+								</div>
 
-							<!-- CTA Buttons -->
-							<div class="flex flex-col sm:flex-row gap-3 justify-center">
-								{#if data.user}
-									<!-- User is logged in but not premium -->
-									<a
-										href="/premium"
-										class="rounded-xl bg-gradient-to-r from-purple-500 to-blue-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-purple-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 hover:from-purple-400 hover:to-blue-500"
-									>
-										Subscribe to Premium
-									</a>
-								{:else}
-									<!-- User is not logged in -->
-									<a
-										href="/login?redirect=/articles/{data.article.slug}"
-										class="rounded-xl bg-gradient-to-r from-purple-500 to-blue-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-purple-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 hover:from-purple-400 hover:to-blue-500"
-									>
-										Sign In to Subscribe
-									</a>
-									<a
-										href="/signup?redirect=/articles/{data.article.slug}"
-										class="rounded-xl border border-gray-700 bg-gray-800/50 px-8 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-gray-700"
-									>
-										Create Account
-									</a>
-								{/if}
-							</div>
+								<h3 class="text-xl sm:text-2xl font-bold text-white mb-2">
+									Continue Reading with Premium
+								</h3>
+								<p class="text-gray-400 mb-6 max-w-md mx-auto">
+									This article is exclusive to AGE Premium members. Subscribe to unlock the full article and all premium content.
+								</p>
 
-							<!-- Pricing hint -->
-							<p class="mt-4 text-xs text-gray-500">
-								Starting at $10/month · Cancel anytime
-							</p>
+								<!-- Benefits Preview -->
+								<div class="flex flex-wrap justify-center gap-3 mb-6 text-sm">
+									<span class="flex items-center gap-1.5 text-gray-300">
+										<svg class="h-4 w-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+										</svg>
+										Unlimited articles
+									</span>
+									<span class="flex items-center gap-1.5 text-gray-300">
+										<svg class="h-4 w-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+										</svg>
+										10% off events
+									</span>
+									<span class="flex items-center gap-1.5 text-gray-300">
+										<svg class="h-4 w-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+										</svg>
+										Exclusive match VODs
+									</span>
+								</div>
+
+								<!-- CTA Buttons -->
+								<div class="flex flex-col sm:flex-row gap-3 justify-center">
+									{#if data.user}
+										<!-- User is logged in but not premium -->
+										<a
+											href="/premium"
+											class="rounded-xl bg-gradient-to-r from-emerald-600 to-green-700 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/30 hover:from-emerald-500 hover:to-green-600"
+										>
+											Subscribe to Premium
+										</a>
+									{:else}
+										<!-- User is not logged in -->
+										<a
+											href="/premium"
+											class="rounded-xl bg-gradient-to-r from-emerald-600 to-green-700 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/30 hover:from-emerald-500 hover:to-green-600"
+										>
+											Join Premium
+										</a>
+										<a
+											href="/login?redirect=/articles/{data.article.slug}"
+											class="rounded-xl border border-gray-700 bg-gray-800/50 px-6 py-3.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700 hover:text-white"
+										>
+											Sign In
+										</a>
+									{/if}
+								</div>
+
+								<!-- Pricing hint -->
+								<p class="mt-4 text-xs text-gray-500">
+									Starting at $10/month · Cancel anytime
+								</p>
+							</div>
 						</div>
 					</div>
 				{/if}

@@ -1,6 +1,15 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { event, order, user, eventStaff, player, playerAlias, seasonStanding, lssSeason } from '$lib/server/db/schema.js';
+import {
+	event,
+	order,
+	user,
+	eventStaff,
+	player,
+	playerAlias,
+	seasonStanding,
+	lssSeason
+} from '$lib/server/db/schema.js';
 import { desc, eq, count, and, sql, asc } from 'drizzle-orm';
 
 export async function load({ locals }) {
@@ -14,11 +23,7 @@ export async function load({ locals }) {
 		const events = await db.select().from(event).orderBy(desc(event.createdAt));
 
 		// Fetch recent orders (last 10)
-		const recentOrders = await db
-			.select()
-			.from(order)
-			.orderBy(desc(order.createdAt))
-			.limit(10);
+		const recentOrders = await db.select().from(order).orderBy(desc(order.createdAt)).limit(10);
 
 		// Get stats
 		const [eventCount] = await db.select({ count: count() }).from(event);
@@ -29,15 +34,10 @@ export async function load({ locals }) {
 			.where(eq(user.role, 'premium'));
 
 		// Fetch tournament staff users
-		const tournamentStaff = await db
-			.select()
-			.from(user)
-			.where(eq(user.role, 'tournament_staff'));
+		const tournamentStaff = await db.select().from(user).where(eq(user.role, 'tournament staff'));
 
 		// Fetch event staff assignments
-		const staffAssignments = await db
-			.select()
-			.from(eventStaff);
+		const staffAssignments = await db.select().from(eventStaff);
 
 		// Fetch all users for user management
 		const allUsers = await db
@@ -62,10 +62,7 @@ export async function load({ locals }) {
 			.orderBy(desc(player.createdAt));
 
 		// Fetch player aliases
-		const aliases = await db
-			.select()
-			.from(playerAlias)
-			.orderBy(playerAlias.aliasName);
+		const aliases = await db.select().from(playerAlias).orderBy(playerAlias.aliasName);
 
 		// Fetch season standings with flattened monthly columns
 		const rawStandings = await db
@@ -74,27 +71,77 @@ export async function load({ locals }) {
 			.orderBy(desc(seasonStanding.totalPoints));
 
 		// Map standings with computed monthly data for display
-		const standings = rawStandings.map(standing => {
+		const standings = rawStandings.map((standing) => {
 			// Calculate win percentage if we have matches data but no stored percentage
 			let winPercentage = standing.winPercentage;
 			if (winPercentage === null && standing.matchesPlayed && standing.matchesPlayed > 0) {
-				winPercentage = parseFloat(((standing.matchesWon / standing.matchesPlayed) * 100).toFixed(2));
+				winPercentage = parseFloat(
+					((standing.matchesWon / standing.matchesPlayed) * 100).toFixed(2)
+				);
 			}
 
 			// Build monthly breakdown from flattened columns
 			const monthlyBreakdown = {
-				january: { points: standing.januaryPoints || 0, matchesWon: standing.januaryMatchesWon || 0, events: standing.januaryEvents || 0 },
-				february: { points: standing.februaryPoints || 0, matchesWon: standing.februaryMatchesWon || 0, events: standing.februaryEvents || 0 },
-				march: { points: standing.marchPoints || 0, matchesWon: standing.marchMatchesWon || 0, events: standing.marchEvents || 0 },
-				april: { points: standing.aprilPoints || 0, matchesWon: standing.aprilMatchesWon || 0, events: standing.aprilEvents || 0 },
-				may: { points: standing.mayPoints || 0, matchesWon: standing.mayMatchesWon || 0, events: standing.mayEvents || 0 },
-				june: { points: standing.junePoints || 0, matchesWon: standing.juneMatchesWon || 0, events: standing.juneEvents || 0 },
-				july: { points: standing.julyPoints || 0, matchesWon: standing.julyMatchesWon || 0, events: standing.julyEvents || 0 },
-				august: { points: standing.augustPoints || 0, matchesWon: standing.augustMatchesWon || 0, events: standing.augustEvents || 0 },
-				september: { points: standing.septemberPoints || 0, matchesWon: standing.septemberMatchesWon || 0, events: standing.septemberEvents || 0 },
-				october: { points: standing.octoberPoints || 0, matchesWon: standing.octoberMatchesWon || 0, events: standing.octoberEvents || 0 },
-				november: { points: standing.novemberPoints || 0, matchesWon: standing.novemberMatchesWon || 0, events: standing.novemberEvents || 0 },
-				december: { points: standing.decemberPoints || 0, matchesWon: standing.decemberMatchesWon || 0, events: standing.decemberEvents || 0 }
+				january: {
+					points: standing.januaryPoints || 0,
+					matchesWon: standing.januaryMatchesWon || 0,
+					events: standing.januaryEvents || 0
+				},
+				february: {
+					points: standing.februaryPoints || 0,
+					matchesWon: standing.februaryMatchesWon || 0,
+					events: standing.februaryEvents || 0
+				},
+				march: {
+					points: standing.marchPoints || 0,
+					matchesWon: standing.marchMatchesWon || 0,
+					events: standing.marchEvents || 0
+				},
+				april: {
+					points: standing.aprilPoints || 0,
+					matchesWon: standing.aprilMatchesWon || 0,
+					events: standing.aprilEvents || 0
+				},
+				may: {
+					points: standing.mayPoints || 0,
+					matchesWon: standing.mayMatchesWon || 0,
+					events: standing.mayEvents || 0
+				},
+				june: {
+					points: standing.junePoints || 0,
+					matchesWon: standing.juneMatchesWon || 0,
+					events: standing.juneEvents || 0
+				},
+				july: {
+					points: standing.julyPoints || 0,
+					matchesWon: standing.julyMatchesWon || 0,
+					events: standing.julyEvents || 0
+				},
+				august: {
+					points: standing.augustPoints || 0,
+					matchesWon: standing.augustMatchesWon || 0,
+					events: standing.augustEvents || 0
+				},
+				september: {
+					points: standing.septemberPoints || 0,
+					matchesWon: standing.septemberMatchesWon || 0,
+					events: standing.septemberEvents || 0
+				},
+				october: {
+					points: standing.octoberPoints || 0,
+					matchesWon: standing.octoberMatchesWon || 0,
+					events: standing.octoberEvents || 0
+				},
+				november: {
+					points: standing.novemberPoints || 0,
+					matchesWon: standing.novemberMatchesWon || 0,
+					events: standing.novemberEvents || 0
+				},
+				december: {
+					points: standing.decemberPoints || 0,
+					matchesWon: standing.decemberMatchesWon || 0,
+					events: standing.decemberEvents || 0
+				}
 			};
 
 			return {
@@ -114,10 +161,7 @@ export async function load({ locals }) {
 		const [playerCount] = await db.select({ count: count() }).from(player);
 
 		// Fetch LSS tournament seasons
-		const lssSeasons = await db
-			.select()
-			.from(lssSeason)
-			.orderBy(desc(lssSeason.startDate));
+		const lssSeasons = await db.select().from(lssSeason).orderBy(desc(lssSeason.startDate));
 
 		return {
 			user: locals.user,
@@ -177,10 +221,7 @@ export const actions = {
 			const existing = await db
 				.select()
 				.from(eventStaff)
-				.where(and(
-					eq(eventStaff.userId, staffId),
-					eq(eventStaff.eventId, eventId)
-				))
+				.where(and(eq(eventStaff.userId, staffId), eq(eventStaff.eventId, eventId)))
 				.limit(1);
 
 			if (existing.length > 0) {
@@ -214,10 +255,7 @@ export const actions = {
 		try {
 			await db
 				.delete(eventStaff)
-				.where(and(
-					eq(eventStaff.userId, staffId),
-					eq(eventStaff.eventId, eventId)
-				));
+				.where(and(eq(eventStaff.userId, staffId), eq(eventStaff.eventId, eventId)));
 
 			return { success: true, message: 'Staff unassigned successfully' };
 		} catch (err) {
@@ -237,7 +275,7 @@ export const actions = {
 		const newRole = formData.get('role');
 
 		// Validate role
-		const validRoles = ['free', 'premium', 'admin', 'writer', 'tournament_staff'];
+		const validRoles = ['free', 'premium', 'admin', 'writer', 'tournament staff'];
 		if (!validRoles.includes(newRole)) {
 			return fail(400, { error: 'Invalid role' });
 		}
@@ -248,10 +286,7 @@ export const actions = {
 		}
 
 		try {
-			await db
-				.update(user)
-				.set({ role: newRole })
-				.where(eq(user.id, userId));
+			await db.update(user).set({ role: newRole }).where(eq(user.id, userId));
 
 			return { success: true, message: `User role updated to ${newRole}` };
 		} catch (err) {
@@ -277,21 +312,55 @@ export const actions = {
 
 		// Allowed fields that can be updated
 		const allowedFields = [
-			'playerName', 'gemId', 'totalPoints', 'winPercentage',
-			'eventsPlayed', 'top8Finishes', 'rank', 'qualifiedForChampionship',
-			'matchesPlayed', 'matchesWon',
+			'playerName',
+			'gemId',
+			'totalPoints',
+			'winPercentage',
+			'eventsPlayed',
+			'top8Finishes',
+			'rank',
+			'qualifiedForChampionship',
+			'matchesPlayed',
+			'matchesWon',
 			// Monthly points columns
-			'januaryPoints', 'februaryPoints', 'marchPoints', 'aprilPoints',
-			'mayPoints', 'junePoints', 'julyPoints', 'augustPoints',
-			'septemberPoints', 'octoberPoints', 'novemberPoints', 'decemberPoints',
+			'januaryPoints',
+			'februaryPoints',
+			'marchPoints',
+			'aprilPoints',
+			'mayPoints',
+			'junePoints',
+			'julyPoints',
+			'augustPoints',
+			'septemberPoints',
+			'octoberPoints',
+			'novemberPoints',
+			'decemberPoints',
 			// Monthly matches won columns
-			'januaryMatchesWon', 'februaryMatchesWon', 'marchMatchesWon', 'aprilMatchesWon',
-			'mayMatchesWon', 'juneMatchesWon', 'julyMatchesWon', 'augustMatchesWon',
-			'septemberMatchesWon', 'octoberMatchesWon', 'novemberMatchesWon', 'decemberMatchesWon',
+			'januaryMatchesWon',
+			'februaryMatchesWon',
+			'marchMatchesWon',
+			'aprilMatchesWon',
+			'mayMatchesWon',
+			'juneMatchesWon',
+			'julyMatchesWon',
+			'augustMatchesWon',
+			'septemberMatchesWon',
+			'octoberMatchesWon',
+			'novemberMatchesWon',
+			'decemberMatchesWon',
 			// Monthly events columns
-			'januaryEvents', 'februaryEvents', 'marchEvents', 'aprilEvents',
-			'mayEvents', 'juneEvents', 'julyEvents', 'augustEvents',
-			'septemberEvents', 'octoberEvents', 'novemberEvents', 'decemberEvents'
+			'januaryEvents',
+			'februaryEvents',
+			'marchEvents',
+			'aprilEvents',
+			'mayEvents',
+			'juneEvents',
+			'julyEvents',
+			'augustEvents',
+			'septemberEvents',
+			'octoberEvents',
+			'novemberEvents',
+			'decemberEvents'
 		];
 
 		if (!allowedFields.includes(field)) {
@@ -304,19 +373,51 @@ export const actions = {
 
 			// Integer fields (including all monthly columns)
 			const integerFields = [
-				'totalPoints', 'eventsPlayed', 'top8Finishes', 'rank', 'matchesPlayed', 'matchesWon',
+				'totalPoints',
+				'eventsPlayed',
+				'top8Finishes',
+				'rank',
+				'matchesPlayed',
+				'matchesWon',
 				// Monthly points
-				'januaryPoints', 'februaryPoints', 'marchPoints', 'aprilPoints',
-				'mayPoints', 'junePoints', 'julyPoints', 'augustPoints',
-				'septemberPoints', 'octoberPoints', 'novemberPoints', 'decemberPoints',
+				'januaryPoints',
+				'februaryPoints',
+				'marchPoints',
+				'aprilPoints',
+				'mayPoints',
+				'junePoints',
+				'julyPoints',
+				'augustPoints',
+				'septemberPoints',
+				'octoberPoints',
+				'novemberPoints',
+				'decemberPoints',
 				// Monthly matches won
-				'januaryMatchesWon', 'februaryMatchesWon', 'marchMatchesWon', 'aprilMatchesWon',
-				'mayMatchesWon', 'juneMatchesWon', 'julyMatchesWon', 'augustMatchesWon',
-				'septemberMatchesWon', 'octoberMatchesWon', 'novemberMatchesWon', 'decemberMatchesWon',
+				'januaryMatchesWon',
+				'februaryMatchesWon',
+				'marchMatchesWon',
+				'aprilMatchesWon',
+				'mayMatchesWon',
+				'juneMatchesWon',
+				'julyMatchesWon',
+				'augustMatchesWon',
+				'septemberMatchesWon',
+				'octoberMatchesWon',
+				'novemberMatchesWon',
+				'decemberMatchesWon',
 				// Monthly events
-				'januaryEvents', 'februaryEvents', 'marchEvents', 'aprilEvents',
-				'mayEvents', 'juneEvents', 'julyEvents', 'augustEvents',
-				'septemberEvents', 'octoberEvents', 'novemberEvents', 'decemberEvents'
+				'januaryEvents',
+				'februaryEvents',
+				'marchEvents',
+				'aprilEvents',
+				'mayEvents',
+				'juneEvents',
+				'julyEvents',
+				'augustEvents',
+				'septemberEvents',
+				'octoberEvents',
+				'novemberEvents',
+				'decemberEvents'
 			];
 
 			if (integerFields.includes(field)) {
@@ -366,8 +467,103 @@ export const actions = {
 
 			return { success: true, message: `${field} updated successfully` };
 		} catch (err) {
-			console.error('Error updating standing:', err);
 			return fail(500, { error: 'Failed to update standing' });
+		}
+	},
+
+	// Update standing player info (name and GEM ID) in one request
+	updateStandingPlayerInfo: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const standingId = formData.get('standingId');
+		const playerName = formData.get('playerName');
+		const gemId = formData.get('gemId') || null;
+
+		if (!standingId || !playerName) {
+			return fail(400, { error: 'Standing ID and player name are required' });
+		}
+
+		try {
+			// First get the current standing data including old gemId and playerId
+			const currentStanding = await db
+				.select({ playerId: seasonStanding.playerId, oldGemId: seasonStanding.gemId })
+				.from(seasonStanding)
+				.where(eq(seasonStanding.id, standingId))
+				.limit(1);
+
+			const oldGemId = currentStanding[0]?.oldGemId;
+			const playerId = currentStanding[0]?.playerId;
+
+			// 1. Update the standing record
+			await db
+				.update(seasonStanding)
+				.set({
+					playerName,
+					gemId,
+					updatedAt: new Date()
+				})
+				.where(eq(seasonStanding.id, standingId));
+
+			// 2. If there's a linked playerId, update the player record and all their standings
+			if (playerId) {
+				await db
+					.update(player)
+					.set({
+						displayName: playerName,
+						gemId,
+						updatedAt: new Date()
+					})
+					.where(eq(player.id, playerId));
+
+				// Update all standings linked to this player by playerId
+				await db
+					.update(seasonStanding)
+					.set({
+						playerName,
+						gemId,
+						updatedAt: new Date()
+					})
+					.where(eq(seasonStanding.playerId, playerId));
+			}
+
+			// 3. Update player record by OLD gemId (catches players not linked by playerId)
+			if (oldGemId) {
+				await db
+					.update(player)
+					.set({
+						displayName: playerName,
+						gemId: gemId, // Update to new gemId if changed
+						updatedAt: new Date()
+					})
+					.where(eq(player.gemId, oldGemId));
+
+				// Also update all standings that share the old GEM ID
+				await db
+					.update(seasonStanding)
+					.set({
+						playerName,
+						gemId,
+						updatedAt: new Date()
+					})
+					.where(eq(seasonStanding.gemId, oldGemId));
+			}
+
+			// 4. If there's a NEW gemId (different from old), also update any player with that gemId
+			if (gemId && gemId !== oldGemId) {
+				await db
+					.update(player)
+					.set({
+						displayName: playerName,
+						updatedAt: new Date()
+					})
+					.where(eq(player.gemId, gemId));
+			}
+			return { success: true, message: 'Player info updated successfully' };
+		} catch (err) {
+			return fail(500, { error: 'Failed to update player info' });
 		}
 	},
 
@@ -385,9 +581,7 @@ export const actions = {
 		}
 
 		try {
-			await db
-				.delete(seasonStanding)
-				.where(eq(seasonStanding.id, standingId));
+			await db.delete(seasonStanding).where(eq(seasonStanding.id, standingId));
 
 			return { success: true, message: 'Standing deleted successfully' };
 		} catch (err) {
@@ -428,9 +622,7 @@ export const actions = {
 				.where(eq(seasonStanding.playerId, sourcePlayerId));
 
 			// Delete the source player
-			await db
-				.delete(player)
-				.where(eq(player.id, sourcePlayerId));
+			await db.delete(player).where(eq(player.id, sourcePlayerId));
 
 			return { success: true, message: 'Players merged successfully' };
 		} catch (err) {
@@ -467,16 +659,12 @@ export const actions = {
 				.where(eq(playerAlias.playerId, playerId));
 
 			// Collect all names to match (display name + all aliases)
-			const playerNames = [
-				playerData[0]?.displayName,
-				...aliases.map(a => a.aliasName)
-			].filter(Boolean);
+			const playerNames = [playerData[0]?.displayName, ...aliases.map((a) => a.aliasName)].filter(
+				Boolean
+			);
 
 			// Update player's GEM ID
-			await db
-				.update(player)
-				.set({ gemId, updatedAt: new Date() })
-				.where(eq(player.id, playerId));
+			await db.update(player).set({ gemId, updatedAt: new Date() }).where(eq(player.id, playerId));
 
 			// Update all standings linked to this player by playerId
 			await db
@@ -489,10 +677,7 @@ export const actions = {
 				await db
 					.update(seasonStanding)
 					.set({ gemId, playerId, updatedAt: new Date() })
-					.where(and(
-						eq(seasonStanding.playerName, name),
-						sql`${seasonStanding.playerId} IS NULL`
-					));
+					.where(and(eq(seasonStanding.playerName, name), sql`${seasonStanding.playerId} IS NULL`));
 			}
 
 			return { success: true, message: 'GEM ID updated successfully' };
@@ -550,14 +735,10 @@ export const actions = {
 				.where(eq(seasonStanding.playerId, playerId));
 
 			// Delete all aliases for this player
-			await db
-				.delete(playerAlias)
-				.where(eq(playerAlias.playerId, playerId));
+			await db.delete(playerAlias).where(eq(playerAlias.playerId, playerId));
 
 			// Delete the player
-			await db
-				.delete(player)
-				.where(eq(player.id, playerId));
+			await db.delete(player).where(eq(player.id, playerId));
 
 			return { success: true, message: 'Player deleted successfully' };
 		} catch (err) {
@@ -679,9 +860,7 @@ export const actions = {
 		}
 
 		try {
-			await db
-				.delete(lssSeason)
-				.where(eq(lssSeason.id, seasonId));
+			await db.delete(lssSeason).where(eq(lssSeason.id, seasonId));
 
 			return { success: true, message: 'LSS season deleted successfully' };
 		} catch (err) {
@@ -712,9 +891,8 @@ export const actions = {
 		}
 
 		// Calculate win percentage
-		const winPercentage = matchesPlayed > 0
-			? Math.round((matchesWon / matchesPlayed) * 100 * 100) / 100
-			: null;
+		const winPercentage =
+			matchesPlayed > 0 ? Math.round((matchesWon / matchesPlayed) * 100 * 100) / 100 : null;
 
 		try {
 			await db.insert(seasonStanding).values({
@@ -736,7 +914,9 @@ export const actions = {
 			console.error('Error creating standing:', err);
 			// Check for unique constraint violation
 			if (err.code === '23505') {
-				return fail(400, { error: 'A standing for this player in this season/circuit already exists' });
+				return fail(400, {
+					error: 'A standing for this player in this season/circuit already exists'
+				});
 			}
 			return fail(500, { error: 'Failed to create standing' });
 		}

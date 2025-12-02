@@ -12,7 +12,7 @@ export const user = pgTable('user', {
 	lastName: text('last_name').notNull(),
 	gemId: text('gem_id'), // Optional GEM ID for tournament registration
 
-	role: text('role').notNull().default('free'), // Options: 'free', 'premium', 'admin', 'writer', 'tournament_staff'
+	role: text('role').notNull().default('free'), // Options: 'free', 'premium', 'admin', 'writer', 'tournament staff'
 
 	// Authorize.net Customer Profile (for saved cards)
 	customerProfileId: text('customer_profile_id'), // Authorize.net CIM customer profile ID
