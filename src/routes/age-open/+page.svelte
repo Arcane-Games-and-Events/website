@@ -2382,7 +2382,7 @@
 							type="text"
 							bind:value={decklistSearch}
 							placeholder="Search by player, deck name, or hero..."
-							class="w-full rounded-lg border border-gray-700 bg-gray-900 py-2 pl-10 pr-4 text-sm text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+							class="w-full rounded-lg border border-gray-700 bg-gray-900 py-2 pl-10 pr-4 text-base md:text-sm text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 						/>
 					</div>
 
@@ -2536,7 +2536,7 @@
 							type="text"
 							bind:value={searchQuery}
 							placeholder="Search players..."
-							class="w-full rounded-lg border border-gray-700 bg-gray-900 py-2 pl-9 md:pl-10 pr-4 text-sm text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+							class="w-full rounded-lg border border-gray-700 bg-gray-900 py-2 pl-9 md:pl-10 pr-4 text-base md:text-sm text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 						/>
 					</div>
 
