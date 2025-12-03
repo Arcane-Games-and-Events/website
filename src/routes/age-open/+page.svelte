@@ -1605,6 +1605,167 @@
 		<!-- Events Tab -->
 		{:else if activeTab === 'events'}
 			<div class="space-y-8">
+				<!-- Circuit Filter Pills -->
+				<div class="flex flex-wrap items-center gap-3">
+					<span class="text-sm font-medium text-gray-400">Browse Events:</span>
+					<div class="flex flex-wrap gap-2">
+						<button
+							onclick={() => (selectedCircuit = 'all')}
+							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'all'
+								? 'bg-white text-gray-900 shadow-lg'
+								: 'bg-gray-800 text-gray-300 hover:bg-gray-700'}"
+						>
+							All Circuits
+						</button>
+						<button
+							onclick={() => (selectedCircuit = 'Los Angeles')}
+							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'Los Angeles'
+								? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+								: 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/30'}"
+						>
+							<span class="flex items-center gap-1.5">
+								<span class="w-2 h-2 rounded-full bg-blue-400"></span>
+								Los Angeles
+							</span>
+						</button>
+						<button
+							onclick={() => (selectedCircuit = 'New England')}
+							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'New England'
+								? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
+								: 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/30'}"
+						>
+							<span class="flex items-center gap-1.5">
+								<span class="w-2 h-2 rounded-full bg-purple-400"></span>
+								New England
+							</span>
+						</button>
+						<button
+							onclick={() => (selectedCircuit = 'St. Louis')}
+							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'St. Louis'
+								? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
+								: 'bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/30'}"
+						>
+							<span class="flex items-center gap-1.5">
+								<span class="w-2 h-2 rounded-full bg-green-400"></span>
+								St. Louis
+							</span>
+						</button>
+					</div>
+				</div>
+
+				<!-- Events List -->
+				{#if filteredEvents.length > 0}
+					<div class="space-y-4">
+						{#each filteredEvents as evt}
+							{@const colors = getCircuitColor(evt.circuit)}
+							{@const circuitImages = {
+								'Los Angeles': '/images/circuits/los-angeles.jpg',
+								'New England': '/images/circuits/new-england.jpg',
+								'St. Louis': '/images/circuits/st-louis.jpg'
+							}}
+							{@const bgImage = circuitImages[evt.circuit] || '/images/circuits/los-angeles.jpg'}
+
+							<a href="/age-open/{evt.id}" class="block group">
+								<div class="relative overflow-hidden rounded-xl border {colors.eventBorder} bg-gray-900/90 hover:bg-gray-800/90 transition-all hover:shadow-xl hover:shadow-black/30 hover:border-white/20">
+									<!-- Background Image -->
+									<div class="absolute inset-0">
+										<img src={bgImage} alt="" class="w-full h-full object-cover opacity-60 group-hover:opacity-70 group-hover:scale-105 transition-all duration-500" />
+										<div class="absolute inset-0 bg-gradient-to-r from-gray-900/95 via-gray-900/90 to-gray-900/70"></div>
+									</div>
+
+									<!-- Circuit Accent Bar -->
+									<div class="{colors.bg} px-3 py-1 relative z-10">
+										<span class="text-white/90 text-[10px] font-semibold uppercase tracking-widest">{evt.circuit || 'AGE Open'}</span>
+									</div>
+
+									<!-- Card Content -->
+									<div class="relative px-4 py-3 flex items-center justify-between gap-4">
+										<!-- Left: Event Info -->
+										<div class="flex-1 min-w-0">
+											<!-- Title -->
+											<h4 class="text-base font-bold text-white group-hover:text-blue-400 transition-colors truncate">
+												{evt.title}
+											</h4>
+
+											<!-- Meta Row -->
+											<div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-xs">
+												<!-- Date -->
+												<div class="flex items-center gap-1 text-gray-400">
+													<svg class="w-3.5 h-3.5 {colors.text}" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+													</svg>
+													{formatDate(evt.eventDate)}
+												</div>
+
+												<!-- Location -->
+												{#if evt.location}
+													<div class="flex items-center gap-1 text-gray-500">
+														<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+															<path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+															<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+														</svg>
+														<span class="truncate max-w-[200px]">{evt.location}</span>
+													</div>
+												{/if}
+
+												<!-- Format Badge -->
+												{#if evt.format}
+													<span class="px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-medium text-gray-400">{evt.format}</span>
+												{/if}
+
+												<!-- Premium Badge -->
+												{#if evt.premiumDiscount}
+													<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-[10px] font-medium text-amber-300 border border-amber-500/30">
+														Premium -10%
+													</span>
+												{/if}
+											</div>
+										</div>
+
+										<!-- Right: Price & CTA -->
+										<div class="flex items-center gap-3 shrink-0">
+											<div class="text-right hidden sm:block">
+												<p class="text-lg font-bold text-white">${Number(evt.price).toFixed(0)}</p>
+											</div>
+											<div class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-semibold group-hover:from-blue-600 group-hover:to-purple-700 transition-all whitespace-nowrap shadow-lg shadow-blue-500/20">
+												Sign Up →
+											</div>
+										</div>
+									</div>
+								</div>
+							</a>
+						{/each}
+					</div>
+				{:else}
+					<div class="rounded-lg border border-gray-800 bg-gray-900 p-12 text-center">
+						<div
+							class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-800"
+						>
+							<svg
+								class="h-8 w-8 text-gray-600"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+								/>
+							</svg>
+						</div>
+						<h3 class="mb-2 text-xl font-semibold text-white">No Events Found</h3>
+						<p class="text-gray-400">
+							{#if selectedCircuit !== 'all'}
+								No events found for the {selectedCircuit} circuit. Try selecting a different circuit.
+							{:else}
+								Check back soon for new tournament announcements!
+							{/if}
+						</p>
+					</div>
+				{/if}
+
 				<!-- Circuit Season Tracker -->
 				<div class="rounded-2xl border border-gray-800 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950 p-6 overflow-hidden">
 					<div class="flex items-center justify-between mb-6">
@@ -1805,167 +1966,6 @@
 						</div>
 					</div>
 				</div>
-
-				<!-- Circuit Filter Pills -->
-				<div class="flex flex-wrap items-center gap-3">
-					<span class="text-sm font-medium text-gray-400">Browse Events:</span>
-					<div class="flex flex-wrap gap-2">
-						<button
-							onclick={() => (selectedCircuit = 'all')}
-							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'all'
-								? 'bg-white text-gray-900 shadow-lg'
-								: 'bg-gray-800 text-gray-300 hover:bg-gray-700'}"
-						>
-							All Circuits
-						</button>
-						<button
-							onclick={() => (selectedCircuit = 'Los Angeles')}
-							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'Los Angeles'
-								? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
-								: 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/30'}"
-						>
-							<span class="flex items-center gap-1.5">
-								<span class="w-2 h-2 rounded-full bg-blue-400"></span>
-								Los Angeles
-							</span>
-						</button>
-						<button
-							onclick={() => (selectedCircuit = 'New England')}
-							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'New England'
-								? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
-								: 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/30'}"
-						>
-							<span class="flex items-center gap-1.5">
-								<span class="w-2 h-2 rounded-full bg-purple-400"></span>
-								New England
-							</span>
-						</button>
-						<button
-							onclick={() => (selectedCircuit = 'St. Louis')}
-							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'St. Louis'
-								? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
-								: 'bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/30'}"
-						>
-							<span class="flex items-center gap-1.5">
-								<span class="w-2 h-2 rounded-full bg-green-400"></span>
-								St. Louis
-							</span>
-						</button>
-					</div>
-				</div>
-
-				<!-- Events List -->
-				{#if filteredEvents.length > 0}
-					<div class="space-y-4">
-						{#each filteredEvents as evt}
-							{@const colors = getCircuitColor(evt.circuit)}
-							{@const circuitImages = {
-								'Los Angeles': '/images/circuits/los-angeles.jpg',
-								'New England': '/images/circuits/new-england.jpg',
-								'St. Louis': '/images/circuits/st-louis.jpg'
-							}}
-							{@const bgImage = circuitImages[evt.circuit] || '/images/circuits/los-angeles.jpg'}
-
-							<a href="/age-open/{evt.id}" class="block group">
-								<div class="relative overflow-hidden rounded-xl border {colors.eventBorder} bg-gray-900/90 hover:bg-gray-800/90 transition-all hover:shadow-xl hover:shadow-black/30 hover:border-white/20">
-									<!-- Background Image -->
-									<div class="absolute inset-0">
-										<img src={bgImage} alt="" class="w-full h-full object-cover opacity-60 group-hover:opacity-70 group-hover:scale-105 transition-all duration-500" />
-										<div class="absolute inset-0 bg-gradient-to-r from-gray-900/95 via-gray-900/90 to-gray-900/70"></div>
-									</div>
-
-									<!-- Circuit Accent Bar -->
-									<div class="{colors.bg} px-3 py-1 relative z-10">
-										<span class="text-white/90 text-[10px] font-semibold uppercase tracking-widest">{evt.circuit || 'AGE Open'}</span>
-									</div>
-
-									<!-- Card Content -->
-									<div class="relative px-4 py-3 flex items-center justify-between gap-4">
-										<!-- Left: Event Info -->
-										<div class="flex-1 min-w-0">
-											<!-- Title -->
-											<h4 class="text-base font-bold text-white group-hover:text-blue-400 transition-colors truncate">
-												{evt.title}
-											</h4>
-
-											<!-- Meta Row -->
-											<div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-xs">
-												<!-- Date -->
-												<div class="flex items-center gap-1 text-gray-400">
-													<svg class="w-3.5 h-3.5 {colors.text}" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-													</svg>
-													{formatDate(evt.eventDate)}
-												</div>
-
-												<!-- Location -->
-												{#if evt.location}
-													<div class="flex items-center gap-1 text-gray-500">
-														<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-															<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-														</svg>
-														<span class="truncate max-w-[200px]">{evt.location}</span>
-													</div>
-												{/if}
-
-												<!-- Format Badge -->
-												{#if evt.format}
-													<span class="px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-medium text-gray-400">{evt.format}</span>
-												{/if}
-
-												<!-- Premium Badge -->
-												{#if evt.premiumDiscount}
-													<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-[10px] font-medium text-amber-300 border border-amber-500/30">
-														Premium -10%
-													</span>
-												{/if}
-											</div>
-										</div>
-
-										<!-- Right: Price & CTA -->
-										<div class="flex items-center gap-3 shrink-0">
-											<div class="text-right hidden sm:block">
-												<p class="text-lg font-bold text-white">${Number(evt.price).toFixed(0)}</p>
-											</div>
-											<div class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-semibold group-hover:from-blue-600 group-hover:to-purple-700 transition-all whitespace-nowrap shadow-lg shadow-blue-500/20">
-												Sign Up →
-											</div>
-										</div>
-									</div>
-								</div>
-							</a>
-						{/each}
-					</div>
-				{:else}
-					<div class="rounded-lg border border-gray-800 bg-gray-900 p-12 text-center">
-						<div
-							class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-800"
-						>
-							<svg
-								class="h-8 w-8 text-gray-600"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-								/>
-							</svg>
-						</div>
-						<h3 class="mb-2 text-xl font-semibold text-white">No Events Found</h3>
-						<p class="text-gray-400">
-							{#if selectedCircuit !== 'all'}
-								No events found for the {selectedCircuit} circuit. Try selecting a different circuit.
-							{:else}
-								Check back soon for new tournament announcements!
-							{/if}
-						</p>
-					</div>
-				{/if}
 
 				<!-- Quick Info Card -->
 				<div class="rounded-lg border border-gray-800 bg-gradient-to-br from-gray-900 to-gray-950 p-6">

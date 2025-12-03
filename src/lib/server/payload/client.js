@@ -3,15 +3,16 @@
  * Handles communication with Payload CMS REST API
  */
 
+import { PAYLOAD_URL, PAYLOAD_SECRET } from '$env/static/private';
 import { parseFabraryExport, toComponentFormat } from '$lib/utils/decklist-parser.js';
 
-const PAYLOAD_URL = process.env.PAYLOAD_URL || 'http://localhost:3000';
-const PAYLOAD_SECRET = process.env.PAYLOAD_SECRET;
+const payloadUrl = PAYLOAD_URL || 'http://localhost:3000';
+const payloadSecret = PAYLOAD_SECRET;
 
 class PayloadClient {
 	constructor() {
-		this.baseURL = PAYLOAD_URL;
-		this.secret = PAYLOAD_SECRET;
+		this.baseURL = payloadUrl;
+		this.secret = payloadSecret;
 	}
 
 	/**

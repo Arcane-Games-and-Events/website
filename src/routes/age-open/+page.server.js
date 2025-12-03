@@ -98,7 +98,12 @@ function getRatingTier(rating) {
 	return { label: 'Unranked', color: 'slate' };
 }
 
-export async function load({ url }) {
+export async function load({ url, setHeaders }) {
+	// Cache for 5 minutes, allow stale for 1 hour while revalidating
+	setHeaders({
+		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
+	});
+
 	const currentYear = new Date().getFullYear().toString();
 	const selectedSeason = url.searchParams.get('season') || currentYear;
 	const selectedCircuit = url.searchParams.get('circuit') || null;
@@ -116,42 +121,61 @@ export async function load({ url }) {
 	};
 
 	try {
-		// Get events sorted by date (upcoming first)
-		const events = await db
-			.select()
-			.from(event)
-			.orderBy(asc(event.eventDate));
+		// Run independent queries in parallel for better performance
+		const [events, allEventResults, allStandings, decklists, lssSeasons] = await Promise.all([
+			// Get events sorted by date
+			db.select().from(event).orderBy(asc(event.eventDate)),
+			// Get ALL event results in one query (fixes N+1 problem)
+			db.select().from(eventResult).orderBy(asc(eventResult.placement)),
+			// Get all standings (needed for both display and AGE Rating calculation)
+			db.select().from(seasonStanding).orderBy(desc(seasonStanding.totalPoints)),
+			// Get public decklists with event info
+			db.select({
+				id: eventDecklist.id,
+				eventId: eventDecklist.eventId,
+				playerName: eventDecklist.playerName,
+				gemId: eventDecklist.gemId,
+				deckName: eventDecklist.deckName,
+				hero: eventDecklist.hero,
+				format: eventDecklist.format,
+				cards: eventDecklist.cards,
+				createdAt: eventDecklist.createdAt,
+				eventTitle: event.title,
+				eventDate: event.eventDate,
+				circuit: event.circuit
+			})
+				.from(eventDecklist)
+				.innerJoin(event, eq(eventDecklist.eventId, event.id))
+				.where(eq(eventDecklist.isPublic, true))
+				.orderBy(desc(eventDecklist.createdAt)),
+			// Get LSS tournament seasons
+			db.select().from(lssSeason).where(eq(lssSeason.isActive, true)).orderBy(asc(lssSeason.startDate))
+		]);
 
 		// Get completed events with results for the Results tab
 		const completedEvents = events.filter((e) => e.status === 'completed');
 
-		// Get results for completed events
-		const allResults = [];
-		for (const evt of completedEvents) {
-			const results = await db
-				.select()
-				.from(eventResult)
-				.where(eq(eventResult.eventId, evt.id))
-				.orderBy(asc(eventResult.placement));
-
-			if (results.length > 0) {
-				allResults.push({
-					event: evt,
-					results
-				});
+		// Group event results by eventId (avoids N+1 queries)
+		const resultsByEventId = new Map();
+		for (const result of allEventResults) {
+			if (!resultsByEventId.has(result.eventId)) {
+				resultsByEventId.set(result.eventId, []);
 			}
+			resultsByEventId.get(result.eventId).push(result);
 		}
+
+		// Build results array using the grouped data
+		const allResults = completedEvents
+			.filter(evt => resultsByEventId.has(evt.id))
+			.map(evt => ({
+				event: evt,
+				results: resultsByEventId.get(evt.id)
+			}));
 
 		let standings = [];
 
 		if (selectedSeason === 'all') {
-			// Aggregate career stats across all seasons/circuits by gemId
-			const allStandings = await db
-				.select()
-				.from(seasonStanding)
-				.orderBy(desc(seasonStanding.totalPoints));
-
-			// Group by gemId to aggregate career stats
+			// Group by gemId to aggregate career stats (using allStandings from Promise.all)
 			const careerStatsMap = new Map();
 
 			for (const standing of allStandings) {
@@ -208,25 +232,12 @@ export async function load({ url }) {
 				}));
 			}
 		} else {
-			// Get season standings for selected season
-			let standingsQuery = db
-				.select()
-				.from(seasonStanding)
-				.where(eq(seasonStanding.season, selectedSeason));
+			// Filter standings from already-fetched data (no additional query needed)
+			let rawStandings = allStandings.filter(s => s.season === selectedSeason);
 
 			if (selectedCircuit) {
-				standingsQuery = db
-					.select()
-					.from(seasonStanding)
-					.where(
-						and(
-							eq(seasonStanding.season, selectedSeason),
-							eq(seasonStanding.circuit, selectedCircuit)
-						)
-					);
+				rawStandings = rawStandings.filter(s => s.circuit === selectedCircuit);
 			}
-
-			const rawStandings = await standingsQuery;
 
 			// Sort using tiebreaker rules and assign ranks
 			rawStandings.sort(compareStandings);
@@ -247,13 +258,9 @@ export async function load({ url }) {
 
 		// === Calculate AGE Rating for each player in standings ===
 		if (standings.length > 0) {
-			// Calculate all aggregate stats for percentile calculation
-			// First, get all standings to compute global percentiles
-			const allStandingsForPercentiles = await db.select().from(seasonStanding);
-
-			// Group by gemId/playerName to get aggregate stats
+			// Group by gemId/playerName to get aggregate stats (using allStandings from Promise.all)
 			const playerStatsMap = new Map();
-			for (const standing of allStandingsForPercentiles) {
+			for (const standing of allStandings) {
 				const key = standing.gemId || standing.playerName;
 				if (!key) continue;
 
@@ -282,7 +289,7 @@ export async function load({ url }) {
 			// Calculate ranks for best rank and championship qualifications
 			for (const [key, playerData] of playerStatsMap) {
 				for (const standing of playerData.standingsList) {
-					const circuitStandings = allStandingsForPercentiles.filter(
+					const circuitStandings = allStandings.filter(
 						s => s.season === standing.season && s.circuit === standing.circuit
 					);
 					circuitStandings.sort(compareStandings);
@@ -347,33 +354,7 @@ export async function load({ url }) {
 			});
 		}
 
-		// Get public decklists with event info
-		const decklists = await db
-			.select({
-				id: eventDecklist.id,
-				eventId: eventDecklist.eventId,
-				playerName: eventDecklist.playerName,
-				gemId: eventDecklist.gemId,
-				deckName: eventDecklist.deckName,
-				hero: eventDecklist.hero,
-				format: eventDecklist.format,
-				cards: eventDecklist.cards,
-				createdAt: eventDecklist.createdAt,
-				eventTitle: event.title,
-				eventDate: event.eventDate,
-				circuit: event.circuit
-			})
-			.from(eventDecklist)
-			.innerJoin(event, eq(eventDecklist.eventId, event.id))
-			.where(eq(eventDecklist.isPublic, true))
-			.orderBy(desc(eventDecklist.createdAt));
-
-		// Get LSS tournament seasons (active ones, ordered by start date)
-		const lssSeasons = await db
-			.select()
-			.from(lssSeason)
-			.where(eq(lssSeason.isActive, true))
-			.orderBy(asc(lssSeason.startDate));
+		// decklists and lssSeasons already fetched in Promise.all above
 
 		return {
 			events,

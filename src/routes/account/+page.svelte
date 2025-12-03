@@ -1010,7 +1010,7 @@
 										<path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
 									</svg>
 									<p class="text-sm font-medium text-emerald-300">{cardSuccess}</p>
-									<button on:click={() => cardSuccess = ''} class="ml-auto text-emerald-400 hover:text-emerald-300">
+									<button on:click={() => cardSuccess = ''} class="ml-auto text-emerald-400 hover:text-emerald-300" aria-label="Dismiss success message">
 										<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
 											<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
 										</svg>
@@ -1026,7 +1026,7 @@
 										<path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
 									</svg>
 									<p class="text-sm font-medium text-red-300">{cardError}</p>
-									<button on:click={() => cardError = ''} class="ml-auto text-red-400 hover:text-red-300">
+									<button on:click={() => cardError = ''} class="ml-auto text-red-400 hover:text-red-300" aria-label="Dismiss error message">
 										<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
 											<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
 										</svg>
@@ -1133,6 +1133,7 @@
 															on:click={() => setDefaultCard(card.id)}
 															class="p-2 rounded-lg text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all"
 															title="Set as default"
+															aria-label="Set as default card"
 														>
 															<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 																<path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
@@ -1143,6 +1144,7 @@
 														on:click={() => deleteCard(card.id)}
 														class="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
 														title="Remove card"
+														aria-label="Remove card"
 													>
 														<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 															<path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
@@ -1189,6 +1191,7 @@
 										<button
 											on:click={() => showAddCardForm = false}
 											class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+											aria-label="Close add card form"
 										>
 											<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
 												<path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />

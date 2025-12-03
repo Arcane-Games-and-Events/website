@@ -1341,7 +1341,7 @@
 										</div>
 									</div>
 									<div class="mt-4">
-										<label class="mb-2 block text-sm font-medium text-gray-300">Format(s)</label>
+										<span class="mb-2 block text-sm font-medium text-gray-300">Format(s)</span>
 										<div class="flex flex-wrap gap-3">
 											{#each ['Classic Constructed', 'Blitz', 'Silver Age', 'Draft', 'Sealed', 'Team Event', 'Living Legend'] as fmt}
 												<label class="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
@@ -1558,8 +1558,8 @@
 																	</div>
 																</div>
 																<div class="mt-3">
-																	<label class="mb-1 block text-xs font-medium text-gray-400"
-																		>Format(s)</label
+																	<span class="mb-1 block text-xs font-medium text-gray-400"
+																		>Format(s)</span
 																	>
 																	<div class="flex flex-wrap gap-2">
 																		{#each ['Classic Constructed', 'Blitz', 'Silver Age', 'Draft', 'Sealed', 'Team Event', 'Living Legend'] as fmt}
