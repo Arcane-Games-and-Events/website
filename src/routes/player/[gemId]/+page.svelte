@@ -1261,8 +1261,8 @@
 			</div>
 
 			<!-- Historical Performance Chart -->
-			<div class="rounded-2xl border border-gray-800 bg-gray-900/50 p-6">
-				<h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+			<div class="rounded-2xl border border-gray-800 bg-gray-900/50 p-4 sm:p-6">
+				<h3 class="mb-4 flex flex-wrap items-center gap-2 text-base font-semibold text-white sm:text-lg">
 					<svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
 							stroke-linecap="round"
@@ -1305,42 +1305,42 @@
 
 				<!-- Match Stats Row -->
 				{#if data.matchHistory}
-					<div class="mb-5 grid grid-cols-4 gap-3">
+					<div class="mb-4 grid grid-cols-2 gap-2 sm:mb-5 sm:grid-cols-4 sm:gap-3">
 						<!-- Total Matches -->
-						<div class="rounded-lg bg-gray-800/50 p-3 text-center">
-							<div class="text-xl font-bold tabular-nums text-white">{data.matchHistory.totalMatches}</div>
-							<div class="text-[10px] font-medium uppercase tracking-wide text-gray-500">Matches</div>
+						<div class="rounded-lg bg-gray-800/50 p-2.5 text-center sm:p-3">
+							<div class="text-lg font-bold tabular-nums text-white sm:text-xl">{data.matchHistory.totalMatches}</div>
+							<div class="text-[9px] font-medium uppercase tracking-wide text-gray-500 sm:text-[10px]">Matches</div>
 						</div>
 						<!-- Unique Opponents -->
-						<div class="rounded-lg bg-gray-800/50 p-3 text-center">
-							<div class="text-xl font-bold tabular-nums text-blue-400">{data.matchHistory.headToHead?.length || 0}</div>
-							<div class="text-[10px] font-medium uppercase tracking-wide text-gray-500">Opponents</div>
+						<div class="rounded-lg bg-gray-800/50 p-2.5 text-center sm:p-3">
+							<div class="text-lg font-bold tabular-nums text-blue-400 sm:text-xl">{data.matchHistory.headToHead?.length || 0}</div>
+							<div class="text-[9px] font-medium uppercase tracking-wide text-gray-500 sm:text-[10px]">Opponents</div>
 						</div>
 						<!-- Current Streak -->
-						<div class="rounded-lg bg-gray-800/50 p-3 text-center">
-							<div class="text-xl font-bold tabular-nums {data.matchHistory.currentWinStreak > 0 ? 'text-emerald-400' : 'text-gray-400'}">
+						<div class="rounded-lg bg-gray-800/50 p-2.5 text-center sm:p-3">
+							<div class="text-lg font-bold tabular-nums sm:text-xl {data.matchHistory.currentWinStreak > 0 ? 'text-emerald-400' : 'text-gray-400'}">
 								{data.matchHistory.currentWinStreak > 0 ? data.matchHistory.currentWinStreak : '—'}
 							</div>
-							<div class="text-[10px] font-medium uppercase tracking-wide text-gray-500">Streak</div>
+							<div class="text-[9px] font-medium uppercase tracking-wide text-gray-500 sm:text-[10px]">Streak</div>
 						</div>
 						<!-- Longest Streak -->
-						<div class="rounded-lg bg-gray-800/50 p-3 text-center">
-							<div class="text-xl font-bold tabular-nums text-yellow-400">{data.matchHistory.longestWinStreak || '—'}</div>
-							<div class="text-[10px] font-medium uppercase tracking-wide text-gray-500">Best Run</div>
+						<div class="rounded-lg bg-gray-800/50 p-2.5 text-center sm:p-3">
+							<div class="text-lg font-bold tabular-nums text-yellow-400 sm:text-xl">{data.matchHistory.longestWinStreak || '—'}</div>
+							<div class="text-[9px] font-medium uppercase tracking-wide text-gray-500 sm:text-[10px]">Best Run</div>
 						</div>
 					</div>
 
 					<!-- Recent Form -->
 					{#if data.matchHistory.recentMatches?.length > 0}
-						<div class="mb-5">
-							<div class="mb-2 text-xs font-medium text-gray-500">Recent Form</div>
-							<div class="flex items-center gap-1.5">
+						<div class="mb-4 sm:mb-5">
+							<div class="mb-2 text-[10px] font-medium text-gray-500 sm:text-xs">Recent Form</div>
+							<div class="flex flex-wrap items-center gap-1 sm:gap-1.5">
 								{#each data.matchHistory.recentMatches.slice(0, 10) as { match }, i}
 									{@const isPlayer1 = match.player1GemId === data.gemId}
 									{@const won = (isPlayer1 && match.winner === 'player1') || (!isPlayer1 && match.winner === 'player2')}
 									{@const lost = (isPlayer1 && match.winner === 'player2') || (!isPlayer1 && match.winner === 'player1')}
 									<div
-										class="flex h-6 w-6 items-center justify-center rounded text-[10px] font-bold
+										class="flex h-5 w-5 items-center justify-center rounded text-[9px] font-bold sm:h-6 sm:w-6 sm:text-[10px]
 											{won ? 'bg-green-500/20 text-green-400' : lost ? 'bg-red-500/20 text-red-400' : 'bg-gray-700 text-gray-400'}"
 										title="Match {i + 1}"
 									>
@@ -1348,7 +1348,7 @@
 									</div>
 								{/each}
 								{#if data.matchHistory.recentMatches.length > 10}
-									<span class="text-xs text-gray-600">+{data.matchHistory.recentMatches.length - 10}</span>
+									<span class="text-[10px] text-gray-600 sm:text-xs">+{data.matchHistory.recentMatches.length - 10}</span>
 								{/if}
 							</div>
 						</div>
@@ -1362,24 +1362,24 @@
 						<div class="-mx-2 overflow-x-auto px-2 pb-2">
 							<div
 								class="mb-2 flex items-end gap-1"
-								style="height: 160px; min-width: {Math.max(
-									historicalPerformance().length * 40,
+								style="height: 120px; min-width: {Math.max(
+									historicalPerformance().length * 36,
 									100
 								)}px"
 							>
 								{#each historicalPerformance() as dataPoint, i}
 									{@const heightPx =
 										maxMonthlyPoints() > 0
-											? Math.max((dataPoint.points / maxMonthlyPoints()) * 140, 12)
-											: 12}
+											? Math.max((dataPoint.points / maxMonthlyPoints()) * 100, 10)
+											: 10}
 									{@const prevSeason = i > 0 ? historicalPerformance()[i - 1].season : null}
 									{@const isNewSeason = dataPoint.season !== prevSeason}
 									<div
 										class="group relative flex h-full flex-col items-center justify-end {isNewSeason &&
 										i > 0
-											? 'ml-3 border-l border-gray-700 pl-3'
+											? 'ml-2 border-l border-gray-700 pl-2 sm:ml-3 sm:pl-3'
 											: ''}"
-										style="min-width: 36px; flex: 1;"
+										style="min-width: 32px; flex: 1;"
 									>
 										<!-- Tooltip -->
 										<div
@@ -1408,20 +1408,20 @@
 							<!-- Labels -->
 							<div
 								class="flex gap-1"
-								style="min-width: {Math.max(historicalPerformance().length * 40, 100)}px"
+								style="min-width: {Math.max(historicalPerformance().length * 36, 100)}px"
 							>
 								{#each historicalPerformance() as dataPoint, i}
 									{@const prevSeason = i > 0 ? historicalPerformance()[i - 1].season : null}
 									{@const isNewSeason = dataPoint.season !== prevSeason}
 									<div
 										class="flex flex-col items-center {isNewSeason && i > 0
-											? 'ml-3 border-l border-gray-700 pl-3'
+											? 'ml-2 border-l border-gray-700 pl-2 sm:ml-3 sm:pl-3'
 											: ''}"
-										style="min-width: 36px; flex: 1;"
+										style="min-width: 32px; flex: 1;"
 									>
-										<span class="text-[10px] text-gray-500">{dataPoint.shortLabel}</span>
+										<span class="text-[9px] text-gray-500 sm:text-[10px]">{dataPoint.shortLabel}</span>
 										{#if isNewSeason}
-											<span class="text-[9px] font-medium text-blue-400">{dataPoint.season}</span>
+											<span class="text-[8px] font-medium text-blue-400 sm:text-[9px]">{dataPoint.season}</span>
 										{/if}
 									</div>
 								{/each}
@@ -1451,13 +1451,13 @@
 
 					<!-- Best Month Highlight -->
 					{#if bestMonth()}
-						<div class="mt-4 border-t border-gray-800 pt-4">
-							<div class="flex items-center justify-between">
-								<div class="text-sm text-gray-400">Best Month</div>
-								<div class="flex items-center gap-2">
-									<span class="text-lg font-bold text-yellow-400">{bestMonth().label}</span>
-									<span class="text-sm text-gray-500">•</span>
-									<span class="font-semibold text-emerald-400">{bestMonth().points} pts</span>
+						<div class="mt-3 border-t border-gray-800 pt-3 sm:mt-4 sm:pt-4">
+							<div class="flex items-center justify-between gap-2">
+								<div class="text-xs text-gray-400 sm:text-sm">Best Month</div>
+								<div class="flex items-center gap-1.5 sm:gap-2">
+									<span class="text-sm font-bold text-yellow-400 sm:text-lg">{bestMonth().label}</span>
+									<span class="text-xs text-gray-500 sm:text-sm">•</span>
+									<span class="text-sm font-semibold text-emerald-400">{bestMonth().points} pts</span>
 								</div>
 							</div>
 						</div>
@@ -1465,15 +1465,15 @@
 				{:else if seasonPerformance().length > 0}
 					<!-- Season-Level Chart (Fallback when no monthly data) -->
 					<div class="relative">
-						<div class="mb-2 flex items-end justify-center gap-4" style="height: 160px;">
+						<div class="mb-2 flex items-end justify-center gap-2 sm:gap-4" style="height: 120px;">
 							{#each seasonPerformance() as seasonData}
 								{@const heightPx =
 									maxSeasonPoints() > 0
-										? Math.max((seasonData.points / maxSeasonPoints()) * 140, 12)
-										: 12}
+										? Math.max((seasonData.points / maxSeasonPoints()) * 100, 10)
+										: 10}
 								<div
 									class="group relative flex h-full flex-col items-center justify-end"
-									style="min-width: 80px; max-width: 120px; flex: 1;"
+									style="min-width: 60px; max-width: 100px; flex: 1;"
 								>
 									<!-- Tooltip -->
 									<div
@@ -1986,15 +1986,13 @@
 										<!-- Circuit + Rank -->
 										<div class="flex items-center gap-2">
 											<h4 class="truncate text-base font-semibold text-white">{standing.circuit}</h4>
-											{#if standing.calculatedRank && standing.calculatedRank <= 8}
+											{#if standing.calculatedRank && standing.calculatedRank <= 16}
 												<span class="inline-flex items-center gap-0.5 rounded bg-yellow-500/20 px-1.5 py-0.5 text-xs font-bold text-yellow-400">
 													<svg class="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 24 24">
 														<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
 													</svg>
 													{standing.calculatedRank}
 												</span>
-											{:else if standing.calculatedRank && standing.calculatedRank <= 16}
-												<span class="rounded bg-gray-700 px-1.5 py-0.5 text-xs font-medium text-gray-300">#{standing.calculatedRank}</span>
 											{:else if standing.calculatedRank}
 												<span class="text-xs text-gray-500">#{standing.calculatedRank}</span>
 											{/if}
