@@ -5,6 +5,33 @@ import { event, seasonStanding } from '$lib/server/db/schema.js';
 import { asc, gte, desc } from 'drizzle-orm';
 
 /**
+ * Calculate derived stats from monthly data
+ * - eventsPlayed: count of months with points > 0
+ * - top8Finishes: count of months with points >= 15 (5th-8th or better)
+ */
+function calculateDerivedStats(standing) {
+	const monthlyPoints = [
+		standing.januaryPoints || 0,
+		standing.februaryPoints || 0,
+		standing.marchPoints || 0,
+		standing.aprilPoints || 0,
+		standing.mayPoints || 0,
+		standing.junePoints || 0,
+		standing.julyPoints || 0,
+		standing.augustPoints || 0,
+		standing.septemberPoints || 0,
+		standing.octoberPoints || 0,
+		standing.novemberPoints || 0,
+		standing.decemberPoints || 0
+	];
+
+	const eventsPlayed = monthlyPoints.filter(p => p > 0).length;
+	const top8Finishes = monthlyPoints.filter(p => p >= 15).length;
+
+	return { eventsPlayed, top8Finishes };
+}
+
+/**
  * Compare two standings using tiebreaker rules:
  * 1. Total Points (primary)
  * 2. Number of Top 8's made
@@ -15,13 +42,16 @@ function compareStandings(a, b) {
 	const pointsDiff = (b.totalPoints || 0) - (a.totalPoints || 0);
 	if (pointsDiff !== 0) return pointsDiff;
 
-	const top8Diff = (b.top8Finishes || 0) - (a.top8Finishes || 0);
+	const aDerived = calculateDerivedStats(a);
+	const bDerived = calculateDerivedStats(b);
+
+	const top8Diff = bDerived.top8Finishes - aDerived.top8Finishes;
 	if (top8Diff !== 0) return top8Diff;
 
 	const winsDiff = (b.matchesWon || 0) - (a.matchesWon || 0);
 	if (winsDiff !== 0) return winsDiff;
 
-	return (b.eventsPlayed || 0) - (a.eventsPlayed || 0);
+	return bDerived.eventsPlayed - aDerived.eventsPlayed;
 }
 
 export async function load({ setHeaders, url }) {
@@ -122,12 +152,13 @@ export async function load({ setHeaders, url }) {
 					top8Finishes: 0
 				});
 			}
+			const derived = calculateDerivedStats(standing);
 			const stats = statsMap.get(key);
 			stats.totalPoints += standing.totalPoints || 0;
 			stats.matchesWon += standing.matchesWon || 0;
 			stats.matchesPlayed += standing.matchesPlayed || 0;
-			stats.eventsPlayed += standing.eventsPlayed || 0;
-			stats.top8Finishes += standing.top8Finishes || 0;
+			stats.eventsPlayed += derived.eventsPlayed;
+			stats.top8Finishes += derived.top8Finishes;
 		}
 
 		// Sort and take top 8 for homepage

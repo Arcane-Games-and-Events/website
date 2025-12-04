@@ -31,26 +31,23 @@ export const user = pgTable('user', {
 	}).defaultNow()
 });
 
-// PLAYER (canonical player identity for standings tracking)
+// PLAYER TABLES (kept for historical data, not actively used)
+// GEM ID in season_standing is now the primary player identifier
 export const player = pgTable('player', {
 	id: uuid('id').defaultRandom().primaryKey(),
-	displayName: text('display_name').notNull(), // Current preferred display name
-	gemId: text('gem_id').unique(), // GEM ID (nullable until linked)
-	userId: text('user_id').references(() => user.id), // Website account (optional)
+	gemId: text('gem_id').unique(), // Unique GEM ID from LSS
+	primaryName: text('primary_name').notNull(), // Current display name
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
-// PLAYER ALIAS (name mappings for reconciliation)
 export const playerAlias = pgTable('player_alias', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	playerId: uuid('player_id').notNull().references(() => player.id, { onDelete: 'cascade' }),
-	aliasName: text('alias_name').notNull(), // Historical name variant
-	season: text('season'), // Which season this alias was used (optional)
+	aliasName: text('alias_name').notNull(),
+	source: text('source'), // Where this alias came from (e.g., "event_result", "manual")
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
-}, (table) => ({
-	uniqueAlias: unique().on(table.aliasName) // Each alias maps to exactly one player
-}));
+});
 
 // Session table for Lucia session tracking
 export const session = pgTable('session', {
@@ -212,6 +209,33 @@ export const eventDecklist = pgTable('event_decklist', {
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
+// INDIVIDUAL MATCH RECORDS (for head-to-head analysis)
+export const eventMatch = pgTable('event_match', {
+	id: uuid('id').defaultRandom().primaryKey(),
+
+	// Event context - identifies which event this match belongs to
+	month: text('month').notNull(), // e.g., "January", "February"
+	year: text('year').notNull(), // e.g., "2025", "2024"
+	circuit: text('circuit').notNull(), // e.g., "Los Angeles", "St. Louis"
+
+	// Match context
+	round: integer('round').notNull(),
+	table: integer('table'),
+
+	// Player 1
+	player1GemId: text('player1_gem_id'),
+	player1Name: text('player1_name').notNull(),
+
+	// Player 2
+	player2GemId: text('player2_gem_id'),
+	player2Name: text('player2_name').notNull(),
+
+	// Result: 'player1', 'player2', or null for draw
+	winner: text('winner'),
+
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
 // SEASON STANDINGS (circuit leaderboards)
 export const seasonStanding = pgTable('season_standing', {
 	id: uuid('id').defaultRandom().primaryKey(),
@@ -220,24 +244,17 @@ export const seasonStanding = pgTable('season_standing', {
 	season: text('season').notNull(), // e.g., "2025", "2024-2025"
 	circuit: text('circuit').notNull(), // "Los Angeles", "St. Louis", "New England"
 
-	// Player identification
-	playerId: uuid('player_id').references(() => player.id), // Link to canonical player
-	userId: text('user_id').references(() => user.id),
+	// Player identification - GEM ID is the universal identifier
 	gemId: text('gem_id'),
 	playerName: text('player_name').notNull(),
 
 	// Standing data
-	rank: integer('rank'), // Current rank in circuit
 	totalPoints: integer('total_points').default(0), // Total AGE points
 	winPercentage: decimal('win_percentage', { precision: 5, scale: 2 }), // Win % for the season
-	eventsPlayed: integer('events_played').default(0),
 
 	// Match statistics for the season
 	matchesPlayed: integer('matches_played').default(0), // Total matches played
 	matchesWon: integer('matches_won').default(0), // Total matches won
-
-	// Best finishes
-	top8Finishes: integer('top_8_finishes').default(0),
 
 	// Qualification status
 	qualifiedForChampionship: boolean('qualified_for_championship').default(false),
@@ -283,11 +300,6 @@ export const seasonStanding = pgTable('season_standing', {
 	octoberMatches: integer('october_matches').default(0),
 	novemberMatches: integer('november_matches').default(0),
 	decemberMatches: integer('december_matches').default(0),
-
-	// DEPRECATED: Legacy JSONB columns - now using flattened monthly columns above
-	// Kept for backwards compatibility during migration
-	monthlyData: jsonb('monthly_data'),
-	metadata: jsonb('metadata'),
 
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow(),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()

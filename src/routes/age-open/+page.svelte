@@ -290,7 +290,7 @@
 	// Standings search and filter
 	let searchQuery = '';
 	let standingsCircuit = 'all';
-	let standingsSeason = data.selectedSeason || data.currentYear;
+	let standingsSeason = data.selectedSeason || 'all';
 
 	// Sorting state for standings
 	let sortColumn = 'rank'; // 'rank', 'points', 'record', 'winPct', 'events', 'top8', 'ageRating'

@@ -1,84 +1,9 @@
 import { json } from '@sveltejs/kit';
 import { authnet } from '$lib/server/authnet/client.js';
 import { db } from '$lib/server/db/index.js';
-import { ticket, order, event as eventTable, player, playerAlias, savedCard, user } from '$lib/server/db/schema.js';
+import { ticket, order, event as eventTable, savedCard, user } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import crypto from 'crypto';
-
-/**
- * Links a player by GEM ID when they register for an event.
- * This reconciles historical name-based records with GEM IDs.
- *
- * @param {string} gemId - The player's GEM ID
- * @param {string} playerName - The player's current name (firstName + lastName)
- * @returns {Promise<string|null>} - The player ID if linked/created, null if no gemId provided
- */
-async function linkPlayerByGemId(gemId, playerName) {
-	if (!gemId || !playerName) return null;
-
-	try {
-		// 1. Check if player with this GEM ID already exists
-		const [existingPlayer] = await db
-			.select()
-			.from(player)
-			.where(eq(player.gemId, gemId))
-			.limit(1);
-
-		if (existingPlayer) {
-			// Player already linked - add this name as alias if new
-			const [existingAlias] = await db
-				.select()
-				.from(playerAlias)
-				.where(eq(playerAlias.aliasName, playerName))
-				.limit(1);
-
-			if (!existingAlias) {
-				// Add new alias for this player
-				await db.insert(playerAlias).values({
-					playerId: existingPlayer.id,
-					aliasName: playerName
-				});
-			}
-			return existingPlayer.id;
-		}
-
-		// 2. Check if playerName exists as alias (from historical data)
-		const [existingAlias] = await db
-			.select()
-			.from(playerAlias)
-			.where(eq(playerAlias.aliasName, playerName))
-			.limit(1);
-
-		if (existingAlias) {
-			// Link GEM ID to existing player
-			await db
-				.update(player)
-				.set({ gemId, updatedAt: new Date() })
-				.where(eq(player.id, existingAlias.playerId));
-			return existingAlias.playerId;
-		}
-
-		// 3. Create new player with GEM ID
-		const [newPlayer] = await db
-			.insert(player)
-			.values({
-				displayName: playerName,
-				gemId
-			})
-			.returning();
-
-		// Create alias for this player name
-		await db.insert(playerAlias).values({
-			playerId: newPlayer.id,
-			aliasName: playerName
-		});
-
-		return newPlayer.id;
-	} catch (err) {
-		console.error('Error linking player by GEM ID:', err);
-		return null;
-	}
-}
 
 /**
  * Purchase event tickets (one-time payment)
@@ -258,13 +183,6 @@ export async function POST({ params, request, locals }) {
 				transactionId: result.transactionId,
 				enteredIntoGem: false
 			}).returning();
-
-			// Link player by GEM ID for standings tracking
-			// This reconciles historical name-based records with GEM IDs
-			const playerName = [billTo?.firstName, billTo?.lastName].filter(Boolean).join(' ');
-			if (gemId && playerName) {
-				await linkPlayerByGemId(gemId, playerName);
-			}
 
 			// Record the order
 			await db.insert(order).values({

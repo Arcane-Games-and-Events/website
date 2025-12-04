@@ -3,6 +3,33 @@ import { event, eventResult, eventDecklist, seasonStanding, lssSeason } from '$l
 import { asc, desc, eq, and, sql, gt, gte } from 'drizzle-orm';
 
 /**
+ * Calculate derived stats from monthly data
+ * - eventsPlayed: count of months with points > 0
+ * - top8Finishes: count of months with points >= 15 (5th-8th or better)
+ */
+function calculateDerivedStats(standing) {
+	const monthlyPoints = [
+		standing.januaryPoints || 0,
+		standing.februaryPoints || 0,
+		standing.marchPoints || 0,
+		standing.aprilPoints || 0,
+		standing.mayPoints || 0,
+		standing.junePoints || 0,
+		standing.julyPoints || 0,
+		standing.augustPoints || 0,
+		standing.septemberPoints || 0,
+		standing.octoberPoints || 0,
+		standing.novemberPoints || 0,
+		standing.decemberPoints || 0
+	];
+
+	const eventsPlayed = monthlyPoints.filter(p => p > 0).length;
+	const top8Finishes = monthlyPoints.filter(p => p >= 15).length;
+
+	return { eventsPlayed, top8Finishes };
+}
+
+/**
  * Compare two standings using tiebreaker rules:
  * 1. Total Points (primary)
  * 2. Number of Top 8's made
@@ -15,8 +42,12 @@ function compareStandings(a, b) {
 	const pointsDiff = (b.totalPoints || 0) - (a.totalPoints || 0);
 	if (pointsDiff !== 0) return pointsDiff;
 
+	// Calculate derived stats for tiebreakers
+	const aDerived = calculateDerivedStats(a);
+	const bDerived = calculateDerivedStats(b);
+
 	// Tiebreaker 1: Top 8 finishes (higher is better)
-	const top8Diff = (b.top8Finishes || 0) - (a.top8Finishes || 0);
+	const top8Diff = bDerived.top8Finishes - aDerived.top8Finishes;
 	if (top8Diff !== 0) return top8Diff;
 
 	// Tiebreaker 2: Total match wins (higher is better)
@@ -24,7 +55,7 @@ function compareStandings(a, b) {
 	if (winsDiff !== 0) return winsDiff;
 
 	// Tiebreaker 3: Events attended (higher is better)
-	const eventsDiff = (b.eventsPlayed || 0) - (a.eventsPlayed || 0);
+	const eventsDiff = bDerived.eventsPlayed - aDerived.eventsPlayed;
 	return eventsDiff;
 }
 
@@ -105,7 +136,7 @@ export async function load({ url, setHeaders }) {
 	});
 
 	const currentYear = new Date().getFullYear().toString();
-	const selectedSeason = url.searchParams.get('season') || currentYear;
+	const selectedSeason = url.searchParams.get('season') || 'all';
 	const selectedCircuit = url.searchParams.get('circuit') || null;
 
 	// Available seasons (newest first) - 'all' represents career/all-time stats
@@ -195,12 +226,13 @@ export async function load({ url, setHeaders }) {
 					});
 				}
 
+				const derived = calculateDerivedStats(standing);
 				const career = careerStatsMap.get(key);
 				career.totalPoints += standing.totalPoints || 0;
 				career.matchesWon += standing.matchesWon || 0;
 				career.matchesPlayed += standing.matchesPlayed || 0;
-				career.eventsPlayed += standing.eventsPlayed || 0;
-				career.top8Finishes += standing.top8Finishes || 0;
+				career.eventsPlayed += derived.eventsPlayed;
+				career.top8Finishes += derived.top8Finishes;
 				career.seasonsPlayed.add(standing.season);
 				career.circuitsPlayed.add(standing.circuit);
 			}
@@ -242,16 +274,19 @@ export async function load({ url, setHeaders }) {
 			// Sort using tiebreaker rules and assign ranks
 			rawStandings.sort(compareStandings);
 
-			// Calculate ranks and win percentage
+			// Calculate ranks, win percentage, and derived stats
 			standings = rawStandings.map((standing, index) => {
 				const winPercentage = standing.matchesPlayed > 0
 					? Math.round((standing.matchesWon / standing.matchesPlayed) * 10000) / 100
 					: null;
+				const derived = calculateDerivedStats(standing);
 
 				return {
 					...standing,
 					calculatedRank: index + 1,
-					winPercentage: standing.winPercentage || winPercentage
+					winPercentage: standing.winPercentage || winPercentage,
+					eventsPlayed: derived.eventsPlayed,
+					top8Finishes: derived.top8Finishes
 				};
 			});
 		}
@@ -277,12 +312,13 @@ export async function load({ url, setHeaders }) {
 					});
 				}
 
+				const derived = calculateDerivedStats(standing);
 				const playerData = playerStatsMap.get(key);
 				playerData.totalPoints += standing.totalPoints || 0;
 				playerData.matchesWon += standing.matchesWon || 0;
 				playerData.matchesPlayed += standing.matchesPlayed || 0;
-				playerData.eventsPlayed += standing.eventsPlayed || 0;
-				playerData.top8Finishes += standing.top8Finishes || 0;
+				playerData.eventsPlayed += derived.eventsPlayed;
+				playerData.top8Finishes += derived.top8Finishes;
 				playerData.standingsList.push(standing);
 			}
 

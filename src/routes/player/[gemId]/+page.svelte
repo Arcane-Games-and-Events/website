@@ -5,10 +5,127 @@
 
 	let { data } = $props();
 
+	/**
+	 * Calculate derived stats from monthly data
+	 * - eventsPlayed: count of months with points > 0
+	 * - top8Finishes: count of months with points >= 15 (5th-8th or better)
+	 */
+	function calculateDerivedStats(standing) {
+		const monthlyPoints = [
+			standing.januaryPoints || 0,
+			standing.februaryPoints || 0,
+			standing.marchPoints || 0,
+			standing.aprilPoints || 0,
+			standing.mayPoints || 0,
+			standing.junePoints || 0,
+			standing.julyPoints || 0,
+			standing.augustPoints || 0,
+			standing.septemberPoints || 0,
+			standing.octoberPoints || 0,
+			standing.novemberPoints || 0,
+			standing.decemberPoints || 0
+		];
+
+		const eventsPlayed = monthlyPoints.filter(p => p > 0).length;
+		const top8Finishes = monthlyPoints.filter(p => p >= 15).length;
+
+		return { eventsPlayed, top8Finishes };
+	}
+
 	let editMode = $state(false);
 	let showAddStanding = $state(false);
 	let expandedSeasonId = $state(null);
+	let expandedMonthKey = $state(null); // Tracks which month is expanded: "standingId|month"
 	let linkCopied = $state(false);
+	let selectedOpponentKey = $state(''); // Selected opponent for head-to-head breakdown
+	let opponentSearchQuery = $state(''); // Search query for combobox
+	let showOpponentDropdown = $state(false); // Whether dropdown is visible
+
+	// Head-to-head records sorted alphabetically
+	const sortedHeadToHead = $derived(() => {
+		if (!data.matchHistory?.headToHead) return [];
+		return [...data.matchHistory.headToHead].sort((a, b) =>
+			a.opponentName.localeCompare(b.opponentName)
+		);
+	});
+
+	// Filtered head-to-head records based on search
+	const filteredHeadToHead = $derived(() => {
+		const sorted = sortedHeadToHead();
+		if (!opponentSearchQuery.trim()) return sorted;
+		const query = opponentSearchQuery.toLowerCase().trim();
+		return sorted.filter((h2h) => h2h.opponentName.toLowerCase().includes(query));
+	});
+
+	// Select an opponent from the dropdown
+	function selectOpponent(h2h) {
+		selectedOpponentKey = h2h.opponentGemId || h2h.opponentName;
+		opponentSearchQuery = h2h.opponentName;
+		showOpponentDropdown = false;
+	}
+
+	// Clear selection
+	function clearOpponentSelection() {
+		selectedOpponentKey = '';
+		opponentSearchQuery = '';
+		showOpponentDropdown = false;
+	}
+
+	// Get selected opponent's record and matches
+	const selectedOpponent = $derived(() => {
+		if (!selectedOpponentKey || !data.matchHistory?.headToHead) return null;
+		return data.matchHistory.headToHead.find(
+			(h2h) => (h2h.opponentGemId || h2h.opponentName) === selectedOpponentKey
+		);
+	});
+
+	// Get all matches against selected opponent
+	const opponentMatches = $derived(() => {
+		if (!selectedOpponent() || !data.matchHistory?.matchesByEvent) return [];
+		const opponent = selectedOpponent();
+		const allMatches = [];
+		for (const matches of Object.values(data.matchHistory.matchesByEvent)) {
+			for (const { match, event } of matches) {
+				const isPlayer1 = match.player1GemId === data.gemId;
+				const opponentGemId = isPlayer1 ? match.player2GemId : match.player1GemId;
+				const opponentName = isPlayer1 ? match.player2Name : match.player1Name;
+				// Match by GEM ID if available, otherwise by name
+				if (
+					(opponent.opponentGemId && opponentGemId === opponent.opponentGemId) ||
+					(!opponent.opponentGemId && opponentName === opponent.opponentName)
+				) {
+					allMatches.push({ match, event });
+				}
+			}
+		}
+		// Sort by year desc, then month order, then round
+		const monthOrder = [
+			'January', 'February', 'March', 'April', 'May', 'June',
+			'July', 'August', 'September', 'October', 'November', 'December'
+		];
+		return allMatches.sort((a, b) => {
+			if (a.event.year !== b.event.year) return b.event.year.localeCompare(a.event.year);
+			const monthA = monthOrder.indexOf(a.event.month);
+			const monthB = monthOrder.indexOf(b.event.month);
+			if (monthA !== monthB) return monthA - monthB;
+			return a.match.round - b.match.round;
+		});
+	});
+
+	// Get matches for a specific event (year|circuit|month)
+	function getMatchesForEvent(year, circuit, month) {
+		if (!data.matchHistory?.matchesByEvent) return [];
+		// Convert month key to proper case (e.g., "january" -> "January")
+		const monthName = month.charAt(0).toUpperCase() + month.slice(1);
+		const key = `${year}|${circuit}|${monthName}`;
+		return data.matchHistory.matchesByEvent[key] || [];
+	}
+
+	// Toggle expanded month
+	function toggleMonthExpand(standingId, monthKey) {
+		const key = `${standingId}|${monthKey}`;
+		expandedMonthKey = expandedMonthKey === key ? null : key;
+	}
 
 	// Copy link to clipboard
 	async function copyLink() {
@@ -164,10 +281,11 @@
 				});
 			}
 			const seasonData = seasonMap.get(s.season);
+			const derived = calculateDerivedStats(s);
 			seasonData.points += s.totalPoints || 0;
 			seasonData.wins += s.matchesWon || 0;
 			seasonData.matches += s.matchesPlayed || 0;
-			seasonData.events += s.eventsPlayed || 0;
+			seasonData.events += derived.eventsPlayed;
 			seasonData.circuits.add(s.circuit);
 		});
 
@@ -474,48 +592,48 @@
 								.color} text-xs font-bold">{ratingTier().label}</span
 						>
 					</div>
-					<!-- Tooltip on hover (positioned below to avoid cutoff) -->
+					<!-- Tooltip on hover -->
 					<div
-						class="absolute top-full left-1/2 z-20 mt-3 hidden -translate-x-1/2 group-hover:block"
+						class="pointer-events-none absolute left-1/2 top-full z-50 mt-3 hidden -translate-x-1/2 group-hover:block"
 					>
 						<div
-							class="rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 whitespace-nowrap shadow-2xl"
+							class="min-w-[200px] rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 shadow-2xl"
 						>
 							<div class="mb-2 text-center">
 								<span class="{ratingTier().color} font-bold">{ratingTier().label}</span>
 								<span class="ml-1 text-xs text-gray-500">- {ratingTier().description}</span>
 							</div>
-							<div class="mb-2 border-t border-gray-800 pt-2 text-center text-xs text-gray-500">
+							<div class="mb-3 text-center text-xs text-gray-500">
 								vs {ageRating().totalPlayers} players
 							</div>
-							<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-								<div class="flex items-center gap-2">
-									<div class="h-2 w-2 rounded-full bg-blue-400"></div>
-									<span class="text-gray-400">Win Rate</span>
+							<div class="space-y-1.5 text-xs">
+								<div class="flex items-center justify-between">
+									<div class="flex items-center gap-2">
+										<div class="h-2 w-2 rounded-full bg-blue-400"></div>
+										<span class="text-gray-400">Win Rate</span>
+									</div>
+									<span class="font-medium text-white">{ageRating().percentiles.winRate}th %ile</span>
 								</div>
-								<span class="text-right font-medium text-white"
-									>{ageRating().percentiles.winRate}th %ile</span
-								>
-								<div class="flex items-center gap-2">
-									<div class="h-2 w-2 rounded-full bg-purple-400"></div>
-									<span class="text-gray-400">Top 8</span>
+								<div class="flex items-center justify-between">
+									<div class="flex items-center gap-2">
+										<div class="h-2 w-2 rounded-full bg-purple-400"></div>
+										<span class="text-gray-400">Top 8</span>
+									</div>
+									<span class="font-medium text-white">{ageRating().percentiles.top8Rate}th %ile</span>
 								</div>
-								<span class="text-right font-medium text-white"
-									>{ageRating().percentiles.top8Rate}th %ile</span
-								>
-								<div class="flex items-center gap-2">
-									<div class="h-2 w-2 rounded-full bg-emerald-400"></div>
-									<span class="text-gray-400">Peak</span>
+								<div class="flex items-center justify-between">
+									<div class="flex items-center gap-2">
+										<div class="h-2 w-2 rounded-full bg-emerald-400"></div>
+										<span class="text-gray-400">Peak</span>
+									</div>
+									<span class="font-medium text-white">{ageRating().percentiles.bestRank}th %ile</span>
 								</div>
-								<span class="text-right font-medium text-white"
-									>{ageRating().percentiles.bestRank}th %ile</span
-								>
 							</div>
 							{#if ageRating().eventPenalty}
 								<div
 									class="mt-2 border-t border-gray-800 pt-2 text-center text-xs text-amber-500/80"
 								>
-									Rating reduced (need 5+ events)
+									Rating reduced (need 3+ events)
 								</div>
 							{/if}
 						</div>
@@ -561,21 +679,6 @@
 							</svg>
 							GEM ID: {data.gemId}
 						</span>
-						{#if data.aliases.length > 0}
-							<span
-								class="inline-flex items-center gap-2 rounded-lg bg-purple-500/20 px-3 py-1.5 text-sm font-medium text-purple-400"
-							>
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-									/>
-								</svg>
-								{data.aliases.length} Alias{data.aliases.length > 1 ? 'es' : ''}
-							</span>
-						{/if}
 					</div>
 
 					<!-- Action Buttons -->
@@ -817,7 +920,7 @@
 		</h2>
 
 		<!-- AGE Rating Breakdown - Compact Visual Grid -->
-		<div class="mb-6 overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/50">
+		<div class="mb-6 rounded-2xl border border-gray-800 bg-gray-900/50">
 			<div class="flex items-center justify-between border-b border-gray-800 px-6 py-4">
 				<h3 class="flex items-center gap-2 text-lg font-semibold text-white">
 					<svg class="h-5 w-5 {ratingTier().color}" fill="currentColor" viewBox="0 0 24 24">
@@ -831,8 +934,8 @@
 					>vs {ageRating().totalPlayers} players</span
 				>
 			</div>
-			<div class="p-4 sm:p-6">
-				<div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+			<div class="overflow-visible p-4 sm:p-6">
+				<div class="grid grid-cols-2 gap-3 overflow-visible sm:grid-cols-3 lg:grid-cols-6">
 					<!-- Win Rate -->
 					<div
 						class="group relative cursor-help rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-900/40 to-gray-900 p-4 transition-all hover:border-blue-500/40"
@@ -852,14 +955,14 @@
 						</div>
 						<!-- Tooltip -->
 						<div
-							class="absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 group-hover:block"
+							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
 						>
 							<div
-								class="max-w-[220px] min-w-[160px] rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs shadow-xl"
+								class="whitespace-nowrap rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs shadow-xl"
 							>
-								<div class="mb-1 font-semibold text-blue-400">Win Rate Score</div>
-								<div class="text-gray-300">{ageRating().breakdown.winRate} / 25 points</div>
-								<div class="mt-1 text-gray-500">Match win percentage (harsh curve)</div>
+								<div class="font-semibold text-blue-400">Win Rate Score</div>
+								<div class="text-gray-300">{ageRating().breakdown.winRate.toFixed(1)} / 25 pts</div>
+								<div class="text-gray-500">Match win percentage</div>
 							</div>
 						</div>
 					</div>
@@ -883,14 +986,14 @@
 						</div>
 						<!-- Tooltip -->
 						<div
-							class="absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 group-hover:block"
+							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
 						>
 							<div
-								class="max-w-[220px] min-w-[160px] rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs shadow-xl"
+								class="whitespace-nowrap rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs shadow-xl"
 							>
-								<div class="mb-1 font-semibold text-purple-400">Top 8 Conversion</div>
-								<div class="text-gray-300">{ageRating().breakdown.top8} / 25 points</div>
-								<div class="mt-1 text-gray-500">Playoff consistency (harsh curve)</div>
+								<div class="font-semibold text-purple-400">Top 8 Conversion</div>
+								<div class="text-gray-300">{ageRating().breakdown.top8.toFixed(1)} / 25 pts</div>
+								<div class="text-gray-500">Playoff consistency</div>
 							</div>
 						</div>
 					</div>
@@ -914,14 +1017,14 @@
 						</div>
 						<!-- Tooltip -->
 						<div
-							class="absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 group-hover:block"
+							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
 						>
 							<div
-								class="max-w-[220px] min-w-[160px] rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs shadow-xl"
+								class="whitespace-nowrap rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs shadow-xl"
 							>
-								<div class="mb-1 font-semibold text-emerald-400">Peak Performance</div>
-								<div class="text-gray-300">{ageRating().breakdown.peak} / 20 points</div>
-								<div class="mt-1 text-gray-500">Best circuit rank achieved</div>
+								<div class="font-semibold text-emerald-400">Peak Performance</div>
+								<div class="text-gray-300">{ageRating().breakdown.peak.toFixed(1)} / 20 pts</div>
+								<div class="text-gray-500">Best circuit rank achieved</div>
 							</div>
 						</div>
 					</div>
@@ -945,14 +1048,14 @@
 						</div>
 						<!-- Tooltip -->
 						<div
-							class="absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 group-hover:block"
+							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
 						>
 							<div
-								class="max-w-[220px] min-w-[160px] rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs shadow-xl"
+								class="whitespace-nowrap rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs shadow-xl"
 							>
-								<div class="mb-1 font-semibold text-amber-400">Experience</div>
-								<div class="text-gray-300">{ageRating().breakdown.experience} / 10 points</div>
-								<div class="mt-1 text-gray-500">Total events played</div>
+								<div class="font-semibold text-amber-400">Experience</div>
+								<div class="text-gray-300">{ageRating().breakdown.experience.toFixed(1)} / 10 pts</div>
+								<div class="text-gray-500">Total events played</div>
 							</div>
 						</div>
 					</div>
@@ -976,14 +1079,14 @@
 						</div>
 						<!-- Tooltip -->
 						<div
-							class="absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 group-hover:block"
+							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
 						>
 							<div
-								class="max-w-[220px] min-w-[160px] rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs shadow-xl"
+								class="whitespace-nowrap rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs shadow-xl"
 							>
-								<div class="mb-1 font-semibold text-cyan-400">Points Efficiency</div>
-								<div class="text-gray-300">{ageRating().breakdown.efficiency} / 15 points</div>
-								<div class="mt-1 text-gray-500">Avg points per event (harsh curve)</div>
+								<div class="font-semibold text-cyan-400">Points Efficiency</div>
+								<div class="text-gray-300">{ageRating().breakdown.efficiency.toFixed(1)} / 15 pts</div>
+								<div class="text-gray-500">Avg points per event</div>
 							</div>
 						</div>
 					</div>
@@ -1007,14 +1110,14 @@
 						</div>
 						<!-- Tooltip -->
 						<div
-							class="absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 group-hover:block"
+							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
 						>
 							<div
-								class="max-w-[220px] min-w-[160px] rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs shadow-xl"
+								class="whitespace-nowrap rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs shadow-xl"
 							>
-								<div class="mb-1 font-semibold text-yellow-400">Championship Bonus</div>
-								<div class="text-gray-300">{ageRating().breakdown.championship} / 5 points</div>
-								<div class="mt-1 text-gray-500">Top 16 qualifications</div>
+								<div class="font-semibold text-yellow-400">Championship Bonus</div>
+								<div class="text-gray-300">{ageRating().breakdown.championship.toFixed(1)} / 5 pts</div>
+								<div class="text-gray-500">Top 16 qualifications</div>
 							</div>
 						</div>
 					</div>
@@ -1055,7 +1158,7 @@
 		</div>
 
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-			<!-- Advanced Stats Grid -->
+			<!-- Performance Stats Grid -->
 			<div class="rounded-2xl border border-gray-800 bg-gray-900/50 p-6">
 				<h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
 					<svg class="h-5 w-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1066,7 +1169,7 @@
 							d="M13 10V3L4 14h7v7l9-11h-7z"
 						/>
 					</svg>
-					Key Metrics
+					Performance Stats
 				</h3>
 				<div class="grid grid-cols-2 gap-4">
 					<!-- Top 8 Conversion -->
@@ -1169,45 +1272,88 @@
 						/>
 					</svg>
 					Performance History
-					{#if hasMonthlyData()}
-						<span class="ml-2 rounded-full bg-gray-800 px-2 py-1 text-xs text-gray-500">
-							{activeMonths()} month{activeMonths() !== 1 ? 's' : ''}
+					{#if performanceTrend() === 'up'}
+						<span
+							class="ml-auto flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-1 text-xs text-emerald-400"
+						>
+							<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+								/>
+							</svg>
+							Trending Up
 						</span>
-						{#if performanceTrend() === 'up'}
-							<span
-								class="ml-auto flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-1 text-xs text-emerald-400"
-							>
-								<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-									/>
-								</svg>
-								Trending Up
-							</span>
-						{:else if performanceTrend() === 'down'}
-							<span
-								class="ml-auto flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-1 text-xs text-red-400"
-							>
-								<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
-									/>
-								</svg>
-								Trending Down
-							</span>
-						{/if}
-					{:else if seasonPerformance().length > 0}
-						<span class="ml-2 rounded-full bg-gray-800 px-2 py-1 text-xs text-gray-500">
-							{seasonPerformance().length} season{seasonPerformance().length !== 1 ? 's' : ''}
+					{:else if performanceTrend() === 'down'}
+						<span
+							class="ml-auto flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-1 text-xs text-red-400"
+						>
+							<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
+								/>
+							</svg>
+							Trending Down
 						</span>
 					{/if}
 				</h3>
+
+				<!-- Match Stats Row -->
+				{#if data.matchHistory}
+					<div class="mb-5 grid grid-cols-4 gap-3">
+						<!-- Total Matches -->
+						<div class="rounded-lg bg-gray-800/50 p-3 text-center">
+							<div class="text-xl font-bold tabular-nums text-white">{data.matchHistory.totalMatches}</div>
+							<div class="text-[10px] font-medium uppercase tracking-wide text-gray-500">Matches</div>
+						</div>
+						<!-- Unique Opponents -->
+						<div class="rounded-lg bg-gray-800/50 p-3 text-center">
+							<div class="text-xl font-bold tabular-nums text-blue-400">{data.matchHistory.headToHead?.length || 0}</div>
+							<div class="text-[10px] font-medium uppercase tracking-wide text-gray-500">Opponents</div>
+						</div>
+						<!-- Current Streak -->
+						<div class="rounded-lg bg-gray-800/50 p-3 text-center">
+							<div class="text-xl font-bold tabular-nums {data.matchHistory.currentWinStreak > 0 ? 'text-emerald-400' : 'text-gray-400'}">
+								{data.matchHistory.currentWinStreak > 0 ? data.matchHistory.currentWinStreak : '—'}
+							</div>
+							<div class="text-[10px] font-medium uppercase tracking-wide text-gray-500">Streak</div>
+						</div>
+						<!-- Longest Streak -->
+						<div class="rounded-lg bg-gray-800/50 p-3 text-center">
+							<div class="text-xl font-bold tabular-nums text-yellow-400">{data.matchHistory.longestWinStreak || '—'}</div>
+							<div class="text-[10px] font-medium uppercase tracking-wide text-gray-500">Best Run</div>
+						</div>
+					</div>
+
+					<!-- Recent Form -->
+					{#if data.matchHistory.recentMatches?.length > 0}
+						<div class="mb-5">
+							<div class="mb-2 text-xs font-medium text-gray-500">Recent Form</div>
+							<div class="flex items-center gap-1.5">
+								{#each data.matchHistory.recentMatches.slice(0, 10) as { match }, i}
+									{@const isPlayer1 = match.player1GemId === data.gemId}
+									{@const won = (isPlayer1 && match.winner === 'player1') || (!isPlayer1 && match.winner === 'player2')}
+									{@const lost = (isPlayer1 && match.winner === 'player2') || (!isPlayer1 && match.winner === 'player1')}
+									<div
+										class="flex h-6 w-6 items-center justify-center rounded text-[10px] font-bold
+											{won ? 'bg-green-500/20 text-green-400' : lost ? 'bg-red-500/20 text-red-400' : 'bg-gray-700 text-gray-400'}"
+										title="Match {i + 1}"
+									>
+										{won ? 'W' : lost ? 'L' : 'D'}
+									</div>
+								{/each}
+								{#if data.matchHistory.recentMatches.length > 10}
+									<span class="text-xs text-gray-600">+{data.matchHistory.recentMatches.length - 10}</span>
+								{/if}
+							</div>
+						</div>
+					{/if}
+				{/if}
 
 				{#if hasMonthlyData()}
 					<!-- Historical Timeline Chart (Monthly) -->
@@ -1389,191 +1535,376 @@
 					<p class="mt-3 text-center text-xs text-gray-600">
 						Monthly breakdown available after event closeouts
 					</p>
-				{:else}
-					<!-- No Data State -->
-					<div class="flex h-40 flex-col items-center justify-center text-center">
-						<svg
-							class="mb-3 h-12 w-12 text-gray-700"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="1.5"
-								d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-							/>
-						</svg>
-						<p class="text-sm text-gray-500">No performance history available</p>
-						<p class="mt-1 text-xs text-gray-600">Data shows after event closeouts</p>
+				{:else if !data.matchHistory}
+					<!-- No Data State (no match or performance data at all) -->
+					<div class="flex flex-col items-center justify-center py-8 text-center">
+						<div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-800/50">
+							<svg
+								class="h-8 w-8 text-gray-600"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="1.5"
+									d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+								/>
+							</svg>
+						</div>
+						<p class="text-sm font-medium text-gray-400">No match history yet</p>
+						<p class="mt-1 text-xs text-gray-600">Performance data appears after events are processed</p>
 					</div>
 				{/if}
 			</div>
 		</div>
 
-		<!-- Win Rate Visualization -->
+		<!-- Player vs Player Stats -->
 		<div class="mt-6 rounded-2xl border border-gray-800 bg-gray-900/50 p-6">
 			<h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
-				<svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<svg class="h-5 w-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"
 						stroke-width="2"
-						d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+						d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
 					/>
 				</svg>
-				Win Rate Breakdown
+				Player vs Player
+				{#if data.matchHistory?.headToHead?.length > 0}
+					<span class="ml-auto rounded-full bg-gray-800 px-2.5 py-1 text-xs text-gray-400">
+						{data.matchHistory.headToHead.length} opponents faced
+					</span>
+				{/if}
 			</h3>
 
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-				<!-- Overall Win Rate Ring -->
-				<div class="flex items-center gap-4 rounded-xl bg-gray-800/50 p-4">
-					<div class="relative h-16 w-16">
-						<svg class="h-16 w-16 -rotate-90" viewBox="0 0 36 36">
-							<path
-								class="text-gray-700"
-								stroke="currentColor"
-								stroke-width="3"
+			{#if data.matchHistory?.headToHead?.length > 0}
+				<!-- Nemesis & Best Matchup Cards -->
+				<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+					<!-- Nemesis -->
+					<div class="rounded-xl border border-red-500/20 bg-gradient-to-br from-red-900/20 to-gray-900 p-4">
+						<div class="flex items-start justify-between">
+							<div class="min-w-0 flex-1">
+								<div class="mb-2 flex items-center gap-2">
+									<span class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/20">
+										<svg class="h-4 w-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+										</svg>
+									</span>
+									<span class="text-xs font-semibold tracking-wide text-red-400 uppercase">Nemesis</span>
+								</div>
+								{#if data.matchHistory.nemesis}
+									<div class="truncate text-lg font-bold text-white">
+										{#if data.matchHistory.nemesis.opponentGemId}
+											<a href="/player/{data.matchHistory.nemesis.opponentGemId}" class="hover:text-red-400">
+												{data.matchHistory.nemesis.opponentName}
+											</a>
+										{:else}
+											{data.matchHistory.nemesis.opponentName}
+										{/if}
+									</div>
+									<div class="mt-1 flex items-center gap-2 text-sm">
+										<span class="rounded bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400">
+											{data.matchHistory.nemesis.losses}L
+										</span>
+										<span class="text-gray-500">vs</span>
+										<span class="text-green-400">{data.matchHistory.nemesis.wins}W</span>
+									</div>
+								{:else}
+									<div class="text-gray-500">No nemesis yet</div>
+								{/if}
+							</div>
+						</div>
+					</div>
+
+					<!-- Best Matchup -->
+					<div class="rounded-xl border border-green-500/20 bg-gradient-to-br from-green-900/20 to-gray-900 p-4">
+						<div class="flex items-start justify-between">
+							<div class="min-w-0 flex-1">
+								<div class="mb-2 flex items-center gap-2">
+									<span class="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/20">
+										<svg class="h-4 w-4 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+											<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+										</svg>
+									</span>
+									<span class="text-xs font-semibold tracking-wide text-green-400 uppercase">Best Matchup</span>
+								</div>
+								{#if data.matchHistory.bestMatchup}
+									<div class="truncate text-lg font-bold text-white">
+										{#if data.matchHistory.bestMatchup.opponentGemId}
+											<a href="/player/{data.matchHistory.bestMatchup.opponentGemId}" class="hover:text-green-400">
+												{data.matchHistory.bestMatchup.opponentName}
+											</a>
+										{:else}
+											{data.matchHistory.bestMatchup.opponentName}
+										{/if}
+									</div>
+									<div class="mt-1 flex items-center gap-2 text-sm">
+										<span class="rounded bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400">
+											{data.matchHistory.bestMatchup.wins}W
+										</span>
+										<span class="text-gray-500">vs</span>
+										<span class="text-red-400">{data.matchHistory.bestMatchup.losses}L</span>
+									</div>
+								{:else}
+									<div class="text-gray-500">No best matchup yet</div>
+								{/if}
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Top Opponents Lists -->
+				<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					<!-- Most Wins Against -->
+					<div class="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4">
+						<h4 class="mb-3 flex items-center gap-2 text-sm font-medium text-gray-400">
+							<svg class="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+							</svg>
+							Most Wins Against
+						</h4>
+						<div class="space-y-2">
+							{#each [...data.matchHistory.headToHead].sort((a, b) => b.wins - a.wins).slice(0, 3) as opponent, i}
+								<div class="flex items-center gap-3 rounded-lg bg-gray-900/50 px-3 py-2">
+									<span class="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20 text-xs font-bold text-green-400">
+										{i + 1}
+									</span>
+									<div class="min-w-0 flex-1">
+										{#if opponent.opponentGemId}
+											<a href="/player/{opponent.opponentGemId}" class="block truncate text-sm font-medium text-white hover:text-green-400">
+												{opponent.opponentName}
+											</a>
+										{:else}
+											<span class="block truncate text-sm font-medium text-white">{opponent.opponentName}</span>
+										{/if}
+									</div>
+									<span class="text-sm font-bold text-green-400">{opponent.wins}W</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+
+					<!-- Most Losses Against -->
+					<div class="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4">
+						<h4 class="mb-3 flex items-center gap-2 text-sm font-medium text-gray-400">
+							<svg class="h-4 w-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+							Most Losses Against
+						</h4>
+						<div class="space-y-2">
+							{#each [...data.matchHistory.headToHead].sort((a, b) => b.losses - a.losses).slice(0, 3) as opponent, i}
+								<div class="flex items-center gap-3 rounded-lg bg-gray-900/50 px-3 py-2">
+									<span class="flex h-6 w-6 items-center justify-center rounded-full bg-red-500/20 text-xs font-bold text-red-400">
+										{i + 1}
+									</span>
+									<div class="min-w-0 flex-1">
+										{#if opponent.opponentGemId}
+											<a href="/player/{opponent.opponentGemId}" class="block truncate text-sm font-medium text-white hover:text-red-400">
+												{opponent.opponentName}
+											</a>
+										{:else}
+											<span class="block truncate text-sm font-medium text-white">{opponent.opponentName}</span>
+										{/if}
+									</div>
+									<span class="text-sm font-bold text-red-400">{opponent.losses}L</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+
+					<!-- Most Played -->
+					<div class="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4 sm:col-span-2 lg:col-span-1">
+						<h4 class="mb-3 flex items-center gap-2 text-sm font-medium text-gray-400">
+							<svg class="h-4 w-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+							</svg>
+							Most Played
+						</h4>
+						<div class="space-y-2">
+							{#each [...data.matchHistory.headToHead].sort((a, b) => (b.wins + b.losses + b.draws) - (a.wins + a.losses + a.draws)).slice(0, 3) as opponent, i}
+								{@const totalGames = opponent.wins + opponent.losses + opponent.draws}
+								<div class="flex items-center gap-3 rounded-lg bg-gray-900/50 px-3 py-2">
+									<span class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-xs font-bold text-blue-400">
+										{i + 1}
+									</span>
+									<div class="min-w-0 flex-1">
+										{#if opponent.opponentGemId}
+											<a href="/player/{opponent.opponentGemId}" class="block truncate text-sm font-medium text-white hover:text-blue-400">
+												{opponent.opponentName}
+											</a>
+										{:else}
+											<span class="block truncate text-sm font-medium text-white">{opponent.opponentName}</span>
+										{/if}
+									</div>
+									<span class="text-xs text-gray-400">{totalGames} games</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+				</div>
+
+				<!-- Head-to-Head Lookup -->
+				<div class="border-t border-gray-800 pt-4">
+					<div class="mb-3 flex items-center justify-between">
+						<h4 class="text-sm font-medium text-gray-400">Look Up Opponent</h4>
+						<span class="text-xs text-gray-500">{data.matchHistory.headToHead.length} opponents</span>
+					</div>
+					<!-- Combobox Search + Select -->
+					<div class="relative">
+						<div class="relative">
+							<svg
+								class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
 								fill="none"
-								d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-							/>
-							<path
-								class="text-green-500"
 								stroke="currentColor"
-								stroke-width="3"
-								stroke-linecap="round"
-								fill="none"
-								stroke-dasharray="{winRate}, 100"
-								d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+								/>
+							</svg>
+							<input
+								type="text"
+								bind:value={opponentSearchQuery}
+								onfocus={() => (showOpponentDropdown = true)}
+								oninput={() => {
+									showOpponentDropdown = true;
+									if (selectedOpponent() && opponentSearchQuery !== selectedOpponent().opponentName) {
+										selectedOpponentKey = '';
+									}
+								}}
+								placeholder="Search opponent..."
+								class="w-full rounded-lg border border-gray-700 bg-gray-800 py-2 pr-8 pl-10 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 							/>
-						</svg>
-						<div class="absolute inset-0 flex items-center justify-center">
-							<span class="text-sm font-bold text-white">{winRate}%</span>
+							{#if opponentSearchQuery}
+								<button
+									type="button"
+									onclick={clearOpponentSelection}
+									aria-label="Clear search"
+									class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-500 hover:text-gray-300"
+								>
+									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+									</svg>
+								</button>
+							{/if}
 						</div>
+						<!-- Dropdown -->
+						{#if showOpponentDropdown && filteredHeadToHead().length > 0}
+							<div class="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-700 bg-gray-800 py-1 shadow-xl">
+								{#each filteredHeadToHead() as h2h}
+									{@const isSelected = selectedOpponentKey === (h2h.opponentGemId || h2h.opponentName)}
+									<button
+										type="button"
+										onclick={() => selectOpponent(h2h)}
+										class="w-full px-3 py-2 text-left text-sm transition-colors {isSelected ? 'bg-blue-600/20 text-blue-400' : 'text-white hover:bg-gray-700'}"
+									>
+										{h2h.opponentName}
+									</button>
+								{/each}
+							</div>
+						{/if}
+						{#if showOpponentDropdown && opponentSearchQuery && filteredHeadToHead().length === 0}
+							<div class="absolute z-20 mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-3 text-center text-sm text-gray-500 shadow-xl">
+								No opponents found
+							</div>
+						{/if}
 					</div>
-					<div>
-						<div class="text-sm font-medium text-white">Overall</div>
-						<div class="text-xs text-gray-400">
-							{data.totalStats.matchesWon}W - {data.totalStats.matchesPlayed -
-								data.totalStats.matchesWon}L
+					<!-- Click outside to close dropdown -->
+					{#if showOpponentDropdown}
+						<button
+							type="button"
+							class="fixed inset-0 z-10 cursor-default"
+							onclick={() => (showOpponentDropdown = false)}
+							aria-label="Close dropdown"
+						></button>
+					{/if}
+
+					<!-- Selected Opponent Breakdown -->
+					{#if selectedOpponent()}
+						{@const opponent = selectedOpponent()}
+						{@const totalGames = opponent.wins + opponent.losses + opponent.draws}
+						{@const winPct = totalGames > 0 ? Math.round((opponent.wins / totalGames) * 100) : 0}
+						<div class="mt-3 rounded-xl border border-gray-700 bg-gray-800/50 p-4">
+							<div class="mb-3 flex items-center justify-between">
+								<div>
+									<p class="font-semibold text-white">
+										vs
+										{#if opponent.opponentGemId}
+											<a href="/player/{opponent.opponentGemId}" class="hover:text-blue-400">
+												{opponent.opponentName}
+											</a>
+										{:else}
+											{opponent.opponentName}
+										{/if}
+									</p>
+									<p class="mt-1 flex items-center gap-2 text-sm">
+										<span class="rounded bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400">{opponent.wins}W</span>
+										<span class="rounded bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400">{opponent.losses}L</span>
+										{#if opponent.draws > 0}
+											<span class="rounded bg-gray-500/20 px-2 py-0.5 text-xs font-medium text-gray-400">{opponent.draws}D</span>
+										{/if}
+									</p>
+								</div>
+								<div class="flex items-center justify-center rounded-lg px-3 py-2 {winPct >= 50 ? 'bg-green-500/20' : 'bg-red-500/20'}">
+									<span class="text-lg font-bold {winPct >= 50 ? 'text-green-400' : 'text-red-400'}">{winPct}%</span>
+								</div>
+							</div>
+
+							{#if opponentMatches().length > 0}
+								<div class="border-t border-gray-700 pt-3">
+									<p class="mb-2 text-xs font-medium text-gray-500 uppercase">Match History</p>
+									<div class="max-h-48 space-y-1.5 overflow-y-auto">
+										{#each opponentMatches() as { match, event }}
+											{@const isPlayer1 = match.player1GemId === data.gemId}
+											{@const won = (isPlayer1 && match.winner === 'player1') || (!isPlayer1 && match.winner === 'player2')}
+											{@const lost = (isPlayer1 && match.winner === 'player2') || (!isPlayer1 && match.winner === 'player1')}
+											<div class="flex items-center gap-3 rounded-lg bg-gray-900/50 px-3 py-2 text-sm">
+												<span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-xs font-bold {won ? 'bg-green-500/20 text-green-400' : lost ? 'bg-red-500/20 text-red-400' : 'bg-gray-500/20 text-gray-400'}">
+													{won ? 'W' : lost ? 'L' : 'D'}
+												</span>
+												<div class="min-w-0 flex-1">
+													<p class="truncate text-gray-300">{event.circuit} {event.month} Open</p>
+													<p class="text-xs text-gray-500">
+														{event.year} · Round {match.round}
+														{#if match.table}· Table {match.table}{/if}
+													</p>
+												</div>
+											</div>
+										{/each}
+									</div>
+								</div>
+							{/if}
 						</div>
-					</div>
-				</div>
-
-				<!-- Matches Won -->
-				<div class="flex items-center gap-4 rounded-xl bg-gray-800/50 p-4">
-					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-500/20">
-						<svg
-							class="h-6 w-6 text-green-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M5 13l4 4L19 7"
-							/>
-						</svg>
-					</div>
-					<div>
-						<div class="text-2xl font-bold text-green-400">{data.totalStats.matchesWon}</div>
-						<div class="text-xs text-gray-400">Matches Won</div>
-					</div>
-				</div>
-
-				<!-- Matches Lost -->
-				<div class="flex items-center gap-4 rounded-xl bg-gray-800/50 p-4">
-					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/20">
-						<svg class="h-6 w-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M6 18L18 6M6 6l12 12"
-							/>
-						</svg>
-					</div>
-					<div>
-						<div class="text-2xl font-bold text-red-400">
-							{data.totalStats.matchesPlayed - data.totalStats.matchesWon}
-						</div>
-						<div class="text-xs text-gray-400">Matches Lost</div>
-					</div>
-				</div>
-
-				<!-- Total Matches -->
-				<div class="flex items-center gap-4 rounded-xl bg-gray-800/50 p-4">
-					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/20">
-						<svg
-							class="h-6 w-6 text-blue-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-							/>
-						</svg>
-					</div>
-					<div>
-						<div class="text-2xl font-bold text-blue-400">{data.totalStats.matchesPlayed}</div>
-						<div class="text-xs text-gray-400">Total Matches</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Win Rate Progress Bar -->
-			<div class="mt-4 border-t border-gray-800 pt-4">
-				<div class="mb-2 flex items-center justify-between text-sm">
-					<span class="text-gray-400">Win/Loss Distribution</span>
-					<span class="text-gray-500">{data.totalStats.matchesPlayed} matches</span>
-				</div>
-				<div class="flex h-4 overflow-hidden rounded-full bg-gray-800">
-					{#if data.totalStats.matchesPlayed > 0}
-						<div
-							class="h-full bg-gradient-to-r from-green-600 to-green-400 transition-all duration-500"
-							style="width: {winRate}%"
-						></div>
-						<div
-							class="h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-500"
-							style="width: {100 - winRate}%"
-						></div>
-					{:else}
-						<div class="h-full w-full bg-gray-700"></div>
 					{/if}
 				</div>
-				<div class="mt-1 flex justify-between text-xs">
-					<span class="text-green-400">{winRate}% Won</span>
-					<span class="text-red-400">{100 - winRate}% Lost</span>
+			{:else}
+				<div class="py-8 text-center">
+					<svg class="mx-auto mb-3 h-12 w-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+					</svg>
+					<p class="text-gray-500">No head-to-head data available yet</p>
+					<p class="mt-1 text-xs text-gray-600">Match data will appear once imported</p>
 				</div>
-			</div>
+			{/if}
 		</div>
 	</div>
 
 	<!-- Season Standings -->
 	<div class="mx-auto max-w-6xl px-4 pb-12 sm:px-6 lg:px-8">
-		<div class="mb-6 flex items-center justify-between">
-			<h2 class="flex items-center gap-3 text-2xl font-bold text-white">
-				<svg class="h-6 w-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-					/>
-				</svg>
-				Season Standings
-			</h2>
+		<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+			<div>
+				<h2 class="text-xl font-bold text-white sm:text-2xl">Season Standings</h2>
+			</div>
 			{#if editMode}
 				<button
 					onclick={() => (showAddStanding = true)}
-					class="inline-flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 transition-all hover:bg-emerald-500/30"
+					class="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/20 px-4 py-2.5 text-sm font-medium text-emerald-400 transition-all hover:bg-emerald-500/30"
 				>
 					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
@@ -1622,134 +1953,154 @@
 				{/if}
 			</div>
 		{:else}
-			<div class="space-y-6">
+			<div class="space-y-4">
 				{#each Object.entries(standingsBySeason).sort( (a, b) => b[0].localeCompare(a[0]) ) as [season, seasonStandings]}
-					<div class="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/50">
-						<!-- Season Header -->
-						<div
-							class="border-b border-gray-800 bg-gradient-to-r from-gray-800/80 to-gray-900 px-6 py-4"
-						>
-							<h3 class="flex items-center gap-3 text-xl font-bold text-white">
-								<span
-									class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20 text-blue-400"
-								>
-									<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-										/>
-									</svg>
-								</span>
-								{season} Season
-							</h3>
-						</div>
+					<!-- Season Label -->
+					<div class="flex items-center gap-3 pt-2 first:pt-0">
+						<h3 class="text-sm font-medium text-gray-500">{season}</h3>
+						<div class="h-px flex-1 bg-gray-800"></div>
+					</div>
 
-						<!-- Circuit Cards -->
-						<div class="space-y-4 p-4 sm:p-6">
-							{#each seasonStandings as standing}
-								<div class="overflow-hidden rounded-xl border border-gray-700/50 bg-gray-800/30">
-									<!-- Circuit Header -->
-									<button
-										onclick={() =>
-											(expandedSeasonId = expandedSeasonId === standing.id ? null : standing.id)}
-										class="flex w-full items-center justify-between px-4 py-4 transition-all hover:bg-gray-800/50 sm:px-5"
-									>
-										<div
-											class="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4"
-										>
-											<!-- Circuit badge and rank -->
-											<div class="flex flex-wrap items-center gap-2">
-												<span
-													class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {standing.circuit ===
-													'Los Angeles'
-														? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30'
-														: standing.circuit === 'New England'
-															? 'bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30'
-															: 'bg-green-500/20 text-green-400 ring-1 ring-green-500/30'}"
-												>
-													{standing.circuit}
+					<!-- Circuit Cards -->
+					<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+						{#each seasonStandings as standing}
+							{@const stats = calculateDerivedStats(standing)}
+							{@const isExpanded = expandedSeasonId === standing.id}
+							<button
+								onclick={() => (expandedSeasonId = isExpanded ? null : standing.id)}
+								class="group w-full overflow-hidden rounded-xl border text-left transition-all duration-200
+									{isExpanded
+										? 'border-blue-500/40 bg-gray-900/80 ring-1 ring-blue-500/20'
+										: 'border-gray-800 bg-gray-900/40 hover:border-gray-700 hover:bg-gray-900/60'}"
+							>
+								<!-- Card Content -->
+								<div class="flex items-center gap-4 p-4">
+									<!-- Points - Hero stat -->
+									<div class="flex h-14 w-14 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 sm:h-16 sm:w-16">
+										<span class="text-xl font-bold tabular-nums text-emerald-400 sm:text-2xl">{standing.totalPoints || 0}</span>
+										<span class="text-[10px] font-medium text-emerald-500/70">PTS</span>
+									</div>
+
+									<!-- Info -->
+									<div class="min-w-0 flex-1">
+										<!-- Circuit + Rank -->
+										<div class="flex items-center gap-2">
+											<h4 class="truncate text-base font-semibold text-white">{standing.circuit}</h4>
+											{#if standing.calculatedRank && standing.calculatedRank <= 8}
+												<span class="inline-flex items-center gap-0.5 rounded bg-yellow-500/20 px-1.5 py-0.5 text-xs font-bold text-yellow-400">
+													<svg class="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 24 24">
+														<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+													</svg>
+													{standing.calculatedRank}
 												</span>
-												{#if standing.calculatedRank && standing.calculatedRank <= 16}
-													<span
-														class="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-yellow-500/20 to-amber-500/20 px-2 py-0.5 text-xs font-bold text-yellow-400 ring-1 ring-yellow-500/30"
-													>
-														<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
-															<path
-																d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-															/>
-														</svg>
-														#{standing.calculatedRank}
-													</span>
-												{:else if standing.calculatedRank}
-													<span class="text-xs text-gray-500">Rank #{standing.calculatedRank}</span>
-												{/if}
-											</div>
-											<!-- Stats row -->
-											<div class="mt-2 grid grid-cols-3 gap-2 text-xs sm:gap-3 sm:text-sm">
-												<div
-													class="flex flex-col items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2 py-1.5 sm:px-3 sm:py-2"
-												>
-													<span
-														class="text-[10px] font-medium tracking-wide text-emerald-400/70 uppercase sm:text-xs"
-														>Points</span
-													>
-													<span class="text-base font-bold text-emerald-400 sm:text-lg"
-														>{standing.totalPoints || 0}</span
-													>
-												</div>
-												<div
-													class="flex flex-col items-center justify-center rounded-lg border border-gray-600/30 bg-gray-700/30 px-2 py-1.5 sm:px-3 sm:py-2"
-												>
-													<span
-														class="text-[10px] font-medium tracking-wide text-gray-400 uppercase sm:text-xs"
-														>Record</span
-													>
-													<span class="text-base font-bold sm:text-lg">
-														<span class="text-green-400">{standing.matchesWon || 0}</span>
-														<span class="text-gray-500">-</span>
-														<span class="text-red-400"
-															>{(standing.matchesPlayed || 0) - (standing.matchesWon || 0)}</span
-														>
-													</span>
-												</div>
-												<div
-													class="flex flex-col items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 px-2 py-1.5 sm:px-3 sm:py-2"
-												>
-													<span
-														class="text-[10px] font-medium tracking-wide text-blue-400/70 uppercase sm:text-xs"
-														>Events</span
-													>
-													<span class="text-base font-bold text-blue-400 sm:text-lg"
-														>{standing.eventsPlayed || 0}</span
-													>
-												</div>
-											</div>
+											{:else if standing.calculatedRank && standing.calculatedRank <= 16}
+												<span class="rounded bg-gray-700 px-1.5 py-0.5 text-xs font-medium text-gray-300">#{standing.calculatedRank}</span>
+											{:else if standing.calculatedRank}
+												<span class="text-xs text-gray-500">#{standing.calculatedRank}</span>
+											{/if}
 										</div>
+
+										<!-- Stats row -->
+										<div class="mt-1.5 flex items-center gap-4 text-sm">
+											<span class="tabular-nums">
+												<span class="font-medium text-green-400">{standing.matchesWon || 0}</span><span class="text-gray-600">-</span><span class="font-medium text-red-400">{(standing.matchesPlayed || 0) - (standing.matchesWon || 0)}</span>
+											</span>
+											<span class="text-gray-600">·</span>
+											<span class="text-gray-400">{stats.eventsPlayed} event{stats.eventsPlayed !== 1 ? 's' : ''}</span>
+										</div>
+									</div>
+
+									<!-- Expand indicator -->
+									<div class="flex-shrink-0">
 										<svg
-											class="ml-2 h-5 w-5 shrink-0 text-gray-400 transition-transform {expandedSeasonId ===
-											standing.id
-												? 'rotate-180'
-												: ''}"
+											class="h-5 w-5 text-gray-500 transition-transform duration-200 group-hover:text-gray-400 {isExpanded ? 'rotate-180' : ''}"
 											fill="none"
 											stroke="currentColor"
 											viewBox="0 0 24 24"
 										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M19 9l-7 7-7-7"
-											/>
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
 										</svg>
-									</button>
+									</div>
+								</div>
+							</button>
 
-									<!-- Expanded Details -->
-									{#if expandedSeasonId === standing.id}
-										<div
-											class="border-t border-gray-700/50 bg-gray-900/50 px-4 py-4 sm:px-5 sm:py-5"
-										>
+							<!-- Expanded Details -->
+							{#if isExpanded}
+								<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/60 mt-2 mb-1">
+									<div class="p-4">
+									<!-- Player Info Editing (Admin Only) -->
+									{#if editMode}
+												<div class="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+													<h4 class="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-400">
+														<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+														</svg>
+														Player Info
+													</h4>
+													<div class="grid gap-4 sm:grid-cols-2">
+														<form
+															method="POST"
+															action="?/updateStanding"
+															use:enhance={() => {
+																return async ({ result, update }) => {
+																	if (result.type === 'success') {
+																		await update();
+																		await invalidateAll();
+																	}
+																};
+															}}
+															class="space-y-1"
+														>
+															<input type="hidden" name="standingId" value={standing.id} />
+															<input type="hidden" name="field" value="playerName" />
+															<label class="block text-xs text-gray-400">
+																Player Name
+																<input
+																	type="text"
+																	name="value"
+																	value={standing.playerName || ''}
+																	onchange={(e) => e.target.form.requestSubmit()}
+																	class="mt-1 w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-base text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none sm:text-sm"
+																	placeholder="Enter player name"
+																/>
+															</label>
+														</form>
+														<form
+															method="POST"
+															action="?/updateStanding"
+															use:enhance={() => {
+																return async ({ result, update }) => {
+																	if (result.type === 'success') {
+																		await update();
+																		await invalidateAll();
+																	}
+																};
+															}}
+															class="space-y-1"
+														>
+															<input type="hidden" name="standingId" value={standing.id} />
+															<input type="hidden" name="field" value="gemId" />
+															<label class="block text-xs text-gray-400">
+																GEM ID
+																<input
+																	type="text"
+																	name="value"
+																	value={standing.gemId || ''}
+																	onchange={(e) => e.target.form.requestSubmit()}
+																	class="mt-1 w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 font-mono text-base text-blue-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none sm:text-sm"
+																	placeholder="e.g., GEM00000001"
+																/>
+															</label>
+														</form>
+													</div>
+													<p class="mt-3 text-xs text-amber-400/70">
+														<svg class="mr-1 inline h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+														</svg>
+														Changing GEM ID will affect how this standing is linked to the player profile.
+													</p>
+												</div>
+											{/if}
 											<!-- Main Stats Grid -->
 											{#if editMode}
 												<div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
@@ -1821,32 +2172,6 @@
 														class="space-y-1"
 													>
 														<input type="hidden" name="standingId" value={standing.id} />
-														<input type="hidden" name="field" value="eventsPlayed" />
-														<label class="block text-xs text-gray-500">
-															Events Played
-															<input
-																type="number"
-																name="value"
-																value={standing.eventsPlayed || 0}
-																onchange={(e) => e.target.form.requestSubmit()}
-																class="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-center text-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
-															/>
-														</label>
-													</form>
-													<form
-														method="POST"
-														action="?/updateStanding"
-														use:enhance={() => {
-															return async ({ result, update }) => {
-																if (result.type === 'success') {
-																	await update();
-																	await invalidateAll();
-																}
-															};
-														}}
-														class="space-y-1"
-													>
-														<input type="hidden" name="standingId" value={standing.id} />
 														<input type="hidden" name="field" value="matchesWon" />
 														<label class="block text-xs text-gray-500">
 															Matches Won
@@ -1888,45 +2213,31 @@
 												</div>
 											{/if}
 
-											<!-- Monthly Breakdown -->
-											<div class="mb-4">
-												<h4
-													class="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-400"
-												>
-													<svg
-														class="h-4 w-4"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-														/>
-													</svg>
-													Monthly Breakdown
-												</h4>
-												<div class="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-12">
+									<!-- Monthly Breakdown -->
+									<div>
+										<h4 class="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500">Monthly Results</h4>
+										<div class="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-12">
 													{#each months as month}
 														{@const points = standing[`${month.key}Points`] || 0}
 														{@const wins = standing[`${month.key}MatchesWon`] || 0}
 														{@const matches = standing[`${month.key}Matches`] || 0}
 														{@const hasData = points > 0 || wins > 0 || matches > 0}
-														<div
-															class="rounded-lg border {hasData
-																? 'border-gray-700 bg-gray-800/50'
-																: 'border-gray-800/50 bg-gray-900/30'} p-2 text-center"
-														>
+														{@const eventMatches = getMatchesForEvent(standing.season, standing.circuit, month.key)}
+														{@const hasMatches = eventMatches.length > 0}
+														{@const isExpanded = expandedMonthKey === `${standing.id}|${month.key}`}
+														{#if editMode}
 															<div
-																class="text-xs font-medium {hasData
-																	? 'text-blue-400'
-																	: 'text-gray-600'} mb-1"
+																class="rounded-lg border p-2 text-center {hasData
+																	? 'border-gray-700 bg-gray-800/50'
+																	: 'border-gray-800/50 bg-gray-900/30'}"
 															>
-																{month.label}
-															</div>
-															{#if editMode}
+																<div
+																	class="text-xs font-medium {hasData
+																		? 'text-blue-400'
+																		: 'text-gray-600'} mb-1"
+																>
+																	{month.label}
+																</div>
 																<!-- Points input -->
 																<form
 																	method="POST"
@@ -2013,73 +2324,163 @@
 																		/>
 																	</form>
 																</div>
-															{:else}
+															</div>
+														{:else}
+															<button
+																type="button"
+																onclick={() => hasMatches && toggleMonthExpand(standing.id, month.key)}
+																disabled={!hasMatches}
+																class="group relative rounded-xl border p-2 text-center transition-all {isExpanded
+																	? 'border-blue-500 bg-blue-900/30 ring-1 ring-blue-500/20'
+																	: hasData
+																		? 'border-gray-700 bg-gray-800/50'
+																		: 'border-gray-800/30 bg-gray-900/20'} {hasMatches
+																	? 'cursor-pointer hover:border-blue-500/50 hover:bg-gray-800/70 active:scale-95'
+																	: 'cursor-default'}"
+															>
+																<!-- Month label -->
 																<div
-																	class="text-sm font-bold {hasData
+																	class="mb-0.5 text-[10px] font-medium {isExpanded
+																		? 'text-blue-300'
+																		: hasData
+																			? 'text-blue-400'
+																			: 'text-gray-600'}"
+																>
+																	{month.label}
+																</div>
+																<!-- Points - main value -->
+																<div
+																	class="text-sm font-bold tabular-nums {hasData
 																		? 'text-emerald-400'
 																		: 'text-gray-700'}"
 																>
 																	{points}
 																</div>
+																<!-- Record -->
 																<div
-																	class="text-xs {hasData
+																	class="mt-0.5 text-[10px] tabular-nums {hasData
 																		? 'text-gray-400'
-																		: 'text-gray-700'} mt-0.5"
+																		: 'text-gray-700'}"
 																>
 																	{wins}/{matches}
 																</div>
-															{/if}
-														</div>
+																<!-- Tap indicator for months with matches -->
+																{#if hasMatches && !isExpanded}
+																	<div class="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-blue-500 text-[8px] font-bold text-white shadow">
+																		{eventMatches.length}
+																	</div>
+																{/if}
+															</button>
+														{/if}
 													{/each}
 												</div>
-											</div>
 
-											<!-- Delete Button -->
-											{#if editMode}
-												<div class="border-t border-gray-700/50 pt-4">
-													<form
-														method="POST"
-														action="?/deleteStanding"
-														use:enhance={() => {
-															return async ({ result, update }) => {
-																if (result.type === 'success') {
-																	await update();
-																	await invalidateAll();
-																}
-															};
-														}}
-													>
-														<input type="hidden" name="standingId" value={standing.id} />
-														<button
-															type="submit"
-															onclick={(e) => {
-																if (!confirm('Delete this standing record?')) e.preventDefault();
-															}}
-															class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 transition-all hover:bg-red-500/20"
+												<!-- Expanded Matches Section -->
+												{#each months as month}
+													{@const eventMatches = getMatchesForEvent(standing.season, standing.circuit, month.key)}
+													{@const isExpanded = expandedMonthKey === `${standing.id}|${month.key}`}
+													{#if isExpanded && eventMatches.length > 0}
+														<div
+															class="mt-4 overflow-hidden rounded-xl border border-blue-500/30 bg-gradient-to-b from-blue-900/20 to-gray-900/50"
 														>
-															<svg
-																class="h-4 w-4"
-																fill="none"
-																stroke="currentColor"
-																viewBox="0 0 24 24"
-															>
-																<path
-																	stroke-linecap="round"
-																	stroke-linejoin="round"
-																	stroke-width="2"
-																	d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-																/>
-															</svg>
-															Delete Standing
-														</button>
-													</form>
-												</div>
-											{/if}
+															<!-- Header -->
+															<div class="flex items-center justify-between border-b border-blue-500/20 bg-blue-900/30 px-4 py-2.5">
+																<h5 class="text-sm font-semibold text-blue-300">
+																	{month.label} {standing.season}
+																</h5>
+																<span class="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400">
+																	{eventMatches.length} match{eventMatches.length !== 1 ? 'es' : ''}
+																</span>
+															</div>
+															<!-- Match list -->
+															<div class="divide-y divide-gray-800/50">
+																{#each eventMatches.sort((a, b) => a.match.round - b.match.round) as { match }}
+																	{@const isPlayer1 = match.player1GemId === data.gemId}
+																	{@const opponent = isPlayer1
+																		? match.player2Name
+																		: match.player1Name}
+																	{@const opponentGemId = isPlayer1
+																		? match.player2GemId
+																		: match.player1GemId}
+																	{@const won =
+																		(isPlayer1 && match.winner === 'player1') ||
+																		(!isPlayer1 && match.winner === 'player2')}
+																	{@const lost =
+																		(isPlayer1 && match.winner === 'player2') ||
+																		(!isPlayer1 && match.winner === 'player1')}
+																	<div
+																		class="flex items-center gap-3 px-4 py-3"
+																	>
+																		<!-- Round number -->
+																		<span class="w-8 flex-shrink-0 text-xs font-medium text-gray-500">R{match.round}</span>
+																		<!-- Result badge -->
+																		<span
+																			class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold {won
+																				? 'bg-green-500/20 text-green-400 ring-1 ring-green-500/30'
+																				: lost
+																					? 'bg-red-500/20 text-red-400 ring-1 ring-red-500/30'
+																					: 'bg-gray-500/20 text-gray-400 ring-1 ring-gray-500/30'}"
+																		>
+																			{won ? 'W' : lost ? 'L' : 'D'}
+																		</span>
+																		<!-- Opponent -->
+																		<div class="min-w-0 flex-1">
+																			<span class="mr-1 text-xs text-gray-500">vs</span>
+																			{#if opponentGemId}
+																				<a
+																					href="/player/{opponentGemId}"
+																					class="font-medium text-white hover:text-blue-400"
+																				>
+																					{opponent}
+																				</a>
+																			{:else}
+																				<span class="font-medium text-white">{opponent}</span>
+																			{/if}
+																		</div>
+																		<!-- Table (if available) -->
+																		{#if match.table}
+																			<span class="hidden text-xs text-gray-600 sm:block">T{match.table}</span>
+																		{/if}
+																	</div>
+																{/each}
+															</div>
+														</div>
+													{/if}
+												{/each}
+									</div>
+
+									<!-- Delete Button -->
+									{#if editMode}
+										<div class="mt-4 border-t border-gray-700/50 pt-4">
+											<button
+												type="button"
+												onclick={() => {
+													if (confirm('Delete this standing record?')) {
+														const form = document.createElement('form');
+														form.method = 'POST';
+														form.action = '?/deleteStanding';
+														const input = document.createElement('input');
+														input.type = 'hidden';
+														input.name = 'standingId';
+														input.value = standing.id;
+														form.appendChild(input);
+														document.body.appendChild(form);
+														form.submit();
+													}
+												}}
+												class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition-all hover:bg-red-500/20"
+											>
+												<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+												</svg>
+												Delete
+											</button>
 										</div>
 									{/if}
+									</div>
 								</div>
-							{/each}
-						</div>
+							{/if}
+						{/each}
 					</div>
 				{/each}
 			</div>
@@ -2161,4 +2562,5 @@
 			</div>
 		</div>
 	{/if}
+
 </div>

@@ -69,7 +69,6 @@
 	let swissStandingsFile = null;
 	let pairingsFile = null;
 	let csvProcessing = false;
-	let csvProcessedResults = null;
 
 	function formatDate(dateStr) {
 		if (!dateStr) return 'TBA';
@@ -92,7 +91,7 @@
 			wins: 0,
 			losses: 0,
 			draws: 0,
-			agePoints: agePointsPresets[(data.existingResults?.length || 0) + 1] || 0,
+			agePoints: agePointsPresets[(data.existingResults?.length || 0) + 1] || 1,
 			prizeAmount: prizePresets[(data.existingResults?.length || 0) + 1] || ''
 		};
 		showResultForm = true;
@@ -184,7 +183,7 @@
 	}
 
 	function updateAgePoints() {
-		resultForm.agePoints = agePointsPresets[resultForm.placement] || 0;
+		resultForm.agePoints = agePointsPresets[resultForm.placement] || 1;
 		resultForm.prizeAmount = prizePresets[resultForm.placement] || '';
 	}
 
@@ -192,11 +191,13 @@
 	$: sortedResults = [...(data.existingResults || [])].sort((a, b) => a.placement - b.placement);
 
 	// Check if event is closed
-	$: isClosed = data.event.status === 'completed';
+	$: isCompleted = data.event.status === 'completed';
+	$: isInProgress = data.event.status === 'in_progress';
+	$: hasResults = (data.existingResults?.length || 0) > 0;
 </script>
 
 <svelte:head>
-	<title>Closeout - {data.event.title}</title>
+	<title>Tournament Update - {data.event.title}</title>
 </svelte:head>
 
 <div class="container mx-auto px-2 py-8 max-w-7xl">
@@ -213,23 +214,30 @@
 		<div class="flex items-center justify-between">
 			<div>
 				<h1 class="text-4xl font-bold text-gray-100">{data.event.title}</h1>
-				<p class="text-gray-400 mt-2">Event Closeout - {formatDate(data.event.eventDate)}</p>
+				<p class="text-gray-400 mt-2">Tournament Update - {formatDate(data.event.eventDate)}</p>
 			</div>
 			<div class="flex items-center gap-4">
 				<!-- Event Status Badge -->
-				{#if isClosed}
+				{#if isCompleted}
 					<span class="inline-flex items-center gap-2 rounded-full bg-green-500/20 px-4 py-2 text-sm font-semibold text-green-400">
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 						</svg>
-						Completed
+						Finalized
+					</span>
+				{:else if isInProgress}
+					<span class="inline-flex items-center gap-2 rounded-full bg-blue-500/20 px-4 py-2 text-sm font-semibold text-blue-400">
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+						</svg>
+						In Progress
 					</span>
 				{:else}
 					<span class="inline-flex items-center gap-2 rounded-full bg-yellow-500/20 px-4 py-2 text-sm font-semibold text-yellow-400">
 						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
 						</svg>
-						{data.event.status || 'Upcoming'}
+						Upcoming
 					</span>
 				{/if}
 			</div>
@@ -240,6 +248,15 @@
 	{#if form?.success}
 		<div class="rounded-[var(--radius)] bg-green-100 border border-green-400 p-4 mb-6">
 			<p class="text-sm text-green-800">{form.message}</p>
+			{#if form.details}
+				<ul class="mt-2 text-sm text-green-700 list-disc list-inside">
+					<li>Players updated: {form.details.playersUpdated}</li>
+					<li>New players added: {form.details.playersCreated}</li>
+					{#if form.details.errors?.length > 0}
+						<li class="text-red-600">Errors: {form.details.errors.length}</li>
+					{/if}
+				</ul>
+			{/if}
 		</div>
 	{/if}
 
@@ -294,10 +311,10 @@
 				<h2 class="text-2xl font-bold text-white mb-2">Import Tournament Results</h2>
 				<p class="text-gray-400 mb-6">Upload CSV files from your tournament software to automatically calculate standings and distribute AGE points.</p>
 
-				{#if isClosed}
+				{#if isCompleted}
 					<div class="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-4 mb-6">
 						<p class="text-sm text-yellow-400">
-							This event is closed. Reopen the event to import new results.
+							This event is finalized. Reopen the event to import new results.
 						</p>
 					</div>
 				{:else}
@@ -374,7 +391,7 @@
 							<li>Total Prize Pool: ${form.processedResults.totalPrizeDistributed}</li>
 						</ul>
 						<p class="mt-4 text-sm text-gray-400">
-							Switch to the <button on:click={() => activeTab = 'results'} class="text-blue-400 hover:underline">Results tab</button> to review and edit the imported data.
+							Switch to the <button on:click={() => activeTab = 'results'} class="text-blue-400 hover:underline">Results tab</button> to review and edit the imported data, then go to <button on:click={() => activeTab = 'finalize'} class="text-blue-400 hover:underline">Finalize</button> to update standings.
 						</p>
 					</div>
 				{/if}
@@ -425,7 +442,7 @@
 	{#if activeTab === 'results'}
 		<div class="space-y-6">
 			<!-- Add Result Button -->
-			{#if !isClosed}
+			{#if !isCompleted}
 				<div class="flex justify-end">
 					<button
 						on:click={startNewResult}
@@ -609,7 +626,7 @@
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
 						</svg>
 						<p class="mt-4 text-gray-400">No results recorded yet</p>
-						{#if !isClosed}
+						{#if !isCompleted}
 							<button
 								on:click={startNewResult}
 								class="mt-4 text-sm font-medium text-blue-400 hover:text-blue-300"
@@ -629,7 +646,7 @@
 									<th class="text-left p-4 font-semibold text-gray-100">Record</th>
 									<th class="text-left p-4 font-semibold text-gray-100">AGE Pts</th>
 									<th class="text-left p-4 font-semibold text-gray-100">Prize</th>
-									{#if !isClosed}
+									{#if !isCompleted}
 										<th class="text-right p-4 font-semibold text-gray-100">Actions</th>
 									{/if}
 								</tr>
@@ -647,7 +664,7 @@
 										<td class="p-4 text-gray-100">{result.wins}-{result.losses}{result.draws > 0 ? `-${result.draws}` : ''}</td>
 										<td class="p-4 text-blue-400 font-medium">{result.agePoints}</td>
 										<td class="p-4 text-green-400">{result.prizeAmount ? `$${result.prizeAmount}` : '-'}</td>
-										{#if !isClosed}
+										{#if !isCompleted}
 											<td class="p-4 text-right">
 												<div class="flex justify-end gap-2">
 													<button
@@ -687,7 +704,7 @@
 	{#if activeTab === 'decklists'}
 		<div class="space-y-6">
 			<!-- Add Decklist Button -->
-			{#if !isClosed}
+			{#if !isCompleted}
 				<div class="flex justify-end">
 					<button
 						on:click={startNewDecklist}
@@ -874,7 +891,7 @@
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
 						</svg>
 						<p class="mt-4 text-gray-400">No decklists recorded yet</p>
-						{#if !isClosed}
+						{#if !isCompleted}
 							<button
 								on:click={startNewDecklist}
 								class="mt-4 text-sm font-medium text-blue-400 hover:text-blue-300"
@@ -893,7 +910,7 @@
 										<p class="text-sm text-blue-400">{decklist.hero}</p>
 									{/if}
 								</div>
-								{#if !isClosed}
+								{#if !isCompleted}
 									<div class="flex gap-2">
 										<button
 											on:click={() => editDecklist(decklist)}
@@ -940,14 +957,14 @@
 			<div class="rounded-[var(--radius)] bg-gray-950 border shadow-md p-8">
 				<h2 class="text-2xl font-bold text-white mb-6">Finalize Event</h2>
 
-				{#if isClosed}
+				{#if isCompleted}
 					<div class="text-center py-8">
 						<svg class="mx-auto h-16 w-16 text-green-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
 						</svg>
-						<h3 class="text-xl font-semibold text-white mb-2">Event Completed</h3>
+						<h3 class="text-xl font-semibold text-white mb-2">Event Finalized</h3>
 						<p class="text-gray-400 mb-6">
-							This event was closed on {formatDate(data.event.closedAt)}.
+							This event was finalized on {formatDate(data.event.closedAt)}. Season standings have been updated.
 						</p>
 						{#if data.isAdmin}
 							<form method="POST" action="?/reopenEvent">
@@ -962,6 +979,7 @@
 					</div>
 				{:else}
 					<div class="space-y-6">
+						<!-- Summary -->
 						<div class="rounded-lg bg-gray-900 p-4">
 							<h3 class="font-semibold text-white mb-2">Summary</h3>
 							<ul class="space-y-2 text-sm text-gray-300">
@@ -977,40 +995,73 @@
 									<span>Registered Players:</span>
 									<span class="font-medium">{data.participants?.length || 0}</span>
 								</li>
+								<li class="flex justify-between">
+									<span>Circuit:</span>
+									<span class="font-medium">{data.event.circuit || 'Not set'}</span>
+								</li>
 							</ul>
 						</div>
 
+						<!-- Save Progress Option -->
 						<div class="rounded-lg bg-blue-500/10 border border-blue-500/30 p-4">
-							<h3 class="font-semibold text-blue-400 mb-2">What happens when you close?</h3>
-							<ul class="space-y-1 text-sm text-gray-300 list-disc list-inside">
-								<li>Results will be published to the public results page</li>
-								<li>AGE Points will be added to player standings</li>
-								<li>Season standings will be updated</li>
-								<li>Results and decklists can no longer be edited (admin can reopen)</li>
-							</ul>
+							<h3 class="font-semibold text-blue-400 mb-2">Save Progress</h3>
+							<p class="text-sm text-gray-300 mb-3">
+								Save results without updating season standings. Use this if you're still making changes or waiting for more data.
+							</p>
+							<form method="POST" action="?/saveProgress">
+								<button
+									type="submit"
+									class="rounded-[var(--radius)] bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+								>
+									Save Progress
+								</button>
+							</form>
 						</div>
 
-						{#if (data.existingResults?.length || 0) === 0}
-							<div class="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-4">
-								<p class="text-sm text-yellow-400">
-									<strong>Warning:</strong> No results have been recorded yet. Are you sure you want to close this event?
-								</p>
-							</div>
-						{/if}
+						<!-- Finalize Section -->
+						<div class="rounded-lg bg-green-500/10 border border-green-500/30 p-4">
+							<h3 class="font-semibold text-green-400 mb-2">Finalize & Update Standings</h3>
+							<p class="text-sm text-gray-300 mb-3">
+								This will update season standings with AGE points and match data for all players. The event will be marked as complete.
+							</p>
+							<ul class="space-y-1 text-sm text-gray-400 list-disc list-inside mb-4">
+								<li>AGE Points will be added to player standings</li>
+								<li>Monthly match data will be updated</li>
+								<li>Win percentages will be recalculated</li>
+								<li>New players will be added to standings</li>
+							</ul>
 
-						<form method="POST" action="?/closeEvent">
-							<button
-								type="submit"
-								class="w-full rounded-[var(--radius)] bg-green-600 px-6 py-3 text-lg font-semibold text-white hover:bg-green-700 transition-colors"
-								on:click|preventDefault={(e) => {
-									if (confirm('Are you sure you want to close this event? AGE points will be distributed and standings will be updated.')) {
-										e.target.closest('form').submit();
-									}
-								}}
-							>
-								Close Event & Publish Results
-							</button>
-						</form>
+							{#if !hasResults}
+								<div class="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3 mb-4">
+									<p class="text-sm text-yellow-400">
+										<strong>Warning:</strong> No results have been recorded yet. Import CSV or add results before finalizing.
+									</p>
+								</div>
+							{/if}
+
+							{#if !data.event.circuit}
+								<div class="rounded-lg bg-red-500/10 border border-red-500/30 p-3 mb-4">
+									<p class="text-sm text-red-400">
+										<strong>Error:</strong> This event has no circuit assigned. Please edit the event to add a circuit before finalizing.
+									</p>
+								</div>
+							{/if}
+
+							<form method="POST" action="?/finalizeEvent">
+								<button
+									type="submit"
+									disabled={!hasResults || !data.event.circuit}
+									class="w-full rounded-[var(--radius)] bg-green-600 px-6 py-3 text-lg font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+									on:click|preventDefault={(e) => {
+										if (confirm('Are you sure you want to finalize this event? AGE points will be distributed and season standings will be updated.')) {
+											e.target.closest('form').submit();
+										}
+									}}
+								>
+									Finalize Event & Update Standings
+								</button>
+							</form>
+						</div>
 					</div>
 				{/if}
 			</div>

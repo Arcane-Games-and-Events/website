@@ -5,12 +5,12 @@ import {
 	order,
 	user,
 	eventStaff,
-	player,
-	playerAlias,
 	seasonStanding,
-	lssSeason
+	lssSeason,
+	ticket,
+	entitlement
 } from '$lib/server/db/schema.js';
-import { desc, eq, count, and, sql, asc } from 'drizzle-orm';
+import { desc, eq, count, and, sql, asc, gte } from 'drizzle-orm';
 
 export async function load({ locals }) {
 	// Require admin authentication
@@ -22,8 +22,8 @@ export async function load({ locals }) {
 		// Fetch events
 		const events = await db.select().from(event).orderBy(desc(event.createdAt));
 
-		// Fetch recent orders (last 10)
-		const recentOrders = await db.select().from(order).orderBy(desc(order.createdAt)).limit(10);
+		// Fetch ALL orders for order management
+		const allOrders = await db.select().from(order).orderBy(desc(order.createdAt));
 
 		// Get stats
 		const [eventCount] = await db.select({ count: count() }).from(event);
@@ -32,6 +32,135 @@ export async function load({ locals }) {
 			.select({ count: count() })
 			.from(user)
 			.where(eq(user.role, 'premium'));
+
+		// ========== REVENUE ANALYTICS ==========
+		const now = new Date();
+		const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+		const weekStart = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+		const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+		const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+		// Today's revenue
+		const [todayRevenueResult] = await db
+			.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
+			.from(order)
+			.where(gte(order.createdAt, todayStart));
+
+		// This week's revenue
+		const [weekRevenueResult] = await db
+			.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
+			.from(order)
+			.where(gte(order.createdAt, weekStart));
+
+		// This month's revenue
+		const [monthRevenueResult] = await db
+			.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
+			.from(order)
+			.where(gte(order.createdAt, monthStart));
+
+		// All-time revenue
+		const [totalRevenueResult] = await db
+			.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
+			.from(order);
+
+		// Revenue breakdown by type
+		const revenueByType = await db
+			.select({
+				type: sql`COALESCE(meta->>'type', 'unknown')`,
+				total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
+				count: count()
+			})
+			.from(order)
+			.groupBy(sql`meta->>'type'`);
+
+		// Daily revenue trend (last 30 days for chart)
+		const dailyRevenueTrend = await db
+			.select({
+				date: sql`DATE(created_at)`,
+				total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
+				count: count()
+			})
+			.from(order)
+			.where(gte(order.createdAt, thirtyDaysAgo))
+			.groupBy(sql`DATE(created_at)`)
+			.orderBy(sql`DATE(created_at)`);
+
+		// Top performing events (by ticket revenue)
+		const topEvents = await db
+			.select({
+				eventId: sql`meta->>'eventId'`,
+				eventTitle: sql`meta->>'eventTitle'`,
+				totalRevenue: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
+				ticketCount: count()
+			})
+			.from(order)
+			.where(sql`meta->>'type' = 'ticket'`)
+			.groupBy(sql`meta->>'eventId'`, sql`meta->>'eventTitle'`)
+			.orderBy(desc(sql`SUM(CAST(amount AS DECIMAL))`))
+			.limit(5);
+
+		// Customer insights - aggregate by email
+		const customerStatsRaw = await db
+			.select({
+				email: order.userEmail,
+				orderCount: count(),
+				totalSpent: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
+				firstOrder: sql`MIN(created_at)`,
+				lastOrder: sql`MAX(created_at)`
+			})
+			.from(order)
+			.groupBy(order.userEmail);
+
+		// Process customer stats
+		const newCustomers = customerStatsRaw.filter((c) => Number(c.orderCount) === 1).length;
+		const returningCustomers = customerStatsRaw.filter((c) => Number(c.orderCount) > 1).length;
+		const topCustomers = [...customerStatsRaw]
+			.sort((a, b) => parseFloat(b.totalSpent) - parseFloat(a.totalSpent))
+			.slice(0, 5);
+
+		// Refund statistics (for ticket orders)
+		const [refundedCount] = await db
+			.select({ count: count() })
+			.from(ticket)
+			.where(eq(ticket.refunded, true));
+
+		// Bundle revenue stats
+		const revenueStats = {
+			today: parseFloat(todayRevenueResult?.total) || 0,
+			week: parseFloat(weekRevenueResult?.total) || 0,
+			month: parseFloat(monthRevenueResult?.total) || 0,
+			allTime: parseFloat(totalRevenueResult?.total) || 0,
+			byType: revenueByType.map((r) => ({
+				type: r.type,
+				total: parseFloat(r.total) || 0,
+				count: Number(r.count) || 0
+			}))
+		};
+
+		const customerInsights = {
+			newCustomers,
+			returningCustomers,
+			totalCustomers: customerStatsRaw.length,
+			topCustomers: topCustomers.map((c) => ({
+				email: c.email,
+				orderCount: Number(c.orderCount),
+				totalSpent: parseFloat(c.totalSpent) || 0,
+				firstOrder: c.firstOrder,
+				lastOrder: c.lastOrder
+			})),
+			allCustomers: customerStatsRaw.map((c) => ({
+				email: c.email,
+				orderCount: Number(c.orderCount),
+				totalSpent: parseFloat(c.totalSpent) || 0,
+				firstOrder: c.firstOrder,
+				lastOrder: c.lastOrder
+			}))
+		};
+
+		const refundStats = {
+			refundedTickets: Number(refundedCount?.count) || 0,
+			totalTicketOrders: revenueByType.find((r) => r.type === 'ticket')?.count || 0
+		};
 
 		// Fetch tournament staff users
 		const tournamentStaff = await db.select().from(user).where(eq(user.role, 'tournament staff'));
@@ -49,20 +178,6 @@ export async function load({ locals }) {
 			})
 			.from(user)
 			.orderBy(desc(user.createdAt));
-
-		// Fetch players with their aliases for standings management
-		const players = await db
-			.select({
-				id: player.id,
-				displayName: player.displayName,
-				gemId: player.gemId,
-				createdAt: player.createdAt
-			})
-			.from(player)
-			.orderBy(desc(player.createdAt));
-
-		// Fetch player aliases
-		const aliases = await db.select().from(playerAlias).orderBy(playerAlias.aliasName);
 
 		// Fetch season standings with flattened monthly columns
 		const rawStandings = await db
@@ -150,15 +265,14 @@ export async function load({ locals }) {
 				matchesPlayed: standing.matchesPlayed ?? 0,
 				winPercentage,
 				totalPoints: standing.totalPoints ?? 0,
-				top8Finishes: standing.top8Finishes ?? 0,
-				eventsPlayed: standing.eventsPlayed ?? 0,
-				rank: standing.rank,
 				monthlyBreakdown
 			};
 		});
 
-		// Get player count
-		const [playerCount] = await db.select({ count: count() }).from(player);
+		// Get unique player count (distinct GEM IDs from standings)
+		const [playerCount] = await db
+			.select({ count: sql`COUNT(DISTINCT gem_id)` })
+			.from(seasonStanding);
 
 		// Fetch LSS tournament seasons
 		const lssSeasons = await db.select().from(lssSeason).orderBy(desc(lssSeason.startDate));
@@ -166,14 +280,27 @@ export async function load({ locals }) {
 		return {
 			user: locals.user,
 			events,
-			recentOrders,
+			allOrders,
 			tournamentStaff,
 			staffAssignments,
 			allUsers,
-			players,
-			aliases,
 			standings,
 			lssSeasons,
+			// Revenue analytics
+			revenueStats,
+			dailyRevenueTrend: dailyRevenueTrend.map((d) => ({
+				date: d.date,
+				total: parseFloat(d.total) || 0,
+				count: Number(d.count) || 0
+			})),
+			topEvents: topEvents.map((e) => ({
+				eventId: e.eventId,
+				eventTitle: e.eventTitle,
+				totalRevenue: parseFloat(e.totalRevenue) || 0,
+				ticketCount: Number(e.ticketCount) || 0
+			})),
+			customerInsights,
+			refundStats,
 			stats: {
 				totalEvents: eventCount.count,
 				totalOrders: orderCount.count,
@@ -187,14 +314,23 @@ export async function load({ locals }) {
 		return {
 			user: locals.user,
 			events: [],
-			recentOrders: [],
+			allOrders: [],
 			tournamentStaff: [],
 			staffAssignments: [],
 			allUsers: [],
-			players: [],
-			aliases: [],
 			standings: [],
 			lssSeasons: [],
+			revenueStats: { today: 0, week: 0, month: 0, allTime: 0, byType: [] },
+			dailyRevenueTrend: [],
+			topEvents: [],
+			customerInsights: {
+				newCustomers: 0,
+				returningCustomers: 0,
+				totalCustomers: 0,
+				topCustomers: [],
+				allCustomers: []
+			},
+			refundStats: { refundedTickets: 0, totalTicketOrders: 0 },
 			stats: {
 				totalEvents: 0,
 				totalOrders: 0,
@@ -316,9 +452,6 @@ export const actions = {
 			'gemId',
 			'totalPoints',
 			'winPercentage',
-			'eventsPlayed',
-			'top8Finishes',
-			'rank',
 			'qualifiedForChampionship',
 			'matchesPlayed',
 			'matchesWon',
@@ -374,9 +507,6 @@ export const actions = {
 			// Integer fields (including all monthly columns)
 			const integerFields = [
 				'totalPoints',
-				'eventsPlayed',
-				'top8Finishes',
-				'rank',
 				'matchesPlayed',
 				'matchesWon',
 				// Monthly points
@@ -430,40 +560,36 @@ export const actions = {
 				parsedValue = null;
 			}
 
+			// Special handling for gemId - update ALL standings for this player
+			if (field === 'gemId') {
+				const [currentStanding] = await db
+					.select({ oldGemId: seasonStanding.gemId })
+					.from(seasonStanding)
+					.where(eq(seasonStanding.id, standingId))
+					.limit(1);
+
+				const oldGemId = currentStanding?.oldGemId;
+				if (oldGemId) {
+					// Update ALL standings with the old gemId to the new gemId
+					await db
+						.update(seasonStanding)
+						.set({ gemId: parsedValue, updatedAt: new Date() })
+						.where(eq(seasonStanding.gemId, oldGemId));
+				} else {
+					// No old gemId, just update this standing
+					await db
+						.update(seasonStanding)
+						.set({ gemId: parsedValue, updatedAt: new Date() })
+						.where(eq(seasonStanding.id, standingId));
+				}
+				return { success: true, message: 'GEM ID updated across all seasons' };
+			}
+
+			// Standard field update
 			await db
 				.update(seasonStanding)
 				.set({ [field]: parsedValue, updatedAt: new Date() })
 				.where(eq(seasonStanding.id, standingId));
-
-			// Get the standing's linked player for sync updates
-			const standingData = await db
-				.select({ playerId: seasonStanding.playerId })
-				.from(seasonStanding)
-				.where(eq(seasonStanding.id, standingId))
-				.limit(1);
-
-			// If updating gemId, also update the linked player and all other standings for that player
-			if (field === 'gemId' && standingData[0]?.playerId) {
-				// Update the player's GEM ID
-				await db
-					.update(player)
-					.set({ gemId: parsedValue, updatedAt: new Date() })
-					.where(eq(player.id, standingData[0].playerId));
-
-				// Update all other standings linked to this player
-				await db
-					.update(seasonStanding)
-					.set({ gemId: parsedValue, updatedAt: new Date() })
-					.where(eq(seasonStanding.playerId, standingData[0].playerId));
-			}
-
-			// If updating playerName, also update the linked player's displayName
-			if (field === 'playerName' && standingData[0]?.playerId) {
-				await db
-					.update(player)
-					.set({ displayName: parsedValue, updatedAt: new Date() })
-					.where(eq(player.id, standingData[0].playerId));
-			}
 
 			return { success: true, message: `${field} updated successfully` };
 		} catch (err) {
@@ -472,6 +598,7 @@ export const actions = {
 	},
 
 	// Update standing player info (name and GEM ID) in one request
+	// Note: playerName only updates this standing, gemId updates all standings for this player
 	updateStandingPlayerInfo: async ({ request, locals }) => {
 		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Unauthorized' });
@@ -487,80 +614,41 @@ export const actions = {
 		}
 
 		try {
-			// First get the current standing data including old gemId and playerId
-			const currentStanding = await db
-				.select({ playerId: seasonStanding.playerId, oldGemId: seasonStanding.gemId })
+			// Get current standing data
+			const [currentStanding] = await db
+				.select({ oldGemId: seasonStanding.gemId })
 				.from(seasonStanding)
 				.where(eq(seasonStanding.id, standingId))
 				.limit(1);
 
-			const oldGemId = currentStanding[0]?.oldGemId;
-			const playerId = currentStanding[0]?.playerId;
+			const oldGemId = currentStanding?.oldGemId;
 
-			// 1. Update the standing record
+			// Update this standing's playerName
 			await db
 				.update(seasonStanding)
 				.set({
 					playerName,
-					gemId,
 					updatedAt: new Date()
 				})
 				.where(eq(seasonStanding.id, standingId));
 
-			// 2. If there's a linked playerId, update the player record and all their standings
-			if (playerId) {
-				await db
-					.update(player)
-					.set({
-						displayName: playerName,
-						gemId,
-						updatedAt: new Date()
-					})
-					.where(eq(player.id, playerId));
-
-				// Update all standings linked to this player by playerId
-				await db
-					.update(seasonStanding)
-					.set({
-						playerName,
-						gemId,
-						updatedAt: new Date()
-					})
-					.where(eq(seasonStanding.playerId, playerId));
+			// If gemId changed, update ALL standings with the old gemId
+			if (gemId !== oldGemId) {
+				if (oldGemId) {
+					// Update all standings that share the old GEM ID to the new GEM ID
+					await db
+						.update(seasonStanding)
+						.set({ gemId, updatedAt: new Date() })
+						.where(eq(seasonStanding.gemId, oldGemId));
+				} else {
+					// No old gemId, just update this standing's gemId
+					await db
+						.update(seasonStanding)
+						.set({ gemId, updatedAt: new Date() })
+						.where(eq(seasonStanding.id, standingId));
+				}
 			}
 
-			// 3. Update player record by OLD gemId (catches players not linked by playerId)
-			if (oldGemId) {
-				await db
-					.update(player)
-					.set({
-						displayName: playerName,
-						gemId: gemId, // Update to new gemId if changed
-						updatedAt: new Date()
-					})
-					.where(eq(player.gemId, oldGemId));
-
-				// Also update all standings that share the old GEM ID
-				await db
-					.update(seasonStanding)
-					.set({
-						playerName,
-						gemId,
-						updatedAt: new Date()
-					})
-					.where(eq(seasonStanding.gemId, oldGemId));
-			}
-
-			// 4. If there's a NEW gemId (different from old), also update any player with that gemId
-			if (gemId && gemId !== oldGemId) {
-				await db
-					.update(player)
-					.set({
-						displayName: playerName,
-						updatedAt: new Date()
-					})
-					.where(eq(player.gemId, gemId));
-			}
 			return { success: true, message: 'Player info updated successfully' };
 		} catch (err) {
 			return fail(500, { error: 'Failed to update player info' });
@@ -587,163 +675,6 @@ export const actions = {
 		} catch (err) {
 			console.error('Error deleting standing:', err);
 			return fail(500, { error: 'Failed to delete standing' });
-		}
-	},
-
-	// Merge two players into one
-	mergePlayers: async ({ request, locals }) => {
-		if (!locals.user || locals.user.role !== 'admin') {
-			return fail(403, { error: 'Unauthorized' });
-		}
-
-		const formData = await request.formData();
-		const sourcePlayerId = formData.get('sourcePlayerId');
-		const targetPlayerId = formData.get('targetPlayerId');
-
-		if (!sourcePlayerId || !targetPlayerId) {
-			return fail(400, { error: 'Both source and target player IDs are required' });
-		}
-
-		if (sourcePlayerId === targetPlayerId) {
-			return fail(400, { error: 'Cannot merge a player with themselves' });
-		}
-
-		try {
-			// Move all aliases from source to target
-			await db
-				.update(playerAlias)
-				.set({ playerId: targetPlayerId })
-				.where(eq(playerAlias.playerId, sourcePlayerId));
-
-			// Move all standings from source to target
-			await db
-				.update(seasonStanding)
-				.set({ playerId: targetPlayerId })
-				.where(eq(seasonStanding.playerId, sourcePlayerId));
-
-			// Delete the source player
-			await db.delete(player).where(eq(player.id, sourcePlayerId));
-
-			return { success: true, message: 'Players merged successfully' };
-		} catch (err) {
-			console.error('Error merging players:', err);
-			return fail(500, { error: 'Failed to merge players' });
-		}
-	},
-
-	// Update player GEM ID
-	updatePlayerGemId: async ({ request, locals }) => {
-		if (!locals.user || locals.user.role !== 'admin') {
-			return fail(403, { error: 'Unauthorized' });
-		}
-
-		const formData = await request.formData();
-		const playerId = formData.get('playerId');
-		const gemId = formData.get('gemId')?.trim() || null;
-
-		if (!playerId) {
-			return fail(400, { error: 'Player ID is required' });
-		}
-
-		try {
-			// Get the player's display name and all aliases
-			const playerData = await db
-				.select({ displayName: player.displayName })
-				.from(player)
-				.where(eq(player.id, playerId))
-				.limit(1);
-
-			const aliases = await db
-				.select({ aliasName: playerAlias.aliasName })
-				.from(playerAlias)
-				.where(eq(playerAlias.playerId, playerId));
-
-			// Collect all names to match (display name + all aliases)
-			const playerNames = [playerData[0]?.displayName, ...aliases.map((a) => a.aliasName)].filter(
-				Boolean
-			);
-
-			// Update player's GEM ID
-			await db.update(player).set({ gemId, updatedAt: new Date() }).where(eq(player.id, playerId));
-
-			// Update all standings linked to this player by playerId
-			await db
-				.update(seasonStanding)
-				.set({ gemId, playerId, updatedAt: new Date() })
-				.where(eq(seasonStanding.playerId, playerId));
-
-			// Also update standings that match by playerName but don't have playerId set
-			for (const name of playerNames) {
-				await db
-					.update(seasonStanding)
-					.set({ gemId, playerId, updatedAt: new Date() })
-					.where(and(eq(seasonStanding.playerName, name), sql`${seasonStanding.playerId} IS NULL`));
-			}
-
-			return { success: true, message: 'GEM ID updated successfully' };
-		} catch (err) {
-			console.error('Error updating GEM ID:', err);
-			return fail(500, { error: 'Failed to update GEM ID' });
-		}
-	},
-
-	// Update player display name
-	updatePlayerName: async ({ request, locals }) => {
-		if (!locals.user || locals.user.role !== 'admin') {
-			return fail(403, { error: 'Unauthorized' });
-		}
-
-		const formData = await request.formData();
-		const playerId = formData.get('playerId');
-		const displayName = formData.get('displayName')?.trim();
-
-		if (!playerId || !displayName) {
-			return fail(400, { error: 'Player ID and display name are required' });
-		}
-
-		try {
-			await db
-				.update(player)
-				.set({ displayName, updatedAt: new Date() })
-				.where(eq(player.id, playerId));
-
-			return { success: true, message: 'Display name updated successfully' };
-		} catch (err) {
-			console.error('Error updating display name:', err);
-			return fail(500, { error: 'Failed to update display name' });
-		}
-	},
-
-	// Delete a player
-	deletePlayer: async ({ request, locals }) => {
-		if (!locals.user || locals.user.role !== 'admin') {
-			return fail(403, { error: 'Unauthorized' });
-		}
-
-		const formData = await request.formData();
-		const playerId = formData.get('playerId');
-
-		if (!playerId) {
-			return fail(400, { error: 'Player ID is required' });
-		}
-
-		try {
-			// First, unlink any standings that reference this player (set playerId to null)
-			await db
-				.update(seasonStanding)
-				.set({ playerId: null, updatedAt: new Date() })
-				.where(eq(seasonStanding.playerId, playerId));
-
-			// Delete all aliases for this player
-			await db.delete(playerAlias).where(eq(playerAlias.playerId, playerId));
-
-			// Delete the player
-			await db.delete(player).where(eq(player.id, playerId));
-
-			return { success: true, message: 'Player deleted successfully' };
-		} catch (err) {
-			console.error('Error deleting player:', err);
-			return fail(500, { error: 'Failed to delete player' });
 		}
 	},
 
@@ -881,10 +812,8 @@ export const actions = {
 		const playerName = formData.get('playerName')?.trim();
 		const gemId = formData.get('gemId')?.trim() || null;
 		const totalPoints = parseInt(formData.get('totalPoints')) || 0;
-		const eventsPlayed = parseInt(formData.get('eventsPlayed')) || 0;
 		const matchesPlayed = parseInt(formData.get('matchesPlayed')) || 0;
 		const matchesWon = parseInt(formData.get('matchesWon')) || 0;
-		const top8Finishes = parseInt(formData.get('top8Finishes')) || 0;
 
 		if (!season || !circuit || !playerName) {
 			return fail(400, { error: 'Season, circuit, and player name are required' });
@@ -901,10 +830,8 @@ export const actions = {
 				playerName,
 				gemId,
 				totalPoints,
-				eventsPlayed,
 				matchesPlayed,
 				matchesWon,
-				top8Finishes,
 				winPercentage,
 				qualifiedForChampionship: false
 			});
@@ -919,6 +846,115 @@ export const actions = {
 				});
 			}
 			return fail(500, { error: 'Failed to create standing' });
+		}
+	},
+
+	// Admin refund order - bypasses user restrictions
+	refundOrder: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Admin access required' });
+		}
+
+		const formData = await request.formData();
+		const orderId = formData.get('orderId');
+
+		if (!orderId) {
+			return fail(400, { error: 'Order ID is required' });
+		}
+
+		try {
+			// Fetch order details
+			const [orderData] = await db.select().from(order).where(eq(order.id, orderId)).limit(1);
+
+			if (!orderData) {
+				return fail(404, { error: 'Order not found' });
+			}
+
+			const { authnet } = await import('$lib/server/authnet/client.js');
+			let refundType = '';
+
+			// Handle subscription orders
+			if (orderData.meta?.type === 'subscription') {
+				// Cancel the subscription if we have the ID
+				if (orderData.meta.subscriptionId) {
+					try {
+						await authnet.cancelSubscription(orderData.meta.subscriptionId);
+					} catch (cancelErr) {
+						console.log('Subscription cancellation error (may already be cancelled):', cancelErr.message);
+					}
+				}
+
+				// Downgrade user to free tier
+				await db
+					.update(user)
+					.set({
+						subscriptionStatus: 'cancelled',
+						role: 'free'
+					})
+					.where(eq(user.email, orderData.userEmail));
+
+				// Try to void/refund the payment
+				try {
+					await authnet.voidTransaction(orderData.providerRef);
+					refundType = 'voided';
+				} catch (voidError) {
+					console.log('Void failed, attempting refund:', voidError.message);
+					try {
+						await authnet.refundTransaction({
+							transactionId: orderData.providerRef,
+							amount: orderData.amount,
+							cardNumber: '1111'
+						});
+						refundType = 'refunded';
+					} catch (refundError) {
+						// Payment might already be refunded or too old
+						console.log('Refund also failed:', refundError.message);
+						refundType = 'subscription cancelled (payment refund failed - may be too old)';
+					}
+				}
+
+				return {
+					success: true,
+					message: `Subscription cancelled and ${refundType}. User downgraded to free tier.`
+				};
+			}
+
+			// For ticket and course orders: Try VOID first, then REFUND
+			try {
+				await authnet.voidTransaction(orderData.providerRef);
+				refundType = 'voided';
+			} catch (voidError) {
+				console.log('Void failed, attempting refund:', voidError.message);
+				await authnet.refundTransaction({
+					transactionId: orderData.providerRef,
+					amount: orderData.amount,
+					cardNumber: '1111'
+				});
+				refundType = 'refunded';
+			}
+
+			// Update related records based on order type
+			if (orderData.meta?.type === 'ticket' && orderData.meta.ticketId) {
+				// Mark ticket as refunded
+				await db
+					.update(ticket)
+					.set({
+						refunded: true,
+						refundedAt: new Date()
+					})
+					.where(eq(ticket.id, orderData.meta.ticketId));
+			} else if (orderData.meta?.type === 'course' && orderData.meta.entitlementId) {
+				// Revoke course entitlement
+				await db.delete(entitlement).where(eq(entitlement.id, orderData.meta.entitlementId));
+			}
+
+			return {
+				success: true,
+				message: `Order ${refundType} successfully`
+			};
+		} catch (err) {
+			console.error('Error refunding order:', err);
+			return fail(500, { error: err.message || 'Failed to process refund' });
 		}
 	}
 };

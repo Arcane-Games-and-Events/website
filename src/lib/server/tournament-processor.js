@@ -402,8 +402,23 @@ export async function processTournamentResults(swissStandingsCsv, pairingsCsv, e
 
 	const standings = calculateFinalStandings(swissStandings, pairings);
 
+	// Format matches for database insertion
+	const matches = pairings.map(p => ({
+		eventId: eventInfo.eventId,
+		round: p.round,
+		table: p.table || null,
+		player1GemId: p.player1Id || null,
+		player1Name: p.player1Name,
+		player2GemId: p.player2Id || null,
+		player2Name: p.player2Name,
+		winner: p.result === '1WIN' || p.result.includes('Player 1') ? 'player1'
+			: p.result === '2WIN' || p.result.includes('Player 2') ? 'player2'
+			: null // draw
+	}));
+
 	return {
 		...standings,
+		matches, // Include matches for persistence
 		eventInfo,
 		summary: {
 			totalPlayers: standings.totalPlayers,
