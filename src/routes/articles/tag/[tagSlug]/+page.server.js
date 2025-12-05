@@ -29,11 +29,8 @@ export async function load({ params, setHeaders }) {
 
 		// Transform posts
 		const articles = posts.map((post) => {
-			// Extract cover image URL
-			let coverImageUrl = null;
-			if (post.coverImage && typeof post.coverImage === 'object') {
-				coverImageUrl = payload.getAbsoluteUrl(post.coverImage.url);
-			}
+			// Extract optimized cover image with srcset
+			const coverImage = payload.getOptimizedImage(post.coverImage);
 
 			// Extract author
 			let author = null;
@@ -69,7 +66,7 @@ export async function load({ params, setHeaders }) {
 				excerpt: post.excerpt,
 				publishedAt: post.publishedDate,
 				accessMode: post.accessMode,
-				coverImage: coverImageUrl,
+				coverImage,
 				author,
 				tags,
 				readTime: post.readTime || null,

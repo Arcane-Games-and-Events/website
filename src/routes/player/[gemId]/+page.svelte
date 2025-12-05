@@ -2213,7 +2213,10 @@
 
 									<!-- Monthly Breakdown -->
 									<div>
-										<h4 class="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500">Monthly Results</h4>
+										<div class="mb-3 flex items-center justify-between">
+											<h4 class="text-xs font-medium uppercase tracking-wide text-gray-500">Monthly Results</h4>
+											<span class="text-[10px] text-gray-600 italic">Tap month for details</span>
+										</div>
 										<div class="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-12">
 													{#each months as month}
 														{@const points = standing[`${month.key}Points`] || 0}

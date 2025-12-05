@@ -146,7 +146,10 @@ export async function load({ params, locals }) {
 	const displayName = standingsWithRank[0]?.playerName || 'Unknown Player';
 
 	// Group by gemId to get aggregate stats per player
+	// Also build cache for derived stats to avoid redundant calculations
 	const playerStatsMap = new Map();
+	const derivedStatsCache = new Map();
+
 	for (const standing of allStandings) {
 		const playerGemId = standing.gemId;
 		if (!playerGemId) continue;
@@ -165,7 +168,12 @@ export async function load({ params, locals }) {
 			});
 		}
 
-		const derived = calculateDerivedStats(standing);
+		// Cache derived stats calculation
+		if (!derivedStatsCache.has(standing.id)) {
+			derivedStatsCache.set(standing.id, calculateDerivedStats(standing));
+		}
+		const derived = derivedStatsCache.get(standing.id);
+
 		const playerData = playerStatsMap.get(playerGemId);
 		playerData.totalPoints += standing.totalPoints || 0;
 		playerData.matchesWon += standing.matchesWon || 0;
@@ -175,15 +183,13 @@ export async function load({ params, locals }) {
 		playerData.standings.push(standing);
 	}
 
-	// Calculate ranks for all players in their circuits
+	// Calculate ranks for all players using pre-grouped and pre-sorted data
+	// (standingsByCircuitSeason was already built and sorted above)
 	for (const [playerGemId, playerData] of playerStatsMap) {
 		for (const standing of playerData.standings) {
-			// Get all standings for the same circuit/season
-			const circuitStandings = allStandings.filter(
-				s => s.season === standing.season && s.circuit === standing.circuit
-			);
-			circuitStandings.sort(compareStandings);
-			const rank = circuitStandings.findIndex(s => s.gemId === playerGemId) + 1;
+			const key = `${standing.season}|${standing.circuit}`;
+			const circuitSeasonStandings = standingsByCircuitSeason.get(key) || [];
+			const rank = circuitSeasonStandings.findIndex(s => s.gemId === playerGemId) + 1;
 
 			if (rank > 0) {
 				if (playerData.bestRank === null || rank < playerData.bestRank) {

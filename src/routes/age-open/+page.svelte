@@ -897,12 +897,24 @@
 
 <div class="min-h-screen bg-gray-950">
 	<!-- Hero Section -->
-	<section class="relative overflow-hidden bg-gradient-to-b from-gray-900 to-gray-950 py-8">
-		<!-- Animated background -->
+	<section class="relative overflow-hidden py-8">
+		<!-- Banner image background -->
 		<div class="absolute inset-0">
-			<div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-green-500/10"></div>
-			<div class="absolute top-1/2 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
-			<div class="absolute top-1/2 right-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl"></div>
+			<img
+				src="/banner/age-open-banner.jpg"
+				alt=""
+				class="w-full h-full object-cover"
+			/>
+			<!-- Dark overlay for text readability -->
+			<!-- Mobile: flat dark overlay -->
+			<div class="absolute inset-0 bg-gray-900/95 lg:hidden"></div>
+			<!-- Desktop: darker center, lighter edges using radial gradient -->
+			<div class="absolute inset-0 hidden lg:block bg-[radial-gradient(ellipse_at_center,_rgba(3,7,18,0.95)_0%,_rgba(3,7,18,0.88)_50%,_rgba(3,7,18,0.75)_100%)]"></div>
+			<!-- Bottom fade to content -->
+			<div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-gray-950 to-transparent"></div>
+			<!-- Accent glow effects -->
+			<div class="absolute top-1/2 left-1/4 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl"></div>
+			<div class="absolute top-1/2 right-1/4 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl"></div>
 		</div>
 
 		<div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -943,7 +955,7 @@
 				<!-- CTA Button -->
 				<button
 					onclick={() => switchTab('events')}
-					class="group inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3 font-semibold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/40 hover:scale-105 transition-all"
+					class="group inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-3 font-semibold text-white shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/40 hover:scale-105 transition-all"
 				>
 					Play in an AGE Open
 					<svg class="h-4 w-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -955,16 +967,17 @@
 	</section>
 
 	<!-- Tab Navigation -->
-	<nav class="sticky top-0 z-10 border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm">
+	<nav class="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-			<div class="relative">
-				<div class="flex space-x-1 overflow-x-auto py-2 scrollbar-hide">
+			<div class="relative py-3">
+				<!-- Visible pill container for tabs - full width on desktop -->
+				<div class="inline-flex lg:flex rounded-xl bg-gray-800/80 p-1.5 overflow-x-auto scrollbar-hide max-w-full">
 					{#each tabs as tab}
 						<button
 							onclick={() => switchTab(tab.id)}
-							class="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-all {activeTab === tab.id
-								? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/50'
-								: 'text-gray-400 hover:bg-gray-800 hover:text-gray-100'}"
+							class="lg:flex-1 flex items-center justify-center gap-2 rounded-lg px-3 sm:px-4 py-2 text-sm font-medium whitespace-nowrap transition-all {activeTab === tab.id
+								? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25'
+								: 'text-gray-300 hover:bg-gray-700/50 hover:text-white'}"
 						>
 							{#if tab.icon === 'home'}
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1003,14 +1016,12 @@
 						</button>
 					{/each}
 				</div>
-				<!-- Mobile scroll indicator - gradient fade on right -->
-				<div class="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-gray-900 to-transparent pointer-events-none sm:hidden flex items-center justify-end pr-1">
-					<svg class="h-4 w-4 text-gray-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-					</svg>
-				</div>
+				<!-- Mobile scroll indicator - subtle fade hint -->
+				<div class="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-800/90 to-transparent pointer-events-none sm:hidden rounded-r-xl"></div>
 			</div>
 		</div>
+		<!-- Gradient separator line -->
+		<div class="h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent"></div>
 	</nav>
 
 	<!-- Tab Content -->
@@ -1221,7 +1232,7 @@
 					<!-- Bottom CTA -->
 					<div class="relative mt-5 pt-4 border-t border-gray-800/50 flex flex-col sm:flex-row items-center justify-center gap-3">
 						<p class="text-gray-400 text-sm">Ready to begin?</p>
-						<button onclick={() => switchTab('events')} class="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-105 transition-all">
+						<button onclick={() => switchTab('events')} class="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-orange-500/30 hover:scale-105 transition-all">
 							Find Your First Event
 							<svg class="h-4 w-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -2509,26 +2520,12 @@
 					</p>
 				</div>
 
-				<!-- Season Selector -->
-				<div class="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-					<span class="text-xs md:text-sm font-medium text-gray-400 shrink-0">Season:</span>
-					{#each data.availableSeasons || ['all', '2025', '2024', '2023'] as season}
-						<button
-							onclick={() => changeSeason(season)}
-							class="shrink-0 rounded-lg px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-colors {standingsSeason === season
-								? 'bg-yellow-500 text-gray-900'
-								: 'bg-gray-800 text-gray-300 hover:bg-gray-700'}"
-						>
-							{season === 'all' ? 'All Time' : season}
-						</button>
-					{/each}
-				</div>
-
-				<!-- Search and Filters -->
-				<div class="space-y-3 md:space-y-0 md:flex md:items-center md:justify-between md:gap-4">
-					<div class="relative flex-1 md:max-w-md">
+				<!-- Mobile Filters Card -->
+				<div class="md:hidden rounded-xl bg-gray-900/60 border border-gray-800 p-4 space-y-4">
+					<!-- Search -->
+					<div class="relative">
 						<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-							<svg class="h-4 w-4 md:h-5 md:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
 							</svg>
 						</div>
@@ -2536,14 +2533,147 @@
 							type="text"
 							bind:value={searchQuery}
 							placeholder="Search players..."
-							class="w-full rounded-lg border border-gray-700 bg-gray-900 py-2 pl-9 md:pl-10 pr-4 text-base md:text-sm text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+							class="w-full rounded-lg border border-gray-700 bg-gray-800/50 py-2.5 pl-9 pr-9 text-base text-white placeholder-gray-500 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
 						/>
+						{#if searchQuery}
+							<button
+								type="button"
+								onclick={() => searchQuery = ''}
+								class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white"
+								aria-label="Clear search"
+							>
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+								</svg>
+							</button>
+						{/if}
 					</div>
 
-					<div class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 md:mx-0 md:px-0 md:pb-0">
+					<!-- Season & Circuit Row -->
+					<div class="flex gap-3">
+						<!-- Season Dropdown -->
+						<div class="flex-1">
+							<label class="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">Season</label>
+							<select
+								onchange={(e) => changeSeason(e.target.value)}
+								class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2 text-sm text-white focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/50 appearance-none cursor-pointer"
+								style="background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 24 24%27 stroke=%27%239ca3af%27%3E%3Cpath stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%272%27 d=%27M19 9l-7 7-7-7%27/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1.25rem;"
+							>
+								{#each data.availableSeasons || ['all', '2025', '2024', '2023'] as season}
+									<option value={season} selected={standingsSeason === season}>
+										{season === 'all' ? 'All Time' : season}
+									</option>
+								{/each}
+							</select>
+						</div>
+
+						<!-- Circuit Dropdown -->
+						<div class="flex-1">
+							<label class="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">Circuit</label>
+							<select
+								onchange={(e) => (standingsCircuit = e.target.value)}
+								class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2 text-sm text-white focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/50 appearance-none cursor-pointer"
+								style="background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 24 24%27 stroke=%27%239ca3af%27%3E%3Cpath stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%272%27 d=%27M19 9l-7 7-7-7%27/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1.25rem;"
+							>
+								<option value="all" selected={standingsCircuit === 'all'}>All Circuits</option>
+								{#if availableCircuits.includes('Los Angeles')}
+									<option value="Los Angeles" selected={standingsCircuit === 'Los Angeles'}>Los Angeles</option>
+								{/if}
+								{#if availableCircuits.includes('St. Louis')}
+									<option value="St. Louis" selected={standingsCircuit === 'St. Louis'}>St. Louis</option>
+								{/if}
+								{#if availableCircuits.includes('New England')}
+									<option value="New England" selected={standingsCircuit === 'New England'}>New England</option>
+								{/if}
+							</select>
+						</div>
+					</div>
+
+					<!-- Sort Options -->
+					<div>
+						<label class="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">Sort by</label>
+						<div class="flex gap-1.5 overflow-x-auto pb-0.5">
+							<button
+								onclick={() => toggleSort('rank')}
+								class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all {sortColumn === 'rank' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm' : 'bg-gray-800/80 text-gray-400 hover:text-white'}"
+							>
+								Rank
+							</button>
+							<button
+								onclick={() => toggleSort('points')}
+								class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all {sortColumn === 'points' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm' : 'bg-gray-800/80 text-gray-400 hover:text-white'}"
+							>
+								Points
+							</button>
+							<button
+								onclick={() => toggleSort('winPct')}
+								class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all {sortColumn === 'winPct' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm' : 'bg-gray-800/80 text-gray-400 hover:text-white'}"
+							>
+								Win %
+							</button>
+							<button
+								onclick={() => toggleSort('events')}
+								class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all {sortColumn === 'events' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm' : 'bg-gray-800/80 text-gray-400 hover:text-white'}"
+							>
+								Events
+							</button>
+							<button
+								onclick={() => toggleSort('ageRating')}
+								class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all {sortColumn === 'ageRating' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm' : 'bg-gray-800/80 text-gray-400 hover:text-white'}"
+							>
+								Rating
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- Desktop Season Selector -->
+				<div class="hidden md:flex items-center gap-2">
+					<span class="text-sm font-medium text-gray-400 shrink-0">Season:</span>
+					{#each data.availableSeasons || ['all', '2025', '2024', '2023'] as season}
+						<button
+							onclick={() => changeSeason(season)}
+							class="shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition-colors {standingsSeason === season
+								? 'bg-amber-500 text-gray-900'
+								: 'bg-gray-800 text-gray-300 hover:bg-gray-700'}"
+						>
+							{season === 'all' ? 'All Time' : season}
+						</button>
+					{/each}
+				</div>
+
+				<!-- Desktop Search and Circuit Filters -->
+				<div class="hidden md:flex md:items-center md:justify-between md:gap-4">
+					<div class="relative flex-1 max-w-md">
+						<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+							<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+							</svg>
+						</div>
+						<input
+							type="text"
+							bind:value={searchQuery}
+							placeholder="Search players..."
+							class="w-full rounded-lg border border-gray-700 bg-gray-900 py-2 pl-10 pr-9 text-sm text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+						/>
+						{#if searchQuery}
+							<button
+								type="button"
+								onclick={() => searchQuery = ''}
+								class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white"
+								aria-label="Clear search"
+							>
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+								</svg>
+							</button>
+						{/if}
+					</div>
+
+					<div class="flex gap-2">
 						<button
 							onclick={() => (standingsCircuit = 'all')}
-							class="shrink-0 rounded-full px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-colors {standingsCircuit === 'all'
+							class="shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors {standingsCircuit === 'all'
 								? 'bg-white text-gray-900'
 								: 'bg-gray-800 text-gray-300 hover:bg-gray-700'}"
 						>
@@ -2552,7 +2682,7 @@
 						{#if availableCircuits.includes('Los Angeles')}
 							<button
 								onclick={() => (standingsCircuit = 'Los Angeles')}
-								class="shrink-0 rounded-full px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-colors {standingsCircuit === 'Los Angeles'
+								class="shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors {standingsCircuit === 'Los Angeles'
 									? 'bg-blue-500 text-white'
 									: 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'}"
 							>
@@ -2562,7 +2692,7 @@
 						{#if availableCircuits.includes('St. Louis')}
 							<button
 								onclick={() => (standingsCircuit = 'St. Louis')}
-								class="shrink-0 rounded-full px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-colors {standingsCircuit === 'St. Louis'
+								class="shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors {standingsCircuit === 'St. Louis'
 									? 'bg-green-500 text-white'
 									: 'bg-green-500/10 text-green-400 hover:bg-green-500/20'}"
 							>
@@ -2572,7 +2702,7 @@
 						{#if availableCircuits.includes('New England')}
 							<button
 								onclick={() => (standingsCircuit = 'New England')}
-								class="shrink-0 rounded-full px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm font-medium transition-colors {standingsCircuit === 'New England'
+								class="shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors {standingsCircuit === 'New England'
 									? 'bg-purple-500 text-white'
 									: 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'}"
 							>
@@ -2584,40 +2714,6 @@
 
 				<!-- Mobile Standings Cards -->
 				<div class="md:hidden space-y-3">
-					<!-- Mobile Sort Controls -->
-					<div class="flex items-center gap-2 overflow-x-auto pb-2">
-						<span class="text-xs text-gray-500 shrink-0">Sort:</span>
-						<button
-							onclick={() => toggleSort('rank')}
-							class="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors {sortColumn === 'rank' ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400'}"
-						>
-							Rank
-						</button>
-						<button
-							onclick={() => toggleSort('points')}
-							class="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors {sortColumn === 'points' ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400'}"
-						>
-							Points
-						</button>
-						<button
-							onclick={() => toggleSort('winPct')}
-							class="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors {sortColumn === 'winPct' ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400'}"
-						>
-							Win %
-						</button>
-						<button
-							onclick={() => toggleSort('events')}
-							class="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors {sortColumn === 'events' ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400'}"
-						>
-							Events
-						</button>
-						<button
-							onclick={() => toggleSort('ageRating')}
-							class="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors {sortColumn === 'ageRating' ? 'bg-blue-500 text-white' : 'bg-gray-800 text-gray-400'}"
-						>
-							Rating
-						</button>
-					</div>
 
 					{#each paginatedStandings as player}
 						{@const rank = player.calculatedRank || player.rank}

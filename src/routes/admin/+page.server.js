@@ -4,7 +4,6 @@ import {
 	event,
 	order,
 	user,
-	eventStaff,
 	seasonStanding,
 	lssSeason,
 	ticket,
@@ -19,97 +18,237 @@ export async function load({ locals }) {
 	}
 
 	try {
-		// Fetch events
-		const events = await db.select().from(event).orderBy(desc(event.createdAt));
-
-		// Fetch ALL orders for order management
-		const allOrders = await db.select().from(order).orderBy(desc(order.createdAt));
-
-		// Get stats
-		const [eventCount] = await db.select({ count: count() }).from(event);
-		const [orderCount] = await db.select({ count: count() }).from(order);
-		const [premiumCount] = await db
-			.select({ count: count() })
-			.from(user)
-			.where(eq(user.role, 'premium'));
-
-		// ========== REVENUE ANALYTICS ==========
+		const currentDate = new Date();
+		const thirtyDaysFromNow = new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000);
 		const now = new Date();
 		const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 		const weekStart = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
 		const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 		const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-		// Today's revenue
-		const [todayRevenueResult] = await db
-			.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
-			.from(order)
-			.where(gte(order.createdAt, todayStart));
-
-		// This week's revenue
-		const [weekRevenueResult] = await db
-			.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
-			.from(order)
-			.where(gte(order.createdAt, weekStart));
-
-		// This month's revenue
-		const [monthRevenueResult] = await db
-			.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
-			.from(order)
-			.where(gte(order.createdAt, monthStart));
-
-		// All-time revenue
-		const [totalRevenueResult] = await db
-			.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
-			.from(order);
-
-		// Revenue breakdown by type
-		const revenueByType = await db
-			.select({
+		// ========== RUN ALL QUERIES IN PARALLEL ==========
+		const [
+			// Core data
+			events,
+			// Ticket stats grouped by event (replaces manual grouping)
+			ticketStatsByEvent,
+			// Orders (paginated to last 100 for performance)
+			allOrders,
+			// Basic counts
+			[eventCount],
+			[orderCount],
+			[premiumCount],
+			// Revenue queries
+			[todayRevenueResult],
+			[weekRevenueResult],
+			[monthRevenueResult],
+			[totalRevenueResult],
+			revenueByType,
+			dailyRevenueTrend,
+			topEvents,
+			// Customer stats
+			customerStatsRaw,
+			// Refund stats
+			[refundedCount],
+			// Users (paginated to last 100 for performance)
+			allUsers,
+			// Standings
+			rawStandings,
+			// Player count
+			[playerCount],
+			// LSS seasons
+			lssSeasons
+		] = await Promise.all([
+			// Events
+			db.select().from(event).orderBy(desc(event.createdAt)),
+			// Ticket stats grouped by event (database-level aggregation)
+			db.select({
+				eventId: ticket.eventId,
+				sold: count(),
+				refunded: sql`SUM(CASE WHEN refunded = true THEN 1 ELSE 0 END)::int`,
+				revenue: sql`COALESCE(SUM(CAST(amount_paid AS DECIMAL)), 0)`
+			})
+				.from(ticket)
+				.groupBy(ticket.eventId),
+			// Orders (limit to recent 500 for admin dashboard)
+			db.select().from(order).orderBy(desc(order.createdAt)).limit(500),
+			// Counts
+			db.select({ count: count() }).from(event),
+			db.select({ count: count() }).from(order),
+			db.select({ count: count() }).from(user).where(eq(user.role, 'premium')),
+			// Revenue queries
+			db.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
+				.from(order).where(gte(order.createdAt, todayStart)),
+			db.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
+				.from(order).where(gte(order.createdAt, weekStart)),
+			db.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
+				.from(order).where(gte(order.createdAt, monthStart)),
+			db.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
+				.from(order),
+			db.select({
 				type: sql`COALESCE(meta->>'type', 'unknown')`,
 				total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
 				count: count()
-			})
-			.from(order)
-			.groupBy(sql`meta->>'type'`);
-
-		// Daily revenue trend (last 30 days for chart)
-		const dailyRevenueTrend = await db
-			.select({
+			}).from(order).groupBy(sql`meta->>'type'`),
+			db.select({
 				date: sql`DATE(created_at)`,
 				total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
 				count: count()
-			})
-			.from(order)
-			.where(gte(order.createdAt, thirtyDaysAgo))
-			.groupBy(sql`DATE(created_at)`)
-			.orderBy(sql`DATE(created_at)`);
-
-		// Top performing events (by ticket revenue)
-		const topEvents = await db
-			.select({
+			}).from(order).where(gte(order.createdAt, thirtyDaysAgo))
+				.groupBy(sql`DATE(created_at)`).orderBy(sql`DATE(created_at)`),
+			db.select({
 				eventId: sql`meta->>'eventId'`,
 				eventTitle: sql`meta->>'eventTitle'`,
 				totalRevenue: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
 				ticketCount: count()
-			})
-			.from(order)
-			.where(sql`meta->>'type' = 'ticket'`)
-			.groupBy(sql`meta->>'eventId'`, sql`meta->>'eventTitle'`)
-			.orderBy(desc(sql`SUM(CAST(amount AS DECIMAL))`))
-			.limit(5);
-
-		// Customer insights - aggregate by email
-		const customerStatsRaw = await db
-			.select({
+			}).from(order).where(sql`meta->>'type' = 'ticket'`)
+				.groupBy(sql`meta->>'eventId'`, sql`meta->>'eventTitle'`)
+				.orderBy(desc(sql`SUM(CAST(amount AS DECIMAL))`)).limit(5),
+			// Customer stats
+			db.select({
 				email: order.userEmail,
 				orderCount: count(),
 				totalSpent: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
 				firstOrder: sql`MIN(created_at)`,
 				lastOrder: sql`MAX(created_at)`
+			}).from(order).groupBy(order.userEmail),
+			// Refund stats
+			db.select({ count: count() }).from(ticket).where(eq(ticket.refunded, true)),
+			// Users (limit to recent 200 for admin dashboard)
+			db.select({
+				id: user.id,
+				email: user.email,
+				role: user.role,
+				createdAt: user.createdAt
+			}).from(user).orderBy(desc(user.createdAt)).limit(200),
+			// Standings
+			db.select().from(seasonStanding).orderBy(desc(seasonStanding.totalPoints)),
+			// Player count
+			db.select({ count: sql`COUNT(DISTINCT gem_id)` }).from(seasonStanding),
+			// LSS seasons
+			db.select().from(lssSeason).orderBy(desc(lssSeason.startDate))
+		]);
+
+		// ========== EVENT ANALYTICS ==========
+		// Convert ticket stats to Map for fast lookup
+		const ticketsByEvent = new Map();
+		for (const t of ticketStatsByEvent) {
+			ticketsByEvent.set(t.eventId, {
+				sold: Number(t.sold) || 0,
+				refunded: Number(t.refunded) || 0,
+				revenue: parseFloat(t.revenue) || 0
+			});
+		}
+
+		// Compute event analytics
+		let upcomingEvents = 0;
+		let pastEvents = 0;
+		let eventsNoDate = 0;
+		let totalTicketsSold = 0;
+		let totalTicketRevenue = 0;
+		const eventsByCircuit = {};
+		const eventsByFormat = {};
+		const eventsByStatus = { upcoming: 0, in_progress: 0, completed: 0, cancelled: 0 };
+		const upcomingEventsList = [];
+
+		for (const e of events) {
+			// Status counts
+			const status = e.status || 'upcoming';
+			eventsByStatus[status] = (eventsByStatus[status] || 0) + 1;
+
+			// Date analysis
+			if (e.eventDate) {
+				const eventDate = new Date(e.eventDate);
+				if (eventDate > currentDate) {
+					upcomingEvents++;
+					// Add to upcoming list if within 30 days
+					if (eventDate <= thirtyDaysFromNow) {
+						upcomingEventsList.push(e);
+					}
+				} else {
+					pastEvents++;
+				}
+			} else {
+				eventsNoDate++;
+			}
+
+			// Circuit breakdown
+			const circuit = e.circuit || 'Unassigned';
+			eventsByCircuit[circuit] = (eventsByCircuit[circuit] || 0) + 1;
+
+			// Format breakdown
+			const format = e.format || 'Unknown';
+			eventsByFormat[format] = (eventsByFormat[format] || 0) + 1;
+
+			// Ticket stats for this event
+			const ticketStats = ticketsByEvent.get(e.id);
+			if (ticketStats) {
+				totalTicketsSold += ticketStats.sold;
+				totalTicketRevenue += ticketStats.revenue;
+			}
+		}
+
+		// Sort upcoming events by date
+		upcomingEventsList.sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
+
+		// Find top performing events
+		const eventsWithTickets = events
+			.map((e) => {
+				const stats = ticketsByEvent.get(e.id) || { sold: 0, revenue: 0, refunded: 0 };
+				return {
+					id: e.id,
+					title: e.title,
+					circuit: e.circuit,
+					eventDate: e.eventDate,
+					status: e.status,
+					ticketsSold: stats.sold,
+					revenue: stats.revenue,
+					refunded: stats.refunded
+				};
 			})
-			.from(order)
-			.groupBy(order.userEmail);
+			.filter((e) => e.ticketsSold > 0);
+
+		const topEventsByTickets = [...eventsWithTickets]
+			.sort((a, b) => b.ticketsSold - a.ticketsSold)
+			.slice(0, 5);
+
+		const topEventsByRevenue = [...eventsWithTickets]
+			.sort((a, b) => b.revenue - a.revenue)
+			.slice(0, 5);
+
+		// Recent completed events
+		const recentCompletedEvents = events
+			.filter((e) => e.status === 'completed' || (e.eventDate && new Date(e.eventDate) < currentDate))
+			.slice(0, 5)
+			.map((e) => {
+				const stats = ticketsByEvent.get(e.id) || { sold: 0, revenue: 0 };
+				return {
+					...e,
+					ticketsSold: stats.sold,
+					revenue: stats.revenue
+				};
+			});
+
+		// Bundle event analytics
+		const eventAnalytics = {
+			totalEvents: events.length,
+			upcomingEvents,
+			pastEvents,
+			eventsNoDate,
+			totalTicketsSold,
+			totalTicketRevenue,
+			avgTicketPrice: totalTicketsSold > 0 ? (totalTicketRevenue / totalTicketsSold).toFixed(2) : 0,
+			byCircuit: Object.entries(eventsByCircuit).map(([name, count]) => ({ name, count })),
+			byFormat: Object.entries(eventsByFormat).map(([name, count]) => ({ name, count })),
+			byStatus: eventsByStatus,
+			upcomingEventsList: upcomingEventsList.slice(0, 5),
+			topEventsByTickets,
+			topEventsByRevenue,
+			recentCompletedEvents,
+			ticketsByEvent: Object.fromEntries(ticketsByEvent)
+		};
+
+		// ========== REVENUE ANALYTICS ==========
 
 		// Process customer stats
 		const newCustomers = customerStatsRaw.filter((c) => Number(c.orderCount) === 1).length;
@@ -117,12 +256,6 @@ export async function load({ locals }) {
 		const topCustomers = [...customerStatsRaw]
 			.sort((a, b) => parseFloat(b.totalSpent) - parseFloat(a.totalSpent))
 			.slice(0, 5);
-
-		// Refund statistics (for ticket orders)
-		const [refundedCount] = await db
-			.select({ count: count() })
-			.from(ticket)
-			.where(eq(ticket.refunded, true));
 
 		// Bundle revenue stats
 		const revenueStats = {
@@ -161,29 +294,6 @@ export async function load({ locals }) {
 			refundedTickets: Number(refundedCount?.count) || 0,
 			totalTicketOrders: revenueByType.find((r) => r.type === 'ticket')?.count || 0
 		};
-
-		// Fetch tournament staff users
-		const tournamentStaff = await db.select().from(user).where(eq(user.role, 'tournament staff'));
-
-		// Fetch event staff assignments
-		const staffAssignments = await db.select().from(eventStaff);
-
-		// Fetch all users for user management
-		const allUsers = await db
-			.select({
-				id: user.id,
-				email: user.email,
-				role: user.role,
-				createdAt: user.createdAt
-			})
-			.from(user)
-			.orderBy(desc(user.createdAt));
-
-		// Fetch season standings with flattened monthly columns
-		const rawStandings = await db
-			.select()
-			.from(seasonStanding)
-			.orderBy(desc(seasonStanding.totalPoints));
 
 		// Map standings with computed monthly data for display
 		const standings = rawStandings.map((standing) => {
@@ -269,20 +379,11 @@ export async function load({ locals }) {
 			};
 		});
 
-		// Get unique player count (distinct GEM IDs from standings)
-		const [playerCount] = await db
-			.select({ count: sql`COUNT(DISTINCT gem_id)` })
-			.from(seasonStanding);
-
-		// Fetch LSS tournament seasons
-		const lssSeasons = await db.select().from(lssSeason).orderBy(desc(lssSeason.startDate));
-
 		return {
 			user: locals.user,
 			events,
+			eventAnalytics,
 			allOrders,
-			tournamentStaff,
-			staffAssignments,
 			allUsers,
 			standings,
 			lssSeasons,
@@ -314,9 +415,24 @@ export async function load({ locals }) {
 		return {
 			user: locals.user,
 			events: [],
+			eventAnalytics: {
+				totalEvents: 0,
+				upcomingEvents: 0,
+				pastEvents: 0,
+				eventsNoDate: 0,
+				totalTicketsSold: 0,
+				totalTicketRevenue: 0,
+				avgTicketPrice: 0,
+				byCircuit: [],
+				byFormat: [],
+				byStatus: { upcoming: 0, in_progress: 0, completed: 0, cancelled: 0 },
+				upcomingEventsList: [],
+				topEventsByTickets: [],
+				topEventsByRevenue: [],
+				recentCompletedEvents: [],
+				ticketsByEvent: {}
+			},
 			allOrders: [],
-			tournamentStaff: [],
-			staffAssignments: [],
 			allUsers: [],
 			standings: [],
 			lssSeasons: [],
@@ -342,64 +458,6 @@ export async function load({ locals }) {
 }
 
 export const actions = {
-	// Assign tournament staff to an event
-	assignStaff: async ({ request, locals }) => {
-		if (!locals.user || locals.user.role !== 'admin') {
-			return fail(403, { error: 'Unauthorized' });
-		}
-
-		const formData = await request.formData();
-		const staffId = formData.get('staffId');
-		const eventId = formData.get('eventId');
-
-		try {
-			// Check if assignment already exists
-			const existing = await db
-				.select()
-				.from(eventStaff)
-				.where(and(eq(eventStaff.userId, staffId), eq(eventStaff.eventId, eventId)))
-				.limit(1);
-
-			if (existing.length > 0) {
-				return fail(400, { error: 'Staff member already assigned to this event' });
-			}
-
-			// Create assignment
-			await db.insert(eventStaff).values({
-				userId: staffId,
-				eventId,
-				assignedBy: locals.user.id
-			});
-
-			return { success: true, message: 'Staff assigned successfully' };
-		} catch (err) {
-			console.error('Error assigning staff:', err);
-			return fail(500, { error: 'Failed to assign staff' });
-		}
-	},
-
-	// Remove tournament staff from an event
-	unassignStaff: async ({ request, locals }) => {
-		if (!locals.user || locals.user.role !== 'admin') {
-			return fail(403, { error: 'Unauthorized' });
-		}
-
-		const formData = await request.formData();
-		const staffId = formData.get('staffId');
-		const eventId = formData.get('eventId');
-
-		try {
-			await db
-				.delete(eventStaff)
-				.where(and(eq(eventStaff.userId, staffId), eq(eventStaff.eventId, eventId)));
-
-			return { success: true, message: 'Staff unassigned successfully' };
-		} catch (err) {
-			console.error('Error unassigning staff:', err);
-			return fail(500, { error: 'Failed to unassign staff' });
-		}
-	},
-
 	// Update user role
 	updateUserRole: async ({ request, locals }) => {
 		if (!locals.user || locals.user.role !== 'admin') {

@@ -1,6 +1,6 @@
 <script>
 	import AdminSidebar from '$lib/components/AdminSidebar.svelte';
-	import { page } from '$app/stores';
+	import { page, navigating } from '$app/stores';
 
 	let { children } = $props();
 
@@ -25,6 +25,7 @@
 		if (pathname.includes('/admin/customers/')) return 'users';
 		if (pathname.includes('/admin/orders/')) return 'orders';
 		if (pathname.includes('/admin/import-matches')) return 'import-matches';
+		if (pathname.includes('/admin/analytics')) return 'analytics';
 
 		return 'overview';
 	});
@@ -32,27 +33,35 @@
 	// Page title based on current page
 	let pageTitle = $derived.by(() => {
 		switch (currentPage) {
-			case 'overview': return 'Dashboard Overview';
-			case 'events': return 'Events Management';
-			case 'orders': return 'Order History';
-			case 'staff': return 'Tournament Staff';
-			case 'users': return 'User Management';
+			case 'overview': return 'Dashboard';
+			case 'analytics': return 'Analytics';
+			case 'events': return 'Events';
+			case 'orders': return 'Orders';
+			case 'staff': return 'Staff';
+			case 'users': return 'Users';
 			case 'players': return 'Standings';
 			case 'seasons': return 'Calendar';
-			case 'import-matches': return 'Import Match History';
+			case 'import-matches': return 'Import Matches';
 			default: return 'Admin';
 		}
 	});
 </script>
 
+<!-- Navigation Loading Indicator -->
+{#if $navigating}
+	<div class="fixed top-0 left-0 right-0 z-[9999] h-0.5">
+		<div class="h-full bg-blue-500 animate-loading-bar"></div>
+	</div>
+{/if}
+
 <AdminSidebar {currentPage} {sidebarOpen} onClose={closeSidebar} />
 
 <div class="min-h-screen bg-gray-950 pl-0 lg:pl-64">
 	<!-- Mobile Header with Hamburger Menu -->
-	<header class="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-gray-800 bg-gray-950/95 px-4 backdrop-blur-sm lg:hidden">
+	<header class="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-white/5 bg-gray-950/95 px-4 backdrop-blur-sm lg:hidden">
 		<button
 			onclick={toggleSidebar}
-			class="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-700 bg-gray-800/50 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
+			class="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
 			aria-label="Toggle menu"
 		>
 			<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

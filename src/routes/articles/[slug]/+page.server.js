@@ -90,11 +90,8 @@ export async function load({ params, locals, setHeaders }) {
 			throw error(404, 'Article not found');
 		}
 
-		// Extract cover image URL
-		let coverImageUrl = null;
-		if (post.coverImage && typeof post.coverImage === 'object') {
-			coverImageUrl = payload.getAbsoluteUrl(post.coverImage.url);
-		}
+		// Extract optimized cover image with srcset
+		const coverImage = payload.getOptimizedImage(post.coverImage);
 
 		// Extract author information
 		let author = null;
@@ -139,7 +136,7 @@ export async function load({ params, locals, setHeaders }) {
 			content: processedContent,
 			publishedAt: post.publishedDate,
 			accessMode: post.accessMode,
-			coverImage: coverImageUrl,
+			coverImage,
 			author,
 			tags,
 			decklists,

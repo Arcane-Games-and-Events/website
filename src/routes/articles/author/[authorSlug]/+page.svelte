@@ -282,11 +282,13 @@
 								<!-- Thumbnail -->
 								<a href="/articles/{article.slug}" class="shrink-0">
 									<div class="relative h-24 w-36 overflow-hidden rounded-lg bg-gray-800 sm:h-28 sm:w-44">
-										{#if article.coverImage}
+										{#if article.coverImage?.src}
 											<FadeImage
-												src={article.coverImage}
+												src={article.coverImage.src}
+												srcset={article.coverImage.srcset}
+												sizes="(max-width: 640px) 144px, 176px"
 												alt={article.title}
-												class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+												class="h-full w-full transition-transform duration-300 group-hover:scale-105"
 											/>
 										{:else}
 											<div class="flex h-full items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">

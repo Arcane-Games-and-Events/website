@@ -201,6 +201,59 @@ class PayloadClient {
 	}
 
 	/**
+	 * Process image object to extract optimized image data
+	 * @param {Object} image - Payload image object with sizes
+	 * @returns {Object} - Processed image with src, srcset, sizes info
+	 */
+	getOptimizedImage(image) {
+		if (!image || typeof image !== 'object') {
+			return null;
+		}
+
+		const src = this.getAbsoluteUrl(image.url);
+		const width = image.width;
+		const height = image.height;
+
+		// Build srcset from available sizes
+		const srcsetParts = [];
+
+		// Add original image
+		if (src && width) {
+			srcsetParts.push(`${src} ${width}w`);
+		}
+
+		// Add resized versions if available
+		if (image.sizes) {
+			if (image.sizes.thumbnail?.url) {
+				const thumbUrl = this.getAbsoluteUrl(image.sizes.thumbnail.url);
+				srcsetParts.push(`${thumbUrl} ${image.sizes.thumbnail.width}w`);
+			}
+			if (image.sizes.card?.url) {
+				const cardUrl = this.getAbsoluteUrl(image.sizes.card.url);
+				srcsetParts.push(`${cardUrl} ${image.sizes.card.width}w`);
+			}
+			if (image.sizes.hero?.url) {
+				const heroUrl = this.getAbsoluteUrl(image.sizes.hero.url);
+				srcsetParts.push(`${heroUrl} ${image.sizes.hero.width}w`);
+			}
+		}
+
+		// Sort by width ascending for proper srcset
+		srcsetParts.sort((a, b) => {
+			const widthA = parseInt(a.split(' ')[1]);
+			const widthB = parseInt(b.split(' ')[1]);
+			return widthA - widthB;
+		});
+
+		return {
+			src,
+			srcset: srcsetParts.length > 1 ? srcsetParts.join(', ') : undefined,
+			width,
+			height
+		};
+	}
+
+	/**
 	 * Parse decklists from post data
 	 * @param {Array} rawDecklists - Array of decklist objects with rawText
 	 * @returns {Array} Parsed decklists ready for component rendering

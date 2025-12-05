@@ -425,9 +425,11 @@
 	<header class="relative">
 		<!-- Cover Image Container - Taller on mobile for better visual impact -->
 		<div class="relative aspect-[3/4] w-full overflow-hidden bg-gray-900 sm:aspect-[16/9] lg:aspect-[21/9]">
-			{#if data.article.coverImage}
+			{#if data.article.coverImage?.src}
 				<img
-					src={data.article.coverImage}
+					src={data.article.coverImage.src}
+					srcset={data.article.coverImage.srcset}
+					sizes="100vw"
 					alt={data.article.title}
 					class="h-full w-full object-cover"
 					loading="eager"

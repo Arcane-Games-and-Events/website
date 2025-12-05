@@ -102,19 +102,23 @@
 
 			<!-- Success/Error Messages -->
 		{#if form?.success}
-			<div class="mb-6 rounded-lg border border-green-500/30 bg-green-500/10 p-4">
+			<div class="mb-6 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
 				<p class="text-green-400">{form.message}</p>
 			</div>
 		{/if}
 		{#if form?.error}
-			<div class="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+			<div class="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
 				<p class="text-red-400">{form.error}</p>
 			</div>
 		{/if}
 
 		<!-- Customer Header -->
-		<div class="mb-8 overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
-			<div class="p-6">
+		<div class="relative mb-8 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-purple-900/30 via-gray-900 to-gray-950 shadow-2xl shadow-purple-500/5">
+			<!-- Decorative elements -->
+			<div class="absolute top-0 right-0 -mt-16 -mr-16 h-64 w-64 rounded-full bg-purple-500/10 blur-3xl"></div>
+			<div class="absolute bottom-0 left-0 -mb-16 -ml-16 h-48 w-48 rounded-full bg-violet-500/10 blur-3xl"></div>
+
+			<div class="relative p-6">
 				<div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
 					<!-- Customer Info -->
 					<div class="flex items-start gap-4">
@@ -221,19 +225,19 @@
 
 		<!-- Stats Cards -->
 		<div class="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-			<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-4">
+			<div class="rounded-xl border border-white/10 bg-gray-900/50 p-4">
 				<p class="text-sm text-gray-400">Lifetime Value</p>
-				<p class="mt-1 text-2xl font-bold text-white">{formatCurrency(data.stats.totalSpent)}</p>
+				<p class="mt-1 text-2xl font-bold text-emerald-400">{formatCurrency(data.stats.totalSpent)}</p>
 			</div>
-			<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-4">
+			<div class="rounded-xl border border-white/10 bg-gray-900/50 p-4">
 				<p class="text-sm text-gray-400">Total Orders</p>
 				<p class="mt-1 text-2xl font-bold text-white">{data.stats.totalOrders}</p>
 			</div>
-			<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-4">
+			<div class="rounded-xl border border-white/10 bg-gray-900/50 p-4">
 				<p class="text-sm text-gray-400">Avg Order Value</p>
 				<p class="mt-1 text-2xl font-bold text-white">{formatCurrency(data.stats.avgOrderValue)}</p>
 			</div>
-			<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-4">
+			<div class="rounded-xl border border-white/10 bg-gray-900/50 p-4">
 				<p class="text-sm text-gray-400">Active Tickets</p>
 				<p class="mt-1 text-2xl font-bold text-white">{data.activeTicketsCount}</p>
 			</div>
@@ -241,8 +245,8 @@
 
 		<!-- Subscription Section (only if user has account with subscription) -->
 		{#if data.customer && (data.customer.subscriptionId || data.customer.subscriptionStatus)}
-			<div class="mb-8 overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
-				<div class="border-b border-gray-800 bg-gray-800/30 px-6 py-4">
+			<div class="mb-8 overflow-hidden rounded-xl border border-white/10 bg-gray-900/50">
+				<div class="border-b border-white/10 bg-gray-800/30 px-6 py-4">
 					<h2 class="text-lg font-semibold text-white">Subscription</h2>
 				</div>
 				<div class="p-6">
@@ -298,11 +302,11 @@
 		{/if}
 
 		<!-- Order Breakdown -->
-		<div class="mb-8 overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
-			<div class="border-b border-gray-800 bg-gray-800/30 px-6 py-4">
+		<div class="mb-8 overflow-hidden rounded-xl border border-white/10 bg-gray-900/50">
+			<div class="border-b border-white/10 bg-gray-800/30 px-6 py-4">
 				<h2 class="text-lg font-semibold text-white">Order Breakdown</h2>
 			</div>
-			<div class="grid divide-y divide-gray-800 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+			<div class="grid divide-y divide-white/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
 				<div class="p-6">
 					<div class="flex items-center gap-3">
 						<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20">
@@ -355,29 +359,29 @@
 		</div>
 
 		<!-- Tabs -->
-		<div class="mb-6 flex gap-1 rounded-lg border border-gray-800 bg-gray-900/50 p-1">
+		<div class="mb-6 flex gap-1 rounded-xl border border-white/10 bg-gray-900/50 p-1">
 			<button
 				onclick={() => (activeTab = 'orders')}
-				class="flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all {activeTab === 'orders'
-					? 'bg-gray-800 text-white'
-					: 'text-gray-400 hover:text-white'}"
+				class="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all {activeTab === 'orders'
+					? 'bg-purple-500/20 text-purple-400'
+					: 'text-gray-400 hover:bg-white/5 hover:text-white'}"
 			>
 				Orders ({data.orders.length})
 			</button>
 			<button
 				onclick={() => (activeTab = 'tickets')}
-				class="flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all {activeTab === 'tickets'
-					? 'bg-gray-800 text-white'
-					: 'text-gray-400 hover:text-white'}"
+				class="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all {activeTab === 'tickets'
+					? 'bg-purple-500/20 text-purple-400'
+					: 'text-gray-400 hover:bg-white/5 hover:text-white'}"
 			>
 				Tickets ({data.tickets.length})
 			</button>
 			{#if data.customer}
 				<button
 					onclick={() => (activeTab = 'courses')}
-					class="flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all {activeTab === 'courses'
-						? 'bg-gray-800 text-white'
-						: 'text-gray-400 hover:text-white'}"
+					class="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all {activeTab === 'courses'
+						? 'bg-purple-500/20 text-purple-400'
+						: 'text-gray-400 hover:bg-white/5 hover:text-white'}"
 				>
 					Courses ({data.entitlements.length})
 				</button>
@@ -386,7 +390,7 @@
 
 		<!-- Orders Tab -->
 		{#if activeTab === 'orders'}
-			<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
+			<div class="overflow-hidden rounded-xl border border-white/10 bg-gray-900/50">
 				{#if data.orders.length === 0}
 					<div class="p-12 text-center">
 						<svg class="mx-auto mb-4 h-12 w-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -406,9 +410,9 @@
 									<th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-400">Actions</th>
 								</tr>
 							</thead>
-							<tbody class="divide-y divide-gray-800">
+							<tbody class="divide-y divide-white/10">
 								{#each data.orders as order}
-									<tr class="transition-colors hover:bg-gray-800/50">
+									<tr class="transition-colors hover:bg-white/5">
 										<td class="px-6 py-4 text-sm text-gray-300">{formatDate(order.createdAt)}</td>
 										<td class="px-6 py-4">
 											<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize
@@ -443,7 +447,7 @@
 
 		<!-- Tickets Tab -->
 		{#if activeTab === 'tickets'}
-			<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
+			<div class="overflow-hidden rounded-xl border border-white/10 bg-gray-900/50">
 				{#if data.tickets.length === 0}
 					<div class="p-12 text-center">
 						<svg class="mx-auto mb-4 h-12 w-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -463,9 +467,9 @@
 									<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Status</th>
 								</tr>
 							</thead>
-							<tbody class="divide-y divide-gray-800">
+							<tbody class="divide-y divide-white/10">
 								{#each data.tickets as { ticket, event }}
-									<tr class="transition-colors hover:bg-gray-800/50">
+									<tr class="transition-colors hover:bg-white/5">
 										<td class="px-6 py-4 text-sm font-medium text-white">{event?.title || 'Unknown Event'}</td>
 										<td class="px-6 py-4">
 											<code class="rounded bg-gray-800 px-2 py-1 text-sm text-gray-300">{ticket.code}</code>
@@ -503,7 +507,7 @@
 
 		<!-- Courses Tab -->
 		{#if activeTab === 'courses' && data.customer}
-			<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
+			<div class="overflow-hidden rounded-xl border border-white/10 bg-gray-900/50">
 				{#if data.entitlements.length === 0}
 					<div class="p-12 text-center">
 						<svg class="mx-auto mb-4 h-12 w-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -512,7 +516,7 @@
 						<p class="text-gray-400">No courses purchased</p>
 					</div>
 				{:else}
-					<div class="divide-y divide-gray-800">
+					<div class="divide-y divide-white/10">
 						{#each data.entitlements as ent}
 							<div class="flex items-center justify-between p-6">
 								<div class="flex items-center gap-4">

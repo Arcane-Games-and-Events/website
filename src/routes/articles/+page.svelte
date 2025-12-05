@@ -120,11 +120,13 @@
 					>
 						<!-- Background Image -->
 						<div class="absolute inset-0">
-							{#if article.coverImage}
+							{#if article.coverImage?.src}
 								<FadeImage
-									src={article.coverImage}
+									src={article.coverImage.src}
+									srcset={article.coverImage.srcset}
+									sizes="100vw"
 									alt=""
-									class="h-full w-full object-cover"
+									class="h-full w-full"
 									loading={index === 0 ? "eager" : "lazy"}
 								/>
 							{:else}
@@ -351,11 +353,13 @@
 							<article class="relative flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-gray-900/50 backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-gray-800/50 hover:shadow-xl hover:shadow-black/20">
 								<!-- Image -->
 								<div class="relative h-44 shrink-0 overflow-hidden">
-									{#if article.coverImage}
+									{#if article.coverImage?.src}
 										<FadeImage
-											src={article.coverImage}
+											src={article.coverImage.src}
+											srcset={article.coverImage.srcset}
+											sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
 											alt={article.title}
-											class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+											class="h-full w-full transition-transform duration-500 group-hover:scale-105"
 										/>
 									{:else}
 										<div class="flex h-full items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">

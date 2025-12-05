@@ -58,21 +58,6 @@
 
 	// Search and filter state
 	let userSearchQuery = $state('');
-	let selectedEventForStaff = $state('');
-
-	// Get staff assignments for a specific event
-	function getStaffForEvent(eventId) {
-		return data.staffAssignments
-			.filter((assignment) => assignment.eventId === eventId)
-			.map((assignment) => assignment.userId);
-	}
-
-	// Check if a staff member is assigned to an event
-	function isStaffAssigned(staffId, eventId) {
-		return data.staffAssignments.some(
-			(assignment) => assignment.userId === staffId && assignment.eventId === eventId
-		);
-	}
 
 	// Filter users based on search query
 	let filteredUsers = $derived((data.allUsers || []).filter((user) =>
@@ -90,16 +75,87 @@
 		goto(url.toString(), { replaceState: false, noScroll: true });
 	}
 
-	// Tab configuration with icons
+	// Tab configuration with icons and colors
 	const tabs = [
-		{ id: 'overview', name: 'Overview', icon: 'home' },
-		{ id: 'orders', name: 'Orders', icon: 'receipt' },
-		{ id: 'users', name: 'Users', icon: 'user' },
-		{ id: 'events', name: 'Events', icon: 'ticket' },
-		{ id: 'staff', name: 'Staff', icon: 'users' },
-		{ id: 'players', name: 'Standings', icon: 'trophy' },
-		{ id: 'seasons', name: 'Calendar', icon: 'calendar-days' }
+		{
+			id: 'overview',
+			name: 'Overview',
+			icon: 'M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25',
+			color: 'blue'
+		},
+		{
+			id: 'orders',
+			name: 'Orders',
+			icon: 'M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z',
+			color: 'emerald'
+		},
+		{
+			id: 'users',
+			name: 'Users',
+			icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z',
+			color: 'purple'
+		},
+		{
+			id: 'events',
+			name: 'Events',
+			icon: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5',
+			color: 'cyan'
+		},
+		{
+			id: 'players',
+			name: 'Standings',
+			icon: 'M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m3.044-1.35a6.726 6.726 0 01-2.748 1.35m0 0a6.772 6.772 0 01-3.044 0',
+			color: 'rose'
+		},
+		{
+			id: 'seasons',
+			name: 'Calendar',
+			icon: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z',
+			color: 'indigo'
+		}
 	];
+
+	// Get tab color classes
+	function getTabColors(color, isActive) {
+		const colors = {
+			blue: {
+				active: 'bg-blue-500/15 border-blue-500/40 text-blue-400',
+				icon: 'bg-blue-500/20 text-blue-400',
+				inactive: 'text-gray-400 hover:bg-white/5 hover:text-white'
+			},
+			emerald: {
+				active: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400',
+				icon: 'bg-emerald-500/20 text-emerald-400',
+				inactive: 'text-gray-400 hover:bg-white/5 hover:text-white'
+			},
+			purple: {
+				active: 'bg-purple-500/15 border-purple-500/40 text-purple-400',
+				icon: 'bg-purple-500/20 text-purple-400',
+				inactive: 'text-gray-400 hover:bg-white/5 hover:text-white'
+			},
+			cyan: {
+				active: 'bg-cyan-500/15 border-cyan-500/40 text-cyan-400',
+				icon: 'bg-cyan-500/20 text-cyan-400',
+				inactive: 'text-gray-400 hover:bg-white/5 hover:text-white'
+			},
+			amber: {
+				active: 'bg-amber-500/15 border-amber-500/40 text-amber-400',
+				icon: 'bg-amber-500/20 text-amber-400',
+				inactive: 'text-gray-400 hover:bg-white/5 hover:text-white'
+			},
+			rose: {
+				active: 'bg-rose-500/15 border-rose-500/40 text-rose-400',
+				icon: 'bg-rose-500/20 text-rose-400',
+				inactive: 'text-gray-400 hover:bg-white/5 hover:text-white'
+			},
+			indigo: {
+				active: 'bg-indigo-500/15 border-indigo-500/40 text-indigo-400',
+				icon: 'bg-indigo-500/20 text-indigo-400',
+				inactive: 'text-gray-400 hover:bg-white/5 hover:text-white'
+			}
+		};
+		return colors[color] || colors.blue;
+	}
 
 	// LSS Seasons state
 	let showAddSeasonForm = $state(false);
@@ -190,6 +246,55 @@
 	let ordersSortBy = $state('date'); // 'date', 'amount'
 	let ordersSortDir = $state('desc');
 
+	// ========== EVENT MANAGEMENT STATE ==========
+	let eventsSearchQuery = $state('');
+	let eventsStatusFilter = $state('all'); // 'all', 'upcoming', 'in_progress', 'completed', 'cancelled'
+	let eventsCircuitFilter = $state('all'); // 'all' or specific circuit
+	let eventsPage = $state(1);
+	let eventsPerPage = 10;
+
+	// Filtered events
+	let filteredEvents = $derived((data.events || [])
+		.filter((evt) => {
+			// Search filter
+			if (eventsSearchQuery) {
+				const q = eventsSearchQuery.toLowerCase();
+				const matchesTitle = evt.title?.toLowerCase().includes(q);
+				const matchesCircuit = evt.circuit?.toLowerCase().includes(q);
+				const matchesLocation = evt.location?.toLowerCase().includes(q);
+				if (!matchesTitle && !matchesCircuit && !matchesLocation) return false;
+			}
+			// Status filter
+			if (eventsStatusFilter !== 'all') {
+				const status = evt.status || 'upcoming';
+				if (status !== eventsStatusFilter) return false;
+			}
+			// Circuit filter
+			if (eventsCircuitFilter !== 'all' && evt.circuit !== eventsCircuitFilter) return false;
+			return true;
+		})
+		.sort((a, b) => {
+			// Sort by event date descending (upcoming first), then by creation date
+			if (a.eventDate && b.eventDate) {
+				return new Date(b.eventDate) - new Date(a.eventDate);
+			}
+			if (a.eventDate) return -1;
+			if (b.eventDate) return 1;
+			return new Date(b.createdAt) - new Date(a.createdAt);
+		})
+	);
+
+	// Paginated events
+	let paginatedEvents = $derived(
+		filteredEvents.slice((eventsPage - 1) * eventsPerPage, eventsPage * eventsPerPage)
+	);
+	let totalEventsPages = $derived(Math.ceil(filteredEvents.length / eventsPerPage));
+
+	// Get ticket stats for an event
+	function getEventTicketStats(eventId) {
+		return data.eventAnalytics?.ticketsByEvent?.[eventId] || { sold: 0, revenue: 0, refunded: 0 };
+	}
+
 	// Format currency helper
 	function formatCurrency(amount) {
 		return new Intl.NumberFormat('en-US', {
@@ -201,6 +306,16 @@
 	// Format date helper
 	function formatDate(date, options = { month: 'short', day: 'numeric', year: 'numeric' }) {
 		return new Date(date).toLocaleDateString('en-US', options);
+	}
+
+	// Get circuit border color
+	function getCircuitBorderColor(circuit) {
+		const colors = {
+			'Los Angeles': 'border-l-blue-500',
+			'New England': 'border-l-purple-500',
+			'St. Louis': 'border-l-green-500'
+		};
+		return colors[circuit] || 'border-l-gray-600';
 	}
 
 	// Filtered and sorted orders
@@ -256,46 +371,6 @@
 		ordersDateFilter;
 		ordersPage = 1;
 	});
-
-	// Generate SVG path for revenue trend chart
-	function generateChartPath(data, width, height, padding = 20) {
-		if (!data || data.length === 0) return '';
-
-		const maxValue = Math.max(...data.map((d) => d.total), 1);
-		const minValue = 0;
-		const xStep = (width - padding * 2) / Math.max(data.length - 1, 1);
-		const yScale = (height - padding * 2) / (maxValue - minValue || 1);
-
-		const points = data.map((d, i) => {
-			const x = padding + i * xStep;
-			const y = height - padding - (d.total - minValue) * yScale;
-			return `${x},${y}`;
-		});
-
-		return `M ${points.join(' L ')}`;
-	}
-
-	// Generate area path for chart fill
-	function generateAreaPath(data, width, height, padding = 20) {
-		if (!data || data.length === 0) return '';
-
-		const maxValue = Math.max(...data.map((d) => d.total), 1);
-		const minValue = 0;
-		const xStep = (width - padding * 2) / Math.max(data.length - 1, 1);
-		const yScale = (height - padding * 2) / (maxValue - minValue || 1);
-
-		const points = data.map((d, i) => {
-			const x = padding + i * xStep;
-			const y = height - padding - (d.total - minValue) * yScale;
-			return `${x},${y}`;
-		});
-
-		const baseline = height - padding;
-		const firstX = padding;
-		const lastX = padding + (data.length - 1) * xStep;
-
-		return `M ${firstX},${baseline} L ${points.join(' L ')} L ${lastX},${baseline} Z`;
-	}
 
 	// Sorting state for standings
 	let sortColumn = $state('points'); // 'points', 'winPct', 'record', 'events', 'top8'
@@ -395,31 +470,93 @@
 	<title>Admin Dashboard - AGE</title>
 </svelte:head>
 
-		<!-- Main Content -->
-		<main class="min-h-screen w-full">
-			<!-- Top Bar (Desktop only - mobile header is in layout) -->
-			<header class="sticky top-0 z-30 hidden border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm lg:block">
-				<div class="flex h-16 items-center justify-between px-8">
-					<div>
-						<h1 class="text-xl font-bold text-white">
-							{#if activeTab === 'overview'}Dashboard Overview
-							{:else if activeTab === 'events'}Events Management
-							{:else if activeTab === 'orders'}Order History
-							{:else if activeTab === 'staff'}Tournament Staff
-							{:else if activeTab === 'users'}User Management
-							{:else if activeTab === 'players'}Standings
-							{:else if activeTab === 'seasons'}Calendar
-							{/if}
-						</h1>
-					</div>
-					<div class="flex items-center gap-2 rounded-lg bg-gray-800/50 px-3 py-1.5">
-						<div class="h-2 w-2 animate-pulse rounded-full bg-green-400"></div>
-						<span class="text-sm text-gray-300">{data.user.email}</span>
+<div class="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950">
+	<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+		<!-- Admin Header Card - Only show on Overview tab -->
+		{#if activeTab === 'overview'}
+			<div class="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-gray-800/50 via-gray-900 to-gray-950 shadow-2xl shadow-black/20 mb-6">
+				<!-- Decorative elements -->
+				<div class="absolute inset-0 overflow-hidden pointer-events-none">
+					<div class="absolute -top-32 -right-32 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
+					<div class="absolute -bottom-32 -left-32 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl"></div>
+					<div class="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl"></div>
+					<!-- Grid pattern -->
+					<div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:32px_32px]"></div>
+				</div>
+
+				<div class="relative px-6 py-8 sm:px-10 sm:py-12">
+					<div class="flex flex-col sm:flex-row sm:items-start gap-6">
+						<!-- Admin Icon -->
+						<div class="relative shrink-0">
+							<div class="flex h-24 w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 shadow-2xl shadow-blue-500/20 ring-4 ring-blue-400/20 transition-transform hover:scale-105">
+								<svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+								</svg>
+							</div>
+							<!-- Admin badge -->
+							<div class="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 ring-2 ring-gray-800">
+								<div class="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-600">
+									<svg class="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+										<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+									</svg>
+								</div>
+							</div>
+						</div>
+
+						<!-- Admin info -->
+						<div class="flex-1 min-w-0">
+							<div class="flex flex-wrap items-center gap-3 mb-2">
+								<h1 class="text-2xl sm:text-3xl font-bold text-white truncate">
+									Admin Dashboard
+								</h1>
+								<span class="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-600/20 border border-amber-500/30 px-3 py-1 text-xs font-semibold text-amber-400 shadow-lg shadow-amber-500/10">
+									<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+										<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+									</svg>
+									Administrator
+								</span>
+							</div>
+							<p class="text-gray-400 text-sm mb-4">
+								Manage events, users, and tournament operations
+							</p>
+							<div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-500">
+								<span class="flex items-center gap-2">
+									<div class="h-2 w-2 animate-pulse rounded-full bg-green-400"></div>
+									<span class="truncate">{data.user.email}</span>
+								</span>
+								<span class="flex items-center gap-2">
+									<svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+									</svg>
+									{data.stats.totalEvents} Events
+								</span>
+								<span class="flex items-center gap-2">
+									<svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+									</svg>
+									{(data.allUsers || []).length} Users
+								</span>
+							</div>
+						</div>
+
+						<!-- Quick stats -->
+						<div class="hidden lg:flex items-start gap-4">
+							<div class="text-center px-4 py-2 rounded-xl bg-white/5 border border-white/5">
+								<div class="text-2xl font-bold text-white">{data.stats.totalOrders}</div>
+								<div class="text-xs text-gray-500 mt-0.5">Orders</div>
+							</div>
+							<div class="text-center px-4 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20">
+								<div class="text-2xl font-bold text-purple-400">{data.stats.premiumUsers}</div>
+								<div class="text-xs text-purple-500/80 mt-0.5">Premium</div>
+							</div>
+						</div>
 					</div>
 				</div>
-			</header>
+			</div>
+		{/if}
 
-			<div class="p-4 lg:p-8">
+		<!-- Main Content Area -->
+		<main>
 				<!-- Success/Error Messages -->
 				{#if form?.success}
 					<div
@@ -564,27 +701,29 @@
 					<div class="grid gap-6 lg:grid-cols-3">
 						<!-- Quick Actions -->
 						<div class="lg:col-span-1">
-							<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+							<div class="rounded-2xl border border-white/10 bg-gradient-to-br from-gray-800/30 to-gray-900/50 p-6 shadow-xl">
 								<h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
-									<svg
-										class="h-5 w-5 text-blue-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M13 10V3L4 14h7v7l9-11h-7z"
-										/>
-									</svg>
+									<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
+										<svg
+											class="h-4 w-4 text-blue-400"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M13 10V3L4 14h7v7l9-11h-7z"
+											/>
+										</svg>
+									</div>
 									Quick Actions
 								</h3>
 								<div class="space-y-3">
 									<a
 										href="/admin/events/new"
-										class="group flex items-center gap-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4 transition-all hover:border-blue-500/50 hover:bg-gray-800"
+										class="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4 transition-all hover:border-blue-500/30 hover:bg-blue-500/5"
 									>
 										<div
 											class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400 transition-colors group-hover:bg-blue-500/30"
@@ -599,14 +738,14 @@
 											</svg>
 										</div>
 										<div>
-											<div class="font-medium text-white">Create Event</div>
-											<div class="text-xs text-gray-400">Add a new tournament</div>
+											<div class="font-medium text-white group-hover:text-blue-400 transition-colors">Create Event</div>
+											<div class="text-xs text-gray-500">Add a new tournament</div>
 										</div>
 									</a>
 
 									<button
 										onclick={() => switchTab('users')}
-										class="group flex w-full items-center gap-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4 text-left transition-all hover:border-purple-500/50 hover:bg-gray-800"
+										class="group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition-all hover:border-purple-500/30 hover:bg-purple-500/5"
 									>
 										<div
 											class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20 text-purple-400 transition-colors group-hover:bg-purple-500/30"
@@ -621,17 +760,17 @@
 											</svg>
 										</div>
 										<div>
-											<div class="font-medium text-white">Manage Users</div>
-											<div class="text-xs text-gray-400">Update roles & permissions</div>
+											<div class="font-medium text-white group-hover:text-purple-400 transition-colors">Manage Users</div>
+											<div class="text-xs text-gray-500">Update roles & permissions</div>
 										</div>
 									</button>
 
 									<button
 										onclick={() => switchTab('staff')}
-										class="group flex w-full items-center gap-3 rounded-lg border border-gray-700 bg-gray-800/50 p-4 text-left transition-all hover:border-green-500/50 hover:bg-gray-800"
+										class="group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition-all hover:border-emerald-500/30 hover:bg-emerald-500/5"
 									>
 										<div
-											class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20 text-green-400 transition-colors group-hover:bg-green-500/30"
+											class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400 transition-colors group-hover:bg-emerald-500/30"
 										>
 											<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 												<path
@@ -643,8 +782,8 @@
 											</svg>
 										</div>
 										<div>
-											<div class="font-medium text-white">Staff Assignments</div>
-											<div class="text-xs text-gray-400">Manage tournament staff</div>
+											<div class="font-medium text-white group-hover:text-emerald-400 transition-colors">Staff Assignments</div>
+											<div class="text-xs text-gray-500">Manage tournament staff</div>
 										</div>
 									</button>
 								</div>
@@ -653,22 +792,24 @@
 
 						<!-- Recent Events -->
 						<div class="lg:col-span-2">
-							<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+							<div class="rounded-2xl border border-white/10 bg-gradient-to-br from-gray-800/30 to-gray-900/50 p-6 shadow-xl">
 								<div class="mb-4 flex items-center justify-between">
 									<h3 class="flex items-center gap-2 text-lg font-semibold text-white">
-										<svg
-											class="h-5 w-5 text-blue-400"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-											/>
-										</svg>
+										<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10">
+											<svg
+												class="h-4 w-4 text-cyan-400"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2"
+													d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+												/>
+											</svg>
+										</div>
 										Recent Events
 									</h3>
 									<button
@@ -683,11 +824,11 @@
 										{#each (data.events || []).slice(0, 5) as event, i}
 											<a
 												href="/admin/events/{event.id}"
-												class="group flex items-center justify-between rounded-lg border border-gray-700/50 bg-gray-800/30 p-4 transition-all hover:border-gray-600 hover:bg-gray-800/50"
+												class="group flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:border-white/10 hover:bg-white/5"
 											>
 												<div class="flex items-center gap-4">
 													<div
-														class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-700/50 text-sm font-bold text-gray-300"
+														class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-sm font-bold text-gray-400 group-hover:bg-cyan-500/10 group-hover:text-cyan-400 transition-colors"
 													>
 														{i + 1}
 													</div>
@@ -830,279 +971,301 @@
 
 				<!-- Events Tab -->
 				{#if activeTab === 'events'}
-					<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
-						<div
-							class="flex flex-col gap-3 border-b border-gray-800 bg-gray-800/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4"
-						>
-							<div class="flex items-center gap-3">
-								<div class="hidden h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20 sm:flex">
-									<svg
-										class="h-5 w-5 text-blue-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-										/>
-									</svg>
-								</div>
-								<div>
-									<h2 class="text-base font-semibold text-white sm:text-lg">All Events</h2>
-									<p class="text-xs text-gray-400 sm:text-sm">{(data.events || []).length} events total</p>
+					<div class="space-y-4">
+						<!-- Stats Cards -->
+						<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+							<div class="rounded-xl border border-white/10 bg-gray-900/50 p-4">
+								<div class="flex items-center gap-3">
+									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/20">
+										<svg class="h-5 w-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+										</svg>
+									</div>
+									<div>
+										<p class="text-xs text-gray-400">Total Events</p>
+										<p class="text-xl font-bold text-white">{data.eventAnalytics?.totalEvents || 0}</p>
+									</div>
 								</div>
 							</div>
-							<a
-								href="/admin/events/new"
-								class="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-3 py-2 text-sm font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-105 hover:shadow-blue-500/30"
-							>
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 4v16m8-8H4"
-									/>
-								</svg>
-								<span class="sm:inline">Create Event</span>
-							</a>
+							<div class="rounded-xl border border-white/10 bg-gray-900/50 p-4">
+								<div class="flex items-center gap-3">
+									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20">
+										<svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+										</svg>
+									</div>
+									<div>
+										<p class="text-xs text-gray-400">Upcoming</p>
+										<p class="text-xl font-bold text-green-400">{data.eventAnalytics?.upcomingEvents || 0}</p>
+									</div>
+								</div>
+							</div>
+							<div class="rounded-xl border border-white/10 bg-gray-900/50 p-4">
+								<div class="flex items-center gap-3">
+									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20">
+										<svg class="h-5 w-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+										</svg>
+									</div>
+									<div>
+										<p class="text-xs text-gray-400">Tickets Sold</p>
+										<p class="text-xl font-bold text-purple-400">{data.eventAnalytics?.totalTicketsSold || 0}</p>
+									</div>
+								</div>
+							</div>
+							<div class="rounded-xl border border-white/10 bg-gray-900/50 p-4">
+								<div class="flex items-center gap-3">
+									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20">
+										<svg class="h-5 w-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+										</svg>
+									</div>
+									<div>
+										<p class="text-xs text-gray-400">Revenue</p>
+										<p class="text-xl font-bold text-emerald-400">{formatCurrency(data.eventAnalytics?.totalTicketRevenue || 0)}</p>
+									</div>
+								</div>
+							</div>
 						</div>
 
-						<!-- Events - Mobile Card View -->
-						<div class="space-y-3 p-4 lg:hidden">
-							{#each data.events || [] as event}
-								<a
-									href="/admin/events/{event.id}"
-									class="block rounded-lg border border-gray-700 bg-gray-800/30 p-4 transition-colors hover:border-gray-600"
-								>
-									<div class="flex items-start justify-between gap-3">
-										<div class="flex items-center gap-3 min-w-0">
-											<div
-												class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-700/50 text-sm font-bold text-gray-300"
-											>
-												{event.title.charAt(0)}
-											</div>
-											<div class="min-w-0">
-												<p class="truncate text-sm font-medium text-white">{event.title}</p>
-												{#if event.circuit}
-													<p class="text-xs text-gray-500">{event.circuit}</p>
-												{/if}
-											</div>
-										</div>
-										<span class="shrink-0 text-sm font-semibold text-green-400">
-											${parseFloat(event.price).toFixed(2)}
-										</span>
-									</div>
-									<div class="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-700 pt-3">
-										{#if event.eventDate}
-											<span class="text-xs text-gray-400">
-												{new Date(event.eventDate).toLocaleDateString('en-US', {
-													month: 'short',
-													day: 'numeric',
-													year: 'numeric'
-												})}
-											</span>
-										{:else}
-											<span class="rounded-full bg-gray-700 px-2 py-0.5 text-xs text-gray-400">TBA</span>
-										{/if}
-										<span class="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400">
-											{event.format || 'N/A'}
-										</span>
-										{#if event.location}
-											<span class="text-xs text-gray-500">{event.location}</span>
-										{/if}
-									</div>
-								</a>
-							{:else}
-								<div class="rounded-lg border border-dashed border-gray-700 p-8 text-center">
-									<svg
-										class="mx-auto mb-4 h-10 w-10 text-gray-600"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-										/>
-									</svg>
-									<p class="text-gray-400">No events yet</p>
-									<a
-										href="/admin/events/new"
-										class="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 transition-colors"
-									>
-										<svg
-											class="h-4 w-4"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M12 4v16m8-8H4"
-											/>
-										</svg>
-										Create First Event
-									</a>
+						<!-- Circuit Breakdown -->
+						<div class="flex flex-wrap items-center gap-4 rounded-xl border border-white/10 bg-gray-900/50 px-4 py-3">
+							<span class="text-xs font-medium text-gray-500 uppercase tracking-wider">By Circuit:</span>
+							{#each (data.eventAnalytics?.byCircuit || []) as circuit}
+								<div class="flex items-center gap-2">
+									<div class="h-2.5 w-2.5 rounded-full {circuit.name === 'Los Angeles' ? 'bg-blue-500' : circuit.name === 'St. Louis' ? 'bg-green-500' : circuit.name === 'New England' ? 'bg-purple-500' : 'bg-gray-500'}"></div>
+									<span class="text-sm text-gray-300">{circuit.name || 'Other'}</span>
+									<span class="rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-white">{circuit.count}</span>
 								</div>
 							{/each}
 						</div>
 
-						<!-- Events - Desktop Table View -->
-						<div class="hidden overflow-x-auto lg:block">
-							<table class="w-full">
-								<thead class="bg-gray-800/50">
-									<tr>
-										<th
-											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-											>Event</th
-										>
-										<th
-											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-											>Date</th
-										>
-										<th
-											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-											>Format</th
-										>
-										<th
-											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-											>Location</th
-										>
-										<th
-											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-											>Price</th
-										>
-										<th
-											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-											>Actions</th
-										>
-									</tr>
-								</thead>
-								<tbody class="divide-y divide-gray-800">
-									{#each data.events || [] as event}
-										<tr class="group transition-colors hover:bg-gray-800/50">
-											<td class="px-6 py-4">
-												<div class="flex items-center gap-3">
-													<div
-														class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-700/50 text-sm font-bold text-gray-300"
-													>
-														{event.title.charAt(0)}
-													</div>
-													<div>
-														<div
-															class="font-medium text-white transition-colors group-hover:text-blue-400"
-														>
-															{event.title}
-														</div>
-														{#if event.circuit}
-															<div class="text-xs text-gray-500">{event.circuit}</div>
-														{/if}
-													</div>
-												</div>
-											</td>
-											<td class="px-6 py-4">
-												{#if event.eventDate}
-													<div class="text-sm text-gray-300">
-														{new Date(event.eventDate).toLocaleDateString('en-US', {
-															month: 'short',
-															day: 'numeric',
-															year: 'numeric'
-														})}
-													</div>
-												{:else}
-													<span class="rounded-full bg-gray-700 px-2 py-1 text-xs text-gray-400"
-														>TBA</span
-													>
-												{/if}
-											</td>
-											<td class="px-6 py-4">
-												<span
-													class="rounded-full bg-blue-500/20 px-2.5 py-1 text-xs font-medium text-blue-400"
-												>
-													{event.format || 'N/A'}
-												</span>
-											</td>
-											<td class="px-6 py-4 text-sm text-gray-400">
-												{event.location || 'TBA'}
-											</td>
-											<td class="px-6 py-4">
-												<span class="text-sm font-semibold text-green-400"
-													>${parseFloat(event.price).toFixed(2)}</span
-												>
-											</td>
-											<td class="px-6 py-4">
-												<a
-													href="/admin/events/{event.id}"
-													class="inline-flex items-center gap-1.5 rounded-lg bg-gray-700 px-3 py-1.5 text-sm font-medium text-white transition-all hover:bg-gray-600"
-												>
-													Manage
-													<svg
-														class="h-4 w-4"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M9 5l7 7-7 7"
-														/>
-													</svg>
-												</a>
-											</td>
-										</tr>
-									{:else}
-										<tr>
-											<td colspan="6" class="px-6 py-12 text-center">
-												<div class="flex flex-col items-center">
-													<svg
-														class="h-12 w-12 text-gray-600 mb-4"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-														/>
-													</svg>
-													<p class="text-gray-400">No events yet</p>
-													<a
-														href="/admin/events/new"
-														class="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 transition-colors"
-													>
-														<svg
-															class="h-4 w-4"
-															fill="none"
-															stroke="currentColor"
-															viewBox="0 0 24 24"
-														>
-															<path
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																stroke-width="2"
-																d="M12 4v16m8-8H4"
-															/>
-														</svg>
-														Create First Event
-													</a>
-												</div>
-											</td>
-										</tr>
+						<!-- Search, Filters & Create Button -->
+						<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+							<!-- Search -->
+							<div class="relative flex-1 sm:max-w-xs">
+								<svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+								</svg>
+								<input
+									type="text"
+									bind:value={eventsSearchQuery}
+									placeholder="Search events..."
+									class="w-full rounded-lg border border-white/10 bg-gray-800 py-2 pl-9 pr-8 text-sm text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+								/>
+								{#if eventsSearchQuery}
+									<button
+										type="button"
+										onclick={() => eventsSearchQuery = ''}
+										class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+										aria-label="Clear search"
+									>
+										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+										</svg>
+									</button>
+								{/if}
+							</div>
+
+							<!-- Filters & Create -->
+							<div class="flex flex-wrap items-center gap-2">
+								<select
+									bind:value={eventsStatusFilter}
+									class="rounded-lg border border-white/10 bg-gray-800 px-3 py-2 text-sm text-white focus:border-cyan-500 focus:outline-none"
+								>
+									<option value="all">All Status</option>
+									<option value="upcoming">Upcoming</option>
+									<option value="in_progress">In Progress</option>
+									<option value="completed">Completed</option>
+									<option value="cancelled">Cancelled</option>
+								</select>
+								<select
+									bind:value={eventsCircuitFilter}
+									class="rounded-lg border border-white/10 bg-gray-800 px-3 py-2 text-sm text-white focus:border-cyan-500 focus:outline-none"
+								>
+									<option value="all">All Circuits</option>
+									{#each data.eventAnalytics?.byCircuit || [] as circuit}
+										<option value={circuit.name}>{circuit.name}</option>
 									{/each}
-								</tbody>
-							</table>
+								</select>
+								<a
+									href="/admin/events/new"
+									class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/30"
+								>
+									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+									</svg>
+									Create Event
+								</a>
+							</div>
+						</div>
+
+						<!-- Events List -->
+						<div class="overflow-hidden rounded-xl border border-white/10 bg-gray-900/50">
+							<div class="flex items-center justify-between border-b border-white/10 bg-gray-800/30 px-4 py-2.5">
+								<p class="text-sm text-gray-400">{filteredEvents.length} events</p>
+								{#if filteredEvents.length !== (data.events || []).length}
+									<button
+										onclick={() => { eventsSearchQuery = ''; eventsStatusFilter = 'all'; eventsCircuitFilter = 'all'; }}
+										class="text-xs text-cyan-400 hover:text-cyan-300"
+									>
+										Clear filters
+									</button>
+								{/if}
+							</div>
+
+							<!-- Mobile Card View -->
+							<div class="divide-y divide-white/5 sm:hidden">
+								{#each paginatedEvents as event}
+									{@const ticketStats = getEventTicketStats(event.id)}
+									<a
+										href="/admin/events/{event.id}"
+										class="flex items-center gap-3 p-4 transition-colors hover:bg-white/5 active:bg-white/10"
+									>
+										<!-- Circuit Color Indicator -->
+										<div class="w-1 self-stretch rounded-full {event.circuit === 'Los Angeles' ? 'bg-blue-500' : event.circuit === 'St. Louis' ? 'bg-green-500' : event.circuit === 'New England' ? 'bg-purple-500' : 'bg-gray-600'}"></div>
+
+										<div class="flex-1 min-w-0">
+											<div class="flex items-start justify-between gap-2">
+												<div class="min-w-0">
+													<p class="truncate font-medium text-white">{event.title}</p>
+													<div class="mt-1 flex flex-wrap items-center gap-2">
+														{#if event.circuit}
+															<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium {event.circuit === 'Los Angeles' ? 'bg-blue-500/20 text-blue-400' : event.circuit === 'St. Louis' ? 'bg-green-500/20 text-green-400' : event.circuit === 'New England' ? 'bg-purple-500/20 text-purple-400' : 'bg-gray-500/20 text-gray-400'}">
+																{event.circuit}
+															</span>
+														{/if}
+														<span class="rounded-full px-2 py-0.5 text-xs font-medium capitalize {event.status === 'completed' ? 'bg-green-500/20 text-green-400' : event.status === 'in_progress' ? 'bg-amber-500/20 text-amber-400' : event.status === 'cancelled' ? 'bg-red-500/20 text-red-400' : 'bg-cyan-500/20 text-cyan-400'}">
+															{event.status || 'upcoming'}
+														</span>
+													</div>
+												</div>
+												<svg class="h-5 w-5 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+												</svg>
+											</div>
+											<div class="mt-2 flex items-center gap-4 text-xs text-gray-500">
+												<span>{event.eventDate ? formatDate(event.eventDate) : 'No date'}</span>
+												{#if ticketStats.sold > 0}
+													<span>{ticketStats.sold} tickets</span>
+												{/if}
+											</div>
+										</div>
+									</a>
+								{:else}
+									<div class="p-8 text-center">
+										<svg class="mx-auto mb-3 h-10 w-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+										</svg>
+										<p class="text-gray-400">{eventsSearchQuery || eventsStatusFilter !== 'all' || eventsCircuitFilter !== 'all' ? 'No events match your filters' : 'No events yet'}</p>
+									</div>
+								{/each}
+							</div>
+
+							<!-- Desktop Table View -->
+							<div class="hidden sm:block">
+								<table class="w-full">
+									<thead class="bg-gray-800/50">
+										<tr>
+											<th class="px-4 py-3 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase">Event</th>
+											<th class="px-4 py-3 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase">Circuit</th>
+											<th class="px-4 py-3 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase">Date</th>
+											<th class="px-4 py-3 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase">Status</th>
+											<th class="px-4 py-3 text-right text-xs font-semibold tracking-wider text-gray-400 uppercase">Tickets</th>
+											<th class="px-4 py-3 text-right text-xs font-semibold tracking-wider text-gray-400 uppercase">Revenue</th>
+										</tr>
+									</thead>
+									<tbody class="divide-y divide-white/5">
+										{#each paginatedEvents as event}
+											{@const ticketStats = getEventTicketStats(event.id)}
+											<tr
+												class="group cursor-pointer transition-colors hover:bg-white/5"
+												onclick={() => window.location.href = `/admin/events/${event.id}`}
+											>
+												<td class="px-4 py-3">
+													<div class="flex items-center gap-3">
+														<div class="w-1 h-8 rounded-full {event.circuit === 'Los Angeles' ? 'bg-blue-500' : event.circuit === 'St. Louis' ? 'bg-green-500' : event.circuit === 'New England' ? 'bg-purple-500' : 'bg-gray-600'}"></div>
+														<div class="min-w-0">
+															<p class="truncate font-medium text-white group-hover:text-cyan-400 transition-colors">{event.title}</p>
+															<p class="text-xs text-gray-500">{event.format || 'N/A'}</p>
+														</div>
+													</div>
+												</td>
+												<td class="px-4 py-3">
+													{#if event.circuit}
+														<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {event.circuit === 'Los Angeles' ? 'bg-blue-500/20 text-blue-400' : event.circuit === 'St. Louis' ? 'bg-green-500/20 text-green-400' : event.circuit === 'New England' ? 'bg-purple-500/20 text-purple-400' : 'bg-gray-500/20 text-gray-400'}">
+															{event.circuit}
+														</span>
+													{:else}
+														<span class="text-gray-500">—</span>
+													{/if}
+												</td>
+												<td class="px-4 py-3">
+													{#if event.eventDate}
+														<span class="text-sm text-gray-300">{formatDate(event.eventDate)}</span>
+													{:else}
+														<span class="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-400">No Date</span>
+													{/if}
+												</td>
+												<td class="px-4 py-3">
+													<span class="rounded-full px-2.5 py-1 text-xs font-medium capitalize {event.status === 'completed' ? 'bg-green-500/20 text-green-400' : event.status === 'in_progress' ? 'bg-amber-500/20 text-amber-400' : event.status === 'cancelled' ? 'bg-red-500/20 text-red-400' : 'bg-cyan-500/20 text-cyan-400'}">
+														{event.status || 'upcoming'}
+													</span>
+												</td>
+												<td class="px-4 py-3 text-right">
+													<span class="text-sm font-medium text-white">{ticketStats.sold}</span>
+												</td>
+												<td class="px-4 py-3 text-right">
+													<span class="text-sm font-medium text-emerald-400">{formatCurrency(ticketStats.revenue)}</span>
+												</td>
+											</tr>
+										{:else}
+											<tr>
+												<td colspan="6" class="px-4 py-12 text-center">
+													<svg class="mx-auto h-10 w-10 text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+													</svg>
+													<p class="text-gray-400">{eventsSearchQuery || eventsStatusFilter !== 'all' || eventsCircuitFilter !== 'all' ? 'No events match your filters' : 'No events yet'}</p>
+													{#if !eventsSearchQuery && eventsStatusFilter === 'all' && eventsCircuitFilter === 'all'}
+														<a
+															href="/admin/events/new"
+															class="mt-3 inline-flex items-center gap-2 rounded-lg bg-cyan-500 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-600 transition-colors"
+														>
+															<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+															</svg>
+															Create First Event
+														</a>
+													{/if}
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
+
+							<!-- Pagination -->
+							{#if totalEventsPages > 1}
+								<div class="flex items-center justify-between border-t border-white/10 bg-gray-800/30 px-4 py-3">
+									<p class="text-sm text-gray-400">Page {eventsPage} of {totalEventsPages}</p>
+									<div class="flex gap-2">
+										<button
+											onclick={() => eventsPage = Math.max(1, eventsPage - 1)}
+											disabled={eventsPage === 1}
+											class="rounded-lg border border-white/10 bg-gray-800 px-3 py-1.5 text-sm text-white transition-colors hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+										>
+											Previous
+										</button>
+										<button
+											onclick={() => eventsPage = Math.min(totalEventsPages, eventsPage + 1)}
+											disabled={eventsPage === totalEventsPages}
+											class="rounded-lg border border-white/10 bg-gray-800 px-3 py-1.5 text-sm text-white transition-colors hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+										>
+											Next
+										</button>
+									</div>
+								</div>
+							{/if}
 						</div>
 					</div>
 				{/if}
@@ -1787,237 +1950,27 @@
 				<!-- Orders Tab -->
 				{#if activeTab === 'orders'}
 					<div class="space-y-6">
-						<!-- Revenue Overview Cards -->
-						<div class="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
-							<!-- Today's Revenue -->
-							<div class="group relative overflow-hidden rounded-lg sm:rounded-xl border border-blue-500/30 bg-gradient-to-br from-blue-500/20 to-blue-600/10 p-3 sm:p-5 transition-all hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10">
-								<div class="flex items-center justify-between">
-									<div>
-										<p class="text-xs sm:text-sm font-medium text-blue-300">Today</p>
-										<p class="mt-0.5 sm:mt-1 text-lg sm:text-2xl font-bold text-white">{formatCurrency(data.revenueStats?.today || 0)}</p>
-									</div>
-									<div class="hidden sm:flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/20">
-										<svg class="h-6 w-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-										</svg>
-									</div>
+						<!-- Quick Stats Bar -->
+						<div class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-800 bg-gray-900/50 p-4">
+							<div class="flex flex-wrap items-center gap-6">
+								<div>
+									<p class="text-xs text-gray-500">Total Orders</p>
+									<p class="text-lg font-bold text-white">{data.stats?.totalOrders || 0}</p>
+								</div>
+								<div>
+									<p class="text-xs text-gray-500">This Month</p>
+									<p class="text-lg font-bold text-emerald-400">{formatCurrency(data.revenueStats?.month || 0)}</p>
 								</div>
 							</div>
-
-							<!-- This Week's Revenue -->
-							<div class="group relative overflow-hidden rounded-lg sm:rounded-xl border border-green-500/30 bg-gradient-to-br from-green-500/20 to-green-600/10 p-3 sm:p-5 transition-all hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/10">
-								<div class="flex items-center justify-between">
-									<div>
-										<p class="text-xs sm:text-sm font-medium text-green-300">This Week</p>
-										<p class="mt-0.5 sm:mt-1 text-lg sm:text-2xl font-bold text-white">{formatCurrency(data.revenueStats?.week || 0)}</p>
-									</div>
-									<div class="hidden sm:flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/20">
-										<svg class="h-6 w-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-										</svg>
-									</div>
-								</div>
-							</div>
-
-							<!-- This Month's Revenue -->
-							<div class="group relative overflow-hidden rounded-lg sm:rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-500/20 to-purple-600/10 p-3 sm:p-5 transition-all hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10">
-								<div class="flex items-center justify-between">
-									<div>
-										<p class="text-xs sm:text-sm font-medium text-purple-300">This Month</p>
-										<p class="mt-0.5 sm:mt-1 text-lg sm:text-2xl font-bold text-white">{formatCurrency(data.revenueStats?.month || 0)}</p>
-									</div>
-									<div class="hidden sm:flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500/20">
-										<svg class="h-6 w-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-										</svg>
-									</div>
-								</div>
-							</div>
-
-							<!-- All Time Revenue -->
-							<div class="group relative overflow-hidden rounded-lg sm:rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/20 to-amber-600/10 p-3 sm:p-5 transition-all hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10">
-								<div class="flex items-center justify-between">
-									<div>
-										<p class="text-xs sm:text-sm font-medium text-amber-300">All Time</p>
-										<p class="mt-0.5 sm:mt-1 text-lg sm:text-2xl font-bold text-white">{formatCurrency(data.revenueStats?.allTime || 0)}</p>
-									</div>
-									<div class="hidden sm:flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/20">
-										<svg class="h-6 w-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-										</svg>
-									</div>
-								</div>
-							</div>
-						</div>
-
-						<!-- Key Metrics & Revenue by Type -->
-						<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-							<!-- Key Metrics -->
-							<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-5">
-								<h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Key Metrics</h3>
-								<div class="space-y-4">
-									<div class="flex items-center justify-between">
-										<span class="text-gray-400">Total Orders</span>
-										<span class="text-lg font-semibold text-white">{data.stats?.totalOrders || 0}</span>
-									</div>
-									<div class="flex items-center justify-between">
-										<span class="text-gray-400">Average Order Value</span>
-										<span class="text-lg font-semibold text-white">
-											{formatCurrency((data.revenueStats?.allTime || 0) / Math.max(data.stats?.totalOrders || 1, 1))}
-										</span>
-									</div>
-									<div class="flex items-center justify-between">
-										<span class="text-gray-400">Refund Rate</span>
-										<span class="text-lg font-semibold text-white">
-											{((data.refundStats?.refundedTickets || 0) / Math.max(data.refundStats?.totalTicketOrders || 1, 1) * 100).toFixed(1)}%
-										</span>
-									</div>
-									<div class="flex items-center justify-between">
-										<span class="text-gray-400">Total Customers</span>
-										<span class="text-lg font-semibold text-white">{data.customerInsights?.totalCustomers || 0}</span>
-									</div>
-								</div>
-							</div>
-
-							<!-- Revenue by Type -->
-							<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-5">
-								<h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Revenue by Type</h3>
-								<div class="space-y-3">
-									{#each data.revenueStats?.byType || [] as typeData}
-										{@const totalRevenue = data.revenueStats?.allTime || 1}
-										{@const percentage = ((typeData.total / totalRevenue) * 100).toFixed(1)}
-										<div>
-											<div class="mb-1 flex items-center justify-between text-sm">
-												<span class="capitalize {typeData.type === 'ticket' ? 'text-blue-400' : typeData.type === 'course' ? 'text-purple-400' : typeData.type === 'subscription' ? 'text-green-400' : 'text-gray-400'}">
-													{typeData.type || 'Other'}
-												</span>
-												<span class="text-gray-300">{formatCurrency(typeData.total)} ({percentage}%)</span>
-											</div>
-											<div class="h-2 overflow-hidden rounded-full bg-gray-700">
-												<div
-													class="h-full rounded-full {typeData.type === 'ticket' ? 'bg-blue-500' : typeData.type === 'course' ? 'bg-purple-500' : typeData.type === 'subscription' ? 'bg-green-500' : 'bg-gray-500'}"
-													style="width: {percentage}%"
-												></div>
-											</div>
-											<p class="mt-1 text-xs text-gray-500">{typeData.count} orders</p>
-										</div>
-									{:else}
-										<p class="text-gray-500">No revenue data yet</p>
-									{/each}
-								</div>
-							</div>
-						</div>
-
-						<!-- Revenue Trend Chart -->
-						<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-5">
-							<h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Revenue Trend (Last 30 Days)</h3>
-							{#if data.dailyRevenueTrend && data.dailyRevenueTrend.length > 0}
-								<div class="relative h-48">
-									<svg class="h-full w-full" viewBox="0 0 600 180" preserveAspectRatio="none">
-										<!-- Grid lines -->
-										<line x1="20" y1="20" x2="20" y2="160" stroke="#374151" stroke-width="1" />
-										<line x1="20" y1="160" x2="580" y2="160" stroke="#374151" stroke-width="1" />
-										<line x1="20" y1="90" x2="580" y2="90" stroke="#374151" stroke-width="0.5" stroke-dasharray="4" />
-										<!-- Area fill -->
-										<path d={generateAreaPath(data.dailyRevenueTrend, 600, 180)} fill="url(#chartGradient)" opacity="0.3" />
-										<!-- Line -->
-										<path d={generateChartPath(data.dailyRevenueTrend, 600, 180)} fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-										<!-- Gradient definition -->
-										<defs>
-											<linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-												<stop offset="0%" stop-color="#10b981" />
-												<stop offset="100%" stop-color="#10b981" stop-opacity="0" />
-											</linearGradient>
-										</defs>
-									</svg>
-									<!-- Max value label -->
-									<div class="absolute left-0 top-2 text-xs text-gray-500">
-										{formatCurrency(Math.max(...data.dailyRevenueTrend.map(d => d.total)))}
-									</div>
-								</div>
-							{:else}
-								<div class="flex h-48 items-center justify-center text-gray-500">
-									No revenue data for the last 30 days
-								</div>
-							{/if}
-						</div>
-
-						<!-- Insights Section -->
-						<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-							<!-- Top Events -->
-							<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-5">
-								<h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Top Events by Revenue</h3>
-								<div class="space-y-3">
-									{#each data.topEvents || [] as event, i}
-										<div class="flex items-center justify-between">
-											<div class="flex items-center gap-2">
-												<span class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-xs font-bold text-blue-400">{i + 1}</span>
-												<span class="text-sm text-gray-300 truncate max-w-[140px]" title={event.eventTitle}>{event.eventTitle || 'Unknown Event'}</span>
-											</div>
-											<span class="text-sm font-semibold text-green-400">{formatCurrency(event.totalRevenue)}</span>
-										</div>
-									{:else}
-										<p class="text-sm text-gray-500">No event data yet</p>
-									{/each}
-								</div>
-							</div>
-
-							<!-- Top Customers -->
-							<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-5">
-								<h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Top Customers</h3>
-								<div class="space-y-3">
-									{#each data.customerInsights?.topCustomers || [] as customer, i}
-										<a
-											href="/admin/customers/{encodeURIComponent(customer.email)}"
-											class="flex w-full items-center justify-between rounded-lg p-1 -m-1 transition-colors hover:bg-gray-800/50"
-										>
-											<div class="flex items-center gap-2">
-												<span class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20 text-xs font-bold text-purple-400">{i + 1}</span>
-												<span class="text-sm text-gray-300 truncate max-w-[120px]" title={customer.email}>{customer.email}</span>
-											</div>
-											<span class="text-sm font-semibold text-green-400">{formatCurrency(customer.totalSpent)}</span>
-										</a>
-									{:else}
-										<p class="text-sm text-gray-500">No customer data yet</p>
-									{/each}
-								</div>
-							</div>
-
-							<!-- Customer Mix -->
-							<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-5">
-								<h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Customer Mix</h3>
-								{#if true}
-									{@const totalCustomers = (data.customerInsights?.newCustomers || 0) + (data.customerInsights?.returningCustomers || 0)}
-									{@const newPct = totalCustomers > 0 ? ((data.customerInsights?.newCustomers || 0) / totalCustomers * 100).toFixed(0) : 0}
-									{@const retPct = totalCustomers > 0 ? ((data.customerInsights?.returningCustomers || 0) / totalCustomers * 100).toFixed(0) : 0}
-									<div class="flex items-center justify-center">
-										<!-- Simple pie chart using conic-gradient -->
-										<div class="relative h-32 w-32">
-											<div
-												class="h-full w-full rounded-full"
-												style="background: conic-gradient(#10b981 0% {newPct}%, #3b82f6 {newPct}% 100%)"
-											></div>
-											<div class="absolute inset-4 rounded-full bg-gray-900"></div>
-										</div>
-									</div>
-									<div class="mt-4 space-y-2">
-										<div class="flex items-center justify-between">
-											<div class="flex items-center gap-2">
-												<div class="h-3 w-3 rounded-full bg-green-500"></div>
-												<span class="text-sm text-gray-400">New Customers</span>
-											</div>
-											<span class="text-sm font-semibold text-white">{data.customerInsights?.newCustomers || 0} ({newPct}%)</span>
-										</div>
-										<div class="flex items-center justify-between">
-											<div class="flex items-center gap-2">
-												<div class="h-3 w-3 rounded-full bg-blue-500"></div>
-												<span class="text-sm text-gray-400">Returning</span>
-											</div>
-											<span class="text-sm font-semibold text-white">{data.customerInsights?.returningCustomers || 0} ({retPct}%)</span>
-										</div>
-									</div>
-								{/if}
-							</div>
+							<a
+								href="/admin/analytics"
+								class="inline-flex items-center gap-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-sm font-medium text-indigo-400 transition-colors hover:bg-indigo-500/20"
+							>
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+								</svg>
+								View Full Analytics
+							</a>
 						</div>
 
 						<!-- Search & Filters -->
@@ -2253,173 +2206,6 @@
 									>
 										Next
 									</button>
-								</div>
-							{/if}
-						</div>
-					</div>
-				{/if}
-
-				<!-- Tournament Staff Tab -->
-				{#if activeTab === 'staff'}
-					<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
-						<div
-							class="flex flex-col gap-3 border-b border-gray-800 bg-gray-800/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4"
-						>
-							<div class="flex items-center gap-3">
-								<div class="hidden h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20 sm:flex">
-									<svg
-										class="h-5 w-5 text-purple-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-										/>
-									</svg>
-								</div>
-								<div>
-									<h2 class="text-base font-semibold text-white sm:text-lg">Tournament Staff</h2>
-									<p class="text-xs text-gray-400 sm:text-sm">{(data.tournamentStaff || []).length} staff members</p>
-								</div>
-							</div>
-							<button
-								onclick={() => switchTab('users')}
-								class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2 text-sm font-medium text-gray-300 transition-all hover:bg-gray-700 hover:text-white"
-							>
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 4v16m8-8H4"
-									/>
-								</svg>
-								Add Staff
-							</button>
-						</div>
-
-						<div class="p-4 sm:p-6">
-							{#if (data.tournamentStaff || []).length === 0}
-								<div class="rounded-xl border border-dashed border-gray-700 p-8 sm:p-12 text-center">
-									<svg
-										class="mx-auto mb-4 h-10 w-10 sm:h-12 sm:w-12 text-gray-600"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-										/>
-									</svg>
-									<p class="text-gray-400">No tournament staff members yet</p>
-									<p class="mt-2 text-xs sm:text-sm text-gray-500">
-										Assign the "tournament staff" role to users in User Management
-									</p>
-									<button
-										onclick={() => switchTab('users')}
-										class="mt-4 inline-flex items-center gap-2 rounded-lg bg-purple-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-600"
-									>
-										Go to User Management
-									</button>
-								</div>
-							{:else}
-								<div class="space-y-4 sm:space-y-6">
-									{#each data.tournamentStaff || [] as staff}
-										<div class="rounded-xl border border-gray-700 bg-gray-800/30 p-4 sm:p-5">
-											<div class="mb-3 sm:mb-4 flex items-center gap-3 sm:gap-4">
-												<div
-													class="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-violet-600 text-base sm:text-lg font-bold text-white"
-												>
-													{staff.email.charAt(0).toUpperCase()}
-												</div>
-												<div class="min-w-0 flex-1">
-													<h3 class="truncate text-sm sm:text-base font-semibold text-white">{staff.email}</h3>
-													<span
-														class="inline-flex items-center rounded-full bg-purple-500/20 px-2 py-0.5 text-xs font-medium text-purple-400"
-													>
-														Tournament Staff
-													</span>
-												</div>
-											</div>
-
-											<div class="space-y-2 sm:space-y-3">
-												<p class="flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-300">
-													<svg
-														class="h-4 w-4 text-gray-500"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-														/>
-													</svg>
-													Event Assignments
-												</p>
-												<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-													{#each data.events || [] as event}
-														{@const isAssigned = isStaffAssigned(staff.id, event.id)}
-														<div
-															class="flex items-center justify-between rounded-lg border p-2.5 sm:p-3 transition-all {isAssigned
-																? 'border-green-500/30 bg-green-500/10'
-																: 'border-gray-700 bg-gray-800/50 hover:border-gray-600'}"
-														>
-															<div class="min-w-0 flex-1">
-																<p
-																	class="truncate text-xs sm:text-sm font-medium {isAssigned
-																		? 'text-green-400'
-																		: 'text-gray-300'}"
-																>
-																	{event.title}
-																</p>
-																<p class="text-xs text-gray-500">
-																	{event.eventDate
-																		? new Date(event.eventDate).toLocaleDateString('en-US', {
-																				month: 'short',
-																				day: 'numeric'
-																			})
-																		: 'TBA'}
-																</p>
-															</div>
-															{#if isAssigned}
-																<form method="POST" action="?/unassignStaff" use:enhance>
-																	<input type="hidden" name="staffId" value={staff.id} />
-																	<input type="hidden" name="eventId" value={event.id} />
-																	<button
-																		type="submit"
-																		class="ml-2 shrink-0 rounded-md bg-red-500/20 px-2 sm:px-2.5 py-1 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/30"
-																	>
-																		Remove
-																	</button>
-																</form>
-															{:else}
-																<form method="POST" action="?/assignStaff" use:enhance>
-																	<input type="hidden" name="staffId" value={staff.id} />
-																	<input type="hidden" name="eventId" value={event.id} />
-																	<button
-																		type="submit"
-																		class="ml-2 shrink-0 rounded-md bg-green-500/20 px-2 sm:px-2.5 py-1 text-xs font-medium text-green-400 transition-colors hover:bg-green-500/30"
-																	>
-																		Assign
-																	</button>
-																</form>
-															{/if}
-														</div>
-													{/each}
-												</div>
-											</div>
-										</div>
-									{/each}
 								</div>
 							{/if}
 						</div>
@@ -3250,8 +3036,9 @@
 						</div>
 					</div>
 				{/if}
-			</div>
 		</main>
+	</div>
+</div>
 
 <!-- Create Standing Modal -->
 {#if showCreateStandingModal}

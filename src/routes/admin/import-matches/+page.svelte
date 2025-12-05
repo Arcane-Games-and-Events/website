@@ -27,178 +27,201 @@
 	<title>Import Match History - Admin</title>
 </svelte:head>
 
-<div class="container mx-auto px-4 py-8 max-w-7xl">
-	<div class="mb-8">
-		<h1 class="text-3xl font-bold text-white">Import Match History</h1>
-		<p class="text-gray-400 mt-2">Import pairings data for AGE Circuit events (derived from standings data)</p>
-	</div>
+<div class="px-4 py-8 sm:px-6 lg:px-8">
+	<div class="mx-auto max-w-7xl">
+		<!-- Page Header -->
+		<div class="relative mb-8 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-teal-900/30 via-gray-900 to-gray-950 p-6 shadow-2xl shadow-teal-500/5">
+			<!-- Decorative elements -->
+			<div class="absolute top-0 right-0 -mt-16 -mr-16 h-64 w-64 rounded-full bg-teal-500/10 blur-3xl"></div>
+			<div class="absolute bottom-0 left-0 -mb-16 -ml-16 h-48 w-48 rounded-full bg-cyan-500/10 blur-3xl"></div>
 
-	<!-- Success/Error Messages -->
-	{#if form?.success}
-		<div class="rounded-lg bg-green-500/10 border border-green-500/30 p-4 mb-6">
-			<p class="text-green-400">{form.message}</p>
-		</div>
-	{/if}
-	{#if form?.error}
-		<div class="rounded-lg bg-red-500/10 border border-red-500/30 p-4 mb-6">
-			<p class="text-red-400">{form.error}</p>
-		</div>
-	{/if}
-
-	<!-- Stats -->
-	<div class="flex gap-4 mb-6">
-		<div class="text-center px-4">
-			<p class="text-2xl font-bold text-white">{data.totalEvents}</p>
-			<p class="text-xs text-gray-400">Total Events</p>
-		</div>
-		<div class="text-center px-4 border-l border-gray-700">
-			<p class="text-2xl font-bold text-green-400">{data.eventsWithMatches}</p>
-			<p class="text-xs text-gray-400">Have Data</p>
-		</div>
-		<div class="text-center px-4 border-l border-gray-700">
-			<p class="text-2xl font-bold text-red-400">{data.eventsMissingMatches}</p>
-			<p class="text-xs text-gray-400">Missing</p>
-		</div>
-	</div>
-
-	<!-- Circuits Grid -->
-	<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-		{#each data.circuitGroups as circuit}
-			<div class="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden">
-				<!-- Circuit Header -->
-				<div class="bg-gray-900 px-4 py-3 border-b border-gray-800">
-					<div class="flex items-center justify-between">
-						<div>
-							<h2 class="text-lg font-semibold text-white">{circuit.name}</h2>
-							<p class="text-xs text-gray-500">{circuit.totalPlayers} players in standings</p>
-						</div>
-						<div class="flex gap-3 text-sm">
-							<span class="text-green-400">{circuit.eventsWithMatches} done</span>
-							<span class="text-gray-500">|</span>
-							<span class="text-red-400">{circuit.eventsMissing} missing</span>
-						</div>
+			<div class="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+				<div class="flex items-center gap-4">
+					<div class="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg shadow-teal-500/25">
+						<svg class="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+						</svg>
 					</div>
-					{#if circuit.totalMatches > 0}
-						<p class="text-xs text-gray-500 mt-1">{circuit.totalMatches.toLocaleString()} total matches imported</p>
-					{/if}
+					<div>
+						<h1 class="text-2xl font-bold text-white sm:text-3xl">Import Match History</h1>
+						<p class="mt-1 text-gray-400">Import pairings data for AGE Circuit events</p>
+					</div>
 				</div>
 
-				<!-- Events List -->
-				<div class="divide-y divide-gray-800">
-					{#each circuit.events as eventData (getEventKey(eventData))}
-						<button
-							type="button"
-							class="w-full px-4 py-3 text-left transition-colors hover:bg-gray-800/50
-								{selectedEventKey === getEventKey(eventData) ? 'bg-blue-900/20 border-l-2 border-blue-500' : ''}"
-							onclick={() => selectEvent(eventData.season, eventData.circuit, eventData.month)}
-						>
-							<div class="flex items-center justify-between">
-								<div class="min-w-0 flex-1">
-									<h3 class="font-medium text-white truncate">{eventData.title}</h3>
-									<p class="text-xs text-gray-500">
-										{eventData.month} {eventData.season}
-										{#if eventData.playerCount > 0}
-											&middot; {eventData.playerCount} players
-										{/if}
-									</p>
-								</div>
-								<div class="ml-3 flex-shrink-0 flex items-center gap-2">
-									{#if eventData.matchCount > 0}
-										<span class="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">
-											{eventData.matchCount} matches
-										</span>
-									{:else}
-										<span class="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded">
-											No data
-										</span>
-									{/if}
-								</div>
-							</div>
-						</button>
-					{/each}
+				<!-- Stats -->
+				<div class="flex items-center gap-6 rounded-xl border border-white/10 bg-white/5 px-6 py-3">
+					<div class="text-center">
+						<p class="text-2xl font-bold text-white">{data.totalEvents}</p>
+						<p class="text-xs text-gray-400">Total Events</p>
+					</div>
+					<div class="h-8 w-px bg-white/10"></div>
+					<div class="text-center">
+						<p class="text-2xl font-bold text-green-400">{data.eventsWithMatches}</p>
+						<p class="text-xs text-gray-400">Have Data</p>
+					</div>
+					<div class="h-8 w-px bg-white/10"></div>
+					<div class="text-center">
+						<p class="text-2xl font-bold text-red-400">{data.eventsMissingMatches}</p>
+						<p class="text-xs text-gray-400">Missing</p>
+					</div>
 				</div>
 			</div>
-		{/each}
-	</div>
+		</div>
 
-	<!-- Import Form (shows when event selected) -->
-	{#if selectedEventKey && selectedEvent}
-		<div class="fixed bottom-0 left-0 right-0 lg:left-64 bg-gray-950 border-t border-gray-700 shadow-2xl">
-			<div class="container mx-auto max-w-5xl p-4">
-				<!-- Event Info Header -->
-				<div class="flex items-start justify-between mb-3">
-					<div>
-						<h3 class="text-lg font-semibold text-white">{selectedEvent.title}</h3>
-						<p class="text-sm text-gray-400">
-							{selectedEvent.circuit} &middot; {selectedEvent.month} {selectedEvent.season}
-							&middot; {selectedEvent.playerCount} players in standings
-						</p>
+		<!-- Success/Error Messages -->
+		{#if form?.success}
+			<div class="mb-6 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
+				<p class="text-green-400">{form.message}</p>
+			</div>
+		{/if}
+		{#if form?.error}
+			<div class="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
+				<p class="text-red-400">{form.error}</p>
+			</div>
+		{/if}
+
+		<!-- Circuits Grid -->
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+			{#each data.circuitGroups as circuit}
+				<div class="overflow-hidden rounded-xl border border-white/10 bg-gray-900/50">
+					<!-- Circuit Header -->
+					<div class="border-b border-white/10 bg-gray-800/50 px-5 py-4">
+						<div class="flex items-center justify-between">
+							<div>
+								<h2 class="text-lg font-semibold text-white">{circuit.name}</h2>
+								<p class="text-xs text-gray-500">{circuit.totalPlayers} players in standings</p>
+							</div>
+							<div class="flex items-center gap-3 text-sm">
+								<span class="rounded-full bg-green-500/20 px-2.5 py-1 text-xs font-medium text-green-400">{circuit.eventsWithMatches} done</span>
+								<span class="rounded-full bg-red-500/20 px-2.5 py-1 text-xs font-medium text-red-400">{circuit.eventsMissing} missing</span>
+							</div>
+						</div>
+						{#if circuit.totalMatches > 0}
+							<p class="mt-2 text-xs text-gray-500">{circuit.totalMatches.toLocaleString()} total matches imported</p>
+						{/if}
 					</div>
-					<button
-						type="button"
-						onclick={() => selectedEventKey = null}
-						class="text-gray-400 hover:text-white p-1"
-					>
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-						</svg>
-					</button>
+
+					<!-- Events List -->
+					<div class="divide-y divide-white/5">
+						{#each circuit.events as eventData (getEventKey(eventData))}
+							<button
+								type="button"
+								class="w-full px-5 py-3.5 text-left transition-all hover:bg-white/5
+									{selectedEventKey === getEventKey(eventData) ? 'border-l-2 border-teal-500 bg-teal-500/10' : 'border-l-2 border-transparent'}"
+								onclick={() => selectEvent(eventData.season, eventData.circuit, eventData.month)}
+							>
+								<div class="flex items-center justify-between">
+									<div class="min-w-0 flex-1">
+										<h3 class="truncate font-medium text-white">{eventData.title}</h3>
+										<p class="text-xs text-gray-500">
+											{eventData.month} {eventData.season}
+											{#if eventData.playerCount > 0}
+												&middot; {eventData.playerCount} players
+											{/if}
+										</p>
+									</div>
+									<div class="ml-3 flex shrink-0 items-center gap-2">
+										{#if eventData.matchCount > 0}
+											<span class="rounded-full bg-green-500/20 px-2.5 py-1 text-xs font-medium text-green-400">
+												{eventData.matchCount} matches
+											</span>
+										{:else}
+											<span class="rounded-full bg-red-500/20 px-2.5 py-1 text-xs font-medium text-red-400">
+												No data
+											</span>
+										{/if}
+									</div>
+								</div>
+							</button>
+						{/each}
+					</div>
 				</div>
+			{/each}
+		</div>
 
-				<!-- CSV Format Info -->
-				<div class="bg-gray-900/50 border border-gray-800 rounded-lg p-3 mb-3">
-					<p class="text-xs text-gray-400 mb-1 font-medium">Expected CSV columns from GEM Pairings export:</p>
-					<p class="text-xs text-gray-500 font-mono">Round, Table, Player 1 Name, Player 1 GEM ID, Player 2 Name, Player 2 GEM ID, Result</p>
-					<p class="text-xs text-gray-500 mt-1">Result values: "1WIN" or "Player 1 Wins", "2WIN" or "Player 2 Wins", or empty for draw</p>
-				</div>
-
-				<!-- Upload Form -->
-				<form
-					method="POST"
-					action="?/importMatches"
-					enctype="multipart/form-data"
-					class="flex items-center gap-4"
-				>
-					<input type="hidden" name="eventCircuit" value={selectedEvent.circuit} />
-					<input type="hidden" name="eventMonth" value={selectedEvent.month} />
-					<input type="hidden" name="eventSeason" value={selectedEvent.season} />
-
-					{#if selectedEvent.matchCount > 0}
-						<div class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-3 py-2">
-							<p class="text-xs text-yellow-400">
-								<strong>Warning:</strong> This will replace {selectedEvent.matchCount} existing matches
+		<!-- Import Form (shows when event selected) -->
+		{#if selectedEventKey && selectedEvent}
+			<div class="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-gray-950/95 shadow-2xl backdrop-blur-sm lg:left-64">
+				<div class="mx-auto max-w-5xl p-4">
+					<!-- Event Info Header -->
+					<div class="mb-3 flex items-start justify-between">
+						<div>
+							<h3 class="text-lg font-semibold text-white">{selectedEvent.title}</h3>
+							<p class="text-sm text-gray-400">
+								{selectedEvent.circuit} &middot; {selectedEvent.month} {selectedEvent.season}
+								&middot; {selectedEvent.playerCount} players in standings
 							</p>
 						</div>
-					{/if}
-
-					<div class="flex-1">
-						<input
-							type="file"
-							id="pairings"
-							name="pairings"
-							accept=".csv"
-							required
-							bind:files={pairingsFile}
-							class="w-full text-sm rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-gray-100
-								file:mr-3 file:py-1 file:px-3 file:rounded file:border-0
-								file:text-sm file:font-semibold file:bg-blue-600 file:text-white"
-						/>
+						<button
+							type="button"
+							onclick={() => selectedEventKey = null}
+							class="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
+							aria-label="Close event panel"
+						>
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
 					</div>
 
-					<button
-						type="submit"
-						class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg text-white font-semibold transition-colors whitespace-nowrap"
+					<!-- CSV Format Info -->
+					<div class="mb-3 rounded-lg border border-white/10 bg-white/5 p-3">
+						<p class="mb-1 text-xs font-medium text-gray-400">Expected CSV columns from GEM Pairings export:</p>
+						<p class="font-mono text-xs text-gray-500">Round, Table, Player 1 Name, Player 1 GEM ID, Player 2 Name, Player 2 GEM ID, Result</p>
+						<p class="mt-1 text-xs text-gray-500">Result values: "1WIN" or "Player 1 Wins", "2WIN" or "Player 2 Wins", or empty for draw</p>
+					</div>
+
+					<!-- Upload Form -->
+					<form
+						method="POST"
+						action="?/importMatches"
+						enctype="multipart/form-data"
+						class="flex items-center gap-4"
 					>
-						Import Matches
-					</button>
-				</form>
+						<input type="hidden" name="eventCircuit" value={selectedEvent.circuit} />
+						<input type="hidden" name="eventMonth" value={selectedEvent.month} />
+						<input type="hidden" name="eventSeason" value={selectedEvent.season} />
+
+						{#if selectedEvent.matchCount > 0}
+							<div class="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-2">
+								<p class="text-xs text-yellow-400">
+									<strong>Warning:</strong> This will replace {selectedEvent.matchCount} existing matches
+								</p>
+							</div>
+						{/if}
+
+						<div class="flex-1">
+							<input
+								type="file"
+								id="pairings"
+								name="pairings"
+								accept=".csv"
+								required
+								bind:files={pairingsFile}
+								class="w-full rounded-lg border border-white/10 bg-gray-900 px-3 py-2 text-sm text-gray-100
+									file:mr-3 file:rounded file:border-0 file:bg-teal-600 file:px-3
+									file:py-1 file:text-sm file:font-semibold file:text-white"
+							/>
+						</div>
+
+						<button
+							type="submit"
+							class="whitespace-nowrap rounded-lg bg-gradient-to-r from-teal-600 to-cyan-600 px-6 py-2 font-semibold text-white shadow-lg shadow-teal-500/25 transition-all hover:from-teal-500 hover:to-cyan-500"
+						>
+							Import Matches
+						</button>
+					</form>
+				</div>
 			</div>
-		</div>
-		<!-- Spacer to prevent content from being hidden behind fixed footer -->
-		<div class="h-48"></div>
-	{:else if data.circuitGroups.length === 0}
-		<div class="bg-gray-900 border border-gray-700 rounded-lg p-8 text-center">
-			<p class="text-gray-400">No circuit events found in standings data</p>
-		</div>
-	{/if}
+			<!-- Spacer to prevent content from being hidden behind fixed footer -->
+			<div class="h-48"></div>
+		{:else if data.circuitGroups.length === 0}
+			<div class="mt-8 rounded-xl border border-white/10 bg-gray-900/50 p-12 text-center">
+				<svg class="mx-auto mb-4 h-12 w-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+				</svg>
+				<p class="text-gray-400">No circuit events found in standings data</p>
+			</div>
+		{/if}
+	</div>
 </div>

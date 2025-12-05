@@ -1,6 +1,6 @@
 <script>
 	import '../app.css';
-	import { page } from '$app/stores';
+	import { page, navigating } from '$app/stores';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	export let data;
@@ -12,6 +12,13 @@
 	// Admin pages have their own layout
 	$: isAdminPage = $page.url.pathname.startsWith('/admin');
 </script>
+
+<!-- Navigation Loading Indicator -->
+{#if $navigating}
+	<div class="fixed top-0 left-0 right-0 z-[9999] h-0.5">
+		<div class="h-full bg-blue-500 animate-loading-bar"></div>
+	</div>
+{/if}
 
 {#if isAuthPage}
 	<slot />

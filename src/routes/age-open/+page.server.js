@@ -293,6 +293,24 @@ export async function load({ url, setHeaders }) {
 
 		// === Calculate AGE Rating for each player in standings ===
 		if (standings.length > 0) {
+			// Pre-group standings by circuit/season for efficient rank lookup
+			const standingsByCircuitSeason = new Map();
+			for (const s of allStandings) {
+				const key = `${s.season}|${s.circuit}`;
+				if (!standingsByCircuitSeason.has(key)) {
+					standingsByCircuitSeason.set(key, []);
+				}
+				standingsByCircuitSeason.get(key).push(s);
+			}
+
+			// Sort each circuit/season group once (instead of sorting repeatedly in loop)
+			for (const [key, group] of standingsByCircuitSeason) {
+				group.sort(compareStandings);
+			}
+
+			// Cache for derived stats to avoid redundant calculations
+			const derivedStatsCache = new Map();
+
 			// Group by gemId/playerName to get aggregate stats (using allStandings from Promise.all)
 			const playerStatsMap = new Map();
 			for (const standing of allStandings) {
@@ -312,7 +330,12 @@ export async function load({ url, setHeaders }) {
 					});
 				}
 
-				const derived = calculateDerivedStats(standing);
+				// Use cached derived stats
+				if (!derivedStatsCache.has(standing.id)) {
+					derivedStatsCache.set(standing.id, calculateDerivedStats(standing));
+				}
+				const derived = derivedStatsCache.get(standing.id);
+
 				const playerData = playerStatsMap.get(key);
 				playerData.totalPoints += standing.totalPoints || 0;
 				playerData.matchesWon += standing.matchesWon || 0;
@@ -322,14 +345,12 @@ export async function load({ url, setHeaders }) {
 				playerData.standingsList.push(standing);
 			}
 
-			// Calculate ranks for best rank and championship qualifications
-			for (const [key, playerData] of playerStatsMap) {
+			// Calculate ranks using pre-grouped and pre-sorted data (no more O(n*m) filtering)
+			for (const [playerKey, playerData] of playerStatsMap) {
 				for (const standing of playerData.standingsList) {
-					const circuitStandings = allStandings.filter(
-						s => s.season === standing.season && s.circuit === standing.circuit
-					);
-					circuitStandings.sort(compareStandings);
-					const rank = circuitStandings.findIndex(s => (s.gemId || s.playerName) === key) + 1;
+					const circuitSeasonKey = `${standing.season}|${standing.circuit}`;
+					const circuitSeasonStandings = standingsByCircuitSeason.get(circuitSeasonKey) || [];
+					const rank = circuitSeasonStandings.findIndex(s => (s.gemId || s.playerName) === playerKey) + 1;
 
 					if (rank > 0) {
 						if (playerData.bestRank === null || rank < playerData.bestRank) {

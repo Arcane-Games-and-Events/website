@@ -56,91 +56,97 @@
 			</nav>
 
 			<!-- Header -->
-		<div class="mb-8 flex items-start justify-between">
-			<div class="flex items-center gap-4">
-				<div
-					class="flex h-14 w-14 items-center justify-center rounded-xl {data.order.meta?.type ===
-					'ticket'
-						? 'bg-blue-500/20'
-						: data.order.meta?.type === 'course'
-							? 'bg-purple-500/20'
-							: data.order.meta?.type === 'subscription'
-								? 'bg-green-500/20'
-								: 'bg-gray-500/20'}"
-				>
-					{#if data.order.meta?.type === 'ticket'}
-						<svg class="h-7 w-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
-							/>
-						</svg>
-					{:else if data.order.meta?.type === 'course'}
-						<svg
-							class="h-7 w-7 text-purple-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-							/>
-						</svg>
-					{:else if data.order.meta?.type === 'subscription'}
-						<svg
-							class="h-7 w-7 text-green-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-							/>
-						</svg>
-					{:else}
-						<svg class="h-7 w-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-							/>
-						</svg>
-					{/if}
+		<div class="relative mb-8 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-emerald-900/30 via-gray-900 to-gray-950 p-6 shadow-2xl shadow-emerald-500/5">
+			<!-- Decorative elements -->
+			<div class="absolute top-0 right-0 -mt-16 -mr-16 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl"></div>
+			<div class="absolute bottom-0 left-0 -mb-16 -ml-16 h-48 w-48 rounded-full bg-green-500/10 blur-3xl"></div>
+
+			<div class="relative flex items-start justify-between">
+				<div class="flex items-center gap-4">
+					<div
+						class="flex h-14 w-14 items-center justify-center rounded-xl shadow-lg {data.order.meta?.type ===
+						'ticket'
+							? 'bg-gradient-to-br from-blue-500 to-cyan-600 shadow-blue-500/25'
+							: data.order.meta?.type === 'course'
+								? 'bg-gradient-to-br from-purple-500 to-violet-600 shadow-purple-500/25'
+								: data.order.meta?.type === 'subscription'
+									? 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/25'
+									: 'bg-gradient-to-br from-gray-500 to-gray-600 shadow-gray-500/25'}"
+					>
+						{#if data.order.meta?.type === 'ticket'}
+							<svg class="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+								/>
+							</svg>
+						{:else if data.order.meta?.type === 'course'}
+							<svg
+								class="h-7 w-7 text-white"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+								/>
+							</svg>
+						{:else if data.order.meta?.type === 'subscription'}
+							<svg
+								class="h-7 w-7 text-white"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+								/>
+							</svg>
+						{:else}
+							<svg class="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+								/>
+							</svg>
+						{/if}
+					</div>
+					<div>
+						<h1 class="text-2xl font-bold text-white">Order Details</h1>
+						<p class="text-sm text-gray-400">{formatDateTime(data.order.createdAt)}</p>
+					</div>
 				</div>
-				<div>
-					<h1 class="text-2xl font-bold text-white">Order Details</h1>
-					<p class="text-sm text-gray-400">{formatDateTime(data.order.createdAt)}</p>
+				<div class="text-right">
+					<p class="text-3xl font-bold text-emerald-400">{formatCurrency(data.order.amount)}</p>
+					<span
+						class="mt-1 inline-flex rounded-full px-3 py-1 text-sm font-medium capitalize {data.order
+							.meta?.type === 'ticket'
+							? 'bg-blue-500/20 text-blue-400'
+							: data.order.meta?.type === 'course'
+								? 'bg-purple-500/20 text-purple-400'
+								: data.order.meta?.type === 'subscription'
+									? 'bg-green-500/20 text-green-400'
+									: 'bg-gray-500/20 text-gray-400'}"
+					>
+						{data.order.meta?.type || 'payment'}
+					</span>
 				</div>
-			</div>
-			<div class="text-right">
-				<p class="text-3xl font-bold text-green-400">{formatCurrency(data.order.amount)}</p>
-				<span
-					class="mt-1 inline-flex rounded-full px-3 py-1 text-sm font-medium capitalize {data.order
-						.meta?.type === 'ticket'
-						? 'bg-blue-500/20 text-blue-400'
-						: data.order.meta?.type === 'course'
-							? 'bg-purple-500/20 text-purple-400'
-							: data.order.meta?.type === 'subscription'
-								? 'bg-green-500/20 text-green-400'
-								: 'bg-gray-500/20 text-gray-400'}"
-				>
-					{data.order.meta?.type || 'payment'}
-				</span>
 			</div>
 		</div>
 
 		<div class="grid gap-6 lg:grid-cols-2">
 			<!-- Order Information -->
-			<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+			<div class="rounded-xl border border-white/10 bg-gray-900/50 p-6">
 				<h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">
 					Order Information
 				</h2>
@@ -179,7 +185,7 @@
 			</div>
 
 			<!-- Customer Information -->
-			<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+			<div class="rounded-xl border border-white/10 bg-gray-900/50 p-6">
 				<h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Customer</h2>
 				<div class="space-y-4">
 					<div class="flex items-center gap-4">
@@ -213,7 +219,7 @@
 			</div>
 
 			<!-- Order Type Details -->
-			<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6 lg:col-span-2">
+			<div class="rounded-xl border border-white/10 bg-gray-900/50 p-6 lg:col-span-2">
 				<h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">
 					{data.order.meta?.type === 'ticket'
 						? 'Ticket Details'
@@ -353,7 +359,7 @@
 			</div>
 
 			<!-- Refund Section -->
-			<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6 lg:col-span-2">
+			<div class="rounded-xl border border-white/10 bg-gray-900/50 p-6 lg:col-span-2">
 				<h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Actions</h2>
 
 				{#if refundSuccess}

@@ -100,9 +100,9 @@
 
 			<!-- Basic Information Card -->
 			<div
-				class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50 backdrop-blur-sm"
+				class="overflow-hidden rounded-xl border border-white/10 bg-gray-900/50 backdrop-blur-sm"
 			>
-				<div class="border-b border-gray-800 bg-gray-900/50 px-6 py-4">
+				<div class="border-b border-white/10 bg-gray-900/50 px-6 py-4">
 					<div class="flex items-center gap-3">
 						<svg
 							class="h-5 w-5 text-blue-400"
@@ -134,7 +134,7 @@
 							required
 							value={form?.values?.title || ''}
 							placeholder="e.g., Winter Championship 2025"
-							class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
+							class="w-full rounded-lg border border-white/10 bg-gray-800/50 px-4 py-3 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
 						/>
 					</div>
 
@@ -150,7 +150,7 @@
 							required
 							value={form?.values?.location || ''}
 							placeholder="e.g., Downtown Game Store"
-							class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
+							class="w-full rounded-lg border border-white/10 bg-gray-800/50 px-4 py-3 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
 						/>
 					</div>
 
@@ -165,7 +165,7 @@
 							name="address"
 							value={form?.values?.address || ''}
 							placeholder="e.g., 123 Main St, Los Angeles, CA 90001"
-							class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
+							class="w-full rounded-lg border border-white/10 bg-gray-800/50 px-4 py-3 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
 						/>
 					</div>
 
@@ -180,7 +180,7 @@
 								id="format"
 								name="format"
 								required
-								class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
+								class="w-full rounded-lg border border-white/10 bg-gray-800/50 px-4 py-3 text-white transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
 							>
 								<option value="" class="bg-gray-900">Select a format</option>
 								{#each formats as format}
@@ -201,7 +201,7 @@
 							<select
 								id="circuit"
 								name="circuit"
-								class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
+								class="w-full rounded-lg border border-white/10 bg-gray-800/50 px-4 py-3 text-white transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
 							>
 								<option value="" class="bg-gray-900">No circuit</option>
 								{#each circuits as circuit}
@@ -222,7 +222,7 @@
 							<select
 								id="month"
 								name="month"
-								class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
+								class="w-full rounded-lg border border-white/10 bg-gray-800/50 px-4 py-3 text-white transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
 							>
 								<option value="" class="bg-gray-900">Select month</option>
 								{#each months as month}
@@ -247,7 +247,7 @@
 								name="eventDate"
 								required
 								value={form?.values?.eventDate || ''}
-								class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white [color-scheme:dark] transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
+								class="w-full rounded-lg border border-white/10 bg-gray-800/50 px-4 py-3 text-white [color-scheme:dark] transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
 							/>
 						</div>
 
@@ -267,7 +267,7 @@
 									step="0.01"
 									value={form?.values?.price || ''}
 									placeholder="25.00"
-									class="w-full rounded-lg border border-gray-700 bg-gray-800/50 py-3 pr-4 pl-8 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
+									class="w-full rounded-lg border border-white/10 bg-gray-800/50 py-3 pr-4 pl-8 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
 								/>
 							</div>
 						</div>
@@ -284,7 +284,7 @@
 							rows="4"
 							value={form?.values?.description || ''}
 							placeholder="Provide details about the event, prizes, schedule, etc."
-							class="w-full resize-none rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
+							class="w-full resize-none rounded-lg border border-white/10 bg-gray-800/50 px-4 py-3 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
 						></textarea>
 					</div>
 				</div>
@@ -292,9 +292,9 @@
 
 			<!-- Settings Card -->
 			<div
-				class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50 backdrop-blur-sm"
+				class="overflow-hidden rounded-xl border border-white/10 bg-gray-900/50 backdrop-blur-sm"
 			>
-				<div class="border-b border-gray-800 bg-gray-900/50 px-6 py-4">
+				<div class="border-b border-white/10 bg-gray-900/50 px-6 py-4">
 					<div class="flex items-center gap-3">
 						<svg
 							class="h-5 w-5 text-blue-400"
@@ -322,7 +322,7 @@
 				<div class="space-y-4 p-6">
 					<!-- Gem ID Required -->
 					<label
-						class="group flex cursor-pointer items-start gap-4 rounded-lg border border-gray-800 bg-gray-800/30 p-4 transition-colors hover:border-gray-700"
+						class="group flex cursor-pointer items-start gap-4 rounded-lg border border-white/10 bg-gray-800/30 p-4 transition-colors hover:border-white/10"
 					>
 						<div class="relative flex items-center justify-center">
 							<input
@@ -364,7 +364,7 @@
 
 					<!-- Premium Discount -->
 					<label
-						class="group flex cursor-pointer items-start gap-4 rounded-lg border border-gray-800 bg-gray-800/30 p-4 transition-colors hover:border-emerald-500/30"
+						class="group flex cursor-pointer items-start gap-4 rounded-lg border border-white/10 bg-gray-800/30 p-4 transition-colors hover:border-emerald-500/30"
 					>
 						<div class="relative flex items-center justify-center">
 							<input
@@ -424,7 +424,7 @@
 			<div class="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-end">
 				<a
 					href="/admin"
-					class="rounded-xl border border-gray-700 bg-gray-800/50 px-6 py-3 text-center text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700 hover:text-white"
+					class="rounded-xl border border-white/10 bg-gray-800/50 px-6 py-3 text-center text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700 hover:text-white"
 				>
 					Cancel
 				</a>

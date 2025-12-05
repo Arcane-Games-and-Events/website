@@ -42,7 +42,7 @@
 	const carouselSlides = [
 		{
 			id: 'AGE Open Series',
-			href: '/age-open',
+			href: '/age-open?tab=events',
 			label: 'AGE Open Series',
 			icon: 'trophy',
 			tagline: 'Compete & Win',
@@ -402,12 +402,14 @@
 										<article
 											class="relative flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-gray-900/50 backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-gray-800/50 hover:shadow-xl hover:shadow-black/20"
 										>
-											{#if article.coverImage}
+											{#if article.coverImage?.src}
 												<div class="relative h-36 shrink-0 overflow-hidden">
 													<FadeImage
-														src={article.coverImage}
+														src={article.coverImage.src}
+														srcset={article.coverImage.srcset}
+														sizes="(max-width: 640px) 100vw, 400px"
 														alt={article.title}
-														class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+														class="h-full w-full transition-transform duration-500 group-hover:scale-105"
 													/>
 													<div
 														class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/20 to-transparent"

@@ -73,11 +73,8 @@ export async function load({ setHeaders, url }) {
 		const posts = await payload.getPosts({ limit: 3 });
 
 		const articles = posts.map((post) => {
-			// Extract cover image URL
-			let coverImageUrl = null;
-			if (post.coverImage && typeof post.coverImage === 'object') {
-				coverImageUrl = payload.getAbsoluteUrl(post.coverImage.url);
-			}
+			// Extract optimized cover image with srcset
+			const coverImage = payload.getOptimizedImage(post.coverImage);
 
 			// Extract author information
 			let author = null;
@@ -100,7 +97,7 @@ export async function load({ setHeaders, url }) {
 				excerpt: post.excerpt,
 				publishedAt: post.publishedDate,
 				accessMode: post.accessMode,
-				coverImage: coverImageUrl,
+				coverImage,
 				author,
 				readTime: post.readTime || null,
 				isPremium: isPremiumNow({
