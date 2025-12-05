@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db/index.js';
 import { event, eventResult, eventDecklist, seasonStanding, lssSeason } from '$lib/server/db/schema.js';
 import { asc, desc, eq, and, sql, gt, gte } from 'drizzle-orm';
+import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 
 /**
  * Calculate derived stats from monthly data
@@ -152,35 +153,56 @@ export async function load({ url, setHeaders }) {
 	};
 
 	try {
-		// Run independent queries in parallel for better performance
+		// Fetch raw data with Redis caching (5 minute TTL)
+		// This caches the expensive database queries
 		const [events, allEventResults, allStandings, decklists, lssSeasons] = await Promise.all([
-			// Get events sorted by date
-			db.select().from(event).orderBy(asc(event.eventDate)),
-			// Get ALL event results in one query (fixes N+1 problem)
-			db.select().from(eventResult).orderBy(asc(eventResult.placement)),
-			// Get all standings (needed for both display and AGE Rating calculation)
-			db.select().from(seasonStanding).orderBy(desc(seasonStanding.totalPoints)),
-			// Get public decklists with event info
-			db.select({
-				id: eventDecklist.id,
-				eventId: eventDecklist.eventId,
-				playerName: eventDecklist.playerName,
-				gemId: eventDecklist.gemId,
-				deckName: eventDecklist.deckName,
-				hero: eventDecklist.hero,
-				format: eventDecklist.format,
-				cards: eventDecklist.cards,
-				createdAt: eventDecklist.createdAt,
-				eventTitle: event.title,
-				eventDate: event.eventDate,
-				circuit: event.circuit
-			})
-				.from(eventDecklist)
-				.innerJoin(event, eq(eventDecklist.eventId, event.id))
-				.where(eq(eventDecklist.isPublic, true))
-				.orderBy(desc(eventDecklist.createdAt)),
-			// Get LSS tournament seasons
-			db.select().from(lssSeason).where(eq(lssSeason.isActive, true)).orderBy(asc(lssSeason.startDate))
+			// Get events sorted by date (cached)
+			getCachedOrFetch(
+				`${CACHE_KEYS.EVENTS}:all`,
+				() => db.select().from(event).orderBy(asc(event.eventDate)),
+				CACHE_TTL.MEDIUM
+			),
+			// Get ALL event results in one query (cached)
+			getCachedOrFetch(
+				`${CACHE_KEYS.EVENTS}:results:all`,
+				() => db.select().from(eventResult).orderBy(asc(eventResult.placement)),
+				CACHE_TTL.MEDIUM
+			),
+			// Get all standings (cached)
+			getCachedOrFetch(
+				`${CACHE_KEYS.STANDINGS}:all`,
+				() => db.select().from(seasonStanding).orderBy(desc(seasonStanding.totalPoints)),
+				CACHE_TTL.MEDIUM
+			),
+			// Get public decklists with event info (cached)
+			getCachedOrFetch(
+				`${CACHE_KEYS.EVENTS}:decklists:public`,
+				() => db.select({
+					id: eventDecklist.id,
+					eventId: eventDecklist.eventId,
+					playerName: eventDecklist.playerName,
+					gemId: eventDecklist.gemId,
+					deckName: eventDecklist.deckName,
+					hero: eventDecklist.hero,
+					format: eventDecklist.format,
+					cards: eventDecklist.cards,
+					createdAt: eventDecklist.createdAt,
+					eventTitle: event.title,
+					eventDate: event.eventDate,
+					circuit: event.circuit
+				})
+					.from(eventDecklist)
+					.innerJoin(event, eq(eventDecklist.eventId, event.id))
+					.where(eq(eventDecklist.isPublic, true))
+					.orderBy(desc(eventDecklist.createdAt)),
+				CACHE_TTL.MEDIUM
+			),
+			// Get LSS tournament seasons (cached)
+			getCachedOrFetch(
+				`${CACHE_KEYS.EVENTS}:lss:active`,
+				() => db.select().from(lssSeason).where(eq(lssSeason.isActive, true)).orderBy(asc(lssSeason.startDate)),
+				CACHE_TTL.MEDIUM
+			)
 		]);
 
 		// Get completed events with results for the Results tab

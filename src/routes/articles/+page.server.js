@@ -1,5 +1,6 @@
 import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow } from '$lib/server/articles/access.js';
+import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 
 export async function load({ setHeaders }) {
 	// Cache articles list for 5 minutes, allow stale for 1 hour while revalidating
@@ -8,7 +9,12 @@ export async function load({ setHeaders }) {
 	});
 
 	try {
-		const posts = await payload.getPosts();
+		// Cache CMS response in Redis (15 minute TTL)
+		const posts = await getCachedOrFetch(
+			`${CACHE_KEYS.ARTICLES}:all`,
+			() => payload.getPosts(),
+			CACHE_TTL.LONG
+		);
 
 		// Transform Payload response to match our expected format
 		const articles = posts.map((post) => {

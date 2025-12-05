@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow, userHasPremiumAccess } from '$lib/server/articles/access.js';
+import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 
 /**
  * Truncate Lexical content to only show first few paragraphs for preview
@@ -84,7 +85,12 @@ export async function load({ params, locals, setHeaders }) {
 	const { slug } = params;
 
 	try {
-		const post = await payload.getPostBySlug(slug);
+		// Cache individual article CMS response (15 minute TTL)
+		const post = await getCachedOrFetch(
+			`${CACHE_KEYS.ARTICLES}:slug:${slug}`,
+			() => payload.getPostBySlug(slug),
+			CACHE_TTL.LONG
+		);
 
 		if (!post) {
 			throw error(404, 'Article not found');

@@ -3,6 +3,7 @@ import { isPremiumNow } from '$lib/server/articles/access.js';
 import { db } from '$lib/server/db/index.js';
 import { event, seasonStanding } from '$lib/server/db/schema.js';
 import { asc, gte, desc } from 'drizzle-orm';
+import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 
 /**
  * Calculate derived stats from monthly data
@@ -63,10 +64,14 @@ export async function load({ setHeaders, url, locals }) {
 	const availableSeasons = ['all', '2025', '2024', '2023'];
 	const availableCircuits = ['all', 'Los Angeles', 'New England', 'St. Louis'];
 
-	// Fetch articles separately to prevent CMS issues from breaking the entire page
+	// Fetch articles with Redis caching (15 minute TTL for CMS content)
 	let articles = [];
 	try {
-		const posts = await payload.getPosts({ limit: 3 });
+		const posts = await getCachedOrFetch(
+			`${CACHE_KEYS.ARTICLES}:latest:3`,
+			() => payload.getPosts({ limit: 3 }),
+			CACHE_TTL.LONG // 15 minutes for articles
+		);
 		articles = posts.map((post) => {
 			// Extract optimized cover image with srcset
 			const coverImage = payload.getOptimizedImage(post.coverImage);
@@ -110,20 +115,28 @@ export async function load({ setHeaders, url, locals }) {
 	}
 
 	try {
-		// Fetch upcoming events (limit to 3)
+		// Fetch upcoming events with Redis caching (1 minute TTL - events change more frequently)
 		const now = new Date();
-		const upcomingEvents = await db
-			.select()
-			.from(event)
-			.where(gte(event.eventDate, now))
-			.orderBy(asc(event.eventDate))
-			.limit(3);
+		const upcomingEvents = await getCachedOrFetch(
+			`${CACHE_KEYS.EVENTS}:upcoming:3`,
+			async () => {
+				const events = await db
+					.select()
+					.from(event)
+					.where(gte(event.eventDate, now))
+					.orderBy(asc(event.eventDate))
+					.limit(3);
+				return events;
+			},
+			CACHE_TTL.SHORT // 1 minute for upcoming events
+		);
 
-		// Fetch standings for homepage sidebar with optional filtering
-		const allStandings = await db
-			.select()
-			.from(seasonStanding)
-			.orderBy(desc(seasonStanding.totalPoints));
+		// Fetch standings for homepage sidebar with Redis caching (5 minute TTL)
+		const allStandings = await getCachedOrFetch(
+			`${CACHE_KEYS.STANDINGS}:all`,
+			() => db.select().from(seasonStanding).orderBy(desc(seasonStanding.totalPoints)),
+			CACHE_TTL.MEDIUM
+		);
 
 		// Filter standings based on selected season and circuit
 		let filteredStandings = allStandings;
