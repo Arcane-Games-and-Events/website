@@ -16,20 +16,21 @@ class PayloadClient {
 	}
 
 	/**
-	 * Make a GET request to Payload API
+	 * Make a GET request to Payload API with retry logic
 	 * @param {string} endpoint - API endpoint (e.g., '/api/posts')
 	 * @param {Object} params - Query parameters
+	 * @param {number} retries - Number of retries remaining
 	 * @returns {Promise<Object>}
 	 */
-	async get(endpoint, params = {}) {
+	async get(endpoint, params = {}, retries = 2) {
 		const url = new URL(endpoint, this.baseURL);
 
 		// Convert params to Payload's bracket notation format
 		this.addParamsToURL(url, params);
 
-		// Add timeout to prevent hanging when CMS is down
+		// Increased timeout to 15 seconds to handle cold starts
 		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+		const timeout = setTimeout(() => controller.abort(), 15000);
 
 		try {
 			const response = await fetch(url.toString(), {
@@ -48,8 +49,17 @@ class PayloadClient {
 			return response.json();
 		} catch (error) {
 			clearTimeout(timeout);
+
+			// Retry on timeout or network errors
+			if (retries > 0 && (error.name === 'AbortError' || error.message.includes('fetch'))) {
+				console.log(`Payload CMS request failed, retrying... (${retries} attempts left)`);
+				// Wait 1 second before retry
+				await new Promise(resolve => setTimeout(resolve, 1000));
+				return this.get(endpoint, params, retries - 1);
+			}
+
 			if (error.name === 'AbortError') {
-				throw new Error('Payload CMS request timed out - is the CMS server running?');
+				throw new Error('Payload CMS request timed out after retries - is the CMS server running?');
 			}
 			throw error;
 		}

@@ -54,12 +54,7 @@ function compareStandings(a, b) {
 	return bDerived.eventsPlayed - aDerived.eventsPlayed;
 }
 
-export async function load({ setHeaders, url }) {
-	// Cache homepage data for 5 minutes, allow stale for 1 hour while revalidating
-	setHeaders({
-		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
-	});
-
+export async function load({ setHeaders, url, locals }) {
 	// Get filter params for standings
 	const standingsSeason = url.searchParams.get('standings_season') || 'all';
 	const standingsCircuit = url.searchParams.get('standings_circuit') || 'all';
@@ -68,11 +63,11 @@ export async function load({ setHeaders, url }) {
 	const availableSeasons = ['all', '2025', '2024', '2023'];
 	const availableCircuits = ['all', 'Los Angeles', 'New England', 'St. Louis'];
 
+	// Fetch articles separately to prevent CMS issues from breaking the entire page
+	let articles = [];
 	try {
-		// Fetch latest 3 articles from Payload CMS
 		const posts = await payload.getPosts({ limit: 3 });
-
-		const articles = posts.map((post) => {
+		articles = posts.map((post) => {
 			// Extract optimized cover image with srcset
 			const coverImage = payload.getOptimizedImage(post.coverImage);
 
@@ -109,7 +104,12 @@ export async function load({ setHeaders, url }) {
 		// Sort by published date (newest first)
 		.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
 		.slice(0, 3);
+	} catch (error) {
+		console.error('Error fetching articles from Payload CMS:', error);
+		// Articles will remain empty array - page continues to load
+	}
 
+	try {
 		// Fetch upcoming events (limit to 3)
 		const now = new Date();
 		const upcomingEvents = await db
@@ -172,6 +172,25 @@ export async function load({ setHeaders, url }) {
 			uniquePlayers.add(standing.gemId || standing.playerName);
 		}
 
+		// IMPORTANT: Only use public caching for anonymous users
+		// Logged-in users must get private responses to prevent user data leaking between sessions
+		if (locals.user) {
+			// Logged-in users: never cache publicly (prevents session data leaking to other users)
+			setHeaders({
+				'cache-control': 'private, no-cache, no-store, must-revalidate'
+			});
+		} else if (articles.length > 0) {
+			// Anonymous users with articles: cache at CDN level
+			setHeaders({
+				'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
+			});
+		} else {
+			// Anonymous users without articles: don't cache error state
+			setHeaders({
+				'cache-control': 'private, no-cache, no-store, must-revalidate'
+			});
+		}
+
 		return {
 			articles,
 			events: upcomingEvents,
@@ -190,8 +209,12 @@ export async function load({ setHeaders, url }) {
 		};
 	} catch (error) {
 		console.error('Error fetching data for homepage:', error);
+		// Don't cache error responses
+		setHeaders({
+			'cache-control': 'private, no-cache, no-store, must-revalidate'
+		});
 		return {
-			articles: [],
+			articles,
 			events: [],
 			standings: [],
 			standingsFilters: {

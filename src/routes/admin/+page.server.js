@@ -26,57 +26,51 @@ export async function load({ locals }) {
 		const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 		const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-		// ========== RUN ALL QUERIES IN PARALLEL ==========
+		// ========== RUN QUERIES IN BATCHES TO AVOID CONNECTION POOL EXHAUSTION ==========
+		// Batch 1: Core data (most important)
+		const [events, allOrders, allUsers, rawStandings, lssSeasons] = await Promise.all([
+			db.select().from(event).orderBy(desc(event.createdAt)),
+			db.select().from(order).orderBy(desc(order.createdAt)).limit(500),
+			db.select({
+				id: user.id,
+				email: user.email,
+				role: user.role,
+				createdAt: user.createdAt
+			}).from(user).orderBy(desc(user.createdAt)).limit(200),
+			db.select().from(seasonStanding).orderBy(desc(seasonStanding.totalPoints)),
+			db.select().from(lssSeason).orderBy(desc(lssSeason.startDate))
+		]);
+
+		// Batch 2: Counts and ticket stats
 		const [
-			// Core data
-			events,
-			// Ticket stats grouped by event (replaces manual grouping)
 			ticketStatsByEvent,
-			// Orders (paginated to last 100 for performance)
-			allOrders,
-			// Basic counts
 			[eventCount],
 			[orderCount],
 			[premiumCount],
-			// Revenue queries
-			[todayRevenueResult],
-			[weekRevenueResult],
-			[monthRevenueResult],
-			[totalRevenueResult],
-			revenueByType,
-			dailyRevenueTrend,
-			topEvents,
-			// Customer stats
-			customerStatsRaw,
-			// Refund stats
-			[refundedCount],
-			// Users (paginated to last 100 for performance)
-			allUsers,
-			// Standings
-			rawStandings,
-			// Player count
 			[playerCount],
-			// LSS seasons
-			lssSeasons
+			[refundedCount]
 		] = await Promise.all([
-			// Events
-			db.select().from(event).orderBy(desc(event.createdAt)),
-			// Ticket stats grouped by event (database-level aggregation)
 			db.select({
 				eventId: ticket.eventId,
 				sold: count(),
 				refunded: sql`SUM(CASE WHEN refunded = true THEN 1 ELSE 0 END)::int`,
 				revenue: sql`COALESCE(SUM(CAST(amount_paid AS DECIMAL)), 0)`
-			})
-				.from(ticket)
-				.groupBy(ticket.eventId),
-			// Orders (limit to recent 500 for admin dashboard)
-			db.select().from(order).orderBy(desc(order.createdAt)).limit(500),
-			// Counts
+			}).from(ticket).groupBy(ticket.eventId),
 			db.select({ count: count() }).from(event),
 			db.select({ count: count() }).from(order),
 			db.select({ count: count() }).from(user).where(eq(user.role, 'premium')),
-			// Revenue queries
+			db.select({ count: sql`COUNT(DISTINCT gem_id)` }).from(seasonStanding),
+			db.select({ count: count() }).from(ticket).where(eq(ticket.refunded, true))
+		]);
+
+		// Batch 3: Revenue analytics
+		const [
+			[todayRevenueResult],
+			[weekRevenueResult],
+			[monthRevenueResult],
+			[totalRevenueResult],
+			revenueByType
+		] = await Promise.all([
 			db.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
 				.from(order).where(gte(order.createdAt, todayStart)),
 			db.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
@@ -89,7 +83,11 @@ export async function load({ locals }) {
 				type: sql`COALESCE(meta->>'type', 'unknown')`,
 				total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
 				count: count()
-			}).from(order).groupBy(sql`meta->>'type'`),
+			}).from(order).groupBy(sql`meta->>'type'`)
+		]);
+
+		// Batch 4: Additional analytics (less critical)
+		const [dailyRevenueTrend, topEvents, customerStatsRaw] = await Promise.all([
 			db.select({
 				date: sql`DATE(created_at)`,
 				total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
@@ -104,29 +102,13 @@ export async function load({ locals }) {
 			}).from(order).where(sql`meta->>'type' = 'ticket'`)
 				.groupBy(sql`meta->>'eventId'`, sql`meta->>'eventTitle'`)
 				.orderBy(desc(sql`SUM(CAST(amount AS DECIMAL))`)).limit(5),
-			// Customer stats
 			db.select({
 				email: order.userEmail,
 				orderCount: count(),
 				totalSpent: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
 				firstOrder: sql`MIN(created_at)`,
 				lastOrder: sql`MAX(created_at)`
-			}).from(order).groupBy(order.userEmail),
-			// Refund stats
-			db.select({ count: count() }).from(ticket).where(eq(ticket.refunded, true)),
-			// Users (limit to recent 200 for admin dashboard)
-			db.select({
-				id: user.id,
-				email: user.email,
-				role: user.role,
-				createdAt: user.createdAt
-			}).from(user).orderBy(desc(user.createdAt)).limit(200),
-			// Standings
-			db.select().from(seasonStanding).orderBy(desc(seasonStanding.totalPoints)),
-			// Player count
-			db.select({ count: sql`COUNT(DISTINCT gem_id)` }).from(seasonStanding),
-			// LSS seasons
-			db.select().from(lssSeason).orderBy(desc(lssSeason.startDate))
+			}).from(order).groupBy(order.userEmail)
 		]);
 
 		// ========== EVENT ANALYTICS ==========
