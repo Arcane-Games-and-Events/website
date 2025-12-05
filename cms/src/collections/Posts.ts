@@ -354,5 +354,36 @@ export const Posts: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [
+      async ({ doc, operation }) => {
+        // Send webhook to SvelteKit frontend to invalidate cache
+        const webhookUrl = process.env.FRONTEND_URL
+        const webhookSecret = process.env.PAYLOAD_WEBHOOK_SECRET
+
+        if (webhookUrl && webhookSecret) {
+          try {
+            await fetch(`${webhookUrl}/api/webhooks/payload`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${webhookSecret}`,
+              },
+              body: JSON.stringify({
+                collection: 'posts',
+                operation,
+                doc: {
+                  id: doc.id,
+                  slug: doc.slug,
+                },
+              }),
+            })
+          } catch (error) {
+            // Silent fail - webhook errors shouldn't break CMS operations
+          }
+        }
+
+        return doc
+      },
+    ],
   },
 }

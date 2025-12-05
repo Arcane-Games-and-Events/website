@@ -42,23 +42,19 @@ export async function getCachedOrFetch(key, fetchFn, ttl = CACHE_TTL.MEDIUM) {
 		// Try to get from cache
 		const cached = await redis.get(key);
 		if (cached !== null) {
-			console.log(`[Redis] Cache HIT: ${key}`);
 			return cached;
 		}
-
-		console.log(`[Redis] Cache MISS: ${key}`);
 
 		// Cache miss - fetch fresh data
 		const freshData = await fetchFn();
 
 		// Store in cache (don't await - fire and forget)
-		redis.set(key, freshData, { ex: ttl }).catch((err) => {
-			console.error(`[Redis] Failed to set cache for ${key}:`, err);
+		redis.set(key, freshData, { ex: ttl }).catch(() => {
+			// Silent fail - Redis errors shouldn't break the app
 		});
 
 		return freshData;
 	} catch (error) {
-		console.error(`[Redis] Error for ${key}:`, error);
 		// On Redis error, fall back to direct fetch
 		return fetchFn();
 	}
@@ -73,9 +69,8 @@ export async function invalidateCache(key) {
 
 	try {
 		await redis.del(key);
-		console.log(`[Redis] Invalidated: ${key}`);
 	} catch (error) {
-		console.error(`[Redis] Failed to invalidate ${key}:`, error);
+		// Silent fail - cache invalidation errors shouldn't break the app
 	}
 }
 
@@ -86,13 +81,8 @@ export async function invalidateCache(key) {
 export async function invalidateCacheByPrefix(prefix) {
 	if (!redis) return;
 
-	try {
-		// Upstash doesn't support SCAN in REST API, so we track keys manually
-		// For now, just log the intent - in production you'd use a key registry
-		console.log(`[Redis] Would invalidate keys with prefix: ${prefix}`);
-	} catch (error) {
-		console.error(`[Redis] Failed to invalidate prefix ${prefix}:`, error);
-	}
+	// Upstash REST API doesn't support SCAN, so pattern-based invalidation
+	// requires tracking keys manually. For now, use specific invalidateCache calls.
 }
 
 /**
