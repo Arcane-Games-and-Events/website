@@ -3,6 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { event, ticket, user, eventStaff, eventResult, eventDecklist, seasonStanding, eventMatch } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { processTournamentResults } from '$lib/server/tournament-processor.js';
+import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
 
 export async function load({ params, locals }) {
 	// Require authentication (admin or tournament staff)
@@ -277,6 +278,10 @@ export const actions = {
 				.update(event)
 				.set(updateData)
 				.where(eq(event.id, params.eventId));
+
+			// Invalidate events cache so changes appear immediately
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
 
 			return { success: true, message: 'Event updated successfully' };
 		} catch (err) {
@@ -744,6 +749,12 @@ export const actions = {
 				})
 				.where(eq(event.id, params.eventId));
 
+			// Invalidate all relevant caches so updates appear immediately
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:results:all`);
+			await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
+
 			let message = `Event finalized. ${playersUpdated} players updated, ${playersCreated} new players added.`;
 			if (errors.length > 0) {
 				message += ` ${errors.length} errors occurred.`;
@@ -779,6 +790,9 @@ export const actions = {
 					closedBy: null
 				})
 				.where(eq(event.id, params.eventId));
+
+			// Invalidate events cache
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
 
 			return { success: true, message: 'Event reopened. You can now update results and standings.' };
 		} catch (err) {

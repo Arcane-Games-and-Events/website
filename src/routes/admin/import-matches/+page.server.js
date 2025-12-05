@@ -3,6 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { eventMatch, seasonStanding } from '$lib/server/db/schema.js';
 import { eq, and, count } from 'drizzle-orm';
 import { parsePairings } from '$lib/server/tournament-processor.js';
+import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
 
 const MONTHS = [
 	'january', 'february', 'march', 'april', 'may', 'june',
@@ -183,6 +184,10 @@ export const actions = {
 			}));
 
 			await db.insert(eventMatch).values(matches);
+
+			// Invalidate events cache so imported matches appear immediately
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:results:all`);
 
 			return {
 				success: true,
