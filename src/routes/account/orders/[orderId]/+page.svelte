@@ -5,15 +5,21 @@
 
 	// For refund confirmation
 	let refunding = false;
+	let showRefundModal = false;
+	let refundFormRef;
 
-	function handleRefund(event) {
-		if (
-			!confirm(
-				'Are you sure you want to refund this order? This action cannot be undone and will revoke any access granted by this purchase.'
-			)
-		) {
-			event.preventDefault();
-		}
+	function openRefundModal() {
+		showRefundModal = true;
+	}
+
+	function closeRefundModal() {
+		showRefundModal = false;
+	}
+
+	function confirmRefund() {
+		showRefundModal = false;
+		refunding = true;
+		refundFormRef.requestSubmit();
 	}
 
 	// Calculate hours until event for tickets
@@ -56,7 +62,7 @@
 		const styles = {
 			ticket: { color: 'blue', icon: 'M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z' },
 			course: { color: 'emerald', icon: 'M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5' },
-			subscription: { color: 'purple', icon: 'M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z' }
+			subscription: { color: 'emerald', icon: 'M13 2L3 14h9l-1 8 10-12h-9l1-8z', isFilled: true }
 		};
 		return styles[type] || { color: 'gray', icon: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z' };
 	}
@@ -100,12 +106,17 @@
 					<div class="relative shrink-0">
 						<div class="flex h-16 w-16 items-center justify-center rounded-2xl shadow-2xl
 							{typeStyle.color === 'blue' ? 'bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 shadow-blue-500/20' : ''}
-							{typeStyle.color === 'purple' ? 'bg-gradient-to-br from-purple-500 via-purple-600 to-blue-600 shadow-purple-500/20' : ''}
 							{typeStyle.color === 'emerald' ? 'bg-gradient-to-br from-emerald-500 via-green-600 to-emerald-600 shadow-emerald-500/20' : ''}
 							{typeStyle.color === 'gray' ? 'bg-gradient-to-br from-gray-500 via-gray-600 to-gray-700 shadow-gray-500/20' : ''}">
-							<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" d={typeStyle.icon} />
-							</svg>
+							{#if typeStyle.isFilled}
+								<svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+									<path d={typeStyle.icon} />
+								</svg>
+							{:else}
+								<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" d={typeStyle.icon} />
+								</svg>
+							{/if}
 						</div>
 					</div>
 
@@ -123,10 +134,35 @@
 									Refunded
 								</span>
 							{:else if data.order.meta?.type === 'subscription'}
-								<span class="inline-flex items-center gap-1.5 rounded-full bg-purple-500/10 border border-purple-500/30 px-3 py-1 text-xs font-semibold text-purple-400">
-									<span class="h-1.5 w-1.5 rounded-full bg-purple-400 animate-pulse"></span>
-									Recurring
-								</span>
+								{#if data.user.subscriptionStatus === 'cancelled'}
+									<span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 px-3 py-1 text-xs font-semibold text-amber-400">
+										<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+										</svg>
+										Cancelled
+									</span>
+								{:else if data.user.subscriptionStatus === 'payment_failed'}
+									<span class="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 border border-red-500/30 px-3 py-1 text-xs font-semibold text-red-400">
+										<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+										</svg>
+										Payment Failed
+									</span>
+								{:else if data.user.subscriptionStatus === 'expired'}
+									<span class="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 border border-red-500/30 px-3 py-1 text-xs font-semibold text-red-400">
+										<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+										</svg>
+										Expired
+									</span>
+								{:else}
+									<span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-semibold text-emerald-400">
+										<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+											<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+										</svg>
+										Active
+									</span>
+								{/if}
 							{:else}
 								<span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-semibold text-emerald-400">
 									<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
@@ -248,9 +284,39 @@
 
 				<div class="p-6 border-t border-white/5">
 					<div class="grid gap-4 sm:grid-cols-2">
-						<div class="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+						<div class="p-4 rounded-xl bg-white/[0.02] border border-white/5 sm:col-span-2">
 							<div class="text-xs text-gray-500 uppercase tracking-wider mb-1">Event</div>
 							<div class="text-sm font-medium text-white">{data.order.meta.eventTitle}</div>
+							<!-- Event Details -->
+							{#if data.additionalData?.event}
+								<div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-400">
+									{#if data.additionalData.event.eventDate}
+										<span class="flex items-center gap-1.5">
+											<svg class="h-3.5 w-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+											</svg>
+											{new Date(data.additionalData.event.eventDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+										</span>
+									{/if}
+									{#if data.additionalData.event.location}
+										<span class="flex items-center gap-1.5">
+											<svg class="h-3.5 w-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+											</svg>
+											{data.additionalData.event.location}
+										</span>
+									{/if}
+									{#if data.additionalData.event.format}
+										<span class="flex items-center gap-1.5">
+											<svg class="h-3.5 w-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+											</svg>
+											{data.additionalData.event.format}
+										</span>
+									{/if}
+								</div>
+							{/if}
 						</div>
 						<div class="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
 							<div class="text-xs text-blue-500/80 uppercase tracking-wider mb-1">Ticket Code</div>
@@ -315,16 +381,16 @@
 					</div>
 				</div>
 			{:else if data.order.meta?.type === 'subscription'}
-				<div class="px-6 py-5 border-t border-white/5 bg-white/[0.02]">
+				<div class="px-6 py-5 border-t border-white/5 bg-gradient-to-r from-emerald-500/5 to-green-500/5">
 					<div class="flex items-center gap-3">
-						<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400">
-							<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
+						<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 text-emerald-400">
+							<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
 							</svg>
 						</div>
 						<div>
-							<h2 class="text-lg font-semibold text-white">Subscription Details</h2>
-							<p class="text-sm text-gray-400">Premium membership information</p>
+							<h2 class="text-lg font-semibold text-white">Premium Subscription</h2>
+							<p class="text-sm text-gray-400">AGE Premium membership details</p>
 						</div>
 					</div>
 				</div>
@@ -335,22 +401,83 @@
 							<div class="text-xs text-gray-500 uppercase tracking-wider mb-1">Subscription ID</div>
 							<div class="text-sm font-mono text-white">{data.order.meta.subscriptionId}</div>
 						</div>
-						<div class="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20">
-							<div class="text-xs text-purple-500/80 uppercase tracking-wider mb-1">Type</div>
-							<div class="text-sm font-medium text-purple-400">
-								{data.order.meta.subscriptionType === 'yearly' ? 'Annual' : 'Monthly'} Recurring
+						<div class="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+							<div class="text-xs text-emerald-500/80 uppercase tracking-wider mb-1">Plan</div>
+							<div class="text-sm font-medium text-emerald-400">
+								{data.order.meta.subscriptionType === 'yearly' ? 'Annual' : 'Monthly'} Premium
 							</div>
 						</div>
+						<!-- Subscription Status -->
+						{#if data.user.subscriptionStatus === 'cancelled'}
+							<div class="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 sm:col-span-2">
+								<div class="text-xs text-amber-500/80 uppercase tracking-wider mb-1">Status</div>
+								<div class="flex items-center gap-2">
+									<svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+									</svg>
+									<span class="text-sm font-medium text-amber-400">Cancelled</span>
+								</div>
+								{#if data.user.subscriptionEndDate}
+									<p class="text-xs text-gray-400 mt-1">
+										Access until {new Date(data.user.subscriptionEndDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+									</p>
+								{/if}
+							</div>
+						{:else if data.user.subscriptionStatus === 'payment_failed'}
+							<div class="p-4 rounded-xl bg-red-500/5 border border-red-500/20 sm:col-span-2">
+								<div class="text-xs text-red-500/80 uppercase tracking-wider mb-1">Status</div>
+								<div class="flex items-center gap-2">
+									<svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+									</svg>
+									<span class="text-sm font-medium text-red-400">Payment Failed</span>
+								</div>
+								<p class="text-xs text-gray-400 mt-1">
+									Your last payment failed. Please <a href="/account?tab=plan" class="text-emerald-400 hover:text-emerald-300 underline">update your payment method</a> to avoid losing access.
+									{#if data.user.subscriptionEndDate}
+										<br />Grace period ends {new Date(data.user.subscriptionEndDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.
+									{/if}
+								</p>
+							</div>
+						{:else if data.user.subscriptionStatus === 'expired'}
+							<div class="p-4 rounded-xl bg-red-500/5 border border-red-500/20 sm:col-span-2">
+								<div class="text-xs text-red-500/80 uppercase tracking-wider mb-1">Status</div>
+								<div class="flex items-center gap-2">
+									<svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+									</svg>
+									<span class="text-sm font-medium text-red-400">Expired</span>
+								</div>
+								<p class="text-xs text-gray-400 mt-1">
+									Your subscription has ended. <a href="/premium" class="text-emerald-400 hover:text-emerald-300 underline">Resubscribe</a> to regain access.
+								</p>
+							</div>
+						{:else if data.user.subscriptionStatus === 'active'}
+							<div class="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 sm:col-span-2">
+								<div class="text-xs text-emerald-500/80 uppercase tracking-wider mb-1">Status</div>
+								<div class="flex items-center gap-2">
+									<svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+										<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+									</svg>
+									<span class="text-sm font-medium text-emerald-400">Active</span>
+								</div>
+								{#if data.user.nextBillingDate}
+									<p class="text-xs text-gray-400 mt-1">
+										Next billing: {new Date(data.user.nextBillingDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+									</p>
+								{/if}
+							</div>
+						{/if}
 					</div>
 
-					<div class="mt-6 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20">
+					<div class="mt-6 p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/20">
 						<div class="flex items-start gap-3">
-							<svg class="h-5 w-5 text-purple-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+							<svg class="h-5 w-5 text-emerald-400 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
 							</svg>
 							<p class="text-sm text-gray-300">
 								To manage or cancel your subscription, visit the
-								<a href="/account?tab=plan" class="text-purple-400 hover:text-purple-300 font-medium underline">Subscription</a>
+								<a href="/account?tab=plan" class="text-emerald-400 hover:text-emerald-300 font-medium underline">Subscription</a>
 								section of your account.
 							</p>
 						</div>
@@ -419,9 +546,10 @@
 							</div>
 						</div>
 
-						<form method="POST" action="?/refund" use:enhance on:submit={handleRefund}>
+						<form method="POST" action="?/refund" use:enhance bind:this={refundFormRef}>
 							<button
-								type="submit"
+								type="button"
+								onclick={openRefundModal}
 								disabled={refunding}
 								class="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-6 py-3 text-sm font-semibold text-red-400 hover:bg-red-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 							>
@@ -459,3 +587,77 @@
 		</div>
 	</div>
 </div>
+
+<!-- Refund Confirmation Modal -->
+{#if showRefundModal}
+	<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+		<!-- Backdrop -->
+		<button
+			type="button"
+			class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+			onclick={closeRefundModal}
+			aria-label="Close modal"
+		></button>
+
+		<!-- Modal Content -->
+		<div class="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-gray-900 shadow-2xl">
+			<!-- Header -->
+			<div class="flex items-center gap-4 border-b border-white/5 bg-red-500/5 px-6 py-5">
+				<div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/20">
+					<svg class="h-6 w-6 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+					</svg>
+				</div>
+				<div>
+					<h3 class="text-lg font-bold text-white">Confirm Refund</h3>
+					<p class="text-sm text-gray-400">This action cannot be undone</p>
+				</div>
+			</div>
+
+			<!-- Body -->
+			<div class="px-6 py-5">
+				<p class="text-sm text-gray-300 mb-4">
+					Are you sure you want to refund this order? This will:
+				</p>
+				<ul class="space-y-2 text-sm text-gray-400">
+					<li class="flex items-start gap-2">
+						<svg class="h-5 w-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+						<span>Cancel your ticket/registration for this event</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<svg class="h-5 w-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+						<span>Issue a refund of <strong class="text-white">${parseFloat(data.order.amount).toFixed(2)}</strong> to your payment method</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<svg class="h-5 w-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+						<span>Permanently revoke any access granted by this purchase</span>
+					</li>
+				</ul>
+			</div>
+
+			<!-- Footer -->
+			<div class="flex gap-3 border-t border-white/5 bg-gray-950/50 px-6 py-4">
+				<button
+					type="button"
+					onclick={closeRefundModal}
+					class="flex-1 rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-300 transition-colors hover:bg-gray-700 hover:text-white"
+				>
+					Cancel
+				</button>
+				<button
+					type="button"
+					onclick={confirmRefund}
+					class="flex-1 rounded-xl bg-red-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-600"
+				>
+					Yes, Refund Order
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

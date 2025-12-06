@@ -89,8 +89,8 @@
 
 	<!-- Decorative elements -->
 	<div class="absolute inset-0 overflow-hidden pointer-events-none">
-		<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
-		<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+		<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
+		<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-green-500/10 rounded-full blur-3xl"></div>
 		<div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]"></div>
 	</div>
 
@@ -100,11 +100,11 @@
 			<div class="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
 				<!-- Header -->
 				<div class="text-center mb-12">
-					<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 mb-6">
-						<svg class="h-5 w-5 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
-							<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
+					<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/30 mb-6">
+						<svg class="h-5 w-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
 						</svg>
-						<span class="text-sm font-semibold text-purple-300">Premium Member</span>
+						<span class="text-sm font-semibold text-emerald-300">Premium Member</span>
 					</div>
 					<h1 class="text-4xl sm:text-5xl font-bold text-white mb-4">Welcome Back!</h1>
 					<p class="text-lg text-gray-400">You have full access to all premium features.</p>
@@ -112,19 +112,19 @@
 
 				<!-- Quick Links Grid -->
 				<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
-					<a href="/articles" class="group relative rounded-xl border border-gray-800 bg-gray-900/50 backdrop-blur-sm p-6 hover:border-purple-500/50 transition-all duration-300">
-						<div class="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+					<a href="/articles" class="group relative rounded-xl border border-gray-800 bg-gray-900/50 backdrop-blur-sm p-6 hover:border-emerald-500/50 transition-all duration-300">
+						<div class="absolute inset-0 rounded-xl bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
 						<div class="relative flex items-center gap-4">
-							<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500/20">
-								<svg class="h-6 w-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/20">
+								<svg class="h-6 w-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
 								</svg>
 							</div>
 							<div>
-								<h3 class="font-semibold text-white group-hover:text-purple-300 transition-colors">Premium Articles</h3>
+								<h3 class="font-semibold text-white group-hover:text-emerald-300 transition-colors">Premium Articles</h3>
 								<p class="text-sm text-gray-400">Browse exclusive content</p>
 							</div>
-							<svg class="h-5 w-5 text-gray-600 group-hover:text-purple-400 ml-auto transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<svg class="h-5 w-5 text-gray-600 group-hover:text-emerald-400 ml-auto transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
 							</svg>
 						</div>
@@ -189,8 +189,8 @@
 				<!-- Benefits Reminder -->
 				<div class="rounded-xl border border-gray-800 bg-gray-900/50 backdrop-blur-sm p-8">
 					<h2 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-						<svg class="h-5 w-5 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
-							<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
+						<svg class="h-5 w-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
 						</svg>
 						Your Premium Benefits
 					</h2>
@@ -216,10 +216,10 @@
 			<div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
 				<!-- Resubscribe Banner for Cancelled Users -->
 				{#if isCancelled}
-					<div class="mb-8 rounded-xl border border-purple-500/30 bg-gradient-to-r from-purple-500/10 to-blue-500/10 p-6 text-center">
+					<div class="mb-8 rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-green-500/10 p-6 text-center">
 						<div class="flex items-center justify-center gap-2 mb-2">
-							<svg class="h-5 w-5 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
-								<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+							<svg class="h-5 w-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
 							</svg>
 							<h3 class="text-lg font-semibold text-white">Welcome Back!</h3>
 						</div>
@@ -229,14 +229,14 @@
 
 				<!-- Hero Section -->
 				<div class="text-center mb-16">
-					<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 mb-6">
-						<svg class="h-5 w-5 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
-							<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
+					<div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/30 mb-6">
+						<svg class="h-5 w-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
 						</svg>
-						<span class="text-sm font-semibold text-purple-300">AGE Premium</span>
+						<span class="text-sm font-semibold text-emerald-300">AGE Premium</span>
 					</div>
 					<h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
-						Elevate Your <span class="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Game</span>
+						Elevate Your <span class="bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">Game</span>
 					</h1>
 					<p class="text-xl text-gray-400 max-w-2xl mx-auto">
 						Unlock exclusive content, event discounts, and premium features to take your competitive journey to the next level.
@@ -252,9 +252,9 @@
 									<span class="px-2 py-1 rounded-full bg-amber-500/20 text-xs font-medium text-amber-400">Coming Soon</span>
 								</div>
 							{/if}
-							<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 mb-4">
+							<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/20 to-green-500/20 mb-4">
 								{#if benefit.icon === 'article'}
-									<svg class="h-6 w-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<svg class="h-6 w-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
 									</svg>
 								{:else if benefit.icon === 'ticket'}
@@ -300,14 +300,14 @@
 						<button
 							type="button"
 							on:click={() => selectedPlan = 'monthly'}
-							class="relative rounded-2xl border-2 p-6 text-left transition-all duration-300 {selectedPlan === 'monthly' ? 'border-purple-500 bg-purple-500/10' : 'border-gray-800 bg-gray-900/50 hover:border-gray-700'}"
+							class="relative rounded-2xl border-2 p-6 text-left transition-all duration-300 {selectedPlan === 'monthly' ? 'border-emerald-500 bg-emerald-500/10' : 'border-gray-800 bg-gray-900/50 hover:border-gray-700'}"
 						>
 							<div class="flex items-start justify-between mb-4">
 								<div>
 									<h3 class="text-xl font-bold text-white">Monthly</h3>
 									<p class="text-sm text-gray-400">Flexible, cancel anytime</p>
 								</div>
-								<div class="h-6 w-6 rounded-full border-2 flex items-center justify-center {selectedPlan === 'monthly' ? 'border-purple-500 bg-purple-500' : 'border-gray-600'}">
+								<div class="h-6 w-6 rounded-full border-2 flex items-center justify-center {selectedPlan === 'monthly' ? 'border-emerald-500 bg-emerald-500' : 'border-gray-600'}">
 									{#if selectedPlan === 'monthly'}
 										<svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
@@ -325,7 +325,7 @@
 						<button
 							type="button"
 							on:click={() => selectedPlan = 'yearly'}
-							class="relative rounded-2xl border-2 p-6 text-left transition-all duration-300 {selectedPlan === 'yearly' ? 'border-purple-500 bg-purple-500/10' : 'border-gray-800 bg-gray-900/50 hover:border-gray-700'}"
+							class="relative rounded-2xl border-2 p-6 text-left transition-all duration-300 {selectedPlan === 'yearly' ? 'border-emerald-500 bg-emerald-500/10' : 'border-gray-800 bg-gray-900/50 hover:border-gray-700'}"
 						>
 							<div class="absolute -top-3 left-4">
 								<span class="px-3 py-1 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 text-xs font-bold text-white shadow-lg">
@@ -337,7 +337,7 @@
 									<h3 class="text-xl font-bold text-white">Yearly</h3>
 									<p class="text-sm text-gray-400">1 month free!</p>
 								</div>
-								<div class="h-6 w-6 rounded-full border-2 flex items-center justify-center {selectedPlan === 'yearly' ? 'border-purple-500 bg-purple-500' : 'border-gray-600'}">
+								<div class="h-6 w-6 rounded-full border-2 flex items-center justify-center {selectedPlan === 'yearly' ? 'border-emerald-500 bg-emerald-500' : 'border-gray-600'}">
 									{#if selectedPlan === 'yearly'}
 										<svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
@@ -349,7 +349,7 @@
 								<span class="text-4xl font-bold text-white">$110</span>
 								<span class="text-gray-400">/year</span>
 							</div>
-							<p class="text-xs text-green-400 mt-2">That's just $9.17/month</p>
+							<p class="text-xs text-emerald-400 mt-2">That's just $9.17/month</p>
 						</button>
 					</div>
 
@@ -358,9 +358,9 @@
 						<div class="relative rounded-2xl border border-gray-800 bg-gray-900/80 backdrop-blur-xl p-8 text-center">
 							<div class="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/5 via-transparent to-black/20 pointer-events-none"></div>
 							<div class="relative">
-								<div class="flex h-12 w-12 items-center justify-center rounded-full bg-purple-500/20 mx-auto mb-4">
-									<svg class="h-6 w-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+								<div class="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 mx-auto mb-4">
+									<svg class="h-6 w-6 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+										<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
 									</svg>
 								</div>
 								<h3 class="text-xl font-bold text-white mb-2">Ready to subscribe?</h3>
@@ -368,7 +368,7 @@
 								<div class="flex flex-col sm:flex-row gap-3 justify-center">
 									<a
 										href="/login?redirect=/premium"
-										class="rounded-xl bg-gradient-to-r from-purple-500 to-blue-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-purple-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/30 hover:from-purple-400 hover:to-blue-500"
+										class="rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/30 hover:from-emerald-400 hover:to-green-500"
 									>
 										Sign In to Subscribe
 									</a>
@@ -402,8 +402,8 @@
 									submitText={planDetails.buttonText}
 									isSubscription={true}
 									subscriptionType={selectedPlan}
-									savedCards={[]}
-									showSaveCardOption={false}
+									savedCards={data.savedCards || []}
+									showSaveCardOption={true}
 								/>
 							</div>
 						</div>

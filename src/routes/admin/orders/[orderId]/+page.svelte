@@ -7,6 +7,21 @@
 	let refundLoading = $state(false);
 	let refundError = $state(form?.error || '');
 	let refundSuccess = $state(form?.success ? form.message : '');
+	let showRefundModal = $state(false);
+	let refundFormRef = $state();
+
+	function openRefundModal() {
+		showRefundModal = true;
+	}
+
+	function closeRefundModal() {
+		showRefundModal = false;
+	}
+
+	function confirmRefund() {
+		showRefundModal = false;
+		refundFormRef.requestSubmit();
+	}
 
 	function formatCurrency(amount) {
 		return new Intl.NumberFormat('en-US', {
@@ -395,6 +410,7 @@
 					<form
 						method="POST"
 						action="?/refund"
+						bind:this={refundFormRef}
 						use:enhance={() => {
 							refundLoading = true;
 							refundError = '';
@@ -430,7 +446,8 @@
 								</div>
 							</div>
 							<button
-								type="submit"
+								type="button"
+								onclick={openRefundModal}
 								disabled={refundLoading}
 								class="w-full rounded-lg bg-red-500/20 px-4 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
 							>
@@ -453,3 +470,93 @@
 		</div>
 		</div>
 	</div>
+
+<!-- Refund Confirmation Modal -->
+{#if showRefundModal}
+	<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+		<!-- Backdrop -->
+		<button
+			type="button"
+			class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+			onclick={closeRefundModal}
+			aria-label="Close modal"
+		></button>
+
+		<!-- Modal Content -->
+		<div class="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-gray-900 shadow-2xl">
+			<!-- Header -->
+			<div class="flex items-center gap-4 border-b border-white/5 bg-red-500/5 px-6 py-5">
+				<div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/20">
+					<svg class="h-6 w-6 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+					</svg>
+				</div>
+				<div>
+					<h3 class="text-lg font-bold text-white">Confirm Refund</h3>
+					<p class="text-sm text-gray-400">This action cannot be undone</p>
+				</div>
+			</div>
+
+			<!-- Body -->
+			<div class="px-6 py-5">
+				<p class="text-sm text-gray-300 mb-4">
+					Are you sure you want to process this refund? This will:
+				</p>
+				<ul class="space-y-2 text-sm text-gray-400">
+					<li class="flex items-start gap-2">
+						<svg class="h-5 w-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+						<span>Void or refund the transaction via Authorize.net</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<svg class="h-5 w-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						</svg>
+						<span>Issue a refund of <strong class="text-white">{formatCurrency(data.order.amount)}</strong> to the customer</span>
+					</li>
+					{#if data.order.meta?.type === 'ticket'}
+						<li class="flex items-start gap-2">
+							<svg class="h-5 w-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+							<span>Invalidate the ticket for check-in</span>
+						</li>
+					{:else if data.order.meta?.type === 'course'}
+						<li class="flex items-start gap-2">
+							<svg class="h-5 w-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+							<span>Revoke the customer's course access</span>
+						</li>
+					{:else if data.order.meta?.type === 'subscription'}
+						<li class="flex items-start gap-2">
+							<svg class="h-5 w-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+							</svg>
+							<span>Cancel subscription and downgrade to free tier</span>
+						</li>
+					{/if}
+				</ul>
+			</div>
+
+			<!-- Footer -->
+			<div class="flex gap-3 border-t border-white/5 bg-gray-950/50 px-6 py-4">
+				<button
+					type="button"
+					onclick={closeRefundModal}
+					class="flex-1 rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-300 transition-colors hover:bg-gray-700 hover:text-white"
+				>
+					Cancel
+				</button>
+				<button
+					type="button"
+					onclick={confirmRefund}
+					class="flex-1 rounded-xl bg-red-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-600"
+				>
+					Yes, Process Refund
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

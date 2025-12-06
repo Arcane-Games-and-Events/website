@@ -2552,8 +2552,8 @@
 					<!-- Season & Circuit Row -->
 					<div class="flex gap-3">
 						<!-- Season Dropdown -->
-						<div class="flex-1">
-							<label class="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">Season</label>
+						<label class="flex-1">
+							<span class="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">Season</span>
 							<select
 								onchange={(e) => changeSeason(e.target.value)}
 								class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2 text-sm text-white focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/50 appearance-none cursor-pointer"
@@ -2565,11 +2565,11 @@
 									</option>
 								{/each}
 							</select>
-						</div>
+						</label>
 
 						<!-- Circuit Dropdown -->
-						<div class="flex-1">
-							<label class="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">Circuit</label>
+						<label class="flex-1">
+							<span class="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">Circuit</span>
 							<select
 								onchange={(e) => (standingsCircuit = e.target.value)}
 								class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2 text-sm text-white focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/50 appearance-none cursor-pointer"
@@ -2586,12 +2586,12 @@
 									<option value="New England" selected={standingsCircuit === 'New England'}>New England</option>
 								{/if}
 							</select>
-						</div>
+						</label>
 					</div>
 
 					<!-- Sort Options -->
 					<div>
-						<label class="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">Sort by</label>
+						<span class="block text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-1.5">Sort by</span>
 						<div class="flex gap-1.5 overflow-x-auto pb-0.5">
 							<button
 								onclick={() => toggleSort('rank')}

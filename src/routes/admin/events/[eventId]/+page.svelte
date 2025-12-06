@@ -463,7 +463,7 @@
 		<div class="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-white/10 bg-gray-900/50 p-1">
 			{#each [
 				{ id: 'overview', label: 'Overview' },
-				{ id: 'registrations', label: `Registrations (${data.tickets.length})` },
+				{ id: 'registrations', label: `Registrations (${data.stats.totalTickets})` },
 				{ id: 'import', label: 'Import CSV' },
 				{ id: 'results', label: `Results (${data.existingResults?.length || 0})` },
 				{ id: 'decklists', label: `Decklists (${data.existingDecklists?.length || 0})` },

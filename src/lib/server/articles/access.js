@@ -6,6 +6,7 @@
  * - Admin role (always has access)
  * - Premium role with active subscription
  * - Premium role with cancelled subscription but within paid period
+ * - Premium role with payment_failed status but within grace period
  *
  * @param {Object|null} user - The user object from locals.user
  * @returns {boolean} Whether the user has premium access
@@ -24,6 +25,14 @@ export function userHasPremiumAccess(user) {
 
 	// Premium with cancelled subscription - check if within paid period
 	if (user.subscriptionStatus === 'cancelled' && user.subscriptionEndDate) {
+		const endDate = new Date(user.subscriptionEndDate);
+		const now = new Date();
+		return now < endDate;
+	}
+
+	// Premium with payment_failed - check if within grace period
+	// Users get a 7-day grace period to update their payment method
+	if (user.subscriptionStatus === 'payment_failed' && user.subscriptionEndDate) {
 		const endDate = new Date(user.subscriptionEndDate);
 		const now = new Date();
 		return now < endDate;
@@ -53,6 +62,13 @@ export function isPremiumExpired(user) {
 
 	// Cancelled and past end date
 	if (user.subscriptionStatus === 'cancelled' && user.subscriptionEndDate) {
+		const endDate = new Date(user.subscriptionEndDate);
+		const now = new Date();
+		return now >= endDate;
+	}
+
+	// Payment failed and past grace period
+	if (user.subscriptionStatus === 'payment_failed' && user.subscriptionEndDate) {
 		const endDate = new Date(user.subscriptionEndDate);
 		const now = new Date();
 		return now >= endDate;

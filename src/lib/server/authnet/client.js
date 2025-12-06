@@ -297,6 +297,74 @@ class AuthNetClient {
 	}
 
 	/**
+	 * Create a subscription from customer profile (ARB - Automated Recurring Billing)
+	 * @param {Object} options - Subscription options
+	 * @returns {Promise<Object>} Subscription result
+	 */
+	async createSubscriptionFromCustomerProfile(options) {
+		return new Promise((resolve, reject) => {
+			const merchantAuth = this.getMerchantAuth();
+
+			// Payment schedule
+			const interval = new ApiContracts.PaymentScheduleType.Interval();
+			interval.setLength(options.intervalLength || 1);
+			interval.setUnit(options.intervalUnit || ApiContracts.ARBSubscriptionUnitEnum.MONTHS);
+
+			const paymentSchedule = new ApiContracts.PaymentScheduleType();
+			paymentSchedule.setInterval(interval);
+			paymentSchedule.setStartDate(options.startDate || new Date().toISOString().split('T')[0]);
+			paymentSchedule.setTotalOccurrences(options.totalOccurrences || 9999);
+
+			// Customer profile for ARB subscription (uses CustomerProfileIdType, not CustomerProfilePaymentType)
+			// Note: When using a customer profile, we cannot also send customer data
+			const customerProfile = new ApiContracts.CustomerProfileIdType();
+			customerProfile.setCustomerProfileId(options.customerProfileId);
+			customerProfile.setCustomerPaymentProfileId(options.paymentProfileId);
+
+			// Subscription
+			const subscription = new ApiContracts.ARBSubscriptionType();
+			subscription.setName(options.subscriptionName || 'Subscription');
+			subscription.setPaymentSchedule(paymentSchedule);
+			subscription.setAmount(options.amount);
+			subscription.setProfile(customerProfile);
+
+			// Create request
+			const request = new ApiContracts.ARBCreateSubscriptionRequest();
+			request.setMerchantAuthentication(merchantAuth);
+			request.setSubscription(subscription);
+
+			const ctrl = new ApiControllers.ARBCreateSubscriptionController(request.getJSON());
+
+			// Explicitly set the environment
+			if (this.environment === 'production') {
+				ctrl.setEnvironment(Constants.constants.endpoint.production);
+			} else {
+				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
+			}
+
+			ctrl.execute(() => {
+				const apiResponse = ctrl.getResponse();
+				const response = new ApiContracts.ARBCreateSubscriptionResponse(apiResponse);
+
+				if (response !== null) {
+					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
+						resolve({
+							success: true,
+							subscriptionId: response.getSubscriptionId()
+						});
+					} else {
+						reject(new Error(
+							response.getMessages().getMessage()[0].getText()
+						));
+					}
+				} else {
+					reject(new Error('No response from Authorize.net'));
+				}
+			});
+		});
+	}
+
+	/**
 	 * Cancel a subscription
 	 * @param {string} subscriptionId - Subscription ID to cancel
 	 * @returns {Promise<Object>} Cancellation result
@@ -678,6 +746,116 @@ class AuthNetClient {
 						} else {
 							reject(new Error(response.getMessages().getMessage()[0].getText()));
 						}
+					}
+				} else {
+					reject(new Error('No response from Authorize.net'));
+				}
+			});
+		});
+	}
+
+	/**
+	 * Get subscription status from Authorize.net
+	 * @param {string} subscriptionId - Subscription ID
+	 * @returns {Promise<Object>} Subscription status
+	 */
+	async getSubscriptionStatus(subscriptionId) {
+		return new Promise((resolve, reject) => {
+			const merchantAuth = this.getMerchantAuth();
+
+			const request = new ApiContracts.ARBGetSubscriptionStatusRequest();
+			request.setMerchantAuthentication(merchantAuth);
+			request.setSubscriptionId(subscriptionId);
+
+			const ctrl = new ApiControllers.ARBGetSubscriptionStatusController(request.getJSON());
+
+			if (this.environment === 'production') {
+				ctrl.setEnvironment(Constants.constants.endpoint.production);
+			} else {
+				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
+			}
+
+			ctrl.execute(() => {
+				const apiResponse = ctrl.getResponse();
+				const response = new ApiContracts.ARBGetSubscriptionStatusResponse(apiResponse);
+
+				if (response !== null) {
+					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
+						// Status can be: active, expired, suspended, cancelled, terminated
+						resolve({
+							success: true,
+							subscriptionId,
+							status: response.getStatus()
+						});
+					} else {
+						reject(new Error(
+							response.getMessages().getMessage()[0].getText()
+						));
+					}
+				} else {
+					reject(new Error('No response from Authorize.net'));
+				}
+			});
+		});
+	}
+
+	/**
+	 * Get subscription details including transactions
+	 * @param {string} subscriptionId - Subscription ID
+	 * @returns {Promise<Object>} Subscription details
+	 */
+	async getSubscription(subscriptionId) {
+		return new Promise((resolve, reject) => {
+			const merchantAuth = this.getMerchantAuth();
+
+			const request = new ApiContracts.ARBGetSubscriptionRequest();
+			request.setMerchantAuthentication(merchantAuth);
+			request.setSubscriptionId(subscriptionId);
+			request.setIncludeTransactions(true);
+
+			const ctrl = new ApiControllers.ARBGetSubscriptionController(request.getJSON());
+
+			if (this.environment === 'production') {
+				ctrl.setEnvironment(Constants.constants.endpoint.production);
+			} else {
+				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
+			}
+
+			ctrl.execute(() => {
+				const apiResponse = ctrl.getResponse();
+				const response = new ApiContracts.ARBGetSubscriptionResponse(apiResponse);
+
+				if (response !== null) {
+					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
+						const sub = response.getSubscription();
+						const arbTransactions = sub.getArbTransactions();
+
+						// Parse transactions if available
+						let transactions = [];
+						if (arbTransactions && arbTransactions.getArbTransaction) {
+							const txList = arbTransactions.getArbTransaction();
+							if (Array.isArray(txList)) {
+								transactions = txList.map(tx => ({
+									transId: tx.getTransId(),
+									response: tx.getResponse(),
+									submitTimeUTC: tx.getSubmitTimeUTC(),
+									payNum: tx.getPayNum()
+								}));
+							}
+						}
+
+						resolve({
+							success: true,
+							subscriptionId,
+							name: sub.getName(),
+							status: sub.getStatus(),
+							amount: sub.getAmount(),
+							transactions
+						});
+					} else {
+						reject(new Error(
+							response.getMessages().getMessage()[0].getText()
+						));
 					}
 				} else {
 					reject(new Error('No response from Authorize.net'));

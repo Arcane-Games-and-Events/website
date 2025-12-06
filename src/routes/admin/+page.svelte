@@ -2114,6 +2114,7 @@
 												</button>
 											</th>
 											<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Type</th>
+											<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Status</th>
 											<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
 												<button onclick={() => { ordersSortBy = 'date'; ordersSortDir = ordersSortDir === 'desc' ? 'asc' : 'desc'; }} class="flex items-center gap-1 hover:text-white">
 													Date
@@ -2153,6 +2154,14 @@
 														{order.meta?.type || 'payment'}
 													</span>
 												</td>
+												<td class="px-6 py-4">
+													<span class="rounded-full px-2.5 py-1 text-xs font-medium capitalize
+														{order.status === 'refunded' ? 'bg-red-500/20 text-red-400' :
+														order.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' :
+														'bg-emerald-500/20 text-emerald-400'}">
+														{order.status || 'completed'}
+													</span>
+												</td>
 												<td class="px-6 py-4 text-sm text-gray-500">
 													{formatDate(order.createdAt)}
 												</td>
@@ -2167,7 +2176,7 @@
 											</tr>
 										{:else}
 											<tr>
-												<td colspan="6" class="px-6 py-12 text-center">
+												<td colspan="7" class="px-6 py-12 text-center">
 													<div class="flex flex-col items-center">
 														<svg class="mb-4 h-12 w-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />

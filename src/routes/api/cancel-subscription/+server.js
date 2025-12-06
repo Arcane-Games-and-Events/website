@@ -13,12 +13,9 @@ import { eq } from 'drizzle-orm';
  * logic will deny premium access.
  */
 export async function POST({ locals }) {
-	console.log('=== CANCEL SUBSCRIPTION ENDPOINT CALLED ===');
-
 	try {
 		// Ensure user is logged in
 		const currentUser = locals.user;
-		console.log('Current user:', currentUser?.email, 'Role:', currentUser?.role);
 
 		if (!currentUser) {
 			return json({ error: 'You must be logged in to cancel' }, { status: 401 });
@@ -34,15 +31,11 @@ export async function POST({ locals }) {
 			return json({ error: 'Subscription is already cancelled' }, { status: 400 });
 		}
 
-		console.log('Cancelling subscription:', currentUser.subscriptionId);
-
 		// Cancel subscription with Authorize.net
 		try {
 			const result = await authnet.cancelSubscription(currentUser.subscriptionId);
-			console.log('Authorize.net cancellation response:', result);
 
 			if (result.success) {
-				console.log('Subscription cancelled successfully in Authorize.net');
 
 				// Calculate when access should end (the next billing date is when the paid period ends)
 				// If nextBillingDate is available, use it; otherwise calculate from start date
@@ -70,19 +63,14 @@ export async function POST({ locals }) {
 					})
 					.where(eq(userTable.id, currentUser.id));
 
-				console.log('Subscription marked as cancelled, access until:', subscriptionEndDate);
-
 				// Invalidate current session and create new one with updated subscription status
 				if (locals.session) {
 					await auth.invalidateSession(locals.session.id);
-					console.log('Old session invalidated');
 				}
 
 				// Create new session with updated user data
 				const newSession = await auth.createSession(currentUser.id, {});
 				const sessionCookie = auth.createSessionCookie(newSession.id);
-
-				console.log('New session created');
 
 				return json(
 					{

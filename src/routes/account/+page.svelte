@@ -179,13 +179,13 @@
 			id: 'security',
 			name: 'Security',
 			icon: 'M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z',
-			color: 'emerald'
+			color: 'purple'
 		},
 		{
 			id: 'plan',
 			name: 'Subscription',
-			icon: 'M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z',
-			color: 'purple'
+			icon: 'M13 2L3 14h9l-1 8 10-12h-9l1-8z',
+			color: 'emerald'
 		},
 		{
 			id: 'cards',
@@ -204,16 +204,22 @@
 	// For subscription cancellation
 	let cancelling = false;
 	let cancelError = '';
+	let showCancelModal = false;
+
+	function openCancelModal() {
+		showCancelModal = true;
+	}
+
+	function closeCancelModal() {
+		showCancelModal = false;
+	}
+
+	function confirmCancellation() {
+		showCancelModal = false;
+		handleCancelSubscription();
+	}
 
 	async function handleCancelSubscription() {
-		if (
-			!confirm(
-				'Are you sure you want to cancel your premium subscription? You will retain access until the end of your current billing period.'
-			)
-		) {
-			return;
-		}
-
 		cancelling = true;
 		cancelError = '';
 
@@ -239,6 +245,47 @@
 			console.error('Cancel error:', err);
 		} finally {
 			cancelling = false;
+		}
+	}
+
+	// Refresh subscription state
+	let refreshing = false;
+	let refreshError = '';
+	let refreshSuccess = '';
+
+	async function refreshSubscription() {
+		refreshing = true;
+		refreshError = '';
+		refreshSuccess = '';
+
+		try {
+			const response = await fetch('/api/subscription/refresh', {
+				method: 'POST'
+			});
+
+			const result = await response.json();
+
+			if (response.ok && result.success) {
+				if (result.updated) {
+					refreshSuccess = 'Subscription information updated';
+					// Reload page to reflect changes
+					setTimeout(() => window.location.reload(), 1500);
+				} else {
+					refreshSuccess = 'Already up to date';
+				}
+			} else {
+				refreshError = result.error || 'Failed to refresh';
+			}
+		} catch (err) {
+			refreshError = 'Network error';
+			console.error('Refresh error:', err);
+		} finally {
+			refreshing = false;
+			// Clear messages after a few seconds
+			setTimeout(() => {
+				refreshSuccess = '';
+				refreshError = '';
+			}, 3000);
 		}
 	}
 
@@ -852,24 +899,44 @@
 							<div class="p-6">
 								{#if isPremium}
 									<!-- Premium Plan Details -->
-									<div class="flex items-center gap-4 mb-6 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20">
-										<div class="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-blue-600 shadow-lg shadow-purple-500/25">
+									<div class="flex items-center gap-4 mb-6 p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/20">
+										<div class="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-lg shadow-emerald-500/25">
 											<svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-												<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+												<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
 											</svg>
 										</div>
 										<div class="flex-1">
-											<div class="text-lg font-bold text-white">AGE Premium</div>
+											<div class="text-lg font-bold text-white">
+												{subscriptionType === 'weekly_test' ? 'Test Subscription' : 'AGE Premium'}
+											</div>
 											<div class="text-sm text-gray-400">
-												{subscriptionType === 'yearly' ? 'Annual' : 'Monthly'} Subscription
+												{#if subscriptionType === 'yearly'}
+													Annual Subscription
+												{:else if subscriptionType === 'weekly_test'}
+													Weekly Test (Dev Only)
+												{:else}
+													Monthly Subscription
+												{/if}
 											</div>
 										</div>
 										<div class="text-right">
 											<div class="text-2xl font-bold text-white">
-												{subscriptionType === 'yearly' ? '$110' : '$10'}
+												{#if subscriptionType === 'yearly'}
+													$110
+												{:else if subscriptionType === 'weekly_test'}
+													$0.01
+												{:else}
+													$10
+												{/if}
 											</div>
 											<div class="text-sm text-gray-500">
-												{subscriptionType === 'yearly' ? '/year' : '/month'}
+												{#if subscriptionType === 'yearly'}
+													/year
+												{:else if subscriptionType === 'weekly_test'}
+													/week
+												{:else}
+													/month
+												{/if}
 											</div>
 										</div>
 									</div>
@@ -886,6 +953,38 @@
 											<div class="p-4 rounded-xl bg-white/[0.02] border border-white/5">
 												<div class="text-xs text-gray-500 uppercase tracking-wider mb-1">Next Billing</div>
 												<div class="text-sm font-medium text-white">{formatDate(nextBillingDate)}</div>
+												<!-- Subtle refresh link -->
+												<button
+													on:click={refreshSubscription}
+													disabled={refreshing}
+													class="group relative mt-2 text-xs text-gray-600 hover:text-gray-400 transition-colors disabled:opacity-50"
+													title="Sync billing info from payment provider"
+												>
+													{#if refreshing}
+														<span class="flex items-center gap-1">
+															<svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+																<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+																<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+															</svg>
+															Refreshing...
+														</span>
+													{:else if refreshSuccess}
+														<span class="text-emerald-500">{refreshSuccess}</span>
+													{:else if refreshError}
+														<span class="text-red-400">{refreshError}</span>
+													{:else}
+														<span class="flex items-center gap-1">
+															<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+															</svg>
+															Refresh
+														</span>
+														<!-- Tooltip -->
+														<span class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded bg-gray-800 px-2 py-1 text-center text-xs text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal">
+															Sync subscription info from Authorize.net if billing date seems incorrect
+														</span>
+													{/if}
+												</button>
 											</div>
 										{/if}
 										{#if isCancelled && subscriptionEndDate}
@@ -956,26 +1055,26 @@
 									{#if !isPremium}
 										<a
 											href="/premium"
-											class="flex items-center justify-center gap-2 w-full rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all"
+											class="flex items-center justify-center gap-2 w-full rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all"
 										>
 											<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-												<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+												<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
 											</svg>
 											Upgrade to Premium
 										</a>
 									{:else if isCancelled}
 										<a
 											href="/premium"
-											class="flex items-center justify-center gap-2 w-full rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all"
+											class="flex items-center justify-center gap-2 w-full rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all"
 										>
 											<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-												<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+												<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
 											</svg>
 											Resubscribe Now
 										</a>
 									{:else if hasSubscription}
 										<button
-											on:click={handleCancelSubscription}
+											on:click={openCancelModal}
 											disabled={cancelling}
 											class="flex items-center justify-center gap-2 w-full rounded-xl border border-red-500/30 bg-red-500/10 px-6 py-3 text-sm font-semibold text-red-400 hover:bg-red-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 										>
@@ -1330,13 +1429,13 @@
 											<div class="flex items-center justify-between">
 												<div class="flex items-center gap-4">
 													<div class="flex h-10 w-10 items-center justify-center rounded-lg
-														{order.meta?.type === 'subscription' ? 'bg-purple-500/10' : ''}
+														{order.meta?.type === 'subscription' ? 'bg-emerald-500/10' : ''}
 														{order.meta?.type === 'ticket' ? 'bg-blue-500/10' : ''}
 														{order.meta?.type === 'course' ? 'bg-emerald-500/10' : ''}
 														{!order.meta?.type ? 'bg-gray-500/10' : ''}">
 														{#if order.meta?.type === 'subscription'}
-															<svg class="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
-																<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+															<svg class="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+																<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
 															</svg>
 														{:else if order.meta?.type === 'ticket'}
 															<svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -1409,10 +1508,10 @@
 									<div class="flex flex-wrap items-center justify-center gap-3">
 										<a
 											href="/premium"
-											class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all"
+											class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all"
 										>
 											<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-												<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+												<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
 											</svg>
 											Get Premium
 										</a>
@@ -1451,3 +1550,77 @@
 		</div>
 	</div>
 </div>
+
+<!-- Cancel Subscription Modal -->
+{#if showCancelModal}
+	<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+		<!-- Backdrop -->
+		<button
+			type="button"
+			class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+			on:click={closeCancelModal}
+			aria-label="Close modal"
+		></button>
+
+		<!-- Modal Content -->
+		<div class="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-gray-900 shadow-2xl">
+			<!-- Header -->
+			<div class="flex items-center gap-4 border-b border-white/5 bg-amber-500/5 px-6 py-5">
+				<div class="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/20">
+					<svg class="h-6 w-6 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+					</svg>
+				</div>
+				<div>
+					<h3 class="text-lg font-bold text-white">Cancel Subscription</h3>
+					<p class="text-sm text-gray-400">We're sorry to see you go</p>
+				</div>
+			</div>
+
+			<!-- Body -->
+			<div class="px-6 py-5">
+				<p class="text-sm text-gray-300 mb-4">
+					Are you sure you want to cancel your premium subscription?
+				</p>
+				<ul class="space-y-2 text-sm text-gray-400">
+					<li class="flex items-start gap-2">
+						<svg class="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+						</svg>
+						<span>You'll retain premium access until <strong class="text-white">{formatDate(nextBillingDate)}</strong></span>
+					</li>
+					<li class="flex items-start gap-2">
+						<svg class="h-5 w-5 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+						</svg>
+						<span>After that, you'll lose access to premium articles and event discounts</span>
+					</li>
+					<li class="flex items-start gap-2">
+						<svg class="h-5 w-5 text-blue-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+						</svg>
+						<span>You can resubscribe anytime to regain access</span>
+					</li>
+				</ul>
+			</div>
+
+			<!-- Footer -->
+			<div class="flex gap-3 border-t border-white/5 bg-gray-950/50 px-6 py-4">
+				<button
+					type="button"
+					on:click={closeCancelModal}
+					class="flex-1 rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-300 transition-colors hover:bg-gray-700 hover:text-white"
+				>
+					Keep Subscription
+				</button>
+				<button
+					type="button"
+					on:click={confirmCancellation}
+					class="flex-1 rounded-xl bg-red-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-600"
+				>
+					Yes, Cancel
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

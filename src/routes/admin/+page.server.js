@@ -361,11 +361,45 @@ export async function load({ locals }) {
 			};
 		});
 
+		// ========== ENRICH ORDERS WITH REFUND STATUS ==========
+		// Get all ticket IDs from order meta
+		const ticketOrderIds = allOrders
+			.filter(o => o.meta?.type === 'ticket' && o.meta?.ticketId)
+			.map(o => o.meta.ticketId);
+
+		// Fetch refund status for all tickets in one query
+		let ticketRefundMap = new Map();
+		if (ticketOrderIds.length > 0) {
+			const ticketStatuses = await db
+				.select({
+					id: ticket.id,
+					refunded: ticket.refunded
+				})
+				.from(ticket)
+				.where(sql`${ticket.id} IN ${ticketOrderIds}`);
+
+			ticketStatuses.forEach(t => {
+				ticketRefundMap.set(t.id, t.refunded);
+			});
+		}
+
+		// Enrich orders with status
+		const enrichedOrders = allOrders.map(o => {
+			let status = 'completed';
+			if (o.meta?.type === 'ticket' && o.meta?.ticketId) {
+				const isRefunded = ticketRefundMap.get(o.meta.ticketId);
+				status = isRefunded ? 'refunded' : 'completed';
+			} else if (o.meta?.type === 'subscription') {
+				status = 'active'; // Subscriptions are managed separately
+			}
+			return { ...o, status };
+		});
+
 		return {
 			user: locals.user,
 			events,
 			eventAnalytics,
-			allOrders,
+			allOrders: enrichedOrders,
 			allUsers,
 			standings,
 			lssSeasons,

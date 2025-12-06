@@ -1,5 +1,8 @@
 // src/hooks.server.js
 import { auth } from '$lib/server/lucia';
+import { db } from '$lib/server/db';
+import { user as userTable } from '$lib/server/db/schema.js';
+import { eq } from 'drizzle-orm';
 
 export const handle = async ({ event, resolve }) => {
 	// read the session id from the cookie
@@ -21,6 +24,50 @@ export const handle = async ({ event, resolve }) => {
 			// if valid & fresh, renew cookie
 			const renewed = auth.createSessionCookie(session.id);
 			event.cookies.set(renewed.name, renewed.value, { ...renewed.attributes, path: '/' });
+		}
+
+		// Check for expired subscriptions (cancelled or payment_failed) and downgrade to free
+		if (user && user.role === 'premium' && user.subscriptionEndDate) {
+			const now = new Date();
+			const endDate = new Date(user.subscriptionEndDate);
+
+			// Handle cancelled subscriptions that have reached their end date
+			if (user.subscriptionStatus === 'cancelled' && now >= endDate) {
+				await db
+					.update(userTable)
+					.set({
+						role: 'free',
+						subscriptionStatus: 'expired',
+						subscriptionId: null
+					})
+					.where(eq(userTable.id, user.id));
+
+				user = {
+					...user,
+					role: 'free',
+					subscriptionStatus: 'expired',
+					subscriptionId: null
+				};
+			}
+
+			// Handle payment_failed subscriptions that have exceeded grace period
+			if (user.subscriptionStatus === 'payment_failed' && now >= endDate) {
+				await db
+					.update(userTable)
+					.set({
+						role: 'free',
+						subscriptionStatus: 'expired',
+						subscriptionId: null
+					})
+					.where(eq(userTable.id, user.id));
+
+				user = {
+					...user,
+					role: 'free',
+					subscriptionStatus: 'expired',
+					subscriptionId: null
+				};
+			}
 		}
 	}
 

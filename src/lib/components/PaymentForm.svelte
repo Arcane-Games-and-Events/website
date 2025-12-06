@@ -411,7 +411,10 @@
 		<button
 			type="submit"
 			disabled={loading}
-			class="w-full rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 text-lg font-semibold text-white shadow-lg shadow-blue-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/30 hover:from-blue-400 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center justify-center gap-2"
+			class="w-full rounded-xl bg-gradient-to-r px-6 py-4 text-lg font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center justify-center gap-2
+				{isSubscription
+					? 'from-emerald-500 to-green-600 shadow-emerald-500/25 hover:shadow-emerald-500/30 hover:from-emerald-400 hover:to-green-500'
+					: 'from-blue-500 to-blue-600 shadow-blue-500/25 hover:shadow-blue-500/30 hover:from-blue-400 hover:to-blue-500'}"
 		>
 			{#if loading}
 				<svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
