@@ -166,7 +166,8 @@ class AuthNetClient {
 
 			// Create customer profile
 			const customerProfile = new ApiContracts.CustomerProfileType();
-			customerProfile.setMerchantCustomerId(options.customerId);
+			// Authorize.net merchantCustomerId has max length of 20 characters
+			customerProfile.setMerchantCustomerId(options.customerId.substring(0, 20));
 			customerProfile.setEmail(options.email);
 			customerProfile.setPaymentProfiles([paymentProfile]);
 
@@ -419,7 +420,8 @@ class AuthNetClient {
 
 			// Create customer profile without payment (we'll add payment profiles separately)
 			const customerProfile = new ApiContracts.CustomerProfileType();
-			customerProfile.setMerchantCustomerId(options.customerId);
+			// Authorize.net merchantCustomerId has max length of 20 characters
+			customerProfile.setMerchantCustomerId(options.customerId.substring(0, 20));
 			customerProfile.setEmail(options.email);
 
 			// Create request
