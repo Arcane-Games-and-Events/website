@@ -65,17 +65,6 @@
 				</div>
 			</div>
 
-			<!-- Ticket Code - Prominent Display -->
-			<div class="relative px-6 py-8 text-center border-b border-dashed border-white/10">
-				<p class="text-xs text-gray-500 uppercase tracking-wider mb-2">Your Ticket Code</p>
-				<div class="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-blue-500/10 border border-blue-500/30">
-					<span class="text-2xl sm:text-3xl font-mono font-bold text-blue-400 tracking-wider">
-						{ticket.code}
-					</span>
-				</div>
-				<p class="text-xs text-gray-500 mt-3">Present this code at the event</p>
-			</div>
-
 			<!-- Ticket Details -->
 			<div class="relative p-6">
 				<div class="grid gap-4">
