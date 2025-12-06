@@ -4,8 +4,10 @@ import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index
 
 export async function load({ setHeaders }) {
 	// Cache articles list for 5 minutes, allow stale for 1 hour while revalidating
+	// Vary by Cookie ensures sidebar updates properly after login/logout
 	setHeaders({
-		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
+		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
+		'vary': 'Cookie'
 	});
 
 	try {

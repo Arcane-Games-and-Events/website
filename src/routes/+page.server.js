@@ -190,17 +190,21 @@ export async function load({ setHeaders, url, locals }) {
 		if (locals.user) {
 			// Logged-in users: never cache publicly (prevents session data leaking to other users)
 			setHeaders({
-				'cache-control': 'private, no-cache, no-store, must-revalidate'
+				'cache-control': 'private, no-cache, no-store, must-revalidate',
+				'vary': 'Cookie'
 			});
 		} else if (articles.length > 0) {
 			// Anonymous users with articles: cache at CDN level
+			// Vary by Cookie ensures logged-in users get fresh responses after login
 			setHeaders({
-				'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
+				'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
+				'vary': 'Cookie'
 			});
 		} else {
 			// Anonymous users without articles: don't cache error state
 			setHeaders({
-				'cache-control': 'private, no-cache, no-store, must-revalidate'
+				'cache-control': 'private, no-cache, no-store, must-revalidate',
+				'vary': 'Cookie'
 			});
 		}
 

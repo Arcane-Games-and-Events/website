@@ -177,15 +177,18 @@ export async function load({ params, locals, setHeaders }) {
 		// Cache free articles for 5 minutes at the edge
 		// Premium content cannot be cached publicly since the same URL returns
 		// different content depending on user's premium status
+		// Vary by Cookie ensures sidebar updates properly after login/logout
 		if (!isPremium) {
 			setHeaders({
-				'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
+				'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
+				'vary': 'Cookie'
 			});
 		} else {
 			// Premium articles must not be cached publicly - each request needs fresh auth check
 			// Otherwise a cached preview might be served to premium users, or vice versa
 			setHeaders({
-				'cache-control': 'private, no-store'
+				'cache-control': 'private, no-store',
+				'vary': 'Cookie'
 			});
 		}
 

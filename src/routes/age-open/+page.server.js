@@ -132,8 +132,10 @@ function getRatingTier(rating) {
 
 export async function load({ url, setHeaders }) {
 	// Cache for 5 minutes, allow stale for 1 hour while revalidating
+	// Vary by Cookie ensures sidebar updates properly after login/logout
 	setHeaders({
-		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
+		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
+		'vary': 'Cookie'
 	});
 
 	const currentYear = new Date().getFullYear().toString();

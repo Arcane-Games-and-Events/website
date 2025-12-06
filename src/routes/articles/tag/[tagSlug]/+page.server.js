@@ -4,8 +4,10 @@ import { isPremiumNow } from '$lib/server/articles/access.js';
 
 export async function load({ params, setHeaders }) {
 	// Cache tag pages for 5 minutes, allow stale for 1 hour while revalidating
+	// Vary by Cookie ensures sidebar updates properly after login/logout
 	setHeaders({
-		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
+		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
+		'vary': 'Cookie'
 	});
 
 	const { tagSlug } = params;

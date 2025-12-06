@@ -4,29 +4,24 @@ import { auth } from '$lib/server/lucia';
 export const handle = async ({ event, resolve }) => {
 	// read the session id from the cookie
 	const sid = event.cookies.get(auth.sessionCookieName);
+	let user = null;
+	let session = null;
 
-	if (!sid) {
-		event.locals.user = null;
-		event.locals.session = null;
-		return resolve(event);
-	}
+	if (sid) {
+		// validate the session id with Lucia v3
+		const validated = await auth.validateSession(sid);
+		session = validated.session;
+		user = validated.user;
 
-	// validate the session id with Lucia v3
-	const { session, user } = await auth.validateSession(sid);
-
-	// if invalid, clear cookie
-	if (!session) {
-		const blank = auth.createBlankSessionCookie();
-		event.cookies.set(blank.name, blank.value, { ...blank.attributes, path: '/' });
-		event.locals.user = null;
-		event.locals.session = null;
-		return resolve(event);
-	}
-
-	// if valid & fresh, renew cookie
-	if (session.fresh) {
-		const renewed = auth.createSessionCookie(session.id);
-		event.cookies.set(renewed.name, renewed.value, { ...renewed.attributes, path: '/' });
+		// if invalid, clear cookie
+		if (!session) {
+			const blank = auth.createBlankSessionCookie();
+			event.cookies.set(blank.name, blank.value, { ...blank.attributes, path: '/' });
+		} else if (session.fresh) {
+			// if valid & fresh, renew cookie
+			const renewed = auth.createSessionCookie(session.id);
+			event.cookies.set(renewed.name, renewed.value, { ...renewed.attributes, path: '/' });
+		}
 	}
 
 	// expose to routes/layouts
@@ -36,11 +31,14 @@ export const handle = async ({ event, resolve }) => {
 	// Resolve the request
 	const response = await resolve(event);
 
-	// CRITICAL: Prevent Vercel CDN from caching authenticated user responses
-	// This prevents user data from leaking between sessions via cached pages
+	// CRITICAL: Always set Vary: Cookie so CDN caches separate versions
+	// for logged-in vs logged-out users. This ensures the sidebar updates
+	// immediately after login/logout.
+	response.headers.set('vary', 'Cookie');
+
+	// For authenticated users, also prevent any CDN caching
 	if (user) {
 		response.headers.set('cache-control', 'private, no-cache, no-store, must-revalidate');
-		response.headers.set('vary', 'Cookie');
 	}
 
 	return response;
