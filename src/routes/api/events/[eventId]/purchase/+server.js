@@ -101,21 +101,21 @@ export async function POST({ params, request, locals }) {
 			if (result.success && saveCard) {
 				try {
 					// Get or create customer profile
-					const profileId = await authnet.getOrCreateCustomerProfile({
-						email: currentUser.email,
-						description: `Customer: ${currentUser.email}`
+					const profileResult = await authnet.getOrCreateCustomerProfile({
+						customerId: currentUser.id,
+						email: currentUser.email
 					});
 
 					// Save customer profile ID to user if not already saved
-					if (profileId) {
+					if (profileResult && profileResult.customerProfileId) {
 						await db
 							.update(user)
-							.set({ customerProfileId: profileId })
+							.set({ customerProfileId: profileResult.customerProfileId })
 							.where(eq(user.id, currentUser.id));
 
 						// Add payment profile
 						const paymentProfile = await authnet.addPaymentProfile({
-							customerProfileId: profileId,
+							customerProfileId: profileResult.customerProfileId,
 							cardNumber,
 							expirationDate,
 							cardCode,
@@ -148,7 +148,7 @@ export async function POST({ params, request, locals }) {
 								// Save the card to database
 								await db.insert(savedCard).values({
 									userId: currentUser.id,
-									customerProfileId: profileId,
+									customerProfileId: profileResult.customerProfileId,
 									paymentProfileId: paymentProfile.paymentProfileId,
 									cardType: paymentProfile.cardType,
 									lastFour: paymentProfile.lastFour,
