@@ -12,16 +12,17 @@ export async function load({ params }) {
 				eventId: eventDecklist.eventId,
 				playerName: eventDecklist.playerName,
 				gemId: eventDecklist.gemId,
-				deckName: eventDecklist.deckName,
 				hero: eventDecklist.hero,
 				format: eventDecklist.format,
+				placement: eventDecklist.placement,
 				cards: eventDecklist.cards,
 				isPublic: eventDecklist.isPublic,
 				createdAt: eventDecklist.createdAt,
 				eventTitle: event.title,
 				eventDate: event.eventDate,
 				eventLocation: event.location,
-				circuit: event.circuit
+				circuit: event.circuit,
+				month: event.month
 			})
 			.from(eventDecklist)
 			.innerJoin(event, eq(eventDecklist.eventId, event.id))

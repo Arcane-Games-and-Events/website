@@ -39,7 +39,7 @@
 	<div
 		class="absolute inset-0 bg-gray-800 transition-opacity duration-300 {loaded ? 'opacity-0' : 'opacity-100'}"
 		aria-hidden="true"
-	/>
+	></div>
 	<!-- Main image -->
 	<img
 		{src}

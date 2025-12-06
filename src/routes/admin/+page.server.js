@@ -10,6 +10,52 @@ import {
 	entitlement
 } from '$lib/server/db/schema.js';
 import { desc, eq, count, and, sql, asc, gte } from 'drizzle-orm';
+import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+
+// Helper to add timeout to promises (defined at module level)
+const withTimeout = (promise, ms, fallback) =>
+	Promise.race([
+		promise,
+		new Promise((resolve) => setTimeout(() => resolve(fallback), ms))
+	]);
+
+// Default empty data for when database is unavailable
+function getEmptyAdminData() {
+	return {
+		events: [],
+		standings: [],
+		orders: [],
+		users: [],
+		lssSeasons: [],
+		stats: {
+			totalEvents: 0,
+			totalOrders: 0,
+			premiumUsers: 0,
+			totalPlayers: 0,
+			totalTicketsSold: 0,
+			totalRefunded: 0,
+			upcomingEvents: 0,
+			pastEvents: 0
+		},
+		analytics: {
+			todayRevenue: 0,
+			weekRevenue: 0,
+			monthRevenue: 0,
+			totalRevenue: 0,
+			revenueByType: [],
+			dailyTrend: [],
+			topEvents: [],
+			customerStats: []
+		},
+		eventAnalytics: {
+			byCircuit: {},
+			byFormat: {},
+			byStatus: { upcoming: 0, in_progress: 0, completed: 0, cancelled: 0 },
+			upcoming: []
+		},
+		dbError: true
+	};
+}
 
 export async function load({ locals }) {
 	// Require admin authentication
@@ -26,90 +72,171 @@ export async function load({ locals }) {
 		const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 		const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-		// ========== RUN QUERIES IN BATCHES TO AVOID CONNECTION POOL EXHAUSTION ==========
-		// Batch 1: Core data (most important)
-		const [events, allOrders, allUsers, rawStandings, lssSeasons] = await Promise.all([
-			db.select().from(event).orderBy(desc(event.createdAt)),
-			db.select().from(order).orderBy(desc(order.createdAt)).limit(500),
-			db.select({
-				id: user.id,
-				email: user.email,
-				role: user.role,
-				createdAt: user.createdAt
-			}).from(user).orderBy(desc(user.createdAt)).limit(200),
-			db.select().from(seasonStanding).orderBy(desc(seasonStanding.totalPoints)),
-			db.select().from(lssSeason).orderBy(desc(lssSeason.startDate))
-		]);
+		// Quick database health check - if this times out, return empty data
+		const dbHealthy = await withTimeout(
+			db.select({ count: count() }).from(event).limit(1),
+			5000,
+			null
+		);
+		if (!dbHealthy) {
+			console.warn('Database health check timed out - returning empty admin data');
+			return getEmptyAdminData();
+		}
 
-		// Batch 2: Counts and ticket stats
-		const [
-			ticketStatsByEvent,
-			[eventCount],
-			[orderCount],
-			[premiumCount],
-			[playerCount],
-			[refundedCount]
-		] = await Promise.all([
-			db.select({
-				eventId: ticket.eventId,
-				sold: count(),
-				refunded: sql`SUM(CASE WHEN refunded = true THEN 1 ELSE 0 END)::int`,
-				revenue: sql`COALESCE(SUM(CAST(amount_paid AS DECIMAL)), 0)`
-			}).from(ticket).groupBy(ticket.eventId),
-			db.select({ count: count() }).from(event),
-			db.select({ count: count() }).from(order),
-			db.select({ count: count() }).from(user).where(eq(user.role, 'premium')),
-			db.select({ count: sql`COUNT(DISTINCT gem_id)` }).from(seasonStanding),
-			db.select({ count: count() }).from(ticket).where(eq(ticket.refunded, true))
-		]);
+		// ========== CORE DATA QUERIES (with timeouts to prevent page hanging) ==========
 
-		// Batch 3: Revenue analytics
-		const [
-			[todayRevenueResult],
-			[weekRevenueResult],
-			[monthRevenueResult],
-			[totalRevenueResult],
-			revenueByType
-		] = await Promise.all([
-			db.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
-				.from(order).where(gte(order.createdAt, todayStart)),
-			db.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
-				.from(order).where(gte(order.createdAt, weekStart)),
-			db.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
-				.from(order).where(gte(order.createdAt, monthStart)),
-			db.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
-				.from(order),
-			db.select({
-				type: sql`COALESCE(meta->>'type', 'unknown')`,
-				total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
-				count: count()
-			}).from(order).groupBy(sql`meta->>'type'`)
-		]);
+		// Batch 1: Core data (2 queries max parallel) - 10s timeout
+		const [events, rawStandings] = await withTimeout(
+			Promise.all([
+				db.select().from(event).orderBy(desc(event.createdAt)),
+				db.select().from(seasonStanding).orderBy(desc(seasonStanding.totalPoints))
+			]),
+			10000,
+			[[], []]
+		);
 
-		// Batch 4: Additional analytics (less critical)
-		const [dailyRevenueTrend, topEvents, customerStatsRaw] = await Promise.all([
-			db.select({
-				date: sql`DATE(created_at)`,
-				total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
-				count: count()
-			}).from(order).where(gte(order.createdAt, thirtyDaysAgo))
-				.groupBy(sql`DATE(created_at)`).orderBy(sql`DATE(created_at)`),
-			db.select({
-				eventId: sql`meta->>'eventId'`,
-				eventTitle: sql`meta->>'eventTitle'`,
-				totalRevenue: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
-				ticketCount: count()
-			}).from(order).where(sql`meta->>'type' = 'ticket'`)
-				.groupBy(sql`meta->>'eventId'`, sql`meta->>'eventTitle'`)
-				.orderBy(desc(sql`SUM(CAST(amount AS DECIMAL))`)).limit(5),
-			db.select({
-				email: order.userEmail,
-				orderCount: count(),
-				totalSpent: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
-				firstOrder: sql`MIN(created_at)`,
-				lastOrder: sql`MAX(created_at)`
-			}).from(order).groupBy(order.userEmail)
-		]);
+		// Batch 2: More core data - 10s timeout
+		const [allOrders, allUsers, lssSeasons] = await withTimeout(
+			Promise.all([
+				db.select().from(order).orderBy(desc(order.createdAt)).limit(500),
+				db.select({
+					id: user.id,
+					email: user.email,
+					role: user.role,
+					createdAt: user.createdAt
+				}).from(user).orderBy(desc(user.createdAt)).limit(200),
+				db.select().from(lssSeason).orderBy(desc(lssSeason.startDate))
+			]),
+			10000,
+			[[], [], []]
+		);
+
+		// Batch 3: Counts (2 queries) - 8s timeout
+		const [ticketStatsByEvent, eventCountResult] = await withTimeout(
+			Promise.all([
+				db.select({
+					eventId: ticket.eventId,
+					sold: count(),
+					refunded: sql`SUM(CASE WHEN refunded = true THEN 1 ELSE 0 END)::int`,
+					revenue: sql`COALESCE(SUM(CAST(amount_paid AS DECIMAL)), 0)`
+				}).from(ticket).groupBy(ticket.eventId),
+				db.select({ count: count() }).from(event)
+			]),
+			8000,
+			[[], [{ count: 0 }]]
+		);
+		const [eventCount] = eventCountResult;
+
+		// Batch 4: More counts (2 queries) - 8s timeout
+		const [orderCountResult, premiumCountResult] = await withTimeout(
+			Promise.all([
+				db.select({ count: count() }).from(order),
+				db.select({ count: count() }).from(user).where(eq(user.role, 'premium'))
+			]),
+			8000,
+			[[{ count: 0 }], [{ count: 0 }]]
+		);
+		const [orderCount] = orderCountResult;
+		const [premiumCount] = premiumCountResult;
+
+		// Batch 5: Final counts (2 queries) - 8s timeout
+		const [playerCountResult, refundedCountResult] = await withTimeout(
+			Promise.all([
+				db.select({ count: sql`COUNT(DISTINCT gem_id)` }).from(seasonStanding),
+				db.select({ count: count() }).from(ticket).where(eq(ticket.refunded, true))
+			]),
+			8000,
+			[[{ count: 0 }], [{ count: 0 }]]
+		);
+		const [playerCount] = playerCountResult;
+		const [refundedCount] = refundedCountResult;
+
+		// ========== ANALYTICS QUERIES (with timeout + try-catch) ==========
+		let todayRevenueResult = { total: 0 };
+		let weekRevenueResult = { total: 0 };
+		let monthRevenueResult = { total: 0 };
+		let totalRevenueResult = { total: 0 };
+		let revenueByType = [];
+		let dailyRevenueTrend = [];
+		let topEvents = [];
+		let customerStatsRaw = [];
+
+		try {
+			// Batch 6: Revenue analytics (2 queries) - with 8s timeout
+			[[todayRevenueResult], [weekRevenueResult]] = await withTimeout(
+				Promise.all([
+					db.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
+						.from(order).where(gte(order.createdAt, todayStart)),
+					db.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
+						.from(order).where(gte(order.createdAt, weekStart))
+				]),
+				8000,
+				[[{ total: 0 }], [{ total: 0 }]]
+			);
+
+			// Batch 7: More revenue (2 queries)
+			[[monthRevenueResult], [totalRevenueResult]] = await withTimeout(
+				Promise.all([
+					db.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
+						.from(order).where(gte(order.createdAt, monthStart)),
+					db.select({ total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` })
+						.from(order)
+				]),
+				8000,
+				[[{ total: 0 }], [{ total: 0 }]]
+			);
+
+			// Batch 8: Revenue by type and trend (2 queries)
+			[revenueByType, dailyRevenueTrend] = await withTimeout(
+				Promise.all([
+					db.select({
+						type: sql`COALESCE(meta->>'type', 'unknown')`,
+						total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
+						count: count()
+					}).from(order).groupBy(sql`meta->>'type'`),
+					db.select({
+						date: sql`DATE(created_at)`,
+						total: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
+						count: count()
+					}).from(order).where(gte(order.createdAt, thirtyDaysAgo))
+						.groupBy(sql`DATE(created_at)`).orderBy(sql`DATE(created_at)`)
+				]),
+				8000,
+				[[], []]
+			);
+
+			// Batch 9: Top events
+			topEvents = await withTimeout(
+				db.select({
+					eventId: sql`meta->>'eventId'`,
+					eventTitle: sql`meta->>'eventTitle'`,
+					totalRevenue: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
+					ticketCount: count()
+				}).from(order).where(sql`meta->>'type' = 'ticket'`)
+					.groupBy(sql`meta->>'eventId'`, sql`meta->>'eventTitle'`)
+					.orderBy(desc(sql`SUM(CAST(amount AS DECIMAL))`)).limit(5),
+				8000,
+				[]
+			);
+
+			// Batch 10: Customer stats - limited to top 100
+			customerStatsRaw = await withTimeout(
+				db.select({
+					email: order.userEmail,
+					orderCount: count(),
+					totalSpent: sql`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)`,
+					firstOrder: sql`MIN(created_at)`,
+					lastOrder: sql`MAX(created_at)`
+				}).from(order).groupBy(order.userEmail)
+					.orderBy(desc(sql`SUM(CAST(amount AS DECIMAL))`))
+					.limit(100),
+				8000,
+				[]
+			);
+		} catch (analyticsErr) {
+			console.error('Analytics queries failed (page will still load):', analyticsErr.message);
+			// Analytics data will use defaults set above
+		}
 
 		// ========== EVENT ANALYTICS ==========
 		// Convert ticket stats to Map for fast lookup

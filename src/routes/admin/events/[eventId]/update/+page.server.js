@@ -179,10 +179,11 @@ export const actions = {
 		const playerName = formData.get('playerName');
 		const gemId = formData.get('gemId') || null;
 		const userId = formData.get('userId') || null;
-		const deckName = formData.get('deckName') || null;
 		const hero = formData.get('hero') || null;
 		const format = formData.get('format') || null;
+		const placement = formData.get('placement') ? parseInt(formData.get('placement')) : null;
 		const cardsJson = formData.get('cards');
+		const rawText = formData.get('rawText') || null;
 		const isPublic = formData.get('isPublic') === 'true';
 
 		if (!playerName || !cardsJson) {
@@ -202,10 +203,11 @@ export const actions = {
 				playerName,
 				gemId,
 				userId,
-				deckName,
 				hero,
 				format,
+				placement,
 				cards,
+				rawText,
 				isPublic
 			};
 

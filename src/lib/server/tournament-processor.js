@@ -290,7 +290,7 @@ export function calculateFinalStandings(swissStandings, pairings) {
 		if (bracketResults.winner) {
 			results.push({
 				placement: 1,
-				...findPlayerData(bracketResults.winner, swissStandings, tiebreakers),
+				...findPlayerData(bracketResults.winner, swissStandings, tiebreakers, pairings),
 				...AGE_POINTS[1]
 			});
 		}
@@ -299,7 +299,7 @@ export function calculateFinalStandings(swissStandings, pairings) {
 		if (bracketResults.second) {
 			results.push({
 				placement: 2,
-				...findPlayerData(bracketResults.second, swissStandings, tiebreakers),
+				...findPlayerData(bracketResults.second, swissStandings, tiebreakers, pairings),
 				...AGE_POINTS[2]
 			});
 		}
@@ -308,7 +308,7 @@ export function calculateFinalStandings(swissStandings, pairings) {
 		bracketResults.thirdFourth.forEach((player, index) => {
 			results.push({
 				placement: 3 + index,
-				...findPlayerData(player, swissStandings, tiebreakers),
+				...findPlayerData(player, swissStandings, tiebreakers, pairings),
 				...AGE_POINTS[3]
 			});
 		});
@@ -317,7 +317,7 @@ export function calculateFinalStandings(swissStandings, pairings) {
 		bracketResults.fifthEighth.forEach((player, index) => {
 			results.push({
 				placement: 5 + index,
-				...findPlayerData(player, swissStandings, tiebreakers),
+				...findPlayerData(player, swissStandings, tiebreakers, pairings),
 				...AGE_POINTS[5]
 			});
 		});
@@ -367,19 +367,48 @@ export function calculateFinalStandings(swissStandings, pairings) {
 
 /**
  * Find player data from various sources
+ * @param {object} player - Player object with name and id
+ * @param {array} swissStandings - Swiss standings data
+ * @param {object} tiebreakers - Tiebreaker data (Swiss rounds only)
+ * @param {array} allPairings - All pairings including playoffs (optional)
  */
-function findPlayerData(player, swissStandings, tiebreakers) {
+function findPlayerData(player, swissStandings, tiebreakers, allPairings = []) {
 	const fromTiebreakers = tiebreakers[player.id] || tiebreakers[player.name];
 	const fromSwiss = swissStandings.find(s =>
 		s.playerId === player.id || s.name === player.name
 	);
 
+	// Count ALL matches (Swiss + playoffs) for accurate record
+	let totalMatchesPlayed = fromTiebreakers?.matchesPlayed || 0;
+	let totalMatchesWon = fromTiebreakers?.matchesWon || fromSwiss?.wins || 0;
+
+	if (allPairings.length > 0) {
+		// Find all matches this player participated in
+		const allPlayerMatches = allPairings.filter(p =>
+			p.player1Id === player.id || p.player2Id === player.id ||
+			p.player1Name === player.name || p.player2Name === player.name
+		);
+
+		// Count wins from all matches
+		const allWins = allPlayerMatches.filter(m => {
+			const winner = m.result === '1WIN' || m.result.includes('Player 1')
+				? { name: m.player1Name, id: m.player1Id }
+				: m.result === '2WIN' || m.result.includes('Player 2')
+					? { name: m.player2Name, id: m.player2Id }
+					: null;
+			return winner && (winner.id === player.id || winner.name === player.name);
+		}).length;
+
+		totalMatchesPlayed = allPlayerMatches.length;
+		totalMatchesWon = allWins;
+	}
+
 	return {
 		name: player.name,
 		playerId: player.id || fromSwiss?.playerId,
-		matchesWon: fromTiebreakers?.matchesWon || fromSwiss?.wins || 0,
-		matchesPlayed: fromTiebreakers?.matchesPlayed || 0,
-		matchWinPct: fromTiebreakers?.matchWinPct || 0,
+		matchesWon: totalMatchesWon,
+		matchesPlayed: totalMatchesPlayed,
+		matchWinPct: totalMatchesPlayed > 0 ? totalMatchesWon / totalMatchesPlayed : 0,
 		oppMatchWinPct: fromTiebreakers?.oppMatchWinPct || 0
 	};
 }

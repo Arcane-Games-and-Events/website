@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { calculateAgeRating } from '$lib/age-rating.js';
 
 	let { data } = $props();
 
@@ -342,61 +343,18 @@
 		return best.points > 0 ? best : null;
 	});
 
-	// === AGE RATING CALCULATION (HARSH PERCENTILE-BASED) ===
-	// A cumulative player rating out of 100 using power curves for harsher differentiation
-	// Top ratings are extremely difficult to achieve - requires excellence across all metrics
+	// === AGE RATING CALCULATION ===
+	// Uses shared utility from $lib/age-rating.js for single source of truth
 	const ageRating = $derived(() => {
 		const p = data.percentiles;
 		const stats = data.totalStats;
 
-		// Power curve function - makes high ratings exponentially harder
-		// At 50th percentile, you only get ~35% of max points
-		// At 90th percentile, you get ~85% of max points
-		const harshCurve = (percentile) => Math.pow(percentile / 100, 1.4) * 100;
+		// Use shared calculateAgeRating function
+		const result = calculateAgeRating(p, stats.eventsPlayed);
 
-		// Minimum events penalty - need at least 3 events for full credit
-		const minEvents = 3;
-		const eventMultiplier = Math.min(1, stats.eventsPlayed / minEvents);
-
-		// Apply harsh curve to all percentiles
-		const adjustedWinRate = harshCurve(p.winRate);
-		const adjustedTop8 = harshCurve(p.top8Rate);
-		const adjustedExperience = harshCurve(p.experience);
-		const adjustedPeak = harshCurve(p.bestRank);
-		const adjustedEfficiency = harshCurve(p.efficiency);
-		const adjustedChampionship = harshCurve(p.championship);
-
-		// Rebalanced weights (total 100):
-		// - Win Rate: 25 pts (fundamental but not everything)
-		// - Top 8 Rate: 25 pts (consistency in making playoffs is key)
-		// - Peak Performance: 20 pts (best finish matters)
-		// - Efficiency: 15 pts (points per event - rewarding quality)
-		// - Experience: 10 pts (sample size, capped)
-		// - Championship: 5 pts (elite bonus for Top 16 qualifiers)
-		const winRateScore = (adjustedWinRate / 100) * 25;
-		const top8Score = (adjustedTop8 / 100) * 25;
-		const peakScore = (adjustedPeak / 100) * 20;
-		const efficiencyScore = (adjustedEfficiency / 100) * 15;
-		const experienceScore = (adjustedExperience / 100) * 10;
-		const championshipScore = (adjustedChampionship / 100) * 5;
-
-		// Calculate raw total
-		let total =
-			winRateScore + top8Score + peakScore + efficiencyScore + experienceScore + championshipScore;
-
-		// Apply minimum events penalty (reduces score if < 3 events)
-		total = total * (0.6 + 0.4 * eventMultiplier);
-
+		// Extend with additional display data needed for player profile
 		return {
-			total: Math.round(Math.min(100, Math.max(0, total))),
-			breakdown: {
-				winRate: Math.round(winRateScore * 10) / 10,
-				top8: Math.round(top8Score * 10) / 10,
-				peak: Math.round(peakScore * 10) / 10,
-				efficiency: Math.round(efficiencyScore * 10) / 10,
-				experience: Math.round(experienceScore * 10) / 10,
-				championship: Math.round(championshipScore * 10) / 10
-			},
+			...result,
 			percentiles: {
 				winRate: Math.round(p.winRate),
 				top8Rate: Math.round(p.top8Rate),
@@ -405,8 +363,7 @@
 				efficiency: Math.round(p.efficiency),
 				championship: Math.round(p.championship)
 			},
-			totalPlayers: p.totalPlayers,
-			eventPenalty: eventMultiplier < 1
+			totalPlayers: p.totalPlayers
 		};
 	});
 
@@ -1894,6 +1851,85 @@
 			{/if}
 		</div>
 	</div>
+
+	<!-- Decklists Section -->
+	{#if data.decklists && data.decklists.length > 0}
+		<div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+			<h2 class="mb-6 flex items-center gap-3 text-2xl font-bold text-white">
+				<svg class="h-6 w-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+				</svg>
+				Tournament Decklists
+				<span class="rounded-full bg-gray-800 px-3 py-1 text-sm font-normal text-gray-400">{data.decklists.length}</span>
+			</h2>
+
+			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+				{#each data.decklists as { decklist, event: eventData }}
+					{@const placementColors = {
+						1: 'from-yellow-500/30 to-yellow-600/10 border-yellow-500/40',
+						2: 'from-gray-300/30 to-gray-400/10 border-gray-300/40',
+						3: 'from-amber-600/30 to-amber-700/10 border-amber-600/40'
+					}}
+					{@const placementBadge = {
+						1: 'bg-yellow-500/20 text-yellow-400 ring-yellow-500/30',
+						2: 'bg-gray-300/20 text-gray-300 ring-gray-300/30',
+						3: 'bg-amber-600/20 text-amber-500 ring-amber-600/30'
+					}}
+					{@const bgClass = placementColors[decklist.placement] || 'from-gray-800/50 to-gray-900/50 border-gray-700/50'}
+					{@const badgeClass = placementBadge[decklist.placement] || 'bg-gray-700/50 text-gray-400 ring-gray-600/30'}
+
+					<a
+						href="/age-open/{eventData?.id}/decklist/{decklist.id}"
+						class="group relative overflow-hidden rounded-xl border bg-gradient-to-br p-5 transition-all hover:scale-[1.02] hover:shadow-lg {bgClass}"
+					>
+						<!-- Placement Badge -->
+						{#if decklist.placement}
+							<div class="absolute right-3 top-3">
+								<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold ring-1 {badgeClass}">
+									{decklist.placement === 1 ? '1st' : decklist.placement === 2 ? '2nd' : decklist.placement === 3 ? '3rd' : `${decklist.placement}th`}
+								</span>
+							</div>
+						{/if}
+
+						<!-- Hero -->
+						<div class="mb-3 pr-12">
+							<h3 class="text-lg font-semibold text-white group-hover:text-purple-400 transition-colors">
+								{decklist.hero || 'Unknown Hero'}
+							</h3>
+						</div>
+
+						<!-- Event Info -->
+						<div class="mb-3 text-sm text-gray-400">
+							<p class="flex items-center gap-1.5">
+								<svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+								</svg>
+								{eventData?.circuit || 'Unknown'} {eventData?.month || ''} Open
+							</p>
+							{#if decklist.format}
+								<p class="mt-1 flex items-center gap-1.5">
+									<svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+									</svg>
+									{decklist.format}
+								</p>
+							{/if}
+						</div>
+
+						<!-- Card Count -->
+						{#if decklist.cards && Array.isArray(decklist.cards)}
+							{@const totalCards = decklist.cards.reduce((sum, c) => sum + (c.quantity || 0), 0)}
+							<div class="flex items-center justify-between border-t border-gray-700/50 pt-3">
+								<span class="text-xs text-gray-500">{totalCards} cards</span>
+								<span class="text-xs text-purple-400 group-hover:text-purple-300">View deck →</span>
+							</div>
+						{/if}
+					</a>
+				{/each}
+			</div>
+		</div>
+	{/if}
 
 	<!-- Season Standings -->
 	<div class="mx-auto max-w-6xl px-4 pb-12 sm:px-6 lg:px-8">

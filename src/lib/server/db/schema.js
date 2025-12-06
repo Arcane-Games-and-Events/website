@@ -196,13 +196,16 @@ export const eventDecklist = pgTable('event_decklist', {
 	playerName: text('player_name').notNull(),
 
 	// Deck information
-	deckName: text('deck_name'), // Optional deck name/archetype
 	hero: text('hero'), // Hero card for the deck
 	format: text('format'), // Format the deck was played in
+	placement: integer('placement'), // Tournament placement (1-8)
 
 	// Deck contents - stored as JSON array of card objects
-	// Each card: { name: string, quantity: number, type?: string }
+	// Each card: { name: string, quantity: number, section: string, color?: string }
 	cards: jsonb('cards').notNull(),
+
+	// Raw text input (for reference/re-parsing)
+	rawText: text('raw_text'),
 
 	// Visibility
 	isPublic: boolean('is_public').default(true), // Whether to show on public results

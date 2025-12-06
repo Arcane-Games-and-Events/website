@@ -1,5 +1,7 @@
 <script>
 	import { browser } from '$app/environment';
+	import heroes from '$lib/data/heroes.json';
+	import { parseGemDecklist, toStorageFormat, fromStorageFormat, getPlacementSuffix } from '$lib/utils/gem-decklist-parser.js';
 
 	let { data, form } = $props();
 
@@ -44,12 +46,24 @@
 		playerName: '',
 		gemId: '',
 		userId: '',
-		deckName: '',
 		hero: '',
 		format: data.event.format || '',
+		placement: '',
 		cardsText: '',
 		isPublic: true
 	});
+
+	// Hero search state
+	let heroSearch = $state('');
+	let showHeroDropdown = $state(false);
+	let filteredHeroes = $derived(
+		heroSearch.trim()
+			? heroes.filter(h => h.name.toLowerCase().includes(heroSearch.toLowerCase()))
+			: heroes
+	);
+
+	// Decklist preview (parsed from cardsText)
+	let decklistPreview = $derived(parseGemDecklist(decklistForm.cardsText));
 
 	// CSV Import state
 	let swissStandingsFile = $state(null);
@@ -277,29 +291,38 @@
 			playerName: '',
 			gemId: '',
 			userId: '',
-			deckName: '',
 			hero: '',
 			format: data.event.format || '',
+			placement: '',
 			cardsText: '',
 			isPublic: true
 		};
+		heroSearch = '';
 		showDecklistForm = true;
 	}
 
 	function editDecklist(decklist) {
 		editingDecklist = decklist;
-		const cardsText = decklist.cards.map((c) => `${c.quantity}x ${c.name}`).join('\n');
+		// Use rawText if available, otherwise reconstruct from cards
+		const cardsText = decklist.rawText || decklist.cards.map((c) => `${c.quantity} ${c.name}`).join('\n');
 		decklistForm = {
 			playerName: decklist.playerName,
 			gemId: decklist.gemId || '',
 			userId: decklist.userId || '',
-			deckName: decklist.deckName || '',
 			hero: decklist.hero || '',
 			format: decklist.format || '',
+			placement: decklist.placement || '',
 			cardsText,
 			isPublic: decklist.isPublic
 		};
+		heroSearch = decklist.hero || '';
 		showDecklistForm = true;
+	}
+
+	function selectHero(heroName) {
+		decklistForm.hero = heroName;
+		heroSearch = heroName;
+		showHeroDropdown = false;
 	}
 
 	function cancelDecklistForm() {
@@ -308,29 +331,9 @@
 	}
 
 	function parseCardsText(text) {
-		const lines = text.split('\n').filter((line) => line.trim());
-		const cards = [];
-
-		for (const line of lines) {
-			const trimmed = line.trim();
-
-			// Skip section headers (lines that don't start with a number)
-			if (!/^\d/.test(trimmed)) continue;
-
-			// Skip "Total" lines (e.g., "9 Total Weapon / Equipment", "40 Total Pitch 0/1")
-			if (/^\d+\s+Total\b/i.test(trimmed)) continue;
-
-			// Parse "quantity cardname" or "quantity x cardname" format
-			const match = trimmed.match(/^(\d+)\s*x?\s+(.+)$/i);
-			if (match) {
-				const cardName = match[2].trim();
-				// Skip if the card name looks like a section label
-				if (cardName.toLowerCase().startsWith('total ')) continue;
-				cards.push({ quantity: parseInt(match[1]), name: cardName });
-			}
-		}
-
-		return cards;
+		// Use the GEM parser to parse the decklist
+		const parsed = parseGemDecklist(text);
+		return toStorageFormat(parsed);
 	}
 
 	function selectParticipant(participant, formType) {
@@ -1074,22 +1077,23 @@
 											</div>
 											<p class="text-xs text-gray-500 mb-3">Rank, Name, Player ID, Wins</p>
 
+											<input type="file" id="swissStandings" name="swissStandings" accept=".csv" required bind:files={swissStandingsFile} class="sr-only" />
 											{#if swissStandingsFile && swissStandingsFile.length > 0}
 												<div class="flex items-center gap-2 text-sm text-green-400">
 													<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 													</svg>
 													<span class="truncate">{swissStandingsFile[0].name}</span>
+													<label for="swissStandings" class="cursor-pointer text-xs text-gray-500 hover:text-gray-300">(change)</label>
 												</div>
 											{:else}
-												<label class="cursor-pointer">
+												<label for="swissStandings" class="cursor-pointer">
 													<span class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors">
 														<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
 														</svg>
 														Choose File
 													</span>
-													<input type="file" id="swissStandings" name="swissStandings" accept=".csv" required bind:files={swissStandingsFile} class="sr-only" />
 												</label>
 											{/if}
 										</div>
@@ -1121,22 +1125,23 @@
 											</div>
 											<p class="text-xs text-gray-500 mb-3">Round, Table, P1 Name, P1 ID, P2 Name, P2 ID, Result</p>
 
+											<input type="file" id="pairings" name="pairings" accept=".csv" required bind:files={pairingsFile} class="sr-only" />
 											{#if pairingsFile && pairingsFile.length > 0}
 												<div class="flex items-center gap-2 text-sm text-green-400">
 													<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 													</svg>
 													<span class="truncate">{pairingsFile[0].name}</span>
+													<label for="pairings" class="cursor-pointer text-xs text-gray-500 hover:text-gray-300">(change)</label>
 												</div>
 											{:else}
-												<label class="cursor-pointer">
+												<label for="pairings" class="cursor-pointer">
 													<span class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors">
 														<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
 														</svg>
 														Choose File
 													</span>
-													<input type="file" id="pairings" name="pairings" accept=".csv" required bind:files={pairingsFile} class="sr-only" />
 												</label>
 											{/if}
 										</div>
@@ -1534,7 +1539,7 @@
 
 						{#if data.participants.length > 0 && !editingDecklist}
 							<div class="mb-4">
-								<label class="block text-sm font-medium text-gray-100 mb-2">Select from registered players</label>
+								<label for="participantSearchInput" class="block text-sm font-medium text-gray-100 mb-2">Select from registered players</label>
 								<div class="relative">
 									<div class="relative">
 										<svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1542,6 +1547,7 @@
 										</svg>
 										<input
 											type="text"
+											id="participantSearchInput"
 											bind:value={participantSearch}
 											onfocus={() => showParticipantDropdown = true}
 											placeholder="Search by name or GEM ID..."
@@ -1551,6 +1557,7 @@
 											<button
 												type="button"
 												onclick={() => { participantSearch = ''; }}
+												aria-label="Clear search"
 												class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
 											>
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1591,6 +1598,7 @@
 										class="fixed inset-0 z-0 cursor-default"
 										onclick={() => showParticipantDropdown = false}
 										tabindex="-1"
+										aria-label="Close dropdown"
 									></button>
 								{/if}
 								<p class="mt-2 text-xs text-gray-500">Or enter details manually below</p>
@@ -1602,6 +1610,7 @@
 								const cards = parseCardsText(decklistForm.cardsText);
 								const formData = new FormData(e.target);
 								formData.set('cards', JSON.stringify(cards));
+								formData.set('rawText', decklistForm.cardsText);
 								fetch(e.target.action, { method: 'POST', body: formData }).then(() => {
 									showDecklistForm = false;
 									editingDecklist = null;
@@ -1615,6 +1624,7 @@
 							{/if}
 							<input type="hidden" name="userId" value={decklistForm.userId} />
 							<input type="hidden" name="isPublic" value={decklistForm.isPublic} />
+							<input type="hidden" name="hero" value={decklistForm.hero} />
 
 							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div>
@@ -1625,7 +1635,7 @@
 										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300" />
 									<datalist id="participantNames">
 										{#each data.participants as participant}
-											<option value={participant.playerName} />
+											<option value={participant.playerName}></option>
 										{/each}
 									</datalist>
 								</div>
@@ -1644,30 +1654,208 @@
 							</div>
 
 							<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-								<div>
-									<label for="deckName" class="block text-sm font-medium text-gray-100 mb-2">Deck Name</label>
-									<input type="text" id="deckName" name="deckName" bind:value={decklistForm.deckName} placeholder="e.g., Briar Aggro"
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300" />
+								<!-- Hero Combo Search/Select -->
+								<div class="relative">
+									<label for="heroSearch" class="block text-sm font-medium text-gray-100 mb-2">Hero *</label>
+									<div class="relative">
+										<input
+											type="text"
+											id="heroSearch"
+											bind:value={heroSearch}
+											onfocus={() => showHeroDropdown = true}
+											oninput={() => { showHeroDropdown = true; decklistForm.hero = heroSearch; }}
+											placeholder="Search hero..."
+											autocomplete="off"
+											class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500"
+										/>
+										{#if heroSearch}
+											<button
+												type="button"
+												onclick={() => { heroSearch = ''; decklistForm.hero = ''; }}
+												class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+												aria-label="Clear hero search"
+											>
+												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+												</svg>
+											</button>
+										{/if}
+									</div>
+									{#if showHeroDropdown}
+										<div class="absolute z-20 mt-1 w-full max-h-48 overflow-auto rounded-lg border border-gray-700 bg-gray-900 shadow-xl">
+											{#if filteredHeroes.length === 0}
+												<div class="px-4 py-3 text-sm text-gray-500">No matching heroes</div>
+											{:else}
+												{#each filteredHeroes.slice(0, 20) as hero}
+													<button
+														type="button"
+														onclick={() => selectHero(hero.name)}
+														class="w-full px-4 py-2.5 text-left hover:bg-gray-800 transition-colors text-gray-100"
+													>
+														{hero.name}
+													</button>
+												{/each}
+												{#if filteredHeroes.length > 20}
+													<div class="px-4 py-2 text-xs text-gray-500 border-t border-gray-800">
+														+{filteredHeroes.length - 20} more...
+													</div>
+												{/if}
+											{/if}
+										</div>
+										<!-- Invisible overlay to close dropdown -->
+										<button
+											type="button"
+											class="fixed inset-0 z-10 cursor-default"
+											onclick={() => showHeroDropdown = false}
+											tabindex="-1"
+											aria-label="Close dropdown"
+										></button>
+									{/if}
 								</div>
+
+								<!-- Placement Dropdown -->
 								<div>
-									<label for="hero" class="block text-sm font-medium text-gray-100 mb-2">Hero</label>
-									<input type="text" id="hero" name="hero" bind:value={decklistForm.hero} placeholder="e.g., Briar, Warden of Thorns"
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300" />
+									<label for="placement" class="block text-sm font-medium text-gray-100 mb-2">Placement</label>
+									<select
+										id="placement"
+										name="placement"
+										bind:value={decklistForm.placement}
+										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
+									>
+										<option value="">Select placement...</option>
+										<option value="1">1st Place</option>
+										<option value="2">2nd Place</option>
+										<option value="3">3rd Place</option>
+										<option value="4">4th Place</option>
+										<option value="5">5th Place</option>
+										<option value="6">6th Place</option>
+										<option value="7">7th Place</option>
+										<option value="8">8th Place</option>
+									</select>
 								</div>
+
+								<!-- Format -->
 								<div>
 									<label for="deckFormat" class="block text-sm font-medium text-gray-100 mb-2">Format</label>
-									<input type="text" id="deckFormat" name="format" bind:value={decklistForm.format}
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300" />
+									<select
+										id="deckFormat"
+										name="format"
+										bind:value={decklistForm.format}
+										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
+									>
+										{#each formats as fmt}
+											<option value={fmt}>{fmt}</option>
+										{/each}
+									</select>
 								</div>
 							</div>
 
-							<div>
-								<label for="cardsText" class="block text-sm font-medium text-gray-100 mb-2">Cards * (one per line: "3x Card Name")</label>
-								<textarea id="cardsText" bind:value={decklistForm.cardsText} rows="10" required
-									placeholder="3x Command and Conquer
-2x Art of War
-3x Fyendal's Spring Tunic"
-									class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"></textarea>
+							<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+								<!-- Cards Textarea -->
+								<div>
+									<label for="cardsText" class="block text-sm font-medium text-gray-100 mb-2">
+										Decklist (GEM Format) *
+									</label>
+									<textarea id="cardsText" bind:value={decklistForm.cardsText} rows="16" required
+										placeholder="Weapon / Equipment
+1 Balance of Justice
+2 Cintari Saber
+9 Total Weapon / Equipment
+Pitch 0/1 (Red)
+3 Blade Flurry
+3 Sharpen Steel
+..."
+										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"></textarea>
+									<p class="mt-2 text-xs text-gray-500">Paste decklist directly from GEM export</p>
+								</div>
+
+								<!-- Live Preview -->
+								<div>
+									<span class="block text-sm font-medium text-gray-100 mb-2">Preview</span>
+									<div class="rounded-lg border border-gray-700 bg-gray-950 p-4 h-[400px] overflow-auto">
+										{#if decklistPreview.totals.total === 0}
+											<p class="text-gray-500 text-sm">Paste a decklist to see preview...</p>
+										{:else}
+											<div class="space-y-4 text-sm">
+												<!-- Equipment Section -->
+												{#if decklistPreview.equipment.length > 0}
+													<div>
+														<h4 class="font-semibold text-gray-400 uppercase text-xs tracking-wider mb-2">
+															Equipment ({decklistPreview.totals.equipment})
+														</h4>
+														<div class="space-y-1">
+															{#each decklistPreview.equipment as card}
+																<div class="flex justify-between text-gray-300">
+																	<span>{card.name}</span>
+																	<span class="text-gray-500">{card.quantity}</span>
+																</div>
+															{/each}
+														</div>
+													</div>
+												{/if}
+
+												<!-- Red Cards -->
+												{#if decklistPreview.red.length > 0}
+													<div>
+														<h4 class="font-semibold text-red-400 uppercase text-xs tracking-wider mb-2">
+															Red ({decklistPreview.totals.red})
+														</h4>
+														<div class="space-y-1">
+															{#each decklistPreview.red as card}
+																<div class="flex justify-between text-gray-300">
+																	<span>{card.name}</span>
+																	<span class="text-gray-500">{card.quantity}</span>
+																</div>
+															{/each}
+														</div>
+													</div>
+												{/if}
+
+												<!-- Yellow Cards -->
+												{#if decklistPreview.yellow.length > 0}
+													<div>
+														<h4 class="font-semibold text-yellow-400 uppercase text-xs tracking-wider mb-2">
+															Yellow ({decklistPreview.totals.yellow})
+														</h4>
+														<div class="space-y-1">
+															{#each decklistPreview.yellow as card}
+																<div class="flex justify-between text-gray-300">
+																	<span>{card.name}</span>
+																	<span class="text-gray-500">{card.quantity}</span>
+																</div>
+															{/each}
+														</div>
+													</div>
+												{/if}
+
+												<!-- Blue Cards -->
+												{#if decklistPreview.blue.length > 0}
+													<div>
+														<h4 class="font-semibold text-blue-400 uppercase text-xs tracking-wider mb-2">
+															Blue ({decklistPreview.totals.blue})
+														</h4>
+														<div class="space-y-1">
+															{#each decklistPreview.blue as card}
+																<div class="flex justify-between text-gray-300">
+																	<span>{card.name}</span>
+																	<span class="text-gray-500">{card.quantity}</span>
+																</div>
+															{/each}
+														</div>
+													</div>
+												{/if}
+
+												<!-- Total -->
+												<div class="pt-3 border-t border-gray-700">
+													<div class="flex justify-between font-semibold text-white">
+														<span>Total Cards</span>
+														<span>{decklistPreview.totals.total}</span>
+													</div>
+												</div>
+											</div>
+										{/if}
+									</div>
+								</div>
 							</div>
 
 							<div class="flex items-center gap-3">
@@ -1697,14 +1885,21 @@
 							{/if}
 						</div>
 					{:else}
-						{#each data.existingDecklists as decklist}
+						{#each data.existingDecklists.sort((a, b) => (a.placement || 99) - (b.placement || 99)) as decklist}
 							<div class="rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-950 p-4">
 								<div class="flex items-start justify-between mb-3">
-									<div>
-										<h4 class="font-semibold text-white">{decklist.playerName}</h4>
-										{#if decklist.hero}
-											<p class="text-sm text-blue-400">{decklist.hero}</p>
+									<div class="flex items-start gap-3">
+										{#if decklist.placement}
+											<div class="flex h-8 w-8 items-center justify-center rounded-lg {decklist.placement === 1 ? 'bg-yellow-500/20 text-yellow-400' : decklist.placement === 2 ? 'bg-gray-400/20 text-gray-300' : decklist.placement === 3 ? 'bg-amber-600/20 text-amber-500' : 'bg-gray-700 text-gray-400'} text-sm font-bold">
+												{decklist.placement}
+											</div>
 										{/if}
+										<div>
+											<h4 class="font-semibold text-white">{decklist.playerName}</h4>
+											{#if decklist.hero}
+												<p class="text-sm text-blue-400">{decklist.hero}</p>
+											{/if}
+										</div>
 									</div>
 									{#if !isCompleted}
 										<div class="flex gap-2">
@@ -1719,10 +1914,15 @@
 										</div>
 									{/if}
 								</div>
-								{#if decklist.deckName}
-									<p class="text-sm text-gray-400 mb-2">{decklist.deckName}</p>
-								{/if}
-								<p class="text-xs text-gray-500">{decklist.cards?.length || 0} cards • {decklist.format || 'Unknown format'}</p>
+								<div class="flex items-center gap-2 text-xs text-gray-500">
+									<span>{decklist.cards?.reduce((sum, c) => sum + c.quantity, 0) || 0} cards</span>
+									<span>•</span>
+									<span>{decklist.format || 'Unknown format'}</span>
+									{#if decklist.gemId}
+										<span>•</span>
+										<span class="font-mono">{decklist.gemId}</span>
+									{/if}
+								</div>
 								{#if !decklist.isPublic}
 									<span class="inline-block mt-2 text-xs text-yellow-500">Private</span>
 								{/if}

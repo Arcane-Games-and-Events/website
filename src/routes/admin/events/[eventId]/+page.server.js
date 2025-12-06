@@ -416,10 +416,11 @@ export const actions = {
 		const playerName = formData.get('playerName');
 		const gemId = formData.get('gemId') || null;
 		const userId = formData.get('userId') || null;
-		const deckName = formData.get('deckName') || null;
 		const hero = formData.get('hero') || null;
 		const format = formData.get('format') || null;
+		const placement = formData.get('placement') ? parseInt(formData.get('placement')) : null;
 		const cardsJson = formData.get('cards');
+		const rawText = formData.get('rawText') || null;
 		const isPublic = formData.get('isPublic') === 'true';
 
 		if (!playerName || !cardsJson) {
@@ -439,10 +440,11 @@ export const actions = {
 				playerName,
 				gemId,
 				userId,
-				deckName,
 				hero,
 				format,
+				placement,
 				cards,
+				rawText,
 				isPublic
 			};
 
@@ -522,9 +524,9 @@ export const actions = {
 			// Clear existing results for this event
 			await db.delete(eventResult).where(eq(eventResult.eventId, params.eventId));
 
-			// Insert new results
-			for (const result of processedResults.results) {
-				await db.insert(eventResult).values({
+			// Insert new results (batched to avoid connection pool exhaustion)
+			if (processedResults.results.length > 0) {
+				const resultsToInsert = processedResults.results.map(result => ({
 					eventId: params.eventId,
 					playerName: result.name,
 					gemId: result.playerId || null,
@@ -534,7 +536,8 @@ export const actions = {
 					draws: 0,
 					agePoints: result.points,
 					prizeAmount: result.prize > 0 ? result.prize.toFixed(2) : null
-				});
+				}));
+				await db.insert(eventResult).values(resultsToInsert);
 			}
 
 			// Clear existing matches for this event and insert new ones
@@ -776,12 +779,114 @@ export const actions = {
 	},
 
 	// Reopen a closed event (admin only)
+	// This reverses the standings changes made during finalization
 	reopenEvent: async ({ params, locals }) => {
 		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Only admins can reopen events' });
 		}
 
 		try {
+			// Get event data
+			const [eventData] = await db
+				.select()
+				.from(event)
+				.where(eq(event.id, params.eventId))
+				.limit(1);
+
+			if (!eventData) {
+				return fail(404, { error: 'Event not found' });
+			}
+
+			// Only reverse standings if event was completed (finalized)
+			if (eventData.status === 'completed' && eventData.circuit) {
+				// Get the results that were finalized
+				const results = await db
+					.select()
+					.from(eventResult)
+					.where(eq(eventResult.eventId, params.eventId));
+
+				if (results.length > 0) {
+					const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
+					const monthNames = ['january', 'february', 'march', 'april', 'may', 'june',
+						'july', 'august', 'september', 'october', 'november', 'december'];
+					const eventMonth = monthNames[eventDate.getMonth()];
+					const currentYear = eventDate.getFullYear().toString();
+
+					// Subtract points from each player's standings
+					for (const result of results) {
+						try {
+							const matchesWon = result.wins || 0;
+							const matchesPlayed = matchesWon + (result.losses || 0) + (result.draws || 0);
+
+							let existingStanding = null;
+
+							// Find by GEM ID first
+							if (result.gemId) {
+								const [byGemId] = await db
+									.select()
+									.from(seasonStanding)
+									.where(and(
+										eq(seasonStanding.season, currentYear),
+										eq(seasonStanding.circuit, eventData.circuit),
+										eq(seasonStanding.gemId, result.gemId)
+									))
+									.limit(1);
+								existingStanding = byGemId;
+							}
+
+							// Fall back to name if no GEM ID match
+							if (!existingStanding) {
+								const [byName] = await db
+									.select()
+									.from(seasonStanding)
+									.where(and(
+										eq(seasonStanding.season, currentYear),
+										eq(seasonStanding.circuit, eventData.circuit),
+										eq(seasonStanding.playerName, result.playerName)
+									))
+									.limit(1);
+								existingStanding = byName;
+							}
+
+							if (existingStanding) {
+								const monthPointsCol = `${eventMonth}Points`;
+								const monthMatchesWonCol = `${eventMonth}MatchesWon`;
+								const monthMatchesCol = `${eventMonth}Matches`;
+
+								// Subtract the event's contribution
+								const newTotalPoints = Math.max(0, (existingStanding.totalPoints || 0) - (result.agePoints || 0));
+								const newMatchesWon = Math.max(0, (existingStanding.matchesWon || 0) - matchesWon);
+								const newMatchesPlayed = Math.max(0, (existingStanding.matchesPlayed || 0) - matchesPlayed);
+								const newWinPercentage = newMatchesPlayed > 0
+									? parseFloat(((newMatchesWon / newMatchesPlayed) * 100).toFixed(2))
+									: null;
+
+								const updateData = {
+									totalPoints: newTotalPoints,
+									matchesWon: newMatchesWon,
+									matchesPlayed: newMatchesPlayed,
+									winPercentage: newWinPercentage,
+									updatedAt: new Date()
+								};
+
+								// Subtract from monthly columns
+								updateData[monthPointsCol] = Math.max(0, (existingStanding[monthPointsCol] || 0) - (result.agePoints || 0));
+								updateData[monthMatchesWonCol] = Math.max(0, (existingStanding[monthMatchesWonCol] || 0) - matchesWon);
+								updateData[monthMatchesCol] = Math.max(0, (existingStanding[monthMatchesCol] || 0) - matchesPlayed);
+
+								await db
+									.update(seasonStanding)
+									.set(updateData)
+									.where(eq(seasonStanding.id, existingStanding.id));
+							}
+						} catch (playerErr) {
+							console.error(`Error reversing standings for ${result.playerName}:`, playerErr);
+							// Continue with other players even if one fails
+						}
+					}
+				}
+			}
+
 			await db
 				.update(event)
 				.set({
@@ -791,10 +896,11 @@ export const actions = {
 				})
 				.where(eq(event.id, params.eventId));
 
-			// Invalidate events cache
+			// Invalidate all relevant caches
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
+			await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
 
-			return { success: true, message: 'Event reopened. You can now update results and standings.' };
+			return { success: true, message: 'Event reopened. Previous standings changes have been reversed. You can now update results and re-finalize.' };
 		} catch (err) {
 			console.error('Error reopening event:', err);
 			return fail(500, { error: 'Failed to reopen event' });

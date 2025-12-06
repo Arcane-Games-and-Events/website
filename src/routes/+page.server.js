@@ -60,10 +60,6 @@ export async function load({ setHeaders, url, locals }) {
 	const standingsSeason = url.searchParams.get('standings_season') || 'all';
 	const standingsCircuit = url.searchParams.get('standings_circuit') || 'all';
 
-	// Available seasons and circuits for filters
-	const availableSeasons = ['all', '2025', '2024', '2023'];
-	const availableCircuits = ['all', 'Los Angeles', 'New England', 'St. Louis'];
-
 	// Fetch articles with Redis caching (15 minute TTL for CMS content)
 	let articles = [];
 	try {
@@ -115,28 +111,49 @@ export async function load({ setHeaders, url, locals }) {
 	}
 
 	try {
+		// Helper to add timeout to promises
+		const withTimeout = (promise, ms, fallback) =>
+			Promise.race([
+				promise,
+				new Promise((resolve) => setTimeout(() => resolve(fallback), ms))
+			]);
+
 		// Fetch upcoming events with Redis caching (1 minute TTL - events change more frequently)
 		const now = new Date();
-		const upcomingEvents = await getCachedOrFetch(
-			`${CACHE_KEYS.EVENTS}:upcoming:3`,
-			async () => {
-				const events = await db
-					.select()
-					.from(event)
-					.where(gte(event.eventDate, now))
-					.orderBy(asc(event.eventDate))
-					.limit(3);
-				return events;
-			},
-			CACHE_TTL.SHORT // 1 minute for upcoming events
+		const upcomingEvents = await withTimeout(
+			getCachedOrFetch(
+				`${CACHE_KEYS.EVENTS}:upcoming:3`,
+				async () => {
+					const events = await db
+						.select()
+						.from(event)
+						.where(gte(event.eventDate, now))
+						.orderBy(asc(event.eventDate))
+						.limit(3);
+					return events;
+				},
+				CACHE_TTL.SHORT // 1 minute for upcoming events
+			),
+			10000, // 10 second timeout
+			[] // fallback to empty array
 		);
 
 		// Fetch standings for homepage sidebar with Redis caching (5 minute TTL)
-		const allStandings = await getCachedOrFetch(
-			`${CACHE_KEYS.STANDINGS}:all`,
-			() => db.select().from(seasonStanding).orderBy(desc(seasonStanding.totalPoints)),
-			CACHE_TTL.MEDIUM
+		const allStandings = await withTimeout(
+			getCachedOrFetch(
+				`${CACHE_KEYS.STANDINGS}:all`,
+				() => db.select().from(seasonStanding).orderBy(desc(seasonStanding.totalPoints)),
+				CACHE_TTL.MEDIUM
+			),
+			10000, // 10 second timeout
+			[] // fallback to empty array
 		);
+
+		// Extract unique seasons and circuits from standings data (dynamic filters)
+		const uniqueSeasons = [...new Set(allStandings.map(s => s.season))].filter(Boolean).sort().reverse();
+		const uniqueCircuits = [...new Set(allStandings.map(s => s.circuit))].filter(Boolean).sort();
+		const availableSeasons = ['all', ...uniqueSeasons];
+		const availableCircuits = ['all', ...uniqueCircuits];
 
 		// Filter standings based on selected season and circuit
 		let filteredStandings = allStandings;
@@ -237,8 +254,8 @@ export async function load({ setHeaders, url, locals }) {
 			standingsFilters: {
 				season: 'all',
 				circuit: 'all',
-				availableSeasons: ['all', '2025', '2024', '2023'],
-				availableCircuits: ['all', 'Los Angeles', 'New England', 'St. Louis']
+				availableSeasons: ['all'],
+				availableCircuits: ['all']
 			},
 			seriesStats: {
 				totalPlayers: 0,

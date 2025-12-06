@@ -346,6 +346,100 @@
 								</svg>
 							</a>
 						</div>
+					{:else if data.userTicket}
+						<!-- Already Registered -->
+						<div class="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-6">
+							<div class="flex items-start gap-4">
+								<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20">
+									<svg class="h-6 w-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+									</svg>
+								</div>
+								<div class="flex-1">
+									<h2 class="text-xl font-bold text-white mb-2">You're Signed Up!</h2>
+									<p class="text-gray-300 leading-relaxed">
+										We'll see you at <span class="font-semibold text-white">{data.event.location}</span>
+										{#if data.event.eventDate}
+											at <span class="font-semibold text-white">{formatTime(data.event.eventDate)}</span>
+										{/if}. Good luck!
+									</p>
+
+									<!-- Ticket Details -->
+									<div class="mt-4 space-y-3">
+										{#each data.userTicket as ticket, index}
+											<div class="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
+												{#if data.userTicket.length > 1}
+													<p class="text-xs text-emerald-400 font-medium uppercase tracking-wider mb-3">
+														Ticket {index + 1} of {data.userTicket.length}
+													</p>
+												{/if}
+												<div class="grid gap-3 sm:grid-cols-2">
+													<div>
+														<p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Ticket Code</p>
+														<p class="font-mono font-bold text-emerald-400">{ticket.code}</p>
+													</div>
+													<div>
+														<p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Player Name</p>
+														<p class="font-medium text-white">
+															{ticket.firstName} {ticket.lastName}
+														</p>
+													</div>
+													{#if ticket.gemId}
+														<div>
+															<p class="text-xs text-gray-500 uppercase tracking-wider mb-1">GEM ID</p>
+															<p class="font-medium text-white">{ticket.gemId}</p>
+														</div>
+													{/if}
+												</div>
+
+												<!-- GEM Status -->
+												<div class="mt-3 pt-3 border-t border-emerald-500/10">
+													{#if ticket.enteredIntoGem}
+														<div class="flex items-start gap-2">
+															<svg class="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+																<path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
+															</svg>
+															<p class="text-sm text-emerald-300">
+																Checked in on GEM
+															</p>
+														</div>
+													{:else}
+														<div class="flex items-start gap-2">
+															<svg class="h-4 w-4 text-amber-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+															</svg>
+															<p class="text-sm text-amber-300">
+																Pending GEM check-in
+															</p>
+														</div>
+													{/if}
+												</div>
+											</div>
+										{/each}
+									</div>
+
+									<!-- GEM Info Note (show once if any ticket is not entered) -->
+									{#if data.userTicket.some(t => !t.enteredIntoGem)}
+										<p class="mt-3 text-xs text-gray-400">
+											Keep an eye on your GEM account before the event. If you don't see it after check-in, please see a judge when you arrive.
+										</p>
+									{/if}
+
+									<!-- View Order Link -->
+									{#if data.userTicket[0]?.orderId}
+										<a
+											href="/account/orders/{data.userTicket[0].orderId}"
+											class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
+										>
+											<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+											</svg>
+											View Order Details
+										</a>
+									{/if}
+								</div>
+							</div>
+						</div>
 					{:else}
 						<!-- Ticket Entry Form -->
 						<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
@@ -463,8 +557,8 @@
 							</button>
 						</div>
 
-						<!-- Mobile Order Summary (shown above payment form on mobile) -->
-						{#if showPaymentForm}
+						<!-- Mobile Order Summary (shown above payment form on mobile, only if not already registered) -->
+						{#if showPaymentForm && !data.userTicket}
 							<div class="lg:hidden rounded-xl border border-gray-800 bg-gray-900/50 p-6">
 								<h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
 									<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -579,91 +673,93 @@
 			<!-- Right Column - Order Summary Sidebar (Desktop Only) -->
 			<div class="hidden lg:block lg:col-span-1">
 				<div class="sticky top-6 space-y-6">
-					<!-- Order Summary -->
-					<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
-						<h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-							<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-							</svg>
-							Order Summary
-						</h2>
+					<!-- Order Summary (only show if not already registered) -->
+					{#if !data.userTicket}
+						<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+							<h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+								<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+								</svg>
+								Order Summary
+							</h2>
 
-						<div class="space-y-3">
-							<!-- Line Items -->
-							{#each tickets as ticket, index}
-								<div class="flex items-center justify-between py-2 {index > 0 ? 'border-t border-gray-800' : ''}">
-									<div class="flex-1 min-w-0">
-										<p class="text-sm text-white truncate">
-											{ticket.firstName || ticket.lastName
-												? `${ticket.firstName} ${ticket.lastName}`.trim()
-												: `Player ${index + 1}`}
+							<div class="space-y-3">
+								<!-- Line Items -->
+								{#each tickets as ticket, index}
+									<div class="flex items-center justify-between py-2 {index > 0 ? 'border-t border-gray-800' : ''}">
+										<div class="flex-1 min-w-0">
+											<p class="text-sm text-white truncate">
+												{ticket.firstName || ticket.lastName
+													? `${ticket.firstName} ${ticket.lastName}`.trim()
+													: `Player ${index + 1}`}
+											</p>
+											{#if ticket.gemId}
+												<p class="text-xs text-gray-500">GEM: {ticket.gemId}</p>
+											{/if}
+										</div>
+										<div class="text-right ml-4">
+											{#if data.hasPremiumDiscount && index === 0}
+												<p class="text-xs text-gray-500 line-through">${formatPrice(data.event.price)}</p>
+												<p class="text-sm font-medium text-white">${data.finalPrice}</p>
+											{:else}
+												<p class="text-sm font-medium text-white">${formatPrice(data.event.price)}</p>
+											{/if}
+										</div>
+									</div>
+								{/each}
+
+								<!-- Premium Discount Note -->
+								{#if data.hasPremiumDiscount}
+									<div class="flex items-center justify-between rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2">
+										<div class="flex items-center gap-2">
+											<svg class="h-4 w-4 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+												<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+											</svg>
+											<span class="text-sm text-green-400">Premium Discount (1st ticket)</span>
+										</div>
+										<span class="text-sm font-medium text-green-400">-10%</span>
+									</div>
+								{/if}
+
+								<!-- Total -->
+								<div class="border-t border-gray-700 pt-4 mt-4">
+									<div class="flex items-center justify-between">
+										<span class="text-base font-semibold text-white">Total</span>
+										<span class="text-2xl font-bold text-white">${totalAmount}</span>
+									</div>
+									{#if data.hasPremiumDiscount && hasMultipleTickets}
+										<p class="text-xs text-gray-500 mt-1">
+											1 @ ${data.finalPrice} + {tickets.length - 1} @ ${formatPrice(data.event.price)}
 										</p>
-										{#if ticket.gemId}
-											<p class="text-xs text-gray-500">GEM: {ticket.gemId}</p>
-										{/if}
-									</div>
-									<div class="text-right ml-4">
-										{#if data.hasPremiumDiscount && index === 0}
-											<p class="text-xs text-gray-500 line-through">${formatPrice(data.event.price)}</p>
-											<p class="text-sm font-medium text-white">${data.finalPrice}</p>
-										{:else}
-											<p class="text-sm font-medium text-white">${formatPrice(data.event.price)}</p>
-										{/if}
-									</div>
+									{:else}
+										<p class="text-xs text-gray-500 mt-1">
+											{tickets.length} ticket{tickets.length > 1 ? 's' : ''} @ ${data.finalPrice} each
+										</p>
+									{/if}
 								</div>
-							{/each}
+							</div>
 
-							<!-- Premium Discount Note -->
-							{#if data.hasPremiumDiscount}
-								<div class="flex items-center justify-between rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2">
-									<div class="flex items-center gap-2">
-										<svg class="h-4 w-4 text-green-400" fill="currentColor" viewBox="0 0 24 24">
-											<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+							<!-- Validation Status -->
+							{#if !isPastEvent && data.user && !allTicketsValid}
+								<div class="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+									<p class="text-sm text-amber-400 flex items-center gap-2">
+										<svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
 										</svg>
-										<span class="text-sm text-green-400">Premium Discount (1st ticket)</span>
-									</div>
-									<span class="text-sm font-medium text-green-400">-10%</span>
+										Complete player info to proceed
+									</p>
 								</div>
 							{/if}
 
-							<!-- Total -->
-							<div class="border-t border-gray-700 pt-4 mt-4">
-								<div class="flex items-center justify-between">
-									<span class="text-base font-semibold text-white">Total</span>
-									<span class="text-2xl font-bold text-white">${totalAmount}</span>
-								</div>
-								{#if data.hasPremiumDiscount && hasMultipleTickets}
-									<p class="text-xs text-gray-500 mt-1">
-										1 @ ${data.finalPrice} + {tickets.length - 1} @ ${formatPrice(data.event.price)}
-									</p>
-								{:else}
-									<p class="text-xs text-gray-500 mt-1">
-										{tickets.length} ticket{tickets.length > 1 ? 's' : ''} @ ${data.finalPrice} each
-									</p>
-								{/if}
+							<!-- Security Badge -->
+							<div class="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500">
+								<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+								</svg>
+								<span>Secure checkout via Authorize.net</span>
 							</div>
 						</div>
-
-						<!-- Validation Status -->
-						{#if !isPastEvent && data.user && !allTicketsValid}
-							<div class="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
-								<p class="text-sm text-amber-400 flex items-center gap-2">
-									<svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-									</svg>
-									Complete player info to proceed
-								</p>
-							</div>
-						{/if}
-
-						<!-- Security Badge -->
-						<div class="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500">
-							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-							</svg>
-							<span>Secure checkout via Authorize.net</span>
-						</div>
-					</div>
+					{/if}
 
 					<!-- Prize Info Card -->
 					<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
@@ -671,27 +767,48 @@
 							<svg class="h-5 w-5 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
 								<path d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 0 7.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 0 0 2.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 0 1 2.916.52 6.003 6.003 0 0 1-5.395 4.972m0 0a6.726 6.726 0 0 1-2.749 1.35m0 0a6.772 6.772 0 0 1-2.992 0" />
 							</svg>
-							Prize Pool
+							Prizes & Points
 						</h3>
 						<div class="space-y-2 text-sm">
-							<div class="flex justify-between">
+							<div class="flex justify-between items-center">
 								<span class="text-gray-400">1st Place</span>
-								<span class="font-medium text-green-400">$400</span>
+								<div class="text-right">
+									<span class="font-medium text-green-400">$400</span>
+									<span class="text-amber-400 ml-2">+30 pts</span>
+								</div>
 							</div>
-							<div class="flex justify-between">
+							<div class="flex justify-between items-center">
 								<span class="text-gray-400">2nd Place</span>
-								<span class="font-medium text-green-400">$200</span>
+								<div class="text-right">
+									<span class="font-medium text-green-400">$200</span>
+									<span class="text-amber-400 ml-2">+25 pts</span>
+								</div>
 							</div>
-							<div class="flex justify-between">
-								<span class="text-gray-400">3rd-4th Place</span>
-								<span class="font-medium text-green-400">$100</span>
+							<div class="flex justify-between items-center">
+								<span class="text-gray-400">3rd-4th</span>
+								<div class="text-right">
+									<span class="font-medium text-green-400">$100</span>
+									<span class="text-amber-400 ml-2">+20 pts</span>
+								</div>
 							</div>
-							<div class="flex justify-between">
-								<span class="text-gray-400">5th-8th Place</span>
-								<span class="font-medium text-green-400">$50</span>
+							<div class="flex justify-between items-center">
+								<span class="text-gray-400">5th-8th</span>
+								<div class="text-right">
+									<span class="font-medium text-green-400">$50</span>
+									<span class="text-amber-400 ml-2">+15 pts</span>
+								</div>
 							</div>
-							<div class="mt-3 pt-3 border-t border-gray-800">
-								<p class="text-xs text-gray-500">Plus AGE Points for all participants</p>
+							<div class="flex justify-between items-center">
+								<span class="text-gray-400">Top 12</span>
+								<span class="text-amber-400">+12 pts</span>
+							</div>
+							<div class="flex justify-between items-center">
+								<span class="text-gray-400">Top 16</span>
+								<span class="text-amber-400">+8 pts</span>
+							</div>
+							<div class="flex justify-between items-center pt-2 border-t border-gray-800 mt-2">
+								<span class="text-gray-400">Participation</span>
+								<span class="text-amber-400">+1 pt</span>
 							</div>
 						</div>
 					</div>

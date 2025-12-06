@@ -189,14 +189,15 @@ export async function POST({ params, request, locals }) {
 			}).returning();
 
 			// Create ticket record with orderId link
+			// Use billTo name if provided, otherwise fall back to user's account name
 			const [newTicket] = await db.insert(ticket).values({
 				userId: currentUser.id,
 				eventId,
 				orderId: newOrder.id,
 				code: ticketCode,
 				quantity: 1,
-				firstName: billTo?.firstName || null,
-				lastName: billTo?.lastName || null,
+				firstName: billTo?.firstName || currentUser.firstName || null,
+				lastName: billTo?.lastName || currentUser.lastName || null,
 				gemId: gemId || null,
 				amountPaid: parseFloat(amount).toFixed(2),
 				transactionId: result.transactionId,

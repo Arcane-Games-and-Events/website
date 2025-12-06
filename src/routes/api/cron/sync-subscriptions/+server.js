@@ -3,7 +3,7 @@ import { authnet } from '$lib/server/authnet/client.js';
 import { db } from '$lib/server/db/index.js';
 import { user as userTable } from '$lib/server/db/schema.js';
 import { eq, isNotNull, and, ne } from 'drizzle-orm';
-import { CRON_SECRET } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 /**
  * Sync subscription statuses from Authorize.net
@@ -20,7 +20,7 @@ import { CRON_SECRET } from '$env/static/private';
 export async function GET({ request, locals }) {
 	// Verify authorization
 	const authHeader = request.headers.get('authorization');
-	const isValidCronSecret = CRON_SECRET && authHeader === `Bearer ${CRON_SECRET}`;
+	const isValidCronSecret = env.CRON_SECRET && authHeader === `Bearer ${env.CRON_SECRET}`;
 	const isAdmin = locals.user?.role === 'admin';
 
 	if (!isValidCronSecret && !isAdmin) {

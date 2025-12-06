@@ -1,7 +1,8 @@
 import { db } from '$lib/server/db';
-import { seasonStanding, eventMatch } from '$lib/server/db/schema';
+import { seasonStanding, eventMatch, eventDecklist, event } from '$lib/server/db/schema';
 import { eq, desc, or, asc } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
+import { calculatePercentile, calculateRankPercentile } from '$lib/age-rating.js';
 
 /**
  * Calculate derived stats from monthly data
@@ -60,30 +61,7 @@ function compareStandings(a, b) {
 	return eventsDiff;
 }
 
-/**
- * Calculate percentile rank (0-100) for a value in an array
- * Higher percentile = better (e.g., 95th percentile means better than 95% of players)
- */
-function calculatePercentile(value, allValues) {
-	if (allValues.length === 0) return 50;
-	const sorted = [...allValues].sort((a, b) => a - b);
-	const belowCount = sorted.filter(v => v < value).length;
-	const equalCount = sorted.filter(v => v === value).length;
-	// Use midpoint method for ties
-	return ((belowCount + equalCount / 2) / sorted.length) * 100;
-}
-
-/**
- * Calculate percentile rank for rank values (lower is better)
- */
-function calculateRankPercentile(rank, allRanks) {
-	if (allRanks.length === 0 || rank === null) return 50;
-	const sorted = [...allRanks].sort((a, b) => a - b);
-	// For ranks, lower is better, so we count how many are WORSE (higher)
-	const worseCount = sorted.filter(r => r > rank).length;
-	const equalCount = sorted.filter(r => r === rank).length;
-	return ((worseCount + equalCount / 2) / sorted.length) * 100;
-}
+// Note: calculatePercentile and calculateRankPercentile are imported from $lib/age-rating.js
 
 export async function load({ params, locals }) {
 	const { gemId } = params;
@@ -151,12 +129,14 @@ export async function load({ params, locals }) {
 	const derivedStatsCache = new Map();
 
 	for (const standing of allStandings) {
-		const playerGemId = standing.gemId;
-		if (!playerGemId) continue;
+		// Use gemId || playerName to match standings page logic (include ALL players)
+		const key = standing.gemId || standing.playerName;
+		if (!key) continue;
 
-		if (!playerStatsMap.has(playerGemId)) {
-			playerStatsMap.set(playerGemId, {
-				gemId: playerGemId,
+		if (!playerStatsMap.has(key)) {
+			playerStatsMap.set(key, {
+				gemId: standing.gemId,
+				playerName: standing.playerName,
 				totalPoints: 0,
 				matchesWon: 0,
 				matchesPlayed: 0,
@@ -174,7 +154,7 @@ export async function load({ params, locals }) {
 		}
 		const derived = derivedStatsCache.get(standing.id);
 
-		const playerData = playerStatsMap.get(playerGemId);
+		const playerData = playerStatsMap.get(key);
 		playerData.totalPoints += standing.totalPoints || 0;
 		playerData.matchesWon += standing.matchesWon || 0;
 		playerData.matchesPlayed += standing.matchesPlayed || 0;
@@ -185,11 +165,12 @@ export async function load({ params, locals }) {
 
 	// Calculate ranks for all players using pre-grouped and pre-sorted data
 	// (standingsByCircuitSeason was already built and sorted above)
-	for (const [playerGemId, playerData] of playerStatsMap) {
+	for (const [playerKey, playerData] of playerStatsMap) {
 		for (const standing of playerData.standings) {
-			const key = `${standing.season}|${standing.circuit}`;
-			const circuitSeasonStandings = standingsByCircuitSeason.get(key) || [];
-			const rank = circuitSeasonStandings.findIndex(s => s.gemId === playerGemId) + 1;
+			const circuitSeasonKey = `${standing.season}|${standing.circuit}`;
+			const circuitSeasonStandings = standingsByCircuitSeason.get(circuitSeasonKey) || [];
+			// Match using gemId || playerName to be consistent
+			const rank = circuitSeasonStandings.findIndex(s => (s.gemId || s.playerName) === playerKey) + 1;
 
 			if (rank > 0) {
 				if (playerData.bestRank === null || rank < playerData.bestRank) {
@@ -382,6 +363,37 @@ export async function load({ params, locals }) {
 		matchesByEvent: matchesByEventObj
 	} : null;
 
+	// === DECKLISTS ===
+	// Query decklists for this player with event join (single query, no N+1)
+	const decklistsWithEvents = await db
+		.select({
+			decklist: eventDecklist,
+			event: {
+				id: event.id,
+				title: event.title,
+				circuit: event.circuit,
+				month: event.month,
+				eventDate: event.eventDate,
+				format: event.format
+			}
+		})
+		.from(eventDecklist)
+		.leftJoin(event, eq(eventDecklist.eventId, event.id))
+		.where(eq(eventDecklist.gemId, gemId));
+
+	// Transform to expected format
+	const playerDecklists = decklistsWithEvents.map(row => ({
+		decklist: row.decklist,
+		event: row.event?.id ? row.event : null
+	}));
+
+	// Sort by event date (newest first)
+	playerDecklists.sort((a, b) => {
+		const dateA = a.event?.eventDate ? new Date(a.event.eventDate) : new Date(0);
+		const dateB = b.event?.eventDate ? new Date(b.event.eventDate) : new Date(0);
+		return dateB - dateA;
+	});
+
 	return {
 		gemId,
 		displayName,
@@ -389,7 +401,8 @@ export async function load({ params, locals }) {
 		totalStats,
 		isAdmin,
 		percentiles,
-		matchHistory
+		matchHistory,
+		decklists: playerDecklists
 	};
 }
 

@@ -2,6 +2,12 @@ import { db } from '$lib/server/db/index.js';
 import { event, eventResult, eventDecklist, seasonStanding, lssSeason } from '$lib/server/db/schema.js';
 import { asc, desc, eq, and, sql, gt, gte } from 'drizzle-orm';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+import {
+	calculateAgeRatingTotal,
+	getRatingTier,
+	calculatePercentile,
+	calculateRankPercentile
+} from '$lib/age-rating.js';
 
 /**
  * Calculate derived stats from monthly data
@@ -60,75 +66,8 @@ function compareStandings(a, b) {
 	return eventsDiff;
 }
 
-/**
- * Calculate percentile rank (0-100) for a value in an array
- * Higher percentile = better
- */
-function calculatePercentile(value, allValues) {
-	if (allValues.length === 0) return 50;
-	const sorted = [...allValues].sort((a, b) => a - b);
-	const belowCount = sorted.filter(v => v < value).length;
-	const equalCount = sorted.filter(v => v === value).length;
-	return ((belowCount + equalCount / 2) / sorted.length) * 100;
-}
-
-/**
- * Calculate percentile rank for rank values (lower is better)
- */
-function calculateRankPercentile(rank, allRanks) {
-	if (allRanks.length === 0 || rank === null) return 50;
-	const sorted = [...allRanks].sort((a, b) => a - b);
-	const worseCount = sorted.filter(r => r > rank).length;
-	const equalCount = sorted.filter(r => r === rank).length;
-	return ((worseCount + equalCount / 2) / sorted.length) * 100;
-}
-
-/**
- * Calculate AGE Rating from percentiles using harsh power curve
- */
-function calculateAgeRating(percentiles, eventsPlayed) {
-	const harshCurve = (percentile) => Math.pow(percentile / 100, 1.4) * 100;
-
-	// Minimum events penalty
-	const minEvents = 3;
-	const eventMultiplier = Math.min(1, eventsPlayed / minEvents);
-
-	// Apply harsh curve
-	const adjustedWinRate = harshCurve(percentiles.winRate);
-	const adjustedTop8 = harshCurve(percentiles.top8Rate);
-	const adjustedPeak = harshCurve(percentiles.bestRank);
-	const adjustedEfficiency = harshCurve(percentiles.efficiency);
-	const adjustedExperience = harshCurve(percentiles.experience);
-	const adjustedChampionship = harshCurve(percentiles.championship);
-
-	// Weights (total 100)
-	const winRateScore = (adjustedWinRate / 100) * 25;
-	const top8Score = (adjustedTop8 / 100) * 25;
-	const peakScore = (adjustedPeak / 100) * 20;
-	const efficiencyScore = (adjustedEfficiency / 100) * 15;
-	const experienceScore = (adjustedExperience / 100) * 10;
-	const championshipScore = (adjustedChampionship / 100) * 5;
-
-	let total = winRateScore + top8Score + peakScore + efficiencyScore + experienceScore + championshipScore;
-	total = total * (0.6 + 0.4 * eventMultiplier);
-
-	return Math.round(Math.min(100, Math.max(0, total)));
-}
-
-/**
- * Get rating tier info based on AGE Rating
- */
-function getRatingTier(rating) {
-	if (rating >= 90) return { label: 'Elite', color: 'yellow' };
-	if (rating >= 80) return { label: 'Premier', color: 'purple' };
-	if (rating >= 70) return { label: 'Distinguished', color: 'cyan' };
-	if (rating >= 60) return { label: 'Competitive', color: 'teal' };
-	if (rating >= 50) return { label: 'Established', color: 'amber' };
-	if (rating >= 40) return { label: 'Rising', color: 'gray' };
-	if (rating >= 30) return { label: 'Developing', color: 'orange' };
-	if (rating >= 20) return { label: 'Newcomer', color: 'stone' };
-	return { label: 'Unranked', color: 'slate' };
-}
+// Note: calculatePercentile, calculateRankPercentile, calculateAgeRating, and getRatingTier
+// are imported from $lib/age-rating.js for single source of truth
 
 export async function load({ url, setHeaders }) {
 	// Cache for 5 minutes, allow stale for 1 hour while revalidating
@@ -141,18 +80,6 @@ export async function load({ url, setHeaders }) {
 	const currentYear = new Date().getFullYear().toString();
 	const selectedSeason = url.searchParams.get('season') || 'all';
 	const selectedCircuit = url.searchParams.get('circuit') || null;
-
-	// Available seasons (newest first) - 'all' represents career/all-time stats
-	const availableSeasons = ['all', '2025', '2024', '2023'];
-
-	// Circuits available per season
-	const circuitsByYear = {
-		'all': ['Los Angeles', 'New England', 'St. Louis'],
-		'2023': ['Los Angeles'],
-		'2024': ['Los Angeles'],
-		'2025': ['Los Angeles', 'New England'],
-		'2026': ['Los Angeles', 'New England', 'St. Louis']
-	};
 
 	try {
 		// Fetch raw data with Redis caching (5 minute TTL)
@@ -184,14 +111,15 @@ export async function load({ url, setHeaders }) {
 					eventId: eventDecklist.eventId,
 					playerName: eventDecklist.playerName,
 					gemId: eventDecklist.gemId,
-					deckName: eventDecklist.deckName,
 					hero: eventDecklist.hero,
 					format: eventDecklist.format,
+					placement: eventDecklist.placement,
 					cards: eventDecklist.cards,
 					createdAt: eventDecklist.createdAt,
 					eventTitle: event.title,
 					eventDate: event.eventDate,
-					circuit: event.circuit
+					circuit: event.circuit,
+					month: event.month
 				})
 					.from(eventDecklist)
 					.innerJoin(event, eq(eventDecklist.eventId, event.id))
@@ -206,6 +134,29 @@ export async function load({ url, setHeaders }) {
 				CACHE_TTL.MEDIUM
 			)
 		]);
+
+		// Extract unique seasons and circuits from standings data (dynamic filters)
+		const uniqueSeasons = [...new Set(allStandings.map(s => s.season))].filter(Boolean).sort().reverse();
+		const availableSeasons = ['all', ...uniqueSeasons];
+
+		// Build circuits by year dynamically
+		const circuitsByYear = { 'all': [] };
+		for (const standing of allStandings) {
+			if (!standing.season || !standing.circuit) continue;
+			if (!circuitsByYear[standing.season]) {
+				circuitsByYear[standing.season] = [];
+			}
+			if (!circuitsByYear[standing.season].includes(standing.circuit)) {
+				circuitsByYear[standing.season].push(standing.circuit);
+			}
+			if (!circuitsByYear['all'].includes(standing.circuit)) {
+				circuitsByYear['all'].push(standing.circuit);
+			}
+		}
+		// Sort circuits alphabetically
+		for (const year of Object.keys(circuitsByYear)) {
+			circuitsByYear[year].sort();
+		}
 
 		// Get completed events with results for the Results tab
 		const completedEvents = events.filter((e) => e.status === 'completed');
@@ -422,7 +373,7 @@ export async function load({ url, setHeaders }) {
 					championship: calculatePercentile(playerData.championshipQualifications, allChampionshipQuals)
 				};
 
-				const ageRating = calculateAgeRating(percentiles, playerData.eventsPlayed);
+				const ageRating = calculateAgeRatingTotal(percentiles, playerData.eventsPlayed);
 				const ratingTier = getRatingTier(ageRating);
 				const isProvisional = playerData.eventsPlayed < 3;
 
@@ -460,15 +411,10 @@ export async function load({ url, setHeaders }) {
 			decklists: [],
 			lssSeasons: [],
 			currentYear,
-			selectedSeason: currentYear,
+			selectedSeason: 'all',
 			selectedCircuit,
-			availableSeasons: ['2025', '2024', '2023'],
-			circuitsByYear: {
-				'2023': ['Los Angeles'],
-				'2024': ['Los Angeles'],
-				'2025': ['Los Angeles', 'New England'],
-				'2026': ['Los Angeles', 'New England', 'St. Louis']
-			}
+			availableSeasons: ['all'],
+			circuitsByYear: { 'all': [] }
 		};
 	}
 }

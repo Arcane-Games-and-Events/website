@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { event, savedCard } from '$lib/server/db/schema.js';
-import { eq } from 'drizzle-orm';
+import { event, savedCard, ticket } from '$lib/server/db/schema.js';
+import { eq, and } from 'drizzle-orm';
 
 export async function load({ params, locals }) {
 	try {
@@ -33,11 +33,26 @@ export async function load({ params, locals }) {
 
 		// Fetch saved cards if user is logged in
 		let userSavedCards = [];
+		let userTicket = null;
 		if (locals.user) {
 			userSavedCards = await db
 				.select()
 				.from(savedCard)
 				.where(eq(savedCard.userId, locals.user.id));
+
+			// Check if user already has tickets for this event
+			const existingTickets = await db
+				.select()
+				.from(ticket)
+				.where(
+					and(
+						eq(ticket.userId, locals.user.id),
+						eq(ticket.eventId, params.eventId),
+						eq(ticket.refunded, false)
+					)
+				);
+
+			userTicket = existingTickets.length > 0 ? existingTickets : null;
 		}
 
 		return {
@@ -49,7 +64,8 @@ export async function load({ params, locals }) {
 			userGemId,
 			userFirstName,
 			userLastName,
-			savedCards: userSavedCards
+			savedCards: userSavedCards,
+			userTicket
 		};
 	} catch (err) {
 		if (err.status === 404) {
