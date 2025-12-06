@@ -501,7 +501,8 @@ class AuthNetClient {
 			const paymentProfile = new ApiContracts.CustomerPaymentProfileType();
 			paymentProfile.setPayment(payment);
 
-			if (options.billTo) {
+			// Only set billTo if we have meaningful billing data
+			if (options.billTo && (options.billTo.firstName || options.billTo.lastName)) {
 				const billTo = new ApiContracts.CustomerAddressType();
 				if (options.billTo.firstName) billTo.setFirstName(options.billTo.firstName);
 				if (options.billTo.lastName) billTo.setLastName(options.billTo.lastName);
@@ -518,7 +519,11 @@ class AuthNetClient {
 			request.setMerchantAuthentication(merchantAuth);
 			request.setCustomerProfileId(options.customerProfileId);
 			request.setPaymentProfile(paymentProfile);
-			request.setValidationMode(ApiContracts.ValidationModeEnum.LIVEMODE);
+			// Use TESTMODE for sandbox, LIVEMODE for production
+			const validationMode = this.environment === 'production'
+				? ApiContracts.ValidationModeEnum.LIVEMODE
+				: ApiContracts.ValidationModeEnum.TESTMODE;
+			request.setValidationMode(validationMode);
 
 			const ctrl = new ApiControllers.CreateCustomerPaymentProfileController(request.getJSON());
 
