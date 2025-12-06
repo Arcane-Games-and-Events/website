@@ -63,6 +63,18 @@ export const session = pgTable('session', {
 	}).notNull()
 });
 
+// ORDERS (audit) - defined before ticket for foreign key reference
+export const order = pgTable('order', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	provider: text('provider').notNull(), // 'authnet'
+	providerRef: text('provider_ref').notNull(),
+	userEmail: text('user_email'),
+	amount: text('amount'),
+	currency: text('currency'),
+	meta: jsonb('meta'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
 // EVENTS
 export const event = pgTable('event', {
 	id: text('id').primaryKey(), // UUID or slug
@@ -92,6 +104,7 @@ export const ticket = pgTable('ticket', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	userId: text('user_id').references(() => user.id),
 	eventId: text('event_id').notNull().references(() => event.id),
+	orderId: uuid('order_id').references(() => order.id), // Link to payment record
 	code: text('code').notNull(),
 	quantity: integer('quantity').default(1),
 
@@ -119,18 +132,6 @@ export const entitlement = pgTable('entitlement', {
 	id: uuid('id').defaultRandom().primaryKey(), // <-- uuid + defaultRandom
 	userId: text('user_id'),
 	product: text('product').notNull(),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
-});
-
-// ORDERS (audit)
-export const order = pgTable('order', {
-	id: uuid('id').defaultRandom().primaryKey(), // <-- uuid + defaultRandom
-	provider: text('provider').notNull(), // 'authnet'
-	providerRef: text('provider_ref').notNull(),
-	userEmail: text('user_email'),
-	amount: text('amount'),
-	currency: text('currency'),
-	meta: jsonb('meta'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 

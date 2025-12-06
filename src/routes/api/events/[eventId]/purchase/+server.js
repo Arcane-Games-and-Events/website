@@ -170,10 +170,29 @@ export async function POST({ params, request, locals }) {
 			// Generate unique ticket code
 			const ticketCode = crypto.randomBytes(8).toString('hex').toUpperCase();
 
-			// Create ticket record with new fields
+			// Create order record first (so we can link ticket to it)
+			const [newOrder] = await db.insert(order).values({
+				provider: 'authnet',
+				providerRef: result.transactionId,
+				userEmail: currentUser.email,
+				amount,
+				currency: 'USD',
+				meta: {
+					type: 'ticket',
+					eventId,
+					eventTitle: eventData.title,
+					ticketCode,
+					gemId: gemId || null,
+					transactionId: result.transactionId,
+					premiumDiscount: eventData.premiumDiscount && isPremium
+				}
+			}).returning();
+
+			// Create ticket record with orderId link
 			const [newTicket] = await db.insert(ticket).values({
 				userId: currentUser.id,
 				eventId,
+				orderId: newOrder.id,
 				code: ticketCode,
 				quantity: 1,
 				firstName: billTo?.firstName || null,
@@ -184,24 +203,10 @@ export async function POST({ params, request, locals }) {
 				enteredIntoGem: false
 			}).returning();
 
-			// Record the order
-			await db.insert(order).values({
-				provider: 'authnet',
-				providerRef: result.transactionId,
-				userEmail: currentUser.email,
-				amount,
-				currency: 'USD',
-				meta: {
-					type: 'ticket',
-					eventId,
-					eventTitle: eventData.title,
-					ticketId: newTicket.id,
-					ticketCode,
-					gemId: gemId || null,
-					transactionId: result.transactionId,
-					premiumDiscount: eventData.premiumDiscount && isPremium
-				}
-			});
+			// Update order meta with ticketId for backwards compatibility
+			await db.update(order)
+				.set({ meta: { ...newOrder.meta, ticketId: newTicket.id } })
+				.where(eq(order.id, newOrder.id));
 
 			return json({
 				success: true,
