@@ -4,9 +4,6 @@
 	 * Supports both legacy JSON format and new Strapi component format
 	 */
 
-	import { onMount } from 'svelte';
-	import { fade, scale } from 'svelte/transition';
-
 	// Props - supports both old and new formats
 	/** @type {{ title?: string, cards?: Array<{quantity: number, name: string, type?: string}> }} */
 	export let decklist = { cards: [] };
@@ -18,22 +15,6 @@
 	export let format = null;
 	export let parsedCards = null;
 	export let fabraryUrl = null;
-
-	// State for card hover/modal
-	let hoveredCard = null;
-	let hoverPosition = { x: 0, y: 0 };
-	let cardImageData = {};
-	let imageLoaded = false;
-	let isMobile = false;
-	let showMobileModal = false;
-	let mobileCard = null;
-
-	onMount(() => {
-		// Detect mobile device
-		isMobile =
-			/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-			window.innerWidth < 768;
-	});
 
 	// Determine if using new or legacy format
 	$: isNewFormat = parsedCards && (parsedCards.arenaCards || parsedCards.deckCards);
@@ -132,90 +113,6 @@
 			(parsedCards?.deckCards?.reduce((sum, card) => sum + card.quantity, 0) || 0)
 		: (decklist.cards || []).reduce((sum, card) => sum + card.quantity, 0);
 
-	// Fetch card data from API (keeps JSON server-side only)
-	async function fetchCardData(cardName, cardColor) {
-		const cacheKey = `${cardName}_${cardColor}`;
-		if (cardImageData[cacheKey]) {
-			return cardImageData[cacheKey];
-		}
-
-		try {
-			const params = new URLSearchParams({ name: cardName });
-			if (cardColor) params.append('color', cardColor);
-			const response = await fetch(`/api/card?${params}`);
-			const data = await response.json();
-			cardImageData[cacheKey] = data;
-			cardImageData = cardImageData; // Trigger reactivity
-			return data;
-		} catch (error) {
-			console.error('Error fetching card data:', error);
-			return { name: cardName, color: cardColor, found: false, image: null };
-		}
-	}
-
-	// Handle card hover (desktop only)
-	async function handleCardHover(event, cardName, cardColor) {
-		if (isMobile) return;
-
-		const rect = event.target.getBoundingClientRect();
-		const viewportWidth = window.innerWidth;
-		const viewportHeight = window.innerHeight;
-		const imageWidth = 250;
-		const imageHeight = 350;
-
-		let x = rect.right + 10;
-		let y = rect.top;
-
-		if (x + imageWidth > viewportWidth - 20) {
-			x = rect.left - imageWidth - 10;
-		}
-
-		if (y + imageHeight > viewportHeight - 20) {
-			y = viewportHeight - imageHeight - 20;
-		}
-
-		if (y < 10) {
-			y = 10;
-		}
-
-		hoverPosition = { x, y };
-		hoveredCard = { name: cardName, color: cardColor };
-		imageLoaded = false;
-
-		await fetchCardData(cardName, cardColor);
-	}
-
-	function handleCardLeave() {
-		if (isMobile) return;
-		hoveredCard = null;
-		imageLoaded = false;
-	}
-
-	// Handle card tap (mobile)
-	async function handleCardTap(event, cardName, cardColor) {
-		if (!isMobile) return;
-
-		event.preventDefault();
-		const data = await fetchCardData(cardName, cardColor);
-		mobileCard = { name: cardName, color: cardColor, data };
-		showMobileModal = true;
-	}
-
-	function closeMobileModal() {
-		showMobileModal = false;
-		mobileCard = null;
-	}
-
-	function handleImageLoad() {
-		imageLoaded = true;
-	}
-
-	function handleKeydown(event) {
-		if (event.key === 'Escape') {
-			closeMobileModal();
-		}
-	}
-
 	/**
 	 * Get the formatted search URL for cards.fabtcg.com
 	 */
@@ -225,16 +122,15 @@
 	}
 
 	/**
-	 * Navigate to card page (mobile)
+	 * Convert color to pitch value for data attribute
 	 */
-	function navigateToCard() {
-		if (!mobileCard) return;
-		const url = getSearchUrl(mobileCard.name);
-		window.open(url, '_blank', 'noopener,noreferrer');
+	function colorToPitch(color) {
+		if (color === 'red') return '1';
+		if (color === 'yellow') return '2';
+		if (color === 'blue') return '3';
+		return null;
 	}
 </script>
-
-<svelte:window on:keydown={handleKeydown} />
 
 <div
 	class="relative my-8 overflow-hidden rounded-2xl border border-white/10 bg-gray-900/50 shadow-xl"
@@ -286,15 +182,15 @@
 					<div class="mb-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">Arena</div>
 					<div class="flex flex-wrap gap-2">
 						{#each processedCards.arena as card}
-							<button
-								type="button"
-								class="font-inherit cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white transition-all duration-150 hover:border-yellow-500/50 hover:bg-yellow-500/10 hover:text-yellow-300"
-								on:mouseenter={(e) => handleCardHover(e, card.name, card.color)}
-								on:mouseleave={handleCardLeave}
-								on:click={(e) => handleCardTap(e, card.name, card.color)}
-								>{#if card.quantity > 1}<span class="mr-1 text-gray-400">{card.quantity}×</span
-									>{/if}{card.name}</button
+							<a
+								href={getSearchUrl(card.name)}
+								target="_blank"
+								rel="noopener noreferrer"
+								data-card-name={card.name}
+								class="card-link rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm !text-white !no-underline transition-all duration-150 hover:border-yellow-500/50 hover:bg-yellow-500/10 hover:!text-yellow-300"
 							>
+								{#if card.quantity > 1}<span class="mr-1 text-gray-400">{card.quantity}×</span>{/if}{card.name}
+							</a>
 						{/each}
 					</div>
 				</div>
@@ -336,13 +232,14 @@
 										<span class="w-5 shrink-0 text-right text-xs font-medium text-gray-500"
 											>{card.quantity}×</span
 										>
-										<button
-											type="button"
-											class="font-inherit cursor-pointer truncate border-0 bg-transparent p-0 text-left text-gray-300 transition-colors duration-150 hover:text-yellow-400"
-											on:mouseenter={(e) => handleCardHover(e, card.name, card.color)}
-											on:mouseleave={handleCardLeave}
-											on:click={(e) => handleCardTap(e, card.name, card.color)}
-											title={card.name}>{card.name}</button
+										<a
+											href={getSearchUrl(card.name)}
+											target="_blank"
+											rel="noopener noreferrer"
+											data-card-name={card.name}
+											data-card-pitch={colorToPitch(color)}
+											class="card-link truncate !text-white !underline !decoration-white/40 transition-colors duration-150 hover:!text-yellow-400 hover:!decoration-yellow-400/60"
+											title={card.name}>{card.name}</a
 										>
 									</div>
 								{/each}
@@ -371,8 +268,8 @@
 												`https://cards.fabtcg.com/?search=${encodeURIComponent(card.id || card.name)}`}
 											target="_blank"
 											rel="noopener noreferrer"
-											data-card-name={card.id || card.name}
-											class="cursor-pointer truncate text-gray-300 no-underline transition-colors duration-150 hover:text-yellow-400"
+											data-card-name={card.name}
+											class="card-link truncate !text-white !underline !decoration-white/40 transition-colors duration-150 hover:!text-yellow-400 hover:!decoration-yellow-400/60"
 											title={card.name}>{card.name}</a
 										>
 									</div>
@@ -414,104 +311,3 @@
 		</div>
 	{/if}
 </div>
-
-<!-- Desktop Card Preview (Hover) -->
-{#if hoveredCard && !isMobile}
-	{@const cacheKey = `${hoveredCard.name}_${hoveredCard.color}`}
-	{@const cardData = cardImageData[cacheKey]}
-	<div
-		class="pointer-events-none fixed z-[1000]"
-		style="left: {hoverPosition.x}px; top: {hoverPosition.y}px;"
-		transition:fade={{ duration: 150 }}
-	>
-		<div class="relative">
-			<!-- Subtle placeholder - shows immediately -->
-			<div
-				class="h-[350px] w-[250px] rounded-xl border border-white/10 bg-gray-900/90 shadow-2xl transition-opacity duration-200 {imageLoaded
-					? 'opacity-0'
-					: 'opacity-100'}"
-			></div>
-			<!-- Actual card image - fades in when loaded -->
-			{#if cardData?.image}
-				<img
-					src={cardData.image}
-					alt={hoveredCard.name}
-					loading="lazy"
-					decoding="async"
-					on:load={handleImageLoad}
-					class="absolute top-0 left-0 w-[250px] rounded-xl border border-white/20 shadow-2xl transition-opacity duration-200 {imageLoaded
-						? 'opacity-100'
-						: 'opacity-0'}"
-				/>
-			{/if}
-		</div>
-	</div>
-{/if}
-
-<!-- Mobile Card Modal (Tap) -->
-{#if showMobileModal && mobileCard}
-	<div
-		class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-5 backdrop-blur-md"
-		role="button"
-		tabindex="0"
-		on:click={closeMobileModal}
-		on:keydown={(e) => e.key === 'Escape' && closeMobileModal()}
-		transition:fade={{ duration: 200 }}
-	>
-		<div
-			class="relative max-h-[90%] max-w-[90%]"
-			role="dialog"
-			tabindex="-1"
-			aria-modal="true"
-			aria-label="Card preview"
-			on:click|stopPropagation
-			on:keydown|stopPropagation
-			transition:scale={{ duration: 200, start: 0.9 }}
-		>
-			<button
-				class="absolute -top-3 -right-3 z-[1] flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-white/20 bg-gray-900 text-white shadow-xl transition-all duration-200 hover:bg-gray-800 active:scale-95"
-				on:click={closeMobileModal}
-				aria-label="Close card preview"
-			>
-				<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M6 18L18 6M6 6l12 12"
-					/>
-				</svg>
-			</button>
-			{#if mobileCard.data?.image}
-				<img
-					src={mobileCard.data.image}
-					alt="Card preview"
-					loading="lazy"
-					decoding="async"
-					class="h-auto w-full max-w-[350px] rounded-2xl border-2 border-white/20 shadow-2xl"
-				/>
-			{:else}
-				<div
-					class="flex h-[490px] w-[350px] items-center justify-center rounded-2xl border-2 border-white/20 bg-gray-900"
-				>
-					<span class="text-gray-500">Image not available</span>
-				</div>
-			{/if}
-			<button
-				class="mt-4 flex w-full max-w-[350px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/20 bg-white p-3 px-6 text-sm font-semibold text-gray-900 shadow-xl transition-all duration-200 hover:bg-gray-100 active:scale-[0.98]"
-				on:click={navigateToCard}
-			>
-				<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-					/>
-				</svg>
-				View Full Card
-			</button>
-			<p class="mt-3 text-center text-xs text-gray-500">Tap outside to close</p>
-		</div>
-	</div>
-{/if}

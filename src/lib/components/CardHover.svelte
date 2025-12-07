@@ -1,339 +1,324 @@
 <script>
-	import { onMount } from 'svelte';
-	import { fade, scale } from 'svelte/transition';
-	import { getCardData } from '$lib/utils/fab-cards.js';
-
-	let cardImage = null;
-	let showCard = false;
-	let mouseX = 0;
-	let mouseY = 0;
-	let isMobile = false;
-	let mobileCardImage = null;
-	let mobileCardUrl = null;
-	let mobileCardName = null;
-
 	/**
-	 * Check if the mobile card URL is a custom purchase link (not default search)
+	 * CardHover - Hover tooltip and mobile modal for card links
+	 *
+	 * Automatically attaches to elements with class "card-link" and data-card-name attribute.
+	 * - Desktop: Shows hover tooltip
+	 * - Mobile: Shows modal on tap with optional external link button
+	 *
+	 * Supports:
+	 * - data-card-name: Card name for image lookup
+	 * - data-card-pitch: Optional pitch (1/2/3) for pitched cards
+	 * - data-card-url: Optional custom URL for external link button
 	 */
-	function hasCustomPurchaseLink() {
-		if (!mobileCardUrl) return false;
-		// Default search URLs look like: https://cards.fabtcg.com/?search=CARDNAME
-		return !mobileCardUrl.startsWith('https://cards.fabtcg.com/?search=');
-	}
 
-	/**
-	 * Get the formatted search URL for cards.fabtcg.com
-	 */
-	function getSearchUrl(cardName) {
-		// Remove pitch notation like [r], [y], [b]
-		const cleanName = cardName.replace(/\[(r|red|y|yellow|b|blue)\]$/i, '').trim();
-		// Replace spaces with + for the search query
-		const searchQuery = cleanName.replace(/\s+/g, '+').toLowerCase();
-		return `https://cards.fabtcg.com/results/?q=${searchQuery}`;
-	}
+	import { onMount, onDestroy } from 'svelte';
+	import { resolveCardImage } from '$lib/utils/fab-cards.js';
 
-	// Card dimensions (approximate aspect ratio for FaB cards)
-	const CARD_WIDTH = 250;
-	const CARD_HEIGHT = 350;
+	// Container element to search for card links (defaults to document)
+	export let container = null;
 
-	// Offset from cursor - position card to upper-right of cursor
-	const OFFSET_X = 15; // Space to the right of cursor
-	const OFFSET_Y = 15; // Space above the card bottom
+	// Tooltip state (desktop hover)
+	let tooltipVisible = false;
+	let tooltipX = 0;
+	let tooltipY = 0;
 
-	/**
-	 * Parse card identifier with pitch notation
-	 * @param {string} cardIdentifier - e.g., "Snatch[r]", "Command and Conquer[b]", "Blade Runner"
-	 * @returns {object} { cardName, pitch }
-	 */
-	function parseCardIdentifier(cardIdentifier) {
-		// Match pitch notation: [r], [y], [b], [red], [yellow], [blue]
-		const pitchMatch = cardIdentifier.match(/^(.+?)\[(r|red|y|yellow|b|blue)\]$/i);
+	// Modal state (mobile tap)
+	let modalVisible = false;
+	let modalCard = null;
+	let modalUrl = null;
+	let modalHasCustomUrl = false;
+	let modalImageLoaded = false;
+	let modalImageError = false;
 
-		if (pitchMatch) {
-			const cardName = pitchMatch[1].trim();
-			const pitchNotation = pitchMatch[2].toLowerCase();
+	// Shared state
+	let currentCard = null;
+	let imageUrl = null;
+	let fallbackUrl = null;
+	let imageLoaded = false;
+	let imageError = false;
+	let listeners = [];
 
-			// Map pitch notation to numeric values (as used by @flesh-and-blood/cards)
-			let pitch;
-			if (pitchNotation === 'r' || pitchNotation === 'red') {
-				pitch = 1;
-			} else if (pitchNotation === 'y' || pitchNotation === 'yellow') {
-				pitch = 2;
-			} else if (pitchNotation === 'b' || pitchNotation === 'blue') {
-				pitch = 3;
-			}
+	// Detect if device supports touch
+	let isTouchDevice = false;
 
-			return { cardName, pitch };
-		}
+	function handleMouseEnter(event) {
+		// Skip hover on touch devices
+		if (isTouchDevice) return;
 
-		// No pitch notation - return card name as-is
-		return { cardName: cardIdentifier.trim(), pitch: undefined };
-	}
+		const link = event.currentTarget;
+		const cardName = link.dataset.cardName;
+		const pitch = link.dataset.cardPitch;
 
-	/**
-	 * Get card image URL using offline card database
-	 * @param {string} cardIdentifier - The card name/ID with optional pitch notation
-	 * @returns {Promise<string|null>} The card image URL or null
-	 */
-	async function fetchCardImage(cardIdentifier) {
-		try {
-			// Check if this looks like a card ID (alphanumeric pattern like ARC077, WTR001, etc)
-			const cardIdPattern = /^[A-Z]{3,}\d{3}$/i;
-
-			if (cardIdPattern.test(cardIdentifier)) {
-				// Direct card ID - construct the image URL immediately
-				return `https://d2wlb52bya4y8z.cloudfront.net/media/cards/large/${cardIdentifier.toUpperCase()}.webp`;
-			}
-
-			// Parse pitch notation if present
-			const { cardName, pitch } = parseCardIdentifier(cardIdentifier);
-
-			// Use offline card database
-			const cardData = getCardData(cardName, { pitch });
-
-			if (cardData && cardData.imageUrl) {
-				return cardData.imageUrl;
-			}
-
-			// Fallback: try API search if offline lookup fails
-			const searchUrl = `https://cards.fabtcg.com/api/search/v1/complete/card/${encodeURIComponent(cardName)}`;
-			const response = await fetch(searchUrl);
-
-			if (!response.ok) {
-				console.warn(`Card not found: ${cardName}${pitch ? ` (pitch ${pitch})` : ''}`);
-				return null;
-			}
-
-			const data = await response.json();
-
-			// Get the first matching card's identifier
-			if (data && data.length > 0) {
-				const cardId = data[0].identifier || data[0].id;
-				if (cardId) {
-					// Construct the image URL using the CloudFront CDN pattern
-					return `https://d2wlb52bya4y8z.cloudfront.net/media/cards/large/${cardId}.webp`;
-				}
-			}
-
-			return null;
-		} catch (error) {
-			console.error('Error fetching card image:', error);
-			return null;
-		}
-	}
-
-	/**
-	 * Handle mouse enter on card link (desktop)
-	 */
-	async function handleMouseEnter(event) {
-		if (isMobile) return; // Skip on mobile
-
-		const target = event.target.closest('[data-card-name]');
-		if (!target) return;
-
-		const cardName = target.getAttribute('data-card-name');
 		if (!cardName) return;
 
-		// Fetch card image
-		const imageUrl = await fetchCardImage(cardName);
-		if (imageUrl) {
-			cardImage = imageUrl;
-			showCard = true;
+		// Use unified resolver
+		const result = resolveCardImage(cardName, { pitch });
+
+		if (result.found) {
+			currentCard = result;
+			imageUrl = result.imageUrl;
+			fallbackUrl = result.fallbackUrl;
+			imageLoaded = false;
+			imageError = false;
+
+			// Position tooltip
+			const rect = link.getBoundingClientRect();
+			const viewportWidth = window.innerWidth;
+			const viewportHeight = window.innerHeight;
+			const tooltipWidth = 250;
+			const tooltipHeight = 350;
+
+			// Default: position to the right of the link
+			let x = rect.right + 10;
+			let y = rect.top;
+
+			// If tooltip would go off right edge, position to the left
+			if (x + tooltipWidth > viewportWidth - 20) {
+				x = rect.left - tooltipWidth - 10;
+			}
+
+			// If still off screen (narrow viewport), center it
+			if (x < 20) {
+				x = Math.max(20, (viewportWidth - tooltipWidth) / 2);
+			}
+
+			// If tooltip would go off bottom, adjust y
+			if (y + tooltipHeight > viewportHeight - 20) {
+				y = viewportHeight - tooltipHeight - 20;
+			}
+
+			// Ensure y is not negative
+			if (y < 20) {
+				y = 20;
+			}
+
+			tooltipX = x;
+			tooltipY = y;
+			tooltipVisible = true;
 		}
 	}
 
-	/**
-	 * Handle mouse leave on card link (desktop)
-	 */
 	function handleMouseLeave() {
-		if (isMobile) return; // Skip on mobile
-
-		showCard = false;
-		cardImage = null;
+		tooltipVisible = false;
+		currentCard = null;
+		imageUrl = null;
+		fallbackUrl = null;
 	}
 
-	/**
-	 * Handle mouse move to update card position (desktop)
-	 */
-	function handleMouseMove(event) {
-		if (isMobile) return; // Skip on mobile
+	function handleClick(event) {
+		// Only intercept on touch devices
+		if (!isTouchDevice) return;
 
-		mouseX = event.clientX;
-		mouseY = event.clientY;
-	}
+		const link = event.currentTarget;
+		const cardName = link.dataset.cardName;
+		const pitch = link.dataset.cardPitch;
+		const customUrl = link.dataset.cardUrl;
 
-	/**
-	 * Handle touch/click on card link (mobile)
-	 */
-	async function handleTouch(event) {
-		if (!isMobile) return; // Skip on desktop
-
-		const target = event.target.closest('[data-card-name]');
-		if (!target) return;
-
-		event.preventDefault();
-
-		const cardName = target.getAttribute('data-card-name');
-		const cardUrl = target.getAttribute('href');
 		if (!cardName) return;
 
-		// Fetch card image
-		const imageUrl = await fetchCardImage(cardName);
-		if (imageUrl) {
-			mobileCardImage = imageUrl;
-			mobileCardUrl = cardUrl || null;
-			mobileCardName = cardName;
+		// Prevent default link behavior
+		event.preventDefault();
+		event.stopPropagation();
+
+		// Use unified resolver
+		const result = resolveCardImage(cardName, { pitch });
+
+		if (result.found) {
+			modalCard = result;
+			// Track if we have a custom URL
+			modalHasCustomUrl = !!customUrl;
+			// Use custom URL if provided, otherwise generate default fabtcg search URL
+			modalUrl = customUrl || `https://cards.fabtcg.com/results/?q=${encodeURIComponent(cardName).replace(/%20/g, '+')}`;
+			modalImageLoaded = false;
+			modalImageError = false;
+			modalVisible = true;
 		}
 	}
 
-	/**
-	 * Close mobile card preview
-	 */
-	function closeMobilePreview() {
-		mobileCardImage = null;
-		mobileCardUrl = null;
-		mobileCardName = null;
+	function closeModal() {
+		modalVisible = false;
+		modalCard = null;
+		modalUrl = null;
+		modalHasCustomUrl = false;
 	}
 
-	/**
-	 * Navigate to card URL (mobile)
-	 */
-	function navigateToCard() {
-		let url;
-
-		// If custom purchase link exists, use it; otherwise generate search URL
-		if (hasCustomPurchaseLink()) {
-			url = mobileCardUrl;
-		} else if (mobileCardName) {
-			url = getSearchUrl(mobileCardName);
-		}
-
-		if (url) {
-			window.open(url, '_blank', 'noopener,noreferrer');
+	function handleBackdropClick(event) {
+		if (event.target === event.currentTarget) {
+			closeModal();
 		}
 	}
 
-	/**
-	 * Calculate card position to be upper-right of cursor
-	 */
-	function getCardPosition() {
-		let left = mouseX + OFFSET_X;
-		let top = mouseY - CARD_HEIGHT + OFFSET_Y;
+	function handleImageLoad() {
+		imageLoaded = true;
+	}
 
-		// Ensure card doesn't go off-screen on the right
-		if (left + CARD_WIDTH > window.innerWidth) {
-			left = mouseX - CARD_WIDTH - OFFSET_X; // Show on left side instead
+	function handleImageError() {
+		// Try fallback URL if available
+		if (fallbackUrl && imageUrl !== fallbackUrl) {
+			imageUrl = fallbackUrl;
+			imageLoaded = false;
+			imageError = false;
+		} else {
+			imageError = true;
 		}
+	}
 
-		// Ensure card doesn't go off-screen on the top
-		if (top < 0) {
-			top = OFFSET_Y;
+	function handleModalImageLoad() {
+		modalImageLoaded = true;
+	}
+
+	function handleModalImageError() {
+		// Try fallback URL if available
+		if (modalCard?.fallbackUrl && modalCard.imageUrl !== modalCard.fallbackUrl) {
+			modalCard = { ...modalCard, imageUrl: modalCard.fallbackUrl };
+			modalImageLoaded = false;
+			modalImageError = false;
+		} else {
+			modalImageError = true;
 		}
+	}
 
-		return { left, top };
+	function attachListeners() {
+		const target = container || document;
+		const links = target.querySelectorAll('.card-link[data-card-name]');
+
+		links.forEach(link => {
+			link.addEventListener('mouseenter', handleMouseEnter);
+			link.addEventListener('mouseleave', handleMouseLeave);
+			link.addEventListener('click', handleClick);
+			listeners.push({ element: link });
+		});
+	}
+
+	function detachListeners() {
+		listeners.forEach(({ element }) => {
+			element.removeEventListener('mouseenter', handleMouseEnter);
+			element.removeEventListener('mouseleave', handleMouseLeave);
+			element.removeEventListener('click', handleClick);
+		});
+		listeners = [];
 	}
 
 	onMount(() => {
-		// Detect if mobile device
-		isMobile =
-			/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-			window.innerWidth < 768;
+		// Detect touch device
+		isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-		// Add event listeners to all card links
-		if (!isMobile) {
-			// Desktop: hover events
-			document.addEventListener('mouseenter', handleMouseEnter, true);
-			document.addEventListener('mouseleave', handleMouseLeave, true);
-			document.addEventListener('mousemove', handleMouseMove);
-		} else {
-			// Mobile: touch events
-			document.addEventListener('click', handleTouch, true);
-		}
-
-		// Cleanup
-		return () => {
-			document.removeEventListener('mouseenter', handleMouseEnter, true);
-			document.removeEventListener('mouseleave', handleMouseLeave, true);
-			document.removeEventListener('mousemove', handleMouseMove);
-			document.removeEventListener('click', handleTouch, true);
-		};
+		// Small delay to ensure DOM is ready after content renders
+		setTimeout(attachListeners, 100);
 	});
+
+	onDestroy(() => {
+		detachListeners();
+	});
+
+	// Re-attach listeners when container changes
+	$: if (container) {
+		detachListeners();
+		setTimeout(attachListeners, 100);
+	}
 </script>
 
-<!-- Desktop Card Preview (Hover) -->
-{#if showCard && cardImage && !isMobile}
-	{@const position = getCardPosition()}
+<!-- Desktop: Hover Tooltip -->
+{#if tooltipVisible && imageUrl}
 	<div
-		class="pointer-events-none fixed z-[9999]"
-		style="left: {position.left}px; top: {position.top}px;"
-		transition:fade={{ duration: 200 }}
+		class="fixed z-50 pointer-events-none"
+		style="left: {tooltipX}px; top: {tooltipY}px;"
 	>
-		<img
-			src={cardImage}
-			alt="Card preview"
-			loading="lazy"
-			decoding="async"
-			class="h-auto w-[250px] rounded-xl border-2 border-white/15 shadow-[0_10px_40px_rgba(0,0,0,0.6)]"
-		/>
+		<div class="w-[250px] rounded-xl overflow-hidden shadow-2xl bg-gray-900 border border-white/10">
+			<div class="aspect-[488/680] bg-gray-800 relative">
+				{#if !imageLoaded && !imageError}
+					<div class="absolute inset-0 flex items-center justify-center">
+						<div class="animate-spin rounded-full h-8 w-8 border-2 border-amber-500/50 border-t-amber-500"></div>
+					</div>
+				{/if}
+				{#if imageError}
+					<div class="absolute inset-0 flex items-center justify-center text-gray-500">
+						<svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+						</svg>
+					</div>
+				{/if}
+				<img
+					src={imageUrl}
+					alt={currentCard?.name || 'Card'}
+					class="w-full h-full object-contain transition-opacity duration-200 {imageLoaded ? 'opacity-100' : 'opacity-0'}"
+					on:load={handleImageLoad}
+					on:error={handleImageError}
+				/>
+			</div>
+		</div>
 	</div>
 {/if}
 
-<!-- Mobile Card Preview (Tap) -->
-{#if mobileCardImage}
+<!-- Mobile: Modal -->
+{#if modalVisible && modalCard}
 	<div
-		class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-5 backdrop-blur-sm"
-		role="button"
-		tabindex="0"
-		on:click={closeMobilePreview}
-		on:keydown={(e) => e.key === 'Escape' && closeMobilePreview()}
-		transition:fade={{ duration: 200 }}
+		class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+		on:click={handleBackdropClick}
+		role="dialog"
+		aria-modal="true"
+		aria-label="Card preview"
 	>
-		<div
-			class="relative max-h-[90%] max-w-[90%]"
-			role="dialog"
-			tabindex="-1"
-			aria-modal="true"
-			aria-label="Card preview"
-			on:click|stopPropagation
-			on:keydown|stopPropagation
-			transition:scale={{ duration: 200, start: 0.9 }}
-		>
+		<div class="relative w-full max-w-sm">
+			<!-- Close Button -->
 			<button
-				class="absolute -top-3 -right-3 z-[1] flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-0 bg-white/95 text-black shadow-[0_4px_12px_rgba(0,0,0,0.4)] transition-all duration-200 hover:scale-110 hover:bg-white active:scale-95"
-				on:click={closeMobilePreview}
-				aria-label="Close card preview"
+				on:click={closeModal}
+				class="absolute -top-12 right-0 p-2 rounded-full bg-gray-800/80 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors z-10"
+				aria-label="Close modal"
 			>
-				<svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M6 18L18 6M6 6l12 12"
-					/>
+				<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 				</svg>
 			</button>
-			<img
-				src={mobileCardImage}
-				alt="Card preview"
-				loading="lazy"
-				decoding="async"
-				class="h-auto w-full max-w-[350px] rounded-2xl border-[3px] border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.8)]"
-			/>
-			<button
-				class="mt-4 flex w-full max-w-[350px] cursor-pointer items-center justify-center gap-2 rounded-lg border-0 bg-white/95 p-3 px-6 text-[15px] font-semibold text-black shadow-[0_4px_12px_rgba(0,0,0,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_6px_16px_rgba(0,0,0,0.4)] active:translate-y-0"
-				on:click={navigateToCard}
-			>
-				<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-					/>
-				</svg>
-				{hasCustomPurchaseLink() ? 'Buy this card' : 'View Full Card'}
-			</button>
-			<p class="mt-3 text-center text-xs font-medium text-white/80">Tap outside to close</p>
+
+			<!-- Card Image Container -->
+			<div class="rounded-2xl overflow-hidden">
+				<div class="aspect-[488/680] relative">
+					{#if !modalImageLoaded && !modalImageError}
+						<div class="absolute inset-0 flex items-center justify-center">
+							<div class="animate-spin rounded-full h-10 w-10 border-2 border-amber-500/50 border-t-amber-500"></div>
+						</div>
+					{/if}
+					{#if modalImageError}
+						<div class="absolute inset-0 flex items-center justify-center">
+							<div class="text-center px-4">
+								<svg class="mx-auto h-12 w-12 text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+								</svg>
+								<p class="text-gray-400 text-sm">Image unavailable</p>
+							</div>
+						</div>
+					{/if}
+					{#if modalCard.imageUrl}
+						<img
+							src={modalCard.imageUrl}
+							alt={modalCard.name || 'Card'}
+							class="w-full h-full object-contain transition-opacity duration-300 {modalImageLoaded ? 'opacity-100' : 'opacity-0'}"
+							on:load={handleModalImageLoad}
+							on:error={handleModalImageError}
+						/>
+					{/if}
+				</div>
+
+				<!-- Link Button -->
+				{#if modalUrl}
+					<div class="pt-4">
+						<a
+							href={modalUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-amber-500/40"
+							on:click={closeModal}
+						>
+							<span>{modalHasCustomUrl ? 'Go to Link' : 'View Card'}</span>
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+							</svg>
+						</a>
+					</div>
+				{/if}
+			</div>
 		</div>
 	</div>
 {/if}

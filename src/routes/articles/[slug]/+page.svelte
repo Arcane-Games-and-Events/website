@@ -1,7 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
-	import CardHover from '$lib/components/CardHover.svelte';
 	import Decklist from '$lib/components/Decklist.svelte';
+	import CardHover from '$lib/components/CardHover.svelte';
 
 	export let data;
 
@@ -258,32 +258,73 @@
 		// Handle links
 		if (node.type === 'link' || node.type === 'autolink') {
 			const children = renderLexicalChildren(node.children);
-			const rawUrl = node.url || node.fields?.url || '#';
+
+			// Payload CMS Lexical stores URLs in node.fields.url for custom links
+			let rawUrl = node.fields?.url || node.url || '#';
+
+			// Try to decode the URL in case it was URL-encoded by the CMS
+			try {
+				rawUrl = decodeURIComponent(rawUrl);
+			} catch (e) {
+				// Keep original if decoding fails
+			}
 
 			// Check if this is a card link
-			const cardMatch = rawUrl.match(/^card:(.+)$/);
+			// Supports: card:CardName[pitch]|customUrl or #card:CardName[pitch]|customUrl
+			let cardMatch = rawUrl.match(/^card:(.+)$/);
+			if (!cardMatch) {
+				cardMatch = rawUrl.match(/^#card:(.+)$/);
+			}
+
 			if (cardMatch) {
-				const fullString = cardMatch[1];
-				const pipeIndex = fullString.indexOf('|');
+				let fullString = cardMatch[1];
+
+				// Look for separator: | (pipe), %7C (encoded), :: or --
+				let separatorIndex = -1;
+				let separatorLength = 1;
+
+				separatorIndex = fullString.indexOf('|');
+				if (separatorIndex === -1) {
+					separatorIndex = fullString.indexOf('%7C');
+					if (separatorIndex !== -1) separatorLength = 3;
+				}
+				if (separatorIndex === -1) {
+					separatorIndex = fullString.indexOf('::');
+					if (separatorIndex !== -1) separatorLength = 2;
+				}
+				if (separatorIndex === -1) {
+					separatorIndex = fullString.indexOf('--');
+					if (separatorIndex !== -1) separatorLength = 2;
+				}
 
 				let cardId, customUrl;
-				if (pipeIndex !== -1) {
-					cardId = fullString.substring(0, pipeIndex);
-					customUrl = fullString.substring(pipeIndex + 1);
+				if (separatorIndex !== -1) {
+					cardId = fullString.substring(0, separatorIndex);
+					customUrl = fullString.substring(separatorIndex + separatorLength);
+					try {
+						customUrl = decodeURIComponent(customUrl);
+					} catch (e) {
+						// Keep as-is
+					}
 				} else {
 					cardId = fullString;
 					customUrl = null;
 				}
 
-				try {
-					cardId = decodeURIComponent(cardId);
-				} catch (e) {
-					console.warn('Failed to decode card ID:', cardId);
+				// Extract pitch indicator [r], [y], [b] from card name
+				let pitch = null;
+				const pitchMatch = cardId.match(/\[(r|y|b)\]$/i);
+				if (pitchMatch) {
+					const pitchLetter = pitchMatch[1].toLowerCase();
+					pitch = pitchLetter === 'r' ? '1' : pitchLetter === 'y' ? '2' : '3';
+					cardId = cardId.replace(/\[(r|y|b)\]$/i, '').trim();
 				}
 
 				const linkUrl = customUrl || `https://cards.fabtcg.com/?search=${encodeURIComponent(cardId)}`;
+				const pitchAttr = pitch ? ` data-card-pitch="${pitch}"` : '';
+				const customUrlAttr = customUrl ? ` data-card-url="${escapeHtml(customUrl)}"` : '';
 
-				return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}" class="card-link">${children}</a>`;
+				return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}"${pitchAttr}${customUrlAttr} class="card-link !text-blue-400 !underline !decoration-blue-400/50 hover:!text-blue-300 hover:!decoration-blue-300/70">${children}</a>`;
 			} else {
 				const url = escapeHtml(rawUrl);
 				return `<a href="${url}" target="_blank" rel="noopener noreferrer">${children}</a>`;
@@ -344,31 +385,69 @@
 			.map((child) => {
 				// Handle links
 				if (child.type === 'link') {
-					const cardMatch = child.url?.match(/^card:(.+)$/);
+					// Get URL and decode if needed
+					let rawUrl = child.fields?.url || child.url || '#';
+					try {
+						rawUrl = decodeURIComponent(rawUrl);
+					} catch (e) {
+						// Keep original
+					}
+
+					// Check for card link patterns
+					let cardMatch = rawUrl.match(/^card:(.+)$/);
+					if (!cardMatch) {
+						cardMatch = rawUrl.match(/^#card:(.+)$/);
+					}
+
 					if (cardMatch) {
-						const fullString = cardMatch[1];
-						const pipeIndex = fullString.indexOf('|');
+						let fullString = cardMatch[1];
+
+						// Look for separator - try multiple options
+						let separatorIndex = -1;
+						let separatorLength = 1;
+
+						separatorIndex = fullString.indexOf('|');
+						if (separatorIndex === -1) {
+							separatorIndex = fullString.indexOf('%7C');
+							if (separatorIndex !== -1) separatorLength = 3;
+						}
+						if (separatorIndex === -1) {
+							separatorIndex = fullString.indexOf('::');
+							if (separatorIndex !== -1) separatorLength = 2;
+						}
+						if (separatorIndex === -1) {
+							separatorIndex = fullString.indexOf('--');
+							if (separatorIndex !== -1) separatorLength = 2;
+						}
 
 						let cardId, customUrl;
-						if (pipeIndex !== -1) {
-							cardId = fullString.substring(0, pipeIndex);
-							customUrl = fullString.substring(pipeIndex + 1);
+						if (separatorIndex !== -1) {
+							cardId = fullString.substring(0, separatorIndex);
+							customUrl = fullString.substring(separatorIndex + separatorLength);
+							try {
+								customUrl = decodeURIComponent(customUrl);
+							} catch (e) {}
 						} else {
 							cardId = fullString;
 							customUrl = null;
 						}
 
-						try {
-							cardId = decodeURIComponent(cardId);
-						} catch (e) {
-							console.warn('Failed to decode card ID:', cardId);
+						// Extract pitch indicator [r], [y], [b] from card name
+						let pitch = null;
+						const pitchMatch = cardId.match(/\[(r|y|b)\]$/i);
+						if (pitchMatch) {
+							const pitchLetter = pitchMatch[1].toLowerCase();
+							pitch = pitchLetter === 'r' ? '1' : pitchLetter === 'y' ? '2' : '3';
+							cardId = cardId.replace(/\[(r|y|b)\]$/i, '').trim();
 						}
 
 						const linkUrl = customUrl || `https://cards.fabtcg.com/?search=${encodeURIComponent(cardId)}`;
+						const pitchAttr = pitch ? ` data-card-pitch="${pitch}"` : '';
+						const customUrlAttr = customUrl ? ` data-card-url="${escapeHtml(customUrl)}"` : '';
 
-						return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}" class="card-link">${renderChildren(child.children)}</a>`;
+						return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}"${pitchAttr}${customUrlAttr} class="card-link !text-blue-400 !underline !decoration-blue-400/50 hover:!text-blue-300 hover:!decoration-blue-300/70">${renderChildren(child.children)}</a>`;
 					} else {
-						return `<a href="${escapeHtml(child.url || '#')}" target="_blank" rel="noopener noreferrer">${renderChildren(child.children)}</a>`;
+						return `<a href="${escapeHtml(rawUrl)}" target="_blank" rel="noopener noreferrer">${renderChildren(child.children)}</a>`;
 					}
 				}
 
@@ -799,5 +878,5 @@
 	</div>
 </div>
 
-<!-- Card Hover Component -->
+<!-- Card hover tooltip for inline card links -->
 <CardHover />

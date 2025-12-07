@@ -882,6 +882,14 @@
 		return circuitColors[circuit] || defaultCircuitColor;
 	}
 
+	// Get ordinal suffix for placement (1st, 2nd, 3rd, etc.)
+	function getOrdinal(n) {
+		if (!n) return '';
+		const s = ['th', 'st', 'nd', 'rd'];
+		const v = n % 100;
+		return n + (s[(v - 20) % 10] || s[v] || s[0]);
+	}
+
 	// Filter standings by circuit and search query (explicitly reference sort state for reactivity)
 	$: filteredStandings = (() => {
 		// These references ensure reactivity when sort state changes
@@ -2529,25 +2537,84 @@
 						Showing {filteredDecklists.length} decklist{filteredDecklists.length !== 1 ? 's' : ''}
 					</div>
 
-					<!-- Decklists Table -->
-					<div class="overflow-x-auto rounded-lg border border-gray-800">
+					<!-- Mobile: Card Layout -->
+					<div class="space-y-3 md:hidden">
+						{#each filteredDecklists as decklist}
+							<div class="rounded-xl bg-gray-900/80 p-4 border border-gray-800">
+								<!-- Player info -->
+								<div class="mb-1">
+									<div class="flex items-center gap-2">
+										<span class="font-semibold text-white truncate">{decklist.playerName}</span>
+										{#if decklist.placement}
+											<span class="text-gray-500">·</span>
+											<span class="flex-shrink-0 font-semibold
+												{decklist.placement === 1 ? 'text-amber-400' :
+												decklist.placement === 2 ? 'text-gray-300' :
+												decklist.placement === 3 ? 'text-orange-400' :
+												decklist.placement <= 8 ? 'text-blue-400' :
+												'text-gray-400'}">
+												{getOrdinal(decklist.placement)}
+											</span>
+										{/if}
+									</div>
+									{#if decklist.hero}
+										<p class="text-sm text-blue-400 truncate">{decklist.hero}</p>
+									{/if}
+								</div>
+
+								<!-- Bottom row: Circuit, Month, Format + View button -->
+								<div class="flex items-center justify-between gap-3 mt-3">
+									<div class="flex items-center gap-2 text-xs">
+										{#if decklist.circuit}
+											{@const colors = getCircuitColor(decklist.circuit)}
+											<span class="rounded-full {colors.bg} px-2 py-0.5 font-medium text-white">
+												{decklist.circuit === 'Los Angeles' ? 'LA' : decklist.circuit === 'St. Louis' ? 'STL' : decklist.circuit === 'New England' ? 'NE' : decklist.circuit}
+											</span>
+										{/if}
+										{#if decklist.month}
+											<span class="text-gray-400">{decklist.month}</span>
+										{/if}
+										{#if decklist.format}
+											<span class="text-gray-500">·</span>
+											<span class="text-gray-400">{decklist.format}</span>
+										{/if}
+									</div>
+									<a
+										href="/age-open/{decklist.eventId}/decklist/{decklist.id}"
+										class="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 hover:bg-blue-500/20 transition-colors active:scale-[0.97]"
+									>
+										View Deck
+										<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+										</svg>
+									</a>
+								</div>
+							</div>
+						{/each}
+					</div>
+
+					<!-- Desktop: Table Layout -->
+					<div class="hidden md:block overflow-x-auto rounded-lg border border-gray-800">
 						<table class="w-full">
 							<thead class="bg-gray-900/80">
 								<tr class="border-b border-gray-800">
 									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Player</th>
 									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Hero</th>
-									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400 hidden sm:table-cell">Month</th>
-									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400 hidden md:table-cell">Circuit</th>
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Month</th>
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Circuit</th>
 									<th class="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-400">Place</th>
-									<th class="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-400 hidden sm:table-cell">Format</th>
+									<th class="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-400">Format</th>
 									<th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-400"></th>
 								</tr>
 							</thead>
 							<tbody class="divide-y divide-gray-800 bg-gray-900/50">
 								{#each filteredDecklists as decklist}
-									<tr class="hover:bg-gray-800/50 transition-colors">
+									<tr
+										class="hover:bg-gray-800/50 transition-colors cursor-pointer relative group"
+										onclick={(e) => { if (!e.target.closest('a')) window.location.href = `/age-open/${decklist.eventId}/decklist/${decklist.id}`; }}
+									>
 										<td class="px-4 py-3">
-											<span class="font-medium text-white">{decklist.playerName}</span>
+											<span class="font-medium text-white group-hover:text-blue-400 transition-colors">{decklist.playerName}</span>
 										</td>
 										<td class="px-4 py-3">
 											{#if decklist.hero}
@@ -2556,10 +2623,10 @@
 												<span class="text-gray-500">—</span>
 											{/if}
 										</td>
-										<td class="px-4 py-3 hidden sm:table-cell">
+										<td class="px-4 py-3">
 											<span class="text-sm text-gray-300">{decklist.month || '—'}</span>
 										</td>
-										<td class="px-4 py-3 hidden md:table-cell">
+										<td class="px-4 py-3">
 											{#if decklist.circuit}
 												{@const colors = getCircuitColor(decklist.circuit)}
 												<span class="rounded-full {colors.bg} px-2 py-0.5 text-xs font-medium text-white">
@@ -2583,13 +2650,13 @@
 												<span class="text-gray-500">—</span>
 											{/if}
 										</td>
-										<td class="px-4 py-3 text-center hidden sm:table-cell">
+										<td class="px-4 py-3 text-center">
 											<span class="text-sm text-gray-400">{decklist.format || '—'}</span>
 										</td>
 										<td class="px-4 py-3 text-right">
 											<a
 												href="/age-open/{decklist.eventId}/decklist/{decklist.id}"
-												class="inline-flex items-center gap-1 rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 hover:bg-blue-500/20 transition-colors"
+												class="inline-flex items-center gap-1 rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 hover:bg-blue-500/20 transition-colors relative z-10"
 											>
 												View
 												<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
