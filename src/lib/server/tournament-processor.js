@@ -113,9 +113,10 @@ export function parsePairings(csvString) {
 }
 
 /**
- * Determine the round structure from pairings data
+ * Determine the round structure from pairings data and swiss standings
+ * Uses max wins from swiss standings as the primary source for swiss rounds count
  */
-export function determineRoundStructure(pairings) {
+export function determineRoundStructure(pairings, swissStandings = []) {
 	const roundCounts = {};
 
 	for (const pairing of pairings) {
@@ -124,6 +125,12 @@ export function determineRoundStructure(pairings) {
 
 	const rounds = Object.keys(roundCounts).map(Number).sort((a, b) => a - b);
 	const maxRound = Math.max(...rounds);
+
+	// Use max wins from swiss standings as the number of swiss rounds
+	// This is more reliable than trying to detect bracket structure
+	const maxWins = swissStandings.length > 0
+		? Math.max(...swissStandings.map(p => p.wins || 0))
+		: 0;
 
 	// Find where Swiss ends and Top 8 begins
 	// Top 8 bracket: QF = 4 matches, SF = 2 matches, Finals = 1 match
@@ -151,9 +158,14 @@ export function determineRoundStructure(pairings) {
 		top8StartRound = maxRound - 2;
 	}
 
+	// Determine swiss rounds: prefer max wins from standings, fall back to bracket detection
+	const swissRounds = maxWins > 0
+		? maxWins
+		: (top8StartRound ? top8StartRound - 1 : maxRound);
+
 	return {
 		totalRounds: maxRound,
-		swissRounds: top8StartRound ? top8StartRound - 1 : maxRound,
+		swissRounds,
 		top8StartRound,
 		hasTop8: !!top8StartRound,
 		roundCounts
@@ -225,24 +237,33 @@ export function traceBracket(pairings, top8StartRound) {
 /**
  * Calculate tiebreakers for Swiss standings
  * Uses FAB-style tiebreakers: Match Win %, Opponent Match Win %
+ * Match records include ALL matches from pairings (Swiss + playoffs)
  */
 export function calculateTiebreakers(standings, pairings, swissRounds) {
 	const playerStats = {};
 
 	// Build player stats from pairings
 	for (const player of standings) {
-		const matches = pairings.filter(p =>
-			p.round <= swissRounds &&
-			(p.player1Id === player.playerId || p.player2Id === player.playerId ||
-				p.player1Name === player.name || p.player2Name === player.name)
+		// Get ALL matches for accurate win/loss record
+		const allMatches = pairings.filter(p =>
+			p.player1Id === player.playerId || p.player2Id === player.playerId ||
+			p.player1Name === player.name || p.player2Name === player.name
 		);
 
-		const wins = matches.filter(m => {
+		// Get Swiss-only matches for tiebreaker calculations
+		const swissMatches = allMatches.filter(p => p.round <= swissRounds);
+
+		const totalWins = allMatches.filter(m => {
 			const winner = getMatchWinner(m);
 			return winner && (winner.id === player.playerId || winner.name === player.name);
 		}).length;
 
-		const opponents = matches.map(m => {
+		const swissWins = swissMatches.filter(m => {
+			const winner = getMatchWinner(m);
+			return winner && (winner.id === player.playerId || winner.name === player.name);
+		}).length;
+
+		const opponents = swissMatches.map(m => {
 			if (m.player1Id === player.playerId || m.player1Name === player.name) {
 				return { id: m.player2Id, name: m.player2Name };
 			}
@@ -251,9 +272,11 @@ export function calculateTiebreakers(standings, pairings, swissRounds) {
 
 		playerStats[player.playerId || player.name] = {
 			...player,
-			matchesPlayed: matches.length,
-			matchesWon: wins,
-			matchWinPct: matches.length > 0 ? wins / matches.length : 0,
+			matchesPlayed: allMatches.length,  // Total matches (Swiss + playoffs)
+			matchesWon: totalWins,              // Total wins (Swiss + playoffs)
+			swissMatchesPlayed: swissMatches.length,  // Swiss only for tiebreakers
+			swissMatchesWon: swissWins,               // Swiss only for tiebreakers
+			matchWinPct: swissMatches.length > 0 ? swissWins / swissMatches.length : 0,  // Swiss-based for tiebreakers
 			opponents
 		};
 	}
@@ -278,7 +301,7 @@ export function calculateTiebreakers(standings, pairings, swissRounds) {
  * Calculate final standings with points distribution
  */
 export function calculateFinalStandings(swissStandings, pairings) {
-	const roundStructure = determineRoundStructure(pairings);
+	const roundStructure = determineRoundStructure(pairings, swissStandings);
 	const bracketResults = traceBracket(pairings, roundStructure.top8StartRound);
 	const tiebreakers = calculateTiebreakers(swissStandings, pairings, roundStructure.swissRounds);
 
@@ -452,7 +475,9 @@ export async function processTournamentResults(swissStandingsCsv, pairingsCsv, e
 		summary: {
 			totalPlayers: standings.totalPlayers,
 			top8Players: standings.bracketResults ? 8 : 0,
+			totalRounds: standings.roundStructure.totalRounds,
 			swissRounds: standings.roundStructure.swissRounds,
+			bracketRounds: standings.roundStructure.hasTop8 ? standings.roundStructure.totalRounds - standings.roundStructure.swissRounds : 0,
 			hasTop8: standings.roundStructure.hasTop8,
 			winner: standings.results.find(r => r.placement === 1),
 			totalPointsDistributed: standings.results.reduce((sum, r) => sum + r.points, 0),

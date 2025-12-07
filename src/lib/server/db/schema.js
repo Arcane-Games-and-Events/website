@@ -31,24 +31,6 @@ export const user = pgTable('user', {
 	}).defaultNow()
 });
 
-// PLAYER TABLES (kept for historical data, not actively used)
-// GEM ID in season_standing is now the primary player identifier
-export const player = pgTable('player', {
-	id: uuid('id').defaultRandom().primaryKey(),
-	gemId: text('gem_id').unique(), // Unique GEM ID from LSS
-	primaryName: text('primary_name').notNull(), // Current display name
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
-	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
-});
-
-export const playerAlias = pgTable('player_alias', {
-	id: uuid('id').defaultRandom().primaryKey(),
-	playerId: uuid('player_id').notNull().references(() => player.id, { onDelete: 'cascade' }),
-	aliasName: text('alias_name').notNull(),
-	source: text('source'), // Where this alias came from (e.g., "event_result", "manual")
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
-});
-
 // Session table for Lucia session tracking
 export const session = pgTable('session', {
 	id: text('id').primaryKey(),
@@ -76,7 +58,7 @@ export const order = pgTable('order', {
 });
 
 // EVENTS
-export const event = pgTable('event', {
+export const event = pgTable('events', {
 	id: text('id').primaryKey(), // UUID or slug
 	title: text('title').notNull(),
 	location: text('location'), // Venue name - nullable for migration compatibility
@@ -150,8 +132,8 @@ export const passwordResetToken = pgTable('password_reset_token', {
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
-// EVENT STAFF ASSIGNMENTS (for tournament staff)
-export const eventStaff = pgTable('event_staff', {
+// STAFF ASSIGNMENTS (for tournament staff)
+export const eventStaff = pgTable('staff_assignments', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	userId: text('user_id').notNull().references(() => user.id),
 	eventId: text('event_id').notNull().references(() => event.id),
@@ -159,34 +141,12 @@ export const eventStaff = pgTable('event_staff', {
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
-// EVENT RESULTS (tournament placements after event closeout)
-export const eventResult = pgTable('event_result', {
-	id: uuid('id').defaultRandom().primaryKey(),
-	eventId: text('event_id').notNull().references(() => event.id),
+// NOTE: event_result table has been removed
+// Results (placements, wins/losses, AGE points, prizes) are now computed on-the-fly
+// from event_match data using calculateFinalStandings() in tournament-processor.js
 
-	// Player identification
-	userId: text('user_id').references(() => user.id), // Optional - may not have account
-	gemId: text('gem_id'), // GEM ID from tournament software
-	playerName: text('player_name').notNull(), // Display name
-
-	// Tournament results
-	placement: integer('placement').notNull(), // 1st, 2nd, 3rd, etc.
-	wins: integer('wins').default(0),
-	losses: integer('losses').default(0),
-	draws: integer('draws').default(0),
-
-	// Rewards
-	agePoints: integer('age_points').default(0), // Points toward Player's Championship
-	prizeAmount: decimal('prize_amount', { precision: 10, scale: 2 }), // Cash prize if any
-
-	// Decklist reference (optional - some players may not submit)
-	decklistId: uuid('decklist_id'),
-
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
-});
-
-// EVENT DECKLISTS (player deck submissions)
-export const eventDecklist = pgTable('event_decklist', {
+// DECKLISTS (player deck submissions)
+export const decklist = pgTable('decklists', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	eventId: text('event_id').notNull().references(() => event.id),
 
@@ -213,14 +173,17 @@ export const eventDecklist = pgTable('event_decklist', {
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
-// INDIVIDUAL MATCH RECORDS (for head-to-head analysis)
-export const eventMatch = pgTable('event_match', {
+// MATCH RECORDS (for head-to-head analysis and computing results)
+export const match = pgTable('matches', {
 	id: uuid('id').defaultRandom().primaryKey(),
 
-	// Event context - identifies which event this match belongs to
-	month: text('month').notNull(), // e.g., "January", "February"
-	year: text('year').notNull(), // e.g., "2025", "2024"
-	circuit: text('circuit').notNull(), // e.g., "Los Angeles", "St. Louis"
+	// Direct link to event
+	eventId: text('event_id').notNull().references(() => event.id),
+
+	// Legacy context fields (kept for backwards compatibility)
+	month: text('month'), // e.g., "January", "February"
+	year: text('year'), // e.g., "2025", "2024"
+	circuit: text('circuit'), // e.g., "Los Angeles", "St. Louis"
 
 	// Match context
 	round: integer('round').notNull(),
@@ -240,8 +203,8 @@ export const eventMatch = pgTable('event_match', {
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
-// SEASON STANDINGS (circuit leaderboards)
-export const seasonStanding = pgTable('season_standing', {
+// STANDINGS (circuit leaderboards)
+export const standing = pgTable('standings', {
 	id: uuid('id').defaultRandom().primaryKey(),
 
 	// Season and circuit info
@@ -335,7 +298,7 @@ export const savedCard = pgTable('saved_card', {
 });
 
 // LSS EVENTS (official Legend Story Studios competitive events/seasons)
-export const lssSeason = pgTable('lss_season', {
+export const lssEvent = pgTable('lss_events', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	name: text('name').notNull(), // e.g., "Skirmish Season 5", "Road to Nationals 2025", "Pro Tour: Los Angeles"
 	description: text('description'), // Optional description

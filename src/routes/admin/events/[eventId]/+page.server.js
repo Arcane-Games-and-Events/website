@@ -1,8 +1,8 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { event, ticket, user, eventStaff, eventResult, eventDecklist, seasonStanding, eventMatch } from '$lib/server/db/schema.js';
-import { eq, and } from 'drizzle-orm';
-import { processTournamentResults } from '$lib/server/tournament-processor.js';
+import { event, ticket, user, eventStaff, decklist, standing, match } from '$lib/server/db/schema.js';
+import { eq, and, sql } from 'drizzle-orm';
+import { processTournamentResults, calculateFinalStandings, parseSwissStandings, parsePairings } from '$lib/server/tournament-processor.js';
 import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
 
 export async function load({ params, locals }) {
@@ -100,17 +100,70 @@ export async function load({ params, locals }) {
 		const totalTickets = tickets.filter((t) => !t.refunded).length;
 		const totalRefunded = tickets.filter((t) => t.refunded).length;
 
-		// Fetch existing results for this event
-		const existingResults = await db
+		// Fetch existing matches for this event
+		const existingMatches = await db
 			.select()
-			.from(eventResult)
-			.where(eq(eventResult.eventId, params.eventId));
+			.from(match)
+			.where(eq(match.eventId, params.eventId))
+			.orderBy(match.round);
+
+		// Compute results from matches if there are any
+		let existingResults = [];
+		if (existingMatches.length > 0) {
+			// Extract unique players from matches
+			const playerMap = new Map();
+			for (const match of existingMatches) {
+				if (match.player1GemId || match.player1Name) {
+					const key = match.player1GemId || match.player1Name;
+					if (!playerMap.has(key)) {
+						playerMap.set(key, { playerId: match.player1GemId, name: match.player1Name, wins: 0 });
+					}
+				}
+				if (match.player2GemId || match.player2Name) {
+					const key = match.player2GemId || match.player2Name;
+					if (!playerMap.has(key)) {
+						playerMap.set(key, { playerId: match.player2GemId, name: match.player2Name, wins: 0 });
+					}
+				}
+			}
+
+			// Build swiss standings from unique players (simplified - real calc happens in processor)
+			const swissStandings = Array.from(playerMap.values());
+
+			// Convert matches to pairings format
+			const pairings = existingMatches.map(m => ({
+				round: m.round,
+				table: m.table,
+				player1Id: m.player1GemId,
+				player1Name: m.player1Name,
+				player2Id: m.player2GemId,
+				player2Name: m.player2Name,
+				result: m.winner === 'player1' ? '1WIN' : m.winner === 'player2' ? '2WIN' : 'DRAW'
+			}));
+
+			// Calculate standings from matches
+			try {
+				const standings = calculateFinalStandings(swissStandings, pairings);
+				existingResults = standings.results.map(r => ({
+					playerName: r.name,
+					gemId: r.playerId,
+					placement: r.placement,
+					wins: r.matchesWon,
+					losses: r.matchesPlayed - r.matchesWon,
+					draws: 0,
+					agePoints: r.points,
+					prizeAmount: r.prize
+				}));
+			} catch (err) {
+				console.error('Error calculating results from matches:', err);
+			}
+		}
 
 		// Fetch existing decklists for this event
 		const existingDecklists = await db
 			.select()
-			.from(eventDecklist)
-			.where(eq(eventDecklist.eventId, params.eventId));
+			.from(decklist)
+			.where(eq(decklist.eventId, params.eventId));
 
 		// Fetch staff assignments for this event (admin only)
 		let assignedStaff = [];
@@ -154,6 +207,7 @@ export async function load({ params, locals }) {
 			tickets,
 			participants,
 			existingResults,
+			existingMatches,
 			existingDecklists,
 			assignedStaff,
 			availableStaff,
@@ -335,75 +389,9 @@ export const actions = {
 		}
 	},
 
-	// Save a single result
-	saveResult: async ({ params, request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
-			return fail(403, { error: 'Unauthorized' });
-		}
-
-		const formData = await request.formData();
-		const resultId = formData.get('resultId');
-		const playerName = formData.get('playerName');
-		const gemId = formData.get('gemId') || null;
-		const userId = formData.get('userId') || null;
-		const placement = parseInt(formData.get('placement'));
-		const wins = parseInt(formData.get('wins') || '0');
-		const losses = parseInt(formData.get('losses') || '0');
-		const draws = parseInt(formData.get('draws') || '0');
-		const agePoints = parseInt(formData.get('agePoints') || '0');
-		const prizeAmount = formData.get('prizeAmount') || null;
-
-		if (!playerName || isNaN(placement) || placement < 1) {
-			return fail(400, { error: 'Player name and valid placement are required' });
-		}
-
-		try {
-			const resultData = {
-				eventId: params.eventId,
-				playerName,
-				gemId,
-				userId,
-				placement,
-				wins,
-				losses,
-				draws,
-				agePoints,
-				prizeAmount: prizeAmount ? parseFloat(prizeAmount).toFixed(2) : null
-			};
-
-			if (resultId) {
-				await db
-					.update(eventResult)
-					.set(resultData)
-					.where(eq(eventResult.id, resultId));
-			} else {
-				await db.insert(eventResult).values(resultData);
-			}
-
-			return { success: true, message: 'Result saved successfully' };
-		} catch (err) {
-			console.error('Error saving result:', err);
-			return fail(500, { error: 'Failed to save result' });
-		}
-	},
-
-	// Delete a result
-	deleteResult: async ({ request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
-			return fail(403, { error: 'Unauthorized' });
-		}
-
-		const formData = await request.formData();
-		const resultId = formData.get('resultId');
-
-		try {
-			await db.delete(eventResult).where(eq(eventResult.id, resultId));
-			return { success: true, message: 'Result deleted' };
-		} catch (err) {
-			console.error('Error deleting result:', err);
-			return fail(500, { error: 'Failed to delete result' });
-		}
-	},
+	// NOTE: saveResult and deleteResult actions removed
+	// Results are now computed from event_match data
+	// To update results, re-upload the tournament CSV files
 
 	// Save a decklist
 	saveDecklist: async ({ params, request, locals }) => {
@@ -450,12 +438,15 @@ export const actions = {
 
 			if (decklistId) {
 				await db
-					.update(eventDecklist)
+					.update(decklist)
 					.set(decklistData)
-					.where(eq(eventDecklist.id, decklistId));
+					.where(eq(decklist.id, decklistId));
 			} else {
-				await db.insert(eventDecklist).values(decklistData);
+				await db.insert(decklist).values(decklistData);
 			}
+
+			// Invalidate the public decklists cache so the age-open page updates
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:decklists:public`);
 
 			return { success: true, message: 'Decklist saved successfully' };
 		} catch (err) {
@@ -474,7 +465,11 @@ export const actions = {
 		const decklistId = formData.get('decklistId');
 
 		try {
-			await db.delete(eventDecklist).where(eq(eventDecklist.id, decklistId));
+			await db.delete(decklist).where(eq(decklist.id, decklistId));
+
+			// Invalidate the public decklists cache so the age-open page updates
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:decklists:public`);
+
 			return { success: true, message: 'Decklist deleted' };
 		} catch (err) {
 			console.error('Error deleting decklist:', err);
@@ -483,6 +478,7 @@ export const actions = {
 	},
 
 	// Process CSV files to import tournament results
+	// Updates standings in real-time - no separate finalize step needed
 	processCSV: async ({ params, request, locals }) => {
 		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
 			return fail(403, { error: 'Unauthorized' });
@@ -521,47 +517,199 @@ export const actions = {
 				}
 			);
 
-			// Clear existing results for this event
-			await db.delete(eventResult).where(eq(eventResult.eventId, params.eventId));
+			// Format results for standings sync
+			const resultsJson = processedResults.results.map(result => ({
+				playerName: result.name,
+				gemId: result.playerId || null,
+				placement: result.placement,
+				wins: result.matchesWon || 0,
+				losses: result.matchesPlayed - result.matchesWon || 0,
+				draws: 0,
+				agePoints: result.points,
+				prizeAmount: result.prize > 0 ? result.prize.toFixed(2) : null
+			}));
 
-			// Insert new results (batched to avoid connection pool exhaustion)
-			if (processedResults.results.length > 0) {
-				const resultsToInsert = processedResults.results.map(result => ({
-					eventId: params.eventId,
-					playerName: result.name,
-					gemId: result.playerId || null,
-					placement: result.placement,
-					wins: result.matchesWon || 0,
-					losses: result.matchesPlayed - result.matchesWon || 0,
-					draws: 0,
-					agePoints: result.points,
-					prizeAmount: result.prize > 0 ? result.prize.toFixed(2) : null
-				}));
-				await db.insert(eventResult).values(resultsToInsert);
-			}
-
-			// Clear existing matches for this event and insert new ones
-			const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
-			const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-				'July', 'August', 'September', 'October', 'November', 'December'];
-			const eventMonthName = monthNames[eventDate.getMonth()];
-			const eventYear = eventDate.getFullYear().toString();
-
+			// Sync standings directly (update season_standing table)
+			let standingsUpdated = false;
+			let standingsError = null;
+			let isReupload = false;
 			if (eventData.circuit) {
-				await db.delete(eventMatch).where(
-					and(
-						eq(eventMatch.year, eventYear),
-						eq(eventMatch.circuit, eventData.circuit),
-						eq(eventMatch.month, eventMonthName)
-					)
-				);
+				try {
+					const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
+					const currentYear = eventDate.getFullYear().toString();
+					const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+						'July', 'August', 'September', 'October', 'November', 'December'];
+					const eventMonthName = monthNames[eventDate.getMonth()];
+					const monthKey = eventMonthName.toLowerCase();
+
+					// Check if this is a re-upload by looking for existing matches
+					const existingEventMatches = await db.select().from(match)
+						.where(eq(match.eventId, params.eventId));
+
+					if (existingEventMatches.length > 0) {
+						isReupload = true;
+						// Calculate old standings contribution from existing matches to subtract
+						const oldPlayerStats = new Map();
+						for (const match of existingEventMatches) {
+							// Track player 1
+							const p1Key = match.player1GemId || match.player1Name;
+							if (!oldPlayerStats.has(p1Key)) {
+								oldPlayerStats.set(p1Key, { gemId: match.player1GemId, name: match.player1Name, wins: 0, matches: 0 });
+							}
+							const p1 = oldPlayerStats.get(p1Key);
+							p1.matches++;
+							if (match.winner === 'player1') p1.wins++;
+
+							// Track player 2
+							const p2Key = match.player2GemId || match.player2Name;
+							if (!oldPlayerStats.has(p2Key)) {
+								oldPlayerStats.set(p2Key, { gemId: match.player2GemId, name: match.player2Name, wins: 0, matches: 0 });
+							}
+							const p2 = oldPlayerStats.get(p2Key);
+							p2.matches++;
+							if (match.winner === 'player2') p2.wins++;
+						}
+
+						// Calculate old AGE points for each player (simplified - use same logic as tournament processor)
+						const oldSorted = Array.from(oldPlayerStats.values()).sort((a, b) => b.wins - a.wins);
+						const oldPointsMap = new Map();
+						const pointsTable = { 1: 30, 2: 25, 3: 20, 4: 20, 5: 15, 6: 15, 7: 15, 8: 15, 9: 12, 10: 12, 11: 12, 12: 12, 13: 8, 14: 8, 15: 8, 16: 8 };
+						oldSorted.forEach((player, idx) => {
+							const placement = idx + 1;
+							oldPointsMap.set(player.gemId || player.name, {
+								points: pointsTable[placement] || 1,
+								wins: player.wins,
+								matches: player.matches
+							});
+						});
+
+						// Subtract old contribution from standings
+						const existingStandings = await db.select().from(standing)
+							.where(and(
+								eq(standing.season, currentYear),
+								eq(standing.circuit, eventData.circuit)
+							));
+
+						const monthPointsCol = `${monthKey}Points`;
+						const monthMatchesWonCol = `${monthKey}MatchesWon`;
+						const monthMatchesCol = `${monthKey}Matches`;
+
+						for (const standing of existingStandings) {
+							const key = standing.gemId || standing.playerName;
+							const oldStats = oldPointsMap.get(key);
+							if (oldStats) {
+								await db.update(standing)
+									.set({
+										totalPoints: Math.max(0, (standing.totalPoints || 0) - oldStats.points),
+										matchesWon: Math.max(0, (standing.matchesWon || 0) - oldStats.wins),
+										matchesPlayed: Math.max(0, (standing.matchesPlayed || 0) - oldStats.matches),
+										[monthPointsCol]: Math.max(0, (standing[monthPointsCol] || 0) - oldStats.points),
+										[monthMatchesWonCol]: Math.max(0, (standing[monthMatchesWonCol] || 0) - oldStats.wins),
+										[monthMatchesCol]: Math.max(0, (standing[monthMatchesCol] || 0) - oldStats.matches)
+									})
+									.where(eq(standing.id, standing.id));
+							}
+						}
+					}
+
+					// Now add new standings contribution
+					// Re-fetch standings after potential subtraction
+					const existingStandings = await db.select().from(standing)
+						.where(and(
+							eq(standing.season, currentYear),
+							eq(standing.circuit, eventData.circuit)
+						));
+
+					// Build lookup maps for existing standings
+					const byGemId = new Map(existingStandings.filter(s => s.gemId).map(s => [s.gemId, s]));
+					const byName = new Map(existingStandings.map(s => [s.playerName, s]));
+
+					const monthPointsCol = `${monthKey}Points`;
+					const monthMatchesWonCol = `${monthKey}MatchesWon`;
+					const monthMatchesCol = `${monthKey}Matches`;
+
+					// Process each result
+					for (const result of resultsJson) {
+						// Find existing standing by gemId first, then by name
+						let existing = result.gemId ? byGemId.get(result.gemId) : null;
+						if (!existing) {
+							existing = byName.get(result.playerName);
+						}
+
+						if (existing) {
+							// Update existing standing - add new points/matches to totals and monthly
+							const newTotalPoints = (existing.totalPoints || 0) + result.agePoints;
+							const newMatchesWon = (existing.matchesWon || 0) + result.wins;
+							const newMatchesPlayed = (existing.matchesPlayed || 0) + result.wins + result.losses;
+							const newWinPercentage = newMatchesPlayed > 0
+								? Math.round((newMatchesWon / newMatchesPlayed) * 10000) / 100
+								: null;
+
+							// Get current monthly values
+							const currentMonthPoints = existing[monthPointsCol] || 0;
+							const currentMonthWon = existing[monthMatchesWonCol] || 0;
+							const currentMonthMatches = existing[monthMatchesCol] || 0;
+
+							await db.update(standing)
+								.set({
+									totalPoints: newTotalPoints,
+									matchesWon: newMatchesWon,
+									matchesPlayed: newMatchesPlayed,
+									winPercentage: newWinPercentage,
+									gemId: result.gemId || existing.gemId,
+									[monthPointsCol]: currentMonthPoints + result.agePoints,
+									[monthMatchesWonCol]: currentMonthWon + result.wins,
+									[monthMatchesCol]: currentMonthMatches + result.wins + result.losses,
+									updatedAt: new Date()
+								})
+								.where(eq(standing.id, existing.id));
+						} else {
+							// Insert new standing
+							const insertData = {
+								season: currentYear,
+								circuit: eventData.circuit,
+								gemId: result.gemId || null,
+								playerName: result.playerName,
+								totalPoints: result.agePoints,
+								matchesWon: result.wins,
+								matchesPlayed: result.wins + result.losses,
+								winPercentage: (result.wins + result.losses) > 0
+									? Math.round((result.wins / (result.wins + result.losses)) * 10000) / 100
+									: null,
+								[monthPointsCol]: result.agePoints,
+								[monthMatchesWonCol]: result.wins,
+								[monthMatchesCol]: result.wins + result.losses
+							};
+							await db.insert(standing).values(insertData);
+						}
+					}
+					standingsUpdated = true;
+					console.log(`Standings synced for ${resultsJson.length} players in ${eventData.circuit}${isReupload ? ' (re-upload)' : ''}`);
+				} catch (err) {
+					standingsError = err.message;
+					console.error('Standings sync failed:', err.message);
+				}
 			}
 
-			if (processedResults.matches?.length > 0 && eventData.circuit) {
+			// Store matches (source of truth for computing results)
+			// Delete existing matches for this event
+			await db.delete(match).where(eq(match.eventId, params.eventId));
+
+			// Insert new matches with eventId
+			if (processedResults.matches?.length > 0) {
+				const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
+				const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+					'July', 'August', 'September', 'October', 'November', 'December'];
+				const eventMonthName = monthNames[eventDate.getMonth()];
+				const eventYear = eventDate.getFullYear().toString();
+
 				const matchesToInsert = processedResults.matches.map(m => ({
+					eventId: params.eventId,
+					// Legacy fields for backwards compatibility
 					year: eventYear,
 					circuit: eventData.circuit,
 					month: eventMonthName,
+					// Match data
 					round: m.round,
 					table: m.table || null,
 					player1GemId: m.player1GemId || null,
@@ -570,12 +718,24 @@ export const actions = {
 					player2Name: m.player2Name,
 					winner: m.winner || null
 				}));
-				await db.insert(eventMatch).values(matchesToInsert);
+				await db.insert(match).values(matchesToInsert);
 			}
+
+			// Invalidate caches so changes appear immediately
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:matches:${params.eventId}`);
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:matches:all`);
+			await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
+
+			const standingsMessage = standingsUpdated
+				? ' Standings updated.'
+				: eventData.circuit
+					? ` (Standings sync failed: ${standingsError || 'unknown error'})`
+					: '';
 
 			return {
 				success: true,
-				message: `Processed ${processedResults.results.length} players and ${processedResults.matches?.length || 0} matches. Winner: ${processedResults.summary.winner?.name || 'Unknown'}`,
+				message: `Processed ${processedResults.results.length} players and ${processedResults.matches?.length || 0} matches.${standingsMessage} Winner: ${processedResults.summary.winner?.name || 'Unknown'}`,
 				processedResults: processedResults.summary
 			};
 		} catch (err) {
@@ -603,144 +763,46 @@ export const actions = {
 		}
 	},
 
-	// Finalize the event - update season standings
+	// Mark event as completed
+	// Standings are already updated in real-time when CSV is uploaded
 	finalizeEvent: async ({ params, locals }) => {
 		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
 		try {
-			const [eventData] = await db
-				.select()
-				.from(event)
-				.where(eq(event.id, params.eventId))
-				.limit(1);
+			// Try RPC first
+			try {
+				const result = await db.execute(
+					sql`SELECT finalize_event(${params.eventId}, ${locals.user.id}) as result`
+				);
+				const rpcResult = result.rows?.[0]?.result || result[0]?.result;
 
-			if (!eventData) {
-				return fail(404, { error: 'Event not found' });
-			}
-
-			const results = await db
-				.select()
-				.from(eventResult)
-				.where(eq(eventResult.eventId, params.eventId));
-
-			if (results.length === 0) {
-				return fail(400, { error: 'No results to finalize. Please import or add results first.' });
-			}
-
-			const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
-			const monthNames = ['january', 'february', 'march', 'april', 'may', 'june',
-				'july', 'august', 'september', 'october', 'november', 'december'];
-			const eventMonth = monthNames[eventDate.getMonth()];
-			const currentYear = eventDate.getFullYear().toString();
-
-			let playersUpdated = 0;
-			let playersCreated = 0;
-			const errors = [];
-
-			if (eventData.circuit && results.length > 0) {
-				for (const result of results) {
-					try {
-						const matchesWon = result.wins || 0;
-						const matchesPlayed = matchesWon + (result.losses || 0) + (result.draws || 0);
-
-						let existingStanding = null;
-
-						if (result.gemId) {
-							const [byGemId] = await db
-								.select()
-								.from(seasonStanding)
-								.where(and(
-									eq(seasonStanding.season, currentYear),
-									eq(seasonStanding.circuit, eventData.circuit),
-									eq(seasonStanding.gemId, result.gemId)
-								))
-								.limit(1);
-							existingStanding = byGemId;
-						}
-
-						if (!existingStanding) {
-							const [byName] = await db
-								.select()
-								.from(seasonStanding)
-								.where(and(
-									eq(seasonStanding.season, currentYear),
-									eq(seasonStanding.circuit, eventData.circuit),
-									eq(seasonStanding.playerName, result.playerName)
-								))
-								.limit(1);
-							existingStanding = byName;
-						}
-
-						if (existingStanding) {
-							const monthPointsCol = `${eventMonth}Points`;
-							const monthMatchesWonCol = `${eventMonth}MatchesWon`;
-							const monthMatchesCol = `${eventMonth}Matches`;
-
-							const newTotalPoints = (existingStanding.totalPoints || 0) + (result.agePoints || 0);
-							const newMatchesWon = (existingStanding.matchesWon || 0) + matchesWon;
-							const newMatchesPlayed = (existingStanding.matchesPlayed || 0) + matchesPlayed;
-							const newWinPercentage = newMatchesPlayed > 0
-								? parseFloat(((newMatchesWon / newMatchesPlayed) * 100).toFixed(2))
-								: null;
-
-							const updateData = {
-								totalPoints: newTotalPoints,
-								matchesWon: newMatchesWon,
-								matchesPlayed: newMatchesPlayed,
-								winPercentage: newWinPercentage,
-								updatedAt: new Date()
-							};
-
-							updateData[monthPointsCol] = (existingStanding[monthPointsCol] || 0) + (result.agePoints || 0);
-							updateData[monthMatchesWonCol] = (existingStanding[monthMatchesWonCol] || 0) + matchesWon;
-							updateData[monthMatchesCol] = (existingStanding[monthMatchesCol] || 0) + matchesPlayed;
-
-							if (result.gemId && !existingStanding.gemId) {
-								updateData.gemId = result.gemId;
-							}
-
-							if (result.gemId && existingStanding.gemId === result.gemId) {
-								updateData.playerName = result.playerName;
-							}
-
-							await db
-								.update(seasonStanding)
-								.set(updateData)
-								.where(eq(seasonStanding.id, existingStanding.id));
-
-							playersUpdated++;
-						} else {
-							const monthPointsCol = `${eventMonth}Points`;
-							const monthMatchesWonCol = `${eventMonth}MatchesWon`;
-							const monthMatchesCol = `${eventMonth}Matches`;
-
-							const newStanding = {
-								season: currentYear,
-								circuit: eventData.circuit,
-								gemId: result.gemId || null,
-								playerName: result.playerName,
-								totalPoints: result.agePoints || 0,
-								matchesWon: matchesWon,
-								matchesPlayed: matchesPlayed,
-								winPercentage: matchesPlayed > 0
-									? parseFloat(((matchesWon / matchesPlayed) * 100).toFixed(2))
-									: null
-							};
-
-							newStanding[monthPointsCol] = result.agePoints || 0;
-							newStanding[monthMatchesWonCol] = matchesWon;
-							newStanding[monthMatchesCol] = matchesPlayed;
-
-							await db.insert(seasonStanding).values(newStanding);
-							playersCreated++;
-						}
-					} catch (playerErr) {
-						console.error(`Error processing player ${result.playerName}:`, playerErr);
-						errors.push(`Failed to update ${result.playerName}: ${playerErr.message}`);
+				if (rpcResult) {
+					if (!rpcResult.success) {
+						return fail(400, { error: rpcResult.error || 'Failed to finalize event' });
 					}
+
+					await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
+					await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
+
+					return {
+						success: true,
+						message: rpcResult.message || 'Event marked as completed.'
+					};
 				}
+			} catch (rpcError) {
+				console.log('RPC finalize_event failed, using direct query:', rpcError.message);
+			}
+
+			// Fallback: Direct query - check for matches instead of results
+			const matches = await db
+				.select()
+				.from(match)
+				.where(eq(match.eventId, params.eventId));
+
+			if (matches.length === 0) {
+				return fail(400, { error: 'No match data to finalize. Please upload tournament results first.' });
 			}
 
 			await db
@@ -752,25 +814,12 @@ export const actions = {
 				})
 				.where(eq(event.id, params.eventId));
 
-			// Invalidate all relevant caches so updates appear immediately
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:results:all`);
-			await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
-
-			let message = `Event finalized. ${playersUpdated} players updated, ${playersCreated} new players added.`;
-			if (errors.length > 0) {
-				message += ` ${errors.length} errors occurred.`;
-			}
 
 			return {
 				success: true,
-				message,
-				details: {
-					playersUpdated,
-					playersCreated,
-					errors: errors.length > 0 ? errors : undefined
-				}
+				message: 'Event marked as completed.'
 			};
 		} catch (err) {
 			console.error('Error finalizing event:', err);
@@ -779,114 +828,37 @@ export const actions = {
 	},
 
 	// Reopen a closed event (admin only)
-	// This reverses the standings changes made during finalization
+	// Just updates status - standings are synced in real-time from event_results
 	reopenEvent: async ({ params, locals }) => {
 		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Only admins can reopen events' });
 		}
 
 		try {
-			// Get event data
-			const [eventData] = await db
-				.select()
-				.from(event)
-				.where(eq(event.id, params.eventId))
-				.limit(1);
+			// Try RPC first
+			try {
+				const result = await db.execute(
+					sql`SELECT reopen_event(${params.eventId}) as result`
+				);
+				const rpcResult = result.rows?.[0]?.result || result[0]?.result;
 
-			if (!eventData) {
-				return fail(404, { error: 'Event not found' });
-			}
-
-			// Only reverse standings if event was completed (finalized)
-			if (eventData.status === 'completed' && eventData.circuit) {
-				// Get the results that were finalized
-				const results = await db
-					.select()
-					.from(eventResult)
-					.where(eq(eventResult.eventId, params.eventId));
-
-				if (results.length > 0) {
-					const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
-					const monthNames = ['january', 'february', 'march', 'april', 'may', 'june',
-						'july', 'august', 'september', 'october', 'november', 'december'];
-					const eventMonth = monthNames[eventDate.getMonth()];
-					const currentYear = eventDate.getFullYear().toString();
-
-					// Subtract points from each player's standings
-					for (const result of results) {
-						try {
-							const matchesWon = result.wins || 0;
-							const matchesPlayed = matchesWon + (result.losses || 0) + (result.draws || 0);
-
-							let existingStanding = null;
-
-							// Find by GEM ID first
-							if (result.gemId) {
-								const [byGemId] = await db
-									.select()
-									.from(seasonStanding)
-									.where(and(
-										eq(seasonStanding.season, currentYear),
-										eq(seasonStanding.circuit, eventData.circuit),
-										eq(seasonStanding.gemId, result.gemId)
-									))
-									.limit(1);
-								existingStanding = byGemId;
-							}
-
-							// Fall back to name if no GEM ID match
-							if (!existingStanding) {
-								const [byName] = await db
-									.select()
-									.from(seasonStanding)
-									.where(and(
-										eq(seasonStanding.season, currentYear),
-										eq(seasonStanding.circuit, eventData.circuit),
-										eq(seasonStanding.playerName, result.playerName)
-									))
-									.limit(1);
-								existingStanding = byName;
-							}
-
-							if (existingStanding) {
-								const monthPointsCol = `${eventMonth}Points`;
-								const monthMatchesWonCol = `${eventMonth}MatchesWon`;
-								const monthMatchesCol = `${eventMonth}Matches`;
-
-								// Subtract the event's contribution
-								const newTotalPoints = Math.max(0, (existingStanding.totalPoints || 0) - (result.agePoints || 0));
-								const newMatchesWon = Math.max(0, (existingStanding.matchesWon || 0) - matchesWon);
-								const newMatchesPlayed = Math.max(0, (existingStanding.matchesPlayed || 0) - matchesPlayed);
-								const newWinPercentage = newMatchesPlayed > 0
-									? parseFloat(((newMatchesWon / newMatchesPlayed) * 100).toFixed(2))
-									: null;
-
-								const updateData = {
-									totalPoints: newTotalPoints,
-									matchesWon: newMatchesWon,
-									matchesPlayed: newMatchesPlayed,
-									winPercentage: newWinPercentage,
-									updatedAt: new Date()
-								};
-
-								// Subtract from monthly columns
-								updateData[monthPointsCol] = Math.max(0, (existingStanding[monthPointsCol] || 0) - (result.agePoints || 0));
-								updateData[monthMatchesWonCol] = Math.max(0, (existingStanding[monthMatchesWonCol] || 0) - matchesWon);
-								updateData[monthMatchesCol] = Math.max(0, (existingStanding[monthMatchesCol] || 0) - matchesPlayed);
-
-								await db
-									.update(seasonStanding)
-									.set(updateData)
-									.where(eq(seasonStanding.id, existingStanding.id));
-							}
-						} catch (playerErr) {
-							console.error(`Error reversing standings for ${result.playerName}:`, playerErr);
-							// Continue with other players even if one fails
-						}
+				if (rpcResult) {
+					if (!rpcResult.success) {
+						return fail(400, { error: rpcResult.error || 'Failed to reopen event' });
 					}
+
+					await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
+
+					return {
+						success: true,
+						message: rpcResult.message || 'Event reopened. You can now update results.'
+					};
 				}
+			} catch (rpcError) {
+				console.log('RPC reopen_event failed, using direct query:', rpcError.message);
 			}
 
+			// Fallback: Direct query
 			await db
 				.update(event)
 				.set({
@@ -896,14 +868,57 @@ export const actions = {
 				})
 				.where(eq(event.id, params.eventId));
 
-			// Invalidate all relevant caches
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
-			await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
 
-			return { success: true, message: 'Event reopened. Previous standings changes have been reversed. You can now update results and re-finalize.' };
+			return { success: true, message: 'Event reopened. You can now update results.' };
 		} catch (err) {
 			console.error('Error reopening event:', err);
 			return fail(500, { error: 'Failed to reopen event' });
+		}
+	},
+
+	// Update event status directly
+	updateStatus: async ({ params, request, locals }) => {
+		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const newStatus = formData.get('status');
+
+		const validStatuses = ['upcoming', 'in_progress', 'completed', 'cancelled'];
+		if (!validStatuses.includes(newStatus)) {
+			return fail(400, { error: 'Invalid status' });
+		}
+
+		try {
+			const updateData = { status: newStatus };
+
+			// If marking as completed, set closedAt and closedBy
+			if (newStatus === 'completed') {
+				updateData.closedAt = new Date();
+				updateData.closedBy = locals.user.id;
+			} else {
+				// Clear closed fields for non-completed status
+				updateData.closedAt = null;
+				updateData.closedBy = null;
+			}
+
+			await db
+				.update(event)
+				.set(updateData)
+				.where(eq(event.id, params.eventId));
+
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
+
+			return {
+				success: true,
+				message: `Event status updated to ${newStatus.replace('_', ' ')}`
+			};
+		} catch (err) {
+			console.error('Error updating event status:', err);
+			return fail(500, { error: 'Failed to update event status' });
 		}
 	},
 
@@ -980,25 +995,18 @@ export const actions = {
 		try {
 			// Delete in order due to foreign key constraints
 			// 1. Delete event matches
-			await db.delete(eventMatch).where(
-				and(
-					eq(eventMatch.circuit, params.eventId) // Note: eventMatch uses month/year/circuit, not eventId directly
-				)
-			).catch(() => {}); // Ignore if no matches
+			await db.delete(match).where(eq(match.eventId, params.eventId));
 
 			// 2. Delete event decklists
-			await db.delete(eventDecklist).where(eq(eventDecklist.eventId, params.eventId));
+			await db.delete(decklist).where(eq(decklist.eventId, params.eventId));
 
-			// 3. Delete event results
-			await db.delete(eventResult).where(eq(eventResult.eventId, params.eventId));
-
-			// 4. Delete staff assignments
+			// 3. Delete staff assignments
 			await db.delete(eventStaff).where(eq(eventStaff.eventId, params.eventId));
 
-			// 5. Delete tickets
+			// 4. Delete tickets
 			await db.delete(ticket).where(eq(ticket.eventId, params.eventId));
 
-			// 6. Finally delete the event
+			// 5. Finally delete the event
 			await db.delete(event).where(eq(event.id, params.eventId));
 
 			// Redirect to events list

@@ -163,13 +163,13 @@
 	let calendarSubTab = $state('upcoming'); // 'upcoming' or 'completed'
 
 	// Filter LSS events based on sub-tab
-	let upcomingLssEvents = $derived((data.lssSeasons || []).filter((s) => {
+	let upcomingLssEvents = $derived((data.lssEvents || []).filter((s) => {
 		const endDate = new Date(s.endDate);
 		const now = new Date();
 		return endDate >= now; // Include active and upcoming
 	}));
 
-	let completedLssEvents = $derived((data.lssSeasons || []).filter((s) => {
+	let completedLssEvents = $derived((data.lssEvents || []).filter((s) => {
 		const endDate = new Date(s.endDate);
 		const now = new Date();
 		return endDate < now;

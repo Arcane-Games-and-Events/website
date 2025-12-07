@@ -1,5 +1,6 @@
 import { db } from '$lib/server/db/index.js';
-import { event, eventResult, eventDecklist, seasonStanding, lssSeason } from '$lib/server/db/schema.js';
+import { event, match, decklist, standing, lssEvent } from '$lib/server/db/schema.js';
+import { calculateFinalStandings } from '$lib/server/tournament-processor.js';
 import { asc, desc, eq, and, sql, gt, gte } from 'drizzle-orm';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 import {
@@ -70,10 +71,11 @@ function compareStandings(a, b) {
 // are imported from $lib/age-rating.js for single source of truth
 
 export async function load({ url, setHeaders }) {
-	// Cache for 5 minutes, allow stale for 1 hour while revalidating
+	// Cache for 1 minute, allow stale for 5 minutes while revalidating
+	// Shorter cache for tournament real-time updates
 	// Vary by Cookie ensures sidebar updates properly after login/logout
 	setHeaders({
-		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
+		'cache-control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=300',
 		'vary': 'Cookie'
 	});
 
@@ -84,53 +86,53 @@ export async function load({ url, setHeaders }) {
 	try {
 		// Fetch raw data with Redis caching (5 minute TTL)
 		// This caches the expensive database queries
-		const [events, allEventResults, allStandings, decklists, lssSeasons] = await Promise.all([
+		const [events, allEventMatches, allStandings, decklists, lssEvents] = await Promise.all([
 			// Get events sorted by date (cached)
 			getCachedOrFetch(
 				`${CACHE_KEYS.EVENTS}:all`,
 				() => db.select().from(event).orderBy(asc(event.eventDate)),
 				CACHE_TTL.MEDIUM
 			),
-			// Get ALL event results in one query (cached)
+			// Get ALL event matches in one query (cached with shorter TTL for real-time updates)
 			getCachedOrFetch(
-				`${CACHE_KEYS.EVENTS}:results:all`,
-				() => db.select().from(eventResult).orderBy(asc(eventResult.placement)),
-				CACHE_TTL.MEDIUM
+				`${CACHE_KEYS.EVENTS}:matches:all`,
+				() => db.select().from(match).orderBy(asc(match.round)),
+				CACHE_TTL.SHORT
 			),
-			// Get all standings (cached)
+			// Get all standings (cached with shorter TTL for real-time tournament updates)
 			getCachedOrFetch(
 				`${CACHE_KEYS.STANDINGS}:all`,
-				() => db.select().from(seasonStanding).orderBy(desc(seasonStanding.totalPoints)),
-				CACHE_TTL.MEDIUM
+				() => db.select().from(standing).orderBy(desc(standing.totalPoints)),
+				CACHE_TTL.SHORT
 			),
 			// Get public decklists with event info (cached)
 			getCachedOrFetch(
 				`${CACHE_KEYS.EVENTS}:decklists:public`,
 				() => db.select({
-					id: eventDecklist.id,
-					eventId: eventDecklist.eventId,
-					playerName: eventDecklist.playerName,
-					gemId: eventDecklist.gemId,
-					hero: eventDecklist.hero,
-					format: eventDecklist.format,
-					placement: eventDecklist.placement,
-					cards: eventDecklist.cards,
-					createdAt: eventDecklist.createdAt,
+					id: decklist.id,
+					eventId: decklist.eventId,
+					playerName: decklist.playerName,
+					gemId: decklist.gemId,
+					hero: decklist.hero,
+					format: decklist.format,
+					placement: decklist.placement,
+					cards: decklist.cards,
+					createdAt: decklist.createdAt,
 					eventTitle: event.title,
 					eventDate: event.eventDate,
 					circuit: event.circuit,
 					month: event.month
 				})
-					.from(eventDecklist)
-					.innerJoin(event, eq(eventDecklist.eventId, event.id))
-					.where(eq(eventDecklist.isPublic, true))
-					.orderBy(desc(eventDecklist.createdAt)),
+					.from(decklist)
+					.innerJoin(event, eq(decklist.eventId, event.id))
+					.where(eq(decklist.isPublic, true))
+					.orderBy(desc(decklist.createdAt)),
 				CACHE_TTL.MEDIUM
 			),
 			// Get LSS tournament seasons (cached)
 			getCachedOrFetch(
 				`${CACHE_KEYS.EVENTS}:lss:active`,
-				() => db.select().from(lssSeason).where(eq(lssSeason.isActive, true)).orderBy(asc(lssSeason.startDate)),
+				() => db.select().from(lssEvent).where(eq(lssEvent.isActive, true)).orderBy(asc(lssEvent.startDate)),
 				CACHE_TTL.MEDIUM
 			)
 		]);
@@ -158,25 +160,82 @@ export async function load({ url, setHeaders }) {
 			circuitsByYear[year].sort();
 		}
 
-		// Get completed events with results for the Results tab
-		const completedEvents = events.filter((e) => e.status === 'completed');
+		// Get active/completed events with results for the Tournament Archive tab
+		// Include both in_progress and completed events, but only from 2026 onwards
+		const cutoffDate = new Date('2026-01-01');
+		const archiveEvents = events.filter((e) =>
+			(e.status === 'completed' || e.status === 'in_progress') &&
+			e.eventDate && new Date(e.eventDate) >= cutoffDate
+		);
 
-		// Group event results by eventId (avoids N+1 queries)
-		const resultsByEventId = new Map();
-		for (const result of allEventResults) {
-			if (!resultsByEventId.has(result.eventId)) {
-				resultsByEventId.set(result.eventId, []);
+		// Group event matches by eventId
+		const matchesByEventId = new Map();
+		for (const match of allEventMatches) {
+			if (!matchesByEventId.has(match.eventId)) {
+				matchesByEventId.set(match.eventId, []);
 			}
-			resultsByEventId.get(result.eventId).push(result);
+			matchesByEventId.get(match.eventId).push(match);
 		}
 
-		// Build results array using the grouped data
-		const allResults = completedEvents
-			.filter(evt => resultsByEventId.has(evt.id))
-			.map(evt => ({
-				event: evt,
-				results: resultsByEventId.get(evt.id)
-			}));
+		// Build results array by computing standings from matches
+		const allResults = archiveEvents
+			.filter(evt => matchesByEventId.has(evt.id))
+			.map(evt => {
+				const matches = matchesByEventId.get(evt.id);
+
+				// Extract unique players from matches
+				const playerMap = new Map();
+				for (const match of matches) {
+					if (match.player1GemId || match.player1Name) {
+						const key = match.player1GemId || match.player1Name;
+						if (!playerMap.has(key)) {
+							playerMap.set(key, { playerId: match.player1GemId, name: match.player1Name, wins: 0 });
+						}
+					}
+					if (match.player2GemId || match.player2Name) {
+						const key = match.player2GemId || match.player2Name;
+						if (!playerMap.has(key)) {
+							playerMap.set(key, { playerId: match.player2GemId, name: match.player2Name, wins: 0 });
+						}
+					}
+				}
+
+				// Convert matches to pairings format
+				const pairings = matches.map(m => ({
+					round: m.round,
+					table: m.table,
+					player1Id: m.player1GemId,
+					player1Name: m.player1Name,
+					player2Id: m.player2GemId,
+					player2Name: m.player2Name,
+					result: m.winner === 'player1' ? '1WIN' : m.winner === 'player2' ? '2WIN' : 'DRAW'
+				}));
+
+				// Calculate standings from matches
+				let computedResults = [];
+				try {
+					const swissStandings = Array.from(playerMap.values());
+					const standings = calculateFinalStandings(swissStandings, pairings);
+					computedResults = standings.results.map(r => ({
+						playerName: r.name,
+						gemId: r.playerId,
+						placement: r.placement,
+						wins: r.matchesWon,
+						losses: r.matchesPlayed - r.matchesWon,
+						draws: 0,
+						agePoints: r.points,
+						prizeAmount: r.prize
+					}));
+				} catch (err) {
+					console.error(`Error calculating results for event ${evt.id}:`, err);
+				}
+
+				return {
+					event: evt,
+					results: computedResults
+				};
+			})
+			.filter(r => r.results.length > 0);
 
 		let standings = [];
 
@@ -386,15 +445,27 @@ export async function load({ url, setHeaders }) {
 			});
 		}
 
-		// decklists and lssSeasons already fetched in Promise.all above
+		// decklists and lssEvents already fetched in Promise.all above
+
+		// Sort results: in_progress events first, then by date (most recent first)
+		const sortedResults = [...allResults].sort((a, b) => {
+			// In-progress events come first
+			if (a.event.status === 'in_progress' && b.event.status !== 'in_progress') return -1;
+			if (a.event.status !== 'in_progress' && b.event.status === 'in_progress') return 1;
+			// Then sort by date (most recent first)
+			return new Date(b.event.eventDate) - new Date(a.event.eventDate);
+		});
+
+		// Filter events to only show upcoming ones
+		const upcomingEvents = events.filter(e => e.status === 'upcoming');
 
 		return {
-			events,
-			completedEvents,
-			eventResults: allResults,
+			events: upcomingEvents,
+			archiveEvents,
+			eventResults: sortedResults,
 			standings,
 			decklists,
-			lssSeasons,
+			lssEvents,
 			currentYear,
 			selectedSeason,
 			selectedCircuit,
@@ -405,11 +476,11 @@ export async function load({ url, setHeaders }) {
 		console.error('Error loading AGE Open data:', error);
 		return {
 			events: [],
-			completedEvents: [],
+			archiveEvents: [],
 			eventResults: [],
 			standings: [],
 			decklists: [],
-			lssSeasons: [],
+			lssEvents: [],
 			currentYear,
 			selectedSeason: 'all',
 			selectedCircuit,

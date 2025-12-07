@@ -1,6 +1,6 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { event, ticket, eventStaff, eventResult, eventDecklist, seasonStanding, eventMatch } from '$lib/server/db/schema.js';
+import { event, ticket, eventStaff, decklist, standing, match } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { processTournamentResults, AGE_POINTS, PARTICIPATION_POINTS } from '$lib/server/tournament-processor.js';
 import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
@@ -74,8 +74,8 @@ export async function load({ params, locals }) {
 		// Fetch existing decklists for this event
 		const existingDecklists = await db
 			.select()
-			.from(eventDecklist)
-			.where(eq(eventDecklist.eventId, params.eventId));
+			.from(decklist)
+			.where(eq(decklist.eventId, params.eventId));
 
 		return {
 			user: locals.user,
@@ -213,11 +213,11 @@ export const actions = {
 
 			if (decklistId) {
 				await db
-					.update(eventDecklist)
+					.update(decklist)
 					.set(decklistData)
-					.where(eq(eventDecklist.id, decklistId));
+					.where(eq(decklist.id, decklistId));
 			} else {
-				await db.insert(eventDecklist).values(decklistData);
+				await db.insert(decklist).values(decklistData);
 			}
 
 			return { success: true, message: 'Decklist saved successfully' };
@@ -237,7 +237,7 @@ export const actions = {
 		const decklistId = formData.get('decklistId');
 
 		try {
-			await db.delete(eventDecklist).where(eq(eventDecklist.id, decklistId));
+			await db.delete(decklist).where(eq(decklist.id, decklistId));
 			return { success: true, message: 'Decklist deleted' };
 		} catch (err) {
 			console.error('Error deleting decklist:', err);
@@ -314,11 +314,11 @@ export const actions = {
 			const eventYear = eventDate.getFullYear().toString();
 
 			if (eventData.circuit) {
-				await db.delete(eventMatch).where(
+				await db.delete(match).where(
 					and(
-						eq(eventMatch.year, eventYear),
-						eq(eventMatch.circuit, eventData.circuit),
-						eq(eventMatch.month, eventMonthName)
+						eq(match.year, eventYear),
+						eq(match.circuit, eventData.circuit),
+						eq(match.month, eventMonthName)
 					)
 				);
 			}
@@ -337,7 +337,7 @@ export const actions = {
 					player2Name: m.player2Name,
 					winner: m.winner || null
 				}));
-				await db.insert(eventMatch).values(matchesToInsert);
+				await db.insert(match).values(matchesToInsert);
 			}
 
 			return {
@@ -427,11 +427,11 @@ export const actions = {
 						if (result.gemId) {
 							const [byGemId] = await db
 								.select()
-								.from(seasonStanding)
+								.from(standing)
 								.where(and(
-									eq(seasonStanding.season, currentYear),
-									eq(seasonStanding.circuit, eventData.circuit),
-									eq(seasonStanding.gemId, result.gemId)
+									eq(standing.season, currentYear),
+									eq(standing.circuit, eventData.circuit),
+									eq(standing.gemId, result.gemId)
 								))
 								.limit(1);
 							existingStanding = byGemId;
@@ -441,11 +441,11 @@ export const actions = {
 						if (!existingStanding) {
 							const [byName] = await db
 								.select()
-								.from(seasonStanding)
+								.from(standing)
 								.where(and(
-									eq(seasonStanding.season, currentYear),
-									eq(seasonStanding.circuit, eventData.circuit),
-									eq(seasonStanding.playerName, result.playerName)
+									eq(standing.season, currentYear),
+									eq(standing.circuit, eventData.circuit),
+									eq(standing.playerName, result.playerName)
 								))
 								.limit(1);
 							existingStanding = byName;
@@ -489,9 +489,9 @@ export const actions = {
 							}
 
 							await db
-								.update(seasonStanding)
+								.update(standing)
 								.set(updateData)
-								.where(eq(seasonStanding.id, existingStanding.id));
+								.where(eq(standing.id, existingStanding.id));
 
 							playersUpdated++;
 						} else {
@@ -518,7 +518,7 @@ export const actions = {
 							newStanding[monthMatchesWonCol] = matchesWon;
 							newStanding[monthMatchesCol] = matchesPlayed;
 
-							await db.insert(seasonStanding).values(newStanding);
+							await db.insert(standing).values(newStanding);
 							playersCreated++;
 						}
 					} catch (playerErr) {

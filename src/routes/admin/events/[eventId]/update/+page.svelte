@@ -29,6 +29,7 @@
 		deckName: '',
 		hero: '',
 		format: data.event.format || '',
+		placement: '',
 		cardsText: '',
 		isPublic: true
 	};
@@ -127,6 +128,7 @@
 			deckName: '',
 			hero: '',
 			format: data.event.format || '',
+			placement: '',
 			cardsText: '',
 			isPublic: true
 		};
@@ -146,6 +148,7 @@
 			deckName: decklist.deckName || '',
 			hero: decklist.hero || '',
 			format: decklist.format || '',
+			placement: decklist.placement ?? '',
 			cardsText,
 			isPublic: decklist.isPublic
 		};
@@ -820,7 +823,7 @@
 							</div>
 						</div>
 
-						<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
 							<div>
 								<label for="deckName" class="block text-sm font-medium text-gray-100 mb-2">
 									Deck Name
@@ -856,6 +859,20 @@
 									id="deckFormat"
 									name="format"
 									bind:value={decklistForm.format}
+									class="w-full rounded-xl border border-white/10 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
+								/>
+							</div>
+							<div>
+								<label for="deckPlacement" class="block text-sm font-medium text-gray-100 mb-2">
+									Placement
+								</label>
+								<input
+									type="number"
+									id="deckPlacement"
+									name="placement"
+									bind:value={decklistForm.placement}
+									placeholder="e.g., 1"
+									min="1"
 									class="w-full rounded-xl border border-white/10 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
 								/>
 							</div>

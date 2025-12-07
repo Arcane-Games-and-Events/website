@@ -1,8 +1,8 @@
 import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow } from '$lib/server/articles/access.js';
 import { db } from '$lib/server/db/index.js';
-import { event, seasonStanding } from '$lib/server/db/schema.js';
-import { asc, gte, desc } from 'drizzle-orm';
+import { event, standing } from '$lib/server/db/schema.js';
+import { asc, gte, desc, and, or, eq, isNull } from 'drizzle-orm';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 
 /**
@@ -119,6 +119,7 @@ export async function load({ setHeaders, url, locals }) {
 			]);
 
 		// Fetch upcoming events with Redis caching (1 minute TTL - events change more frequently)
+		// Only show events that are: upcoming in the future AND not completed/cancelled
 		const now = new Date();
 		const upcomingEvents = await withTimeout(
 			getCachedOrFetch(
@@ -127,7 +128,13 @@ export async function load({ setHeaders, url, locals }) {
 					const events = await db
 						.select()
 						.from(event)
-						.where(gte(event.eventDate, now))
+						.where(and(
+							gte(event.eventDate, now),
+							or(
+								eq(event.status, 'upcoming'),
+								isNull(event.status) // Handle legacy events without status
+							)
+						))
 						.orderBy(asc(event.eventDate))
 						.limit(3);
 					return events;
@@ -142,7 +149,7 @@ export async function load({ setHeaders, url, locals }) {
 		const allStandings = await withTimeout(
 			getCachedOrFetch(
 				`${CACHE_KEYS.STANDINGS}:all`,
-				() => db.select().from(seasonStanding).orderBy(desc(seasonStanding.totalPoints)),
+				() => db.select().from(standing).orderBy(desc(standing.totalPoints)),
 				CACHE_TTL.MEDIUM
 			),
 			10000, // 10 second timeout

@@ -38,6 +38,18 @@
 	let expandedSeasonId = $state(null);
 	let expandedMonthKey = $state(null); // Tracks which month is expanded: "standingId|month"
 	let linkCopied = $state(false);
+	let isRefreshing = $state(false);
+
+	// Refresh player data
+	async function refreshData() {
+		if (isRefreshing) return;
+		isRefreshing = true;
+		try {
+			await invalidateAll();
+		} finally {
+			isRefreshing = false;
+		}
+	}
 	let selectedOpponentKey = $state(''); // Selected opponent for head-to-head breakdown
 	let opponentSearchQuery = $state(''); // Search query for combobox
 	let showOpponentDropdown = $state(false); // Whether dropdown is visible
@@ -640,6 +652,24 @@
 
 					<!-- Action Buttons -->
 					<div class="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+						<!-- Refresh Button -->
+						<button
+							onclick={refreshData}
+							disabled={isRefreshing}
+							class="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/80 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-all disabled:opacity-50"
+							title="Refresh data"
+						>
+							<svg
+								class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+							</svg>
+							<span class="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+						</button>
+
 						{#if data.isAdmin}
 							<button
 								onclick={() => (editMode = !editMode)}

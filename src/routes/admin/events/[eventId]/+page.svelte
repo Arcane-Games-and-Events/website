@@ -1,5 +1,6 @@
 <script>
 	import { browser } from '$app/environment';
+	import { invalidateAll } from '$app/navigation';
 	import heroes from '$lib/data/heroes.json';
 	import { parseGemDecklist, toStorageFormat, fromStorageFormat, getPlacementSuffix } from '$lib/utils/gem-decklist-parser.js';
 
@@ -19,25 +20,11 @@
 	// Edit mode for event details
 	let isEditMode = $state(false);
 	let premiumDiscount = $state(data.event.premiumDiscount);
+	let gemIdRequired = $state(data.event.gemIdRequired);
 
 	// Sorting state for registrations
 	let sortColumn = $state('createdAt');
 	let sortDirection = $state('desc');
-
-	// Result form state
-	let showResultForm = $state(false);
-	let editingResult = $state(null);
-	let resultForm = $state({
-		playerName: '',
-		gemId: '',
-		userId: '',
-		placement: 1,
-		wins: 0,
-		losses: 0,
-		draws: 0,
-		agePoints: 0,
-		prizeAmount: ''
-	});
 
 	// Decklist form state
 	let showDecklistForm = $state(false);
@@ -121,10 +108,6 @@
 	const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 	const formats = ['Classic Constructed', 'Draft', 'Silver Age', 'Blitz', 'Living Legend', 'Sealed'];
 
-	// AGE Open points presets
-	const agePointsPresets = { 1: 30, 2: 25, 3: 20, 4: 20, 5: 15, 6: 15, 7: 15, 8: 15, 9: 12, 10: 12, 11: 12, 12: 12, 13: 8, 14: 8, 15: 8, 16: 8 };
-	const prizePresets = { 1: 400, 2: 200, 3: 100, 4: 100, 5: 50, 6: 50, 7: 50, 8: 50 };
-
 	// Derived state
 	let sortedTickets = $derived([...data.tickets].sort((a, b) => {
 		let aVal, bVal;
@@ -167,10 +150,19 @@
 	let isCompleted = $derived(displayStatus === 'completed');
 	let isInProgress = $derived(displayStatus === 'in_progress');
 	let isUpcoming = $derived(displayStatus === 'upcoming');
+	let isCancelled = $derived(displayStatus === 'cancelled');
 	let hasResults = $derived((data.existingResults?.length || 0) > 0);
+	// Check if there's a winner (placement 1 means finals were played)
+	let hasWinner = $derived(data.existingResults?.some(r => r.placement === 1) || false);
 
 	// Delete confirmation state
 	let showDeleteConfirm = $state(false);
+
+	// Close event confirmation state
+	let showCloseConfirm = $state(false);
+
+	// Status form reference for auto-submit
+	let statusForm;
 
 	// Helper functions
 	function formatDate(dateStr) {
@@ -248,43 +240,6 @@
 		}
 	}
 
-	function startNewResult() {
-		editingResult = null;
-		resultForm = {
-			playerName: '',
-			gemId: '',
-			userId: '',
-			placement: (data.existingResults?.length || 0) + 1,
-			wins: 0,
-			losses: 0,
-			draws: 0,
-			agePoints: agePointsPresets[(data.existingResults?.length || 0) + 1] || 1,
-			prizeAmount: prizePresets[(data.existingResults?.length || 0) + 1] || ''
-		};
-		showResultForm = true;
-	}
-
-	function editResult(result) {
-		editingResult = result;
-		resultForm = {
-			playerName: result.playerName,
-			gemId: result.gemId || '',
-			userId: result.userId || '',
-			placement: result.placement,
-			wins: result.wins || 0,
-			losses: result.losses || 0,
-			draws: result.draws || 0,
-			agePoints: result.agePoints || 0,
-			prizeAmount: result.prizeAmount || ''
-		};
-		showResultForm = true;
-	}
-
-	function cancelResultForm() {
-		showResultForm = false;
-		editingResult = null;
-	}
-
 	function startNewDecklist() {
 		editingDecklist = null;
 		decklistForm = {
@@ -311,7 +266,7 @@
 			userId: decklist.userId || '',
 			hero: decklist.hero || '',
 			format: decklist.format || '',
-			placement: decklist.placement || '',
+			placement: decklist.placement?.toString() || '',
 			cardsText,
 			isPublic: decklist.isPublic
 		};
@@ -336,21 +291,10 @@
 		return toStorageFormat(parsed);
 	}
 
-	function selectParticipant(participant, formType) {
-		if (formType === 'result') {
-			resultForm.playerName = participant.playerName;
-			resultForm.gemId = participant.gemId || '';
-			resultForm.userId = participant.userId || '';
-		} else {
-			decklistForm.playerName = participant.playerName;
-			decklistForm.gemId = participant.gemId || '';
-			decklistForm.userId = participant.userId || '';
-		}
-	}
-
-	function updateAgePoints() {
-		resultForm.agePoints = agePointsPresets[resultForm.placement] || 1;
-		resultForm.prizeAmount = prizePresets[resultForm.placement] || '';
+	function selectParticipant(participant) {
+		decklistForm.playerName = participant.playerName;
+		decklistForm.gemId = participant.gemId || '';
+		decklistForm.userId = participant.userId || '';
 	}
 </script>
 
@@ -389,42 +333,49 @@
 					</div>
 				</div>
 				<div class="flex items-center gap-3">
-					<!-- Event Status Badge -->
-					{#if isCompleted}
-						<span class="inline-flex items-center gap-2 rounded-full bg-green-500/20 px-3 py-1.5 text-sm font-medium text-green-400">
+					<!-- Event Status Dropdown -->
+					<form method="POST" action="?/updateStatus" class="inline-flex items-center gap-2" bind:this={statusForm}>
+						<select
+							name="status"
+							onchange={() => statusForm.submit()}
+							class="rounded-lg border border-white/10 bg-gray-800 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 {displayStatus === 'completed' ? 'text-green-400' : displayStatus === 'in_progress' ? 'text-blue-400' : displayStatus === 'cancelled' ? 'text-red-400' : 'text-yellow-400'}"
+						>
+							<option value="upcoming" selected={displayStatus === 'upcoming'} class="bg-gray-800 text-yellow-400">Upcoming</option>
+							<option value="in_progress" selected={displayStatus === 'in_progress'} class="bg-gray-800 text-blue-400">In Progress</option>
+							<option value="completed" selected={displayStatus === 'completed'} class="bg-gray-800 text-green-400">Completed</option>
+							<option value="cancelled" selected={displayStatus === 'cancelled'} class="bg-gray-800 text-red-400">Cancelled</option>
+						</select>
+					</form>
+
+					<!-- Close Event Button (shows when not completed AND has a winner) -->
+					{#if !isCompleted && hasWinner}
+						<button
+							type="button"
+							onclick={() => showCloseConfirm = true}
+							class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-green-600 to-green-500 px-4 py-1.5 text-sm font-medium text-white shadow-lg transition-all hover:from-green-500 hover:to-green-400"
+						>
 							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
 							</svg>
-							Finalized
-						</span>
-					{:else if isInProgress}
-						<span class="inline-flex items-center gap-2 rounded-full bg-blue-500/20 px-3 py-1.5 text-sm font-medium text-blue-400">
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-							</svg>
-							In Progress
-						</span>
-					{:else}
-						<span class="inline-flex items-center gap-2 rounded-full bg-yellow-500/20 px-3 py-1.5 text-sm font-medium text-yellow-400">
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-							</svg>
-							Upcoming
-						</span>
-					{/if}
-
-					<!-- Admin Actions -->
-					{#if data.isAdmin}
-						<button
-							type="button"
-							onclick={() => showDeleteConfirm = true}
-							class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20"
-						>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-							</svg>
-							Delete
+							Close Event
 						</button>
+					{:else if !isCompleted && !hasWinner && hasResults}
+						<!-- Show disabled state with tooltip when results exist but no winner -->
+						<span class="inline-flex items-center gap-2 rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-1.5 text-sm font-medium text-gray-400 cursor-not-allowed" title="Finals match required to close event">
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m10-6a8 8 0 11-16 0 8 8 0 0116 0z" />
+							</svg>
+							Awaiting Finals
+						</span>
+					{:else if isCompleted && data.isAdmin}
+						<form method="POST" action="?/reopenEvent" class="inline">
+							<button type="submit" class="inline-flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-sm font-medium text-yellow-400 transition-colors hover:bg-yellow-500/20">
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+								</svg>
+								Reopen
+							</button>
+						</form>
 					{/if}
 				</div>
 			</div>
@@ -470,8 +421,7 @@
 				{ id: 'import', label: 'Import CSV' },
 				{ id: 'results', label: `Results (${data.existingResults?.length || 0})` },
 				{ id: 'decklists', label: `Decklists (${data.existingDecklists?.length || 0})` },
-				...(data.isAdmin ? [{ id: 'staff', label: `Staff (${data.assignedStaff?.length || 0})` }] : []),
-				{ id: 'finalize', label: 'Finalize' }
+				...(data.isAdmin ? [{ id: 'staff', label: `Staff (${data.assignedStaff?.length || 0})` }] : [])
 			] as tab}
 				<button
 					onclick={() => setActiveTab(tab.id)}
@@ -637,6 +587,11 @@
 
 						<div class="flex flex-wrap gap-4 pt-2">
 							<label class="flex cursor-pointer items-center gap-3">
+								<input type="checkbox" id="gemIdRequired" name="gemIdRequired" bind:checked={gemIdRequired}
+									class="h-4 w-4 border-gray-600 bg-gray-800 text-blue-500" />
+								<span class="text-sm font-medium text-gray-300">GEM ID Required</span>
+							</label>
+							<label class="flex cursor-pointer items-center gap-3">
 								<input type="checkbox" id="premiumDiscount" name="premiumDiscount" bind:checked={premiumDiscount}
 									class="h-4 w-4 border-gray-600 bg-gray-800 text-blue-500" />
 								<span class="text-sm font-medium text-gray-300">10% Premium Discount</span>
@@ -683,6 +638,14 @@
 						<div class="rounded-lg bg-gray-800/30 p-3 md:col-span-2">
 							<p class="text-xs font-medium uppercase tracking-wider text-gray-500">Settings</p>
 							<div class="flex flex-wrap gap-2 mt-2">
+								<span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium {data.event.gemIdRequired ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-700 text-gray-400'}">
+									{#if data.event.gemIdRequired}
+										<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+									{:else}
+										<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+									{/if}
+									GEM ID Required
+								</span>
 								<span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium {data.event.premiumDiscount ? 'bg-amber-500/20 text-amber-400' : 'bg-gray-700 text-gray-400'}">
 									{#if data.event.premiumDiscount}
 										<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
@@ -702,6 +665,22 @@
 					</div>
 				{/if}
 			</div>
+
+			<!-- Delete Event Button (Admin Only) -->
+			{#if data.isAdmin}
+				<div class="mt-6 flex justify-end">
+					<button
+						type="button"
+						onclick={() => showDeleteConfirm = true}
+						class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20"
+					>
+						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+						</svg>
+						Delete Event
+					</button>
+				</div>
+			{/if}
 		{/if}
 
 		<!-- Registrations Tab -->
@@ -1003,7 +982,7 @@
 											<p class="text-xs text-gray-400">Players</p>
 										</div>
 										<div class="bg-gray-900/50 rounded-lg p-3 text-center">
-											<p class="text-2xl font-bold text-white">{form.processedResults.swissRounds}</p>
+											<p class="text-2xl font-bold text-white">{form.processedResults.totalRounds}</p>
 											<p class="text-xs text-gray-400">Rounds</p>
 										</div>
 										<div class="bg-gray-900/50 rounded-lg p-3 text-center">
@@ -1015,364 +994,128 @@
 											<p class="text-xs text-gray-400">Prize Pool</p>
 										</div>
 									</div>
-									{#if form.processedResults.winner}
-										<p class="text-sm text-gray-300 mb-3">
-											Champion: <span class="text-yellow-400 font-semibold">{form.processedResults.winner.name}</span>
-										</p>
-									{/if}
-									<div class="flex flex-wrap gap-2">
-										<button onclick={() => setActiveTab('results')} class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-sm text-white hover:bg-gray-700 transition-colors">
-											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-											</svg>
-											Review Results
-										</button>
-										<button onclick={() => setActiveTab('finalize')} class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-sm text-white hover:bg-green-700 transition-colors">
-											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-											</svg>
-											Finalize Event
-										</button>
-									</div>
+									<button onclick={() => setActiveTab('results')} class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-sm text-white hover:bg-gray-700 transition-colors">
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+									</svg>
+									Review Results
+								</button>
 								</div>
 							</div>
 						</div>
 					{/if}
 
-					<form method="POST" action="?/processCSV" enctype="multipart/form-data">
-						<!-- Header -->
-						<div class="text-center mb-8">
-							<div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 mb-4">
-								<svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<form method="POST" action="?/processCSV" enctype="multipart/form-data" class="space-y-4">
+						<!-- Compact Header -->
+						<div class="flex items-center gap-3 mb-2">
+							<div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+								<svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
 								</svg>
 							</div>
-							<h2 class="text-2xl font-bold text-white mb-2">Import Tournament Results</h2>
-							<p class="text-gray-400 max-w-lg mx-auto">Upload your GEM CSV exports to automatically calculate standings, distribute AGE points, and record match history.</p>
+							<div>
+								<h2 class="text-lg font-semibold text-white">Import Tournament Results</h2>
+								<p class="text-xs text-gray-500">Upload GEM CSV exports to calculate standings and record matches</p>
+							</div>
 						</div>
 
-						<!-- File Upload Cards -->
-						<div class="grid md:grid-cols-2 gap-6 mb-8">
-							<!-- Swiss Standings Upload -->
-							<div class="group relative">
-								<div class="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
-								<div class="relative rounded-xl border-2 border-dashed border-gray-700 bg-gray-900/50 p-6 transition-colors hover:border-blue-500/50 {swissStandingsFile && swissStandingsFile.length > 0 ? 'border-green-500/50 bg-green-500/5' : ''}">
-									<div class="flex items-start gap-4">
-										<div class="flex-shrink-0 w-12 h-12 rounded-xl {swissStandingsFile && swissStandingsFile.length > 0 ? 'bg-green-500/20' : 'bg-blue-500/20'} flex items-center justify-center">
-											{#if swissStandingsFile && swissStandingsFile.length > 0}
-												<svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-												</svg>
-											{:else}
-												<svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-												</svg>
-											{/if}
-										</div>
-										<div class="flex-1 min-w-0">
-											<div class="flex items-center gap-2 mb-1">
-												<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/20 text-xs font-bold text-blue-400">1</span>
-												<h3 class="font-semibold text-white">Swiss Standings</h3>
-												<span class="text-red-400">*</span>
-											</div>
-											<p class="text-xs text-gray-500 mb-3">Rank, Name, Player ID, Wins</p>
-
-											<input type="file" id="swissStandings" name="swissStandings" accept=".csv" required bind:files={swissStandingsFile} class="sr-only" />
-											{#if swissStandingsFile && swissStandingsFile.length > 0}
-												<div class="flex items-center gap-2 text-sm text-green-400">
-													<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-													</svg>
-													<span class="truncate">{swissStandingsFile[0].name}</span>
-													<label for="swissStandings" class="cursor-pointer text-xs text-gray-500 hover:text-gray-300">(change)</label>
-												</div>
-											{:else}
-												<label for="swissStandings" class="cursor-pointer">
-													<span class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors">
-														<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-														</svg>
-														Choose File
-													</span>
-												</label>
-											{/if}
-										</div>
+						<!-- Compact File Uploads -->
+						<div class="grid sm:grid-cols-2 gap-3">
+							<!-- Swiss Standings -->
+							<div class="rounded-lg border border-dashed border-gray-700 bg-gray-900/50 p-3 transition-colors hover:border-gray-600 {swissStandingsFile && swissStandingsFile.length > 0 ? 'border-green-500/50 bg-green-500/5' : ''}">
+								<input type="file" id="swissStandings" name="swissStandings" accept=".csv" required bind:files={swissStandingsFile} class="sr-only" />
+								<label for="swissStandings" class="cursor-pointer flex items-center gap-3">
+									<div class="w-8 h-8 rounded-lg flex-shrink-0 {swissStandingsFile && swissStandingsFile.length > 0 ? 'bg-green-500/20' : 'bg-gray-800'} flex items-center justify-center">
+										{#if swissStandingsFile && swissStandingsFile.length > 0}
+											<svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+											</svg>
+										{:else}
+											<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+											</svg>
+										{/if}
 									</div>
-								</div>
-							</div>
-
-							<!-- Pairings Upload -->
-							<div class="group relative">
-								<div class="absolute -inset-0.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
-								<div class="relative rounded-xl border-2 border-dashed border-gray-700 bg-gray-900/50 p-6 transition-colors hover:border-purple-500/50 {pairingsFile && pairingsFile.length > 0 ? 'border-green-500/50 bg-green-500/5' : ''}">
-									<div class="flex items-start gap-4">
-										<div class="flex-shrink-0 w-12 h-12 rounded-xl {pairingsFile && pairingsFile.length > 0 ? 'bg-green-500/20' : 'bg-purple-500/20'} flex items-center justify-center">
-											{#if pairingsFile && pairingsFile.length > 0}
-												<svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-												</svg>
-											{:else}
-												<svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-												</svg>
-											{/if}
-										</div>
-										<div class="flex-1 min-w-0">
-											<div class="flex items-center gap-2 mb-1">
-												<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-500/20 text-xs font-bold text-purple-400">2</span>
-												<h3 class="font-semibold text-white">Pairings Data</h3>
-												<span class="text-red-400">*</span>
-											</div>
-											<p class="text-xs text-gray-500 mb-3">Round, Table, P1 Name, P1 ID, P2 Name, P2 ID, Result</p>
-
-											<input type="file" id="pairings" name="pairings" accept=".csv" required bind:files={pairingsFile} class="sr-only" />
-											{#if pairingsFile && pairingsFile.length > 0}
-												<div class="flex items-center gap-2 text-sm text-green-400">
-													<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-													</svg>
-													<span class="truncate">{pairingsFile[0].name}</span>
-													<label for="pairings" class="cursor-pointer text-xs text-gray-500 hover:text-gray-300">(change)</label>
-												</div>
-											{:else}
-												<label for="pairings" class="cursor-pointer">
-													<span class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors">
-														<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-														</svg>
-														Choose File
-													</span>
-												</label>
-											{/if}
-										</div>
+									<div class="flex-1 min-w-0">
+										<p class="text-sm font-medium text-white">Swiss Standings <span class="text-red-400">*</span></p>
+										{#if swissStandingsFile && swissStandingsFile.length > 0}
+											<p class="text-xs text-green-400 truncate">{swissStandingsFile[0].name}</p>
+										{:else}
+											<p class="text-xs text-gray-500">Click to select CSV</p>
+										{/if}
 									</div>
-								</div>
+								</label>
+							</div>
+
+							<!-- Pairings -->
+							<div class="rounded-lg border border-dashed border-gray-700 bg-gray-900/50 p-3 transition-colors hover:border-gray-600 {pairingsFile && pairingsFile.length > 0 ? 'border-green-500/50 bg-green-500/5' : ''}">
+								<input type="file" id="pairings" name="pairings" accept=".csv" required bind:files={pairingsFile} class="sr-only" />
+								<label for="pairings" class="cursor-pointer flex items-center gap-3">
+									<div class="w-8 h-8 rounded-lg flex-shrink-0 {pairingsFile && pairingsFile.length > 0 ? 'bg-green-500/20' : 'bg-gray-800'} flex items-center justify-center">
+										{#if pairingsFile && pairingsFile.length > 0}
+											<svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+											</svg>
+										{:else}
+											<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+											</svg>
+										{/if}
+									</div>
+									<div class="flex-1 min-w-0">
+										<p class="text-sm font-medium text-white">Pairings Data <span class="text-red-400">*</span></p>
+										{#if pairingsFile && pairingsFile.length > 0}
+											<p class="text-xs text-green-400 truncate">{pairingsFile[0].name}</p>
+										{:else}
+											<p class="text-xs text-gray-500">Click to select CSV</p>
+										{/if}
+									</div>
+								</label>
 							</div>
 						</div>
 
-						<!-- What Gets Calculated -->
-						<div class="rounded-xl border border-white/10 bg-gray-900/30 p-6 mb-6">
-							<h3 class="font-semibold text-white mb-4 flex items-center gap-2">
-								<svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-								</svg>
-								What will be calculated
-							</h3>
-							<div class="grid sm:grid-cols-2 gap-3">
-								<div class="flex items-center gap-3 text-sm text-gray-300">
-									<div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-									Top 8 bracket results
-								</div>
-								<div class="flex items-center gap-3 text-sm text-gray-300">
-									<div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-									Final standings with tiebreakers
-								</div>
-								<div class="flex items-center gap-3 text-sm text-gray-300">
-									<div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-									AGE Points distribution
-								</div>
-								<div class="flex items-center gap-3 text-sm text-gray-300">
-									<div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-									Prize pool allocation
-								</div>
-								<div class="flex items-center gap-3 text-sm text-gray-300">
-									<div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-									Match history records
-								</div>
-								<div class="flex items-center gap-3 text-sm text-gray-300">
-									<div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-									Head-to-head statistics
-								</div>
-							</div>
-						</div>
-
-						<!-- Warning -->
+						<!-- Warning (if exists) -->
 						{#if data.existingResults && data.existingResults.length > 0}
-							<div class="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 mb-6">
-								<div class="flex items-start gap-3">
-									<svg class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-									</svg>
-									<div>
-										<p class="text-sm font-medium text-amber-400">Existing results will be replaced</p>
-										<p class="text-xs text-gray-400 mt-1">This event has {data.existingResults.length} existing results. Importing will replace all current data.</p>
-									</div>
-								</div>
+							<div class="flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs text-amber-400">
+								<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+								</svg>
+								<span>This will replace {data.existingResults.length} existing results</span>
 							</div>
 						{/if}
 
 						<!-- Submit Button -->
 						<button type="submit" disabled={csvProcessing || !swissStandingsFile || !pairingsFile}
-							class="w-full flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-4 text-lg font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:from-blue-500 hover:to-blue-400 hover:shadow-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-blue-500/25">
+							class="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
 							{#if csvProcessing}
-								<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+								<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
 									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
 								</svg>
-								Processing CSV Files...
+								Processing...
 							{:else}
-								<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
 								</svg>
-								Import & Process Results
+								Import Results
 							{/if}
 						</button>
 					</form>
 				{/if}
-
-				<!-- AGE Points Structure Reference (collapsible) -->
-				<details class="mt-8 group">
-					<summary class="cursor-pointer list-none">
-						<div class="flex items-center justify-between rounded-xl border border-white/10 bg-gray-900/30 px-6 py-4 hover:bg-gray-900/50 transition-colors">
-							<div class="flex items-center gap-3">
-								<div class="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
-									<svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-									</svg>
-								</div>
-								<div>
-									<h3 class="font-semibold text-white">AGE Points & Prize Structure</h3>
-									<p class="text-xs text-gray-500">View distribution table</p>
-								</div>
-							</div>
-							<svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-							</svg>
-						</div>
-					</summary>
-					<div class="mt-4 rounded-xl border border-white/10 bg-gray-900/30 p-6">
-						<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-							<div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-yellow-500/20 to-amber-500/10 p-4 text-center">
-								<div class="absolute top-0 right-0 w-16 h-16 -translate-y-4 translate-x-4 rounded-full bg-yellow-500/10"></div>
-								<p class="text-2xl font-bold text-yellow-400">30</p>
-								<p class="text-xs text-gray-400">1st Place</p>
-								<p class="text-sm font-medium text-green-400 mt-1">$400</p>
-							</div>
-							<div class="rounded-xl bg-gray-800/50 p-4 text-center">
-								<p class="text-2xl font-bold text-gray-300">25</p>
-								<p class="text-xs text-gray-400">2nd Place</p>
-								<p class="text-sm font-medium text-green-400 mt-1">$200</p>
-							</div>
-							<div class="rounded-xl bg-amber-900/20 p-4 text-center">
-								<p class="text-2xl font-bold text-amber-400">20</p>
-								<p class="text-xs text-gray-400">3rd-4th</p>
-								<p class="text-sm font-medium text-green-400 mt-1">$100</p>
-							</div>
-							<div class="rounded-xl bg-gray-800/50 p-4 text-center">
-								<p class="text-2xl font-bold text-gray-300">15</p>
-								<p class="text-xs text-gray-400">5th-8th</p>
-								<p class="text-sm font-medium text-green-400 mt-1">$50</p>
-							</div>
-							<div class="rounded-xl bg-gray-800/50 p-4 text-center">
-								<p class="text-2xl font-bold text-gray-400">12</p>
-								<p class="text-xs text-gray-500">9th-12th</p>
-							</div>
-							<div class="rounded-xl bg-gray-800/50 p-4 text-center">
-								<p class="text-2xl font-bold text-gray-400">8</p>
-								<p class="text-xs text-gray-500">13th-16th</p>
-							</div>
-							<div class="rounded-xl bg-gray-800/50 p-4 text-center col-span-2">
-								<p class="text-2xl font-bold text-gray-500">1</p>
-								<p class="text-xs text-gray-500">Participation</p>
-							</div>
-						</div>
-					</div>
-				</details>
 			</div>
 		{/if}
 
 		<!-- Results Tab -->
 		{#if activeTab === 'results'}
 			<div class="space-y-6">
-				{#if !isCompleted}
-					<div class="flex justify-end">
-						<button onclick={startNewResult}
-							class="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:opacity-90 transition-opacity">
-							+ Add Result
-						</button>
-					</div>
-				{/if}
-
-				<!-- Result Form Modal -->
-				{#if showResultForm}
-					<div class="rounded-xl border border-gray-700 bg-gray-900 p-6">
-						<h3 class="text-lg font-semibold text-white mb-4">{editingResult ? 'Edit Result' : 'Add Result'}</h3>
-
-						{#if data.participants.length > 0 && !editingResult}
-							<div class="mb-4">
-								<p class="text-sm text-gray-400 mb-2">Quick select from registered players:</p>
-								<div class="flex flex-wrap gap-2">
-									{#each data.participants as participant}
-										<button type="button" onclick={() => selectParticipant(participant, 'result')}
-											class="rounded-full bg-gray-800 px-3 py-1 text-sm text-gray-300 hover:bg-gray-700">
-											{participant.playerName}
-										</button>
-									{/each}
-								</div>
-							</div>
-						{/if}
-
-						<form method="POST" action="?/saveResult" class="space-y-4">
-							{#if editingResult}
-								<input type="hidden" name="resultId" value={editingResult.id} />
-							{/if}
-							<input type="hidden" name="userId" value={resultForm.userId} />
-
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-								<div>
-									<label for="playerName" class="block text-sm font-medium text-gray-100 mb-2">Player Name *</label>
-									<input type="text" id="playerName" name="playerName" required bind:value={resultForm.playerName}
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300" />
-								</div>
-								<div>
-									<label for="gemId" class="block text-sm font-medium text-gray-100 mb-2">GEM ID</label>
-									<input type="text" id="gemId" name="gemId" bind:value={resultForm.gemId}
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300" />
-								</div>
-							</div>
-
-							<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-								<div>
-									<label for="placement" class="block text-sm font-medium text-gray-100 mb-2">Placement *</label>
-									<input type="number" id="placement" name="placement" required min="1" bind:value={resultForm.placement} onchange={updateAgePoints}
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300" />
-								</div>
-								<div>
-									<label for="wins" class="block text-sm font-medium text-gray-100 mb-2">Wins</label>
-									<input type="number" id="wins" name="wins" min="0" bind:value={resultForm.wins}
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300" />
-								</div>
-								<div>
-									<label for="losses" class="block text-sm font-medium text-gray-100 mb-2">Losses</label>
-									<input type="number" id="losses" name="losses" min="0" bind:value={resultForm.losses}
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300" />
-								</div>
-								<div>
-									<label for="draws" class="block text-sm font-medium text-gray-100 mb-2">Draws</label>
-									<input type="number" id="draws" name="draws" min="0" bind:value={resultForm.draws}
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300" />
-								</div>
-							</div>
-
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-								<div>
-									<label for="agePoints" class="block text-sm font-medium text-gray-100 mb-2">AGE Points</label>
-									<input type="number" id="agePoints" name="agePoints" min="0" bind:value={resultForm.agePoints}
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300" />
-								</div>
-								<div>
-									<label for="prizeAmount" class="block text-sm font-medium text-gray-100 mb-2">Prize Amount ($)</label>
-									<input type="number" id="prizeAmount" name="prizeAmount" min="0" step="0.01" bind:value={resultForm.prizeAmount}
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300" />
-								</div>
-							</div>
-
-							<div class="flex justify-end gap-3 pt-4">
-								<button type="button" onclick={cancelResultForm}
-									class="rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium text-white hover:bg-gray-600">Cancel</button>
-								<button type="submit" class="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:opacity-90">Save Result</button>
-							</div>
-						</form>
+				<!-- Stats Header -->
+				{#if sortedResults.length > 0}
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-4">
+							<span class="text-sm text-gray-400">
+								{sortedResults.length} players • {data.existingMatches?.length || 0} matches recorded
+							</span>
+						</div>
 					</div>
 				{/if}
 
@@ -1384,9 +1127,7 @@
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
 							</svg>
 							<p class="mt-4 text-gray-400">No results recorded yet</p>
-							{#if !isCompleted}
-								<button onclick={startNewResult} class="mt-4 text-sm font-medium text-blue-400 hover:text-blue-300">Add the first result</button>
-							{/if}
+							<p class="mt-2 text-sm text-gray-500">Import tournament CSV files to see results here</p>
 						</div>
 					{:else}
 						<!-- Mobile Card View -->
@@ -1429,18 +1170,6 @@
 											<span class="text-gray-400">Prize: <span class="text-green-400">${result.prizeAmount}</span></span>
 										{/if}
 									</div>
-									{#if !isCompleted}
-										<div class="mt-3 pt-3 border-t border-gray-700 flex gap-3">
-											<button onclick={() => editResult(result)} class="text-sm text-gray-400 hover:text-white">Edit</button>
-											<form method="POST" action="?/deleteResult" class="inline">
-												<input type="hidden" name="resultId" value={result.id} />
-												<button type="submit" class="text-sm text-red-400 hover:text-red-300"
-													onclick={(e) => { if (!confirm('Delete this result?')) e.preventDefault(); }}>
-													Delete
-												</button>
-											</form>
-										</div>
-									{/if}
 								</div>
 							{/each}
 						</div>
@@ -1456,9 +1185,6 @@
 										<th class="text-left p-4 font-semibold text-gray-100">Record</th>
 										<th class="text-left p-4 font-semibold text-gray-100">AGE Pts</th>
 										<th class="text-left p-4 font-semibold text-gray-100">Prize</th>
-										{#if !isCompleted}
-											<th class="text-right p-4 font-semibold text-gray-100">Actions</th>
-										{/if}
 									</tr>
 								</thead>
 								<tbody>
@@ -1496,20 +1222,6 @@
 											<td class="p-4 text-gray-100">{result.wins}-{result.losses}{result.draws > 0 ? `-${result.draws}` : ''}</td>
 											<td class="p-4 text-blue-400 font-medium">{result.agePoints}</td>
 											<td class="p-4 text-green-400">{result.prizeAmount ? `$${result.prizeAmount}` : '-'}</td>
-											{#if !isCompleted}
-												<td class="p-4 text-right">
-													<div class="flex justify-end gap-2">
-														<button onclick={() => editResult(result)} class="text-gray-400 hover:text-white">Edit</button>
-														<form method="POST" action="?/deleteResult" class="inline">
-															<input type="hidden" name="resultId" value={result.id} />
-															<button type="submit" class="text-red-400 hover:text-red-300"
-																onclick={(e) => { if (!confirm('Delete this result?')) e.preventDefault(); }}>
-																Delete
-															</button>
-														</form>
-													</div>
-												</td>
-											{/if}
 										</tr>
 									{/each}
 								</tbody>
@@ -1575,7 +1287,7 @@
 													<button
 														type="button"
 														onclick={() => {
-															selectParticipant(participant, 'decklist');
+															selectParticipant(participant);
 															participantSearch = '';
 															showParticipantDropdown = false;
 														}}
@@ -1606,17 +1318,16 @@
 						{/if}
 
 						<form method="POST" action="?/saveDecklist"
-							onsubmit={(e) => {
+							onsubmit={async (e) => {
+								e.preventDefault();
 								const cards = parseCardsText(decklistForm.cardsText);
 								const formData = new FormData(e.target);
 								formData.set('cards', JSON.stringify(cards));
 								formData.set('rawText', decklistForm.cardsText);
-								fetch(e.target.action, { method: 'POST', body: formData }).then(() => {
-									showDecklistForm = false;
-									editingDecklist = null;
-									location.reload();
-								});
-								e.preventDefault();
+								await fetch(e.target.action, { method: 'POST', body: formData });
+								showDecklistForm = false;
+								editingDecklist = null;
+								await invalidateAll();
 							}}
 							class="space-y-4">
 							{#if editingDecklist}
@@ -1904,10 +1615,16 @@ Pitch 0/1 (Red)
 									{#if !isCompleted}
 										<div class="flex gap-2">
 											<button onclick={() => editDecklist(decklist)} class="text-xs text-gray-400 hover:text-white">Edit</button>
-											<form method="POST" action="?/deleteDecklist" class="inline">
+											<form method="POST" action="?/deleteDecklist" class="inline"
+												onsubmit={async (e) => {
+													e.preventDefault();
+													if (!confirm('Delete this decklist?')) return;
+													const formData = new FormData(e.target);
+													await fetch(e.target.action, { method: 'POST', body: formData });
+													await invalidateAll();
+												}}>
 												<input type="hidden" name="decklistId" value={decklist.id} />
-												<button type="submit" class="text-xs text-red-400 hover:text-red-300"
-													onclick={(e) => { if (!confirm('Delete this decklist?')) e.preventDefault(); }}>
+												<button type="submit" class="text-xs text-red-400 hover:text-red-300">
 													Delete
 												</button>
 											</form>
@@ -2055,85 +1772,6 @@ Pitch 0/1 (Red)
 			</div>
 		{/if}
 
-		<!-- Finalize Tab -->
-		{#if activeTab === 'finalize'}
-			<div class="max-w-2xl mx-auto">
-				<div class="rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-950 p-8">
-					<h2 class="text-2xl font-bold text-white mb-6">Finalize Event</h2>
-
-					{#if isCompleted}
-						<div class="text-center py-8">
-							<svg class="mx-auto h-16 w-16 text-green-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-							</svg>
-							<h3 class="text-xl font-semibold text-white mb-2">Event Finalized</h3>
-							<p class="text-gray-400 mb-6">This event was finalized on {formatDate(data.event.closedAt)}. Season standings have been updated.</p>
-							{#if data.isAdmin}
-								<form method="POST" action="?/reopenEvent">
-									<button type="submit" class="rounded-lg bg-yellow-500/20 px-6 py-2 text-sm font-medium text-yellow-400 hover:bg-yellow-500/30">
-										Reopen Event
-									</button>
-								</form>
-							{/if}
-						</div>
-					{:else}
-						<div class="space-y-6">
-							<!-- Summary -->
-							<div class="rounded-lg bg-gray-900 p-4">
-								<h3 class="font-semibold text-white mb-2">Summary</h3>
-								<ul class="space-y-2 text-sm text-gray-300">
-									<li class="flex justify-between"><span>Results Recorded:</span><span class="font-medium">{data.existingResults?.length || 0}</span></li>
-									<li class="flex justify-between"><span>Decklists Recorded:</span><span class="font-medium">{data.existingDecklists?.length || 0}</span></li>
-									<li class="flex justify-between"><span>Registered Players:</span><span class="font-medium">{data.participants?.length || 0}</span></li>
-									<li class="flex justify-between"><span>Circuit:</span><span class="font-medium">{data.event.circuit || 'Not set'}</span></li>
-								</ul>
-							</div>
-
-							<!-- Save Progress Option -->
-							<div class="rounded-lg bg-blue-500/10 border border-blue-500/30 p-4">
-								<h3 class="font-semibold text-blue-400 mb-2">Save Progress</h3>
-								<p class="text-sm text-gray-300 mb-3">Save results without updating season standings. Use this if you're still making changes or waiting for more data.</p>
-								<form method="POST" action="?/saveProgress">
-									<button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Save Progress</button>
-								</form>
-							</div>
-
-							<!-- Finalize Section -->
-							<div class="rounded-lg bg-green-500/10 border border-green-500/30 p-4">
-								<h3 class="font-semibold text-green-400 mb-2">Finalize & Update Standings</h3>
-								<p class="text-sm text-gray-300 mb-3">This will update season standings with AGE points and match data for all players. The event will be marked as complete.</p>
-								<ul class="space-y-1 text-sm text-gray-400 list-disc list-inside mb-4">
-									<li>AGE Points will be added to player standings</li>
-									<li>Monthly match data will be updated</li>
-									<li>Win percentages will be recalculated</li>
-									<li>New players will be added to standings</li>
-								</ul>
-
-								{#if !hasResults}
-									<div class="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3 mb-4">
-										<p class="text-sm text-yellow-400"><strong>Warning:</strong> No results have been recorded yet. Import CSV or add results before finalizing.</p>
-									</div>
-								{/if}
-
-								{#if !data.event.circuit}
-									<div class="rounded-lg bg-red-500/10 border border-red-500/30 p-3 mb-4">
-										<p class="text-sm text-red-400"><strong>Error:</strong> This event has no circuit assigned. Please edit the event to add a circuit before finalizing.</p>
-									</div>
-								{/if}
-
-								<form method="POST" action="?/finalizeEvent">
-									<button type="submit" disabled={!hasResults || !data.event.circuit}
-										class="w-full rounded-lg bg-green-600 px-6 py-3 text-lg font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-										onclick={(e) => { if (!confirm('Are you sure you want to finalize this event? AGE points will be distributed and season standings will be updated.')) e.preventDefault(); }}>
-										Finalize Event & Update Standings
-									</button>
-								</form>
-							</div>
-						</div>
-					{/if}
-				</div>
-			</div>
-		{/if}
 	</div>
 </div>
 
@@ -2170,6 +1808,71 @@ Pitch 0/1 (Red)
 						class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
 					>
 						Delete Event
+					</button>
+				</form>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Close Event Confirmation Modal -->
+{#if showCloseConfirm}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+		<div class="mx-4 w-full max-w-lg rounded-xl border border-green-500/30 bg-gray-900 p-6 shadow-2xl">
+			<div class="mb-4 flex items-center gap-3">
+				<div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-500/20">
+					<svg class="h-6 w-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+					</svg>
+				</div>
+				<div>
+					<h3 class="text-lg font-bold text-white">Close Event</h3>
+					<p class="text-sm text-gray-400">Update season standings with results</p>
+				</div>
+			</div>
+
+			<!-- Summary -->
+			<div class="mb-4 rounded-lg bg-gray-800/50 p-4">
+				<h4 class="font-medium text-white mb-2">Summary</h4>
+				<ul class="space-y-1 text-sm text-gray-300">
+					<li class="flex justify-between"><span>Results Recorded:</span><span class="font-medium">{data.existingResults?.length || 0}</span></li>
+					<li class="flex justify-between"><span>Decklists Recorded:</span><span class="font-medium">{data.existingDecklists?.length || 0}</span></li>
+					<li class="flex justify-between"><span>Registered Players:</span><span class="font-medium">{data.participants?.length || 0}</span></li>
+					<li class="flex justify-between"><span>Circuit:</span><span class="font-medium">{data.event.circuit || 'Not set'}</span></li>
+				</ul>
+			</div>
+
+			{#if !hasResults}
+				<div class="mb-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3">
+					<p class="text-sm text-yellow-400"><strong>Warning:</strong> No results have been recorded yet. Import CSV or add results before closing.</p>
+				</div>
+			{/if}
+
+			{#if !data.event.circuit}
+				<div class="mb-4 rounded-lg bg-red-500/10 border border-red-500/30 p-3">
+					<p class="text-sm text-red-400"><strong>Error:</strong> This event has no circuit assigned. Please edit the event to add a circuit before closing.</p>
+				</div>
+			{/if}
+
+			<p class="mb-4 text-sm text-gray-400">
+				Closing the event will update season standings with AGE points and match data for all players.
+			</p>
+
+			<div class="flex justify-end gap-3">
+				<button
+					type="button"
+					onclick={() => showCloseConfirm = false}
+					class="rounded-lg border border-white/10 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700"
+				>
+					Cancel
+				</button>
+				<form method="POST" action="?/finalizeEvent">
+					<button
+						type="submit"
+						disabled={!hasResults || !data.event.circuit}
+						class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						Close Event
 					</button>
 				</form>
 			</div>

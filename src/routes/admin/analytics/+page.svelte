@@ -53,10 +53,47 @@
 		{ id: 'overview', name: 'Overview', icon: 'chart-bar' },
 		{ id: 'revenue', name: 'Revenue', icon: 'currency-dollar' },
 		{ id: 'users', name: 'Users', icon: 'users' },
+		{ id: 'premium', name: 'Premium', icon: 'star' },
 		{ id: 'events', name: 'Events', icon: 'calendar' },
 		{ id: 'tickets', name: 'Tickets', icon: 'ticket' },
 		{ id: 'players', name: 'Players', icon: 'trophy' }
 	];
+
+	// Calculate premium metrics
+	const premiumMetrics = $derived(() => {
+		const breakdown = data.users?.subscriptionBreakdown || [];
+		const activeMonthly = breakdown.find(s => s.type === 'monthly' && s.status === 'active')?.count || 0;
+		const activeYearly = breakdown.find(s => s.type === 'yearly' && s.status === 'active')?.count || 0;
+		const cancelledMonthly = breakdown.find(s => s.type === 'monthly' && s.status === 'cancelled')?.count || 0;
+		const cancelledYearly = breakdown.find(s => s.type === 'yearly' && s.status === 'cancelled')?.count || 0;
+		const failedPayments = breakdown.filter(s => s.status === 'payment_failed').reduce((sum, s) => sum + s.count, 0);
+
+		const totalActive = activeMonthly + activeYearly;
+		const totalCancelled = cancelledMonthly + cancelledYearly;
+
+		// Monthly revenue estimate: $9.99/mo for monthly, $99/12 = $8.25/mo for yearly
+		const monthlyMRR = (activeMonthly * 9.99) + (activeYearly * 8.25);
+		const annualARR = monthlyMRR * 12;
+
+		// Churn rate: cancelled / (active + cancelled)
+		const churnRate = (totalActive + totalCancelled) > 0
+			? ((totalCancelled / (totalActive + totalCancelled)) * 100).toFixed(1)
+			: 0;
+
+		return {
+			activeMonthly,
+			activeYearly,
+			totalActive,
+			cancelledMonthly,
+			cancelledYearly,
+			totalCancelled,
+			failedPayments,
+			monthlyMRR,
+			annualARR,
+			churnRate,
+			breakdown
+		};
+	});
 </script>
 
 <svelte:head>
@@ -213,6 +250,73 @@
 					</div>
 					<p class="mt-4 text-2xl font-bold text-white">{formatNumber(data.tickets?.total)}</p>
 					<p class="mt-1 text-sm text-gray-400">Tickets sold</p>
+				</div>
+			</div>
+
+			<!-- Premium & Players Row -->
+			<div class="mb-8 grid gap-4 sm:grid-cols-2">
+				<!-- Premium Members -->
+				<div class="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-yellow-500/5 p-5">
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-3">
+							<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/20">
+								<svg class="h-6 w-6 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+									<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+								</svg>
+							</div>
+							<div>
+								<p class="text-2xl font-bold text-white">{formatNumber(data.users?.activeSubscribers)}</p>
+								<p class="text-sm text-gray-400">Premium members</p>
+							</div>
+						</div>
+						<button
+							onclick={() => (activeSection = 'premium')}
+							class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-400 transition-colors hover:bg-amber-500/20"
+						>
+							View details
+						</button>
+					</div>
+					<div class="mt-4 flex items-center gap-4 border-t border-white/10 pt-4">
+						<div class="flex-1">
+							<p class="text-xs text-gray-500">Monthly MRR</p>
+							<p class="text-lg font-semibold text-amber-400">{formatCurrency(premiumMetrics().monthlyMRR)}</p>
+						</div>
+						<div class="flex-1">
+							<p class="text-xs text-gray-500">Annual ARR</p>
+							<p class="text-lg font-semibold text-white">{formatCurrency(premiumMetrics().annualARR)}</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- Total Players -->
+				<div class="rounded-xl border border-white/10 bg-gray-900/50 p-5">
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-3">
+							<div class="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500/20">
+								<svg class="h-6 w-6 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+								</svg>
+							</div>
+							<div>
+								<p class="text-2xl font-bold text-white">{formatNumber(data.players?.total)}</p>
+								<p class="text-sm text-gray-400">Registered players</p>
+							</div>
+						</div>
+						<button
+							onclick={() => (activeSection = 'players')}
+							class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-medium text-rose-400 transition-colors hover:bg-rose-500/20"
+						>
+							View details
+						</button>
+					</div>
+					<div class="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-4">
+						{#each (data.players?.byCircuit || []).slice(0, 3) as circuit}
+							<div>
+								<p class="text-xs text-gray-500">{circuit.circuit}</p>
+								<p class="text-sm font-semibold text-white">{formatNumber(circuit.count)}</p>
+							</div>
+						{/each}
+					</div>
 				</div>
 			</div>
 
@@ -466,6 +570,229 @@
 					</div>
 				</div>
 			</div>
+		{/if}
+
+		<!-- Premium Section -->
+		{#if activeSection === 'premium'}
+			<!-- Premium Stats -->
+			<div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+				<div class="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-yellow-500/5 p-5">
+					<p class="text-sm text-amber-300">Active Premium Members</p>
+					<p class="mt-2 text-3xl font-bold text-white">{formatNumber(premiumMetrics().totalActive)}</p>
+					<p class="mt-1 text-xs text-amber-400">{formatNumber(premiumMetrics().activeMonthly)} monthly, {formatNumber(premiumMetrics().activeYearly)} yearly</p>
+				</div>
+				<div class="rounded-xl border border-white/10 bg-gray-900/50 p-5">
+					<p class="text-sm text-gray-400">Monthly Recurring Revenue</p>
+					<p class="mt-2 text-2xl font-bold text-emerald-400">{formatCurrency(premiumMetrics().monthlyMRR)}</p>
+					<p class="mt-1 text-xs text-gray-500">Estimated from active subs</p>
+				</div>
+				<div class="rounded-xl border border-white/10 bg-gray-900/50 p-5">
+					<p class="text-sm text-gray-400">Annual Recurring Revenue</p>
+					<p class="mt-2 text-2xl font-bold text-white">{formatCurrency(premiumMetrics().annualARR)}</p>
+					<p class="mt-1 text-xs text-gray-500">Projected yearly</p>
+				</div>
+				<div class="rounded-xl border border-white/10 bg-gray-900/50 p-5">
+					<p class="text-sm text-gray-400">Churn Rate</p>
+					<p class="mt-2 text-2xl font-bold {parseFloat(premiumMetrics().churnRate) > 10 ? 'text-red-400' : parseFloat(premiumMetrics().churnRate) > 5 ? 'text-yellow-400' : 'text-green-400'}">{premiumMetrics().churnRate}%</p>
+					<p class="mt-1 text-xs text-gray-500">{formatNumber(premiumMetrics().totalCancelled)} cancelled</p>
+				</div>
+			</div>
+
+			<div class="grid gap-6 lg:grid-cols-2">
+				<!-- Subscription Breakdown -->
+				<div class="rounded-xl border border-white/10 bg-gray-900/50 p-6">
+					<h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Subscription Breakdown</h3>
+					<div class="space-y-4">
+						<!-- Monthly Subscriptions -->
+						<div class="rounded-lg border border-white/5 bg-white/5 p-4">
+							<div class="flex items-center justify-between mb-3">
+								<div class="flex items-center gap-3">
+									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20">
+										<svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+										</svg>
+									</div>
+									<div>
+										<p class="font-medium text-white">Monthly Plan</p>
+										<p class="text-xs text-gray-400">$9.99/month</p>
+									</div>
+								</div>
+								<p class="text-lg font-bold text-blue-400">{formatNumber(premiumMetrics().activeMonthly)}</p>
+							</div>
+							<div class="flex gap-4 text-xs">
+								<span class="text-green-400">{formatNumber(premiumMetrics().activeMonthly)} active</span>
+								<span class="text-red-400">{formatNumber(premiumMetrics().cancelledMonthly)} cancelled</span>
+							</div>
+						</div>
+
+						<!-- Yearly Subscriptions -->
+						<div class="rounded-lg border border-white/5 bg-white/5 p-4">
+							<div class="flex items-center justify-between mb-3">
+								<div class="flex items-center gap-3">
+									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20">
+										<svg class="h-5 w-5 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+											<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+										</svg>
+									</div>
+									<div>
+										<p class="font-medium text-white">Yearly Plan</p>
+										<p class="text-xs text-gray-400">$99/year (save 17%)</p>
+									</div>
+								</div>
+								<p class="text-lg font-bold text-amber-400">{formatNumber(premiumMetrics().activeYearly)}</p>
+							</div>
+							<div class="flex gap-4 text-xs">
+								<span class="text-green-400">{formatNumber(premiumMetrics().activeYearly)} active</span>
+								<span class="text-red-400">{formatNumber(premiumMetrics().cancelledYearly)} cancelled</span>
+							</div>
+						</div>
+
+						<!-- Payment Issues -->
+						{#if premiumMetrics().failedPayments > 0}
+							<div class="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+								<div class="flex items-center justify-between">
+									<div class="flex items-center gap-3">
+										<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-red-500/20">
+											<svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+											</svg>
+										</div>
+										<div>
+											<p class="font-medium text-white">Failed Payments</p>
+											<p class="text-xs text-red-400">Needs attention</p>
+										</div>
+									</div>
+									<p class="text-lg font-bold text-red-400">{formatNumber(premiumMetrics().failedPayments)}</p>
+								</div>
+							</div>
+						{/if}
+					</div>
+				</div>
+
+				<!-- Revenue Analysis -->
+				<div class="rounded-xl border border-white/10 bg-gray-900/50 p-6">
+					<h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Revenue Analysis</h3>
+					<div class="space-y-6">
+						<!-- MRR Breakdown -->
+						<div>
+							<p class="mb-3 text-sm font-medium text-gray-300">Monthly Recurring Revenue</p>
+							<div class="space-y-3">
+								<div>
+									<div class="mb-1 flex items-center justify-between">
+										<span class="text-sm text-gray-400">Monthly Plans</span>
+										<span class="text-sm font-medium text-white">{formatCurrency(premiumMetrics().activeMonthly * 9.99)}</span>
+									</div>
+									<div class="h-2 overflow-hidden rounded-full bg-gray-800">
+										<div
+											class="h-full rounded-full bg-blue-500"
+											style="width: {premiumMetrics().monthlyMRR > 0 ? ((premiumMetrics().activeMonthly * 9.99) / premiumMetrics().monthlyMRR) * 100 : 0}%"
+										></div>
+									</div>
+								</div>
+								<div>
+									<div class="mb-1 flex items-center justify-between">
+										<span class="text-sm text-gray-400">Yearly Plans (monthly avg)</span>
+										<span class="text-sm font-medium text-white">{formatCurrency(premiumMetrics().activeYearly * 8.25)}</span>
+									</div>
+									<div class="h-2 overflow-hidden rounded-full bg-gray-800">
+										<div
+											class="h-full rounded-full bg-amber-500"
+											style="width: {premiumMetrics().monthlyMRR > 0 ? ((premiumMetrics().activeYearly * 8.25) / premiumMetrics().monthlyMRR) * 100 : 0}%"
+										></div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Key Metrics -->
+						<div class="border-t border-white/10 pt-4">
+							<p class="mb-3 text-sm font-medium text-gray-300">Key Metrics</p>
+							<div class="grid grid-cols-2 gap-4">
+								<div class="rounded-lg bg-white/5 p-3">
+									<p class="text-xs text-gray-500">Avg Revenue/Member</p>
+									<p class="text-lg font-semibold text-white">
+										{formatCurrency(premiumMetrics().totalActive > 0 ? premiumMetrics().monthlyMRR / premiumMetrics().totalActive : 0)}
+									</p>
+									<p class="text-xs text-gray-500">/month</p>
+								</div>
+								<div class="rounded-lg bg-white/5 p-3">
+									<p class="text-xs text-gray-500">Plan Mix</p>
+									<p class="text-lg font-semibold text-white">
+										{premiumMetrics().totalActive > 0 ? Math.round((premiumMetrics().activeYearly / premiumMetrics().totalActive) * 100) : 0}%
+									</p>
+									<p class="text-xs text-gray-500">yearly subscribers</p>
+								</div>
+							</div>
+						</div>
+
+						<!-- Health Indicator -->
+						<div class="border-t border-white/10 pt-4">
+							<p class="mb-3 text-sm font-medium text-gray-300">Subscription Health</p>
+							<div class="flex items-center gap-4">
+								<div class="flex-1">
+									<div class="flex items-center justify-between mb-1">
+										<span class="text-xs text-gray-500">Active</span>
+										<span class="text-xs text-green-400">{formatNumber(premiumMetrics().totalActive)}</span>
+									</div>
+									<div class="h-3 overflow-hidden rounded-full bg-gray-800">
+										<div
+											class="h-full rounded-full bg-gradient-to-r from-green-600 to-green-400"
+											style="width: {(premiumMetrics().totalActive + premiumMetrics().totalCancelled) > 0 ? (premiumMetrics().totalActive / (premiumMetrics().totalActive + premiumMetrics().totalCancelled)) * 100 : 100}%"
+										></div>
+									</div>
+								</div>
+								<div class="flex-1">
+									<div class="flex items-center justify-between mb-1">
+										<span class="text-xs text-gray-500">Churned</span>
+										<span class="text-xs text-red-400">{formatNumber(premiumMetrics().totalCancelled)}</span>
+									</div>
+									<div class="h-3 overflow-hidden rounded-full bg-gray-800">
+										<div
+											class="h-full rounded-full bg-gradient-to-r from-red-600 to-red-400"
+											style="width: {(premiumMetrics().totalActive + premiumMetrics().totalCancelled) > 0 ? (premiumMetrics().totalCancelled / (premiumMetrics().totalActive + premiumMetrics().totalCancelled)) * 100 : 0}%"
+										></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Full Breakdown Table -->
+			{#if premiumMetrics().breakdown.length > 0}
+				<div class="mt-6 rounded-xl border border-white/10 bg-gray-900/50 p-6">
+					<h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">Full Status Breakdown</h3>
+					<div class="overflow-x-auto">
+						<table class="w-full">
+							<thead>
+								<tr class="border-b border-gray-800">
+									<th class="pb-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Plan Type</th>
+									<th class="pb-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+									<th class="pb-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Count</th>
+								</tr>
+							</thead>
+							<tbody class="divide-y divide-gray-800">
+								{#each premiumMetrics().breakdown as sub}
+									<tr>
+										<td class="py-3 text-sm capitalize text-white">{sub.type || 'Unknown'}</td>
+										<td class="py-3">
+											<span class="rounded-full px-2 py-1 text-xs font-medium capitalize
+												{sub.status === 'active' ? 'bg-green-500/20 text-green-400' :
+												sub.status === 'cancelled' ? 'bg-red-500/20 text-red-400' :
+												sub.status === 'payment_failed' ? 'bg-yellow-500/20 text-yellow-400' :
+												'bg-gray-500/20 text-gray-400'}">
+												{sub.status?.replace('_', ' ') || 'unknown'}
+											</span>
+										</td>
+										<td class="py-3 text-right text-sm font-medium text-white">{formatNumber(sub.count)}</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			{/if}
 		{/if}
 
 		<!-- Events Section -->

@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
-import { seasonStanding, eventMatch, eventDecklist, event } from '$lib/server/db/schema';
-import { eq, desc, or, asc } from 'drizzle-orm';
+import { standing, match, decklist, event } from '$lib/server/db/schema';
+import { eq, desc, or, asc, inArray } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import { calculatePercentile, calculateRankPercentile } from '$lib/age-rating.js';
 
@@ -69,9 +69,9 @@ export async function load({ params, locals }) {
 	// Get all standings for this GEM ID - this is now the single source of truth
 	const standings = await db
 		.select()
-		.from(seasonStanding)
-		.where(eq(seasonStanding.gemId, gemId))
-		.orderBy(desc(seasonStanding.season), seasonStanding.circuit);
+		.from(standing)
+		.where(eq(standing.gemId, gemId))
+		.orderBy(desc(standing.season), standing.circuit);
 
 	if (!standings.length) {
 		throw error(404, 'Player not found');
@@ -81,7 +81,7 @@ export async function load({ params, locals }) {
 	const isAdmin = locals.user?.role === 'admin';
 
 	// === FETCH ALL STANDINGS ONCE (for rank calculation and percentiles) ===
-	const allStandings = await db.select().from(seasonStanding);
+	const allStandings = await db.select().from(standing);
 
 	// Group standings by circuit/season for efficient rank lookup
 	const standingsByCircuitSeason = new Map();
@@ -122,6 +122,9 @@ export async function load({ params, locals }) {
 
 	// Display name comes from the most recent season's standings (first in array since sorted desc)
 	const displayName = standingsWithRank[0]?.playerName || 'Unknown Player';
+
+	// Collect ALL player names from ALL standings for this player (handles name changes across seasons)
+	const allPlayerNames = [...new Set(standings.map(s => s.playerName).filter(Boolean))];
 
 	// Group by gemId to get aggregate stats per player
 	// Also build cache for derived stats to avoid redundant calculations
@@ -215,17 +218,20 @@ export async function load({ params, locals }) {
 	};
 
 	// === MATCH HISTORY ===
-	// Query all matches for this player (now using year, circuit, month directly on eventMatch)
+	// Query all matches for this player by GEM ID or ANY player name from their standings
+	// This handles name changes across seasons and legacy matches without GEM IDs
 	const playerMatchesRaw = await db
 		.select()
-		.from(eventMatch)
+		.from(match)
 		.where(
 			or(
-				eq(eventMatch.player1GemId, gemId),
-				eq(eventMatch.player2GemId, gemId)
+				eq(match.player1GemId, gemId),
+				eq(match.player2GemId, gemId),
+				inArray(match.player1Name, allPlayerNames),
+				inArray(match.player2Name, allPlayerNames)
 			)
 		)
-		.orderBy(desc(eventMatch.year), asc(eventMatch.round));
+		.orderBy(desc(match.year), asc(match.round));
 
 	// Transform to match expected format
 	const playerMatches = playerMatchesRaw.map(match => ({
@@ -242,7 +248,8 @@ export async function load({ params, locals }) {
 	const headToHeadMap = new Map();
 
 	for (const { match, event: eventData } of playerMatches) {
-		const isPlayer1 = match.player1GemId === gemId;
+		// Check if this player is player1 (by GEM ID or any of their known names)
+		const isPlayer1 = match.player1GemId === gemId || allPlayerNames.includes(match.player1Name);
 		const opponentGemId = isPlayer1 ? match.player2GemId : match.player1GemId;
 		const opponentName = isPlayer1 ? match.player2Name : match.player1Name;
 		const won = (isPlayer1 && match.winner === 'player1') ||
@@ -312,7 +319,7 @@ export async function load({ params, locals }) {
 	// For longest streak, iterate chronologically (reversed since matches are sorted desc)
 	const chronologicalMatches = [...playerMatches].reverse();
 	for (const { match } of chronologicalMatches) {
-		const isPlayer1 = match.player1GemId === gemId;
+		const isPlayer1 = match.player1GemId === gemId || allPlayerNames.includes(match.player1Name);
 		const won = (isPlayer1 && match.winner === 'player1') ||
 			(!isPlayer1 && match.winner === 'player2');
 
@@ -326,7 +333,7 @@ export async function load({ params, locals }) {
 
 	// Current streak (from most recent match backwards)
 	for (const { match } of playerMatches) {
-		const isPlayer1 = match.player1GemId === gemId;
+		const isPlayer1 = match.player1GemId === gemId || allPlayerNames.includes(match.player1Name);
 		const won = (isPlayer1 && match.winner === 'player1') ||
 			(!isPlayer1 && match.winner === 'player2');
 
@@ -367,7 +374,7 @@ export async function load({ params, locals }) {
 	// Query decklists for this player with event join (single query, no N+1)
 	const decklistsWithEvents = await db
 		.select({
-			decklist: eventDecklist,
+			decklist: decklist,
 			event: {
 				id: event.id,
 				title: event.title,
@@ -377,9 +384,9 @@ export async function load({ params, locals }) {
 				format: event.format
 			}
 		})
-		.from(eventDecklist)
-		.leftJoin(event, eq(eventDecklist.eventId, event.id))
-		.where(eq(eventDecklist.gemId, gemId));
+		.from(decklist)
+		.leftJoin(event, eq(decklist.eventId, event.id))
+		.where(eq(decklist.gemId, gemId));
 
 	// Transform to expected format
 	const playerDecklists = decklistsWithEvents.map(row => ({
@@ -458,8 +465,8 @@ export const actions = {
 			if (field === 'gemId') {
 				const [currentStanding] = await db
 					.select()
-					.from(seasonStanding)
-					.where(eq(seasonStanding.id, standingId));
+					.from(standing)
+					.where(eq(standing.id, standingId));
 
 				if (!currentStanding) {
 					return fail(404, { error: 'Standing not found' });
@@ -469,15 +476,15 @@ export const actions = {
 				if (oldGemId) {
 					// Update ALL standings with the old gemId to the new gemId
 					await db
-						.update(seasonStanding)
+						.update(standing)
 						.set({ gemId: parsedValue, updatedAt: new Date() })
-						.where(eq(seasonStanding.gemId, oldGemId));
+						.where(eq(standing.gemId, oldGemId));
 				} else {
 					// No old gemId, just update this standing
 					await db
-						.update(seasonStanding)
+						.update(standing)
 						.set({ gemId: parsedValue, updatedAt: new Date() })
-						.where(eq(seasonStanding.id, standingId));
+						.where(eq(standing.id, standingId));
 				}
 
 				return { success: true, message: 'GEM ID updated across all seasons' };
@@ -487,33 +494,33 @@ export const actions = {
 			if (field === 'playerName') {
 				const [currentStanding] = await db
 					.select()
-					.from(seasonStanding)
-					.where(eq(seasonStanding.id, standingId));
+					.from(standing)
+					.where(eq(standing.id, standingId));
 
 				if (!currentStanding || !currentStanding.gemId) {
 					// No gemId, just update this standing directly
 					await db
-						.update(seasonStanding)
+						.update(standing)
 						.set({ playerName: parsedValue, updatedAt: new Date() })
-						.where(eq(seasonStanding.id, standingId));
+						.where(eq(standing.id, standingId));
 					return { success: true };
 				}
 
 				// Get all standings for this gemId, sorted by season desc
 				const playerStandings = await db
 					.select()
-					.from(seasonStanding)
-					.where(eq(seasonStanding.gemId, currentStanding.gemId))
-					.orderBy(desc(seasonStanding.season));
+					.from(standing)
+					.where(eq(standing.gemId, currentStanding.gemId))
+					.orderBy(desc(standing.season));
 
 				const mostRecentStandingId = playerStandings[0]?.id;
 
 				// Only update if this IS the most recent season
 				if (standingId === mostRecentStandingId) {
 					await db
-						.update(seasonStanding)
+						.update(standing)
 						.set({ playerName: parsedValue, updatedAt: new Date() })
-						.where(eq(seasonStanding.id, standingId));
+						.where(eq(standing.id, standingId));
 					return { success: true };
 				} else {
 					return fail(400, {
@@ -524,17 +531,17 @@ export const actions = {
 
 			// Standard field update
 			await db
-				.update(seasonStanding)
+				.update(standing)
 				.set({ [field]: parsedValue, updatedAt: new Date() })
-				.where(eq(seasonStanding.id, standingId));
+				.where(eq(standing.id, standingId));
 
 			// If a monthly field was updated, recalculate all aggregate fields
 			if (isMonthlyField) {
 				// Fetch the current standing to get all monthly values
 				const [standing] = await db
 					.select()
-					.from(seasonStanding)
-					.where(eq(seasonStanding.id, standingId));
+					.from(standing)
+					.where(eq(standing.id, standingId));
 
 				if (standing) {
 					// Calculate total points from monthly points
@@ -568,7 +575,7 @@ export const actions = {
 
 					// Update aggregate fields (eventsPlayed and top8Finishes are calculated dynamically)
 					await db
-						.update(seasonStanding)
+						.update(standing)
 						.set({
 							totalPoints,
 							matchesWon,
@@ -576,7 +583,7 @@ export const actions = {
 							winPercentage,
 							updatedAt: new Date()
 						})
-						.where(eq(seasonStanding.id, standingId));
+						.where(eq(standing.id, standingId));
 				}
 			}
 
@@ -602,7 +609,7 @@ export const actions = {
 		}
 
 		try {
-			await db.insert(seasonStanding).values({
+			await db.insert(standing).values({
 				season,
 				circuit,
 				playerName,
@@ -635,7 +642,7 @@ export const actions = {
 		}
 
 		try {
-			await db.delete(seasonStanding).where(eq(seasonStanding.id, standingId));
+			await db.delete(standing).where(eq(standing.id, standingId));
 			return { success: true };
 		} catch (err) {
 			console.error('Failed to delete standing:', err);

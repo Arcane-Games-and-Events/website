@@ -1,9 +1,56 @@
 <script>
 	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { onMount, onDestroy } from 'svelte';
 
 	export let data;
+
+	// Refresh state for standings
+	let isRefreshing = false;
+	let lastRefresh = null;
+	let autoRefreshInterval = null;
+
+	// Check if there are any in-progress events
+	$: hasLiveEvents = (data.eventResults || []).some(e => e.event.status === 'in_progress');
+
+	// Auto-refresh for live events when on archive tab
+	$: if (browser && activeTab === 'results' && hasLiveEvents) {
+		startAutoRefresh();
+	} else {
+		stopAutoRefresh();
+	}
+
+	function startAutoRefresh() {
+		if (autoRefreshInterval) return;
+		// Refresh every 30 seconds for live events
+		autoRefreshInterval = setInterval(() => {
+			refreshStandings();
+		}, 30000);
+	}
+
+	function stopAutoRefresh() {
+		if (autoRefreshInterval) {
+			clearInterval(autoRefreshInterval);
+			autoRefreshInterval = null;
+		}
+	}
+
+	onDestroy(() => {
+		stopAutoRefresh();
+	});
+
+	// Refresh standings data
+	async function refreshStandings() {
+		if (isRefreshing) return;
+		isRefreshing = true;
+		try {
+			await invalidateAll();
+			lastRefresh = new Date();
+		} finally {
+			isRefreshing = false;
+		}
+	}
 
 	const tabs = [
 		{ id: 'overview', name: 'Overview', icon: 'home' },
@@ -121,7 +168,7 @@
 
 	// Get LSS seasons for a specific date
 	function getSeasonsForDate(date) {
-		return (data.lssSeasons || []).filter(season => {
+		return (data.lssEvents || []).filter(season => {
 			const start = new Date(season.startDate);
 			const end = new Date(season.endDate);
 			return date >= start && date <= end;
@@ -144,7 +191,7 @@
 
 	// Get season bars for a week row (returns array of {season, startCol, span, isStart, isEnd})
 	function getSeasonBarsForWeek(weekDays, seasonIndex) {
-		const seasons = data.lssSeasons || [];
+		const seasons = data.lssEvents || [];
 		if (seasonIndex >= seasons.length) return [];
 
 		const season = seasons[seasonIndex];
@@ -796,8 +843,11 @@
 	$: stlCount = stlEvents.length;
 	$: neCount = neEvents.length;
 
-	// All upcoming events sorted by date
-	$: upcomingEvents = (data.events || []).filter((e) => new Date(e.eventDate) >= new Date());
+	// All upcoming events sorted by date (exclude completed/cancelled events)
+	$: upcomingEvents = (data.events || []).filter((e) =>
+		new Date(e.eventDate) >= new Date() &&
+		(!e.status || e.status === 'upcoming')
+	);
 
 	// Circuit slots configuration (8 guaranteed opens per circuit)
 	const SLOTS_PER_CIRCUIT = 8;
@@ -969,7 +1019,7 @@
 	<!-- Tab Navigation -->
 	<nav class="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-			<div class="relative py-3">
+			<div class="relative py-3 pb-4 lg:pb-3">
 				<!-- Visible pill container for tabs - full width on desktop -->
 				<div class="inline-flex lg:flex rounded-xl bg-gray-800/80 p-1.5 overflow-x-auto scrollbar-hide max-w-full">
 					{#each tabs as tab}
@@ -2109,7 +2159,7 @@
 							<div class="relative">
 								<!-- Season bars layer -->
 								<div class="absolute inset-0 pointer-events-none" style="z-index: 10;">
-									{#each (data.lssSeasons || []) as season, seasonIndex}
+									{#each (data.lssEvents || []) as season, seasonIndex}
 										{@const bar = getSeasonBarsForWeek(week, seasonIndex)}
 										{#if bar}
 											{@const colors = getSeasonColor(seasonIndex)}
@@ -2286,7 +2336,7 @@
 				</div>
 
 				<!-- LSS Events Section - Minimalistic with subtle accent -->
-				{#if data.lssSeasons && data.lssSeasons.length > 0}
+				{#if data.lssEvents && data.lssEvents.length > 0}
 					<div class="mt-8 rounded-lg border border-amber-500/20 bg-gradient-to-r from-amber-950/20 to-transparent p-3 sm:p-4">
 						<div class="flex items-center gap-2 mb-3">
 							<svg class="h-4 w-4 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -2296,7 +2346,7 @@
 							<div class="flex-1 h-px bg-amber-500/20"></div>
 						</div>
 						<div class="space-y-1">
-							{#each data.lssSeasons as season}
+							{#each data.lssEvents as season}
 								{@const startDate = new Date(season.startDate)}
 								{@const endDate = new Date(season.endDate)}
 								{@const now = new Date()}
@@ -2479,32 +2529,78 @@
 						Showing {filteredDecklists.length} decklist{filteredDecklists.length !== 1 ? 's' : ''}
 					</div>
 
-					<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-						{#each filteredDecklists as decklist}
-							<a href="/age-open/{decklist.eventId}/decklist/{decklist.id}" class="group block rounded-lg border border-gray-800 bg-gray-900 p-6 hover:border-gray-700 transition-colors">
-								<div class="flex items-start justify-between mb-3">
-									<div>
-										<h3 class="font-semibold text-white group-hover:text-blue-400 transition-colors">{decklist.playerName}</h3>
-										{#if decklist.hero}
-											<p class="text-sm text-blue-400">{decklist.hero}</p>
-										{/if}
-									</div>
-									{#if decklist.circuit}
-										{@const colors = getCircuitColor(decklist.circuit)}
-										<span class="rounded-full {colors.bg} px-2 py-0.5 text-xs font-medium text-white">
-											{decklist.circuit}
-										</span>
-									{/if}
-								</div>
-								{#if decklist.deckName}
-									<p class="text-sm text-gray-300 mb-2">{decklist.deckName}</p>
-								{/if}
-								<div class="flex items-center justify-between text-xs text-gray-500">
-									<span>{decklist.eventTitle}</span>
-									<span>{decklist.cards?.length || 0} cards</span>
-								</div>
-							</a>
-						{/each}
+					<!-- Decklists Table -->
+					<div class="overflow-x-auto rounded-lg border border-gray-800">
+						<table class="w-full">
+							<thead class="bg-gray-900/80">
+								<tr class="border-b border-gray-800">
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Player</th>
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Hero</th>
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400 hidden sm:table-cell">Month</th>
+									<th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400 hidden md:table-cell">Circuit</th>
+									<th class="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-400">Place</th>
+									<th class="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-400 hidden sm:table-cell">Format</th>
+									<th class="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-400"></th>
+								</tr>
+							</thead>
+							<tbody class="divide-y divide-gray-800 bg-gray-900/50">
+								{#each filteredDecklists as decklist}
+									<tr class="hover:bg-gray-800/50 transition-colors">
+										<td class="px-4 py-3">
+											<span class="font-medium text-white">{decklist.playerName}</span>
+										</td>
+										<td class="px-4 py-3">
+											{#if decklist.hero}
+												<span class="text-blue-400">{decklist.hero}</span>
+											{:else}
+												<span class="text-gray-500">—</span>
+											{/if}
+										</td>
+										<td class="px-4 py-3 hidden sm:table-cell">
+											<span class="text-sm text-gray-300">{decklist.month || '—'}</span>
+										</td>
+										<td class="px-4 py-3 hidden md:table-cell">
+											{#if decklist.circuit}
+												{@const colors = getCircuitColor(decklist.circuit)}
+												<span class="rounded-full {colors.bg} px-2 py-0.5 text-xs font-medium text-white">
+													{decklist.circuit}
+												</span>
+											{:else}
+												<span class="text-gray-500">—</span>
+											{/if}
+										</td>
+										<td class="px-4 py-3 text-center">
+											{#if decklist.placement}
+												<span class="inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold
+													{decklist.placement === 1 ? 'bg-amber-500/20 text-amber-400' :
+													decklist.placement === 2 ? 'bg-gray-400/20 text-gray-300' :
+													decklist.placement === 3 ? 'bg-orange-600/20 text-orange-400' :
+													decklist.placement <= 8 ? 'bg-blue-500/20 text-blue-400' :
+													'bg-gray-700/50 text-gray-400'}">
+													{decklist.placement}
+												</span>
+											{:else}
+												<span class="text-gray-500">—</span>
+											{/if}
+										</td>
+										<td class="px-4 py-3 text-center hidden sm:table-cell">
+											<span class="text-sm text-gray-400">{decklist.format || '—'}</span>
+										</td>
+										<td class="px-4 py-3 text-right">
+											<a
+												href="/age-open/{decklist.eventId}/decklist/{decklist.id}"
+												class="inline-flex items-center gap-1 rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 hover:bg-blue-500/20 transition-colors"
+											>
+												View
+												<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+												</svg>
+											</a>
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
 					</div>
 				{/if}
 			</div>
@@ -2513,11 +2609,29 @@
 		<!-- Standings Tab -->
 		{#if activeTab === 'standings'}
 			<div class="space-y-4 md:space-y-6">
-				<div>
-					<h2 class="mb-1 md:mb-2 text-2xl md:text-3xl font-bold text-white">Circuit Standings</h2>
-					<p class="text-sm md:text-base text-gray-400">
-						Track player performance across AGE Open Series seasons
-					</p>
+				<div class="flex items-start justify-between">
+					<div>
+						<h2 class="mb-1 md:mb-2 text-2xl md:text-3xl font-bold text-white">Circuit Standings</h2>
+						<p class="text-sm md:text-base text-gray-400">
+							Track player performance across AGE Open Series seasons
+						</p>
+					</div>
+					<button
+						onclick={refreshStandings}
+						disabled={isRefreshing}
+						class="flex items-center gap-1.5 rounded-lg bg-gray-800/80 border border-gray-700 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors disabled:opacity-50"
+						title="Refresh standings"
+					>
+						<svg
+							class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+						</svg>
+						<span class="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+					</button>
 				</div>
 
 				<!-- Mobile Filters Card -->
@@ -3155,12 +3269,32 @@
 			</div>
 		{/if}
 
-		<!-- Results Tab -->
+		<!-- Tournament Archive Tab -->
 		{#if activeTab === 'results'}
 			<div class="space-y-8">
-				<div>
-					<h2 class="mb-2 text-3xl font-bold text-white">Event Results</h2>
-					<p class="text-gray-400">View standings and results from completed AGE Open Series events</p>
+				<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+					<div>
+						<h2 class="mb-2 text-3xl font-bold text-white">Tournament Archive</h2>
+						<p class="text-gray-400">Live standings from in-progress events and results from completed tournaments</p>
+					</div>
+					<div class="flex items-center gap-3">
+						{#if hasLiveEvents}
+							<span class="inline-flex items-center gap-2 rounded-full bg-blue-500/20 px-3 py-1 text-sm font-medium text-blue-400">
+								<span class="h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
+								Auto-refreshing
+							</span>
+						{/if}
+						<button
+							onclick={refreshStandings}
+							disabled={isRefreshing}
+							class="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700 disabled:opacity-50"
+						>
+							<svg class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+							</svg>
+							{isRefreshing ? 'Refreshing...' : 'Refresh'}
+						</button>
+					</div>
 				</div>
 
 				{#if (data.eventResults || []).length === 0}
@@ -3174,92 +3308,102 @@
 						<p class="text-gray-400">Results from completed events will appear here.</p>
 					</div>
 				{:else}
-					{#each data.eventResults as eventData}
-						<div class="rounded-lg border border-gray-800 bg-gray-900 overflow-hidden">
-							<!-- Event Header -->
-							<div class="bg-gray-800 p-6">
-								<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-									<div>
-										<h3 class="text-xl font-bold text-white">{eventData.event.title}</h3>
-										<div class="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-400">
-											{#if eventData.event.eventDate}
-												<span>{formatDate(eventData.event.eventDate)}</span>
-											{/if}
-											{#if eventData.event.location}
-												<span>• {eventData.event.location}</span>
-											{/if}
-										</div>
-									</div>
-									<div class="flex flex-wrap gap-2">
-										{#if eventData.event.format}
-											<span class="rounded-full bg-gray-700 px-3 py-1 text-sm font-medium text-gray-200">
-												{eventData.event.format}
-											</span>
-										{/if}
-										{#if eventData.event.circuit}
-											{@const colors = getCircuitColor(eventData.event.circuit)}
-											<span class="rounded-full {colors.bg} px-3 py-1 text-sm font-medium text-white">
-												{eventData.event.circuit}
-											</span>
-										{/if}
-									</div>
-								</div>
-							</div>
-
-							<!-- Results Table -->
-							<div class="overflow-x-auto">
-								<table class="w-full">
-									<thead class="bg-gray-850">
-										<tr class="border-b border-gray-700">
-											<th class="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Place</th>
-											<th class="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Player</th>
-											<th class="px-6 py-3 text-center text-xs font-semibold text-gray-400 uppercase">Record</th>
-											<th class="px-6 py-3 text-center text-xs font-semibold text-gray-400 uppercase">AGE Pts</th>
-											<th class="px-6 py-3 text-center text-xs font-semibold text-gray-400 uppercase">Prize</th>
-										</tr>
-									</thead>
-									<tbody class="divide-y divide-gray-800">
-										{#each eventData.results.slice(0, 8) as result}
-											<tr class="hover:bg-gray-800/50 {result.placement <= 3 ? 'bg-gray-800/30' : ''}">
-												<td class="px-6 py-4">
-													<span class="inline-flex items-center justify-center w-8 h-8 rounded-full {result.placement === 1 ? 'bg-yellow-500/20 text-yellow-400' : result.placement === 2 ? 'bg-gray-400/20 text-gray-300' : result.placement === 3 ? 'bg-amber-600/20 text-amber-500' : 'bg-gray-800 text-gray-400'} font-bold text-sm">
-														{result.placement}
+					<div class="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
+						<div class="overflow-x-auto">
+							<table class="w-full">
+								<thead>
+									<tr class="border-b border-gray-700 bg-gray-800">
+										<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Event</th>
+										<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Date</th>
+										<th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-400">Circuit</th>
+										<th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-400">Format</th>
+										<th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-400">Players</th>
+										<th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-400">Winner</th>
+										<th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-400">Status</th>
+										<th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-400"></th>
+									</tr>
+								</thead>
+								<tbody class="divide-y divide-gray-800">
+									{#each data.eventResults as eventData}
+										{@const winner = eventData.results.find(r => r.placement === 1)}
+										{@const colors = getCircuitColor(eventData.event.circuit)}
+										<tr class="hover:bg-gray-800/50 transition-colors">
+											<td class="px-6 py-4">
+												<span class="font-medium text-white">{eventData.event.title}</span>
+												{#if eventData.event.location}
+													<p class="text-xs text-gray-500 mt-0.5">{eventData.event.location}</p>
+												{/if}
+											</td>
+											<td class="px-6 py-4 text-sm text-gray-300 whitespace-nowrap">
+												{#if eventData.event.eventDate}
+													{formatDate(eventData.event.eventDate)}
+												{:else}
+													<span class="text-gray-500">-</span>
+												{/if}
+											</td>
+											<td class="px-6 py-4 text-center">
+												{#if eventData.event.circuit}
+													<span class="rounded-full {colors.bg} px-3 py-1 text-xs font-medium text-white">
+														{eventData.event.circuit}
 													</span>
-												</td>
-												<td class="px-6 py-4">
-													<div class="font-medium text-white">{result.playerName}</div>
-													{#if result.gemId}
-														<div class="text-xs text-gray-500">{result.gemId}</div>
-													{/if}
-												</td>
-												<td class="px-6 py-4 text-center text-gray-300">
-													{result.wins}-{result.losses}{result.draws > 0 ? `-${result.draws}` : ''}
-												</td>
-												<td class="px-6 py-4 text-center">
-													<span class="font-medium text-blue-400">{result.agePoints || 0}</span>
-												</td>
-												<td class="px-6 py-4 text-center">
-													{#if result.prizeAmount}
-														<span class="font-medium text-green-400">${result.prizeAmount}</span>
-													{:else}
-														<span class="text-gray-500">-</span>
-													{/if}
-												</td>
-											</tr>
-										{/each}
-									</tbody>
-								</table>
-							</div>
-
-							{#if eventData.results.length > 8}
-								<div class="px-6 py-3 bg-gray-800/50 text-center">
-									<a href="/age-open/{eventData.event.id}/results" class="text-sm font-medium text-blue-400 hover:text-blue-300">
-										View all {eventData.results.length} results →
-									</a>
-								</div>
-							{/if}
+												{:else}
+													<span class="text-gray-500">-</span>
+												{/if}
+											</td>
+											<td class="px-6 py-4 text-center">
+												{#if eventData.event.format}
+													<span class="rounded-full bg-gray-700 px-3 py-1 text-xs font-medium text-gray-200">
+														{eventData.event.format}
+													</span>
+												{:else}
+													<span class="text-gray-500">-</span>
+												{/if}
+											</td>
+											<td class="px-6 py-4 text-center text-sm text-gray-300">
+												{eventData.results.length}
+											</td>
+											<td class="px-6 py-4 text-center">
+												{#if winner}
+													<div class="flex items-center justify-center gap-2">
+														<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-yellow-500/20 text-yellow-400">
+															<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+																<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+															</svg>
+														</span>
+														<span class="text-sm font-medium text-white">{winner.playerName}</span>
+													</div>
+												{:else}
+													<span class="text-gray-500">-</span>
+												{/if}
+											</td>
+											<td class="px-6 py-4 text-center">
+												{#if eventData.event.status === 'in_progress'}
+													<span class="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-medium text-blue-400 animate-pulse">
+														LIVE
+													</span>
+												{:else}
+													<span class="rounded-full bg-green-500/20 px-3 py-1 text-xs font-medium text-green-400">
+														Completed
+													</span>
+												{/if}
+											</td>
+											<td class="px-6 py-4 text-right">
+												<a
+													href="/age-open/{eventData.event.id}/results"
+													class="inline-flex items-center gap-1.5 rounded-lg bg-blue-500/10 px-3 py-1.5 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/20"
+												>
+													View Results
+													<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+													</svg>
+												</a>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
 						</div>
-					{/each}
+					</div>
 				{/if}
 			</div>
 		{/if}
