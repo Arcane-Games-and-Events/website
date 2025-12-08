@@ -149,6 +149,12 @@
 		}
 	}
 
+	function handleKeydown(event) {
+		if (event.key === 'Escape' && modalVisible) {
+			closeModal();
+		}
+	}
+
 	function handleImageLoad() {
 		imageLoaded = true;
 	}
@@ -256,9 +262,11 @@
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
 		on:click={handleBackdropClick}
+		on:keydown={handleKeydown}
 		role="dialog"
 		aria-modal="true"
 		aria-label="Card preview"
+		tabindex="-1"
 	>
 		<div class="relative w-full max-w-sm">
 			<!-- Close Button -->
