@@ -8,7 +8,7 @@
 		{ id: 'users', name: 'Users', icon: 'user', href: '/admin?tab=users', color: 'purple' },
 		{ id: 'events', name: 'Events', icon: 'ticket', href: '/admin?tab=events', color: 'cyan' },
 		{ id: 'players', name: 'Standings', icon: 'trophy', href: '/admin?tab=players', color: 'rose' },
-		{ id: 'seasons', name: 'Calendar', icon: 'calendar-days', href: '/admin?tab=seasons', color: 'amber' },
+		{ id: 'calendar', name: 'Calendar', icon: 'calendar-days', href: '/admin?tab=calendar', color: 'amber' },
 		{ id: 'import-matches', name: 'Import Matches', icon: 'upload', href: '/admin/import-matches', color: 'teal' }
 	];
 

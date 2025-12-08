@@ -11,7 +11,7 @@
 	<!-- Background with circuit-style imagery -->
 	<div class="absolute inset-0">
 		<img
-			src="/images/circuits/new-england.jpg"
+			src="/images/circuits/new-england.webp"
 			alt=""
 			class="w-full h-full object-cover opacity-30"
 		/>

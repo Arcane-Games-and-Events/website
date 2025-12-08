@@ -1,11 +1,13 @@
 <script>
+	import { getCircuitNames } from '$lib/data/circuits.js';
+
 	export let form;
 
 	// Checkbox state variables
 	let gemIdRequired = false;
 	let premiumDiscount = false;
 
-	const circuits = ['Los Angeles', 'St. Louis', 'New England'];
+	const circuits = getCircuitNames();
 
 	const months = [
 		'January',

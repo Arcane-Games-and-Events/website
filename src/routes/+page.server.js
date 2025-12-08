@@ -1,7 +1,7 @@
 import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow } from '$lib/server/articles/access.js';
 import { db } from '$lib/server/db/index.js';
-import { event, standing } from '$lib/server/db/schema.js';
+import { event, standing, decklist } from '$lib/server/db/schema.js';
 import { asc, gte, desc, and, or, eq, isNull } from 'drizzle-orm';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 
@@ -209,6 +209,40 @@ export async function load({ setHeaders, url, locals }) {
 			uniquePlayers.add(standing.gemId || standing.playerName);
 		}
 
+		// Fetch featured decklists (last 3 winning decklists) with Redis caching
+		const featuredDecklists = await withTimeout(
+			getCachedOrFetch(
+				`${CACHE_KEYS.DECKLISTS || 'decklists'}:featured:3`,
+				async () => {
+					const decklists = await db
+						.select({
+							id: decklist.id,
+							playerName: decklist.playerName,
+							gemId: decklist.gemId,
+							hero: decklist.hero,
+							format: decklist.format,
+							placement: decklist.placement,
+							createdAt: decklist.createdAt,
+							eventId: decklist.eventId,
+							eventName: event.title,
+							eventCircuit: event.circuit
+						})
+						.from(decklist)
+						.leftJoin(event, eq(decklist.eventId, event.id))
+						.where(and(
+							eq(decklist.placement, 1),
+							eq(decklist.isPublic, true)
+						))
+						.orderBy(desc(decklist.createdAt))
+						.limit(3);
+					return decklists;
+				},
+				CACHE_TTL.MEDIUM // 5 minutes for decklists
+			),
+			10000, // 10 second timeout
+			[] // fallback to empty array
+		);
+
 		// IMPORTANT: Only use public caching for anonymous users
 		// Logged-in users must get private responses to prevent user data leaking between sessions
 		if (locals.user) {
@@ -246,7 +280,8 @@ export async function load({ setHeaders, url, locals }) {
 				totalPlayers: uniquePlayers.size,
 				totalEvents: 24, // Total AGE Open events
 				prizePool: 30000 // 2026 prize pool
-			}
+			},
+			featuredDecklists
 		};
 	} catch (error) {
 		console.error('Error fetching data for homepage:', error);
@@ -268,7 +303,8 @@ export async function load({ setHeaders, url, locals }) {
 				totalPlayers: 0,
 				totalEvents: 24,
 				prizePool: 30000
-			}
+			},
+			featuredDecklists: []
 		};
 	}
 }

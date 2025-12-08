@@ -1,40 +1,15 @@
 <script>
 	import PaymentForm from '$lib/components/PaymentForm.svelte';
+	import { getCircuit, DEFAULT_CIRCUIT } from '$lib/data/circuits.js';
 
 	export let data;
 
-	// Circuit colors and images
-	const circuitStyles = {
-		'Los Angeles': {
-			bg: 'bg-blue-500',
-			text: 'text-blue-400',
-			bgLight: 'bg-blue-500/10',
-			border: 'border-blue-500/30',
-			image: '/images/circuits/los-angeles.jpg'
-		},
-		'St. Louis': {
-			bg: 'bg-green-500',
-			text: 'text-green-400',
-			bgLight: 'bg-green-500/10',
-			border: 'border-green-500/30',
-			image: '/images/circuits/st-louis.jpg'
-		},
-		'New England': {
-			bg: 'bg-purple-500',
-			text: 'text-purple-400',
-			bgLight: 'bg-purple-500/10',
-			border: 'border-purple-500/30',
-			image: '/images/circuits/new-england.jpg'
-		}
-	};
-
+	// Get circuit config with colors and image
 	function getCircuitConfig(circuit) {
-		return circuitStyles[circuit] || {
-			bg: 'bg-gray-500',
-			text: 'text-gray-400',
-			bgLight: 'bg-gray-500/10',
-			border: 'border-gray-500/30',
-			image: '/images/circuits/default.jpg'
+		const config = getCircuit(circuit);
+		return {
+			...config.colors,
+			image: config.image
 		};
 	}
 

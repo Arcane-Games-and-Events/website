@@ -161,11 +161,8 @@ export async function load({ url, setHeaders }) {
 		}
 
 		// Get active/completed events with results for the Tournament Archive tab
-		// Include both in_progress and completed events, but only from 2026 onwards
-		const cutoffDate = new Date('2026-01-01');
 		const archiveEvents = events.filter((e) =>
-			(e.status === 'completed' || e.status === 'in_progress') &&
-			e.eventDate && new Date(e.eventDate) >= cutoffDate
+			(e.status === 'completed' || e.status === 'in_progress') && e.eventDate
 		);
 
 		// Group event matches by eventId
@@ -456,11 +453,12 @@ export async function load({ url, setHeaders }) {
 			return new Date(b.event.eventDate) - new Date(a.event.eventDate);
 		});
 
-		// Filter events to only show upcoming ones
+		// Filter events to only show upcoming ones for the events list
 		const upcomingEvents = events.filter(e => e.status === 'upcoming');
 
 		return {
 			events: upcomingEvents,
+			allEvents: events, // All events for circuit tracker
 			archiveEvents,
 			eventResults: sortedResults,
 			standings,
@@ -476,6 +474,7 @@ export async function load({ url, setHeaders }) {
 		console.error('Error loading AGE Open data:', error);
 		return {
 			events: [],
+			allEvents: [],
 			archiveEvents: [],
 			eventResults: [],
 			standings: [],

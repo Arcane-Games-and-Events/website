@@ -3,6 +3,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import heroes from '$lib/data/heroes.json';
 	import { parseGemDecklist, toStorageFormat, fromStorageFormat, getPlacementSuffix } from '$lib/utils/gem-decklist-parser.js';
+	import { getCircuitNames } from '$lib/data/circuits.js';
 
 	let { data, form } = $props();
 
@@ -104,7 +105,7 @@
 		}
 	}
 
-	const circuits = ['Los Angeles', 'St. Louis', 'New England'];
+	const circuits = getCircuitNames();
 	const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 	const formats = ['Classic Constructed', 'Draft', 'Silver Age', 'Blitz', 'Living Legend', 'Sealed'];
 

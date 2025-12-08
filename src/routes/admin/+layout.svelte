@@ -40,7 +40,7 @@
 			case 'staff': return 'Staff';
 			case 'users': return 'Users';
 			case 'players': return 'Standings';
-			case 'seasons': return 'Calendar';
+			case 'calendar': return 'Calendar';
 			case 'import-matches': return 'Import Matches';
 			default: return 'Admin';
 		}

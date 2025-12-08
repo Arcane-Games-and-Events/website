@@ -265,7 +265,7 @@
 										>
 										<a
 											href={card.url ||
-												`https://cards.fabtcg.com/?search=${encodeURIComponent(card.id || card.name)}`}
+												`https://cards.fabtcg.com/results/?q=${encodeURIComponent(card.id || card.name)}`}
 											target="_blank"
 											rel="noopener noreferrer"
 											data-card-name={card.name}

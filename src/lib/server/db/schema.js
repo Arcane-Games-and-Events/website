@@ -177,8 +177,8 @@ export const decklist = pgTable('decklists', {
 export const match = pgTable('matches', {
 	id: uuid('id').defaultRandom().primaryKey(),
 
-	// Direct link to event
-	eventId: text('event_id').notNull().references(() => event.id),
+	// Direct link to event (nullable for historical matches imported without real events)
+	eventId: text('event_id').references(() => event.id),
 
 	// Legacy context fields (kept for backwards compatibility)
 	month: text('month'), // e.g., "January", "February"

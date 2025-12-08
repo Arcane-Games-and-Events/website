@@ -1,4 +1,6 @@
 <script>
+	import { getCircuit, DEFAULT_CIRCUIT } from '$lib/data/circuits.js';
+
 	let { data } = $props();
 
 	function formatDate(date) {
@@ -12,12 +14,12 @@
 	}
 
 	function getCircuitColor(circuit) {
-		const colors = {
-			'Los Angeles': { bg: 'bg-blue-600', text: 'text-blue-400', border: 'border-blue-500' },
-			'St. Louis': { bg: 'bg-red-600', text: 'text-red-400', border: 'border-red-500' },
-			'New England': { bg: 'bg-emerald-600', text: 'text-emerald-400', border: 'border-emerald-500' }
+		const config = getCircuit(circuit);
+		return {
+			bg: config.colors.bgDark,
+			text: config.colors.text,
+			border: config.colors.borderSolid
 		};
-		return colors[circuit] || { bg: 'bg-gray-600', text: 'text-gray-400', border: 'border-gray-500' };
 	}
 
 	const circuitColors = $derived(getCircuitColor(data.event.circuit));

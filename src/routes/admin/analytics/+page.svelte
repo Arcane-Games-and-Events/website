@@ -1,6 +1,7 @@
 <script>
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
+	import { getCircuit } from '$lib/data/circuits.js';
 
 	let { data } = $props();
 
@@ -825,7 +826,7 @@
 						{#each data.events?.byCircuit || [] as circuit}
 							<div class="flex items-center justify-between rounded-lg border border-white/5 bg-white/5 p-4">
 								<div class="flex items-center gap-3">
-									<div class="h-3 w-3 rounded-full {circuit.circuit === 'Los Angeles' ? 'bg-blue-500' : circuit.circuit === 'St. Louis' ? 'bg-green-500' : circuit.circuit === 'New England' ? 'bg-purple-500' : 'bg-gray-500'}"></div>
+									<div class="h-3 w-3 rounded-full {getCircuit(circuit.circuit).colors.dot}"></div>
 									<p class="font-medium text-white">{circuit.circuit}</p>
 								</div>
 								<p class="text-lg font-bold text-white">{formatNumber(circuit.count)}</p>
@@ -885,7 +886,7 @@
 							<div class="rounded-lg border border-white/5 bg-white/5 p-4">
 								<div class="flex items-center justify-between">
 									<div class="flex items-center gap-3">
-										<div class="h-3 w-3 rounded-full {circuit.circuit === 'Los Angeles' ? 'bg-blue-500' : circuit.circuit === 'St. Louis' ? 'bg-green-500' : circuit.circuit === 'New England' ? 'bg-purple-500' : 'bg-gray-500'}"></div>
+										<div class="h-3 w-3 rounded-full {getCircuit(circuit.circuit).colors.dot}"></div>
 										<p class="font-medium text-white">{circuit.circuit || 'Unassigned'}</p>
 									</div>
 									<p class="font-bold text-white">{formatNumber(circuit.count)} tickets</p>
@@ -945,7 +946,7 @@
 						{#each data.players?.byCircuit || [] as circuit}
 							<div class="flex items-center justify-between rounded-lg border border-white/5 bg-white/5 p-4">
 								<div class="flex items-center gap-3">
-									<div class="h-3 w-3 rounded-full {circuit.circuit === 'Los Angeles' ? 'bg-blue-500' : circuit.circuit === 'St. Louis' ? 'bg-green-500' : circuit.circuit === 'New England' ? 'bg-purple-500' : 'bg-gray-500'}"></div>
+									<div class="h-3 w-3 rounded-full {getCircuit(circuit.circuit).colors.dot}"></div>
 									<p class="font-medium text-white">{circuit.circuit}</p>
 								</div>
 								<p class="text-lg font-bold text-white">{formatNumber(circuit.count)}</p>

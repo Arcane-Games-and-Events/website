@@ -16,7 +16,7 @@
 	<!-- Background with circuit-style imagery -->
 	<div class="absolute inset-0">
 		<img
-			src="/images/circuits/los-angeles.jpg"
+			src="/images/circuits/los-angeles.webp"
 			alt=""
 			class="w-full h-full object-cover opacity-30"
 		/>

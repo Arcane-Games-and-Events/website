@@ -5,6 +5,9 @@
 	import { sidebarCollapsed } from '$lib/stores/sidebar';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { getCircuit, getCircuitImage } from '$lib/data/circuits.js';
+	import StandingsCard from '$lib/components/StandingsCard.svelte';
+	import FeaturedDecklists from '$lib/components/FeaturedDecklists.svelte';
 	export let data;
 
 	// Handle standings filter changes with client-side navigation
@@ -221,7 +224,7 @@
 					<!-- Background image for AGE Open Series slide -->
 					{#if slide.id === 'AGE Open Series'}
 						<img
-							src="/banner/age-open-banner.jpg"
+							src="/banner/age-open-banner.webp"
 							alt=""
 							class="absolute inset-0 h-full w-full object-cover opacity-30 md:opacity-50"
 						/>
@@ -320,6 +323,8 @@
 					{@const colors = colorClasses[slide.color]}
 					<button
 						on:click={() => goToSlide(index)}
+						aria-label="Go to {slide.label}"
+						aria-current={index === currentSlide ? 'true' : undefined}
 						class="relative border-b-2 p-1.5 text-left transition-all duration-300 md:p-2.5 lg:p-3 {index ===
 						currentSlide
 							? colors.active
@@ -630,7 +635,7 @@
 									class="group relative block overflow-hidden rounded-xl border border-blue-500/30 transition-all hover:border-blue-500/60"
 								>
 									<img
-										src="/images/circuits/los-angeles.jpg"
+										src="/images/circuits/los-angeles.webp"
 										alt="Los Angeles"
 										class="absolute inset-0 h-full w-full object-cover opacity-20 transition-all duration-500 group-hover:scale-105 group-hover:opacity-30"
 									/>
@@ -673,7 +678,7 @@
 									class="group relative block overflow-hidden rounded-xl border border-purple-500/30 transition-all hover:border-purple-500/60"
 								>
 									<img
-										src="/images/circuits/new-england.jpg"
+										src="/images/circuits/new-england.webp"
 										alt="New England"
 										class="absolute inset-0 h-full w-full object-cover opacity-20 transition-all duration-500 group-hover:scale-105 group-hover:opacity-30"
 									/>
@@ -716,7 +721,7 @@
 									class="group relative block overflow-hidden rounded-xl border border-green-500/30 transition-all hover:border-green-500/60"
 								>
 									<img
-										src="/images/circuits/st-louis.jpg"
+										src="/images/circuits/st-louis.webp"
 										alt="St. Louis"
 										class="absolute inset-0 h-full w-full object-cover opacity-20 transition-all duration-500 group-hover:scale-105 group-hover:opacity-30"
 									/>
@@ -797,35 +802,13 @@
 						{#if data.events && data.events.length > 0}
 							<div class="space-y-4">
 								{#each data.events.slice(0, 3) as event}
-									{@const circuitColors = {
-										'Los Angeles': {
-											bg: 'bg-blue-600',
-											border: 'border-blue-500/30',
-											text: 'text-blue-400'
-										},
-										'New England': {
-											bg: 'bg-purple-600',
-											border: 'border-purple-500/30',
-											text: 'text-purple-400'
-										},
-										'St. Louis': {
-											bg: 'bg-green-600',
-											border: 'border-green-500/30',
-											text: 'text-green-400'
-										}
+									{@const circuit = getCircuit(event.circuit)}
+									{@const colors = {
+										bg: circuit.colors.bgDark,
+										border: circuit.colors.border,
+										text: circuit.colors.text
 									}}
-									{@const colors = circuitColors[event.circuit] || {
-										bg: 'bg-gray-600',
-										border: 'border-gray-500/30',
-										text: 'text-gray-400'
-									}}
-									{@const circuitImages = {
-										'Los Angeles': '/images/circuits/los-angeles.jpg',
-										'New England': '/images/circuits/new-england.jpg',
-										'St. Louis': '/images/circuits/st-louis.jpg'
-									}}
-									{@const bgImage =
-										circuitImages[event.circuit] || '/images/circuits/los-angeles.jpg'}
+									{@const bgImage = circuit.image}
 
 									<a href="/age-open/{event.id}" class="group block">
 										<div
@@ -937,276 +920,93 @@
 						{/if}
 					</div>
 
-					<!-- Decklists Section (Placeholder) -->
-					<div class="rounded-xl border border-white/10 bg-gray-900/50 p-5 backdrop-blur-sm">
-						<div class="mb-4 flex items-center justify-between">
-							<h3 class="text-lg font-semibold text-white">Featured Decklists</h3>
-							<a
-								href="/decklists"
-								class="flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
-							>
-								View all
-								<svg
-									class="h-4 w-4"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									viewBox="0 0 24 24"
-								>
-									<path stroke-linecap="round" stroke-linejoin="round" d={icons.chevronRight} />
-								</svg>
-							</a>
-						</div>
-						<div class="grid gap-3 sm:grid-cols-2">
-							<!-- Placeholder decklist cards -->
-							<div class="rounded-lg border border-white/10 bg-white/5 p-4">
-								<div class="mb-2 flex items-center gap-3">
-									<div
-										class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-red-500/30 to-orange-500/30"
-									>
-										<svg
-											class="h-5 w-5 text-red-400"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="1.5"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z"
-											/>
-										</svg>
-									</div>
-									<div>
-										<p class="text-sm font-medium text-white">Fai Aggro</p>
-										<p class="text-xs text-gray-500">Classic Constructed</p>
-									</div>
-								</div>
-								<p class="text-xs text-gray-400">Top 8 · AGE Open LA #3</p>
-							</div>
-							<div class="rounded-lg border border-white/10 bg-white/5 p-4">
-								<div class="mb-2 flex items-center gap-3">
-									<div
-										class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/30 to-cyan-500/30"
-									>
-										<svg
-											class="h-5 w-5 text-blue-400"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="1.5"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
-											/>
-										</svg>
-									</div>
-									<div>
-										<p class="text-sm font-medium text-white">Iyslander Control</p>
-										<p class="text-xs text-gray-500">Classic Constructed</p>
-									</div>
-								</div>
-								<p class="text-xs text-gray-400">1st Place · AGE Open NE #1</p>
-							</div>
-						</div>
-					</div>
+					<!-- Featured Decklists -->
+					<FeaturedDecklists decklists={data.featuredDecklists || []} />
 				</div>
 
 				<!-- Sidebar (1/3) - starts at top -->
 				<div class="space-y-6">
-					<!-- Standings Preview -->
-					<div
-						class="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-900/20 via-gray-900 to-gray-900 p-5"
-					>
-						<div class="mb-3 flex items-center justify-between">
-							<div class="flex items-center gap-2">
-								<svg
-									class="h-5 w-5 text-amber-400"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="1.5"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"
-									/>
-								</svg>
-								<h3 class="font-semibold text-white">Standings</h3>
-							</div>
-							<a href="/age-open?tab=standings" class="text-xs text-amber-400 hover:text-amber-300"
-								>View all</a
-							>
-						</div>
+	<!-- Standings Preview -->
+					<StandingsCard
+						standings={data.standings || []}
+						seasons={data.standingsFilters?.availableSeasons || []}
+						circuits={data.standingsFilters?.availableCircuits?.filter(c => c !== 'all') || []}
+						selectedSeason={data.standingsFilters?.season || 'all'}
+						selectedCircuit={data.standingsFilters?.circuit || 'all'}
+						showFilters={!!data.standingsFilters}
+						onSeasonChange={(value) => updateStandingsFilter('standings_season', value)}
+						onCircuitChange={(value) => updateStandingsFilter('standings_circuit', value)}
+					/>
 
-						<!-- Filters -->
-						{#if data.standingsFilters}
-							<div class="mb-3 flex gap-2">
-								<select
-									class="flex-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 focus:outline-none"
-									value={data.standingsFilters.season}
-									on:change={(e) => updateStandingsFilter('standings_season', e.target.value)}
-								>
-									{#each data.standingsFilters.availableSeasons as season}
-										<option value={season}>
-											{season === 'all' ? 'All Time' : season}
-										</option>
-									{/each}
-								</select>
-								<select
-									class="flex-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 focus:outline-none"
-									value={data.standingsFilters.circuit}
-									on:change={(e) => updateStandingsFilter('standings_circuit', e.target.value)}
-								>
-									{#each data.standingsFilters.availableCircuits as circuit}
-										<option value={circuit}>
-											{circuit === 'all' ? 'All Circuits' : circuit}
-										</option>
-									{/each}
-								</select>
-							</div>
-						{/if}
-
-						{#if data.standings && data.standings.length > 0}
-							<div class="space-y-1.5">
-								{#each data.standings as player}
-									{@const rank = player.rank}
-									<a
-										href={player.gemId ? `/player/${player.gemId}` : '/age-open?tab=standings'}
-										class="group flex items-center gap-2 rounded-lg bg-white/5 p-1.5 transition-colors hover:bg-white/10"
-									>
-										<!-- Rank Badge -->
-										<div
-											class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full {rank ===
-											1
-												? 'bg-yellow-500/20 text-yellow-500'
-												: rank === 2
-													? 'bg-gray-400/20 text-gray-400'
-													: rank === 3
-														? 'bg-orange-900/20 text-orange-600'
-														: 'bg-gray-700/20 text-gray-400'} text-[10px] font-bold"
-										>
-											{rank}
-										</div>
-										<!-- Avatar + Name -->
-										<div class="flex min-w-0 flex-1 items-center gap-1.5">
-											<div
-												class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-[8px] font-semibold text-blue-400"
-											>
-												{player.playerName
-													.split(' ')
-													.map((n) => n[0])
-													.join('')
-													.slice(0, 2)}
-											</div>
-											<span
-												class="truncate text-xs text-white transition-colors group-hover:text-blue-400"
-											>
-												{player.playerName}
-											</span>
-										</div>
-										<!-- Points -->
-										<div class="shrink-0 text-right">
-											<span class="text-xs font-bold text-emerald-400"
-												>{player.totalPoints || 0}</span
-											>
-											<span class="ml-0.5 text-[9px] text-gray-500">pts</span>
-										</div>
-									</a>
-								{/each}
-							</div>
-						{:else}
-							<div class="flex flex-col items-center gap-2 py-6">
-								<svg
-									class="h-10 w-10 text-gray-600"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-									/>
-								</svg>
-								<p class="text-sm text-gray-400">No standings data yet</p>
-								<p class="text-xs text-gray-500">Check back after events complete</p>
-							</div>
-						{/if}
-					</div>
-
-					<!-- Premium Promo -->
-					<div
-						class="relative overflow-hidden rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-900/30 via-gray-900 to-purple-900/20 p-5"
-					>
+					<!-- Premium Promo (hide if user is already premium or admin) -->
+					{#if data.user?.subscriptionStatus !== 'active' && data.user?.role !== 'premium' && data.user?.role !== 'admin'}
 						<div
-							class="absolute top-0 right-0 h-32 w-32 rounded-full bg-emerald-500/20 blur-2xl"
-						></div>
-						<div class="relative">
-							<div class="mb-3 flex items-center gap-2">
-								<svg
-									class="h-5 w-5 text-emerald-400"
-									fill="currentColor"
-									viewBox="0 0 24 24"
+							class="relative overflow-hidden rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-900/30 via-gray-900 to-purple-900/20 p-5"
+						>
+							<div
+								class="absolute top-0 right-0 h-32 w-32 rounded-full bg-emerald-500/20 blur-2xl"
+							></div>
+							<div class="relative">
+								<div class="mb-3 flex items-center gap-2">
+									<svg
+										class="h-5 w-5 text-emerald-400"
+										fill="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
+									</svg>
+									<h3 class="font-semibold text-white">AGE Premium</h3>
+								</div>
+								<p class="mb-4 text-sm text-gray-400">
+									Unlock premium content, event discounts, and powerful tools to level up your game.
+								</p>
+								<ul class="mb-4 space-y-2">
+									<li class="flex items-center gap-2 text-sm text-gray-300">
+										<svg
+											class="h-4 w-4 text-emerald-400"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											viewBox="0 0 24 24"
+										>
+											<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+										</svg>
+										Premium articles
+									</li>
+									<li class="flex items-center gap-2 text-sm text-gray-300">
+										<svg
+											class="h-4 w-4 text-emerald-400"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											viewBox="0 0 24 24"
+										>
+											<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+										</svg>
+										Discounts at AGE events
+									</li>
+									<li class="flex items-center gap-2 text-sm text-gray-300">
+										<svg
+											class="h-4 w-4 text-emerald-400"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											viewBox="0 0 24 24"
+										>
+											<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+										</svg>
+										Exclusive event coverage
+									</li>
+								</ul>
+								<a
+									href="/premium"
+									class="block w-full rounded-lg bg-gradient-to-r from-emerald-600 to-green-700 py-2.5 text-center text-sm font-semibold text-white transition-all hover:from-emerald-500 hover:to-green-600"
 								>
-									<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
-								</svg>
-								<h3 class="font-semibold text-white">AGE Premium</h3>
+									Join Premium
+								</a>
 							</div>
-							<p class="mb-4 text-sm text-gray-400">
-								Unlock premium content, event discounts, and powerful tools to level up your game.
-							</p>
-							<ul class="mb-4 space-y-2">
-								<li class="flex items-center gap-2 text-sm text-gray-300">
-									<svg
-										class="h-4 w-4 text-emerald-400"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										viewBox="0 0 24 24"
-									>
-										<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-									</svg>
-									Premium articles
-								</li>
-								<li class="flex items-center gap-2 text-sm text-gray-300">
-									<svg
-										class="h-4 w-4 text-emerald-400"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										viewBox="0 0 24 24"
-									>
-										<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-									</svg>
-									Discounts at AGE events
-								</li>
-								<li class="flex items-center gap-2 text-sm text-gray-300">
-									<svg
-										class="h-4 w-4 text-emerald-400"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										viewBox="0 0 24 24"
-									>
-										<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-									</svg>
-									Exclusive event coverage
-								</li>
-							</ul>
-							<a
-								href="/premium"
-								class="block w-full rounded-lg bg-gradient-to-r from-emerald-600 to-green-700 py-2.5 text-center text-sm font-semibold text-white transition-all hover:from-emerald-500 hover:to-green-600"
-							>
-								Join Premium
-							</a>
 						</div>
-					</div>
+					{/if}
 
 					<!-- Newsletter -->
 					<div class="rounded-xl border border-white/10 bg-gray-900/50 p-5 backdrop-blur-sm">
@@ -1250,6 +1050,7 @@
 									bind:value={newsletterEmail}
 									placeholder="Enter your email"
 									required
+									aria-label="Email address for newsletter"
 									class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
 								/>
 								<button

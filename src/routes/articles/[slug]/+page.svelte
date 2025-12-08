@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { fade, fly } from 'svelte/transition';
 	import Decklist from '$lib/components/Decklist.svelte';
 	import CardHover from '$lib/components/CardHover.svelte';
 
@@ -9,6 +10,7 @@
 	let renderBlocks = [];
 	let tableOfContents = [];
 	let activeSection = '';
+	let mobileTocOpen = false;
 
 	$: {
 		if (data.article.content) {
@@ -320,7 +322,7 @@
 					cardId = cardId.replace(/\[(r|y|b)\]$/i, '').trim();
 				}
 
-				const linkUrl = customUrl || `https://cards.fabtcg.com/?search=${encodeURIComponent(cardId)}`;
+				const linkUrl = customUrl || `https://cards.fabtcg.com/results/?q=${encodeURIComponent(cardId)}`;
 				const pitchAttr = pitch ? ` data-card-pitch="${pitch}"` : '';
 				const customUrlAttr = customUrl ? ` data-card-url="${escapeHtml(customUrl)}"` : '';
 
@@ -441,7 +443,7 @@
 							cardId = cardId.replace(/\[(r|y|b)\]$/i, '').trim();
 						}
 
-						const linkUrl = customUrl || `https://cards.fabtcg.com/?search=${encodeURIComponent(cardId)}`;
+						const linkUrl = customUrl || `https://cards.fabtcg.com/results/?q=${encodeURIComponent(cardId)}`;
 						const pitchAttr = pitch ? ` data-card-pitch="${pitch}"` : '';
 						const customUrlAttr = customUrl ? ` data-card-url="${escapeHtml(customUrl)}"` : '';
 
@@ -680,7 +682,7 @@
 				<!-- Article content with preview overlay when not premium -->
 				<div class="relative">
 					<!-- Article content using Tailwind Typography - Optimized for mobile readability -->
-					<div class="prose prose-invert prose-base mx-auto max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-headings:scroll-mt-24 prose-h2:mt-8 prose-h2:mb-3 prose-h2:text-xl prose-h3:mt-6 prose-h3:mb-2 prose-h3:text-lg prose-h4:mt-5 prose-h4:mb-2 prose-h4:text-base prose-p:text-gray-300 prose-p:leading-relaxed prose-a:text-yellow-600 prose-a:no-underline hover:prose-a:text-yellow-500 hover:prose-a:underline prose-strong:text-white prose-em:text-gray-200 prose-code:rounded prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-orange-400 prose-code:text-sm prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-xl prose-pre:border prose-pre:border-white/10 prose-pre:bg-gray-900 prose-blockquote:rounded-r-lg prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:bg-blue-500/10 prose-blockquote:not-italic prose-blockquote:pl-4 prose-li:marker:text-blue-500 prose-img:rounded-xl prose-hr:border-white/10 sm:prose-lg sm:max-w-[34em] sm:prose-h2:mt-10 sm:prose-h2:mb-4 sm:prose-h2:text-3xl sm:prose-h3:mt-8 sm:prose-h3:mb-3 sm:prose-h3:text-2xl sm:prose-h4:mt-6 sm:prose-h4:mb-3 sm:prose-h4:text-xl lg:prose-xl">
+					<div class="prose prose-invert prose-lg mx-auto max-w-prose prose-headings:font-bold prose-headings:tracking-tight prose-headings:scroll-mt-24 prose-h2:mt-8 prose-h2:mb-3 prose-h2:text-xl prose-h3:mt-6 prose-h3:mb-2 prose-h3:text-lg prose-h4:mt-5 prose-h4:mb-2 prose-h4:text-base prose-p:text-gray-300 prose-p:leading-relaxed prose-a:text-yellow-600 prose-a:no-underline hover:prose-a:text-yellow-500 hover:prose-a:underline prose-strong:text-white prose-em:text-gray-200 prose-code:rounded prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-orange-400 prose-code:text-sm prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-xl prose-pre:border prose-pre:border-white/10 prose-pre:bg-gray-900 prose-blockquote:rounded-r-lg prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:bg-blue-500/10 prose-blockquote:not-italic prose-blockquote:pl-4 prose-li:marker:text-blue-500 prose-img:rounded-xl prose-hr:border-white/10 sm:prose-h2:mt-10 sm:prose-h2:mb-4 sm:prose-h2:text-3xl sm:prose-h3:mt-8 sm:prose-h3:mb-3 sm:prose-h3:text-2xl sm:prose-h4:mt-6 sm:prose-h4:mb-3 sm:prose-h4:text-xl lg:prose-xl">
 						{#if data.article.content}
 							{#if renderBlocks.length > 0}
 								{#each renderBlocks as block}
@@ -794,7 +796,7 @@
 
 				<!-- Tags Footer (hide in preview mode) -->
 				{#if !data.isPreview && data.article.tags && data.article.tags.length > 1}
-					<div class="mx-auto mt-8 max-w-none border-t border-white/10 pt-6 sm:mt-12 sm:max-w-[34em] sm:pt-8">
+					<div class="mx-auto mt-8 max-w-prose border-t border-white/10 pt-6 sm:mt-12 sm:pt-8">
 						<h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 sm:mb-4">Topics</h3>
 						<div class="flex flex-wrap gap-2">
 							{#each data.article.tags as tag}
@@ -811,7 +813,7 @@
 
 				<!-- Author Card Footer (hide in preview mode) -->
 				{#if !data.isPreview && data.article.author}
-					<div class="mx-auto mt-8 max-w-none rounded-xl border border-white/10 bg-gray-900/50 p-4 sm:mt-12 sm:max-w-[34em] sm:rounded-2xl sm:p-6">
+					<div class="mx-auto mt-8 max-w-prose rounded-xl border border-white/10 bg-gray-900/50 p-4 sm:mt-12 sm:rounded-2xl sm:p-6">
 						<a href="/articles/author/{data.article.author.slug}" class="flex items-center gap-3 group sm:items-start sm:gap-4">
 							{#if data.article.author.profilePicture}
 								<img
@@ -839,7 +841,7 @@
 
 				<!-- Back Link Footer (hide in preview mode) -->
 				{#if !data.isPreview}
-					<footer class="mx-auto mt-8 max-w-none border-t border-white/10 pt-6 sm:mt-12 sm:max-w-[34em] sm:pt-8">
+					<footer class="mx-auto mt-8 max-w-prose border-t border-white/10 pt-6 sm:mt-12 sm:pt-8">
 						<a
 							href="/articles"
 							class="inline-flex items-center gap-2 text-sm font-medium text-gray-400 transition-colors hover:text-white"
@@ -877,6 +879,66 @@
 		</div>
 	</div>
 </div>
+
+<!-- Mobile TOC Floating Button -->
+{#if !data.isPreview && tableOfContents.length > 0}
+	<button
+		on:click={() => mobileTocOpen = true}
+		class="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-gray-900/80 text-yellow-500 shadow-lg ring-1 ring-white/10 backdrop-blur-sm transition-all hover:bg-gray-800/90 hover:text-yellow-400 active:scale-95 lg:hidden"
+		aria-label="Table of contents"
+	>
+		<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+		</svg>
+	</button>
+{/if}
+
+<!-- Mobile TOC Modal -->
+{#if mobileTocOpen}
+	<div class="fixed inset-0 z-50 lg:hidden">
+		<!-- Backdrop -->
+		<div
+			transition:fade={{ duration: 200 }}
+			class="absolute inset-0 bg-black/40 backdrop-blur-sm"
+			on:click={() => mobileTocOpen = false}
+			on:keydown={(e) => e.key === 'Escape' && (mobileTocOpen = false)}
+			role="button"
+			tabindex="0"
+			aria-label="Close table of contents"
+		></div>
+
+		<!-- Modal -->
+		<div
+			transition:fly={{ y: 300, duration: 300 }}
+			class="absolute bottom-4 left-4 right-4 max-h-[60vh] overflow-y-auto rounded-2xl bg-gray-900 p-5 shadow-2xl ring-1 ring-white/10"
+		>
+			<div class="mb-4 flex items-center justify-between">
+				<h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400">On this page</h2>
+				<button
+					on:click={() => mobileTocOpen = false}
+					class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
+					aria-label="Close"
+				>
+					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+				</button>
+			</div>
+			<nav class="space-y-3">
+				{#each tableOfContents as heading}
+					<a
+						href="#{heading.id}"
+						on:click={() => mobileTocOpen = false}
+						class="block text-base leading-snug transition-colors {activeSection === heading.id ? 'font-medium text-white' : 'text-gray-400 hover:text-white'}"
+						style="padding-left: {(heading.level - 2) * 16}px"
+					>
+						{heading.text}
+					</a>
+				{/each}
+			</nav>
+		</div>
+	</div>
+{/if}
 
 <!-- Card hover tooltip for inline card links -->
 <CardHover />

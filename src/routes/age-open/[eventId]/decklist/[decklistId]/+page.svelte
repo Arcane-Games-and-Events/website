@@ -407,7 +407,7 @@
 	// Hero image state for mobile header
 	let heroImageLoaded = $state(false);
 	let heroImageError = $state(false);
-	let heroCurrentUrl = $state(heroImage?.imageUrl || null);
+	let heroCurrentUrl = $state(null);
 	let heroTriedFallback = $state(false);
 
 	function handleHeroLoad() { heroImageLoaded = true; }
@@ -421,10 +421,13 @@
 		}
 	}
 
-	// Initialize hero URL
+	// Initialize hero URL when heroImage changes
 	$effect(() => {
-		if (heroImage && !heroCurrentUrl) {
+		if (heroImage?.imageUrl) {
 			heroCurrentUrl = heroImage.imageUrl;
+			heroImageLoaded = false;
+			heroImageError = false;
+			heroTriedFallback = false;
 		}
 	});
 </script>
@@ -733,11 +736,11 @@
 											<span class="text-sm font-semibold {config.text}">{config.label}</span>
 											<span class="text-xs text-gray-500 ml-auto font-medium">{colorGroup.cards.reduce((s, c) => s + (c.quantity || 1), 0)} cards</span>
 										</div>
-										<div class="p-1" role="list">
+										<div class="p-1">
 											{#each colorGroup.cards as card}
 												{@const isSelected = selectedCard === card}
 												<button
-													role="listitem"
+													type="button"
 													class="w-full flex items-center gap-2 py-1 px-2.5 rounded-lg text-left transition-all
 														{isSelected ? 'bg-white/5' : config.hover}
 														cursor-pointer group"
@@ -775,11 +778,11 @@
 											</div>
 
 											<!-- Cards List -->
-											<div class="p-1" role="list">
+											<div class="p-1">
 												{#each colorGroup.cards as card}
 													{@const isSelected = selectedCard === card}
 													<button
-														role="listitem"
+														type="button"
 														class="w-full flex items-center gap-2 py-1 px-2.5 rounded-lg text-left transition-all
 															{isSelected ? 'bg-white/5' : config.hover}
 															cursor-pointer group"
@@ -814,9 +817,11 @@
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
 		onclick={handleBackdropClick}
+		onkeydown={handleKeydown}
 		role="dialog"
 		aria-modal="true"
 		aria-label="Card preview"
+		tabindex="-1"
 	>
 		<div class="relative w-full max-w-sm">
 			<!-- Close Button -->

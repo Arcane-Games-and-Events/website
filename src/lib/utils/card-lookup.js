@@ -143,12 +143,12 @@ export function getCardUrl(cardName, color = null) {
 		const validPrintings = filterPrintings(card.printings);
 		const printing = getBestPrinting(validPrintings);
 		if (printing && printing.id) {
-			return `https://cards.fabtcg.com/?search=${encodeURIComponent(printing.id)}`;
+			return `https://cards.fabtcg.com/results/?q=${encodeURIComponent(printing.id)}`;
 		}
 	}
 
 	// Fallback: construct search URL from card name
-	return `https://cards.fabtcg.com/?search=${encodeURIComponent(cardName)}`;
+	return `https://cards.fabtcg.com/results/?q=${encodeURIComponent(cardName)}`;
 }
 
 /**

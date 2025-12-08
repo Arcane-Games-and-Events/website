@@ -392,6 +392,23 @@ export async function load({ locals }) {
 			totalTicketOrders: revenueStats.byType.find((r) => r.type === 'ticket')?.count || 0
 		};
 
+		// Transform LSS events from snake_case to camelCase
+		const rawLssEvents = data.lssEvents || [];
+		const lssEvents = rawLssEvents.map((e) => ({
+			id: e.id,
+			name: e.name,
+			description: e.description,
+			startDate: e.start_date || e.startDate,
+			endDate: e.end_date || e.endDate,
+			eventType: e.event_type || e.eventType,
+			format: e.format,
+			link: e.link,
+			isActive: e.is_active ?? e.isActive ?? true,
+			createdBy: e.created_by || e.createdBy,
+			createdAt: e.created_at || e.createdAt,
+			updatedAt: e.updated_at || e.updatedAt
+		}));
+
 		return {
 			user: locals.user,
 			events,
@@ -399,7 +416,7 @@ export async function load({ locals }) {
 			allOrders: enrichedOrders,
 			allUsers: data.users || [],
 			standings,
-			lssEvents: data.lssEvents || [],
+			lssEvents,
 			revenueStats,
 			dailyRevenueTrend: (data.analytics?.dailyTrend || []).map((d) => ({
 				date: d.date,
