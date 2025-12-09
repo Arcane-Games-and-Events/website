@@ -553,8 +553,8 @@
 
 	<!-- Hero Section with Cover Image and Title Overlay -->
 	<header class="relative">
-		<!-- Cover Image Container - Taller on mobile for better visual impact -->
-		<div class="relative aspect-[3/4] w-full overflow-hidden bg-gray-900 sm:aspect-[16/9] lg:aspect-[21/9]">
+		<!-- Cover Image Container - Wider aspect ratios to show more of the image -->
+		<div class="relative aspect-[3/2] w-full overflow-hidden bg-gray-900 sm:aspect-[16/9] lg:aspect-[5/2]">
 			{#if data.article.coverImage?.src}
 				<img
 					src={data.article.coverImage.src}

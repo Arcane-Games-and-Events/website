@@ -141,7 +141,7 @@
 	<!-- Circuit Indicator -->
 	{#if resolvedEventCircuit}
 		<div class="absolute top-3 left-3">
-			<div class="flex items-center gap-1.5 rounded-full bg-black/50 px-2 py-1 backdrop-blur-sm">
+			<div class="flex items-center gap-1.5 rounded-full bg-black/60 px-2 py-1">
 				<span class="h-2 w-2 rounded-full {circuit.colors.bg}"></span>
 				<span class="text-[10px] font-medium text-white/90">{resolvedEventCircuit}</span>
 			</div>

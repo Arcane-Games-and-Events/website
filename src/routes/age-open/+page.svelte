@@ -985,6 +985,16 @@
 		}).format(date);
 	}
 
+	function formatDateShort(dateStr) {
+		if (!dateStr) return 'TBA';
+		const date = new Date(dateStr);
+		return new Intl.DateTimeFormat('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric'
+		}).format(date);
+	}
+
 	function formatPrice(price) {
 		return parseFloat(price).toFixed(2);
 	}
@@ -4730,138 +4740,172 @@
 						<p class="text-gray-400">Results from completed events will appear here.</p>
 					</div>
 				{:else}
-					<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900">
+					<!-- Mobile Card View -->
+					<div class="space-y-3 md:hidden">
+						{#each data.eventResults as eventData}
+							{@const winner = eventData.results.find((r) => r.placement === 1)}
+							{@const colors = getCircuitColor(eventData.event.circuit)}
+							<a
+								href="/age-open/{eventData.event.id}/results"
+								class="block overflow-hidden rounded-xl border border-gray-800 bg-gray-900 hover:bg-gray-800/50"
+							>
+								<div class="flex">
+									<!-- Circuit Color Accent -->
+									<div class="w-1 shrink-0 {colors.bg}"></div>
+									<div class="flex-1 p-4">
+										<!-- Top Row: Status + Circuit -->
+										<div class="mb-3 flex items-center justify-between">
+											<div class="flex items-center gap-2">
+												{#if eventData.event.circuit}
+													<span class="rounded-full {colors.bg} px-2.5 py-0.5 text-xs font-medium text-white">
+														{eventData.event.circuit}
+													</span>
+												{/if}
+												{#if eventData.event.format}
+													<span class="rounded-full bg-gray-700 px-2.5 py-0.5 text-xs font-medium text-gray-200">
+														{eventData.event.format}
+													</span>
+												{/if}
+											</div>
+											{#if eventData.event.status === 'in_progress'}
+												<span class="animate-pulse rounded-full bg-blue-500/20 px-2.5 py-0.5 text-xs font-medium text-blue-400">
+													LIVE
+												</span>
+											{:else}
+												<span class="rounded-full bg-green-500/20 px-2.5 py-0.5 text-xs font-medium text-green-400">
+													Completed
+												</span>
+											{/if}
+										</div>
+
+										<!-- Event Title -->
+										<h3 class="mb-1 text-base font-semibold text-white">{eventData.event.title}</h3>
+
+										<!-- Date & Location -->
+										<div class="mb-3 text-sm text-gray-400">
+											{#if eventData.event.eventDate}
+												{formatDateShort(eventData.event.eventDate)}
+											{/if}
+											{#if eventData.event.location}
+												<span class="text-gray-600"> · </span>{eventData.event.location}
+											{/if}
+										</div>
+
+										<!-- Winner & Players -->
+										<div class="flex items-center justify-between">
+											{#if winner}
+												<div class="flex items-center gap-2">
+													<span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-yellow-500/20 text-yellow-400">
+														<svg class="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 24 24">
+															<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+														</svg>
+													</span>
+													<span class="text-sm font-medium text-white">{winner.playerName}</span>
+												</div>
+											{:else}
+												<span></span>
+											{/if}
+											<div class="flex items-center gap-1 text-sm text-gray-500">
+												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+												</svg>
+												{eventData.results.length}
+											</div>
+										</div>
+									</div>
+								</div>
+							</a>
+						{/each}
+					</div>
+
+					<!-- Desktop Table View -->
+					<div class="hidden overflow-hidden rounded-xl border border-gray-800 bg-gray-900 md:block">
 						<div class="overflow-x-auto">
-							<table class="w-full">
+							<table class="w-full min-w-[900px]">
 								<thead>
 									<tr class="border-b border-gray-700 bg-gray-800">
-										<th
-											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-											>Event</th
-										>
-										<th
-											class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-											>Date</th
-										>
-										<th
-											class="px-6 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase"
-											>Circuit</th
-										>
-										<th
-											class="px-6 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase"
-											>Format</th
-										>
-										<th
-											class="px-6 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase"
-											>Players</th
-										>
-										<th
-											class="px-6 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase"
-											>Winner</th
-										>
-										<th
-											class="px-6 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase"
-											>Status</th
-										>
-										<th
-											class="px-6 py-4 text-right text-xs font-semibold tracking-wider text-gray-400 uppercase"
-										></th>
+										<th class="px-4 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase min-w-[200px]">Event</th>
+										<th class="px-4 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase min-w-[100px]">Date</th>
+										<th class="px-4 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase">Circuit</th>
+										<th class="px-4 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase">Format</th>
+										<th class="px-4 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase w-16">Players</th>
+										<th class="px-4 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase min-w-[140px]">Winner</th>
+										<th class="px-4 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase">Status</th>
+										<th class="px-4 py-4 text-right text-xs font-semibold tracking-wider text-gray-400 uppercase w-32"></th>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-gray-800">
 									{#each data.eventResults as eventData}
 										{@const winner = eventData.results.find((r) => r.placement === 1)}
 										{@const colors = getCircuitColor(eventData.event.circuit)}
-										<tr class="transition-colors hover:bg-gray-800/50">
-											<td class="px-6 py-4">
-												<span class="font-medium text-white">{eventData.event.title}</span>
+										<tr class="hover:bg-gray-800/50 border-l-4 {colors.borderLeft}">
+											<td class="px-4 py-4">
+												<div class="font-medium text-white">{eventData.event.title}</div>
 												{#if eventData.event.location}
-													<p class="mt-0.5 text-xs text-gray-500">{eventData.event.location}</p>
+													<div class="mt-0.5 text-xs text-gray-500">{eventData.event.location}</div>
 												{/if}
 											</td>
-											<td class="px-6 py-4 text-sm whitespace-nowrap text-gray-300">
+											<td class="px-4 py-4 whitespace-nowrap text-sm text-gray-300">
 												{#if eventData.event.eventDate}
-													{formatDate(eventData.event.eventDate)}
+													{formatDateShort(eventData.event.eventDate)}
 												{:else}
 													<span class="text-gray-500">-</span>
 												{/if}
 											</td>
-											<td class="px-6 py-4 text-center">
+											<td class="px-4 py-4 text-center">
 												{#if eventData.event.circuit}
-													<span
-														class="rounded-full {colors.bg} px-3 py-1 text-xs font-medium text-white"
-													>
+													<span class="inline-block whitespace-nowrap rounded-full {colors.bg} px-2.5 py-1 text-xs font-medium text-white">
 														{eventData.event.circuit}
 													</span>
 												{:else}
 													<span class="text-gray-500">-</span>
 												{/if}
 											</td>
-											<td class="px-6 py-4 text-center">
+											<td class="px-4 py-4 text-center">
 												{#if eventData.event.format}
-													<span
-														class="rounded-full bg-gray-700 px-3 py-1 text-xs font-medium text-gray-200"
-													>
+													<span class="inline-block whitespace-nowrap rounded-full bg-gray-700 px-2.5 py-1 text-xs font-medium text-gray-200">
 														{eventData.event.format}
 													</span>
 												{:else}
 													<span class="text-gray-500">-</span>
 												{/if}
 											</td>
-											<td class="px-6 py-4 text-center text-sm text-gray-300">
+											<td class="px-4 py-4 text-center text-sm font-medium text-gray-300">
 												{eventData.results.length}
 											</td>
-											<td class="px-6 py-4 text-center">
+											<td class="px-4 py-4">
 												{#if winner}
-													<div class="flex items-center justify-center gap-2">
-														<span
-															class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-yellow-500/20 text-yellow-400"
-														>
+													<div class="flex items-center gap-2">
+														<span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-yellow-500/20 text-yellow-400">
 															<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
-																<path
-																	d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-																/>
+																<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
 															</svg>
 														</span>
-														<span class="text-sm font-medium text-white">{winner.playerName}</span>
+														<span class="text-sm font-medium text-white truncate">{winner.playerName}</span>
 													</div>
 												{:else}
 													<span class="text-gray-500">-</span>
 												{/if}
 											</td>
-											<td class="px-6 py-4 text-center">
+											<td class="px-4 py-4 text-center">
 												{#if eventData.event.status === 'in_progress'}
-													<span
-														class="animate-pulse rounded-full bg-blue-500/20 px-3 py-1 text-xs font-medium text-blue-400"
-													>
+													<span class="inline-block whitespace-nowrap animate-pulse rounded-full bg-blue-500/20 px-2.5 py-1 text-xs font-medium text-blue-400">
 														LIVE
 													</span>
 												{:else}
-													<span
-														class="rounded-full bg-green-500/20 px-3 py-1 text-xs font-medium text-green-400"
-													>
+													<span class="inline-block whitespace-nowrap rounded-full bg-green-500/20 px-2.5 py-1 text-xs font-medium text-green-400">
 														Completed
 													</span>
 												{/if}
 											</td>
-											<td class="px-6 py-4 text-right">
+											<td class="px-4 py-4 text-right">
 												<a
 													href="/age-open/{eventData.event.id}/results"
-													class="inline-flex items-center gap-1.5 rounded-lg bg-blue-500/10 px-3 py-1.5 text-sm font-medium text-blue-400 transition-colors hover:bg-blue-500/20"
+													class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-blue-500/10 px-3 py-1.5 text-sm font-medium text-blue-400 hover:bg-blue-500/20"
 												>
-													View Results
-													<svg
-														class="h-4 w-4"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M9 5l7 7-7 7"
-														/>
+													View
+													<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
 													</svg>
 												</a>
 											</td>
