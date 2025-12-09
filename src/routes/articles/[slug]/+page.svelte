@@ -6,6 +6,9 @@
 
 	export let data;
 
+	// Card images map from server for hover tooltips
+	$: cardImages = data.cardImages || {};
+
 	// Process content blocks for inline decklists
 	let renderBlocks = [];
 	let tableOfContents = [];
@@ -17,6 +20,26 @@
 			renderBlocks = processInlineDecklists(data.article.content, data.article.decklists);
 			tableOfContents = extractHeadings(data.article.content);
 		}
+	}
+
+	/**
+	 * Look up card image from the server-provided cardImages map
+	 */
+	function getCardImage(cardName, pitch) {
+		const normalizedName = cardName.toLowerCase();
+		const pitchKey = pitch ? `${normalizedName}:${pitch}` : null;
+
+		// Try pitch-specific key first
+		if (pitchKey && cardImages[pitchKey]) {
+			return cardImages[pitchKey];
+		}
+
+		// Fall back to base name
+		if (cardImages[normalizedName]) {
+			return cardImages[normalizedName];
+		}
+
+		return null;
 	}
 
 	// Extract headings for table of contents
@@ -322,11 +345,24 @@
 					cardId = cardId.replace(/\[(r|y|b)\]$/i, '').trim();
 				}
 
+				// Decode URL-encoded card names (e.g., Felling%20of%20the%20Crown -> Felling of the Crown)
+				try {
+					cardId = decodeURIComponent(cardId);
+				} catch (e) {
+					// Keep original if decoding fails
+				}
+
 				const linkUrl = customUrl || `https://cards.fabtcg.com/results/?q=${encodeURIComponent(cardId)}`;
 				const pitchAttr = pitch ? ` data-card-pitch="${pitch}"` : '';
 				const customUrlAttr = customUrl ? ` data-card-url="${escapeHtml(customUrl)}"` : '';
 
-				return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}"${pitchAttr}${customUrlAttr} class="card-link !text-blue-400 !underline !decoration-blue-400/50 hover:!text-blue-300 hover:!decoration-blue-300/70">${children}</a>`;
+				// Look up card image from server-resolved images
+				const pitchLetter = pitch === '1' ? 'r' : pitch === '2' ? 'y' : pitch === '3' ? 'b' : null;
+				const cardImg = getCardImage(cardId, pitchLetter);
+				const imageAttr = cardImg?.imageUrl ? ` data-card-image="${escapeHtml(cardImg.imageUrl)}"` : '';
+				const fallbackAttr = cardImg?.fallbackUrl ? ` data-card-fallback="${escapeHtml(cardImg.fallbackUrl)}"` : '';
+
+				return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}"${pitchAttr}${customUrlAttr}${imageAttr}${fallbackAttr} class="card-link !text-blue-400 !underline !decoration-blue-400/50 hover:!text-blue-300 hover:!decoration-blue-300/70">${children}</a>`;
 			} else {
 				const url = escapeHtml(rawUrl);
 				return `<a href="${url}" target="_blank" rel="noopener noreferrer">${children}</a>`;
@@ -443,11 +479,24 @@
 							cardId = cardId.replace(/\[(r|y|b)\]$/i, '').trim();
 						}
 
+						// Decode URL-encoded card names (e.g., Felling%20of%20the%20Crown -> Felling of the Crown)
+						try {
+							cardId = decodeURIComponent(cardId);
+						} catch (e) {
+							// Keep original if decoding fails
+						}
+
 						const linkUrl = customUrl || `https://cards.fabtcg.com/results/?q=${encodeURIComponent(cardId)}`;
 						const pitchAttr = pitch ? ` data-card-pitch="${pitch}"` : '';
 						const customUrlAttr = customUrl ? ` data-card-url="${escapeHtml(customUrl)}"` : '';
 
-						return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}"${pitchAttr}${customUrlAttr} class="card-link !text-blue-400 !underline !decoration-blue-400/50 hover:!text-blue-300 hover:!decoration-blue-300/70">${renderChildren(child.children)}</a>`;
+						// Look up card image from server-resolved images
+						const pitchLetter2 = pitch === '1' ? 'r' : pitch === '2' ? 'y' : pitch === '3' ? 'b' : null;
+						const cardImg2 = getCardImage(cardId, pitchLetter2);
+						const imageAttr2 = cardImg2?.imageUrl ? ` data-card-image="${escapeHtml(cardImg2.imageUrl)}"` : '';
+						const fallbackAttr2 = cardImg2?.fallbackUrl ? ` data-card-fallback="${escapeHtml(cardImg2.fallbackUrl)}"` : '';
+
+						return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}"${pitchAttr}${customUrlAttr}${imageAttr2}${fallbackAttr2} class="card-link !text-blue-400 !underline !decoration-blue-400/50 hover:!text-blue-300 hover:!decoration-blue-300/70">${renderChildren(child.children)}</a>`;
 					} else {
 						return `<a href="${escapeHtml(rawUrl)}" target="_blank" rel="noopener noreferrer">${renderChildren(child.children)}</a>`;
 					}
@@ -696,6 +745,7 @@
 											format={block.data.format}
 											fabraryUrl={block.data.fabraryUrl}
 											parsedCards={block.data.parsedCards}
+											{cardImages}
 										/>
 									{/if}
 								{/each}

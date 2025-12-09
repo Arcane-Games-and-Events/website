@@ -26,6 +26,7 @@
 		if (pathname.includes('/admin/orders/')) return 'orders';
 		if (pathname.includes('/admin/import-matches')) return 'import-matches';
 		if (pathname.includes('/admin/analytics')) return 'analytics';
+		if (pathname.includes('/admin/cards')) return 'cards';
 
 		return 'overview';
 	});
@@ -42,6 +43,7 @@
 			case 'players': return 'Standings';
 			case 'calendar': return 'Calendar';
 			case 'import-matches': return 'Import Matches';
+			case 'cards': return 'Card Database';
 			default: return 'Admin';
 		}
 	});

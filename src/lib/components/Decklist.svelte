@@ -16,6 +16,9 @@
 	export let parsedCards = null;
 	export let fabraryUrl = null;
 
+	// Card images map from server for hover tooltips
+	export let cardImages = {};
+
 	// Determine if using new or legacy format
 	$: isNewFormat = parsedCards && (parsedCards.arenaCards || parsedCards.deckCards);
 
@@ -130,6 +133,37 @@
 		if (color === 'blue') return '3';
 		return null;
 	}
+
+	/**
+	 * Convert color to pitch letter for card image lookup
+	 */
+	function colorToPitchLetter(color) {
+		if (color === 'red') return 'r';
+		if (color === 'yellow') return 'y';
+		if (color === 'blue') return 'b';
+		return null;
+	}
+
+	/**
+	 * Look up card image from the server-provided cardImages map
+	 */
+	function getCardImage(cardName, pitchLetter) {
+		if (!cardImages || Object.keys(cardImages).length === 0) return null;
+		const normalizedName = cardName.toLowerCase();
+		const pitchKey = pitchLetter ? `${normalizedName}:${pitchLetter}` : null;
+
+		// Try pitch-specific key first
+		if (pitchKey && cardImages[pitchKey]) {
+			return cardImages[pitchKey];
+		}
+
+		// Fall back to base name
+		if (cardImages[normalizedName]) {
+			return cardImages[normalizedName];
+		}
+
+		return null;
+	}
 </script>
 
 <div
@@ -182,11 +216,14 @@
 					<div class="mb-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">Arena</div>
 					<div class="flex flex-wrap gap-2">
 						{#each processedCards.arena as card}
+							{@const arenaCardImg = getCardImage(card.name, null)}
 							<a
 								href={getSearchUrl(card.name)}
 								target="_blank"
 								rel="noopener noreferrer"
 								data-card-name={card.name}
+								data-card-image={arenaCardImg?.imageUrl || null}
+								data-card-fallback={arenaCardImg?.fallbackUrl || null}
 								class="card-link rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm !text-white !no-underline transition-all duration-150 hover:border-yellow-500/50 hover:bg-yellow-500/10 hover:!text-yellow-300"
 							>
 								{#if card.quantity > 1}<span class="mr-1 text-gray-400">{card.quantity}×</span>{/if}{card.name}
@@ -228,6 +265,7 @@
 							</div>
 							<div class="grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2 md:grid-cols-3">
 								{#each processedCards.deck[color] as card}
+									{@const deckCardImg = getCardImage(card.name, colorToPitchLetter(color))}
 									<div class="flex min-w-0 items-baseline gap-2">
 										<span class="w-5 shrink-0 text-right text-xs font-medium text-gray-500"
 											>{card.quantity}×</span
@@ -238,6 +276,8 @@
 											rel="noopener noreferrer"
 											data-card-name={card.name}
 											data-card-pitch={colorToPitch(color)}
+											data-card-image={deckCardImg?.imageUrl || null}
+											data-card-fallback={deckCardImg?.fallbackUrl || null}
 											class="card-link truncate !text-white !underline !decoration-white/40 transition-colors duration-150 hover:!text-yellow-400 hover:!decoration-yellow-400/60"
 											title={card.name}>{card.name}</a
 										>
@@ -259,6 +299,7 @@
 							</h4>
 							<div class="space-y-1 text-sm">
 								{#each groupedCards[type] as card}
+									{@const legacyCardImg = getCardImage(card.name, null)}
 									<div class="flex items-baseline gap-2">
 										<span class="w-5 shrink-0 text-right text-xs font-medium text-gray-500"
 											>{card.quantity}×</span
@@ -269,6 +310,8 @@
 											target="_blank"
 											rel="noopener noreferrer"
 											data-card-name={card.name}
+											data-card-image={legacyCardImg?.imageUrl || null}
+											data-card-fallback={legacyCardImg?.fallbackUrl || null}
 											class="card-link truncate !text-white !underline !decoration-white/40 transition-colors duration-150 hover:!text-yellow-400 hover:!decoration-yellow-400/60"
 											title={card.name}>{card.name}</a
 										>

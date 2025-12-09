@@ -2,18 +2,18 @@
 	/**
 	 * CardHover - Hover tooltip and mobile modal for card links
 	 *
-	 * Automatically attaches to elements with class "card-link" and data-card-name attribute.
+	 * Automatically attaches to elements with class "card-link" and pre-resolved image URLs.
 	 * - Desktop: Shows hover tooltip
 	 * - Mobile: Shows modal on tap with optional external link button
 	 *
-	 * Supports:
-	 * - data-card-name: Card name for image lookup
-	 * - data-card-pitch: Optional pitch (1/2/3) for pitched cards
+	 * Required data attributes (server must resolve these):
+	 * - data-card-name: Card name for display
+	 * - data-card-image: Pre-resolved image URL
+	 * - data-card-fallback: Optional fallback image URL
 	 * - data-card-url: Optional custom URL for external link button
 	 */
 
 	import { onMount, onDestroy } from 'svelte';
-	import { resolveCardImage } from '$lib/utils/fab-cards.js';
 
 	// Container element to search for card links (defaults to document)
 	export let container = null;
@@ -48,55 +48,51 @@
 
 		const link = event.currentTarget;
 		const cardName = link.dataset.cardName;
-		const pitch = link.dataset.cardPitch;
+		const cardImage = link.dataset.cardImage;
+		const cardFallback = link.dataset.cardFallback;
 
-		if (!cardName) return;
+		if (!cardName || !cardImage) return;
 
-		// Use unified resolver
-		const result = resolveCardImage(cardName, { pitch });
+		currentCard = { name: cardName, imageUrl: cardImage, fallbackUrl: cardFallback };
+		imageUrl = cardImage;
+		fallbackUrl = cardFallback || null;
+		imageLoaded = false;
+		imageError = false;
 
-		if (result.found) {
-			currentCard = result;
-			imageUrl = result.imageUrl;
-			fallbackUrl = result.fallbackUrl;
-			imageLoaded = false;
-			imageError = false;
+		// Position tooltip
+		const rect = link.getBoundingClientRect();
+		const viewportWidth = window.innerWidth;
+		const viewportHeight = window.innerHeight;
+		const tooltipWidth = 250;
+		const tooltipHeight = 350;
 
-			// Position tooltip
-			const rect = link.getBoundingClientRect();
-			const viewportWidth = window.innerWidth;
-			const viewportHeight = window.innerHeight;
-			const tooltipWidth = 250;
-			const tooltipHeight = 350;
+		// Default: position to the right of the link
+		let x = rect.right + 10;
+		let y = rect.top;
 
-			// Default: position to the right of the link
-			let x = rect.right + 10;
-			let y = rect.top;
-
-			// If tooltip would go off right edge, position to the left
-			if (x + tooltipWidth > viewportWidth - 20) {
-				x = rect.left - tooltipWidth - 10;
-			}
-
-			// If still off screen (narrow viewport), center it
-			if (x < 20) {
-				x = Math.max(20, (viewportWidth - tooltipWidth) / 2);
-			}
-
-			// If tooltip would go off bottom, adjust y
-			if (y + tooltipHeight > viewportHeight - 20) {
-				y = viewportHeight - tooltipHeight - 20;
-			}
-
-			// Ensure y is not negative
-			if (y < 20) {
-				y = 20;
-			}
-
-			tooltipX = x;
-			tooltipY = y;
-			tooltipVisible = true;
+		// If tooltip would go off right edge, position to the left
+		if (x + tooltipWidth > viewportWidth - 20) {
+			x = rect.left - tooltipWidth - 10;
 		}
+
+		// If still off screen (narrow viewport), center it
+		if (x < 20) {
+			x = Math.max(20, (viewportWidth - tooltipWidth) / 2);
+		}
+
+		// If tooltip would go off bottom, adjust y
+		if (y + tooltipHeight > viewportHeight - 20) {
+			y = viewportHeight - tooltipHeight - 20;
+		}
+
+		// Ensure y is not negative
+		if (y < 20) {
+			y = 20;
+		}
+
+		tooltipX = x;
+		tooltipY = y;
+		tooltipVisible = true;
 	}
 
 	function handleMouseLeave() {
@@ -112,28 +108,24 @@
 
 		const link = event.currentTarget;
 		const cardName = link.dataset.cardName;
-		const pitch = link.dataset.cardPitch;
+		const cardImage = link.dataset.cardImage;
+		const cardFallback = link.dataset.cardFallback;
 		const customUrl = link.dataset.cardUrl;
 
-		if (!cardName) return;
+		if (!cardName || !cardImage) return;
 
 		// Prevent default link behavior
 		event.preventDefault();
 		event.stopPropagation();
 
-		// Use unified resolver
-		const result = resolveCardImage(cardName, { pitch });
-
-		if (result.found) {
-			modalCard = result;
-			// Track if we have a custom URL
-			modalHasCustomUrl = !!customUrl;
-			// Use custom URL if provided, otherwise generate default fabtcg search URL
-			modalUrl = customUrl || `https://cards.fabtcg.com/results/?q=${encodeURIComponent(cardName).replace(/%20/g, '+')}`;
-			modalImageLoaded = false;
-			modalImageError = false;
-			modalVisible = true;
-		}
+		modalCard = { name: cardName, imageUrl: cardImage, fallbackUrl: cardFallback };
+		// Track if we have a custom URL
+		modalHasCustomUrl = !!customUrl;
+		// Use custom URL if provided, otherwise generate default fabtcg search URL
+		modalUrl = customUrl || `https://cards.fabtcg.com/results/?q=${encodeURIComponent(cardName).replace(/%20/g, '+')}`;
+		modalImageLoaded = false;
+		modalImageError = false;
+		modalVisible = true;
 	}
 
 	function closeModal() {

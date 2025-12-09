@@ -9,7 +9,8 @@
 		{ id: 'events', name: 'Events', icon: 'ticket', href: '/admin?tab=events', color: 'cyan' },
 		{ id: 'players', name: 'Standings', icon: 'trophy', href: '/admin?tab=players', color: 'rose' },
 		{ id: 'calendar', name: 'Calendar', icon: 'calendar-days', href: '/admin?tab=calendar', color: 'amber' },
-		{ id: 'import-matches', name: 'Import Matches', icon: 'upload', href: '/admin/import-matches', color: 'teal' }
+		{ id: 'import-matches', name: 'Import Matches', icon: 'upload', href: '/admin/import-matches', color: 'teal' },
+		{ id: 'cards', name: 'Cards', icon: 'cards', href: '/admin/cards', color: 'orange' }
 	];
 
 	function getActiveColor(color) {
@@ -21,7 +22,8 @@
 			rose: 'bg-rose-500/15 border-rose-500/40 text-rose-400',
 			indigo: 'bg-indigo-500/15 border-indigo-500/40 text-indigo-400',
 			teal: 'bg-teal-500/15 border-teal-500/40 text-teal-400',
-			amber: 'bg-amber-500/15 border-amber-500/40 text-amber-400'
+			amber: 'bg-amber-500/15 border-amber-500/40 text-amber-400',
+			orange: 'bg-orange-500/15 border-orange-500/40 text-orange-400'
 		};
 		return colors[color] || colors.blue;
 	}
@@ -36,7 +38,8 @@
 			rose: 'text-rose-400',
 			indigo: 'text-indigo-400',
 			teal: 'text-teal-400',
-			amber: 'text-amber-400'
+			amber: 'text-amber-400',
+			orange: 'text-orange-400'
 		};
 		return colors[color] || colors.blue;
 	}
@@ -160,6 +163,10 @@
 					{:else if item.icon === 'upload'}
 						<svg class="h-4 w-4 {getIconColor(item.color, isActive)}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+						</svg>
+					{:else if item.icon === 'cards'}
+						<svg class="h-4 w-4 {getIconColor(item.color, isActive)}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
 						</svg>
 					{/if}
 				</div>

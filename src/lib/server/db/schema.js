@@ -297,6 +297,30 @@ export const savedCard = pgTable('saved_card', {
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
+// FAB CARD LOOKUP (card image URLs for fast decklist resolution)
+// Keys: "card name" or "card name:red/yellow/blue" for pitch-specific lookups
+export const fabCardLookup = pgTable('fab_card_lookup', {
+	lookupKey: text('lookup_key').primaryKey(), // "snatch" or "snatch:red"
+	name: text('name').notNull(), // Original card name
+	imageUrl: text('image_url'),
+	fallbackUrl: text('fallback_url'),
+	pitch: integer('pitch'),
+
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// FAB CARD UPLOAD HISTORY (track card database updates)
+export const fabCardUploadHistory = pgTable('fab_card_upload_history', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	uploadedBy: text('uploaded_by'), // User email who uploaded
+	filename: text('filename'),
+	totalCards: integer('total_cards').notNull(),
+	lookupEntries: integer('lookup_entries').notNull(),
+	setsIncluded: jsonb('sets_included'), // Array of set IDs
+
+	uploadedAt: timestamp('uploaded_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
 // LSS EVENTS (official Legend Story Studios competitive events/seasons)
 export const lssEvent = pgTable('lss_events', {
 	id: uuid('id').defaultRandom().primaryKey(),

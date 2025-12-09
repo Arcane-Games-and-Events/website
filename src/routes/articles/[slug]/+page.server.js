@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow, userHasPremiumAccess } from '$lib/server/articles/access.js';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+import { resolveCardImage } from '$lib/server/cards/index.js';
 
 /**
  * Truncate Lexical content to only show first few paragraphs for preview
@@ -43,6 +44,118 @@ function truncateContentForPreview(content, maxParagraphs = 3) {
 			children: truncatedChildren
 		}
 	};
+}
+
+/**
+ * Extract card names from Lexical content (looks for card: links)
+ */
+function extractCardNamesFromContent(node, cardNames = new Set()) {
+	if (!node) return cardNames;
+
+	// Check for link nodes with card: URLs
+	if (node.type === 'link' || node.type === 'autolink') {
+		const url = node.fields?.url || node.url || '';
+		const cardMatch = url.match(/^#?card:(.+)$/);
+		if (cardMatch) {
+			let cardId = cardMatch[1];
+			// Handle separators for custom URLs
+			const separatorIndex = cardId.search(/[|]|%7C|::|--/);
+			if (separatorIndex !== -1) {
+				cardId = cardId.substring(0, separatorIndex);
+			}
+			// Remove pitch indicator [r], [y], [b]
+			const pitchMatch = cardId.match(/\[(r|y|b)\]$/i);
+			let pitch = null;
+			if (pitchMatch) {
+				pitch = pitchMatch[1].toLowerCase();
+				cardId = cardId.replace(/\[(r|y|b)\]$/i, '').trim();
+			}
+			// Decode URL-encoded card names (e.g., Felling%20of%20the%20Crown -> Felling of the Crown)
+			try {
+				cardId = decodeURIComponent(cardId);
+			} catch (e) {
+				// Keep original if decoding fails
+			}
+			// Store with pitch info
+			cardNames.add(JSON.stringify({ name: cardId, pitch }));
+		}
+	}
+
+	// Recursively process children
+	if (node.children && Array.isArray(node.children)) {
+		node.children.forEach(child => extractCardNamesFromContent(child, cardNames));
+	}
+
+	// Handle root node
+	if (node.root) {
+		extractCardNamesFromContent(node.root, cardNames);
+	}
+
+	return cardNames;
+}
+
+/**
+ * Extract card names from decklists
+ */
+function extractCardNamesFromDecklists(decklists) {
+	const cardNames = new Set();
+	if (!decklists || !Array.isArray(decklists)) return cardNames;
+
+	for (const decklist of decklists) {
+		// Hero
+		if (decklist.hero) {
+			cardNames.add(JSON.stringify({ name: decklist.hero, pitch: null }));
+		}
+
+		// Arena cards
+		if (decklist.parsedCards?.arenaCards) {
+			for (const card of decklist.parsedCards.arenaCards) {
+				cardNames.add(JSON.stringify({ name: card.name, pitch: null }));
+			}
+		}
+
+		// Deck cards
+		if (decklist.parsedCards?.deckCards) {
+			for (const card of decklist.parsedCards.deckCards) {
+				const pitch = card.color === 'red' ? 'r' : card.color === 'yellow' ? 'y' : card.color === 'blue' ? 'b' : null;
+				cardNames.add(JSON.stringify({ name: card.name, pitch }));
+			}
+		}
+	}
+
+	return cardNames;
+}
+
+/**
+ * Resolve card images for a set of card names
+ * Returns a map of "cardName:pitch" -> { imageUrl, fallbackUrl }
+ */
+async function resolveCardImages(cardNamesSet) {
+	const cardImages = {};
+	const cards = Array.from(cardNamesSet).map(json => JSON.parse(json));
+
+	await Promise.all(cards.map(async ({ name, pitch }) => {
+		const pitchNum = pitch === 'r' ? 1 : pitch === 'y' ? 2 : pitch === 'b' ? 3 : null;
+		const resolved = await resolveCardImage({ name, pitch: pitchNum });
+
+		if (resolved.found) {
+			// Store with pitch key for specific lookups
+			const key = pitch ? `${name.toLowerCase()}:${pitch}` : name.toLowerCase();
+			cardImages[key] = {
+				imageUrl: resolved.imageUrl,
+				fallbackUrl: resolved.fallbackUrl
+			};
+			// Also store without pitch for fallback
+			if (pitch && !cardImages[name.toLowerCase()]) {
+				cardImages[name.toLowerCase()] = {
+					imageUrl: resolved.imageUrl,
+					fallbackUrl: resolved.fallbackUrl
+				};
+			}
+		}
+	}));
+
+	return cardImages;
 }
 
 /**
@@ -135,6 +248,14 @@ export async function load({ params, locals, setHeaders }) {
 		// Process content to convert relative URLs to absolute
 		const processedContent = processContentUrls(post.content);
 
+		// Extract all card names from content and decklists for image resolution
+		const contentCardNames = extractCardNamesFromContent(processedContent);
+		const decklistCardNames = extractCardNamesFromDecklists(decklists);
+		const allCardNames = new Set([...contentCardNames, ...decklistCardNames]);
+
+		// Resolve card images in parallel
+		const cardImages = allCardNames.size > 0 ? await resolveCardImages(allCardNames) : {};
+
 		const article = {
 			slug: post.slug,
 			title: post.title,
@@ -196,6 +317,7 @@ export async function load({ params, locals, setHeaders }) {
 			article,
 			isPremium,
 			isPreview,
+			cardImages,
 			user: user ? { role: user.role } : null
 		};
 	} catch (err) {

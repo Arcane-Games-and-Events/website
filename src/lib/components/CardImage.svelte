@@ -1,30 +1,19 @@
 <script>
 	/**
-	 * CardImage - Unified card image component for the entire site
+	 * CardImage - Card image display component
 	 *
-	 * Usage:
-	 * 1. With card object (from decklists):
-	 *    <CardImage card={{ name: 'Snatch', color: 'red' }} />
-	 *
-	 * 2. With separate props:
-	 *    <CardImage name="Snatch" pitch="r" />
-	 *    <CardImage name="Snatch" color="red" />
-	 *
-	 * 3. For equipment/heroes (no pitch):
-	 *    <CardImage name="Fyendal's Spring Tunic" />
+	 * Usage (server resolves images, client just displays):
+	 * <CardImage card={{ name: 'Snatch', imageUrl: '...', fallbackUrl: '...' }} />
+	 * <CardImage imageUrl="..." fallbackUrl="..." alt="Card name" />
 	 */
 
-	import { resolveCardImage } from '$lib/utils/fab-cards.js';
-
-	// Props - accepts multiple input formats
-	/** @type {{ name?: string, color?: string, pitch?: string|number } | null} */
+	// Props - accepts card object with pre-resolved URLs or direct URL props
+	/** @type {{ name?: string, imageUrl?: string, fallbackUrl?: string } | null} */
 	export let card = null;
 	/** @type {string | null} */
-	export let name = null;
-	/** @type {string | number | null} */
-	export let pitch = null;
+	export let imageUrl = null;
 	/** @type {string | null} */
-	export let color = null;
+	export let fallbackUrl = null;
 
 	// Display options
 	/** @type {string} */
@@ -39,26 +28,16 @@
 	// State
 	let imageLoaded = false;
 	let imageError = false;
-	let currentUrl = null;
-	let fallbackUrl = null;
 
-	// Resolve the card image when inputs change
-	$: {
-		// Reset state
+	// Get URLs from card object or direct props
+	$: currentUrl = card?.imageUrl || imageUrl;
+	$: currentFallback = card?.fallbackUrl || fallbackUrl;
+	$: computedAlt = alt || card?.name || 'Card';
+
+	// Reset state when URL changes
+	$: if (currentUrl) {
 		imageLoaded = false;
 		imageError = false;
-
-		// Determine input - prefer card object, fall back to individual props
-		const input = card || (name ? { name, pitch: pitch || color } : null);
-
-		if (input) {
-			const result = resolveCardImage(input);
-			currentUrl = result.imageUrl;
-			fallbackUrl = result.fallbackUrl;
-		} else {
-			currentUrl = null;
-			fallbackUrl = null;
-		}
 	}
 
 	function handleLoad() {
@@ -68,17 +47,14 @@
 
 	function handleError() {
 		// Try fallback if available
-		if (fallbackUrl && currentUrl !== fallbackUrl) {
-			currentUrl = fallbackUrl;
+		if (currentFallback && currentUrl !== currentFallback) {
+			currentUrl = currentFallback;
 			imageLoaded = false;
 			imageError = false;
 		} else {
 			imageError = true;
 		}
 	}
-
-	// Compute alt text
-	$: computedAlt = alt || card?.name || name || 'Card';
 </script>
 
 <div class="card-image-container aspect-[488/680] bg-gray-800 relative {className}">

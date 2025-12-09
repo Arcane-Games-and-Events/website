@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { event, decklist } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
-import { resolveCardImage } from '$lib/utils/fab-cards.js';
+import { resolveCardImage } from '$lib/server/cards/index.js';
 
 export async function load({ params }) {
 	try {
@@ -43,25 +43,26 @@ export async function load({ params }) {
 			throw error(403, 'This decklist is not public');
 		}
 
-		// Resolve card images server-side to avoid sending 12MB JSON to client
+		// Resolve card images server-side using database lookup
 		const cards = Array.isArray(decklistData.cards) ? decklistData.cards : [];
-		const cardsWithImages = cards.map(card => {
-			const resolved = resolveCardImage({
-				name: card.name,
-				color: card.section // section is the color (red/yellow/blue)
-			});
-			return {
-				...card,
-				imageUrl: resolved.imageUrl,
-				fallbackUrl: resolved.fallbackUrl,
-				pitch: resolved.pitch,
-				cardTypes: resolved.found ? undefined : undefined // We'll handle types differently
-			};
-		});
+		const cardsWithImages = await Promise.all(
+			cards.map(async (card) => {
+				const resolved = await resolveCardImage({
+					name: card.name,
+					color: card.section // section is the color (red/yellow/blue)
+				});
+				return {
+					...card,
+					imageUrl: resolved.imageUrl,
+					fallbackUrl: resolved.fallbackUrl,
+					pitch: resolved.pitch
+				};
+			})
+		);
 
 		// Resolve hero image
 		const heroResolved = decklistData.hero
-			? resolveCardImage({ name: decklistData.hero })
+			? await resolveCardImage({ name: decklistData.hero })
 			: null;
 
 		return {
