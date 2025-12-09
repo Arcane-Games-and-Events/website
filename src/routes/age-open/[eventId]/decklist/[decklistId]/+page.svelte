@@ -1,147 +1,32 @@
 <script>
-	import cardsData from '$lib/data/cards.json';
-
+	// Card images are now resolved server-side - no 12MB JSON import needed!
 	let { data } = $props();
 
-	const { decklist, playerResult } = data;
+	const { decklist } = data;
 
-	// Build a lookup map for card images by name
-	const cardImageMap = new Map();
-
-	// Official FAB CDN for card images (faster, consistent quality)
-	const CDN_BASE = 'https://d2wlb52bya4y8z.cloudfront.net/media/cards/large';
-
-	// Sets that don't work with the official CDN (promos, special sets)
-	const NON_CDN_SETS = new Set([
-		'FAB', 'LGS', 'HER', 'JDG', 'WIN', 'LSS', 'GEM', 'TCC',
-		'AAZ', 'AGB', 'AIO', 'AKO', 'AMX', 'APR', 'APS', 'ASB', 'ASR', 'AST',
-		'AUA', 'AVS', 'BET', 'BOL', 'BRI', 'CHN', 'CIN', 'DRO', 'DVR', 'ENG',
-		'FAI', 'FLR', 'FNG', 'KSI', 'KYO', 'LEV', 'LXI', 'NUU', 'OLA', 'OLD',
-		'OSC', 'PSM', 'RHI', 'RVD', 'VER', 'VIC', 'WOD', 'ZEN'
-	]);
-
-	function findBestPrinting(printings) {
-		const excludedRarities = ['P', 'V'];
-		const excludedEditions = ['N'];
-
-		const passesBasicFilters = (p) =>
-			p.id && !excludedRarities.includes(p.rarity) && !excludedEditions.includes(p.edition);
-		const isCdnCompatible = (p) => !NON_CDN_SETS.has(p.set_id);
-
-		const cdnNonFoil = printings.find(p => passesBasicFilters(p) && isCdnCompatible(p) && (!p.foiling || p.foiling === ''));
-		if (cdnNonFoil) return { printing: cdnNonFoil, useCdn: true };
-
-		const cdnColdFoil = printings.find(p => passesBasicFilters(p) && isCdnCompatible(p) && p.foiling === 'S');
-		if (cdnColdFoil) return { printing: cdnColdFoil, useCdn: true };
-
-		const cdnRainbowFoil = printings.find(p => passesBasicFilters(p) && isCdnCompatible(p) && p.foiling === 'R');
-		if (cdnRainbowFoil) return { printing: cdnRainbowFoil, useCdn: true };
-
-		const anyCdnPrinting = printings.find(p => p.id && isCdnCompatible(p) && p.foiling !== 'G');
-		if (anyCdnPrinting) return { printing: anyCdnPrinting, useCdn: true };
-
-		const fallbackNonFoil = printings.find(p => p.image_url && (!p.foiling || p.foiling === ''));
-		if (fallbackNonFoil) return { printing: fallbackNonFoil, useCdn: false };
-
-		const fallbackAny = printings.find(p => p.image_url && p.foiling !== 'G');
-		if (fallbackAny) return { printing: fallbackAny, useCdn: false };
-
-		const lastResort = printings.find(p => p.image_url || p.id);
-		return lastResort ? { printing: lastResort, useCdn: !!lastResort.id && isCdnCompatible(lastResort) } : null;
-	}
-
-	const pitchToSection = { 1: 'red', 2: 'yellow', 3: 'blue', '1': 'red', '2': 'yellow', '3': 'blue' };
-
-	for (const card of cardsData) {
-		if (card.name && card.printings && card.printings.length > 0) {
-			const result = findBestPrinting(card.printings);
-			if (result) {
-				const { printing, useCdn } = result;
-				const imageUrl = useCdn ? `${CDN_BASE}/${printing.id}.webp` : printing.image_url;
-
-				if (imageUrl) {
-					const cardData = {
-						imageUrl,
-						fallbackUrl: printing.image_url,
-						color: card.color,
-						pitch: card.pitch,
-						types: card.types || []
-					};
-
-					const baseName = card.name.toLowerCase();
-					const section = pitchToSection[card.pitch];
-
-					if (section) {
-						cardImageMap.set(`${baseName}:${section}`, cardData);
-					}
-					if (!cardImageMap.has(baseName)) {
-						cardImageMap.set(baseName, cardData);
-					}
-				}
-			}
-		}
-	}
-
-	const equipmentTypes = ['Equipment', 'Weapon', 'Hero', 'Young Hero', 'Token'];
-
-	function findCardImage(card) {
-		if (!card) return null;
-
-		const cardName = typeof card === 'string' ? card : (card.name || card);
-		const section = typeof card === 'object' ? card.section?.toLowerCase() : null;
-
-		if (!cardName) return null;
-
-		const normalizedName = cardName.trim().toLowerCase();
-
-		if (section && ['red', 'yellow', 'blue'].includes(section)) {
-			const pitchKey = `${normalizedName}:${section}`;
-			if (cardImageMap.has(pitchKey)) return cardImageMap.get(pitchKey);
-
-			const withoutSuffix = normalizedName.replace(/\s*\(\d\)\s*$/, '').replace(/\s*\((red|yellow|blue)\)\s*$/i, '');
-			const pitchKeyClean = `${withoutSuffix}:${section}`;
-			if (cardImageMap.has(pitchKeyClean)) return cardImageMap.get(pitchKeyClean);
-		}
-
-		if (cardImageMap.has(normalizedName)) return cardImageMap.get(normalizedName);
-
-		const withoutPitchSuffix = normalizedName.replace(/\s*\(\d\)\s*$/, '').replace(/\s*\((red|yellow|blue)\)\s*$/i, '');
-		if (cardImageMap.has(withoutPitchSuffix)) return cardImageMap.get(withoutPitchSuffix);
-
-		for (const [key, value] of cardImageMap) {
-			if (key.startsWith(normalizedName) || normalizedName.startsWith(key)) return value;
-		}
-
-		return null;
-	}
-
+	// Cards now come with imageUrl and fallbackUrl from the server
 	const cardsList = $derived(Array.isArray(decklist.cards) ? decklist.cards : []);
 	const totalCards = $derived(cardsList.reduce((sum, card) => sum + (card.quantity || 1), 0));
 
-	function getCardCategory(card) {
-		const cardData = findCardImage(card);
+	// Hero image is now provided by the server
+	const heroImage = $derived(decklist.heroImage);
 
+	function getCardCategory(card) {
+		// Check section first (equipment/arena)
 		if (card.section) {
 			const section = card.section.toLowerCase();
 			if (section === 'equipment' || section === 'arena') return 'equipment';
 		}
 
-		if (cardData) {
-			const isEquipmentType = cardData.types.some(type => equipmentTypes.includes(type));
-			if (isEquipmentType) return 'equipment';
+		// Use pitch from server-resolved data
+		const pitch = card.pitch;
+		if (pitch !== undefined && pitch !== null && pitch !== '') {
+			if (pitch === 1 || pitch === '1') return 'red';
+			if (pitch === 2 || pitch === '2') return 'yellow';
+			if (pitch === 3 || pitch === '3') return 'blue';
 		}
 
-		if (cardData) {
-			const pitch = cardData.pitch;
-			const color = cardData.color;
-			const hasPitch = pitch !== undefined && pitch !== null && pitch !== '';
-			const hasColor = color !== undefined && color !== null && color !== '';
-
-			if (!hasPitch && !hasColor) {
-				return 'colorless';
-			}
-		}
-
+		// Fall back to section color
 		if (card.section) {
 			const section = card.section.toLowerCase();
 			if (section === 'red') return 'red';
@@ -149,21 +34,7 @@
 			if (section === 'blue') return 'blue';
 		}
 
-		if (cardData) {
-			const pitch = cardData.pitch;
-			if (pitch === 1 || pitch === '1') return 'red';
-			if (pitch === 2 || pitch === '2') return 'yellow';
-			if (pitch === 3 || pitch === '3') return 'blue';
-
-			const color = cardData.color;
-			if (color) {
-				const c = color.toLowerCase();
-				if (c === 'red') return 'red';
-				if (c === 'yellow') return 'yellow';
-				if (c === 'blue') return 'blue';
-			}
-		}
-
+		// Default to equipment for items without pitch/color
 		return 'equipment';
 	}
 
@@ -175,14 +46,18 @@
 		return groups;
 	});
 
-	// Create hero card object
+	// Create hero card object with server-provided image URLs
 	const heroCard = $derived(() => {
 		if (!decklist.hero) return null;
-		return { name: decklist.hero, quantity: 1, section: 'equipment', isHero: true };
+		return {
+			name: decklist.hero,
+			quantity: 1,
+			section: 'equipment',
+			isHero: true,
+			imageUrl: heroImage?.imageUrl,
+			fallbackUrl: heroImage?.fallbackUrl
+		};
 	});
-
-	// Get hero image
-	const heroImage = $derived(decklist.hero ? findCardImage(decklist.hero) : null);
 
 	// Smart column layout for pitched cards + colorless
 	const columnLayout = $derived(() => {
@@ -243,7 +118,8 @@
 
 	function selectCard(card) {
 		selectedCard = card;
-		selectedCardImage = findCardImage(card);
+		// Use the server-provided imageUrl and fallbackUrl directly from the card
+		selectedCardImage = card ? { imageUrl: card.imageUrl, fallbackUrl: card.fallbackUrl } : null;
 		previewImageLoaded = false;
 		previewImageError = false;
 		previewTriedFallback = false;
@@ -365,7 +241,8 @@
 
 	function openCardModal(card) {
 		modalCard = card;
-		modalCardImage = findCardImage(card);
+		// Use the server-provided imageUrl and fallbackUrl directly from the card
+		modalCardImage = card ? { imageUrl: card.imageUrl, fallbackUrl: card.fallbackUrl } : null;
 		modalImageLoaded = false;
 		modalImageError = false;
 		modalTriedFallback = false;
@@ -437,6 +314,15 @@
 <svelte:head>
 	<title>{decklist.playerName}'s {decklist.hero || 'Deck'} - AGE Open</title>
 	<meta name="description" content="Decklist for {decklist.playerName} playing {decklist.hero || 'Deck'}" />
+	<!-- Preload hero and first few card images for instant display -->
+	{#if heroImage?.imageUrl}
+		<link rel="preload" as="image" href={heroImage.imageUrl} />
+	{/if}
+	{#each cardsList.slice(0, 6) as card}
+		{#if card.imageUrl}
+			<link rel="preload" as="image" href={card.imageUrl} />
+		{/if}
+	{/each}
 </svelte:head>
 
 <div class="min-h-screen bg-gray-950">

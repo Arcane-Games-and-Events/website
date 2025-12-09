@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { event, decklist } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
+import { resolveCardImage } from '$lib/utils/fab-cards.js';
 
 export async function load({ params }) {
 	try {
@@ -42,8 +43,36 @@ export async function load({ params }) {
 			throw error(403, 'This decklist is not public');
 		}
 
+		// Resolve card images server-side to avoid sending 12MB JSON to client
+		const cards = Array.isArray(decklistData.cards) ? decklistData.cards : [];
+		const cardsWithImages = cards.map(card => {
+			const resolved = resolveCardImage({
+				name: card.name,
+				color: card.section // section is the color (red/yellow/blue)
+			});
+			return {
+				...card,
+				imageUrl: resolved.imageUrl,
+				fallbackUrl: resolved.fallbackUrl,
+				pitch: resolved.pitch,
+				cardTypes: resolved.found ? undefined : undefined // We'll handle types differently
+			};
+		});
+
+		// Resolve hero image
+		const heroResolved = decklistData.hero
+			? resolveCardImage({ name: decklistData.hero })
+			: null;
+
 		return {
-			decklist: decklistData
+			decklist: {
+				...decklistData,
+				cards: cardsWithImages,
+				heroImage: heroResolved ? {
+					imageUrl: heroResolved.imageUrl,
+					fallbackUrl: heroResolved.fallbackUrl
+				} : null
+			}
 		};
 	} catch (err) {
 		if (err.status === 404 || err.status === 403) {

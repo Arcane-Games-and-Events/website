@@ -205,6 +205,8 @@
 		name="description"
 		content="Your hub for Flesh and Blood TCG events, premium content, and community"
 	/>
+	<!-- Preload LCP image for faster initial render -->
+	<link rel="preload" as="image" href="/banner/age-open-banner.webp" />
 </svelte:head>
 
 <div class="min-h-screen">
@@ -226,6 +228,7 @@
 						<img
 							src="/banner/age-open-banner.webp"
 							alt=""
+							fetchpriority="high"
 							class="absolute inset-0 h-full w-full object-cover opacity-30 md:opacity-50"
 						/>
 					{/if}
