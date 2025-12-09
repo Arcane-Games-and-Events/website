@@ -1,6 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { match, standing, event } from '$lib/server/db/schema.js';
+import { match, standing, event, eventPlayerHero } from '$lib/server/db/schema.js';
 import { eq, and, count, sql } from 'drizzle-orm';
 import { parsePairings } from '$lib/server/tournament-processor.js';
 import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
@@ -45,6 +45,19 @@ export async function load({ locals }) {
 	if (!locals.user || locals.user.role !== 'admin') {
 		throw redirect(302, '/login');
 	}
+
+	// Get hero counts first (no RPC needed, simple query)
+	const heroCounts = await db
+		.select({
+			season: eventPlayerHero.season,
+			circuit: eventPlayerHero.circuit,
+			month: eventPlayerHero.month,
+			count: count()
+		})
+		.from(eventPlayerHero)
+		.groupBy(eventPlayerHero.season, eventPlayerHero.circuit, eventPlayerHero.month);
+
+	const heroCountMap = new Map(heroCounts.map((h) => [`${h.season}|${h.circuit}|${h.month}`, h.count]));
 
 	try {
 		// Try RPC first
@@ -99,6 +112,7 @@ export async function load({ locals }) {
 					derivedEvents.push({
 						title: `${dataEntry.circuit} ${month} Open`,
 						matchCount: matchCountMap.get(matchKey) || 0,
+						heroCount: heroCountMap.get(matchKey) || 0,
 						playerCount,
 						month,
 						season: dataEntry.season,
@@ -120,6 +134,8 @@ export async function load({ locals }) {
 						totalMatches: 0,
 						eventsWithMatches: 0,
 						eventsMissing: 0,
+						eventsWithHeroes: 0,
+						eventsMissingHeroes: 0,
 						totalPlayers: circuitData?.totalPlayers || 0
 					};
 				}
@@ -129,6 +145,11 @@ export async function load({ locals }) {
 					circuitGroups[circuit].eventsWithMatches++;
 				} else {
 					circuitGroups[circuit].eventsMissing++;
+				}
+				if (e.heroCount > 0) {
+					circuitGroups[circuit].eventsWithHeroes++;
+				} else {
+					circuitGroups[circuit].eventsMissingHeroes++;
 				}
 			}
 
@@ -142,11 +163,15 @@ export async function load({ locals }) {
 
 			const eventsWithMatches = derivedEvents.filter((e) => e.matchCount > 0).length;
 			const eventsMissingMatches = derivedEvents.filter((e) => e.matchCount === 0).length;
+			const eventsWithHeroes = derivedEvents.filter((e) => e.heroCount > 0).length;
+			const eventsMissingHeroes = derivedEvents.filter((e) => e.heroCount === 0).length;
 
 			return {
 				circuitGroups: Object.values(circuitGroups).sort((a, b) => a.name.localeCompare(b.name)),
 				eventsWithMatches,
 				eventsMissingMatches,
+				eventsWithHeroes,
+				eventsMissingHeroes,
 				totalEvents: derivedEvents.length
 			};
 		}
@@ -200,6 +225,7 @@ export async function load({ locals }) {
 			derivedEvents.push({
 				title: `${data.circuit} ${month} Open`,
 				matchCount: matchCountMap.get(matchKey) || 0,
+				heroCount: heroCountMap.get(matchKey) || 0,
 				playerCount,
 				month,
 				season: data.season,
@@ -220,6 +246,8 @@ export async function load({ locals }) {
 				totalMatches: 0,
 				eventsWithMatches: 0,
 				eventsMissing: 0,
+				eventsWithHeroes: 0,
+				eventsMissingHeroes: 0,
 				totalPlayers: circuitData?.totalPlayers || 0
 			};
 		}
@@ -229,6 +257,11 @@ export async function load({ locals }) {
 			circuitGroups[circuit].eventsWithMatches++;
 		} else {
 			circuitGroups[circuit].eventsMissing++;
+		}
+		if (e.heroCount > 0) {
+			circuitGroups[circuit].eventsWithHeroes++;
+		} else {
+			circuitGroups[circuit].eventsMissingHeroes++;
 		}
 	}
 
@@ -241,11 +274,15 @@ export async function load({ locals }) {
 
 	const eventsWithMatches = derivedEvents.filter((e) => e.matchCount > 0).length;
 	const eventsMissingMatches = derivedEvents.filter((e) => e.matchCount === 0).length;
+	const eventsWithHeroes = derivedEvents.filter((e) => e.heroCount > 0).length;
+	const eventsMissingHeroes = derivedEvents.filter((e) => e.heroCount === 0).length;
 
 	return {
 		circuitGroups: Object.values(circuitGroups).sort((a, b) => a.name.localeCompare(b.name)),
 		eventsWithMatches,
 		eventsMissingMatches,
+		eventsWithHeroes,
+		eventsMissingHeroes,
 		totalEvents: derivedEvents.length
 	};
 }
@@ -376,6 +413,120 @@ export const actions = {
 		} catch (err) {
 			console.error('Error importing matches:', err);
 			return fail(500, { error: `Failed to import: ${err.message}` });
+		}
+	},
+
+	importHeroes: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const heroesFile = formData.get('heroes');
+		const eventCircuit = formData.get('eventCircuit');
+		const eventMonth = formData.get('eventMonth');
+		const eventSeason = formData.get('eventSeason');
+
+		if (!heroesFile || !eventCircuit || !eventMonth || !eventSeason) {
+			return fail(400, { error: 'Heroes file and event details are required' });
+		}
+
+		try {
+			const csvContent = await heroesFile.text();
+			const lines = csvContent.split('\n').filter((line) => line.trim());
+
+			if (lines.length < 2) {
+				return fail(400, { error: 'CSV must have a header row and at least one data row' });
+			}
+
+			// Parse header to find column indices
+			const header = lines[0].split(',').map((h) => h.trim().toLowerCase());
+			const nameIdx = header.findIndex((h) => h === 'name' || h === 'player name' || h === 'player');
+			const heroIdx = header.findIndex((h) => h === 'hero' || h === 'hero name');
+			const gemIdIdx = header.findIndex((h) =>
+				h === 'gem id' || h === 'gemid' || h === 'gem_id' ||
+				h === 'player id' || h === 'playerid' || h === 'player_id'
+			);
+			const countryIdx = header.findIndex((h) => h === 'country/region' || h === 'country' || h === 'region');
+
+			if (nameIdx === -1 || heroIdx === -1) {
+				return fail(400, { error: 'CSV must have "Name" and "Hero" columns' });
+			}
+
+			// Parse hero entries
+			const heroEntries = [];
+			for (let i = 1; i < lines.length; i++) {
+				const line = lines[i].trim();
+				if (!line) continue;
+
+				// Handle CSV with potential quoted fields
+				const parts = [];
+				let current = '';
+				let inQuotes = false;
+				for (const char of line) {
+					if (char === '"') {
+						inQuotes = !inQuotes;
+					} else if (char === ',' && !inQuotes) {
+						parts.push(current.trim());
+						current = '';
+					} else {
+						current += char;
+					}
+				}
+				parts.push(current.trim());
+
+				const playerName = parts[nameIdx]?.replace(/^"|"$/g, '').trim();
+				// Sanitize hero name: remove "(LL)" suffix and trim
+				const rawHero = parts[heroIdx]?.replace(/^"|"$/g, '').trim();
+				const hero = rawHero?.replace(/\s*\(LL\)\s*$/i, '').trim();
+				const gemId = gemIdIdx !== -1 ? parts[gemIdIdx]?.replace(/^"|"$/g, '').trim() || null : null;
+				const countryRegion = countryIdx !== -1 ? parts[countryIdx]?.replace(/^"|"$/g, '').trim() || null : null;
+
+				if (playerName && hero) {
+					heroEntries.push({
+						season: eventSeason,
+						circuit: eventCircuit,
+						month: eventMonth,
+						playerName,
+						hero,
+						gemId,
+						countryRegion
+					});
+				}
+			}
+
+			if (heroEntries.length === 0) {
+				return fail(400, { error: 'No valid hero entries found in CSV' });
+			}
+
+			// Import with transaction
+			await db.transaction(async (tx) => {
+				// Clear existing heroes for this event context
+				await tx
+					.delete(eventPlayerHero)
+					.where(
+						and(
+							eq(eventPlayerHero.season, eventSeason),
+							eq(eventPlayerHero.circuit, eventCircuit),
+							eq(eventPlayerHero.month, eventMonth)
+						)
+					);
+
+				// Insert new hero entries
+				await tx.insert(eventPlayerHero).values(heroEntries);
+			});
+
+			// Invalidate relevant caches
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:results:all`);
+
+			return {
+				success: true,
+				message: `Imported ${heroEntries.length} hero entries for ${eventCircuit} ${eventMonth} ${eventSeason}`
+			};
+		} catch (err) {
+			console.error('Error importing heroes:', err);
+			return fail(500, { error: `Failed to import heroes: ${err.message}` });
 		}
 	}
 };

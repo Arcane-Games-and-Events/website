@@ -336,3 +336,29 @@ export const lssEvent = pgTable('lss_events', {
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
+
+// EVENT PLAYER HEROES (track what hero each player played at each event)
+// Organized by season/circuit/month to match standings structure
+export const eventPlayerHero = pgTable('event_player_heroes', {
+	id: uuid('id').defaultRandom().primaryKey(),
+
+	// Event context (matches standings structure)
+	season: text('season').notNull(), // e.g., "2025"
+	circuit: text('circuit').notNull(), // e.g., "Los Angeles", "St. Louis"
+	month: text('month').notNull(), // e.g., "January", "February"
+
+	// Player identification
+	gemId: text('gem_id'), // Player's GEM ID
+	playerName: text('player_name').notNull(), // For display and fallback matching
+
+	// Hero played at this event
+	hero: text('hero').notNull(),
+
+	// Optional metadata from CSV
+	countryRegion: text('country_region'),
+
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+}, (table) => ({
+	// Each player can only have one hero entry per season/circuit/month
+	uniqueEventPlayer: unique().on(table.season, table.circuit, table.month, table.gemId)
+}));

@@ -28,8 +28,8 @@
 			standing.decemberPoints || 0
 		];
 
-		const eventsPlayed = monthlyPoints.filter(p => p > 0).length;
-		const top8Finishes = monthlyPoints.filter(p => p >= 15).length;
+		const eventsPlayed = monthlyPoints.filter((p) => p > 0).length;
+		const top8Finishes = monthlyPoints.filter((p) => p >= 15).length;
 
 		return { eventsPlayed, top8Finishes };
 	}
@@ -112,16 +112,26 @@
 				}
 			}
 		}
-		// Sort by year desc, then month order, then round
+		// Sort by year desc, then month desc (most recent first), then round asc
 		const monthOrder = [
-			'January', 'February', 'March', 'April', 'May', 'June',
-			'July', 'August', 'September', 'October', 'November', 'December'
+			'January',
+			'February',
+			'March',
+			'April',
+			'May',
+			'June',
+			'July',
+			'August',
+			'September',
+			'October',
+			'November',
+			'December'
 		];
 		return allMatches.sort((a, b) => {
 			if (a.event.year !== b.event.year) return b.event.year.localeCompare(a.event.year);
 			const monthA = monthOrder.indexOf(a.event.month);
 			const monthB = monthOrder.indexOf(b.event.month);
-			if (monthA !== monthB) return monthA - monthB;
+			if (monthA !== monthB) return monthB - monthA; // Descending (most recent month first)
 			return a.match.round - b.match.round;
 		});
 	});
@@ -134,6 +144,49 @@
 		const key = `${year}|${circuit}|${monthName}`;
 		return data.matchHistory.matchesByEvent[key] || [];
 	}
+
+	// Get hero for a specific event (season|circuit|month)
+	function getHeroForEvent(season, circuit, month) {
+		if (!data.heroByEvent) return null;
+		// Convert month key to proper case (e.g., "january" -> "January")
+		const monthName = month.charAt(0).toUpperCase() + month.slice(1);
+		const key = `${season}|${circuit}|${monthName}`;
+		return data.heroByEvent[key] || null;
+	}
+
+	// Get opponent hero for a specific match
+	function getOpponentHero(opponentGemId, year, circuit, month) {
+		if (!data.opponentHeroMap || !opponentGemId) return null;
+		const key = `${opponentGemId}|${year}|${circuit}|${month}`;
+		return data.opponentHeroMap[key] || null;
+	}
+
+	// Sorted hero history (most recent first)
+	const sortedHeroHistory = $derived(() => {
+		if (!data.heroHistory) return [];
+		const monthOrder = [
+			'January',
+			'February',
+			'March',
+			'April',
+			'May',
+			'June',
+			'July',
+			'August',
+			'September',
+			'October',
+			'November',
+			'December'
+		];
+		return [...data.heroHistory].sort((a, b) => {
+			// Sort by season descending
+			if (a.season !== b.season) return b.season.localeCompare(a.season);
+			// Sort by month descending (most recent first)
+			const monthA = monthOrder.indexOf(a.month);
+			const monthB = monthOrder.indexOf(b.month);
+			return monthB - monthA;
+		});
+	});
 
 	// Toggle expanded month
 	function toggleMonthExpand(standingId, monthKey) {
@@ -564,7 +617,7 @@
 					</div>
 					<!-- Tooltip on hover -->
 					<div
-						class="pointer-events-none absolute left-1/2 top-full z-50 mt-3 hidden -translate-x-1/2 group-hover:block"
+						class="pointer-events-none absolute top-full left-1/2 z-50 mt-3 hidden -translate-x-1/2 group-hover:block"
 					>
 						<div
 							class="min-w-[200px] rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 shadow-2xl"
@@ -582,21 +635,27 @@
 										<div class="h-2 w-2 rounded-full bg-blue-400"></div>
 										<span class="text-gray-400">Win Rate</span>
 									</div>
-									<span class="font-medium text-white">{ageRating().percentiles.winRate}th %ile</span>
+									<span class="font-medium text-white"
+										>{ageRating().percentiles.winRate}th %ile</span
+									>
 								</div>
 								<div class="flex items-center justify-between">
 									<div class="flex items-center gap-2">
 										<div class="h-2 w-2 rounded-full bg-purple-400"></div>
 										<span class="text-gray-400">Top 8</span>
 									</div>
-									<span class="font-medium text-white">{ageRating().percentiles.top8Rate}th %ile</span>
+									<span class="font-medium text-white"
+										>{ageRating().percentiles.top8Rate}th %ile</span
+									>
 								</div>
 								<div class="flex items-center justify-between">
 									<div class="flex items-center gap-2">
 										<div class="h-2 w-2 rounded-full bg-emerald-400"></div>
 										<span class="text-gray-400">Peak</span>
 									</div>
-									<span class="font-medium text-white">{ageRating().percentiles.bestRank}th %ile</span>
+									<span class="font-medium text-white"
+										>{ageRating().percentiles.bestRank}th %ile</span
+									>
 								</div>
 							</div>
 							{#if ageRating().eventPenalty}
@@ -657,7 +716,7 @@
 						<button
 							onclick={refreshData}
 							disabled={isRefreshing}
-							class="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/80 px-3 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-all disabled:opacity-50"
+							class="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/80 px-3 py-2 text-sm font-medium text-gray-300 transition-all hover:bg-gray-700 hover:text-white disabled:opacity-50"
 							title="Refresh data"
 						>
 							<svg
@@ -666,7 +725,12 @@
 								stroke="currentColor"
 								viewBox="0 0 24 24"
 							>
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+								/>
 							</svg>
 							<span class="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
 						</button>
@@ -946,7 +1010,7 @@
 							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
 						>
 							<div
-								class="whitespace-nowrap rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs shadow-xl"
+								class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs whitespace-nowrap shadow-xl"
 							>
 								<div class="font-semibold text-blue-400">Win Rate Score</div>
 								<div class="text-gray-300">{ageRating().breakdown.winRate.toFixed(1)} / 25 pts</div>
@@ -977,7 +1041,7 @@
 							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
 						>
 							<div
-								class="whitespace-nowrap rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs shadow-xl"
+								class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs whitespace-nowrap shadow-xl"
 							>
 								<div class="font-semibold text-purple-400">Top 8 Conversion</div>
 								<div class="text-gray-300">{ageRating().breakdown.top8.toFixed(1)} / 25 pts</div>
@@ -1008,7 +1072,7 @@
 							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
 						>
 							<div
-								class="whitespace-nowrap rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs shadow-xl"
+								class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs whitespace-nowrap shadow-xl"
 							>
 								<div class="font-semibold text-emerald-400">Peak Performance</div>
 								<div class="text-gray-300">{ageRating().breakdown.peak.toFixed(1)} / 20 pts</div>
@@ -1039,10 +1103,12 @@
 							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
 						>
 							<div
-								class="whitespace-nowrap rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs shadow-xl"
+								class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs whitespace-nowrap shadow-xl"
 							>
 								<div class="font-semibold text-amber-400">Experience</div>
-								<div class="text-gray-300">{ageRating().breakdown.experience.toFixed(1)} / 10 pts</div>
+								<div class="text-gray-300">
+									{ageRating().breakdown.experience.toFixed(1)} / 10 pts
+								</div>
 								<div class="text-gray-500">Total events played</div>
 							</div>
 						</div>
@@ -1070,10 +1136,12 @@
 							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
 						>
 							<div
-								class="whitespace-nowrap rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs shadow-xl"
+								class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs whitespace-nowrap shadow-xl"
 							>
 								<div class="font-semibold text-cyan-400">Points Efficiency</div>
-								<div class="text-gray-300">{ageRating().breakdown.efficiency.toFixed(1)} / 15 pts</div>
+								<div class="text-gray-300">
+									{ageRating().breakdown.efficiency.toFixed(1)} / 15 pts
+								</div>
 								<div class="text-gray-500">Avg points per event</div>
 							</div>
 						</div>
@@ -1101,10 +1169,12 @@
 							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
 						>
 							<div
-								class="whitespace-nowrap rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs shadow-xl"
+								class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs whitespace-nowrap shadow-xl"
 							>
 								<div class="font-semibold text-yellow-400">Championship Bonus</div>
-								<div class="text-gray-300">{ageRating().breakdown.championship.toFixed(1)} / 5 pts</div>
+								<div class="text-gray-300">
+									{ageRating().breakdown.championship.toFixed(1)} / 5 pts
+								</div>
 								<div class="text-gray-500">Top 16 qualifications</div>
 							</div>
 						</div>
@@ -1250,7 +1320,9 @@
 
 			<!-- Historical Performance Chart -->
 			<div class="rounded-2xl border border-gray-800 bg-gray-900/50 p-4 sm:p-6">
-				<h3 class="mb-4 flex flex-wrap items-center gap-2 text-base font-semibold text-white sm:text-lg">
+				<h3
+					class="mb-4 flex flex-wrap items-center gap-2 text-base font-semibold text-white sm:text-lg"
+				>
 					<svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
 							stroke-linecap="round"
@@ -1296,25 +1368,52 @@
 					<div class="mb-4 grid grid-cols-2 gap-2 sm:mb-5 sm:grid-cols-4 sm:gap-3">
 						<!-- Total Matches -->
 						<div class="rounded-lg bg-gray-800/50 p-2.5 text-center sm:p-3">
-							<div class="text-lg font-bold tabular-nums text-white sm:text-xl">{data.matchHistory.totalMatches}</div>
-							<div class="text-[9px] font-medium uppercase tracking-wide text-gray-500 sm:text-[10px]">Matches</div>
+							<div class="text-lg font-bold text-white tabular-nums sm:text-xl">
+								{data.matchHistory.totalMatches}
+							</div>
+							<div
+								class="text-[9px] font-medium tracking-wide text-gray-500 uppercase sm:text-[10px]"
+							>
+								Matches
+							</div>
 						</div>
 						<!-- Unique Opponents -->
 						<div class="rounded-lg bg-gray-800/50 p-2.5 text-center sm:p-3">
-							<div class="text-lg font-bold tabular-nums text-blue-400 sm:text-xl">{data.matchHistory.headToHead?.length || 0}</div>
-							<div class="text-[9px] font-medium uppercase tracking-wide text-gray-500 sm:text-[10px]">Opponents</div>
+							<div class="text-lg font-bold text-blue-400 tabular-nums sm:text-xl">
+								{data.matchHistory.headToHead?.length || 0}
+							</div>
+							<div
+								class="text-[9px] font-medium tracking-wide text-gray-500 uppercase sm:text-[10px]"
+							>
+								Opponents
+							</div>
 						</div>
 						<!-- Current Streak -->
 						<div class="rounded-lg bg-gray-800/50 p-2.5 text-center sm:p-3">
-							<div class="text-lg font-bold tabular-nums sm:text-xl {data.matchHistory.currentWinStreak > 0 ? 'text-emerald-400' : 'text-gray-400'}">
+							<div
+								class="text-lg font-bold tabular-nums sm:text-xl {data.matchHistory
+									.currentWinStreak > 0
+									? 'text-emerald-400'
+									: 'text-gray-400'}"
+							>
 								{data.matchHistory.currentWinStreak > 0 ? data.matchHistory.currentWinStreak : '—'}
 							</div>
-							<div class="text-[9px] font-medium uppercase tracking-wide text-gray-500 sm:text-[10px]">Streak</div>
+							<div
+								class="text-[9px] font-medium tracking-wide text-gray-500 uppercase sm:text-[10px]"
+							>
+								Streak
+							</div>
 						</div>
 						<!-- Longest Streak -->
 						<div class="rounded-lg bg-gray-800/50 p-2.5 text-center sm:p-3">
-							<div class="text-lg font-bold tabular-nums text-yellow-400 sm:text-xl">{data.matchHistory.longestWinStreak || '—'}</div>
-							<div class="text-[9px] font-medium uppercase tracking-wide text-gray-500 sm:text-[10px]">Best Run</div>
+							<div class="text-lg font-bold text-yellow-400 tabular-nums sm:text-xl">
+								{data.matchHistory.longestWinStreak || '—'}
+							</div>
+							<div
+								class="text-[9px] font-medium tracking-wide text-gray-500 uppercase sm:text-[10px]"
+							>
+								Best Run
+							</div>
 						</div>
 					</div>
 
@@ -1325,18 +1424,28 @@
 							<div class="flex flex-wrap items-center gap-1 sm:gap-1.5">
 								{#each data.matchHistory.recentMatches.slice(0, 10) as { match }, i}
 									{@const isPlayer1 = match.player1GemId === data.gemId}
-									{@const won = (isPlayer1 && match.winner === 'player1') || (!isPlayer1 && match.winner === 'player2')}
-									{@const lost = (isPlayer1 && match.winner === 'player2') || (!isPlayer1 && match.winner === 'player1')}
+									{@const won =
+										(isPlayer1 && match.winner === 'player1') ||
+										(!isPlayer1 && match.winner === 'player2')}
+									{@const lost =
+										(isPlayer1 && match.winner === 'player2') ||
+										(!isPlayer1 && match.winner === 'player1')}
 									<div
 										class="flex h-5 w-5 items-center justify-center rounded text-[9px] font-bold sm:h-6 sm:w-6 sm:text-[10px]
-											{won ? 'bg-green-500/20 text-green-400' : lost ? 'bg-red-500/20 text-red-400' : 'bg-gray-700 text-gray-400'}"
+											{won
+											? 'bg-green-500/20 text-green-400'
+											: lost
+												? 'bg-red-500/20 text-red-400'
+												: 'bg-gray-700 text-gray-400'}"
 										title="Match {i + 1}"
 									>
 										{won ? 'W' : lost ? 'L' : 'D'}
 									</div>
 								{/each}
 								{#if data.matchHistory.recentMatches.length > 10}
-									<span class="text-[10px] text-gray-600 sm:text-xs">+{data.matchHistory.recentMatches.length - 10}</span>
+									<span class="text-[10px] text-gray-600 sm:text-xs"
+										>+{data.matchHistory.recentMatches.length - 10}</span
+									>
 								{/if}
 							</div>
 						</div>
@@ -1407,9 +1516,13 @@
 											: ''}"
 										style="min-width: 32px; flex: 1;"
 									>
-										<span class="text-[9px] text-gray-500 sm:text-[10px]">{dataPoint.shortLabel}</span>
+										<span class="text-[9px] text-gray-500 sm:text-[10px]"
+											>{dataPoint.shortLabel}</span
+										>
 										{#if isNewSeason}
-											<span class="text-[8px] font-medium text-blue-400 sm:text-[9px]">{dataPoint.season}</span>
+											<span class="text-[8px] font-medium text-blue-400 sm:text-[9px]"
+												>{dataPoint.season}</span
+											>
 										{/if}
 									</div>
 								{/each}
@@ -1443,9 +1556,13 @@
 							<div class="flex items-center justify-between gap-2">
 								<div class="text-xs text-gray-400 sm:text-sm">Best Month</div>
 								<div class="flex items-center gap-1.5 sm:gap-2">
-									<span class="text-sm font-bold text-yellow-400 sm:text-lg">{bestMonth().label}</span>
+									<span class="text-sm font-bold text-yellow-400 sm:text-lg"
+										>{bestMonth().label}</span
+									>
 									<span class="text-xs text-gray-500 sm:text-sm">•</span>
-									<span class="text-sm font-semibold text-emerald-400">{bestMonth().points} pts</span>
+									<span class="text-sm font-semibold text-emerald-400"
+										>{bestMonth().points} pts</span
+									>
 								</div>
 							</div>
 						</div>
@@ -1526,7 +1643,9 @@
 				{:else if !data.matchHistory}
 					<!-- No Data State (no match or performance data at all) -->
 					<div class="flex flex-col items-center justify-center py-8 text-center">
-						<div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-800/50">
+						<div
+							class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-800/50"
+						>
 							<svg
 								class="h-8 w-8 text-gray-600"
 								fill="none"
@@ -1542,7 +1661,9 @@
 							</svg>
 						</div>
 						<p class="text-sm font-medium text-gray-400">No match history yet</p>
-						<p class="mt-1 text-xs text-gray-600">Performance data appears after events are processed</p>
+						<p class="mt-1 text-xs text-gray-600">
+							Performance data appears after events are processed
+						</p>
 					</div>
 				{/if}
 			</div>
@@ -1571,21 +1692,38 @@
 				<!-- Nemesis & Best Matchup Cards -->
 				<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<!-- Nemesis -->
-					<div class="rounded-xl border border-red-500/20 bg-gradient-to-br from-red-900/20 to-gray-900 p-4">
+					<div
+						class="rounded-xl border border-red-500/20 bg-gradient-to-br from-red-900/20 to-gray-900 p-4"
+					>
 						<div class="flex items-start justify-between">
 							<div class="min-w-0 flex-1">
 								<div class="mb-2 flex items-center gap-2">
 									<span class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/20">
-										<svg class="h-4 w-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+										<svg
+											class="h-4 w-4 text-red-400"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M13 10V3L4 14h7v7l9-11h-7z"
+											/>
 										</svg>
 									</span>
-									<span class="text-xs font-semibold tracking-wide text-red-400 uppercase">Nemesis</span>
+									<span class="text-xs font-semibold tracking-wide text-red-400 uppercase"
+										>Nemesis</span
+									>
 								</div>
 								{#if data.matchHistory.nemesis}
 									<div class="truncate text-lg font-bold text-white">
 										{#if data.matchHistory.nemesis.opponentGemId}
-											<a href="/player/{data.matchHistory.nemesis.opponentGemId}" class="hover:text-red-400">
+											<a
+												href="/player/{data.matchHistory.nemesis.opponentGemId}"
+												class="hover:text-red-400"
+											>
 												{data.matchHistory.nemesis.opponentName}
 											</a>
 										{:else}
@@ -1593,7 +1731,9 @@
 										{/if}
 									</div>
 									<div class="mt-1 flex items-center gap-2 text-sm">
-										<span class="rounded bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400">
+										<span
+											class="rounded bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400"
+										>
 											{data.matchHistory.nemesis.losses}L
 										</span>
 										<span class="text-gray-500">vs</span>
@@ -1607,21 +1747,30 @@
 					</div>
 
 					<!-- Best Matchup -->
-					<div class="rounded-xl border border-green-500/20 bg-gradient-to-br from-green-900/20 to-gray-900 p-4">
+					<div
+						class="rounded-xl border border-green-500/20 bg-gradient-to-br from-green-900/20 to-gray-900 p-4"
+					>
 						<div class="flex items-start justify-between">
 							<div class="min-w-0 flex-1">
 								<div class="mb-2 flex items-center gap-2">
 									<span class="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/20">
 										<svg class="h-4 w-4 text-green-400" fill="currentColor" viewBox="0 0 24 24">
-											<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+											<path
+												d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+											/>
 										</svg>
 									</span>
-									<span class="text-xs font-semibold tracking-wide text-green-400 uppercase">Best Matchup</span>
+									<span class="text-xs font-semibold tracking-wide text-green-400 uppercase"
+										>Best Matchup</span
+									>
 								</div>
 								{#if data.matchHistory.bestMatchup}
 									<div class="truncate text-lg font-bold text-white">
 										{#if data.matchHistory.bestMatchup.opponentGemId}
-											<a href="/player/{data.matchHistory.bestMatchup.opponentGemId}" class="hover:text-green-400">
+											<a
+												href="/player/{data.matchHistory.bestMatchup.opponentGemId}"
+												class="hover:text-green-400"
+											>
 												{data.matchHistory.bestMatchup.opponentName}
 											</a>
 										{:else}
@@ -1629,7 +1778,9 @@
 										{/if}
 									</div>
 									<div class="mt-1 flex items-center gap-2 text-sm">
-										<span class="rounded bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400">
+										<span
+											class="rounded bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400"
+										>
 											{data.matchHistory.bestMatchup.wins}W
 										</span>
 										<span class="text-gray-500">vs</span>
@@ -1648,24 +1799,43 @@
 					<!-- Most Wins Against -->
 					<div class="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4">
 						<h4 class="mb-3 flex items-center gap-2 text-sm font-medium text-gray-400">
-							<svg class="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+							<svg
+								class="h-4 w-4 text-green-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M5 13l4 4L19 7"
+								/>
 							</svg>
 							Most Wins Against
 						</h4>
 						<div class="space-y-2">
-							{#each [...data.matchHistory.headToHead].sort((a, b) => b.wins - a.wins).slice(0, 3) as opponent, i}
+							{#each [...data.matchHistory.headToHead]
+								.sort((a, b) => b.wins - a.wins)
+								.slice(0, 3) as opponent, i}
 								<div class="flex items-center gap-3 rounded-lg bg-gray-900/50 px-3 py-2">
-									<span class="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20 text-xs font-bold text-green-400">
+									<span
+										class="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20 text-xs font-bold text-green-400"
+									>
 										{i + 1}
 									</span>
 									<div class="min-w-0 flex-1">
 										{#if opponent.opponentGemId}
-											<a href="/player/{opponent.opponentGemId}" class="block truncate text-sm font-medium text-white hover:text-green-400">
+											<a
+												href="/player/{opponent.opponentGemId}"
+												class="block truncate text-sm font-medium text-white hover:text-green-400"
+											>
 												{opponent.opponentName}
 											</a>
 										{:else}
-											<span class="block truncate text-sm font-medium text-white">{opponent.opponentName}</span>
+											<span class="block truncate text-sm font-medium text-white"
+												>{opponent.opponentName}</span
+											>
 										{/if}
 									</div>
 									<span class="text-sm font-bold text-green-400">{opponent.wins}W</span>
@@ -1677,24 +1847,43 @@
 					<!-- Most Losses Against -->
 					<div class="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4">
 						<h4 class="mb-3 flex items-center gap-2 text-sm font-medium text-gray-400">
-							<svg class="h-4 w-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+							<svg
+								class="h-4 w-4 text-red-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M6 18L18 6M6 6l12 12"
+								/>
 							</svg>
 							Most Losses Against
 						</h4>
 						<div class="space-y-2">
-							{#each [...data.matchHistory.headToHead].sort((a, b) => b.losses - a.losses).slice(0, 3) as opponent, i}
+							{#each [...data.matchHistory.headToHead]
+								.sort((a, b) => b.losses - a.losses)
+								.slice(0, 3) as opponent, i}
 								<div class="flex items-center gap-3 rounded-lg bg-gray-900/50 px-3 py-2">
-									<span class="flex h-6 w-6 items-center justify-center rounded-full bg-red-500/20 text-xs font-bold text-red-400">
+									<span
+										class="flex h-6 w-6 items-center justify-center rounded-full bg-red-500/20 text-xs font-bold text-red-400"
+									>
 										{i + 1}
 									</span>
 									<div class="min-w-0 flex-1">
 										{#if opponent.opponentGemId}
-											<a href="/player/{opponent.opponentGemId}" class="block truncate text-sm font-medium text-white hover:text-red-400">
+											<a
+												href="/player/{opponent.opponentGemId}"
+												class="block truncate text-sm font-medium text-white hover:text-red-400"
+											>
 												{opponent.opponentName}
 											</a>
 										{:else}
-											<span class="block truncate text-sm font-medium text-white">{opponent.opponentName}</span>
+											<span class="block truncate text-sm font-medium text-white"
+												>{opponent.opponentName}</span
+											>
 										{/if}
 									</div>
 									<span class="text-sm font-bold text-red-400">{opponent.losses}L</span>
@@ -1704,27 +1893,48 @@
 					</div>
 
 					<!-- Most Played -->
-					<div class="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4 sm:col-span-2 lg:col-span-1">
+					<div
+						class="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4 sm:col-span-2 lg:col-span-1"
+					>
 						<h4 class="mb-3 flex items-center gap-2 text-sm font-medium text-gray-400">
-							<svg class="h-4 w-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+							<svg
+								class="h-4 w-4 text-blue-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+								/>
 							</svg>
 							Most Played
 						</h4>
 						<div class="space-y-2">
-							{#each [...data.matchHistory.headToHead].sort((a, b) => (b.wins + b.losses + b.draws) - (a.wins + a.losses + a.draws)).slice(0, 3) as opponent, i}
+							{#each [...data.matchHistory.headToHead]
+								.sort((a, b) => b.wins + b.losses + b.draws - (a.wins + a.losses + a.draws))
+								.slice(0, 3) as opponent, i}
 								{@const totalGames = opponent.wins + opponent.losses + opponent.draws}
 								<div class="flex items-center gap-3 rounded-lg bg-gray-900/50 px-3 py-2">
-									<span class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-xs font-bold text-blue-400">
+									<span
+										class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-xs font-bold text-blue-400"
+									>
 										{i + 1}
 									</span>
 									<div class="min-w-0 flex-1">
 										{#if opponent.opponentGemId}
-											<a href="/player/{opponent.opponentGemId}" class="block truncate text-sm font-medium text-white hover:text-blue-400">
+											<a
+												href="/player/{opponent.opponentGemId}"
+												class="block truncate text-sm font-medium text-white hover:text-blue-400"
+											>
 												{opponent.opponentName}
 											</a>
 										{:else}
-											<span class="block truncate text-sm font-medium text-white">{opponent.opponentName}</span>
+											<span class="block truncate text-sm font-medium text-white"
+												>{opponent.opponentName}</span
+											>
 										{/if}
 									</div>
 									<span class="text-xs text-gray-400">{totalGames} games</span>
@@ -1738,13 +1948,15 @@
 				<div class="border-t border-gray-800 pt-4">
 					<div class="mb-3 flex items-center justify-between">
 						<h4 class="text-sm font-medium text-gray-400">Look Up Opponent</h4>
-						<span class="text-xs text-gray-500">{data.matchHistory.headToHead.length} opponents</span>
+						<span class="text-xs text-gray-500"
+							>{data.matchHistory.headToHead.length} opponents</span
+						>
 					</div>
 					<!-- Combobox Search + Select -->
 					<div class="relative">
 						<div class="relative">
 							<svg
-								class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
+								class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-500"
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
@@ -1762,35 +1974,48 @@
 								onfocus={() => (showOpponentDropdown = true)}
 								oninput={() => {
 									showOpponentDropdown = true;
-									if (selectedOpponent() && opponentSearchQuery !== selectedOpponent().opponentName) {
+									if (
+										selectedOpponent() &&
+										opponentSearchQuery !== selectedOpponent().opponentName
+									) {
 										selectedOpponentKey = '';
 									}
 								}}
 								placeholder="Search opponent..."
-								class="w-full rounded-lg border border-gray-700 bg-gray-800 py-2 pr-8 pl-10 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+								class="w-full rounded-lg border border-gray-700 bg-gray-800 py-2 pr-8 pl-10 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 							/>
 							{#if opponentSearchQuery}
 								<button
 									type="button"
 									onclick={clearOpponentSelection}
 									aria-label="Clear search"
-									class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-500 hover:text-gray-300"
+									class="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-gray-500 hover:text-gray-300"
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M6 18L18 6M6 6l12 12"
+										/>
 									</svg>
 								</button>
 							{/if}
 						</div>
 						<!-- Dropdown -->
 						{#if showOpponentDropdown && filteredHeadToHead().length > 0}
-							<div class="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-700 bg-gray-800 py-1 shadow-xl">
+							<div
+								class="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-700 bg-gray-800 py-1 shadow-xl"
+							>
 								{#each filteredHeadToHead() as h2h}
-									{@const isSelected = selectedOpponentKey === (h2h.opponentGemId || h2h.opponentName)}
+									{@const isSelected =
+										selectedOpponentKey === (h2h.opponentGemId || h2h.opponentName)}
 									<button
 										type="button"
 										onclick={() => selectOpponent(h2h)}
-										class="w-full px-3 py-2 text-left text-sm transition-colors {isSelected ? 'bg-blue-600/20 text-blue-400' : 'text-white hover:bg-gray-700'}"
+										class="w-full px-3 py-2 text-left text-sm transition-colors {isSelected
+											? 'bg-blue-600/20 text-blue-400'
+											: 'text-white hover:bg-gray-700'}"
 									>
 										{h2h.opponentName}
 									</button>
@@ -1798,7 +2023,9 @@
 							</div>
 						{/if}
 						{#if showOpponentDropdown && opponentSearchQuery && filteredHeadToHead().length === 0}
-							<div class="absolute z-20 mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-3 text-center text-sm text-gray-500 shadow-xl">
+							<div
+								class="absolute z-20 mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-3 text-center text-sm text-gray-500 shadow-xl"
+							>
 								No opponents found
 							</div>
 						{/if}
@@ -1832,15 +2059,29 @@
 										{/if}
 									</p>
 									<p class="mt-1 flex items-center gap-2 text-sm">
-										<span class="rounded bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400">{opponent.wins}W</span>
-										<span class="rounded bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400">{opponent.losses}L</span>
+										<span
+											class="rounded bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400"
+											>{opponent.wins}W</span
+										>
+										<span class="rounded bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400"
+											>{opponent.losses}L</span
+										>
 										{#if opponent.draws > 0}
-											<span class="rounded bg-gray-500/20 px-2 py-0.5 text-xs font-medium text-gray-400">{opponent.draws}D</span>
+											<span
+												class="rounded bg-gray-500/20 px-2 py-0.5 text-xs font-medium text-gray-400"
+												>{opponent.draws}D</span
+											>
 										{/if}
 									</p>
 								</div>
-								<div class="flex items-center justify-center rounded-lg px-3 py-2 {winPct >= 50 ? 'bg-green-500/20' : 'bg-red-500/20'}">
-									<span class="text-lg font-bold {winPct >= 50 ? 'text-green-400' : 'text-red-400'}">{winPct}%</span>
+								<div
+									class="flex items-center justify-center rounded-lg px-3 py-2 {winPct >= 50
+										? 'bg-green-500/20'
+										: 'bg-red-500/20'}"
+								>
+									<span class="text-lg font-bold {winPct >= 50 ? 'text-green-400' : 'text-red-400'}"
+										>{winPct}%</span
+									>
 								</div>
 							</div>
 
@@ -1850,19 +2091,101 @@
 									<div class="max-h-48 space-y-1.5 overflow-y-auto">
 										{#each opponentMatches() as { match, event }}
 											{@const isPlayer1 = match.player1GemId === data.gemId}
-											{@const won = (isPlayer1 && match.winner === 'player1') || (!isPlayer1 && match.winner === 'player2')}
-											{@const lost = (isPlayer1 && match.winner === 'player2') || (!isPlayer1 && match.winner === 'player1')}
-											<div class="flex items-center gap-3 rounded-lg bg-gray-900/50 px-3 py-2 text-sm">
-												<span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-xs font-bold {won ? 'bg-green-500/20 text-green-400' : lost ? 'bg-red-500/20 text-red-400' : 'bg-gray-500/20 text-gray-400'}">
-													{won ? 'W' : lost ? 'L' : 'D'}
-												</span>
-												<div class="min-w-0 flex-1">
-													<p class="truncate text-gray-300">{event.circuit} {event.month} Open</p>
-													<p class="text-xs text-gray-500">
-														{event.year} · Round {match.round}
-														{#if match.table}· Table {match.table}{/if}
-													</p>
+											{@const opponentGemId = isPlayer1 ? match.player2GemId : match.player1GemId}
+											{@const opponentHero = getOpponentHero(
+												opponentGemId,
+												event.year,
+												event.circuit,
+												event.month
+											)}
+											{@const playerHero = getHeroForEvent(event.year, event.circuit, event.month)}
+											{@const won =
+												(isPlayer1 && match.winner === 'player1') ||
+												(!isPlayer1 && match.winner === 'player2')}
+											{@const lost =
+												(isPlayer1 && match.winner === 'player2') ||
+												(!isPlayer1 && match.winner === 'player1')}
+											<div class="rounded-lg bg-gray-900/50 px-3 py-2 text-sm">
+												<div class="flex items-center gap-3">
+													<span
+														class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-xs font-bold {won
+															? 'bg-green-500/20 text-green-400'
+															: lost
+																? 'bg-red-500/20 text-red-400'
+																: 'bg-gray-500/20 text-gray-400'}"
+													>
+														{won ? 'W' : lost ? 'L' : 'D'}
+													</span>
+													<div class="min-w-0 flex-1">
+														<p class="truncate text-gray-300">{event.circuit} {event.month} Open</p>
+														<p class="text-xs text-gray-500">
+															{event.year} · Round {match.round}
+															{#if match.table}· Table {match.table}{/if}
+														</p>
+													</div>
 												</div>
+												<!-- Hero matchup display -->
+												{#if playerHero || opponentHero}
+													<div
+														class="mt-2 flex items-center gap-2 rounded-lg border border-gray-700/50 bg-gray-800/50 px-2 py-1.5"
+													>
+														<!-- Player's hero -->
+														<div class="flex min-w-0 flex-1 items-center gap-2">
+															{#if playerHero}
+																<div
+																	class="h-5 w-5 flex-shrink-0 overflow-hidden rounded-full border border-amber-500/50 bg-gray-700"
+																	title={playerHero.hero}
+																>
+																	<img
+																		src={playerHero.imageUrl}
+																		alt={playerHero.hero}
+																		class="h-full w-full object-cover object-right"
+																		onerror={(e) => (e.target.style.display = 'none')}
+																	/>
+																</div>
+															{/if}
+															<div class="min-w-0">
+																<p class="truncate text-xs font-medium text-amber-400">
+																	{data.displayName?.split(' ')[0] || 'You'}
+																</p>
+																{#if playerHero}
+																	<p class="truncate text-xs text-gray-400">{playerHero.hero}</p>
+																{:else}
+																	<p class="text-xs text-gray-600">Unknown hero</p>
+																{/if}
+															</div>
+														</div>
+														<span class="flex-shrink-0 text-xs font-medium text-gray-500">vs</span>
+														<!-- Opponent's hero -->
+														<div
+															class="flex min-w-0 flex-1 items-center justify-end gap-2 text-right"
+														>
+															<div class="min-w-0">
+																<p class="truncate text-xs font-medium text-purple-400">
+																	{selectedOpponent()?.opponentName.split(' ')[0] || 'Opponent'}
+																</p>
+																{#if opponentHero}
+																	<p class="truncate text-xs text-gray-400">{opponentHero.hero}</p>
+																{:else}
+																	<p class="text-xs text-gray-600">Unknown hero</p>
+																{/if}
+															</div>
+															{#if opponentHero}
+																<div
+																	class="h-5 w-5 flex-shrink-0 overflow-hidden rounded-full border border-purple-500/50 bg-gray-700"
+																	title={opponentHero.hero}
+																>
+																	<img
+																		src={opponentHero.imageUrl}
+																		alt={opponentHero.hero}
+																		class="h-full w-full object-cover object-right"
+																		onerror={(e) => (e.target.style.display = 'none')}
+																	/>
+																</div>
+															{/if}
+														</div>
+													</div>
+												{/if}
 											</div>
 										{/each}
 									</div>
@@ -1873,8 +2196,18 @@
 				</div>
 			{:else}
 				<div class="py-8 text-center">
-					<svg class="mx-auto mb-3 h-12 w-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+					<svg
+						class="mx-auto mb-3 h-12 w-12 text-gray-600"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="1.5"
+							d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+						/>
 					</svg>
 					<p class="text-gray-500">No head-to-head data available yet</p>
 					<p class="mt-1 text-xs text-gray-600">Match data will appear once imported</p>
@@ -1888,8 +2221,18 @@
 		<div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
 			<div class="mb-6 flex items-center justify-between">
 				<h2 class="flex items-center gap-3 text-2xl font-bold text-white">
-					<svg class="h-6 w-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+					<svg
+						class="h-6 w-6 text-purple-400"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+						/>
 					</svg>
 					Tournament Decklists
 				</h2>
@@ -1899,7 +2242,13 @@
 						class="flex items-center gap-1 text-sm text-purple-400 hover:text-purple-300"
 					>
 						View all
-						<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+						<svg
+							class="h-4 w-4"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							viewBox="0 0 24 24"
+						>
 							<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
 						</svg>
 					</a>
@@ -1911,12 +2260,298 @@
 					<DecklistCard
 						{decklist}
 						eventId={eventData?.id}
-						eventName={eventData?.circuit ? `${eventData.circuit} ${eventData.month || ''} Open` : 'AGE Open'}
+						eventName={eventData?.circuit
+							? `${eventData.circuit} ${eventData.month || ''} Open`
+							: 'AGE Open'}
 						eventCircuit={eventData?.circuit}
 						showPlayerName={false}
 						showCardCount={true}
 					/>
 				{/each}
+			</div>
+		</div>
+	{/if}
+
+	<!-- Hero History Section -->
+	{#if data.heroHistory && data.heroHistory.length > 0}
+		{@const totalEvents = data.heroHistory.length}
+		{@const primaryHero = data.heroUsage?.[0]}
+		{@const primaryHeroPercentage = primaryHero
+			? Math.round((primaryHero.count / totalEvents) * 100)
+			: 0}
+		{@const isOneHeroPlayer = data.heroUsage?.length === 1}
+		{@const hasDominantHero = primaryHeroPercentage >= 60}
+
+		<div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+			<div class="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/50">
+				<!-- Header -->
+				<div class="flex items-center justify-between border-b border-gray-800 px-6 py-4">
+					<h2 class="flex items-center gap-3 text-xl font-bold text-white">
+						<svg
+							class="h-5 w-5 text-amber-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+							/>
+						</svg>
+						Hero History
+					</h2>
+					<span class="text-sm text-gray-400"
+						>{totalEvents} {totalEvents === 1 ? 'event' : 'events'}</span
+					>
+				</div>
+
+				<div class="overflow-hidden p-6">
+					{#if isOneHeroPlayer}
+						<!-- Single Hero Player - Compact display with hero image -->
+						<div class="flex min-w-0 items-center gap-5 overflow-hidden">
+							<div
+								class="h-16 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-800 shadow-lg ring-2 ring-amber-500/30"
+							>
+								{#if primaryHero.imageUrl}
+									<img
+										src={primaryHero.imageUrl}
+										alt={primaryHero.hero}
+										class="h-full w-full object-cover object-right"
+									/>
+								{:else}
+									<div
+										class="flex h-full w-full items-center justify-center bg-gradient-to-br from-amber-500/20 to-orange-500/20"
+									>
+										<span class="px-1 text-center text-xs font-medium text-amber-400"
+											>{primaryHero.hero}</span
+										>
+									</div>
+								{/if}
+							</div>
+							<div class="min-w-0 flex-1">
+								<p class="mb-1 text-xs tracking-wider text-amber-400/80 uppercase">
+									Dedicated Main
+								</p>
+								<p class="truncate text-2xl font-bold text-white">{primaryHero.hero}</p>
+								<p class="mt-1 text-sm text-gray-400">
+									{totalEvents} consecutive {totalEvents === 1 ? 'event' : 'events'}
+								</p>
+							</div>
+						</div>
+					{:else if hasDominantHero}
+						<!-- Dominant Hero with Others -->
+						<div class="grid gap-6 overflow-hidden lg:grid-cols-3">
+							<!-- Primary Hero with Image -->
+							<div class="min-w-0 lg:col-span-1">
+								<div
+									class="overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/20 to-orange-500/10 p-4"
+								>
+									<div class="flex min-w-0 gap-4">
+										<div
+											class="h-14 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gray-800 shadow-md"
+										>
+											{#if primaryHero.imageUrl}
+												<img
+													src={primaryHero.imageUrl}
+													alt={primaryHero.hero}
+													class="h-full w-full object-cover object-right"
+												/>
+											{:else}
+												<div class="flex h-full w-full items-center justify-center bg-gray-700">
+													<span class="px-1 text-center text-xs text-gray-400"
+														>{primaryHero.hero}</span
+													>
+												</div>
+											{/if}
+										</div>
+										<div class="min-w-0 flex-1">
+											<p class="mb-1 text-xs tracking-wider text-amber-400/80 uppercase">
+												Main Hero
+											</p>
+											<p class="truncate text-lg font-bold text-white">{primaryHero.hero}</p>
+											<div class="mt-1 flex items-baseline gap-2">
+												<span class="text-2xl font-bold text-amber-400"
+													>{primaryHeroPercentage}%</span
+												>
+												<span class="text-xs text-gray-400">({primaryHero.count})</span>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<!-- Other Heroes with small images -->
+							<div class="min-w-0 overflow-hidden lg:col-span-2">
+								<p class="mb-3 text-xs tracking-wider text-gray-500 uppercase">Also Played</p>
+								<div class="space-y-2">
+									{#each data.heroUsage.slice(1) as usage}
+										{@const percentage = Math.round((usage.count / totalEvents) * 100)}
+										<div class="flex min-w-0 items-center gap-3 overflow-hidden">
+											<div class="h-8 w-12 flex-shrink-0 overflow-hidden rounded bg-gray-800">
+												{#if usage.imageUrl}
+													<img
+														src={usage.imageUrl}
+														alt={usage.hero}
+														class="h-full w-full object-cover object-right"
+													/>
+												{:else}
+													<div
+														class="flex h-full w-full items-center justify-center bg-gray-700 text-[8px] text-gray-500"
+													>
+														?
+													</div>
+												{/if}
+											</div>
+											<div class="min-w-0 flex-1">
+												<div class="mb-1 flex min-w-0 items-center justify-between gap-2">
+													<span class="min-w-0 truncate text-sm font-medium text-gray-300"
+														>{usage.hero}</span
+													>
+													<span class="flex-shrink-0 text-xs text-gray-500"
+														>{usage.count} ({percentage}%)</span
+													>
+												</div>
+												<div class="h-1.5 overflow-hidden rounded-full bg-gray-800">
+													<div
+														class="h-full rounded-full bg-gray-600"
+														style="width: {percentage}%"
+													></div>
+												</div>
+											</div>
+										</div>
+									{/each}
+								</div>
+							</div>
+						</div>
+					{:else}
+						<!-- Diverse Hero Pool with images -->
+						<div class="overflow-hidden">
+							<p class="mb-4 text-xs tracking-wider text-gray-500 uppercase">Hero Distribution</p>
+							<div class="grid gap-3 overflow-hidden sm:grid-cols-2 lg:grid-cols-3">
+								{#each data.heroUsage as usage, idx}
+									{@const percentage = Math.round((usage.count / totalEvents) * 100)}
+									{@const isTop = idx === 0}
+									<div
+										class="flex min-w-0 items-center gap-3 overflow-hidden rounded-lg p-3 {isTop
+											? 'border border-amber-500/20 bg-amber-500/10'
+											: 'bg-gray-800/50'}"
+									>
+										<div
+											class="h-10 w-14 flex-shrink-0 overflow-hidden rounded bg-gray-800 {isTop
+												? 'ring-2 ring-amber-500/40'
+												: ''}"
+										>
+											{#if usage.imageUrl}
+												<img
+													src={usage.imageUrl}
+													alt={usage.hero}
+													class="h-full w-full object-cover object-right"
+												/>
+											{:else}
+												<div class="flex h-full w-full items-center justify-center bg-gray-700">
+													<span class="text-center text-[10px] text-gray-500">{idx + 1}</span>
+												</div>
+											{/if}
+										</div>
+										<div class="min-w-0 flex-1">
+											<div class="flex min-w-0 items-center justify-between gap-2">
+												<span
+													class="min-w-0 truncate font-medium {isTop
+														? 'text-white'
+														: 'text-gray-300'} text-sm">{usage.hero}</span
+												>
+												<span
+													class="flex-shrink-0 text-sm {isTop
+														? 'text-amber-400'
+														: 'text-gray-500'}">{usage.count}×</span
+												>
+											</div>
+											<div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-700">
+												<div
+													class="h-full rounded-full {isTop
+														? 'bg-gradient-to-r from-amber-500 to-orange-500'
+														: 'bg-gray-500'}"
+													style="width: {percentage}%"
+												></div>
+											</div>
+										</div>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					<!-- Expandable Event History (only show if multiple events) -->
+					{#if totalEvents > 1}
+						<details class="group mt-6">
+							<summary
+								class="flex cursor-pointer items-center gap-2 text-sm text-gray-400 transition-colors hover:text-gray-300"
+							>
+								<svg
+									class="h-4 w-4 transition-transform group-open:rotate-90"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M9 5l7 7-7 7"
+									/>
+								</svg>
+								View event-by-event breakdown
+							</summary>
+							<div class="mt-4 overflow-hidden rounded-lg border border-gray-800">
+								<!-- Mobile: Card layout -->
+								<div class="divide-y divide-gray-800 sm:hidden">
+									{#each sortedHeroHistory() as entry}
+										<div class="flex items-center justify-between gap-3 px-4 py-3">
+											<div class="min-w-0 flex-1">
+												<p class="text-sm font-medium text-gray-300">{entry.circuit}</p>
+												<p class="text-xs text-gray-500">{entry.month} {entry.season}</p>
+											</div>
+											<span
+												class="flex-shrink-0 rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-400"
+											>
+												{entry.hero.split(',')[0]}
+											</span>
+										</div>
+									{/each}
+								</div>
+								<!-- Desktop: Table layout -->
+								<table class="hidden w-full text-sm sm:table">
+									<thead>
+										<tr class="bg-gray-800/50">
+											<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"
+												>Event</th
+											>
+											<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"
+												>Hero</th
+											>
+										</tr>
+									</thead>
+									<tbody class="divide-y divide-gray-800">
+										{#each sortedHeroHistory() as entry}
+											<tr class="hover:bg-gray-800/30">
+												<td class="px-4 py-2 text-gray-400">
+													{entry.circuit}
+													{entry.month}
+													{entry.season}
+												</td>
+												<td class="px-4 py-2">
+													<span class="text-gray-200">{entry.hero}</span>
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
+						</details>
+					{/if}
+				</div>
 			</div>
 		</div>
 	{/if}
@@ -1988,7 +2623,7 @@
 					</div>
 
 					<!-- Circuit Cards -->
-					<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+					<div class="space-y-3">
 						{#each seasonStandings as standing}
 							{@const stats = calculateDerivedStats(standing)}
 							{@const isExpanded = expandedSeasonId === standing.id}
@@ -1996,53 +2631,85 @@
 								onclick={() => (expandedSeasonId = isExpanded ? null : standing.id)}
 								class="group w-full overflow-hidden rounded-xl border text-left transition-all duration-200
 									{isExpanded
-										? 'border-blue-500/40 bg-gray-900/80 ring-1 ring-blue-500/20'
-										: 'border-gray-800 bg-gray-900/40 hover:border-gray-700 hover:bg-gray-900/60'}"
+									? 'border-blue-500/40 bg-gray-900/80 ring-1 ring-blue-500/20'
+									: 'border-gray-800 bg-gray-900/40 hover:border-gray-700 hover:bg-gray-900/60'}"
 							>
 								<!-- Card Content -->
-								<div class="flex items-center gap-4 p-4">
+								<div class="flex items-center gap-3 p-3 sm:gap-4 sm:p-4">
 									<!-- Points - Hero stat -->
-									<div class="flex h-14 w-14 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 sm:h-16 sm:w-16">
-										<span class="text-xl font-bold tabular-nums text-emerald-400 sm:text-2xl">{standing.totalPoints || 0}</span>
-										<span class="text-[10px] font-medium text-emerald-500/70">PTS</span>
+									<div
+										class="flex h-12 w-12 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 sm:h-16 sm:w-16"
+									>
+										<span class="text-lg font-bold text-emerald-400 tabular-nums sm:text-2xl"
+											>{standing.totalPoints || 0}</span
+										>
+										<span class="text-[9px] font-medium text-emerald-500/70 sm:text-[10px]"
+											>PTS</span
+										>
 									</div>
 
 									<!-- Info -->
 									<div class="min-w-0 flex-1">
 										<!-- Circuit + Rank -->
-										<div class="flex items-center gap-2">
-											<h4 class="truncate text-base font-semibold text-white">{standing.circuit}</h4>
+										<div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+											<h4 class="truncate text-sm font-semibold text-white sm:text-base">
+												{standing.circuit}
+											</h4>
 											{#if standing.calculatedRank && standing.calculatedRank <= 16}
-												<span class="inline-flex items-center gap-0.5 rounded bg-yellow-500/20 px-1.5 py-0.5 text-xs font-bold text-yellow-400">
-													<svg class="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 24 24">
-														<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+												<span
+													class="inline-flex items-center gap-0.5 rounded bg-yellow-500/20 px-1.5 py-0.5 text-[10px] font-bold text-yellow-400 sm:text-xs"
+												>
+													<svg
+														class="h-2 w-2 sm:h-2.5 sm:w-2.5"
+														fill="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+														/>
 													</svg>
 													{standing.calculatedRank}
 												</span>
 											{:else if standing.calculatedRank}
-												<span class="text-xs text-gray-500">#{standing.calculatedRank}</span>
+												<span class="text-[10px] text-gray-500 sm:text-xs"
+													>#{standing.calculatedRank}</span
+												>
 											{/if}
 										</div>
 
 										<!-- Stats row -->
-										<div class="mt-1.5 flex items-center gap-4 text-sm">
+										<div
+											class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs sm:mt-1.5 sm:gap-x-4 sm:text-sm"
+										>
 											<span class="tabular-nums">
-												<span class="font-medium text-green-400">{standing.matchesWon || 0}</span><span class="text-gray-600">-</span><span class="font-medium text-red-400">{(standing.matchesPlayed || 0) - (standing.matchesWon || 0)}</span>
+												<span class="font-medium text-green-400">{standing.matchesWon || 0}</span
+												><span class="text-gray-600">-</span><span class="font-medium text-red-400"
+													>{(standing.matchesPlayed || 0) - (standing.matchesWon || 0)}</span
+												>
 											</span>
-											<span class="text-gray-600">·</span>
-											<span class="text-gray-400">{stats.eventsPlayed} event{stats.eventsPlayed !== 1 ? 's' : ''}</span>
+											<span class="hidden text-gray-600 sm:inline">·</span>
+											<span class="text-gray-400"
+												>{stats.eventsPlayed} event{stats.eventsPlayed !== 1 ? 's' : ''}</span
+											>
 										</div>
 									</div>
 
 									<!-- Expand indicator -->
 									<div class="flex-shrink-0">
 										<svg
-											class="h-5 w-5 text-gray-500 transition-transform duration-200 group-hover:text-gray-400 {isExpanded ? 'rotate-180' : ''}"
+											class="h-4 w-4 text-gray-500 transition-transform duration-200 group-hover:text-gray-400 sm:h-5 sm:w-5 {isExpanded
+												? 'rotate-180'
+												: ''}"
 											fill="none"
 											stroke="currentColor"
 											viewBox="0 0 24 24"
 										>
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M19 9l-7 7-7-7"
+											/>
 										</svg>
 									</div>
 								</div>
@@ -2050,84 +2717,32 @@
 
 							<!-- Expanded Details -->
 							{#if isExpanded}
-								<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/60 mt-2 mb-1">
+								<div
+									class="mt-2 mb-1 overflow-hidden rounded-xl border border-gray-800 bg-gray-900/60"
+								>
 									<div class="p-4">
-									<!-- Player Info Editing (Admin Only) -->
-									{#if editMode}
-												<div class="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-													<h4 class="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-400">
-														<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-														</svg>
-														Player Info
-													</h4>
-													<div class="grid gap-4 sm:grid-cols-2">
-														<form
-															method="POST"
-															action="?/updateStanding"
-															use:enhance={() => {
-																return async ({ result, update }) => {
-																	if (result.type === 'success') {
-																		await update();
-																		await invalidateAll();
-																	}
-																};
-															}}
-															class="space-y-1"
-														>
-															<input type="hidden" name="standingId" value={standing.id} />
-															<input type="hidden" name="field" value="playerName" />
-															<label class="block text-xs text-gray-400">
-																Player Name
-																<input
-																	type="text"
-																	name="value"
-																	value={standing.playerName || ''}
-																	onchange={(e) => e.target.form.requestSubmit()}
-																	class="mt-1 w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-base text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none sm:text-sm"
-																	placeholder="Enter player name"
-																/>
-															</label>
-														</form>
-														<form
-															method="POST"
-															action="?/updateStanding"
-															use:enhance={() => {
-																return async ({ result, update }) => {
-																	if (result.type === 'success') {
-																		await update();
-																		await invalidateAll();
-																	}
-																};
-															}}
-															class="space-y-1"
-														>
-															<input type="hidden" name="standingId" value={standing.id} />
-															<input type="hidden" name="field" value="gemId" />
-															<label class="block text-xs text-gray-400">
-																GEM ID
-																<input
-																	type="text"
-																	name="value"
-																	value={standing.gemId || ''}
-																	onchange={(e) => e.target.form.requestSubmit()}
-																	class="mt-1 w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 font-mono text-base text-blue-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none sm:text-sm"
-																	placeholder="e.g., GEM00000001"
-																/>
-															</label>
-														</form>
-													</div>
-													<p class="mt-3 text-xs text-amber-400/70">
-														<svg class="mr-1 inline h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-														</svg>
-														Changing GEM ID will affect how this standing is linked to the player profile.
-													</p>
-												</div>
-											{/if}
-											<!-- Main Stats Grid -->
-											{#if editMode}
-												<div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+										<!-- Player Info Editing (Admin Only) -->
+										{#if editMode}
+											<div class="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+												<h4
+													class="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-400"
+												>
+													<svg
+														class="h-4 w-4"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+														/>
+													</svg>
+													Player Info
+												</h4>
+												<div class="grid gap-4 sm:grid-cols-2">
 													<form
 														method="POST"
 														action="?/updateStanding"
@@ -2142,15 +2757,16 @@
 														class="space-y-1"
 													>
 														<input type="hidden" name="standingId" value={standing.id} />
-														<input type="hidden" name="field" value="totalPoints" />
-														<label class="block text-xs text-gray-500">
-															Total Points
+														<input type="hidden" name="field" value="playerName" />
+														<label class="block text-xs text-gray-400">
+															Player Name
 															<input
-																type="number"
+																type="text"
 																name="value"
-																value={standing.totalPoints || 0}
+																value={standing.playerName || ''}
 																onchange={(e) => e.target.form.requestSubmit()}
-																class="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-center font-bold text-emerald-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 focus:outline-none"
+																class="mt-1 w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-base text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none sm:text-sm"
+																placeholder="Enter player name"
 															/>
 														</label>
 													</form>
@@ -2168,104 +2784,217 @@
 														class="space-y-1"
 													>
 														<input type="hidden" name="standingId" value={standing.id} />
-														<input type="hidden" name="field" value="winPercentage" />
-														<label class="block text-xs text-gray-500">
-															Win %
+														<input type="hidden" name="field" value="gemId" />
+														<label class="block text-xs text-gray-400">
+															GEM ID
 															<input
-																type="number"
-																step="0.01"
+																type="text"
 																name="value"
-																value={standing.winPercentage || ''}
-																placeholder="-"
+																value={standing.gemId || ''}
 																onchange={(e) => e.target.form.requestSubmit()}
-																class="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-center text-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
-															/>
-														</label>
-													</form>
-													<form
-														method="POST"
-														action="?/updateStanding"
-														use:enhance={() => {
-															return async ({ result, update }) => {
-																if (result.type === 'success') {
-																	await update();
-																	await invalidateAll();
-																}
-															};
-														}}
-														class="space-y-1"
-													>
-														<input type="hidden" name="standingId" value={standing.id} />
-														<input type="hidden" name="field" value="matchesWon" />
-														<label class="block text-xs text-gray-500">
-															Matches Won
-															<input
-																type="number"
-																name="value"
-																value={standing.matchesWon || 0}
-																onchange={(e) => e.target.form.requestSubmit()}
-																class="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-center text-green-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
-															/>
-														</label>
-													</form>
-													<form
-														method="POST"
-														action="?/updateStanding"
-														use:enhance={() => {
-															return async ({ result, update }) => {
-																if (result.type === 'success') {
-																	await update();
-																	await invalidateAll();
-																}
-															};
-														}}
-														class="space-y-1"
-													>
-														<input type="hidden" name="standingId" value={standing.id} />
-														<input type="hidden" name="field" value="matchesPlayed" />
-														<label class="block text-xs text-gray-500">
-															Matches Played
-															<input
-																type="number"
-																name="value"
-																value={standing.matchesPlayed || 0}
-																onchange={(e) => e.target.form.requestSubmit()}
-																class="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-center text-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
+																class="mt-1 w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 font-mono text-base text-blue-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none sm:text-sm"
+																placeholder="e.g., GEM00000001"
 															/>
 														</label>
 													</form>
 												</div>
-											{/if}
+												<p class="mt-3 text-xs text-amber-400/70">
+													<svg
+														class="mr-1 inline h-3 w-3"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+														/>
+													</svg>
+													Changing GEM ID will affect how this standing is linked to the player profile.
+												</p>
+											</div>
+										{/if}
+										<!-- Main Stats Grid -->
+										{#if editMode}
+											<div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+												<form
+													method="POST"
+													action="?/updateStanding"
+													use:enhance={() => {
+														return async ({ result, update }) => {
+															if (result.type === 'success') {
+																await update();
+																await invalidateAll();
+															}
+														};
+													}}
+													class="space-y-1"
+												>
+													<input type="hidden" name="standingId" value={standing.id} />
+													<input type="hidden" name="field" value="totalPoints" />
+													<label class="block text-xs text-gray-500">
+														Total Points
+														<input
+															type="number"
+															name="value"
+															value={standing.totalPoints || 0}
+															onchange={(e) => e.target.form.requestSubmit()}
+															class="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-center font-bold text-emerald-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 focus:outline-none"
+														/>
+													</label>
+												</form>
+												<form
+													method="POST"
+													action="?/updateStanding"
+													use:enhance={() => {
+														return async ({ result, update }) => {
+															if (result.type === 'success') {
+																await update();
+																await invalidateAll();
+															}
+														};
+													}}
+													class="space-y-1"
+												>
+													<input type="hidden" name="standingId" value={standing.id} />
+													<input type="hidden" name="field" value="winPercentage" />
+													<label class="block text-xs text-gray-500">
+														Win %
+														<input
+															type="number"
+															step="0.01"
+															name="value"
+															value={standing.winPercentage || ''}
+															placeholder="-"
+															onchange={(e) => e.target.form.requestSubmit()}
+															class="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-center text-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
+														/>
+													</label>
+												</form>
+												<form
+													method="POST"
+													action="?/updateStanding"
+													use:enhance={() => {
+														return async ({ result, update }) => {
+															if (result.type === 'success') {
+																await update();
+																await invalidateAll();
+															}
+														};
+													}}
+													class="space-y-1"
+												>
+													<input type="hidden" name="standingId" value={standing.id} />
+													<input type="hidden" name="field" value="matchesWon" />
+													<label class="block text-xs text-gray-500">
+														Matches Won
+														<input
+															type="number"
+															name="value"
+															value={standing.matchesWon || 0}
+															onchange={(e) => e.target.form.requestSubmit()}
+															class="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-center text-green-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
+														/>
+													</label>
+												</form>
+												<form
+													method="POST"
+													action="?/updateStanding"
+													use:enhance={() => {
+														return async ({ result, update }) => {
+															if (result.type === 'success') {
+																await update();
+																await invalidateAll();
+															}
+														};
+													}}
+													class="space-y-1"
+												>
+													<input type="hidden" name="standingId" value={standing.id} />
+													<input type="hidden" name="field" value="matchesPlayed" />
+													<label class="block text-xs text-gray-500">
+														Matches Played
+														<input
+															type="number"
+															name="value"
+															value={standing.matchesPlayed || 0}
+															onchange={(e) => e.target.form.requestSubmit()}
+															class="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-center text-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
+														/>
+													</label>
+												</form>
+											</div>
+										{/if}
 
-									<!-- Monthly Breakdown -->
-									<div>
-										<div class="mb-3 flex items-center justify-between">
-											<h4 class="text-xs font-medium uppercase tracking-wide text-gray-500">Monthly Results</h4>
-											<span class="text-[10px] text-gray-600 italic">Tap month for details</span>
-										</div>
-										<div class="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-12">
-													{#each months as month}
-														{@const points = standing[`${month.key}Points`] || 0}
-														{@const wins = standing[`${month.key}MatchesWon`] || 0}
-														{@const matches = standing[`${month.key}Matches`] || 0}
-														{@const hasData = points > 0 || wins > 0 || matches > 0}
-														{@const eventMatches = getMatchesForEvent(standing.season, standing.circuit, month.key)}
-														{@const hasMatches = eventMatches.length > 0}
-														{@const isExpanded = expandedMonthKey === `${standing.id}|${month.key}`}
-														{#if editMode}
+										<!-- Monthly Breakdown -->
+										<div>
+											<div class="mb-3 flex items-center justify-between">
+												<h4 class="text-xs font-medium tracking-wide text-gray-500 uppercase">
+													Monthly Results
+												</h4>
+												<span class="text-[10px] text-gray-600 italic">Tap month for details</span>
+											</div>
+											<div class="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-12">
+												{#each months as month}
+													{@const points = standing[`${month.key}Points`] || 0}
+													{@const wins = standing[`${month.key}MatchesWon`] || 0}
+													{@const matches = standing[`${month.key}Matches`] || 0}
+													{@const hasData = points > 0 || wins > 0 || matches > 0}
+													{@const eventMatches = getMatchesForEvent(
+														standing.season,
+														standing.circuit,
+														month.key
+													)}
+													{@const hasMatches = eventMatches.length > 0}
+													{@const isExpanded = expandedMonthKey === `${standing.id}|${month.key}`}
+													{@const monthHero = getHeroForEvent(
+														standing.season,
+														standing.circuit,
+														month.key
+													)}
+													{#if editMode}
+														<div
+															class="rounded-lg border p-2 text-center {hasData
+																? 'border-gray-700 bg-gray-800/50'
+																: 'border-gray-800/50 bg-gray-900/30'}"
+														>
 															<div
-																class="rounded-lg border p-2 text-center {hasData
-																	? 'border-gray-700 bg-gray-800/50'
-																	: 'border-gray-800/50 bg-gray-900/30'}"
+																class="text-xs font-medium {hasData
+																	? 'text-blue-400'
+																	: 'text-gray-600'} mb-1"
 															>
-																<div
-																	class="text-xs font-medium {hasData
-																		? 'text-blue-400'
-																		: 'text-gray-600'} mb-1"
-																>
-																	{month.label}
-																</div>
-																<!-- Points input -->
+																{month.label}
+															</div>
+															<!-- Points input -->
+															<form
+																method="POST"
+																action="?/updateStanding"
+																use:enhance={() => {
+																	return async ({ result, update }) => {
+																		if (result.type === 'success') {
+																			await update();
+																			await invalidateAll();
+																		}
+																	};
+																}}
+															>
+																<input type="hidden" name="standingId" value={standing.id} />
+																<input type="hidden" name="field" value="{month.key}Points" />
+																<input
+																	type="text"
+																	inputmode="numeric"
+																	pattern="[0-9]*"
+																	name="value"
+																	value={points}
+																	onchange={(e) => e.target.form.requestSubmit()}
+																	class="mb-1 w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-center text-sm font-bold text-emerald-400 focus:border-emerald-500 focus:outline-none"
+																	title="Points"
+																/>
+															</form>
+															<!-- Matches Won / Matches Played inputs -->
+															<div class="flex items-center justify-center gap-1">
 																<form
 																	method="POST"
 																	action="?/updateStanding"
@@ -2277,233 +3006,293 @@
 																			}
 																		};
 																	}}
+																	class="flex-1"
 																>
 																	<input type="hidden" name="standingId" value={standing.id} />
-																	<input type="hidden" name="field" value="{month.key}Points" />
+																	<input type="hidden" name="field" value="{month.key}MatchesWon" />
 																	<input
 																		type="text"
 																		inputmode="numeric"
 																		pattern="[0-9]*"
 																		name="value"
-																		value={points}
+																		value={wins}
 																		onchange={(e) => e.target.form.requestSubmit()}
-																		class="mb-1 w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-center text-sm font-bold text-emerald-400 focus:border-emerald-500 focus:outline-none"
-																		title="Points"
+																		class="w-full rounded border border-gray-700 bg-gray-900 px-1 py-1 text-center text-sm text-green-400 focus:border-green-500 focus:outline-none"
+																		title="Matches Won"
 																	/>
 																</form>
-																<!-- Matches Won / Matches Played inputs -->
-																<div class="flex items-center justify-center gap-1">
-																	<form
-																		method="POST"
-																		action="?/updateStanding"
-																		use:enhance={() => {
-																			return async ({ result, update }) => {
-																				if (result.type === 'success') {
-																					await update();
-																					await invalidateAll();
-																				}
-																			};
-																		}}
-																		class="flex-1"
-																	>
-																		<input type="hidden" name="standingId" value={standing.id} />
-																		<input
-																			type="hidden"
-																			name="field"
-																			value="{month.key}MatchesWon"
-																		/>
-																		<input
-																			type="text"
-																			inputmode="numeric"
-																			pattern="[0-9]*"
-																			name="value"
-																			value={wins}
-																			onchange={(e) => e.target.form.requestSubmit()}
-																			class="w-full rounded border border-gray-700 bg-gray-900 px-1 py-1 text-center text-sm text-green-400 focus:border-green-500 focus:outline-none"
-																			title="Matches Won"
-																		/>
-																	</form>
-																	<span class="text-sm font-medium text-gray-500">/</span>
-																	<form
-																		method="POST"
-																		action="?/updateStanding"
-																		use:enhance={() => {
-																			return async ({ result, update }) => {
-																				if (result.type === 'success') {
-																					await update();
-																					await invalidateAll();
-																				}
-																			};
-																		}}
-																		class="flex-1"
-																	>
-																		<input type="hidden" name="standingId" value={standing.id} />
-																		<input type="hidden" name="field" value="{month.key}Matches" />
-																		<input
-																			type="text"
-																			inputmode="numeric"
-																			pattern="[0-9]*"
-																			name="value"
-																			value={matches}
-																			onchange={(e) => e.target.form.requestSubmit()}
-																			class="w-full rounded border border-gray-700 bg-gray-900 px-1 py-1 text-center text-sm text-gray-300 focus:border-blue-500 focus:outline-none"
-																			title="Matches Played"
-																		/>
-																	</form>
-																</div>
+																<span class="text-sm font-medium text-gray-500">/</span>
+																<form
+																	method="POST"
+																	action="?/updateStanding"
+																	use:enhance={() => {
+																		return async ({ result, update }) => {
+																			if (result.type === 'success') {
+																				await update();
+																				await invalidateAll();
+																			}
+																		};
+																	}}
+																	class="flex-1"
+																>
+																	<input type="hidden" name="standingId" value={standing.id} />
+																	<input type="hidden" name="field" value="{month.key}Matches" />
+																	<input
+																		type="text"
+																		inputmode="numeric"
+																		pattern="[0-9]*"
+																		name="value"
+																		value={matches}
+																		onchange={(e) => e.target.form.requestSubmit()}
+																		class="w-full rounded border border-gray-700 bg-gray-900 px-1 py-1 text-center text-sm text-gray-300 focus:border-blue-500 focus:outline-none"
+																		title="Matches Played"
+																	/>
+																</form>
 															</div>
-														{:else}
-															<button
-																type="button"
-																onclick={() => hasMatches && toggleMonthExpand(standing.id, month.key)}
-																disabled={!hasMatches}
-																class="group relative rounded-xl border p-2 text-center transition-all {isExpanded
-																	? 'border-blue-500 bg-blue-900/30 ring-1 ring-blue-500/20'
-																	: hasData
-																		? 'border-gray-700 bg-gray-800/50'
-																		: 'border-gray-800/30 bg-gray-900/20'} {hasMatches
-																	? 'cursor-pointer hover:border-blue-500/50 hover:bg-gray-800/70 active:scale-95'
-																	: 'cursor-default'}"
-															>
-																<!-- Month label -->
-																<div
-																	class="mb-0.5 text-[10px] font-medium {isExpanded
-																		? 'text-blue-300'
-																		: hasData
-																			? 'text-blue-400'
-																			: 'text-gray-600'}"
-																>
-																	{month.label}
-																</div>
-																<!-- Points - main value -->
-																<div
-																	class="text-sm font-bold tabular-nums {hasData
-																		? 'text-emerald-400'
-																		: 'text-gray-700'}"
-																>
-																	{points}
-																</div>
-																<!-- Record -->
-																<div
-																	class="mt-0.5 text-[10px] tabular-nums {hasData
-																		? 'text-gray-400'
-																		: 'text-gray-700'}"
-																>
-																	{wins}/{matches}
-																</div>
-																<!-- Tap indicator for months with matches -->
-																{#if hasMatches && !isExpanded}
-																	<div class="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-blue-500 text-[8px] font-bold text-white shadow">
-																		{eventMatches.length}
-																	</div>
-																{/if}
-															</button>
-														{/if}
-													{/each}
-												</div>
-
-												<!-- Expanded Matches Section -->
-												{#each months as month}
-													{@const eventMatches = getMatchesForEvent(standing.season, standing.circuit, month.key)}
-													{@const isExpanded = expandedMonthKey === `${standing.id}|${month.key}`}
-													{#if isExpanded && eventMatches.length > 0}
-														<div
-															class="mt-4 overflow-hidden rounded-xl border border-blue-500/30 bg-gradient-to-b from-blue-900/20 to-gray-900/50"
+														</div>
+													{:else}
+														<button
+															type="button"
+															onclick={() =>
+																hasMatches && toggleMonthExpand(standing.id, month.key)}
+															disabled={!hasMatches}
+															class="group relative rounded-xl border p-2 text-center transition-all {isExpanded
+																? 'border-blue-500 bg-blue-900/30 ring-1 ring-blue-500/20'
+																: hasData
+																	? 'border-gray-700 bg-gray-800/50'
+																	: 'border-gray-800/30 bg-gray-900/20'} {hasMatches
+																? 'cursor-pointer hover:border-blue-500/50 hover:bg-gray-800/70 active:scale-95'
+																: 'cursor-default'}"
 														>
-															<!-- Header -->
-															<div class="flex items-center justify-between border-b border-blue-500/20 bg-blue-900/30 px-4 py-2.5">
-																<h5 class="text-sm font-semibold text-blue-300">
-																	{month.label} {standing.season}
-																</h5>
-																<span class="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400">
+															<!-- Hero image (if available) -->
+															{#if monthHero && hasData}
+																<div
+																	class="mx-auto mb-1 h-6 w-6 overflow-hidden rounded-full border border-gray-600 bg-gray-700"
+																>
+																	<img
+																		src={monthHero.imageUrl}
+																		alt={monthHero.hero}
+																		class="h-full w-full object-cover object-right"
+																		onerror={(e) => (e.target.style.display = 'none')}
+																	/>
+																</div>
+															{/if}
+															<!-- Month label -->
+															<div
+																class="mb-0.5 text-[10px] font-medium {isExpanded
+																	? 'text-blue-300'
+																	: hasData
+																		? 'text-blue-400'
+																		: 'text-gray-600'}"
+															>
+																{month.label}
+															</div>
+															<!-- Points - main value -->
+															<div
+																class="text-sm font-bold tabular-nums {hasData
+																	? 'text-emerald-400'
+																	: 'text-gray-700'}"
+															>
+																{points}
+															</div>
+															<!-- Hero name or Record -->
+															<div
+																class="mt-0.5 text-[10px] {hasData
+																	? monthHero
+																		? 'font-bold text-amber-400'
+																		: 'text-gray-400'
+																	: 'text-gray-700'} max-w-full truncate"
+																title={monthHero?.hero || `${wins}/${matches}`}
+															>
+																{#if monthHero}
+																	{monthHero.hero.split(',')[0]}
+																{:else}
+																	{wins}/{matches}
+																{/if}
+															</div>
+															<!-- Tap indicator for months with matches -->
+															{#if hasMatches && !isExpanded}
+																<div
+																	class="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-blue-500 text-[8px] font-bold text-white shadow"
+																>
+																	{eventMatches.length}
+																</div>
+															{/if}
+														</button>
+													{/if}
+												{/each}
+											</div>
+
+											<!-- Expanded Matches Section -->
+											{#each months as month}
+												{@const eventMatches = getMatchesForEvent(
+													standing.season,
+													standing.circuit,
+													month.key
+												)}
+												{@const isExpanded = expandedMonthKey === `${standing.id}|${month.key}`}
+												{@const expandedMonthHero = getHeroForEvent(
+													standing.season,
+													standing.circuit,
+													month.key
+												)}
+												{#if isExpanded && eventMatches.length > 0}
+													<div
+														class="mt-3 overflow-hidden rounded-xl border border-blue-500/30 bg-gradient-to-b from-blue-900/20 to-gray-900/50 sm:mt-4"
+													>
+														<!-- Header -->
+														<div
+															class="flex flex-col gap-1 border-b border-blue-500/20 bg-blue-900/30 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-2.5"
+														>
+															<h5 class="text-xs font-semibold text-blue-300 sm:text-sm">
+																{month.label}
+																{standing.season}
+															</h5>
+															{#if expandedMonthHero}
+																<span
+																	class="w-fit rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400 sm:text-xs"
+																>
+																	{expandedMonthHero.hero}
+																</span>
+															{:else}
+																<span
+																	class="w-fit rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-medium text-blue-400 sm:text-xs"
+																>
 																	{eventMatches.length} match{eventMatches.length !== 1 ? 'es' : ''}
 																</span>
-															</div>
-															<!-- Match list -->
-															<div class="divide-y divide-gray-800/50">
-																{#each eventMatches.sort((a, b) => a.match.round - b.match.round) as { match }}
-																	{@const isPlayer1 = match.player1GemId === data.gemId}
-																	{@const opponent = isPlayer1
-																		? match.player2Name
-																		: match.player1Name}
-																	{@const opponentGemId = isPlayer1
-																		? match.player2GemId
-																		: match.player1GemId}
-																	{@const won =
-																		(isPlayer1 && match.winner === 'player1') ||
-																		(!isPlayer1 && match.winner === 'player2')}
-																	{@const lost =
-																		(isPlayer1 && match.winner === 'player2') ||
-																		(!isPlayer1 && match.winner === 'player1')}
-																	<div
-																		class="flex items-center gap-3 px-4 py-3"
+															{/if}
+														</div>
+														<!-- Match list -->
+														<div class="divide-y divide-gray-800/50">
+															{#each eventMatches.sort((a, b) => a.match.round - b.match.round) as { match, event }}
+																{@const isPlayer1 = match.player1GemId === data.gemId}
+																{@const opponent = isPlayer1
+																	? match.player2Name
+																	: match.player1Name}
+																{@const opponentGemId = isPlayer1
+																	? match.player2GemId
+																	: match.player1GemId}
+																{@const opponentHero = getOpponentHero(
+																	opponentGemId,
+																	event.year,
+																	event.circuit,
+																	event.month
+																)}
+																{@const won =
+																	(isPlayer1 && match.winner === 'player1') ||
+																	(!isPlayer1 && match.winner === 'player2')}
+																{@const lost =
+																	(isPlayer1 && match.winner === 'player2') ||
+																	(!isPlayer1 && match.winner === 'player1')}
+																<div
+																	class="flex items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3"
+																>
+																	<!-- Round number -->
+																	<span
+																		class="w-6 flex-shrink-0 text-[10px] font-medium text-gray-500 sm:w-8 sm:text-xs"
+																		>R{match.round}</span
 																	>
-																		<!-- Round number -->
-																		<span class="w-8 flex-shrink-0 text-xs font-medium text-gray-500">R{match.round}</span>
-																		<!-- Result badge -->
-																		<span
-																			class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold {won
-																				? 'bg-green-500/20 text-green-400 ring-1 ring-green-500/30'
-																				: lost
-																					? 'bg-red-500/20 text-red-400 ring-1 ring-red-500/30'
-																					: 'bg-gray-500/20 text-gray-400 ring-1 ring-gray-500/30'}"
-																		>
-																			{won ? 'W' : lost ? 'L' : 'D'}
-																		</span>
-																		<!-- Opponent -->
+																	<!-- Result badge -->
+																	<span
+																		class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg text-[10px] font-bold sm:h-7 sm:w-7 sm:text-xs {won
+																			? 'bg-green-500/20 text-green-400 ring-1 ring-green-500/30'
+																			: lost
+																				? 'bg-red-500/20 text-red-400 ring-1 ring-red-500/30'
+																				: 'bg-gray-500/20 text-gray-400 ring-1 ring-gray-500/30'}"
+																	>
+																		{won ? 'W' : lost ? 'L' : 'D'}
+																	</span>
+																	<!-- Opponent with hero -->
+																	<div class="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
+																		<span class="text-[10px] text-gray-500 sm:text-xs">vs</span>
+																		{#if opponentHero}
+																			<div
+																				class="hidden h-5 w-5 flex-shrink-0 overflow-hidden rounded-full border border-purple-500/50 bg-gray-700 sm:block sm:h-6 sm:w-6"
+																				title={opponentHero.hero}
+																			>
+																				<img
+																					src={opponentHero.imageUrl}
+																					alt={opponentHero.hero}
+																					class="h-full w-full object-cover object-right"
+																					onerror={(e) => (e.target.style.display = 'none')}
+																				/>
+																			</div>
+																		{/if}
 																		<div class="min-w-0 flex-1">
-																			<span class="mr-1 text-xs text-gray-500">vs</span>
 																			{#if opponentGemId}
 																				<a
 																					href="/player/{opponentGemId}"
-																					class="font-medium text-white hover:text-blue-400"
+																					class="block truncate text-xs font-medium text-white hover:text-blue-400 sm:text-sm"
 																				>
 																					{opponent}
 																				</a>
 																			{:else}
-																				<span class="font-medium text-white">{opponent}</span>
+																				<span
+																					class="block truncate text-xs font-medium text-white sm:text-sm"
+																					>{opponent}</span
+																				>
+																			{/if}
+																			{#if opponentHero}
+																				<span
+																					class="block truncate text-[10px] text-yellow-400 sm:inline sm:text-xs"
+																				>
+																					{opponentHero.hero}
+																				</span>
 																			{/if}
 																		</div>
-																		<!-- Table (if available) -->
-																		{#if match.table}
-																			<span class="hidden text-xs text-gray-600 sm:block">T{match.table}</span>
-																		{/if}
 																	</div>
-																{/each}
-															</div>
+																	<!-- Table (if available) -->
+																	{#if match.table}
+																		<span class="hidden text-xs text-gray-600 sm:block"
+																			>T{match.table}</span
+																		>
+																	{/if}
+																</div>
+															{/each}
 														</div>
-													{/if}
-												{/each}
-									</div>
-
-									<!-- Delete Button -->
-									{#if editMode}
-										<div class="mt-4 border-t border-gray-700/50 pt-4">
-											<button
-												type="button"
-												onclick={() => {
-													if (confirm('Delete this standing record?')) {
-														const form = document.createElement('form');
-														form.method = 'POST';
-														form.action = '?/deleteStanding';
-														const input = document.createElement('input');
-														input.type = 'hidden';
-														input.name = 'standingId';
-														input.value = standing.id;
-														form.appendChild(input);
-														document.body.appendChild(form);
-														form.submit();
-													}
-												}}
-												class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition-all hover:bg-red-500/20"
-											>
-												<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-												</svg>
-												Delete
-											</button>
+													</div>
+												{/if}
+											{/each}
 										</div>
-									{/if}
+
+										<!-- Delete Button -->
+										{#if editMode}
+											<div class="mt-4 border-t border-gray-700/50 pt-4">
+												<button
+													type="button"
+													onclick={() => {
+														if (confirm('Delete this standing record?')) {
+															const form = document.createElement('form');
+															form.method = 'POST';
+															form.action = '?/deleteStanding';
+															const input = document.createElement('input');
+															input.type = 'hidden';
+															input.name = 'standingId';
+															input.value = standing.id;
+															form.appendChild(input);
+															document.body.appendChild(form);
+															form.submit();
+														}
+													}}
+													class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition-all hover:bg-red-500/20"
+												>
+													<svg
+														class="h-3.5 w-3.5"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+														/>
+													</svg>
+													Delete
+												</button>
+											</div>
+										{/if}
 									</div>
 								</div>
 							{/if}
@@ -2589,5 +3378,4 @@
 			</div>
 		</div>
 	{/if}
-
 </div>

@@ -1,8 +1,34 @@
 import { db } from '$lib/server/db';
-import { standing, match, decklist, event } from '$lib/server/db/schema';
+import { standing, match, decklist, event, eventPlayerHero } from '$lib/server/db/schema';
 import { eq, desc, or, asc, inArray } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import { calculatePercentile, calculateRankPercentile } from '$lib/age-rating.js';
+
+/**
+ * Convert hero name to static image URL
+ * e.g., "Kayo, Armed and Dangerous" -> "/hero_images/kayo-armed-and-dangerous.webp"
+ * e.g., "Arakni, 5L!p3d 7hRu 7h3 cR4X" -> "/hero_images/arakni-5lp3d-7hru-7h3-cr4x.webp"
+ * e.g., "Jarl Vetreiði" -> "/hero_images/jarl-vetreidi.webp"
+ */
+function getHeroImageUrl(heroName) {
+	if (!heroName) return null;
+	const slug = heroName
+		.toLowerCase()
+		// Normalize special characters (ð → d, etc.)
+		.replace(/ð/g, 'd')
+		.replace(/þ/g, 'th')
+		.replace(/æ/g, 'ae')
+		.replace(/ø/g, 'o')
+		.replace(/å/g, 'a')
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+		.replace(/[!@#$%^&*()+=[\]{}|\\:;<>?/~`]/g, '') // Remove special chars
+		.replace(/[,'"]/g, '') // Remove commas, quotes
+		.replace(/\s+/g, '-') // Replace spaces with dashes
+		.replace(/-+/g, '-') // Collapse multiple dashes
+		.trim();
+	return `/hero_images/${slug}.webp`;
+}
 
 /**
  * Calculate derived stats from monthly data
@@ -401,6 +427,79 @@ export async function load({ params, locals }) {
 		return dateB - dateA;
 	});
 
+	// === HERO HISTORY ===
+	// Query hero choices for this player from event_player_heroes
+	const heroHistory = await db
+		.select()
+		.from(eventPlayerHero)
+		.where(eq(eventPlayerHero.gemId, gemId))
+		.orderBy(desc(eventPlayerHero.season), eventPlayerHero.month);
+
+	// Calculate hero usage stats
+	const heroStats = heroHistory.reduce((acc, entry) => {
+		if (!acc[entry.hero]) {
+			acc[entry.hero] = { hero: entry.hero, count: 0, events: [] };
+		}
+		acc[entry.hero].count++;
+		acc[entry.hero].events.push({
+			season: entry.season,
+			circuit: entry.circuit,
+			month: entry.month
+		});
+		return acc;
+	}, {});
+
+	// Sort heroes by usage count (most played first) and add image URLs
+	const heroUsage = Object.values(heroStats)
+		.sort((a, b) => b.count - a.count)
+		.map((usage) => ({
+			...usage,
+			imageUrl: getHeroImageUrl(usage.hero)
+		}));
+
+	// Create hero lookup map by season|circuit|month for this player
+	const heroByEvent = {};
+	for (const entry of heroHistory) {
+		const key = `${entry.season}|${entry.circuit}|${entry.month}`;
+		heroByEvent[key] = {
+			hero: entry.hero,
+			imageUrl: getHeroImageUrl(entry.hero)
+		};
+	}
+
+	// === OPPONENT HERO LOOKUP ===
+	// Collect all unique opponent GEM IDs and event keys from matches
+	const opponentEventKeys = new Set();
+	const opponentGemIds = new Set();
+	for (const { match, event: eventData } of playerMatches) {
+		const isPlayer1 = match.player1GemId === gemId || allPlayerNames.includes(match.player1Name);
+		const opponentGemId = isPlayer1 ? match.player2GemId : match.player1GemId;
+		if (opponentGemId) {
+			opponentGemIds.add(opponentGemId);
+			// Format: opponentGemId|season|circuit|month
+			opponentEventKeys.add(`${opponentGemId}|${eventData.year}|${eventData.circuit}|${eventData.month}`);
+		}
+	}
+
+	// Query opponent heroes - only fetch records for relevant GEM IDs
+	const opponentHeroMap = {};
+	if (opponentGemIds.size > 0) {
+		const relevantHeroes = await db
+			.select()
+			.from(eventPlayerHero)
+			.where(inArray(eventPlayerHero.gemId, [...opponentGemIds]));
+
+		for (const entry of relevantHeroes) {
+			const key = `${entry.gemId}|${entry.season}|${entry.circuit}|${entry.month}`;
+			if (opponentEventKeys.has(key)) {
+				opponentHeroMap[key] = {
+					hero: entry.hero,
+					imageUrl: getHeroImageUrl(entry.hero)
+				};
+			}
+		}
+	}
+
 	return {
 		gemId,
 		displayName,
@@ -409,7 +508,11 @@ export async function load({ params, locals }) {
 		isAdmin,
 		percentiles,
 		matchHistory,
-		decklists: playerDecklists
+		decklists: playerDecklists,
+		heroHistory,
+		heroUsage,
+		heroByEvent,
+		opponentHeroMap
 	};
 }
 

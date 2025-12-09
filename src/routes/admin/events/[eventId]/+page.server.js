@@ -1,6 +1,6 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { event, ticket, user, eventStaff, decklist, standing, match } from '$lib/server/db/schema.js';
+import { event, ticket, user, eventStaff, decklist, standing, match, eventPlayerHero } from '$lib/server/db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
 import { processTournamentResults, calculateFinalStandings, parseSwissStandings, parsePairings } from '$lib/server/tournament-processor.js';
 import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
@@ -165,6 +165,22 @@ export async function load({ params, locals }) {
 			.from(decklist)
 			.where(eq(decklist.eventId, params.eventId));
 
+		// Fetch existing hero data for this event (for metagame display)
+		// Use season/circuit/month to match the standings structure
+		const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : null;
+		const eventYear = eventDate ? eventDate.getFullYear().toString() : null;
+		let existingHeroes = [];
+		if (eventData.circuit && eventData.month && eventYear) {
+			existingHeroes = await db
+				.select()
+				.from(eventPlayerHero)
+				.where(and(
+					eq(eventPlayerHero.season, eventYear),
+					eq(eventPlayerHero.circuit, eventData.circuit),
+					eq(eventPlayerHero.month, eventData.month)
+				));
+		}
+
 		// Fetch staff assignments for this event (admin only)
 		let assignedStaff = [];
 		let availableStaff = [];
@@ -209,6 +225,7 @@ export async function load({ params, locals }) {
 			existingResults,
 			existingMatches,
 			existingDecklists,
+			existingHeroes,
 			assignedStaff,
 			availableStaff,
 			stats: {
@@ -986,6 +1003,158 @@ export const actions = {
 		}
 	},
 
+	// Upload hero data from CSV
+	uploadHeroes: async ({ params, request, locals }) => {
+		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const heroesFile = formData.get('heroesFile');
+
+		if (!heroesFile) {
+			return fail(400, { error: 'Heroes CSV file is required' });
+		}
+
+		try {
+			// Get event details for season/circuit/month
+			const [eventData] = await db
+				.select()
+				.from(event)
+				.where(eq(event.id, params.eventId))
+				.limit(1);
+
+			if (!eventData) {
+				return fail(404, { error: 'Event not found' });
+			}
+
+			if (!eventData.circuit || !eventData.month) {
+				return fail(400, { error: 'Event must have circuit and month set before uploading hero data' });
+			}
+
+			const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
+			const season = eventDate.getFullYear().toString();
+
+			const csvText = await heroesFile.text();
+			const lines = csvText.trim().split('\n');
+
+			if (lines.length < 2) {
+				return fail(400, { error: 'CSV file must have a header row and at least one data row' });
+			}
+
+			// Parse header to find column indices
+			const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+			const playerNameIdx = header.findIndex(h => h === 'player name' || h === 'playername' || h === 'name');
+			const playerIdIdx = header.findIndex(h =>
+				h === 'player id' || h === 'playerid' || h === 'player_id' ||
+				h === 'gem id' || h === 'gemid' || h === 'gem_id'
+			);
+			const heroIdx = header.findIndex(h => h === 'hero' || h === 'hero name');
+			const countryIdx = header.findIndex(h => h === 'country/region' || h === 'country' || h === 'region');
+
+			if (playerNameIdx === -1 || heroIdx === -1) {
+				return fail(400, { error: 'CSV must have "Player Name" and "Hero" columns' });
+			}
+
+			// Parse data rows
+			const heroData = [];
+			for (let i = 1; i < lines.length; i++) {
+				const line = lines[i].trim();
+				if (!line) continue;
+
+				// Handle CSV with quoted fields containing commas
+				const values = [];
+				let current = '';
+				let inQuotes = false;
+				for (const char of line) {
+					if (char === '"') {
+						inQuotes = !inQuotes;
+					} else if (char === ',' && !inQuotes) {
+						values.push(current.trim());
+						current = '';
+					} else {
+						current += char;
+					}
+				}
+				values.push(current.trim());
+
+				const playerName = values[playerNameIdx]?.replace(/^"|"$/g, '').trim();
+				const gemId = playerIdIdx !== -1 ? values[playerIdIdx]?.replace(/^"|"$/g, '').trim() || null : null;
+				// Sanitize hero name: remove "(LL)" suffix and trim
+				const rawHero = values[heroIdx]?.replace(/^"|"$/g, '').trim();
+				const hero = rawHero?.replace(/\s*\(LL\)\s*$/i, '').trim();
+				const countryRegion = countryIdx !== -1 ? values[countryIdx]?.replace(/^"|"$/g, '').trim() || null : null;
+
+				if (playerName && hero) {
+					heroData.push({
+						season,
+						circuit: eventData.circuit,
+						month: eventData.month,
+						gemId: gemId || null,
+						playerName,
+						hero,
+						countryRegion: countryRegion || null
+					});
+				}
+			}
+
+			if (heroData.length === 0) {
+				return fail(400, { error: 'No valid hero data found in CSV' });
+			}
+
+			// Delete existing hero data for this season/circuit/month
+			await db.delete(eventPlayerHero).where(and(
+				eq(eventPlayerHero.season, season),
+				eq(eventPlayerHero.circuit, eventData.circuit),
+				eq(eventPlayerHero.month, eventData.month)
+			));
+
+			// Insert new hero data
+			await db.insert(eventPlayerHero).values(heroData);
+
+			return {
+				success: true,
+				message: `Uploaded hero data for ${heroData.length} players`
+			};
+		} catch (err) {
+			console.error('Error uploading heroes:', err);
+			return fail(500, { error: `Failed to upload heroes: ${err.message}` });
+		}
+	},
+
+	// Delete hero data for this event
+	deleteHeroes: async ({ params, locals }) => {
+		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		try {
+			// Get event details for season/circuit/month
+			const [eventData] = await db
+				.select()
+				.from(event)
+				.where(eq(event.id, params.eventId))
+				.limit(1);
+
+			if (!eventData || !eventData.circuit || !eventData.month || !eventData.eventDate) {
+				return fail(400, { error: 'Event not properly configured' });
+			}
+
+			const season = new Date(eventData.eventDate).getFullYear().toString();
+
+			await db.delete(eventPlayerHero).where(and(
+				eq(eventPlayerHero.season, season),
+				eq(eventPlayerHero.circuit, eventData.circuit),
+				eq(eventPlayerHero.month, eventData.month)
+			));
+
+			return { success: true, message: 'Hero data deleted' };
+		} catch (err) {
+			console.error('Error deleting heroes:', err);
+			return fail(500, { error: 'Failed to delete hero data' });
+		}
+	},
+
 	// Delete event and all related data (admin only)
 	deleteEvent: async ({ params, locals }) => {
 		if (!locals.user || locals.user.role !== 'admin') {
@@ -993,6 +1162,13 @@ export const actions = {
 		}
 
 		try {
+			// Get event details first for hero data cleanup
+			const [eventData] = await db
+				.select()
+				.from(event)
+				.where(eq(event.id, params.eventId))
+				.limit(1);
+
 			// Delete in order due to foreign key constraints
 			// 1. Delete event matches
 			await db.delete(match).where(eq(match.eventId, params.eventId));
@@ -1000,13 +1176,23 @@ export const actions = {
 			// 2. Delete event decklists
 			await db.delete(decklist).where(eq(decklist.eventId, params.eventId));
 
-			// 3. Delete staff assignments
+			// 3. Delete hero data (by season/circuit/month)
+			if (eventData?.circuit && eventData?.month && eventData?.eventDate) {
+				const season = new Date(eventData.eventDate).getFullYear().toString();
+				await db.delete(eventPlayerHero).where(and(
+					eq(eventPlayerHero.season, season),
+					eq(eventPlayerHero.circuit, eventData.circuit),
+					eq(eventPlayerHero.month, eventData.month)
+				));
+			}
+
+			// 4. Delete staff assignments
 			await db.delete(eventStaff).where(eq(eventStaff.eventId, params.eventId));
 
-			// 4. Delete tickets
+			// 5. Delete tickets
 			await db.delete(ticket).where(eq(ticket.eventId, params.eventId));
 
-			// 5. Finally delete the event
+			// 6. Finally delete the event
 			await db.delete(event).where(eq(event.id, params.eventId));
 
 			// Redirect to events list

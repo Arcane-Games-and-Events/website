@@ -116,6 +116,44 @@
 		</div>
 	</div>
 
+	<!-- Metagame Breakdown (if available) -->
+	{#if data.metagameBreakdown?.length > 0}
+		<div class="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8">
+			<div class="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
+				<div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+					<div>
+						<h2 class="text-xl font-semibold text-white">Metagame Breakdown</h2>
+						<p class="text-sm text-gray-400 mt-1">{data.totalPlayers} players</p>
+					</div>
+				</div>
+				<div class="p-6">
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						{#each data.metagameBreakdown.slice(0, 10) as { hero, count, percentage }, idx}
+							<div class="flex items-center gap-4">
+								<span class="w-6 text-right text-sm text-gray-500 font-medium">{idx + 1}.</span>
+								<div class="flex-1 min-w-0">
+									<div class="flex items-center justify-between mb-1">
+										<span class="text-sm font-medium text-white truncate">{hero}</span>
+										<span class="text-sm text-gray-400 ml-2 flex-shrink-0">{count} ({percentage}%)</span>
+									</div>
+									<div class="h-2 rounded-full bg-gray-800 overflow-hidden">
+										<div class="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500"
+											style="width: {percentage}%"></div>
+									</div>
+								</div>
+							</div>
+						{/each}
+					</div>
+					{#if data.metagameBreakdown.length > 10}
+						<p class="text-sm text-gray-500 mt-4 text-center">
+							+{data.metagameBreakdown.length - 10} more heroes
+						</p>
+					{/if}
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Results Table -->
 	<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 		<div class="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
@@ -140,6 +178,9 @@
 							<tr class="border-b border-gray-700 bg-gray-800/50">
 								<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Place</th>
 								<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Player</th>
+								{#if data.metagameBreakdown?.length > 0}
+									<th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">Hero</th>
+								{/if}
 								<th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-400">Record</th>
 								<th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-400">Win %</th>
 								<th class="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-400">AGE Points</th>
@@ -176,6 +217,15 @@
 											</div>
 										</div>
 									</td>
+									{#if data.metagameBreakdown?.length > 0}
+										<td class="px-6 py-4">
+											{#if result.hero}
+												<span class="text-sm text-gray-300">{result.hero}</span>
+											{:else}
+												<span class="text-gray-600">-</span>
+											{/if}
+										</td>
+									{/if}
 									<td class="px-6 py-4 text-center">
 										<span class="text-white font-medium">{result.wins}</span>
 										<span class="text-gray-500">-</span>

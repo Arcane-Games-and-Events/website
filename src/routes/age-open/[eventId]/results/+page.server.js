@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { event, match } from '$lib/server/db/schema.js';
-import { eq, asc } from 'drizzle-orm';
+import { event, match, eventPlayerHero } from '$lib/server/db/schema.js';
+import { eq, asc, and } from 'drizzle-orm';
 import { calculateFinalStandings } from '$lib/server/tournament-processor.js';
 
 export async function load({ params }) {
@@ -80,10 +80,52 @@ export async function load({ params }) {
 			}
 		}
 
+		// Fetch hero data for this event (by season/circuit/month)
+		let heroData = [];
+		let metagameBreakdown = [];
+		if (eventData.circuit && eventData.month && eventData.eventDate) {
+			const season = new Date(eventData.eventDate).getFullYear().toString();
+			heroData = await db
+				.select()
+				.from(eventPlayerHero)
+				.where(and(
+					eq(eventPlayerHero.season, season),
+					eq(eventPlayerHero.circuit, eventData.circuit),
+					eq(eventPlayerHero.month, eventData.month)
+				));
+
+			// Calculate metagame breakdown
+			if (heroData.length > 0) {
+				const counts = {};
+				for (const entry of heroData) {
+					counts[entry.hero] = (counts[entry.hero] || 0) + 1;
+				}
+				metagameBreakdown = Object.entries(counts)
+					.map(([hero, count]) => ({
+						hero,
+						count,
+						percentage: ((count / heroData.length) * 100).toFixed(1)
+					}))
+					.sort((a, b) => b.count - a.count);
+			}
+		}
+
+		// Create a hero lookup map for enriching results
+		const heroByGemId = new Map(heroData.filter(h => h.gemId).map(h => [h.gemId, h.hero]));
+		const heroByName = new Map(heroData.map(h => [h.playerName.toLowerCase(), h.hero]));
+
+		// Enrich results with hero data
+		const enrichedResults = results.map(r => ({
+			...r,
+			hero: (r.gemId && heroByGemId.get(r.gemId)) || heroByName.get(r.playerName.toLowerCase()) || null
+		}));
+
 		return {
 			event: eventData,
-			results,
-			totalRounds: eventMatches.length > 0 ? Math.max(...eventMatches.map((m) => m.round)) : 0
+			results: enrichedResults,
+			totalRounds: eventMatches.length > 0 ? Math.max(...eventMatches.map((m) => m.round)) : 0,
+			metagameBreakdown,
+			totalPlayers: heroData.length
 		};
 	} catch (err) {
 		if (err.status === 404) {
