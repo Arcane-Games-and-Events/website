@@ -1236,6 +1236,7 @@
 				<!-- Close Button -->
 				<button
 					onclick={closeHeroModal}
+					aria-label="Close hero details"
 					class="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
 				>
 					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

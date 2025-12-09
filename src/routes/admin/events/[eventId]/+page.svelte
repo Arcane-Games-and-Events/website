@@ -1744,11 +1744,9 @@ Pitch 0/1 (Red)
 								</button>
 
 								{#if data.existingHeroes?.length > 0}
-									<form method="POST" action="?/deleteHeroes" class="contents">
-										<button type="submit" class="px-4 py-2.5 rounded-lg border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/10 transition-colors">
+										<button type="submit" formaction="?/deleteHeroes" class="px-4 py-2.5 rounded-lg border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/10 transition-colors">
 											Clear All
 										</button>
-									</form>
 								{/if}
 							</div>
 						</form>
