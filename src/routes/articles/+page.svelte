@@ -154,6 +154,13 @@
 											</svg>
 											Premium
 										</span>
+									{:else if article.accessMode === 'Premium' || article.accessMode === 'premium'}
+										<span class="flex items-center gap-1 rounded-full bg-blue-600/80 px-2 py-0.5 text-[10px] md:text-xs font-semibold text-white backdrop-blur-sm">
+											<svg class="w-2.5 h-2.5 md:w-3 md:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+											</svg>
+											Now Free
+										</span>
 									{:else}
 										<span class="rounded-full bg-gray-800/70 px-2 py-0.5 text-[10px] md:text-xs font-medium text-gray-300 backdrop-blur-sm">
 											Free
@@ -209,7 +216,7 @@
 								<!-- Read Now Button -->
 								<a
 									href="/articles/{article.slug}"
-									class="group/btn inline-flex items-center gap-1.5 md:gap-2.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 px-4 md:px-6 py-2 md:py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-105"
+									class="group/btn inline-flex items-center gap-1.5 md:gap-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 md:px-6 py-2 md:py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-105"
 								>
 									Read Now
 									<svg class="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -244,9 +251,9 @@
 								<div class="flex items-center gap-2 md:gap-3">
 									<!-- Thumbnail -->
 									<div class="relative h-10 w-10 md:h-12 md:w-12 shrink-0 rounded-lg overflow-hidden">
-										{#if article.coverImage}
+										{#if article.coverImage?.src}
 											<img
-												src={article.coverImage}
+												src={article.coverImage.src}
 												alt=""
 												class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
 											/>
@@ -326,11 +333,11 @@
 					{#if allTags.length > 0}
 						<select
 							bind:value={selectedTag}
-							class="rounded-lg border border-white/10 bg-gray-800/50 px-3 py-2 text-xs font-medium text-gray-300 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+							class="rounded-lg border border-white/10 bg-gray-800 px-3 py-2 text-xs font-medium text-gray-300 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 						>
-							<option value={null}>All Topics</option>
+							<option value={null} class="bg-gray-800 text-white">All Topics</option>
 							{#each allTags as tag}
-								<option value={tag}>{tag}</option>
+								<option value={tag} class="bg-gray-800 text-white">{tag}</option>
 							{/each}
 						</select>
 					{/if}
@@ -377,6 +384,13 @@
 													<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
 												</svg>
 												Premium
+											</span>
+										{:else if article.accessMode === 'Premium' || article.accessMode === 'premium'}
+											<span class="flex items-center gap-1 rounded-full bg-blue-600/90 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+												<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+												</svg>
+												Now Free
 											</span>
 										{:else}
 											<span class="rounded-full bg-gray-800/80 px-2.5 py-1 text-xs font-medium text-gray-300 backdrop-blur-sm">

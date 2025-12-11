@@ -1,7 +1,7 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { event, ticket, user, eventStaff, decklist, standing, match, eventPlayerHero } from '$lib/server/db/schema.js';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, ilike } from 'drizzle-orm';
 import { processTournamentResults, calculateFinalStandings, parseSwissStandings, parsePairings } from '$lib/server/tournament-processor.js';
 import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
 
@@ -183,18 +183,7 @@ export async function load({ params, locals }) {
 
 		// Fetch staff assignments for this event (admin only)
 		let assignedStaff = [];
-		let availableStaff = [];
 		if (isAdmin) {
-			// Get all tournament staff users
-			const allTournamentStaff = await db
-				.select({
-					id: user.id,
-					email: user.email,
-					createdAt: user.createdAt
-				})
-				.from(user)
-				.where(eq(user.role, 'tournament staff'));
-
 			// Get staff assignments for this event with user info
 			const assignments = await db
 				.select({
@@ -202,17 +191,14 @@ export async function load({ params, locals }) {
 					userId: eventStaff.userId,
 					assignedBy: eventStaff.assignedBy,
 					createdAt: eventStaff.createdAt,
-					userEmail: user.email
+					userEmail: user.email,
+					userRole: user.role
 				})
 				.from(eventStaff)
 				.leftJoin(user, eq(eventStaff.userId, user.id))
 				.where(eq(eventStaff.eventId, params.eventId));
 
 			assignedStaff = assignments;
-
-			// Filter out already assigned staff from available list
-			const assignedUserIds = new Set(assignments.map(a => a.userId));
-			availableStaff = allTournamentStaff.filter(s => !assignedUserIds.has(s.id));
 		}
 
 		return {
@@ -227,7 +213,6 @@ export async function load({ params, locals }) {
 			existingDecklists,
 			existingHeroes,
 			assignedStaff,
-			availableStaff,
 			stats: {
 				totalRevenue: isAdmin ? totalRevenue.toFixed(2) : null,
 				totalTickets,
@@ -788,31 +773,7 @@ export const actions = {
 		}
 
 		try {
-			// Try RPC first
-			try {
-				const result = await db.execute(
-					sql`SELECT finalize_event(${params.eventId}, ${locals.user.id}) as result`
-				);
-				const rpcResult = result.rows?.[0]?.result || result[0]?.result;
-
-				if (rpcResult) {
-					if (!rpcResult.success) {
-						return fail(400, { error: rpcResult.error || 'Failed to finalize event' });
-					}
-
-					await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
-					await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
-
-					return {
-						success: true,
-						message: rpcResult.message || 'Event marked as completed.'
-					};
-				}
-			} catch (rpcError) {
-				console.log('RPC finalize_event failed, using direct query:', rpcError.message);
-			}
-
-			// Fallback: Direct query - check for matches instead of results
+			// Check for matches before finalizing
 			const matches = await db
 				.select()
 				.from(match)
@@ -831,12 +792,15 @@ export const actions = {
 				})
 				.where(eq(event.id, params.eventId));
 
+			// Remove all staff assignments for this event now that it's closed
+			await db.delete(eventStaff).where(eq(eventStaff.eventId, params.eventId));
+
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
 
 			return {
 				success: true,
-				message: 'Event marked as completed.'
+				message: 'Event marked as completed. Staff assignments have been cleared.'
 			};
 		} catch (err) {
 			console.error('Error finalizing event:', err);
@@ -845,37 +809,12 @@ export const actions = {
 	},
 
 	// Reopen a closed event (admin only)
-	// Just updates status - standings are synced in real-time from event_results
 	reopenEvent: async ({ params, locals }) => {
 		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Only admins can reopen events' });
 		}
 
 		try {
-			// Try RPC first
-			try {
-				const result = await db.execute(
-					sql`SELECT reopen_event(${params.eventId}) as result`
-				);
-				const rpcResult = result.rows?.[0]?.result || result[0]?.result;
-
-				if (rpcResult) {
-					if (!rpcResult.success) {
-						return fail(400, { error: rpcResult.error || 'Failed to reopen event' });
-					}
-
-					await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
-
-					return {
-						success: true,
-						message: rpcResult.message || 'Event reopened. You can now update results.'
-					};
-				}
-			} catch (rpcError) {
-				console.log('RPC reopen_event failed, using direct query:', rpcError.message);
-			}
-
-			// Fallback: Direct query
 			await db
 				.update(event)
 				.set({
@@ -926,12 +865,21 @@ export const actions = {
 				.set(updateData)
 				.where(eq(event.id, params.eventId));
 
+			// Remove staff assignments when event is completed or cancelled
+			if (newStatus === 'completed' || newStatus === 'cancelled') {
+				await db.delete(eventStaff).where(eq(eventStaff.eventId, params.eventId));
+			}
+
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
 
+			const statusMessage = (newStatus === 'completed' || newStatus === 'cancelled')
+				? `Event status updated to ${newStatus.replace('_', ' ')}. Staff assignments have been cleared.`
+				: `Event status updated to ${newStatus.replace('_', ' ')}`;
+
 			return {
 				success: true,
-				message: `Event status updated to ${newStatus.replace('_', ' ')}`
+				message: statusMessage
 			};
 		} catch (err) {
 			console.error('Error updating event status:', err);
@@ -1000,6 +948,49 @@ export const actions = {
 		} catch (err) {
 			console.error('Error unassigning staff:', err);
 			return fail(500, { error: 'Failed to unassign staff' });
+		}
+	},
+
+	// Search users by email for staff assignment (admin only)
+	searchUsers: async ({ params, request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Only admins can search users' });
+		}
+
+		const formData = await request.formData();
+		const email = formData.get('email')?.trim();
+
+		if (!email || email.length < 3) {
+			return { success: true, users: [] };
+		}
+
+		try {
+			// Get users already assigned to this event
+			const assignedUserIds = await db
+				.select({ userId: eventStaff.userId })
+				.from(eventStaff)
+				.where(eq(eventStaff.eventId, params.eventId));
+
+			const assignedIds = assignedUserIds.map(a => a.userId);
+
+			// Search all users by email (case-insensitive)
+			const users = await db
+				.select({
+					id: user.id,
+					email: user.email,
+					role: user.role
+				})
+				.from(user)
+				.where(ilike(user.email, `%${email}%`))
+				.limit(10);
+
+			// Filter out already assigned users
+			const availableUsers = users.filter(u => !assignedIds.includes(u.id));
+
+			return { success: true, users: availableUsers };
+		} catch (err) {
+			console.error('Error searching users:', err);
+			return fail(500, { error: 'Failed to search users' });
 		}
 	},
 

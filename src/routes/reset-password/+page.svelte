@@ -66,7 +66,7 @@
 							</p>
 							<a
 								href="/forgot-password"
-								class="inline-flex justify-center rounded-full bg-gray-800 px-6 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
+								class="inline-flex justify-center rounded-lg bg-gray-800 px-6 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
 							>
 								Request New Link
 							</a>
@@ -122,7 +122,7 @@
 							<!-- Submit Button -->
 							<button
 								type="submit"
-								class="flex w-full justify-center rounded-full bg-gray-800 px-4 py-3 text-sm font-semibold text-white hover:bg-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 transition-colors"
+								class="flex w-full justify-center rounded-lg bg-gray-800 px-4 py-3 text-sm font-semibold text-white hover:bg-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 transition-colors"
 							>
 								Reset Password
 							</button>

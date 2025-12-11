@@ -33,7 +33,7 @@
 {:else if isAdminPage}
 	<slot />
 {:else}
-	<Sidebar user={data.user}>
+	<Sidebar user={data.user} assignedEventsCount={data.assignedEventsCount}>
 		<div class="flex min-h-screen flex-col bg-gray-950">
 			<main id="main-content" class="flex-1 pb-16">
 				<slot />

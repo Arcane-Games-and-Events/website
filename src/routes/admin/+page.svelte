@@ -194,6 +194,15 @@
 		(data.events || []).filter((e) => new Date(e.eventDate) <= new Date()).length
 	);
 
+	// Upcoming events list for overview card (sorted by date, limited to 3)
+	let upcomingEventsList = $derived(
+		(data.events || [])
+			.filter((e) => e.eventDate && new Date(e.eventDate) >= new Date())
+			.sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate))
+			.slice(0, 3)
+	);
+	let ticketsByEvent = $derived(data.eventAnalytics?.ticketsByEvent || {});
+
 	// Standings table state
 	let standingsSearchQuery = $state('');
 	let standingsSeasonFilter = $state('all');
@@ -915,7 +924,7 @@
 						</div>
 					</div>
 
-					<!-- Recent Events -->
+					<!-- Upcoming Events -->
 					<div class="lg:col-span-2">
 						<div
 							class="rounded-2xl border border-white/10 bg-gradient-to-br from-gray-800/30 to-gray-900/50 p-6 shadow-xl"
@@ -937,7 +946,7 @@
 											/>
 										</svg>
 									</div>
-									Recent Events
+									Upcoming Events
 								</h3>
 								<button
 									onclick={() => switchTab('events')}
@@ -946,41 +955,64 @@
 									View all
 								</button>
 							</div>
-							{#if (data.events || []).length > 0}
-								<div class="space-y-3">
-									{#each (data.events || []).slice(0, 5) as event, i}
+							{#if upcomingEventsList.length > 0}
+								<div class="space-y-2">
+									{#each upcomingEventsList as event}
+										{@const ticketStats = ticketsByEvent[event.id] || { sold: 0 }}
+										{@const circuit = getCircuit(event.circuit)}
 										<a
 											href="/admin/events/{event.id}"
-											class="group flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:border-white/10 hover:bg-white/5"
+											class="group flex items-center gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2.5 transition-all hover:border-white/10 hover:bg-white/5 border-l-2"
+											style="border-left-color: {circuit.hex.light};"
 										>
-											<div class="flex items-center gap-4">
-												<div
-													class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 text-sm font-bold text-gray-400 transition-colors group-hover:bg-cyan-500/10 group-hover:text-cyan-400"
-												>
-													{i + 1}
-												</div>
-												<div>
-													<div
-														class="font-medium text-white transition-colors group-hover:text-blue-400"
+											<!-- Date Badge with Circuit Color -->
+											<div
+												class="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg text-center border"
+												style="background-color: {circuit.hex.primary}25; border-color: {circuit.hex.light}40;"
+											>
+												<span class="text-[10px] font-bold uppercase tracking-wide" style="color: {circuit.hex.light};">
+													{new Date(event.eventDate).toLocaleDateString('en-US', { month: 'short' })}
+												</span>
+												<span class="text-base font-bold leading-none" style="color: {circuit.hex.light};">
+													{new Date(event.eventDate).getDate()}
+												</span>
+											</div>
+
+											<!-- Event Info -->
+											<div class="min-w-0 flex-1">
+												<div class="flex items-center gap-2">
+													<span
+														class="text-sm font-medium text-white transition-colors group-hover:text-blue-400 truncate"
 													>
 														{event.title}
-													</div>
-													<div class="text-sm text-gray-400">
-														{event.eventDate
-															? new Date(event.eventDate).toLocaleDateString('en-US', {
-																	month: 'short',
-																	day: 'numeric',
-																	year: 'numeric'
-																})
-															: 'Date TBA'}
-														{#if event.circuit}
-															<span class="ml-2 text-xs text-gray-500">• {event.circuit}</span>
-														{/if}
-													</div>
+													</span>
+												</div>
+												<div class="flex items-center gap-1.5 text-xs text-gray-500">
+													{#if event.circuit}
+														<span
+															class="font-semibold"
+															style="color: {circuit.hex.light};"
+														>{event.circuit}</span>
+														<span>•</span>
+													{/if}
+													<span>
+														{new Date(event.eventDate).toLocaleDateString('en-US', {
+															weekday: 'short',
+															month: 'short',
+															day: 'numeric'
+														})}
+													</span>
 												</div>
 											</div>
+
+											<!-- Tickets Sold -->
+											<div class="shrink-0 text-right">
+												<div class="text-lg font-bold text-white">{ticketStats.sold}</div>
+												<div class="text-[10px] text-gray-500 uppercase tracking-wide">tickets</div>
+											</div>
+
 											<svg
-												class="h-5 w-5 text-gray-500 transition-colors group-hover:text-blue-400"
+												class="h-4 w-4 shrink-0 text-gray-600 transition-colors group-hover:text-blue-400"
 												fill="none"
 												stroke="currentColor"
 												viewBox="0 0 24 24"
@@ -1010,7 +1042,7 @@
 											d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
 										/>
 									</svg>
-									<p class="mt-4 text-gray-400">No events yet</p>
+									<p class="mt-4 text-gray-400">No upcoming events</p>
 									<a
 										href="/admin/events/new"
 										class="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
@@ -1023,7 +1055,7 @@
 												d="M12 4v16m8-8H4"
 											/>
 										</svg>
-										Create First Event
+										Create Event
 									</a>
 								</div>
 							{/if}

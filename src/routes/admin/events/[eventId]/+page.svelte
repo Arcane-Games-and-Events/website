@@ -1,6 +1,7 @@
 <script>
 	import { browser } from '$app/environment';
 	import { invalidateAll } from '$app/navigation';
+	import { enhance, deserialize } from '$app/forms';
 	import heroes from '$lib/data/heroes.json';
 	import { parseGemDecklist, toStorageFormat, fromStorageFormat, getPlacementSuffix } from '$lib/utils/gem-decklist-parser.js';
 	import { getCircuitNames } from '$lib/data/circuits.js';
@@ -64,13 +65,58 @@
 
 	// Staff management state
 	let staffSearch = $state('');
-	let filteredAvailableStaff = $derived(
-		staffSearch.trim()
-			? (data.availableStaff || []).filter(s =>
-				s.email.toLowerCase().includes(staffSearch.toLowerCase())
-			)
-			: (data.availableStaff || [])
-	);
+	let staffSearchResults = $state([]);
+	let staffSearchLoading = $state(false);
+	let staffSearchTimeout = $state(null);
+
+	async function searchStaffByEmail(email) {
+		if (!email || email.length < 3) {
+			staffSearchResults = [];
+			return;
+		}
+
+		staffSearchLoading = true;
+		try {
+			const formData = new FormData();
+			formData.append('email', email);
+			const response = await fetch('?/searchUsers', {
+				method: 'POST',
+				body: formData
+			});
+			const text = await response.text();
+			const result = deserialize(text);
+			if (result.type === 'success' && result.data?.users) {
+				staffSearchResults = result.data.users;
+			} else {
+				staffSearchResults = [];
+			}
+		} catch (err) {
+			console.error('Error searching users:', err);
+			staffSearchResults = [];
+		} finally {
+			staffSearchLoading = false;
+		}
+	}
+
+	// Debounced email search
+	function handleStaffSearchInput(email) {
+		staffSearch = email;
+		if (staffSearchTimeout) clearTimeout(staffSearchTimeout);
+		staffSearchTimeout = setTimeout(() => {
+			searchStaffByEmail(email);
+		}, 300);
+	}
+
+	// Clear search after staff assignment
+	function handleStaffAssign() {
+		return async ({ result, update }) => {
+			if (result.type === 'success') {
+				staffSearch = '';
+				staffSearchResults = [];
+			}
+			await update();
+		};
+	}
 
 	// Participant search dropdown state
 	let participantSearch = $state('');
@@ -1868,39 +1914,49 @@ Pitch 0/1 (Red)
 							</div>
 							<div>
 								<h3 class="text-lg font-semibold text-white">Add Staff</h3>
-								<p class="text-sm text-gray-400">Search and assign tournament staff to this event</p>
+								<p class="text-sm text-gray-400">Search any user by email to assign them to this event</p>
 							</div>
 						</div>
 					</div>
 					<div class="p-6">
-						{#if data.availableStaff?.length > 0}
-							<!-- Search Input -->
-							<div class="mb-4">
-								<div class="relative">
-									<svg class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-									</svg>
-									<input
-										type="text"
-										bind:value={staffSearch}
-										placeholder="Search by email..."
-										class="w-full rounded-lg border border-white/10 bg-gray-800 py-2 pl-10 pr-4 text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-									/>
-								</div>
+						<!-- Email Search Input -->
+						<div class="mb-4">
+							<div class="relative">
+								<svg class="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+								</svg>
+								<input
+									type="email"
+									value={staffSearch}
+									oninput={(e) => handleStaffSearchInput(e.target.value)}
+									placeholder="Search by email address (min 3 characters)..."
+									class="w-full rounded-lg border border-white/10 bg-gray-800 py-2.5 pl-10 pr-4 text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+								/>
+								{#if staffSearchLoading}
+									<div class="absolute right-3 top-1/2 -translate-y-1/2">
+										<svg class="h-5 w-5 animate-spin text-purple-400" fill="none" viewBox="0 0 24 24">
+											<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+											<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+										</svg>
+									</div>
+								{/if}
 							</div>
+							<p class="mt-1.5 text-xs text-gray-500">Type at least 3 characters to search</p>
+						</div>
 
-							<!-- Available Staff List -->
+						<!-- Search Results -->
+						{#if staffSearchResults.length > 0}
 							<div class="space-y-2 max-h-64 overflow-y-auto">
-								{#each filteredAvailableStaff as staff}
-									<form method="POST" action="?/assignStaff" class="flex items-center justify-between rounded-lg border border-white/10 bg-gray-800/30 px-4 py-3 transition-colors hover:bg-gray-800/50">
-										<input type="hidden" name="staffId" value={staff.id} />
+								{#each staffSearchResults as userResult}
+									<form method="POST" action="?/assignStaff" use:enhance={handleStaffAssign} class="flex items-center justify-between rounded-lg border border-white/10 bg-gray-800/30 px-4 py-3 transition-colors hover:bg-gray-800/50">
+										<input type="hidden" name="staffId" value={userResult.id} />
 										<div class="flex items-center gap-3">
 											<div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-700">
-												<span class="text-sm font-medium text-gray-300">{staff.email?.charAt(0).toUpperCase() || '?'}</span>
+												<span class="text-sm font-medium text-gray-300">{userResult.email?.charAt(0).toUpperCase() || '?'}</span>
 											</div>
 											<div>
-												<p class="font-medium text-white">{staff.email}</p>
-												<p class="text-xs text-gray-500">Member since {formatShortDate(staff.createdAt)}</p>
+												<p class="font-medium text-white">{userResult.email}</p>
+												<p class="text-xs text-gray-500">Role: {userResult.role || 'user'}</p>
 											</div>
 										</div>
 										<button type="submit" class="rounded-lg bg-green-500/20 px-3 py-1.5 text-sm font-medium text-green-400 transition-colors hover:bg-green-500/30">
@@ -1908,17 +1964,20 @@ Pitch 0/1 (Red)
 										</button>
 									</form>
 								{/each}
-								{#if filteredAvailableStaff.length === 0 && staffSearch.trim()}
-									<p class="text-center text-gray-400 py-4">No staff found matching "{staffSearch}"</p>
-								{/if}
 							</div>
-						{:else}
-							<div class="text-center py-8">
-								<svg class="mx-auto h-12 w-12 text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+						{:else if staffSearch.length >= 3 && !staffSearchLoading}
+							<div class="text-center py-6">
+								<svg class="mx-auto h-10 w-10 text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
 								</svg>
-								<p class="text-gray-400">No available tournament staff</p>
-								<p class="text-sm text-gray-500 mt-1">Assign the "tournament staff" role to users in the Users section to make them available here</p>
+								<p class="text-gray-400">No users found matching "{staffSearch}"</p>
+							</div>
+						{:else if staffSearch.length === 0}
+							<div class="text-center py-6">
+								<svg class="mx-auto h-10 w-10 text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+								</svg>
+								<p class="text-gray-400">Enter an email address to search for users</p>
 							</div>
 						{/if}
 					</div>

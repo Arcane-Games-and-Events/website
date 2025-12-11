@@ -89,25 +89,25 @@
 		<div class="mb-3 flex gap-2">
 			<select
 				aria-label="Filter standings by season"
-				class="flex-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 focus:outline-none"
+				class="flex-1 rounded-lg border border-white/10 bg-gray-800 px-2 py-1.5 text-xs text-white focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 focus:outline-none"
 				value={selectedSeason}
 				onchange={(e) => onSeasonChange(e.target.value)}
 			>
 				{#each seasons as season}
-					<option value={season}>
+					<option value={season} class="bg-gray-800 text-white">
 						{getSeasonLabel(season)}
 					</option>
 				{/each}
 			</select>
 			<select
 				aria-label="Filter standings by circuit"
-				class="flex-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 focus:outline-none"
+				class="flex-1 rounded-lg border border-white/10 bg-gray-800 px-2 py-1.5 text-xs text-white focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 focus:outline-none"
 				value={selectedCircuit}
 				onchange={(e) => onCircuitChange(e.target.value)}
 			>
-				<option value="all">All Circuits</option>
+				<option value="all" class="bg-gray-800 text-white">All Circuits</option>
 				{#each circuits as circuit}
-					<option value={circuit}>{circuit}</option>
+					<option value={circuit} class="bg-gray-800 text-white">{circuit}</option>
 				{/each}
 			</select>
 		</div>

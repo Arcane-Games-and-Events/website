@@ -317,6 +317,35 @@ export interface Author {
     [k: string]: unknown;
   } | null;
   profilePicture?: (number | null) | Media;
+  /**
+   * Add links to your social media, website, coaching services, etc.
+   */
+  socialLinks?:
+    | {
+        platform:
+          | 'twitter'
+          | 'bluesky'
+          | 'youtube'
+          | 'twitch'
+          | 'discord'
+          | 'patreon'
+          | 'metafy'
+          | 'kofi'
+          | 'instagram'
+          | 'tiktok'
+          | 'website'
+          | 'other';
+        /**
+         * Custom label (only shown if "Other" is selected)
+         */
+        customLabel?: string | null;
+        /**
+         * Full URL (e.g., https://twitter.com/username)
+         */
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -488,6 +517,14 @@ export interface AuthorsSelect<T extends boolean = true> {
   slug?: T;
   bio?: T;
   profilePicture?: T;
+  socialLinks?:
+    | T
+    | {
+        platform?: T;
+        customLabel?: T;
+        url?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

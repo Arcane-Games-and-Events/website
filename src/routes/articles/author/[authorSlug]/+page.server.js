@@ -32,7 +32,7 @@ export async function load({ params, setHeaders }) {
 			slug: author.slug,
 			bio: lexicalToHtml(author.bio),
 			profilePicture: profilePictureUrl,
-			socialMedia: author.socialMedia || {}
+			socialLinks: author.socialLinks || []
 		};
 
 		// Fetch all posts by this author

@@ -220,11 +220,11 @@
 						{#if allAuthors.length > 0}
 							<select
 								bind:value={selectedAuthor}
-								class="rounded-lg border border-white/10 bg-gray-800/50 px-3 py-2 text-xs font-medium text-gray-300 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+								class="rounded-lg border border-white/10 bg-gray-800 px-3 py-2 text-xs font-medium text-gray-300 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
 							>
-								<option value={null}>All Authors</option>
+								<option value={null} class="bg-gray-800 text-white">All Authors</option>
 								{#each allAuthors as author}
-									<option value={author.slug}>{author.name}</option>
+									<option value={author.slug} class="bg-gray-800 text-white">{author.name}</option>
 								{/each}
 							</select>
 						{/if}

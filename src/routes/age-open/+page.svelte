@@ -1124,7 +1124,7 @@
 	</section>
 
 	<!-- Tab Navigation -->
-	<nav class="sticky top-0 z-10 bg-gray-900/95 backdrop-blur-sm">
+	<nav class="sticky top-0 z-30 bg-gray-900/95 backdrop-blur-sm">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="relative py-3 pb-4 lg:pb-3">
 				<!-- Visible pill container for tabs - full width on desktop -->
@@ -1511,7 +1511,7 @@
 						<p class="text-sm text-gray-400">Ready to begin?</p>
 						<button
 							onclick={() => switchTab('events')}
-							class="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition-all hover:scale-105 hover:shadow-xl hover:shadow-orange-500/30"
+							class="group inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition-all hover:scale-105 hover:shadow-xl hover:shadow-orange-500/30"
 						>
 							Find Your First Event
 							<svg
@@ -3322,9 +3322,9 @@
 							bind:value={decklistHero}
 							class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 						>
-							<option value="all">All Heroes</option>
+							<option value="all" class="bg-gray-900 text-white">All Heroes</option>
 							{#each uniqueHeroes as hero}
-								<option value={hero}>{hero}</option>
+								<option value={hero} class="bg-gray-900 text-white">{hero}</option>
 							{/each}
 						</select>
 
@@ -3711,11 +3711,11 @@
 							>
 							<select
 								onchange={(e) => changeSeason(e.target.value)}
-								class="w-full cursor-pointer appearance-none rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2 text-sm text-white focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 focus:outline-none"
+								class="w-full cursor-pointer appearance-none rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 focus:outline-none"
 								style="background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 24 24%27 stroke=%27%239ca3af%27%3E%3Cpath stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%272%27 d=%27M19 9l-7 7-7-7%27/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1.25rem;"
 							>
 								{#each data.availableSeasons || ['all', '2025', '2024', '2023'] as season}
-									<option value={season} selected={standingsSeason === season}>
+									<option value={season} selected={standingsSeason === season} class="bg-gray-800 text-white">
 										{season === 'all' ? 'All Time' : season}
 									</option>
 								{/each}
@@ -3730,22 +3730,22 @@
 							>
 							<select
 								onchange={(e) => (standingsCircuit = e.target.value)}
-								class="w-full cursor-pointer appearance-none rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2 text-sm text-white focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 focus:outline-none"
+								class="w-full cursor-pointer appearance-none rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 focus:outline-none"
 								style="background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 fill=%27none%27 viewBox=%270 0 24 24%27 stroke=%27%239ca3af%27%3E%3Cpath stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%272%27 d=%27M19 9l-7 7-7-7%27/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1.25rem;"
 							>
-								<option value="all" selected={standingsCircuit === 'all'}>All Circuits</option>
+								<option value="all" selected={standingsCircuit === 'all'} class="bg-gray-800 text-white">All Circuits</option>
 								{#if availableCircuits.includes('Los Angeles')}
-									<option value="Los Angeles" selected={standingsCircuit === 'Los Angeles'}
+									<option value="Los Angeles" selected={standingsCircuit === 'Los Angeles'} class="bg-gray-800 text-white"
 										>Los Angeles</option
 									>
 								{/if}
 								{#if availableCircuits.includes('St. Louis')}
-									<option value="St. Louis" selected={standingsCircuit === 'St. Louis'}
+									<option value="St. Louis" selected={standingsCircuit === 'St. Louis'} class="bg-gray-800 text-white"
 										>St. Louis</option
 									>
 								{/if}
 								{#if availableCircuits.includes('New England')}
-									<option value="New England" selected={standingsCircuit === 'New England'}
+									<option value="New England" selected={standingsCircuit === 'New England'} class="bg-gray-800 text-white"
 										>New England</option
 									>
 								{/if}

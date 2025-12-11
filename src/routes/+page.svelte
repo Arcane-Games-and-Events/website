@@ -186,16 +186,36 @@
 	let newsletterEmail = '';
 	let newsletterSubmitting = false;
 	let newsletterSuccess = false;
+	let newsletterError = '';
 
 	async function handleNewsletterSubmit(e) {
 		e.preventDefault();
 		if (!newsletterEmail) return;
 
 		newsletterSubmitting = true;
-		// Simulate API call - replace with actual endpoint
-		await new Promise((resolve) => setTimeout(resolve, 1000));
-		newsletterSuccess = true;
-		newsletterSubmitting = false;
+		newsletterError = '';
+
+		try {
+			const response = await fetch('/api/newsletter/subscribe', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email: newsletterEmail })
+			});
+
+			const result = await response.json();
+
+			if (response.ok) {
+				newsletterSuccess = true;
+				newsletterEmail = '';
+			} else {
+				newsletterError = result.error || 'Something went wrong. Please try again.';
+			}
+		} catch (err) {
+			console.error('Newsletter subscribe error:', err);
+			newsletterError = 'Something went wrong. Please try again.';
+		} finally {
+			newsletterSubmitting = false;
+		}
 	}
 </script>
 
@@ -292,7 +312,7 @@
 							<!-- CTA Button -->
 							<a
 								href={slide.href}
-								class="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r px-4 py-2 md:gap-2 md:px-6 md:py-3 {slide.accentGradient} text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl md:text-base"
+								class="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r px-4 py-2 md:gap-2 md:px-6 md:py-3 {slide.accentGradient} text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl md:text-base"
 							>
 								{slide.cta}
 								<svg
@@ -430,6 +450,13 @@
 																</svg>
 																Premium
 															</span>
+														{:else if article.accessMode === 'Premium' || article.accessMode === 'premium'}
+															<span class="inline-flex h-5 items-center gap-1 rounded-full bg-blue-600/90 px-2 text-[10px] font-semibold text-white backdrop-blur-sm">
+																<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+																</svg>
+																Now Free
+															</span>
 														{:else}
 															<span class="inline-flex h-5 items-center rounded-full bg-gray-800/80 px-2 text-[10px] font-medium text-gray-300 backdrop-blur-sm">
 																Free
@@ -461,6 +488,13 @@
 																	<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
 																</svg>
 																Premium
+															</span>
+														{:else if article.accessMode === 'Premium' || article.accessMode === 'premium'}
+															<span class="inline-flex h-5 items-center gap-1 rounded-full bg-blue-600/90 px-2 text-[10px] font-semibold text-white backdrop-blur-sm">
+																<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+																</svg>
+																Now Free
 															</span>
 														{:else}
 															<span class="inline-flex h-5 items-center rounded-full bg-gray-800/80 px-2 text-[10px] font-medium text-gray-300 backdrop-blur-sm">
@@ -1056,6 +1090,9 @@
 									aria-label="Email address for newsletter"
 									class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
 								/>
+								{#if newsletterError}
+									<p class="text-sm text-red-400">{newsletterError}</p>
+								{/if}
 								<button
 									type="submit"
 									disabled={newsletterSubmitting}

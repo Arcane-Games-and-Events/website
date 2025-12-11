@@ -224,7 +224,8 @@ export async function load({ params, locals, setHeaders }) {
 				name: post.author.name,
 				slug: post.author.slug,
 				bio: post.author.bio,
-				profilePicture: profilePictureUrl
+				profilePicture: profilePictureUrl,
+				socialLinks: post.author.socialLinks || []
 			};
 		}
 

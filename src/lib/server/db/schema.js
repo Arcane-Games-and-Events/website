@@ -132,6 +132,17 @@ export const passwordResetToken = pgTable('password_reset_token', {
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
+// NEWSLETTER SUBSCRIBERS
+export const newsletterSubscriber = pgTable('newsletter_subscriber', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	email: text('email').notNull().unique(),
+	resendContactId: text('resend_contact_id'), // Resend Audience contact ID
+	status: text('status').notNull().default('active'), // active, unsubscribed
+	source: text('source').default('website'), // where they signed up
+	subscribedAt: timestamp('subscribed_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true, mode: 'date' })
+});
+
 // STAFF ASSIGNMENTS (for tournament staff)
 export const eventStaff = pgTable('staff_assignments', {
 	id: uuid('id').defaultRandom().primaryKey(),
