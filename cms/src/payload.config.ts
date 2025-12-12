@@ -42,17 +42,15 @@ export default buildConfig({
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
-      max: 5, // Lower pool size for Supabase pooler to avoid connection limits
-      min: 0, // Allow pool to shrink to 0 when idle
-      idleTimeoutMillis: 10000, // Close idle clients after 10 seconds (before Supabase timeout)
-      connectionTimeoutMillis: 10000, // Longer timeout for connection acquisition
-      allowExitOnIdle: true, // Allow pool to close when idle
-      ssl: {
-        rejectUnauthorized: false, // Accept self-signed certificates (for Supabase)
-      },
+      max: 5,
+      min: 0,
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 10000,
+      allowExitOnIdle: true,
+      ssl: { rejectUnauthorized: false },
     },
-    schemaName: 'payload', // Use separate schema for Payload tables
-    push: false, // Disable automatic schema push to prevent data loss
+    schemaName: 'payload',
+    push: false,
   }),
   sharp,
   plugins: [
