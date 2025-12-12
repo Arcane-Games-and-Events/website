@@ -15,7 +15,7 @@ export const Icon: React.FC = () => {
         }
       `}</style>
       <img
-        src="/logo.svg"
+        src="/favicon.svg"
         alt="AGE"
         className="custom-icon"
       />
