@@ -8,6 +8,7 @@
 	import { getCircuit, getCircuitImage } from '$lib/data/circuits.js';
 	import StandingsCard from '$lib/components/StandingsCard.svelte';
 	import FeaturedDecklists from '$lib/components/FeaturedDecklists.svelte';
+	import UpcomingEvents from '$lib/components/UpcomingEvents.svelte';
 	export let data;
 
 	// Handle standings filter changes with client-side navigation
@@ -816,146 +817,12 @@
 					</div>
 
 					<!-- Upcoming Events -->
-					<div>
-						<div class="mb-4 flex items-center justify-between">
-							<h3 class="text-lg font-semibold text-white">Upcoming Events</h3>
-							<a
-								href="/age-open"
-								class="flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
-							>
-								View all
-								<svg
-									class="h-4 w-4"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									viewBox="0 0 24 24"
-								>
-									<path stroke-linecap="round" stroke-linejoin="round" d={icons.chevronRight} />
-								</svg>
-							</a>
-						</div>
-
-						{#if data.events && data.events.length > 0}
-							<div class="space-y-4">
-								{#each data.events.slice(0, 3) as event}
-									{@const circuit = getCircuit(event.circuit)}
-									{@const colors = {
-										bg: circuit.colors.bgDark,
-										border: circuit.colors.border,
-										text: circuit.colors.text
-									}}
-									{@const bgImage = circuit.image}
-
-									<a href="/age-open/{event.id}" class="group block">
-										<div
-											class="relative overflow-hidden rounded-xl border {colors.border} bg-gray-900/90 transition-all hover:border-white/20 hover:bg-gray-800/90 hover:shadow-xl hover:shadow-black/30"
-										>
-											<!-- Background Image -->
-											<div class="absolute inset-0">
-												<img
-													src={bgImage}
-													alt=""
-													class="h-full w-full object-cover opacity-60 transition-all duration-500 group-hover:scale-105 group-hover:opacity-70"
-												/>
-												<div
-													class="absolute inset-0 bg-gradient-to-r from-gray-900/95 via-gray-900/90 to-gray-900/70"
-												></div>
-											</div>
-
-											<!-- Circuit Accent Bar -->
-											<div class="{colors.bg} relative z-10 px-3 py-1">
-												<span
-													class="text-[10px] font-semibold tracking-widest text-white/90 uppercase"
-													>{event.circuit || 'AGE Open'}</span
-												>
-											</div>
-
-											<!-- Card Content -->
-											<div class="relative flex items-center justify-between gap-4 px-4 py-3">
-												<!-- Left: Event Info -->
-												<div class="min-w-0 flex-1">
-													<!-- Title -->
-													<h4
-														class="truncate text-base font-bold text-white transition-colors group-hover:text-blue-400"
-													>
-														{event.title}
-													</h4>
-
-													<!-- Meta Row -->
-													<div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
-														<!-- Date -->
-														<div class="flex items-center gap-1 text-gray-400">
-															<svg
-																class="h-3.5 w-3.5 {colors.text}"
-																fill="none"
-																stroke="currentColor"
-																stroke-width="1.5"
-																viewBox="0 0 24 24"
-															>
-																<path
-																	stroke-linecap="round"
-																	stroke-linejoin="round"
-																	d={icons.calendar}
-																/>
-															</svg>
-															{formatDate(event.eventDate)}
-														</div>
-
-														<!-- Location -->
-														{#if event.location}
-															<div class="flex items-center gap-1 text-gray-500">
-																<svg
-																	class="h-3.5 w-3.5"
-																	fill="none"
-																	stroke="currentColor"
-																	stroke-width="1.5"
-																	viewBox="0 0 24 24"
-																>
-																	<path
-																		stroke-linecap="round"
-																		stroke-linejoin="round"
-																		d={icons.mapPin}
-																	/>
-																</svg>
-																<span class="max-w-[150px] truncate">{event.location}</span>
-															</div>
-														{/if}
-
-														<!-- Format Badge -->
-														{#if event.format}
-															<span
-																class="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-medium text-gray-400"
-																>{event.format}</span
-															>
-														{/if}
-													</div>
-												</div>
-
-												<!-- Right: Price & CTA -->
-												<div class="flex shrink-0 items-center gap-3">
-													<div class="hidden text-right sm:block">
-														<p class="text-lg font-bold text-white">
-															${Number(event.price).toFixed(0)}
-														</p>
-													</div>
-													<div
-														class="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-lg shadow-blue-500/20 transition-all group-hover:from-blue-600 group-hover:to-purple-700"
-													>
-														Sign Up →
-													</div>
-												</div>
-											</div>
-										</div>
-									</a>
-								{/each}
-							</div>
-						{:else}
-							<div class="rounded-xl border border-white/10 bg-gray-900/50 p-8 text-center">
-								<p class="text-sm text-gray-500">No upcoming events scheduled</p>
-							</div>
-						{/if}
-					</div>
+					<UpcomingEvents
+						events={data.events || []}
+						maxEvents={3}
+						viewAllLink="/age-open"
+						showPremiumBadge={false}
+					/>
 
 					<!-- Featured Decklists -->
 					<FeaturedDecklists decklists={data.featuredDecklists || []} />

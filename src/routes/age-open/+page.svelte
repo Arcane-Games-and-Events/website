@@ -12,6 +12,9 @@
 		buildCircuitColorsMap
 	} from '$lib/data/circuits.js';
 	import StandingsCard from '$lib/components/StandingsCard.svelte';
+	import UpcomingEvents from '$lib/components/UpcomingEvents.svelte';
+	import NextEventBanner from '$lib/components/NextEventBanner.svelte';
+	import EventCard from '$lib/components/EventCard.svelte';
 
 	export let data;
 
@@ -178,7 +181,9 @@
 	}
 
 	function getEventsForDate(date) {
-		return (data.events || []).filter((event) => {
+		// Use allEvents (all events) with fallback to events (upcoming only)
+		const allEvts = data.allEvents?.length > 0 ? data.allEvents : data.events || [];
+		return allEvts.filter((event) => {
 			if (!event.eventDate) return false;
 			const eventDate = getLocalDateFromUTC(event.eventDate);
 			return (
@@ -215,63 +220,6 @@
 
 	function getSeasonColor(index) {
 		return seasonColors[index % seasonColors.length];
-	}
-
-	// Get season bars for a week row (returns array of {season, startCol, span, isStart, isEnd})
-	function getSeasonBarsForWeek(weekDays, seasonIndex) {
-		const seasons = data.lssEvents || [];
-		if (seasonIndex >= seasons.length) return [];
-
-		const season = seasons[seasonIndex];
-		// Use UTC helper to get correct dates
-		const seasonStart = getLocalDateFromUTC(season.startDate);
-		const seasonEnd = getLocalDateFromUTC(season.endDate);
-
-		// Normalize dates for comparison (remove time component)
-		seasonStart.setHours(0, 0, 0, 0);
-		seasonEnd.setHours(23, 59, 59, 999);
-
-		const weekStart = new Date(weekDays[0].date);
-		const weekEnd = new Date(weekDays[6].date);
-		weekStart.setHours(0, 0, 0, 0);
-		weekEnd.setHours(23, 59, 59, 999);
-
-		// Check if season overlaps with this week
-		if (seasonEnd < weekStart || seasonStart > weekEnd) {
-			return null;
-		}
-
-		// Calculate start column (0-6)
-		let startCol = 0;
-		if (seasonStart > weekStart) {
-			for (let i = 0; i < 7; i++) {
-				const dayDate = new Date(weekDays[i].date);
-				dayDate.setHours(0, 0, 0, 0);
-				if (dayDate >= seasonStart) {
-					startCol = i;
-					break;
-				}
-			}
-		}
-
-		// Calculate end column (0-6)
-		let endCol = 6;
-		if (seasonEnd < weekEnd) {
-			for (let i = 6; i >= 0; i--) {
-				const dayDate = new Date(weekDays[i].date);
-				dayDate.setHours(0, 0, 0, 0);
-				if (dayDate <= seasonEnd) {
-					endCol = i;
-					break;
-				}
-			}
-		}
-
-		const span = endCol - startCol + 1;
-		const isStart = seasonStart >= weekStart && seasonStart <= weekEnd;
-		const isEnd = seasonEnd >= weekStart && seasonEnd <= weekEnd;
-
-		return { season, startCol, span, isStart, isEnd };
 	}
 
 	// Split calendar days into weeks
@@ -888,9 +836,9 @@
 	$: stlCount = stlEvents.length;
 	$: neCount = neEvents.length;
 
-	// All upcoming events sorted by date (uses status='upcoming' from database)
+	// All upcoming events sorted by date (filter by future date, closest first)
 	$: upcomingEvents = (data.events || [])
-		.filter((e) => e.status === 'upcoming')
+		.filter((e) => e.eventDate && new Date(e.eventDate) >= new Date())
 		.sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
 
 	// Circuit slots configuration (8 guaranteed opens per circuit)
@@ -913,14 +861,6 @@
 	$: neSlots = getCircuitSlots(data.allEvents || [], 'New England');
 	$: stlSlots = getCircuitSlots(data.allEvents || [], 'St. Louis');
 
-	// Circuit filter state
-	let selectedCircuit = 'all';
-
-	// Filtered events based on circuit selection
-	$: filteredEvents =
-		selectedCircuit === 'all'
-			? data.events || []
-			: (data.events || []).filter((e) => e.circuit === selectedCircuit);
 
 	// Get circuit color classes
 	function getCircuitColor(circuit) {
@@ -1233,52 +1173,9 @@
 			<div class="space-y-12">
 				<!-- Next Event - Minimal Banner -->
 				{#if upcomingEvents.length > 0}
-					{@const nextEvent = upcomingEvents[0]}
-					{@const nextColors = getCircuitColor(nextEvent.circuit)}
-
-					<a
-						href="/age-open/{nextEvent.id}"
-						class="group mb-4 flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-900/40 px-4 py-4 transition-all hover:border-gray-700 hover:bg-gray-800/60"
-					>
-						<!-- Pulse indicator -->
-						<span class="relative flex h-2 w-2 shrink-0">
-							<span
-								class="absolute inline-flex h-full w-full animate-ping rounded-full {nextColors.bg} opacity-75"
-							></span>
-							<span class="relative inline-flex h-2 w-2 rounded-full {nextColors.bg}"></span>
-						</span>
-
-						<!-- Label -->
-						<span
-							class="shrink-0 rounded bg-gray-800 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-gray-400 uppercase"
-							>Next Event</span
-						>
-
-						<!-- Info -->
-						<span
-							class="truncate font-semibold text-white transition-colors group-hover:text-blue-400"
-							>{nextEvent.title}</span
-						>
-
-						<span class="hidden text-gray-600 sm:inline">•</span>
-						{#if nextEvent.eventDate}
-							<span class="hidden text-xs font-medium text-white sm:inline"
-								>{new Date(nextEvent.eventDate).toLocaleDateString('en-US', {
-									month: 'short',
-									day: 'numeric',
-									timeZone: 'UTC'
-								})}</span
-							>
-						{/if}
-
-						<span class="hidden text-gray-600 md:inline">•</span>
-						<span class="hidden text-xs font-semibold md:inline {nextColors.text}">{nextEvent.circuit}</span>
-
-						<!-- Sign Up Button -->
-						<span class="ml-auto shrink-0 rounded-md {nextColors.bg} px-3 py-1 text-xs font-semibold text-white transition-transform group-hover:scale-105">
-							Sign Up
-						</span>
-					</a>
+					<div class="mb-4">
+						<NextEventBanner event={upcomingEvents[0]} />
+					</div>
 				{/if}
 
 				<!-- Your Path to Championship - Premium Section -->
@@ -1826,121 +1723,8 @@
 
 						{#if upcomingEvents.length > 0}
 							<div class="space-y-3">
-								{#each upcomingEvents as evt}
-									{@const colors = getCircuitColor(evt.circuit)}
-									{@const bgImage = getCircuitImage(evt.circuit)}
-
-									<a href="/age-open/{evt.id}" class="group block">
-										<div
-											class="relative overflow-hidden rounded-xl border {colors.eventBorder} bg-gray-900/90 transition-all hover:bg-gray-800/90 hover:shadow-xl hover:shadow-black/30 {colors.eventBorderHover}"
-										>
-											<!-- Background Image -->
-											<div class="absolute inset-0">
-												<img
-													src={bgImage}
-													alt=""
-													class="h-full w-full object-cover opacity-60 transition-all duration-500 group-hover:scale-105 group-hover:opacity-70"
-												/>
-												<div
-													class="absolute inset-0 bg-gradient-to-r from-gray-900/95 via-gray-900/90 to-gray-900/70"
-												></div>
-											</div>
-
-											<!-- Circuit Accent Bar -->
-											<div class="{colors.bg} relative z-10 px-3 py-1">
-												<span
-													class="text-[10px] font-semibold tracking-widest text-white/90 uppercase"
-													>{evt.circuit || 'AGE Open'}</span
-												>
-											</div>
-
-											<!-- Card Content -->
-											<div class="relative flex items-center justify-between gap-4 px-4 py-3">
-												<!-- Left: Event Info -->
-												<div class="min-w-0 flex-1">
-													<!-- Title -->
-													<h4
-														class="truncate text-base font-bold text-white transition-colors group-hover:text-blue-400"
-													>
-														{evt.title}
-													</h4>
-
-													<!-- Meta Row -->
-													<div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
-														<!-- Date -->
-														{#if evt.eventDate}
-															<div class="flex items-center gap-1 text-gray-400">
-																<svg
-																	class="h-3.5 w-3.5 {colors.text}"
-																	fill="none"
-																	stroke="currentColor"
-																	stroke-width="1.5"
-																	viewBox="0 0 24 24"
-																>
-																	<path
-																		stroke-linecap="round"
-																		stroke-linejoin="round"
-																		d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
-																	/>
-																</svg>
-																{new Date(evt.eventDate).toLocaleDateString('en-US', {
-																	month: 'short',
-																	day: 'numeric',
-																	year: 'numeric',
-																	timeZone: 'UTC'
-																})}
-															</div>
-														{/if}
-
-														<!-- Location -->
-														{#if evt.location}
-															<div class="flex items-center gap-1 text-gray-500">
-																<svg
-																	class="h-3.5 w-3.5"
-																	fill="none"
-																	stroke="currentColor"
-																	stroke-width="1.5"
-																	viewBox="0 0 24 24"
-																>
-																	<path
-																		stroke-linecap="round"
-																		stroke-linejoin="round"
-																		d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
-																	/>
-																	<path
-																		stroke-linecap="round"
-																		stroke-linejoin="round"
-																		d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
-																	/>
-																</svg>
-																<span class="max-w-[150px] truncate">{evt.location}</span>
-															</div>
-														{/if}
-
-														<!-- Format Badge -->
-														{#if evt.format}
-															<span
-																class="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-medium text-gray-400"
-																>{evt.format}</span
-															>
-														{/if}
-													</div>
-												</div>
-
-												<!-- Right: Price & CTA -->
-												<div class="flex shrink-0 items-center gap-3">
-													<div class="hidden text-right sm:block">
-														<p class="text-lg font-bold text-white">${formatPrice(evt.price)}</p>
-													</div>
-													<div
-														class="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-lg shadow-blue-500/20 transition-all group-hover:from-blue-600 group-hover:to-purple-700"
-													>
-														Sign Up →
-													</div>
-												</div>
-											</div>
-										</div>
-									</a>
+								{#each upcomingEvents as evt (evt.id)}
+									<EventCard event={evt} showPremiumBadge={false} />
 								{/each}
 							</div>
 						{:else}
@@ -2069,208 +1853,12 @@
 			<!-- Events Tab -->
 		{:else if activeTab === 'events'}
 			<div class="space-y-8">
-				<!-- Circuit Filter Pills -->
-				<div class="flex flex-wrap items-center gap-3">
-					<span class="text-sm font-medium text-gray-400">Browse Events:</span>
-					<div class="flex flex-wrap gap-2">
-						<button
-							onclick={() => (selectedCircuit = 'all')}
-							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit ===
-							'all'
-								? 'bg-white text-gray-900 shadow-lg'
-								: 'bg-gray-800 text-gray-300 hover:bg-gray-700'}"
-						>
-							All Circuits
-						</button>
-						<button
-							onclick={() => (selectedCircuit = 'Los Angeles')}
-							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit ===
-							'Los Angeles'
-								? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
-								: 'border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'}"
-						>
-							<span class="flex items-center gap-1.5">
-								<span class="h-2 w-2 rounded-full bg-blue-400"></span>
-								Los Angeles
-							</span>
-						</button>
-						<button
-							onclick={() => (selectedCircuit = 'New England')}
-							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit ===
-							'New England'
-								? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
-								: 'border border-purple-500/30 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'}"
-						>
-							<span class="flex items-center gap-1.5">
-								<span class="h-2 w-2 rounded-full bg-purple-400"></span>
-								New England
-							</span>
-						</button>
-						<button
-							onclick={() => (selectedCircuit = 'St. Louis')}
-							class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit ===
-							'St. Louis'
-								? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
-								: 'border border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20'}"
-						>
-							<span class="flex items-center gap-1.5">
-								<span class="h-2 w-2 rounded-full bg-green-400"></span>
-								St. Louis
-							</span>
-						</button>
-					</div>
-				</div>
-
-				<!-- Events List -->
-				{#if filteredEvents.length > 0}
-					<div class="space-y-4">
-						{#each filteredEvents as evt}
-							{@const colors = getCircuitColor(evt.circuit)}
-							{@const bgImage = getCircuitImage(evt.circuit)}
-
-							<a href="/age-open/{evt.id}" class="group block">
-								<div
-									class="relative overflow-hidden rounded-xl border {colors.eventBorder} bg-gray-900/90 transition-all hover:border-white/20 hover:bg-gray-800/90 hover:shadow-xl hover:shadow-black/30"
-								>
-									<!-- Background Image -->
-									<div class="absolute inset-0">
-										<img
-											src={bgImage}
-											alt=""
-											class="h-full w-full object-cover opacity-60 transition-all duration-500 group-hover:scale-105 group-hover:opacity-70"
-										/>
-										<div
-											class="absolute inset-0 bg-gradient-to-r from-gray-900/95 via-gray-900/90 to-gray-900/70"
-										></div>
-									</div>
-
-									<!-- Circuit Accent Bar -->
-									<div class="{colors.bg} relative z-10 px-3 py-1">
-										<span class="text-[10px] font-semibold tracking-widest text-white/90 uppercase"
-											>{evt.circuit || 'AGE Open'}</span
-										>
-									</div>
-
-									<!-- Card Content -->
-									<div class="relative flex items-center justify-between gap-4 px-4 py-3">
-										<!-- Left: Event Info -->
-										<div class="min-w-0 flex-1">
-											<!-- Title -->
-											<h4
-												class="truncate text-base font-bold text-white transition-colors group-hover:text-blue-400"
-											>
-												{evt.title}
-											</h4>
-
-											<!-- Meta Row -->
-											<div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
-												<!-- Date -->
-												<div class="flex items-center gap-1 text-gray-400">
-													<svg
-														class="h-3.5 w-3.5 {colors.text}"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="1.5"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
-														/>
-													</svg>
-													{formatDate(evt.eventDate)}
-												</div>
-
-												<!-- Location -->
-												{#if evt.location}
-													<div class="flex items-center gap-1 text-gray-500">
-														<svg
-															class="h-3.5 w-3.5"
-															fill="none"
-															stroke="currentColor"
-															stroke-width="1.5"
-															viewBox="0 0 24 24"
-														>
-															<path
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
-															/>
-															<path
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
-															/>
-														</svg>
-														<span class="max-w-[200px] truncate">{evt.location}</span>
-													</div>
-												{/if}
-
-												<!-- Format Badge -->
-												{#if evt.format}
-													<span
-														class="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-medium text-gray-400"
-														>{evt.format}</span
-													>
-												{/if}
-
-												<!-- Premium Badge -->
-												{#if evt.premiumDiscount}
-													<span
-														class="rounded border border-amber-500/30 bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-medium text-amber-300"
-													>
-														Premium -10%
-													</span>
-												{/if}
-											</div>
-										</div>
-
-										<!-- Right: Price & CTA -->
-										<div class="flex shrink-0 items-center gap-3">
-											<div class="hidden text-right sm:block">
-												<p class="text-lg font-bold text-white">${Number(evt.price).toFixed(0)}</p>
-											</div>
-											<div
-												class="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-lg shadow-blue-500/20 transition-all group-hover:from-blue-600 group-hover:to-purple-700"
-											>
-												Sign Up →
-											</div>
-										</div>
-									</div>
-								</div>
-							</a>
-						{/each}
-					</div>
-				{:else}
-					<div class="rounded-lg border border-gray-800 bg-gray-900 p-12 text-center">
-						<div
-							class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-800"
-						>
-							<svg
-								class="h-8 w-8 text-gray-600"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-								/>
-							</svg>
-						</div>
-						<h3 class="mb-2 text-xl font-semibold text-white">No Events Found</h3>
-						<p class="text-gray-400">
-							{#if selectedCircuit !== 'all'}
-								No events found for the {selectedCircuit} circuit. Try selecting a different circuit.
-							{:else}
-								Check back soon for new tournament announcements!
-							{/if}
-						</p>
-					</div>
-				{/if}
+				<UpcomingEvents
+					events={data.events || []}
+					showTitle={false}
+					showFilters={true}
+					emptyMessage="Check back soon for new tournament announcements!"
+				/>
 
 				<!-- Circuit Season Tracker -->
 				<div
@@ -2775,260 +2363,76 @@
 							{/each}
 						</div>
 
-						<!-- Calendar Grid - Week by Week -->
-						<div>
-							{#each calendarWeeks as week, weekIndex}
-								<div class="relative">
-									<!-- Season bars layer -->
-									<div class="pointer-events-none absolute inset-0" style="z-index: 10;">
-										{#each data.lssEvents || [] as season, seasonIndex}
-											{@const bar = getSeasonBarsForWeek(week, seasonIndex)}
-											{#if bar}
-												{@const colors = getSeasonColor(seasonIndex)}
-												{@const leftPercent = (bar.startCol / 7) * 100}
-												{@const widthPercent = (bar.span / 7) * 100}
-												{@const topOffset = 28 + seasonIndex * 22}
-												<div
-													class="pointer-events-auto absolute flex h-5 cursor-pointer items-center {colors.bg} {colors.text} border-y {colors.border}
-														{bar.isStart ? 'ml-1 rounded-l-md border-l' : ''}
-														{bar.isEnd ? 'mr-1 rounded-r-md border-r' : ''}"
-													style="left: {leftPercent}%; width: calc({widthPercent}% - {bar.isStart
-														? 4
-														: 0}px - {bar.isEnd ? 4 : 0}px); top: {topOffset}px;"
-													title="{season.name}{season.eventType ? ` (${season.eventType})` : ''}"
-												>
-													{#if bar.isStart || bar.startCol === 0}
-														<span class="truncate px-2 text-[10px] font-medium whitespace-nowrap">
-															{season.name}
-														</span>
-													{/if}
-												</div>
-											{/if}
-										{/each}
-									</div>
-
-									<!-- Days grid -->
-									<div class="grid grid-cols-7">
-										{#each week as day, dayIndex}
-											{@const dayEvents = getEventsForDate(day.date)}
-											{@const hasEvents = dayEvents.length > 0}
-											{@const seasonCount = getSeasonsForDate(day.date).length}
-											{@const hasSeasons = seasonCount > 0}
-											{@const firstEventColor = hasEvents
-												? getCircuitColor(dayEvents[0].circuit)
-												: null}
-											<div
-												class="min-h-[100px] border-r border-b border-gray-800 p-2 transition-colors
-													{day.isCurrentMonth ? 'bg-gray-900/50' : 'bg-gray-950/50'}
-													{isToday(day.date) ? 'ring-2 ring-emerald-500/50 ring-inset' : ''}
-													{hasEvents ? firstEventColor.cellBg + ' ' + firstEventColor.cellBorder : ''}
-													{dayIndex === 6 ? 'border-r-0' : ''}"
+						<!-- Calendar Grid -->
+						<div class="grid grid-cols-7">
+							{#each calendarWeeks as week}
+								{#each week as day, dayIndex}
+									{@const dayEvents = getEventsForDate(day.date)}
+									{@const daySeasons = getSeasonsForDate(day.date)}
+									{@const hasEvents = dayEvents.length > 0}
+									{@const firstEventColor = hasEvents
+										? getCircuitColor(dayEvents[0].circuit)
+										: null}
+									<div
+										class="min-h-[100px] border-r border-b border-gray-800 p-1.5 transition-colors
+											{day.isCurrentMonth ? 'bg-gray-900/50' : 'bg-gray-950/50'}
+											{isToday(day.date) ? 'ring-2 ring-emerald-500/50 ring-inset' : ''}
+											{hasEvents ? firstEventColor.cellBg + ' ' + firstEventColor.cellBorder : ''}
+											{dayIndex === 6 ? 'border-r-0' : ''}"
+									>
+										<!-- Day number header -->
+										<div class="mb-1 flex items-start justify-between">
+											<span
+												class="text-sm font-medium {day.isCurrentMonth
+													? isToday(day.date)
+														? 'text-emerald-400'
+														: 'text-white'
+													: 'text-gray-600'}"
 											>
-												<div class="mb-1 flex items-start justify-between">
+												{day.day}
+											</span>
+											{#if hasEvents}
+												{@const dotColor = getCircuitColor(dayEvents[0].circuit)}
+												<span class="relative flex h-3 w-3">
 													<span
-														class="text-sm font-medium {day.isCurrentMonth
-															? isToday(day.date)
-																? 'text-emerald-400'
-																: 'text-white'
-															: 'text-gray-600'}"
-													>
-														{day.day}
-													</span>
-													{#if hasEvents}
-														{@const dotColor = getCircuitColor(dayEvents[0].circuit)}
-														<span class="relative flex h-3 w-3">
-															<span
-																class="absolute inline-flex h-full w-full animate-ping rounded-full {dotColor.ping} opacity-75"
-															></span>
-															<span
-																class="relative inline-flex h-3 w-3 rounded-full {dotColor.dot} ring-2 {dotColor.ring}"
-															></span>
-														</span>
-													{/if}
-												</div>
+														class="absolute inline-flex h-full w-full animate-ping rounded-full {dotColor.ping} opacity-75"
+													></span>
+													<span
+														class="relative inline-flex h-3 w-3 rounded-full {dotColor.dot} ring-2 {dotColor.ring}"
+													></span>
+												</span>
+											{/if}
+										</div>
 
-												<!-- Spacer for season bars (22px per season bar) -->
-												{#if hasSeasons}
-													<div style="height: {seasonCount * 22}px;"></div>
-												{/if}
+										<!-- AGE Events -->
+										{#each dayEvents as event}
+											{@const eventColor = getCircuitColor(event.circuit)}
+											<a
+												href="/age-open/{event.id}"
+												class="group mb-1 block rounded-md bg-gradient-to-r px-1.5 py-0.5 text-[10px] font-semibold {eventColor.eventGradient} {eventColor.eventText} {eventColor.eventGradientHover} border hover:text-white {eventColor.eventBorder} {eventColor.eventBorderHover} truncate shadow-sm transition-all {eventColor.eventShadow}"
+												title="{event.title} ({event.circuit || 'TBA'})"
+											>
+												<span class="flex items-center gap-1">
+													<span class="h-1.5 w-1.5 rounded-full {eventColor.dot} flex-shrink-0"></span>
+													<span class="truncate">{event.title}</span>
+												</span>
+											</a>
+										{/each}
 
-												<!-- Event indicators -->
-												{#each dayEvents.slice(0, hasSeasons ? 1 : 2) as event}
-													{@const eventColor = getCircuitColor(event.circuit)}
-													<a
-														href="/age-open/{event.id}"
-														class="group mb-1 block rounded-md bg-gradient-to-r px-2 py-1 text-[11px] font-semibold {eventColor.eventGradient} {eventColor.eventText} {eventColor.eventGradientHover} border hover:text-white {eventColor.eventBorder} {eventColor.eventBorderHover} truncate shadow-sm transition-all {eventColor.eventShadow}"
-														title="{event.title} ({event.circuit || 'TBA'})"
-													>
-														<span class="flex items-center gap-1">
-															<span class="h-1.5 w-1.5 rounded-full {eventColor.dot} flex-shrink-0"
-															></span>
-															<span class="truncate">{event.title}</span>
-														</span>
-													</a>
-												{/each}
-												{#if dayEvents.length > (hasSeasons ? 1 : 2)}
-													<div class="px-1 text-[10px] text-gray-500">
-														+{dayEvents.length - (hasSeasons ? 1 : 2)} more
-													</div>
-												{/if}
+										<!-- LSS Seasons (stacked) -->
+										{#each daySeasons as season, seasonIndex}
+											{@const colors = getSeasonColor((data.lssEvents || []).indexOf(season))}
+											<div
+												class="mt-1 rounded px-1.5 py-0.5 text-[9px] font-medium {colors.bg} {colors.text} truncate"
+												title="{season.name}{season.eventType ? ` (${season.eventType})` : ''}"
+											>
+												{season.name}
 											</div>
 										{/each}
 									</div>
-								</div>
+								{/each}
 							{/each}
 						</div>
-					</div>
-
-					<!-- Upcoming AGE Opens -->
-					<div>
-						<h3 class="mb-4 text-lg font-bold text-white">Upcoming Events</h3>
-
-						{#if (data.events || []).filter((e) => e.eventDate && new Date(e.eventDate) >= new Date()).length > 0}
-							<div class="space-y-3">
-								{#each (data.events || [])
-									.filter((e) => e.eventDate && new Date(e.eventDate) >= new Date())
-									.slice(0, 5) as event}
-									{@const colors = getCircuitColor(event.circuit)}
-									{@const bgImage = getCircuitImage(event.circuit)}
-
-									<a href="/age-open/{event.id}" class="group block">
-										<div
-											class="relative overflow-hidden rounded-xl border {colors.eventBorder} bg-gray-900/90 transition-all hover:bg-gray-800/90 hover:shadow-xl hover:shadow-black/30 {colors.eventBorderHover}"
-										>
-											<!-- Background Image -->
-											<div class="absolute inset-0">
-												<img
-													src={bgImage}
-													alt=""
-													class="h-full w-full object-cover opacity-60 transition-all duration-500 group-hover:scale-105 group-hover:opacity-70"
-												/>
-												<div
-													class="absolute inset-0 bg-gradient-to-r from-gray-900/95 via-gray-900/90 to-gray-900/70"
-												></div>
-											</div>
-
-											<!-- Circuit Accent Bar -->
-											<div class="{colors.bg} relative z-10 px-3 py-1">
-												<span
-													class="text-[10px] font-semibold tracking-widest text-white/90 uppercase"
-													>{event.circuit || 'AGE Open'}</span
-												>
-											</div>
-
-											<!-- Card Content -->
-											<div class="relative flex items-center justify-between gap-4 px-4 py-3">
-												<!-- Left: Event Info -->
-												<div class="min-w-0 flex-1">
-													<!-- Title -->
-													<h4
-														class="truncate text-base font-bold text-white transition-colors group-hover:text-blue-400"
-													>
-														{event.title}
-													</h4>
-
-													<!-- Meta Row -->
-													<div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
-														<!-- Date -->
-														{#if event.eventDate}
-															<div class="flex items-center gap-1 text-gray-400">
-																<svg
-																	class="h-3.5 w-3.5 {colors.text}"
-																	fill="none"
-																	stroke="currentColor"
-																	stroke-width="1.5"
-																	viewBox="0 0 24 24"
-																>
-																	<path
-																		stroke-linecap="round"
-																		stroke-linejoin="round"
-																		d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
-																	/>
-																</svg>
-																{new Date(event.eventDate).toLocaleDateString('en-US', {
-																	month: 'short',
-																	day: 'numeric',
-																	year: 'numeric',
-																	timeZone: 'UTC'
-																})}
-															</div>
-														{/if}
-
-														<!-- Location -->
-														{#if event.location}
-															<div class="flex items-center gap-1 text-gray-500">
-																<svg
-																	class="h-3.5 w-3.5"
-																	fill="none"
-																	stroke="currentColor"
-																	stroke-width="1.5"
-																	viewBox="0 0 24 24"
-																>
-																	<path
-																		stroke-linecap="round"
-																		stroke-linejoin="round"
-																		d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
-																	/>
-																	<path
-																		stroke-linecap="round"
-																		stroke-linejoin="round"
-																		d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
-																	/>
-																</svg>
-																<span class="max-w-[150px] truncate">{event.location}</span>
-															</div>
-														{/if}
-
-														<!-- Format -->
-														{#if event.format}
-															<span class="text-gray-500">{event.format}</span>
-														{/if}
-													</div>
-												</div>
-
-												<!-- Right: Price & Sign Up -->
-												<div class="flex shrink-0 items-center gap-3">
-													{#if event.price}
-														<div class="hidden text-right sm:block">
-															<div class="text-lg font-bold text-white">
-																${parseFloat(event.price).toFixed(0)}
-															</div>
-														</div>
-													{/if}
-													<div
-														class="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-lg shadow-blue-500/20 transition-all group-hover:from-blue-600 group-hover:to-purple-700"
-													>
-														Sign Up →
-													</div>
-												</div>
-											</div>
-										</div>
-									</a>
-								{/each}
-							</div>
-						{:else}
-							<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-10 text-center">
-								<div
-									class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-500/20"
-								>
-									<svg
-										class="h-8 w-8 text-blue-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-										/>
-									</svg>
-								</div>
-								<p class="text-gray-400">No upcoming events scheduled</p>
-								<p class="mt-1 text-sm text-gray-500">Check back soon for new tournaments!</p>
-							</div>
-						{/if}
 					</div>
 
 					<!-- LSS Events Section - Minimalistic with subtle accent -->
