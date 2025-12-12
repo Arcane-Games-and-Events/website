@@ -2,6 +2,7 @@ import { redirect, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { event, savedCard } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
+import { AUTHNET_ENVIRONMENT } from '$env/static/private';
 
 export async function load({ params, locals }) {
 	// Require authentication
@@ -41,7 +42,8 @@ export async function load({ params, locals }) {
 			event: eventData,
 			finalPrice: finalPrice.toFixed(2),
 			hasPremiumDiscount: eventData.premiumDiscount && isPremium,
-			savedCards: userSavedCards
+			savedCards: userSavedCards,
+			isSandbox: AUTHNET_ENVIRONMENT === 'sandbox'
 		};
 	} catch (err) {
 		if (err.status === 404) {

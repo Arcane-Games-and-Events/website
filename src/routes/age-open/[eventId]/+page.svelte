@@ -620,6 +620,7 @@
 									gemId={gemIdsForPayment}
 									savedCards={data.savedCards || []}
 									showSaveCardOption={true}
+									showTestData={data.isSandbox}
 								/>
 							</div>
 						{/if}

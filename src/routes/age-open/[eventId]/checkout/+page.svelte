@@ -375,6 +375,7 @@
 							gemId={gemId}
 							savedCards={data.savedCards}
 							showSaveCardOption={true}
+							showTestData={data.isSandbox}
 						/>
 					</div>
 				</div>
