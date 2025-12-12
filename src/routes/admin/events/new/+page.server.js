@@ -9,9 +9,8 @@ export async function load({ locals }) {
 		throw redirect(302, '/login?redirect=/admin/events/new');
 	}
 
-	return {
-		user: locals.user
-	};
+	// No data needed in the component - just auth check
+	return {};
 }
 
 export const actions = {

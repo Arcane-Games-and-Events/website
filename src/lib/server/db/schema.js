@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer, jsonb, boolean, decimal } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, integer, jsonb, boolean, decimal, unique } from 'drizzle-orm/pg-core';
 
 // User table with auth and role support
 export const user = pgTable('user', {
@@ -12,10 +12,18 @@ export const user = pgTable('user', {
 	lastName: text('last_name').notNull(),
 	gemId: text('gem_id'), // Optional GEM ID for tournament registration
 
-	role: text('role').notNull().default('free'), // Options: 'free', 'premium', 'admin', 'writer', 'tournament_staff'
+	role: text('role').notNull().default('free'), // Options: 'free', 'premium', 'admin', 'writer', 'tournament staff'
+
+	// Authorize.net Customer Profile (for saved cards)
+	customerProfileId: text('customer_profile_id'), // Authorize.net CIM customer profile ID
 
 	// Subscription tracking
 	subscriptionId: text('subscription_id'), // Authorize.net subscription ID for premium users
+	subscriptionType: text('subscription_type'), // 'monthly' or 'yearly'
+	subscriptionStatus: text('subscription_status'), // 'active', 'cancelled', 'expired'
+	subscriptionStartDate: timestamp('subscription_start_date', { withTimezone: true, mode: 'date' }),
+	subscriptionEndDate: timestamp('subscription_end_date', { withTimezone: true, mode: 'date' }), // When access expires (for cancelled subs)
+	nextBillingDate: timestamp('next_billing_date', { withTimezone: true, mode: 'date' }),
 
 	createdAt: timestamp('created_at', {
 		withTimezone: true,
@@ -37,8 +45,20 @@ export const session = pgTable('session', {
 	}).notNull()
 });
 
+// ORDERS (audit) - defined before ticket for foreign key reference
+export const order = pgTable('order', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	provider: text('provider').notNull(), // 'authnet'
+	providerRef: text('provider_ref').notNull(),
+	userEmail: text('user_email'),
+	amount: text('amount'),
+	currency: text('currency'),
+	meta: jsonb('meta'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
 // EVENTS
-export const event = pgTable('event', {
+export const event = pgTable('events', {
 	id: text('id').primaryKey(), // UUID or slug
 	title: text('title').notNull(),
 	location: text('location'), // Venue name - nullable for migration compatibility
@@ -46,11 +66,17 @@ export const event = pgTable('event', {
 	price: decimal('price', { precision: 10, scale: 2 }).notNull(),
 	format: text('format'), // e.g., "Standard", "Modern", "Draft" - nullable for migration
 	gemIdRequired: boolean('gem_id_required').default(false),
-	circuit: text('circuit'), // e.g., "West", "East", "Central"
+	circuit: text('circuit'), // e.g., "Los Angeles", "St. Louis", "New England"
 	month: text('month'), // e.g., "January", "February", etc.
 	eventDate: timestamp('event_date', { withTimezone: true, mode: 'date' }), // Nullable for migration
 	description: text('description'),
 	premiumDiscount: boolean('premium_discount').default(false), // 10% discount for premium users
+
+	// Event status for closeout workflow
+	status: text('status').default('upcoming'), // 'upcoming', 'in_progress', 'completed', 'cancelled'
+	closedAt: timestamp('closed_at', { withTimezone: true, mode: 'date' }),
+	closedBy: text('closed_by').references(() => user.id),
+
 	createdBy: text('created_by').references(() => user.id),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
@@ -60,6 +86,7 @@ export const ticket = pgTable('ticket', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	userId: text('user_id').references(() => user.id),
 	eventId: text('event_id').notNull().references(() => event.id),
+	orderId: uuid('order_id').references(() => order.id), // Link to payment record
 	code: text('code').notNull(),
 	quantity: integer('quantity').default(1),
 
@@ -90,18 +117,6 @@ export const entitlement = pgTable('entitlement', {
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
-// ORDERS (audit)
-export const order = pgTable('order', {
-	id: uuid('id').defaultRandom().primaryKey(), // <-- uuid + defaultRandom
-	provider: text('provider').notNull(), // 'authnet'
-	providerRef: text('provider_ref').notNull(),
-	userEmail: text('user_email'),
-	amount: text('amount'),
-	currency: text('currency'),
-	meta: jsonb('meta'),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
-});
-
 // WEBHOOK IDEMPOTENCY
 export const webhookEvent = pgTable('webhook_event', {
 	id: text('id').primaryKey(), // Auth.Net event id as text (no default)
@@ -117,11 +132,244 @@ export const passwordResetToken = pgTable('password_reset_token', {
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
-// EVENT STAFF ASSIGNMENTS (for tournament staff)
-export const eventStaff = pgTable('event_staff', {
+// NEWSLETTER SUBSCRIBERS
+export const newsletterSubscriber = pgTable('newsletter_subscriber', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	email: text('email').notNull().unique(),
+	resendContactId: text('resend_contact_id'), // Resend Audience contact ID
+	status: text('status').notNull().default('active'), // active, unsubscribed
+	source: text('source').default('website'), // where they signed up
+	subscribedAt: timestamp('subscribed_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true, mode: 'date' })
+});
+
+// STAFF ASSIGNMENTS (for tournament staff)
+export const eventStaff = pgTable('staff_assignments', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	userId: text('user_id').notNull().references(() => user.id),
 	eventId: text('event_id').notNull().references(() => event.id),
 	assignedBy: text('assigned_by').references(() => user.id), // Admin who assigned the staff
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
+
+// NOTE: event_result table has been removed
+// Results (placements, wins/losses, AGE points, prizes) are now computed on-the-fly
+// from event_match data using calculateFinalStandings() in tournament-processor.js
+
+// DECKLISTS (player deck submissions)
+export const decklist = pgTable('decklists', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	eventId: text('event_id').notNull().references(() => event.id),
+
+	// Player identification
+	userId: text('user_id').references(() => user.id),
+	gemId: text('gem_id'),
+	playerName: text('player_name').notNull(),
+
+	// Deck information
+	hero: text('hero'), // Hero card for the deck
+	format: text('format'), // Format the deck was played in
+	placement: integer('placement'), // Tournament placement (1-8)
+
+	// Deck contents - stored as JSON array of card objects
+	// Each card: { name: string, quantity: number, section: string, color?: string }
+	cards: jsonb('cards').notNull(),
+
+	// Raw text input (for reference/re-parsing)
+	rawText: text('raw_text'),
+
+	// Visibility
+	isPublic: boolean('is_public').default(true), // Whether to show on public results
+
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// MATCH RECORDS (for head-to-head analysis and computing results)
+export const match = pgTable('matches', {
+	id: uuid('id').defaultRandom().primaryKey(),
+
+	// Direct link to event (nullable for historical matches imported without real events)
+	eventId: text('event_id').references(() => event.id),
+
+	// Legacy context fields (kept for backwards compatibility)
+	month: text('month'), // e.g., "January", "February"
+	year: text('year'), // e.g., "2025", "2024"
+	circuit: text('circuit'), // e.g., "Los Angeles", "St. Louis"
+
+	// Match context
+	round: integer('round').notNull(),
+	table: integer('table'),
+
+	// Player 1
+	player1GemId: text('player1_gem_id'),
+	player1Name: text('player1_name').notNull(),
+
+	// Player 2
+	player2GemId: text('player2_gem_id'),
+	player2Name: text('player2_name').notNull(),
+
+	// Result: 'player1', 'player2', or null for draw
+	winner: text('winner'),
+
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// STANDINGS (circuit leaderboards)
+export const standing = pgTable('standings', {
+	id: uuid('id').defaultRandom().primaryKey(),
+
+	// Season and circuit info
+	season: text('season').notNull(), // e.g., "2025", "2024-2025"
+	circuit: text('circuit').notNull(), // "Los Angeles", "St. Louis", "New England"
+
+	// Player identification - GEM ID is the universal identifier
+	gemId: text('gem_id'),
+	playerName: text('player_name').notNull(),
+
+	// Standing data
+	totalPoints: integer('total_points').default(0), // Total AGE points
+	winPercentage: decimal('win_percentage', { precision: 5, scale: 2 }), // Win % for the season
+
+	// Match statistics for the season
+	matchesPlayed: integer('matches_played').default(0), // Total matches played
+	matchesWon: integer('matches_won').default(0), // Total matches won
+
+	// Qualification status
+	qualifiedForChampionship: boolean('qualified_for_championship').default(false),
+
+	// Monthly points - flattened columns
+	januaryPoints: integer('january_points').default(0),
+	februaryPoints: integer('february_points').default(0),
+	marchPoints: integer('march_points').default(0),
+	aprilPoints: integer('april_points').default(0),
+	mayPoints: integer('may_points').default(0),
+	junePoints: integer('june_points').default(0),
+	julyPoints: integer('july_points').default(0),
+	augustPoints: integer('august_points').default(0),
+	septemberPoints: integer('september_points').default(0),
+	octoberPoints: integer('october_points').default(0),
+	novemberPoints: integer('november_points').default(0),
+	decemberPoints: integer('december_points').default(0),
+
+	// Monthly matches won
+	januaryMatchesWon: integer('january_matches_won').default(0),
+	februaryMatchesWon: integer('february_matches_won').default(0),
+	marchMatchesWon: integer('march_matches_won').default(0),
+	aprilMatchesWon: integer('april_matches_won').default(0),
+	mayMatchesWon: integer('may_matches_won').default(0),
+	juneMatchesWon: integer('june_matches_won').default(0),
+	julyMatchesWon: integer('july_matches_won').default(0),
+	augustMatchesWon: integer('august_matches_won').default(0),
+	septemberMatchesWon: integer('september_matches_won').default(0),
+	octoberMatchesWon: integer('october_matches_won').default(0),
+	novemberMatchesWon: integer('november_matches_won').default(0),
+	decemberMatchesWon: integer('december_matches_won').default(0),
+
+	// Monthly matches played
+	januaryMatches: integer('january_matches').default(0),
+	februaryMatches: integer('february_matches').default(0),
+	marchMatches: integer('march_matches').default(0),
+	aprilMatches: integer('april_matches').default(0),
+	mayMatches: integer('may_matches').default(0),
+	juneMatches: integer('june_matches').default(0),
+	julyMatches: integer('july_matches').default(0),
+	augustMatches: integer('august_matches').default(0),
+	septemberMatches: integer('september_matches').default(0),
+	octoberMatches: integer('october_matches').default(0),
+	novemberMatches: integer('november_matches').default(0),
+	decemberMatches: integer('december_matches').default(0),
+
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+}, (table) => ({
+	uniqueSeasonCircuitPlayer: unique().on(table.season, table.circuit, table.playerName)
+}));
+
+// SAVED PAYMENT METHODS (Authorize.net CIM tokens)
+export const savedCard = pgTable('saved_card', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+
+	// Authorize.net CIM IDs (we never store actual card numbers)
+	customerProfileId: text('customer_profile_id').notNull(), // Authorize.net customer profile ID
+	paymentProfileId: text('payment_profile_id').notNull(), // Authorize.net payment profile ID
+
+	// Display info (safe to store - no sensitive data)
+	cardType: text('card_type').notNull(), // 'Visa', 'Mastercard', 'Amex', 'Discover'
+	lastFour: text('last_four').notNull(), // Last 4 digits for display
+	expirationMonth: text('expiration_month').notNull(), // MM
+	expirationYear: text('expiration_year').notNull(), // YYYY
+
+	// User preferences
+	isDefault: boolean('is_default').default(false),
+	nickname: text('nickname'), // Optional user-defined name like "Personal Card"
+
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// FAB CARD LOOKUP (card image URLs for fast decklist resolution)
+// Keys: "card name" or "card name:red/yellow/blue" for pitch-specific lookups
+export const fabCardLookup = pgTable('fab_card_lookup', {
+	lookupKey: text('lookup_key').primaryKey(), // "snatch" or "snatch:red"
+	name: text('name').notNull(), // Original card name
+	imageUrl: text('image_url'),
+	fallbackUrl: text('fallback_url'),
+	pitch: integer('pitch'),
+
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// FAB CARD UPLOAD HISTORY (track card database updates)
+export const fabCardUploadHistory = pgTable('fab_card_upload_history', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	uploadedBy: text('uploaded_by'), // User email who uploaded
+	filename: text('filename'),
+	totalCards: integer('total_cards').notNull(),
+	lookupEntries: integer('lookup_entries').notNull(),
+	setsIncluded: jsonb('sets_included'), // Array of set IDs
+
+	uploadedAt: timestamp('uploaded_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// LSS EVENTS (official Legend Story Studios competitive events/seasons)
+export const lssEvent = pgTable('lss_events', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	name: text('name').notNull(), // e.g., "Skirmish Season 5", "Road to Nationals 2025", "Pro Tour: Los Angeles"
+	description: text('description'), // Optional description
+	startDate: timestamp('start_date', { withTimezone: true, mode: 'date' }).notNull(),
+	endDate: timestamp('end_date', { withTimezone: true, mode: 'date' }).notNull(),
+	eventType: text('event_type'), // e.g., "Skirmish", "Road to Nationals", "ProQuest", "Pro Tour", "Worlds"
+	format: text('format'), // e.g., "Classic Constructed", "Blitz", "Draft", "Living Legend"
+	link: text('link'), // Link to official LSS page for this event
+	isActive: boolean('is_active').default(true), // Whether to show on calendar
+	createdBy: text('created_by').references(() => user.id),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// EVENT PLAYER HEROES (track what hero each player played at each event)
+// Organized by season/circuit/month to match standings structure
+export const eventPlayerHero = pgTable('event_player_heroes', {
+	id: uuid('id').defaultRandom().primaryKey(),
+
+	// Event context (matches standings structure)
+	season: text('season').notNull(), // e.g., "2025"
+	circuit: text('circuit').notNull(), // e.g., "Los Angeles", "St. Louis"
+	month: text('month').notNull(), // e.g., "January", "February"
+
+	// Player identification
+	gemId: text('gem_id'), // Player's GEM ID
+	playerName: text('player_name').notNull(), // For display and fallback matching
+
+	// Hero played at this event
+	hero: text('hero').notNull(),
+
+	// Optional metadata from CSV
+	countryRegion: text('country_region'),
+
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+}, (table) => ({
+	// Each player can only have one hero entry per season/circuit/month
+	uniqueEventPlayer: unique().on(table.season, table.circuit, table.month, table.gemId)
+}));

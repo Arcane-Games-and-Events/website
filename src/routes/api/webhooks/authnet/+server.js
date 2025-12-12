@@ -31,7 +31,6 @@ export async function POST({ request }) {
 		// Check for duplicate webhook (idempotency)
 		const existing = await db.select().from(webhookEvent).where(eq(webhookEvent.id, eventId));
 		if (existing.length > 0) {
-			console.log('Duplicate webhook received:', eventId);
 			return json({ received: true });
 		}
 
@@ -56,12 +55,30 @@ export async function POST({ request }) {
 }
 
 /**
+ * Calculate the next billing date based on subscription type
+ */
+function calculateNextBillingDate(currentDate, subscriptionType) {
+	const nextDate = new Date(currentDate);
+	if (subscriptionType === 'yearly') {
+		nextDate.setFullYear(nextDate.getFullYear() + 1);
+	} else if (subscriptionType === 'weekly_test') {
+		// For testing: 7-day interval (minimum allowed by Authorize.net)
+		nextDate.setDate(nextDate.getDate() + 7);
+	} else {
+		// Default: monthly
+		nextDate.setMonth(nextDate.getMonth() + 1);
+	}
+	return nextDate;
+}
+
+/**
  * Handle subscription events (renewals, cancellations, failures)
  */
 async function handleSubscriptionEvent(payload) {
 	const subscriptionId = payload.x_subscription_id;
 	const email = payload.x_email;
 	const responseCode = payload.x_response_code;
+	const subscriptionPayNum = payload.x_subscription_paynum; // Payment number in sequence
 
 	// Response codes:
 	// 1 = Approved
@@ -69,25 +86,54 @@ async function handleSubscriptionEvent(payload) {
 	// 3 = Error
 	// 4 = Held for review
 
+	// Find user by subscriptionId first (more reliable), fallback to email
+	let users = await db.select().from(userTable).where(eq(userTable.subscriptionId, subscriptionId));
+	if (users.length === 0 && email) {
+		users = await db.select().from(userTable).where(eq(userTable.email, email));
+	}
+
+	if (users.length === 0) {
+		console.error(`No user found for subscription ${subscriptionId} or email ${email}`);
+		return;
+	}
+
+	const user = users[0];
+
 	if (responseCode === '1') {
 		// Subscription payment successful
-		console.log(`Subscription ${subscriptionId} payment successful for ${email}`);
+		// Calculate next billing date
+		const now = new Date();
+		const nextBillingDate = calculateNextBillingDate(now, user.subscriptionType || 'monthly');
 
-		// Ensure user still has premium role
-		const users = await db.select().from(userTable).where(eq(userTable.email, email));
-		if (users.length > 0 && users[0].role !== 'premium' && users[0].role !== 'admin') {
-			await db.update(userTable)
-				.set({ role: 'premium' })
-				.where(eq(userTable.email, email));
-		}
-	} else if (responseCode === '2') {
-		// Subscription payment declined
-		console.log(`Subscription ${subscriptionId} payment declined for ${email}`);
-
-		// Downgrade user to free tier
+		// Update user: ensure premium role, update billing date, clear any failed status
 		await db.update(userTable)
-			.set({ role: 'free' })
-			.where(eq(userTable.email, email));
+			.set({
+				role: 'premium',
+				subscriptionStatus: 'active',
+				nextBillingDate,
+				// Clear any previous end date if they were in grace period
+				subscriptionEndDate: null
+			})
+			.where(eq(userTable.id, user.id));
+
+	} else if (responseCode === '2' || responseCode === '3') {
+		// Subscription payment declined or error
+		// Set status to payment_failed - give them a grace period
+		// Don't immediately downgrade, allow them to update payment method
+		const gracePeriodEnd = new Date();
+		gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7); // 7 day grace period
+
+		await db.update(userTable)
+			.set({
+				subscriptionStatus: 'payment_failed',
+				subscriptionEndDate: gracePeriodEnd
+			})
+			.where(eq(userTable.id, user.id));
+
+		// TODO: Send email notification to user about failed payment
+
+	} else if (responseCode === '4') {
+		// Held for review - don't change anything yet
 	}
 }
 
@@ -95,15 +141,11 @@ async function handleSubscriptionEvent(payload) {
  * Handle one-time transaction events
  */
 async function handleTransactionEvent(payload) {
-	const transactionId = payload.x_trans_id;
 	const responseCode = payload.x_response_code;
-	const amount = payload.x_amount;
 
 	if (responseCode === '1') {
-		console.log(`Transaction ${transactionId} successful: $${amount}`);
 		// Transaction was successful - already handled in the purchase endpoint
 	} else if (responseCode === '2') {
-		console.log(`Transaction ${transactionId} declined`);
 		// Mark any associated tickets/entitlements as voided
 		// This would require tracking transaction IDs in the order meta
 	}

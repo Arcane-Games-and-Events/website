@@ -5,7 +5,7 @@ import { eq, inArray } from 'drizzle-orm';
 
 export async function load({ locals }) {
 	// Require tournament staff authentication
-	if (!locals.user || locals.user.role !== 'tournament_staff') {
+	if (!locals.user || locals.user.role !== 'tournament staff') {
 		throw redirect(302, '/login?redirect=/staff');
 	}
 

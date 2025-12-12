@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { event } from '$lib/server/db/schema.js';
+import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
 
 /**
  * Create a new event (Admin only)
@@ -27,6 +28,10 @@ export async function POST({ request, locals }) {
 			title,
 			price
 		}).returning();
+
+		// Invalidate events cache so new event appears immediately
+		await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
+		await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
 
 		return json({
 			success: true,

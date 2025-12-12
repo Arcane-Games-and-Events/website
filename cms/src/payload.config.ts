@@ -21,6 +21,12 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    components: {
+      graphics: {
+        Logo: './components/Logo',
+        Icon: './components/Icon',
+      },
+    },
   },
   cors: [
     'http://localhost:5173', // Local dev
@@ -36,9 +42,10 @@ export default buildConfig({
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
-      max: 10, // Reduced pool size for Supabase pooler
-      idleTimeoutMillis: 20000, // Close idle clients after 20 seconds
-      connectionTimeoutMillis: 5000, // Return an error after 5 seconds if connection not available
+      max: 5, // Lower pool size for Supabase pooler to avoid connection limits
+      min: 0, // Allow pool to shrink to 0 when idle
+      idleTimeoutMillis: 10000, // Close idle clients after 10 seconds (before Supabase timeout)
+      connectionTimeoutMillis: 10000, // Longer timeout for connection acquisition
       allowExitOnIdle: true, // Allow pool to close when idle
       ssl: {
         rejectUnauthorized: false, // Accept self-signed certificates (for Supabase)

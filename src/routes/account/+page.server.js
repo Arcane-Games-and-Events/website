@@ -1,7 +1,7 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { user, order, ticket } from '$lib/server/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, inArray } from 'drizzle-orm';
 import { Argon2id } from 'oslo/password';
 
 export async function load({ locals }) {
@@ -17,24 +17,34 @@ export async function load({ locals }) {
 		.where(eq(order.userEmail, locals.user.email))
 		.orderBy(desc(order.createdAt));
 
-	// Enrich orders with refund status for tickets
-	const enrichedOrders = await Promise.all(
-		userOrders.map(async (ord) => {
-			if (ord.meta?.type === 'ticket' && ord.meta.ticketId) {
-				const [ticketData] = await db
-					.select({ refunded: ticket.refunded })
-					.from(ticket)
-					.where(eq(ticket.id, ord.meta.ticketId))
-					.limit(1);
+	// Batch fetch ALL ticket refund statuses at once (fixes N+1 query problem)
+	const ticketIds = userOrders
+		.filter(o => o.meta?.type === 'ticket' && o.meta.ticketId)
+		.map(o => o.meta.ticketId);
 
-				return {
-					...ord,
-					refunded: ticketData?.refunded || false
-				};
-			}
-			return ord;
-		})
-	);
+	// Only query if there are ticket orders
+	const ticketRefundMap = new Map();
+	if (ticketIds.length > 0) {
+		const ticketRefunds = await db
+			.select({ id: ticket.id, refunded: ticket.refunded })
+			.from(ticket)
+			.where(inArray(ticket.id, ticketIds));
+
+		for (const t of ticketRefunds) {
+			ticketRefundMap.set(t.id, t.refunded);
+		}
+	}
+
+	// Enrich orders with refund status (no additional queries needed)
+	const enrichedOrders = userOrders.map(ord => {
+		if (ord.meta?.type === 'ticket' && ord.meta.ticketId) {
+			return {
+				...ord,
+				refunded: ticketRefundMap.get(ord.meta.ticketId) || false
+			};
+		}
+		return ord;
+	});
 
 	return {
 		user: locals.user,

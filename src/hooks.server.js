@@ -1,68 +1,92 @@
 // src/hooks.server.js
 import { auth } from '$lib/server/lucia';
+import { db } from '$lib/server/db';
+import { user as userTable } from '$lib/server/db/schema.js';
+import { eq } from 'drizzle-orm';
 
 export const handle = async ({ event, resolve }) => {
 	// read the session id from the cookie
 	const sid = event.cookies.get(auth.sessionCookieName);
+	let user = null;
+	let session = null;
 
-	if (!sid) {
-		event.locals.user = null;
-		event.locals.session = null;
-		return resolve(event);
-	}
+	if (sid) {
+		// validate the session id with Lucia v3
+		const validated = await auth.validateSession(sid);
+		session = validated.session;
+		user = validated.user;
 
-	// validate the session id with Lucia v3
-	const { session, user } = await auth.validateSession(sid);
+		// if invalid, clear cookie
+		if (!session) {
+			const blank = auth.createBlankSessionCookie();
+			event.cookies.set(blank.name, blank.value, { ...blank.attributes, path: '/' });
+		} else if (session.fresh) {
+			// if valid & fresh, renew cookie
+			const renewed = auth.createSessionCookie(session.id);
+			event.cookies.set(renewed.name, renewed.value, { ...renewed.attributes, path: '/' });
+		}
 
-	// if invalid, clear cookie
-	if (!session) {
-		const blank = auth.createBlankSessionCookie();
-		event.cookies.set(blank.name, blank.value, { ...blank.attributes, path: '/' });
-		event.locals.user = null;
-		event.locals.session = null;
-		return resolve(event);
-	}
+		// Check for expired subscriptions (cancelled or payment_failed) and downgrade to free
+		if (user && user.role === 'premium' && user.subscriptionEndDate) {
+			const now = new Date();
+			const endDate = new Date(user.subscriptionEndDate);
 
-	// if valid & fresh, renew cookie
-	if (session.fresh) {
-		const renewed = auth.createSessionCookie(session.id);
-		event.cookies.set(renewed.name, renewed.value, { ...renewed.attributes, path: '/' });
+			// Handle cancelled subscriptions that have reached their end date
+			if (user.subscriptionStatus === 'cancelled' && now >= endDate) {
+				await db
+					.update(userTable)
+					.set({
+						role: 'free',
+						subscriptionStatus: 'expired',
+						subscriptionId: null
+					})
+					.where(eq(userTable.id, user.id));
+
+				user = {
+					...user,
+					role: 'free',
+					subscriptionStatus: 'expired',
+					subscriptionId: null
+				};
+			}
+
+			// Handle payment_failed subscriptions that have exceeded grace period
+			if (user.subscriptionStatus === 'payment_failed' && now >= endDate) {
+				await db
+					.update(userTable)
+					.set({
+						role: 'free',
+						subscriptionStatus: 'expired',
+						subscriptionId: null
+					})
+					.where(eq(userTable.id, user.id));
+
+				user = {
+					...user,
+					role: 'free',
+					subscriptionStatus: 'expired',
+					subscriptionId: null
+				};
+			}
+		}
 	}
 
 	// expose to routes/layouts
 	event.locals.user = user;
 	event.locals.session = session;
 
-	return resolve(event);
+	// Resolve the request
+	const response = await resolve(event);
+
+	// CRITICAL: Always set Vary: Cookie so CDN caches separate versions
+	// for logged-in vs logged-out users. This ensures the sidebar updates
+	// immediately after login/logout.
+	response.headers.set('vary', 'Cookie');
+
+	// For authenticated users, also prevent any CDN caching
+	if (user) {
+		response.headers.set('cache-control', 'private, no-cache, no-store, must-revalidate');
+	}
+
+	return response;
 };
-
-// import { auth } from '$lib/server/lucia';
-
-// export const handle = async ({ event, resolve }) => {
-// 	const sid = event.cookies.get(auth.sessionCookieName);
-
-// 	if (!sid) {
-// 		event.locals.user = null;
-// 		event.locals.session = null;
-// 		return resolve(event);
-// 	}
-
-// 	const { session, user } = await auth.validateSession(sid);
-
-// 	if (!session) {
-// 		const blank = auth.createBlankSessionCookie();
-// 		event.cookies.set(blank.name, blank.value, { ...blank.attributes, path: '/' });
-// 		event.locals.user = null;
-// 		event.locals.session = null;
-// 		return resolve(event);
-// 	}
-
-// 	if (session.fresh) {
-// 		const renewed = auth.createSessionCookie(session.id);
-// 		event.cookies.set(renewed.name, renewed.value, { ...renewed.attributes, path: '/' });
-// 	}
-
-// 	event.locals.user = user;
-// 	event.locals.session = session;
-// 	return resolve(event);
-// };

@@ -225,6 +225,10 @@ export interface Post {
   createdBy: number | User;
   tags?: (number | Tag)[] | null;
   /**
+   * Estimated read time in minutes (auto-calculated)
+   */
+  readTime?: number | null;
+  /**
    * Add FaB decklists to embed in the article. Use [DECKLIST:0], [DECKLIST:1], etc. in the content to place them.
    */
   decklists?:
@@ -259,6 +263,32 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    featured?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -287,6 +317,35 @@ export interface Author {
     [k: string]: unknown;
   } | null;
   profilePicture?: (number | null) | Media;
+  /**
+   * Add links to your social media, website, coaching services, etc.
+   */
+  socialLinks?:
+    | {
+        platform:
+          | 'twitter'
+          | 'bluesky'
+          | 'youtube'
+          | 'twitch'
+          | 'discord'
+          | 'patreon'
+          | 'metafy'
+          | 'kofi'
+          | 'instagram'
+          | 'tiktok'
+          | 'website'
+          | 'other';
+        /**
+         * Custom label (only shown if "Other" is selected)
+         */
+        customLabel?: string | null;
+        /**
+         * Full URL (e.g., https://twitter.com/username)
+         */
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -438,6 +497,7 @@ export interface PostsSelect<T extends boolean = true> {
   author?: T;
   createdBy?: T;
   tags?: T;
+  readTime?: T;
   decklists?:
     | T
     | {
@@ -457,6 +517,14 @@ export interface AuthorsSelect<T extends boolean = true> {
   slug?: T;
   bio?: T;
   profilePicture?: T;
+  socialLinks?:
+    | T
+    | {
+        platform?: T;
+        customLabel?: T;
+        url?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -488,6 +556,40 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        card?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        featured?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -18,13 +18,13 @@ export async function sendPasswordResetEmail(email, resetUrl) {
 
 	try {
 		await resend.emails.send({
-			from: env.EMAIL_FROM || 'Arcane Games <noreply@arcanegamesandevents.com>',
+			from: env.EMAIL_FROM || 'AGE <noreply@arcanegamesandevents.com>',
 			to: email,
-			subject: 'Reset Your Password - Arcane Games',
+			subject: 'Reset Your Password - AGE',
 			html: `
 				<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
 					<h1 style="color: #1a1a2e;">Reset Your Password</h1>
-					<p>You requested a password reset for your Arcane Games account.</p>
+					<p>You requested a password reset for your AGE account.</p>
 					<p>Click the button below to reset your password. This link will expire in 1 hour.</p>
 					<a href="${resetUrl}" style="display: inline-block; background-color: #1a1a2e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
 						Reset Password
@@ -34,7 +34,7 @@ export async function sendPasswordResetEmail(email, resetUrl) {
 					</p>
 					<hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
 					<p style="color: #999; font-size: 12px;">
-						Arcane Games and Events
+						AGE - Arcane Games and Events
 					</p>
 				</div>
 			`
@@ -43,5 +43,36 @@ export async function sendPasswordResetEmail(email, resetUrl) {
 	} catch (error) {
 		console.error('Failed to send password reset email:', error);
 		return { success: false, error: 'Failed to send email' };
+	}
+}
+
+/**
+ * Add email to Resend Audience for newsletter
+ * @param {string} email - Email to add to audience
+ * @returns {Promise<{success: boolean, contactId?: string, error?: string}>}
+ */
+export async function addToNewsletterAudience(email) {
+	if (!resend) {
+		console.warn('RESEND_API_KEY not configured - skipping Resend audience sync');
+		return { success: true, contactId: null };
+	}
+
+	const audienceId = env.RESEND_AUDIENCE_ID;
+	if (!audienceId) {
+		console.warn('RESEND_AUDIENCE_ID not configured - skipping Resend audience sync');
+		return { success: true, contactId: null };
+	}
+
+	try {
+		const contact = await resend.contacts.create({
+			email,
+			audienceId,
+			unsubscribed: false
+		});
+		return { success: true, contactId: contact.data?.id };
+	} catch (error) {
+		console.error('Failed to add to Resend audience:', error);
+		// Don't fail the subscription if Resend sync fails
+		return { success: false, error: error.message };
 	}
 }

@@ -1,8 +1,8 @@
 import { json } from '@sveltejs/kit';
 import { authnet } from '$lib/server/authnet/client.js';
 import { db } from '$lib/server/db/index.js';
-import { ticket, order, event as eventTable } from '$lib/server/db/schema.js';
-import { eq } from 'drizzle-orm';
+import { ticket, order, event as eventTable, savedCard, user } from '$lib/server/db/schema.js';
+import { eq, and } from 'drizzle-orm';
 import crypto from 'crypto';
 
 /**
@@ -19,7 +19,22 @@ export async function POST({ params, request, locals }) {
 		}
 
 		const body = await request.json();
-		const { amount, cardNumber, expirationDate, cardCode, description, billTo, gemId } = body;
+		const {
+			amount,
+			cardNumber,
+			expirationDate,
+			cardCode,
+			description,
+			billTo,
+			gemId,
+			// Saved card fields
+			useSavedCard,
+			savedCardId,
+			customerProfileId,
+			paymentProfileId,
+			// Save card option
+			saveCard
+		} = body;
 
 		// Verify event exists
 		const [eventData] = await db.select().from(eventTable).where(eq(eventTable.id, eventId));
@@ -45,36 +60,118 @@ export async function POST({ params, request, locals }) {
 			return json({ error: 'Invalid payment amount' }, { status: 400 });
 		}
 
-		// Process one-time payment
-		const result = await authnet.chargeCard({
-			amount,
-			cardNumber,
-			expirationDate,
-			cardCode,
-			description: description || `Ticket for ${eventData.title}`,
-			billTo
-		});
+		let result;
+
+		if (useSavedCard && savedCardId) {
+			// Verify the saved card belongs to the user
+			const [card] = await db
+				.select()
+				.from(savedCard)
+				.where(
+					and(
+						eq(savedCard.id, savedCardId),
+						eq(savedCard.userId, currentUser.id)
+					)
+				)
+				.limit(1);
+
+			if (!card) {
+				return json({ error: 'Saved card not found' }, { status: 404 });
+			}
+
+			// Process payment with saved card
+			result = await authnet.chargeCustomerProfile({
+				customerProfileId: card.customerProfileId,
+				paymentProfileId: card.paymentProfileId,
+				amount,
+				description: description || `Ticket for ${eventData.title}`
+			});
+		} else {
+			// Process one-time payment with new card
+			result = await authnet.chargeCard({
+				amount,
+				cardNumber,
+				expirationDate,
+				cardCode,
+				description: description || `Ticket for ${eventData.title}`,
+				billTo
+			});
+
+			// If payment successful and user wants to save card, save it
+			if (result.success && saveCard) {
+				try {
+					// Get or create customer profile
+					const profileResult = await authnet.getOrCreateCustomerProfile({
+						customerId: currentUser.id,
+						email: currentUser.email
+					});
+
+					// Save customer profile ID to user if not already saved
+					if (profileResult && profileResult.customerProfileId) {
+						await db
+							.update(user)
+							.set({ customerProfileId: profileResult.customerProfileId })
+							.where(eq(user.id, currentUser.id));
+
+						// Add payment profile
+						const paymentProfile = await authnet.addPaymentProfile({
+							customerProfileId: profileResult.customerProfileId,
+							cardNumber,
+							expirationDate,
+							cardCode,
+							billTo
+						});
+
+						if (paymentProfile) {
+							// Check if card already exists (by last four and expiration)
+							const [existingCard] = await db
+								.select()
+								.from(savedCard)
+								.where(
+									and(
+										eq(savedCard.userId, currentUser.id),
+										eq(savedCard.lastFour, paymentProfile.lastFour)
+									)
+								)
+								.limit(1);
+
+							if (!existingCard) {
+								// Check if user has any saved cards (to set default)
+								const userCards = await db
+									.select()
+									.from(savedCard)
+									.where(eq(savedCard.userId, currentUser.id))
+									.limit(1);
+
+								const isFirstCard = userCards.length === 0;
+
+								// Save the card to database
+								await db.insert(savedCard).values({
+									userId: currentUser.id,
+									customerProfileId: profileResult.customerProfileId,
+									paymentProfileId: paymentProfile.paymentProfileId,
+									cardType: paymentProfile.cardType,
+									lastFour: paymentProfile.lastFour,
+									expirationMonth: paymentProfile.expirationMonth,
+									expirationYear: paymentProfile.expirationYear,
+									isDefault: isFirstCard
+								});
+							}
+						}
+					}
+				} catch (saveError) {
+					// Log but don't fail the purchase if card save fails
+					console.error('Error saving card:', saveError);
+				}
+			}
+		}
 
 		if (result.success) {
 			// Generate unique ticket code
 			const ticketCode = crypto.randomBytes(8).toString('hex').toUpperCase();
 
-			// Create ticket record with new fields
-			const [newTicket] = await db.insert(ticket).values({
-				userId: currentUser.id,
-				eventId,
-				code: ticketCode,
-				quantity: 1,
-				firstName: billTo?.firstName || null,
-				lastName: billTo?.lastName || null,
-				gemId: gemId || null,
-				amountPaid: parseFloat(amount).toFixed(2),
-				transactionId: result.transactionId,
-				enteredIntoGem: false
-			}).returning();
-
-			// Record the order
-			await db.insert(order).values({
+			// Create order record first (so we can link ticket to it)
+			const [newOrder] = await db.insert(order).values({
 				provider: 'authnet',
 				providerRef: result.transactionId,
 				userEmail: currentUser.email,
@@ -84,13 +181,33 @@ export async function POST({ params, request, locals }) {
 					type: 'ticket',
 					eventId,
 					eventTitle: eventData.title,
-					ticketId: newTicket.id,
 					ticketCode,
 					gemId: gemId || null,
 					transactionId: result.transactionId,
 					premiumDiscount: eventData.premiumDiscount && isPremium
 				}
-			});
+			}).returning();
+
+			// Create ticket record with orderId link
+			// Use billTo name if provided, otherwise fall back to user's account name
+			const [newTicket] = await db.insert(ticket).values({
+				userId: currentUser.id,
+				eventId,
+				orderId: newOrder.id,
+				code: ticketCode,
+				quantity: 1,
+				firstName: billTo?.firstName || currentUser.firstName || null,
+				lastName: billTo?.lastName || currentUser.lastName || null,
+				gemId: gemId || null,
+				amountPaid: parseFloat(amount).toFixed(2),
+				transactionId: result.transactionId,
+				enteredIntoGem: false
+			}).returning();
+
+			// Update order meta with ticketId for backwards compatibility
+			await db.update(order)
+				.set({ meta: { ...newOrder.meta, ticketId: newTicket.id } })
+				.where(eq(order.id, newOrder.id));
 
 			return json({
 				success: true,

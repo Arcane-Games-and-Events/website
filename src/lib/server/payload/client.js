@@ -3,32 +3,34 @@
  * Handles communication with Payload CMS REST API
  */
 
+import { PAYLOAD_URL, PAYLOAD_SECRET } from '$env/static/private';
 import { parseFabraryExport, toComponentFormat } from '$lib/utils/decklist-parser.js';
 
-const PAYLOAD_URL = process.env.PAYLOAD_URL || 'http://localhost:3000';
-const PAYLOAD_SECRET = process.env.PAYLOAD_SECRET;
+const payloadUrl = PAYLOAD_URL || 'http://localhost:3000';
+const payloadSecret = PAYLOAD_SECRET;
 
 class PayloadClient {
 	constructor() {
-		this.baseURL = PAYLOAD_URL;
-		this.secret = PAYLOAD_SECRET;
+		this.baseURL = payloadUrl;
+		this.secret = payloadSecret;
 	}
 
 	/**
-	 * Make a GET request to Payload API
+	 * Make a GET request to Payload API with retry logic
 	 * @param {string} endpoint - API endpoint (e.g., '/api/posts')
 	 * @param {Object} params - Query parameters
+	 * @param {number} retries - Number of retries remaining
 	 * @returns {Promise<Object>}
 	 */
-	async get(endpoint, params = {}) {
+	async get(endpoint, params = {}, retries = 2) {
 		const url = new URL(endpoint, this.baseURL);
 
 		// Convert params to Payload's bracket notation format
 		this.addParamsToURL(url, params);
 
-		// Add timeout to prevent hanging when CMS is down
+		// Increased timeout to 15 seconds to handle cold starts
 		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+		const timeout = setTimeout(() => controller.abort(), 15000);
 
 		try {
 			const response = await fetch(url.toString(), {
@@ -47,8 +49,17 @@ class PayloadClient {
 			return response.json();
 		} catch (error) {
 			clearTimeout(timeout);
+
+			// Retry on timeout or network errors
+			if (retries > 0 && (error.name === 'AbortError' || error.message.includes('fetch'))) {
+				console.log(`Payload CMS request failed, retrying... (${retries} attempts left)`);
+				// Wait 1 second before retry
+				await new Promise(resolve => setTimeout(resolve, 1000));
+				return this.get(endpoint, params, retries - 1);
+			}
+
 			if (error.name === 'AbortError') {
-				throw new Error('Payload CMS request timed out - is the CMS server running?');
+				throw new Error('Payload CMS request timed out after retries - is the CMS server running?');
 			}
 			throw error;
 		}
@@ -150,6 +161,43 @@ class PayloadClient {
 	}
 
 	/**
+	 * Get tag by slug
+	 * @param {string} slug - Tag slug
+	 * @returns {Promise<Object|null>}
+	 */
+	async getTagBySlug(slug) {
+		const params = {
+			depth: 1,
+			where: {
+				slug: { equals: slug },
+			},
+			limit: 1,
+		};
+
+		const response = await this.get('/api/tags', params);
+		const tags = response.docs || [];
+		return tags.length > 0 ? tags[0] : null;
+	}
+
+	/**
+	 * Get posts by tag
+	 * @param {string} tagId - Tag ID
+	 * @returns {Promise<Array>}
+	 */
+	async getPostsByTag(tagId) {
+		const params = {
+			depth: 2,
+			where: {
+				tags: { contains: tagId },
+				_status: { equals: 'published' },
+			},
+		};
+
+		const response = await this.get('/api/posts', params);
+		return response.docs || [];
+	}
+
+	/**
 	 * Convert relative URL to absolute URL
 	 * @param {string} url - Relative URL
 	 * @returns {string} - Absolute URL
@@ -160,6 +208,59 @@ class PayloadClient {
 			return url;
 		}
 		return `${this.baseURL}${url}`;
+	}
+
+	/**
+	 * Process image object to extract optimized image data
+	 * @param {Object} image - Payload image object with sizes
+	 * @returns {Object} - Processed image with src, srcset, sizes info
+	 */
+	getOptimizedImage(image) {
+		if (!image || typeof image !== 'object') {
+			return null;
+		}
+
+		const src = this.getAbsoluteUrl(image.url);
+		const width = image.width;
+		const height = image.height;
+
+		// Build srcset from available sizes
+		const srcsetParts = [];
+
+		// Add original image
+		if (src && width) {
+			srcsetParts.push(`${src} ${width}w`);
+		}
+
+		// Add resized versions if available
+		if (image.sizes) {
+			if (image.sizes.thumbnail?.url) {
+				const thumbUrl = this.getAbsoluteUrl(image.sizes.thumbnail.url);
+				srcsetParts.push(`${thumbUrl} ${image.sizes.thumbnail.width}w`);
+			}
+			if (image.sizes.card?.url) {
+				const cardUrl = this.getAbsoluteUrl(image.sizes.card.url);
+				srcsetParts.push(`${cardUrl} ${image.sizes.card.width}w`);
+			}
+			if (image.sizes.hero?.url) {
+				const heroUrl = this.getAbsoluteUrl(image.sizes.hero.url);
+				srcsetParts.push(`${heroUrl} ${image.sizes.hero.width}w`);
+			}
+		}
+
+		// Sort by width ascending for proper srcset
+		srcsetParts.sort((a, b) => {
+			const widthA = parseInt(a.split(' ')[1]);
+			const widthB = parseInt(b.split(' ')[1]);
+			return widthA - widthB;
+		});
+
+		return {
+			src,
+			srcset: srcsetParts.length > 1 ? srcsetParts.join(', ') : undefined,
+			width,
+			height
+		};
 	}
 
 	/**
