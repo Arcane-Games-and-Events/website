@@ -8,6 +8,7 @@
 	export let gemId = '';
 	export let savedCards = []; // Array of saved cards
 	export let showSaveCardOption = true; // Whether to show "save card" checkbox
+	export let showTestData = false; // Show test card info (only in sandbox/dev)
 
 	let loading = false;
 	let error = '';
@@ -240,21 +241,23 @@
 
 		<!-- New Card Form (show if no saved cards or "new card" selected) -->
 		{#if savedCards.length === 0 || paymentMethod === 'new'}
-			<!-- Test Data Helper -->
-			<div class="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
-				<div class="flex items-center gap-2 mb-2">
-					<svg class="h-4 w-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-					</svg>
-					<p class="text-sm font-semibold text-amber-300">Test Mode</p>
+			<!-- Test Data Helper (only shown in sandbox/dev) -->
+			{#if showTestData}
+				<div class="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+					<div class="flex items-center gap-2 mb-2">
+						<svg class="h-4 w-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+						</svg>
+						<p class="text-sm font-semibold text-amber-300">Test Mode</p>
+					</div>
+					<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-amber-200/80">
+						<div><span class="text-amber-300">Card:</span> 4007 0000 0002 7</div>
+						<div><span class="text-amber-300">Exp:</span> 12/2028</div>
+						<div><span class="text-amber-300">CVV:</span> 123</div>
+						<div><span class="text-amber-300">ZIP:</span> 12345</div>
+					</div>
 				</div>
-				<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-amber-200/80">
-					<div><span class="text-amber-300">Card:</span> 4007 0000 0002 7</div>
-					<div><span class="text-amber-300">Exp:</span> 12/2028</div>
-					<div><span class="text-amber-300">CVV:</span> 123</div>
-					<div><span class="text-amber-300">ZIP:</span> 12345</div>
-				</div>
-			</div>
+			{/if}
 
 			<!-- Card Information -->
 		<div class="space-y-4">

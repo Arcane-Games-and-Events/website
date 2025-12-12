@@ -404,6 +404,7 @@
 									subscriptionType={selectedPlan}
 									savedCards={data.savedCards || []}
 									showSaveCardOption={true}
+									showTestData={data.isSandbox}
 								/>
 							</div>
 						</div>
