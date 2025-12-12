@@ -10,9 +10,9 @@
 		"prepare": "svelte-kit sync || echo ''",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
-		"db:push": "drizzle-kit push",
+		"db:push": "DATABASE_URL=$DATABASE_URL_DIRECT drizzle-kit push",
 		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate",
+		"db:migrate": "DATABASE_URL=$DATABASE_URL_DIRECT drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio"
 	},
 	"devDependencies": {
