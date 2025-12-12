@@ -9,6 +9,7 @@
 	import StandingsCard from '$lib/components/StandingsCard.svelte';
 	import FeaturedDecklists from '$lib/components/FeaturedDecklists.svelte';
 	import UpcomingEvents from '$lib/components/UpcomingEvents.svelte';
+	import ArticleCard from '$lib/components/ArticleCard.svelte';
 	export let data;
 
 	// Handle standings filter changes with client-side navigation
@@ -421,109 +422,9 @@
 						</div>
 
 						{#if data.articles && data.articles.length > 0}
-							<div
-								class="grid grid-cols-1 gap-4 sm:grid-cols-2 {isCollapsed
-									? 'lg:grid-cols-3'
-									: 'lg:grid-cols-2'}"
-							>
+							<div class="grid gap-4 {isCollapsed ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2'}">
 								{#each data.articles.slice(0, isCollapsed ? 3 : 2) as article}
-									<a href="/articles/{article.slug}" class="group block h-full">
-										<article
-											class="relative flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-gray-900/50 backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-gray-800/50 hover:shadow-xl hover:shadow-black/20"
-										>
-											{#if article.coverImage?.src}
-												<div class="relative h-36 shrink-0 overflow-hidden">
-													<FadeImage
-														src={article.coverImage.src}
-														srcset={article.coverImage.srcset}
-														sizes="(max-width: 640px) 100vw, 400px"
-														alt={article.title}
-														class="h-full w-full transition-transform duration-500 group-hover:scale-105"
-													/>
-													<div
-														class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/20 to-transparent"
-													></div>
-													<div class="absolute top-2 left-2">
-														{#if article.isPremium}
-															<span class="inline-flex h-5 items-center gap-1 rounded-full bg-emerald-600/90 px-2 text-[10px] font-semibold text-white backdrop-blur-sm">
-																<svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
-																	<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
-																</svg>
-																Premium
-															</span>
-														{:else if article.accessMode === 'Premium' || article.accessMode === 'premium'}
-															<span class="inline-flex h-5 items-center gap-1 rounded-full bg-blue-600/90 px-2 text-[10px] font-semibold text-white backdrop-blur-sm">
-																<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-																</svg>
-																Now Free
-															</span>
-														{:else}
-															<span class="inline-flex h-5 items-center rounded-full bg-gray-800/80 px-2 text-[10px] font-medium text-gray-300 backdrop-blur-sm">
-																Free
-															</span>
-														{/if}
-													</div>
-												</div>
-											{:else}
-												<div
-													class="relative flex h-36 shrink-0 items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900"
-												>
-													<svg
-														class="h-8 w-8 text-gray-700"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="1.5"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															d={icons.newspaper}
-														/>
-													</svg>
-													<div class="absolute top-2 left-2">
-														{#if article.isPremium}
-															<span class="inline-flex h-5 items-center gap-1 rounded-full bg-emerald-600/90 px-2 text-[10px] font-semibold text-white backdrop-blur-sm">
-																<svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24">
-																	<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
-																</svg>
-																Premium
-															</span>
-														{:else if article.accessMode === 'Premium' || article.accessMode === 'premium'}
-															<span class="inline-flex h-5 items-center gap-1 rounded-full bg-blue-600/90 px-2 text-[10px] font-semibold text-white backdrop-blur-sm">
-																<svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-																</svg>
-																Now Free
-															</span>
-														{:else}
-															<span class="inline-flex h-5 items-center rounded-full bg-gray-800/80 px-2 text-[10px] font-medium text-gray-300 backdrop-blur-sm">
-																Free
-															</span>
-														{/if}
-													</div>
-												</div>
-											{/if}
-
-											<div class="flex flex-1 flex-col p-3">
-												<h3
-													class="mb-2 line-clamp-2 text-sm font-semibold text-white transition-colors group-hover:text-blue-400"
-												>
-													{article.title}
-												</h3>
-												<div class="mt-auto flex items-center gap-2 text-xs text-gray-500">
-													{#if article.author}
-														<span class="truncate">{article.author.name}</span>
-														<span>·</span>
-													{/if}
-													{#if article.publishedAt}
-														<span>{formatDate(article.publishedAt)}</span>
-													{/if}
-												</div>
-											</div>
-										</article>
-									</a>
+									<ArticleCard {article} />
 								{/each}
 							</div>
 						{:else}

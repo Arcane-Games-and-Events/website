@@ -7,7 +7,7 @@
 	let { decklists = [], viewAllHref = '/age-open?tab=decklists' } = $props();
 </script>
 
-<div class="rounded-xl border border-white/10 bg-gray-900/50 p-5 backdrop-blur-sm">
+<div class="featured-decklists">
 	<div class="mb-4 flex items-center justify-between">
 		<h3 class="text-lg font-semibold text-white">Featured Decklists</h3>
 		<a
@@ -22,7 +22,7 @@
 	</div>
 
 	{#if decklists.length > 0}
-		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+		<div class="space-y-3">
 			{#each decklists as decklist}
 				<DecklistCard {decklist} />
 			{/each}

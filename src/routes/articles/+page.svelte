@@ -1,5 +1,6 @@
 <script>
 	import FadeImage from '$lib/components/FadeImage.svelte';
+	import ArticleCard from '$lib/components/ArticleCard.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	export let data;
 
@@ -356,103 +357,7 @@
 			{#if filteredArticles.length > 0}
 				<div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 					{#each filteredArticles as article}
-						<a href="/articles/{article.slug}" class="group block">
-							<article class="relative flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-gray-900/50 backdrop-blur-sm transition-all duration-300 hover:border-white/20 hover:bg-gray-800/50 hover:shadow-xl hover:shadow-black/20">
-								<!-- Image -->
-								<div class="relative h-44 shrink-0 overflow-hidden">
-									{#if article.coverImage?.src}
-										<FadeImage
-											src={article.coverImage.src}
-											srcset={article.coverImage.srcset}
-											sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-											alt={article.title}
-											class="h-full w-full transition-transform duration-500 group-hover:scale-105"
-										/>
-									{:else}
-										<div class="flex h-full items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-											<svg class="h-12 w-12 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-											</svg>
-										</div>
-									{/if}
-									<div class="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-transparent to-transparent"></div>
-									<!-- Access Badge -->
-									<div class="absolute top-3 left-3">
-										{#if article.isPremium}
-											<span class="flex items-center gap-1 rounded-full bg-emerald-600/90 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
-												<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-													<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
-												</svg>
-												Premium
-											</span>
-										{:else if article.accessMode === 'Premium' || article.accessMode === 'premium'}
-											<span class="flex items-center gap-1 rounded-full bg-blue-600/90 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
-												<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-												</svg>
-												Now Free
-											</span>
-										{:else}
-											<span class="rounded-full bg-gray-800/80 px-2.5 py-1 text-xs font-medium text-gray-300 backdrop-blur-sm">
-												Free
-											</span>
-										{/if}
-									</div>
-								</div>
-
-								<!-- Content -->
-								<div class="flex flex-1 flex-col p-4">
-									<!-- Tags -->
-									{#if article.tags && article.tags.length > 0}
-										<div class="relative mb-2 overflow-hidden">
-											<div class="flex gap-2 overflow-hidden whitespace-nowrap" style="mask-image: linear-gradient(to right, black 85%, transparent 100%); -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);">
-												{#each article.tags as tag}
-													<span class="shrink-0 text-xs font-semibold uppercase tracking-wider text-blue-400">
-														{tag.name}
-													</span>
-												{/each}
-											</div>
-										</div>
-									{/if}
-
-									<!-- Title -->
-									<h3 class="mb-2 text-base font-bold text-white leading-snug group-hover:text-blue-400 transition-colors line-clamp-2">
-										{article.title}
-									</h3>
-
-									<!-- Excerpt -->
-									{#if article.excerpt}
-										<p class="mb-3 text-sm text-gray-400 line-clamp-2 flex-1">
-											{article.excerpt}
-										</p>
-									{:else}
-										<div class="flex-1"></div>
-									{/if}
-
-									<!-- Meta Footer -->
-									<div class="mt-auto flex items-center gap-2 pt-3 border-t border-white/5">
-										{#if article.author}
-											{#if article.author.profilePicture}
-												<img
-													src={article.author.profilePicture}
-													alt={article.author.name}
-													class="h-6 w-6 rounded-full object-cover ring-1 ring-white/10"
-												/>
-											{:else}
-												<div class="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 ring-1 ring-white/10">
-													<span class="text-[10px] font-bold text-blue-400">{article.author.name.charAt(0)}</span>
-												</div>
-											{/if}
-											<span class="text-xs font-medium text-gray-300 truncate">{article.author.name}</span>
-											<span class="text-gray-600">·</span>
-										{/if}
-										<span class="text-xs text-gray-500">{formatDate(article.publishedAt)}</span>
-										<span class="text-gray-600">·</span>
-										<span class="text-xs text-gray-500">{getReadTime(article)}</span>
-									</div>
-								</div>
-							</article>
-						</a>
+						<ArticleCard {article} />
 					{/each}
 				</div>
 			{:else if allArticles.length === 0}
