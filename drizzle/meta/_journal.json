@@ -5,50 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1762562847876,
-      "tag": "0000_bumpy_war_machine",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1763711661273,
-      "tag": "0001_cute_doctor_spectrum",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1763758604878,
-      "tag": "0002_slimy_orphan",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1764101023951,
-      "tag": "0003_wet_gideon",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1764834559298,
-      "tag": "0004_event_match",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1764834783347,
-      "tag": "0005_event_match_restructure",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1764834900000,
-      "tag": "0006_add_order_id_to_ticket",
+      "when": 1765599826640,
+      "tag": "0000_brief_winter_soldier",
       "breakpoints": true
     }
   ]
