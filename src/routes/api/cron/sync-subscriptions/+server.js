@@ -52,12 +52,17 @@ export async function GET({ request, locals }) {
 				// Map Authorize.net status to our status
 				let newStatus = user.subscriptionStatus;
 				let shouldUpdate = false;
+				let shouldSyncBillingDate = false;
 
 				// Authorize.net statuses: active, expired, suspended, cancelled, terminated
-				if (authnetStatus === 'active' && user.subscriptionStatus !== 'active') {
-					// Subscription is active in Authorize.net but not locally
-					newStatus = 'active';
-					shouldUpdate = true;
+				if (authnetStatus === 'active') {
+					if (user.subscriptionStatus !== 'active') {
+						// Subscription is active in Authorize.net but not locally
+						newStatus = 'active';
+						shouldUpdate = true;
+					}
+					// Always sync billing date for active subscriptions
+					shouldSyncBillingDate = true;
 				} else if (authnetStatus === 'expired' || authnetStatus === 'terminated') {
 					// Subscription has ended
 					newStatus = 'expired';
@@ -72,7 +77,7 @@ export async function GET({ request, locals }) {
 					shouldUpdate = true;
 				}
 
-				if (shouldUpdate) {
+				if (shouldUpdate || shouldSyncBillingDate) {
 					// Get full subscription details to check for recent transactions
 					const subDetails = await authnet.getSubscription(user.subscriptionId);
 
@@ -100,35 +105,44 @@ export async function GET({ request, locals }) {
 						}
 					}
 
-					// Update user
-					const updateData = {
-						subscriptionStatus: newStatus
-					};
+					// Build update data
+					const updateData = {};
 
-					// Update role based on status
-					if (newStatus === 'expired' || newStatus === 'cancelled') {
-						// Check if past end date
-						const now = new Date();
-						if (user.subscriptionEndDate && now >= new Date(user.subscriptionEndDate)) {
-							updateData.role = 'user';
-						}
-					} else if (newStatus === 'active') {
-						updateData.role = 'premium';
-						updateData.subscriptionEndDate = null;
-						if (nextBillingDate) {
-							updateData.nextBillingDate = nextBillingDate;
+					// Update status if changed
+					if (shouldUpdate) {
+						updateData.subscriptionStatus = newStatus;
+
+						// Update role based on status
+						if (newStatus === 'expired' || newStatus === 'cancelled') {
+							// Check if past end date
+							const now = new Date();
+							if (user.subscriptionEndDate && now >= new Date(user.subscriptionEndDate)) {
+								updateData.role = 'user';
+							}
+						} else if (newStatus === 'active') {
+							updateData.role = 'premium';
+							updateData.subscriptionEndDate = null;
 						}
 					}
 
-					await db.update(userTable).set(updateData).where(eq(userTable.id, user.id));
+					// Always update billing date if we have a new one and it's different
+					if (nextBillingDate && nextBillingDate.getTime() !== user.nextBillingDate?.getTime()) {
+						updateData.nextBillingDate = nextBillingDate;
+					}
 
-					results.updated++;
-					results.details.push({
-						email: user.email,
-						oldStatus: user.subscriptionStatus,
-						newStatus,
-						authnetStatus
-					});
+					// Only update if there's something to change
+					if (Object.keys(updateData).length > 0) {
+						await db.update(userTable).set(updateData).where(eq(userTable.id, user.id));
+
+						results.updated++;
+						results.details.push({
+							email: user.email,
+							oldStatus: user.subscriptionStatus,
+							newStatus: shouldUpdate ? newStatus : user.subscriptionStatus,
+							authnetStatus,
+							billingDateUpdated: !!updateData.nextBillingDate
+						});
+					}
 				}
 			} catch (err) {
 				console.error(`Error checking subscription for ${user.email}:`, err.message);
