@@ -32,6 +32,9 @@ importers:
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
+      lucia:
+        specifier: ^3.2.2
+        version: 3.2.2
       nanoid:
         specifier: ^5.1.6
         version: 5.1.6

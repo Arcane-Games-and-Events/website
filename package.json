@@ -52,6 +52,7 @@
 		"dotenv": "^17.2.2",
 		"fab-cards": "^8.0.147",
 		"leaflet": "^1.9.4",
+		"lucia": "^3.2.2",
 		"nanoid": "^5.1.6",
 		"oslo": "^1.2.1",
 		"playwright": "^1.57.0",
