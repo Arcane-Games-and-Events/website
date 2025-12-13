@@ -141,8 +141,8 @@ export async function POST({ request, locals }) {
 								.set({ customerProfileId: profileResult.customerProfileId })
 								.where(eq(userTable.id, currentUser.id));
 
-							// Create payment profile
-							const paymentProfileResult = await authnet.createPaymentProfile({
+							// Add payment profile to customer profile
+							const paymentProfileResult = await authnet.addPaymentProfile({
 								customerProfileId: profileResult.customerProfileId,
 								cardNumber,
 								expirationDate,
@@ -156,7 +156,7 @@ export async function POST({ request, locals }) {
 									userId: currentUser.id,
 									customerProfileId: profileResult.customerProfileId,
 									paymentProfileId: paymentProfileResult.paymentProfileId,
-									lastFourDigits: cardNumber.slice(-4),
+									lastFour: cardNumber.slice(-4),
 									cardType: paymentProfileResult.cardType || 'Unknown',
 									expirationMonth: expirationDate.split('/')[0] || expirationDate.substring(0, 2),
 									expirationYear: expirationDate.split('/')[1] || expirationDate.substring(2)

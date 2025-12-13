@@ -8,6 +8,13 @@
       "when": 1765599826640,
       "tag": "0000_brief_winter_soldier",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1734072000000,
+      "tag": "0001_add_performance_indexes",
+      "breakpoints": true
     }
   ]
 }
