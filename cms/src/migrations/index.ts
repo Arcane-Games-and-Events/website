@@ -1,12 +1,16 @@
 import * as migration_20251123_220411 from './20251123_220411';
 import * as migration_20251123_220835 from './20251123_220835';
 import * as migration_20251123_225356 from './20251123_225356';
+import * as migration_20251123_232500 from './20251123_232500';
+import * as migration_20251123_232600 from './20251123_232600';
+import * as migration_20251123_234500 from './20251123_234500';
 import * as migration_20251125_000000_add_decklists from './20251125_000000_add_decklists';
 import * as migration_20251125_001200_fix_decklists_id from './20251125_001200_fix_decklists_id';
 import * as migration_20251125_001300_fix_decklists_uuid from './20251125_001300_fix_decklists_uuid';
 import * as migration_20251125_001400_fix_decklists_schema from './20251125_001400_fix_decklists_schema';
 import * as migration_20251125_001500_fix_decklists_hybrid from './20251125_001500_fix_decklists_hybrid';
 import * as migration_20251126_000000_add_read_time from './20251126_000000_add_read_time';
+import * as migration_20251205_042900_add_media_columns from './20251205_042900_add_media_columns';
 import * as migration_20251208_000000_add_media_sizes from './20251208_000000_add_media_sizes';
 
 export const migrations = [
@@ -24,6 +28,21 @@ export const migrations = [
     up: migration_20251123_225356.up,
     down: migration_20251123_225356.down,
     name: '20251123_225356'
+  },
+  {
+    up: migration_20251123_232500.up,
+    down: migration_20251123_232500.down,
+    name: '20251123_232500'
+  },
+  {
+    up: migration_20251123_232600.up,
+    down: migration_20251123_232600.down,
+    name: '20251123_232600'
+  },
+  {
+    up: migration_20251123_234500.up,
+    down: migration_20251123_234500.down,
+    name: '20251123_234500'
   },
   {
     up: migration_20251125_000000_add_decklists.up,
@@ -54,6 +73,11 @@ export const migrations = [
     up: migration_20251126_000000_add_read_time.up,
     down: migration_20251126_000000_add_read_time.down,
     name: '20251126_000000_add_read_time'
+  },
+  {
+    up: migration_20251205_042900_add_media_columns.up,
+    down: migration_20251205_042900_add_media_columns.down,
+    name: '20251205_042900_add_media_columns'
   },
   {
     up: migration_20251208_000000_add_media_sizes.up,
