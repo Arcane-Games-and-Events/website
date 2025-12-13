@@ -5,8 +5,10 @@
 	let { data, form } = $props();
 
 	// Tab state
-	const storageKey = `staff-event-tab-${data.event.id}`;
-	let activeTab = $state(browser ? sessionStorage.getItem(storageKey) || 'overview' : 'overview');
+	const storageKey = $derived(`staff-event-tab-${data.event.id}`);
+	let activeTab = $state(
+		browser ? sessionStorage.getItem(`staff-event-tab-${data.event.id}`) || 'overview' : 'overview'
+	);
 
 	function setActiveTab(tab) {
 		activeTab = tab;
@@ -16,7 +18,7 @@
 	}
 
 	// Track local gem entry status for each ticket
-	let gemEntryStatus = $state(
+	let gemEntryStatus = $derived(
 		Object.fromEntries(data.tickets.map((t) => [t.ticketId, t.enteredIntoGem]))
 	);
 	let gemEntryLoading = $state({});
@@ -103,10 +105,10 @@
 	// Filter tickets (non-refunded only for registrations tab)
 	const activeTickets = $derived(data.tickets.filter((t) => !t.refunded));
 
-	const tabs = [
+	const tabs = $derived([
 		{ id: 'overview', label: 'Overview' },
 		{ id: 'registrations', label: `Registrations (${data.stats.totalTickets})` }
-	];
+	]);
 </script>
 
 <svelte:head>

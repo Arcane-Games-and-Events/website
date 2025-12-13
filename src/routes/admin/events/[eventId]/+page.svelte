@@ -14,8 +14,10 @@
 	let { data, form } = $props();
 
 	// Tab state - persist to sessionStorage to survive reloads
-	const storageKey = `event-tab-${data.event.id}`;
-	let activeTab = $state(browser ? sessionStorage.getItem(storageKey) || 'overview' : 'overview');
+	const storageKey = $derived(`event-tab-${data.event.id}`);
+	let activeTab = $state(
+		browser ? sessionStorage.getItem(`event-tab-${data.event.id}`) || 'overview' : 'overview'
+	);
 
 	function setActiveTab(tab) {
 		activeTab = tab;
@@ -26,8 +28,8 @@
 
 	// Edit mode for event details
 	let isEditMode = $state(false);
-	let premiumDiscount = $state(data.event.premiumDiscount);
-	let gemIdRequired = $state(data.event.gemIdRequired);
+	let premiumDiscount = $derived(data.event.premiumDiscount);
+	let gemIdRequired = $derived(data.event.gemIdRequired);
 
 	// Sorting state for registrations
 	let sortColumn = $state('createdAt');
@@ -41,10 +43,17 @@
 		gemId: '',
 		userId: '',
 		hero: '',
-		format: data.event.format || '',
+		format: '',
 		placement: '',
 		cardsText: '',
 		isPublic: true
+	});
+
+	// Initialize format from event data
+	$effect(() => {
+		if (data.event.format && !decklistForm.format) {
+			decklistForm.format = data.event.format;
+		}
 	});
 
 	// Hero search state
@@ -137,7 +146,7 @@
 	);
 
 	// Track local gem entry status for each ticket (to avoid page reload)
-	let gemEntryStatus = $state(
+	let gemEntryStatus = $derived(
 		Object.fromEntries(data.tickets.map((t) => [t.ticketId, t.enteredIntoGem]))
 	);
 	let gemEntryLoading = $state({});

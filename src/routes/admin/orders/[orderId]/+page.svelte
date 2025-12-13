@@ -5,8 +5,8 @@
 	let { data, form } = $props();
 
 	let refundLoading = $state(false);
-	let refundError = $state(form?.error || '');
-	let refundSuccess = $state(form?.success ? form.message : '');
+	let refundError = $derived(form?.error || '');
+	let refundSuccess = $derived(form?.success ? form.message : '');
 	let showRefundModal = $state(false);
 	let refundFormRef = $state();
 

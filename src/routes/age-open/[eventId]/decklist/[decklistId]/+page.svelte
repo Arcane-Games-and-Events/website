@@ -2,7 +2,7 @@
 	// Card images are now resolved server-side - no 12MB JSON import needed!
 	let { data } = $props();
 
-	const { decklist } = data;
+	const decklist = $derived(data.decklist);
 
 	// Cards now come with imageUrl and fallbackUrl from the server
 	const cardsList = $derived(Array.isArray(decklist.cards) ? decklist.cards : []);
