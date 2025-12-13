@@ -381,14 +381,9 @@
 					<div>
 						<!-- Section Header -->
 						<div class="mb-6 flex items-end justify-between border-b border-white/10 pb-3">
-							<div>
-								<span class="text-[10px] font-medium tracking-widest text-gray-500 uppercase"
-									>News</span
-								>
-								<h2 class="font-display text-2xl font-bold tracking-tight text-white">
-									Latest Articles
-								</h2>
-							</div>
+							<h2 class="font-display text-2xl font-bold tracking-tight text-white">
+								Latest Articles
+							</h2>
 							<a
 								href="/articles"
 								class="flex items-center gap-1 text-xs font-medium tracking-wide text-gray-400 uppercase transition-colors hover:text-white"
