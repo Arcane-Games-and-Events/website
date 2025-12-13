@@ -89,7 +89,13 @@ export async function GET({ request, locals }) {
 						const latestTx = sortedTx[0];
 
 						// If there's a successful transaction, update billing date
-						if (latestTx.response === '1') {
+						// Response from ARB transactions is text like "This transaction has been approved."
+						const isApproved =
+							latestTx.response === '1' ||
+							latestTx.response === 1 ||
+							(typeof latestTx.response === 'string' &&
+								latestTx.response.toLowerCase().includes('approved'));
+						if (isApproved) {
 							const txDate = new Date(latestTx.submitTimeUTC);
 							// Calculate next billing based on subscription type
 							if (user.subscriptionType === 'yearly') {

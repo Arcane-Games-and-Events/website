@@ -3,12 +3,85 @@ import { db } from '$lib/server/db';
 import { user, order, ticket } from '$lib/server/db/schema';
 import { eq, desc, inArray } from 'drizzle-orm';
 import { Argon2id } from 'oslo/password';
+import { authnet } from '$lib/server/authnet/client.js';
+
+/**
+ * Sync subscription billing date from Authorize.net
+ * Called automatically when loading the account page
+ */
+async function syncSubscriptionBillingDate(currentUser) {
+	if (!currentUser.subscriptionId || currentUser.subscriptionStatus === 'expired') {
+		return null;
+	}
+
+	try {
+		// Get subscription details from Authorize.net
+		const subDetails = await authnet.getSubscription(currentUser.subscriptionId);
+
+		if (!subDetails.transactions || subDetails.transactions.length === 0) {
+			return null;
+		}
+
+		// Sort by payNum descending to get the most recent
+		const sortedTx = [...subDetails.transactions].sort((a, b) => b.payNum - a.payNum);
+		const latestTx = sortedTx[0];
+
+		// Check if approved (ARB returns text like "This transaction has been approved.")
+		const isApproved =
+			latestTx.response === '1' ||
+			latestTx.response === 1 ||
+			(typeof latestTx.response === 'string' &&
+				latestTx.response.toLowerCase().includes('approved'));
+
+		if (!isApproved) {
+			return null;
+		}
+
+		// Calculate next billing date based on subscription type
+		const txDate = new Date(latestTx.submitTimeUTC);
+		let nextBillingDate;
+
+		if (currentUser.subscriptionType === 'yearly') {
+			nextBillingDate = new Date(txDate);
+			nextBillingDate.setFullYear(nextBillingDate.getFullYear() + 1);
+		} else if (currentUser.subscriptionType === 'weekly_test') {
+			nextBillingDate = new Date(txDate);
+			nextBillingDate.setDate(nextBillingDate.getDate() + 7);
+		} else {
+			nextBillingDate = new Date(txDate);
+			nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+		}
+
+		// Check if different (more than 1 hour difference)
+		if (currentUser.nextBillingDate) {
+			const currentNext = new Date(currentUser.nextBillingDate);
+			if (Math.abs(nextBillingDate.getTime() - currentNext.getTime()) <= 1000 * 60 * 60) {
+				return null; // No significant difference
+			}
+		}
+
+		// Update the database
+		await db
+			.update(user)
+			.set({ nextBillingDate })
+			.where(eq(user.id, currentUser.id));
+
+		return nextBillingDate;
+	} catch (err) {
+		// Silently fail - don't break the page load if sync fails
+		console.error('[Account] Subscription sync error:', err.message);
+		return null;
+	}
+}
 
 export async function load({ locals }) {
 	// Require authentication
 	if (!locals.user) {
 		throw redirect(302, '/login?redirect=/account');
 	}
+
+	// Sync subscription billing date in the background (don't block page load)
+	const syncPromise = syncSubscriptionBillingDate(locals.user);
 
 	// Fetch user's orders
 	const userOrders = await db
@@ -46,8 +119,14 @@ export async function load({ locals }) {
 		return ord;
 	});
 
+	// Wait for subscription sync to complete and update user data if needed
+	const updatedBillingDate = await syncPromise;
+	const userData = updatedBillingDate
+		? { ...locals.user, nextBillingDate: updatedBillingDate }
+		: locals.user;
+
 	return {
-		user: locals.user,
+		user: userData,
 		orders: enrichedOrders
 	};
 }

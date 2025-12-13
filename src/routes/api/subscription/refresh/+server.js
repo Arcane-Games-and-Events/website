@@ -53,13 +53,21 @@ export async function POST({ locals }) {
 
 		// Calculate next billing date from transaction history
 		let nextBillingDate = currentUser.nextBillingDate;
+		let billingDateChanged = false;
 		if (subDetails.transactions && subDetails.transactions.length > 0) {
 			// Sort by payNum descending to get the most recent
 			const sortedTx = [...subDetails.transactions].sort((a, b) => b.payNum - a.payNum);
 			const latestTx = sortedTx[0];
 
 			// If there's a successful transaction, calculate next billing
-			if (latestTx.response === '1') {
+			// Response from ARB transactions is text like "This transaction has been approved."
+			const isApproved =
+				latestTx.response === '1' ||
+				latestTx.response === 1 ||
+				(typeof latestTx.response === 'string' &&
+					latestTx.response.toLowerCase().includes('approved'));
+
+			if (isApproved) {
 				const txDate = new Date(latestTx.submitTimeUTC);
 
 				// Calculate next billing based on subscription type
@@ -80,9 +88,11 @@ export async function POST({ locals }) {
 					const currentNext = new Date(currentUser.nextBillingDate);
 					if (Math.abs(nextBillingDate.getTime() - currentNext.getTime()) > 1000 * 60 * 60) {
 						// More than 1 hour difference
+						billingDateChanged = true;
 						shouldUpdate = true;
 					}
 				} else {
+					billingDateChanged = true;
 					shouldUpdate = true;
 				}
 			}
@@ -90,9 +100,12 @@ export async function POST({ locals }) {
 
 		// Update if needed
 		if (shouldUpdate) {
-			const updateData = {
-				subscriptionStatus: newStatus
-			};
+			const updateData = {};
+
+			// Only update status if it changed
+			if (newStatus !== currentUser.subscriptionStatus) {
+				updateData.subscriptionStatus = newStatus;
+			}
 
 			// Update role based on status
 			if (newStatus === 'expired' || newStatus === 'cancelled') {
@@ -103,9 +116,11 @@ export async function POST({ locals }) {
 			} else if (newStatus === 'active') {
 				updateData.role = 'premium';
 				updateData.subscriptionEndDate = null;
-				if (nextBillingDate) {
-					updateData.nextBillingDate = nextBillingDate;
-				}
+			}
+
+			// Always update billing date if it changed
+			if (billingDateChanged && nextBillingDate) {
+				updateData.nextBillingDate = nextBillingDate;
 			}
 
 			await db.update(userTable).set(updateData).where(eq(userTable.id, currentUser.id));

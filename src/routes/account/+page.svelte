@@ -238,47 +238,6 @@
 		}
 	}
 
-	// Refresh subscription state
-	let refreshing = false;
-	let refreshError = '';
-	let refreshSuccess = '';
-
-	async function refreshSubscription() {
-		refreshing = true;
-		refreshError = '';
-		refreshSuccess = '';
-
-		try {
-			const response = await fetch('/api/subscription/refresh', {
-				method: 'POST'
-			});
-
-			const result = await response.json();
-
-			if (response.ok && result.success) {
-				if (result.updated) {
-					refreshSuccess = 'Subscription information updated';
-					// Reload page to reflect changes
-					setTimeout(() => window.location.reload(), 1500);
-				} else {
-					refreshSuccess = 'Already up to date';
-				}
-			} else {
-				refreshError = result.error || 'Failed to refresh';
-			}
-		} catch (err) {
-			refreshError = 'Network error';
-			console.error('Refresh error:', err);
-		} finally {
-			refreshing = false;
-			// Clear messages after a few seconds
-			setTimeout(() => {
-				refreshSuccess = '';
-				refreshError = '';
-			}, 3000);
-		}
-	}
-
 	const hasSubscription = data.user?.subscriptionId;
 
 	// Subscription details
@@ -1248,62 +1207,6 @@
 												<div class="text-sm font-medium text-white">
 													{formatDate(nextBillingDate)}
 												</div>
-												<!-- Subtle refresh link -->
-												<button
-													on:click={refreshSubscription}
-													disabled={refreshing}
-													class="group relative mt-2 text-xs text-gray-600 transition-colors hover:text-gray-400 disabled:opacity-50"
-													title="Sync billing info from payment provider"
-												>
-													{#if refreshing}
-														<span class="flex items-center gap-1">
-															<svg class="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
-																<circle
-																	class="opacity-25"
-																	cx="12"
-																	cy="12"
-																	r="10"
-																	stroke="currentColor"
-																	stroke-width="4"
-																></circle>
-																<path
-																	class="opacity-75"
-																	fill="currentColor"
-																	d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-																></path>
-															</svg>
-															Refreshing...
-														</span>
-													{:else if refreshSuccess}
-														<span class="text-emerald-500">{refreshSuccess}</span>
-													{:else if refreshError}
-														<span class="text-red-400">{refreshError}</span>
-													{:else}
-														<span class="flex items-center gap-1">
-															<svg
-																class="h-3 w-3"
-																fill="none"
-																stroke="currentColor"
-																viewBox="0 0 24 24"
-															>
-																<path
-																	stroke-linecap="round"
-																	stroke-linejoin="round"
-																	stroke-width="2"
-																	d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-																/>
-															</svg>
-															Refresh
-														</span>
-														<!-- Tooltip -->
-														<span
-															class="pointer-events-none absolute bottom-full left-1/2 mb-2 w-48 -translate-x-1/2 rounded bg-gray-800 px-2 py-1 text-center text-xs whitespace-normal text-gray-300 opacity-0 transition-opacity group-hover:opacity-100"
-														>
-															Sync subscription info from Authorize.net if billing date seems
-															incorrect
-														</span>
-													{/if}
-												</button>
 											</div>
 										{/if}
 										{#if isCancelled && subscriptionEndDate}
