@@ -3,7 +3,6 @@ import { db } from '$lib/server/db/index.js';
 import { webhookEvent, user as userTable, ticket } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
-import { AUTHNET_SIGNATURE_KEY } from '$env/static/private';
 import { env } from '$env/dynamic/private';
 import { sendPaymentFailedEmail } from '$lib/server/email.js';
 
@@ -18,8 +17,8 @@ export async function POST({ request }) {
 
 		// Verify webhook signature if available
 		const signature = request.headers.get('x-anet-signature');
-		if (signature && AUTHNET_SIGNATURE_KEY) {
-			const isValid = verifySignature(signature, JSON.stringify(payload), AUTHNET_SIGNATURE_KEY);
+		if (signature && env.AUTHNET_SIGNATURE_KEY) {
+			const isValid = verifySignature(signature, JSON.stringify(payload), env.AUTHNET_SIGNATURE_KEY);
 			if (!isValid) {
 				console.error('Invalid Authorize.net webhook signature');
 				return json({ error: 'Invalid signature' }, { status: 401 });
