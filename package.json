@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "DATABASE_URL=$DATABASE_URL_DIRECT drizzle-kit migrate && vite build",
+		"build:ci": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"format": "prettier --write .",
