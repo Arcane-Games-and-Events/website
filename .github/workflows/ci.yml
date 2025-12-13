@@ -33,11 +33,7 @@ jobs:
         run: pnpm lint
 
       - name: Build
-        run: pnpm build
-        env:
-          DATABASE_URL: postgresql://localhost:5432/dummy
-          DATABASE_URL_DIRECT: postgresql://localhost:5432/dummy
-
+        run: pnpm build:ci
   cms-lint:
     name: CMS Lint
     runs-on: ubuntu-latest
