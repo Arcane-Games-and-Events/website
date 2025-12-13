@@ -37,30 +37,34 @@ export function normalizePitch(input) {
 async function lookupCardFromDb(lookupKey) {
 	const cacheKey = `card:${lookupKey}`;
 
-	return getCachedOrFetch(cacheKey, async () => {
-		const [result] = await db
-			.select({
-				name: fabCardLookup.name,
-				imageUrl: fabCardLookup.imageUrl,
-				fallbackUrl: fabCardLookup.fallbackUrl,
-				pitch: fabCardLookup.pitch
-			})
-			.from(fabCardLookup)
-			.where(eq(fabCardLookup.lookupKey, lookupKey))
-			.limit(1);
+	return getCachedOrFetch(
+		cacheKey,
+		async () => {
+			const [result] = await db
+				.select({
+					name: fabCardLookup.name,
+					imageUrl: fabCardLookup.imageUrl,
+					fallbackUrl: fabCardLookup.fallbackUrl,
+					pitch: fabCardLookup.pitch
+				})
+				.from(fabCardLookup)
+				.where(eq(fabCardLookup.lookupKey, lookupKey))
+				.limit(1);
 
-		if (result) {
-			return {
-				name: result.name,
-				imageUrl: result.imageUrl,
-				fallbackUrl: result.fallbackUrl,
-				pitch: result.pitch,
-				found: true
-			};
-		}
+			if (result) {
+				return {
+					name: result.name,
+					imageUrl: result.imageUrl,
+					fallbackUrl: result.fallbackUrl,
+					pitch: result.pitch,
+					found: true
+				};
+			}
 
-		return null;
-	}, CACHE_TTL.HOUR);
+			return null;
+		},
+		CACHE_TTL.HOUR
+	);
 }
 
 /**
@@ -102,26 +106,30 @@ export async function findCard(cardName, options = {}) {
 export async function searchCards(searchTerm, limit = 10) {
 	const cacheKey = `card:search:${searchTerm.toLowerCase()}:${limit}`;
 
-	return getCachedOrFetch(cacheKey, async () => {
-		const results = await db
-			.select({
-				name: fabCardLookup.name,
-				imageUrl: fabCardLookup.imageUrl,
-				fallbackUrl: fabCardLookup.fallbackUrl,
-				pitch: fabCardLookup.pitch
-			})
-			.from(fabCardLookup)
-			.where(ilike(fabCardLookup.name, `%${searchTerm}%`))
-			.limit(limit);
+	return getCachedOrFetch(
+		cacheKey,
+		async () => {
+			const results = await db
+				.select({
+					name: fabCardLookup.name,
+					imageUrl: fabCardLookup.imageUrl,
+					fallbackUrl: fabCardLookup.fallbackUrl,
+					pitch: fabCardLookup.pitch
+				})
+				.from(fabCardLookup)
+				.where(ilike(fabCardLookup.name, `%${searchTerm}%`))
+				.limit(limit);
 
-		// Deduplicate by name (since we have both "snatch" and "snatch:red" entries)
-		const seen = new Set();
-		return results.filter(r => {
-			if (seen.has(r.name)) return false;
-			seen.add(r.name);
-			return true;
-		});
-	}, CACHE_TTL.MEDIUM);
+			// Deduplicate by name (since we have both "snatch" and "snatch:red" entries)
+			const seen = new Set();
+			return results.filter((r) => {
+				if (seen.has(r.name)) return false;
+				seen.add(r.name);
+				return true;
+			});
+		},
+		CACHE_TTL.MEDIUM
+	);
 }
 
 /**
@@ -168,5 +176,5 @@ export async function resolveCardImage(input, options = {}) {
  * Batch resolve multiple cards at once
  */
 export async function resolveCardImages(cards) {
-	return Promise.all(cards.map(card => resolveCardImage(card)));
+	return Promise.all(cards.map((card) => resolveCardImage(card)));
 }

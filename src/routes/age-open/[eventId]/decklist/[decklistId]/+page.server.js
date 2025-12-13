@@ -27,12 +27,7 @@ export async function load({ params }) {
 			})
 			.from(decklist)
 			.innerJoin(event, eq(decklist.eventId, event.id))
-			.where(
-				and(
-					eq(decklist.id, params.decklistId),
-					eq(decklist.eventId, params.eventId)
-				)
-			)
+			.where(and(eq(decklist.id, params.decklistId), eq(decklist.eventId, params.eventId)))
 			.limit(1);
 
 		if (!decklistData) {
@@ -69,10 +64,12 @@ export async function load({ params }) {
 			decklist: {
 				...decklistData,
 				cards: cardsWithImages,
-				heroImage: heroResolved ? {
-					imageUrl: heroResolved.imageUrl,
-					fallbackUrl: heroResolved.fallbackUrl
-				} : null
+				heroImage: heroResolved
+					? {
+							imageUrl: heroResolved.imageUrl,
+							fallbackUrl: heroResolved.fallbackUrl
+						}
+					: null
 			}
 		};
 	} catch (err) {

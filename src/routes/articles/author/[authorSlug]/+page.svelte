@@ -7,17 +7,19 @@
 	let selectedTag = null;
 
 	// Get unique tags from author's articles
-	$: allTags = [...new Set(data.articles.flatMap(article => article.tags || []).map(tag => tag.name))].sort();
+	$: allTags = [
+		...new Set(data.articles.flatMap((article) => article.tags || []).map((tag) => tag.name))
+	].sort();
 
 	// Filtered articles
-	$: filteredArticles = data.articles.filter(article => {
+	$: filteredArticles = data.articles.filter((article) => {
 		// Filter by access type
 		if (selectedAccessType === 'free' && article.isPremium) return false;
 		if (selectedAccessType === 'premium' && !article.isPremium) return false;
 
 		// Filter by tag
 		if (selectedTag) {
-			const articleTags = (article.tags || []).map(tag => tag.name);
+			const articleTags = (article.tags || []).map((tag) => tag.name);
 			if (!articleTags.includes(selectedTag)) return false;
 		}
 
@@ -37,7 +39,7 @@
 		}
 		// Fallback: estimate from excerpt if readTime not yet calculated
 		const words = article.excerpt ? article.excerpt.split(/\s+/).length : 0;
-		const minutes = Math.max(3, Math.ceil(words * 5 / 200));
+		const minutes = Math.max(3, Math.ceil((words * 5) / 200));
 		return `${minutes} min read`;
 	}
 
@@ -147,7 +149,7 @@
 
 	// Stats
 	$: articleCount = data.articles.length;
-	$: premiumCount = data.articles.filter(a => a.isPremium).length;
+	$: premiumCount = data.articles.filter((a) => a.isPremium).length;
 	$: freeCount = articleCount - premiumCount;
 </script>
 
@@ -160,9 +162,16 @@
 	<!-- Header Bar -->
 	<div class="border-b border-white/10 bg-gray-900/50">
 		<div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-			<a href="/articles" class="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
-				<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+			<a
+				href="/articles"
+				class="inline-flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
+			>
+				<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+					/>
 				</svg>
 				Back to all articles
 			</a>
@@ -187,7 +196,9 @@
 									loading="eager"
 								/>
 							{:else}
-								<div class="flex h-32 w-32 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 ring-4 ring-white/10 lg:h-40 lg:w-40">
+								<div
+									class="flex h-32 w-32 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 ring-4 ring-white/10 lg:h-40 lg:w-40"
+								>
 									<span class="text-5xl font-bold text-white lg:text-6xl">
 										{data.author.name.charAt(0).toUpperCase()}
 									</span>
@@ -223,7 +234,7 @@
 						<!-- Bio -->
 						{#if data.author.bio}
 							<div class="mt-6 border-t border-white/10 pt-6">
-								<div class="prose prose-invert prose-sm max-w-none text-gray-300 leading-relaxed">
+								<div class="prose prose-sm max-w-none leading-relaxed text-gray-300 prose-invert">
 									{@html data.author.bio}
 								</div>
 							</div>
@@ -232,7 +243,9 @@
 						<!-- Social Links -->
 						{#if data.author.socialLinks && data.author.socialLinks.length > 0}
 							<div class="mt-6 border-t border-white/10 pt-6">
-								<h3 class="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Connect</h3>
+								<h3 class="mb-3 text-xs font-semibold tracking-wider text-gray-400 uppercase">
+									Connect
+								</h3>
 								<div class="flex flex-wrap gap-2">
 									{#each data.author.socialLinks as link}
 										{@const iconConfig = getLinkIcon(link)}
@@ -240,11 +253,23 @@
 											href={normalizeUrl(link.url)}
 											target="_blank"
 											rel="noopener noreferrer"
-											class="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 transition-all hover:bg-white/10 hover:border-white/20 {iconConfig.color}"
+											class="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 transition-all hover:border-white/20 hover:bg-white/10 {iconConfig.color}"
 											title={getLinkLabel(link)}
 											aria-label={getLinkLabel(link)}
 										>
-											<svg class="h-5 w-5" fill={link.platform === 'other' || link.platform === 'metafy' ? 'none' : 'currentColor'} stroke={link.platform === 'other' || link.platform === 'metafy' ? 'currentColor' : 'none'} stroke-width={link.platform === 'other' || link.platform === 'metafy' ? '2' : '0'} viewBox="0 0 24 24">
+											<svg
+												class="h-5 w-5"
+												fill={link.platform === 'other' || link.platform === 'metafy'
+													? 'none'
+													: 'currentColor'}
+												stroke={link.platform === 'other' || link.platform === 'metafy'
+													? 'currentColor'
+													: 'none'}
+												stroke-width={link.platform === 'other' || link.platform === 'metafy'
+													? '2'
+													: '0'}
+												viewBox="0 0 24 24"
+											>
 												<path d={iconConfig.icon} />
 											</svg>
 										</a>
@@ -263,7 +288,8 @@
 					<div>
 						<h2 class="text-xl font-bold text-white">Articles</h2>
 						<p class="text-sm text-gray-400">
-							{filteredArticles.length} {filteredArticles.length === 1 ? 'article' : 'articles'}
+							{filteredArticles.length}
+							{filteredArticles.length === 1 ? 'article' : 'articles'}
 							{#if selectedAccessType !== 'all' || selectedTag}
 								<span class="text-gray-500">(filtered)</span>
 							{/if}
@@ -275,24 +301,27 @@
 						<!-- Access Type Pills -->
 						<div class="flex rounded-lg bg-gray-800/50 p-1">
 							<button
-								on:click={() => selectedAccessType = 'all'}
-								class="rounded-md px-3 py-1.5 text-xs font-medium transition-all {selectedAccessType === 'all'
+								on:click={() => (selectedAccessType = 'all')}
+								class="rounded-md px-3 py-1.5 text-xs font-medium transition-all {selectedAccessType ===
+								'all'
 									? 'bg-white text-gray-900'
 									: 'text-gray-400 hover:text-white'}"
 							>
 								All
 							</button>
 							<button
-								on:click={() => selectedAccessType = 'free'}
-								class="rounded-md px-3 py-1.5 text-xs font-medium transition-all {selectedAccessType === 'free'
+								on:click={() => (selectedAccessType = 'free')}
+								class="rounded-md px-3 py-1.5 text-xs font-medium transition-all {selectedAccessType ===
+								'free'
 									? 'bg-white text-gray-900'
 									: 'text-gray-400 hover:text-white'}"
 							>
 								Free
 							</button>
 							<button
-								on:click={() => selectedAccessType = 'premium'}
-								class="rounded-md px-3 py-1.5 text-xs font-medium transition-all {selectedAccessType === 'premium'
+								on:click={() => (selectedAccessType = 'premium')}
+								class="rounded-md px-3 py-1.5 text-xs font-medium transition-all {selectedAccessType ===
+								'premium'
 									? 'bg-emerald-500 text-white'
 									: 'text-gray-400 hover:text-white'}"
 							>
@@ -304,7 +333,7 @@
 						{#if allTags.length > 0}
 							<select
 								bind:value={selectedTag}
-								class="rounded-lg border border-white/10 bg-gray-800 px-3 py-2 text-xs font-medium text-gray-300 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+								class="rounded-lg border border-white/10 bg-gray-800 px-3 py-2 text-xs font-medium text-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 							>
 								<option value={null} class="bg-gray-800 text-white">All Topics</option>
 								{#each allTags as tag}
@@ -317,7 +346,7 @@
 						{#if selectedAccessType !== 'all' || selectedTag}
 							<button
 								on:click={clearFilters}
-								class="text-xs font-medium text-gray-400 hover:text-white transition-colors"
+								class="text-xs font-medium text-gray-400 transition-colors hover:text-white"
 							>
 								Clear
 							</button>
@@ -329,10 +358,14 @@
 				{#if filteredArticles.length > 0}
 					<div class="space-y-6">
 						{#each filteredArticles as article}
-							<article class="group flex gap-5 rounded-xl p-3 -m-3 transition-colors hover:bg-white/5">
+							<article
+								class="group -m-3 flex gap-5 rounded-xl p-3 transition-colors hover:bg-white/5"
+							>
 								<!-- Thumbnail -->
 								<a href="/articles/{article.slug}" class="shrink-0">
-									<div class="relative h-24 w-36 overflow-hidden rounded-lg bg-gray-800 sm:h-28 sm:w-44">
+									<div
+										class="relative h-24 w-36 overflow-hidden rounded-lg bg-gray-800 sm:h-28 sm:w-44"
+									>
 										{#if article.coverImage?.src}
 											<FadeImage
 												src={article.coverImage.src}
@@ -342,17 +375,33 @@
 												class="h-full w-full transition-transform duration-300 group-hover:scale-105"
 											/>
 										{:else}
-											<div class="flex h-full items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-												<svg class="h-8 w-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+											<div
+												class="flex h-full items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900"
+											>
+												<svg
+													class="h-8 w-8 text-gray-700"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="1.5"
+														d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+													/>
 												</svg>
 											</div>
 										{/if}
 										{#if article.isPremium}
 											<div class="absolute top-2 left-2">
-												<span class="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 shadow-lg">
-													<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-														<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+												<span
+													class="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 shadow-lg"
+												>
+													<svg class="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+														<path
+															d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+														/>
 													</svg>
 												</span>
 											</div>
@@ -361,24 +410,29 @@
 								</a>
 
 								<!-- Content -->
-								<div class="flex flex-1 flex-col justify-center min-w-0">
+								<div class="flex min-w-0 flex-1 flex-col justify-center">
 									<!-- Tag -->
 									{#if article.tags && article.tags.length > 0}
-										<a href="/articles/tag/{article.tags[0].slug}" class="mb-1 text-xs font-bold uppercase tracking-wider text-blue-400 hover:text-blue-300 transition-colors w-fit">
+										<a
+											href="/articles/tag/{article.tags[0].slug}"
+											class="mb-1 w-fit text-xs font-bold tracking-wider text-blue-400 uppercase transition-colors hover:text-blue-300"
+										>
 											{article.tags[0].name}
 										</a>
 									{/if}
 
 									<!-- Title -->
 									<a href="/articles/{article.slug}">
-										<h3 class="text-lg font-bold text-white leading-snug group-hover:text-gray-300 transition-colors line-clamp-2">
+										<h3
+											class="line-clamp-2 text-lg leading-snug font-bold text-white transition-colors group-hover:text-gray-300"
+										>
 											{article.title}
 										</h3>
 									</a>
 
 									<!-- Excerpt (hidden on mobile) -->
 									{#if article.excerpt}
-										<p class="mt-1 hidden text-sm text-gray-400 line-clamp-1 sm:block">
+										<p class="mt-1 line-clamp-1 hidden text-sm text-gray-400 sm:block">
 											{article.excerpt}
 										</p>
 									{/if}
@@ -389,16 +443,32 @@
 										<span>·</span>
 										<span>{getReadTime(article)}</span>
 										<span>·</span>
-										<span class="{article.isPremium ? 'text-emerald-400' : 'text-blue-400'} font-medium">
+										<span
+											class="{article.isPremium ? 'text-emerald-400' : 'text-blue-400'} font-medium"
+										>
 											{article.isPremium ? 'Premium' : 'Free'}
 										</span>
 									</div>
 								</div>
 
 								<!-- Arrow (hidden on mobile) -->
-								<a href="/articles/{article.slug}" class="hidden items-center sm:flex" aria-label="Read {article.title}">
-									<svg class="h-5 w-5 text-gray-600 transition-colors group-hover:text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+								<a
+									href="/articles/{article.slug}"
+									class="hidden items-center sm:flex"
+									aria-label="Read {article.title}"
+								>
+									<svg
+										class="h-5 w-5 text-gray-600 transition-colors group-hover:text-gray-400"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M8.25 4.5l7.5 7.5-7.5 7.5"
+										/>
 									</svg>
 								</a>
 							</article>
@@ -406,8 +476,18 @@
 					</div>
 				{:else if data.articles.length === 0}
 					<div class="rounded-xl border border-white/10 bg-white/5 py-16 text-center">
-						<svg class="mx-auto h-12 w-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+						<svg
+							class="mx-auto h-12 w-12 text-gray-600"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="1.5"
+								d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+							/>
 						</svg>
 						<h3 class="mt-4 text-lg font-semibold text-white">No articles yet</h3>
 						<p class="mt-2 text-sm text-gray-400">
@@ -417,7 +497,10 @@
 				{:else}
 					<div class="rounded-xl border border-white/10 bg-white/5 py-12 text-center">
 						<p class="text-gray-400">No articles match your filters.</p>
-						<button on:click={clearFilters} class="mt-2 text-blue-400 hover:text-blue-300 transition-colors">
+						<button
+							on:click={clearFilters}
+							class="mt-2 text-blue-400 transition-colors hover:text-blue-300"
+						>
 							Clear filters
 						</button>
 					</div>

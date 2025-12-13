@@ -14,7 +14,8 @@
 		<!-- Pulse indicator -->
 		<span class="relative flex h-2 w-2 shrink-0">
 			<span
-				class="absolute inline-flex h-full w-full animate-ping rounded-full {circuit.colors.bg} opacity-75"
+				class="absolute inline-flex h-full w-full animate-ping rounded-full {circuit.colors
+					.bg} opacity-75"
 			></span>
 			<span class="relative inline-flex h-2 w-2 rounded-full {circuit.colors.bg}"></span>
 		</span>
@@ -43,11 +44,13 @@
 		{/if}
 
 		<span class="hidden text-gray-600 md:inline">•</span>
-		<span class="hidden text-xs font-semibold md:inline {circuit.colors.text}">{event.circuit}</span>
+		<span class="hidden text-xs font-semibold md:inline {circuit.colors.text}">{event.circuit}</span
+		>
 
 		<!-- Sign Up Button -->
 		<span
-			class="ml-auto shrink-0 rounded-md {circuit.colors.bg} px-3 py-1 text-xs font-semibold text-white transition-transform group-hover:scale-105"
+			class="ml-auto shrink-0 rounded-md {circuit.colors
+				.bg} px-3 py-1 text-xs font-semibold text-white transition-transform group-hover:scale-105"
 		>
 			Sign Up
 		</span>

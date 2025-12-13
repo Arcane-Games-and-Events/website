@@ -7,11 +7,7 @@ import { AUTHNET_ENVIRONMENT } from '$env/static/private';
 export async function load({ params, locals }) {
 	try {
 		// Fetch event details
-		const [eventData] = await db
-			.select()
-			.from(event)
-			.where(eq(event.id, params.eventId))
-			.limit(1);
+		const [eventData] = await db.select().from(event).where(eq(event.id, params.eventId)).limit(1);
 
 		if (!eventData) {
 			throw error(404, 'Event not found');

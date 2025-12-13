@@ -7,22 +7,22 @@
 
 // AGE Open Points Structure
 export const AGE_POINTS = {
-	1: { points: 30, prize: 400 },   // Winner
-	2: { points: 25, prize: 200 },   // 2nd Place
-	3: { points: 20, prize: 100 },   // 3rd-4th (tied)
+	1: { points: 30, prize: 400 }, // Winner
+	2: { points: 25, prize: 200 }, // 2nd Place
+	3: { points: 20, prize: 100 }, // 3rd-4th (tied)
 	4: { points: 20, prize: 100 },
-	5: { points: 15, prize: 50 },    // 5th-8th (tied)
+	5: { points: 15, prize: 50 }, // 5th-8th (tied)
 	6: { points: 15, prize: 50 },
 	7: { points: 15, prize: 50 },
 	8: { points: 15, prize: 50 },
-	9: { points: 12, prize: 0 },     // 9th-12th (Top 12)
+	9: { points: 12, prize: 0 }, // 9th-12th (Top 12)
 	10: { points: 12, prize: 0 },
 	11: { points: 12, prize: 0 },
 	12: { points: 12, prize: 0 },
-	13: { points: 8, prize: 0 },     // 13th-16th (Top 16)
+	13: { points: 8, prize: 0 }, // 13th-16th (Top 16)
 	14: { points: 8, prize: 0 },
 	15: { points: 8, prize: 0 },
-	16: { points: 8, prize: 0 },
+	16: { points: 8, prize: 0 }
 };
 
 export const PARTICIPATION_POINTS = 1;
@@ -85,13 +85,15 @@ function parseCSVLine(line) {
 export function parseSwissStandings(csvString) {
 	const data = parseCSV(csvString);
 
-	return data.map(row => ({
-		rank: parseInt(row['Rank'] || row['rank'] || '0', 10),
-		name: row['Name'] || row['name'] || row['Player Name'] || '',
-		playerId: row['Player ID'] || row['player_id'] || row['GEM ID'] || '',
-		wins: parseInt(row['Wins'] || row['wins'] || '0', 10),
-		dropped: row['Dropped'] === 'true' || row['dropped'] === 'true'
-	})).filter(p => p.name && !p.dropped);
+	return data
+		.map((row) => ({
+			rank: parseInt(row['Rank'] || row['rank'] || '0', 10),
+			name: row['Name'] || row['name'] || row['Player Name'] || '',
+			playerId: row['Player ID'] || row['player_id'] || row['GEM ID'] || '',
+			wins: parseInt(row['Wins'] || row['wins'] || '0', 10),
+			dropped: row['Dropped'] === 'true' || row['dropped'] === 'true'
+		}))
+		.filter((p) => p.name && !p.dropped);
 }
 
 /**
@@ -101,15 +103,17 @@ export function parseSwissStandings(csvString) {
 export function parsePairings(csvString) {
 	const data = parseCSV(csvString);
 
-	return data.map(row => ({
-		round: parseInt(row['Round'] || row['round'] || '0', 10),
-		table: parseInt(row['Table'] || row['table'] || '0', 10),
-		player1Name: row['Player 1 Name'] || row['player1_name'] || '',
-		player1Id: row['Player 1 ID'] || row['player1_id'] || '',
-		player2Name: row['Player 2 Name'] || row['player2_name'] || '',
-		player2Id: row['Player 2 ID'] || row['player2_id'] || '',
-		result: row['Result'] || row['result'] || ''
-	})).filter(p => p.round > 0);
+	return data
+		.map((row) => ({
+			round: parseInt(row['Round'] || row['round'] || '0', 10),
+			table: parseInt(row['Table'] || row['table'] || '0', 10),
+			player1Name: row['Player 1 Name'] || row['player1_name'] || '',
+			player1Id: row['Player 1 ID'] || row['player1_id'] || '',
+			player2Name: row['Player 2 Name'] || row['player2_name'] || '',
+			player2Id: row['Player 2 ID'] || row['player2_id'] || '',
+			result: row['Result'] || row['result'] || ''
+		}))
+		.filter((p) => p.round > 0);
 }
 
 /**
@@ -123,14 +127,15 @@ export function determineRoundStructure(pairings, swissStandings = []) {
 		roundCounts[pairing.round] = (roundCounts[pairing.round] || 0) + 1;
 	}
 
-	const rounds = Object.keys(roundCounts).map(Number).sort((a, b) => a - b);
+	const rounds = Object.keys(roundCounts)
+		.map(Number)
+		.sort((a, b) => a - b);
 	const maxRound = Math.max(...rounds);
 
 	// Use max wins from swiss standings as the number of swiss rounds
 	// This is more reliable than trying to detect bracket structure
-	const maxWins = swissStandings.length > 0
-		? Math.max(...swissStandings.map(p => p.wins || 0))
-		: 0;
+	const maxWins =
+		swissStandings.length > 0 ? Math.max(...swissStandings.map((p) => p.wins || 0)) : 0;
 
 	// Find where Swiss ends and Top 8 begins
 	// Top 8 bracket: QF = 4 matches, SF = 2 matches, Finals = 1 match
@@ -159,9 +164,7 @@ export function determineRoundStructure(pairings, swissStandings = []) {
 	}
 
 	// Determine swiss rounds: prefer max wins from standings, fall back to bracket detection
-	const swissRounds = maxWins > 0
-		? maxWins
-		: (top8StartRound ? top8StartRound - 1 : maxRound);
+	const swissRounds = maxWins > 0 ? maxWins : top8StartRound ? top8StartRound - 1 : maxRound;
 
 	return {
 		totalRounds: maxRound,
@@ -202,9 +205,9 @@ function getMatchLoser(match) {
 export function traceBracket(pairings, top8StartRound) {
 	if (!top8StartRound) return null;
 
-	const quarters = pairings.filter(p => p.round === top8StartRound);
-	const semis = pairings.filter(p => p.round === top8StartRound + 1);
-	const finals = pairings.filter(p => p.round === top8StartRound + 2);
+	const quarters = pairings.filter((p) => p.round === top8StartRound);
+	const semis = pairings.filter((p) => p.round === top8StartRound + 1);
+	const finals = pairings.filter((p) => p.round === top8StartRound + 2);
 
 	if (finals.length !== 1) {
 		console.warn('Invalid bracket structure: expected 1 finals match');
@@ -216,10 +219,10 @@ export function traceBracket(pairings, top8StartRound) {
 	const second = getMatchLoser(finalsMatch);
 
 	// Semi losers are 3rd-4th
-	const thirdFourth = semis.map(match => getMatchLoser(match)).filter(Boolean);
+	const thirdFourth = semis.map((match) => getMatchLoser(match)).filter(Boolean);
 
 	// Quarter losers are 5th-8th
-	const fifthEighth = quarters.map(match => getMatchLoser(match)).filter(Boolean);
+	const fifthEighth = quarters.map((match) => getMatchLoser(match)).filter(Boolean);
 
 	return {
 		winner,
@@ -245,25 +248,28 @@ export function calculateTiebreakers(standings, pairings, swissRounds) {
 	// Build player stats from pairings
 	for (const player of standings) {
 		// Get ALL matches for accurate win/loss record
-		const allMatches = pairings.filter(p =>
-			p.player1Id === player.playerId || p.player2Id === player.playerId ||
-			p.player1Name === player.name || p.player2Name === player.name
+		const allMatches = pairings.filter(
+			(p) =>
+				p.player1Id === player.playerId ||
+				p.player2Id === player.playerId ||
+				p.player1Name === player.name ||
+				p.player2Name === player.name
 		);
 
 		// Get Swiss-only matches for tiebreaker calculations
-		const swissMatches = allMatches.filter(p => p.round <= swissRounds);
+		const swissMatches = allMatches.filter((p) => p.round <= swissRounds);
 
-		const totalWins = allMatches.filter(m => {
+		const totalWins = allMatches.filter((m) => {
 			const winner = getMatchWinner(m);
 			return winner && (winner.id === player.playerId || winner.name === player.name);
 		}).length;
 
-		const swissWins = swissMatches.filter(m => {
+		const swissWins = swissMatches.filter((m) => {
 			const winner = getMatchWinner(m);
 			return winner && (winner.id === player.playerId || winner.name === player.name);
 		}).length;
 
-		const opponents = swissMatches.map(m => {
+		const opponents = swissMatches.map((m) => {
 			if (m.player1Id === player.playerId || m.player1Name === player.name) {
 				return { id: m.player2Id, name: m.player2Name };
 			}
@@ -272,26 +278,25 @@ export function calculateTiebreakers(standings, pairings, swissRounds) {
 
 		playerStats[player.playerId || player.name] = {
 			...player,
-			matchesPlayed: allMatches.length,  // Total matches (Swiss + playoffs)
-			matchesWon: totalWins,              // Total wins (Swiss + playoffs)
-			swissMatchesPlayed: swissMatches.length,  // Swiss only for tiebreakers
-			swissMatchesWon: swissWins,               // Swiss only for tiebreakers
-			matchWinPct: swissMatches.length > 0 ? swissWins / swissMatches.length : 0,  // Swiss-based for tiebreakers
+			matchesPlayed: allMatches.length, // Total matches (Swiss + playoffs)
+			matchesWon: totalWins, // Total wins (Swiss + playoffs)
+			swissMatchesPlayed: swissMatches.length, // Swiss only for tiebreakers
+			swissMatchesWon: swissWins, // Swiss only for tiebreakers
+			matchWinPct: swissMatches.length > 0 ? swissWins / swissMatches.length : 0, // Swiss-based for tiebreakers
 			opponents
 		};
 	}
 
 	// Calculate opponent match win %
 	for (const [playerId, stats] of Object.entries(playerStats)) {
-		const oppWinPcts = stats.opponents.map(opp => {
+		const oppWinPcts = stats.opponents.map((opp) => {
 			const oppStats = playerStats[opp.id] || playerStats[opp.name];
 			// Floor at 33% per MTG/FAB rules
 			return Math.max(0.33, oppStats?.matchWinPct || 0.33);
 		});
 
-		stats.oppMatchWinPct = oppWinPcts.length > 0
-			? oppWinPcts.reduce((a, b) => a + b, 0) / oppWinPcts.length
-			: 0.33;
+		stats.oppMatchWinPct =
+			oppWinPcts.length > 0 ? oppWinPcts.reduce((a, b) => a + b, 0) / oppWinPcts.length : 0.33;
 	}
 
 	return playerStats;
@@ -347,12 +352,12 @@ export function calculateFinalStandings(swissStandings, pairings) {
 	}
 
 	// Get players already placed
-	const placedNames = new Set(results.map(r => r.name));
-	const placedIds = new Set(results.map(r => r.playerId).filter(Boolean));
+	const placedNames = new Set(results.map((r) => r.name));
+	const placedIds = new Set(results.map((r) => r.playerId).filter(Boolean));
 
 	// Process remaining players from Swiss standings (9th and below)
 	const remainingPlayers = Object.values(tiebreakers)
-		.filter(p => !placedNames.has(p.name) && !placedIds.has(p.playerId))
+		.filter((p) => !placedNames.has(p.name) && !placedIds.has(p.playerId))
 		.sort((a, b) => {
 			// Sort by wins descending
 			if (b.matchesWon !== a.matchesWon) return b.matchesWon - a.matchesWon;
@@ -397,9 +402,7 @@ export function calculateFinalStandings(swissStandings, pairings) {
  */
 function findPlayerData(player, swissStandings, tiebreakers, allPairings = []) {
 	const fromTiebreakers = tiebreakers[player.id] || tiebreakers[player.name];
-	const fromSwiss = swissStandings.find(s =>
-		s.playerId === player.id || s.name === player.name
-	);
+	const fromSwiss = swissStandings.find((s) => s.playerId === player.id || s.name === player.name);
 
 	// Count ALL matches (Swiss + playoffs) for accurate record
 	let totalMatchesPlayed = fromTiebreakers?.matchesPlayed || 0;
@@ -407,18 +410,22 @@ function findPlayerData(player, swissStandings, tiebreakers, allPairings = []) {
 
 	if (allPairings.length > 0) {
 		// Find all matches this player participated in
-		const allPlayerMatches = allPairings.filter(p =>
-			p.player1Id === player.id || p.player2Id === player.id ||
-			p.player1Name === player.name || p.player2Name === player.name
+		const allPlayerMatches = allPairings.filter(
+			(p) =>
+				p.player1Id === player.id ||
+				p.player2Id === player.id ||
+				p.player1Name === player.name ||
+				p.player2Name === player.name
 		);
 
 		// Count wins from all matches
-		const allWins = allPlayerMatches.filter(m => {
-			const winner = m.result === '1WIN' || m.result.includes('Player 1')
-				? { name: m.player1Name, id: m.player1Id }
-				: m.result === '2WIN' || m.result.includes('Player 2')
-					? { name: m.player2Name, id: m.player2Id }
-					: null;
+		const allWins = allPlayerMatches.filter((m) => {
+			const winner =
+				m.result === '1WIN' || m.result.includes('Player 1')
+					? { name: m.player1Name, id: m.player1Id }
+					: m.result === '2WIN' || m.result.includes('Player 2')
+						? { name: m.player2Name, id: m.player2Id }
+						: null;
 			return winner && (winner.id === player.id || winner.name === player.name);
 		}).length;
 
@@ -455,7 +462,7 @@ export async function processTournamentResults(swissStandingsCsv, pairingsCsv, e
 	const standings = calculateFinalStandings(swissStandings, pairings);
 
 	// Format matches for database insertion
-	const matches = pairings.map(p => ({
+	const matches = pairings.map((p) => ({
 		eventId: eventInfo.eventId,
 		round: p.round,
 		table: p.table || null,
@@ -463,9 +470,12 @@ export async function processTournamentResults(swissStandingsCsv, pairingsCsv, e
 		player1Name: p.player1Name,
 		player2GemId: p.player2Id || null,
 		player2Name: p.player2Name,
-		winner: p.result === '1WIN' || p.result.includes('Player 1') ? 'player1'
-			: p.result === '2WIN' || p.result.includes('Player 2') ? 'player2'
-			: null // draw
+		winner:
+			p.result === '1WIN' || p.result.includes('Player 1')
+				? 'player1'
+				: p.result === '2WIN' || p.result.includes('Player 2')
+					? 'player2'
+					: null // draw
 	}));
 
 	return {
@@ -477,9 +487,11 @@ export async function processTournamentResults(swissStandingsCsv, pairingsCsv, e
 			top8Players: standings.bracketResults ? 8 : 0,
 			totalRounds: standings.roundStructure.totalRounds,
 			swissRounds: standings.roundStructure.swissRounds,
-			bracketRounds: standings.roundStructure.hasTop8 ? standings.roundStructure.totalRounds - standings.roundStructure.swissRounds : 0,
+			bracketRounds: standings.roundStructure.hasTop8
+				? standings.roundStructure.totalRounds - standings.roundStructure.swissRounds
+				: 0,
 			hasTop8: standings.roundStructure.hasTop8,
-			winner: standings.results.find(r => r.placement === 1),
+			winner: standings.results.find((r) => r.placement === 1),
 			totalPointsDistributed: standings.results.reduce((sum, r) => sum + r.points, 0),
 			totalPrizeDistributed: standings.results.reduce((sum, r) => sum + r.prize, 0)
 		}

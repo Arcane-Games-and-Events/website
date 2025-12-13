@@ -13,9 +13,9 @@ export const CIRCUITS = {
 		image: '/images/circuits/los-angeles.webp',
 		// Hex colors for inline styles
 		hex: {
-			primary: '#3b82f6',    // blue-500
-			light: '#60a5fa',      // blue-400
-			dark: '#2563eb'        // blue-600
+			primary: '#3b82f6', // blue-500
+			light: '#60a5fa', // blue-400
+			dark: '#2563eb' // blue-600
 		},
 		colors: {
 			// Core colors
@@ -60,9 +60,9 @@ export const CIRCUITS = {
 		image: '/images/circuits/st-louis.webp',
 		// Hex colors for inline styles
 		hex: {
-			primary: '#22c55e',    // green-500
-			light: '#4ade80',      // green-400
-			dark: '#16a34a'        // green-600
+			primary: '#22c55e', // green-500
+			light: '#4ade80', // green-400
+			dark: '#16a34a' // green-600
 		},
 		colors: {
 			bg: 'bg-green-500',
@@ -102,9 +102,9 @@ export const CIRCUITS = {
 		image: '/images/circuits/new-england.webp',
 		// Hex colors for inline styles
 		hex: {
-			primary: '#a855f7',    // purple-500
-			light: '#c084fc',      // purple-400
-			dark: '#9333ea'        // purple-600
+			primary: '#a855f7', // purple-500
+			light: '#c084fc', // purple-400
+			dark: '#9333ea' // purple-600
 		},
 		colors: {
 			bg: 'bg-purple-500',
@@ -147,9 +147,9 @@ export const DEFAULT_CIRCUIT = {
 	image: '/images/circuits/los-angeles.webp',
 	// Hex colors for inline styles
 	hex: {
-		primary: '#6b7280',    // gray-500
-		light: '#9ca3af',      // gray-400
-		dark: '#4b5563'        // gray-600
+		primary: '#6b7280', // gray-500
+		light: '#9ca3af', // gray-400
+		dark: '#4b5563' // gray-600
 	},
 	colors: {
 		bg: 'bg-gray-500',

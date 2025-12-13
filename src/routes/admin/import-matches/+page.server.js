@@ -57,7 +57,9 @@ export async function load({ locals }) {
 		.from(eventPlayerHero)
 		.groupBy(eventPlayerHero.season, eventPlayerHero.circuit, eventPlayerHero.month);
 
-	const heroCountMap = new Map(heroCounts.map((h) => [`${h.season}|${h.circuit}|${h.month}`, h.count]));
+	const heroCountMap = new Map(
+		heroCounts.map((h) => [`${h.season}|${h.circuit}|${h.month}`, h.count])
+	);
 
 	try {
 		// Try RPC first
@@ -216,7 +218,9 @@ export async function load({ locals }) {
 		.from(match)
 		.groupBy(match.year, match.circuit, match.month);
 
-	const matchCountMap = new Map(matchCounts.map((m) => [`${m.year}|${m.circuit}|${m.month}`, m.count]));
+	const matchCountMap = new Map(
+		matchCounts.map((m) => [`${m.year}|${m.circuit}|${m.month}`, m.count])
+	);
 
 	const derivedEvents = [];
 	for (const [key, data] of circuitSeasonData) {
@@ -441,13 +445,22 @@ export const actions = {
 
 			// Parse header to find column indices
 			const header = lines[0].split(',').map((h) => h.trim().toLowerCase());
-			const nameIdx = header.findIndex((h) => h === 'name' || h === 'player name' || h === 'player');
-			const heroIdx = header.findIndex((h) => h === 'hero' || h === 'hero name');
-			const gemIdIdx = header.findIndex((h) =>
-				h === 'gem id' || h === 'gemid' || h === 'gem_id' ||
-				h === 'player id' || h === 'playerid' || h === 'player_id'
+			const nameIdx = header.findIndex(
+				(h) => h === 'name' || h === 'player name' || h === 'player'
 			);
-			const countryIdx = header.findIndex((h) => h === 'country/region' || h === 'country' || h === 'region');
+			const heroIdx = header.findIndex((h) => h === 'hero' || h === 'hero name');
+			const gemIdIdx = header.findIndex(
+				(h) =>
+					h === 'gem id' ||
+					h === 'gemid' ||
+					h === 'gem_id' ||
+					h === 'player id' ||
+					h === 'playerid' ||
+					h === 'player_id'
+			);
+			const countryIdx = header.findIndex(
+				(h) => h === 'country/region' || h === 'country' || h === 'region'
+			);
 
 			if (nameIdx === -1 || heroIdx === -1) {
 				return fail(400, { error: 'CSV must have "Name" and "Hero" columns' });
@@ -479,8 +492,10 @@ export const actions = {
 				// Sanitize hero name: remove "(LL)" suffix and trim
 				const rawHero = parts[heroIdx]?.replace(/^"|"$/g, '').trim();
 				const hero = rawHero?.replace(/\s*\(LL\)\s*$/i, '').trim();
-				const gemId = gemIdIdx !== -1 ? parts[gemIdIdx]?.replace(/^"|"$/g, '').trim() || null : null;
-				const countryRegion = countryIdx !== -1 ? parts[countryIdx]?.replace(/^"|"$/g, '').trim() || null : null;
+				const gemId =
+					gemIdIdx !== -1 ? parts[gemIdIdx]?.replace(/^"|"$/g, '').trim() || null : null;
+				const countryRegion =
+					countryIdx !== -1 ? parts[countryIdx]?.replace(/^"|"$/g, '').trim() || null : null;
 
 				if (playerName && hero) {
 					heroEntries.push({

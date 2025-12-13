@@ -130,7 +130,9 @@
 				>
 					<!-- Rank Badge -->
 					<div
-						class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full {getRankStyle(rank)} text-[10px] font-bold"
+						class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full {getRankStyle(
+							rank
+						)} text-[10px] font-bold"
 					>
 						{rank}
 					</div>
@@ -141,9 +143,7 @@
 						>
 							{getInitials(player.playerName)}
 						</div>
-						<span
-							class="truncate text-xs text-white transition-colors group-hover:text-blue-400"
-						>
+						<span class="truncate text-xs text-white transition-colors group-hover:text-blue-400">
 							{player.playerName}
 						</span>
 					</div>

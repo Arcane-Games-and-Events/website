@@ -7,7 +7,7 @@ export async function load({ setHeaders }) {
 	// Vary by Cookie ensures sidebar updates properly after login/logout
 	setHeaders({
 		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
-		'vary': 'Cookie'
+		vary: 'Cookie'
 	});
 
 	try {
@@ -41,15 +41,17 @@ export async function load({ setHeaders }) {
 			// Extract tags
 			let tags = [];
 			if (post.tags && Array.isArray(post.tags)) {
-				tags = post.tags.map((tag) => {
-					if (typeof tag === 'object') {
-						return {
-							name: tag.name,
-							slug: tag.slug
-						};
-					}
-					return null;
-				}).filter(Boolean);
+				tags = post.tags
+					.map((tag) => {
+						if (typeof tag === 'object') {
+							return {
+								name: tag.name,
+								slug: tag.slug
+							};
+						}
+						return null;
+					})
+					.filter(Boolean);
 			}
 
 			return {

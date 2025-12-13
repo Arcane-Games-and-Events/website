@@ -1,8 +1,22 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { event, ticket, user, eventStaff, decklist, standing, match, eventPlayerHero } from '$lib/server/db/schema.js';
+import {
+	event,
+	ticket,
+	user,
+	eventStaff,
+	decklist,
+	standing,
+	match,
+	eventPlayerHero
+} from '$lib/server/db/schema.js';
 import { eq, and, ilike } from 'drizzle-orm';
-import { processTournamentResults, calculateFinalStandings, parseSwissStandings, parsePairings } from '$lib/server/tournament-processor.js';
+import {
+	processTournamentResults,
+	calculateFinalStandings,
+	parseSwissStandings,
+	parsePairings
+} from '$lib/server/tournament-processor.js';
 import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
 
 export async function load({ params, locals }) {
@@ -19,14 +33,14 @@ export async function load({ params, locals }) {
 		const assignment = await db
 			.select()
 			.from(eventStaff)
-			.where(and(
-				eq(eventStaff.userId, locals.user.id),
-				eq(eventStaff.eventId, params.eventId)
-			))
+			.where(and(eq(eventStaff.userId, locals.user.id), eq(eventStaff.eventId, params.eventId)))
 			.limit(1);
 
 		if (assignment.length === 0) {
-			throw error(403, 'You are not assigned to this event. Please contact an administrator to be assigned to this event.');
+			throw error(
+				403,
+				'You are not assigned to this event. Please contact an administrator to be assigned to this event.'
+			);
 		}
 	} else if (!isAdmin) {
 		throw redirect(302, '/login');
@@ -34,11 +48,7 @@ export async function load({ params, locals }) {
 
 	try {
 		// Fetch event details
-		const [eventData] = await db
-			.select()
-			.from(event)
-			.where(eq(event.id, params.eventId))
-			.limit(1);
+		const [eventData] = await db.select().from(event).where(eq(event.id, params.eventId)).limit(1);
 
 		if (!eventData) {
 			throw error(404, 'Event not found');
@@ -131,7 +141,7 @@ export async function load({ params, locals }) {
 			const swissStandings = Array.from(playerMap.values());
 
 			// Convert matches to pairings format
-			const pairings = existingMatches.map(m => ({
+			const pairings = existingMatches.map((m) => ({
 				round: m.round,
 				table: m.table,
 				player1Id: m.player1GemId,
@@ -144,7 +154,7 @@ export async function load({ params, locals }) {
 			// Calculate standings from matches
 			try {
 				const standings = calculateFinalStandings(swissStandings, pairings);
-				existingResults = standings.results.map(r => ({
+				existingResults = standings.results.map((r) => ({
 					playerName: r.name,
 					gemId: r.playerId,
 					placement: r.placement,
@@ -174,11 +184,13 @@ export async function load({ params, locals }) {
 			existingHeroes = await db
 				.select()
 				.from(eventPlayerHero)
-				.where(and(
-					eq(eventPlayerHero.season, eventYear),
-					eq(eventPlayerHero.circuit, eventData.circuit),
-					eq(eventPlayerHero.month, eventData.month)
-				));
+				.where(
+					and(
+						eq(eventPlayerHero.season, eventYear),
+						eq(eventPlayerHero.circuit, eventData.circuit),
+						eq(eventPlayerHero.month, eventData.month)
+					)
+				);
 		}
 
 		// Fetch staff assignments for this event (admin only)
@@ -239,11 +251,7 @@ export const actions = {
 		const ticketId = formData.get('ticketId');
 
 		try {
-			const [ticketData] = await db
-				.select()
-				.from(ticket)
-				.where(eq(ticket.id, ticketId))
-				.limit(1);
+			const [ticketData] = await db.select().from(ticket).where(eq(ticket.id, ticketId)).limit(1);
 
 			if (!ticketData) {
 				return fail(404, { error: 'Ticket not found' });
@@ -330,10 +338,7 @@ export const actions = {
 				updateData.price = priceNum.toFixed(2);
 			}
 
-			await db
-				.update(event)
-				.set(updateData)
-				.where(eq(event.id, params.eventId));
+			await db.update(event).set(updateData).where(eq(event.id, params.eventId));
 
 			// Invalidate events cache so changes appear immediately
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
@@ -356,12 +361,12 @@ export const actions = {
 		const gemIdRequired = formData.get('gemIdRequired') === 'true';
 
 		try {
-			await db
-				.update(event)
-				.set({ gemIdRequired })
-				.where(eq(event.id, params.eventId));
+			await db.update(event).set({ gemIdRequired }).where(eq(event.id, params.eventId));
 
-			return { success: true, message: `GEM ID ${gemIdRequired ? 'now required' : 'no longer required'}` };
+			return {
+				success: true,
+				message: `GEM ID ${gemIdRequired ? 'now required' : 'no longer required'}`
+			};
 		} catch (err) {
 			console.error('Error toggling GEM ID required:', err);
 			return fail(500, { error: 'Failed to update setting' });
@@ -379,12 +384,12 @@ export const actions = {
 		const enteredIntoGem = formData.get('enteredIntoGem') === 'true';
 
 		try {
-			await db
-				.update(ticket)
-				.set({ enteredIntoGem })
-				.where(eq(ticket.id, ticketId));
+			await db.update(ticket).set({ enteredIntoGem }).where(eq(ticket.id, ticketId));
 
-			return { success: true, message: `Ticket ${enteredIntoGem ? 'marked as entered' : 'unmarked'} in GEM` };
+			return {
+				success: true,
+				message: `Ticket ${enteredIntoGem ? 'marked as entered' : 'unmarked'} in GEM`
+			};
 		} catch (err) {
 			console.error('Error toggling Gem entry status:', err);
 			return fail(500, { error: 'Failed to update GEM entry status' });
@@ -439,10 +444,7 @@ export const actions = {
 			};
 
 			if (decklistId) {
-				await db
-					.update(decklist)
-					.set(decklistData)
-					.where(eq(decklist.id, decklistId));
+				await db.update(decklist).set(decklistData).where(eq(decklist.id, decklistId));
 			} else {
 				await db.insert(decklist).values(decklistData);
 			}
@@ -508,19 +510,15 @@ export const actions = {
 				return fail(404, { error: 'Event not found' });
 			}
 
-			const processedResults = await processTournamentResults(
-				swissStandingsCsv,
-				pairingsCsv,
-				{
-					eventId: params.eventId,
-					circuit: eventData.circuit,
-					month: eventData.month,
-					eventDate: eventData.eventDate
-				}
-			);
+			const processedResults = await processTournamentResults(swissStandingsCsv, pairingsCsv, {
+				eventId: params.eventId,
+				circuit: eventData.circuit,
+				month: eventData.month,
+				eventDate: eventData.eventDate
+			});
 
 			// Format results for standings sync
-			const resultsJson = processedResults.results.map(result => ({
+			const resultsJson = processedResults.results.map((result) => ({
 				playerName: result.name,
 				gemId: result.playerId || null,
 				placement: result.placement,
@@ -539,13 +537,27 @@ export const actions = {
 				try {
 					const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
 					const currentYear = eventDate.getFullYear().toString();
-					const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-						'July', 'August', 'September', 'October', 'November', 'December'];
+					const monthNames = [
+						'January',
+						'February',
+						'March',
+						'April',
+						'May',
+						'June',
+						'July',
+						'August',
+						'September',
+						'October',
+						'November',
+						'December'
+					];
 					const eventMonthName = monthNames[eventDate.getMonth()];
 					const monthKey = eventMonthName.toLowerCase();
 
 					// Check if this is a re-upload by looking for existing matches
-					const existingEventMatches = await db.select().from(match)
+					const existingEventMatches = await db
+						.select()
+						.from(match)
 						.where(eq(match.eventId, params.eventId));
 
 					if (existingEventMatches.length > 0) {
@@ -556,7 +568,12 @@ export const actions = {
 							// Track player 1
 							const p1Key = match.player1GemId || match.player1Name;
 							if (!oldPlayerStats.has(p1Key)) {
-								oldPlayerStats.set(p1Key, { gemId: match.player1GemId, name: match.player1Name, wins: 0, matches: 0 });
+								oldPlayerStats.set(p1Key, {
+									gemId: match.player1GemId,
+									name: match.player1Name,
+									wins: 0,
+									matches: 0
+								});
 							}
 							const p1 = oldPlayerStats.get(p1Key);
 							p1.matches++;
@@ -565,7 +582,12 @@ export const actions = {
 							// Track player 2
 							const p2Key = match.player2GemId || match.player2Name;
 							if (!oldPlayerStats.has(p2Key)) {
-								oldPlayerStats.set(p2Key, { gemId: match.player2GemId, name: match.player2Name, wins: 0, matches: 0 });
+								oldPlayerStats.set(p2Key, {
+									gemId: match.player2GemId,
+									name: match.player2Name,
+									wins: 0,
+									matches: 0
+								});
 							}
 							const p2 = oldPlayerStats.get(p2Key);
 							p2.matches++;
@@ -575,7 +597,24 @@ export const actions = {
 						// Calculate old AGE points for each player (simplified - use same logic as tournament processor)
 						const oldSorted = Array.from(oldPlayerStats.values()).sort((a, b) => b.wins - a.wins);
 						const oldPointsMap = new Map();
-						const pointsTable = { 1: 30, 2: 25, 3: 20, 4: 20, 5: 15, 6: 15, 7: 15, 8: 15, 9: 12, 10: 12, 11: 12, 12: 12, 13: 8, 14: 8, 15: 8, 16: 8 };
+						const pointsTable = {
+							1: 30,
+							2: 25,
+							3: 20,
+							4: 20,
+							5: 15,
+							6: 15,
+							7: 15,
+							8: 15,
+							9: 12,
+							10: 12,
+							11: 12,
+							12: 12,
+							13: 8,
+							14: 8,
+							15: 8,
+							16: 8
+						};
 						oldSorted.forEach((player, idx) => {
 							const placement = idx + 1;
 							oldPointsMap.set(player.gemId || player.name, {
@@ -586,11 +625,12 @@ export const actions = {
 						});
 
 						// Subtract old contribution from standings
-						const existingStandings = await db.select().from(standing)
-							.where(and(
-								eq(standing.season, currentYear),
-								eq(standing.circuit, eventData.circuit)
-							));
+						const existingStandings = await db
+							.select()
+							.from(standing)
+							.where(
+								and(eq(standing.season, currentYear), eq(standing.circuit, eventData.circuit))
+							);
 
 						const monthPointsCol = `${monthKey}Points`;
 						const monthMatchesWonCol = `${monthKey}MatchesWon`;
@@ -600,14 +640,24 @@ export const actions = {
 							const key = standing.gemId || standing.playerName;
 							const oldStats = oldPointsMap.get(key);
 							if (oldStats) {
-								await db.update(standing)
+								await db
+									.update(standing)
 									.set({
 										totalPoints: Math.max(0, (standing.totalPoints || 0) - oldStats.points),
 										matchesWon: Math.max(0, (standing.matchesWon || 0) - oldStats.wins),
 										matchesPlayed: Math.max(0, (standing.matchesPlayed || 0) - oldStats.matches),
-										[monthPointsCol]: Math.max(0, (standing[monthPointsCol] || 0) - oldStats.points),
-										[monthMatchesWonCol]: Math.max(0, (standing[monthMatchesWonCol] || 0) - oldStats.wins),
-										[monthMatchesCol]: Math.max(0, (standing[monthMatchesCol] || 0) - oldStats.matches)
+										[monthPointsCol]: Math.max(
+											0,
+											(standing[monthPointsCol] || 0) - oldStats.points
+										),
+										[monthMatchesWonCol]: Math.max(
+											0,
+											(standing[monthMatchesWonCol] || 0) - oldStats.wins
+										),
+										[monthMatchesCol]: Math.max(
+											0,
+											(standing[monthMatchesCol] || 0) - oldStats.matches
+										)
 									})
 									.where(eq(standing.id, standing.id));
 							}
@@ -616,15 +666,16 @@ export const actions = {
 
 					// Now add new standings contribution
 					// Re-fetch standings after potential subtraction
-					const existingStandings = await db.select().from(standing)
-						.where(and(
-							eq(standing.season, currentYear),
-							eq(standing.circuit, eventData.circuit)
-						));
+					const existingStandings = await db
+						.select()
+						.from(standing)
+						.where(and(eq(standing.season, currentYear), eq(standing.circuit, eventData.circuit)));
 
 					// Build lookup maps for existing standings
-					const byGemId = new Map(existingStandings.filter(s => s.gemId).map(s => [s.gemId, s]));
-					const byName = new Map(existingStandings.map(s => [s.playerName, s]));
+					const byGemId = new Map(
+						existingStandings.filter((s) => s.gemId).map((s) => [s.gemId, s])
+					);
+					const byName = new Map(existingStandings.map((s) => [s.playerName, s]));
 
 					const monthPointsCol = `${monthKey}Points`;
 					const monthMatchesWonCol = `${monthKey}MatchesWon`;
@@ -643,16 +694,18 @@ export const actions = {
 							const newTotalPoints = (existing.totalPoints || 0) + result.agePoints;
 							const newMatchesWon = (existing.matchesWon || 0) + result.wins;
 							const newMatchesPlayed = (existing.matchesPlayed || 0) + result.wins + result.losses;
-							const newWinPercentage = newMatchesPlayed > 0
-								? Math.round((newMatchesWon / newMatchesPlayed) * 10000) / 100
-								: null;
+							const newWinPercentage =
+								newMatchesPlayed > 0
+									? Math.round((newMatchesWon / newMatchesPlayed) * 10000) / 100
+									: null;
 
 							// Get current monthly values
 							const currentMonthPoints = existing[monthPointsCol] || 0;
 							const currentMonthWon = existing[monthMatchesWonCol] || 0;
 							const currentMonthMatches = existing[monthMatchesCol] || 0;
 
-							await db.update(standing)
+							await db
+								.update(standing)
 								.set({
 									totalPoints: newTotalPoints,
 									matchesWon: newMatchesWon,
@@ -675,9 +728,10 @@ export const actions = {
 								totalPoints: result.agePoints,
 								matchesWon: result.wins,
 								matchesPlayed: result.wins + result.losses,
-								winPercentage: (result.wins + result.losses) > 0
-									? Math.round((result.wins / (result.wins + result.losses)) * 10000) / 100
-									: null,
+								winPercentage:
+									result.wins + result.losses > 0
+										? Math.round((result.wins / (result.wins + result.losses)) * 10000) / 100
+										: null,
 								[monthPointsCol]: result.agePoints,
 								[monthMatchesWonCol]: result.wins,
 								[monthMatchesCol]: result.wins + result.losses
@@ -686,7 +740,9 @@ export const actions = {
 						}
 					}
 					standingsUpdated = true;
-					console.log(`Standings synced for ${resultsJson.length} players in ${eventData.circuit}${isReupload ? ' (re-upload)' : ''}`);
+					console.log(
+						`Standings synced for ${resultsJson.length} players in ${eventData.circuit}${isReupload ? ' (re-upload)' : ''}`
+					);
 				} catch (err) {
 					standingsError = err.message;
 					console.error('Standings sync failed:', err.message);
@@ -700,12 +756,24 @@ export const actions = {
 			// Insert new matches with eventId
 			if (processedResults.matches?.length > 0) {
 				const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
-				const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-					'July', 'August', 'September', 'October', 'November', 'December'];
+				const monthNames = [
+					'January',
+					'February',
+					'March',
+					'April',
+					'May',
+					'June',
+					'July',
+					'August',
+					'September',
+					'October',
+					'November',
+					'December'
+				];
 				const eventMonthName = monthNames[eventDate.getMonth()];
 				const eventYear = eventDate.getFullYear().toString();
 
-				const matchesToInsert = processedResults.matches.map(m => ({
+				const matchesToInsert = processedResults.matches.map((m) => ({
 					eventId: params.eventId,
 					// Legacy fields for backwards compatibility
 					year: eventYear,
@@ -753,12 +821,12 @@ export const actions = {
 		}
 
 		try {
-			await db
-				.update(event)
-				.set({ status: 'in_progress' })
-				.where(eq(event.id, params.eventId));
+			await db.update(event).set({ status: 'in_progress' }).where(eq(event.id, params.eventId));
 
-			return { success: true, message: 'Progress saved. Results are stored but standings have not been updated yet.' };
+			return {
+				success: true,
+				message: 'Progress saved. Results are stored but standings have not been updated yet.'
+			};
 		} catch (err) {
 			console.error('Error saving progress:', err);
 			return fail(500, { error: 'Failed to save progress' });
@@ -774,13 +842,12 @@ export const actions = {
 
 		try {
 			// Check for matches before finalizing
-			const matches = await db
-				.select()
-				.from(match)
-				.where(eq(match.eventId, params.eventId));
+			const matches = await db.select().from(match).where(eq(match.eventId, params.eventId));
 
 			if (matches.length === 0) {
-				return fail(400, { error: 'No match data to finalize. Please upload tournament results first.' });
+				return fail(400, {
+					error: 'No match data to finalize. Please upload tournament results first.'
+				});
 			}
 
 			await db
@@ -860,10 +927,7 @@ export const actions = {
 				updateData.closedBy = null;
 			}
 
-			await db
-				.update(event)
-				.set(updateData)
-				.where(eq(event.id, params.eventId));
+			await db.update(event).set(updateData).where(eq(event.id, params.eventId));
 
 			// Remove staff assignments when event is completed or cancelled
 			if (newStatus === 'completed' || newStatus === 'cancelled') {
@@ -873,9 +937,10 @@ export const actions = {
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
 
-			const statusMessage = (newStatus === 'completed' || newStatus === 'cancelled')
-				? `Event status updated to ${newStatus.replace('_', ' ')}. Staff assignments have been cleared.`
-				: `Event status updated to ${newStatus.replace('_', ' ')}`;
+			const statusMessage =
+				newStatus === 'completed' || newStatus === 'cancelled'
+					? `Event status updated to ${newStatus.replace('_', ' ')}. Staff assignments have been cleared.`
+					: `Event status updated to ${newStatus.replace('_', ' ')}`;
 
 			return {
 				success: true,
@@ -971,7 +1036,7 @@ export const actions = {
 				.from(eventStaff)
 				.where(eq(eventStaff.eventId, params.eventId));
 
-			const assignedIds = assignedUserIds.map(a => a.userId);
+			const assignedIds = assignedUserIds.map((a) => a.userId);
 
 			// Search all users by email (case-insensitive)
 			const users = await db
@@ -985,7 +1050,7 @@ export const actions = {
 				.limit(10);
 
 			// Filter out already assigned users
-			const availableUsers = users.filter(u => !assignedIds.includes(u.id));
+			const availableUsers = users.filter((u) => !assignedIds.includes(u.id));
 
 			return { success: true, users: availableUsers };
 		} catch (err) {
@@ -1020,7 +1085,9 @@ export const actions = {
 			}
 
 			if (!eventData.circuit || !eventData.month) {
-				return fail(400, { error: 'Event must have circuit and month set before uploading hero data' });
+				return fail(400, {
+					error: 'Event must have circuit and month set before uploading hero data'
+				});
 			}
 
 			const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
@@ -1034,14 +1101,23 @@ export const actions = {
 			}
 
 			// Parse header to find column indices
-			const header = lines[0].split(',').map(h => h.trim().toLowerCase());
-			const playerNameIdx = header.findIndex(h => h === 'player name' || h === 'playername' || h === 'name');
-			const playerIdIdx = header.findIndex(h =>
-				h === 'player id' || h === 'playerid' || h === 'player_id' ||
-				h === 'gem id' || h === 'gemid' || h === 'gem_id'
+			const header = lines[0].split(',').map((h) => h.trim().toLowerCase());
+			const playerNameIdx = header.findIndex(
+				(h) => h === 'player name' || h === 'playername' || h === 'name'
 			);
-			const heroIdx = header.findIndex(h => h === 'hero' || h === 'hero name');
-			const countryIdx = header.findIndex(h => h === 'country/region' || h === 'country' || h === 'region');
+			const playerIdIdx = header.findIndex(
+				(h) =>
+					h === 'player id' ||
+					h === 'playerid' ||
+					h === 'player_id' ||
+					h === 'gem id' ||
+					h === 'gemid' ||
+					h === 'gem_id'
+			);
+			const heroIdx = header.findIndex((h) => h === 'hero' || h === 'hero name');
+			const countryIdx = header.findIndex(
+				(h) => h === 'country/region' || h === 'country' || h === 'region'
+			);
 
 			if (playerNameIdx === -1 || heroIdx === -1) {
 				return fail(400, { error: 'CSV must have "Player Name" and "Hero" columns' });
@@ -1070,11 +1146,13 @@ export const actions = {
 				values.push(current.trim());
 
 				const playerName = values[playerNameIdx]?.replace(/^"|"$/g, '').trim();
-				const gemId = playerIdIdx !== -1 ? values[playerIdIdx]?.replace(/^"|"$/g, '').trim() || null : null;
+				const gemId =
+					playerIdIdx !== -1 ? values[playerIdIdx]?.replace(/^"|"$/g, '').trim() || null : null;
 				// Sanitize hero name: remove "(LL)" suffix and trim
 				const rawHero = values[heroIdx]?.replace(/^"|"$/g, '').trim();
 				const hero = rawHero?.replace(/\s*\(LL\)\s*$/i, '').trim();
-				const countryRegion = countryIdx !== -1 ? values[countryIdx]?.replace(/^"|"$/g, '').trim() || null : null;
+				const countryRegion =
+					countryIdx !== -1 ? values[countryIdx]?.replace(/^"|"$/g, '').trim() || null : null;
 
 				if (playerName && hero) {
 					heroData.push({
@@ -1094,11 +1172,15 @@ export const actions = {
 			}
 
 			// Delete existing hero data for this season/circuit/month
-			await db.delete(eventPlayerHero).where(and(
-				eq(eventPlayerHero.season, season),
-				eq(eventPlayerHero.circuit, eventData.circuit),
-				eq(eventPlayerHero.month, eventData.month)
-			));
+			await db
+				.delete(eventPlayerHero)
+				.where(
+					and(
+						eq(eventPlayerHero.season, season),
+						eq(eventPlayerHero.circuit, eventData.circuit),
+						eq(eventPlayerHero.month, eventData.month)
+					)
+				);
 
 			// Insert new hero data
 			await db.insert(eventPlayerHero).values(heroData);
@@ -1133,11 +1215,15 @@ export const actions = {
 
 			const season = new Date(eventData.eventDate).getFullYear().toString();
 
-			await db.delete(eventPlayerHero).where(and(
-				eq(eventPlayerHero.season, season),
-				eq(eventPlayerHero.circuit, eventData.circuit),
-				eq(eventPlayerHero.month, eventData.month)
-			));
+			await db
+				.delete(eventPlayerHero)
+				.where(
+					and(
+						eq(eventPlayerHero.season, season),
+						eq(eventPlayerHero.circuit, eventData.circuit),
+						eq(eventPlayerHero.month, eventData.month)
+					)
+				);
 
 			return { success: true, message: 'Hero data deleted' };
 		} catch (err) {
@@ -1170,11 +1256,15 @@ export const actions = {
 			// 3. Delete hero data (by season/circuit/month)
 			if (eventData?.circuit && eventData?.month && eventData?.eventDate) {
 				const season = new Date(eventData.eventDate).getFullYear().toString();
-				await db.delete(eventPlayerHero).where(and(
-					eq(eventPlayerHero.season, season),
-					eq(eventPlayerHero.circuit, eventData.circuit),
-					eq(eventPlayerHero.month, eventData.month)
-				));
+				await db
+					.delete(eventPlayerHero)
+					.where(
+						and(
+							eq(eventPlayerHero.season, season),
+							eq(eventPlayerHero.circuit, eventData.circuit),
+							eq(eventPlayerHero.month, eventData.month)
+						)
+					);
 			}
 
 			// 4. Delete staff assignments
@@ -1191,7 +1281,9 @@ export const actions = {
 		} catch (err) {
 			if (err.status === 302) throw err; // Re-throw redirect
 			console.error('Error deleting event:', err);
-			return fail(500, { error: 'Failed to delete event. There may be related data that could not be removed.' });
+			return fail(500, {
+				error: 'Failed to delete event. There may be related data that could not be removed.'
+			});
 		}
 	}
 };

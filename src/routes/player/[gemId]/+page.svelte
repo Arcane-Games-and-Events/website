@@ -2463,9 +2463,8 @@
 														: 'text-gray-300'} text-sm">{usage.hero}</span
 												>
 												<span
-													class="flex-shrink-0 text-sm {isTop
-														? 'text-amber-400'
-														: 'text-gray-500'}">{usage.count}×</span
+													class="flex-shrink-0 text-sm {isTop ? 'text-amber-400' : 'text-gray-500'}"
+													>{usage.count}×</span
 												>
 											</div>
 											<div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-700">

@@ -34,7 +34,10 @@ export async function POST({ request, locals }) {
 		}
 
 		// Check if already premium with active subscription
-		if ((currentUser.role === 'premium' && currentUser.subscriptionStatus === 'active') || currentUser.role === 'admin') {
+		if (
+			(currentUser.role === 'premium' && currentUser.subscriptionStatus === 'active') ||
+			currentUser.role === 'admin'
+		) {
 			return json({ error: 'You already have premium access' }, { status: 400 });
 		}
 
@@ -70,21 +73,17 @@ export async function POST({ request, locals }) {
 			const intervalLength = subscriptionType === 'yearly' ? 12 : 1;
 			// Include timestamp to prevent duplicate subscription errors when resubscribing
 			const timestamp = Date.now().toString(36);
-			const subscriptionName = subscriptionType === 'yearly'
-				? `AGE Premium Yearly - ${timestamp}`
-				: `AGE Premium Monthly - ${timestamp}`;
+			const subscriptionName =
+				subscriptionType === 'yearly'
+					? `AGE Premium Yearly - ${timestamp}`
+					: `AGE Premium Monthly - ${timestamp}`;
 
 			if (useSavedCard && savedCardId) {
 				// Verify the saved card belongs to the user
 				const [card] = await db
 					.select()
 					.from(savedCard)
-					.where(
-						and(
-							eq(savedCard.id, savedCardId),
-							eq(savedCard.userId, currentUser.id)
-						)
-					)
+					.where(and(eq(savedCard.id, savedCardId), eq(savedCard.userId, currentUser.id)))
 					.limit(1);
 
 				if (!card) {
@@ -185,7 +184,8 @@ export async function POST({ request, locals }) {
 			const nextBillingDate = calculateNextBillingDate(subscriptionStartDate, subscriptionType);
 
 			// Update user role to premium and save subscription details
-			await db.update(userTable)
+			await db
+				.update(userTable)
 				.set({
 					role: 'premium',
 					subscriptionId: result.subscriptionId,

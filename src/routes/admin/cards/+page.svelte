@@ -42,11 +42,16 @@
 
 	<!-- Stats Card -->
 	<div class="mb-8">
-		<div class="rounded-xl border border-white/10 bg-gray-900/50 p-5 inline-block">
+		<div class="inline-block rounded-xl border border-white/10 bg-gray-900/50 p-5">
 			<div class="flex items-center gap-3">
 				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
 					<svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+						/>
 					</svg>
 				</div>
 				<div>
@@ -61,7 +66,8 @@
 	<div class="rounded-xl border border-white/10 bg-gray-900/50 p-6">
 		<h2 class="mb-4 text-lg font-semibold text-white">Update Card Database</h2>
 		<p class="mb-4 text-sm text-gray-400">
-			Upload a new <code class="rounded bg-gray-800 px-1.5 py-0.5 text-blue-400">cards.json</code> file to update the card lookup database.
+			Upload a new <code class="rounded bg-gray-800 px-1.5 py-0.5 text-blue-400">cards.json</code> file
+			to update the card lookup database.
 		</p>
 
 		{#if isUploading}
@@ -69,32 +75,69 @@
 				<div class="flex items-center gap-3">
 					<div class="relative h-5 w-5">
 						<svg class="h-5 w-5 animate-spin text-amber-400" fill="none" viewBox="0 0 24 24">
-							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+							<circle
+								class="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								stroke-width="4"
+							></circle>
+							<path
+								class="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+							></path>
 						</svg>
 					</div>
 					<div>
 						<p class="font-medium text-amber-400">Processing card database...</p>
-						<p class="text-sm text-amber-400/70">Please do not leave this page. This may take a minute.</p>
+						<p class="text-sm text-amber-400/70">
+							Please do not leave this page. This may take a minute.
+						</p>
 					</div>
 				</div>
 				<div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-amber-500/20">
-					<div class="h-full w-1/3 animate-pulse rounded-full bg-amber-500/50" style="animation: progress 2s ease-in-out infinite;"></div>
+					<div
+						class="h-full w-1/3 animate-pulse rounded-full bg-amber-500/50"
+						style="animation: progress 2s ease-in-out infinite;"
+					></div>
 				</div>
 			</div>
 		{:else if uploadMessage}
-			<div class="mb-4 rounded-lg p-4 {uploadMessage.type === 'success' ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}">
+			<div
+				class="mb-4 rounded-lg p-4 {uploadMessage.type === 'success'
+					? 'border border-green-500/20 bg-green-500/10'
+					: 'border border-red-500/20 bg-red-500/10'}"
+			>
 				<div class="flex items-center gap-3">
 					{#if uploadMessage.type === 'success'}
-						<svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+						<svg
+							class="h-5 w-5 text-green-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M5 13l4 4L19 7"
+							/>
 						</svg>
 					{:else}
 						<svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M6 18L18 6M6 6l12 12"
+							/>
 						</svg>
 					{/if}
-					<p class="{uploadMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}">{uploadMessage.text}</p>
+					<p class={uploadMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}>
+						{uploadMessage.text}
+					</p>
 				</div>
 			</div>
 		{/if}
@@ -146,10 +189,10 @@
 				<table class="w-full text-left text-sm">
 					<thead class="border-b border-white/10 text-gray-400">
 						<tr>
-							<th class="pb-3 pr-4 font-medium">Date</th>
-							<th class="pb-3 pr-4 font-medium">File</th>
-							<th class="pb-3 pr-4 font-medium">Cards</th>
-							<th class="pb-3 pr-4 font-medium">Lookups</th>
+							<th class="pr-4 pb-3 font-medium">Date</th>
+							<th class="pr-4 pb-3 font-medium">File</th>
+							<th class="pr-4 pb-3 font-medium">Cards</th>
+							<th class="pr-4 pb-3 font-medium">Lookups</th>
 							<th class="pb-3 font-medium">Sets Included</th>
 						</tr>
 					</thead>
@@ -158,14 +201,23 @@
 							<tr class="text-gray-300">
 								<td class="py-3 pr-4 whitespace-nowrap">
 									<div class="font-medium text-white">
-										{new Date(upload.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+										{new Date(upload.uploadedAt).toLocaleDateString('en-US', {
+											month: 'short',
+											day: 'numeric',
+											year: 'numeric'
+										})}
 									</div>
 									<div class="text-xs text-gray-500">
-										{new Date(upload.uploadedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+										{new Date(upload.uploadedAt).toLocaleTimeString('en-US', {
+											hour: 'numeric',
+											minute: '2-digit'
+										})}
 									</div>
 								</td>
 								<td class="py-3 pr-4">
-									<code class="rounded bg-gray-800 px-1.5 py-0.5 text-xs text-blue-400">{upload.filename}</code>
+									<code class="rounded bg-gray-800 px-1.5 py-0.5 text-xs text-blue-400"
+										>{upload.filename}</code
+									>
 								</td>
 								<td class="py-3 pr-4 tabular-nums">{upload.totalCards.toLocaleString()}</td>
 								<td class="py-3 pr-4 tabular-nums">{upload.lookupEntries.toLocaleString()}</td>
@@ -173,10 +225,14 @@
 									{#if upload.setsIncluded && upload.setsIncluded.length > 0}
 										<div class="flex flex-wrap gap-1">
 											{#each upload.setsIncluded.slice(0, 8) as setId}
-												<span class="rounded bg-gray-800 px-1.5 py-0.5 text-xs text-gray-400">{setId}</span>
+												<span class="rounded bg-gray-800 px-1.5 py-0.5 text-xs text-gray-400"
+													>{setId}</span
+												>
 											{/each}
 											{#if upload.setsIncluded.length > 8}
-												<span class="rounded bg-gray-700 px-1.5 py-0.5 text-xs text-gray-500">+{upload.setsIncluded.length - 8} more</span>
+												<span class="rounded bg-gray-700 px-1.5 py-0.5 text-xs text-gray-500"
+													>+{upload.setsIncluded.length - 8} more</span
+												>
 											{/if}
 										</div>
 									{:else}

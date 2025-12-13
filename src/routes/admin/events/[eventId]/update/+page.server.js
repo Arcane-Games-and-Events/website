@@ -1,8 +1,20 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { event, ticket, eventStaff, decklist, standing, match } from '$lib/server/db/schema.js';
+import {
+	event,
+	ticket,
+	eventStaff,
+	decklist,
+	standing,
+	match,
+	eventResult
+} from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
-import { processTournamentResults, AGE_POINTS, PARTICIPATION_POINTS } from '$lib/server/tournament-processor.js';
+import {
+	processTournamentResults,
+	AGE_POINTS,
+	PARTICIPATION_POINTS
+} from '$lib/server/tournament-processor.js';
 import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
 
 export async function load({ params, locals }) {
@@ -19,10 +31,7 @@ export async function load({ params, locals }) {
 		const assignment = await db
 			.select()
 			.from(eventStaff)
-			.where(and(
-				eq(eventStaff.userId, locals.user.id),
-				eq(eventStaff.eventId, params.eventId)
-			))
+			.where(and(eq(eventStaff.userId, locals.user.id), eq(eventStaff.eventId, params.eventId)))
 			.limit(1);
 
 		if (assignment.length === 0) {
@@ -34,11 +43,7 @@ export async function load({ params, locals }) {
 
 	try {
 		// Fetch event details
-		const [eventData] = await db
-			.select()
-			.from(event)
-			.where(eq(event.id, params.eventId))
-			.limit(1);
+		const [eventData] = await db.select().from(event).where(eq(event.id, params.eventId)).limit(1);
 
 		if (!eventData) {
 			throw error(404, 'Event not found');
@@ -134,10 +139,7 @@ export const actions = {
 
 			if (resultId) {
 				// Update existing result
-				await db
-					.update(eventResult)
-					.set(resultData)
-					.where(eq(eventResult.id, resultId));
+				await db.update(eventResult).set(resultData).where(eq(eventResult.id, resultId));
 			} else {
 				// Create new result
 				await db.insert(eventResult).values(resultData);
@@ -212,10 +214,7 @@ export const actions = {
 			};
 
 			if (decklistId) {
-				await db
-					.update(decklist)
-					.set(decklistData)
-					.where(eq(decklist.id, decklistId));
+				await db.update(decklist).set(decklistData).where(eq(decklist.id, decklistId));
 			} else {
 				await db.insert(decklist).values(decklistData);
 			}
@@ -276,16 +275,12 @@ export const actions = {
 			}
 
 			// Process tournament results
-			const processedResults = await processTournamentResults(
-				swissStandingsCsv,
-				pairingsCsv,
-				{
-					eventId: params.eventId,
-					circuit: eventData.circuit,
-					month: eventData.month,
-					eventDate: eventData.eventDate
-				}
-			);
+			const processedResults = await processTournamentResults(swissStandingsCsv, pairingsCsv, {
+				eventId: params.eventId,
+				circuit: eventData.circuit,
+				month: eventData.month,
+				eventDate: eventData.eventDate
+			});
 
 			// Clear existing results for this event
 			await db.delete(eventResult).where(eq(eventResult.eventId, params.eventId));
@@ -308,24 +303,38 @@ export const actions = {
 			// Clear existing matches for this event and insert new ones
 			// Get month name and year from event date
 			const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
-			const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-				'July', 'August', 'September', 'October', 'November', 'December'];
+			const monthNames = [
+				'January',
+				'February',
+				'March',
+				'April',
+				'May',
+				'June',
+				'July',
+				'August',
+				'September',
+				'October',
+				'November',
+				'December'
+			];
 			const eventMonthName = monthNames[eventDate.getMonth()];
 			const eventYear = eventDate.getFullYear().toString();
 
 			if (eventData.circuit) {
-				await db.delete(match).where(
-					and(
-						eq(match.year, eventYear),
-						eq(match.circuit, eventData.circuit),
-						eq(match.month, eventMonthName)
-					)
-				);
+				await db
+					.delete(match)
+					.where(
+						and(
+							eq(match.year, eventYear),
+							eq(match.circuit, eventData.circuit),
+							eq(match.month, eventMonthName)
+						)
+					);
 			}
 
 			if (processedResults.matches?.length > 0 && eventData.circuit) {
 				// Transform matches to new format with year, circuit, month
-				const matchesToInsert = processedResults.matches.map(m => ({
+				const matchesToInsert = processedResults.matches.map((m) => ({
 					year: eventYear,
 					circuit: eventData.circuit,
 					month: eventMonthName,
@@ -366,7 +375,10 @@ export const actions = {
 				})
 				.where(eq(event.id, params.eventId));
 
-			return { success: true, message: 'Progress saved. Results are stored but standings have not been updated yet.' };
+			return {
+				success: true,
+				message: 'Progress saved. Results are stored but standings have not been updated yet.'
+			};
 		} catch (err) {
 			console.error('Error saving progress:', err);
 			return fail(500, { error: 'Failed to save progress' });
@@ -403,8 +415,20 @@ export const actions = {
 
 			// Determine month column prefix from event date
 			const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
-			const monthNames = ['january', 'february', 'march', 'april', 'may', 'june',
-				'july', 'august', 'september', 'october', 'november', 'december'];
+			const monthNames = [
+				'january',
+				'february',
+				'march',
+				'april',
+				'may',
+				'june',
+				'july',
+				'august',
+				'september',
+				'october',
+				'november',
+				'december'
+			];
 			const eventMonth = monthNames[eventDate.getMonth()];
 			const currentYear = eventDate.getFullYear().toString();
 
@@ -428,11 +452,13 @@ export const actions = {
 							const [byGemId] = await db
 								.select()
 								.from(standing)
-								.where(and(
-									eq(standing.season, currentYear),
-									eq(standing.circuit, eventData.circuit),
-									eq(standing.gemId, result.gemId)
-								))
+								.where(
+									and(
+										eq(standing.season, currentYear),
+										eq(standing.circuit, eventData.circuit),
+										eq(standing.gemId, result.gemId)
+									)
+								)
 								.limit(1);
 							existingStanding = byGemId;
 						}
@@ -442,11 +468,13 @@ export const actions = {
 							const [byName] = await db
 								.select()
 								.from(standing)
-								.where(and(
-									eq(standing.season, currentYear),
-									eq(standing.circuit, eventData.circuit),
-									eq(standing.playerName, result.playerName)
-								))
+								.where(
+									and(
+										eq(standing.season, currentYear),
+										eq(standing.circuit, eventData.circuit),
+										eq(standing.playerName, result.playerName)
+									)
+								)
 								.limit(1);
 							existingStanding = byName;
 						}
@@ -461,9 +489,10 @@ export const actions = {
 							const newTotalPoints = (existingStanding.totalPoints || 0) + (result.agePoints || 0);
 							const newMatchesWon = (existingStanding.matchesWon || 0) + matchesWon;
 							const newMatchesPlayed = (existingStanding.matchesPlayed || 0) + matchesPlayed;
-							const newWinPercentage = newMatchesPlayed > 0
-								? parseFloat(((newMatchesWon / newMatchesPlayed) * 100).toFixed(2))
-								: null;
+							const newWinPercentage =
+								newMatchesPlayed > 0
+									? parseFloat(((newMatchesWon / newMatchesPlayed) * 100).toFixed(2))
+									: null;
 
 							const updateData = {
 								totalPoints: newTotalPoints,
@@ -474,9 +503,12 @@ export const actions = {
 							};
 
 							// Update monthly columns
-							updateData[monthPointsCol] = (existingStanding[monthPointsCol] || 0) + (result.agePoints || 0);
-							updateData[monthMatchesWonCol] = (existingStanding[monthMatchesWonCol] || 0) + matchesWon;
-							updateData[monthMatchesCol] = (existingStanding[monthMatchesCol] || 0) + matchesPlayed;
+							updateData[monthPointsCol] =
+								(existingStanding[monthPointsCol] || 0) + (result.agePoints || 0);
+							updateData[monthMatchesWonCol] =
+								(existingStanding[monthMatchesWonCol] || 0) + matchesWon;
+							updateData[monthMatchesCol] =
+								(existingStanding[monthMatchesCol] || 0) + matchesPlayed;
 
 							// If player has GEM ID and existing record doesn't, update it
 							if (result.gemId && !existingStanding.gemId) {
@@ -488,10 +520,7 @@ export const actions = {
 								updateData.playerName = result.playerName;
 							}
 
-							await db
-								.update(standing)
-								.set(updateData)
-								.where(eq(standing.id, existingStanding.id));
+							await db.update(standing).set(updateData).where(eq(standing.id, existingStanding.id));
 
 							playersUpdated++;
 						} else {
@@ -508,9 +537,10 @@ export const actions = {
 								totalPoints: result.agePoints || 0,
 								matchesWon: matchesWon,
 								matchesPlayed: matchesPlayed,
-								winPercentage: matchesPlayed > 0
-									? parseFloat(((matchesWon / matchesPlayed) * 100).toFixed(2))
-									: null
+								winPercentage:
+									matchesPlayed > 0
+										? parseFloat(((matchesWon / matchesPlayed) * 100).toFixed(2))
+										: null
 							};
 
 							// Set monthly columns
@@ -580,7 +610,10 @@ export const actions = {
 				})
 				.where(eq(event.id, params.eventId));
 
-			return { success: true, message: 'Event reopened. You can now update results and standings.' };
+			return {
+				success: true,
+				message: 'Event reopened. You can now update results and standings.'
+			};
 		} catch (err) {
 			console.error('Error reopening event:', err);
 			return fail(500, { error: 'Failed to reopen event' });

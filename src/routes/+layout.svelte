@@ -7,7 +7,7 @@
 
 	// Auth pages that should not show the sidebar
 	const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
-	$: isAuthPage = authRoutes.some(route => $page.url.pathname.startsWith(route));
+	$: isAuthPage = authRoutes.some((route) => $page.url.pathname.startsWith(route));
 
 	// Admin pages have their own layout
 	$: isAdminPage = $page.url.pathname.startsWith('/admin');
@@ -23,8 +23,8 @@
 
 <!-- Navigation Loading Indicator -->
 {#if $navigating}
-	<div class="fixed top-0 left-0 right-0 z-[9999] h-0.5">
-		<div class="h-full bg-blue-500 animate-loading-bar"></div>
+	<div class="fixed top-0 right-0 left-0 z-[9999] h-0.5">
+		<div class="animate-loading-bar h-full bg-blue-500"></div>
 	</div>
 {/if}
 

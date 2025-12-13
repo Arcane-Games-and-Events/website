@@ -11,10 +11,7 @@ export async function POST({ request, locals }) {
 	try {
 		const { ticketId, enteredIntoGem } = await request.json();
 
-		await db
-			.update(ticket)
-			.set({ enteredIntoGem })
-			.where(eq(ticket.id, ticketId));
+		await db.update(ticket).set({ enteredIntoGem }).where(eq(ticket.id, ticketId));
 
 		return json({ success: true, enteredIntoGem });
 	} catch (err) {

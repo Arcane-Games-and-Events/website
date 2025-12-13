@@ -30,11 +30,7 @@ function getHeroImageUrl(heroName) {
 export async function load({ params }) {
 	try {
 		// Fetch the event
-		const [eventData] = await db
-			.select()
-			.from(event)
-			.where(eq(event.id, params.eventId))
-			.limit(1);
+		const [eventData] = await db.select().from(event).where(eq(event.id, params.eventId)).limit(1);
 
 		if (!eventData) {
 			throw error(404, 'Event not found');
@@ -111,20 +107,24 @@ export async function load({ params }) {
 			heroData = await db
 				.select()
 				.from(eventPlayerHero)
-				.where(and(
-					eq(eventPlayerHero.season, season),
-					eq(eventPlayerHero.circuit, eventData.circuit),
-					eq(eventPlayerHero.month, eventData.month)
-				));
+				.where(
+					and(
+						eq(eventPlayerHero.season, season),
+						eq(eventPlayerHero.circuit, eventData.circuit),
+						eq(eventPlayerHero.month, eventData.month)
+					)
+				);
 		}
 
 		// Create hero lookup maps
-		const heroByGemId = new Map(heroData.filter(h => h.gemId).map(h => [h.gemId, h.hero]));
-		const heroByName = new Map(heroData.map(h => [h.playerName.toLowerCase(), h.hero]));
+		const heroByGemId = new Map(heroData.filter((h) => h.gemId).map((h) => [h.gemId, h.hero]));
+		const heroByName = new Map(heroData.map((h) => [h.playerName.toLowerCase(), h.hero]));
 
 		// Helper function to get hero for a player
 		const getHeroForPlayer = (gemId, name) => {
-			return (gemId && heroByGemId.get(gemId)) || (name && heroByName.get(name.toLowerCase())) || null;
+			return (
+				(gemId && heroByGemId.get(gemId)) || (name && heroByName.get(name.toLowerCase())) || null
+			);
 		};
 
 		// Calculate hero stats from match data
@@ -147,13 +147,25 @@ export async function load({ params }) {
 			if (p1Hero) {
 				const stats = heroStats.get(p1Hero);
 				if (!stats.players.has(p1Key)) {
-					stats.players.set(p1Key, { name: m.player1Name, gemId: m.player1GemId, wins: 0, losses: 0, draws: 0 });
+					stats.players.set(p1Key, {
+						name: m.player1Name,
+						gemId: m.player1GemId,
+						wins: 0,
+						losses: 0,
+						draws: 0
+					});
 				}
 			}
 			if (p2Hero) {
 				const stats = heroStats.get(p2Hero);
 				if (!stats.players.has(p2Key)) {
-					stats.players.set(p2Key, { name: m.player2Name, gemId: m.player2GemId, wins: 0, losses: 0, draws: 0 });
+					stats.players.set(p2Key, {
+						name: m.player2Name,
+						gemId: m.player2GemId,
+						wins: 0,
+						losses: 0,
+						draws: 0
+					});
 				}
 			}
 
@@ -203,12 +215,13 @@ export async function load({ params }) {
 
 					// Convert players map to sorted array
 					const players = Array.from(stats.players.values())
-						.map(p => ({
+						.map((p) => ({
 							...p,
 							totalMatches: p.wins + p.losses + p.draws,
-							winRate: (p.wins + p.losses + p.draws) > 0
-								? ((p.wins / (p.wins + p.losses + p.draws)) * 100).toFixed(1)
-								: '0.0'
+							winRate:
+								p.wins + p.losses + p.draws > 0
+									? ((p.wins / (p.wins + p.losses + p.draws)) * 100).toFixed(1)
+									: '0.0'
 						}))
 						.sort((a, b) => b.wins - a.wins || a.losses - b.losses);
 
@@ -229,7 +242,7 @@ export async function load({ params }) {
 		}
 
 		// Enrich results with hero data
-		const enrichedResults = results.map(r => ({
+		const enrichedResults = results.map((r) => ({
 			...r,
 			hero: getHeroForPlayer(r.gemId, r.playerName)
 		}));
@@ -239,8 +252,8 @@ export async function load({ params }) {
 		const matchesByRound = [];
 		for (let round = 1; round <= totalRounds; round++) {
 			const roundMatches = eventMatches
-				.filter(m => m.round === round)
-				.map(m => ({
+				.filter((m) => m.round === round)
+				.map((m) => ({
 					table: m.table,
 					player1: {
 						name: m.player1Name,
@@ -275,9 +288,9 @@ export async function load({ params }) {
 
 			// Try to identify elimination rounds
 			// Quarterfinals = 4 matches, Semifinals = 2 matches, Finals = 1 match
-			const lastRoundMatches = eventMatches.filter(m => m.round === totalRounds);
-			const secondLastRoundMatches = eventMatches.filter(m => m.round === totalRounds - 1);
-			const thirdLastRoundMatches = eventMatches.filter(m => m.round === totalRounds - 2);
+			const lastRoundMatches = eventMatches.filter((m) => m.round === totalRounds);
+			const secondLastRoundMatches = eventMatches.filter((m) => m.round === totalRounds - 1);
+			const thirdLastRoundMatches = eventMatches.filter((m) => m.round === totalRounds - 2);
 
 			// Check if the last 3 rounds follow the elimination pattern
 			const hasTop8Pattern =
@@ -321,12 +334,12 @@ export async function load({ params }) {
 				const finalsMatch = lastRoundMatches[0];
 
 				top8Bracket = {
-					quarterfinals: qfMatches.map(m => {
+					quarterfinals: qfMatches.map((m) => {
 						const seed1 = getSeed(m.player1GemId, m.player1Name);
 						const seed2 = getSeed(m.player2GemId, m.player2Name);
 						return formatBracketMatch(m, seed1, seed2);
 					}),
-					semifinals: sfMatches.map(m => {
+					semifinals: sfMatches.map((m) => {
 						const seed1 = getSeed(m.player1GemId, m.player1Name);
 						const seed2 = getSeed(m.player2GemId, m.player2Name);
 						return formatBracketMatch(m, seed1, seed2);
@@ -337,14 +350,22 @@ export async function load({ params }) {
 						return formatBracketMatch(finalsMatch, seed1, seed2);
 					})(),
 					champion: {
-						name: finalsMatch.winner === 'player1' ? finalsMatch.player1Name : finalsMatch.player2Name,
-						gemId: finalsMatch.winner === 'player1' ? finalsMatch.player1GemId : finalsMatch.player2GemId,
+						name:
+							finalsMatch.winner === 'player1' ? finalsMatch.player1Name : finalsMatch.player2Name,
+						gemId:
+							finalsMatch.winner === 'player1'
+								? finalsMatch.player1GemId
+								: finalsMatch.player2GemId,
 						hero: getHeroForPlayer(
-							finalsMatch.winner === 'player1' ? finalsMatch.player1GemId : finalsMatch.player2GemId,
+							finalsMatch.winner === 'player1'
+								? finalsMatch.player1GemId
+								: finalsMatch.player2GemId,
 							finalsMatch.winner === 'player1' ? finalsMatch.player1Name : finalsMatch.player2Name
 						),
 						seed: getSeed(
-							finalsMatch.winner === 'player1' ? finalsMatch.player1GemId : finalsMatch.player2GemId,
+							finalsMatch.winner === 'player1'
+								? finalsMatch.player1GemId
+								: finalsMatch.player2GemId,
 							finalsMatch.winner === 'player1' ? finalsMatch.player1Name : finalsMatch.player2Name
 						)
 					}
@@ -356,14 +377,11 @@ export async function load({ params }) {
 		const eventDecklists = await db
 			.select()
 			.from(decklist)
-			.where(and(
-				eq(decklist.eventId, params.eventId),
-				eq(decklist.isPublic, true)
-			))
+			.where(and(eq(decklist.eventId, params.eventId), eq(decklist.isPublic, true)))
 			.orderBy(asc(decklist.placement));
 
 		// Add hero image URLs to decklists
-		const decklistsWithImages = eventDecklists.map(d => ({
+		const decklistsWithImages = eventDecklists.map((d) => ({
 			...d,
 			heroImageUrl: getHeroImageUrl(d.hero)
 		}));

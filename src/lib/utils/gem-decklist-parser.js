@@ -56,7 +56,10 @@ export function parseGemDecklist(rawText) {
 		};
 	}
 
-	const lines = rawText.split('\n').map(line => line.trim()).filter(Boolean);
+	const lines = rawText
+		.split('\n')
+		.map((line) => line.trim())
+		.filter(Boolean);
 
 	let currentSection = null;
 	const sections = {
@@ -103,12 +106,7 @@ export function parseGemDecklist(rawText) {
 	}
 
 	// Build allCards array for easy iteration
-	const allCards = [
-		...sections.equipment,
-		...sections.red,
-		...sections.yellow,
-		...sections.blue
-	];
+	const allCards = [...sections.equipment, ...sections.red, ...sections.yellow, ...sections.blue];
 
 	// Calculate totals
 	const totals = {
@@ -135,7 +133,7 @@ export function parseGemDecklist(rawText) {
  * @returns {Array} Array of card objects for JSONB storage
  */
 export function toStorageFormat(parsed) {
-	return parsed.allCards.map(card => ({
+	return parsed.allCards.map((card) => ({
 		name: card.name,
 		quantity: card.quantity,
 		section: card.section,

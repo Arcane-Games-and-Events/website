@@ -19,8 +19,8 @@ export async function load({ locals }) {
 
 	// Batch fetch ALL ticket refund statuses at once (fixes N+1 query problem)
 	const ticketIds = userOrders
-		.filter(o => o.meta?.type === 'ticket' && o.meta.ticketId)
-		.map(o => o.meta.ticketId);
+		.filter((o) => o.meta?.type === 'ticket' && o.meta.ticketId)
+		.map((o) => o.meta.ticketId);
 
 	// Only query if there are ticket orders
 	const ticketRefundMap = new Map();
@@ -36,7 +36,7 @@ export async function load({ locals }) {
 	}
 
 	// Enrich orders with refund status (no additional queries needed)
-	const enrichedOrders = userOrders.map(ord => {
+	const enrichedOrders = userOrders.map((ord) => {
 		if (ord.meta?.type === 'ticket' && ord.meta.ticketId) {
 			return {
 				...ord,

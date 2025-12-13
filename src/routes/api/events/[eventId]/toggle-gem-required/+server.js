@@ -11,10 +11,7 @@ export async function POST({ params, request, locals }) {
 	try {
 		const { gemIdRequired } = await request.json();
 
-		await db
-			.update(event)
-			.set({ gemIdRequired })
-			.where(eq(event.id, params.eventId));
+		await db.update(event).set({ gemIdRequired }).where(eq(event.id, params.eventId));
 
 		return json({ success: true, gemIdRequired });
 	} catch (err) {

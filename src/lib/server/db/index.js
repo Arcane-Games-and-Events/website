@@ -13,7 +13,7 @@ const client = postgres(env.DATABASE_URL, {
 	fetch_types: false, // Disable type fetching for faster connection
 	prepare: false, // Required for PgBouncer transaction mode
 	connection: {
-		statement_timeout: 10000, // 10 second statement timeout (was 15)
+		statement_timeout: 10000 // 10 second statement timeout (was 15)
 	}
 });
 

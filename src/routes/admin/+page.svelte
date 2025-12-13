@@ -962,18 +962,27 @@
 										{@const circuit = getCircuit(event.circuit)}
 										<a
 											href="/admin/events/{event.id}"
-											class="group flex items-center gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2.5 transition-all hover:border-white/10 hover:bg-white/5 border-l-2"
+											class="group flex items-center gap-3 rounded-lg border border-l-2 border-white/5 bg-white/[0.02] px-3 py-2.5 transition-all hover:border-white/10 hover:bg-white/5"
 											style="border-left-color: {circuit.hex.light};"
 										>
 											<!-- Date Badge with Circuit Color -->
 											<div
-												class="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg text-center border"
-												style="background-color: {circuit.hex.primary}25; border-color: {circuit.hex.light}40;"
+												class="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg border text-center"
+												style="background-color: {circuit.hex.primary}25; border-color: {circuit.hex
+													.light}40;"
 											>
-												<span class="text-[10px] font-bold uppercase tracking-wide" style="color: {circuit.hex.light};">
-													{new Date(event.eventDate).toLocaleDateString('en-US', { month: 'short' })}
+												<span
+													class="text-[10px] font-bold tracking-wide uppercase"
+													style="color: {circuit.hex.light};"
+												>
+													{new Date(event.eventDate).toLocaleDateString('en-US', {
+														month: 'short'
+													})}
 												</span>
-												<span class="text-base font-bold leading-none" style="color: {circuit.hex.light};">
+												<span
+													class="text-base leading-none font-bold"
+													style="color: {circuit.hex.light};"
+												>
 													{new Date(event.eventDate).getDate()}
 												</span>
 											</div>
@@ -982,17 +991,16 @@
 											<div class="min-w-0 flex-1">
 												<div class="flex items-center gap-2">
 													<span
-														class="text-sm font-medium text-white transition-colors group-hover:text-blue-400 truncate"
+														class="truncate text-sm font-medium text-white transition-colors group-hover:text-blue-400"
 													>
 														{event.title}
 													</span>
 												</div>
 												<div class="flex items-center gap-1.5 text-xs text-gray-500">
 													{#if event.circuit}
-														<span
-															class="font-semibold"
-															style="color: {circuit.hex.light};"
-														>{event.circuit}</span>
+														<span class="font-semibold" style="color: {circuit.hex.light};"
+															>{event.circuit}</span
+														>
 														<span>•</span>
 													{/if}
 													<span>
@@ -1008,7 +1016,7 @@
 											<!-- Tickets Sold -->
 											<div class="shrink-0 text-right">
 												<div class="text-lg font-bold text-white">{ticketStats.sold}</div>
-												<div class="text-[10px] text-gray-500 uppercase tracking-wide">tickets</div>
+												<div class="text-[10px] tracking-wide text-gray-500 uppercase">tickets</div>
 											</div>
 
 											<svg
@@ -1910,10 +1918,16 @@
 											{/if}
 										</div>
 										<div class="mt-2 text-xs text-gray-400">
-											{startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} - {endDate.toLocaleDateString(
-												'en-US',
-												{ month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }
-											)}
+											{startDate.toLocaleDateString('en-US', {
+												month: 'short',
+												day: 'numeric',
+												timeZone: 'UTC'
+											})} - {endDate.toLocaleDateString('en-US', {
+												month: 'short',
+												day: 'numeric',
+												year: 'numeric',
+												timeZone: 'UTC'
+											})}
 										</div>
 										{#if season.format}
 											<p class="mt-1 truncate text-xs text-gray-500">{season.format}</p>

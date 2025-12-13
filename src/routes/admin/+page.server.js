@@ -1071,21 +1071,58 @@ export const actions = {
 		try {
 			// AGE points table based on placement
 			const pointsTable = {
-				1: 30, 2: 25, 3: 20, 4: 20, 5: 15, 6: 15, 7: 15, 8: 15,
-				9: 12, 10: 12, 11: 12, 12: 12, 13: 8, 14: 8, 15: 8, 16: 8
+				1: 30,
+				2: 25,
+				3: 20,
+				4: 20,
+				5: 15,
+				6: 15,
+				7: 15,
+				8: 15,
+				9: 12,
+				10: 12,
+				11: 12,
+				12: 12,
+				13: 8,
+				14: 8,
+				15: 8,
+				16: 8
 			};
 
-			const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-				'July', 'August', 'September', 'October', 'November', 'December'];
-			const monthKeys = ['january', 'february', 'march', 'april', 'may', 'june',
-				'july', 'august', 'september', 'october', 'november', 'december'];
+			const monthNames = [
+				'January',
+				'February',
+				'March',
+				'April',
+				'May',
+				'June',
+				'July',
+				'August',
+				'September',
+				'October',
+				'November',
+				'December'
+			];
+			const monthKeys = [
+				'january',
+				'february',
+				'march',
+				'april',
+				'may',
+				'june',
+				'july',
+				'august',
+				'september',
+				'october',
+				'november',
+				'december'
+			];
 
 			// Get all matches for this season/circuit
-			const allMatches = await db.select().from(match)
-				.where(and(
-					eq(match.year, season),
-					eq(match.circuit, circuit)
-				));
+			const allMatches = await db
+				.select()
+				.from(match)
+				.where(and(eq(match.year, season), eq(match.circuit, circuit)));
 
 			if (allMatches.length === 0) {
 				return fail(400, { error: `No matches found for ${circuit} ${season}` });
@@ -1116,7 +1153,12 @@ export const actions = {
 					// Player 1
 					const p1Key = m.player1GemId || m.player1Name;
 					if (!monthPlayerStats.has(p1Key)) {
-						monthPlayerStats.set(p1Key, { gemId: m.player1GemId, name: m.player1Name, wins: 0, matches: 0 });
+						monthPlayerStats.set(p1Key, {
+							gemId: m.player1GemId,
+							name: m.player1Name,
+							wins: 0,
+							matches: 0
+						});
 					}
 					const p1 = monthPlayerStats.get(p1Key);
 					p1.matches++;
@@ -1125,7 +1167,12 @@ export const actions = {
 					// Player 2
 					const p2Key = m.player2GemId || m.player2Name;
 					if (!monthPlayerStats.has(p2Key)) {
-						monthPlayerStats.set(p2Key, { gemId: m.player2GemId, name: m.player2Name, wins: 0, matches: 0 });
+						monthPlayerStats.set(p2Key, {
+							gemId: m.player2GemId,
+							name: m.player2Name,
+							wins: 0,
+							matches: 0
+						});
 					}
 					const p2 = monthPlayerStats.get(p2Key);
 					p2.matches++;
@@ -1158,15 +1205,16 @@ export const actions = {
 			}
 
 			// Get existing standings for this season/circuit
-			const existingStandings = await db.select().from(standing)
-				.where(and(
-					eq(standing.season, season),
-					eq(standing.circuit, circuit)
-				));
+			const existingStandings = await db
+				.select()
+				.from(standing)
+				.where(and(eq(standing.season, season), eq(standing.circuit, circuit)));
 
 			// Build lookup maps
-			const standingByGemId = new Map(existingStandings.filter(s => s.gemId).map(s => [s.gemId, s]));
-			const standingByName = new Map(existingStandings.map(s => [s.playerName, s]));
+			const standingByGemId = new Map(
+				existingStandings.filter((s) => s.gemId).map((s) => [s.gemId, s])
+			);
+			const standingByName = new Map(existingStandings.map((s) => [s.playerName, s]));
 
 			let updated = 0;
 			let created = 0;
@@ -1201,13 +1249,13 @@ export const actions = {
 					}
 				}
 
-				const winPercentage = totalMatches > 0
-					? Math.round((totalWins / totalMatches) * 10000) / 100
-					: null;
+				const winPercentage =
+					totalMatches > 0 ? Math.round((totalWins / totalMatches) * 10000) / 100 : null;
 
 				if (existingStanding) {
 					// Update existing standing
-					await db.update(standing)
+					await db
+						.update(standing)
 						.set({
 							totalPoints,
 							matchesWon: totalWins,
@@ -1254,9 +1302,10 @@ export const actions = {
 
 		try {
 			// Get all standings with GEM IDs
-			const allStandings = await db.select().from(standing).where(
-				sql`${standing.gemId} IS NOT NULL AND ${standing.gemId} != ''`
-			);
+			const allStandings = await db
+				.select()
+				.from(standing)
+				.where(sql`${standing.gemId} IS NOT NULL AND ${standing.gemId} != ''`);
 
 			// Build a map of player name -> GEM ID
 			// Use all names the player has used across all their standings
@@ -1273,10 +1322,13 @@ export const actions = {
 			console.log(`Found ${nameToGemId.size} unique player name -> GEM ID mappings`);
 
 			// Get all matches that are missing GEM IDs
-			const matchesNeedingUpdate = await db.select().from(match).where(
-				sql`(${match.player1GemId} IS NULL OR ${match.player1GemId} = '')
+			const matchesNeedingUpdate = await db
+				.select()
+				.from(match)
+				.where(
+					sql`(${match.player1GemId} IS NULL OR ${match.player1GemId} = '')
 				    OR (${match.player2GemId} IS NULL OR ${match.player2GemId} = '')`
-			);
+				);
 
 			console.log(`Found ${matchesNeedingUpdate.length} matches needing GEM ID updates`);
 
@@ -1287,7 +1339,8 @@ export const actions = {
 
 				// Only update if we found at least one new GEM ID
 				if ((p1GemId && p1GemId !== m.player1GemId) || (p2GemId && p2GemId !== m.player2GemId)) {
-					await db.update(match)
+					await db
+						.update(match)
 						.set({
 							player1GemId: p1GemId,
 							player2GemId: p2GemId

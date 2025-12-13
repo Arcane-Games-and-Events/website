@@ -1,4 +1,14 @@
-import { pgTable, uuid, text, timestamp, integer, jsonb, boolean, decimal, unique } from 'drizzle-orm/pg-core';
+import {
+	pgTable,
+	uuid,
+	text,
+	timestamp,
+	integer,
+	jsonb,
+	boolean,
+	decimal,
+	unique
+} from 'drizzle-orm/pg-core';
 
 // User table with auth and role support
 export const user = pgTable('user', {
@@ -85,7 +95,9 @@ export const event = pgTable('events', {
 export const ticket = pgTable('ticket', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	userId: text('user_id').references(() => user.id),
-	eventId: text('event_id').notNull().references(() => event.id),
+	eventId: text('event_id')
+		.notNull()
+		.references(() => event.id),
 	orderId: uuid('order_id').references(() => order.id), // Link to payment record
 	code: text('code').notNull(),
 	quantity: integer('quantity').default(1),
@@ -127,7 +139,9 @@ export const webhookEvent = pgTable('webhook_event', {
 // PASSWORD RESET TOKENS
 export const passwordResetToken = pgTable('password_reset_token', {
 	id: text('id').primaryKey(), // Token hash
-	userId: text('user_id').notNull().references(() => user.id),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id),
 	expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
@@ -146,8 +160,12 @@ export const newsletterSubscriber = pgTable('newsletter_subscriber', {
 // STAFF ASSIGNMENTS (for tournament staff)
 export const eventStaff = pgTable('staff_assignments', {
 	id: uuid('id').defaultRandom().primaryKey(),
-	userId: text('user_id').notNull().references(() => user.id),
-	eventId: text('event_id').notNull().references(() => event.id),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id),
+	eventId: text('event_id')
+		.notNull()
+		.references(() => event.id),
 	assignedBy: text('assigned_by').references(() => user.id), // Admin who assigned the staff
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
@@ -159,7 +177,9 @@ export const eventStaff = pgTable('staff_assignments', {
 // DECKLISTS (player deck submissions)
 export const decklist = pgTable('decklists', {
 	id: uuid('id').defaultRandom().primaryKey(),
-	eventId: text('event_id').notNull().references(() => event.id),
+	eventId: text('event_id')
+		.notNull()
+		.references(() => event.id),
 
 	// Player identification
 	userId: text('user_id').references(() => user.id),
@@ -215,80 +235,86 @@ export const match = pgTable('matches', {
 });
 
 // STANDINGS (circuit leaderboards)
-export const standing = pgTable('standings', {
-	id: uuid('id').defaultRandom().primaryKey(),
+export const standing = pgTable(
+	'standings',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
 
-	// Season and circuit info
-	season: text('season').notNull(), // e.g., "2025", "2024-2025"
-	circuit: text('circuit').notNull(), // "Los Angeles", "St. Louis", "New England"
+		// Season and circuit info
+		season: text('season').notNull(), // e.g., "2025", "2024-2025"
+		circuit: text('circuit').notNull(), // "Los Angeles", "St. Louis", "New England"
 
-	// Player identification - GEM ID is the universal identifier
-	gemId: text('gem_id'),
-	playerName: text('player_name').notNull(),
+		// Player identification - GEM ID is the universal identifier
+		gemId: text('gem_id'),
+		playerName: text('player_name').notNull(),
 
-	// Standing data
-	totalPoints: integer('total_points').default(0), // Total AGE points
-	winPercentage: decimal('win_percentage', { precision: 5, scale: 2 }), // Win % for the season
+		// Standing data
+		totalPoints: integer('total_points').default(0), // Total AGE points
+		winPercentage: decimal('win_percentage', { precision: 5, scale: 2 }), // Win % for the season
 
-	// Match statistics for the season
-	matchesPlayed: integer('matches_played').default(0), // Total matches played
-	matchesWon: integer('matches_won').default(0), // Total matches won
+		// Match statistics for the season
+		matchesPlayed: integer('matches_played').default(0), // Total matches played
+		matchesWon: integer('matches_won').default(0), // Total matches won
 
-	// Qualification status
-	qualifiedForChampionship: boolean('qualified_for_championship').default(false),
+		// Qualification status
+		qualifiedForChampionship: boolean('qualified_for_championship').default(false),
 
-	// Monthly points - flattened columns
-	januaryPoints: integer('january_points').default(0),
-	februaryPoints: integer('february_points').default(0),
-	marchPoints: integer('march_points').default(0),
-	aprilPoints: integer('april_points').default(0),
-	mayPoints: integer('may_points').default(0),
-	junePoints: integer('june_points').default(0),
-	julyPoints: integer('july_points').default(0),
-	augustPoints: integer('august_points').default(0),
-	septemberPoints: integer('september_points').default(0),
-	octoberPoints: integer('october_points').default(0),
-	novemberPoints: integer('november_points').default(0),
-	decemberPoints: integer('december_points').default(0),
+		// Monthly points - flattened columns
+		januaryPoints: integer('january_points').default(0),
+		februaryPoints: integer('february_points').default(0),
+		marchPoints: integer('march_points').default(0),
+		aprilPoints: integer('april_points').default(0),
+		mayPoints: integer('may_points').default(0),
+		junePoints: integer('june_points').default(0),
+		julyPoints: integer('july_points').default(0),
+		augustPoints: integer('august_points').default(0),
+		septemberPoints: integer('september_points').default(0),
+		octoberPoints: integer('october_points').default(0),
+		novemberPoints: integer('november_points').default(0),
+		decemberPoints: integer('december_points').default(0),
 
-	// Monthly matches won
-	januaryMatchesWon: integer('january_matches_won').default(0),
-	februaryMatchesWon: integer('february_matches_won').default(0),
-	marchMatchesWon: integer('march_matches_won').default(0),
-	aprilMatchesWon: integer('april_matches_won').default(0),
-	mayMatchesWon: integer('may_matches_won').default(0),
-	juneMatchesWon: integer('june_matches_won').default(0),
-	julyMatchesWon: integer('july_matches_won').default(0),
-	augustMatchesWon: integer('august_matches_won').default(0),
-	septemberMatchesWon: integer('september_matches_won').default(0),
-	octoberMatchesWon: integer('october_matches_won').default(0),
-	novemberMatchesWon: integer('november_matches_won').default(0),
-	decemberMatchesWon: integer('december_matches_won').default(0),
+		// Monthly matches won
+		januaryMatchesWon: integer('january_matches_won').default(0),
+		februaryMatchesWon: integer('february_matches_won').default(0),
+		marchMatchesWon: integer('march_matches_won').default(0),
+		aprilMatchesWon: integer('april_matches_won').default(0),
+		mayMatchesWon: integer('may_matches_won').default(0),
+		juneMatchesWon: integer('june_matches_won').default(0),
+		julyMatchesWon: integer('july_matches_won').default(0),
+		augustMatchesWon: integer('august_matches_won').default(0),
+		septemberMatchesWon: integer('september_matches_won').default(0),
+		octoberMatchesWon: integer('october_matches_won').default(0),
+		novemberMatchesWon: integer('november_matches_won').default(0),
+		decemberMatchesWon: integer('december_matches_won').default(0),
 
-	// Monthly matches played
-	januaryMatches: integer('january_matches').default(0),
-	februaryMatches: integer('february_matches').default(0),
-	marchMatches: integer('march_matches').default(0),
-	aprilMatches: integer('april_matches').default(0),
-	mayMatches: integer('may_matches').default(0),
-	juneMatches: integer('june_matches').default(0),
-	julyMatches: integer('july_matches').default(0),
-	augustMatches: integer('august_matches').default(0),
-	septemberMatches: integer('september_matches').default(0),
-	octoberMatches: integer('october_matches').default(0),
-	novemberMatches: integer('november_matches').default(0),
-	decemberMatches: integer('december_matches').default(0),
+		// Monthly matches played
+		januaryMatches: integer('january_matches').default(0),
+		februaryMatches: integer('february_matches').default(0),
+		marchMatches: integer('march_matches').default(0),
+		aprilMatches: integer('april_matches').default(0),
+		mayMatches: integer('may_matches').default(0),
+		juneMatches: integer('june_matches').default(0),
+		julyMatches: integer('july_matches').default(0),
+		augustMatches: integer('august_matches').default(0),
+		septemberMatches: integer('september_matches').default(0),
+		octoberMatches: integer('october_matches').default(0),
+		novemberMatches: integer('november_matches').default(0),
+		decemberMatches: integer('december_matches').default(0),
 
-	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow(),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
-}, (table) => ({
-	uniqueSeasonCircuitPlayer: unique().on(table.season, table.circuit, table.playerName)
-}));
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+	},
+	(table) => ({
+		uniqueSeasonCircuitPlayer: unique().on(table.season, table.circuit, table.playerName)
+	})
+);
 
 // SAVED PAYMENT METHODS (Authorize.net CIM tokens)
 export const savedCard = pgTable('saved_card', {
 	id: uuid('id').defaultRandom().primaryKey(),
-	userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
 
 	// Authorize.net CIM IDs (we never store actual card numbers)
 	customerProfileId: text('customer_profile_id').notNull(), // Authorize.net customer profile ID
@@ -350,26 +376,30 @@ export const lssEvent = pgTable('lss_events', {
 
 // EVENT PLAYER HEROES (track what hero each player played at each event)
 // Organized by season/circuit/month to match standings structure
-export const eventPlayerHero = pgTable('event_player_heroes', {
-	id: uuid('id').defaultRandom().primaryKey(),
+export const eventPlayerHero = pgTable(
+	'event_player_heroes',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
 
-	// Event context (matches standings structure)
-	season: text('season').notNull(), // e.g., "2025"
-	circuit: text('circuit').notNull(), // e.g., "Los Angeles", "St. Louis"
-	month: text('month').notNull(), // e.g., "January", "February"
+		// Event context (matches standings structure)
+		season: text('season').notNull(), // e.g., "2025"
+		circuit: text('circuit').notNull(), // e.g., "Los Angeles", "St. Louis"
+		month: text('month').notNull(), // e.g., "January", "February"
 
-	// Player identification
-	gemId: text('gem_id'), // Player's GEM ID
-	playerName: text('player_name').notNull(), // For display and fallback matching
+		// Player identification
+		gemId: text('gem_id'), // Player's GEM ID
+		playerName: text('player_name').notNull(), // For display and fallback matching
 
-	// Hero played at this event
-	hero: text('hero').notNull(),
+		// Hero played at this event
+		hero: text('hero').notNull(),
 
-	// Optional metadata from CSV
-	countryRegion: text('country_region'),
+		// Optional metadata from CSV
+		countryRegion: text('country_region'),
 
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
-}, (table) => ({
-	// Each player can only have one hero entry per season/circuit/month
-	uniqueEventPlayer: unique().on(table.season, table.circuit, table.month, table.gemId)
-}));
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+	},
+	(table) => ({
+		// Each player can only have one hero entry per season/circuit/month
+		uniqueEventPlayer: unique().on(table.season, table.circuit, table.month, table.gemId)
+	})
+);

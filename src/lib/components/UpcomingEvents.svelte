@@ -52,7 +52,13 @@
 					class="flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
 				>
 					{viewAllText}
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+					<svg
+						class="h-4 w-4"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						viewBox="0 0 24 24"
+					>
 						<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
 					</svg>
 				</a>
@@ -67,7 +73,8 @@
 			<div class="flex flex-wrap gap-2">
 				<button
 					on:click={() => (selectedCircuit = 'all')}
-					class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'all'
+					class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit ===
+					'all'
 						? 'bg-white text-gray-900 shadow-lg'
 						: 'bg-gray-800 text-gray-300 hover:bg-gray-700'}"
 				>
@@ -75,7 +82,8 @@
 				</button>
 				<button
 					on:click={() => (selectedCircuit = 'Los Angeles')}
-					class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'Los Angeles'
+					class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit ===
+					'Los Angeles'
 						? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
 						: 'border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'}"
 				>
@@ -86,7 +94,8 @@
 				</button>
 				<button
 					on:click={() => (selectedCircuit = 'New England')}
-					class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'New England'
+					class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit ===
+					'New England'
 						? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
 						: 'border border-purple-500/30 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20'}"
 				>
@@ -97,7 +106,8 @@
 				</button>
 				<button
 					on:click={() => (selectedCircuit = 'St. Louis')}
-					class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit === 'St. Louis'
+					class="rounded-full px-4 py-2 text-sm font-medium transition-all {selectedCircuit ===
+					'St. Louis'
 						? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
 						: 'border border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20'}"
 				>

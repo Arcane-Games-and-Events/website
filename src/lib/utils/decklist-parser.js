@@ -57,7 +57,7 @@ export function parseFabraryExport(rawText) {
 		};
 	}
 
-	const lines = rawText.split('\n').map(line => line.trim());
+	const lines = rawText.split('\n').map((line) => line.trim());
 
 	let deckName = null;
 	let hero = null;

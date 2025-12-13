@@ -20,12 +20,7 @@ export async function load({ url }) {
 	const [resetToken] = await db
 		.select()
 		.from(passwordResetToken)
-		.where(
-			and(
-				eq(passwordResetToken.id, tokenHash),
-				gt(passwordResetToken.expiresAt, new Date())
-			)
-		);
+		.where(and(eq(passwordResetToken.id, tokenHash), gt(passwordResetToken.expiresAt, new Date())));
 
 	if (!resetToken) {
 		return { error: 'This reset link has expired or is invalid' };
@@ -61,10 +56,7 @@ export const actions = {
 			.select()
 			.from(passwordResetToken)
 			.where(
-				and(
-					eq(passwordResetToken.id, tokenHash),
-					gt(passwordResetToken.expiresAt, new Date())
-				)
+				and(eq(passwordResetToken.id, tokenHash), gt(passwordResetToken.expiresAt, new Date()))
 			);
 
 		if (!resetToken) {
@@ -75,10 +67,7 @@ export const actions = {
 		const hashedPassword = await new Argon2id().hash(password);
 
 		// Update user password
-		await db
-			.update(user)
-			.set({ hashedPassword })
-			.where(eq(user.id, resetToken.userId));
+		await db.update(user).set({ hashedPassword }).where(eq(user.id, resetToken.userId));
 
 		// Delete the used token
 		await db.delete(passwordResetToken).where(eq(passwordResetToken.id, tokenHash));

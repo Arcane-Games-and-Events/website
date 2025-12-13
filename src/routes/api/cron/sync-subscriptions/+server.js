@@ -32,12 +32,7 @@ export async function GET({ request, locals }) {
 		const usersWithSubscriptions = await db
 			.select()
 			.from(userTable)
-			.where(
-				and(
-					isNotNull(userTable.subscriptionId),
-					ne(userTable.subscriptionStatus, 'expired')
-				)
-			);
+			.where(and(isNotNull(userTable.subscriptionId), ne(userTable.subscriptionStatus, 'expired')));
 
 		const results = {
 			checked: 0,
@@ -125,9 +120,7 @@ export async function GET({ request, locals }) {
 						}
 					}
 
-					await db.update(userTable)
-						.set(updateData)
-						.where(eq(userTable.id, user.id));
+					await db.update(userTable).set(updateData).where(eq(userTable.id, user.id));
 
 					results.updated++;
 					results.details.push({

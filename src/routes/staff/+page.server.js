@@ -20,27 +20,21 @@ export async function load({ locals }) {
 			.where(eq(eventStaff.userId, locals.user.id));
 
 		// Fetch full event details for assigned events
-		const assignedEventIds = staffAssignments.map(a => a.eventId);
+		const assignedEventIds = staffAssignments.map((a) => a.eventId);
 
 		let assignedEvents = [];
 		if (assignedEventIds.length > 0) {
 			// Fetch all assigned events at once
-			const events = await db
-				.select()
-				.from(event)
-				.where(inArray(event.id, assignedEventIds));
+			const events = await db.select().from(event).where(inArray(event.id, assignedEventIds));
 
 			// Get ticket counts for each event
 			for (const eventData of events) {
-				const tickets = await db
-					.select()
-					.from(ticket)
-					.where(eq(ticket.eventId, eventData.id));
+				const tickets = await db.select().from(ticket).where(eq(ticket.eventId, eventData.id));
 
 				assignedEvents.push({
 					...eventData,
-					ticketCount: tickets.filter(t => !t.refunded).length,
-					refundCount: tickets.filter(t => t.refunded).length
+					ticketCount: tickets.filter((t) => !t.refunded).length,
+					refundCount: tickets.filter((t) => t.refunded).length
 				});
 			}
 		}

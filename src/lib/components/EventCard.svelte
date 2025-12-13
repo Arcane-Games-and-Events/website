@@ -28,14 +28,17 @@
 				alt=""
 				class="h-full w-full object-cover opacity-50 transition-all duration-500 group-hover:scale-105 group-hover:opacity-60"
 			/>
-			<div class="absolute inset-0 bg-gradient-to-r from-gray-900/95 via-gray-900/80 to-gray-900/60"></div>
+			<div
+				class="absolute inset-0 bg-gradient-to-r from-gray-900/95 via-gray-900/80 to-gray-900/60"
+			></div>
 		</div>
 
 		<!-- Mobile Layout (compact single row) -->
 		<div class="relative z-10 flex items-center gap-2 p-2 sm:hidden">
 			<!-- Date Block -->
 			<div
-				class="flex w-11 shrink-0 flex-col items-center justify-center rounded-md {circuit.colors.bgLight} py-1.5 backdrop-blur-sm"
+				class="flex w-11 shrink-0 flex-col items-center justify-center rounded-md {circuit.colors
+					.bgLight} py-1.5 backdrop-blur-sm"
 			>
 				<span class="text-[8px] font-semibold uppercase {circuit.colors.text}">{monthShort}</span>
 				<span class="text-lg font-bold text-white">{dayNum}</span>
@@ -69,7 +72,8 @@
 		<div class="relative z-10 hidden sm:flex">
 			<!-- Date Block (Calendar Style) -->
 			<div
-				class="flex w-20 shrink-0 flex-col items-center justify-center border-r border-gray-800/50 {circuit.colors.bgLight} px-3 py-3 backdrop-blur-sm"
+				class="flex w-20 shrink-0 flex-col items-center justify-center border-r border-gray-800/50 {circuit
+					.colors.bgLight} px-3 py-3 backdrop-blur-sm"
 			>
 				<span class="text-[10px] font-semibold uppercase {circuit.colors.text}">{monthShort}</span>
 				<span class="text-2xl font-bold text-white">{dayNum}</span>
@@ -81,7 +85,9 @@
 				<!-- Event Details -->
 				<div class="min-w-0 flex-1">
 					<!-- Title Row -->
-					<h4 class="truncate text-sm font-semibold text-white transition-colors group-hover:text-blue-400">
+					<h4
+						class="truncate text-sm font-semibold text-white transition-colors group-hover:text-blue-400"
+					>
 						{event.title}
 					</h4>
 
@@ -111,7 +117,12 @@
 						<!-- Location -->
 						{#if event.location}
 							<div class="flex items-center gap-1.5 text-gray-500">
-								<svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<svg
+									class="h-3.5 w-3.5 shrink-0"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
 									<path
 										stroke-linecap="round"
 										stroke-linejoin="round"
@@ -145,7 +156,9 @@
 								-10%
 							</span>
 						{/if}
-						<span class="rounded-md {circuit.colors.bg} px-2 py-1 text-[10px] font-semibold text-white">
+						<span
+							class="rounded-md {circuit.colors.bg} px-2 py-1 text-[10px] font-semibold text-white"
+						>
 							Sign Up →
 						</span>
 					</div>

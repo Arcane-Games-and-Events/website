@@ -11,11 +11,7 @@ export async function load({ params, locals }) {
 
 	try {
 		// Fetch order details
-		const [orderData] = await db
-			.select()
-			.from(order)
-			.where(eq(order.id, params.orderId))
-			.limit(1);
+		const [orderData] = await db.select().from(order).where(eq(order.id, params.orderId)).limit(1);
 
 		if (!orderData) {
 			throw redirect(302, '/admin?tab=orders');

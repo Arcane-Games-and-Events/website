@@ -5,6 +5,7 @@ A full-stack web application for Arcane Games & Events (AGE), a Flesh and Blood 
 ## Tech Stack
 
 ### Frontend (SvelteKit)
+
 - **Framework:** SvelteKit 2 with Svelte 5
 - **Styling:** Tailwind CSS 4
 - **Database ORM:** Drizzle ORM with PostgreSQL
@@ -13,6 +14,7 @@ A full-stack web application for Arcane Games & Events (AGE), a Flesh and Blood 
 - **Payments:** Authorize.net
 
 ### CMS (Payload)
+
 - **Framework:** Payload CMS 3 with Next.js 15
 - **Database:** PostgreSQL (shared with frontend)
 - **Storage:** S3-compatible storage for media
@@ -142,23 +144,27 @@ npm run db:studio
 ## Features
 
 ### Articles & Premium Content
+
 - Rich text articles with Lexical editor
 - Premium content with access controls
 - Inline FAB card linking with hover previews
 
 ### Card System
+
 - Database-backed card lookup with Redis caching
 - Support for pitch variants (red/yellow/blue)
 - Hover tooltips on desktop, tap modals on mobile
 - Admin interface for uploading card data
 
 ### Tournament Management
+
 - Event listings and registration
 - Live standings and pairings
 - Player profiles and match history
 - AGE circuit tracking
 
 ### Payments
+
 - Premium subscriptions via Authorize.net
 - Secure payment processing
 

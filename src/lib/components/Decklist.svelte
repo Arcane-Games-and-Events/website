@@ -226,7 +226,8 @@
 								data-card-fallback={arenaCardImg?.fallbackUrl || null}
 								class="card-link rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm !text-white !no-underline transition-all duration-150 hover:border-yellow-500/50 hover:bg-yellow-500/10 hover:!text-yellow-300"
 							>
-								{#if card.quantity > 1}<span class="mr-1 text-gray-400">{card.quantity}×</span>{/if}{card.name}
+								{#if card.quantity > 1}<span class="mr-1 text-gray-400">{card.quantity}×</span
+									>{/if}{card.name}
 							</a>
 						{/each}
 					</div>
@@ -240,7 +241,7 @@
 						<div>
 							<!-- Full-width color header with fading gradient -->
 							<div
-								class="-mx-5 mb-3 px-5 py-2 bg-gradient-to-r {color === 'red'
+								class="-mx-5 mb-3 bg-gradient-to-r px-5 py-2 {color === 'red'
 									? 'from-red-500/25 via-red-500/10 to-transparent'
 									: color === 'yellow'
 										? 'from-yellow-500/25 via-yellow-500/10 to-transparent'
@@ -259,7 +260,9 @@
 								>
 									{colorLabels[color]}
 									<span class="ml-2 font-normal text-gray-400">
-										— <span class="font-medium text-white/70">{processedCards.deck[color].reduce((sum, c) => sum + c.quantity, 0)}</span> cards
+										— <span class="font-medium text-white/70"
+											>{processedCards.deck[color].reduce((sum, c) => sum + c.quantity, 0)}</span
+										> cards
 									</span>
 								</span>
 							</div>

@@ -11,11 +11,7 @@ export async function load({ params, locals }) {
 
 	try {
 		// Fetch order details
-		const [orderData] = await db
-			.select()
-			.from(order)
-			.where(eq(order.id, params.orderId))
-			.limit(1);
+		const [orderData] = await db.select().from(order).where(eq(order.id, params.orderId)).limit(1);
 
 		if (!orderData) {
 			throw error(404, 'Order not found');
@@ -111,7 +107,9 @@ export const actions = {
 
 			// Can't refund subscriptions through this endpoint
 			if (orderData.meta?.type === 'subscription') {
-				return fail(400, { error: 'Subscriptions cannot be refunded. Please cancel your subscription instead.' });
+				return fail(400, {
+					error: 'Subscriptions cannot be refunded. Please cancel your subscription instead.'
+				});
 			}
 
 			// For tickets, check the 24-hour refund window
@@ -138,7 +136,8 @@ export const actions = {
 
 						if (hoursUntilEvent <= 24) {
 							return fail(400, {
-								error: 'Self-service refunds are not available within 24 hours of the event. Please contact us at support@arcanegamesandevents.com for assistance.'
+								error:
+									'Self-service refunds are not available within 24 hours of the event. Please contact us at support@arcanegamesandevents.com for assistance.'
 							});
 						}
 					}
@@ -178,9 +177,7 @@ export const actions = {
 					.where(eq(ticket.id, orderData.meta.ticketId));
 			} else if (orderData.meta?.type === 'course' && orderData.meta.entitlementId) {
 				// Revoke course entitlement
-				await db
-					.delete(entitlement)
-					.where(eq(entitlement.id, orderData.meta.entitlementId));
+				await db.delete(entitlement).where(eq(entitlement.id, orderData.meta.entitlementId));
 			}
 
 			return {

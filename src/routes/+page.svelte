@@ -406,15 +406,25 @@
 						<!-- Section Header -->
 						<div class="mb-6 flex items-end justify-between border-b border-white/10 pb-3">
 							<div>
-								<span class="text-[10px] font-medium uppercase tracking-widest text-gray-500">News</span>
-								<h2 class="font-display text-2xl font-bold tracking-tight text-white">Latest Articles</h2>
+								<span class="text-[10px] font-medium tracking-widest text-gray-500 uppercase"
+									>News</span
+								>
+								<h2 class="font-display text-2xl font-bold tracking-tight text-white">
+									Latest Articles
+								</h2>
 							</div>
 							<a
 								href="/articles"
-								class="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-gray-400 transition-colors hover:text-white"
+								class="flex items-center gap-1 text-xs font-medium tracking-wide text-gray-400 uppercase transition-colors hover:text-white"
 							>
 								View all
-								<svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+								<svg
+									class="h-3 w-3"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									viewBox="0 0 24 24"
+								>
 									<path stroke-linecap="round" stroke-linejoin="round" d={icons.chevronRight} />
 								</svg>
 							</a>
@@ -460,30 +470,40 @@
 						<!-- Section Header -->
 						<div class="mb-5">
 							<div class="mb-4 flex justify-center">
-								<span class="inline-flex items-center gap-1 rounded-full border border-amber-500/25 bg-amber-500/15 px-2 py-1 text-[10px] font-semibold text-amber-300">
+								<span
+									class="inline-flex items-center gap-1 rounded-full border border-amber-500/25 bg-amber-500/15 px-2 py-1 text-[10px] font-semibold text-amber-300"
+								>
 									<span class="h-1 w-1 animate-pulse rounded-full bg-amber-400"></span>
 									2026 Season is here!
 								</span>
 							</div>
 							<div class="flex items-center justify-center gap-4">
-								<div class="h-0.5 flex-1 bg-gradient-to-r from-transparent via-white/20 to-white/40"></div>
+								<div
+									class="h-0.5 flex-1 bg-gradient-to-r from-transparent via-white/20 to-white/40"
+								></div>
 								<img src="/age_open_logo.svg" alt="AGE Open Series" class="h-20 w-auto" />
-								<div class="h-0.5 flex-1 bg-gradient-to-l from-transparent via-white/20 to-white/40"></div>
+								<div
+									class="h-0.5 flex-1 bg-gradient-to-l from-transparent via-white/20 to-white/40"
+								></div>
 							</div>
 						</div>
 
 						<!-- Series Description -->
 						<p class="mb-4 text-sm text-gray-400">
 							The premier independent competitive circuit for Flesh and Blood players. Compete
-							across regional circuits, earn points toward the Player's Championship, and battle
-							to become the next AGE Open Champion.
+							across regional circuits, earn points toward the Player's Championship, and battle to
+							become the next AGE Open Champion.
 						</p>
 
 						<!-- Stats Row -->
 						<div class="mb-5 grid grid-cols-3 gap-3">
 							<div class="group relative">
-								<div class="absolute inset-0 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 blur-sm transition-all group-hover:blur-md"></div>
-								<div class="relative rounded-xl border border-amber-500/30 bg-gray-900/80 p-3 text-center">
+								<div
+									class="absolute inset-0 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 blur-sm transition-all group-hover:blur-md"
+								></div>
+								<div
+									class="relative rounded-xl border border-amber-500/30 bg-gray-900/80 p-3 text-center"
+								>
 									<div class="mb-1">
 										<span class="text-xl font-black text-amber-400">$30K</span>
 									</div>
@@ -492,20 +512,32 @@
 							</div>
 
 							<div class="group relative">
-								<div class="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 blur-sm transition-all group-hover:blur-md"></div>
-								<div class="relative rounded-xl border border-blue-500/30 bg-gray-900/80 p-3 text-center">
+								<div
+									class="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 blur-sm transition-all group-hover:blur-md"
+								></div>
+								<div
+									class="relative rounded-xl border border-blue-500/30 bg-gray-900/80 p-3 text-center"
+								>
 									<div class="mb-1">
-										<span class="text-xl font-black text-blue-400">{data.seriesStats?.totalEvents || 24}</span>
+										<span class="text-xl font-black text-blue-400"
+											>{data.seriesStats?.totalEvents || 24}</span
+										>
 									</div>
 									<p class="text-[10px] tracking-wider text-gray-400 uppercase">Open Events</p>
 								</div>
 							</div>
 
 							<div class="group relative">
-								<div class="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 blur-sm transition-all group-hover:blur-md"></div>
-								<div class="relative rounded-xl border border-purple-500/30 bg-gray-900/80 p-3 text-center">
+								<div
+									class="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 blur-sm transition-all group-hover:blur-md"
+								></div>
+								<div
+									class="relative rounded-xl border border-purple-500/30 bg-gray-900/80 p-3 text-center"
+								>
 									<div class="mb-1">
-										<span class="text-xl font-black text-purple-400">{data.seriesStats?.totalPlayers || 0}</span>
+										<span class="text-xl font-black text-purple-400"
+											>{data.seriesStats?.totalPlayers || 0}</span
+										>
 									</div>
 									<p class="text-[10px] tracking-wider text-gray-400 uppercase">AGE Players</p>
 								</div>
@@ -525,20 +557,33 @@
 									loading="lazy"
 									decoding="async"
 								/>
-								<div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900/80"></div>
+								<div
+									class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900/80"
+								></div>
 								<div class="relative flex items-center gap-4 p-4">
-									<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-bold text-white shadow-lg shadow-blue-500/30">
+									<div
+										class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-bold text-white shadow-lg shadow-blue-500/30"
+									>
 										LA
 									</div>
 									<div class="min-w-0 flex-1">
-										<h4 class="text-base font-semibold text-white transition-colors group-hover:text-blue-400">
+										<h4
+											class="text-base font-semibold text-white transition-colors group-hover:text-blue-400"
+										>
 											Los Angeles Circuit
 										</h4>
 										<p class="line-clamp-2 text-xs text-gray-400">
-											The original AGE Open circuit. Home to skilled West Coast players and fierce competition.
+											The original AGE Open circuit. Home to skilled West Coast players and fierce
+											competition.
 										</p>
 									</div>
-									<svg class="h-5 w-5 shrink-0 text-gray-500 transition-colors group-hover:text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+									<svg
+										class="h-5 w-5 shrink-0 text-gray-500 transition-colors group-hover:text-blue-400"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										viewBox="0 0 24 24"
+									>
 										<path stroke-linecap="round" stroke-linejoin="round" d={icons.chevronRight} />
 									</svg>
 								</div>
@@ -555,20 +600,33 @@
 									loading="lazy"
 									decoding="async"
 								/>
-								<div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900/80"></div>
+								<div
+									class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900/80"
+								></div>
 								<div class="relative flex items-center gap-4 p-4">
-									<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 text-lg font-bold text-white shadow-lg shadow-purple-500/30">
+									<div
+										class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 text-lg font-bold text-white shadow-lg shadow-purple-500/30"
+									>
 										NE
 									</div>
 									<div class="min-w-0 flex-1">
-										<h4 class="text-base font-semibold text-white transition-colors group-hover:text-purple-400">
+										<h4
+											class="text-base font-semibold text-white transition-colors group-hover:text-purple-400"
+										>
 											New England Circuit
 										</h4>
 										<p class="line-clamp-2 text-xs text-gray-400">
-											High-stakes competitive FaB on the East Coast. Rising stars and memorable matches.
+											High-stakes competitive FaB on the East Coast. Rising stars and memorable
+											matches.
 										</p>
 									</div>
-									<svg class="h-5 w-5 shrink-0 text-gray-500 transition-colors group-hover:text-purple-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+									<svg
+										class="h-5 w-5 shrink-0 text-gray-500 transition-colors group-hover:text-purple-400"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										viewBox="0 0 24 24"
+									>
 										<path stroke-linecap="round" stroke-linejoin="round" d={icons.chevronRight} />
 									</svg>
 								</div>
@@ -585,20 +643,32 @@
 									loading="lazy"
 									decoding="async"
 								/>
-								<div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900/80"></div>
+								<div
+									class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900/80"
+								></div>
 								<div class="relative flex items-center gap-4 p-4">
-									<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-green-400 to-green-600 text-sm font-bold text-white shadow-lg shadow-green-500/30">
+									<div
+										class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-green-400 to-green-600 text-sm font-bold text-white shadow-lg shadow-green-500/30"
+									>
 										STL
 									</div>
 									<div class="min-w-0 flex-1">
-										<h4 class="text-base font-semibold text-white transition-colors group-hover:text-green-400">
+										<h4
+											class="text-base font-semibold text-white transition-colors group-hover:text-green-400"
+										>
 											St. Louis Circuit
 										</h4>
 										<p class="line-clamp-2 text-xs text-gray-400">
 											The newest circuit bringing premier competitive play to the heart of America.
 										</p>
 									</div>
-									<svg class="h-5 w-5 shrink-0 text-gray-500 transition-colors group-hover:text-green-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+									<svg
+										class="h-5 w-5 shrink-0 text-gray-500 transition-colors group-hover:text-green-400"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										viewBox="0 0 24 24"
+									>
 										<path stroke-linecap="round" stroke-linejoin="round" d={icons.chevronRight} />
 									</svg>
 								</div>
@@ -611,7 +681,13 @@
 							class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-amber-500/40"
 						>
 							Play in an AGE Open
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+							<svg
+								class="h-4 w-4"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								viewBox="0 0 24 24"
+							>
 								<path stroke-linecap="round" stroke-linejoin="round" d={icons.arrowRight} />
 							</svg>
 						</a>
@@ -631,11 +707,11 @@
 
 				<!-- Sidebar (1/3) - starts at top -->
 				<div class="space-y-6">
-	<!-- Standings Preview -->
+					<!-- Standings Preview -->
 					<StandingsCard
 						standings={data.standings || []}
 						seasons={data.standingsFilters?.availableSeasons || []}
-						circuits={data.standingsFilters?.availableCircuits?.filter(c => c !== 'all') || []}
+						circuits={data.standingsFilters?.availableCircuits?.filter((c) => c !== 'all') || []}
 						selectedSeason={data.standingsFilters?.season || 'all'}
 						selectedCircuit={data.standingsFilters?.circuit || 'all'}
 						showFilters={!!data.standingsFilters}
@@ -653,11 +729,7 @@
 							></div>
 							<div class="relative">
 								<div class="mb-3 flex items-center gap-2">
-									<svg
-										class="h-5 w-5 text-emerald-400"
-										fill="currentColor"
-										viewBox="0 0 24 24"
-									>
+									<svg class="h-5 w-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
 										<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 									</svg>
 									<h3 class="font-semibold text-white">AGE Premium</h3>

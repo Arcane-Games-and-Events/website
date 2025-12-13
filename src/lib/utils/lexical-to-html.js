@@ -23,7 +23,7 @@ export function lexicalToHtml(richText) {
 		return '';
 	}
 
-	return root.children.map(node => serializeNode(node)).join('');
+	return root.children.map((node) => serializeNode(node)).join('');
 }
 
 /**
@@ -58,9 +58,7 @@ function serializeNode(node) {
 	}
 
 	// Get children HTML
-	const children = node.children
-		? node.children.map(child => serializeNode(child)).join('')
-		: '';
+	const children = node.children ? node.children.map((child) => serializeNode(child)).join('') : '';
 
 	// Handle different node types
 	switch (node.type) {
@@ -83,7 +81,8 @@ function serializeNode(node) {
 
 		case 'link':
 			const url = node.fields?.url || node.url || '#';
-			const target = node.fields?.newTab || node.newTab ? ' target="_blank" rel="noopener noreferrer"' : '';
+			const target =
+				node.fields?.newTab || node.newTab ? ' target="_blank" rel="noopener noreferrer"' : '';
 			return `<a href="${escapeHtml(url)}"${target}>${children}</a>`;
 
 		case 'autolink':

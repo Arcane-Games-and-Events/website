@@ -83,7 +83,7 @@ function extractCardNamesFromContent(node, cardNames = new Set()) {
 
 	// Recursively process children
 	if (node.children && Array.isArray(node.children)) {
-		node.children.forEach(child => extractCardNamesFromContent(child, cardNames));
+		node.children.forEach((child) => extractCardNamesFromContent(child, cardNames));
 	}
 
 	// Handle root node
@@ -117,7 +117,14 @@ function extractCardNamesFromDecklists(decklists) {
 		// Deck cards
 		if (decklist.parsedCards?.deckCards) {
 			for (const card of decklist.parsedCards.deckCards) {
-				const pitch = card.color === 'red' ? 'r' : card.color === 'yellow' ? 'y' : card.color === 'blue' ? 'b' : null;
+				const pitch =
+					card.color === 'red'
+						? 'r'
+						: card.color === 'yellow'
+							? 'y'
+							: card.color === 'blue'
+								? 'b'
+								: null;
 				cardNames.add(JSON.stringify({ name: card.name, pitch }));
 			}
 		}
@@ -132,28 +139,30 @@ function extractCardNamesFromDecklists(decklists) {
  */
 async function resolveCardImages(cardNamesSet) {
 	const cardImages = {};
-	const cards = Array.from(cardNamesSet).map(json => JSON.parse(json));
+	const cards = Array.from(cardNamesSet).map((json) => JSON.parse(json));
 
-	await Promise.all(cards.map(async ({ name, pitch }) => {
-		const pitchNum = pitch === 'r' ? 1 : pitch === 'y' ? 2 : pitch === 'b' ? 3 : null;
-		const resolved = await resolveCardImage({ name, pitch: pitchNum });
+	await Promise.all(
+		cards.map(async ({ name, pitch }) => {
+			const pitchNum = pitch === 'r' ? 1 : pitch === 'y' ? 2 : pitch === 'b' ? 3 : null;
+			const resolved = await resolveCardImage({ name, pitch: pitchNum });
 
-		if (resolved.found) {
-			// Store with pitch key for specific lookups
-			const key = pitch ? `${name.toLowerCase()}:${pitch}` : name.toLowerCase();
-			cardImages[key] = {
-				imageUrl: resolved.imageUrl,
-				fallbackUrl: resolved.fallbackUrl
-			};
-			// Also store without pitch for fallback
-			if (pitch && !cardImages[name.toLowerCase()]) {
-				cardImages[name.toLowerCase()] = {
+			if (resolved.found) {
+				// Store with pitch key for specific lookups
+				const key = pitch ? `${name.toLowerCase()}:${pitch}` : name.toLowerCase();
+				cardImages[key] = {
 					imageUrl: resolved.imageUrl,
 					fallbackUrl: resolved.fallbackUrl
 				};
+				// Also store without pitch for fallback
+				if (pitch && !cardImages[name.toLowerCase()]) {
+					cardImages[name.toLowerCase()] = {
+						imageUrl: resolved.imageUrl,
+						fallbackUrl: resolved.fallbackUrl
+					};
+				}
 			}
-		}
-	}));
+		})
+	);
 
 	return cardImages;
 }
@@ -179,7 +188,7 @@ function processContentUrls(node) {
 	if (node.children && Array.isArray(node.children)) {
 		return {
 			...node,
-			children: node.children.map(child => processContentUrls(child))
+			children: node.children.map((child) => processContentUrls(child))
 		};
 	}
 
@@ -232,15 +241,17 @@ export async function load({ params, locals, setHeaders }) {
 		// Extract tags
 		let tags = [];
 		if (post.tags && Array.isArray(post.tags)) {
-			tags = post.tags.map((tag) => {
-				if (typeof tag === 'object') {
-					return {
-						name: tag.name,
-						slug: tag.slug
-					};
-				}
-				return null;
-			}).filter(Boolean);
+			tags = post.tags
+				.map((tag) => {
+					if (typeof tag === 'object') {
+						return {
+							name: tag.name,
+							slug: tag.slug
+						};
+					}
+					return null;
+				})
+				.filter(Boolean);
 		}
 
 		// Parse decklists
@@ -303,14 +314,14 @@ export async function load({ params, locals, setHeaders }) {
 		if (!isPremium) {
 			setHeaders({
 				'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
-				'vary': 'Cookie'
+				vary: 'Cookie'
 			});
 		} else {
 			// Premium articles must not be cached publicly - each request needs fresh auth check
 			// Otherwise a cached preview might be served to premium users, or vice versa
 			setHeaders({
 				'cache-control': 'private, no-store',
-				'vary': 'Cookie'
+				vary: 'Cookie'
 			});
 		}
 

@@ -18,12 +18,7 @@ export async function DELETE({ params, locals }) {
 		const [card] = await db
 			.select()
 			.from(savedCard)
-			.where(
-				and(
-					eq(savedCard.id, params.cardId),
-					eq(savedCard.userId, locals.user.id)
-				)
-			)
+			.where(and(eq(savedCard.id, params.cardId), eq(savedCard.userId, locals.user.id)))
 			.limit(1);
 
 		if (!card) {
@@ -50,10 +45,7 @@ export async function DELETE({ params, locals }) {
 				.limit(1);
 
 			if (nextCard) {
-				await db
-					.update(savedCard)
-					.set({ isDefault: true })
-					.where(eq(savedCard.id, nextCard.id));
+				await db.update(savedCard).set({ isDefault: true }).where(eq(savedCard.id, nextCard.id));
 			}
 		}
 
@@ -82,12 +74,7 @@ export async function PATCH({ params, request, locals }) {
 		const [card] = await db
 			.select()
 			.from(savedCard)
-			.where(
-				and(
-					eq(savedCard.id, params.cardId),
-					eq(savedCard.userId, locals.user.id)
-				)
-			)
+			.where(and(eq(savedCard.id, params.cardId), eq(savedCard.userId, locals.user.id)))
 			.limit(1);
 
 		if (!card) {
@@ -114,10 +101,7 @@ export async function PATCH({ params, request, locals }) {
 
 		if (Object.keys(updates).length > 0) {
 			updates.updatedAt = new Date();
-			await db
-				.update(savedCard)
-				.set(updates)
-				.where(eq(savedCard.id, params.cardId));
+			await db.update(savedCard).set(updates).where(eq(savedCard.id, params.cardId));
 		}
 
 		return json({ success: true });

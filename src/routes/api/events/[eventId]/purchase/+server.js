@@ -67,12 +67,7 @@ export async function POST({ params, request, locals }) {
 			const [card] = await db
 				.select()
 				.from(savedCard)
-				.where(
-					and(
-						eq(savedCard.id, savedCardId),
-						eq(savedCard.userId, currentUser.id)
-					)
-				)
+				.where(and(eq(savedCard.id, savedCardId), eq(savedCard.userId, currentUser.id)))
 				.limit(1);
 
 			if (!card) {
@@ -171,41 +166,48 @@ export async function POST({ params, request, locals }) {
 			const ticketCode = crypto.randomBytes(8).toString('hex').toUpperCase();
 
 			// Create order record first (so we can link ticket to it)
-			const [newOrder] = await db.insert(order).values({
-				provider: 'authnet',
-				providerRef: result.transactionId,
-				userEmail: currentUser.email,
-				amount,
-				currency: 'USD',
-				meta: {
-					type: 'ticket',
-					eventId,
-					eventTitle: eventData.title,
-					ticketCode,
-					gemId: gemId || null,
-					transactionId: result.transactionId,
-					premiumDiscount: eventData.premiumDiscount && isPremium
-				}
-			}).returning();
+			const [newOrder] = await db
+				.insert(order)
+				.values({
+					provider: 'authnet',
+					providerRef: result.transactionId,
+					userEmail: currentUser.email,
+					amount,
+					currency: 'USD',
+					meta: {
+						type: 'ticket',
+						eventId,
+						eventTitle: eventData.title,
+						ticketCode,
+						gemId: gemId || null,
+						transactionId: result.transactionId,
+						premiumDiscount: eventData.premiumDiscount && isPremium
+					}
+				})
+				.returning();
 
 			// Create ticket record with orderId link
 			// Use billTo name if provided, otherwise fall back to user's account name
-			const [newTicket] = await db.insert(ticket).values({
-				userId: currentUser.id,
-				eventId,
-				orderId: newOrder.id,
-				code: ticketCode,
-				quantity: 1,
-				firstName: billTo?.firstName || currentUser.firstName || null,
-				lastName: billTo?.lastName || currentUser.lastName || null,
-				gemId: gemId || null,
-				amountPaid: parseFloat(amount).toFixed(2),
-				transactionId: result.transactionId,
-				enteredIntoGem: false
-			}).returning();
+			const [newTicket] = await db
+				.insert(ticket)
+				.values({
+					userId: currentUser.id,
+					eventId,
+					orderId: newOrder.id,
+					code: ticketCode,
+					quantity: 1,
+					firstName: billTo?.firstName || currentUser.firstName || null,
+					lastName: billTo?.lastName || currentUser.lastName || null,
+					gemId: gemId || null,
+					amountPaid: parseFloat(amount).toFixed(2),
+					transactionId: result.transactionId,
+					enteredIntoGem: false
+				})
+				.returning();
 
 			// Update order meta with ticketId for backwards compatibility
-			await db.update(order)
+			await db
+				.update(order)
 				.set({ meta: { ...newOrder.meta, ticketId: newTicket.id } })
 				.where(eq(order.id, newOrder.id));
 

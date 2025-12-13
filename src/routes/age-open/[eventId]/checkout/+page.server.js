@@ -18,11 +18,8 @@ export async function load({ params, locals }) {
 				.from(event)
 				.where(eq(event.id, params.eventId))
 				.limit(1)
-				.then(rows => rows[0]),
-			db
-				.select()
-				.from(savedCard)
-				.where(eq(savedCard.userId, locals.user.id))
+				.then((rows) => rows[0]),
+			db.select().from(savedCard).where(eq(savedCard.userId, locals.user.id))
 		]);
 
 		if (!eventData) {

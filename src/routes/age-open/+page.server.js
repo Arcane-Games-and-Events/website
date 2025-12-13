@@ -31,8 +31,8 @@ function calculateDerivedStats(standing) {
 		standing.decemberPoints || 0
 	];
 
-	const eventsPlayed = monthlyPoints.filter(p => p > 0).length;
-	const top8Finishes = monthlyPoints.filter(p => p >= 15).length;
+	const eventsPlayed = monthlyPoints.filter((p) => p > 0).length;
+	const top8Finishes = monthlyPoints.filter((p) => p >= 15).length;
 
 	return { eventsPlayed, top8Finishes };
 }
@@ -76,7 +76,7 @@ export async function load({ url, setHeaders }) {
 	// Vary by Cookie ensures sidebar updates properly after login/logout
 	setHeaders({
 		'cache-control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=300',
-		'vary': 'Cookie'
+		vary: 'Cookie'
 	});
 
 	const currentYear = new Date().getFullYear().toString();
@@ -108,41 +108,51 @@ export async function load({ url, setHeaders }) {
 			// Get public decklists with event info (cached)
 			getCachedOrFetch(
 				`${CACHE_KEYS.EVENTS}:decklists:public`,
-				() => db.select({
-					id: decklist.id,
-					eventId: decklist.eventId,
-					playerName: decklist.playerName,
-					gemId: decklist.gemId,
-					hero: decklist.hero,
-					format: decklist.format,
-					placement: decklist.placement,
-					cards: decklist.cards,
-					createdAt: decklist.createdAt,
-					eventTitle: event.title,
-					eventDate: event.eventDate,
-					circuit: event.circuit,
-					month: event.month
-				})
-					.from(decklist)
-					.innerJoin(event, eq(decklist.eventId, event.id))
-					.where(eq(decklist.isPublic, true))
-					.orderBy(desc(decklist.createdAt)),
+				() =>
+					db
+						.select({
+							id: decklist.id,
+							eventId: decklist.eventId,
+							playerName: decklist.playerName,
+							gemId: decklist.gemId,
+							hero: decklist.hero,
+							format: decklist.format,
+							placement: decklist.placement,
+							cards: decklist.cards,
+							createdAt: decklist.createdAt,
+							eventTitle: event.title,
+							eventDate: event.eventDate,
+							circuit: event.circuit,
+							month: event.month
+						})
+						.from(decklist)
+						.innerJoin(event, eq(decklist.eventId, event.id))
+						.where(eq(decklist.isPublic, true))
+						.orderBy(desc(decklist.createdAt)),
 				CACHE_TTL.MEDIUM
 			),
 			// Get LSS tournament seasons (cached)
 			getCachedOrFetch(
 				`${CACHE_KEYS.EVENTS}:lss:active`,
-				() => db.select().from(lssEvent).where(eq(lssEvent.isActive, true)).orderBy(asc(lssEvent.startDate)),
+				() =>
+					db
+						.select()
+						.from(lssEvent)
+						.where(eq(lssEvent.isActive, true))
+						.orderBy(asc(lssEvent.startDate)),
 				CACHE_TTL.MEDIUM
 			)
 		]);
 
 		// Extract unique seasons and circuits from standings data (dynamic filters)
-		const uniqueSeasons = [...new Set(allStandings.map(s => s.season))].filter(Boolean).sort().reverse();
+		const uniqueSeasons = [...new Set(allStandings.map((s) => s.season))]
+			.filter(Boolean)
+			.sort()
+			.reverse();
 		const availableSeasons = ['all', ...uniqueSeasons];
 
 		// Build circuits by year dynamically
-		const circuitsByYear = { 'all': [] };
+		const circuitsByYear = { all: [] };
 		for (const standing of allStandings) {
 			if (!standing.season || !standing.circuit) continue;
 			if (!circuitsByYear[standing.season]) {
@@ -161,8 +171,8 @@ export async function load({ url, setHeaders }) {
 		}
 
 		// Get active/completed events with results for the Tournament Archive tab
-		const archiveEvents = events.filter((e) =>
-			(e.status === 'completed' || e.status === 'in_progress') && e.eventDate
+		const archiveEvents = events.filter(
+			(e) => (e.status === 'completed' || e.status === 'in_progress') && e.eventDate
 		);
 
 		// Group event matches by eventId
@@ -176,8 +186,8 @@ export async function load({ url, setHeaders }) {
 
 		// Build results array by computing standings from matches
 		const allResults = archiveEvents
-			.filter(evt => matchesByEventId.has(evt.id))
-			.map(evt => {
+			.filter((evt) => matchesByEventId.has(evt.id))
+			.map((evt) => {
 				const matches = matchesByEventId.get(evt.id);
 
 				// Extract unique players from matches
@@ -186,19 +196,27 @@ export async function load({ url, setHeaders }) {
 					if (match.player1GemId || match.player1Name) {
 						const key = match.player1GemId || match.player1Name;
 						if (!playerMap.has(key)) {
-							playerMap.set(key, { playerId: match.player1GemId, name: match.player1Name, wins: 0 });
+							playerMap.set(key, {
+								playerId: match.player1GemId,
+								name: match.player1Name,
+								wins: 0
+							});
 						}
 					}
 					if (match.player2GemId || match.player2Name) {
 						const key = match.player2GemId || match.player2Name;
 						if (!playerMap.has(key)) {
-							playerMap.set(key, { playerId: match.player2GemId, name: match.player2Name, wins: 0 });
+							playerMap.set(key, {
+								playerId: match.player2GemId,
+								name: match.player2Name,
+								wins: 0
+							});
 						}
 					}
 				}
 
 				// Convert matches to pairings format
-				const pairings = matches.map(m => ({
+				const pairings = matches.map((m) => ({
 					round: m.round,
 					table: m.table,
 					player1Id: m.player1GemId,
@@ -213,7 +231,7 @@ export async function load({ url, setHeaders }) {
 				try {
 					const swissStandings = Array.from(playerMap.values());
 					const standings = calculateFinalStandings(swissStandings, pairings);
-					computedResults = standings.results.map(r => ({
+					computedResults = standings.results.map((r) => ({
 						playerName: r.name,
 						gemId: r.playerId,
 						placement: r.placement,
@@ -232,7 +250,7 @@ export async function load({ url, setHeaders }) {
 					results: computedResults
 				};
 			})
-			.filter(r => r.results.length > 0);
+			.filter((r) => r.results.length > 0);
 
 		let standings = [];
 
@@ -271,9 +289,10 @@ export async function load({ url, setHeaders }) {
 			// Convert map to array and calculate win percentage
 			const careerStats = Array.from(careerStatsMap.values()).map((career) => ({
 				...career,
-				winPercentage: career.matchesPlayed > 0
-					? Math.round((career.matchesWon / career.matchesPlayed) * 10000) / 100
-					: null,
+				winPercentage:
+					career.matchesPlayed > 0
+						? Math.round((career.matchesWon / career.matchesPlayed) * 10000) / 100
+						: null,
 				seasonsPlayed: Array.from(career.seasonsPlayed),
 				circuitsPlayed: Array.from(career.circuitsPlayed)
 			}));
@@ -287,7 +306,7 @@ export async function load({ url, setHeaders }) {
 
 			// Apply circuit filter if selected
 			if (selectedCircuit) {
-				standings = standings.filter(s => s.circuitsPlayed.includes(selectedCircuit));
+				standings = standings.filter((s) => s.circuitsPlayed.includes(selectedCircuit));
 				// Recalculate ranks after filtering
 				standings = standings.map((player, index) => ({
 					...player,
@@ -296,10 +315,10 @@ export async function load({ url, setHeaders }) {
 			}
 		} else {
 			// Filter standings from already-fetched data (no additional query needed)
-			let rawStandings = allStandings.filter(s => s.season === selectedSeason);
+			let rawStandings = allStandings.filter((s) => s.season === selectedSeason);
 
 			if (selectedCircuit) {
-				rawStandings = rawStandings.filter(s => s.circuit === selectedCircuit);
+				rawStandings = rawStandings.filter((s) => s.circuit === selectedCircuit);
 			}
 
 			// Sort using tiebreaker rules and assign ranks
@@ -307,9 +326,10 @@ export async function load({ url, setHeaders }) {
 
 			// Calculate ranks, win percentage, and derived stats
 			standings = rawStandings.map((standing, index) => {
-				const winPercentage = standing.matchesPlayed > 0
-					? Math.round((standing.matchesWon / standing.matchesPlayed) * 10000) / 100
-					: null;
+				const winPercentage =
+					standing.matchesPlayed > 0
+						? Math.round((standing.matchesWon / standing.matchesPlayed) * 10000) / 100
+						: null;
 				const derived = calculateDerivedStats(standing);
 
 				return {
@@ -381,7 +401,8 @@ export async function load({ url, setHeaders }) {
 				for (const standing of playerData.standingsList) {
 					const circuitSeasonKey = `${standing.season}|${standing.circuit}`;
 					const circuitSeasonStandings = standingsByCircuitSeason.get(circuitSeasonKey) || [];
-					const rank = circuitSeasonStandings.findIndex(s => (s.gemId || s.playerName) === playerKey) + 1;
+					const rank =
+						circuitSeasonStandings.findIndex((s) => (s.gemId || s.playerName) === playerKey) + 1;
 
 					if (rank > 0) {
 						if (playerData.bestRank === null || rank < playerData.bestRank) {
@@ -395,16 +416,22 @@ export async function load({ url, setHeaders }) {
 			}
 
 			// Extract arrays for percentile calculation
-			const allPlayers = Array.from(playerStatsMap.values()).filter(p => p.eventsPlayed >= 1);
-			const allWinRates = allPlayers.map(p => p.matchesPlayed > 0 ? p.matchesWon / p.matchesPlayed : 0);
-			const allTop8Rates = allPlayers.map(p => p.eventsPlayed > 0 ? p.top8Finishes / p.eventsPlayed : 0);
-			const allEventsPlayed = allPlayers.map(p => p.eventsPlayed);
-			const allBestRanks = allPlayers.filter(p => p.bestRank !== null).map(p => p.bestRank);
-			const allAvgPointsPerEvent = allPlayers.map(p => p.eventsPlayed > 0 ? p.totalPoints / p.eventsPlayed : 0);
-			const allChampionshipQuals = allPlayers.map(p => p.championshipQualifications);
+			const allPlayers = Array.from(playerStatsMap.values()).filter((p) => p.eventsPlayed >= 1);
+			const allWinRates = allPlayers.map((p) =>
+				p.matchesPlayed > 0 ? p.matchesWon / p.matchesPlayed : 0
+			);
+			const allTop8Rates = allPlayers.map((p) =>
+				p.eventsPlayed > 0 ? p.top8Finishes / p.eventsPlayed : 0
+			);
+			const allEventsPlayed = allPlayers.map((p) => p.eventsPlayed);
+			const allBestRanks = allPlayers.filter((p) => p.bestRank !== null).map((p) => p.bestRank);
+			const allAvgPointsPerEvent = allPlayers.map((p) =>
+				p.eventsPlayed > 0 ? p.totalPoints / p.eventsPlayed : 0
+			);
+			const allChampionshipQuals = allPlayers.map((p) => p.championshipQualifications);
 
 			// Calculate AGE Rating for each player in standings
-			standings = standings.map(standing => {
+			standings = standings.map((standing) => {
 				const key = standing.gemId || standing.playerName;
 				const playerData = playerStatsMap.get(key);
 
@@ -413,20 +440,27 @@ export async function load({ url, setHeaders }) {
 				}
 
 				// Calculate metrics for this player
-				const winRate = playerData.matchesPlayed > 0 ? playerData.matchesWon / playerData.matchesPlayed : 0;
-				const top8Rate = playerData.eventsPlayed > 0 ? playerData.top8Finishes / playerData.eventsPlayed : 0;
-				const avgPtsPerEvent = playerData.eventsPlayed > 0 ? playerData.totalPoints / playerData.eventsPlayed : 0;
+				const winRate =
+					playerData.matchesPlayed > 0 ? playerData.matchesWon / playerData.matchesPlayed : 0;
+				const top8Rate =
+					playerData.eventsPlayed > 0 ? playerData.top8Finishes / playerData.eventsPlayed : 0;
+				const avgPtsPerEvent =
+					playerData.eventsPlayed > 0 ? playerData.totalPoints / playerData.eventsPlayed : 0;
 
 				// Calculate percentiles
 				const percentiles = {
 					winRate: calculatePercentile(winRate, allWinRates),
 					top8Rate: calculatePercentile(top8Rate, allTop8Rates),
 					experience: calculatePercentile(playerData.eventsPlayed, allEventsPlayed),
-					bestRank: playerData.bestRank !== null
-						? calculateRankPercentile(playerData.bestRank, allBestRanks)
-						: 50,
+					bestRank:
+						playerData.bestRank !== null
+							? calculateRankPercentile(playerData.bestRank, allBestRanks)
+							: 50,
 					efficiency: calculatePercentile(avgPtsPerEvent, allAvgPointsPerEvent),
-					championship: calculatePercentile(playerData.championshipQualifications, allChampionshipQuals)
+					championship: calculatePercentile(
+						playerData.championshipQualifications,
+						allChampionshipQuals
+					)
 				};
 
 				const ageRating = calculateAgeRatingTotal(percentiles, playerData.eventsPlayed);
@@ -454,7 +488,7 @@ export async function load({ url, setHeaders }) {
 		});
 
 		// Filter events to only show upcoming ones for the events list
-		const upcomingEvents = events.filter(e => e.status === 'upcoming');
+		const upcomingEvents = events.filter((e) => e.status === 'upcoming');
 
 		return {
 			events: upcomingEvents,
@@ -484,7 +518,7 @@ export async function load({ url, setHeaders }) {
 			selectedSeason: 'all',
 			selectedCircuit,
 			availableSeasons: ['all'],
-			circuitsByYear: { 'all': [] }
+			circuitsByYear: { all: [] }
 		};
 	}
 }

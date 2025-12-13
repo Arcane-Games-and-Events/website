@@ -36,7 +36,6 @@ export async function POST({ locals }) {
 			const result = await authnet.cancelSubscription(currentUser.subscriptionId);
 
 			if (result.success) {
-
 				// Calculate when access should end (the next billing date is when the paid period ends)
 				// If nextBillingDate is available, use it; otherwise calculate from start date
 				let subscriptionEndDate = currentUser.nextBillingDate;
@@ -55,7 +54,8 @@ export async function POST({ locals }) {
 
 				// Update subscription status to cancelled but KEEP role as premium
 				// Access checking logic will handle expiration based on subscriptionEndDate
-				await db.update(userTable)
+				await db
+					.update(userTable)
 					.set({
 						subscriptionStatus: 'cancelled',
 						subscriptionEndDate,

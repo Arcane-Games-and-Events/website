@@ -16,12 +16,12 @@ export const AGE_RATING_MIN_EVENTS = 3;
 
 // Weight distribution for AGE Rating components (must sum to 100)
 export const AGE_RATING_WEIGHTS = {
-	winRate: 25,      // Win percentage - fundamental performance metric
-	top8Rate: 25,     // Top 8 consistency - making playoffs is key
-	peak: 20,         // Best finish - rewards peak performance
-	efficiency: 15,   // Points per event - quality over quantity
-	experience: 10,   // Events played - sample size matters
-	championship: 5   // Top 16 qualification bonus - elite status
+	winRate: 25, // Win percentage - fundamental performance metric
+	top8Rate: 25, // Top 8 consistency - making playoffs is key
+	peak: 20, // Best finish - rewards peak performance
+	efficiency: 15, // Points per event - quality over quantity
+	experience: 10, // Events played - sample size matters
+	championship: 5 // Top 16 qualification bonus - elite status
 };
 
 /**
@@ -66,7 +66,8 @@ export function calculateAgeRating(percentiles, eventsPlayed) {
 	const championshipScore = (adjustedChampionship / 100) * AGE_RATING_WEIGHTS.championship;
 
 	// Calculate raw total
-	let total = winRateScore + top8Score + peakScore + efficiencyScore + experienceScore + championshipScore;
+	let total =
+		winRateScore + top8Score + peakScore + efficiencyScore + experienceScore + championshipScore;
 
 	// Apply minimum events penalty (reduces score if < MIN_EVENTS)
 	const eventMultiplier = Math.min(1, eventsPlayed / AGE_RATING_MIN_EVENTS);
@@ -123,8 +124,8 @@ export function getRatingTier(rating) {
 export function calculatePercentile(value, allValues) {
 	if (allValues.length === 0) return 50;
 	const sorted = [...allValues].sort((a, b) => a - b);
-	const belowCount = sorted.filter(v => v < value).length;
-	const equalCount = sorted.filter(v => v === value).length;
+	const belowCount = sorted.filter((v) => v < value).length;
+	const equalCount = sorted.filter((v) => v === value).length;
 	return ((belowCount + equalCount / 2) / sorted.length) * 100;
 }
 
@@ -137,7 +138,7 @@ export function calculatePercentile(value, allValues) {
 export function calculateRankPercentile(rank, allRanks) {
 	if (allRanks.length === 0 || rank === null) return 50;
 	const sorted = [...allRanks].sort((a, b) => a - b);
-	const worseCount = sorted.filter(r => r > rank).length;
-	const equalCount = sorted.filter(r => r === rank).length;
+	const worseCount = sorted.filter((r) => r > rank).length;
+	const equalCount = sorted.filter((r) => r === rank).length;
 	return ((worseCount + equalCount / 2) / sorted.length) * 100;
 }

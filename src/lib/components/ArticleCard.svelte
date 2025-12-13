@@ -19,7 +19,9 @@
 </script>
 
 <a href="/articles/{article.slug}" class="group block">
-	<div class="relative h-[200px] sm:h-[260px] overflow-hidden rounded-xl sm:rounded-2xl border border-gray-800 bg-gray-900 transition-all hover:border-gray-700">
+	<div
+		class="relative h-[200px] overflow-hidden rounded-xl border border-gray-800 bg-gray-900 transition-all hover:border-gray-700 sm:h-[260px] sm:rounded-2xl"
+	>
 		<!-- Background Image -->
 		{#if article.coverImage?.src}
 			<!-- Skeleton placeholder -->
@@ -40,12 +42,16 @@
 		{/if}
 
 		<!-- Gradient Overlay -->
-		<div class="absolute inset-0 bg-gradient-to-t from-gray-900 from-20% via-gray-900/60 via-50% to-transparent"></div>
+		<div
+			class="absolute inset-0 bg-gradient-to-t from-gray-900 from-20% via-gray-900/60 via-50% to-transparent"
+		></div>
 
 		<!-- Tag Badge (Top Left) -->
 		{#if primaryTag}
-			<div class="absolute top-3 left-3 sm:top-4 sm:left-4 z-10">
-				<span class="rounded-md bg-gray-900/70 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs font-medium text-white backdrop-blur-sm">
+			<div class="absolute top-3 left-3 z-10 sm:top-4 sm:left-4">
+				<span
+					class="rounded-md bg-gray-900/70 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm sm:px-2.5 sm:py-1 sm:text-xs"
+				>
 					#{primaryTag.toLowerCase()}
 				</span>
 			</div>
@@ -58,40 +64,50 @@
 				<div class="min-w-0 flex-1">
 					<!-- Premium Badge (above title) -->
 					{#if article.isPremium}
-						<span class="inline-flex items-center gap-1 rounded-md bg-emerald-600/90 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs font-semibold text-white mb-2">
-							<svg class="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="currentColor" viewBox="0 0 24 24">
-								<path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z" clip-rule="evenodd" />
+						<span
+							class="mb-2 inline-flex items-center gap-1 rounded-md bg-emerald-600/90 px-2 py-0.5 text-[10px] font-semibold text-white sm:px-2.5 sm:py-1 sm:text-xs"
+						>
+							<svg class="h-2.5 w-2.5 sm:h-3 sm:w-3" fill="currentColor" viewBox="0 0 24 24">
+								<path
+									fill-rule="evenodd"
+									d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z"
+									clip-rule="evenodd"
+								/>
 							</svg>
 							Premium
 						</span>
 					{/if}
 
 					<!-- Title -->
-					<h3 class="text-base sm:text-xl font-bold leading-tight text-white drop-shadow-lg line-clamp-2">
+					<h3
+						class="line-clamp-2 text-base leading-tight font-bold text-white drop-shadow-lg sm:text-xl"
+					>
 						{article.title}
 					</h3>
 
 					<!-- Excerpt (hidden on mobile) -->
 					{#if article.excerpt}
-						<p class="mt-2 text-sm text-gray-300 line-clamp-2 drop-shadow-md hidden sm:block">
+						<p class="mt-2 line-clamp-2 hidden text-sm text-gray-300 drop-shadow-md sm:block">
 							{article.excerpt}
 						</p>
 					{/if}
 
 					<!-- Author & Date -->
 					{#if article.author || article.publishedAt}
-						<div class="mt-2 sm:mt-3 flex items-center gap-2 text-[10px] sm:text-xs text-gray-400">
+						<div class="mt-2 flex items-center gap-2 text-[10px] text-gray-400 sm:mt-3 sm:text-xs">
 							{#if article.author}
 								{#if article.author.profilePicture}
 									<img
 										src={article.author.profilePicture}
 										alt={article.author.name}
-										class="h-5 w-5 sm:h-6 sm:w-6 rounded-full object-cover ring-2 ring-white/20"
+										class="h-5 w-5 rounded-full object-cover ring-2 ring-white/20 sm:h-6 sm:w-6"
 										loading="lazy"
 										decoding="async"
 									/>
 								{/if}
-								<span class="font-medium text-gray-300 truncate max-w-[100px] sm:max-w-none">{article.author.name}</span>
+								<span class="max-w-[100px] truncate font-medium text-gray-300 sm:max-w-none"
+									>{article.author.name}</span
+								>
 								<span class="text-gray-500">·</span>
 							{/if}
 							<span class="shrink-0">{formatDate(article.publishedAt)}</span>
@@ -100,9 +116,21 @@
 				</div>
 
 				<!-- Arrow Icon (Bottom Right) -->
-				<div class="shrink-0 text-gray-400 transition-all duration-300 group-hover:text-white group-hover:translate-x-1">
-					<svg class="h-5 w-5 sm:h-6 sm:w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+				<div
+					class="shrink-0 text-gray-400 transition-all duration-300 group-hover:translate-x-1 group-hover:text-white"
+				>
+					<svg
+						class="h-5 w-5 sm:h-6 sm:w-6"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+						/>
 					</svg>
 				</div>
 			</div>

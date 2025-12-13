@@ -39,7 +39,7 @@ export async function POST({ request }) {
 		// Record webhook event
 		await db.insert(webhookEvent).values({
 			id: eventId,
-			provider: 'authnet',
+			provider: 'authnet'
 		});
 
 		// Handle different event types
@@ -108,7 +108,8 @@ async function handleSubscriptionEvent(payload) {
 		const nextBillingDate = calculateNextBillingDate(now, user.subscriptionType || 'monthly');
 
 		// Update user: ensure premium role, update billing date, clear any failed status
-		await db.update(userTable)
+		await db
+			.update(userTable)
 			.set({
 				role: 'premium',
 				subscriptionStatus: 'active',
@@ -117,7 +118,6 @@ async function handleSubscriptionEvent(payload) {
 				subscriptionEndDate: null
 			})
 			.where(eq(userTable.id, user.id));
-
 	} else if (responseCode === '2' || responseCode === '3') {
 		// Subscription payment declined or error
 		// Set status to payment_failed - give them a grace period
@@ -125,7 +125,8 @@ async function handleSubscriptionEvent(payload) {
 		const gracePeriodEnd = new Date();
 		gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7); // 7 day grace period
 
-		await db.update(userTable)
+		await db
+			.update(userTable)
 			.set({
 				subscriptionStatus: 'payment_failed',
 				subscriptionEndDate: gracePeriodEnd
@@ -138,7 +139,6 @@ async function handleSubscriptionEvent(payload) {
 			gracePeriodEnd,
 			updatePaymentUrl: `${baseUrl}/account/billing`
 		});
-
 	} else if (responseCode === '4') {
 		// Held for review - don't change anything yet
 	}

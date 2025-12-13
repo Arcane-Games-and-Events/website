@@ -8,11 +8,52 @@ const FAB_IMAGE_CDN = 'https://d2wlb52bya4y8z.cloudfront.net/media/cards/large';
 
 // Sets that don't work with the official CDN
 const NON_CDN_SETS = new Set([
-	'FAB', 'LGS', 'HER', 'JDG', 'WIN', 'LSS', 'GEM', 'TCC',
-	'AAZ', 'AGB', 'AIO', 'AKO', 'AMX', 'APR', 'APS', 'ASB', 'ASR', 'AST',
-	'AUA', 'AVS', 'BET', 'BOL', 'BRI', 'CHN', 'CIN', 'DRO', 'DVR', 'ENG',
-	'FAI', 'FLR', 'FNG', 'KSI', 'KYO', 'LEV', 'LXI', 'NUU', 'OLA', 'OLD',
-	'OSC', 'PSM', 'RHI', 'RVD', 'VER', 'VIC', 'WOD', 'ZEN'
+	'FAB',
+	'LGS',
+	'HER',
+	'JDG',
+	'WIN',
+	'LSS',
+	'GEM',
+	'TCC',
+	'AAZ',
+	'AGB',
+	'AIO',
+	'AKO',
+	'AMX',
+	'APR',
+	'APS',
+	'ASB',
+	'ASR',
+	'AST',
+	'AUA',
+	'AVS',
+	'BET',
+	'BOL',
+	'BRI',
+	'CHN',
+	'CIN',
+	'DRO',
+	'DVR',
+	'ENG',
+	'FAI',
+	'FLR',
+	'FNG',
+	'KSI',
+	'KYO',
+	'LEV',
+	'LXI',
+	'NUU',
+	'OLA',
+	'OLD',
+	'OSC',
+	'PSM',
+	'RHI',
+	'RVD',
+	'VER',
+	'VIC',
+	'WOD',
+	'ZEN'
 ]);
 
 const pitchToSection = { 1: 'red', 2: 'yellow', 3: 'blue' };
@@ -25,26 +66,34 @@ function findBestPrinting(printings) {
 		p.id && !excludedRarities.includes(p.rarity) && !excludedEditions.includes(p.edition);
 	const isCdnCompatible = (p) => !NON_CDN_SETS.has(p.set_id);
 
-	const cdnNonFoil = printings.find(p => passesBasicFilters(p) && isCdnCompatible(p) && (!p.foiling || p.foiling === ''));
+	const cdnNonFoil = printings.find(
+		(p) => passesBasicFilters(p) && isCdnCompatible(p) && (!p.foiling || p.foiling === '')
+	);
 	if (cdnNonFoil) return { printing: cdnNonFoil, useCdn: true };
 
-	const cdnColdFoil = printings.find(p => passesBasicFilters(p) && isCdnCompatible(p) && p.foiling === 'S');
+	const cdnColdFoil = printings.find(
+		(p) => passesBasicFilters(p) && isCdnCompatible(p) && p.foiling === 'S'
+	);
 	if (cdnColdFoil) return { printing: cdnColdFoil, useCdn: true };
 
-	const cdnRainbowFoil = printings.find(p => passesBasicFilters(p) && isCdnCompatible(p) && p.foiling === 'R');
+	const cdnRainbowFoil = printings.find(
+		(p) => passesBasicFilters(p) && isCdnCompatible(p) && p.foiling === 'R'
+	);
 	if (cdnRainbowFoil) return { printing: cdnRainbowFoil, useCdn: true };
 
-	const anyCdnPrinting = printings.find(p => p.id && isCdnCompatible(p) && p.foiling !== 'G');
+	const anyCdnPrinting = printings.find((p) => p.id && isCdnCompatible(p) && p.foiling !== 'G');
 	if (anyCdnPrinting) return { printing: anyCdnPrinting, useCdn: true };
 
-	const fallbackNonFoil = printings.find(p => p.image_url && (!p.foiling || p.foiling === ''));
+	const fallbackNonFoil = printings.find((p) => p.image_url && (!p.foiling || p.foiling === ''));
 	if (fallbackNonFoil) return { printing: fallbackNonFoil, useCdn: false };
 
-	const fallbackAny = printings.find(p => p.image_url && p.foiling !== 'G');
+	const fallbackAny = printings.find((p) => p.image_url && p.foiling !== 'G');
 	if (fallbackAny) return { printing: fallbackAny, useCdn: false };
 
-	const lastResort = printings.find(p => p.image_url || p.id);
-	return lastResort ? { printing: lastResort, useCdn: !!lastResort.id && isCdnCompatible(lastResort) } : null;
+	const lastResort = printings.find((p) => p.image_url || p.id);
+	return lastResort
+		? { printing: lastResort, useCdn: !!lastResort.id && isCdnCompatible(lastResort) }
+		: null;
 }
 
 export async function load({ locals }) {
@@ -133,13 +182,16 @@ export const actions = {
 					const pitchKey = `${baseName}:${section}`;
 					if (!seenKeys.has(pitchKey)) {
 						seenKeys.add(pitchKey);
-						await db.insert(fabCardLookup).values({
-							lookupKey: pitchKey,
-							name: card.name,
-							imageUrl,
-							fallbackUrl: printing.image_url || null,
-							pitch: validPitch
-						}).onConflictDoNothing();
+						await db
+							.insert(fabCardLookup)
+							.values({
+								lookupKey: pitchKey,
+								name: card.name,
+								imageUrl,
+								fallbackUrl: printing.image_url || null,
+								pitch: validPitch
+							})
+							.onConflictDoNothing();
 						lookupsCreated++;
 					}
 				}
@@ -147,13 +199,16 @@ export const actions = {
 				// Base name lookup
 				if (!seenKeys.has(baseName)) {
 					seenKeys.add(baseName);
-					await db.insert(fabCardLookup).values({
-						lookupKey: baseName,
-						name: card.name,
-						imageUrl,
-						fallbackUrl: printing.image_url || null,
-						pitch: validPitch
-					}).onConflictDoNothing();
+					await db
+						.insert(fabCardLookup)
+						.values({
+							lookupKey: baseName,
+							name: card.name,
+							imageUrl,
+							fallbackUrl: printing.image_url || null,
+							pitch: validPitch
+						})
+						.onConflictDoNothing();
 					lookupsCreated++;
 				}
 			}

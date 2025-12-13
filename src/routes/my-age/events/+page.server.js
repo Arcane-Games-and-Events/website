@@ -29,7 +29,7 @@ export async function load({ locals }) {
 			.orderBy(event.eventDate);
 
 		// Compute status for each event
-		const assignedEvents = assignments.map(a => {
+		const assignedEvents = assignments.map((a) => {
 			let computedStatus = a.eventStatus;
 			if (a.eventStatus !== 'completed' && a.eventStatus !== 'cancelled') {
 				const now = new Date();

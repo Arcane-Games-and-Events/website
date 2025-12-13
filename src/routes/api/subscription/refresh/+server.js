@@ -43,7 +43,10 @@ export async function POST({ locals }) {
 		} else if (authnetStatus === 'cancelled' && currentUser.subscriptionStatus !== 'cancelled') {
 			newStatus = 'cancelled';
 			shouldUpdate = true;
-		} else if (authnetStatus === 'suspended' && currentUser.subscriptionStatus !== 'payment_failed') {
+		} else if (
+			authnetStatus === 'suspended' &&
+			currentUser.subscriptionStatus !== 'payment_failed'
+		) {
 			newStatus = 'payment_failed';
 			shouldUpdate = true;
 		}
@@ -105,9 +108,7 @@ export async function POST({ locals }) {
 				}
 			}
 
-			await db.update(userTable)
-				.set(updateData)
-				.where(eq(userTable.id, currentUser.id));
+			await db.update(userTable).set(updateData).where(eq(userTable.id, currentUser.id));
 
 			return json({
 				success: true,
@@ -125,7 +126,6 @@ export async function POST({ locals }) {
 			nextBillingDate: currentUser.nextBillingDate,
 			message: 'Subscription information is already up to date'
 		});
-
 	} catch (err) {
 		console.error('[Subscription Refresh] Error:', err);
 		return json({ error: 'Failed to refresh subscription information' }, { status: 500 });

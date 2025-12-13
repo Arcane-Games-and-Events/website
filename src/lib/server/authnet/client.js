@@ -1,7 +1,11 @@
 import ApiContracts from 'authorizenet/lib/apicontracts.js';
 import ApiControllers from 'authorizenet/lib/apicontrollers.js';
 import Constants from 'authorizenet/lib/constants.js';
-import { AUTHNET_API_LOGIN_ID, AUTHNET_TRANSACTION_KEY, AUTHNET_ENVIRONMENT } from '$env/static/private';
+import {
+	AUTHNET_API_LOGIN_ID,
+	AUTHNET_TRANSACTION_KEY,
+	AUTHNET_ENVIRONMENT
+} from '$env/static/private';
 
 /**
  * Authorize.net API Client
@@ -58,8 +62,10 @@ class AuthNetClient {
 			if (options.billTo) {
 				billTo = new ApiContracts.CustomerAddressType();
 				if (options.billTo.firstName) billTo.setFirstName(options.billTo.firstName);
-				if (options.billTo.lastName) if (options.billTo.lastName) billTo.setLastName(options.billTo.lastName);
-				if (options.billTo.address) if (options.billTo.address) billTo.setAddress(options.billTo.address);
+				if (options.billTo.lastName)
+					if (options.billTo.lastName) billTo.setLastName(options.billTo.lastName);
+				if (options.billTo.address)
+					if (options.billTo.address) billTo.setAddress(options.billTo.address);
 				if (options.billTo.city) if (options.billTo.city) billTo.setCity(options.billTo.city);
 				if (options.billTo.state) if (options.billTo.state) billTo.setState(options.billTo.state);
 				if (options.billTo.zip) if (options.billTo.zip) billTo.setZip(options.billTo.zip);
@@ -68,7 +74,9 @@ class AuthNetClient {
 
 			// Create transaction request
 			const transactionRequest = new ApiContracts.TransactionRequestType();
-			transactionRequest.setTransactionType(ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION);
+			transactionRequest.setTransactionType(
+				ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION
+			);
 			transactionRequest.setPayment(payment);
 			transactionRequest.setAmount(options.amount);
 			transactionRequest.setOrder(orderDetails);
@@ -110,18 +118,14 @@ class AuthNetClient {
 							});
 						} else {
 							if (transactionResponse.getErrors() !== null) {
-								reject(new Error(
-									transactionResponse.getErrors().getError()[0].getErrorText()
-								));
+								reject(new Error(transactionResponse.getErrors().getError()[0].getErrorText()));
 							} else {
 								reject(new Error('Transaction failed with unknown error'));
 							}
 						}
 					} else {
 						const errors = response.getTransactionResponse().getErrors();
-						reject(new Error(
-							errors.getError()[0].getErrorText()
-						));
+						reject(new Error(errors.getError()[0].getErrorText()));
 					}
 				} else {
 					reject(new Error('No response from Authorize.net'));
@@ -198,9 +202,7 @@ class AuthNetClient {
 							paymentProfileId: response.getCustomerPaymentProfileIdList().getNumericString()[0]
 						});
 					} else {
-						reject(new Error(
-							response.getMessages().getMessage()[0].getText()
-						));
+						reject(new Error(response.getMessages().getMessage()[0].getText()));
 					}
 				} else {
 					reject(new Error('No response from Authorize.net'));
@@ -285,9 +287,7 @@ class AuthNetClient {
 							subscriptionId: response.getSubscriptionId()
 						});
 					} else {
-						reject(new Error(
-							response.getMessages().getMessage()[0].getText()
-						));
+						reject(new Error(response.getMessages().getMessage()[0].getText()));
 					}
 				} else {
 					reject(new Error('No response from Authorize.net'));
@@ -353,9 +353,7 @@ class AuthNetClient {
 							subscriptionId: response.getSubscriptionId()
 						});
 					} else {
-						reject(new Error(
-							response.getMessages().getMessage()[0].getText()
-						));
+						reject(new Error(response.getMessages().getMessage()[0].getText()));
 					}
 				} else {
 					reject(new Error('No response from Authorize.net'));
@@ -397,9 +395,7 @@ class AuthNetClient {
 							subscriptionId
 						});
 					} else {
-						reject(new Error(
-							response.getMessages().getMessage()[0].getText()
-						));
+						reject(new Error(response.getMessages().getMessage()[0].getText()));
 					}
 				} else {
 					reject(new Error('No response from Authorize.net'));
@@ -455,18 +451,14 @@ class AuthNetClient {
 							});
 						} else {
 							if (transactionResponse.getErrors() !== null) {
-								reject(new Error(
-									transactionResponse.getErrors().getError()[0].getErrorText()
-								));
+								reject(new Error(transactionResponse.getErrors().getError()[0].getErrorText()));
 							} else {
 								reject(new Error('Void failed with unknown error'));
 							}
 						}
 					} else {
 						const errors = response.getTransactionResponse().getErrors();
-						reject(new Error(
-							errors.getError()[0].getErrorText()
-						));
+						reject(new Error(errors.getError()[0].getErrorText()));
 					}
 				} else {
 					reject(new Error('No response from Authorize.net'));
@@ -588,9 +580,10 @@ class AuthNetClient {
 			request.setCustomerProfileId(options.customerProfileId);
 			request.setPaymentProfile(paymentProfile);
 			// Use TESTMODE for sandbox, LIVEMODE for production
-			const validationMode = this.environment === 'production'
-				? ApiContracts.ValidationModeEnum.LIVEMODE
-				: ApiContracts.ValidationModeEnum.TESTMODE;
+			const validationMode =
+				this.environment === 'production'
+					? ApiContracts.ValidationModeEnum.LIVEMODE
+					: ApiContracts.ValidationModeEnum.TESTMODE;
 			request.setValidationMode(validationMode);
 
 			const ctrl = new ApiControllers.CreateCustomerPaymentProfileController(request.getJSON());
@@ -697,7 +690,9 @@ class AuthNetClient {
 
 			// Transaction request
 			const transactionRequest = new ApiContracts.TransactionRequestType();
-			transactionRequest.setTransactionType(ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION);
+			transactionRequest.setTransactionType(
+				ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION
+			);
 			transactionRequest.setAmount(options.amount);
 			transactionRequest.setProfile(profileToCharge);
 			transactionRequest.setOrder(orderDetails);
@@ -788,9 +783,7 @@ class AuthNetClient {
 							status: response.getStatus()
 						});
 					} else {
-						reject(new Error(
-							response.getMessages().getMessage()[0].getText()
-						));
+						reject(new Error(response.getMessages().getMessage()[0].getText()));
 					}
 				} else {
 					reject(new Error('No response from Authorize.net'));
@@ -835,7 +828,7 @@ class AuthNetClient {
 						if (arbTransactions && arbTransactions.getArbTransaction) {
 							const txList = arbTransactions.getArbTransaction();
 							if (Array.isArray(txList)) {
-								transactions = txList.map(tx => ({
+								transactions = txList.map((tx) => ({
 									transId: tx.getTransId(),
 									response: tx.getResponse(),
 									submitTimeUTC: tx.getSubmitTimeUTC(),
@@ -853,9 +846,7 @@ class AuthNetClient {
 							transactions
 						});
 					} else {
-						reject(new Error(
-							response.getMessages().getMessage()[0].getText()
-						));
+						reject(new Error(response.getMessages().getMessage()[0].getText()));
 					}
 				} else {
 					reject(new Error('No response from Authorize.net'));
@@ -938,18 +929,14 @@ class AuthNetClient {
 							});
 						} else {
 							if (transactionResponse.getErrors() !== null) {
-								reject(new Error(
-									transactionResponse.getErrors().getError()[0].getErrorText()
-								));
+								reject(new Error(transactionResponse.getErrors().getError()[0].getErrorText()));
 							} else {
 								reject(new Error('Refund failed with unknown error'));
 							}
 						}
 					} else {
 						const errors = response.getTransactionResponse().getErrors();
-						reject(new Error(
-							errors.getError()[0].getErrorText()
-						));
+						reject(new Error(errors.getError()[0].getErrorText()));
 					}
 				} else {
 					reject(new Error('No response from Authorize.net'));

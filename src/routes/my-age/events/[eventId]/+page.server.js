@@ -13,10 +13,7 @@ export async function load({ params, locals }) {
 	const assignment = await db
 		.select()
 		.from(eventStaff)
-		.where(and(
-			eq(eventStaff.userId, locals.user.id),
-			eq(eventStaff.eventId, params.eventId)
-		))
+		.where(and(eq(eventStaff.userId, locals.user.id), eq(eventStaff.eventId, params.eventId)))
 		.limit(1);
 
 	if (assignment.length === 0) {
@@ -25,11 +22,7 @@ export async function load({ params, locals }) {
 
 	try {
 		// Fetch event details
-		const [eventData] = await db
-			.select()
-			.from(event)
-			.where(eq(event.id, params.eventId))
-			.limit(1);
+		const [eventData] = await db.select().from(event).where(eq(event.id, params.eventId)).limit(1);
 
 		if (!eventData) {
 			throw error(404, 'Event not found');
@@ -102,10 +95,7 @@ export const actions = {
 		const assignment = await db
 			.select()
 			.from(eventStaff)
-			.where(and(
-				eq(eventStaff.userId, locals.user.id),
-				eq(eventStaff.eventId, params.eventId)
-			))
+			.where(and(eq(eventStaff.userId, locals.user.id), eq(eventStaff.eventId, params.eventId)))
 			.limit(1);
 
 		if (assignment.length === 0) {
@@ -117,12 +107,12 @@ export const actions = {
 		const enteredIntoGem = formData.get('enteredIntoGem') === 'true';
 
 		try {
-			await db
-				.update(ticket)
-				.set({ enteredIntoGem })
-				.where(eq(ticket.id, ticketId));
+			await db.update(ticket).set({ enteredIntoGem }).where(eq(ticket.id, ticketId));
 
-			return { success: true, message: `Ticket ${enteredIntoGem ? 'marked as entered' : 'unmarked'} in GEM` };
+			return {
+				success: true,
+				message: `Ticket ${enteredIntoGem ? 'marked as entered' : 'unmarked'} in GEM`
+			};
 		} catch (err) {
 			console.error('Error toggling Gem entry status:', err);
 			return fail(500, { error: 'Failed to update GEM entry status' });

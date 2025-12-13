@@ -7,10 +7,7 @@ export async function load({ locals }) {
 	// Fetch saved cards if user is logged in
 	let userSavedCards = [];
 	if (locals.user) {
-		userSavedCards = await db
-			.select()
-			.from(savedCard)
-			.where(eq(savedCard.userId, locals.user.id));
+		userSavedCards = await db.select().from(savedCard).where(eq(savedCard.userId, locals.user.id));
 	}
 
 	return {

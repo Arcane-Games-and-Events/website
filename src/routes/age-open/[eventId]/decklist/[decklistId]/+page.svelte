@@ -72,7 +72,7 @@
 			{ key: 'yellow', cards: yellow, count: yellow.length },
 			{ key: 'blue', cards: blue, count: blue.length },
 			{ key: 'colorless', cards: colorless, count: colorless.length }
-		].filter(c => c.count > 0);
+		].filter((c) => c.count > 0);
 
 		const total = activeCategories.reduce((sum, c) => sum + c.count, 0);
 		if (total === 0) return { columns: [] };
@@ -105,7 +105,7 @@
 			}
 		}
 
-		return { columns: [col1, col2].filter(col => col.length > 0) };
+		return { columns: [col1, col2].filter((col) => col.length > 0) };
 	});
 
 	// Selected card for preview panel
@@ -126,9 +126,15 @@
 		previewCurrentUrl = selectedCardImage?.imageUrl || null;
 	}
 
-	function handlePreviewLoad() { previewImageLoaded = true; }
+	function handlePreviewLoad() {
+		previewImageLoaded = true;
+	}
 	function handlePreviewError() {
-		if (!previewTriedFallback && selectedCardImage?.fallbackUrl && selectedCardImage.fallbackUrl !== previewCurrentUrl) {
+		if (
+			!previewTriedFallback &&
+			selectedCardImage?.fallbackUrl &&
+			selectedCardImage.fallbackUrl !== previewCurrentUrl
+		) {
 			previewTriedFallback = true;
 			previewCurrentUrl = selectedCardImage.fallbackUrl;
 			previewImageLoaded = false;
@@ -146,7 +152,11 @@
 
 	function formatDate(dateStr) {
 		if (!dateStr) return '';
-		return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+		return new Date(dateStr).toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric'
+		});
 	}
 
 	function getOrdinal(n) {
@@ -172,7 +182,8 @@
 
 	// Category config - enhanced styling matching site aesthetic
 	// Stripe-style shadow
-	const cardShadow = 'shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_4px_6px_rgba(0,0,0,0.04),0_12px_24px_rgba(0,0,0,0.12)]';
+	const cardShadow =
+		'shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_4px_6px_rgba(0,0,0,0.04),0_12px_24px_rgba(0,0,0,0.12)]';
 
 	const categoryConfig = {
 		equipment: {
@@ -227,7 +238,7 @@
 	async function copyLink() {
 		await navigator.clipboard.writeText(window.location.href);
 		linkCopied = true;
-		setTimeout(() => linkCopied = false, 2000);
+		setTimeout(() => (linkCopied = false), 2000);
 	}
 
 	// Modal state for mobile card preview
@@ -257,9 +268,15 @@
 		document.body.style.overflow = '';
 	}
 
-	function handleModalLoad() { modalImageLoaded = true; }
+	function handleModalLoad() {
+		modalImageLoaded = true;
+	}
 	function handleModalError() {
-		if (!modalTriedFallback && modalCardImage?.fallbackUrl && modalCardImage.fallbackUrl !== modalCurrentUrl) {
+		if (
+			!modalTriedFallback &&
+			modalCardImage?.fallbackUrl &&
+			modalCardImage.fallbackUrl !== modalCurrentUrl
+		) {
 			modalTriedFallback = true;
 			modalCurrentUrl = modalCardImage.fallbackUrl;
 			modalImageLoaded = false;
@@ -287,7 +304,9 @@
 	let heroCurrentUrl = $state(null);
 	let heroTriedFallback = $state(false);
 
-	function handleHeroLoad() { heroImageLoaded = true; }
+	function handleHeroLoad() {
+		heroImageLoaded = true;
+	}
 	function handleHeroError() {
 		if (!heroTriedFallback && heroImage?.fallbackUrl && heroImage.fallbackUrl !== heroCurrentUrl) {
 			heroTriedFallback = true;
@@ -313,7 +332,10 @@
 
 <svelte:head>
 	<title>{decklist.playerName}'s {decklist.hero || 'Deck'} - AGE Open</title>
-	<meta name="description" content="Decklist for {decklist.playerName} playing {decklist.hero || 'Deck'}" />
+	<meta
+		name="description"
+		content="Decklist for {decklist.playerName} playing {decklist.hero || 'Deck'}"
+	/>
 	<!-- Preload hero and first few card images for instant display -->
 	{#if heroImage?.imageUrl}
 		<link rel="preload" as="image" href={heroImage.imageUrl} />
@@ -327,28 +349,56 @@
 
 <div class="min-h-screen bg-gray-950">
 	<!-- Header with subtle gradient -->
-	<div class="border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm sticky top-0 z-40">
+	<div class="sticky top-0 z-40 border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm">
 		<div class="mx-auto max-w-6xl px-4 py-3 sm:px-6 lg:px-8">
 			<div class="flex items-center justify-between">
-				<a href="/age-open?tab=decklists" class="group flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
-					<svg class="h-4 w-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+				<a
+					href="/age-open?tab=decklists"
+					class="group flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
+				>
+					<svg
+						class="h-4 w-4 transition-transform group-hover:-translate-x-0.5"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M10 19l-7-7m0 0l7-7m-7 7h18"
+						/>
 					</svg>
 					<span class="font-medium">Decklists</span>
 				</a>
 				<button
 					onclick={copyLink}
-					class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-800/80 border border-transparent hover:border-gray-700 transition-all"
+					class="flex items-center gap-2 rounded-lg border border-transparent px-3 py-1.5 text-sm text-gray-400 transition-all hover:border-gray-700 hover:bg-gray-800/80 hover:text-white"
 					title="Copy link"
 				>
 					{#if linkCopied}
-						<svg class="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+						<svg
+							class="h-4 w-4 text-green-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M5 13l4 4L19 7"
+							/>
 						</svg>
 						<span class="text-green-400">Copied</span>
 					{:else}
 						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+							/>
 						</svg>
 						<span class="hidden sm:inline">Share</span>
 					{/if}
@@ -360,58 +410,114 @@
 	<!-- Main Content -->
 	<div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
 		{#if cardsList.length === 0}
-			<div class="rounded-2xl border border-gray-800 bg-gray-900/60 backdrop-blur-sm p-12 text-center">
-				<div class="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700">
-					<svg class="h-10 w-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+			<div
+				class="rounded-2xl border border-gray-800 bg-gray-900/60 p-12 text-center backdrop-blur-sm"
+			>
+				<div
+					class="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl border border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900"
+				>
+					<svg
+						class="h-10 w-10 text-gray-600"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="1.5"
+							d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+						/>
 					</svg>
 				</div>
 				<h3 class="mb-2 text-xl font-bold text-white">No Cards Found</h3>
-				<p class="text-gray-400 max-w-sm mx-auto">This decklist doesn't have any cards yet. Check back later or contact the tournament organizer.</p>
+				<p class="mx-auto max-w-sm text-gray-400">
+					This decklist doesn't have any cards yet. Check back later or contact the tournament
+					organizer.
+				</p>
 			</div>
 		{:else}
-			<div class="flex flex-col lg:flex-row gap-6">
+			<div class="flex flex-col gap-6 lg:flex-row">
 				<!-- Mobile Hero Header -->
 				<div class="lg:hidden">
-					<div class="rounded-xl bg-gray-900/90 backdrop-blur-sm p-4 {cardShadow}">
+					<div class="rounded-xl bg-gray-900/90 p-4 backdrop-blur-sm {cardShadow}">
 						<!-- Player Name & Placement -->
-						<div class="flex items-start justify-between gap-3 mb-3">
+						<div class="mb-3 flex items-start justify-between gap-3">
 							<div class="min-w-0">
 								{#if decklist.gemId}
-									<a href="/player/{decklist.gemId}" class="text-white font-semibold text-lg hover:text-amber-400 transition-colors block truncate">
+									<a
+										href="/player/{decklist.gemId}"
+										class="block truncate text-lg font-semibold text-white transition-colors hover:text-amber-400"
+									>
 										{decklist.playerName}
 									</a>
 								{:else}
-									<span class="text-white font-semibold text-lg block truncate">{decklist.playerName}</span>
+									<span class="block truncate text-lg font-semibold text-white"
+										>{decklist.playerName}</span
+									>
 								{/if}
 							</div>
 							{#if decklist.placement}
 								<div class="flex-shrink-0 text-right">
-									<span class="text-2xl font-bold {decklist.placement <= 3 ? 'text-amber-400' : 'text-gray-300'}">{getOrdinal(decklist.placement)}</span>
+									<span
+										class="text-2xl font-bold {decklist.placement <= 3
+											? 'text-amber-400'
+											: 'text-gray-300'}">{getOrdinal(decklist.placement)}</span
+									>
 								</div>
 							{/if}
 						</div>
 
 						<!-- Event Info -->
-						<div class="space-y-1.5 text-sm mb-3">
+						<div class="mb-3 space-y-1.5 text-sm">
 							<div class="flex items-center gap-2 {getCircuitColor(decklist.circuit)}">
-								<svg class="w-3.5 h-3.5 opacity-60 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+								<svg
+									class="h-3.5 w-3.5 flex-shrink-0 opacity-60"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+									/>
 								</svg>
 								<span class="truncate font-medium">{decklist.circuit || 'AGE Open'}</span>
 							</div>
 							{#if decklist.eventDate}
 								<div class="flex items-center gap-2 text-gray-400">
-									<svg class="w-3.5 h-3.5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+									<svg
+										class="h-3.5 w-3.5 flex-shrink-0 text-gray-500"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+										/>
 									</svg>
 									<span>{formatDate(decklist.eventDate)}</span>
 								</div>
 							{/if}
 							{#if decklist.format}
 								<div class="flex items-center gap-2 text-gray-400">
-									<svg class="w-3.5 h-3.5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+									<svg
+										class="h-3.5 w-3.5 flex-shrink-0 text-gray-500"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+										/>
 									</svg>
 									<span>{decklist.format}</span>
 								</div>
@@ -419,27 +525,34 @@
 						</div>
 
 						<!-- Divider -->
-						<div class="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-3"></div>
+						<div
+							class="my-3 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"
+						></div>
 
 						<!-- Deck Composition -->
 						<div class="flex items-center justify-between">
 							<div class="flex items-center gap-3">
 								<div class="flex items-center gap-1.5" title="Red">
-									<span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+									<span class="h-2.5 w-2.5 rounded-full bg-red-500"></span>
 									<span class="text-sm font-medium text-red-400">{groupedCards().red.length}</span>
 								</div>
 								<div class="flex items-center gap-1.5" title="Yellow">
-									<span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
-									<span class="text-sm font-medium text-yellow-400">{groupedCards().yellow.length}</span>
+									<span class="h-2.5 w-2.5 rounded-full bg-yellow-500"></span>
+									<span class="text-sm font-medium text-yellow-400"
+										>{groupedCards().yellow.length}</span
+									>
 								</div>
 								<div class="flex items-center gap-1.5" title="Blue">
-									<span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-									<span class="text-sm font-medium text-blue-400">{groupedCards().blue.length}</span>
+									<span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+									<span class="text-sm font-medium text-blue-400">{groupedCards().blue.length}</span
+									>
 								</div>
 								{#if groupedCards().colorless.length > 0}
 									<div class="flex items-center gap-1.5" title="Colorless">
-										<span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
-										<span class="text-sm font-medium text-slate-300">{groupedCards().colorless.length}</span>
+										<span class="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
+										<span class="text-sm font-medium text-slate-300"
+											>{groupedCards().colorless.length}</span
+										>
 									</div>
 								{/if}
 							</div>
@@ -449,28 +562,46 @@
 				</div>
 
 				<!-- Card Preview Panel (Left - Sticky on Desktop, Hidden on Mobile) -->
-				<div class="hidden lg:block lg:w-72 flex-shrink-0">
+				<div class="hidden flex-shrink-0 lg:block lg:w-72">
 					<div class="lg:sticky lg:top-16">
 						<!-- Card Preview with glow effect -->
-						<div class="relative group">
+						<div class="group relative">
 							<!-- Subtle glow behind card -->
-							<div class="absolute -inset-1 bg-gradient-to-br from-amber-500/10 via-transparent to-purple-500/10 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+							<div
+								class="absolute -inset-1 rounded-2xl bg-gradient-to-br from-amber-500/10 via-transparent to-purple-500/10 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100"
+							></div>
 
-							<div class="relative rounded-xl bg-gray-900/90 backdrop-blur-sm overflow-hidden {cardShadow}">
-								<div class="aspect-[488/680] bg-gradient-to-br from-gray-800/80 to-gray-900/80 relative">
+							<div
+								class="relative overflow-hidden rounded-xl bg-gray-900/90 backdrop-blur-sm {cardShadow}"
+							>
+								<div
+									class="relative aspect-[488/680] bg-gradient-to-br from-gray-800/80 to-gray-900/80"
+								>
 									{#if selectedCard && selectedCardImage}
 										{#if !previewImageLoaded && !previewImageError}
 											<div class="absolute inset-0 flex items-center justify-center">
-												<div class="animate-spin rounded-full h-8 w-8 border-2 border-amber-500/50 border-t-amber-500"></div>
+												<div
+													class="h-8 w-8 animate-spin rounded-full border-2 border-amber-500/50 border-t-amber-500"
+												></div>
 											</div>
 										{/if}
 										{#if previewImageError}
 											<div class="absolute inset-0 flex items-center justify-center">
-												<div class="text-center px-4">
-													<svg class="mx-auto h-10 w-10 text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+												<div class="px-4 text-center">
+													<svg
+														class="mx-auto mb-3 h-10 w-10 text-gray-600"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="1.5"
+															d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+														/>
 													</svg>
-													<p class="text-gray-500 text-sm">Image unavailable</p>
+													<p class="text-sm text-gray-500">Image unavailable</p>
 												</div>
 											</div>
 										{/if}
@@ -479,7 +610,9 @@
 												<img
 													src={previewCurrentUrl}
 													alt={selectedCard.name || selectedCard}
-													class="w-full h-full object-contain {previewImageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300"
+													class="h-full w-full object-contain {previewImageLoaded
+														? 'opacity-100'
+														: 'opacity-0'} transition-opacity duration-300"
 													onload={handlePreviewLoad}
 													onerror={handlePreviewError}
 												/>
@@ -487,11 +620,21 @@
 										{/if}
 									{:else}
 										<div class="absolute inset-0 flex items-center justify-center">
-											<div class="text-center px-4">
-												<svg class="mx-auto h-10 w-10 text-gray-700 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+											<div class="px-4 text-center">
+												<svg
+													class="mx-auto mb-3 h-10 w-10 text-gray-700"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="1.5"
+														d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+													/>
 												</svg>
-												<p class="text-gray-500 text-sm">Select a card to preview</p>
+												<p class="text-sm text-gray-500">Select a card to preview</p>
 											</div>
 										</div>
 									{/if}
@@ -500,45 +643,84 @@
 						</div>
 
 						<!-- Player & Event Info Card -->
-						<div class="mt-4 rounded-xl bg-gray-900/90 backdrop-blur-sm p-4 {cardShadow}">
+						<div class="mt-4 rounded-xl bg-gray-900/90 p-4 backdrop-blur-sm {cardShadow}">
 							<!-- Player Name & Placement -->
-							<div class="flex items-start justify-between gap-3 mb-3">
+							<div class="mb-3 flex items-start justify-between gap-3">
 								<div class="min-w-0">
 									{#if decklist.gemId}
-										<a href="/player/{decklist.gemId}" class="text-white font-semibold text-lg hover:text-amber-400 transition-colors block truncate">
+										<a
+											href="/player/{decklist.gemId}"
+											class="block truncate text-lg font-semibold text-white transition-colors hover:text-amber-400"
+										>
 											{decklist.playerName}
 										</a>
 									{:else}
-										<span class="text-white font-semibold text-lg block truncate">{decklist.playerName}</span>
+										<span class="block truncate text-lg font-semibold text-white"
+											>{decklist.playerName}</span
+										>
 									{/if}
 								</div>
 								{#if decklist.placement}
 									<div class="flex-shrink-0 text-right">
-										<span class="text-2xl font-bold {decklist.placement <= 3 ? 'text-amber-400' : 'text-gray-300'}">{getOrdinal(decklist.placement)}</span>
+										<span
+											class="text-2xl font-bold {decklist.placement <= 3
+												? 'text-amber-400'
+												: 'text-gray-300'}">{getOrdinal(decklist.placement)}</span
+										>
 									</div>
 								{/if}
 							</div>
 
 							<!-- Event Info -->
-							<div class="space-y-1.5 text-sm mb-3">
+							<div class="mb-3 space-y-1.5 text-sm">
 								<div class="flex items-center gap-2 {getCircuitColor(decklist.circuit)}">
-									<svg class="w-3.5 h-3.5 opacity-60 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+									<svg
+										class="h-3.5 w-3.5 flex-shrink-0 opacity-60"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+										/>
 									</svg>
 									<span class="truncate font-medium">{decklist.circuit || 'AGE Open'}</span>
 								</div>
 								{#if decklist.eventDate}
 									<div class="flex items-center gap-2 text-gray-400">
-										<svg class="w-3.5 h-3.5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+										<svg
+											class="h-3.5 w-3.5 flex-shrink-0 text-gray-500"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+											/>
 										</svg>
 										<span>{formatDate(decklist.eventDate)}</span>
 									</div>
 								{/if}
 								{#if decklist.format}
 									<div class="flex items-center gap-2 text-gray-400">
-										<svg class="w-3.5 h-3.5 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+										<svg
+											class="h-3.5 w-3.5 flex-shrink-0 text-gray-500"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+											/>
 										</svg>
 										<span>{decklist.format}</span>
 									</div>
@@ -546,27 +728,36 @@
 							</div>
 
 							<!-- Divider -->
-							<div class="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-3"></div>
+							<div
+								class="my-3 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"
+							></div>
 
 							<!-- Deck Composition -->
 							<div class="flex items-center justify-between">
 								<div class="flex items-center gap-3">
 									<div class="flex items-center gap-1.5" title="Red">
-										<span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-										<span class="text-sm font-medium text-red-400">{groupedCards().red.length}</span>
+										<span class="h-2.5 w-2.5 rounded-full bg-red-500"></span>
+										<span class="text-sm font-medium text-red-400">{groupedCards().red.length}</span
+										>
 									</div>
 									<div class="flex items-center gap-1.5" title="Yellow">
-										<span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
-										<span class="text-sm font-medium text-yellow-400">{groupedCards().yellow.length}</span>
+										<span class="h-2.5 w-2.5 rounded-full bg-yellow-500"></span>
+										<span class="text-sm font-medium text-yellow-400"
+											>{groupedCards().yellow.length}</span
+										>
 									</div>
 									<div class="flex items-center gap-1.5" title="Blue">
-										<span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-										<span class="text-sm font-medium text-blue-400">{groupedCards().blue.length}</span>
+										<span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+										<span class="text-sm font-medium text-blue-400"
+											>{groupedCards().blue.length}</span
+										>
 									</div>
 									{#if groupedCards().colorless.length > 0}
 										<div class="flex items-center gap-1.5" title="Colorless">
-											<span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
-											<span class="text-sm font-medium text-slate-300">{groupedCards().colorless.length}</span>
+											<span class="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
+											<span class="text-sm font-medium text-slate-300"
+												>{groupedCards().colorless.length}</span
+											>
 										</div>
 									{/if}
 								</div>
@@ -577,21 +768,36 @@
 				</div>
 
 				<!-- Card List (Right) -->
-				<div class="flex-1 min-w-0 space-y-5">
+				<div class="min-w-0 flex-1 space-y-5">
 					<!-- Hero & Equipment Panel -->
-					<div class="rounded-xl bg-gray-900/90 backdrop-blur-sm p-4 {cardShadow}">
-						<div class="flex items-center gap-2 mb-3">
-							<svg class="h-4 w-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+					<div class="rounded-xl bg-gray-900/90 p-4 backdrop-blur-sm {cardShadow}">
+						<div class="mb-3 flex items-center gap-2">
+							<svg
+								class="h-4 w-4 text-amber-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+								/>
 							</svg>
-							<span class="text-xs font-semibold uppercase tracking-wider text-gray-400">Hero & Equipment</span>
+							<span class="text-xs font-semibold tracking-wider text-gray-400 uppercase"
+								>Hero & Equipment</span
+							>
 						</div>
 						<div class="flex flex-wrap items-center gap-2">
 							<!-- Hero -->
 							{#if heroCard()}
 								<button
-									class="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 font-medium text-sm hover:bg-amber-500/20 hover:border-amber-500/30 transition-all cursor-pointer"
-									onclick={() => { selectCard(heroCard()); if (window.innerWidth < 1024) openCardModal(heroCard()); }}
+									class="cursor-pointer rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-sm font-medium text-amber-400 transition-all hover:border-amber-500/30 hover:bg-amber-500/20"
+									onclick={() => {
+										selectCard(heroCard());
+										if (window.innerWidth < 1024) openCardModal(heroCard());
+									}}
 								>
 									{decklist.hero}
 								</button>
@@ -601,9 +807,12 @@
 							{#if groupedCards().equipment.length > 0}
 								{#each groupedCards().equipment as card}
 									<button
-										class="px-2 py-1 rounded-lg bg-gray-800/80 border border-gray-700/50 text-gray-300 text-sm hover:bg-gray-700/80 hover:text-white hover:border-gray-600 transition-all cursor-pointer"
-										onclick={() => { selectCard(card); if (window.innerWidth < 1024) openCardModal(card); }}
-									>{card.quantity || 1}x {card.name}</button>
+										class="cursor-pointer rounded-lg border border-gray-700/50 bg-gray-800/80 px-2 py-1 text-sm text-gray-300 transition-all hover:border-gray-600 hover:bg-gray-700/80 hover:text-white"
+										onclick={() => {
+											selectCard(card);
+											if (window.innerWidth < 1024) openCardModal(card);
+										}}>{card.quantity || 1}x {card.name}</button
+									>
 								{/each}
 							{/if}
 						</div>
@@ -618,28 +827,37 @@
 									{@const config = categoryConfig[colorGroup.key]}
 									<div class="rounded-xl {config.bg} overflow-hidden {cardShadow}">
 										<div class="px-4 py-2 {config.headerBg} flex items-center gap-2.5">
-											<span class="w-2 h-2 rounded-full {config.accent} shadow-sm"></span>
+											<span class="h-2 w-2 rounded-full {config.accent} shadow-sm"></span>
 											<span class="text-sm font-semibold {config.text}">{config.label}</span>
-											<span class="text-xs text-gray-500 ml-auto font-medium">{colorGroup.cards.reduce((s, c) => s + (c.quantity || 1), 0)} cards</span>
+											<span class="ml-auto text-xs font-medium text-gray-500"
+												>{colorGroup.cards.reduce((s, c) => s + (c.quantity || 1), 0)} cards</span
+											>
 										</div>
 										<div class="p-1">
 											{#each colorGroup.cards as card}
 												{@const isSelected = selectedCard === card}
 												<button
 													type="button"
-													class="w-full flex items-center gap-2 py-1 px-2.5 rounded-lg text-left transition-all
+													class="flex w-full items-center gap-2 rounded-lg px-2.5 py-1 text-left transition-all
 														{isSelected ? 'bg-white/5' : config.hover}
-														cursor-pointer group"
-													onclick={() => { selectCard(card); if (window.innerWidth < 1024) openCardModal(card); }}
+														group cursor-pointer"
+													onclick={() => {
+														selectCard(card);
+														if (window.innerWidth < 1024) openCardModal(card);
+													}}
 												>
 													<span class="w-5 text-center text-xs font-bold {config.badge} opacity-80">
 														{card.quantity || 1}x
 													</span>
-													<span class="text-sm text-gray-200 truncate flex-1 group-hover:text-white transition-colors">
+													<span
+														class="flex-1 truncate text-sm text-gray-200 transition-colors group-hover:text-white"
+													>
 														{card.name || card}
 													</span>
 													{#if isSelected}
-														<span class="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0 animate-pulse"></span>
+														<span
+															class="h-1.5 w-1.5 flex-shrink-0 animate-pulse rounded-full bg-amber-400"
+														></span>
 													{/if}
 												</button>
 											{/each}
@@ -650,7 +868,11 @@
 						</div>
 
 						<!-- Desktop: Smart column layout -->
-						<div class="hidden lg:grid gap-4" style="grid-template-columns: repeat({columnLayout().columns.length}, minmax(0, 1fr));">
+						<div
+							class="hidden gap-4 lg:grid"
+							style="grid-template-columns: repeat({columnLayout().columns
+								.length}, minmax(0, 1fr));"
+						>
 							{#each columnLayout().columns as column}
 								<div class="space-y-3">
 									{#each column as colorGroup}
@@ -658,9 +880,11 @@
 										<div class="rounded-xl {config.bg} overflow-hidden {cardShadow}">
 											<!-- Category Header -->
 											<div class="px-4 py-2.5 {config.headerBg} flex items-center gap-2.5">
-												<span class="w-2 h-2 rounded-full {config.accent} shadow-sm"></span>
+												<span class="h-2 w-2 rounded-full {config.accent} shadow-sm"></span>
 												<span class="text-sm font-semibold {config.text}">{config.label}</span>
-												<span class="text-xs text-gray-500 ml-auto font-medium">{colorGroup.cards.reduce((s, c) => s + (c.quantity || 1), 0)} cards</span>
+												<span class="ml-auto text-xs font-medium text-gray-500"
+													>{colorGroup.cards.reduce((s, c) => s + (c.quantity || 1), 0)} cards</span
+												>
 											</div>
 
 											<!-- Cards List -->
@@ -669,19 +893,28 @@
 													{@const isSelected = selectedCard === card}
 													<button
 														type="button"
-														class="w-full flex items-center gap-2 py-1 px-2.5 rounded-lg text-left transition-all
+														class="flex w-full items-center gap-2 rounded-lg px-2.5 py-1 text-left transition-all
 															{isSelected ? 'bg-white/5' : config.hover}
-															cursor-pointer group"
-														onclick={() => { selectCard(card); if (window.innerWidth < 1024) openCardModal(card); }}
+															group cursor-pointer"
+														onclick={() => {
+															selectCard(card);
+															if (window.innerWidth < 1024) openCardModal(card);
+														}}
 													>
-														<span class="w-5 text-center text-xs font-bold {config.badge} opacity-80">
+														<span
+															class="w-5 text-center text-xs font-bold {config.badge} opacity-80"
+														>
 															{card.quantity || 1}x
 														</span>
-														<span class="text-sm text-gray-200 truncate flex-1 group-hover:text-white transition-colors">
+														<span
+															class="flex-1 truncate text-sm text-gray-200 transition-colors group-hover:text-white"
+														>
 															{card.name || card}
 														</span>
 														{#if isSelected}
-															<span class="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0 animate-pulse"></span>
+															<span
+																class="h-1.5 w-1.5 flex-shrink-0 animate-pulse rounded-full bg-amber-400"
+															></span>
 														{/if}
 													</button>
 												{/each}
@@ -701,7 +934,7 @@
 <!-- Card Preview Modal (Mobile) -->
 {#if showModal}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
 		onclick={handleBackdropClick}
 		onkeydown={handleKeydown}
 		role="dialog"
@@ -713,30 +946,49 @@
 			<!-- Close Button -->
 			<button
 				onclick={closeModal}
-				class="absolute -top-12 right-0 p-2 rounded-full bg-gray-800/80 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors z-10"
+				class="absolute -top-12 right-0 z-10 rounded-full bg-gray-800/80 p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
 				aria-label="Close modal"
 			>
-				<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+				<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M6 18L18 6M6 6l12 12"
+					/>
 				</svg>
 			</button>
 
 			<!-- Card Image Container -->
-			<div class="rounded-2xl bg-gray-900 overflow-hidden shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_8px_16px_rgba(0,0,0,0.15),0_24px_48px_rgba(0,0,0,0.2)]">
-				<div class="aspect-[488/680] bg-gradient-to-br from-gray-800 to-gray-900 relative">
+			<div
+				class="overflow-hidden rounded-2xl bg-gray-900 shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_8px_16px_rgba(0,0,0,0.15),0_24px_48px_rgba(0,0,0,0.2)]"
+			>
+				<div class="relative aspect-[488/680] bg-gradient-to-br from-gray-800 to-gray-900">
 					{#if modalCard && modalCardImage}
 						{#if !modalImageLoaded && !modalImageError}
 							<div class="absolute inset-0 flex items-center justify-center">
-								<div class="animate-spin rounded-full h-10 w-10 border-2 border-amber-500/50 border-t-amber-500"></div>
+								<div
+									class="h-10 w-10 animate-spin rounded-full border-2 border-amber-500/50 border-t-amber-500"
+								></div>
 							</div>
 						{/if}
 						{#if modalImageError}
 							<div class="absolute inset-0 flex items-center justify-center">
-								<div class="text-center px-4">
-									<svg class="mx-auto h-12 w-12 text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+								<div class="px-4 text-center">
+									<svg
+										class="mx-auto mb-3 h-12 w-12 text-gray-600"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="1.5"
+											d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+										/>
 									</svg>
-									<p class="text-gray-400 text-sm">Image unavailable</p>
+									<p class="text-sm text-gray-400">Image unavailable</p>
 								</div>
 							</div>
 						{/if}
@@ -745,7 +997,9 @@
 								<img
 									src={modalCurrentUrl}
 									alt={modalCard.name || modalCard}
-									class="w-full h-full object-contain {modalImageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300"
+									class="h-full w-full object-contain {modalImageLoaded
+										? 'opacity-100'
+										: 'opacity-0'} transition-opacity duration-300"
 									onload={handleModalLoad}
 									onerror={handleModalError}
 								/>
@@ -753,16 +1007,25 @@
 						{/if}
 					{:else}
 						<div class="absolute inset-0 flex items-center justify-center">
-							<div class="text-center px-4">
-								<svg class="mx-auto h-12 w-12 text-gray-700 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+							<div class="px-4 text-center">
+								<svg
+									class="mx-auto mb-3 h-12 w-12 text-gray-700"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="1.5"
+										d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+									/>
 								</svg>
-								<p class="text-gray-500 text-sm">No card selected</p>
+								<p class="text-sm text-gray-500">No card selected</p>
 							</div>
 						</div>
 					{/if}
 				</div>
-
 			</div>
 		</div>
 	</div>

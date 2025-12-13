@@ -6,7 +6,7 @@
 
 	// Tab state
 	const storageKey = `staff-event-tab-${data.event.id}`;
-	let activeTab = $state(browser ? (sessionStorage.getItem(storageKey) || 'overview') : 'overview');
+	let activeTab = $state(browser ? sessionStorage.getItem(storageKey) || 'overview' : 'overview');
 
 	function setActiveTab(tab) {
 		activeTab = tab;
@@ -16,7 +16,9 @@
 	}
 
 	// Track local gem entry status for each ticket
-	let gemEntryStatus = $state(Object.fromEntries(data.tickets.map(t => [t.ticketId, t.enteredIntoGem])));
+	let gemEntryStatus = $state(
+		Object.fromEntries(data.tickets.map((t) => [t.ticketId, t.enteredIntoGem]))
+	);
 	let gemEntryLoading = $state({});
 
 	// Track copied GEM ID for visual feedback
@@ -99,7 +101,7 @@
 	const status = $derived(getStatusBadge(data.event.computedStatus));
 
 	// Filter tickets (non-refunded only for registrations tab)
-	const activeTickets = $derived(data.tickets.filter(t => !t.refunded));
+	const activeTickets = $derived(data.tickets.filter((t) => !t.refunded));
 
 	const tabs = [
 		{ id: 'overview', label: 'Overview' },
@@ -113,7 +115,10 @@
 
 <div class="mx-auto max-w-6xl px-4 py-8">
 	<!-- Back Link -->
-	<a href="/my-age/events" class="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors">
+	<a
+		href="/my-age/events"
+		class="mb-6 inline-flex items-center gap-2 text-gray-400 transition-colors hover:text-white"
+	>
 		<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
 		</svg>
@@ -122,7 +127,7 @@
 
 	<!-- Header -->
 	<div class="mb-8">
-		<div class="flex flex-wrap items-center gap-3 mb-2">
+		<div class="mb-2 flex flex-wrap items-center gap-3">
 			<h1 class="text-2xl font-bold text-white sm:text-3xl">{data.event.title}</h1>
 			<span class="rounded-full {status.bg} px-3 py-1 text-sm font-medium {status.text}">
 				{status.label}
@@ -144,7 +149,9 @@
 		</div>
 	{/if}
 	{#if form?.success}
-		<div class="mb-6 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-green-400">
+		<div
+			class="mb-6 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-green-400"
+		>
 			{form.message}
 		</div>
 	{/if}
@@ -155,10 +162,10 @@
 			{#each tabs as tab}
 				<button
 					onclick={() => setActiveTab(tab.id)}
-					class="whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors
+					class="border-b-2 px-1 py-3 text-sm font-medium whitespace-nowrap transition-colors
 						{activeTab === tab.id
-							? 'border-blue-500 text-blue-400'
-							: 'border-transparent text-gray-400 hover:border-gray-600 hover:text-gray-300'}"
+						? 'border-blue-500 text-blue-400'
+						: 'border-transparent text-gray-400 hover:border-gray-600 hover:text-gray-300'}"
 				>
 					{tab.label}
 				</button>
@@ -173,7 +180,7 @@
 			<div class="grid gap-6 lg:grid-cols-2">
 				<!-- Event Details -->
 				<div class="rounded-xl border border-white/10 bg-gray-900/50 p-6">
-					<h3 class="text-lg font-semibold text-white mb-4">Event Details</h3>
+					<h3 class="mb-4 text-lg font-semibold text-white">Event Details</h3>
 					<dl class="space-y-4">
 						<div>
 							<dt class="text-sm text-gray-500">Date</dt>
@@ -211,7 +218,7 @@
 
 				<!-- Stats -->
 				<div class="rounded-xl border border-white/10 bg-gray-900/50 p-6">
-					<h3 class="text-lg font-semibold text-white mb-4">Registration Stats</h3>
+					<h3 class="mb-4 text-lg font-semibold text-white">Registration Stats</h3>
 					<div class="grid grid-cols-2 gap-4">
 						<div class="rounded-lg bg-gray-800/50 p-4 text-center">
 							<p class="text-3xl font-bold text-white">{data.stats.totalTickets}</p>
@@ -227,8 +234,8 @@
 				<!-- Description -->
 				{#if data.event.description}
 					<div class="rounded-xl border border-white/10 bg-gray-900/50 p-6 lg:col-span-2">
-						<h3 class="text-lg font-semibold text-white mb-4">Description</h3>
-						<p class="text-gray-300 whitespace-pre-wrap">{data.event.description}</p>
+						<h3 class="mb-4 text-lg font-semibold text-white">Description</h3>
+						<p class="whitespace-pre-wrap text-gray-300">{data.event.description}</p>
 					</div>
 				{/if}
 			</div>
@@ -236,7 +243,7 @@
 
 		<!-- Registrations Tab -->
 		{#if activeTab === 'registrations'}
-			<div class="rounded-xl border border-white/10 bg-gray-900/50 overflow-hidden">
+			<div class="overflow-hidden rounded-xl border border-white/10 bg-gray-900/50">
 				<div class="border-b border-white/10 bg-gray-800/50 px-6 py-4">
 					<div class="flex items-center justify-between">
 						<h3 class="text-lg font-semibold text-white">Registered Players</h3>
@@ -246,9 +253,11 @@
 
 				{#if activeTickets.length > 0}
 					<!-- Desktop Table -->
-					<div class="hidden md:block overflow-x-auto">
+					<div class="hidden overflow-x-auto md:block">
 						<table class="w-full">
-							<thead class="bg-gray-800/30 text-left text-xs uppercase tracking-wider text-gray-500">
+							<thead
+								class="bg-gray-800/30 text-left text-xs tracking-wider text-gray-500 uppercase"
+							>
 								<tr>
 									<th class="px-6 py-3">Player</th>
 									<th class="px-6 py-3">GEM ID</th>
@@ -259,11 +268,12 @@
 							</thead>
 							<tbody class="divide-y divide-white/5">
 								{#each activeTickets as ticket}
-									<tr class="hover:bg-gray-800/30 transition-colors">
+									<tr class="transition-colors hover:bg-gray-800/30">
 										<td class="px-6 py-4">
 											<div>
 												<p class="font-medium text-white">
-													{ticket.firstName || ''} {ticket.lastName || ''}
+													{ticket.firstName || ''}
+													{ticket.lastName || ''}
 												</p>
 												{#if ticket.userEmail}
 													<p class="text-xs text-gray-500">{ticket.userEmail}</p>
@@ -274,17 +284,37 @@
 											{#if ticket.gemId}
 												<button
 													onclick={() => copyGemId(ticket.gemId)}
-													class="group inline-flex items-center gap-1.5 hover:text-white transition-colors"
+													class="group inline-flex items-center gap-1.5 transition-colors hover:text-white"
 													title="Click to copy"
 												>
 													<span>{ticket.gemId}</span>
 													{#if copiedGemId === ticket.gemId}
-														<svg class="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+														<svg
+															class="h-4 w-4 text-green-400"
+															fill="none"
+															stroke="currentColor"
+															viewBox="0 0 24 24"
+														>
+															<path
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																stroke-width="2"
+																d="M5 13l4 4L19 7"
+															/>
 														</svg>
 													{:else}
-														<svg class="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+														<svg
+															class="h-4 w-4 text-gray-500 opacity-0 transition-opacity group-hover:opacity-100"
+															fill="none"
+															stroke="currentColor"
+															viewBox="0 0 24 24"
+														>
+															<path
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																stroke-width="2"
+																d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+															/>
 														</svg>
 													{/if}
 												</button>
@@ -293,28 +323,46 @@
 											{/if}
 										</td>
 										<td class="px-6 py-4">
-											<code class="rounded bg-gray-800 px-2 py-0.5 text-xs text-gray-400">{ticket.ticketCode}</code>
+											<code class="rounded bg-gray-800 px-2 py-0.5 text-xs text-gray-400"
+												>{ticket.ticketCode}</code
+											>
 										</td>
 										<td class="px-6 py-4 text-sm text-gray-400">
 											{formatDateTime(ticket.createdAt)}
 										</td>
 										<td class="px-6 py-4 text-center">
 											<button
-												onclick={() => toggleGemEntry(ticket.ticketId, gemEntryStatus[ticket.ticketId])}
+												onclick={() =>
+													toggleGemEntry(ticket.ticketId, gemEntryStatus[ticket.ticketId])}
 												disabled={gemEntryLoading[ticket.ticketId]}
 												class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50
 													{gemEntryStatus[ticket.ticketId]
-														? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
-														: 'bg-gray-700 text-gray-400 hover:bg-gray-600'}"
+													? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+													: 'bg-gray-700 text-gray-400 hover:bg-gray-600'}"
 											>
 												{#if gemEntryLoading[ticket.ticketId]}
 													<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-														<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-														<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+														<circle
+															class="opacity-25"
+															cx="12"
+															cy="12"
+															r="10"
+															stroke="currentColor"
+															stroke-width="4"
+														></circle>
+														<path
+															class="opacity-75"
+															fill="currentColor"
+															d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+														></path>
 													</svg>
 												{:else if gemEntryStatus[ticket.ticketId]}
 													<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-														<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+														<path
+															fill-rule="evenodd"
+															d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+															clip-rule="evenodd"
+														/>
 													</svg>
 												{:else}
 													-
@@ -328,27 +376,48 @@
 					</div>
 
 					<!-- Mobile Cards -->
-					<div class="md:hidden divide-y divide-white/5">
+					<div class="divide-y divide-white/5 md:hidden">
 						{#each activeTickets as ticket}
-							<div class="p-4 space-y-3">
+							<div class="space-y-3 p-4">
 								<div class="flex items-start justify-between">
 									<div>
 										<p class="font-medium text-white">
-											{ticket.firstName || ''} {ticket.lastName || ''}
+											{ticket.firstName || ''}
+											{ticket.lastName || ''}
 										</p>
 										{#if ticket.gemId}
 											<button
 												onclick={() => copyGemId(ticket.gemId)}
-												class="group inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+												class="group inline-flex items-center gap-1.5 text-sm text-gray-400 transition-colors hover:text-white"
 											>
 												<span>GEM: {ticket.gemId}</span>
 												{#if copiedGemId === ticket.gemId}
-													<svg class="h-3.5 w-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+													<svg
+														class="h-3.5 w-3.5 text-green-400"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M5 13l4 4L19 7"
+														/>
 													</svg>
 												{:else}
-													<svg class="h-3.5 w-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+													<svg
+														class="h-3.5 w-3.5 text-gray-500"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="2"
+															d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+														/>
 													</svg>
 												{/if}
 											</button>
@@ -358,9 +427,7 @@
 										onclick={() => toggleGemEntry(ticket.ticketId, gemEntryStatus[ticket.ticketId])}
 										disabled={gemEntryLoading[ticket.ticketId]}
 										class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50
-											{gemEntryStatus[ticket.ticketId]
-												? 'bg-green-500/20 text-green-400'
-												: 'bg-gray-700 text-gray-400'}"
+											{gemEntryStatus[ticket.ticketId] ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'}"
 									>
 										{gemEntryStatus[ticket.ticketId] ? 'In GEM' : 'Not in GEM'}
 									</button>
@@ -374,8 +441,18 @@
 					</div>
 				{:else}
 					<div class="p-12 text-center">
-						<svg class="mx-auto h-12 w-12 text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+						<svg
+							class="mx-auto mb-3 h-12 w-12 text-gray-600"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="1.5"
+								d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+							/>
 						</svg>
 						<p class="text-gray-400">No registered players yet</p>
 					</div>

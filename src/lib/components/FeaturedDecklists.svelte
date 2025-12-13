@@ -10,10 +10,7 @@
 <div class="featured-decklists">
 	<div class="mb-4 flex items-center justify-between">
 		<h3 class="text-lg font-semibold text-white">Featured Decklists</h3>
-		<a
-			href={viewAllHref}
-			class="flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
-		>
+		<a href={viewAllHref} class="flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300">
 			View all
 			<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />

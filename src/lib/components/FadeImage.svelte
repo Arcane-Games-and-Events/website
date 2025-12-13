@@ -37,7 +37,9 @@
 <div class="relative overflow-hidden {className}">
 	<!-- Blur placeholder background -->
 	<div
-		class="absolute inset-0 bg-gray-800 transition-opacity duration-300 {loaded ? 'opacity-0' : 'opacity-100'}"
+		class="absolute inset-0 bg-gray-800 transition-opacity duration-300 {loaded
+			? 'opacity-0'
+			: 'opacity-100'}"
 		aria-hidden="true"
 	></div>
 	<!-- Main image -->
@@ -51,6 +53,8 @@
 		{width}
 		{height}
 		on:load={handleLoad}
-		class="h-full w-full object-cover transition-opacity duration-300 {loaded ? 'opacity-100' : 'opacity-0'}"
+		class="h-full w-full object-cover transition-opacity duration-300 {loaded
+			? 'opacity-100'
+			: 'opacity-0'}"
 	/>
 </div>

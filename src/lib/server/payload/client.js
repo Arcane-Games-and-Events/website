@@ -35,9 +35,9 @@ class PayloadClient {
 		try {
 			const response = await fetch(url.toString(), {
 				headers: {
-					'Content-Type': 'application/json',
+					'Content-Type': 'application/json'
 				},
-				signal: controller.signal,
+				signal: controller.signal
 			});
 
 			clearTimeout(timeout);
@@ -54,7 +54,7 @@ class PayloadClient {
 			if (retries > 0 && (error.name === 'AbortError' || error.message.includes('fetch'))) {
 				console.log(`Payload CMS request failed, retrying... (${retries} attempts left)`);
 				// Wait 1 second before retry
-				await new Promise(resolve => setTimeout(resolve, 1000));
+				await new Promise((resolve) => setTimeout(resolve, 1000));
 				return this.get(endpoint, params, retries - 1);
 			}
 
@@ -95,8 +95,8 @@ class PayloadClient {
 			limit: options.limit || 100,
 			depth: 2, // Populate relationships
 			where: {
-				_status: { equals: 'published' },
-			},
+				_status: { equals: 'published' }
+			}
 		};
 
 		const response = await this.get('/api/posts', params);
@@ -113,9 +113,9 @@ class PayloadClient {
 			depth: 2, // Populate relationships
 			where: {
 				slug: { equals: slug },
-				_status: { equals: 'published' },
+				_status: { equals: 'published' }
 			},
-			limit: 1,
+			limit: 1
 		};
 
 		const response = await this.get('/api/posts', params);
@@ -132,9 +132,9 @@ class PayloadClient {
 		const params = {
 			depth: 1,
 			where: {
-				slug: { equals: slug },
+				slug: { equals: slug }
 			},
-			limit: 1,
+			limit: 1
 		};
 
 		const response = await this.get('/api/authors', params);
@@ -152,8 +152,8 @@ class PayloadClient {
 			depth: 2,
 			where: {
 				author: { equals: authorId },
-				_status: { equals: 'published' },
-			},
+				_status: { equals: 'published' }
+			}
 		};
 
 		const response = await this.get('/api/posts', params);
@@ -169,9 +169,9 @@ class PayloadClient {
 		const params = {
 			depth: 1,
 			where: {
-				slug: { equals: slug },
+				slug: { equals: slug }
 			},
-			limit: 1,
+			limit: 1
 		};
 
 		const response = await this.get('/api/tags', params);
@@ -189,8 +189,8 @@ class PayloadClient {
 			depth: 2,
 			where: {
 				tags: { contains: tagId },
-				_status: { equals: 'published' },
-			},
+				_status: { equals: 'published' }
+			}
 		};
 
 		const response = await this.get('/api/posts', params);
@@ -273,14 +273,16 @@ class PayloadClient {
 			return [];
 		}
 
-		return rawDecklists.map((decklist) => {
-			if (!decklist.rawText) {
-				return null;
-			}
+		return rawDecklists
+			.map((decklist) => {
+				if (!decklist.rawText) {
+					return null;
+				}
 
-			const parsed = parseFabraryExport(decklist.rawText);
-			return toComponentFormat(parsed);
-		}).filter(Boolean);
+				const parsed = parseFabraryExport(decklist.rawText);
+				return toComponentFormat(parsed);
+			})
+			.filter(Boolean);
 	}
 }
 

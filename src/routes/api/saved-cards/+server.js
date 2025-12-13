@@ -67,10 +67,7 @@ export async function POST({ request, locals }) {
 			customerProfileId = profileResult.customerProfileId;
 
 			// Save customer profile ID to user
-			await db
-				.update(user)
-				.set({ customerProfileId })
-				.where(eq(user.id, locals.user.id));
+			await db.update(user).set({ customerProfileId }).where(eq(user.id, locals.user.id));
 		}
 
 		// Add payment profile to Authorize.net

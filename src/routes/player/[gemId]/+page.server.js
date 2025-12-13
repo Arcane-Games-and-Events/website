@@ -51,8 +51,8 @@ function calculateDerivedStats(standing) {
 		standing.decemberPoints || 0
 	];
 
-	const eventsPlayed = monthlyPoints.filter(p => p > 0).length;
-	const top8Finishes = monthlyPoints.filter(p => p >= 15).length;
+	const eventsPlayed = monthlyPoints.filter((p) => p > 0).length;
+	const top8Finishes = monthlyPoints.filter((p) => p >= 15).length;
 
 	return { eventsPlayed, top8Finishes };
 }
@@ -128,7 +128,7 @@ export async function load({ params, locals }) {
 	const standingsWithRank = standings.map((standing) => {
 		const key = `${standing.season}|${standing.circuit}`;
 		const circuitSeasonStandings = standingsByCircuitSeason.get(key) || [];
-		const rank = circuitSeasonStandings.findIndex(s => s.id === standing.id) + 1;
+		const rank = circuitSeasonStandings.findIndex((s) => s.id === standing.id) + 1;
 		return { ...standing, calculatedRank: rank };
 	});
 
@@ -150,7 +150,7 @@ export async function load({ params, locals }) {
 	const displayName = standingsWithRank[0]?.playerName || 'Unknown Player';
 
 	// Collect ALL player names from ALL standings for this player (handles name changes across seasons)
-	const allPlayerNames = [...new Set(standings.map(s => s.playerName).filter(Boolean))];
+	const allPlayerNames = [...new Set(standings.map((s) => s.playerName).filter(Boolean))];
 
 	// Group by gemId to get aggregate stats per player
 	// Also build cache for derived stats to avoid redundant calculations
@@ -199,7 +199,8 @@ export async function load({ params, locals }) {
 			const circuitSeasonKey = `${standing.season}|${standing.circuit}`;
 			const circuitSeasonStandings = standingsByCircuitSeason.get(circuitSeasonKey) || [];
 			// Match using gemId || playerName to be consistent
-			const rank = circuitSeasonStandings.findIndex(s => (s.gemId || s.playerName) === playerKey) + 1;
+			const rank =
+				circuitSeasonStandings.findIndex((s) => (s.gemId || s.playerName) === playerKey) + 1;
 
 			if (rank > 0) {
 				if (playerData.bestRank === null || rank < playerData.bestRank) {
@@ -213,31 +214,44 @@ export async function load({ params, locals }) {
 	}
 
 	// Extract arrays of all player metrics for percentile calculation
-	const allPlayers = Array.from(playerStatsMap.values()).filter(p => p.eventsPlayed >= 1);
-	const allWinRates = allPlayers.map(p => p.matchesPlayed > 0 ? p.matchesWon / p.matchesPlayed : 0);
-	const allTop8Rates = allPlayers.map(p => p.eventsPlayed > 0 ? p.top8Finishes / p.eventsPlayed : 0);
-	const allEventsPlayed = allPlayers.map(p => p.eventsPlayed);
-	const allBestRanks = allPlayers.filter(p => p.bestRank !== null).map(p => p.bestRank);
-	const allAvgPointsPerEvent = allPlayers.map(p => p.eventsPlayed > 0 ? p.totalPoints / p.eventsPlayed : 0);
-	const allChampionshipQuals = allPlayers.map(p => p.championshipQualifications);
+	const allPlayers = Array.from(playerStatsMap.values()).filter((p) => p.eventsPlayed >= 1);
+	const allWinRates = allPlayers.map((p) =>
+		p.matchesPlayed > 0 ? p.matchesWon / p.matchesPlayed : 0
+	);
+	const allTop8Rates = allPlayers.map((p) =>
+		p.eventsPlayed > 0 ? p.top8Finishes / p.eventsPlayed : 0
+	);
+	const allEventsPlayed = allPlayers.map((p) => p.eventsPlayed);
+	const allBestRanks = allPlayers.filter((p) => p.bestRank !== null).map((p) => p.bestRank);
+	const allAvgPointsPerEvent = allPlayers.map((p) =>
+		p.eventsPlayed > 0 ? p.totalPoints / p.eventsPlayed : 0
+	);
+	const allChampionshipQuals = allPlayers.map((p) => p.championshipQualifications);
 
 	// Calculate this player's metrics
-	const thisPlayerWinRate = totalStats.matchesPlayed > 0 ? totalStats.matchesWon / totalStats.matchesPlayed : 0;
-	const thisPlayerTop8Rate = totalStats.eventsPlayed > 0 ? totalStats.top8Finishes / totalStats.eventsPlayed : 0;
-	const thisPlayerBestRank = standingsWithRank.length > 0
-		? Math.min(...standingsWithRank.filter(s => s.calculatedRank).map(s => s.calculatedRank))
-		: null;
-	const thisPlayerAvgPts = totalStats.eventsPlayed > 0 ? totalStats.totalPoints / totalStats.eventsPlayed : 0;
-	const thisPlayerChampionshipQuals = standingsWithRank.filter(s => s.calculatedRank && s.calculatedRank <= 16).length;
+	const thisPlayerWinRate =
+		totalStats.matchesPlayed > 0 ? totalStats.matchesWon / totalStats.matchesPlayed : 0;
+	const thisPlayerTop8Rate =
+		totalStats.eventsPlayed > 0 ? totalStats.top8Finishes / totalStats.eventsPlayed : 0;
+	const thisPlayerBestRank =
+		standingsWithRank.length > 0
+			? Math.min(...standingsWithRank.filter((s) => s.calculatedRank).map((s) => s.calculatedRank))
+			: null;
+	const thisPlayerAvgPts =
+		totalStats.eventsPlayed > 0 ? totalStats.totalPoints / totalStats.eventsPlayed : 0;
+	const thisPlayerChampionshipQuals = standingsWithRank.filter(
+		(s) => s.calculatedRank && s.calculatedRank <= 16
+	).length;
 
 	// Calculate percentiles for this player
 	const percentiles = {
 		winRate: calculatePercentile(thisPlayerWinRate, allWinRates),
 		top8Rate: calculatePercentile(thisPlayerTop8Rate, allTop8Rates),
 		experience: calculatePercentile(totalStats.eventsPlayed, allEventsPlayed),
-		bestRank: thisPlayerBestRank !== null && thisPlayerBestRank !== Infinity
-			? calculateRankPercentile(thisPlayerBestRank, allBestRanks)
-			: 50,
+		bestRank:
+			thisPlayerBestRank !== null && thisPlayerBestRank !== Infinity
+				? calculateRankPercentile(thisPlayerBestRank, allBestRanks)
+				: 50,
 		efficiency: calculatePercentile(thisPlayerAvgPts, allAvgPointsPerEvent),
 		championship: calculatePercentile(thisPlayerChampionshipQuals, allChampionshipQuals),
 		totalPlayers: allPlayers.length
@@ -260,7 +274,7 @@ export async function load({ params, locals }) {
 		.orderBy(desc(match.year), asc(match.round));
 
 	// Transform to match expected format
-	const playerMatches = playerMatchesRaw.map(match => ({
+	const playerMatches = playerMatchesRaw.map((match) => ({
 		match,
 		event: {
 			title: `${match.circuit} ${match.month} Open`,
@@ -278,10 +292,10 @@ export async function load({ params, locals }) {
 		const isPlayer1 = match.player1GemId === gemId || allPlayerNames.includes(match.player1Name);
 		const opponentGemId = isPlayer1 ? match.player2GemId : match.player1GemId;
 		const opponentName = isPlayer1 ? match.player2Name : match.player1Name;
-		const won = (isPlayer1 && match.winner === 'player1') ||
-			(!isPlayer1 && match.winner === 'player2');
-		const lost = (isPlayer1 && match.winner === 'player2') ||
-			(!isPlayer1 && match.winner === 'player1');
+		const won =
+			(isPlayer1 && match.winner === 'player1') || (!isPlayer1 && match.winner === 'player2');
+		const lost =
+			(isPlayer1 && match.winner === 'player2') || (!isPlayer1 && match.winner === 'player1');
 
 		const key = opponentGemId || opponentName;
 		if (!headToHeadMap.has(key)) {
@@ -316,26 +330,28 @@ export async function load({ params, locals }) {
 
 	// Helper to get index of most recent match with a specific result (lower index = more recent)
 	const getMostRecentMatchIndex = (h2h, resultType) => {
-		const idx = h2h.matches.findIndex(m => m.result === resultType);
+		const idx = h2h.matches.findIndex((m) => m.result === resultType);
 		return idx === -1 ? Infinity : idx;
 	};
 
-	const nemesis = headToHeadArray
-		.filter(h => h.losses > 0)
-		.sort((a, b) => {
-			// Primary sort: most losses
-			if (b.losses !== a.losses) return b.losses - a.losses;
-			// Tiebreaker: most recent loss (lower index = more recent)
-			return getMostRecentMatchIndex(a, 'L') - getMostRecentMatchIndex(b, 'L');
-		})[0] || null;
-	const bestMatchup = headToHeadArray
-		.filter(h => h.wins > 0)
-		.sort((a, b) => {
-			// Primary sort: most wins
-			if (b.wins !== a.wins) return b.wins - a.wins;
-			// Tiebreaker: most recent win (lower index = more recent)
-			return getMostRecentMatchIndex(a, 'W') - getMostRecentMatchIndex(b, 'W');
-		})[0] || null;
+	const nemesis =
+		headToHeadArray
+			.filter((h) => h.losses > 0)
+			.sort((a, b) => {
+				// Primary sort: most losses
+				if (b.losses !== a.losses) return b.losses - a.losses;
+				// Tiebreaker: most recent loss (lower index = more recent)
+				return getMostRecentMatchIndex(a, 'L') - getMostRecentMatchIndex(b, 'L');
+			})[0] || null;
+	const bestMatchup =
+		headToHeadArray
+			.filter((h) => h.wins > 0)
+			.sort((a, b) => {
+				// Primary sort: most wins
+				if (b.wins !== a.wins) return b.wins - a.wins;
+				// Tiebreaker: most recent win (lower index = more recent)
+				return getMostRecentMatchIndex(a, 'W') - getMostRecentMatchIndex(b, 'W');
+			})[0] || null;
 
 	// Calculate win streaks
 	let currentStreak = 0;
@@ -346,8 +362,8 @@ export async function load({ params, locals }) {
 	const chronologicalMatches = [...playerMatches].reverse();
 	for (const { match } of chronologicalMatches) {
 		const isPlayer1 = match.player1GemId === gemId || allPlayerNames.includes(match.player1Name);
-		const won = (isPlayer1 && match.winner === 'player1') ||
-			(!isPlayer1 && match.winner === 'player2');
+		const won =
+			(isPlayer1 && match.winner === 'player1') || (!isPlayer1 && match.winner === 'player2');
 
 		if (won) {
 			tempStreak++;
@@ -360,8 +376,8 @@ export async function load({ params, locals }) {
 	// Current streak (from most recent match backwards)
 	for (const { match } of playerMatches) {
 		const isPlayer1 = match.player1GemId === gemId || allPlayerNames.includes(match.player1Name);
-		const won = (isPlayer1 && match.winner === 'player1') ||
-			(!isPlayer1 && match.winner === 'player2');
+		const won =
+			(isPlayer1 && match.winner === 'player1') || (!isPlayer1 && match.winner === 'player2');
 
 		if (won) currentStreak++;
 		else break;
@@ -383,18 +399,21 @@ export async function load({ params, locals }) {
 		matchesByEventObj[key] = matches;
 	}
 
-	const matchHistory = playerMatches.length > 0 ? {
-		totalMatches: playerMatches.length,
-		recentMatches: playerMatches.slice(0, 20),
-		headToHead: headToHeadArray.sort((a, b) =>
-			(b.wins + b.losses + b.draws) - (a.wins + a.losses + a.draws)
-		),
-		nemesis,
-		bestMatchup,
-		currentWinStreak: currentStreak,
-		longestWinStreak,
-		matchesByEvent: matchesByEventObj
-	} : null;
+	const matchHistory =
+		playerMatches.length > 0
+			? {
+					totalMatches: playerMatches.length,
+					recentMatches: playerMatches.slice(0, 20),
+					headToHead: headToHeadArray.sort(
+						(a, b) => b.wins + b.losses + b.draws - (a.wins + a.losses + a.draws)
+					),
+					nemesis,
+					bestMatchup,
+					currentWinStreak: currentStreak,
+					longestWinStreak,
+					matchesByEvent: matchesByEventObj
+				}
+			: null;
 
 	// === DECKLISTS ===
 	// Query decklists for this player with event join (single query, no N+1)
@@ -415,7 +434,7 @@ export async function load({ params, locals }) {
 		.where(eq(decklist.gemId, gemId));
 
 	// Transform to expected format
-	const playerDecklists = decklistsWithEvents.map(row => ({
+	const playerDecklists = decklistsWithEvents.map((row) => ({
 		decklist: row.decklist,
 		event: row.event?.id ? row.event : null
 	}));
@@ -477,7 +496,9 @@ export async function load({ params, locals }) {
 		if (opponentGemId) {
 			opponentGemIds.add(opponentGemId);
 			// Format: opponentGemId|season|circuit|month
-			opponentEventKeys.add(`${opponentGemId}|${eventData.year}|${eventData.circuit}|${eventData.month}`);
+			opponentEventKeys.add(
+				`${opponentGemId}|${eventData.year}|${eventData.circuit}|${eventData.month}`
+			);
 		}
 	}
 
@@ -534,26 +555,61 @@ export const actions = {
 		// Parse value based on field type
 		let parsedValue;
 		const monthlyPointsFields = [
-			'januaryPoints', 'februaryPoints', 'marchPoints', 'aprilPoints', 'mayPoints',
-			'junePoints', 'julyPoints', 'augustPoints', 'septemberPoints', 'octoberPoints',
-			'novemberPoints', 'decemberPoints'
+			'januaryPoints',
+			'februaryPoints',
+			'marchPoints',
+			'aprilPoints',
+			'mayPoints',
+			'junePoints',
+			'julyPoints',
+			'augustPoints',
+			'septemberPoints',
+			'octoberPoints',
+			'novemberPoints',
+			'decemberPoints'
 		];
 		const monthlyMatchesWonFields = [
-			'januaryMatchesWon', 'februaryMatchesWon', 'marchMatchesWon', 'aprilMatchesWon',
-			'mayMatchesWon', 'juneMatchesWon', 'julyMatchesWon', 'augustMatchesWon',
-			'septemberMatchesWon', 'octoberMatchesWon', 'novemberMatchesWon', 'decemberMatchesWon'
+			'januaryMatchesWon',
+			'februaryMatchesWon',
+			'marchMatchesWon',
+			'aprilMatchesWon',
+			'mayMatchesWon',
+			'juneMatchesWon',
+			'julyMatchesWon',
+			'augustMatchesWon',
+			'septemberMatchesWon',
+			'octoberMatchesWon',
+			'novemberMatchesWon',
+			'decemberMatchesWon'
 		];
 		const monthlyMatchesFields = [
-			'januaryMatches', 'februaryMatches', 'marchMatches', 'aprilMatches', 'mayMatches',
-			'juneMatches', 'julyMatches', 'augustMatches', 'septemberMatches', 'octoberMatches',
-			'novemberMatches', 'decemberMatches'
+			'januaryMatches',
+			'februaryMatches',
+			'marchMatches',
+			'aprilMatches',
+			'mayMatches',
+			'juneMatches',
+			'julyMatches',
+			'augustMatches',
+			'septemberMatches',
+			'octoberMatches',
+			'novemberMatches',
+			'decemberMatches'
 		];
 		const numericFields = [
-			'totalPoints', 'matchesWon', 'matchesPlayed',
-			...monthlyPointsFields, ...monthlyMatchesWonFields, ...monthlyMatchesFields
+			'totalPoints',
+			'matchesWon',
+			'matchesPlayed',
+			...monthlyPointsFields,
+			...monthlyMatchesWonFields,
+			...monthlyMatchesFields
 		];
 		const decimalFields = ['winPercentage'];
-		const isMonthlyField = [...monthlyPointsFields, ...monthlyMatchesWonFields, ...monthlyMatchesFields].includes(field);
+		const isMonthlyField = [
+			...monthlyPointsFields,
+			...monthlyMatchesWonFields,
+			...monthlyMatchesFields
+		].includes(field);
 
 		if (numericFields.includes(field)) {
 			parsedValue = parseInt(value, 10) || 0;
@@ -627,7 +683,8 @@ export const actions = {
 					return { success: true };
 				} else {
 					return fail(400, {
-						error: 'Can only update player name on the most recent season. Historical names are preserved.'
+						error:
+							'Can only update player name on the most recent season. Historical names are preserved.'
 					});
 				}
 			}
@@ -641,40 +698,57 @@ export const actions = {
 			// If a monthly field was updated, recalculate all aggregate fields
 			if (isMonthlyField) {
 				// Fetch the current standing to get all monthly values
-				const [standing] = await db
-					.select()
-					.from(standing)
-					.where(eq(standing.id, standingId));
+				const [standing] = await db.select().from(standing).where(eq(standing.id, standingId));
 
 				if (standing) {
 					// Calculate total points from monthly points
-					const totalPoints = (standing.januaryPoints || 0) + (standing.februaryPoints || 0) +
-						(standing.marchPoints || 0) + (standing.aprilPoints || 0) +
-						(standing.mayPoints || 0) + (standing.junePoints || 0) +
-						(standing.julyPoints || 0) + (standing.augustPoints || 0) +
-						(standing.septemberPoints || 0) + (standing.octoberPoints || 0) +
-						(standing.novemberPoints || 0) + (standing.decemberPoints || 0);
+					const totalPoints =
+						(standing.januaryPoints || 0) +
+						(standing.februaryPoints || 0) +
+						(standing.marchPoints || 0) +
+						(standing.aprilPoints || 0) +
+						(standing.mayPoints || 0) +
+						(standing.junePoints || 0) +
+						(standing.julyPoints || 0) +
+						(standing.augustPoints || 0) +
+						(standing.septemberPoints || 0) +
+						(standing.octoberPoints || 0) +
+						(standing.novemberPoints || 0) +
+						(standing.decemberPoints || 0);
 
 					// Calculate total matches won from monthly matches won
-					const matchesWon = (standing.januaryMatchesWon || 0) + (standing.februaryMatchesWon || 0) +
-						(standing.marchMatchesWon || 0) + (standing.aprilMatchesWon || 0) +
-						(standing.mayMatchesWon || 0) + (standing.juneMatchesWon || 0) +
-						(standing.julyMatchesWon || 0) + (standing.augustMatchesWon || 0) +
-						(standing.septemberMatchesWon || 0) + (standing.octoberMatchesWon || 0) +
-						(standing.novemberMatchesWon || 0) + (standing.decemberMatchesWon || 0);
+					const matchesWon =
+						(standing.januaryMatchesWon || 0) +
+						(standing.februaryMatchesWon || 0) +
+						(standing.marchMatchesWon || 0) +
+						(standing.aprilMatchesWon || 0) +
+						(standing.mayMatchesWon || 0) +
+						(standing.juneMatchesWon || 0) +
+						(standing.julyMatchesWon || 0) +
+						(standing.augustMatchesWon || 0) +
+						(standing.septemberMatchesWon || 0) +
+						(standing.octoberMatchesWon || 0) +
+						(standing.novemberMatchesWon || 0) +
+						(standing.decemberMatchesWon || 0);
 
 					// Calculate total matches played from monthly matches
-					const matchesPlayed = (standing.januaryMatches || 0) + (standing.februaryMatches || 0) +
-						(standing.marchMatches || 0) + (standing.aprilMatches || 0) +
-						(standing.mayMatches || 0) + (standing.juneMatches || 0) +
-						(standing.julyMatches || 0) + (standing.augustMatches || 0) +
-						(standing.septemberMatches || 0) + (standing.octoberMatches || 0) +
-						(standing.novemberMatches || 0) + (standing.decemberMatches || 0);
+					const matchesPlayed =
+						(standing.januaryMatches || 0) +
+						(standing.februaryMatches || 0) +
+						(standing.marchMatches || 0) +
+						(standing.aprilMatches || 0) +
+						(standing.mayMatches || 0) +
+						(standing.juneMatches || 0) +
+						(standing.julyMatches || 0) +
+						(standing.augustMatches || 0) +
+						(standing.septemberMatches || 0) +
+						(standing.octoberMatches || 0) +
+						(standing.novemberMatches || 0) +
+						(standing.decemberMatches || 0);
 
 					// Calculate win percentage
-					const winPercentage = matchesPlayed > 0
-						? Math.round((matchesWon / matchesPlayed) * 10000) / 100
-						: null;
+					const winPercentage =
+						matchesPlayed > 0 ? Math.round((matchesWon / matchesPlayed) * 10000) / 100 : null;
 
 					// Update aggregate fields (eventsPlayed and top8Finishes are calculated dynamically)
 					await db

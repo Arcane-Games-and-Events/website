@@ -122,7 +122,9 @@
 		// Track if we have a custom URL
 		modalHasCustomUrl = !!customUrl;
 		// Use custom URL if provided, otherwise generate default fabtcg search URL
-		modalUrl = customUrl || `https://cards.fabtcg.com/results/?q=${encodeURIComponent(cardName).replace(/%20/g, '+')}`;
+		modalUrl =
+			customUrl ||
+			`https://cards.fabtcg.com/results/?q=${encodeURIComponent(cardName).replace(/%20/g, '+')}`;
 		modalImageLoaded = false;
 		modalImageError = false;
 		modalVisible = true;
@@ -181,7 +183,7 @@
 		const target = container || document;
 		const links = target.querySelectorAll('.card-link[data-card-name]');
 
-		links.forEach(link => {
+		links.forEach((link) => {
 			link.addEventListener('mouseenter', handleMouseEnter);
 			link.addEventListener('mouseleave', handleMouseLeave);
 			link.addEventListener('click', handleClick);
@@ -219,28 +221,34 @@
 
 <!-- Desktop: Hover Tooltip -->
 {#if tooltipVisible && imageUrl}
-	<div
-		class="fixed z-50 pointer-events-none"
-		style="left: {tooltipX}px; top: {tooltipY}px;"
-	>
-		<div class="w-[250px] rounded-xl overflow-hidden shadow-2xl bg-gray-900 border border-white/10">
-			<div class="aspect-[488/680] bg-gray-800 relative">
+	<div class="pointer-events-none fixed z-50" style="left: {tooltipX}px; top: {tooltipY}px;">
+		<div class="w-[250px] overflow-hidden rounded-xl border border-white/10 bg-gray-900 shadow-2xl">
+			<div class="relative aspect-[488/680] bg-gray-800">
 				{#if !imageLoaded && !imageError}
 					<div class="absolute inset-0 flex items-center justify-center">
-						<div class="animate-spin rounded-full h-8 w-8 border-2 border-amber-500/50 border-t-amber-500"></div>
+						<div
+							class="h-8 w-8 animate-spin rounded-full border-2 border-amber-500/50 border-t-amber-500"
+						></div>
 					</div>
 				{/if}
 				{#if imageError}
 					<div class="absolute inset-0 flex items-center justify-center text-gray-500">
-						<svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+						<svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="1.5"
+								d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+							/>
 						</svg>
 					</div>
 				{/if}
 				<img
 					src={imageUrl}
 					alt={currentCard?.name || 'Card'}
-					class="w-full h-full object-contain transition-opacity duration-200 {imageLoaded ? 'opacity-100' : 'opacity-0'}"
+					class="h-full w-full object-contain transition-opacity duration-200 {imageLoaded
+						? 'opacity-100'
+						: 'opacity-0'}"
 					on:load={handleImageLoad}
 					on:error={handleImageError}
 				/>
@@ -252,7 +260,7 @@
 <!-- Mobile: Modal -->
 {#if modalVisible && modalCard}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
 		on:click={handleBackdropClick}
 		on:keydown={handleKeydown}
 		role="dialog"
@@ -264,29 +272,46 @@
 			<!-- Close Button -->
 			<button
 				on:click={closeModal}
-				class="absolute -top-12 right-0 p-2 rounded-full bg-gray-800/80 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors z-10"
+				class="absolute -top-12 right-0 z-10 rounded-full bg-gray-800/80 p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
 				aria-label="Close modal"
 			>
-				<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+				<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M6 18L18 6M6 6l12 12"
+					/>
 				</svg>
 			</button>
 
 			<!-- Card Image Container -->
-			<div class="rounded-2xl overflow-hidden">
-				<div class="aspect-[488/680] relative">
+			<div class="overflow-hidden rounded-2xl">
+				<div class="relative aspect-[488/680]">
 					{#if !modalImageLoaded && !modalImageError}
 						<div class="absolute inset-0 flex items-center justify-center">
-							<div class="animate-spin rounded-full h-10 w-10 border-2 border-amber-500/50 border-t-amber-500"></div>
+							<div
+								class="h-10 w-10 animate-spin rounded-full border-2 border-amber-500/50 border-t-amber-500"
+							></div>
 						</div>
 					{/if}
 					{#if modalImageError}
 						<div class="absolute inset-0 flex items-center justify-center">
-							<div class="text-center px-4">
-								<svg class="mx-auto h-12 w-12 text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+							<div class="px-4 text-center">
+								<svg
+									class="mx-auto mb-3 h-12 w-12 text-gray-600"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="1.5"
+										d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+									/>
 								</svg>
-								<p class="text-gray-400 text-sm">Image unavailable</p>
+								<p class="text-sm text-gray-400">Image unavailable</p>
 							</div>
 						</div>
 					{/if}
@@ -294,7 +319,9 @@
 						<img
 							src={modalCard.imageUrl}
 							alt={modalCard.name || 'Card'}
-							class="w-full h-full object-contain transition-opacity duration-300 {modalImageLoaded ? 'opacity-100' : 'opacity-0'}"
+							class="h-full w-full object-contain transition-opacity duration-300 {modalImageLoaded
+								? 'opacity-100'
+								: 'opacity-0'}"
 							on:load={handleModalImageLoad}
 							on:error={handleModalImageError}
 						/>
@@ -312,8 +339,13 @@
 							on:click={closeModal}
 						>
 							<span>{modalHasCustomUrl ? 'Go to Link' : 'View Card'}</span>
-							<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+								/>
 							</svg>
 						</a>
 					</div>

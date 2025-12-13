@@ -23,11 +23,14 @@ export async function POST({ request, locals }) {
 		}
 
 		// Create event
-		const [newEvent] = await db.insert(event).values({
-			id,
-			title,
-			price
-		}).returning();
+		const [newEvent] = await db
+			.insert(event)
+			.values({
+				id,
+				title,
+				price
+			})
+			.returning();
 
 		// Invalidate events cache so new event appears immediately
 		await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);

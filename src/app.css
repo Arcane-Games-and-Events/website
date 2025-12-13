@@ -16,7 +16,9 @@ body {
 body {
 	@apply bg-gray-950 text-gray-100;
 	font-family: var(--font-sans);
-	font-feature-settings: "rlig" 1, "calt" 1;
+	font-feature-settings:
+		'rlig' 1,
+		'calt' 1;
 }
 
 /* Navigation loading bar animation */
@@ -40,13 +42,18 @@ body {
 }
 
 /* Headings use Space Grotesk */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
 	font-family: var(--font-display);
 }
 
 /* Article prose styles */
 .prose a.card-link {
-	@apply text-yellow-600 underline cursor-pointer font-medium;
+	@apply cursor-pointer font-medium text-yellow-600 underline;
 }
 
 .prose a.card-link:hover {
@@ -55,10 +62,10 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Hide scrollbar but keep scroll functionality */
 .scrollbar-hide {
-	-ms-overflow-style: none;  /* IE and Edge */
-	scrollbar-width: none;  /* Firefox */
+	-ms-overflow-style: none; /* IE and Edge */
+	scrollbar-width: none; /* Firefox */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-	display: none;  /* Chrome, Safari and Opera */
+	display: none; /* Chrome, Safari and Opera */
 }

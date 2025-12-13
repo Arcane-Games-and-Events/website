@@ -130,9 +130,7 @@ export async function load({ params, locals }) {
 		// Fetch associated events for these tickets
 		const eventIds = [...new Set(ticketsRaw.map((t) => t.eventId).filter(Boolean))];
 		const eventsData =
-			eventIds.length > 0
-				? await db.select().from(event).where(inArray(event.id, eventIds))
-				: [];
+			eventIds.length > 0 ? await db.select().from(event).where(inArray(event.id, eventIds)) : [];
 
 		// Combine tickets with their events
 		const eventsMap = new Map(eventsData.map((e) => [e.id, e]));
@@ -220,15 +218,9 @@ export const actions = {
 
 		try {
 			if (isEmail) {
-				await db
-					.update(user)
-					.set({ role })
-					.where(eq(user.email, customerId));
+				await db.update(user).set({ role }).where(eq(user.email, customerId));
 			} else {
-				await db
-					.update(user)
-					.set({ role })
-					.where(eq(user.id, customerId));
+				await db.update(user).set({ role }).where(eq(user.id, customerId));
 			}
 
 			return { success: true, message: `Role updated to ${role}` };
@@ -267,7 +259,10 @@ export const actions = {
 			try {
 				await authnet.cancelSubscription(userData.subscriptionId);
 			} catch (cancelErr) {
-				console.log('Subscription cancellation error (may already be cancelled):', cancelErr.message);
+				console.log(
+					'Subscription cancellation error (may already be cancelled):',
+					cancelErr.message
+				);
 			}
 
 			// Update user record

@@ -26,8 +26,8 @@ function calculateDerivedStats(standing) {
 		standing.decemberPoints || 0
 	];
 
-	const eventsPlayed = monthlyPoints.filter(p => p > 0).length;
-	const top8Finishes = monthlyPoints.filter(p => p >= 15).length;
+	const eventsPlayed = monthlyPoints.filter((p) => p > 0).length;
+	const top8Finishes = monthlyPoints.filter((p) => p >= 15).length;
 
 	return { eventsPlayed, top8Finishes };
 }
@@ -68,43 +68,44 @@ export async function load({ setHeaders, url, locals }) {
 			() => payload.getPosts({ limit: 3 }),
 			CACHE_TTL.LONG // 15 minutes for articles
 		);
-		articles = posts.map((post) => {
-			// Extract optimized cover image with srcset
-			const coverImage = payload.getOptimizedImage(post.coverImage);
+		articles = posts
+			.map((post) => {
+				// Extract optimized cover image with srcset
+				const coverImage = payload.getOptimizedImage(post.coverImage);
 
-			// Extract author information
-			let author = null;
-			if (post.author && typeof post.author === 'object') {
-				let profilePictureUrl = null;
-				if (post.author.profilePicture && typeof post.author.profilePicture === 'object') {
-					profilePictureUrl = payload.getAbsoluteUrl(post.author.profilePicture.url);
+				// Extract author information
+				let author = null;
+				if (post.author && typeof post.author === 'object') {
+					let profilePictureUrl = null;
+					if (post.author.profilePicture && typeof post.author.profilePicture === 'object') {
+						profilePictureUrl = payload.getAbsoluteUrl(post.author.profilePicture.url);
+					}
+
+					author = {
+						name: post.author.name,
+						slug: post.author.slug,
+						profilePicture: profilePictureUrl
+					};
 				}
 
-				author = {
-					name: post.author.name,
-					slug: post.author.slug,
-					profilePicture: profilePictureUrl
-				};
-			}
-
-			return {
-				slug: post.slug,
-				title: post.title,
-				excerpt: post.excerpt,
-				publishedAt: post.publishedDate,
-				accessMode: post.accessMode,
-				coverImage,
-				author,
-				readTime: post.readTime || null,
-				isPremium: isPremiumNow({
+				return {
+					slug: post.slug,
+					title: post.title,
+					excerpt: post.excerpt,
+					publishedAt: post.publishedDate,
 					accessMode: post.accessMode,
-					publishedAt: post.publishedDate
-				})
-			};
-		})
-		// Sort by published date (newest first)
-		.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
-		.slice(0, 3);
+					coverImage,
+					author,
+					readTime: post.readTime || null,
+					isPremium: isPremiumNow({
+						accessMode: post.accessMode,
+						publishedAt: post.publishedDate
+					})
+				};
+			})
+			// Sort by published date (newest first)
+			.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
+			.slice(0, 3);
 	} catch (error) {
 		console.error('Error fetching articles from Payload CMS:', error);
 		// Articles will remain empty array - page continues to load
@@ -113,10 +114,7 @@ export async function load({ setHeaders, url, locals }) {
 	try {
 		// Helper to add timeout to promises
 		const withTimeout = (promise, ms, fallback) =>
-			Promise.race([
-				promise,
-				new Promise((resolve) => setTimeout(() => resolve(fallback), ms))
-			]);
+			Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(fallback), ms))]);
 
 		// Fetch upcoming events with Redis caching (1 minute TTL - events change more frequently)
 		// Only show events that are: upcoming in the future AND not completed/cancelled
@@ -128,13 +126,15 @@ export async function load({ setHeaders, url, locals }) {
 					const events = await db
 						.select()
 						.from(event)
-						.where(and(
-							gte(event.eventDate, now),
-							or(
-								eq(event.status, 'upcoming'),
-								isNull(event.status) // Handle legacy events without status
+						.where(
+							and(
+								gte(event.eventDate, now),
+								or(
+									eq(event.status, 'upcoming'),
+									isNull(event.status) // Handle legacy events without status
+								)
 							)
-						))
+						)
 						.orderBy(asc(event.eventDate))
 						.limit(3);
 					return events;
@@ -157,18 +157,21 @@ export async function load({ setHeaders, url, locals }) {
 		);
 
 		// Extract unique seasons and circuits from standings data (dynamic filters)
-		const uniqueSeasons = [...new Set(allStandings.map(s => s.season))].filter(Boolean).sort().reverse();
-		const uniqueCircuits = [...new Set(allStandings.map(s => s.circuit))].filter(Boolean).sort();
+		const uniqueSeasons = [...new Set(allStandings.map((s) => s.season))]
+			.filter(Boolean)
+			.sort()
+			.reverse();
+		const uniqueCircuits = [...new Set(allStandings.map((s) => s.circuit))].filter(Boolean).sort();
 		const availableSeasons = ['all', ...uniqueSeasons];
 		const availableCircuits = ['all', ...uniqueCircuits];
 
 		// Filter standings based on selected season and circuit
 		let filteredStandings = allStandings;
 		if (standingsSeason !== 'all') {
-			filteredStandings = filteredStandings.filter(s => s.season === standingsSeason);
+			filteredStandings = filteredStandings.filter((s) => s.season === standingsSeason);
 		}
 		if (standingsCircuit !== 'all') {
-			filteredStandings = filteredStandings.filter(s => s.circuit === standingsCircuit);
+			filteredStandings = filteredStandings.filter((s) => s.circuit === standingsCircuit);
 		}
 
 		// Aggregate stats by gemId/playerName (for career view or filtered view)
@@ -229,10 +232,7 @@ export async function load({ setHeaders, url, locals }) {
 						})
 						.from(decklist)
 						.leftJoin(event, eq(decklist.eventId, event.id))
-						.where(and(
-							eq(decklist.placement, 1),
-							eq(decklist.isPublic, true)
-						))
+						.where(and(eq(decklist.placement, 1), eq(decklist.isPublic, true)))
 						.orderBy(desc(decklist.createdAt))
 						.limit(3);
 					return decklists;
@@ -249,20 +249,20 @@ export async function load({ setHeaders, url, locals }) {
 			// Logged-in users: never cache publicly (prevents session data leaking to other users)
 			setHeaders({
 				'cache-control': 'private, no-cache, no-store, must-revalidate',
-				'vary': 'Cookie'
+				vary: 'Cookie'
 			});
 		} else if (articles.length > 0) {
 			// Anonymous users with articles: cache at CDN level
 			// Vary by Cookie ensures logged-in users get fresh responses after login
 			setHeaders({
 				'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
-				'vary': 'Cookie'
+				vary: 'Cookie'
 			});
 		} else {
 			// Anonymous users without articles: don't cache error state
 			setHeaders({
 				'cache-control': 'private, no-cache, no-store, must-revalidate',
-				'vary': 'Cookie'
+				vary: 'Cookie'
 			});
 		}
 
