@@ -39,6 +39,20 @@
 		return platformIcons[link.platform] || platformIcons.other;
 	}
 
+	// Ensure URL has a protocol (https://) for external links
+	function normalizeUrl(url) {
+		if (!url) return '#';
+		// If URL already has a protocol, return as-is
+		if (url.startsWith('http://') || url.startsWith('https://')) {
+			return url;
+		}
+		// Add https:// if it starts with www. or looks like a domain
+		if (url.startsWith('www.') || url.includes('.')) {
+			return `https://${url}`;
+		}
+		return url;
+	}
+
 	// Calculate when a premium article will become free (30 days from publish)
 	function getFreeDate(publishedAt) {
 		if (!publishedAt) return null;
@@ -979,7 +993,7 @@
 												{#each data.article.author.socialLinks as link}
 													{@const iconConfig = getLinkIcon(link)}
 													<a
-														href={link.url}
+														href={normalizeUrl(link.url)}
 														target="_blank"
 														rel="noopener noreferrer"
 														class="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition-all duration-200 hover:bg-white/10 hover:border-white/20 hover:scale-110 {iconConfig.color}"

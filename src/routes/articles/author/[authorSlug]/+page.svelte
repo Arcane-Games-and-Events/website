@@ -131,6 +131,20 @@
 		return platformIcons[link.platform] || platformIcons.other;
 	}
 
+	// Ensure URL has a protocol (https://) for external links
+	function normalizeUrl(url) {
+		if (!url) return '#';
+		// If URL already has a protocol, return as-is
+		if (url.startsWith('http://') || url.startsWith('https://')) {
+			return url;
+		}
+		// Add https:// if it starts with www. or looks like a domain
+		if (url.startsWith('www.') || url.includes('.')) {
+			return `https://${url}`;
+		}
+		return url;
+	}
+
 	// Stats
 	$: articleCount = data.articles.length;
 	$: premiumCount = data.articles.filter(a => a.isPremium).length;
@@ -223,7 +237,7 @@
 									{#each data.author.socialLinks as link}
 										{@const iconConfig = getLinkIcon(link)}
 										<a
-											href={link.url}
+											href={normalizeUrl(link.url)}
 											target="_blank"
 											rel="noopener noreferrer"
 											class="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 transition-all hover:bg-white/10 hover:border-white/20 {iconConfig.color}"

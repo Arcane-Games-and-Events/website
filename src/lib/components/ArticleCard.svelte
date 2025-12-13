@@ -22,13 +22,18 @@
 	<div class="relative h-[200px] sm:h-[260px] overflow-hidden rounded-xl sm:rounded-2xl border border-gray-800 bg-gray-900 transition-all hover:border-gray-700">
 		<!-- Background Image -->
 		{#if article.coverImage?.src}
+			<!-- Skeleton placeholder -->
+			<div class="absolute inset-0 animate-pulse bg-gray-800"></div>
 			<img
 				src={article.coverImage.src}
 				srcset={article.coverImage.srcset}
 				sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
 				alt=""
-				class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+				class="absolute inset-0 h-full w-full object-cover transition-all duration-500 group-hover:scale-105"
 				loading="lazy"
+				decoding="async"
+				on:load={(e) => e.target.classList.add('opacity-100')}
+				style="opacity: 0;"
 			/>
 		{:else}
 			<div class="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900"></div>
@@ -82,6 +87,8 @@
 										src={article.author.profilePicture}
 										alt={article.author.name}
 										class="h-5 w-5 sm:h-6 sm:w-6 rounded-full object-cover ring-2 ring-white/20"
+										loading="lazy"
+										decoding="async"
 									/>
 								{/if}
 								<span class="font-medium text-gray-300 truncate max-w-[100px] sm:max-w-none">{article.author.name}</span>

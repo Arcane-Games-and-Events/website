@@ -10,6 +10,7 @@
 	import FeaturedDecklists from '$lib/components/FeaturedDecklists.svelte';
 	import UpcomingEvents from '$lib/components/UpcomingEvents.svelte';
 	import ArticleCard from '$lib/components/ArticleCard.svelte';
+	import ArticlePreview from '$lib/components/ArticlePreview.svelte';
 	export let data;
 
 	// Handle standings filter changes with client-side navigation
@@ -395,37 +396,48 @@
 	</section>
 
 	<!-- Main 2/3 + 1/3 Layout - starts immediately after hero -->
-	<section class="bg-gray-950 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+	<section class="bg-gray-950 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
 		<div class="mx-auto max-w-7xl">
-			<div class="grid gap-6 lg:grid-cols-3 lg:gap-8">
+			<div class="grid gap-8 lg:grid-cols-3 lg:gap-10">
 				<!-- Main Content (2/3) -->
-				<div class="space-y-6 lg:col-span-2">
-					<!-- Latest Articles -->
+				<div class="space-y-10 lg:col-span-2">
+					<!-- Latest Articles - Newspaper Style -->
 					<div>
-						<div class="mb-4 flex items-center justify-between">
-							<h2 class="text-lg font-bold text-white">Latest Articles</h2>
+						<!-- Section Header -->
+						<div class="mb-6 flex items-end justify-between border-b border-white/10 pb-3">
+							<div>
+								<span class="text-[10px] font-medium uppercase tracking-widest text-gray-500">News</span>
+								<h2 class="font-display text-2xl font-bold tracking-tight text-white">Latest Articles</h2>
+							</div>
 							<a
 								href="/articles"
-								class="flex items-center gap-1 text-sm font-medium text-blue-400 transition-colors hover:text-blue-300"
+								class="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-gray-400 transition-colors hover:text-white"
 							>
 								View all
-								<svg
-									class="h-4 w-4"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									viewBox="0 0 24 24"
-								>
+								<svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" d={icons.chevronRight} />
 								</svg>
 							</a>
 						</div>
 
 						{#if data.articles && data.articles.length > 0}
-							<div class="grid gap-4 {isCollapsed ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2'}">
-								{#each data.articles.slice(0, isCollapsed ? 3 : 2) as article}
-									<ArticleCard {article} />
-								{/each}
+							{@const featured = data.articles[0]}
+							{@const secondary = data.articles.slice(1, 4)}
+
+							<div class="grid gap-6 sm:grid-cols-2">
+								<!-- Featured Article (Large) -->
+								<div class="sm:row-span-2">
+									<ArticlePreview article={featured} variant="featured" />
+								</div>
+
+								<!-- Secondary Articles (Stacked) -->
+								<div class="flex flex-col divide-y divide-white/10">
+									{#each secondary as article}
+										<div class="py-4 first:pt-0 last:pb-0">
+											<ArticlePreview {article} variant="compact" />
+										</div>
+									{/each}
+								</div>
 							</div>
 						{:else}
 							<div class="rounded-xl border border-white/10 bg-gray-900/50 p-8 text-center">
@@ -444,277 +456,165 @@
 					</div>
 
 					<!-- AGE Open Series Section -->
-					<div
-						class="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 p-5"
-					>
-						<!-- Subtle animated background -->
-						<div class="absolute inset-0 overflow-hidden">
-							<div
-								class="absolute top-0 left-0 h-64 w-64 rounded-full bg-amber-500/5 blur-3xl"
-							></div>
-							<div
-								class="absolute right-0 bottom-0 h-64 w-64 rounded-full bg-orange-500/5 blur-3xl"
-							></div>
+					<div class="relative">
+						<!-- Section Header -->
+						<div class="mb-5">
+							<div class="mb-4 flex justify-center">
+								<span class="inline-flex items-center gap-1 rounded-full border border-amber-500/25 bg-amber-500/15 px-2 py-1 text-[10px] font-semibold text-amber-300">
+									<span class="h-1 w-1 animate-pulse rounded-full bg-amber-400"></span>
+									2026 Season is here!
+								</span>
+							</div>
+							<div class="flex items-center justify-center gap-4">
+								<div class="h-0.5 flex-1 bg-gradient-to-r from-transparent via-white/20 to-white/40"></div>
+								<img src="/age_open_logo.svg" alt="AGE Open Series" class="h-20 w-auto" />
+								<div class="h-0.5 flex-1 bg-gradient-to-l from-transparent via-white/20 to-white/40"></div>
+							</div>
 						</div>
 
-						<div class="relative">
-							<!-- Section Header -->
-							<div class="mb-5">
-								<div class="mb-5 flex justify-center">
-									<span
-										class="inline-flex items-center gap-1 rounded-full border border-amber-500/25 bg-amber-500/15 px-2 py-1 text-[10px] font-semibold text-amber-300"
-									>
-										<span class="h-1 w-1 animate-pulse rounded-full bg-amber-400"></span>
-										2026 Season is here!
-									</span>
-								</div>
-								<div class="flex items-center justify-center gap-4">
-									<div
-										class="h-0.5 flex-1 bg-gradient-to-r from-transparent via-white/20 to-white/40"
-									></div>
-									<img src="/age_open_logo.svg" alt="AGE Open Series" class="h-20 w-auto" />
-									<div
-										class="h-0.5 flex-1 bg-gradient-to-l from-transparent via-white/20 to-white/40"
-									></div>
+						<!-- Series Description -->
+						<p class="mb-4 text-sm text-gray-400">
+							The premier independent competitive circuit for Flesh and Blood players. Compete
+							across regional circuits, earn points toward the Player's Championship, and battle
+							to become the next AGE Open Champion.
+						</p>
+
+						<!-- Stats Row -->
+						<div class="mb-5 grid grid-cols-3 gap-3">
+							<div class="group relative">
+								<div class="absolute inset-0 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 blur-sm transition-all group-hover:blur-md"></div>
+								<div class="relative rounded-xl border border-amber-500/30 bg-gray-900/80 p-3 text-center">
+									<div class="mb-1">
+										<span class="text-xl font-black text-amber-400">$30K</span>
+									</div>
+									<p class="text-[10px] tracking-wider text-gray-400 uppercase">2026 Prize Pool</p>
 								</div>
 							</div>
 
-							<!-- Series Description -->
-							<p class="mb-4 text-sm text-gray-400">
-								The premier independent competitive circuit for Flesh and Blood players. Compete
-								across regional circuits, earn points toward the Player's Championship, and battle
-								to become the next AGE Open Champion.
-							</p>
+							<div class="group relative">
+								<div class="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 blur-sm transition-all group-hover:blur-md"></div>
+								<div class="relative rounded-xl border border-blue-500/30 bg-gray-900/80 p-3 text-center">
+									<div class="mb-1">
+										<span class="text-xl font-black text-blue-400">{data.seriesStats?.totalEvents || 24}</span>
+									</div>
+									<p class="text-[10px] tracking-wider text-gray-400 uppercase">Open Events</p>
+								</div>
+							</div>
 
-							<!-- Stats Row - Enhanced Design -->
-							<div class="mb-5 grid grid-cols-3 gap-3">
-								<!-- Prize Pool -->
-								<div class="group relative">
-									<div
-										class="absolute inset-0 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 blur-sm transition-all group-hover:blur-md"
-									></div>
-									<div
-										class="relative rounded-xl border border-amber-500/30 bg-gray-900/80 p-3 text-center"
-									>
-										<div class="mb-1">
-											<span class="text-xl font-black text-amber-400">$30K</span>
-										</div>
-										<p class="text-[10px] tracking-wider text-gray-400 uppercase">
-											2026 Prize Pool
+							<div class="group relative">
+								<div class="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 blur-sm transition-all group-hover:blur-md"></div>
+								<div class="relative rounded-xl border border-purple-500/30 bg-gray-900/80 p-3 text-center">
+									<div class="mb-1">
+										<span class="text-xl font-black text-purple-400">{data.seriesStats?.totalPlayers || 0}</span>
+									</div>
+									<p class="text-[10px] tracking-wider text-gray-400 uppercase">AGE Players</p>
+								</div>
+							</div>
+						</div>
+
+						<!-- Three Circuits -->
+						<div class="mb-4 space-y-3">
+							<a
+								href="/age-open?circuit=Los%20Angeles"
+								class="group relative block overflow-hidden rounded-xl border border-blue-500/30 transition-all hover:border-blue-500/60"
+							>
+								<img
+									src="/images/circuits/los-angeles.webp"
+									alt="Los Angeles"
+									class="absolute inset-0 h-full w-full object-cover opacity-20 transition-all duration-500 group-hover:scale-105 group-hover:opacity-30"
+									loading="lazy"
+									decoding="async"
+								/>
+								<div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900/80"></div>
+								<div class="relative flex items-center gap-4 p-4">
+									<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-bold text-white shadow-lg shadow-blue-500/30">
+										LA
+									</div>
+									<div class="min-w-0 flex-1">
+										<h4 class="text-base font-semibold text-white transition-colors group-hover:text-blue-400">
+											Los Angeles Circuit
+										</h4>
+										<p class="line-clamp-2 text-xs text-gray-400">
+											The original AGE Open circuit. Home to skilled West Coast players and fierce competition.
 										</p>
 									</div>
+									<svg class="h-5 w-5 shrink-0 text-gray-500 transition-colors group-hover:text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d={icons.chevronRight} />
+									</svg>
 								</div>
+							</a>
 
-								<!-- Open Events -->
-								<div class="group relative">
-									<div
-										class="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 blur-sm transition-all group-hover:blur-md"
-									></div>
-									<div
-										class="relative rounded-xl border border-blue-500/30 bg-gray-900/80 p-3 text-center"
-									>
-										<div class="mb-1 flex items-center justify-center gap-1">
-											<svg
-												class="h-4 w-4 text-blue-400"
-												fill="none"
-												stroke="currentColor"
-												stroke-width="2"
-												viewBox="0 0 24 24"
-											>
-												<path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
-												/>
-											</svg>
-											<span class="text-xl font-black text-blue-400"
-												>{data.seriesStats?.totalEvents || 24}</span
-											>
-										</div>
-										<p class="text-[10px] tracking-wider text-gray-400 uppercase">Open Events</p>
-									</div>
-								</div>
-
-								<!-- Total Players -->
-								<div class="group relative">
-									<div
-										class="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 blur-sm transition-all group-hover:blur-md"
-									></div>
-									<div
-										class="relative rounded-xl border border-purple-500/30 bg-gray-900/80 p-3 text-center"
-									>
-										<div class="mb-1 flex items-center justify-center gap-1">
-											<svg
-												class="h-4 w-4 text-purple-400"
-												fill="none"
-												stroke="currentColor"
-												stroke-width="2"
-												viewBox="0 0 24 24"
-											>
-												<path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
-												/>
-											</svg>
-											<span class="text-xl font-black text-purple-400"
-												>{data.seriesStats?.totalPlayers || 0}</span
-											>
-										</div>
-										<p class="text-[10px] tracking-wider text-gray-400 uppercase">AGE Players</p>
-									</div>
-								</div>
-							</div>
-
-							<!-- Three Circuits - Enhanced Cards with Descriptions -->
-							<div class="mb-4 space-y-3">
-								<!-- Los Angeles -->
-								<a
-									href="/age-open?circuit=Los%20Angeles"
-									class="group relative block overflow-hidden rounded-xl border border-blue-500/30 transition-all hover:border-blue-500/60"
-								>
-									<img
-										src="/images/circuits/los-angeles.webp"
-										alt="Los Angeles"
-										class="absolute inset-0 h-full w-full object-cover opacity-20 transition-all duration-500 group-hover:scale-105 group-hover:opacity-30"
-									/>
-									<div
-										class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900/80"
-									></div>
-									<div class="relative flex items-center gap-4 p-4">
-										<div
-											class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-lg font-bold text-white shadow-lg shadow-blue-500/30"
-										>
-											LA
-										</div>
-										<div class="min-w-0 flex-1">
-											<h4
-												class="text-base font-semibold text-white transition-colors group-hover:text-blue-400"
-											>
-												Los Angeles Circuit
-											</h4>
-											<p class="line-clamp-3 text-xs text-gray-400">
-												The original AGE Open circuit and birthplace of our competitive series. Home
-												to some of the most skilled FaB players on the West Coast, LA events are
-												known for their fierce competition and electric atmosphere.
-											</p>
-										</div>
-										<svg
-											class="h-5 w-5 shrink-0 text-gray-500 transition-colors group-hover:text-blue-400"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											viewBox="0 0 24 24"
-										>
-											<path stroke-linecap="round" stroke-linejoin="round" d={icons.chevronRight} />
-										</svg>
-									</div>
-								</a>
-
-								<!-- New England -->
-								<a
-									href="/age-open?circuit=New%20England"
-									class="group relative block overflow-hidden rounded-xl border border-purple-500/30 transition-all hover:border-purple-500/60"
-								>
-									<img
-										src="/images/circuits/new-england.webp"
-										alt="New England"
-										class="absolute inset-0 h-full w-full object-cover opacity-20 transition-all duration-500 group-hover:scale-105 group-hover:opacity-30"
-									/>
-									<div
-										class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900/80"
-									></div>
-									<div class="relative flex items-center gap-4 p-4">
-										<div
-											class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 text-lg font-bold text-white shadow-lg shadow-purple-500/30"
-										>
-											NE
-										</div>
-										<div class="min-w-0 flex-1">
-											<h4
-												class="text-base font-semibold text-white transition-colors group-hover:text-purple-400"
-											>
-												New England Circuit
-											</h4>
-											<p class="line-clamp-3 text-xs text-gray-400">
-												Bringing high-stakes competitive Flesh and Blood to the East Coast. New
-												England's passionate community has quickly established itself as a force to
-												be reckoned with, producing rising stars and memorable matches.
-											</p>
-										</div>
-										<svg
-											class="h-5 w-5 shrink-0 text-gray-500 transition-colors group-hover:text-purple-400"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											viewBox="0 0 24 24"
-										>
-											<path stroke-linecap="round" stroke-linejoin="round" d={icons.chevronRight} />
-										</svg>
-									</div>
-								</a>
-
-								<!-- St. Louis -->
-								<a
-									href="/age-open?circuit=St.%20Louis"
-									class="group relative block overflow-hidden rounded-xl border border-green-500/30 transition-all hover:border-green-500/60"
-								>
-									<img
-										src="/images/circuits/st-louis.webp"
-										alt="St. Louis"
-										class="absolute inset-0 h-full w-full object-cover opacity-20 transition-all duration-500 group-hover:scale-105 group-hover:opacity-30"
-									/>
-									<div
-										class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900/80"
-									></div>
-									<div class="relative flex items-center gap-4 p-4">
-										<div
-											class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-green-400 to-green-600 text-sm font-bold text-white shadow-lg shadow-green-500/30"
-										>
-											STL
-										</div>
-										<div class="min-w-0 flex-1">
-											<h4
-												class="text-base font-semibold text-white transition-colors group-hover:text-green-400"
-											>
-												St. Louis Circuit
-											</h4>
-											<p class="line-clamp-3 text-xs text-gray-400">
-												The newest addition to the AGE Open family, bringing premier competitive
-												play to the heart of America. St. Louis represents the Midwest's growing FaB
-												community and hunger for high-level competition.
-											</p>
-										</div>
-										<svg
-											class="h-5 w-5 shrink-0 text-gray-500 transition-colors group-hover:text-green-400"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											viewBox="0 0 24 24"
-										>
-											<path stroke-linecap="round" stroke-linejoin="round" d={icons.chevronRight} />
-										</svg>
-									</div>
-								</a>
-							</div>
-
-							<!-- CTA Button -->
 							<a
-								href="/age-open"
-								class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-amber-500/40"
+								href="/age-open?circuit=New%20England"
+								class="group relative block overflow-hidden rounded-xl border border-purple-500/30 transition-all hover:border-purple-500/60"
 							>
-								Play in an AGE Open
-								<svg
-									class="h-4 w-4"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									viewBox="0 0 24 24"
-								>
-									<path stroke-linecap="round" stroke-linejoin="round" d={icons.arrowRight} />
-								</svg>
+								<img
+									src="/images/circuits/new-england.webp"
+									alt="New England"
+									class="absolute inset-0 h-full w-full object-cover opacity-20 transition-all duration-500 group-hover:scale-105 group-hover:opacity-30"
+									loading="lazy"
+									decoding="async"
+								/>
+								<div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900/80"></div>
+								<div class="relative flex items-center gap-4 p-4">
+									<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 text-lg font-bold text-white shadow-lg shadow-purple-500/30">
+										NE
+									</div>
+									<div class="min-w-0 flex-1">
+										<h4 class="text-base font-semibold text-white transition-colors group-hover:text-purple-400">
+											New England Circuit
+										</h4>
+										<p class="line-clamp-2 text-xs text-gray-400">
+											High-stakes competitive FaB on the East Coast. Rising stars and memorable matches.
+										</p>
+									</div>
+									<svg class="h-5 w-5 shrink-0 text-gray-500 transition-colors group-hover:text-purple-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d={icons.chevronRight} />
+									</svg>
+								</div>
+							</a>
+
+							<a
+								href="/age-open?circuit=St.%20Louis"
+								class="group relative block overflow-hidden rounded-xl border border-green-500/30 transition-all hover:border-green-500/60"
+							>
+								<img
+									src="/images/circuits/st-louis.webp"
+									alt="St. Louis"
+									class="absolute inset-0 h-full w-full object-cover opacity-20 transition-all duration-500 group-hover:scale-105 group-hover:opacity-30"
+									loading="lazy"
+									decoding="async"
+								/>
+								<div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900/80"></div>
+								<div class="relative flex items-center gap-4 p-4">
+									<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-green-400 to-green-600 text-sm font-bold text-white shadow-lg shadow-green-500/30">
+										STL
+									</div>
+									<div class="min-w-0 flex-1">
+										<h4 class="text-base font-semibold text-white transition-colors group-hover:text-green-400">
+											St. Louis Circuit
+										</h4>
+										<p class="line-clamp-2 text-xs text-gray-400">
+											The newest circuit bringing premier competitive play to the heart of America.
+										</p>
+									</div>
+									<svg class="h-5 w-5 shrink-0 text-gray-500 transition-colors group-hover:text-green-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d={icons.chevronRight} />
+									</svg>
+								</div>
 							</a>
 						</div>
+
+						<!-- CTA Button -->
+						<a
+							href="/age-open"
+							class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-amber-500/40"
+						>
+							Play in an AGE Open
+							<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" d={icons.arrowRight} />
+							</svg>
+						</a>
 					</div>
 
 					<!-- Upcoming Events -->

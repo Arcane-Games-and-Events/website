@@ -1,6 +1,7 @@
 <script>
 	import FadeImage from '$lib/components/FadeImage.svelte';
 	import ArticleCard from '$lib/components/ArticleCard.svelte';
+	import ArticlePreview from '$lib/components/ArticlePreview.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	export let data;
 
@@ -119,8 +120,8 @@
 					<div
 						class="absolute inset-0 transition-opacity duration-700 ease-in-out {index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}"
 					>
-						<!-- Background Image -->
-						<div class="absolute inset-0">
+						<!-- Background Image - positioned to right 2/3 on desktop -->
+						<div class="absolute inset-0 lg:left-1/3">
 							{#if article.coverImage?.src}
 								<FadeImage
 									src={article.coverImage.src}
@@ -133,14 +134,25 @@
 							{:else}
 								<div class="h-full w-full bg-gradient-to-br from-gray-800 to-gray-900"></div>
 							{/if}
-							<!-- Gradient overlay -->
-							<div class="absolute inset-0 bg-gradient-to-r from-gray-950/90 from-20% via-gray-950/70 via-50% to-gray-950/30 to-80%"></div>
-							<div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent"></div>
+						</div>
+						<!-- Gradient overlays -->
+						<!-- Mobile: standard gradient from left -->
+						<div class="absolute inset-0 bg-gradient-to-r from-gray-950/90 from-20% via-gray-950/70 via-50% to-gray-950/30 to-80% lg:hidden"></div>
+						<!-- Desktop: solid bg on left, smooth fade into image -->
+						<div class="absolute inset-0 hidden lg:block bg-gradient-to-r from-gray-950 from-[34%] via-gray-950/50 via-[55%] to-transparent to-[85%]"></div>
+						<!-- Bottom fade for both -->
+						<div class="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent"></div>
+
+						<!-- Accent glow in upper left (desktop only) -->
+						<div class="absolute inset-0 hidden lg:block overflow-hidden">
+							<div class="absolute -left-20 -top-20 h-[500px] w-[500px] rounded-full bg-blue-500/15 blur-[150px]"></div>
+							<div class="absolute left-[10%] top-[5%] h-[350px] w-[350px] rounded-full bg-purple-600/12 blur-[120px]"></div>
 						</div>
 
 						<!-- Content -->
-						<div class="relative z-10 h-full flex items-center px-4 md:px-8 lg:px-12 py-6 md:py-12 lg:py-16">
-							<div class="max-w-xl lg:max-w-2xl">
+						<div class="relative z-10 h-full flex items-center">
+							<div class="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-6 md:py-12 lg:py-16">
+								<div class="max-w-xl lg:max-w-2xl">
 								<!-- Category/Tag -->
 								<div class="flex items-center gap-2 md:gap-3 mb-2 md:mb-4">
 									{#if article.tags && article.tags.length > 0}
@@ -224,6 +236,7 @@
 										<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
 									</svg>
 								</a>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -355,9 +368,9 @@
 
 			<!-- Articles Grid -->
 			{#if filteredArticles.length > 0}
-				<div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+				<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 					{#each filteredArticles as article}
-						<ArticleCard {article} />
+						<ArticlePreview {article} variant="featured" />
 					{/each}
 				</div>
 			{:else if allArticles.length === 0}
