@@ -1,15 +1,11 @@
 <script>
 	import { icons } from '$lib/icons';
-	import FadeImage from '$lib/components/FadeImage.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import { sidebarCollapsed } from '$lib/stores/sidebar';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { getCircuit, getCircuitImage } from '$lib/data/circuits.js';
 	import StandingsCard from '$lib/components/StandingsCard.svelte';
 	import FeaturedDecklists from '$lib/components/FeaturedDecklists.svelte';
 	import UpcomingEvents from '$lib/components/UpcomingEvents.svelte';
-	import ArticleCard from '$lib/components/ArticleCard.svelte';
 	import ArticlePreview from '$lib/components/ArticlePreview.svelte';
 	export let data;
 
@@ -22,26 +18,6 @@
 			url.searchParams.set(param, value);
 		}
 		goto(url.toString(), { replaceState: true, noScroll: true, keepFocus: true });
-	}
-
-	// Subscribe to sidebar collapsed state
-	$: isCollapsed = $sidebarCollapsed;
-
-	function formatDate(dateStr) {
-		if (!dateStr) return 'TBA';
-		const date = new Date(dateStr);
-		return new Intl.DateTimeFormat('en-US', {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric'
-		}).format(date);
-	}
-
-	function getReadTime(article) {
-		if (article.readTime) {
-			return `${article.readTime} min`;
-		}
-		return null;
 	}
 
 	// Carousel slides configuration

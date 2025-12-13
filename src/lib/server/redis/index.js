@@ -79,7 +79,7 @@ export async function invalidateCache(key) {
  * Invalidate all cache keys matching a prefix
  * @param {string} prefix - Key prefix to match
  */
-export async function invalidateCacheByPrefix(prefix) {
+export async function invalidateCacheByPrefix(_prefix) {
 	if (!redis) return;
 
 	// Upstash REST API doesn't support SCAN, so pattern-based invalidation

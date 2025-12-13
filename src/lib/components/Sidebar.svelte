@@ -1,6 +1,6 @@
 <script>
 	import { page } from '$app/stores';
-	import { fly, fade } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
 	import { sidebarCollapsed } from '$lib/stores/sidebar';
 
 	export let user;

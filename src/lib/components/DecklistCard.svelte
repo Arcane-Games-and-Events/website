@@ -8,10 +8,8 @@
 	let {
 		decklist,
 		eventId = null,
-		eventName = null,
 		eventCircuit = null,
 		showPlayerName = true,
-		showEventName = true,
 		showCardCount = false
 	} = $props();
 
@@ -33,18 +31,10 @@
 		return `#${placement}`;
 	}
 
-	function formatPlacementFull(placement) {
-		if (placement === 1) return '1st Place';
-		if (placement === 2) return '2nd Place';
-		if (placement === 3) return '3rd Place';
-		return `Top ${placement}`;
-	}
-
 	// Computed values
 	const heroImage = $derived(getHeroImage(decklist.hero));
 	const circuit = $derived(getCircuit(eventCircuit || decklist.eventCircuit));
 	const resolvedEventId = $derived(eventId || decklist.eventId);
-	const resolvedEventName = $derived(eventName || decklist.eventName);
 	const resolvedEventCircuit = $derived(eventCircuit || decklist.eventCircuit);
 
 	// Card count calculation

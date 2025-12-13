@@ -288,7 +288,7 @@ export function calculateTiebreakers(standings, pairings, swissRounds) {
 	}
 
 	// Calculate opponent match win %
-	for (const [playerId, stats] of Object.entries(playerStats)) {
+	for (const [_playerId, stats] of Object.entries(playerStats)) {
 		const oppWinPcts = stats.opponents.map((opp) => {
 			const oppStats = playerStats[opp.id] || playerStats[opp.name];
 			// Floor at 33% per MTG/FAB rules

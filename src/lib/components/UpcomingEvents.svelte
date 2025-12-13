@@ -1,6 +1,5 @@
 <script>
 	import EventCard from './EventCard.svelte';
-	import { getCircuitNames } from '$lib/data/circuits.js';
 
 	// Props
 	export let events = [];
@@ -15,7 +14,6 @@
 
 	// Filter state
 	let selectedCircuit = 'all';
-	const circuits = getCircuitNames();
 
 	// Filtered events by circuit
 	$: filteredEvents = events.filter((e) => {

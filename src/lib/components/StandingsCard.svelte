@@ -22,11 +22,6 @@
 		return season === 'all' ? 'All Time' : season;
 	}
 
-	// Get display label for circuit
-	function getCircuitLabel(circuit) {
-		return circuit === 'all' || circuit === '' ? 'All Circuits' : circuit;
-	}
-
 	// Get initials from player name
 	function getInitials(name) {
 		return name
