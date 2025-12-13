@@ -22,12 +22,13 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# Strapi CMS
+# Payload CMS
 cms/node_modules
 cms/.tmp
 cms/dist
 cms/build
 cms/.env
+cms/test.env
 cms/.cache
 cms/public/uploads
 cms/exports

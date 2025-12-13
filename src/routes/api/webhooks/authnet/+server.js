@@ -4,6 +4,8 @@ import { webhookEvent, user as userTable, ticket } from '$lib/server/db/schema.j
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 import { AUTHNET_SIGNATURE_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
+import { sendPaymentFailedEmail } from '$lib/server/email.js';
 
 /**
  * Webhook handler for Authorize.net Silent Post URL
@@ -130,7 +132,12 @@ async function handleSubscriptionEvent(payload) {
 			})
 			.where(eq(userTable.id, user.id));
 
-		// TODO: Send email notification to user about failed payment
+		// Send email notification to user about failed payment
+		const baseUrl = env.PUBLIC_BASE_URL || 'https://www.age.events';
+		await sendPaymentFailedEmail(user.email, {
+			gracePeriodEnd,
+			updatePaymentUrl: `${baseUrl}/account/billing`
+		});
 
 	} else if (responseCode === '4') {
 		// Held for review - don't change anything yet
