@@ -1,10 +1,9 @@
-import { YOUTUBE_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
-const CHANNEL_ID = 'UC8wNJqCM_VT-LAfMDkUPLJg';
+const YOUTUBE_API_KEY = env.YOUTUBE_API_KEY;
+const CHANNEL_ID = env.YOUTUBE_CHANNEL_ID || 'UC8wNJqCM_VT-LAfMDkUPLJg';
+const FALLBACK_VIDEO_ID = env.YOUTUBE_FALLBACK_VIDEO_ID || 'aXYo0W_VobE';
 const BASE_URL = 'https://www.googleapis.com/youtube/v3';
-
-// Fallback video ID - latest livestream from the channel
-const FALLBACK_VIDEO_ID = 'aXYo0W_VobE';
 
 /**
  * Fetch the latest stream - prioritizes scheduled/upcoming streams, then falls back to completed livestreams

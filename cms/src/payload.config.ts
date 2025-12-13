@@ -15,6 +15,14 @@ import { Tags } from './collections/Tags'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+// Validate required environment variables
+const requiredEnvVars = ['PAYLOAD_SECRET', 'DATABASE_URI'] as const
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    throw new Error(`Missing required environment variable: ${envVar}`)
+  }
+}
+
 export default buildConfig({
   admin: {
     user: Users.slug,
@@ -29,10 +37,11 @@ export default buildConfig({
     },
   },
   cors: [
-    'http://localhost:5173', // Local dev
-    'https://arcanegamesandevents.com', // Production domain (update this)
-    process.env.FRONTEND_URL || '', // Vercel preview URLs
-  ].filter(Boolean),
+    ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:5173'] : []),
+    'https://www.age.events',
+    'https://age.events',
+    process.env.FRONTEND_URL,
+  ].filter(Boolean) as string[],
   collections: [Users, Posts, Authors, Tags, Media],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
@@ -47,7 +56,7 @@ export default buildConfig({
       idleTimeoutMillis: 10000,
       connectionTimeoutMillis: 10000,
       allowExitOnIdle: true,
-      ssl: { rejectUnauthorized: false },
+      ssl: process.env.NODE_ENV === 'production' ? true : { rejectUnauthorized: false },
     },
     schemaName: 'payload',
     push: false,

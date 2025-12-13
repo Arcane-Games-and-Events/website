@@ -54,7 +54,6 @@
 
 	async function handleSubmit(e) {
 		e.preventDefault();
-		console.log('Form submitted!');
 		loading = true;
 		error = '';
 
@@ -64,7 +63,6 @@
 			if (paymentMethod === 'saved' && selectedCardId) {
 				// Pay with saved card
 				const selectedCard = savedCards.find(c => c.id === selectedCardId);
-				console.log('Paying with saved card:', selectedCard?.lastFour);
 
 				requestBody = {
 					amount,
@@ -101,9 +99,6 @@
 				};
 			}
 
-			console.log('Sending payment request to:', submitUrl);
-			console.log('Amount:', amount);
-
 			const response = await fetch(submitUrl, {
 				method: 'POST',
 				headers: {
@@ -113,23 +108,18 @@
 			});
 
 			const result = await response.json();
-			console.log('Response status:', response.status);
-			console.log('Response data:', result);
 
 			if (response.ok && result.success) {
-				console.log('Payment successful!');
 				success = true;
 				// Redirect or show success message
 				if (result.redirectUrl) {
 					window.location.href = result.redirectUrl;
 				}
 			} else {
-				console.error('Payment failed:', result.error);
 				error = result.error || 'Payment failed. Please try again.';
 			}
 		} catch (err) {
 			error = 'Network error. Please check your connection and try again.';
-			console.error('Payment error:', err);
 		} finally {
 			loading = false;
 		}
