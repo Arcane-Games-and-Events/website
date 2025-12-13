@@ -1,21 +1,23 @@
 import ApiContracts from 'authorizenet/lib/apicontracts.js';
 import ApiControllers from 'authorizenet/lib/apicontrollers.js';
 import Constants from 'authorizenet/lib/constants.js';
-import {
-	AUTHNET_API_LOGIN_ID,
-	AUTHNET_TRANSACTION_KEY,
-	AUTHNET_ENVIRONMENT
-} from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 /**
  * Authorize.net API Client
  * Handles payments, subscriptions, and customer profiles
  */
 class AuthNetClient {
-	constructor() {
-		this.apiLoginId = AUTHNET_API_LOGIN_ID;
-		this.transactionKey = AUTHNET_TRANSACTION_KEY;
-		this.environment = AUTHNET_ENVIRONMENT || 'sandbox';
+	get apiLoginId() {
+		return env.AUTHNET_API_LOGIN_ID;
+	}
+
+	get transactionKey() {
+		return env.AUTHNET_TRANSACTION_KEY;
+	}
+
+	get environment() {
+		return env.AUTHNET_ENVIRONMENT || 'sandbox';
 	}
 
 	/**
