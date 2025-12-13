@@ -1,7 +1,7 @@
 import { db } from '$lib/server/db';
 import { savedCard } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
-import { AUTHNET_ENVIRONMENT } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 export async function load({ locals }) {
 	// Fetch saved cards if user is logged in
@@ -13,6 +13,6 @@ export async function load({ locals }) {
 	return {
 		user: locals.user,
 		savedCards: userSavedCards,
-		isSandbox: AUTHNET_ENVIRONMENT === 'sandbox'
+		isSandbox: env.AUTHNET_ENVIRONMENT === 'sandbox'
 	};
 }

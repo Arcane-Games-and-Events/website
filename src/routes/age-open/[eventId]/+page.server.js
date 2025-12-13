@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { event, savedCard, ticket } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
-import { AUTHNET_ENVIRONMENT } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 export async function load({ params, locals }) {
 	try {
@@ -63,7 +63,7 @@ export async function load({ params, locals }) {
 			userLastName,
 			savedCards: userSavedCards,
 			userTicket,
-			isSandbox: AUTHNET_ENVIRONMENT === 'sandbox'
+			isSandbox: env.AUTHNET_ENVIRONMENT === 'sandbox'
 		};
 	} catch (err) {
 		if (err.status === 404) {
