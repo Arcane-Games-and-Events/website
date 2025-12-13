@@ -15,11 +15,11 @@ import { Tags } from './collections/Tags'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-// Validate required environment variables
+// Warn about missing environment variables (don't throw during build)
 const requiredEnvVars = ['PAYLOAD_SECRET', 'DATABASE_URI'] as const
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
-    throw new Error(`Missing required environment variable: ${envVar}`)
+    console.warn(`Warning: Missing environment variable: ${envVar}`)
   }
 }
 
