@@ -7,15 +7,8 @@ const config = {
 			runtime: 'nodejs22.x'
 		}),
 		csrf: {
-			// Allow webhooks from Authorize.net (they don't send Origin header)
-			checkOrigin: (event) => {
-				const path = event.url.pathname;
-				// Exempt webhook endpoints from CSRF protection
-				if (path.startsWith('/api/webhooks/')) {
-					return false;
-				}
-				return true;
-			}
+			// Disable built-in CSRF for webhooks - we implement custom checks in hooks
+			checkOrigin: false
 		}
 	}
 };

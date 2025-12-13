@@ -3,8 +3,26 @@ import { auth } from '$lib/server/lucia';
 import { db } from '$lib/server/db';
 import { user as userTable } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
+import { error } from '@sveltejs/kit';
+
+// Paths exempt from CSRF protection (external webhooks)
+const CSRF_EXEMPT_PATHS = ['/api/webhooks/'];
 
 export const handle = async ({ event, resolve }) => {
+	// Custom CSRF protection (exempts webhook paths)
+	const { request, url } = event;
+	const isExempt = CSRF_EXEMPT_PATHS.some((path) => url.pathname.startsWith(path));
+
+	if (!isExempt && request.method !== 'GET' && request.method !== 'HEAD') {
+		const origin = request.headers.get('origin');
+		const host = url.origin;
+
+		// Block if Origin is present but doesn't match
+		if (origin && origin !== host) {
+			throw error(403, 'Cross-site POST form submissions are forbidden');
+		}
+	}
+
 	// read the session id from the cookie
 	const sid = event.cookies.get(auth.sessionCookieName);
 	let user = null;
