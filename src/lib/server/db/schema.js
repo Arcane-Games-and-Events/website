@@ -171,8 +171,8 @@ export const eventStaff = pgTable('staff_assignments', {
 });
 
 // NOTE: event_result table has been removed
-// Results (placements, wins/losses, AGE points, prizes) are now computed on-the-fly
-// from event_match data using calculateFinalStandings() in tournament-processor.js
+// Results (placements, wins/losses, AGE points, prizes) are computed on-the-fly
+// from matches/standings data using tournament-processor.js
 
 // DECKLISTS (player deck submissions)
 export const decklist = pgTable('decklists', {

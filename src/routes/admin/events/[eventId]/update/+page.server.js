@@ -1,14 +1,6 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import {
-	event,
-	ticket,
-	eventStaff,
-	decklist,
-	standing,
-	match,
-	eventResult
-} from '$lib/server/db/schema.js';
+import { event, ticket, eventStaff, decklist, standing, match } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import {
 	processTournamentResults,
@@ -70,12 +62,6 @@ export async function load({ params, locals }) {
 				playerName: `${t.firstName || ''} ${t.lastName || ''}`.trim() || 'Unknown Player'
 			}));
 
-		// Fetch existing results for this event
-		const existingResults = await db
-			.select()
-			.from(eventResult)
-			.where(eq(eventResult.eventId, params.eventId));
-
 		// Fetch existing decklists for this event
 		const existingDecklists = await db
 			.select()
@@ -88,7 +74,6 @@ export async function load({ params, locals }) {
 			isTournamentStaff,
 			event: eventData,
 			participants,
-			existingResults,
 			existingDecklists
 		};
 	} catch (err) {
@@ -101,75 +86,6 @@ export async function load({ params, locals }) {
 }
 
 export const actions = {
-	// Save a single result
-	saveResult: async ({ params, request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
-			return fail(403, { error: 'Unauthorized' });
-		}
-
-		const formData = await request.formData();
-		const resultId = formData.get('resultId');
-		const playerName = formData.get('playerName');
-		const gemId = formData.get('gemId') || null;
-		const userId = formData.get('userId') || null;
-		const placement = parseInt(formData.get('placement'));
-		const wins = parseInt(formData.get('wins') || '0');
-		const losses = parseInt(formData.get('losses') || '0');
-		const draws = parseInt(formData.get('draws') || '0');
-		const agePoints = parseInt(formData.get('agePoints') || '0');
-		const prizeAmount = formData.get('prizeAmount') || null;
-
-		if (!playerName || isNaN(placement) || placement < 1) {
-			return fail(400, { error: 'Player name and valid placement are required' });
-		}
-
-		try {
-			const resultData = {
-				eventId: params.eventId,
-				playerName,
-				gemId,
-				userId,
-				placement,
-				wins,
-				losses,
-				draws,
-				agePoints,
-				prizeAmount: prizeAmount ? parseFloat(prizeAmount).toFixed(2) : null
-			};
-
-			if (resultId) {
-				// Update existing result
-				await db.update(eventResult).set(resultData).where(eq(eventResult.id, resultId));
-			} else {
-				// Create new result
-				await db.insert(eventResult).values(resultData);
-			}
-
-			return { success: true, message: 'Result saved successfully' };
-		} catch (err) {
-			console.error('Error saving result:', err);
-			return fail(500, { error: 'Failed to save result' });
-		}
-	},
-
-	// Delete a result
-	deleteResult: async ({ request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
-			return fail(403, { error: 'Unauthorized' });
-		}
-
-		const formData = await request.formData();
-		const resultId = formData.get('resultId');
-
-		try {
-			await db.delete(eventResult).where(eq(eventResult.id, resultId));
-			return { success: true, message: 'Result deleted' };
-		} catch (err) {
-			console.error('Error deleting result:', err);
-			return fail(500, { error: 'Failed to delete result' });
-		}
-	},
-
 	// Save a decklist
 	saveDecklist: async ({ params, request, locals }) => {
 		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
@@ -282,24 +198,6 @@ export const actions = {
 				eventDate: eventData.eventDate
 			});
 
-			// Clear existing results for this event
-			await db.delete(eventResult).where(eq(eventResult.eventId, params.eventId));
-
-			// Insert new results
-			for (const result of processedResults.results) {
-				await db.insert(eventResult).values({
-					eventId: params.eventId,
-					playerName: result.name,
-					gemId: result.playerId || null,
-					placement: result.placement,
-					wins: result.matchesWon || 0,
-					losses: result.matchesPlayed - result.matchesWon || 0,
-					draws: 0,
-					agePoints: result.points,
-					prizeAmount: result.prize > 0 ? result.prize.toFixed(2) : null
-				});
-			}
-
 			// Clear existing matches for this event and insert new ones
 			// Get month name and year from event date
 			const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
@@ -403,34 +301,102 @@ export const actions = {
 				return fail(404, { error: 'Event not found' });
 			}
 
-			// Fetch all results for this event
-			const results = await db
-				.select()
-				.from(eventResult)
-				.where(eq(eventResult.eventId, params.eventId));
+			// Determine month info from event date
+			const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
+			const monthNamesCapitalized = [
+				'January',
+				'February',
+				'March',
+				'April',
+				'May',
+				'June',
+				'July',
+				'August',
+				'September',
+				'October',
+				'November',
+				'December'
+			];
+			const eventMonthCapitalized = monthNamesCapitalized[eventDate.getMonth()];
+			const currentYear = eventDate.getFullYear().toString();
 
-			if (results.length === 0) {
-				return fail(400, { error: 'No results to finalize. Please import or add results first.' });
+			if (!eventData.circuit) {
+				return fail(400, { error: 'Event must have a circuit to finalize standings.' });
 			}
 
-			// Determine month column prefix from event date
-			const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
-			const monthNames = [
-				'january',
-				'february',
-				'march',
-				'april',
-				'may',
-				'june',
-				'july',
-				'august',
-				'september',
-				'october',
-				'november',
-				'december'
-			];
-			const eventMonth = monthNames[eventDate.getMonth()];
-			const currentYear = eventDate.getFullYear().toString();
+			// Fetch matches for this event to compute results
+			const eventMatches = await db
+				.select()
+				.from(match)
+				.where(
+					and(
+						eq(match.year, currentYear),
+						eq(match.circuit, eventData.circuit),
+						eq(match.month, eventMonthCapitalized)
+					)
+				);
+
+			if (eventMatches.length === 0) {
+				return fail(400, {
+					error: 'No matches found. Please import tournament results first using CSV upload.'
+				});
+			}
+
+			// Compute player stats from matches
+			const playerStats = {};
+			for (const m of eventMatches) {
+				// Initialize player 1
+				const p1Key = m.player1GemId || m.player1Name;
+				if (!playerStats[p1Key]) {
+					playerStats[p1Key] = {
+						playerName: m.player1Name,
+						gemId: m.player1GemId,
+						wins: 0,
+						losses: 0,
+						draws: 0
+					};
+				}
+
+				// Initialize player 2
+				const p2Key = m.player2GemId || m.player2Name;
+				if (m.player2Name && !playerStats[p2Key]) {
+					playerStats[p2Key] = {
+						playerName: m.player2Name,
+						gemId: m.player2GemId,
+						wins: 0,
+						losses: 0,
+						draws: 0
+					};
+				}
+
+				// Count wins/losses based on winner
+				if (m.winner === m.player1Name || m.winner === m.player1GemId) {
+					playerStats[p1Key].wins++;
+					if (m.player2Name) playerStats[p2Key].losses++;
+				} else if (m.winner === m.player2Name || m.winner === m.player2GemId) {
+					if (m.player2Name) playerStats[p2Key].wins++;
+					playerStats[p1Key].losses++;
+				} else if (m.winner === 'Draw' || m.winner === 'draw') {
+					playerStats[p1Key].draws++;
+					if (m.player2Name) playerStats[p2Key].draws++;
+				}
+			}
+
+			// Convert to array and sort by wins (descending) to determine placement
+			const results = Object.values(playerStats)
+				.sort((a, b) => b.wins - a.wins || a.losses - b.losses)
+				.map((player, index) => {
+					const placement = index + 1;
+					const pointsEntry = AGE_POINTS[placement];
+					return {
+						...player,
+						placement,
+						agePoints: pointsEntry ? pointsEntry.points : PARTICIPATION_POINTS
+					};
+				});
+
+			// Get lowercase month for column names
+			const eventMonth = eventMonthCapitalized.toLowerCase();
 
 			// Track updates for summary
 			let playersUpdated = 0;

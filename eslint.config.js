@@ -39,6 +39,7 @@ export default [
 				'warn',
 				{ argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }
 			],
+			'no-undef': 'off',
 			'no-empty': 'off',
 			'no-case-declarations': 'off'
 		}
