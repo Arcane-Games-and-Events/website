@@ -18,7 +18,11 @@ export async function POST({ request }) {
 		// Verify webhook signature if available
 		const signature = request.headers.get('x-anet-signature');
 		if (signature && env.AUTHNET_SIGNATURE_KEY) {
-			const isValid = verifySignature(signature, JSON.stringify(payload), env.AUTHNET_SIGNATURE_KEY);
+			const isValid = verifySignature(
+				signature,
+				JSON.stringify(payload),
+				env.AUTHNET_SIGNATURE_KEY
+			);
 			if (!isValid) {
 				console.error('Invalid Authorize.net webhook signature');
 				return json({ error: 'Invalid signature' }, { status: 401 });
