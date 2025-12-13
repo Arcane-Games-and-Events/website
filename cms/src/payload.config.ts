@@ -56,7 +56,7 @@ export default buildConfig({
       idleTimeoutMillis: 10000,
       connectionTimeoutMillis: 10000,
       allowExitOnIdle: true,
-      ssl: process.env.NODE_ENV === 'production' ? true : { rejectUnauthorized: false },
+      ssl: { rejectUnauthorized: false }, // Supabase uses certificates that require this setting
     },
     schemaName: 'payload',
     push: false,
