@@ -152,16 +152,6 @@
 		return v;
 	}
 
-	function getCardIcon(cardType) {
-		const icons = {
-			Visa: 'M8.75 2.5h6.5a2 2 0 012 2v11a2 2 0 01-2 2h-6.5a2 2 0 01-2-2v-11a2 2 0 012-2z',
-			Mastercard: 'M8.75 2.5h6.5a2 2 0 012 2v11a2 2 0 01-2 2h-6.5a2 2 0 01-2-2v-11a2 2 0 012-2z',
-			Amex: 'M8.75 2.5h6.5a2 2 0 012 2v11a2 2 0 01-2 2h-6.5a2 2 0 01-2-2v-11a2 2 0 012-2z',
-			Discover: 'M8.75 2.5h6.5a2 2 0 012 2v11a2 2 0 01-2 2h-6.5a2 2 0 01-2-2v-11a2 2 0 012-2z'
-		};
-		return icons[cardType] || icons['Visa'];
-	}
-
 	// Navigate to order detail page
 	function navigateToOrder(orderId) {
 		goto(`/account/orders/${orderId}`);
@@ -293,7 +283,6 @@
 
 	// Subscription details
 	const subscriptionType = data.user?.subscriptionType;
-	const subscriptionStatus = data.user?.subscriptionStatus;
 	const subscriptionStartDate = data.user?.subscriptionStartDate
 		? new Date(data.user.subscriptionStartDate)
 		: null;
@@ -350,7 +339,7 @@
 	let cancelSuccess = '';
 
 	// Get tab color classes
-	function getTabColors(color, isActive) {
+	function getTabColors(color, _isActive) {
 		const colors = {
 			blue: {
 				active: 'bg-blue-500/15 border-blue-500/40 text-blue-400',

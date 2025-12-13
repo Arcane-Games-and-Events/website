@@ -82,7 +82,7 @@ export async function load({ params, locals }) {
 }
 
 export const actions = {
-	refund: async ({ params, request, locals }) => {
+	refund: async ({ params, locals }) => {
 		// Require authentication
 		if (!locals.user) {
 			return fail(401, { error: 'Authentication required' });

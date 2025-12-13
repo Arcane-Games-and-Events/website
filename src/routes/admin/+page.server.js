@@ -1,16 +1,7 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import {
-	event,
-	order,
-	user,
-	standing,
-	match,
-	lssEvent,
-	ticket,
-	entitlement
-} from '$lib/server/db/schema.js';
-import { desc, eq, count, and, sql, asc, gte } from 'drizzle-orm';
+import { order, user, standing, match, lssEvent, ticket, entitlement } from '$lib/server/db/schema.js';
+import { eq, and, sql } from 'drizzle-orm';
 
 // Helper to add timeout to promises
 const withTimeout = (promise, ms, fallback) =>

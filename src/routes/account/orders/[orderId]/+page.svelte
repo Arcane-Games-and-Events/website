@@ -36,12 +36,6 @@
 	const isWithin24Hours = hoursUntilEvent !== null && hoursUntilEvent <= 24;
 	const isEventPassed = hoursUntilEvent !== null && hoursUntilEvent < 0;
 
-	// Determine if order can be refunded (self-service)
-	const canRefund =
-		data.order.meta?.type !== 'subscription' &&
-		(!data.additionalData?.ticket || !data.additionalData.ticket.refunded) &&
-		!isWithin24Hours;
-
 	// Show refund section for tickets (even if within 24 hours, to show contact message)
 	const showRefundSection =
 		data.order.meta?.type !== 'subscription' &&
