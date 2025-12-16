@@ -327,9 +327,9 @@
 		}).format(amount || 0);
 	}
 
-	// Format date helper
+	// Format date helper (using UTC to preserve wall clock time)
 	function formatDate(date, options = { month: 'short', day: 'numeric', year: 'numeric' }) {
-		return new Date(date).toLocaleDateString('en-US', options);
+		return new Date(date).toLocaleDateString('en-US', { ...options, timeZone: 'UTC' });
 	}
 
 	// Get circuit border color
@@ -976,14 +976,15 @@
 													style="color: {circuit.hex.light};"
 												>
 													{new Date(event.eventDate).toLocaleDateString('en-US', {
-														month: 'short'
+														month: 'short',
+														timeZone: 'UTC'
 													})}
 												</span>
 												<span
 													class="text-base leading-none font-bold"
 													style="color: {circuit.hex.light};"
 												>
-													{new Date(event.eventDate).getDate()}
+													{new Date(event.eventDate).getUTCDate()}
 												</span>
 											</div>
 
@@ -1007,7 +1008,8 @@
 														{new Date(event.eventDate).toLocaleDateString('en-US', {
 															weekday: 'short',
 															month: 'short',
-															day: 'numeric'
+															day: 'numeric',
+															timeZone: 'UTC'
 														})}
 													</span>
 												</div>

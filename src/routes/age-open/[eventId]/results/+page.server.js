@@ -103,7 +103,7 @@ export async function load({ params }) {
 		let heroData = [];
 		let metagameBreakdown = [];
 		if (eventData.circuit && eventData.month && eventData.eventDate) {
-			const season = new Date(eventData.eventDate).getFullYear().toString();
+			const season = new Date(eventData.eventDate).getUTCFullYear().toString();
 			heroData = await db
 				.select()
 				.from(eventPlayerHero)

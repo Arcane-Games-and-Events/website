@@ -2,6 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { event } from '$lib/server/db/schema';
 import { nanoid } from 'nanoid';
+import { parseDatetimeLocal } from '$lib/server/dates.js';
 
 export async function load({ locals }) {
 	// Require admin authentication
@@ -84,7 +85,7 @@ export const actions = {
 				format,
 				circuit: circuit || null,
 				month: month || null,
-				eventDate: new Date(eventDate),
+				eventDate: parseDatetimeLocal(eventDate),
 				description: description || null,
 				gemIdRequired,
 				premiumDiscount,

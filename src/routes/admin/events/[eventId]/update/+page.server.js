@@ -215,8 +215,8 @@ export const actions = {
 				'November',
 				'December'
 			];
-			const eventMonthName = monthNames[eventDate.getMonth()];
-			const eventYear = eventDate.getFullYear().toString();
+			const eventMonthName = monthNames[eventDate.getUTCMonth()];
+			const eventYear = eventDate.getUTCFullYear().toString();
 
 			if (eventData.circuit) {
 				await db
@@ -317,8 +317,8 @@ export const actions = {
 				'November',
 				'December'
 			];
-			const eventMonthCapitalized = monthNamesCapitalized[eventDate.getMonth()];
-			const currentYear = eventDate.getFullYear().toString();
+			const eventMonthCapitalized = monthNamesCapitalized[eventDate.getUTCMonth()];
+			const currentYear = eventDate.getUTCFullYear().toString();
 
 			if (!eventData.circuit) {
 				return fail(400, { error: 'Event must have a circuit to finalize standings.' });

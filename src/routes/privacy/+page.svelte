@@ -325,7 +325,7 @@
 				please contact us:
 			</p>
 			<a
-				href="mailto:privacy@agesoftware.com"
+				href="mailto:info@age.events"
 				class="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-400"
 			>
 				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -336,7 +336,7 @@
 						d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
 					/>
 				</svg>
-				privacy@agesoftware.com
+				info@age.events
 			</a>
 		</section>
 

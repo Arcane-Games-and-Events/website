@@ -282,7 +282,8 @@
 			year: 'numeric',
 			hour: 'numeric',
 			minute: '2-digit',
-			hour12: true
+			hour12: true,
+			timeZone: 'UTC'
 		}).format(new Date(dateStr));
 	}
 
@@ -293,18 +294,20 @@
 			day: 'numeric',
 			year: 'numeric',
 			hour: 'numeric',
-			minute: '2-digit'
+			minute: '2-digit',
+			timeZone: 'UTC'
 		}).format(new Date(dateStr));
 	}
 
 	function formatDateForInput(dateStr) {
 		if (!dateStr) return '';
 		const date = new Date(dateStr);
-		const year = date.getFullYear();
-		const month = String(date.getMonth() + 1).padStart(2, '0');
-		const day = String(date.getDate()).padStart(2, '0');
-		const hours = String(date.getHours()).padStart(2, '0');
-		const minutes = String(date.getMinutes()).padStart(2, '0');
+		// Format using UTC to preserve the original wall clock time
+		const year = date.getUTCFullYear();
+		const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+		const day = String(date.getUTCDate()).padStart(2, '0');
+		const hours = String(date.getUTCHours()).padStart(2, '0');
+		const minutes = String(date.getUTCMinutes()).padStart(2, '0');
 		return `${year}-${month}-${day}T${hours}:${minutes}`;
 	}
 

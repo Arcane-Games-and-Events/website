@@ -21,6 +21,12 @@ body {
 		'calt' 1;
 }
 
+/* Make all buttons show pointer cursor on hover */
+button,
+[role='button'] {
+	@apply cursor-pointer;
+}
+
 /* Navigation loading bar animation */
 @keyframes loading-bar {
 	0% {

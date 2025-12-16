@@ -1,8 +1,6 @@
 <script>
 	export let data;
 
-	$: isPremium = data.user?.role === 'premium' || data.user?.role === 'admin';
-
 	// Format date for display
 	function formatDate(dateString) {
 		if (!dateString) return '';
@@ -34,37 +32,6 @@
 
 	// Fallback channel ID for when no specific video is available
 	const CHANNEL_ID = 'UC8wNJqCM_VT-LAfMDkUPLJg';
-
-	// Sample premium match videos - in production these would come from a database
-	const premiumMatches = [
-		{
-			id: 1,
-			title: 'Finals - LA Open December 2024',
-			thumbnail: '/images/match-placeholder.jpg',
-			duration: '32:15',
-			event: 'LA Open',
-			date: 'Dec 14, 2024',
-			players: 'Player1 vs Player2'
-		},
-		{
-			id: 2,
-			title: 'Semifinals - LA Open December 2024',
-			thumbnail: '/images/match-placeholder.jpg',
-			duration: '28:42',
-			event: 'LA Open',
-			date: 'Dec 14, 2024',
-			players: 'Player3 vs Player4'
-		},
-		{
-			id: 3,
-			title: 'Top 8 Feature Match',
-			thumbnail: '/images/match-placeholder.jpg',
-			duration: '45:20',
-			event: 'LA Open',
-			date: 'Dec 14, 2024',
-			players: 'Player5 vs Player6'
-		}
-	];
 </script>
 
 <svelte:head>
@@ -477,193 +444,44 @@
 
 		<!-- Premium Match Videos Section -->
 		<section class="mb-16">
-			<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<h2 class="flex items-center gap-3 text-3xl font-bold text-white">
-						<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20">
-							<svg class="h-5 w-5 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
-								<path
-									d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-								/>
-							</svg>
-						</div>
-						Premium Match Videos
-					</h2>
-					<p class="mt-2 text-gray-400">Exclusive match recordings from our events</p>
-				</div>
-				{#if !isPremium}
-					<a
-						href="/premium"
-						class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition-all hover:from-amber-400 hover:to-amber-500"
-					>
-						<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+			<div class="mb-8">
+				<h2 class="flex items-center gap-3 text-3xl font-bold text-white">
+					<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20">
+						<svg class="h-5 w-5 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
 							<path
 								d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
 							/>
 						</svg>
-						Unlock with Premium
-					</a>
-				{/if}
+					</div>
+					Premium Match Videos
+				</h2>
+				<p class="mt-2 text-gray-400">Exclusive match recordings from our events</p>
 			</div>
 
-			{#if isPremium}
-				<!-- Premium Content Grid -->
-				<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-					{#each premiumMatches as match}
-						<div
-							class="group relative overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50 transition-all hover:border-amber-500/50"
-						>
-							<!-- Thumbnail -->
-							<div class="relative aspect-video bg-gray-800">
-								<div
-									class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900"
-								>
-									<svg
-										class="h-16 w-16 text-gray-700"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-										/>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-										/>
-									</svg>
-								</div>
-								<!-- Duration Badge -->
-								<div
-									class="absolute right-2 bottom-2 rounded bg-black/80 px-2 py-1 text-xs font-medium text-white"
-								>
-									{match.duration}
-								</div>
-								<!-- Play Overlay -->
-								<div
-									class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
-								>
-									<div
-										class="flex h-16 w-16 items-center justify-center rounded-full bg-amber-500 text-white"
-									>
-										<svg class="ml-1 h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
-											<path d="M8 5v14l11-7z" />
-										</svg>
-									</div>
-								</div>
-							</div>
-							<!-- Info -->
-							<div class="p-4">
-								<h3
-									class="line-clamp-2 font-semibold text-white transition-colors group-hover:text-amber-400"
-								>
-									{match.title}
-								</h3>
-								<p class="mt-1 text-sm text-gray-400">{match.players}</p>
-								<div class="mt-3 flex items-center gap-3 text-xs text-gray-500">
-									<span class="flex items-center gap-1">
-										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-											/>
-										</svg>
-										{match.date}
-									</span>
-									<span class="flex items-center gap-1">
-										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-											/>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-											/>
-										</svg>
-										{match.event}
-									</span>
-								</div>
-							</div>
-						</div>
-					{/each}
-				</div>
-
-				<!-- Coming Soon Notice -->
-				<div class="mt-8 rounded-xl border border-amber-500/30 bg-amber-500/10 p-6 text-center">
-					<p class="text-amber-300">
-						More match videos coming soon! We're uploading recordings from each event.
-					</p>
-				</div>
-			{:else}
-				<!-- Locked Premium Content -->
-				<div class="relative overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/50">
-					<!-- Blurred Preview -->
-					<div
-						class="pointer-events-none grid grid-cols-1 gap-6 p-8 opacity-40 blur-sm md:grid-cols-3"
+			<!-- Coming Soon -->
+			<div class="rounded-2xl border border-gray-800 bg-gray-900/50 p-12 text-center">
+				<div
+					class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-amber-500/30 bg-gradient-to-br from-amber-500/20 to-amber-600/20"
+				>
+					<svg
+						class="h-10 w-10 text-amber-400"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
 					>
-						{#each [1, 2, 3] as _}
-							<div class="overflow-hidden rounded-xl bg-gray-800">
-								<div class="aspect-video bg-gray-700"></div>
-								<div class="space-y-2 p-4">
-									<div class="h-4 w-3/4 rounded bg-gray-700"></div>
-									<div class="h-3 w-1/2 rounded bg-gray-700"></div>
-								</div>
-							</div>
-						{/each}
-					</div>
-
-					<!-- Lock Overlay -->
-					<div
-						class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/80 p-8 backdrop-blur-sm"
-					>
-						<div
-							class="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-amber-500/30 bg-gradient-to-br from-amber-500/20 to-amber-600/20"
-						>
-							<svg
-								class="h-10 w-10 text-amber-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-								/>
-							</svg>
-						</div>
-						<h3 class="mb-3 text-2xl font-bold text-white">Premium Content</h3>
-						<p class="mb-8 max-w-md px-4 text-center text-gray-400">
-							Get access to exclusive match videos, extended coverage, and behind-the-scenes content
-							from every AGE event.
-						</p>
-						<a
-							href="/premium"
-							class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-8 py-4 text-lg font-semibold text-white shadow-lg shadow-amber-500/25 transition-all hover:from-amber-400 hover:to-amber-500 hover:shadow-xl hover:shadow-amber-500/30"
-						>
-							<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-								<path
-									d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-								/>
-							</svg>
-							Unlock Premium Access
-						</a>
-					</div>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+						/>
+					</svg>
 				</div>
-			{/if}
+				<h3 class="mb-3 text-2xl font-bold text-white">Videos Coming Soon</h3>
+				<p class="mx-auto max-w-md text-gray-400">
+					We're working on bringing you exclusive match recordings from our events. Check back soon!
+				</p>
+			</div>
 		</section>
 
 		<!-- RGE Section -->

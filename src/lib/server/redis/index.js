@@ -10,6 +10,11 @@ const redis =
 			})
 		: null;
 
+// In-memory cache fallback for local development (when Redis is not available)
+// This prevents database connection pool exhaustion during rapid page loads
+const memoryCache = new Map();
+const memoryCacheExpiry = new Map();
+
 // Cache key prefixes for organization
 export const CACHE_KEYS = {
 	STANDINGS: 'standings',
@@ -27,6 +32,33 @@ export const CACHE_TTL = {
 };
 
 /**
+ * Get from memory cache if valid
+ * @param {string} key - Cache key
+ * @returns {any|null} - Cached value or null if expired/missing
+ */
+function getFromMemoryCache(key) {
+	const expiry = memoryCacheExpiry.get(key);
+	if (expiry && Date.now() < expiry) {
+		return memoryCache.get(key);
+	}
+	// Expired or missing - clean up
+	memoryCache.delete(key);
+	memoryCacheExpiry.delete(key);
+	return null;
+}
+
+/**
+ * Set in memory cache
+ * @param {string} key - Cache key
+ * @param {any} value - Value to cache
+ * @param {number} ttl - Time to live in seconds
+ */
+function setInMemoryCache(key, value, ttl) {
+	memoryCache.set(key, value);
+	memoryCacheExpiry.set(key, Date.now() + ttl * 1000);
+}
+
+/**
  * Get cached data or fetch fresh data
  * @param {string} key - Cache key
  * @param {Function} fetchFn - Function to fetch fresh data if cache miss
@@ -34,31 +66,42 @@ export const CACHE_TTL = {
  * @returns {Promise<any>} - Cached or fresh data
  */
 export async function getCachedOrFetch(key, fetchFn, ttl = CACHE_TTL.MEDIUM) {
-	// If Redis is not configured, just fetch directly
-	if (!redis) {
-		return fetchFn();
-	}
+	// Try Redis first if available
+	if (redis) {
+		try {
+			const cached = await redis.get(key);
+			if (cached !== null) {
+				return cached;
+			}
 
-	try {
-		// Try to get from cache
-		const cached = await redis.get(key);
-		if (cached !== null) {
-			return cached;
+			// Cache miss - fetch fresh data
+			const freshData = await fetchFn();
+
+			// Store in cache (don't await - fire and forget)
+			redis.set(key, freshData, { ex: ttl }).catch(() => {
+				// Silent fail - Redis errors shouldn't break the app
+			});
+
+			return freshData;
+		} catch (error) {
+			// On Redis error, fall through to memory cache or direct fetch
+			console.warn('Redis error, falling back to memory cache:', error.message);
 		}
-
-		// Cache miss - fetch fresh data
-		const freshData = await fetchFn();
-
-		// Store in cache (don't await - fire and forget)
-		redis.set(key, freshData, { ex: ttl }).catch(() => {
-			// Silent fail - Redis errors shouldn't break the app
-		});
-
-		return freshData;
-	} catch (error) {
-		// On Redis error, fall back to direct fetch
-		return fetchFn();
 	}
+
+	// Fallback: Use in-memory cache (for local development without Redis)
+	const memoryCached = getFromMemoryCache(key);
+	if (memoryCached !== null) {
+		return memoryCached;
+	}
+
+	// Cache miss - fetch fresh data
+	const freshData = await fetchFn();
+
+	// Store in memory cache
+	setInMemoryCache(key, freshData, ttl);
+
+	return freshData;
 }
 
 /**
@@ -66,6 +109,11 @@ export async function getCachedOrFetch(key, fetchFn, ttl = CACHE_TTL.MEDIUM) {
  * @param {string} key - Cache key to invalidate
  */
 export async function invalidateCache(key) {
+	// Invalidate memory cache
+	memoryCache.delete(key);
+	memoryCacheExpiry.delete(key);
+
+	// Invalidate Redis cache if available
 	if (!redis) return;
 
 	try {
@@ -79,11 +127,27 @@ export async function invalidateCache(key) {
  * Invalidate all cache keys matching a prefix
  * @param {string} prefix - Key prefix to match
  */
-export async function invalidateCacheByPrefix(_prefix) {
+export async function invalidateCacheByPrefix(prefix) {
+	// Invalidate matching memory cache keys
+	for (const key of memoryCache.keys()) {
+		if (key.startsWith(prefix)) {
+			memoryCache.delete(key);
+			memoryCacheExpiry.delete(key);
+		}
+	}
+
 	if (!redis) return;
 
 	// Upstash REST API doesn't support SCAN, so pattern-based invalidation
 	// requires tracking keys manually. For now, use specific invalidateCache calls.
+}
+
+/**
+ * Clear all memory cache (useful for testing or forced refresh)
+ */
+export function clearMemoryCache() {
+	memoryCache.clear();
+	memoryCacheExpiry.clear();
 }
 
 /**

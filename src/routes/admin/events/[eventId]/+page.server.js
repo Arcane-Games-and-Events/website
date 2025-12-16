@@ -18,6 +18,7 @@ import {
 	parsePairings
 } from '$lib/server/tournament-processor.js';
 import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
+import { parseDatetimeLocal } from '$lib/server/dates.js';
 
 export async function load({ params, locals }) {
 	// Require authentication (admin or tournament staff)
@@ -178,7 +179,7 @@ export async function load({ params, locals }) {
 		// Fetch existing hero data for this event (for metagame display)
 		// Use season/circuit/month to match the standings structure
 		const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : null;
-		const eventYear = eventDate ? eventDate.getFullYear().toString() : null;
+		const eventYear = eventDate ? eventDate.getUTCFullYear().toString() : null;
 		let existingHeroes = [];
 		if (eventData.circuit && eventData.month && eventYear) {
 			existingHeroes = await db
@@ -324,7 +325,7 @@ export const actions = {
 				format,
 				circuit: circuit || null,
 				month: month || null,
-				eventDate: new Date(eventDate),
+				eventDate: parseDatetimeLocal(eventDate),
 				description: description || null,
 				gemIdRequired,
 				premiumDiscount
@@ -536,7 +537,7 @@ export const actions = {
 			if (eventData.circuit) {
 				try {
 					const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
-					const currentYear = eventDate.getFullYear().toString();
+					const currentYear = eventDate.getUTCFullYear().toString();
 					const monthNames = [
 						'January',
 						'February',
@@ -551,7 +552,7 @@ export const actions = {
 						'November',
 						'December'
 					];
-					const eventMonthName = monthNames[eventDate.getMonth()];
+					const eventMonthName = monthNames[eventDate.getUTCMonth()];
 					const monthKey = eventMonthName.toLowerCase();
 
 					// Check if this is a re-upload by looking for existing matches
@@ -770,8 +771,8 @@ export const actions = {
 					'November',
 					'December'
 				];
-				const eventMonthName = monthNames[eventDate.getMonth()];
-				const eventYear = eventDate.getFullYear().toString();
+				const eventMonthName = monthNames[eventDate.getUTCMonth()];
+				const eventYear = eventDate.getUTCFullYear().toString();
 
 				const matchesToInsert = processedResults.matches.map((m) => ({
 					eventId: params.eventId,
@@ -1091,7 +1092,7 @@ export const actions = {
 			}
 
 			const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
-			const season = eventDate.getFullYear().toString();
+			const season = eventDate.getUTCFullYear().toString();
 
 			const csvText = await heroesFile.text();
 			const lines = csvText.trim().split('\n');
@@ -1213,7 +1214,7 @@ export const actions = {
 				return fail(400, { error: 'Event not properly configured' });
 			}
 
-			const season = new Date(eventData.eventDate).getFullYear().toString();
+			const season = new Date(eventData.eventDate).getUTCFullYear().toString();
 
 			await db
 				.delete(eventPlayerHero)
@@ -1255,7 +1256,7 @@ export const actions = {
 
 			// 3. Delete hero data (by season/circuit/month)
 			if (eventData?.circuit && eventData?.month && eventData?.eventDate) {
-				const season = new Date(eventData.eventDate).getFullYear().toString();
+				const season = new Date(eventData.eventDate).getUTCFullYear().toString();
 				await db
 					.delete(eventPlayerHero)
 					.where(

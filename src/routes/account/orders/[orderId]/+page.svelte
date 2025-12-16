@@ -483,7 +483,7 @@
 													</svg>
 													{new Date(data.additionalData.event.eventDate).toLocaleDateString(
 														'en-US',
-														{ weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }
+														{ weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }
 													)}
 												</span>
 											{/if}
@@ -887,7 +887,7 @@
 						</div>
 
 						<a
-							href="mailto:support@arcanegamesandevents.com?subject=Refund Request - Order #{data.order.id.substring(
+							href="mailto:info@age.events?subject=Refund Request - Order #{data.order.id.substring(
 								0,
 								8
 							)}&body=Hi, I would like to request a refund for my ticket purchase.%0A%0AOrder ID: {data

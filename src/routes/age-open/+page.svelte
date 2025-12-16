@@ -920,7 +920,8 @@
 			year: 'numeric',
 			hour: 'numeric',
 			minute: '2-digit',
-			hour12: true
+			hour12: true,
+			timeZone: 'UTC'
 		}).format(date);
 	}
 
@@ -930,7 +931,8 @@
 		return new Intl.DateTimeFormat('en-US', {
 			month: 'short',
 			day: 'numeric',
-			year: 'numeric'
+			year: 'numeric',
+			timeZone: 'UTC'
 		}).format(date);
 	}
 
@@ -4785,7 +4787,7 @@
 						</p>
 						<div class="flex flex-wrap justify-center gap-4">
 							<a
-								href="/contact"
+								href="mailto:info@age.events"
 								class="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-600"
 							>
 								<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4799,7 +4801,7 @@
 								Contact Us
 							</a>
 							<a
-								href="https://discord.gg/agesoftware"
+								href="https://discord.gg/aUF552mPUq"
 								target="_blank"
 								rel="noopener noreferrer"
 								class="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-6 py-3 font-medium text-white transition-colors hover:bg-gray-700"

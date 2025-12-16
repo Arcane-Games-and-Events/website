@@ -9,7 +9,8 @@
 			weekday: 'short',
 			month: 'short',
 			day: 'numeric',
-			year: 'numeric'
+			year: 'numeric',
+			timeZone: 'UTC'
 		});
 	}
 

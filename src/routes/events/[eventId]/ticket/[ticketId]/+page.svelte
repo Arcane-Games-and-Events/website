@@ -3,14 +3,15 @@
 
 	const { ticket, isOwner } = data;
 
-	// Format the event date
+	// Format the event date (using UTC to preserve wall clock time)
 	function formatEventDate(date) {
 		if (!date) return 'TBD';
 		return new Date(date).toLocaleDateString('en-US', {
 			weekday: 'long',
 			year: 'numeric',
 			month: 'long',
-			day: 'numeric'
+			day: 'numeric',
+			timeZone: 'UTC'
 		});
 	}
 
@@ -18,7 +19,8 @@
 		if (!date) return '';
 		return new Date(date).toLocaleTimeString('en-US', {
 			hour: '2-digit',
-			minute: '2-digit'
+			minute: '2-digit',
+			timeZone: 'UTC'
 		});
 	}
 </script>

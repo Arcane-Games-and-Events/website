@@ -69,7 +69,8 @@
 			weekday: 'long',
 			month: 'long',
 			day: 'numeric',
-			year: 'numeric'
+			year: 'numeric',
+			timeZone: 'UTC'
 		});
 	}
 
@@ -80,7 +81,8 @@
 			day: 'numeric',
 			year: 'numeric',
 			hour: 'numeric',
-			minute: '2-digit'
+			minute: '2-digit',
+			timeZone: 'UTC'
 		});
 	}
 
