@@ -51,10 +51,10 @@ export default buildConfig({
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URI || '',
-      max: 5,
+      max: 3,
       min: 0,
-      idleTimeoutMillis: 10000,
-      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 30000,
       allowExitOnIdle: true,
       ssl: { rejectUnauthorized: false }, // Supabase uses certificates that require this setting
     },
