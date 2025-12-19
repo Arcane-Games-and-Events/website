@@ -56,10 +56,13 @@ export async function load({ params, locals }) {
 		}
 
 		// Compute dynamic status based on date and completion
+		// Respect manually set statuses (completed, cancelled, in_progress)
+		// Only auto-compute if status is 'upcoming' or not set
 		let computedStatus = eventData.status;
-		if (eventData.status === 'completed') {
-			computedStatus = 'completed'; // Keep as completed/finished if finalized
+		if (eventData.status === 'completed' || eventData.status === 'cancelled' || eventData.status === 'in_progress') {
+			computedStatus = eventData.status; // Keep manually set status
 		} else {
+			// Auto-compute for 'upcoming' or null status based on date
 			const now = new Date();
 			const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : null;
 			if (eventDate) {

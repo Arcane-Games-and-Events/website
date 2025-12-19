@@ -337,6 +337,20 @@
 		return getCircuit(circuit).colors.borderLeft;
 	}
 
+	// Create a map of email -> user for quick lookups
+	let usersByEmail = $derived(
+		new Map((data.allUsers || []).map((u) => [u.email, u]))
+	);
+
+	// Get user display name from email
+	function getUserName(email) {
+		const user = usersByEmail.get(email);
+		if (user?.first_name && user?.last_name) {
+			return `${user.first_name} ${user.last_name}`;
+		}
+		return email || 'Unknown';
+	}
+
 	// Filtered and sorted orders
 	let filteredOrders = $derived(
 		(data.allOrders || [])
@@ -820,11 +834,11 @@
 				</div>
 
 				<!-- Quick Actions & Recent Activity -->
-				<div class="grid gap-6 lg:grid-cols-3">
+				<div class="grid gap-4 overflow-hidden sm:gap-6 lg:grid-cols-3">
 					<!-- Quick Actions -->
-					<div class="lg:col-span-1">
+					<div class="min-w-0 lg:col-span-1">
 						<div
-							class="rounded-2xl border border-white/10 bg-gradient-to-br from-gray-800/30 to-gray-900/50 p-6 shadow-xl"
+							class="rounded-2xl border border-white/10 bg-gradient-to-br from-gray-800/30 to-gray-900/50 p-4 shadow-xl sm:p-6"
 						>
 							<h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
 								<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
@@ -844,10 +858,10 @@
 								</div>
 								Quick Actions
 							</h3>
-							<div class="space-y-3">
+							<div class="space-y-2 sm:space-y-3">
 								<a
 									href="/admin/events/new"
-									class="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4 transition-all hover:border-blue-500/30 hover:bg-blue-500/5"
+									class="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 transition-all hover:border-blue-500/30 hover:bg-blue-500/5 sm:p-4"
 								>
 									<div
 										class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400 transition-colors group-hover:bg-blue-500/30"
@@ -871,7 +885,7 @@
 
 								<button
 									onclick={() => switchTab('users')}
-									class="group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition-all hover:border-purple-500/30 hover:bg-purple-500/5"
+									class="group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-left transition-all hover:border-purple-500/30 hover:bg-purple-500/5 sm:p-4"
 								>
 									<div
 										class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20 text-purple-400 transition-colors group-hover:bg-purple-500/30"
@@ -897,7 +911,7 @@
 
 								<button
 									onclick={() => switchTab('staff')}
-									class="group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4 text-left transition-all hover:border-emerald-500/30 hover:bg-emerald-500/5"
+									class="group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-left transition-all hover:border-emerald-500/30 hover:bg-emerald-500/5 sm:p-4"
 								>
 									<div
 										class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400 transition-colors group-hover:bg-emerald-500/30"
@@ -925,9 +939,9 @@
 					</div>
 
 					<!-- Upcoming Events -->
-					<div class="lg:col-span-2">
+					<div class="min-w-0 lg:col-span-2">
 						<div
-							class="rounded-2xl border border-white/10 bg-gradient-to-br from-gray-800/30 to-gray-900/50 p-6 shadow-xl"
+							class="rounded-2xl border border-white/10 bg-gradient-to-br from-gray-800/30 to-gray-900/50 p-4 shadow-xl sm:p-6"
 						>
 							<div class="mb-4 flex items-center justify-between">
 								<h3 class="flex items-center gap-2 text-lg font-semibold text-white">
@@ -1074,7 +1088,7 @@
 				</div>
 
 				<!-- Recent Orders Section -->
-				<div class="mt-6 rounded-xl border border-gray-800 bg-gray-900/50 p-6">
+				<div class="mt-4 overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50 p-4 sm:mt-6 sm:p-6">
 					<div class="mb-4 flex items-center justify-between">
 						<h3 class="flex items-center gap-2 text-lg font-semibold text-white">
 							<svg
@@ -1100,29 +1114,29 @@
 						</button>
 					</div>
 					{#if (data.allOrders || []).length > 0}
-						<div class="overflow-x-auto">
-							<table class="w-full">
+						<div class="-mx-4 overflow-x-auto sm:mx-0">
+							<table class="w-full min-w-[400px]">
 								<thead>
 									<tr class="border-b border-gray-700">
-										<th class="pb-3 text-left text-sm font-medium text-gray-400">Email</th>
+										<th class="pb-3 pl-4 text-left text-sm font-medium text-gray-400 sm:pl-0">Customer</th>
 										<th class="pb-3 text-left text-sm font-medium text-gray-400">Amount</th>
-										<th class="pb-3 text-left text-sm font-medium text-gray-400">Type</th>
-										<th class="pb-3 text-left text-sm font-medium text-gray-400">Date</th>
+										<th class="hidden pb-3 text-left text-sm font-medium text-gray-400 sm:table-cell">Type</th>
+										<th class="pb-3 pr-4 text-left text-sm font-medium text-gray-400 sm:pr-0">Date</th>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-gray-800">
 									{#each (data.allOrders || []).slice(0, 5) as order}
 										<tr class="group">
-											<td class="py-3 text-sm text-gray-300">{order.userEmail}</td>
-											<td class="py-3 text-sm font-semibold text-green-400">${order.amount}</td>
-											<td class="py-3">
+											<td class="max-w-[120px] truncate py-3 pl-4 text-sm text-gray-300 sm:max-w-none sm:pl-0">{getUserName(order.userEmail)}</td>
+											<td class="whitespace-nowrap py-3 text-sm font-semibold text-green-400">${order.amount}</td>
+											<td class="hidden py-3 sm:table-cell">
 												<span
 													class="rounded-full bg-blue-500/20 px-2 py-1 text-xs font-medium text-blue-400"
 												>
 													{order.meta?.type || 'payment'}
 												</span>
 											</td>
-											<td class="py-3 text-sm text-gray-500">
+											<td class="whitespace-nowrap py-3 pr-4 text-sm text-gray-500 sm:pr-0">
 												{new Date(order.createdAt).toLocaleDateString()}
 											</td>
 										</tr>
@@ -1434,10 +1448,14 @@
 											</svg>
 										</div>
 										<div class="mt-2 flex items-center gap-4 text-xs text-gray-500">
-											<span>{event.eventDate ? formatDate(event.eventDate) : 'No date'}</span>
-											{#if ticketStats.sold > 0}
-												<span>{ticketStats.sold} tickets</span>
-											{/if}
+											<span>
+												{#if event.eventDate}
+													{formatDate(event.eventDate)} @ {new Date(event.eventDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })}
+												{:else}
+													No date
+												{/if}
+											</span>
+											<span class="font-medium text-purple-400">{ticketStats.sold} tickets</span>
 										</div>
 									</div>
 								</a>
@@ -1540,7 +1558,10 @@
 											</td>
 											<td class="px-4 py-3">
 												{#if event.eventDate}
-													<span class="text-sm text-gray-300">{formatDate(event.eventDate)}</span>
+													<div>
+														<span class="text-sm text-gray-300">{formatDate(event.eventDate)}</span>
+														<p class="text-xs text-gray-500">{new Date(event.eventDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })}</p>
+													</div>
 												{:else}
 													<span
 														class="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs text-amber-400"

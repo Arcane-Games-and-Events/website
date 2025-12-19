@@ -492,8 +492,9 @@
 					>
 						<select
 							name="status"
+							value={displayStatus}
 							onchange={() => statusForm.submit()}
-							class="rounded-lg border border-white/10 bg-gray-800 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-700 focus:ring-2 focus:ring-cyan-500 focus:outline-none {displayStatus ===
+							class="rounded-lg border border-white/10 bg-gray-800 py-1.5 pl-3 pr-8 text-sm font-medium transition-colors hover:bg-gray-700 focus:ring-2 focus:ring-cyan-500 focus:outline-none {displayStatus ===
 							'completed'
 								? 'text-green-400'
 								: displayStatus === 'in_progress'
@@ -502,26 +503,10 @@
 										? 'text-red-400'
 										: 'text-yellow-400'}"
 						>
-							<option
-								value="upcoming"
-								selected={displayStatus === 'upcoming'}
-								class="bg-gray-800 text-yellow-400">Upcoming</option
-							>
-							<option
-								value="in_progress"
-								selected={displayStatus === 'in_progress'}
-								class="bg-gray-800 text-blue-400">In Progress</option
-							>
-							<option
-								value="completed"
-								selected={displayStatus === 'completed'}
-								class="bg-gray-800 text-green-400">Completed</option
-							>
-							<option
-								value="cancelled"
-								selected={displayStatus === 'cancelled'}
-								class="bg-gray-800 text-red-400">Cancelled</option
-							>
+							<option value="upcoming" class="bg-gray-800 text-yellow-400">Upcoming</option>
+							<option value="in_progress" class="bg-gray-800 text-blue-400">In Progress</option>
+							<option value="completed" class="bg-gray-800 text-green-400">Completed</option>
+							<option value="cancelled" class="bg-gray-800 text-red-400">Cancelled</option>
 						</select>
 					</form>
 
