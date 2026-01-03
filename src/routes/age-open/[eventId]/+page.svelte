@@ -67,8 +67,13 @@
 	// Show payment form when at least one ticket has info entered
 	$: showPaymentForm = allTicketsValid && data.user;
 
-	// Check if event is in the past
-	$: isPastEvent = data.event.eventDate && new Date(data.event.eventDate) < new Date();
+	// Check if event is in the past (compare dates only, not times)
+	// This allows registration on the day of the event
+	$: isPastEvent = data.event.eventDate && (() => {
+		const eventDate = new Date(data.event.eventDate);
+		eventDate.setHours(23, 59, 59, 999); // Registration closes at end of event day
+		return eventDate < new Date();
+	})();
 
 	function formatDate(dateStr) {
 		if (!dateStr) return 'TBA';
