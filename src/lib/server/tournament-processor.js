@@ -81,18 +81,30 @@ function parseCSVLine(line) {
 /**
  * Parse Swiss Standings CSV
  * Expected columns: Rank, Name, Player ID, Wins
+ * Note: Dropped players may have "Dropped" in the Rank column instead of a number
  */
 export function parseSwissStandings(csvString) {
 	const data = parseCSV(csvString);
 
 	return data
-		.map((row) => ({
-			rank: parseInt(row['Rank'] || row['rank'] || '0', 10),
-			name: row['Name'] || row['name'] || row['Player Name'] || '',
-			playerId: row['Player ID'] || row['player_id'] || row['GEM ID'] || '',
-			wins: parseInt(row['Wins'] || row['wins'] || '0', 10),
-			dropped: row['Dropped'] === 'true' || row['dropped'] === 'true'
-		}))
+		.map((row) => {
+			const rankValue = row['Rank'] || row['rank'] || '0';
+			const rank = parseInt(rankValue, 10);
+			// Player is dropped if Rank column contains "Dropped" or parsed rank is NaN
+			const dropped =
+				rankValue.toLowerCase() === 'dropped' ||
+				isNaN(rank) ||
+				row['Dropped'] === 'true' ||
+				row['dropped'] === 'true';
+
+			return {
+				rank,
+				name: row['Name'] || row['name'] || row['Player Name'] || '',
+				playerId: row['Player ID'] || row['player_id'] || row['GEM ID'] || '',
+				wins: parseInt(row['Wins'] || row['wins'] || '0', 10),
+				dropped
+			};
+		})
 		.filter((p) => p.name && !p.dropped);
 }
 
