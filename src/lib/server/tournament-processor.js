@@ -388,6 +388,53 @@ export function calculateFinalStandings(swissStandings, pairings) {
 			...pointsInfo
 		});
 
+		placedNames.add(player.name);
+		if (player.playerId) placedIds.add(player.playerId);
+		placement++;
+	}
+
+	// Find all players from pairings who haven't been placed yet (dropped players without numeric rank)
+	// These players still get participation points
+	const allParticipants = new Map();
+	for (const pairing of pairings) {
+		// Add player 1
+		if (pairing.player1Name && !placedNames.has(pairing.player1Name) && !placedIds.has(pairing.player1Id)) {
+			const key = pairing.player1Id || pairing.player1Name;
+			if (!allParticipants.has(key)) {
+				allParticipants.set(key, {
+					name: pairing.player1Name,
+					playerId: pairing.player1Id
+				});
+			}
+		}
+		// Add player 2
+		if (pairing.player2Name && !placedNames.has(pairing.player2Name) && !placedIds.has(pairing.player2Id)) {
+			const key = pairing.player2Id || pairing.player2Name;
+			if (!allParticipants.has(key)) {
+				allParticipants.set(key, {
+					name: pairing.player2Name,
+					playerId: pairing.player2Id
+				});
+			}
+		}
+	}
+
+	// Add dropped players who participated but don't have a Swiss rank
+	for (const [, player] of allParticipants) {
+		const stats = tiebreakers[player.playerId] || tiebreakers[player.name] || {};
+
+		results.push({
+			placement,
+			name: player.name,
+			playerId: player.playerId,
+			matchesWon: stats.matchesWon || 0,
+			matchesPlayed: stats.matchesPlayed || 0,
+			matchWinPct: stats.matchWinPct || 0,
+			oppMatchWinPct: stats.oppMatchWinPct || 0,
+			points: PARTICIPATION_POINTS,
+			prize: 0
+		});
+
 		placement++;
 	}
 
