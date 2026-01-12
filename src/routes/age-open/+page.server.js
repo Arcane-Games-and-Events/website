@@ -14,6 +14,7 @@ import {
  * Calculate derived stats from monthly data
  * - eventsPlayed: count of months with points > 0
  * - top8Finishes: count of months with points >= 15 (5th-8th or better)
+ * - seasonPoints: sum of all monthly points (more reliable than totalPoints field)
  */
 function calculateDerivedStats(standing) {
 	const monthlyPoints = [
@@ -33,8 +34,9 @@ function calculateDerivedStats(standing) {
 
 	const eventsPlayed = monthlyPoints.filter((p) => p > 0).length;
 	const top8Finishes = monthlyPoints.filter((p) => p >= 15).length;
+	const seasonPoints = monthlyPoints.reduce((sum, p) => sum + p, 0);
 
-	return { eventsPlayed, top8Finishes };
+	return { eventsPlayed, top8Finishes, seasonPoints };
 }
 
 /**
@@ -321,23 +323,35 @@ export async function load({ url, setHeaders }) {
 				rawStandings = rawStandings.filter((s) => s.circuit === selectedCircuit);
 			}
 
-			// Sort using tiebreaker rules and assign ranks
+			// Pre-calculate seasonPoints from monthly columns (more reliable than totalPoints field)
+			// This fixes cases where totalPoints may have been incorrectly stored
+			rawStandings = rawStandings.map((s) => {
+				const derived = calculateDerivedStats(s);
+				return {
+					...s,
+					// Override totalPoints with calculated seasonPoints for correct display
+					totalPoints: derived.seasonPoints,
+					_eventsPlayed: derived.eventsPlayed,
+					_top8Finishes: derived.top8Finishes
+				};
+			});
+
+			// Sort using tiebreaker rules and assign ranks (now using corrected totalPoints)
 			rawStandings.sort(compareStandings);
 
-			// Calculate ranks, win percentage, and derived stats
+			// Calculate ranks and win percentage
 			standings = rawStandings.map((standing, index) => {
 				const winPercentage =
 					standing.matchesPlayed > 0
 						? Math.round((standing.matchesWon / standing.matchesPlayed) * 10000) / 100
 						: null;
-				const derived = calculateDerivedStats(standing);
 
 				return {
 					...standing,
 					calculatedRank: index + 1,
 					winPercentage: standing.winPercentage || winPercentage,
-					eventsPlayed: derived.eventsPlayed,
-					top8Finishes: derived.top8Finishes
+					eventsPlayed: standing._eventsPlayed,
+					top8Finishes: standing._top8Finishes
 				};
 			});
 		}
