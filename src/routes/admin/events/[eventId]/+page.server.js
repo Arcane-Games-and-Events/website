@@ -121,30 +121,30 @@ export async function load({ params, locals }) {
 			.where(eq(match.eventId, params.eventId))
 			.orderBy(match.round);
 
-		// Compute results from matches if there are any
+		// Use stored tournament results if available (preserves correct Swiss standings order)
+		// Fall back to computing from matches for backwards compatibility
 		let existingResults = [];
-		if (existingMatches.length > 0) {
-			// Extract unique players from matches
+		if (eventData.tournamentResults && Array.isArray(eventData.tournamentResults)) {
+			existingResults = eventData.tournamentResults;
+		} else if (existingMatches.length > 0) {
+			// Legacy fallback: compute from matches (won't have correct Swiss rank order)
 			const playerMap = new Map();
-			for (const match of existingMatches) {
-				if (match.player1GemId || match.player1Name) {
-					const key = match.player1GemId || match.player1Name;
+			for (const m of existingMatches) {
+				if (m.player1GemId || m.player1Name) {
+					const key = m.player1GemId || m.player1Name;
 					if (!playerMap.has(key)) {
-						playerMap.set(key, { playerId: match.player1GemId, name: match.player1Name, wins: 0 });
+						playerMap.set(key, { playerId: m.player1GemId, name: m.player1Name, wins: 0 });
 					}
 				}
-				if (match.player2GemId || match.player2Name) {
-					const key = match.player2GemId || match.player2Name;
+				if (m.player2GemId || m.player2Name) {
+					const key = m.player2GemId || m.player2Name;
 					if (!playerMap.has(key)) {
-						playerMap.set(key, { playerId: match.player2GemId, name: match.player2Name, wins: 0 });
+						playerMap.set(key, { playerId: m.player2GemId, name: m.player2Name, wins: 0 });
 					}
 				}
 			}
 
-			// Build swiss standings from unique players (simplified - real calc happens in processor)
 			const swissStandings = Array.from(playerMap.values());
-
-			// Convert matches to pairings format
 			const pairings = existingMatches.map((m) => ({
 				round: m.round,
 				table: m.table,
@@ -155,7 +155,6 @@ export async function load({ params, locals }) {
 				result: m.winner === 'player1' ? '1WIN' : m.winner === 'player2' ? '2WIN' : 'DRAW'
 			}));
 
-			// Calculate standings from matches
 			try {
 				const standings = calculateFinalStandings(swissStandings, pairings);
 				existingResults = standings.results.map((r) => ({
@@ -794,6 +793,12 @@ export const actions = {
 				}));
 				await db.insert(match).values(matchesToInsert);
 			}
+
+			// Store tournament results on the event (preserves Swiss standings order)
+			await db
+				.update(event)
+				.set({ tournamentResults: resultsJson })
+				.where(eq(event.id, params.eventId));
 
 			// Invalidate caches so changes appear immediately
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);

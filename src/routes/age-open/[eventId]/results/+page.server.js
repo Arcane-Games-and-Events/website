@@ -48,11 +48,14 @@ export async function load({ params }) {
 			.where(eq(match.eventId, params.eventId))
 			.orderBy(asc(match.round));
 
-		// Calculate standings from matches
+		// Use stored tournament results if available (preserves correct Swiss standings order)
+		// Fall back to computing from matches for backwards compatibility
 		let results = [];
 
-		if (eventMatches.length > 0) {
-			// Extract unique players from matches
+		if (eventData.tournamentResults && Array.isArray(eventData.tournamentResults)) {
+			results = eventData.tournamentResults;
+		} else if (eventMatches.length > 0) {
+			// Legacy fallback: compute from matches (won't have correct Swiss rank order)
 			const playerMap = new Map();
 			for (const m of eventMatches) {
 				if (m.player1GemId || m.player1Name) {
@@ -69,7 +72,6 @@ export async function load({ params }) {
 				}
 			}
 
-			// Convert matches to pairings format
 			const pairings = eventMatches.map((m) => ({
 				round: m.round,
 				table: m.table,
@@ -80,7 +82,6 @@ export async function load({ params }) {
 				result: m.winner === 'player1' ? '1WIN' : m.winner === 'player2' ? '2WIN' : 'DRAW'
 			}));
 
-			// Calculate standings
 			try {
 				const swissStandings = Array.from(playerMap.values());
 				const standings = calculateFinalStandings(swissStandings, pairings);

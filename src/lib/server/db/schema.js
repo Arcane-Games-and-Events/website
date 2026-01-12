@@ -87,6 +87,9 @@ export const event = pgTable('events', {
 	closedAt: timestamp('closed_at', { withTimezone: true, mode: 'date' }),
 	closedBy: text('closed_by').references(() => user.id),
 
+	// Tournament results (stored when CSV is processed to preserve Swiss standings order)
+	tournamentResults: jsonb('tournament_results'),
+
 	createdBy: text('created_by').references(() => user.id),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
