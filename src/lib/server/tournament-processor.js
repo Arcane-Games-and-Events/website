@@ -81,31 +81,27 @@ function parseCSVLine(line) {
 /**
  * Parse Swiss Standings CSV
  * Expected columns: Rank, Name, Player ID, Wins
- * Note: Dropped players may have "Dropped" in the Rank column instead of a number
+ * Note: CSV may contain a "Dropped" section at the end with "Dropped" in the Rank column.
+ * We only include rows with valid numeric ranks (the actual Swiss standings).
+ * Players in ranks 9-16 may have also dropped after Swiss, but they still get placement points.
  */
 export function parseSwissStandings(csvString) {
 	const data = parseCSV(csvString);
 
 	return data
 		.map((row) => {
-			const rankValue = row['Rank'] || row['rank'] || '0';
+			const rankValue = row['Rank'] || row['rank'] || '';
 			const rank = parseInt(rankValue, 10);
-			// Player is dropped if Rank column contains "Dropped" or parsed rank is NaN
-			const dropped =
-				rankValue.toLowerCase() === 'dropped' ||
-				isNaN(rank) ||
-				row['Dropped'] === 'true' ||
-				row['dropped'] === 'true';
 
 			return {
 				rank,
 				name: row['Name'] || row['name'] || row['Player Name'] || '',
 				playerId: row['Player ID'] || row['player_id'] || row['GEM ID'] || '',
-				wins: parseInt(row['Wins'] || row['wins'] || '0', 10),
-				dropped
+				wins: parseInt(row['Wins'] || row['wins'] || '0', 10)
 			};
 		})
-		.filter((p) => p.name && !p.dropped);
+		// Only include rows with valid numeric ranks (ignore "Dropped" section entirely)
+		.filter((p) => p.name && !isNaN(p.rank) && p.rank > 0);
 }
 
 /**
