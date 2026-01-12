@@ -364,14 +364,21 @@ export function calculateFinalStandings(swissStandings, pairings) {
 	const placedIds = new Set(results.map((r) => r.playerId).filter(Boolean));
 
 	// Process remaining players from Swiss standings (9th and below)
-	// Use original Swiss rank from tournament software - it has already calculated tiebreakers correctly
+	// Use original Swiss rank if available, otherwise fall back to tiebreaker-based sorting
 	const remainingPlayers = swissStandings
 		.filter((p) => !placedNames.has(p.name) && !placedIds.has(p.playerId))
-		.sort((a, b) => a.rank - b.rank) // Use original Swiss rank
 		.map((p) => ({
 			...p,
 			...(tiebreakers[p.playerId] || tiebreakers[p.name] || {})
-		}));
+		}))
+		.sort((a, b) => {
+			// If both have rank, use Swiss rank order
+			if (a.rank && b.rank) return a.rank - b.rank;
+			// Otherwise fall back to tiebreaker sorting (wins, match win %, opp match win %)
+			if ((b.matchesWon || 0) !== (a.matchesWon || 0)) return (b.matchesWon || 0) - (a.matchesWon || 0);
+			if ((b.matchWinPct || 0) !== (a.matchWinPct || 0)) return (b.matchWinPct || 0) - (a.matchWinPct || 0);
+			return (b.oppMatchWinPct || 0) - (a.oppMatchWinPct || 0);
+		});
 
 	let placement = results.length + 1;
 	for (const player of remainingPlayers) {
