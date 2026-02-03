@@ -155,12 +155,10 @@ export const actions = {
 				// If void fails, try REFUND (for settled transactions)
 				console.log('Void failed, attempting refund:', voidError.message);
 
-				// Note: In production, you should store the last 4 digits of the card during checkout
-				// For sandbox/testing, we use "1111" as a placeholder
 				await authnet.refundTransaction({
 					transactionId: orderData.providerRef,
 					amount: orderData.amount,
-					cardNumber: '1111' // Placeholder - should store last 4 digits in production
+					cardNumber: orderData.meta?.cardLastFour || '1111'
 				});
 				refundType = 'refunded';
 			}

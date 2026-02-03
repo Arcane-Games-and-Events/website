@@ -61,6 +61,7 @@ export async function POST({ params, request, locals }) {
 		}
 
 		let result;
+		let cardLastFour = null;
 
 		if (useSavedCard && savedCardId) {
 			// Verify the saved card belongs to the user
@@ -74,6 +75,8 @@ export async function POST({ params, request, locals }) {
 				return json({ error: 'Saved card not found' }, { status: 404 });
 			}
 
+			cardLastFour = card.lastFour;
+
 			// Process payment with saved card
 			result = await authnet.chargeCustomerProfile({
 				customerProfileId: card.customerProfileId,
@@ -83,6 +86,7 @@ export async function POST({ params, request, locals }) {
 			});
 		} else {
 			// Process one-time payment with new card
+			cardLastFour = cardNumber ? cardNumber.slice(-4) : null;
 			result = await authnet.chargeCard({
 				amount,
 				cardNumber,
@@ -181,7 +185,8 @@ export async function POST({ params, request, locals }) {
 						ticketCode,
 						gemId: gemId || null,
 						transactionId: result.transactionId,
-						premiumDiscount: eventData.premiumDiscount && isPremium
+						premiumDiscount: eventData.premiumDiscount && isPremium,
+						cardLastFour
 					}
 				})
 				.returning();

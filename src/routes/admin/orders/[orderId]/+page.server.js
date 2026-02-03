@@ -134,7 +134,7 @@ export const actions = {
 						await authnet.refundTransaction({
 							transactionId: orderData.providerRef,
 							amount: orderData.amount,
-							cardNumber: '1111'
+							cardNumber: orderData.meta?.cardLastFour || '1111'
 						});
 						refundType = 'refunded';
 					} catch (refundError) {
@@ -158,7 +158,7 @@ export const actions = {
 				await authnet.refundTransaction({
 					transactionId: orderData.providerRef,
 					amount: orderData.amount,
-					cardNumber: '1111'
+					cardNumber: orderData.meta?.cardLastFour || '1111'
 				});
 				refundType = 'refunded';
 			}
