@@ -64,8 +64,8 @@ export async function load({ setHeaders, url, locals }) {
 	let articles = [];
 	try {
 		const posts = await getCachedOrFetch(
-			`${CACHE_KEYS.ARTICLES}:latest:3`,
-			() => payload.getPosts({ limit: 3 }),
+			`${CACHE_KEYS.ARTICLES}:latest:12`,
+			() => payload.getPosts({ limit: 12 }),
 			CACHE_TTL.LONG // 15 minutes for articles
 		);
 		articles = posts
@@ -88,6 +88,27 @@ export async function load({ setHeaders, url, locals }) {
 					};
 				}
 
+				// Extract tags
+				let tags = [];
+				if (post.tags && Array.isArray(post.tags)) {
+					tags = post.tags
+						.filter((tag) => tag && typeof tag === 'object')
+						.map((tag) => ({
+							name: tag.name,
+							slug: tag.slug
+						}));
+				}
+
+				// Check if article is currently premium-gated
+				const isPremium = isPremiumNow({
+					accessMode: post.accessMode,
+					publishedAt: post.publishedDate
+				});
+
+				// Check if article was originally premium but is now free (premium window expired)
+				const isFreeNow =
+					(post.accessMode === 'Premium' || post.accessMode === 'premium') && !isPremium;
+
 				return {
 					slug: post.slug,
 					title: post.title,
@@ -96,16 +117,15 @@ export async function load({ setHeaders, url, locals }) {
 					accessMode: post.accessMode,
 					coverImage,
 					author,
+					tags,
 					readTime: post.readTime || null,
-					isPremium: isPremiumNow({
-						accessMode: post.accessMode,
-						publishedAt: post.publishedDate
-					})
+					isPremium,
+					isFreeNow
 				};
 			})
 			// Sort by published date (newest first)
 			.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
-			.slice(0, 3);
+			.slice(0, 12);
 	} catch (error) {
 		console.error('Error fetching articles from Payload CMS:', error);
 		// Articles will remain empty array - page continues to load

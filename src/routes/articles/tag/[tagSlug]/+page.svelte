@@ -282,38 +282,40 @@
 							<article
 								class="group -m-3 flex gap-5 rounded-xl p-3 transition-colors hover:bg-white/5"
 							>
-								<!-- Thumbnail -->
+								<!-- Thumbnail (16:9) -->
 								<a href="/articles/{article.slug}" class="shrink-0">
 									<div
-										class="relative h-24 w-36 overflow-hidden rounded-lg bg-gray-800 sm:h-28 sm:w-44"
+										class="relative w-32 overflow-hidden rounded-lg bg-gray-800 sm:w-44"
 									>
-										{#if article.coverImage?.src}
-											<FadeImage
-												src={article.coverImage.src}
-												srcset={article.coverImage.srcset}
-												sizes="(max-width: 640px) 144px, 176px"
-												alt={article.title}
-												class="h-full w-full transition-transform duration-300 group-hover:scale-105"
-											/>
-										{:else}
-											<div
-												class="flex h-full items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900"
-											>
-												<svg
-													class="h-8 w-8 text-gray-700"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
+										<div class="aspect-video">
+											{#if article.coverImage?.src}
+												<FadeImage
+													src={article.coverImage.src}
+													srcset={article.coverImage.srcset}
+													sizes="(max-width: 640px) 128px, 176px"
+													alt={article.title}
+													class="absolute inset-0 h-full w-full transition-transform duration-300 group-hover:scale-105"
+												/>
+											{:else}
+												<div
+													class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900"
 												>
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="1.5"
-														d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
-													/>
-												</svg>
-											</div>
-										{/if}
+													<svg
+														class="h-8 w-8 text-gray-700"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															stroke-width="1.5"
+															d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+														/>
+													</svg>
+												</div>
+											{/if}
+										</div>
 										{#if article.isPremium}
 											<div class="absolute top-2 left-2">
 												<span

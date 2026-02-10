@@ -951,110 +951,111 @@
 
 <div class="min-h-screen bg-gray-950">
 	<!-- Hero Section -->
-	<section class="relative overflow-hidden py-8 sm:py-10 md:py-12">
-		<!-- Background -->
-		<div class="absolute inset-0">
-			<img src="/banner/age-open-banner.webp" alt="" class="h-full w-full object-cover" />
-			<!-- Radial gradient: dark in center, lighter on edges -->
-			<div
-				class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(3,7,18,0.98)_0%,_rgba(3,7,18,0.92)_40%,_rgba(3,7,18,0.75)_100%)]"
-			></div>
-			<div
-				class="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-gray-950 to-transparent"
-			></div>
-		</div>
-
-		<div class="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-			<div class="text-center">
-				<!-- Badge -->
-				<div
-					class="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400 sm:mb-4 sm:px-4 sm:py-1.5 sm:text-sm"
-				>
-					<span class="relative flex h-2 w-2">
-						<span
-							class="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"
-						></span>
-						<span class="relative inline-flex h-2 w-2 rounded-full bg-amber-500"></span>
-					</span>
-					2026 Season Now Open
+	<section class="relative px-4 pt-6 sm:px-6 lg:px-8">
+		<div class="mx-auto max-w-7xl">
+			<div class="relative overflow-hidden rounded-2xl py-10 sm:py-12 md:py-14">
+				<!-- Background -->
+				<div class="absolute inset-0">
+					<img src="/banner/age-open-banner.webp" alt="" class="h-full w-full object-cover" />
+					<!-- Radial gradient: dark in center, lighter on edges -->
+					<div
+						class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(3,7,18,0.98)_0%,_rgba(3,7,18,0.92)_40%,_rgba(3,7,18,0.75)_100%)]"
+					></div>
 				</div>
 
-				<!-- Title -->
-				<h1
-					class="mb-2 text-3xl font-black tracking-tight text-white sm:mb-3 sm:text-5xl lg:text-6xl"
-				>
-					AGE Open <span
-						class="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent"
-						>Series</span
-					>
-				</h1>
-
-				<!-- Tagline -->
-				<p class="mx-auto mb-4 max-w-2xl px-2 text-sm text-gray-300 sm:mb-5 sm:px-0 sm:text-lg">
-					Join the premier independent Flesh and Blood tournament circuit. <span
-						class="text-amber-400">$1,000 prize pools</span
-					>, AGE Points, and your shot at the Player's Championship.
-				</p>
-
-				<!-- Stats row -->
-				<div class="mb-5 flex items-center justify-center gap-4 text-sm sm:mb-6 sm:gap-6">
-					<div class="flex items-center gap-1.5 sm:gap-2">
-						<span class="text-xl font-bold text-white sm:text-2xl">24</span>
-						<span class="text-xs text-gray-400 sm:text-sm">Events</span>
-					</div>
-					<div class="h-4 w-px bg-gray-700"></div>
-					<div class="flex items-center gap-1.5 sm:gap-2">
-						<span class="text-xl font-bold text-white sm:text-2xl">$30K+</span>
-						<span class="text-xs text-gray-400 sm:text-sm">Prizes</span>
-					</div>
-					<div class="h-4 w-px bg-gray-700"></div>
-					<div class="flex items-center gap-1.5 sm:gap-2">
-						<span class="text-xl font-bold text-white sm:text-2xl">3</span>
-						<span class="text-xs text-gray-400 sm:text-sm">Regions</span>
-					</div>
-				</div>
-
-				<!-- CTA -->
-				<div
-					class="flex flex-col items-center gap-2.5 px-4 sm:flex-row sm:justify-center sm:gap-3 sm:px-0"
-				>
-					<button
-						onclick={() => switchTab('events')}
-						class="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-amber-500/25 transition-all hover:scale-105 hover:shadow-xl hover:shadow-amber-500/40 sm:w-auto sm:px-8 sm:py-3.5 sm:text-base"
-					>
-						Find an Event
-						<svg
-							class="h-4 w-4 transition-transform group-hover:translate-x-1 sm:h-5 sm:w-5"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
+				<div class="relative px-4 sm:px-8 lg:px-12">
+					<div class="mx-auto max-w-3xl text-center">
+						<!-- Badge -->
+						<div
+							class="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400 sm:mb-4 sm:px-4 sm:py-1.5 sm:text-sm"
 						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M13 7l5 5m0 0l-5 5m5-5H6"
-							/>
-						</svg>
-					</button>
-					<button
-						onclick={() => switchTab('standings')}
-						class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 px-6 py-3 text-sm font-medium text-gray-300 transition-all hover:border-white/30 hover:bg-white/10 hover:text-white sm:w-auto sm:py-3.5"
-					>
-						View Standings
-					</button>
+							<span class="relative flex h-2 w-2">
+								<span
+									class="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"
+								></span>
+								<span class="relative inline-flex h-2 w-2 rounded-full bg-amber-500"></span>
+							</span>
+							2026 Season Now Open
+						</div>
+
+						<!-- Title -->
+						<h1
+							class="mb-2 text-3xl font-black tracking-tight text-white sm:mb-3 sm:text-5xl lg:text-6xl"
+						>
+							AGE Open <span
+								class="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent"
+								>Series</span
+							>
+						</h1>
+
+						<!-- Tagline -->
+						<p class="mx-auto mb-4 max-w-2xl text-sm text-gray-300 sm:mb-5 sm:text-lg">
+							Join the premier independent Flesh and Blood tournament circuit. <span
+								class="text-amber-400">$1,000 prize pools</span
+							>, AGE Points, and your shot at the Player's Championship.
+						</p>
+
+						<!-- Stats row -->
+						<div class="mb-5 flex items-center justify-center gap-4 text-sm sm:mb-6 sm:gap-6">
+							<div class="flex items-center gap-1.5 sm:gap-2">
+								<span class="text-xl font-bold text-white sm:text-2xl">24</span>
+								<span class="text-xs text-gray-400 sm:text-sm">Events</span>
+							</div>
+							<div class="h-4 w-px bg-gray-700"></div>
+							<div class="flex items-center gap-1.5 sm:gap-2">
+								<span class="text-xl font-bold text-white sm:text-2xl">$30K+</span>
+								<span class="text-xs text-gray-400 sm:text-sm">Prizes</span>
+							</div>
+							<div class="h-4 w-px bg-gray-700"></div>
+							<div class="flex items-center gap-1.5 sm:gap-2">
+								<span class="text-xl font-bold text-white sm:text-2xl">3</span>
+								<span class="text-xs text-gray-400 sm:text-sm">Regions</span>
+							</div>
+						</div>
+
+						<!-- CTA -->
+						<div
+							class="flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center sm:gap-3"
+						>
+							<button
+								onclick={() => switchTab('events')}
+								class="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-amber-500/25 transition-all hover:scale-105 hover:shadow-xl hover:shadow-amber-500/40 sm:w-auto sm:px-8 sm:py-3.5 sm:text-base"
+							>
+								Find an Event
+								<svg
+									class="h-4 w-4 transition-transform group-hover:translate-x-1 sm:h-5 sm:w-5"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M13 7l5 5m0 0l-5 5m5-5H6"
+									/>
+								</svg>
+							</button>
+							<button
+								onclick={() => switchTab('standings')}
+								class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 px-6 py-3 text-sm font-medium text-gray-300 transition-all hover:border-white/30 hover:bg-white/10 hover:text-white sm:w-auto sm:py-3.5"
+							>
+								View Standings
+							</button>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
 	</section>
 
 	<!-- Tab Navigation -->
-	<nav class="sticky top-0 z-30 bg-gray-900/95 backdrop-blur-sm">
-		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+	<nav class="sticky top-0 z-30 px-4 sm:px-6 lg:px-8">
+		<div class="mx-auto max-w-7xl">
 			<div class="relative py-3 pb-4 lg:pb-3">
 				<!-- Visible pill container for tabs - full width on desktop -->
 				<div
-					class="scrollbar-hide inline-flex max-w-full overflow-x-auto rounded-xl bg-gray-800/80 p-1.5 lg:flex"
+					class="scrollbar-hide relative inline-flex max-w-full overflow-x-auto rounded-xl bg-gray-800/80 p-1.5 lg:flex"
 				>
 					{#each tabs as tab}
 						<button
@@ -1140,11 +1141,11 @@
 							{tab.name}
 						</button>
 					{/each}
+					<!-- Mobile scroll indicator - subtle fade hint (inside pill container) -->
+					<div
+						class="pointer-events-none sticky right-0 -mr-1.5 w-6 shrink-0 rounded-r-xl bg-gradient-to-l from-gray-800 to-transparent sm:hidden"
+					></div>
 				</div>
-				<!-- Mobile scroll indicator - subtle fade hint -->
-				<div
-					class="pointer-events-none absolute top-0 right-0 bottom-0 w-8 rounded-r-xl bg-gradient-to-l from-gray-800/90 to-transparent sm:hidden"
-				></div>
 			</div>
 		</div>
 		<!-- Gradient separator line -->
@@ -1152,7 +1153,8 @@
 	</nav>
 
 	<!-- Tab Content -->
-	<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+	<div class="px-4 py-8 sm:px-6 lg:px-8">
+		<div class="mx-auto max-w-7xl">
 		<!-- Overview Tab -->
 		{#if activeTab === 'overview'}
 			<div class="space-y-12">
@@ -4818,5 +4820,6 @@
 				</section>
 			</div>
 		{/if}
+		</div>
 	</div>
 </div>

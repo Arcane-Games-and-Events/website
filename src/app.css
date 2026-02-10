@@ -19,6 +19,9 @@ body {
 	font-feature-settings:
 		'rlig' 1,
 		'calt' 1;
+	font-optical-sizing: auto;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 /* Make all buttons show pointer cursor on hover */
@@ -57,13 +60,42 @@ h6 {
 	font-family: var(--font-display);
 }
 
-/* Article prose styles */
+/* Article prose styles - The Ringer inspired typography */
+.prose {
+	font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+	font-optical-sizing: auto;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+	font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+	letter-spacing: -0.02em;
+}
+
+/* Remove underlines from all prose links */
+.prose a {
+	text-decoration: none !important;
+}
+
+.prose a:hover {
+	text-decoration: none !important;
+}
+
+/* Card links (for card tooltips) - use blue to match other links */
 .prose a.card-link {
-	@apply cursor-pointer font-medium text-yellow-600 underline;
+	@apply cursor-pointer font-medium text-blue-400;
+	text-decoration: none !important;
 }
 
 .prose a.card-link:hover {
-	@apply text-yellow-500;
+	@apply text-blue-300;
+	text-decoration: none !important;
 }
 
 /* Hide scrollbar but keep scroll functionality */
