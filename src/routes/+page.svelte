@@ -415,21 +415,21 @@
 						<!-- Featured Article -->
 						<ArticlePreview article={data.articles[0]} variant="hero" />
 
-						<!-- More Articles List -->
+						<!-- More Articles Grid -->
 						{#if data.articles.length > 1}
-							<div class="space-y-5">
+							<div class="grid gap-4 sm:space-y-4 sm:gap-0">
 								{#each data.articles.slice(1, 4) as article}
 									<a
 										href="/articles/{article.slug}"
-										class="group flex gap-4 rounded-xl border border-white/5 bg-gray-900/40 p-4 transition-all hover:border-white/15 hover:bg-gray-900/60 sm:gap-5"
+										class="group overflow-hidden rounded-xl border border-white/5 bg-gray-900/40 transition-all hover:border-white/15 hover:bg-gray-900/60 sm:flex"
 									>
 										<!-- Thumbnail -->
-										<div class="relative aspect-video w-36 shrink-0 overflow-hidden rounded-lg bg-gray-800 sm:w-48">
+										<div class="relative aspect-video overflow-hidden bg-gray-800 sm:aspect-video sm:w-48 sm:shrink-0 lg:w-64">
 											{#if article.coverImage?.src}
 												<img
 													src={article.coverImage.src}
 													srcset={article.coverImage.srcset}
-													sizes="(max-width: 640px) 144px, 192px"
+													sizes="(max-width: 640px) 100vw, 256px"
 													alt={article.title}
 													class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
 													loading="lazy"
@@ -442,26 +442,27 @@
 												</div>
 											{/if}
 										</div>
-
 										<!-- Content -->
-										<div class="flex min-w-0 flex-1 flex-col justify-center py-1">
-											<!-- Top row: Tag + Access Badge -->
-											<div class="mb-2 flex flex-wrap items-center gap-2">
+										<div class="p-4 sm:flex sm:flex-1 sm:flex-col sm:justify-center">
+											<!-- Tag and Access Badge Row -->
+											<div class="mb-1.5 flex items-center justify-between gap-2">
 												{#if article.tags && article.tags.length > 0}
 													<span class="text-xs font-semibold tracking-wide text-blue-400 uppercase">
 														{article.tags[0].name}
 													</span>
+												{:else}
+													<span></span>
 												{/if}
 												{#if article.isPremium}
 													<span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 uppercase">
-														<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+														<svg class="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 24 24">
 															<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 														</svg>
 														Premium
 													</span>
 												{:else if article.isFreeNow}
 													<span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 uppercase">
-														<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+														<svg class="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 24 24">
 															<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 														</svg>
 														Free Now
@@ -472,19 +473,16 @@
 													</span>
 												{/if}
 											</div>
-
 											<!-- Title -->
-											<h3 class="mb-2 line-clamp-2 text-base font-bold leading-snug text-white transition-colors group-hover:text-blue-400 sm:text-lg">
+											<h4 class="mb-2 line-clamp-2 text-sm font-bold leading-snug text-white transition-colors group-hover:text-blue-400 sm:text-base">
 												{article.title}
-											</h3>
-
-											<!-- Excerpt -->
+											</h4>
+											<!-- Excerpt (desktop only) -->
 											{#if article.excerpt}
-												<p class="mb-3 line-clamp-2 text-sm leading-relaxed text-gray-400">
+												<p class="mb-2 hidden line-clamp-2 text-sm leading-relaxed text-gray-400 sm:block">
 													{article.excerpt}
 												</p>
 											{/if}
-
 											<!-- Author & Date -->
 											<div class="flex items-center gap-2 text-xs text-gray-500">
 												{#if article.author}
@@ -492,18 +490,18 @@
 														<img
 															src={article.author.profilePicture}
 															alt={article.author.name}
-															class="h-5 w-5 rounded-full object-cover"
+															class="h-4 w-4 rounded-full object-cover"
 														/>
 													{/if}
-													<span class="font-medium text-gray-400">{article.author.name}</span>
+													<span>{article.author.name}</span>
 													<span class="text-gray-600">·</span>
 												{/if}
 												{#if article.publishedAt}
-													<span>{new Date(article.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+													<span>{new Date(article.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
 												{/if}
 												{#if article.readTime}
 													<span class="text-gray-600">·</span>
-													<span>{article.readTime} min read</span>
+													<span>{article.readTime} min</span>
 												{/if}
 											</div>
 										</div>

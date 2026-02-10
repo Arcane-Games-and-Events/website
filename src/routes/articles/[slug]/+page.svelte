@@ -938,7 +938,7 @@
 		<div class="lg:grid lg:grid-cols-[180px_1fr] lg:gap-8 xl:gap-12">
 			<!-- Left Sidebar - Table of Contents (hide in preview mode) -->
 			<aside class="hidden lg:block">
-				<div class="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-hide">
+				<div class="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-hide">
 					{#if !data.isPreview && tableOfContents.length > 0}
 						<nav>
 							<div class="space-y-1 pb-8">
