@@ -88,9 +88,11 @@ class PayloadClient {
 	/**
 	 * Get all published posts
 	 * @param {Object} options - Query options
+	 * @param {boolean} options.includeScheduled - Include future-dated posts (for admin preview)
 	 * @returns {Promise<Array>}
 	 */
 	async getPosts(options = {}) {
+		const now = new Date().toISOString();
 		const params = {
 			limit: options.limit || 100,
 			depth: 2, // Populate relationships
@@ -99,16 +101,25 @@ class PayloadClient {
 			}
 		};
 
+		// Exclude future-dated posts unless explicitly requested (scheduled publishing)
+		if (!options.includeScheduled) {
+			params.where.publishedDate = { less_than_equal: now };
+		}
+
+		console.log('[Payload] getPosts filter:', JSON.stringify(params.where));
 		const response = await this.get('/api/posts', params);
+		console.log('[Payload] getPosts returned:', response.docs?.length, 'posts');
 		return response.docs || [];
 	}
 
 	/**
 	 * Get a single post by slug
 	 * @param {string} slug - Post slug
+	 * @param {Object} options - Query options
+	 * @param {boolean} options.includeScheduled - Include future-dated posts (for admin preview)
 	 * @returns {Promise<Object|null>}
 	 */
-	async getPostBySlug(slug) {
+	async getPostBySlug(slug, options = {}) {
 		const params = {
 			depth: 2, // Populate relationships
 			where: {
@@ -117,6 +128,11 @@ class PayloadClient {
 			},
 			limit: 1
 		};
+
+		// Exclude future-dated posts unless explicitly requested (scheduled publishing)
+		if (!options.includeScheduled) {
+			params.where.publishedDate = { less_than_equal: new Date().toISOString() };
+		}
 
 		const response = await this.get('/api/posts', params);
 		const posts = response.docs || [];
@@ -145,9 +161,11 @@ class PayloadClient {
 	/**
 	 * Get posts by author
 	 * @param {string} authorId - Author ID
+	 * @param {Object} options - Query options
+	 * @param {boolean} options.includeScheduled - Include future-dated posts (for admin preview)
 	 * @returns {Promise<Array>}
 	 */
-	async getPostsByAuthor(authorId) {
+	async getPostsByAuthor(authorId, options = {}) {
 		const params = {
 			depth: 2,
 			where: {
@@ -155,6 +173,11 @@ class PayloadClient {
 				_status: { equals: 'published' }
 			}
 		};
+
+		// Exclude future-dated posts unless explicitly requested (scheduled publishing)
+		if (!options.includeScheduled) {
+			params.where.publishedDate = { less_than_equal: new Date().toISOString() };
+		}
 
 		const response = await this.get('/api/posts', params);
 		return response.docs || [];
@@ -182,9 +205,11 @@ class PayloadClient {
 	/**
 	 * Get posts by tag
 	 * @param {string} tagId - Tag ID
+	 * @param {Object} options - Query options
+	 * @param {boolean} options.includeScheduled - Include future-dated posts (for admin preview)
 	 * @returns {Promise<Array>}
 	 */
-	async getPostsByTag(tagId) {
+	async getPostsByTag(tagId, options = {}) {
 		const params = {
 			depth: 2,
 			where: {
@@ -192,6 +217,11 @@ class PayloadClient {
 				_status: { equals: 'published' }
 			}
 		};
+
+		// Exclude future-dated posts unless explicitly requested (scheduled publishing)
+		if (!options.includeScheduled) {
+			params.where.publishedDate = { less_than_equal: new Date().toISOString() };
+		}
 
 		const response = await this.get('/api/posts', params);
 		return response.docs || [];

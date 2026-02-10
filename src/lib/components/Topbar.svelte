@@ -139,6 +139,7 @@
 
 						<!-- Dropdown Menu -->
 						{#if userMenuOpen}
+							<!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
 							<div
 								transition:fade={{ duration: 150 }}
 								class="absolute right-0 mt-2 w-56 origin-top-right rounded-xl border border-white/10 bg-gray-900 p-2 shadow-xl"
@@ -271,6 +272,7 @@
 		></div>
 
 		<!-- Sidebar -->
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions a11y_click_events_have_key_events -->
 		<nav
 			transition:fly={{ x: -280, duration: 250 }}
 			class="absolute inset-y-0 left-0 flex w-72 flex-col bg-gray-950 shadow-2xl"

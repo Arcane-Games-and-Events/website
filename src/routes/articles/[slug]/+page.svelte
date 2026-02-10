@@ -417,11 +417,34 @@
 		// Handle lists
 		if (node.type === 'list') {
 			const tag = node.listType === 'number' ? 'ol' : 'ul';
-			const children = renderLexicalChildren(node.children);
-			return `<${tag}>${children}</${tag}>`;
+			// Process list items, handling nested lists specially
+			const itemsHtml = (node.children || [])
+				.map((item) => {
+					if (item.type !== 'listitem') return renderLexicalNode(item);
+
+					const children = item.children || [];
+					// Check if this listitem contains ONLY a nested list (no text content)
+					// This happens in Lexical when you have nested lists - the nested list
+					// is wrapped in its own listitem, causing an empty bullet
+					const hasOnlyNestedList =
+						children.length === 1 && children[0].type === 'list';
+
+					if (hasOnlyNestedList) {
+						// Don't wrap in <li>, just render the nested list directly
+						// This prevents the empty bullet for the wrapper listitem
+						return renderLexicalNode(children[0]);
+					}
+
+					// Normal listitem with content
+					const content = renderLexicalChildren(children);
+					return `<li>${content}</li>`;
+				})
+				.join('');
+			return `<${tag}>${itemsHtml}</${tag}>`;
 		}
 
 		if (node.type === 'listitem') {
+			// This handles listitems that appear outside the list context (shouldn't happen normally)
 			const children = renderLexicalChildren(node.children);
 			return `<li>${children}</li>`;
 		}
