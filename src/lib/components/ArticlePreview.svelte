@@ -20,9 +20,95 @@
 </script>
 
 {#if variant === 'hero'}
-	<!-- Hero Article (Large with overlay - The Ringer style) -->
+	<!-- Hero Article - Card style on mobile, overlay style on desktop -->
 	<a href="/articles/{article.slug}" class="group block">
-		<article class="relative overflow-hidden rounded-xl bg-gray-900">
+		<!-- Mobile: Card Layout (shown on small screens) -->
+		<article class="h-full sm:hidden">
+			{#if article.coverImage?.src}
+				<div class="relative mb-3 aspect-video overflow-hidden rounded-lg bg-gray-800">
+					<div class="absolute inset-0 animate-pulse bg-gray-800"></div>
+					<img
+						src={article.coverImage.src}
+						srcset={article.coverImage.srcset}
+						sizes="100vw"
+						alt=""
+						class="relative h-full w-full object-cover transition-all duration-500 group-hover:scale-105"
+						loading="lazy"
+						decoding="async"
+						on:load={(e) => (e.target.style.opacity = '1')}
+						style="opacity: 0;"
+					/>
+				</div>
+			{/if}
+			<!-- Category & Premium Badge -->
+			<div class="mb-1.5 flex flex-wrap items-center gap-2">
+				{#if article.tags?.[0]}
+					<span class="text-xs font-semibold tracking-wider text-blue-400 uppercase">
+						{article.tags[0].name}
+					</span>
+				{/if}
+				{#if article.isPremium}
+					<span
+						class="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 uppercase"
+					>
+						<svg class="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 24 24">
+							<path
+								fill-rule="evenodd"
+								d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+						Premium
+					</span>
+				{:else if article.isFreeNow}
+					<span
+						class="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 uppercase"
+					>
+						<svg class="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 24 24">
+							<path
+								fill-rule="evenodd"
+								d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+						Free Now
+					</span>
+				{:else}
+					<span class="rounded-full bg-gray-700/50 px-2 py-0.5 text-[10px] font-semibold text-gray-400 uppercase">
+						Free
+					</span>
+				{/if}
+			</div>
+			<h3
+				class="font-display text-lg leading-tight font-bold text-white transition-colors group-hover:text-blue-400"
+			>
+				{article.title}
+			</h3>
+			{#if article.excerpt}
+				<p class="mt-1.5 line-clamp-2 text-sm leading-relaxed text-gray-400">
+					{article.excerpt}
+				</p>
+			{/if}
+			<div class="mt-2 flex items-center gap-2 text-xs text-gray-500">
+				{#if article.author?.profilePicture}
+					<img
+						src={article.author.profilePicture}
+						alt={article.author.name}
+						class="h-5 w-5 rounded-full object-cover"
+						loading="lazy"
+						decoding="async"
+					/>
+				{/if}
+				{#if article.author}
+					<span class="font-medium text-gray-400">{article.author.name}</span>
+					<span>·</span>
+				{/if}
+				<span>{formatDate(article.publishedAt, false)}</span>
+			</div>
+		</article>
+
+		<!-- Desktop: Overlay Layout (shown on sm and up) -->
+		<article class="relative hidden overflow-hidden rounded-xl bg-gray-900 sm:block">
 			<!-- 16:9 Image Container -->
 			<div class="relative aspect-video overflow-hidden">
 				{#if article.coverImage?.src}
@@ -30,7 +116,7 @@
 					<img
 						src={article.coverImage.src}
 						srcset={article.coverImage.srcset}
-						sizes="(max-width: 640px) 100vw, (max-width: 1024px) 66vw, 50vw"
+						sizes="(max-width: 1024px) 66vw, 50vw"
 						alt=""
 						class="relative h-full w-full object-cover transition-all duration-500 group-hover:scale-105"
 						loading="lazy"
@@ -48,7 +134,7 @@
 			</div>
 
 			<!-- Text Overlay -->
-			<div class="absolute inset-x-0 bottom-0 p-4 sm:p-6">
+			<div class="absolute inset-x-0 bottom-0 p-6">
 				<!-- Category & Premium Badge -->
 				<div class="mb-2 flex flex-wrap items-center gap-2">
 					{#if article.tags?.[0]}
@@ -89,20 +175,20 @@
 
 				<!-- Title -->
 				<h3
-					class="font-display text-xl leading-tight font-bold text-white transition-colors group-hover:text-blue-400 sm:text-2xl lg:text-3xl"
+					class="font-display text-2xl leading-tight font-bold text-white transition-colors group-hover:text-blue-400 lg:text-3xl"
 				>
 					{article.title}
 				</h3>
 
 				<!-- Excerpt -->
 				{#if article.excerpt}
-					<p class="mt-2 line-clamp-2 text-sm text-gray-300 sm:text-base">
+					<p class="mt-2 line-clamp-2 text-base text-gray-300">
 						{article.excerpt}
 					</p>
 				{/if}
 
 				<!-- Author & Date -->
-				<div class="mt-3 flex items-center gap-2 text-xs text-gray-400 sm:text-sm">
+				<div class="mt-3 flex items-center gap-2 text-sm text-gray-400">
 					{#if article.author?.profilePicture}
 						<img
 							src={article.author.profilePicture}

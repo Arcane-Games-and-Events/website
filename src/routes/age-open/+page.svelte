@@ -208,19 +208,19 @@
 		});
 	}
 
-	// Color palette for season bars
-	const seasonColors = [
-		{ bg: 'bg-amber-500/30', border: 'border-amber-500/50', text: 'text-amber-300' },
-		{ bg: 'bg-purple-500/30', border: 'border-purple-500/50', text: 'text-purple-300' },
-		{ bg: 'bg-emerald-500/30', border: 'border-emerald-500/50', text: 'text-emerald-300' },
-		{ bg: 'bg-blue-500/30', border: 'border-blue-500/50', text: 'text-blue-300' },
-		{ bg: 'bg-rose-500/30', border: 'border-rose-500/50', text: 'text-rose-300' },
-		{ bg: 'bg-cyan-500/30', border: 'border-cyan-500/50', text: 'text-cyan-300' }
-	];
+	// Color for LSS season bars - all use the same amber/yellow color
+	const seasonColor = { bg: 'bg-amber-500/30', border: 'border-amber-500/50', text: 'text-amber-300' };
 
 	function getSeasonColor(index) {
-		return seasonColors[index % seasonColors.length];
+		return seasonColor;
 	}
+
+	// Filter LSS events to only show upcoming/active events (not past)
+	$: upcomingLssEvents = (data.lssEvents || []).filter((season) => {
+		const endDate = new Date(season.endDate);
+		const now = new Date();
+		return now <= endDate;
+	});
 
 	// Split calendar days into weeks
 	$: calendarWeeks = calendarDays
@@ -2507,7 +2507,7 @@
 					</div>
 
 					<!-- LSS Events Section - Minimalistic with subtle accent -->
-					{#if data.lssEvents && data.lssEvents.length > 0}
+					{#if upcomingLssEvents && upcomingLssEvents.length > 0}
 						<div
 							class="mt-8 rounded-lg border border-amber-500/20 bg-gradient-to-r from-amber-950/20 to-transparent p-3 sm:p-4"
 						>
@@ -2526,12 +2526,12 @@
 								<h3
 									class="text-xs font-medium tracking-wider text-amber-400/80 uppercase sm:text-sm"
 								>
-									Official LSS Events
+									Upcoming LSS Events
 								</h3>
 								<div class="h-px flex-1 bg-amber-500/20"></div>
 							</div>
 							<div class="space-y-1">
-								{#each data.lssEvents as season}
+								{#each upcomingLssEvents as season}
 									{@const startDate = new Date(season.startDate)}
 									{@const endDate = new Date(season.endDate)}
 									{@const now = new Date()}

@@ -2,8 +2,8 @@
 	import FadeImage from '$lib/components/FadeImage.svelte';
 	import ArticleCard from '$lib/components/ArticleCard.svelte';
 	import ArticlePreview from '$lib/components/ArticlePreview.svelte';
-	import { onMount, onDestroy } from 'svelte';
-	export let data;
+	import { onMount, onDestroy, tick } from 'svelte';
+		export let data;
 
 	// Get unique tags from all articles
 	$: allTags = [
@@ -112,6 +112,101 @@
 
 	// View mode: 'separated' or 'all'
 	let viewMode = 'separated';
+
+	// Pagination state
+	let premiumPage = 1;
+	let freePage = 1;
+	let allPage = 1;
+	const ITEMS_PER_PAGE_GROUPED = 6;
+	const ITEMS_PER_PAGE_ALL = 9;
+
+	// Reset pagination when filters change
+	$: if (selectedTag || selectedAccessType) {
+		premiumPage = 1;
+		freePage = 1;
+		allPage = 1;
+	}
+
+	// Reset pagination when view mode changes
+	$: if (viewMode) {
+		premiumPage = 1;
+		freePage = 1;
+		allPage = 1;
+	}
+
+	// Paginated articles for each section (show only current page's items)
+	$: paginatedPremiumArticles = premiumArticles.slice(
+		(premiumPage - 1) * ITEMS_PER_PAGE_GROUPED,
+		premiumPage * ITEMS_PER_PAGE_GROUPED
+	);
+	$: paginatedFreeArticles = freeArticles.slice(
+		(freePage - 1) * ITEMS_PER_PAGE_GROUPED,
+		freePage * ITEMS_PER_PAGE_GROUPED
+	);
+	$: paginatedAllArticles = filteredArticles.slice(
+		(allPage - 1) * ITEMS_PER_PAGE_ALL,
+		allPage * ITEMS_PER_PAGE_ALL
+	);
+
+	// Total pages for each section
+	$: totalPremiumPages = Math.ceil(premiumArticles.length / ITEMS_PER_PAGE_GROUPED);
+	$: totalFreePages = Math.ceil(freeArticles.length / ITEMS_PER_PAGE_GROUPED);
+	$: totalAllPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE_ALL);
+
+	// Scroll to element on mobile (waits for DOM update)
+	async function scrollToSection(elementId) {
+		// Only scroll on mobile/tablet (under 1024px)
+		if (window.innerWidth < 1024) {
+			await tick(); // Wait for Svelte to update the DOM
+			const element = document.getElementById(elementId);
+			if (element) {
+				element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
+		}
+	}
+
+	// Page navigation functions
+	async function goToPremiumPage(page) {
+		premiumPage = page;
+		await scrollToSection('premium-articles');
+	}
+
+	async function goToFreePage(page) {
+		freePage = page;
+		await scrollToSection('free-articles');
+	}
+
+	async function goToAllPage(page) {
+		allPage = page;
+		await scrollToSection('all-articles');
+	}
+
+	// Generate page numbers for pagination
+	function getPageNumbers(currentPage, totalPages) {
+		const pages = [];
+		const maxVisible = 5;
+
+		if (totalPages <= maxVisible) {
+			for (let i = 1; i <= totalPages; i++) pages.push(i);
+		} else {
+			if (currentPage <= 3) {
+				for (let i = 1; i <= 4; i++) pages.push(i);
+				pages.push('...');
+				pages.push(totalPages);
+			} else if (currentPage >= totalPages - 2) {
+				pages.push(1);
+				pages.push('...');
+				for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+			} else {
+				pages.push(1);
+				pages.push('...');
+				for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+				pages.push('...');
+				pages.push(totalPages);
+			}
+		}
+		return pages;
+	}
 </script>
 
 <svelte:head>
@@ -468,8 +563,12 @@
 			{#if filteredArticles.length > 0}
 				{#if viewMode === 'all'}
 					<!-- All Articles View -->
-					<div class="grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-						{#each filteredArticles as article}
+					<div id="all-articles" class="grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 scroll-mt-20">
+						{#each paginatedAllArticles as article, i (article.slug + '-' + allPage)}
+							<div
+								class="article-card-animate"
+								style="animation-delay: {i * 50}ms"
+							>
 							<a href="/articles/{article.slug}" class="group block">
 								<article>
 									<!-- Image -->
@@ -532,13 +631,52 @@
 									</div>
 								</article>
 							</a>
+							</div>
 						{/each}
 					</div>
+
+					<!-- All Articles Pagination -->
+					{#if totalAllPages > 1}
+						<div class="mt-10 flex items-center justify-center gap-2">
+							<button
+								on:click={() => goToAllPage(allPage - 1)}
+								disabled={allPage === 1}
+								class="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+							>
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+								</svg>
+							</button>
+							{#each getPageNumbers(allPage, totalAllPages) as page}
+								{#if page === '...'}
+									<span class="px-2 text-gray-500">...</span>
+								{:else}
+									<button
+										on:click={() => goToAllPage(page)}
+										class="flex h-9 min-w-[2.25rem] items-center justify-center rounded-lg border px-3 text-sm font-medium transition-colors {page === allPage
+											? 'border-blue-500 bg-blue-500 text-white'
+											: 'border-white/10 bg-white/5 text-white hover:bg-white/10'}"
+									>
+										{page}
+									</button>
+								{/if}
+							{/each}
+							<button
+								on:click={() => goToAllPage(allPage + 1)}
+								disabled={allPage === totalAllPages}
+								class="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+							>
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+								</svg>
+							</button>
+						</div>
+					{/if}
 				{:else}
 					<!-- Separated View -->
 					<!-- Premium Articles Section -->
 					{#if premiumArticles.length > 0}
-					<div class="mb-12">
+					<div id="premium-articles" class="mb-12 scroll-mt-20">
 						<!-- Section Header -->
 						<div class="mb-6 flex items-center gap-3">
 							<div class="flex items-center gap-2 rounded-lg bg-emerald-500/10 px-3 py-1.5">
@@ -553,7 +691,11 @@
 
 						<!-- Premium Grid -->
 						<div class="grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-							{#each premiumArticles as article}
+							{#each paginatedPremiumArticles as article, i (article.slug + '-' + premiumPage)}
+								<div
+									class="article-card-animate"
+									style="animation-delay: {i * 50}ms"
+								>
 								<a href="/articles/{article.slug}" class="group block">
 									<article>
 										<!-- Image -->
@@ -593,14 +735,53 @@
 										</div>
 									</article>
 								</a>
+								</div>
 							{/each}
 						</div>
+
+						<!-- Premium Pagination -->
+						{#if totalPremiumPages > 1}
+							<div class="mt-8 flex items-center justify-center gap-2">
+								<button
+									on:click={() => goToPremiumPage(premiumPage - 1)}
+									disabled={premiumPage === 1}
+									class="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 transition-colors hover:bg-emerald-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
+								>
+									<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+									</svg>
+								</button>
+								{#each getPageNumbers(premiumPage, totalPremiumPages) as page}
+									{#if page === '...'}
+										<span class="px-2 text-gray-500">...</span>
+									{:else}
+										<button
+											on:click={() => goToPremiumPage(page)}
+											class="flex h-9 min-w-[2.25rem] items-center justify-center rounded-lg border px-3 text-sm font-medium transition-colors {page === premiumPage
+												? 'border-emerald-500 bg-emerald-500 text-white'
+												: 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10'}"
+										>
+											{page}
+										</button>
+									{/if}
+								{/each}
+								<button
+									on:click={() => goToPremiumPage(premiumPage + 1)}
+									disabled={premiumPage === totalPremiumPages}
+									class="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 transition-colors hover:bg-emerald-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
+								>
+									<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+									</svg>
+								</button>
+							</div>
+						{/if}
 					</div>
 				{/if}
 
 				<!-- Free Articles Section -->
 				{#if freeArticles.length > 0}
-					<div>
+					<div id="free-articles" class="scroll-mt-20">
 						<!-- Section Header -->
 						<div class="mb-6 flex items-center gap-3">
 							<div class="flex items-center gap-2 rounded-lg bg-blue-500/10 px-3 py-1.5">
@@ -615,7 +796,11 @@
 
 						<!-- Free Grid -->
 						<div class="grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-							{#each freeArticles as article}
+							{#each paginatedFreeArticles as article, i (article.slug + '-' + freePage)}
+								<div
+									class="article-card-animate"
+									style="animation-delay: {i * 50}ms"
+								>
 								<a href="/articles/{article.slug}" class="group block">
 									<article>
 										<!-- Image -->
@@ -661,8 +846,47 @@
 										</div>
 									</article>
 								</a>
+								</div>
 							{/each}
 						</div>
+
+						<!-- Free Pagination -->
+						{#if totalFreePages > 1}
+							<div class="mt-8 flex items-center justify-center gap-2">
+								<button
+									on:click={() => goToFreePage(freePage - 1)}
+									disabled={freePage === 1}
+									class="flex h-9 w-9 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/5 text-blue-400 transition-colors hover:bg-blue-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
+								>
+									<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+									</svg>
+								</button>
+								{#each getPageNumbers(freePage, totalFreePages) as page}
+									{#if page === '...'}
+										<span class="px-2 text-gray-500">...</span>
+									{:else}
+										<button
+											on:click={() => goToFreePage(page)}
+											class="flex h-9 min-w-[2.25rem] items-center justify-center rounded-lg border px-3 text-sm font-medium transition-colors {page === freePage
+												? 'border-blue-500 bg-blue-500 text-white'
+												: 'border-blue-500/20 bg-blue-500/5 text-blue-400 hover:bg-blue-500/10'}"
+										>
+											{page}
+										</button>
+									{/if}
+								{/each}
+								<button
+									on:click={() => goToFreePage(freePage + 1)}
+									disabled={freePage === totalFreePages}
+									class="flex h-9 w-9 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/5 text-blue-400 transition-colors hover:bg-blue-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
+								>
+									<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+									</svg>
+								</button>
+							</div>
+						{/if}
 					</div>
 				{/if}
 				{/if}
@@ -682,16 +906,6 @@
 				</div>
 			{/if}
 
-			<!-- Load More (placeholder for future pagination) -->
-			{#if filteredArticles.length > 6}
-				<div class="mt-12 text-center">
-					<button
-						class="rounded-xl border border-white/10 bg-white/5 px-8 py-3 font-semibold text-white transition-colors hover:bg-white/10"
-					>
-						Load More
-					</button>
-				</div>
-			{/if}
 		</div>
 	</section>
 
@@ -722,3 +936,21 @@
 		</section>
 	{/if}
 </div>
+
+<style>
+	@keyframes slideUp {
+		from {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.article-card-animate {
+		animation: slideUp 0.3s ease-out forwards;
+		opacity: 0;
+	}
+</style>

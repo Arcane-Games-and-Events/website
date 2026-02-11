@@ -9,7 +9,7 @@ import {
 	ticket,
 	entitlement
 } from '$lib/server/db/schema.js';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, or, ilike } from 'drizzle-orm';
 
 // Helper to add timeout to promises
 const withTimeout = (promise, ms, fallback) =>
@@ -434,7 +434,8 @@ export async function load({ locals }) {
 				totalEvents: parseInt(data.stats?.totalEvents) || 0,
 				totalOrders: parseInt(data.stats?.totalOrders) || 0,
 				premiumUsers: parseInt(data.stats?.premiumUsers) || 0,
-				totalPlayers: parseInt(data.stats?.totalPlayers) || 0
+				totalPlayers: parseInt(data.stats?.totalPlayers) || 0,
+				totalUsers: parseInt(data.stats?.totalUsers) || 0
 			}
 		};
 	} catch (error) {
@@ -485,7 +486,8 @@ export async function load({ locals }) {
 				totalEvents: 0,
 				totalOrders: 0,
 				premiumUsers: 0,
-				totalPlayers: 0
+				totalPlayers: 0,
+				totalUsers: 0
 			}
 		};
 	}
@@ -1356,6 +1358,97 @@ export const actions = {
 		} catch (err) {
 			console.error('Error backfilling GEM IDs:', err);
 			return fail(500, { error: err.message || 'Failed to backfill GEM IDs' });
+		}
+	},
+
+	// Server-side search for users
+	searchUsers: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const query = formData.get('query')?.toString().trim();
+
+		if (!query || query.length < 2) {
+			return fail(400, { error: 'Search query must be at least 2 characters' });
+		}
+
+		try {
+			const searchPattern = `%${query}%`;
+			const results = await db
+				.select({
+					id: user.id,
+					email: user.email,
+					role: user.role,
+					createdAt: user.createdAt,
+					first_name: user.firstName,
+					last_name: user.lastName
+				})
+				.from(user)
+				.where(
+					or(
+						ilike(user.email, searchPattern),
+						ilike(user.firstName, searchPattern),
+						ilike(user.lastName, searchPattern)
+					)
+				)
+				.orderBy(user.createdAt)
+				.limit(100);
+
+			return {
+				success: true,
+				searchType: 'users',
+				results: results.map((u) => ({
+					id: u.id,
+					email: u.email,
+					role: u.role,
+					createdAt: u.createdAt,
+					first_name: u.first_name,
+					last_name: u.last_name
+				}))
+			};
+		} catch (err) {
+			console.error('Error searching users:', err);
+			return fail(500, { error: 'Failed to search users' });
+		}
+	},
+
+	// Server-side search for orders
+	searchOrders: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const query = formData.get('query')?.toString().trim();
+
+		if (!query || query.length < 2) {
+			return fail(400, { error: 'Search query must be at least 2 characters' });
+		}
+
+		try {
+			const searchPattern = `%${query}%`;
+			const results = await db
+				.select()
+				.from(order)
+				.where(
+					or(
+						ilike(order.userEmail, searchPattern),
+						ilike(order.id, searchPattern)
+					)
+				)
+				.orderBy(order.createdAt)
+				.limit(100);
+
+			return {
+				success: true,
+				searchType: 'orders',
+				results
+			};
+		} catch (err) {
+			console.error('Error searching orders:', err);
+			return fail(500, { error: 'Failed to search orders' });
 		}
 	}
 };

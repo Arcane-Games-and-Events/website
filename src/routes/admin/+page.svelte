@@ -1,5 +1,5 @@
 <script>
-	import { enhance } from '$app/forms';
+	import { enhance, deserialize } from '$app/forms';
 	import { page } from '$app/stores';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { getCircuit, getCircuitNames } from '$lib/data/circuits.js';
@@ -59,13 +59,83 @@
 
 	// Search and filter state
 	let userSearchQuery = $state('');
+	let userSearchResults = $state(null); // Server-side search results
+	let userSearchLoading = $state(false);
+	let userSearchTimeout = $state(null);
 
-	// Filter users based on search query
-	let filteredUsers = $derived(
-		(data.allUsers || []).filter((user) =>
-			user.email.toLowerCase().includes(userSearchQuery.toLowerCase())
-		)
-	);
+	// Filter users - use server results if available, otherwise filter locally
+	let filteredUsers = $derived.by(() => {
+		// If we have server search results, use those
+		if (userSearchResults !== null) {
+			return userSearchResults;
+		}
+		// Otherwise filter locally from loaded data
+		const query = userSearchQuery.toLowerCase();
+		if (!query) {
+			return data.allUsers || [];
+		}
+		return (data.allUsers || []).filter((user) =>
+			user.email.toLowerCase().includes(query) ||
+			(user.first_name && user.first_name.toLowerCase().includes(query)) ||
+			(user.last_name && user.last_name.toLowerCase().includes(query))
+		);
+	});
+
+	// Debounced server-side search for users
+	async function searchUsersOnServer(query) {
+		if (!query || query.length < 2) {
+			userSearchResults = null; // Reset to local filtering
+			return;
+		}
+
+		userSearchLoading = true;
+		try {
+			const formData = new FormData();
+			formData.append('query', query);
+
+			const response = await fetch('?/searchUsers', {
+				method: 'POST',
+				body: formData
+			});
+
+			const text = await response.text();
+			const result = deserialize(text);
+
+			if (result.type === 'success' && result.data?.results) {
+				userSearchResults = result.data.results;
+			} else if (result.type === 'failure') {
+				console.error('Search action failed:', result.data?.error || 'Unknown error');
+			} else {
+				console.log('Search response:', result.type, result.data);
+			}
+		} catch (err) {
+			console.error('Search error:', err);
+		} finally {
+			userSearchLoading = false;
+		}
+	}
+
+	// Handle user search input with debounce
+	function handleUserSearch(event) {
+		const query = event.target.value;
+		userSearchQuery = query;
+
+		// Clear previous timeout
+		if (userSearchTimeout) {
+			clearTimeout(userSearchTimeout);
+		}
+
+		// Reset server results when clearing search
+		if (!query || query.length < 2) {
+			userSearchResults = null;
+			return;
+		}
+
+		// Debounce server search (300ms)
+		userSearchTimeout = setTimeout(() => {
+			searchUsersOnServer(query);
+		}, 300);
+	}
 
 	// Function to switch tabs and update URL
 	function switchTab(tabId) {
@@ -261,11 +331,71 @@
 	// ========== ORDER MANAGEMENT STATE ==========
 	// Orders tab state
 	let ordersSearchQuery = $state('');
+	let ordersSearchResults = $state(null); // Server-side search results
+	let ordersSearchLoading = $state(false);
+	let ordersSearchTimeout = $state(null);
 	let ordersTypeFilter = $state('all'); // 'all', 'ticket', 'course', 'subscription'
 	let ordersStatusFilter = $state('all'); // 'all', 'completed', 'refunded'
 	let ordersDateFilter = $state('all'); // 'all', 'today', 'week', 'month'
 	let ordersPage = $state(1);
 	let ordersPerPage = 25;
+
+	// Debounced server-side search for orders
+	async function searchOrdersOnServer(query) {
+		if (!query || query.length < 2) {
+			ordersSearchResults = null; // Reset to local filtering
+			return;
+		}
+
+		ordersSearchLoading = true;
+		try {
+			const formData = new FormData();
+			formData.append('query', query);
+
+			const response = await fetch('?/searchOrders', {
+				method: 'POST',
+				body: formData
+			});
+
+			const text = await response.text();
+			const result = deserialize(text);
+
+			if (result.type === 'success' && result.data?.results) {
+				ordersSearchResults = result.data.results;
+			} else if (result.type === 'failure') {
+				console.error('Order search action failed:', result.data?.error || 'Unknown error');
+			} else {
+				console.log('Order search response:', result.type, result.data);
+			}
+		} catch (err) {
+			console.error('Order search error:', err);
+		} finally {
+			ordersSearchLoading = false;
+		}
+	}
+
+	// Handle order search input with debounce
+	function handleOrderSearch(event) {
+		const query = event.target.value;
+		ordersSearchQuery = query;
+		ordersPage = 1; // Reset to first page
+
+		// Clear previous timeout
+		if (ordersSearchTimeout) {
+			clearTimeout(ordersSearchTimeout);
+		}
+
+		// Reset server results when clearing search
+		if (!query || query.length < 2) {
+			ordersSearchResults = null;
+			return;
+		}
+
+		// Debounce server search (300ms)
+		ordersSearchTimeout = setTimeout(() => {
+			searchOrdersOnServer(query);
+		}, 300);
+	}
 	let ordersSortBy = $state('date'); // 'date', 'amount'
 	let ordersSortDir = $state('desc');
 
@@ -351,12 +481,15 @@
 		return email || 'Unknown';
 	}
 
-	// Filtered and sorted orders
-	let filteredOrders = $derived(
-		(data.allOrders || [])
+	// Filtered and sorted orders - use server results if available for search
+	let filteredOrders = $derived.by(() => {
+		// Use server results if we have them (from deep search)
+		const baseOrders = ordersSearchResults !== null ? ordersSearchResults : (data.allOrders || []);
+
+		return baseOrders
 			.filter((ord) => {
-				// Search filter
-				if (ordersSearchQuery) {
+				// Search filter (only apply if not using server results)
+				if (ordersSearchResults === null && ordersSearchQuery) {
 					const q = ordersSearchQuery.toLowerCase();
 					const matchesEmail = ord.userEmail?.toLowerCase().includes(q);
 					const matchesId = ord.id?.toLowerCase().includes(q);
@@ -389,8 +522,8 @@
 				}
 				const diff = new Date(a.createdAt) - new Date(b.createdAt);
 				return ordersSortDir === 'asc' ? diff : -diff;
-			})
-	);
+			});
+	});
 
 	let totalOrdersPages = $derived(Math.ceil(filteredOrders.length / ordersPerPage));
 	let paginatedOrders = $derived(
@@ -624,7 +757,7 @@
 											d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"
 										/>
 									</svg>
-									{(data.allUsers || []).length} Users
+									{data.stats.totalUsers} Users
 								</span>
 							</div>
 						</div>
@@ -825,7 +958,7 @@
 							</div>
 							<div>
 								<div class="text-xl font-bold text-white sm:text-3xl">
-									{(data.allUsers || []).length}
+									{data.stats.totalUsers}
 								</div>
 								<div class="text-xs text-amber-300/80 sm:text-sm">Total Users</div>
 							</div>
@@ -2433,10 +2566,24 @@
 								</svg>
 								<input
 									type="text"
-									bind:value={ordersSearchQuery}
-									placeholder="Search by email, order ID..."
-									class="w-full rounded-lg border border-gray-700 bg-gray-800 py-2.5 pr-4 pl-10 text-base text-white placeholder-gray-500 focus:border-green-500 focus:ring-1 focus:ring-green-500 focus:outline-none sm:text-sm"
+									value={ordersSearchQuery}
+									oninput={handleOrderSearch}
+									placeholder="Search all orders by email, ID..."
+									class="w-full rounded-lg border border-gray-700 bg-gray-800 py-2.5 pr-10 pl-10 text-base text-white placeholder-gray-500 focus:border-green-500 focus:ring-1 focus:ring-green-500 focus:outline-none sm:text-sm"
 								/>
+								{#if ordersSearchLoading}
+									<div class="absolute top-1/2 right-3 -translate-y-1/2">
+										<svg class="h-5 w-5 animate-spin text-green-400" fill="none" viewBox="0 0 24 24">
+											<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+											<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+										</svg>
+									</div>
+								{/if}
+								{#if ordersSearchQuery.length >= 2 && ordersSearchResults !== null}
+									<p class="absolute -bottom-5 left-0 text-xs text-gray-500">
+										Searching all {data.stats.totalOrders} orders
+									</p>
+								{/if}
 							</div>
 
 							<!-- Filters -->
@@ -2807,7 +2954,7 @@
 						<div>
 							<h2 class="text-base font-semibold text-white sm:text-lg">User Management</h2>
 							<p class="text-xs text-gray-400 sm:text-sm">
-								{(data.allUsers || []).length} registered users
+								{data.stats.totalUsers} registered users
 							</p>
 						</div>
 					</div>
@@ -2832,11 +2979,29 @@
 								<input
 									id="user-search"
 									type="text"
-									bind:value={userSearchQuery}
-									placeholder="Search users..."
-									class="w-full rounded-xl border border-gray-700 bg-gray-800/50 py-3 pr-4 pl-10 text-base text-gray-100 placeholder-gray-500 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none sm:text-sm"
+									value={userSearchQuery}
+									oninput={handleUserSearch}
+									placeholder="Search all users..."
+									class="w-full rounded-xl border border-gray-700 bg-gray-800/50 py-3 pr-10 pl-10 text-base text-gray-100 placeholder-gray-500 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none sm:text-sm"
 								/>
+								{#if userSearchLoading}
+									<div class="absolute top-1/2 right-3 -translate-y-1/2">
+										<svg class="h-5 w-5 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24">
+											<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+											<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+										</svg>
+									</div>
+								{/if}
 							</div>
+							{#if userSearchQuery.length >= 2 && userSearchResults !== null}
+								<p class="mt-2 text-xs text-gray-500">
+									Searching all {data.stats.totalUsers} users · Found {filteredUsers.length} result{filteredUsers.length !== 1 ? 's' : ''}
+								</p>
+							{:else if userSearchQuery.length >= 2}
+								<p class="mt-2 text-xs text-gray-500">
+									Filtering from recent {(data.allUsers || []).length} users · Type to search all {data.stats.totalUsers}
+								</p>
+							{/if}
 						</div>
 
 						<!-- Users - Mobile Card View -->
