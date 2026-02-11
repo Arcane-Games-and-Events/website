@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { isEditorOrAdmin } from '../access'
 
 export const Authors: CollectionConfig = {
   slug: 'authors',
@@ -7,6 +8,9 @@ export const Authors: CollectionConfig = {
   },
   access: {
     read: () => true, // Allow public read access
+    create: isEditorOrAdmin, // Only editors/admins can create authors
+    update: isEditorOrAdmin, // Only editors/admins can update authors
+    delete: isEditorOrAdmin, // Only editors/admins can delete authors
   },
   fields: [
     {

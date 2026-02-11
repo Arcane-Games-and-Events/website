@@ -19,10 +19,12 @@ class PayloadClient {
 	 * Make a GET request to Payload API with retry logic
 	 * @param {string} endpoint - API endpoint (e.g., '/api/posts')
 	 * @param {Object} params - Query parameters
-	 * @param {number} retries - Number of retries remaining
+	 * @param {Object} options - Request options
+	 * @param {number} options.retries - Number of retries remaining (default: 2)
 	 * @returns {Promise<Object>}
 	 */
-	async get(endpoint, params = {}, retries = 2) {
+	async get(endpoint, params = {}, options = {}) {
+		const retries = options.retries ?? 2;
 		const url = new URL(endpoint, this.baseURL);
 
 		// Convert params to Payload's bracket notation format
@@ -55,7 +57,7 @@ class PayloadClient {
 				console.log(`Payload CMS request failed, retrying... (${retries} attempts left)`);
 				// Wait 1 second before retry
 				await new Promise((resolve) => setTimeout(resolve, 1000));
-				return this.get(endpoint, params, retries - 1);
+				return this.get(endpoint, params, { ...options, retries: retries - 1 });
 			}
 
 			if (error.name === 'AbortError') {
@@ -105,10 +107,7 @@ class PayloadClient {
 		if (!options.includeScheduled) {
 			params.where.publishedDate = { less_than_equal: now };
 		}
-
-		console.log('[Payload] getPosts filter:', JSON.stringify(params.where));
 		const response = await this.get('/api/posts', params);
-		console.log('[Payload] getPosts returned:', response.docs?.length, 'posts');
 		return response.docs || [];
 	}
 
@@ -133,6 +132,27 @@ class PayloadClient {
 		if (!options.includeScheduled) {
 			params.where.publishedDate = { less_than_equal: new Date().toISOString() };
 		}
+
+		const response = await this.get('/api/posts', params);
+		const posts = response.docs || [];
+		return posts.length > 0 ? posts[0] : null;
+	}
+
+	/**
+	 * Get a post for preview (includes scheduled posts)
+	 * Note: Only works for published posts (including future-scheduled ones)
+	 * @param {string} slug - Post slug
+	 * @returns {Promise<Object|null>}
+	 */
+	async getPostForPreview(slug) {
+		const params = {
+			depth: 2,
+			where: {
+				slug: { equals: slug },
+				_status: { equals: 'published' }
+			},
+			limit: 1
+		};
 
 		const response = await this.get('/api/posts', params);
 		const posts = response.docs || [];

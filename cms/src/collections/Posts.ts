@@ -36,11 +36,41 @@ function calculateReadTime(content: any): number {
   return Math.max(1, minutes) // Minimum 1 minute
 }
 
+/**
+ * Convert title to URL-friendly slug
+ */
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
+}
+
 export const Posts: CollectionConfig = {
   slug: 'posts',
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'createdBy', 'author', 'publishedDate', 'accessMode', '_status'],
+    livePreview: {
+      url: ({ data }) => {
+        const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, '') || 'http://localhost:5173'
+        const previewSecret = process.env.PAYLOAD_PREVIEW_SECRET || ''
+        // Use the slug if available, otherwise fall back to ID
+        const identifier = data?.slug || data?.id
+        if (!identifier) return frontendUrl
+        return `${frontendUrl}/articles/preview/${identifier}?secret=${previewSecret}`
+      },
+    },
+    preview: (data) => {
+      const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, '') || 'http://localhost:5173'
+      const previewSecret = process.env.PAYLOAD_PREVIEW_SECRET || ''
+      const identifier = data?.slug || data?.id
+      if (!identifier) return frontendUrl
+      return `${frontendUrl}/articles/preview/${identifier}?secret=${previewSecret}`
+    },
   },
   access: {
     // Public can read published posts, authenticated users see filtered based on role
@@ -141,8 +171,9 @@ export const Posts: CollectionConfig = {
     {
       name: 'excerpt',
       type: 'textarea',
+      maxLength: 150,
       admin: {
-        description: 'Short summary of the post',
+        description: 'Short summary of the post (max 150 characters)',
       },
     },
     {
@@ -331,6 +362,11 @@ export const Posts: CollectionConfig = {
           data.createdBy = req.user.id
         }
 
+        // Auto-generate slug from title (always sync slug with title)
+        if (data.title) {
+          data.slug = slugify(data.title)
+        }
+
         // Automatically set createdBy for new editor notes
         if (data.editorNotes && Array.isArray(data.editorNotes) && req.user) {
           const userId = req.user.id
@@ -357,7 +393,7 @@ export const Posts: CollectionConfig = {
     afterChange: [
       async ({ doc, operation }) => {
         // Send webhook to SvelteKit frontend to invalidate cache
-        const webhookUrl = process.env.FRONTEND_URL
+        const webhookUrl = process.env.FRONTEND_URL?.replace(/\/$/, '') // Remove trailing slash
         const webhookSecret = process.env.PAYLOAD_WEBHOOK_SECRET
 
         if (webhookUrl && webhookSecret) {
