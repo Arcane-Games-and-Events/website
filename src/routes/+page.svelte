@@ -84,16 +84,16 @@
 			accentGradient: 'from-emerald-500 to-green-500'
 		},
 		{
-			id: 'live',
-			href: '/live',
-			label: 'AGE Live',
+			id: 'studios',
+			href: '/studios',
+			label: 'AGE Studios',
 			icon: 'playCircle',
 			tagline: 'Watch & Learn',
-			title: 'AGE Live',
-			subtitle: 'Stream Coverage',
+			title: 'AGE Studios',
+			subtitle: 'Premium Content',
 			description:
-				'Watch live tournament coverage, player interviews, and exclusive content from major events.',
-			cta: 'Watch Now',
+				'Premium VODs, podcasts, and educational video content from Arcane Games and Events.',
+			cta: 'Explore',
 			color: 'red',
 			gradient: 'from-red-600/20 via-red-500/10 to-transparent',
 			accentGradient: 'from-red-500 to-rose-500'

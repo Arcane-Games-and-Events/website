@@ -7,9 +7,13 @@ import {
 	match,
 	lssEvent,
 	ticket,
-	entitlement
+	entitlement,
+	podcast,
+	podcastEpisode,
+	vod,
+	event
 } from '$lib/server/db/schema.js';
-import { eq, and, sql, or, ilike } from 'drizzle-orm';
+import { eq, and, sql, or, ilike, desc } from 'drizzle-orm';
 
 // Helper to add timeout to promises
 const withTimeout = (promise, ms, fallback) =>
@@ -408,6 +412,52 @@ export async function load({ locals }) {
 			updatedAt: e.updated_at || e.updatedAt
 		}));
 
+		// Fetch podcasts and episodes separately (not in RPC)
+		let podcasts = [];
+		let podcastEpisodes = [];
+		try {
+			podcasts = await db
+				.select()
+				.from(podcast)
+				.orderBy(podcast.sortOrder, podcast.createdAt);
+
+			podcastEpisodes = await db
+				.select()
+				.from(podcastEpisode)
+				.orderBy(desc(podcastEpisode.publishedAt));
+		} catch (podcastErr) {
+			console.warn('Could not fetch podcasts (table may not exist yet):', podcastErr.message);
+		}
+
+		// Fetch VODs
+		let vods = [];
+		try {
+			const rawVods = await db
+				.select()
+				.from(vod)
+				.orderBy(desc(vod.createdAt));
+
+			// Sign thumbnail tokens for signed playback VODs
+			const muxMod = await import('$lib/server/mux.js');
+			const muxClient = muxMod.default;
+			vods = await Promise.all(
+				rawVods.map(async (v) => {
+					if (!v.muxPlaybackId) return v;
+					try {
+						const thumbnailToken = await muxClient.jwt.signPlaybackId(v.muxPlaybackId, {
+							type: 'thumbnail',
+							expiration: '24h'
+						});
+						return { ...v, thumbnailToken };
+					} catch {
+						return v;
+					}
+				})
+			);
+		} catch (vodErr) {
+			console.warn('Could not fetch VODs (table may not exist yet):', vodErr.message);
+		}
+
 		return {
 			user: locals.user,
 			events,
@@ -416,6 +466,9 @@ export async function load({ locals }) {
 			allUsers: data.users || [],
 			standings,
 			lssEvents,
+			podcasts,
+			podcastEpisodes,
+			vods,
 			revenueStats,
 			dailyRevenueTrend: (data.analytics?.dailyTrend || []).map((d) => ({
 				date: d.date,
@@ -471,6 +524,9 @@ export async function load({ locals }) {
 			allUsers: [],
 			standings: [],
 			lssEvents: [],
+			podcasts: [],
+			podcastEpisodes: [],
+			vods: [],
 			revenueStats: { today: 0, week: 0, month: 0, allTime: 0, byType: [] },
 			dailyRevenueTrend: [],
 			topEvents: [],
@@ -1449,6 +1505,529 @@ export const actions = {
 		} catch (err) {
 			console.error('Error searching orders:', err);
 			return fail(500, { error: 'Failed to search orders' });
+		}
+	},
+
+	// Create podcast
+	createPodcast: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const name = formData.get('name')?.toString().trim();
+		const description = formData.get('description')?.toString().trim();
+		const youtubePlaylistUrl = formData.get('youtubePlaylistUrl')?.toString().trim();
+
+		if (!name) {
+			return fail(400, { error: 'Podcast name is required' });
+		}
+
+		try {
+			const [newPodcast] = await db
+				.insert(podcast)
+				.values({
+					name,
+					description: description || null,
+					youtubePlaylistUrl: youtubePlaylistUrl || null,
+					createdBy: locals.user.id
+				})
+				.returning();
+
+			return { success: true, podcast: newPodcast };
+		} catch (err) {
+			console.error('Error creating podcast:', err);
+			return fail(500, { error: 'Failed to create podcast' });
+		}
+	},
+
+	// Update podcast
+	updatePodcast: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const podcastId = formData.get('podcastId')?.toString();
+		const name = formData.get('name')?.toString().trim();
+		const description = formData.get('description')?.toString().trim();
+		const youtubePlaylistUrl = formData.get('youtubePlaylistUrl')?.toString().trim();
+		const isActive = formData.get('isActive') === 'true';
+
+		if (!podcastId || !name) {
+			return fail(400, { error: 'Podcast ID and name are required' });
+		}
+
+		try {
+			const [updated] = await db
+				.update(podcast)
+				.set({
+					name,
+					description: description || null,
+					youtubePlaylistUrl: youtubePlaylistUrl || null,
+					isActive,
+					updatedAt: new Date()
+				})
+				.where(eq(podcast.id, podcastId))
+				.returning();
+
+			return { success: true, podcast: updated };
+		} catch (err) {
+			console.error('Error updating podcast:', err);
+			return fail(500, { error: 'Failed to update podcast' });
+		}
+	},
+
+	// Delete podcast
+	deletePodcast: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const podcastId = formData.get('podcastId')?.toString();
+
+		if (!podcastId) {
+			return fail(400, { error: 'Podcast ID is required' });
+		}
+
+		try {
+			await db.delete(podcast).where(eq(podcast.id, podcastId));
+			return { success: true };
+		} catch (err) {
+			console.error('Error deleting podcast:', err);
+			return fail(500, { error: 'Failed to delete podcast' });
+		}
+	},
+
+	// Create podcast episode
+	createPodcastEpisode: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const podcastId = formData.get('podcastId')?.toString();
+		const youtubeUrl = formData.get('youtubeUrl')?.toString().trim();
+		const title = formData.get('title')?.toString().trim();
+		const description = formData.get('description')?.toString().trim();
+		const guest = formData.get('guest')?.toString().trim();
+		const season = formData.get('season')?.toString();
+		const episode = formData.get('episode')?.toString();
+		const publishedAt = formData.get('publishedAt')?.toString();
+		const thumbnailUrl = formData.get('thumbnailUrl')?.toString().trim();
+		const duration = formData.get('duration')?.toString().trim();
+
+		if (!podcastId || !youtubeUrl || !title) {
+			return fail(400, { error: 'Podcast ID, YouTube URL, and title are required' });
+		}
+
+		// Extract video ID from YouTube URL
+		let youtubeVideoId = null;
+		try {
+			const url = new URL(youtubeUrl);
+			if (url.hostname.includes('youtube.com')) {
+				youtubeVideoId = url.searchParams.get('v');
+			} else if (url.hostname.includes('youtu.be')) {
+				youtubeVideoId = url.pathname.slice(1);
+			}
+		} catch {
+			// Invalid URL, continue without video ID
+		}
+
+		try {
+			const [newEpisode] = await db
+				.insert(podcastEpisode)
+				.values({
+					podcastId,
+					youtubeUrl,
+					youtubeVideoId,
+					title,
+					description: description || null,
+					guest: guest || null,
+					season: season ? parseInt(season) : null,
+					episode: episode ? parseInt(episode) : null,
+					publishedAt: publishedAt ? new Date(publishedAt) : null,
+					thumbnailUrl: thumbnailUrl || null,
+					duration: duration || null,
+					createdBy: locals.user.id
+				})
+				.returning();
+
+			return { success: true, episode: newEpisode };
+		} catch (err) {
+			console.error('Error creating podcast episode:', err);
+			return fail(500, { error: 'Failed to create podcast episode' });
+		}
+	},
+
+	// Update podcast episode
+	updatePodcastEpisode: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const episodeId = formData.get('episodeId')?.toString();
+		const title = formData.get('title')?.toString().trim();
+		const description = formData.get('description')?.toString().trim();
+		const guest = formData.get('guest')?.toString().trim();
+		const season = formData.get('season')?.toString();
+		const episode = formData.get('episode')?.toString();
+		const publishedAt = formData.get('publishedAt')?.toString();
+		const isPublished = formData.get('isPublished') === 'true';
+
+		if (!episodeId || !title) {
+			return fail(400, { error: 'Episode ID and title are required' });
+		}
+
+		try {
+			const [updated] = await db
+				.update(podcastEpisode)
+				.set({
+					title,
+					description: description || null,
+					guest: guest || null,
+					season: season ? parseInt(season) : null,
+					episode: episode ? parseInt(episode) : null,
+					publishedAt: publishedAt ? new Date(publishedAt) : null,
+					isPublished,
+					updatedAt: new Date()
+				})
+				.where(eq(podcastEpisode.id, episodeId))
+				.returning();
+
+			return { success: true, episode: updated };
+		} catch (err) {
+			console.error('Error updating podcast episode:', err);
+			return fail(500, { error: 'Failed to update podcast episode' });
+		}
+	},
+
+	// Delete podcast episode
+	deletePodcastEpisode: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const episodeId = formData.get('episodeId')?.toString();
+
+		if (!episodeId) {
+			return fail(400, { error: 'Episode ID is required' });
+		}
+
+		try {
+			await db.delete(podcastEpisode).where(eq(podcastEpisode.id, episodeId));
+			return { success: true };
+		} catch (err) {
+			console.error('Error deleting podcast episode:', err);
+			return fail(500, { error: 'Failed to delete podcast episode' });
+		}
+	},
+
+	// Create VOD
+	createVod: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const title = formData.get('title')?.toString().trim();
+		const description = formData.get('description')?.toString().trim();
+		const player1Name = formData.get('player1Name')?.toString().trim();
+		const player1Hero = formData.get('player1Hero')?.toString().trim();
+		const player2Name = formData.get('player2Name')?.toString().trim();
+		const player2Hero = formData.get('player2Hero')?.toString().trim();
+		const eventId = formData.get('eventId')?.toString().trim();
+		const isPremium = formData.get('isPremium') !== 'false';
+
+		if (!title) {
+			return fail(400, { error: 'Title is required' });
+		}
+
+		try {
+			const [newVod] = await db
+				.insert(vod)
+				.values({
+					title,
+					description: description || null,
+					player1Name: player1Name || null,
+					player1Hero: player1Hero || null,
+					player2Name: player2Name || null,
+					player2Hero: player2Hero || null,
+					eventId: eventId || null,
+					isPremium,
+					status: 'waiting',
+					createdBy: locals.user.id
+				})
+				.returning();
+
+			return { success: true, vod: newVod };
+		} catch (err) {
+			console.error('Error creating VOD:', err);
+			return fail(500, { error: 'Failed to create VOD' });
+		}
+	},
+
+	// Update VOD
+	updateVod: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const vodId = formData.get('vodId')?.toString();
+		const title = formData.get('title')?.toString().trim();
+		const description = formData.get('description')?.toString().trim();
+		const player1Name = formData.get('player1Name')?.toString().trim();
+		const player1Hero = formData.get('player1Hero')?.toString().trim();
+		const player2Name = formData.get('player2Name')?.toString().trim();
+		const player2Hero = formData.get('player2Hero')?.toString().trim();
+		const eventId = formData.get('eventId')?.toString().trim();
+		const isPremium = formData.get('isPremium') !== 'false';
+
+		if (!vodId || !title) {
+			return fail(400, { error: 'VOD ID and title are required' });
+		}
+
+		try {
+			const [updated] = await db
+				.update(vod)
+				.set({
+					title,
+					description: description || null,
+					player1Name: player1Name || null,
+					player1Hero: player1Hero || null,
+					player2Name: player2Name || null,
+					player2Hero: player2Hero || null,
+					eventId: eventId || null,
+					isPremium,
+					updatedAt: new Date()
+				})
+				.where(eq(vod.id, vodId))
+				.returning();
+
+			return { success: true, vod: updated };
+		} catch (err) {
+			console.error('Error updating VOD:', err);
+			return fail(500, { error: 'Failed to update VOD' });
+		}
+	},
+
+	// Delete VOD (also deletes Mux asset)
+	deleteVod: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const vodId = formData.get('vodId')?.toString();
+
+		if (!vodId) {
+			return fail(400, { error: 'VOD ID is required' });
+		}
+
+		try {
+			const [vodRecord] = await db.select().from(vod).where(eq(vod.id, vodId)).limit(1);
+
+			if (!vodRecord) {
+				return fail(404, { error: 'VOD not found' });
+			}
+
+			// Delete Mux asset if it exists
+			if (vodRecord.muxAssetId) {
+				try {
+					const mux = (await import('$lib/server/mux.js')).default;
+					await mux.video.assets.delete(vodRecord.muxAssetId);
+				} catch (muxErr) {
+					console.warn('Could not delete Mux asset:', muxErr.message);
+				}
+			}
+
+			await db.delete(vod).where(eq(vod.id, vodId));
+			return { success: true };
+		} catch (err) {
+			console.error('Error deleting VOD:', err);
+			return fail(500, { error: 'Failed to delete VOD' });
+		}
+	},
+
+	// Publish VOD
+	publishVod: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const vodId = formData.get('vodId')?.toString();
+
+		if (!vodId) {
+			return fail(400, { error: 'VOD ID is required' });
+		}
+
+		try {
+			await db
+				.update(vod)
+				.set({
+					isPublished: true,
+					publishedAt: new Date(),
+					updatedAt: new Date()
+				})
+				.where(eq(vod.id, vodId));
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error publishing VOD:', err);
+			return fail(500, { error: 'Failed to publish VOD' });
+		}
+	},
+
+	// Unpublish VOD
+	unpublishVod: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const vodId = formData.get('vodId')?.toString();
+
+		if (!vodId) {
+			return fail(400, { error: 'VOD ID is required' });
+		}
+
+		try {
+			await db
+				.update(vod)
+				.set({
+					isPublished: false,
+					updatedAt: new Date()
+				})
+				.where(eq(vod.id, vodId));
+
+			return { success: true };
+		} catch (err) {
+			console.error('Error unpublishing VOD:', err);
+			return fail(500, { error: 'Failed to unpublish VOD' });
+		}
+	},
+
+	// Sync VOD status from Mux (workaround for webhook failures)
+	syncVod: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const vodId = formData.get('vodId')?.toString();
+
+		if (!vodId) {
+			return fail(400, { error: 'VOD ID is required' });
+		}
+
+		try {
+			const [vodRecord] = await db.select().from(vod).where(eq(vod.id, vodId)).limit(1);
+			if (!vodRecord) {
+				return fail(404, { error: 'VOD not found' });
+			}
+
+			const mux = (await import('$lib/server/mux.js')).default;
+
+			// If we have an upload ID but no asset ID, fetch from the upload
+			let assetId = vodRecord.muxAssetId;
+			if (!assetId && vodRecord.muxUploadId) {
+				const upload = await mux.video.uploads.retrieve(vodRecord.muxUploadId);
+				assetId = upload.asset_id;
+				if (assetId) {
+					await db
+						.update(vod)
+						.set({ muxAssetId: assetId, updatedAt: new Date() })
+						.where(eq(vod.id, vodId));
+				}
+			}
+
+			if (!assetId) {
+				return fail(400, { error: 'No Mux asset found for this VOD. Upload may still be processing.' });
+			}
+
+			// Fetch asset details from Mux
+			const asset = await mux.video.assets.retrieve(assetId);
+			const playbackId = asset.playback_ids?.[0]?.id;
+
+			const updateData = {
+				muxAssetId: assetId,
+				muxPlaybackId: playbackId || vodRecord.muxPlaybackId,
+				duration: asset.duration || vodRecord.duration,
+				aspectRatio: asset.aspect_ratio || vodRecord.aspectRatio,
+				status: asset.status === 'ready' ? 'ready' : asset.status === 'errored' ? 'errored' : 'preparing',
+				updatedAt: new Date()
+			};
+
+			await db.update(vod).set(updateData).where(eq(vod.id, vodId));
+
+			return { success: true, syncedStatus: updateData.status };
+		} catch (err) {
+			console.error('Error syncing VOD from Mux:', err);
+			return fail(500, { error: `Failed to sync: ${err.message}` });
+		}
+	},
+
+	// Fetch YouTube video metadata
+	fetchYouTubeMetadata: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const youtubeUrl = formData.get('youtubeUrl')?.toString().trim();
+
+		if (!youtubeUrl) {
+			return fail(400, { error: 'YouTube URL is required' });
+		}
+
+		// Extract video ID
+		let videoId = null;
+		try {
+			const url = new URL(youtubeUrl);
+			if (url.hostname.includes('youtube.com')) {
+				videoId = url.searchParams.get('v');
+			} else if (url.hostname.includes('youtu.be')) {
+				videoId = url.pathname.slice(1);
+			}
+		} catch {
+			return fail(400, { error: 'Invalid YouTube URL' });
+		}
+
+		if (!videoId) {
+			return fail(400, { error: 'Could not extract video ID from URL' });
+		}
+
+		try {
+			// Use YouTube oEmbed API (no API key needed)
+			const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+			const response = await fetch(oembedUrl);
+
+			if (!response.ok) {
+				throw new Error('Video not found');
+			}
+
+			const oembedData = await response.json();
+
+			// Get high-quality thumbnail
+			const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+
+			return {
+				success: true,
+				metadata: {
+					videoId,
+					title: oembedData.title,
+					thumbnailUrl,
+					authorName: oembedData.author_name
+				}
+			};
+		} catch (err) {
+			console.error('Error fetching YouTube metadata:', err);
+			return fail(500, { error: 'Failed to fetch video metadata. Make sure the URL is a valid public YouTube video.' });
 		}
 	}
 };
