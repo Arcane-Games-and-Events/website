@@ -1,5 +1,6 @@
 <script>
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { enhance, deserialize } from '$app/forms';
 	import heroes from '$lib/data/heroes.json';
@@ -15,9 +16,11 @@
 
 	// Tab state - persist to sessionStorage to survive reloads
 	const storageKey = $derived(`event-tab-${data.event.id}`);
-	let activeTab = $state(
-		browser ? sessionStorage.getItem(`event-tab-${data.event.id}`) || 'overview' : 'overview'
-	);
+	let activeTab = $state('overview');
+	onMount(() => {
+		const saved = sessionStorage.getItem(storageKey);
+		if (saved) activeTab = saved;
+	});
 
 	function setActiveTab(tab) {
 		activeTab = tab;
@@ -431,7 +434,7 @@
 		<!-- Back Link -->
 		<div class="mb-4">
 			<a
-				href="/admin?tab=events"
+				href="/admin/events"
 				class="group inline-flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
 			>
 				<svg

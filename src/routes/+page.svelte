@@ -36,6 +36,31 @@
 	// Filter free articles (not currently premium) for the Free Articles section
 	$: freeArticles = data.articles?.filter(a => !a.isPremium) || [];
 
+	// Podcast data
+	$: latestPodcastEpisode = data.latestPodcastEpisode;
+	$: podcastInfo = data.podcastInfo;
+
+	// VOD data
+	$: recentVods = data.recentVods || [];
+
+	function formatVodDuration(seconds) {
+		if (!seconds) return '';
+		const h = Math.floor(seconds / 3600);
+		const m = Math.floor((seconds % 3600) / 60);
+		const s = Math.floor(seconds % 60);
+		if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+		return `${m}:${s.toString().padStart(2, '0')}`;
+	}
+
+	function formatPodcastDate(dateStr) {
+		if (!dateStr) return '';
+		return new Date(dateStr).toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric'
+		});
+	}
+
 	// Carousel slides configuration
 	const carouselSlides = [
 		{
@@ -51,7 +76,8 @@
 			cta: 'Find Events',
 			color: 'amber',
 			gradient: 'from-amber-600/20 via-amber-500/10 to-transparent',
-			accentGradient: 'from-amber-500 to-orange-500'
+			accentGradient: 'from-amber-500 to-orange-500',
+			bannerImage: '/banner/age-open-banner.webp'
 		},
 		{
 			id: 'articles',
@@ -66,7 +92,8 @@
 			cta: 'Browse Articles',
 			color: 'blue',
 			gradient: 'from-blue-600/20 via-blue-500/10 to-transparent',
-			accentGradient: 'from-blue-500 to-cyan-500'
+			accentGradient: 'from-blue-500 to-cyan-500',
+			bannerImage: '/banner/articles-banner.webp'
 		},
 		{
 			id: 'academy',
@@ -81,7 +108,8 @@
 			cta: 'Start Learning',
 			color: 'emerald',
 			gradient: 'from-emerald-600/20 via-emerald-500/10 to-transparent',
-			accentGradient: 'from-emerald-500 to-green-500'
+			accentGradient: 'from-emerald-500 to-green-500',
+			bannerImage: '/banner/academy-banner.webp'
 		},
 		{
 			id: 'studios',
@@ -96,7 +124,8 @@
 			cta: 'Explore',
 			color: 'red',
 			gradient: 'from-red-600/20 via-red-500/10 to-transparent',
-			accentGradient: 'from-red-500 to-rose-500'
+			accentGradient: 'from-red-500 to-rose-500',
+			bannerImage: '/banner/studios-banner.webp'
 		}
 	];
 
@@ -239,12 +268,13 @@
 						? 'z-10 opacity-100'
 						: 'z-0 opacity-0'}"
 				>
-					<!-- Background image for AGE Open Series slide -->
-					{#if slide.id === 'AGE Open Series'}
+					<!-- Background image -->
+					{#if slide.bannerImage}
 						<img
-							src="/banner/age-open-banner.webp"
+							src={slide.bannerImage}
 							alt=""
-							fetchpriority="high"
+							fetchpriority={index === 0 ? 'high' : undefined}
+							loading={index === 0 ? 'eager' : 'lazy'}
 							class="absolute inset-0 h-full w-full object-cover opacity-30 md:opacity-50"
 						/>
 					{/if}
@@ -566,7 +596,7 @@
 
 							<!-- Articles Grid -->
 							<div class="grid gap-4 sm:grid-cols-2">
-								{#each freeArticles.slice(0, 6) as article}
+								{#each freeArticles.slice(0, 4) as article}
 									<a
 										href="/articles/{article.slug}"
 										class="group overflow-hidden rounded-xl border border-white/5 bg-gray-900/40 transition-all hover:border-white/15 hover:bg-gray-900/60"
@@ -655,6 +685,184 @@
 									</svg>
 								</a>
 							</div>
+						</div>
+					{/if}
+
+					<!-- Tournament VODs -->
+					{#if recentVods.length > 0}
+						<div class="border-t border-white/10 pt-8">
+							<div class="mb-5 flex items-end justify-between border-b border-white/10 pb-3">
+								<div class="flex items-center gap-3">
+									<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-500/15">
+										<svg class="h-4.5 w-4.5 text-red-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" d={icons.playCircle} />
+										</svg>
+									</div>
+									<h3 class="font-display text-lg font-bold text-white">Tournament VODs</h3>
+								</div>
+								<a
+									href="/studios/vods"
+									class="flex items-center gap-1 text-xs font-medium tracking-wide text-gray-400 uppercase transition-colors hover:text-white"
+								>
+									View all
+									<svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d={icons.chevronRight} />
+									</svg>
+								</a>
+							</div>
+
+							<div class="grid gap-4 sm:grid-cols-3">
+								{#each recentVods as vodItem (vodItem.id)}
+									<a
+										href="/studios/vod/{vodItem.id}"
+										class="group overflow-hidden rounded-xl border border-white/5 bg-gray-900/40 transition-all hover:border-white/15 hover:bg-gray-900/60"
+									>
+										<!-- Thumbnail -->
+										<div class="relative aspect-video overflow-hidden bg-gray-800">
+											{#if vodItem.muxPlaybackId}
+												<img
+													src="https://image.mux.com/{vodItem.muxPlaybackId}/thumbnail.webp?width=640&height=360&fit_mode=smartcrop{vodItem.thumbnailToken ? `&token=${vodItem.thumbnailToken}` : ''}"
+													alt=""
+													class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+													loading="lazy"
+												/>
+											{:else}
+												<div class="flex h-full items-center justify-center">
+													<svg class="h-8 w-8 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+														<path d="M8 5v14l11-7z" />
+													</svg>
+												</div>
+											{/if}
+											<!-- Duration badge -->
+											{#if vodItem.duration}
+												<div class="absolute bottom-1.5 right-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-medium text-white">
+													{formatVodDuration(vodItem.duration)}
+												</div>
+											{/if}
+											<!-- Premium badge -->
+											{#if vodItem.isPremium}
+												<div class="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded bg-emerald-500/90">
+													<svg class="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+														<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
+													</svg>
+												</div>
+											{/if}
+										</div>
+										<!-- Content -->
+										<div class="p-3">
+											<h4 class="mb-1 line-clamp-2 text-sm font-bold leading-snug text-white transition-colors group-hover:text-red-400">
+												{vodItem.title}
+											</h4>
+											<div class="flex items-center gap-2 text-xs text-gray-500">
+												{#if vodItem.player1Name && vodItem.player2Name}
+													<span>{vodItem.player1Name} vs {vodItem.player2Name}</span>
+												{/if}
+												{#if vodItem.publishedAt}
+													{#if vodItem.player1Name && vodItem.player2Name}
+														<span class="text-gray-600">·</span>
+													{/if}
+													<span>{new Date(vodItem.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+												{/if}
+											</div>
+										</div>
+									</a>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					<!-- Cardboard & Beyond - Latest Episode -->
+					{#if latestPodcastEpisode}
+						<div class="border-t border-white/10 pt-8">
+							<div class="mb-5 flex items-start gap-3">
+								<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-500/15">
+									<svg class="h-4.5 w-4.5 text-orange-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+									</svg>
+								</div>
+								<div class="flex-1">
+									<h3 class="font-display text-lg font-bold text-white">Cardboard & Beyond</h3>
+									<p class="mt-0.5 text-sm text-gray-400">
+										The latest episode from Cardboard & Beyond
+									</p>
+								</div>
+								<a
+									href="/studios"
+									class="flex items-center gap-1 text-xs font-medium tracking-wide text-gray-400 uppercase transition-colors hover:text-white"
+								>
+									More
+									<svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" d={icons.chevronRight} />
+									</svg>
+								</a>
+							</div>
+
+							<a
+								href={latestPodcastEpisode.youtubeUrl}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="group block min-w-0 overflow-hidden rounded-xl border border-white/5 bg-gray-900/40 transition-all hover:border-white/15 hover:bg-gray-900/60"
+							>
+								<div class="sm:flex">
+									<!-- Thumbnail -->
+									<div class="relative aspect-video overflow-hidden bg-gray-800 sm:w-64 sm:shrink-0 lg:w-80">
+										{#if latestPodcastEpisode.thumbnailUrl}
+											<img
+												src={latestPodcastEpisode.thumbnailUrl}
+												alt=""
+												class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+												loading="lazy"
+											/>
+										{:else}
+											<div class="flex h-full items-center justify-center bg-gradient-to-br from-orange-900/30 to-gray-900">
+												<img
+													src={podcastInfo?.coverImage || '/c&b.png'}
+													alt=""
+													class="h-24 w-24 rounded-xl object-cover opacity-60"
+												/>
+											</div>
+										{/if}
+										<!-- Play overlay -->
+										<div class="absolute inset-0 flex items-center justify-center bg-black/0 transition-all group-hover:bg-black/20">
+											<div class="flex h-14 w-14 items-center justify-center rounded-full bg-orange-500/90 shadow-lg shadow-orange-500/30 transition-transform group-hover:scale-110">
+												<svg class="h-6 w-6 translate-x-0.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+													<path d="M8 5v14l11-7z" />
+												</svg>
+											</div>
+										</div>
+										{#if latestPodcastEpisode.duration}
+											<div class="absolute bottom-2 right-2 rounded bg-black/80 px-2 py-0.5 text-xs font-medium text-white">
+												{latestPodcastEpisode.duration}
+											</div>
+										{/if}
+									</div>
+									<!-- Content -->
+									<div class="flex min-w-0 flex-1 flex-col justify-center p-3.5 sm:p-5">
+										<div class="mb-1.5 flex flex-wrap items-center gap-2 sm:mb-2">
+											{#if latestPodcastEpisode.season && latestPodcastEpisode.episode}
+												<span class="rounded bg-orange-500/15 px-2 py-0.5 text-[10px] font-semibold text-orange-400 sm:text-xs">
+													S{latestPodcastEpisode.season}E{latestPodcastEpisode.episode}
+												</span>
+											{/if}
+											<span class="text-[10px] font-semibold tracking-wide text-orange-400 uppercase sm:text-xs">
+												{podcastInfo?.name || 'Cardboard & Beyond'}
+											</span>
+										</div>
+										<h3 class="mb-1.5 line-clamp-2 text-base font-bold leading-tight text-white transition-colors group-hover:text-orange-400 sm:mb-2 sm:text-lg md:text-xl">
+											{latestPodcastEpisode.title}
+										</h3>
+										<div class="flex flex-wrap items-center gap-1.5 text-[10px] text-gray-500 sm:gap-2 sm:text-xs">
+											{#if latestPodcastEpisode.guest}
+												<span>Guest: {latestPodcastEpisode.guest}</span>
+												<span class="text-gray-600">·</span>
+											{/if}
+											{#if latestPodcastEpisode.publishedAt}
+												<span>{formatPodcastDate(latestPodcastEpisode.publishedAt)}</span>
+											{/if}
+										</div>
+									</div>
+								</div>
+							</a>
 						</div>
 					{/if}
 				</div>
@@ -817,6 +1025,80 @@
 							<p class="text-sm text-gray-500">No featured decklists.</p>
 						{/if}
 					</div>
+
+					<!-- YouTube Channel Widget -->
+					<a
+						href="https://www.youtube.com/@ArcaneGamesandEvents?sub_confirmation=1"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="group relative block overflow-hidden rounded-xl border border-red-500/20 bg-gray-900/50 p-4 transition-all hover:border-red-500/40"
+					>
+						<div class="pointer-events-none absolute top-0 right-0 h-24 w-24 rounded-full bg-red-500/10 blur-2xl"></div>
+						<div class="relative">
+							<div class="flex items-center gap-3">
+								<div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20">
+									<svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 24 24">
+										<path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0C.488 3.45.029 5.804 0 12c.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0C23.512 20.55 23.971 18.196 24 12c-.029-6.185-.484-8.549-4.385-8.816zM9 16V8l8 4-8 4z"/>
+									</svg>
+								</div>
+								<div class="flex-1">
+									<span class="text-sm font-semibold text-white transition-colors group-hover:text-red-400">AGE on YouTube</span>
+									<p class="text-xs text-gray-400">Streams, VODs & Highlights</p>
+								</div>
+								<svg class="h-4 w-4 text-gray-500 transition-colors group-hover:text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" d={icons.arrowTopRightOnSquare} />
+								</svg>
+							</div>
+							<div class="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-center text-xs font-semibold text-red-400 transition-colors group-hover:bg-red-500/20">
+								Subscribe on YouTube
+							</div>
+						</div>
+					</a>
+
+					<!-- Cardboard & Beyond Widget -->
+					{#if podcastInfo}
+						<div class="rounded-xl border border-white/10 bg-gray-900/50 p-5">
+							<div class="mb-4 flex items-center gap-2">
+								<svg class="h-5 w-5 text-orange-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+								</svg>
+								<h3 class="font-semibold text-white">Podcast</h3>
+							</div>
+							<div class="flex items-center gap-3">
+								<img
+									src={podcastInfo.coverImage || '/c&b.png'}
+									alt={podcastInfo.name}
+									class="h-16 w-16 shrink-0 rounded-lg object-cover ring-1 ring-white/10"
+								/>
+								<div>
+									<h4 class="text-sm font-bold text-white">{podcastInfo.name}</h4>
+									<p class="mt-0.5 text-xs text-orange-400">Hosted by Bryce Platz</p>
+								</div>
+							</div>
+							{#if podcastInfo.youtubePlaylistUrl}
+								<a
+									href={podcastInfo.youtubePlaylistUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="mt-4 flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 py-2 text-xs font-medium text-white transition-all hover:border-white/20 hover:bg-white/10"
+								>
+									<svg class="h-3.5 w-3.5 text-red-400" fill="currentColor" viewBox="0 0 24 24">
+										<path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0C.488 3.45.029 5.804 0 12c.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0C23.512 20.55 23.971 18.196 24 12c-.029-6.185-.484-8.549-4.385-8.816zM9 16V8l8 4-8 4z"/>
+									</svg>
+									Watch on YouTube
+								</a>
+							{/if}
+							<a
+								href="/studios"
+								class="mt-2 flex items-center justify-center gap-2 rounded-lg border border-orange-500/20 bg-orange-500/10 py-2 text-xs font-medium text-orange-400 transition-all hover:border-orange-500/30 hover:bg-orange-500/15"
+							>
+								Visit AGE Studios
+								<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" d={icons.arrowRight} />
+								</svg>
+							</a>
+						</div>
+					{/if}
 
 					<!-- Newsletter -->
 					<div class="rounded-xl border border-white/10 bg-gray-900/50 p-5 backdrop-blur-sm">

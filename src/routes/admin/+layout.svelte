@@ -17,43 +17,44 @@
 
 	// Determine current page for sidebar highlighting
 	let currentPage = $derived.by(() => {
-		const tab = $page.url.searchParams.get('tab');
-		if (tab) return tab;
-
-		// Check if we're on a subpage
 		const pathname = $page.url.pathname;
-		if (pathname.includes('/admin/customers/')) return 'users';
-		if (pathname.includes('/admin/orders/')) return 'orders';
-		if (pathname.includes('/admin/import-matches')) return 'import-matches';
-		if (pathname.includes('/admin/analytics')) return 'analytics';
-		if (pathname.includes('/admin/cards')) return 'cards';
-
-		return 'overview';
+		if (pathname.startsWith('/admin/customers/')) return 'users';
+		if (pathname.startsWith('/admin/orders')) return 'orders';
+		if (pathname.startsWith('/admin/events')) return 'events';
+		if (pathname.startsWith('/admin/players')) return 'players';
+		if (pathname.startsWith('/admin/calendar')) return 'calendar';
+		if (pathname.startsWith('/admin/podcasts')) return 'podcasts';
+		if (pathname.startsWith('/admin/vods')) return 'vods';
+		if (pathname.startsWith('/admin/users')) return 'users';
+		if (pathname.startsWith('/admin/import-matches')) return 'import-matches';
+		if (pathname.startsWith('/admin/analytics')) return 'analytics';
+		if (pathname.startsWith('/admin/cards')) return 'cards';
+		return 'analytics';
 	});
 
 	// Page title based on current page
 	let pageTitle = $derived.by(() => {
 		switch (currentPage) {
-			case 'overview':
-				return 'Dashboard';
 			case 'analytics':
 				return 'Analytics';
 			case 'events':
 				return 'Events';
 			case 'orders':
 				return 'Orders';
-			case 'staff':
-				return 'Staff';
 			case 'users':
 				return 'Users';
 			case 'players':
 				return 'Standings';
 			case 'calendar':
 				return 'Calendar';
-			case 'import-matches':
-				return 'Import Matches';
+			case 'podcasts':
+				return 'Podcasts';
+			case 'vods':
+				return 'VODs';
 			case 'cards':
 				return 'Card Database';
+			case 'import-matches':
+				return 'Import Matches';
 			default:
 				return 'Admin';
 		}

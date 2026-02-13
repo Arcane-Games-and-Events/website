@@ -35,63 +35,23 @@ export async function load({ locals, url }) {
 		episodes: episodes.filter((ep) => ep.podcastId === p.id)
 	}));
 
-	// Fetch published VODs with search/filter/sort
+	// Fetch the latest 6 published VODs for the preview section
 	let vods = [];
+	let vodTotal = 0;
 
 	try {
-		// Build conditions
-		const conditions = [eq(vod.isPublished, true), eq(vod.status, 'ready')];
+		const baseConditions = [eq(vod.isPublished, true), eq(vod.status, 'ready')];
 
-		const q = url.searchParams.get('q')?.trim();
-		if (q) {
-			conditions.push(
-				or(
-					ilike(vod.title, `%${q}%`),
-					ilike(vod.player1Name, `%${q}%`),
-					ilike(vod.player2Name, `%${q}%`)
-				)
-			);
-		}
+		const [countResult, recentVods] = await Promise.all([
+			db.select({ count: sql`count(*)::int` }).from(vod).where(and(...baseConditions)),
+			db.select().from(vod).where(and(...baseConditions)).orderBy(desc(vod.publishedAt)).limit(6)
+		]);
 
-		const eventId = url.searchParams.get('event');
-		if (eventId) {
-			conditions.push(eq(vod.eventId, eventId));
-		}
+		vodTotal = countResult[0]?.count || 0;
 
-		// Sort
-		const sort = url.searchParams.get('sort') || 'newest';
-		let orderBy;
-		if (sort === 'oldest') {
-			orderBy = asc(vod.publishedAt);
-		} else if (sort === 'longest') {
-			orderBy = desc(vod.duration);
-		} else {
-			orderBy = desc(vod.publishedAt);
-		}
-
-		// Pagination
-		const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
-		const perPage = 9;
-		const offset = (page - 1) * perPage;
-
-		// Count total
-		const [{ count: totalCount }] = await db
-			.select({ count: sql`count(*)::int` })
-			.from(vod)
-			.where(and(...conditions));
-
-		// Fetch VODs
-		vods = await db
-			.select()
-			.from(vod)
-			.where(and(...conditions))
-			.orderBy(orderBy)
-			.limit(perPage)
-			.offset(offset);
-
-		// Sign thumbnail tokens for signed playback VODs
-		const vodsWithTokens = await Promise.all(
-			vods.map(async (v) => {
+		// Sign thumbnail tokens
+		vods = await Promise.all(
+			recentVods.map(async (v) => {
 				if (!v.muxPlaybackId) return v;
 				try {
 					const token = await mux.jwt.signPlaybackId(v.muxPlaybackId, {
@@ -104,22 +64,6 @@ export async function load({ locals, url }) {
 				}
 			})
 		);
-
-		return {
-			user: locals.user,
-			podcasts: podcastsWithEpisodes,
-			vods: vodsWithTokens,
-			vodPagination: {
-				page,
-				perPage,
-				total: totalCount,
-				totalPages: Math.ceil(totalCount / perPage)
-			},
-			vodFilters: {
-				q: q || '',
-				sort: sort || 'newest'
-			}
-		};
 	} catch (err) {
 		console.warn('Could not fetch VODs:', err.message);
 	}
@@ -127,8 +71,7 @@ export async function load({ locals, url }) {
 	return {
 		user: locals.user,
 		podcasts: podcastsWithEpisodes,
-		vods: [],
-		vodPagination: { page: 1, perPage: 9, total: 0, totalPages: 0 },
-		vodFilters: { q: '', sort: 'newest' }
+		vods,
+		vodTotal
 	};
 }

@@ -2,7 +2,6 @@
 	let { currentPage = '', sidebarOpen = false, onClose = () => {} } = $props();
 
 	const navItems = [
-		{ id: 'overview', name: 'Overview', icon: 'home', href: '/admin?tab=overview', color: 'blue' },
 		{
 			id: 'analytics',
 			name: 'Analytics',
@@ -10,23 +9,30 @@
 			href: '/admin/analytics',
 			color: 'indigo'
 		},
-		{ id: 'orders', name: 'Orders', icon: 'receipt', href: '/admin?tab=orders', color: 'emerald' },
-		{ id: 'users', name: 'Users', icon: 'user', href: '/admin?tab=users', color: 'purple' },
-		{ id: 'events', name: 'Events', icon: 'ticket', href: '/admin?tab=events', color: 'cyan' },
-		{ id: 'players', name: 'Standings', icon: 'trophy', href: '/admin?tab=players', color: 'rose' },
+		{ id: 'orders', name: 'Orders', icon: 'receipt', href: '/admin/orders', color: 'emerald' },
+		{ id: 'users', name: 'Users', icon: 'user', href: '/admin/users', color: 'purple' },
+		{ id: 'events', name: 'Events', icon: 'ticket', href: '/admin/events', color: 'cyan' },
+		{ id: 'players', name: 'Standings', icon: 'trophy', href: '/admin/players', color: 'rose' },
 		{
 			id: 'calendar',
 			name: 'Calendar',
 			icon: 'calendar-days',
-			href: '/admin?tab=calendar',
+			href: '/admin/calendar',
 			color: 'amber'
 		},
 		{
-			id: 'import-matches',
-			name: 'Import Matches',
-			icon: 'upload',
-			href: '/admin/import-matches',
-			color: 'teal'
+			id: 'podcasts',
+			name: 'Podcasts',
+			icon: 'microphone',
+			href: '/admin/podcasts',
+			color: 'fuchsia'
+		},
+		{
+			id: 'vods',
+			name: 'VODs',
+			icon: 'video',
+			href: '/admin/vods',
+			color: 'red'
 		},
 		{ id: 'cards', name: 'Cards', icon: 'cards', href: '/admin/cards', color: 'orange' }
 	];
@@ -41,7 +47,9 @@
 			indigo: 'bg-indigo-500/15 border-indigo-500/40 text-indigo-400',
 			teal: 'bg-teal-500/15 border-teal-500/40 text-teal-400',
 			amber: 'bg-amber-500/15 border-amber-500/40 text-amber-400',
-			orange: 'bg-orange-500/15 border-orange-500/40 text-orange-400'
+			orange: 'bg-orange-500/15 border-orange-500/40 text-orange-400',
+			fuchsia: 'bg-fuchsia-500/15 border-fuchsia-500/40 text-fuchsia-400',
+			red: 'bg-red-500/15 border-red-500/40 text-red-400'
 		};
 		return colors[color] || colors.blue;
 	}
@@ -57,7 +65,9 @@
 			indigo: 'text-indigo-400',
 			teal: 'text-teal-400',
 			amber: 'text-amber-400',
-			orange: 'text-orange-400'
+			orange: 'text-orange-400',
+			fuchsia: 'text-fuchsia-400',
+			red: 'text-red-400'
 		};
 		return colors[color] || colors.blue;
 	}
@@ -158,21 +168,7 @@
 					class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors
 					{isActive ? 'bg-white/10' : 'bg-white/5 group-hover:bg-white/10'}"
 				>
-					{#if item.icon === 'home'}
-						<svg
-							class="h-4 w-4 {getIconColor(item.color, isActive)}"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-							/>
-						</svg>
-					{:else if item.icon === 'chart-bar'}
+					{#if item.icon === 'chart-bar'}
 						<svg
 							class="h-4 w-4 {getIconColor(item.color, isActive)}"
 							fill="none"
@@ -270,7 +266,7 @@
 								d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
 							/>
 						</svg>
-					{:else if item.icon === 'upload'}
+					{:else if item.icon === 'microphone'}
 						<svg
 							class="h-4 w-4 {getIconColor(item.color, isActive)}"
 							fill="none"
@@ -281,7 +277,21 @@
 								stroke-linecap="round"
 								stroke-linejoin="round"
 								stroke-width="2"
-								d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+								d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+							/>
+						</svg>
+					{:else if item.icon === 'video'}
+						<svg
+							class="h-4 w-4 {getIconColor(item.color, isActive)}"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"
 							/>
 						</svg>
 					{:else if item.icon === 'cards'}

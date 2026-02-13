@@ -14,7 +14,7 @@ export async function load({ params, locals }) {
 		const [orderData] = await db.select().from(order).where(eq(order.id, params.orderId)).limit(1);
 
 		if (!orderData) {
-			throw redirect(302, '/admin?tab=orders');
+			throw redirect(302, '/admin/orders');
 		}
 
 		// Fetch customer info
@@ -77,7 +77,7 @@ export async function load({ params, locals }) {
 			throw err;
 		}
 		console.error('Error loading order:', err);
-		throw redirect(302, '/admin?tab=orders');
+		throw redirect(302, '/admin/orders');
 	}
 }
 

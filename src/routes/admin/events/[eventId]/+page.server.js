@@ -1286,7 +1286,7 @@ export const actions = {
 			await db.delete(event).where(eq(event.id, params.eventId));
 
 			// Redirect to events list
-			throw redirect(302, '/admin?tab=events');
+			throw redirect(302, '/admin/events');
 		} catch (err) {
 			if (err.status === 302) throw err; // Re-throw redirect
 			console.error('Error deleting event:', err);

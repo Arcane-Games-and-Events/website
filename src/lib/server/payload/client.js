@@ -21,10 +21,12 @@ class PayloadClient {
 	 * @param {Object} params - Query parameters
 	 * @param {Object} options - Request options
 	 * @param {number} options.retries - Number of retries remaining (default: 2)
+	 * @param {Function} options.fetch - Optional fetch function (e.g., SvelteKit's load fetch)
 	 * @returns {Promise<Object>}
 	 */
 	async get(endpoint, params = {}, options = {}) {
 		const retries = options.retries ?? 2;
+		const fetchFn = options.fetch || fetch;
 		const url = new URL(endpoint, this.baseURL);
 
 		// Convert params to Payload's bracket notation format
@@ -35,7 +37,7 @@ class PayloadClient {
 		const timeout = setTimeout(() => controller.abort(), 15000);
 
 		try {
-			const response = await fetch(url.toString(), {
+			const response = await fetchFn(url.toString(), {
 				headers: {
 					'Content-Type': 'application/json'
 				},
@@ -107,7 +109,7 @@ class PayloadClient {
 		if (!options.includeScheduled) {
 			params.where.publishedDate = { less_than_equal: now };
 		}
-		const response = await this.get('/api/posts', params);
+		const response = await this.get('/api/posts', params, { fetch: options.fetch });
 		return response.docs || [];
 	}
 

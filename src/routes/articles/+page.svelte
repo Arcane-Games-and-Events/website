@@ -641,6 +641,7 @@
 							<button
 								on:click={() => goToAllPage(allPage - 1)}
 								disabled={allPage === 1}
+								aria-label="Previous page"
 								class="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
 							>
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -664,6 +665,7 @@
 							<button
 								on:click={() => goToAllPage(allPage + 1)}
 								disabled={allPage === totalAllPages}
+								aria-label="Next page"
 								class="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
 							>
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -745,6 +747,7 @@
 								<button
 									on:click={() => goToPremiumPage(premiumPage - 1)}
 									disabled={premiumPage === 1}
+									aria-label="Previous page"
 									class="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 transition-colors hover:bg-emerald-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -768,6 +771,7 @@
 								<button
 									on:click={() => goToPremiumPage(premiumPage + 1)}
 									disabled={premiumPage === totalPremiumPages}
+									aria-label="Next page"
 									class="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 transition-colors hover:bg-emerald-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -856,6 +860,7 @@
 								<button
 									on:click={() => goToFreePage(freePage - 1)}
 									disabled={freePage === 1}
+									aria-label="Previous page"
 									class="flex h-9 w-9 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/5 text-blue-400 transition-colors hover:bg-blue-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -879,6 +884,7 @@
 								<button
 									on:click={() => goToFreePage(freePage + 1)}
 									disabled={freePage === totalFreePages}
+									aria-label="Next page"
 									class="flex h-9 w-9 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/5 text-blue-400 transition-colors hover:bg-blue-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

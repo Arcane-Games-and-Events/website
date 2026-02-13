@@ -1,14 +1,17 @@
 <script>
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 	import { getCircuit } from '$lib/data/circuits.js';
 
 	let { data, form } = $props();
 
 	// Tab state
 	const storageKey = $derived(`staff-event-tab-${data.event.id}`);
-	let activeTab = $state(
-		browser ? sessionStorage.getItem(`staff-event-tab-${data.event.id}`) || 'overview' : 'overview'
-	);
+	let activeTab = $state('overview');
+	onMount(() => {
+		const saved = sessionStorage.getItem(storageKey);
+		if (saved) activeTab = saved;
+	});
 
 	function setActiveTab(tab) {
 		activeTab = tab;

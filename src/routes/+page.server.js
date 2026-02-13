@@ -1,8 +1,9 @@
 import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow } from '$lib/server/articles/access.js';
 import { db } from '$lib/server/db/index.js';
-import { event, standing, decklist } from '$lib/server/db/schema.js';
-import { asc, gte, desc, and, or, eq, isNull } from 'drizzle-orm';
+import { event, standing, decklist, podcast, podcastEpisode, vod } from '$lib/server/db/schema.js';
+import { asc, gte, desc, and, or, eq, isNull, sql } from 'drizzle-orm';
+import mux from '$lib/server/mux.js';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 
 /**
@@ -263,6 +264,68 @@ export async function load({ setHeaders, url, locals }) {
 			[] // fallback to empty array
 		);
 
+		// Fetch latest Cardboard & Beyond podcast episode
+		let latestPodcastEpisode = null;
+		let podcastInfo = null;
+		try {
+			const activePodcasts = await db
+				.select()
+				.from(podcast)
+				.where(eq(podcast.isActive, true))
+				.orderBy(podcast.sortOrder, podcast.createdAt)
+				.limit(1);
+
+			if (activePodcasts.length > 0) {
+				podcastInfo = activePodcasts[0];
+				const episodes = await db
+					.select()
+					.from(podcastEpisode)
+					.where(
+						and(
+							eq(podcastEpisode.podcastId, podcastInfo.id),
+							eq(podcastEpisode.isPublished, true)
+						)
+					)
+					.orderBy(desc(podcastEpisode.publishedAt))
+					.limit(1);
+
+				if (episodes.length > 0) {
+					latestPodcastEpisode = episodes[0];
+				}
+			}
+		} catch (err) {
+			console.warn('Could not fetch podcast data:', err.message);
+		}
+
+		// Fetch latest 3 published VODs for homepage preview
+		let recentVods = [];
+		try {
+			const baseConditions = [eq(vod.isPublished, true), eq(vod.status, 'ready')];
+			const vodRows = await db
+				.select()
+				.from(vod)
+				.where(and(...baseConditions))
+				.orderBy(desc(vod.publishedAt))
+				.limit(3);
+
+			recentVods = await Promise.all(
+				vodRows.map(async (v) => {
+					if (!v.muxPlaybackId) return v;
+					try {
+						const token = await mux.jwt.signPlaybackId(v.muxPlaybackId, {
+							type: 'thumbnail',
+							expiration: '24h'
+						});
+						return { ...v, thumbnailToken: token };
+					} catch {
+						return v;
+					}
+				})
+			);
+		} catch (err) {
+			console.warn('Could not fetch VODs:', err.message);
+		}
+
 		// IMPORTANT: Only use public caching for anonymous users
 		// Logged-in users must get private responses to prevent user data leaking between sessions
 		if (locals.user) {
@@ -301,7 +364,10 @@ export async function load({ setHeaders, url, locals }) {
 				totalEvents: 24, // Total AGE Open events
 				prizePool: 30000 // 2026 prize pool
 			},
-			featuredDecklists
+			featuredDecklists,
+			latestPodcastEpisode,
+			podcastInfo,
+			recentVods
 		};
 	} catch (error) {
 		console.error('Error fetching data for homepage:', error);
@@ -324,7 +390,10 @@ export async function load({ setHeaders, url, locals }) {
 				totalEvents: 24,
 				prizePool: 30000
 			},
-			featuredDecklists: []
+			featuredDecklists: [],
+			latestPodcastEpisode: null,
+			podcastInfo: null,
+			recentVods: []
 		};
 	}
 }
