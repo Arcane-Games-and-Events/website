@@ -126,27 +126,27 @@
 							{/if}
 
 							<!-- Premium overlay -->
-							<div class="absolute inset-0 flex flex-col items-center justify-center bg-black/40 p-6 text-center">
-								<div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10">
-									<svg class="h-8 w-8 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+							<div class="absolute inset-0 flex flex-col items-center justify-center bg-black/40 px-4 py-4 text-center sm:p-6">
+								<div class="mb-2 flex h-10 w-10 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 sm:mb-4 sm:h-16 sm:w-16">
+									<svg class="h-5 w-5 text-emerald-400 sm:h-8 sm:w-8" fill="currentColor" viewBox="0 0 24 24">
 										<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 									</svg>
 								</div>
-								<h3 class="mb-2 text-xl font-bold text-white">Premium Content</h3>
-								<p class="mb-5 max-w-sm text-sm text-gray-300">
+								<h3 class="mb-1 text-sm font-bold text-white sm:mb-2 sm:text-xl">Premium Content</h3>
+								<p class="mb-3 max-w-sm text-xs text-gray-300 sm:mb-5 sm:text-sm">
 									This VOD is available exclusively for AGE Premium members. Subscribe to unlock all tournament recordings.
 								</p>
 								<a
 									href="/premium"
-									class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:scale-[1.02]"
+									class="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:scale-[1.02] sm:gap-2 sm:px-6 sm:py-3 sm:text-sm"
 								>
-									<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+									<svg class="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" viewBox="0 0 24 24">
 										<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 									</svg>
 									Get Premium Access
 								</a>
 								{#if !data.user}
-									<p class="mt-3 text-xs text-gray-500">
+									<p class="mt-2 text-[10px] text-gray-500 sm:mt-3 sm:text-xs">
 										Already a member? <a href="/login" class="text-emerald-400 hover:text-emerald-300">Log in</a>
 									</p>
 								{/if}

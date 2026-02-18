@@ -3,6 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { vod } from '$lib/server/db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
 import mux from '$lib/server/mux.js';
+import { userHasPremiumAccess } from '$lib/server/articles/access.js';
 
 export async function load({ params, locals }) {
 	// Load VOD by ID
@@ -13,8 +14,7 @@ export async function load({ params, locals }) {
 	}
 
 	const user = locals.user;
-	const isPremiumUser = user?.role === 'premium' || user?.role === 'admin';
-	const canWatch = !vodItem.isPremium || isPremiumUser;
+	const canWatch = !vodItem.isPremium || userHasPremiumAccess(user);
 
 	let tokens = null;
 

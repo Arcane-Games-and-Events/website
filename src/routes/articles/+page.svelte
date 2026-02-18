@@ -153,15 +153,12 @@
 	$: totalFreePages = Math.ceil(freeArticles.length / ITEMS_PER_PAGE_GROUPED);
 	$: totalAllPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE_ALL);
 
-	// Scroll to element on mobile (waits for DOM update)
+	// Scroll to section top when paginating
 	async function scrollToSection(elementId) {
-		// Only scroll on mobile/tablet (under 1024px)
-		if (window.innerWidth < 1024) {
-			await tick(); // Wait for Svelte to update the DOM
-			const element = document.getElementById(elementId);
-			if (element) {
-				element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-			}
+		await tick(); // Wait for Svelte to update the DOM
+		const element = document.getElementById(elementId);
+		if (element) {
+			element.scrollIntoView({ behavior: 'smooth', block: 'start' });
 		}
 	}
 

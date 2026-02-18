@@ -24,7 +24,6 @@ CREATE TABLE IF NOT EXISTS vods (
 
 CREATE INDEX IF NOT EXISTS idx_vods_status ON vods(status);
 CREATE INDEX IF NOT EXISTS idx_vods_is_published ON vods(is_published);
-CREATE INDEX IF NOT EXISTS idx_vods_category ON vods(category);
 CREATE INDEX IF NOT EXISTS idx_vods_event_id ON vods(event_id);
 CREATE INDEX IF NOT EXISTS idx_vods_mux_asset_id ON vods(mux_asset_id);
 CREATE INDEX IF NOT EXISTS idx_vods_mux_upload_id ON vods(mux_upload_id);

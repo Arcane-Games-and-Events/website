@@ -13,11 +13,6 @@ export const handle = async ({ event, resolve }) => {
 	const { request, url } = event;
 	const isExempt = CSRF_EXEMPT_PATHS.some((path) => url.pathname.startsWith(path));
 
-	// Debug webhook requests
-	if (url.pathname.startsWith('/api/webhook')) {
-		console.log(`[Webhook] ${request.method} ${url.pathname} | exempt=${isExempt} | origin=${request.headers.get('origin')}`);
-	}
-
 	if (!isExempt && request.method !== 'GET' && request.method !== 'HEAD') {
 		const origin = request.headers.get('origin');
 		const host = url.origin;

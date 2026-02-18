@@ -88,10 +88,22 @@
 		return pages;
 	}
 
+	// Format event label with circuit and date
+	function getEventLabel(ev) {
+		if (!ev) return '';
+		let label = ev.title || '';
+		if (ev.circuit) label += ` - ${ev.circuit}`;
+		if (ev.eventDate) {
+			const d = new Date(ev.eventDate);
+			label += ` (${d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric', timeZone: 'UTC' })})`;
+		}
+		return label;
+	}
+
 	// Get event title by ID
 	function getEventTitle(id) {
 		const ev = events.find((e) => e.id === id);
-		return ev?.title || id;
+		return ev ? getEventLabel(ev) : id;
 	}
 </script>
 
@@ -209,7 +221,7 @@
 								>
 									<option value="">All Events</option>
 									{#each events as ev}
-										<option value={ev.id}>{ev.title}</option>
+										<option value={ev.id}>{getEventLabel(ev)}</option>
 									{/each}
 								</select>
 							</div>
@@ -479,7 +491,7 @@
 						>
 							<option value="">All Events</option>
 							{#each events as ev}
-								<option value={ev.id}>{ev.title}</option>
+								<option value={ev.id}>{getEventLabel(ev)}</option>
 							{/each}
 						</select>
 					</div>

@@ -975,7 +975,7 @@
 								</svg>
 								<h3 class="font-semibold text-white">Featured Decklists</h3>
 							</div>
-							<a href="/decklists" class="text-xs text-gray-400 transition-colors hover:text-white">View all</a>
+							<a href="/age-open?tab=decklists" class="text-xs text-gray-400 transition-colors hover:text-white">View all</a>
 						</div>
 						{#if data.featuredDecklists && data.featuredDecklists.length > 0}
 							<div class="space-y-3">

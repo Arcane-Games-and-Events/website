@@ -438,7 +438,7 @@
 								{:else if item.type === 'decklist'}
 									{@const heroImg = getHeroImage(item.data.hero)}
 									{@const circuit = getCircuit(item.data.eventCircuit)}
-									<a href="/age-open" class="group flex items-center gap-4">
+									<a href="/age-open/{item.data.eventId}/decklist/{item.data.id}" class="group flex items-center gap-4">
 										{#if heroImg}
 											<div class="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-800">
 												<img
@@ -487,7 +487,7 @@
 								{:else if item.type === 'event_result'}
 									{@const circuit = getCircuit(item.data.circuit)}
 									{@const results = item.data.tournamentResults}
-									<a href="/age-open" class="group block">
+									<a href="/age-open/{item.data.id}/results" class="group block">
 										<div class="flex items-start gap-4">
 											<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg {circuit.colors.bgLight}">
 												<svg class="h-6 w-6 {circuit.colors.text}" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -535,7 +535,7 @@
 
 								{:else if item.type === 'upcoming_event'}
 									{@const circuit = getCircuit(item.data.circuit)}
-									<a href="/age-open" class="group flex items-center gap-4">
+									<a href="/age-open/{item.data.id}" class="group flex items-center gap-4">
 										<!-- Date Badge -->
 										<div class="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg {circuit.colors.bgLight} {circuit.colors.text}">
 											<span class="text-[10px] font-medium uppercase">
@@ -713,7 +713,7 @@
 						<div class="space-y-3">
 							<!-- User's registered events first -->
 							{#each upcomingTickets as ticket}
-								<a href="/age-open" class="group flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-white/5">
+								<a href="/age-open/{ticket.eventId}" class="group flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-white/5">
 									<div class="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded bg-blue-500/10 text-blue-400">
 										<span class="text-[8px] font-medium uppercase">
 											{ticket.eventDate ? new Date(ticket.eventDate).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }) : ''}
@@ -736,7 +736,7 @@
 							<!-- General upcoming -->
 							{#each upcomingEvents.filter((e) => !upcomingTickets.some((t) => t.eventId === e.id)) as evt}
 								{@const circuit = getCircuit(evt.circuit)}
-								<a href="/age-open" class="group flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-white/5">
+								<a href="/age-open/{evt.id}" class="group flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-white/5">
 									<div class="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded {circuit.colors.bgLight} {circuit.colors.text}">
 										<span class="text-[8px] font-medium uppercase">
 											{evt.eventDate ? new Date(evt.eventDate).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }) : ''}

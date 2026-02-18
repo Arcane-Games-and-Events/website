@@ -106,7 +106,7 @@ export async function load({ locals, url }) {
 		const eventIds = eventRows.map((r) => r.eventId).filter(Boolean);
 		if (eventIds.length > 0) {
 			events = await db
-				.select({ id: event.id, title: event.title })
+				.select({ id: event.id, title: event.title, eventDate: event.eventDate, circuit: event.circuit })
 				.from(event)
 				.where(sql`${event.id} IN ${eventIds}`)
 				.orderBy(desc(event.eventDate));
