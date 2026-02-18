@@ -15,10 +15,18 @@
 		if (!heroName) return null;
 		const slug = heroName
 			.toLowerCase()
-			.replace(/,/g, '')
+			.replace(/ð/g, 'd')
+			.replace(/þ/g, 'th')
+			.replace(/æ/g, 'ae')
+			.replace(/ø/g, 'o')
+			.replace(/å/g, 'a')
+			.normalize('NFD')
+			.replace(/[\u0300-\u036f]/g, '')
+			.replace(/[!@#$%^&*()+=[\]{}|\\:;<>?/~`]/g, '')
+			.replace(/[,'"]/g, '')
 			.replace(/\s+/g, '-')
-			.replace(/['"]/g, '')
-			.replace(/--+/g, '-');
+			.replace(/-+/g, '-')
+			.trim();
 		return `/hero_images/${slug}.webp`;
 	}
 
