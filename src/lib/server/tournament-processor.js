@@ -88,20 +88,22 @@ function parseCSVLine(line) {
 export function parseSwissStandings(csvString) {
 	const data = parseCSV(csvString);
 
-	return data
-		.map((row) => {
-			const rankValue = row['Rank'] || row['rank'] || '';
-			const rank = parseInt(rankValue, 10);
+	return (
+		data
+			.map((row) => {
+				const rankValue = row['Rank'] || row['rank'] || '';
+				const rank = parseInt(rankValue, 10);
 
-			return {
-				rank,
-				name: row['Name'] || row['name'] || row['Player Name'] || '',
-				playerId: row['Player ID'] || row['player_id'] || row['GEM ID'] || '',
-				wins: parseInt(row['Wins'] || row['wins'] || '0', 10)
-			};
-		})
-		// Only include rows with valid numeric ranks (ignore "Dropped" section entirely)
-		.filter((p) => p.name && !isNaN(p.rank) && p.rank > 0);
+				return {
+					rank,
+					name: row['Name'] || row['name'] || row['Player Name'] || '',
+					playerId: row['Player ID'] || row['player_id'] || row['GEM ID'] || '',
+					wins: parseInt(row['Wins'] || row['wins'] || '0', 10)
+				};
+			})
+			// Only include rows with valid numeric ranks (ignore "Dropped" section entirely)
+			.filter((p) => p.name && !isNaN(p.rank) && p.rank > 0)
+	);
 }
 
 /**
@@ -375,8 +377,10 @@ export function calculateFinalStandings(swissStandings, pairings) {
 			// If both have rank, use Swiss rank order
 			if (a.rank && b.rank) return a.rank - b.rank;
 			// Otherwise fall back to tiebreaker sorting (wins, match win %, opp match win %)
-			if ((b.matchesWon || 0) !== (a.matchesWon || 0)) return (b.matchesWon || 0) - (a.matchesWon || 0);
-			if ((b.matchWinPct || 0) !== (a.matchWinPct || 0)) return (b.matchWinPct || 0) - (a.matchWinPct || 0);
+			if ((b.matchesWon || 0) !== (a.matchesWon || 0))
+				return (b.matchesWon || 0) - (a.matchesWon || 0);
+			if ((b.matchWinPct || 0) !== (a.matchWinPct || 0))
+				return (b.matchWinPct || 0) - (a.matchWinPct || 0);
 			return (b.oppMatchWinPct || 0) - (a.oppMatchWinPct || 0);
 		});
 
@@ -405,7 +409,11 @@ export function calculateFinalStandings(swissStandings, pairings) {
 	const allParticipants = new Map();
 	for (const pairing of pairings) {
 		// Add player 1
-		if (pairing.player1Name && !placedNames.has(pairing.player1Name) && !placedIds.has(pairing.player1Id)) {
+		if (
+			pairing.player1Name &&
+			!placedNames.has(pairing.player1Name) &&
+			!placedIds.has(pairing.player1Id)
+		) {
 			const key = pairing.player1Id || pairing.player1Name;
 			if (!allParticipants.has(key)) {
 				allParticipants.set(key, {
@@ -415,7 +423,11 @@ export function calculateFinalStandings(swissStandings, pairings) {
 			}
 		}
 		// Add player 2
-		if (pairing.player2Name && !placedNames.has(pairing.player2Name) && !placedIds.has(pairing.player2Id)) {
+		if (
+			pairing.player2Name &&
+			!placedNames.has(pairing.player2Name) &&
+			!placedIds.has(pairing.player2Id)
+		) {
 			const key = pairing.player2Id || pairing.player2Name;
 			if (!allParticipants.has(key)) {
 				allParticipants.set(key, {

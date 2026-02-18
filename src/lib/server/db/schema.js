@@ -7,6 +7,7 @@ import {
 	jsonb,
 	boolean,
 	decimal,
+	real,
 	unique
 } from 'drizzle-orm/pg-core';
 
@@ -372,6 +373,80 @@ export const lssEvent = pgTable('lss_events', {
 	format: text('format'), // e.g., "Classic Constructed", "Blitz", "Draft", "Living Legend"
 	link: text('link'), // Link to official LSS page for this event
 	isActive: boolean('is_active').default(true), // Whether to show on calendar
+	createdBy: text('created_by').references(() => user.id),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// PODCASTS (podcast series like "Cardboard and Beyond")
+export const podcast = pgTable('podcasts', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	name: text('name').notNull(), // e.g., "Cardboard and Beyond"
+	description: text('description'), // Description of the podcast
+	coverImage: text('cover_image'), // URL to podcast cover art
+	youtubePlaylistUrl: text('youtube_playlist_url'), // Link to YouTube playlist
+	isActive: boolean('is_active').default(true), // Whether podcast is active
+	sortOrder: integer('sort_order').default(0), // For ordering multiple podcasts
+	createdBy: text('created_by').references(() => user.id),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// PODCAST EPISODES (individual episodes from YouTube)
+export const podcastEpisode = pgTable('podcast_episodes', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	podcastId: uuid('podcast_id')
+		.notNull()
+		.references(() => podcast.id, { onDelete: 'cascade' }),
+
+	// YouTube data (scraped)
+	youtubeUrl: text('youtube_url').notNull(), // YouTube video URL
+	youtubeVideoId: text('youtube_video_id'), // Extracted video ID
+	title: text('title').notNull(), // Video title (scraped or manual)
+	thumbnailUrl: text('thumbnail_url'), // YouTube thumbnail URL
+	publishedAt: timestamp('published_at', { withTimezone: true, mode: 'date' }), // YouTube publish date
+
+	// Manual metadata
+	description: text('description'), // Episode description
+	guest: text('guest'), // Guest name(s)
+	season: integer('season'), // Season number
+	episode: integer('episode'), // Episode number
+	duration: text('duration'), // Duration string e.g., "45:32"
+
+	// Status
+	isPublished: boolean('is_published').default(true), // Whether to show on site
+
+	createdBy: text('created_by').references(() => user.id),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// VODS (Mux-hosted tournament and event videos)
+export const vod = pgTable('vods', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	// Mux data
+	muxAssetId: text('mux_asset_id').unique(),
+	muxPlaybackId: text('mux_playback_id'),
+	muxUploadId: text('mux_upload_id'),
+	// Metadata
+	title: text('title').notNull(),
+	description: text('description'),
+	thumbnail: text('thumbnail'),
+	duration: real('duration'),
+	aspectRatio: text('aspect_ratio'),
+	// Player matchup
+	player1Name: text('player1_name'),
+	player1Hero: text('player1_hero'),
+	player2Name: text('player2_name'),
+	player2Hero: text('player2_hero'),
+	eventId: text('event_id').references(() => event.id, { onDelete: 'set null' }),
+	// Access
+	isPremium: boolean('is_premium').default(true),
+	// Status
+	status: text('status').default('waiting'),
+	isPublished: boolean('is_published').default(false),
+	publishedAt: timestamp('published_at', { withTimezone: true, mode: 'date' }),
+	// Audit
 	createdBy: text('created_by').references(() => user.id),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()

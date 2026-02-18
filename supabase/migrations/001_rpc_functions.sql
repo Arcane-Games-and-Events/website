@@ -232,6 +232,7 @@ BEGIN
             'totalEvents', (SELECT COUNT(*) FROM events),
             'totalOrders', (SELECT COUNT(*) FROM "order"),
             'premiumUsers', (SELECT COUNT(*) FROM "user" WHERE role = 'premium'),
+            'totalUsers', (SELECT COUNT(*) FROM "user"),
             'totalPlayers', (SELECT COUNT(DISTINCT gem_id) FROM standings WHERE gem_id IS NOT NULL),
             'totalTicketsSold', (SELECT COUNT(*) FROM ticket WHERE refunded IS NOT TRUE),
             'totalRefunded', (SELECT COUNT(*) FROM ticket WHERE refunded = true),
@@ -328,14 +329,14 @@ BEGIN
         ),
         'orders', (
             SELECT COALESCE(json_agg(row_to_json(o) ORDER BY created_at DESC), '[]'::json)
-            FROM (SELECT * FROM "order" ORDER BY created_at DESC LIMIT 100) o
+            FROM (SELECT * FROM "order" ORDER BY created_at DESC LIMIT 200) o
         ),
         'users', (
             SELECT COALESCE(json_agg(json_build_object(
                 'id', id, 'email', email, 'role', role, 'createdAt', created_at,
                 'first_name', first_name, 'last_name', last_name
             ) ORDER BY created_at DESC), '[]'::json)
-            FROM (SELECT id, email, role, created_at, first_name, last_name FROM "user" ORDER BY created_at DESC LIMIT 100) u
+            FROM (SELECT id, email, role, created_at, first_name, last_name FROM "user" ORDER BY created_at DESC LIMIT 200) u
         ),
         'lssEvents', (
             SELECT COALESCE(json_agg(row_to_json(s) ORDER BY start_date DESC), '[]'::json)

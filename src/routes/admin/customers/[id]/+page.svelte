@@ -96,7 +96,7 @@
 	<div class="mx-auto max-w-6xl">
 		<!-- Breadcrumb -->
 		<nav class="mb-6 flex items-center gap-2 text-sm">
-			<a href="/admin?tab=users" class="text-gray-400 transition-colors hover:text-white">Users</a>
+			<a href="/admin/users" class="text-gray-400 transition-colors hover:text-white">Users</a>
 			<svg class="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
 			</svg>

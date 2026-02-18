@@ -30,7 +30,7 @@
 		{ href: '/articles', label: 'Articles', icon: 'article' },
 		{ href: '/age-open', label: 'AGE Open', icon: 'trophy' },
 		{ href: '/academy', label: 'Academy', icon: 'book' },
-		{ href: '/live', label: 'AGE Live', icon: 'video' }
+		{ href: '/studios', label: 'AGE Studios', icon: 'video' }
 	];
 
 	const personalNavItems = [

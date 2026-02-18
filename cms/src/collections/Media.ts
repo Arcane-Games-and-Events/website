@@ -10,6 +10,11 @@ export const Media: CollectionConfig = {
       name: 'alt',
       type: 'text',
       required: true,
+      label: 'Alt Text',
+      admin: {
+        description:
+          'Describe the image for screen readers and SEO. Be concise but descriptive (e.g., "Player shuffling deck at tournament table" not just "tournament photo").',
+      },
     },
   ],
   upload: {

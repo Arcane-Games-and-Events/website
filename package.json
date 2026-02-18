@@ -46,6 +46,9 @@
 	"dependencies": {
 		"@flesh-and-blood/cards": "^3.6.158",
 		"@lucia-auth/adapter-drizzle": "^1.1.0",
+		"@mux/mux-node": "^12.8.1",
+		"@mux/mux-player": "^3.11.4",
+		"@mux/upchunk": "^3.5.0",
 		"@upstash/redis": "^1.35.7",
 		"authorizenet": "^1.0.10",
 		"bcryptjs": "^3.0.2",

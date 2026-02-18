@@ -19,10 +19,14 @@ class PayloadClient {
 	 * Make a GET request to Payload API with retry logic
 	 * @param {string} endpoint - API endpoint (e.g., '/api/posts')
 	 * @param {Object} params - Query parameters
-	 * @param {number} retries - Number of retries remaining
+	 * @param {Object} options - Request options
+	 * @param {number} options.retries - Number of retries remaining (default: 2)
+	 * @param {Function} options.fetch - Optional fetch function (e.g., SvelteKit's load fetch)
 	 * @returns {Promise<Object>}
 	 */
-	async get(endpoint, params = {}, retries = 2) {
+	async get(endpoint, params = {}, options = {}) {
+		const retries = options.retries ?? 2;
+		const fetchFn = options.fetch || fetch;
 		const url = new URL(endpoint, this.baseURL);
 
 		// Convert params to Payload's bracket notation format
@@ -33,7 +37,7 @@ class PayloadClient {
 		const timeout = setTimeout(() => controller.abort(), 15000);
 
 		try {
-			const response = await fetch(url.toString(), {
+			const response = await fetchFn(url.toString(), {
 				headers: {
 					'Content-Type': 'application/json'
 				},
@@ -55,7 +59,7 @@ class PayloadClient {
 				console.log(`Payload CMS request failed, retrying... (${retries} attempts left)`);
 				// Wait 1 second before retry
 				await new Promise((resolve) => setTimeout(resolve, 1000));
-				return this.get(endpoint, params, retries - 1);
+				return this.get(endpoint, params, { ...options, retries: retries - 1 });
 			}
 
 			if (error.name === 'AbortError') {
@@ -88,9 +92,11 @@ class PayloadClient {
 	/**
 	 * Get all published posts
 	 * @param {Object} options - Query options
+	 * @param {boolean} options.includeScheduled - Include future-dated posts (for admin preview)
 	 * @returns {Promise<Array>}
 	 */
 	async getPosts(options = {}) {
+		const now = new Date().toISOString();
 		const params = {
 			limit: options.limit || 100,
 			depth: 2, // Populate relationships
@@ -99,18 +105,50 @@ class PayloadClient {
 			}
 		};
 
-		const response = await this.get('/api/posts', params);
+		// Exclude future-dated posts unless explicitly requested (scheduled publishing)
+		if (!options.includeScheduled) {
+			params.where.publishedDate = { less_than_equal: now };
+		}
+		const response = await this.get('/api/posts', params, { fetch: options.fetch });
 		return response.docs || [];
 	}
 
 	/**
 	 * Get a single post by slug
 	 * @param {string} slug - Post slug
+	 * @param {Object} options - Query options
+	 * @param {boolean} options.includeScheduled - Include future-dated posts (for admin preview)
 	 * @returns {Promise<Object|null>}
 	 */
-	async getPostBySlug(slug) {
+	async getPostBySlug(slug, options = {}) {
 		const params = {
 			depth: 2, // Populate relationships
+			where: {
+				slug: { equals: slug },
+				_status: { equals: 'published' }
+			},
+			limit: 1
+		};
+
+		// Exclude future-dated posts unless explicitly requested (scheduled publishing)
+		if (!options.includeScheduled) {
+			params.where.publishedDate = { less_than_equal: new Date().toISOString() };
+		}
+
+		const response = await this.get('/api/posts', params);
+		const posts = response.docs || [];
+		return posts.length > 0 ? posts[0] : null;
+	}
+
+	/**
+	 * Get a post for preview (includes scheduled posts)
+	 * Note: Only works for published posts (including future-scheduled ones)
+	 * @param {string} slug - Post slug
+	 * @returns {Promise<Object|null>}
+	 */
+	async getPostForPreview(slug) {
+		const params = {
+			depth: 2,
 			where: {
 				slug: { equals: slug },
 				_status: { equals: 'published' }
@@ -145,9 +183,11 @@ class PayloadClient {
 	/**
 	 * Get posts by author
 	 * @param {string} authorId - Author ID
+	 * @param {Object} options - Query options
+	 * @param {boolean} options.includeScheduled - Include future-dated posts (for admin preview)
 	 * @returns {Promise<Array>}
 	 */
-	async getPostsByAuthor(authorId) {
+	async getPostsByAuthor(authorId, options = {}) {
 		const params = {
 			depth: 2,
 			where: {
@@ -155,6 +195,11 @@ class PayloadClient {
 				_status: { equals: 'published' }
 			}
 		};
+
+		// Exclude future-dated posts unless explicitly requested (scheduled publishing)
+		if (!options.includeScheduled) {
+			params.where.publishedDate = { less_than_equal: new Date().toISOString() };
+		}
 
 		const response = await this.get('/api/posts', params);
 		return response.docs || [];
@@ -182,9 +227,11 @@ class PayloadClient {
 	/**
 	 * Get posts by tag
 	 * @param {string} tagId - Tag ID
+	 * @param {Object} options - Query options
+	 * @param {boolean} options.includeScheduled - Include future-dated posts (for admin preview)
 	 * @returns {Promise<Array>}
 	 */
-	async getPostsByTag(tagId) {
+	async getPostsByTag(tagId, options = {}) {
 		const params = {
 			depth: 2,
 			where: {
@@ -192,6 +239,11 @@ class PayloadClient {
 				_status: { equals: 'published' }
 			}
 		};
+
+		// Exclude future-dated posts unless explicitly requested (scheduled publishing)
+		if (!options.includeScheduled) {
+			params.where.publishedDate = { less_than_equal: new Date().toISOString() };
+		}
 
 		const response = await this.get('/api/posts', params);
 		return response.docs || [];

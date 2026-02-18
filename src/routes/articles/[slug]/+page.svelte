@@ -135,12 +135,58 @@
 	let tableOfContents = [];
 	let activeSection = '';
 	let mobileTocOpen = false;
+	let expandedSections = {}; // Track which sections are expanded
+
+	// Check if a heading has children (next headings with higher level number)
+	function hasChildren(index, toc = tableOfContents) {
+		if (index >= toc.length - 1) return false;
+		const currentLevel = toc[index].level;
+		const nextLevel = toc[index + 1]?.level;
+		return nextLevel > currentLevel;
+	}
 
 	$: {
 		if (data.article.content) {
 			renderBlocks = processInlineDecklists(data.article.content, data.article.decklists);
 			tableOfContents = extractHeadings(data.article.content);
+			// Initialize sections: only h2 sections are expanded by default (showing h3)
+			// h3+ sections start collapsed (hiding h4+)
+			const newExpanded = { ...expandedSections };
+			tableOfContents.forEach((heading, index) => {
+				if (hasChildren(index, tableOfContents) && newExpanded[heading.id] === undefined) {
+					// Only expand h2 sections by default
+					newExpanded[heading.id] = heading.level === 2;
+				}
+			});
+			expandedSections = newExpanded;
 		}
+	}
+
+	// Check if a heading should be visible based on parent expansion state
+	function isVisible(index) {
+		if (index === 0) return true;
+		const heading = tableOfContents[index];
+		if (heading.level === 2) return true; // Top-level always visible
+
+		// Find parent heading (previous heading with lower level number)
+		for (let i = index - 1; i >= 0; i--) {
+			const parent = tableOfContents[i];
+			if (parent.level < heading.level) {
+				// Check if parent is expanded
+				if (!expandedSections[parent.id]) return false;
+				// Continue checking ancestors
+				if (parent.level > 2) {
+					return isVisible(i);
+				}
+				return true;
+			}
+		}
+		return true;
+	}
+
+	// Toggle section expansion
+	function toggleSection(id) {
+		expandedSections = { ...expandedSections, [id]: !expandedSections[id] };
 	}
 
 	/**
@@ -336,6 +382,11 @@
 	function renderLexicalNode(node) {
 		if (!node) return '';
 
+		// Handle line breaks (Shift+Enter in editor)
+		if (node.type === 'linebreak') {
+			return '<br />';
+		}
+
 		// Handle text nodes
 		if (node.type === 'text') {
 			let text = escapeHtml(node.text || '');
@@ -371,11 +422,33 @@
 		// Handle lists
 		if (node.type === 'list') {
 			const tag = node.listType === 'number' ? 'ol' : 'ul';
-			const children = renderLexicalChildren(node.children);
-			return `<${tag}>${children}</${tag}>`;
+			// Process list items, handling nested lists specially
+			const itemsHtml = (node.children || [])
+				.map((item) => {
+					if (item.type !== 'listitem') return renderLexicalNode(item);
+
+					const children = item.children || [];
+					// Check if this listitem contains ONLY a nested list (no text content)
+					// This happens in Lexical when you have nested lists - the nested list
+					// is wrapped in its own listitem, causing an empty bullet
+					const hasOnlyNestedList = children.length === 1 && children[0].type === 'list';
+
+					if (hasOnlyNestedList) {
+						// Don't wrap in <li>, just render the nested list directly
+						// This prevents the empty bullet for the wrapper listitem
+						return renderLexicalNode(children[0]);
+					}
+
+					// Normal listitem with content
+					const content = renderLexicalChildren(children);
+					return `<li>${content}</li>`;
+				})
+				.join('');
+			return `<${tag}>${itemsHtml}</${tag}>`;
 		}
 
 		if (node.type === 'listitem') {
+			// This handles listitems that appear outside the list context (shouldn't happen normally)
 			const children = renderLexicalChildren(node.children);
 			return `<li>${children}</li>`;
 		}
@@ -488,7 +561,7 @@
 					? ` data-card-fallback="${escapeHtml(cardImg.fallbackUrl)}"`
 					: '';
 
-				return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}"${pitchAttr}${customUrlAttr}${imageAttr}${fallbackAttr} class="card-link !text-blue-400 !underline !decoration-blue-400/50 hover:!text-blue-300 hover:!decoration-blue-300/70">${children}</a>`;
+				return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}"${pitchAttr}${customUrlAttr}${imageAttr}${fallbackAttr} class="card-link !text-blue-400 hover:!text-blue-300">${children}</a>`;
 			} else {
 				const url = escapeHtml(rawUrl);
 				return `<a href="${url}" target="_blank" rel="noopener noreferrer">${children}</a>`;
@@ -628,7 +701,7 @@
 							? ` data-card-fallback="${escapeHtml(cardImg2.fallbackUrl)}"`
 							: '';
 
-						return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}"${pitchAttr}${customUrlAttr}${imageAttr2}${fallbackAttr2} class="card-link !text-blue-400 !underline !decoration-blue-400/50 hover:!text-blue-300 hover:!decoration-blue-300/70">${renderChildren(child.children)}</a>`;
+						return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}"${pitchAttr}${customUrlAttr}${imageAttr2}${fallbackAttr2} class="card-link !text-blue-400 hover:!text-blue-300">${renderChildren(child.children)}</a>`;
 					} else {
 						return `<a href="${escapeHtml(rawUrl)}" target="_blank" rel="noopener noreferrer">${renderChildren(child.children)}</a>`;
 					}
@@ -671,53 +744,55 @@
 </svelte:head>
 
 <div class="min-h-screen">
-	<!-- Header Bar -->
-	<div class="border-b border-white/10 bg-gray-900/50">
-		<div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-			<a
-				href="/articles"
-				class="inline-flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
-			>
-				<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
-					/>
-				</svg>
-				Back to all articles
-			</a>
-		</div>
-	</div>
-
 	<!-- Hero Section with Cover Image and Title Overlay -->
-	<header class="relative">
-		<!-- Cover Image Container - Wider aspect ratios to show more of the image -->
-		<div
-			class="relative aspect-[3/2] w-full overflow-hidden bg-gray-900 sm:aspect-[16/9] lg:aspect-[5/2]"
-		>
-			{#if data.article.coverImage?.src}
-				<img
-					src={data.article.coverImage.src}
-					srcset={data.article.coverImage.srcset}
-					sizes="100vw"
-					alt={data.article.title}
-					class="h-full w-full object-cover"
-					loading="eager"
-				/>
-				<!-- Gradient Overlay for text readability - stronger on mobile -->
-				<div
-					class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/20 sm:from-black/90 sm:via-black/50 sm:to-transparent"
-				></div>
-			{:else}
-				<!-- Fallback gradient when no cover image -->
-				<div class="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900"></div>
-			{/if}
+	<header class="relative px-4 pt-6 sm:px-6 lg:px-8">
+		<div class="mx-auto max-w-7xl">
+			<!-- Cover Image Container - Full content width, 16:9 aspect ratio, rounded corners -->
+			<div
+				class="relative aspect-video w-full overflow-hidden rounded-xl bg-gray-900 sm:rounded-2xl"
+			>
+				{#if data.article.coverImage?.src}
+					<img
+						src={data.article.coverImage.src}
+						srcset={data.article.coverImage.srcset}
+						sizes="(max-width: 1280px) 100vw, 1280px"
+						alt={data.article.title}
+						class="h-full w-full object-cover"
+						loading="eager"
+					/>
+					<!-- Gradient Overlay for text readability -->
+					<div
+						class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"
+					></div>
+				{:else}
+					<!-- Fallback gradient when no cover image -->
+					<div class="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900"></div>
+				{/if}
 
-			<!-- Text Content Overlay -->
-			<div class="absolute inset-0 flex items-end">
-				<div class="w-full px-4 pb-6 sm:px-6 sm:pb-12 lg:px-8 lg:pb-16">
-					<div class="mx-auto max-w-7xl">
+				<!-- Discreet Back Link -->
+				<a
+					href="/articles"
+					class="absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 text-xs text-white/80 backdrop-blur-sm transition-all hover:bg-black/60 hover:text-white sm:top-4 sm:left-4 sm:text-sm"
+				>
+					<svg
+						class="h-3.5 w-3.5 sm:h-4 sm:w-4"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+						/>
+					</svg>
+					All articles
+				</a>
+
+				<!-- Text Content Overlay -->
+				<div class="absolute inset-0 flex items-end">
+					<div class="w-full p-4 sm:p-6 lg:p-8">
 						<!-- Tags & Premium Badge -->
 						<div class="mb-3 flex flex-wrap items-center gap-2 sm:mb-4 sm:gap-3">
 							{#if data.article.tags && data.article.tags.length > 0}
@@ -760,153 +835,225 @@
 		</div>
 	</header>
 
-	<!-- Author Byline Section -->
-	<div class="border-b border-white/10 bg-gray-900/30">
-		<div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
-			<!-- Mobile Layout: Stack author and meta vertically -->
-			<div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-				<!-- Author Info -->
-				<div class="flex items-center justify-between sm:justify-start sm:gap-4">
-					{#if data.article.author}
-						<a
-							href="/articles/author/{data.article.author.slug}"
-							class="group flex items-center gap-3"
-						>
-							{#if data.article.author.profilePicture}
-								<img
-									src={data.article.author.profilePicture}
-									alt={data.article.author.name}
-									class="h-11 w-11 rounded-full object-cover ring-2 ring-white/10 transition-all group-hover:ring-blue-400/50 sm:h-10 sm:w-10"
-								/>
-							{:else}
-								<div
-									class="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 ring-2 ring-white/10 transition-all group-hover:ring-blue-400/50 sm:h-10 sm:w-10"
-								>
-									<span class="text-sm font-bold text-white">
-										{data.article.author.name.charAt(0).toUpperCase()}
-									</span>
-								</div>
-							{/if}
-							<div>
-								<span
-									class="block text-sm font-semibold text-white transition-colors group-hover:text-blue-400"
-								>
-									{data.article.author.name}
-								</span>
-								<!-- Date and read time on mobile only - below author name -->
-								<div class="flex items-center gap-2 text-xs text-gray-400 sm:hidden">
-									{#if data.article.publishedAt}
-										<time datetime={data.article.publishedAt}>
-											{new Date(data.article.publishedAt).toLocaleDateString('en-US', {
-												month: 'short',
-												day: 'numeric',
-												year: 'numeric'
-											})}
-										</time>
-									{/if}
-									{#if data.article.readTime}
-										<span class="text-gray-600">·</span>
-										<span>{data.article.readTime} min read</span>
-									{/if}
-								</div>
-							</div>
-						</a>
+	<!-- Author Byline -->
+	<div class="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+		<!-- Mobile: Two rows - author on top, meta below -->
+		<div class="flex flex-col gap-3 sm:hidden">
+			{#if data.article.author}
+				<a
+					href="/articles/author/{data.article.author.slug}"
+					class="flex items-center gap-3 transition-colors"
+				>
+					{#if data.article.author.profilePicture}
+						<img
+							src={data.article.author.profilePicture}
+							alt={data.article.author.name}
+							class="h-10 w-10 rounded-full object-cover"
+						/>
 					{/if}
-
-					<!-- Share Buttons - Visible on mobile inline with author -->
-					<div class="flex items-center gap-1 sm:hidden">
-						<button
-							on:click={copyLink}
-							class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
-							title="Copy link"
-							aria-label="Copy link"
-						>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-								/>
-							</svg>
-						</button>
-						<button
-							on:click={shareTwitter}
-							class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
-							title="Share on Twitter"
-							aria-label="Share on Twitter"
-						>
-							<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-								<path
-									d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"
-								/>
-							</svg>
-						</button>
-					</div>
-				</div>
-
-				<!-- Date, read time, and share - Desktop only -->
-				<div class="hidden sm:flex sm:items-center sm:gap-4">
+					<span class="font-medium text-white">{data.article.author.name}</span>
+				</a>
+			{/if}
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-2 text-xs text-gray-400">
 					{#if data.article.publishedAt}
-						<time class="text-sm text-gray-400" datetime={data.article.publishedAt}>
+						<time datetime={data.article.publishedAt}>
 							{new Date(data.article.publishedAt).toLocaleDateString('en-US', {
-								year: 'numeric',
-								month: 'long',
-								day: 'numeric'
+								month: 'short',
+								day: 'numeric',
+								year: 'numeric'
 							})}
 						</time>
 					{/if}
 					{#if data.article.readTime}
-						<span class="text-gray-500">·</span>
-						<span class="text-sm text-gray-400">{data.article.readTime} min read</span>
+						<span class="text-gray-600">·</span>
+						<span>{data.article.readTime} min read</span>
 					{/if}
-
-					<!-- Share Buttons - Desktop -->
-					<div class="ml-4 flex items-center gap-2 border-l border-white/10 pl-4">
-						<span class="mr-1 text-xs tracking-wider text-gray-500 uppercase">Share</span>
-						<button
-							on:click={copyLink}
-							class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
-							title="Copy link"
-							aria-label="Copy link"
-						>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-								/>
-							</svg>
-						</button>
-						<button
-							on:click={shareTwitter}
-							class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
-							title="Share on Twitter"
-							aria-label="Share on Twitter"
-						>
-							<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-								<path
-									d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"
-								/>
-							</svg>
-						</button>
-					</div>
 				</div>
+				<div class="flex items-center gap-1">
+					<button
+						on:click={copyLink}
+						class="rounded p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+						title="Copy link"
+						aria-label="Copy link"
+					>
+						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+							/>
+						</svg>
+					</button>
+					<button
+						on:click={shareTwitter}
+						class="rounded p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+						title="Share on Twitter"
+						aria-label="Share on Twitter"
+					>
+						<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+							<path
+								d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"
+							/>
+						</svg>
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- Desktop: Single inline row -->
+		<div
+			class="hidden sm:flex sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2 sm:text-sm sm:text-gray-400"
+		>
+			{#if data.article.author}
+				<a
+					href="/articles/author/{data.article.author.slug}"
+					class="flex items-center gap-2 transition-colors hover:text-white"
+				>
+					{#if data.article.author.profilePicture}
+						<img
+							src={data.article.author.profilePicture}
+							alt={data.article.author.name}
+							class="h-6 w-6 rounded-full object-cover"
+						/>
+					{/if}
+					<span class="font-medium text-gray-300">{data.article.author.name}</span>
+				</a>
+				<span class="text-gray-600">·</span>
+			{/if}
+			{#if data.article.publishedAt}
+				<time datetime={data.article.publishedAt}>
+					{new Date(data.article.publishedAt).toLocaleDateString('en-US', {
+						month: 'long',
+						day: 'numeric',
+						year: 'numeric'
+					})}
+				</time>
+			{/if}
+			{#if data.article.readTime}
+				<span class="text-gray-600">·</span>
+				<span>{data.article.readTime} min read</span>
+			{/if}
+			<span class="text-gray-600">·</span>
+			<div class="flex items-center gap-1">
+				<button
+					on:click={copyLink}
+					class="rounded p-1 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+					title="Copy link"
+					aria-label="Copy link"
+				>
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+						/>
+					</svg>
+				</button>
+				<button
+					on:click={shareTwitter}
+					class="rounded p-1 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+					title="Share on Twitter"
+					aria-label="Share on Twitter"
+				>
+					<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+						<path
+							d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"
+						/>
+					</svg>
+				</button>
 			</div>
 		</div>
 	</div>
 
 	<!-- Main Content Area with Sidebar -->
 	<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
-		<div class="lg:grid lg:grid-cols-[5fr_3fr] lg:gap-12">
+		<div class="lg:grid lg:grid-cols-[180px_1fr] lg:gap-8 xl:gap-12">
+			<!-- Left Sidebar - Table of Contents (hide in preview mode) -->
+			<aside class="hidden lg:block">
+				<div class="scrollbar-hide sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto">
+					{#if !data.isPreview && tableOfContents.length > 0}
+						<nav>
+							<div class="space-y-1 pb-8">
+								{#key expandedSections}
+									{#each tableOfContents as heading, index}
+										{#if isVisible(index)}
+											<div
+												class="flex items-center gap-1 transition-all duration-200"
+												style="padding-left: {(heading.level - 2) * 12}px"
+											>
+												{#if hasChildren(index)}
+													<button
+														on:click={() => toggleSection(heading.id)}
+														class="flex h-5 w-5 shrink-0 items-center justify-center rounded text-gray-500 transition-colors hover:text-gray-300"
+														aria-label={expandedSections[heading.id]
+															? 'Collapse section'
+															: 'Expand section'}
+													>
+														<svg
+															class="h-3 w-3 transition-transform duration-200 {expandedSections[
+																heading.id
+															]
+																? 'rotate-90'
+																: ''}"
+															fill="none"
+															stroke="currentColor"
+															viewBox="0 0 24 24"
+														>
+															<path
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																stroke-width="2"
+																d="M9 5l7 7-7 7"
+															/>
+														</svg>
+													</button>
+												{:else}
+													<span class="w-5 shrink-0"></span>
+												{/if}
+												<a
+													href="#{heading.id}"
+													class="block flex-1 py-1 text-sm leading-normal transition-colors {activeSection ===
+													heading.id
+														? 'text-white'
+														: 'text-gray-500 hover:text-gray-300'}"
+												>
+													{heading.text}
+												</a>
+											</div>
+										{/if}
+									{/each}
+								{/key}
+							</div>
+						</nav>
+					{/if}
+				</div>
+			</aside>
+
 			<!-- Main Content -->
 			<article class="min-w-0">
 				<!-- Article content with preview overlay when not premium -->
 				<div class="relative">
-					<!-- Article content using Tailwind Typography - Optimized for mobile readability -->
+					<!-- Article content using Tailwind Typography - The Ringer inspired readability -->
 					<div
-						class="mx-auto prose prose-lg max-w-prose prose-invert lg:prose-xl prose-headings:scroll-mt-24 prose-headings:font-bold prose-headings:tracking-tight prose-h2:mt-8 prose-h2:mb-3 prose-h2:text-xl sm:prose-h2:mt-10 sm:prose-h2:mb-4 sm:prose-h2:text-3xl prose-h3:mt-6 prose-h3:mb-2 prose-h3:text-lg sm:prose-h3:mt-8 sm:prose-h3:mb-3 sm:prose-h3:text-2xl prose-h4:mt-5 prose-h4:mb-2 prose-h4:text-base sm:prose-h4:mt-6 sm:prose-h4:mb-3 sm:prose-h4:text-xl prose-p:leading-relaxed prose-p:text-gray-300 prose-a:text-yellow-600 prose-a:no-underline hover:prose-a:text-yellow-500 hover:prose-a:underline prose-blockquote:rounded-r-lg prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:bg-blue-500/10 prose-blockquote:pl-4 prose-blockquote:not-italic prose-strong:text-white prose-em:text-gray-200 prose-code:rounded prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:text-orange-400 prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-xl prose-pre:border prose-pre:border-white/10 prose-pre:bg-gray-900 prose-li:marker:text-blue-500 prose-img:rounded-xl prose-hr:border-white/10"
+						class="mx-auto prose prose-lg max-w-[65ch] prose-invert lg:prose-xl
+						prose-headings:scroll-mt-24
+						prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-white prose-h2:mt-16 prose-h2:mb-6
+						prose-h2:text-[1.75rem] sm:prose-h2:text-[2rem] prose-h3:mt-12 prose-h3:mb-4
+						prose-h3:text-[1.375rem] sm:prose-h3:text-[1.5rem] prose-h4:mt-10 prose-h4:mb-3
+						prose-h4:text-[1.125rem] sm:prose-h4:text-[1.25rem] prose-p:text-[1.125rem] prose-p:leading-[1.8]
+						prose-p:font-normal prose-p:tracking-[-0.01em] prose-p:text-gray-200 prose-a:text-blue-400
+						prose-a:no-underline prose-blockquote:border-l-2
+						prose-blockquote:border-gray-600 prose-blockquote:pl-6 prose-blockquote:text-gray-300 prose-blockquote:not-italic prose-strong:font-semibold
+						prose-strong:text-white prose-em:text-gray-200
+						prose-code:rounded
+						prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:text-orange-400 prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-xl
+						prose-pre:border prose-pre:border-white/10 prose-pre:bg-gray-900 prose-li:text-gray-200
+						prose-li:marker:text-gray-500 prose-img:rounded-xl
+						prose-hr:border-gray-800
+						[&>:first-child]:mt-0"
 					>
 						{#if data.article.content}
 							{#if renderBlocks.length > 0}
@@ -1249,33 +1396,6 @@
 					</footer>
 				{/if}
 			</article>
-
-			<!-- Right Sidebar - Table of Contents (hide in preview mode) -->
-			<aside class="hidden lg:block">
-				<div class="sticky top-8">
-					{#if !data.isPreview && tableOfContents.length > 0}
-						<nav class="rounded-xl border border-white/10 bg-gray-900/30 p-5">
-							<h2 class="mb-4 text-xs font-semibold tracking-wider text-gray-400 uppercase">
-								On this page
-							</h2>
-							<div class="space-y-2.5">
-								{#each tableOfContents as heading}
-									<a
-										href="#{heading.id}"
-										class="block text-sm leading-snug transition-colors {activeSection ===
-										heading.id
-											? 'font-medium text-white'
-											: 'text-gray-500 hover:text-gray-300'}"
-										style="padding-left: {(heading.level - 2) * 12}px"
-									>
-										{heading.text}
-									</a>
-								{/each}
-							</div>
-						</nav>
-					{/if}
-				</div>
-			</aside>
 		</div>
 	</div>
 </div>
@@ -1284,17 +1404,18 @@
 {#if !data.isPreview && tableOfContents.length > 0}
 	<button
 		on:click={() => (mobileTocOpen = true)}
-		class="fixed right-6 bottom-6 z-40 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-900/80 text-yellow-500 shadow-lg ring-1 ring-white/10 backdrop-blur-sm transition-all hover:bg-gray-800/90 hover:text-yellow-400 active:scale-95 lg:hidden"
+		class="fixed right-4 bottom-6 z-40 flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2.5 text-white shadow-lg shadow-black/20 transition-all hover:bg-gray-800 active:scale-95 lg:hidden"
 		aria-label="Table of contents"
 	>
-		<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 			<path
 				stroke-linecap="round"
 				stroke-linejoin="round"
 				stroke-width="2"
-				d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
+				d="M4 6h16M4 10h16M4 14h16M4 18h16"
 			/>
 		</svg>
+		<span class="text-sm font-medium">Contents</span>
 	</button>
 {/if}
 
@@ -1304,7 +1425,7 @@
 		<!-- Backdrop -->
 		<div
 			transition:fade={{ duration: 200 }}
-			class="absolute inset-0 bg-black/40 backdrop-blur-sm"
+			class="absolute inset-0 bg-black/60 backdrop-blur-sm"
 			on:click={() => (mobileTocOpen = false)}
 			on:keydown={(e) => e.key === 'Escape' && (mobileTocOpen = false)}
 			role="button"
@@ -1315,16 +1436,39 @@
 		<!-- Modal -->
 		<div
 			transition:fly={{ y: 300, duration: 300 }}
-			class="absolute right-4 bottom-4 left-4 max-h-[60vh] overflow-y-auto rounded-2xl bg-gray-900 p-5 shadow-2xl ring-1 ring-white/10"
+			class="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-hidden rounded-t-3xl bg-gray-900 shadow-2xl ring-1 ring-white/10"
 		>
-			<div class="mb-4 flex items-center justify-between">
-				<h2 class="text-sm font-semibold tracking-wider text-gray-400 uppercase">On this page</h2>
+			<!-- Header -->
+			<div
+				class="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-gray-900 px-5 py-4"
+			>
+				<div class="flex items-center gap-3">
+					<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20">
+						<svg
+							class="h-4 w-4 text-blue-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M4 6h16M4 10h16M4 14h16M4 18h16"
+							/>
+						</svg>
+					</div>
+					<div>
+						<h3 class="text-sm font-semibold text-white">Contents</h3>
+						<p class="text-xs text-gray-500">{tableOfContents.length} sections</p>
+					</div>
+				</div>
 				<button
 					on:click={() => (mobileTocOpen = false)}
-					class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
+					class="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-gray-400 transition-colors hover:bg-white/20 hover:text-white"
 					aria-label="Close"
 				>
-					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
 							stroke-linecap="round"
 							stroke-linejoin="round"
@@ -1334,20 +1478,83 @@
 					</svg>
 				</button>
 			</div>
-			<nav class="space-y-3">
-				{#each tableOfContents as heading}
-					<a
-						href="#{heading.id}"
-						on:click={() => (mobileTocOpen = false)}
-						class="block text-base leading-snug transition-colors {activeSection === heading.id
-							? 'font-medium text-white'
-							: 'text-gray-400 hover:text-white'}"
-						style="padding-left: {(heading.level - 2) * 16}px"
-					>
-						{heading.text}
-					</a>
-				{/each}
+
+			<!-- Article title -->
+			<div class="border-b border-white/10 bg-white/5 px-5 py-3">
+				<p class="line-clamp-2 text-sm font-medium text-gray-300">
+					{data.article.title}
+				</p>
+			</div>
+
+			<!-- TOC items -->
+			<nav class="overflow-y-auto px-3 py-3" style="max-height: calc(80vh - 140px)">
+				{#key expandedSections}
+					{#each tableOfContents as heading, index}
+						{#if isVisible(index)}
+							<div
+								class="group flex items-center gap-1 rounded-lg transition-all duration-200 {activeSection ===
+								heading.id
+									? 'bg-blue-500/20'
+									: 'hover:bg-white/5'}"
+								style="margin-left: {(heading.level - 2) * 12}px"
+							>
+								<!-- Expand/collapse button for sections with children -->
+								{#if hasChildren(index)}
+									<button
+										on:click={() => toggleSection(heading.id)}
+										class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-white/10 hover:text-gray-300"
+										aria-label={expandedSections[heading.id]
+											? 'Collapse section'
+											: 'Expand section'}
+									>
+										<svg
+											class="h-3.5 w-3.5 transition-transform duration-200 {expandedSections[
+												heading.id
+											]
+												? 'rotate-90'
+												: ''}"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M9 5l7 7-7 7"
+											/>
+										</svg>
+									</button>
+								{:else}
+									<!-- Level indicator dot -->
+									<div class="flex h-8 w-8 shrink-0 items-center justify-center">
+										<span
+											class="h-1.5 w-1.5 rounded-full {activeSection === heading.id
+												? 'bg-blue-400'
+												: 'bg-gray-600 group-hover:bg-gray-500'}"
+										></span>
+									</div>
+								{/if}
+								<a
+									href="#{heading.id}"
+									on:click={() => (mobileTocOpen = false)}
+									class="block flex-1 py-2.5 pr-3 text-[15px] leading-snug transition-colors {activeSection ===
+									heading.id
+										? 'font-medium text-blue-400'
+										: 'text-gray-400 group-hover:text-white'} {heading.level === 2
+										? 'font-medium'
+										: ''}"
+								>
+									{heading.text}
+								</a>
+							</div>
+						{/if}
+					{/each}
+				{/key}
 			</nav>
+
+			<!-- Safe area padding for devices with home indicator -->
+			<div class="h-6 bg-gray-900"></div>
 		</div>
 	</div>
 {/if}

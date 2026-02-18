@@ -73,7 +73,7 @@ export async function load({ params, locals }) {
 
 		// If no email found (invalid ID and not an email), redirect
 		if (!customerEmail) {
-			throw redirect(302, '/admin?tab=orders');
+			throw redirect(302, '/admin/orders');
 		}
 
 		// Fetch all orders for this customer
@@ -85,7 +85,7 @@ export async function load({ params, locals }) {
 
 		if (customerOrders.length === 0 && !customerData) {
 			// No orders and no user record - redirect back
-			throw redirect(302, '/admin?tab=orders');
+			throw redirect(302, '/admin/orders');
 		}
 
 		// Calculate stats
@@ -192,7 +192,7 @@ export async function load({ params, locals }) {
 			throw err;
 		}
 		console.error('Error loading customer:', err);
-		throw redirect(302, '/admin?tab=orders');
+		throw redirect(302, '/admin/orders');
 	}
 }
 

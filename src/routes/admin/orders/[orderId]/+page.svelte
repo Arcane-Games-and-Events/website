@@ -63,8 +63,7 @@
 	<div class="mx-auto max-w-4xl">
 		<!-- Breadcrumb -->
 		<nav class="mb-6 flex items-center gap-2 text-sm">
-			<a href="/admin?tab=orders" class="text-gray-400 transition-colors hover:text-white">Orders</a
-			>
+			<a href="/admin/orders" class="text-gray-400 transition-colors hover:text-white">Orders</a>
 			<svg class="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
 			</svg>

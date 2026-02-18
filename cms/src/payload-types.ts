@@ -159,7 +159,7 @@ export interface Post {
    */
   slug: string;
   /**
-   * Short summary of the post
+   * Short summary of the post (max 150 characters)
    */
   excerpt?: string | null;
   coverImage?: (number | null) | Media;
@@ -250,6 +250,9 @@ export interface Post {
  */
 export interface Media {
   id: number;
+  /**
+   * Describe the image for screen readers and SEO. Be concise but descriptive (e.g., "Player shuffling deck at tournament table" not just "tournament photo").
+   */
   alt: string;
   prefix?: string | null;
   updatedAt: string;

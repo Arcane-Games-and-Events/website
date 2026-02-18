@@ -20,7 +20,7 @@
 
 <a href="/articles/{article.slug}" class="group block">
 	<div
-		class="relative h-[200px] overflow-hidden rounded-xl border border-gray-800 bg-gray-900 transition-all hover:border-gray-700 sm:h-[260px] sm:rounded-2xl"
+		class="relative aspect-video overflow-hidden rounded-xl border border-gray-800 bg-gray-900 transition-all hover:border-gray-700 sm:rounded-2xl"
 	>
 		<!-- Background Image -->
 		{#if article.coverImage?.src}

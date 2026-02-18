@@ -59,7 +59,11 @@ export async function load({ params, locals }) {
 		// Respect manually set statuses (completed, cancelled, in_progress)
 		// Only auto-compute if status is 'upcoming' or not set
 		let computedStatus = eventData.status;
-		if (eventData.status === 'completed' || eventData.status === 'cancelled' || eventData.status === 'in_progress') {
+		if (
+			eventData.status === 'completed' ||
+			eventData.status === 'cancelled' ||
+			eventData.status === 'in_progress'
+		) {
 			computedStatus = eventData.status; // Keep manually set status
 		} else {
 			// Auto-compute for 'upcoming' or null status based on date
@@ -1286,7 +1290,7 @@ export const actions = {
 			await db.delete(event).where(eq(event.id, params.eventId));
 
 			// Redirect to events list
-			throw redirect(302, '/admin?tab=events');
+			throw redirect(302, '/admin/events');
 		} catch (err) {
 			if (err.status === 302) throw err; // Re-throw redirect
 			console.error('Error deleting event:', err);
