@@ -33,9 +33,7 @@ export async function load({ locals, url }) {
 
 	// Hero filter
 	if (hero) {
-		conditions.push(
-			or(ilike(vod.player1Hero, hero), ilike(vod.player2Hero, hero))
-		);
+		conditions.push(or(ilike(vod.player1Hero, hero), ilike(vod.player2Hero, hero)));
 	}
 
 	// Sort
@@ -50,48 +48,42 @@ export async function load({ locals, url }) {
 
 	try {
 		// Run queries in parallel
-		const [
-			[{ count: totalCount }],
-			[{ count: totalUnfiltered }],
-			vods,
-			heroRows,
-			eventRows
-		] = await Promise.all([
-			// Filtered count
-			db.select({ count: sql`count(*)::int` }).from(vod).where(and(...conditions)),
-			// Unfiltered count (for header)
-			db
-				.select({ count: sql`count(*)::int` })
-				.from(vod)
-				.where(and(eq(vod.isPublished, true), eq(vod.status, 'ready'))),
-			// Fetch VODs
-			db
-				.select()
-				.from(vod)
-				.where(and(...conditions))
-				.orderBy(orderBy)
-				.limit(perPage)
-				.offset((page - 1) * perPage),
-			// Distinct heroes
-			db
-				.select({
-					player1Hero: vod.player1Hero,
-					player2Hero: vod.player2Hero
-				})
-				.from(vod)
-				.where(and(eq(vod.isPublished, true), eq(vod.status, 'ready'))),
-			// Events that have VODs
-			db
-				.selectDistinct({ eventId: vod.eventId })
-				.from(vod)
-				.where(
-					and(
-						eq(vod.isPublished, true),
-						eq(vod.status, 'ready'),
-						sql`${vod.eventId} IS NOT NULL`
+		const [[{ count: totalCount }], [{ count: totalUnfiltered }], vods, heroRows, eventRows] =
+			await Promise.all([
+				// Filtered count
+				db
+					.select({ count: sql`count(*)::int` })
+					.from(vod)
+					.where(and(...conditions)),
+				// Unfiltered count (for header)
+				db
+					.select({ count: sql`count(*)::int` })
+					.from(vod)
+					.where(and(eq(vod.isPublished, true), eq(vod.status, 'ready'))),
+				// Fetch VODs
+				db
+					.select()
+					.from(vod)
+					.where(and(...conditions))
+					.orderBy(orderBy)
+					.limit(perPage)
+					.offset((page - 1) * perPage),
+				// Distinct heroes
+				db
+					.select({
+						player1Hero: vod.player1Hero,
+						player2Hero: vod.player2Hero
+					})
+					.from(vod)
+					.where(and(eq(vod.isPublished, true), eq(vod.status, 'ready'))),
+				// Events that have VODs
+				db
+					.selectDistinct({ eventId: vod.eventId })
+					.from(vod)
+					.where(
+						and(eq(vod.isPublished, true), eq(vod.status, 'ready'), sql`${vod.eventId} IS NOT NULL`)
 					)
-				)
-		]);
+			]);
 
 		// Build hero list from distinct values
 		const heroSet = new Set();
@@ -106,7 +98,12 @@ export async function load({ locals, url }) {
 		const eventIds = eventRows.map((r) => r.eventId).filter(Boolean);
 		if (eventIds.length > 0) {
 			events = await db
-				.select({ id: event.id, title: event.title, eventDate: event.eventDate, circuit: event.circuit })
+				.select({
+					id: event.id,
+					title: event.title,
+					eventDate: event.eventDate,
+					circuit: event.circuit
+				})
 				.from(event)
 				.where(sql`${event.id} IN ${eventIds}`)
 				.orderBy(desc(event.eventDate));

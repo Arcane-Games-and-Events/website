@@ -11,10 +11,7 @@ export async function load({ locals }) {
 	// Fetch VODs
 	let vods = [];
 	try {
-		const rawVods = await db
-			.select()
-			.from(vod)
-			.orderBy(desc(vod.createdAt));
+		const rawVods = await db.select().from(vod).orderBy(desc(vod.createdAt));
 
 		// Sign thumbnail tokens for signed playback VODs
 		const muxMod = await import('$lib/server/mux.js');
@@ -281,7 +278,9 @@ export const actions = {
 			}
 
 			if (!assetId) {
-				return fail(400, { error: 'No Mux asset found for this VOD. Upload may still be processing.' });
+				return fail(400, {
+					error: 'No Mux asset found for this VOD. Upload may still be processing.'
+				});
 			}
 
 			// Fetch asset details from Mux
@@ -293,7 +292,8 @@ export const actions = {
 				muxPlaybackId: playbackId || vodRecord.muxPlaybackId,
 				duration: asset.duration || vodRecord.duration,
 				aspectRatio: asset.aspect_ratio || vodRecord.aspectRatio,
-				status: asset.status === 'ready' ? 'ready' : asset.status === 'errored' ? 'errored' : 'preparing',
+				status:
+					asset.status === 'ready' ? 'ready' : asset.status === 'errored' ? 'errored' : 'preparing',
 				updatedAt: new Date()
 			};
 

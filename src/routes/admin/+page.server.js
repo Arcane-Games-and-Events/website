@@ -1,6 +1,16 @@
 import { redirect } from '@sveltejs/kit';
 
-const validTabs = ['events', 'calendar', 'podcasts', 'vods', 'orders', 'users', 'players', 'analytics', 'cards'];
+const validTabs = [
+	'events',
+	'calendar',
+	'podcasts',
+	'vods',
+	'orders',
+	'users',
+	'players',
+	'analytics',
+	'cards'
+];
 
 export function load({ url }) {
 	const tab = url.searchParams.get('tab');

@@ -29,17 +29,35 @@
 	];
 
 	// Build unified feed from all data sources
-	$: feedItems = buildFeed(articles, vods, latestPodcastEpisode, podcastInfo, featuredDecklists, completedEvents, upcomingEvents);
+	$: feedItems = buildFeed(
+		articles,
+		vods,
+		latestPodcastEpisode,
+		podcastInfo,
+		featuredDecklists,
+		completedEvents,
+		upcomingEvents
+	);
 	$: filteredFeed = filterFeed(feedItems, activeTab);
 
 	function buildFeed(articles, vods, podcastEp, podInfo, decklists, completed, upcoming) {
 		const items = [];
 
 		for (const a of articles) {
-			items.push({ type: 'article', data: a, date: new Date(a.publishedAt), key: `article-${a.slug}` });
+			items.push({
+				type: 'article',
+				data: a,
+				date: new Date(a.publishedAt),
+				key: `article-${a.slug}`
+			});
 		}
 		for (const v of vods) {
-			items.push({ type: 'vod', data: v, date: new Date(v.publishedAt || v.createdAt), key: `vod-${v.id}` });
+			items.push({
+				type: 'vod',
+				data: v,
+				date: new Date(v.publishedAt || v.createdAt),
+				key: `vod-${v.id}`
+			});
 		}
 		if (podcastEp) {
 			items.push({
@@ -50,13 +68,28 @@
 			});
 		}
 		for (const d of decklists) {
-			items.push({ type: 'decklist', data: d, date: new Date(d.createdAt), key: `decklist-${d.id}` });
+			items.push({
+				type: 'decklist',
+				data: d,
+				date: new Date(d.createdAt),
+				key: `decklist-${d.id}`
+			});
 		}
 		for (const e of completed) {
-			items.push({ type: 'event_result', data: e, date: new Date(e.closedAt || e.eventDate), key: `result-${e.id}` });
+			items.push({
+				type: 'event_result',
+				data: e,
+				date: new Date(e.closedAt || e.eventDate),
+				key: `result-${e.id}`
+			});
 		}
 		for (const e of upcoming) {
-			items.push({ type: 'upcoming_event', data: e, date: new Date(e.eventDate), key: `upcoming-${e.id}` });
+			items.push({
+				type: 'upcoming_event',
+				data: e,
+				date: new Date(e.eventDate),
+				key: `upcoming-${e.id}`
+			});
 		}
 
 		items.sort((a, b) => b.date - a.date);
@@ -130,19 +163,49 @@
 	function getTypeBadge(type) {
 		switch (type) {
 			case 'article':
-				return { label: 'Article', bg: 'bg-amber-500/15', text: 'text-amber-400', icon: icons.newspaper };
+				return {
+					label: 'Article',
+					bg: 'bg-amber-500/15',
+					text: 'text-amber-400',
+					icon: icons.newspaper
+				};
 			case 'vod':
 				return { label: 'VOD', bg: 'bg-red-500/15', text: 'text-red-400', icon: icons.videoCamera };
 			case 'podcast':
-				return { label: 'Podcast', bg: 'bg-orange-500/15', text: 'text-orange-400', icon: icons.speakerWave };
+				return {
+					label: 'Podcast',
+					bg: 'bg-orange-500/15',
+					text: 'text-orange-400',
+					icon: icons.speakerWave
+				};
 			case 'decklist':
-				return { label: 'Decklist', bg: 'bg-cyan-500/15', text: 'text-cyan-400', icon: icons.documentText };
+				return {
+					label: 'Decklist',
+					bg: 'bg-cyan-500/15',
+					text: 'text-cyan-400',
+					icon: icons.documentText
+				};
 			case 'event_result':
-				return { label: 'Results', bg: 'bg-green-500/15', text: 'text-green-400', icon: icons.trophy };
+				return {
+					label: 'Results',
+					bg: 'bg-green-500/15',
+					text: 'text-green-400',
+					icon: icons.trophy
+				};
 			case 'upcoming_event':
-				return { label: 'Event', bg: 'bg-blue-500/15', text: 'text-blue-400', icon: icons.calendar };
+				return {
+					label: 'Event',
+					bg: 'bg-blue-500/15',
+					text: 'text-blue-400',
+					icon: icons.calendar
+				};
 			default:
-				return { label: type, bg: 'bg-gray-500/15', text: 'text-gray-400', icon: icons.informationCircle };
+				return {
+					label: type,
+					bg: 'bg-gray-500/15',
+					text: 'text-gray-400',
+					icon: icons.informationCircle
+				};
 		}
 	}
 
@@ -159,9 +222,13 @@
 <div class="min-h-screen bg-gray-950">
 	<!-- Profile Card Header -->
 	<div class="relative overflow-hidden border-b border-white/10">
-		<div class="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-emerald-500/5"></div>
+		<div
+			class="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-emerald-500/5"
+		></div>
 		<div class="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl"></div>
-		<div class="absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-purple-500/10 blur-3xl"></div>
+		<div
+			class="absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-purple-500/10 blur-3xl"
+		></div>
 
 		<div class="relative mx-auto max-w-7xl px-4 py-8 lg:px-8">
 			<div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
@@ -171,8 +238,8 @@
 						<div
 							class="flex h-16 w-16 items-center justify-center rounded-full text-xl font-bold text-white shadow-lg
 							{isPremium
-								? 'bg-gradient-to-br from-emerald-400 via-green-500 to-emerald-600 ring-2 ring-emerald-400/50 shadow-emerald-500/30'
-								: 'bg-gradient-to-br from-blue-500 to-purple-600 ring-2 ring-white/10 shadow-blue-500/20'}"
+								? 'bg-gradient-to-br from-emerald-400 via-green-500 to-emerald-600 ring-2 shadow-emerald-500/30 ring-emerald-400/50'
+								: 'bg-gradient-to-br from-blue-500 to-purple-600 ring-2 shadow-blue-500/20 ring-white/10'}"
 						>
 							{getUserInitials(user?.firstName, user?.lastName)}
 						</div>
@@ -190,7 +257,8 @@
 					<div>
 						<div class="flex items-center gap-3">
 							<h1 class="text-xl font-bold text-white sm:text-2xl">
-								{user?.firstName || 'User'} {user?.lastName || ''}
+								{user?.firstName || 'User'}
+								{user?.lastName || ''}
 							</h1>
 							{#if isPremium}
 								<span
@@ -202,7 +270,9 @@
 									Premium
 								</span>
 							{:else}
-								<span class="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-gray-400">
+								<span
+									class="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-gray-400"
+								>
 									Free
 								</span>
 							{/if}
@@ -213,7 +283,10 @@
 							{/if}
 							{#if user?.createdAt}
 								<span class="text-xs text-gray-500">
-									Joined {new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+									Joined {new Date(user.createdAt).toLocaleDateString('en-US', {
+										month: 'short',
+										year: 'numeric'
+									})}
 								</span>
 							{/if}
 						</div>
@@ -223,7 +296,9 @@
 				<!-- Stats Bar + Actions -->
 				<div class="flex items-center gap-4">
 					{#if playerStanding}
-						<div class="hidden items-center gap-6 rounded-xl border border-white/10 bg-white/5 px-5 py-3 sm:flex">
+						<div
+							class="hidden items-center gap-6 rounded-xl border border-white/10 bg-white/5 px-5 py-3 sm:flex"
+						>
 							<div class="text-center">
 								<p class="text-lg font-bold text-white">{playerStanding.totalPoints || 0}</p>
 								<p class="text-[10px] font-medium tracking-wider text-gray-500 uppercase">Points</p>
@@ -231,7 +306,8 @@
 							<div class="h-8 w-px bg-white/10"></div>
 							<div class="text-center">
 								<p class="text-lg font-bold text-white">
-									{playerStanding.matchesWon || 0}-{(playerStanding.matchesPlayed || 0) - (playerStanding.matchesWon || 0)}
+									{playerStanding.matchesWon || 0}-{(playerStanding.matchesPlayed || 0) -
+										(playerStanding.matchesWon || 0)}
 								</p>
 								<p class="text-[10px] font-medium tracking-wider text-gray-500 uppercase">Record</p>
 							</div>
@@ -239,7 +315,9 @@
 								<div class="h-8 w-px bg-white/10"></div>
 								<div class="text-center">
 									<p class="text-lg font-bold text-white">{winRate}%</p>
-									<p class="text-[10px] font-medium tracking-wider text-gray-500 uppercase">Win Rate</p>
+									<p class="text-[10px] font-medium tracking-wider text-gray-500 uppercase">
+										Win Rate
+									</p>
 								</div>
 							{/if}
 						</div>
@@ -272,14 +350,14 @@
 				{#each tabs as tab}
 					<button
 						on:click={() => (activeTab = tab.id)}
-						class="relative whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors
-						{activeTab === tab.id
-							? 'text-white'
-							: 'text-gray-500 hover:text-gray-300'}"
+						class="relative px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors
+						{activeTab === tab.id ? 'text-white' : 'text-gray-500 hover:text-gray-300'}"
 					>
 						{tab.label}
 						{#if activeTab === tab.id}
-							<div class="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+							<div
+								class="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500"
+							></div>
 						{/if}
 					</button>
 				{/each}
@@ -295,11 +373,21 @@
 				{#if filteredFeed.length > 0}
 					{#each filteredFeed as item (item.key)}
 						{@const badge = getTypeBadge(item.type)}
-						<div class="overflow-hidden rounded-xl border border-white/10 bg-gray-900/50 transition-all hover:border-white/15">
+						<div
+							class="overflow-hidden rounded-xl border border-white/10 bg-gray-900/50 transition-all hover:border-white/15"
+						>
 							<!-- Feed Item Header -->
 							<div class="flex items-center gap-2 px-4 pt-3 pb-2">
-								<span class="flex items-center gap-1.5 rounded-full {badge.bg} px-2.5 py-1 text-[10px] font-semibold {badge.text}">
-									<svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+								<span
+									class="flex items-center gap-1.5 rounded-full {badge.bg} px-2.5 py-1 text-[10px] font-semibold {badge.text}"
+								>
+									<svg
+										class="h-3 w-3"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.5"
+										viewBox="0 0 24 24"
+									>
 										<path stroke-linecap="round" stroke-linejoin="round" d={badge.icon} />
 									</svg>
 									{badge.label}
@@ -311,32 +399,45 @@
 							<div class="px-4 pb-4">
 								{#if item.type === 'article'}
 									<ArticlePreview article={item.data} variant="compact" />
-
 								{:else if item.type === 'vod'}
 									<a href="/studios/vod/{item.data.id}" class="group flex gap-4">
-										<div class="relative w-36 shrink-0 overflow-hidden rounded-lg bg-gray-800 sm:w-44">
+										<div
+											class="relative w-36 shrink-0 overflow-hidden rounded-lg bg-gray-800 sm:w-44"
+										>
 											<div class="aspect-video">
 												{#if item.data.muxPlaybackId}
 													<img
-														src="https://image.mux.com/{item.data.muxPlaybackId}/thumbnail.webp?width=640&height=360&fit_mode=smartcrop{item.data.thumbnailToken ? `&token=${item.data.thumbnailToken}` : ''}"
+														src="https://image.mux.com/{item.data
+															.muxPlaybackId}/thumbnail.webp?width=640&height=360&fit_mode=smartcrop{item
+															.data.thumbnailToken
+															? `&token=${item.data.thumbnailToken}`
+															: ''}"
 														alt=""
 														class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
 														loading="lazy"
 													/>
 												{:else}
 													<div class="flex h-full items-center justify-center">
-														<svg class="h-8 w-8 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+														<svg
+															class="h-8 w-8 text-gray-600"
+															fill="currentColor"
+															viewBox="0 0 24 24"
+														>
 															<path d="M8 5v14l11-7z" />
 														</svg>
 													</div>
 												{/if}
 												{#if item.data.duration}
-													<div class="absolute bottom-1 right-1 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-medium text-white">
+													<div
+														class="absolute right-1 bottom-1 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-medium text-white"
+													>
 														{formatVodDuration(item.data.duration)}
 													</div>
 												{/if}
 												{#if item.data.isPremium}
-													<div class="absolute top-1 left-1 flex h-5 w-5 items-center justify-center rounded bg-emerald-500/90">
+													<div
+														class="absolute top-1 left-1 flex h-5 w-5 items-center justify-center rounded bg-emerald-500/90"
+													>
 														<svg class="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 24 24">
 															<path d={icons.boltSolid} />
 														</svg>
@@ -345,7 +446,9 @@
 											</div>
 										</div>
 										<div class="min-w-0 flex-1 py-1">
-											<h4 class="line-clamp-2 text-sm font-bold leading-snug text-white transition-colors group-hover:text-red-400 sm:text-base">
+											<h4
+												class="line-clamp-2 text-sm leading-snug font-bold text-white transition-colors group-hover:text-red-400 sm:text-base"
+											>
 												{item.data.title}
 											</h4>
 											{#if item.data.player1Name && item.data.player2Name}
@@ -356,7 +459,9 @@
 											{#if item.data.player1Hero || item.data.player2Hero}
 												<div class="mt-2 flex items-center gap-2">
 													{#if item.data.player1Hero}
-														<span class="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-400">
+														<span
+															class="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-400"
+														>
 															{item.data.player1Hero}
 														</span>
 													{/if}
@@ -364,7 +469,9 @@
 														<span class="text-[10px] text-gray-600">vs</span>
 													{/if}
 													{#if item.data.player2Hero}
-														<span class="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-400">
+														<span
+															class="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-400"
+														>
 															{item.data.player2Hero}
 														</span>
 													{/if}
@@ -372,7 +479,6 @@
 											{/if}
 										</div>
 									</a>
-
 								{:else if item.type === 'podcast'}
 									{@const ep = item.data.episode}
 									{@const info = item.data.podcastInfo}
@@ -382,7 +488,9 @@
 										rel="noopener noreferrer"
 										class="group flex gap-4"
 									>
-										<div class="relative w-36 shrink-0 overflow-hidden rounded-lg bg-gray-800 sm:w-44">
+										<div
+											class="relative w-36 shrink-0 overflow-hidden rounded-lg bg-gray-800 sm:w-44"
+										>
 											<div class="aspect-video">
 												{#if ep.thumbnailUrl}
 													<img
@@ -392,7 +500,9 @@
 														loading="lazy"
 													/>
 												{:else}
-													<div class="flex h-full items-center justify-center bg-gradient-to-br from-orange-900/30 to-gray-900">
+													<div
+														class="flex h-full items-center justify-center bg-gradient-to-br from-orange-900/30 to-gray-900"
+													>
 														<img
 															src={info?.coverImage || '/c&b.png'}
 															alt=""
@@ -401,15 +511,25 @@
 													</div>
 												{/if}
 												<!-- Play overlay -->
-												<div class="absolute inset-0 flex items-center justify-center bg-black/0 transition-all group-hover:bg-black/20">
-													<div class="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/90 shadow-lg shadow-orange-500/30 transition-transform group-hover:scale-110">
-														<svg class="h-4 w-4 translate-x-0.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+												<div
+													class="absolute inset-0 flex items-center justify-center bg-black/0 transition-all group-hover:bg-black/20"
+												>
+													<div
+														class="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/90 shadow-lg shadow-orange-500/30 transition-transform group-hover:scale-110"
+													>
+														<svg
+															class="h-4 w-4 translate-x-0.5 text-white"
+															fill="currentColor"
+															viewBox="0 0 24 24"
+														>
 															<path d="M8 5v14l11-7z" />
 														</svg>
 													</div>
 												</div>
 												{#if ep.duration}
-													<div class="absolute bottom-1 right-1 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-medium text-white">
+													<div
+														class="absolute right-1 bottom-1 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-medium text-white"
+													>
 														{ep.duration}
 													</div>
 												{/if}
@@ -418,15 +538,21 @@
 										<div class="min-w-0 flex-1 py-1">
 											<div class="mb-1 flex flex-wrap items-center gap-2">
 												{#if ep.season && ep.episode}
-													<span class="rounded bg-orange-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-orange-400">
+													<span
+														class="rounded bg-orange-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-orange-400"
+													>
 														S{ep.season}E{ep.episode}
 													</span>
 												{/if}
-												<span class="text-[10px] font-semibold tracking-wide text-orange-400 uppercase">
+												<span
+													class="text-[10px] font-semibold tracking-wide text-orange-400 uppercase"
+												>
 													{info?.name || 'Podcast'}
 												</span>
 											</div>
-											<h4 class="line-clamp-2 text-sm font-bold leading-snug text-white transition-colors group-hover:text-orange-400 sm:text-base">
+											<h4
+												class="line-clamp-2 text-sm leading-snug font-bold text-white transition-colors group-hover:text-orange-400 sm:text-base"
+											>
 												{ep.title}
 											</h4>
 											{#if ep.guest}
@@ -434,36 +560,54 @@
 											{/if}
 										</div>
 									</a>
-
 								{:else if item.type === 'decklist'}
 									{@const heroImg = getHeroImage(item.data.hero)}
 									{@const circuit = getCircuit(item.data.eventCircuit)}
-									<a href="/age-open/{item.data.eventId}/decklist/{item.data.id}" class="group flex items-center gap-4">
+									<a
+										href="/age-open/{item.data.eventId}/decklist/{item.data.id}"
+										class="group flex items-center gap-4"
+									>
 										{#if heroImg}
-											<div class="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-800">
+											<div
+												class="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-800"
+											>
 												<img
 													src={heroImg}
 													alt={item.data.hero}
 													class="h-full w-full object-cover"
 													loading="lazy"
 												/>
-												<div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent py-0.5 text-center">
+												<div
+													class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent py-0.5 text-center"
+												>
 													<span class="text-[8px] font-bold text-white uppercase">1st</span>
 												</div>
 											</div>
 										{:else}
-											<div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10">
-												<svg class="h-6 w-6 text-cyan-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+											<div
+												class="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10"
+											>
+												<svg
+													class="h-6 w-6 text-cyan-400"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="1.5"
+													viewBox="0 0 24 24"
+												>
 													<path stroke-linecap="round" stroke-linejoin="round" d={icons.trophy} />
 												</svg>
 											</div>
 										{/if}
 										<div class="min-w-0 flex-1">
 											<div class="flex items-center gap-2">
-												<h4 class="text-sm font-bold text-white transition-colors group-hover:text-cyan-400">
+												<h4
+													class="text-sm font-bold text-white transition-colors group-hover:text-cyan-400"
+												>
 													{item.data.hero}
 												</h4>
-												<span class="rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold text-amber-400">
+												<span
+													class="rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold text-amber-400"
+												>
 													1st Place
 												</span>
 											</div>
@@ -483,27 +627,41 @@
 											{/if}
 										</div>
 									</a>
-
 								{:else if item.type === 'event_result'}
 									{@const circuit = getCircuit(item.data.circuit)}
 									{@const results = item.data.tournamentResults}
 									<a href="/age-open/{item.data.id}/results" class="group block">
 										<div class="flex items-start gap-4">
-											<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg {circuit.colors.bgLight}">
-												<svg class="h-6 w-6 {circuit.colors.text}" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+											<div
+												class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg {circuit
+													.colors.bgLight}"
+											>
+												<svg
+													class="h-6 w-6 {circuit.colors.text}"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="1.5"
+													viewBox="0 0 24 24"
+												>
 													<path stroke-linecap="round" stroke-linejoin="round" d={icons.trophy} />
 												</svg>
 											</div>
 											<div class="min-w-0 flex-1">
-												<h4 class="text-sm font-bold text-white transition-colors group-hover:text-green-400 sm:text-base">
+												<h4
+													class="text-sm font-bold text-white transition-colors group-hover:text-green-400 sm:text-base"
+												>
 													{item.data.title}
 												</h4>
-												<div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
+												<div
+													class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400"
+												>
 													{#if item.data.location}
 														<span>{item.data.location}</span>
 													{/if}
 													{#if item.data.format}
-														<span class="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-500">{item.data.format}</span>
+														<span class="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-500"
+															>{item.data.format}</span
+														>
 													{/if}
 												</div>
 												<!-- Podium -->
@@ -521,7 +679,9 @@
 																>
 																	{i + 1}
 																</span>
-																<span class="text-xs text-gray-300">{result.playerName || result.player || 'Unknown'}</span>
+																<span class="text-xs text-gray-300"
+																	>{result.playerName || result.player || 'Unknown'}</span
+																>
 																{#if result.hero}
 																	<span class="text-[10px] text-gray-600">({result.hero})</span>
 																{/if}
@@ -532,38 +692,62 @@
 											</div>
 										</div>
 									</a>
-
 								{:else if item.type === 'upcoming_event'}
 									{@const circuit = getCircuit(item.data.circuit)}
 									<a href="/age-open/{item.data.id}" class="group flex items-center gap-4">
 										<!-- Date Badge -->
-										<div class="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg {circuit.colors.bgLight} {circuit.colors.text}">
+										<div
+											class="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg {circuit
+												.colors.bgLight} {circuit.colors.text}"
+										>
 											<span class="text-[10px] font-medium uppercase">
 												{item.data.eventDate
-													? new Date(item.data.eventDate).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
+													? new Date(item.data.eventDate).toLocaleDateString('en-US', {
+															month: 'short',
+															timeZone: 'UTC'
+														})
 													: 'TBD'}
 											</span>
-											<span class="text-lg font-bold leading-none">
+											<span class="text-lg leading-none font-bold">
 												{item.data.eventDate
-													? new Date(item.data.eventDate).toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })
+													? new Date(item.data.eventDate).toLocaleDateString('en-US', {
+															day: 'numeric',
+															timeZone: 'UTC'
+														})
 													: '--'}
 											</span>
 										</div>
 										<div class="min-w-0 flex-1">
-											<h4 class="text-sm font-bold text-white transition-colors group-hover:text-blue-400">
+											<h4
+												class="text-sm font-bold text-white transition-colors group-hover:text-blue-400"
+											>
 												{item.data.title}
 											</h4>
-											<div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
+											<div
+												class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400"
+											>
 												{#if item.data.location}
 													<span class="flex items-center gap-1">
-														<svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" d={icons.mapPin} />
+														<svg
+															class="h-3 w-3"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="2"
+															viewBox="0 0 24 24"
+														>
+															<path
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																d={icons.mapPin}
+															/>
 														</svg>
 														{item.data.location}
 													</span>
 												{/if}
 												{#if item.data.format}
-													<span class="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-500">{item.data.format}</span>
+													<span class="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-gray-500"
+														>{item.data.format}</span
+													>
 												{/if}
 												{#if item.data.circuit}
 													<span class="flex items-center gap-1">
@@ -575,7 +759,9 @@
 										</div>
 										<!-- Registered badge if user has ticket -->
 										{#if upcomingTickets.some((t) => t.eventId === item.data.id)}
-											<span class="hidden shrink-0 rounded-full bg-blue-500/10 px-2.5 py-1 text-[10px] font-semibold text-blue-400 sm:inline-flex">
+											<span
+												class="hidden shrink-0 rounded-full bg-blue-500/10 px-2.5 py-1 text-[10px] font-semibold text-blue-400 sm:inline-flex"
+											>
 												Registered
 											</span>
 										{/if}
@@ -585,12 +771,22 @@
 						</div>
 					{/each}
 				{:else}
-					<div class="rounded-xl border border-dashed border-white/10 bg-gray-900/30 px-6 py-16 text-center">
-						<svg class="mx-auto h-12 w-12 text-gray-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+					<div
+						class="rounded-xl border border-dashed border-white/10 bg-gray-900/30 px-6 py-16 text-center"
+					>
+						<svg
+							class="mx-auto h-12 w-12 text-gray-600"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							viewBox="0 0 24 24"
+						>
 							<path stroke-linecap="round" stroke-linejoin="round" d={icons.newspaper} />
 						</svg>
 						<p class="mt-4 text-sm text-gray-400">No items in this feed yet</p>
-						<p class="mt-1 text-xs text-gray-600">Check back as new content, results, and events are added</p>
+						<p class="mt-1 text-xs text-gray-600">
+							Check back as new content, results, and events are added
+						</p>
 					</div>
 				{/if}
 			</div>
@@ -600,7 +796,9 @@
 				<!-- Your Stats (mobile + desktop, only if standing exists) -->
 				{#if playerStanding}
 					<div class="rounded-xl border border-white/10 bg-gray-900/50 p-5 sm:hidden">
-						<h3 class="mb-3 text-xs font-semibold tracking-wider text-gray-500 uppercase">Your Stats</h3>
+						<h3 class="mb-3 text-xs font-semibold tracking-wider text-gray-500 uppercase">
+							Your Stats
+						</h3>
 						<div class="grid grid-cols-3 gap-3 text-center">
 							<div>
 								<p class="text-lg font-bold text-white">{playerStanding.totalPoints || 0}</p>
@@ -608,29 +806,38 @@
 							</div>
 							<div>
 								<p class="text-lg font-bold text-white">
-									{playerStanding.matchesWon || 0}-{(playerStanding.matchesPlayed || 0) - (playerStanding.matchesWon || 0)}
+									{playerStanding.matchesWon || 0}-{(playerStanding.matchesPlayed || 0) -
+										(playerStanding.matchesWon || 0)}
 								</p>
 								<p class="text-[10px] text-gray-500">Record</p>
 							</div>
 							<div>
-								<p class="text-lg font-bold text-white">{winRate !== null ? `${winRate}%` : '--'}</p>
+								<p class="text-lg font-bold text-white">
+									{winRate !== null ? `${winRate}%` : '--'}
+								</p>
 								<p class="text-[10px] text-gray-500">Win Rate</p>
 							</div>
 						</div>
 					</div>
 
-					<div class="hidden rounded-xl border border-white/10 bg-gray-900/50 p-5 sm:block lg:block">
-						<h3 class="mb-3 text-xs font-semibold tracking-wider text-gray-500 uppercase">Your Stats</h3>
+					<div
+						class="hidden rounded-xl border border-white/10 bg-gray-900/50 p-5 sm:block lg:block"
+					>
+						<h3 class="mb-3 text-xs font-semibold tracking-wider text-gray-500 uppercase">
+							Your Stats
+						</h3>
 						<div class="space-y-3">
 							<div class="flex items-center justify-between">
 								<span class="text-sm text-gray-400">Total Points</span>
-								<span class="text-base font-bold text-white">{playerStanding.totalPoints || 0}</span>
+								<span class="text-base font-bold text-white">{playerStanding.totalPoints || 0}</span
+								>
 							</div>
 							<div class="h-px bg-white/5"></div>
 							<div class="flex items-center justify-between">
 								<span class="text-sm text-gray-400">Match Record</span>
 								<span class="text-sm font-medium text-gray-200">
-									{playerStanding.matchesWon || 0}W - {(playerStanding.matchesPlayed || 0) - (playerStanding.matchesWon || 0)}L
+									{playerStanding.matchesWon || 0}W - {(playerStanding.matchesPlayed || 0) -
+										(playerStanding.matchesWon || 0)}L
 								</span>
 							</div>
 							{#if winRate !== null}
@@ -643,7 +850,9 @@
 							<div class="h-px bg-white/5"></div>
 							<div class="flex items-center justify-between">
 								<span class="text-sm text-gray-400">Season</span>
-								<span class="text-sm font-medium text-gray-200">{playerStanding.season || 'Current'}</span>
+								<span class="text-sm font-medium text-gray-200"
+									>{playerStanding.season || 'Current'}</span
+								>
 							</div>
 						</div>
 						<a
@@ -659,14 +868,21 @@
 				{#if leaderboard.length > 0}
 					<div class="rounded-xl border border-white/10 bg-gray-900/50 p-5">
 						<div class="mb-4 flex items-center justify-between">
-							<h3 class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Leaderboard</h3>
-							<a href="/age-open?tab=standings" class="text-[10px] font-medium text-gray-500 transition-colors hover:text-white">
+							<h3 class="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+								Leaderboard
+							</h3>
+							<a
+								href="/age-open?tab=standings"
+								class="text-[10px] font-medium text-gray-500 transition-colors hover:text-white"
+							>
 								View all
 							</a>
 						</div>
 						<div class="space-y-2">
 							{#each leaderboard as player}
-								<div class="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/5">
+								<div
+									class="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/5"
+								>
 									<!-- Rank -->
 									<span
 										class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold
@@ -681,7 +897,9 @@
 										{player.rank}
 									</span>
 									<!-- Initials avatar -->
-									<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-[10px] font-bold text-gray-300">
+									<div
+										class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-[10px] font-bold text-gray-300"
+									>
 										{player.playerName
 											? player.playerName
 													.split(' ')
@@ -706,29 +924,51 @@
 					<div class="rounded-xl border border-white/10 bg-gray-900/50 p-5">
 						<div class="mb-4 flex items-center justify-between">
 							<h3 class="text-xs font-semibold tracking-wider text-gray-500 uppercase">Upcoming</h3>
-							<a href="/age-open" class="text-[10px] font-medium text-gray-500 transition-colors hover:text-white">
+							<a
+								href="/age-open"
+								class="text-[10px] font-medium text-gray-500 transition-colors hover:text-white"
+							>
 								All events
 							</a>
 						</div>
 						<div class="space-y-3">
 							<!-- User's registered events first -->
 							{#each upcomingTickets as ticket}
-								<a href="/age-open/{ticket.eventId}" class="group flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-white/5">
-									<div class="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded bg-blue-500/10 text-blue-400">
+								<a
+									href="/age-open/{ticket.eventId}"
+									class="group flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-white/5"
+								>
+									<div
+										class="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded bg-blue-500/10 text-blue-400"
+									>
 										<span class="text-[8px] font-medium uppercase">
-											{ticket.eventDate ? new Date(ticket.eventDate).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }) : ''}
+											{ticket.eventDate
+												? new Date(ticket.eventDate).toLocaleDateString('en-US', {
+														month: 'short',
+														timeZone: 'UTC'
+													})
+												: ''}
 										</span>
-										<span class="text-sm font-bold leading-none">
-											{ticket.eventDate ? new Date(ticket.eventDate).toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' }) : '--'}
+										<span class="text-sm leading-none font-bold">
+											{ticket.eventDate
+												? new Date(ticket.eventDate).toLocaleDateString('en-US', {
+														day: 'numeric',
+														timeZone: 'UTC'
+													})
+												: '--'}
 										</span>
 									</div>
 									<div class="min-w-0 flex-1">
-										<p class="truncate text-xs font-medium text-white transition-colors group-hover:text-blue-400">
+										<p
+											class="truncate text-xs font-medium text-white transition-colors group-hover:text-blue-400"
+										>
 											{ticket.eventTitle}
 										</p>
 										<p class="text-[10px] text-gray-500">{ticket.eventLocation || ''}</p>
 									</div>
-									<span class="rounded-full bg-blue-500/10 px-2 py-0.5 text-[9px] font-semibold text-blue-400">
+									<span
+										class="rounded-full bg-blue-500/10 px-2 py-0.5 text-[9px] font-semibold text-blue-400"
+									>
 										Going
 									</span>
 								</a>
@@ -736,17 +976,36 @@
 							<!-- General upcoming -->
 							{#each upcomingEvents.filter((e) => !upcomingTickets.some((t) => t.eventId === e.id)) as evt}
 								{@const circuit = getCircuit(evt.circuit)}
-								<a href="/age-open/{evt.id}" class="group flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-white/5">
-									<div class="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded {circuit.colors.bgLight} {circuit.colors.text}">
+								<a
+									href="/age-open/{evt.id}"
+									class="group flex items-center gap-3 rounded-lg p-1.5 transition-colors hover:bg-white/5"
+								>
+									<div
+										class="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded {circuit
+											.colors.bgLight} {circuit.colors.text}"
+									>
 										<span class="text-[8px] font-medium uppercase">
-											{evt.eventDate ? new Date(evt.eventDate).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }) : ''}
+											{evt.eventDate
+												? new Date(evt.eventDate).toLocaleDateString('en-US', {
+														month: 'short',
+														timeZone: 'UTC'
+													})
+												: ''}
 										</span>
-										<span class="text-sm font-bold leading-none">
-											{evt.eventDate ? new Date(evt.eventDate).toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' }) : '--'}
+										<span class="text-sm leading-none font-bold">
+											{evt.eventDate
+												? new Date(evt.eventDate).toLocaleDateString('en-US', {
+														day: 'numeric',
+														timeZone: 'UTC'
+													})
+												: '--'}
 										</span>
 									</div>
 									<div class="min-w-0 flex-1">
-										<p class="truncate text-xs font-medium text-white transition-colors group-hover:{circuit.colors.text}">
+										<p
+											class="truncate text-xs font-medium text-white transition-colors group-hover:{circuit
+												.colors.text}"
+										>
 											{evt.title}
 										</p>
 										<p class="text-[10px] text-gray-500">{evt.location || ''}</p>
@@ -760,7 +1019,9 @@
 				<!-- Trending Heroes -->
 				{#if trendingHeroes.length > 0}
 					<div class="rounded-xl border border-white/10 bg-gray-900/50 p-5">
-						<h3 class="mb-4 text-xs font-semibold tracking-wider text-gray-500 uppercase">Trending Heroes</h3>
+						<h3 class="mb-4 text-xs font-semibold tracking-wider text-gray-500 uppercase">
+							Trending Heroes
+						</h3>
 						<div class="space-y-2">
 							{#each trendingHeroes as { hero, count }}
 								{@const heroImg = getHeroImage(hero)}
@@ -773,8 +1034,16 @@
 											loading="lazy"
 										/>
 									{:else}
-										<div class="flex h-8 w-8 items-center justify-center rounded-md bg-purple-500/10">
-											<svg class="h-4 w-4 text-purple-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+										<div
+											class="flex h-8 w-8 items-center justify-center rounded-md bg-purple-500/10"
+										>
+											<svg
+												class="h-4 w-4 text-purple-400"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="1.5"
+												viewBox="0 0 24 24"
+											>
 												<path stroke-linecap="round" stroke-linejoin="round" d={icons.fire} />
 											</svg>
 										</div>
@@ -782,7 +1051,9 @@
 									<div class="min-w-0 flex-1">
 										<p class="truncate text-sm font-medium text-gray-200">{hero}</p>
 									</div>
-									<span class="text-xs text-gray-500">{count} {count === 1 ? 'appearance' : 'appearances'}</span>
+									<span class="text-xs text-gray-500"
+										>{count} {count === 1 ? 'appearance' : 'appearances'}</span
+									>
 								</div>
 							{/each}
 						</div>
@@ -791,8 +1062,12 @@
 
 				<!-- Premium CTA (free users only) -->
 				{#if !isPremium}
-					<div class="relative overflow-hidden rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-900/20 via-gray-900 to-purple-900/10 p-5">
-						<div class="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-emerald-500/15 blur-2xl"></div>
+					<div
+						class="relative overflow-hidden rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-900/20 via-gray-900 to-purple-900/10 p-5"
+					>
+						<div
+							class="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-emerald-500/15 blur-2xl"
+						></div>
 						<div class="relative">
 							<div class="mb-2 flex items-center gap-2">
 								<svg class="h-5 w-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">

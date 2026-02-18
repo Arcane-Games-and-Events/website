@@ -55,7 +55,9 @@
 <div class="space-y-4 p-4 lg:p-6">
 	<!-- Success/Error Banners -->
 	{#if successMessage}
-		<div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
+		<div
+			class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400"
+		>
 			{successMessage}
 		</div>
 	{/if}
@@ -326,8 +328,7 @@
 										>Completed</span
 									>
 								{:else}
-									<span
-										class="shrink-0 rounded bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400"
+									<span class="shrink-0 rounded bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400"
 										>Upcoming</span
 									>
 								{/if}
@@ -439,29 +440,25 @@
 															class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-white focus:border-amber-500 focus:outline-none"
 														>
 															<option value="">Select</option>
-															<option
-																value="Skirmish"
-																selected={season.eventType === 'Skirmish'}>Skirmish</option
+															<option value="Skirmish" selected={season.eventType === 'Skirmish'}
+																>Skirmish</option
 															>
 															<option
 																value="Road to Nationals"
 																selected={season.eventType === 'Road to Nationals'}
 																>Road to Nationals</option
 															>
-															<option
-																value="ProQuest"
-																selected={season.eventType === 'ProQuest'}>ProQuest</option
+															<option value="ProQuest" selected={season.eventType === 'ProQuest'}
+																>ProQuest</option
 															>
-															<option
-																value="Pro Tour"
-																selected={season.eventType === 'Pro Tour'}>Pro Tour</option
+															<option value="Pro Tour" selected={season.eventType === 'Pro Tour'}
+																>Pro Tour</option
 															>
 															<option value="Worlds" selected={season.eventType === 'Worlds'}
 																>Worlds</option
 															>
-															<option
-																value="Calling"
-																selected={season.eventType === 'Calling'}>Calling</option
+															<option value="Calling" selected={season.eventType === 'Calling'}
+																>Calling</option
 															>
 															<option
 																value="Battle Hardened"
@@ -476,8 +473,7 @@
 													<div>
 														<label
 															for="edit-start-{season.id}"
-															class="mb-1 block text-xs font-medium text-gray-400"
-															>Start</label
+															class="mb-1 block text-xs font-medium text-gray-400">Start</label
 														>
 														<input
 															id="edit-start-{season.id}"
@@ -504,8 +500,7 @@
 													</div>
 												</div>
 												<div class="mt-3">
-													<span class="mb-1 block text-xs font-medium text-gray-400"
-														>Format(s)</span
+													<span class="mb-1 block text-xs font-medium text-gray-400">Format(s)</span
 													>
 													<div class="flex flex-wrap gap-2">
 														{#each ['Classic Constructed', 'Blitz', 'Silver Age', 'Draft', 'Sealed', 'Team Event', 'Living Legend'] as fmt}
@@ -656,8 +651,7 @@
 										</td>
 										<td class="hidden px-4 py-2 md:table-cell">
 											{#if isActive}
-												<span
-													class="rounded bg-emerald-500/20 px-2 py-0.5 text-xs text-emerald-400"
+												<span class="rounded bg-emerald-500/20 px-2 py-0.5 text-xs text-emerald-400"
 													>Active</span
 												>
 											{:else if isPast}

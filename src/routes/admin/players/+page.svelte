@@ -215,11 +215,15 @@
 		if (form?.success && form?.message) {
 			successMessage = form.message;
 			errorMessage = '';
-			setTimeout(() => { successMessage = ''; }, 5000);
+			setTimeout(() => {
+				successMessage = '';
+			}, 5000);
 		} else if (form?.error) {
 			errorMessage = form.error;
 			successMessage = '';
-			setTimeout(() => { errorMessage = ''; }, 5000);
+			setTimeout(() => {
+				errorMessage = '';
+			}, 5000);
 		}
 	});
 </script>
@@ -235,8 +239,18 @@
 			{#if successMessage}
 				<div class="mb-6 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
 					<div class="flex items-center gap-2">
-						<svg class="h-5 w-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+						<svg
+							class="h-5 w-5 text-emerald-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+							/>
 						</svg>
 						<p class="text-sm font-medium text-emerald-400">{successMessage}</p>
 					</div>
@@ -248,7 +262,12 @@
 				<div class="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3">
 					<div class="flex items-center gap-2">
 						<svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+							/>
 						</svg>
 						<p class="text-sm font-medium text-red-400">{errorMessage}</p>
 					</div>
@@ -312,9 +331,7 @@
 
 					<div class="p-4 sm:p-6">
 						<!-- Filters -->
-						<div
-							class="mb-4 grid grid-cols-1 gap-3 sm:mb-6 sm:grid-cols-2 sm:gap-4 md:grid-cols-4"
-						>
+						<div class="mb-4 grid grid-cols-1 gap-3 sm:mb-6 sm:grid-cols-2 sm:gap-4 md:grid-cols-4">
 							<div class="relative sm:col-span-2 md:col-span-1">
 								<svg
 									class="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-gray-500"
@@ -615,9 +632,7 @@
 								<tbody class="divide-y divide-gray-800/50">
 									{#each paginatedAdminStandings as standing}
 										<tr class="transition-colors hover:bg-gray-800/30">
-											<td class="px-4 py-4 text-sm font-medium text-gray-400"
-												>{standing.season}</td
-											>
+											<td class="px-4 py-4 text-sm font-medium text-gray-400">{standing.season}</td>
 											<td class="px-4 py-4">
 												<span
 													class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap {standing.circuit ===
@@ -838,8 +853,8 @@
 						<div class="mt-6 rounded-lg border border-gray-700 bg-gray-800/30 p-4">
 							<h3 class="mb-3 text-sm font-medium text-gray-300">Player Profiles</h3>
 							<p class="text-xs text-gray-500">
-								Click the "Edit" button to open a player's profile page where you can view and
-								edit all their standings data, including monthly breakdowns.
+								Click the "Edit" button to open a player's profile page where you can view and edit
+								all their standings data, including monthly breakdowns.
 							</p>
 						</div>
 					</div>

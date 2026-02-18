@@ -61,10 +61,7 @@ async function syncSubscriptionBillingDate(currentUser) {
 		}
 
 		// Update the database
-		await db
-			.update(user)
-			.set({ nextBillingDate })
-			.where(eq(user.id, currentUser.id));
+		await db.update(user).set({ nextBillingDate }).where(eq(user.id, currentUser.id));
 
 		return nextBillingDate;
 	} catch (err) {

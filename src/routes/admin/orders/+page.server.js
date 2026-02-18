@@ -269,12 +269,7 @@ export const actions = {
 			const results = await db
 				.select()
 				.from(order)
-				.where(
-					or(
-						ilike(order.userEmail, searchPattern),
-						ilike(order.id, searchPattern)
-					)
-				)
+				.where(or(ilike(order.userEmail, searchPattern), ilike(order.id, searchPattern)))
 				.orderBy(order.createdAt)
 				.limit(100);
 

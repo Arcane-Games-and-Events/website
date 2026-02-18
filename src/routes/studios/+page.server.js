@@ -43,8 +43,16 @@ export async function load({ locals, url }) {
 		const baseConditions = [eq(vod.isPublished, true), eq(vod.status, 'ready')];
 
 		const [countResult, recentVods] = await Promise.all([
-			db.select({ count: sql`count(*)::int` }).from(vod).where(and(...baseConditions)),
-			db.select().from(vod).where(and(...baseConditions)).orderBy(desc(vod.publishedAt)).limit(6)
+			db
+				.select({ count: sql`count(*)::int` })
+				.from(vod)
+				.where(and(...baseConditions)),
+			db
+				.select()
+				.from(vod)
+				.where(and(...baseConditions))
+				.orderBy(desc(vod.publishedAt))
+				.limit(6)
 		]);
 
 		vodTotal = countResult[0]?.count || 0;

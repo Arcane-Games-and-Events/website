@@ -74,7 +74,9 @@
 						Free Now
 					</span>
 				{:else}
-					<span class="rounded-full bg-gray-700/50 px-2 py-0.5 text-[10px] font-semibold text-gray-400 uppercase">
+					<span
+						class="rounded-full bg-gray-700/50 px-2 py-0.5 text-[10px] font-semibold text-gray-400 uppercase"
+					>
 						Free
 					</span>
 				{/if}
@@ -138,9 +140,7 @@
 				<!-- Category & Premium Badge -->
 				<div class="mb-2 flex flex-wrap items-center gap-2">
 					{#if article.tags?.[0]}
-						<span
-							class="text-xs font-semibold tracking-wider text-blue-400 uppercase"
-						>
+						<span class="text-xs font-semibold tracking-wider text-blue-400 uppercase">
 							{article.tags[0].name}
 						</span>
 					{/if}
@@ -298,9 +298,7 @@
 	<a href="/articles/{article.slug}" class="group block">
 		<article class="flex gap-4">
 			{#if article.coverImage?.src}
-				<div
-					class="relative w-28 shrink-0 overflow-hidden rounded-lg bg-gray-800 sm:w-36"
-				>
+				<div class="relative w-28 shrink-0 overflow-hidden rounded-lg bg-gray-800 sm:w-36">
 					<div class="aspect-video">
 						<div class="absolute inset-0 animate-pulse bg-gray-800"></div>
 						<img

@@ -483,7 +483,13 @@
 													</svg>
 													{new Date(data.additionalData.event.eventDate).toLocaleDateString(
 														'en-US',
-														{ weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }
+														{
+															weekday: 'short',
+															month: 'short',
+															day: 'numeric',
+															year: 'numeric',
+															timeZone: 'UTC'
+														}
 													)}
 												</span>
 											{/if}

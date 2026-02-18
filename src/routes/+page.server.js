@@ -281,10 +281,7 @@ export async function load({ setHeaders, url, locals }) {
 					.select()
 					.from(podcastEpisode)
 					.where(
-						and(
-							eq(podcastEpisode.podcastId, podcastInfo.id),
-							eq(podcastEpisode.isPublished, true)
-						)
+						and(eq(podcastEpisode.podcastId, podcastInfo.id), eq(podcastEpisode.isPublished, true))
 					)
 					.orderBy(desc(podcastEpisode.publishedAt))
 					.limit(1);

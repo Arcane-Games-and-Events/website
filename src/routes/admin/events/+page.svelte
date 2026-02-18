@@ -209,9 +209,7 @@
 					</div>
 					<div class="rounded-xl border border-white/10 bg-gray-900/50 p-4">
 						<div class="flex items-center gap-3">
-							<div
-								class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20"
-							>
+							<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20">
 								<svg
 									class="h-5 w-5 text-emerald-400"
 									fill="none"
@@ -240,8 +238,7 @@
 				<div
 					class="flex flex-wrap items-center gap-4 rounded-xl border border-white/10 bg-gray-900/50 px-4 py-3"
 				>
-					<span class="text-xs font-medium tracking-wider text-gray-500 uppercase"
-						>By Circuit:</span
+					<span class="text-xs font-medium tracking-wider text-gray-500 uppercase">By Circuit:</span
 					>
 					{#each data.eventAnalytics?.byCircuit || [] as circuit}
 						<div class="flex items-center gap-2">
@@ -425,7 +422,13 @@
 									<div class="mt-2 flex items-center gap-4 text-xs text-gray-500">
 										<span>
 											{#if event.eventDate}
-												{formatDate(event.eventDate)} @ {new Date(event.eventDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })}
+												{formatDate(event.eventDate)} @ {new Date(
+													event.eventDate
+												).toLocaleTimeString('en-US', {
+													hour: 'numeric',
+													minute: '2-digit',
+													timeZone: 'UTC'
+												})}
 											{:else}
 												No date
 											{/if}
@@ -535,7 +538,13 @@
 											{#if event.eventDate}
 												<div>
 													<span class="text-sm text-gray-300">{formatDate(event.eventDate)}</span>
-													<p class="text-xs text-gray-500">{new Date(event.eventDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })}</p>
+													<p class="text-xs text-gray-500">
+														{new Date(event.eventDate).toLocaleTimeString('en-US', {
+															hour: 'numeric',
+															minute: '2-digit',
+															timeZone: 'UTC'
+														})}
+													</p>
 												</div>
 											{:else}
 												<span

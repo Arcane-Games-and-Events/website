@@ -431,8 +431,7 @@
 					// Check if this listitem contains ONLY a nested list (no text content)
 					// This happens in Lexical when you have nested lists - the nested list
 					// is wrapped in its own listitem, causing an empty bullet
-					const hasOnlyNestedList =
-						children.length === 1 && children[0].type === 'list';
+					const hasOnlyNestedList = children.length === 1 && children[0].type === 'list';
 
 					if (hasOnlyNestedList) {
 						// Don't wrap in <li>, just render the nested list directly
@@ -775,7 +774,13 @@
 					href="/articles"
 					class="absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 text-xs text-white/80 backdrop-blur-sm transition-all hover:bg-black/60 hover:text-white sm:top-4 sm:left-4 sm:text-sm"
 				>
-					<svg class="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+					<svg
+						class="h-3.5 w-3.5 sm:h-4 sm:w-4"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						viewBox="0 0 24 24"
+					>
 						<path
 							stroke-linecap="round"
 							stroke-linejoin="round"
@@ -898,7 +903,9 @@
 		</div>
 
 		<!-- Desktop: Single inline row -->
-		<div class="hidden sm:flex sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2 sm:text-sm sm:text-gray-400">
+		<div
+			class="hidden sm:flex sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2 sm:text-sm sm:text-gray-400"
+		>
 			{#if data.article.author}
 				<a
 					href="/articles/author/{data.article.author.slug}"
@@ -966,7 +973,7 @@
 		<div class="lg:grid lg:grid-cols-[180px_1fr] lg:gap-8 xl:gap-12">
 			<!-- Left Sidebar - Table of Contents (hide in preview mode) -->
 			<aside class="hidden lg:block">
-				<div class="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-hide">
+				<div class="scrollbar-hide sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto">
 					{#if !data.isPreview && tableOfContents.length > 0}
 						<nav>
 							<div class="space-y-1 pb-8">
@@ -974,36 +981,47 @@
 									{#each tableOfContents as heading, index}
 										{#if isVisible(index)}
 											<div
-											class="flex items-center gap-1 transition-all duration-200"
-											style="padding-left: {(heading.level - 2) * 12}px"
-										>
-											{#if hasChildren(index)}
-												<button
-													on:click={() => toggleSection(heading.id)}
-													class="flex h-5 w-5 shrink-0 items-center justify-center rounded text-gray-500 transition-colors hover:text-gray-300"
-													aria-label={expandedSections[heading.id] ? 'Collapse section' : 'Expand section'}
-												>
-													<svg
-														class="h-3 w-3 transition-transform duration-200 {expandedSections[heading.id] ? 'rotate-90' : ''}"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-													</svg>
-												</button>
-											{:else}
-												<span class="w-5 shrink-0"></span>
-											{/if}
-											<a
-												href="#{heading.id}"
-												class="block flex-1 py-1 text-sm leading-normal transition-colors {activeSection ===
-												heading.id
-													? 'text-white'
-													: 'text-gray-500 hover:text-gray-300'}"
+												class="flex items-center gap-1 transition-all duration-200"
+												style="padding-left: {(heading.level - 2) * 12}px"
 											>
-												{heading.text}
-											</a>
+												{#if hasChildren(index)}
+													<button
+														on:click={() => toggleSection(heading.id)}
+														class="flex h-5 w-5 shrink-0 items-center justify-center rounded text-gray-500 transition-colors hover:text-gray-300"
+														aria-label={expandedSections[heading.id]
+															? 'Collapse section'
+															: 'Expand section'}
+													>
+														<svg
+															class="h-3 w-3 transition-transform duration-200 {expandedSections[
+																heading.id
+															]
+																? 'rotate-90'
+																: ''}"
+															fill="none"
+															stroke="currentColor"
+															viewBox="0 0 24 24"
+														>
+															<path
+																stroke-linecap="round"
+																stroke-linejoin="round"
+																stroke-width="2"
+																d="M9 5l7 7-7 7"
+															/>
+														</svg>
+													</button>
+												{:else}
+													<span class="w-5 shrink-0"></span>
+												{/if}
+												<a
+													href="#{heading.id}"
+													class="block flex-1 py-1 text-sm leading-normal transition-colors {activeSection ===
+													heading.id
+														? 'text-white'
+														: 'text-gray-500 hover:text-gray-300'}"
+												>
+													{heading.text}
+												</a>
 											</div>
 										{/if}
 									{/each}
@@ -1020,22 +1038,22 @@
 				<div class="relative">
 					<!-- Article content using Tailwind Typography - The Ringer inspired readability -->
 					<div
-						class="prose prose-lg prose-invert mx-auto max-w-[65ch] lg:prose-xl
-						[&>:first-child]:mt-0
-						prose-p:font-normal prose-p:text-[1.125rem] prose-p:leading-[1.8] prose-p:tracking-[-0.01em] prose-p:text-gray-200
-						prose-headings:scroll-mt-24 prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-white
-						prose-h2:mt-16 prose-h2:mb-6 prose-h2:text-[1.75rem] sm:prose-h2:text-[2rem]
-						prose-h3:mt-12 prose-h3:mb-4 prose-h3:text-[1.375rem] sm:prose-h3:text-[1.5rem]
-						prose-h4:mt-10 prose-h4:mb-3 prose-h4:text-[1.125rem] sm:prose-h4:text-[1.25rem]
-						prose-a:text-blue-400 prose-a:no-underline
-						prose-blockquote:border-l-2 prose-blockquote:border-gray-600 prose-blockquote:pl-6 prose-blockquote:not-italic prose-blockquote:text-gray-300
-						prose-strong:font-semibold prose-strong:text-white
-						prose-em:text-gray-200
-						prose-code:rounded prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:text-orange-400 prose-code:before:content-none prose-code:after:content-none
-						prose-pre:rounded-xl prose-pre:border prose-pre:border-white/10 prose-pre:bg-gray-900
-						prose-li:text-gray-200 prose-li:marker:text-gray-500
-						prose-img:rounded-xl
-						prose-hr:border-gray-800"
+						class="mx-auto prose prose-lg max-w-[65ch] prose-invert lg:prose-xl
+						prose-headings:scroll-mt-24
+						prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-white prose-h2:mt-16 prose-h2:mb-6
+						prose-h2:text-[1.75rem] sm:prose-h2:text-[2rem] prose-h3:mt-12 prose-h3:mb-4
+						prose-h3:text-[1.375rem] sm:prose-h3:text-[1.5rem] prose-h4:mt-10 prose-h4:mb-3
+						prose-h4:text-[1.125rem] sm:prose-h4:text-[1.25rem] prose-p:text-[1.125rem] prose-p:leading-[1.8]
+						prose-p:font-normal prose-p:tracking-[-0.01em] prose-p:text-gray-200 prose-a:text-blue-400
+						prose-a:no-underline prose-blockquote:border-l-2
+						prose-blockquote:border-gray-600 prose-blockquote:pl-6 prose-blockquote:text-gray-300 prose-blockquote:not-italic prose-strong:font-semibold
+						prose-strong:text-white prose-em:text-gray-200
+						prose-code:rounded
+						prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:text-orange-400 prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-xl
+						prose-pre:border prose-pre:border-white/10 prose-pre:bg-gray-900 prose-li:text-gray-200
+						prose-li:marker:text-gray-500 prose-img:rounded-xl
+						prose-hr:border-gray-800
+						[&>:first-child]:mt-0"
 					>
 						{#if data.article.content}
 							{#if renderBlocks.length > 0}
@@ -1421,11 +1439,23 @@
 			class="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-hidden rounded-t-3xl bg-gray-900 shadow-2xl ring-1 ring-white/10"
 		>
 			<!-- Header -->
-			<div class="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-gray-900 px-5 py-4">
+			<div
+				class="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-gray-900 px-5 py-4"
+			>
 				<div class="flex items-center gap-3">
 					<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20">
-						<svg class="h-4 w-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+						<svg
+							class="h-4 w-4 text-blue-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M4 6h16M4 10h16M4 14h16M4 18h16"
+							/>
 						</svg>
 					</div>
 					<div>
@@ -1439,7 +1469,12 @@
 					aria-label="Close"
 				>
 					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/>
 					</svg>
 				</button>
 			</div>
@@ -1457,7 +1492,10 @@
 					{#each tableOfContents as heading, index}
 						{#if isVisible(index)}
 							<div
-								class="group flex items-center gap-1 rounded-lg transition-all duration-200 {activeSection === heading.id ? 'bg-blue-500/20' : 'hover:bg-white/5'}"
+								class="group flex items-center gap-1 rounded-lg transition-all duration-200 {activeSection ===
+								heading.id
+									? 'bg-blue-500/20'
+									: 'hover:bg-white/5'}"
 								style="margin-left: {(heading.level - 2) * 12}px"
 							>
 								<!-- Expand/collapse button for sections with children -->
@@ -1465,29 +1503,47 @@
 									<button
 										on:click={() => toggleSection(heading.id)}
 										class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-white/10 hover:text-gray-300"
-										aria-label={expandedSections[heading.id] ? 'Collapse section' : 'Expand section'}
+										aria-label={expandedSections[heading.id]
+											? 'Collapse section'
+											: 'Expand section'}
 									>
 										<svg
-											class="h-3.5 w-3.5 transition-transform duration-200 {expandedSections[heading.id] ? 'rotate-90' : ''}"
+											class="h-3.5 w-3.5 transition-transform duration-200 {expandedSections[
+												heading.id
+											]
+												? 'rotate-90'
+												: ''}"
 											fill="none"
 											stroke="currentColor"
 											viewBox="0 0 24 24"
 										>
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M9 5l7 7-7 7"
+											/>
 										</svg>
 									</button>
 								{:else}
 									<!-- Level indicator dot -->
 									<div class="flex h-8 w-8 shrink-0 items-center justify-center">
-										<span class="h-1.5 w-1.5 rounded-full {activeSection === heading.id ? 'bg-blue-400' : 'bg-gray-600 group-hover:bg-gray-500'}"></span>
+										<span
+											class="h-1.5 w-1.5 rounded-full {activeSection === heading.id
+												? 'bg-blue-400'
+												: 'bg-gray-600 group-hover:bg-gray-500'}"
+										></span>
 									</div>
 								{/if}
 								<a
 									href="#{heading.id}"
 									on:click={() => (mobileTocOpen = false)}
-									class="block flex-1 py-2.5 pr-3 text-[15px] leading-snug transition-colors {activeSection === heading.id
+									class="block flex-1 py-2.5 pr-3 text-[15px] leading-snug transition-colors {activeSection ===
+									heading.id
 										? 'font-medium text-blue-400'
-										: 'text-gray-400 group-hover:text-white'} {heading.level === 2 ? 'font-medium' : ''}"
+										: 'text-gray-400 group-hover:text-white'} {heading.level === 2
+										? 'font-medium'
+										: ''}"
 								>
 									{heading.text}
 								</a>

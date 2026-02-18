@@ -73,9 +73,15 @@
 
 <svelte:head>
 	<title>{vodItem.title} - AGE Studios</title>
-	<meta name="description" content={vodItem.description || `Watch ${vodItem.title} on AGE Studios`} />
+	<meta
+		name="description"
+		content={vodItem.description || `Watch ${vodItem.title} on AGE Studios`}
+	/>
 	{#if canWatch}
-		<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@mux/mux-player@3/dist/mux-player.mjs" />
+		<link
+			rel="modulepreload"
+			href="https://cdn.jsdelivr.net/npm/@mux/mux-player@3/dist/mux-player.mjs"
+		/>
 	{/if}
 </svelte:head>
 
@@ -109,7 +115,8 @@
 							default-hidden-captions
 							forward-seek-offset="10"
 							backward-seek-offset="10"
-							style="aspect-ratio: {vodItem.aspectRatio || '16/9'}; width: 100%; border-radius: 0.75rem;"
+							style="aspect-ratio: {vodItem.aspectRatio ||
+								'16/9'}; width: 100%; border-radius: 0.75rem;"
 						></mux-player>
 					{:else}
 						<!-- Paywall / Premium CTA -->
@@ -117,24 +124,37 @@
 							<!-- Blurred thumbnail background -->
 							{#if vodItem.muxPlaybackId}
 								<img
-									src="https://image.mux.com/{vodItem.muxPlaybackId}/thumbnail.webp?width=960&height=540&fit_mode=smartcrop{vodThumbnailToken ? `&token=${vodThumbnailToken}` : ''}"
+									src="https://image.mux.com/{vodItem.muxPlaybackId}/thumbnail.webp?width=960&height=540&fit_mode=smartcrop{vodThumbnailToken
+										? `&token=${vodThumbnailToken}`
+										: ''}"
 									alt=""
-									class="h-full w-full object-cover blur-xl brightness-50 scale-110"
+									class="h-full w-full scale-110 object-cover blur-xl brightness-50"
 								/>
 							{:else}
 								<div class="h-full w-full bg-gradient-to-br from-gray-800 to-gray-900"></div>
 							{/if}
 
 							<!-- Premium overlay -->
-							<div class="absolute inset-0 flex flex-col items-center justify-center bg-black/40 px-4 py-4 text-center sm:p-6">
-								<div class="mb-2 flex h-10 w-10 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 sm:mb-4 sm:h-16 sm:w-16">
-									<svg class="h-5 w-5 text-emerald-400 sm:h-8 sm:w-8" fill="currentColor" viewBox="0 0 24 24">
+							<div
+								class="absolute inset-0 flex flex-col items-center justify-center bg-black/40 px-4 py-4 text-center sm:p-6"
+							>
+								<div
+									class="mb-2 flex h-10 w-10 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 sm:mb-4 sm:h-16 sm:w-16"
+								>
+									<svg
+										class="h-5 w-5 text-emerald-400 sm:h-8 sm:w-8"
+										fill="currentColor"
+										viewBox="0 0 24 24"
+									>
 										<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 									</svg>
 								</div>
-								<h3 class="mb-1 text-sm font-bold text-white sm:mb-2 sm:text-xl">Premium Content</h3>
+								<h3 class="mb-1 text-sm font-bold text-white sm:mb-2 sm:text-xl">
+									Premium Content
+								</h3>
 								<p class="mb-3 max-w-sm text-xs text-gray-300 sm:mb-5 sm:text-sm">
-									This VOD is available exclusively for AGE Premium members. Subscribe to unlock all tournament recordings.
+									This VOD is available exclusively for AGE Premium members. Subscribe to unlock all
+									tournament recordings.
 								</p>
 								<a
 									href="/premium"
@@ -147,7 +167,10 @@
 								</a>
 								{#if !data.user}
 									<p class="mt-2 text-[10px] text-gray-500 sm:mt-3 sm:text-xs">
-										Already a member? <a href="/login" class="text-emerald-400 hover:text-emerald-300">Log in</a>
+										Already a member? <a
+											href="/login"
+											class="text-emerald-400 hover:text-emerald-300">Log in</a
+										>
 									</p>
 								{/if}
 							</div>
@@ -166,8 +189,18 @@
 								{/if}
 								{#if vodItem.duration}
 									<span class="flex items-center gap-1">
-										<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+										<svg
+											class="h-3.5 w-3.5"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.5"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+											/>
 										</svg>
 										{formatDuration(vodItem.duration)}
 									</span>
@@ -180,17 +213,23 @@
 						<!-- Badges -->
 						<div class="flex flex-wrap gap-2">
 							{#if vodItem.player1Hero}
-								<span class="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-gray-300">
+								<span
+									class="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-gray-300"
+								>
 									{vodItem.player1Hero}
 								</span>
 							{/if}
 							{#if vodItem.player2Hero}
-								<span class="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-gray-300">
+								<span
+									class="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-gray-300"
+								>
 									{vodItem.player2Hero}
 								</span>
 							{/if}
 							{#if vodItem.isPremium}
-								<span class="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
+								<span
+									class="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400"
+								>
 									<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
 										<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 									</svg>
@@ -202,11 +241,12 @@
 
 					{#if vodItem.description}
 						<div class="mt-4 rounded-xl border border-white/5 bg-gray-900/40 p-4">
-							<p class="text-sm leading-relaxed text-gray-300 whitespace-pre-line">{vodItem.description}</p>
+							<p class="text-sm leading-relaxed whitespace-pre-line text-gray-300">
+								{vodItem.description}
+							</p>
 						</div>
 					{/if}
-
-					</div>
+				</div>
 			</div>
 
 			<!-- Sidebar (1/3) -->
@@ -214,7 +254,9 @@
 				<!-- Related VODs -->
 				{#if relatedVods.length > 0}
 					<div>
-						<h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-400 uppercase">Related Videos</h3>
+						<h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-400 uppercase">
+							Related Videos
+						</h3>
 						<div class="space-y-3">
 							{#each relatedVods as related (related.id)}
 								<a
@@ -224,7 +266,9 @@
 									<div class="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-gray-800">
 										{#if related.muxPlaybackId}
 											<img
-												src="https://image.mux.com/{related.muxPlaybackId}/thumbnail.webp?width=224&height=128&fit_mode=smartcrop{related.thumbnailToken ? `&token=${related.thumbnailToken}` : ''}"
+												src="https://image.mux.com/{related.muxPlaybackId}/thumbnail.webp?width=224&height=128&fit_mode=smartcrop{related.thumbnailToken
+													? `&token=${related.thumbnailToken}`
+													: ''}"
 												alt=""
 												class="h-full w-full object-cover"
 												loading="lazy"
@@ -237,12 +281,16 @@
 											</div>
 										{/if}
 										{#if related.duration}
-											<div class="absolute bottom-1 right-1 rounded bg-black/80 px-1 py-0.5 text-[10px] font-medium text-white">
+											<div
+												class="absolute right-1 bottom-1 rounded bg-black/80 px-1 py-0.5 text-[10px] font-medium text-white"
+											>
 												{formatDuration(related.duration)}
 											</div>
 										{/if}
 										{#if related.isPremium}
-											<div class="absolute top-1 left-1 flex h-4 w-4 items-center justify-center rounded bg-emerald-500/90">
+											<div
+												class="absolute top-1 left-1 flex h-4 w-4 items-center justify-center rounded bg-emerald-500/90"
+											>
 												<svg class="h-2.5 w-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
 													<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 												</svg>
@@ -250,7 +298,9 @@
 										{/if}
 									</div>
 									<div class="min-w-0 flex-1">
-										<h4 class="line-clamp-2 text-sm font-medium text-white transition-colors group-hover:text-red-400">
+										<h4
+											class="line-clamp-2 text-sm font-medium text-white transition-colors group-hover:text-red-400"
+										>
 											{related.title}
 										</h4>
 										<div class="mt-1 flex items-center gap-2 text-xs text-gray-500">
@@ -292,7 +342,13 @@
 					class="group flex items-center gap-3 rounded-xl border border-white/10 bg-gray-900/50 p-4 transition-all hover:border-white/20"
 				>
 					<div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-800">
-						<svg class="h-4 w-4 text-gray-400 transition-colors group-hover:text-white" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+						<svg
+							class="h-4 w-4 text-gray-400 transition-colors group-hover:text-white"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							viewBox="0 0 24 24"
+						>
 							<path stroke-linecap="round" stroke-linejoin="round" d={icons.playCircle} />
 						</svg>
 					</div>
@@ -300,7 +356,13 @@
 						<span class="text-sm font-medium text-white">Browse All VODs</span>
 						<p class="text-xs text-gray-500">Back to Studios</p>
 					</div>
-					<svg class="h-4 w-4 text-gray-500 transition-colors group-hover:text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+					<svg
+						class="h-4 w-4 text-gray-500 transition-colors group-hover:text-white"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						viewBox="0 0 24 24"
+					>
 						<path stroke-linecap="round" stroke-linejoin="round" d={icons.arrowRight} />
 					</svg>
 				</a>
@@ -310,7 +372,11 @@
 </div>
 
 {#if canWatch}
-	<script src="https://cdn.jsdelivr.net/npm/@mux/mux-player@3/dist/mux-player.mjs" type="module" async></script>
+	<script
+		src="https://cdn.jsdelivr.net/npm/@mux/mux-player@3/dist/mux-player.mjs"
+		type="module"
+		async
+	></script>
 {/if}
 
 <style>

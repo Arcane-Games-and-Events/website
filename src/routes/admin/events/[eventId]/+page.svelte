@@ -497,7 +497,7 @@
 							name="status"
 							value={displayStatus}
 							onchange={() => statusForm.submit()}
-							class="rounded-lg border border-white/10 bg-gray-800 py-1.5 pl-3 pr-8 text-sm font-medium transition-colors hover:bg-gray-700 focus:ring-2 focus:ring-cyan-500 focus:outline-none {displayStatus ===
+							class="rounded-lg border border-white/10 bg-gray-800 py-1.5 pr-8 pl-3 text-sm font-medium transition-colors hover:bg-gray-700 focus:ring-2 focus:ring-cyan-500 focus:outline-none {displayStatus ===
 							'completed'
 								? 'text-green-400'
 								: displayStatus === 'in_progress'

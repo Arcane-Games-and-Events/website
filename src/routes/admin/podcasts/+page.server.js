@@ -13,10 +13,7 @@ export async function load({ locals }) {
 	let podcasts = [];
 	let podcastEpisodes = [];
 	try {
-		podcasts = await db
-			.select()
-			.from(podcast)
-			.orderBy(podcast.sortOrder, podcast.createdAt);
+		podcasts = await db.select().from(podcast).orderBy(podcast.sortOrder, podcast.createdAt);
 
 		podcastEpisodes = await db
 			.select()
@@ -266,11 +263,7 @@ export const actions = {
 		}
 
 		// Get podcast with playlist URL
-		const [podcastData] = await db
-			.select()
-			.from(podcast)
-			.where(eq(podcast.id, podcastId))
-			.limit(1);
+		const [podcastData] = await db.select().from(podcast).where(eq(podcast.id, podcastId)).limit(1);
 
 		if (!podcastData?.youtubePlaylistUrl) {
 			return fail(400, { error: 'Podcast has no YouTube playlist URL' });
@@ -387,10 +380,7 @@ export const actions = {
 									`${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 								);
 							} else {
-								videoDurations.set(
-									video.id,
-									`${m}:${s.toString().padStart(2, '0')}`
-								);
+								videoDurations.set(video.id, `${m}:${s.toString().padStart(2, '0')}`);
 							}
 						}
 					}
@@ -491,7 +481,9 @@ export const actions = {
 			};
 		} catch (err) {
 			console.error('Error fetching YouTube metadata:', err);
-			return fail(500, { error: 'Failed to fetch video metadata. Make sure the URL is a valid public YouTube video.' });
+			return fail(500, {
+				error: 'Failed to fetch video metadata. Make sure the URL is a valid public YouTube video.'
+			});
 		}
 	}
 };

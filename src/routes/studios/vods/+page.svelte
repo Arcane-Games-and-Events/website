@@ -16,11 +16,7 @@
 	let showFilters = false;
 
 	// Count active filters
-	$: activeFilterCount = [
-		filters.q,
-		filters.event,
-		filters.hero
-	].filter(Boolean).length;
+	$: activeFilterCount = [filters.q, filters.event, filters.hero].filter(Boolean).length;
 
 	// Debounced search
 	let searchTimeout;
@@ -141,12 +137,24 @@
 				onclick={() => (showFilters = !showFilters)}
 				class="flex items-center gap-1.5 rounded-lg border border-white/10 bg-gray-900/60 px-3 py-2 text-xs text-gray-300 transition-colors hover:border-white/20 hover:text-white sm:text-sm lg:hidden"
 			>
-				<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+				<svg
+					class="h-4 w-4"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.5"
+					viewBox="0 0 24 24"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75"
+					/>
 				</svg>
 				Filters
 				{#if activeFilterCount > 0}
-					<span class="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+					<span
+						class="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white"
+					>
 						{activeFilterCount}
 					</span>
 				{/if}
@@ -159,9 +167,17 @@
 				<div class="space-y-4">
 					<!-- Search -->
 					<div>
-						<label for="mobile-search" class="mb-1.5 block text-xs font-medium text-gray-400">Search</label>
+						<label for="mobile-search" class="mb-1.5 block text-xs font-medium text-gray-400"
+							>Search</label
+						>
 						<div class="relative">
-							<svg class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+							<svg
+								class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-500"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.5"
+								viewBox="0 0 24 24"
+							>
 								<path stroke-linecap="round" stroke-linejoin="round" d={icons.magnifyingGlass} />
 							</svg>
 							<input
@@ -170,19 +186,21 @@
 								placeholder="Search by title or player..."
 								value={filters.q}
 								oninput={handleSearch}
-								class="w-full rounded-lg border border-white/10 bg-gray-800/60 py-2 pr-4 pl-9 text-sm text-white placeholder-gray-500 focus:border-red-500/50 focus:outline-none focus:ring-1 focus:ring-red-500/50"
+								class="w-full rounded-lg border border-white/10 bg-gray-800/60 py-2 pr-4 pl-9 text-sm text-white placeholder-gray-500 focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 focus:outline-none"
 							/>
 						</div>
 					</div>
 
 					<!-- Sort -->
 					<div>
-						<label for="mobile-sort" class="mb-1.5 block text-xs font-medium text-gray-400">Sort by</label>
+						<label for="mobile-sort" class="mb-1.5 block text-xs font-medium text-gray-400"
+							>Sort by</label
+						>
 						<select
 							id="mobile-sort"
 							value={filters.sort}
 							onchange={(e) => updateFilters({ sort: e.target.value })}
-							class="w-full rounded-lg border border-white/10 bg-gray-800/60 px-3 py-2 text-sm text-white focus:border-red-500/50 focus:outline-none focus:ring-1 focus:ring-red-500/50"
+							class="w-full rounded-lg border border-white/10 bg-gray-800/60 px-3 py-2 text-sm text-white focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 focus:outline-none"
 						>
 							<option value="newest">Newest</option>
 							<option value="oldest">Oldest</option>
@@ -194,12 +212,14 @@
 						<!-- Hero -->
 						{#if heroes.length > 0}
 							<div>
-								<label for="mobile-hero" class="mb-1.5 block text-xs font-medium text-gray-400">Hero</label>
+								<label for="mobile-hero" class="mb-1.5 block text-xs font-medium text-gray-400"
+									>Hero</label
+								>
 								<select
 									id="mobile-hero"
 									value={filters.hero}
 									onchange={(e) => updateFilters({ hero: e.target.value || null })}
-									class="w-full rounded-lg border border-white/10 bg-gray-800/60 px-3 py-2 text-sm text-white focus:border-red-500/50 focus:outline-none focus:ring-1 focus:ring-red-500/50"
+									class="w-full rounded-lg border border-white/10 bg-gray-800/60 px-3 py-2 text-sm text-white focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 focus:outline-none"
 								>
 									<option value="">All Heroes</option>
 									{#each heroes as h}
@@ -212,12 +232,14 @@
 						<!-- Event -->
 						{#if events.length > 0}
 							<div>
-								<label for="mobile-event" class="mb-1.5 block text-xs font-medium text-gray-400">Event</label>
+								<label for="mobile-event" class="mb-1.5 block text-xs font-medium text-gray-400"
+									>Event</label
+								>
 								<select
 									id="mobile-event"
 									value={filters.event}
 									onchange={(e) => updateFilters({ event: e.target.value || null })}
-									class="w-full rounded-lg border border-white/10 bg-gray-800/60 px-3 py-2 text-sm text-white focus:border-red-500/50 focus:outline-none focus:ring-1 focus:ring-red-500/50"
+									class="w-full rounded-lg border border-white/10 bg-gray-800/60 px-3 py-2 text-sm text-white focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 focus:outline-none"
 								>
 									<option value="">All Events</option>
 									{#each events as ev}
@@ -250,7 +272,13 @@
 						class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-gray-900/60 px-2.5 py-1 text-xs text-gray-300 transition-colors hover:border-red-500/30 hover:text-white"
 					>
 						"{filters.q}"
-						<svg class="h-3 w-3 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+						<svg
+							class="h-3 w-3 text-gray-500"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							viewBox="0 0 24 24"
+						>
 							<path stroke-linecap="round" stroke-linejoin="round" d={icons.xMark} />
 						</svg>
 					</button>
@@ -261,7 +289,13 @@
 						class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-gray-900/60 px-2.5 py-1 text-xs text-gray-300 transition-colors hover:border-red-500/30 hover:text-white"
 					>
 						{filters.hero}
-						<svg class="h-3 w-3 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+						<svg
+							class="h-3 w-3 text-gray-500"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							viewBox="0 0 24 24"
+						>
 							<path stroke-linecap="round" stroke-linejoin="round" d={icons.xMark} />
 						</svg>
 					</button>
@@ -272,7 +306,13 @@
 						class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-gray-900/60 px-2.5 py-1 text-xs text-gray-300 transition-colors hover:border-red-500/30 hover:text-white"
 					>
 						{getEventTitle(filters.event)}
-						<svg class="h-3 w-3 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+						<svg
+							class="h-3 w-3 text-gray-500"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							viewBox="0 0 24 24"
+						>
 							<path stroke-linecap="round" stroke-linejoin="round" d={icons.xMark} />
 						</svg>
 					</button>
@@ -301,35 +341,55 @@
 								<div class="relative aspect-video overflow-hidden bg-gray-800">
 									{#if vodItem.muxPlaybackId}
 										<img
-											src="https://image.mux.com/{vodItem.muxPlaybackId}/thumbnail.webp?width=480&height=270&fit_mode=smartcrop{vodItem.thumbnailToken ? `&token=${vodItem.thumbnailToken}` : ''}"
+											src="https://image.mux.com/{vodItem.muxPlaybackId}/thumbnail.webp?width=480&height=270&fit_mode=smartcrop{vodItem.thumbnailToken
+												? `&token=${vodItem.thumbnailToken}`
+												: ''}"
 											alt=""
 											class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
 											loading="lazy"
 										/>
 									{:else}
 										<div class="flex h-full items-center justify-center">
-											<svg class="h-10 w-10 text-gray-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+											<svg
+												class="h-10 w-10 text-gray-600"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="1.5"
+												viewBox="0 0 24 24"
+											>
 												<path stroke-linecap="round" stroke-linejoin="round" d={icons.playCircle} />
 											</svg>
 										</div>
 									{/if}
 									<!-- Play overlay -->
-									<div class="absolute inset-0 flex items-center justify-center bg-black/0 transition-all group-hover:bg-black/20">
-										<div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/90 opacity-0 shadow-lg transition-all group-hover:opacity-100 group-hover:scale-110">
-											<svg class="h-5 w-5 translate-x-0.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+									<div
+										class="absolute inset-0 flex items-center justify-center bg-black/0 transition-all group-hover:bg-black/20"
+									>
+										<div
+											class="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/90 opacity-0 shadow-lg transition-all group-hover:scale-110 group-hover:opacity-100"
+										>
+											<svg
+												class="h-5 w-5 translate-x-0.5 text-white"
+												fill="currentColor"
+												viewBox="0 0 24 24"
+											>
 												<path d="M8 5v14l11-7z" />
 											</svg>
 										</div>
 									</div>
 									<!-- Duration badge -->
 									{#if vodItem.duration}
-										<div class="absolute bottom-2 right-2 rounded bg-black/80 px-1.5 py-0.5 text-xs font-medium text-white">
+										<div
+											class="absolute right-2 bottom-2 rounded bg-black/80 px-1.5 py-0.5 text-xs font-medium text-white"
+										>
 											{formatDuration(vodItem.duration)}
 										</div>
 									{/if}
 									<!-- Premium badge -->
 									{#if vodItem.isPremium}
-										<div class="absolute top-2 left-2 flex items-center gap-1 rounded bg-emerald-500/90 px-1.5 py-0.5 text-xs font-semibold text-white">
+										<div
+											class="absolute top-2 left-2 flex items-center gap-1 rounded bg-emerald-500/90 px-1.5 py-0.5 text-xs font-semibold text-white"
+										>
 											<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
 												<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
 											</svg>
@@ -339,12 +399,18 @@
 								</div>
 								<!-- Info -->
 								<div class="min-w-0 overflow-hidden p-2 sm:p-3">
-									<h3 class="mb-0.5 line-clamp-2 text-xs font-semibold leading-tight text-white transition-colors group-hover:text-red-400 sm:mb-1 sm:text-sm">
+									<h3
+										class="mb-0.5 line-clamp-2 text-xs leading-tight font-semibold text-white transition-colors group-hover:text-red-400 sm:mb-1 sm:text-sm"
+									>
 										{vodItem.title}
 									</h3>
-									<div class="flex flex-wrap items-center gap-1 text-[10px] text-gray-500 sm:gap-2 sm:text-xs">
+									<div
+										class="flex flex-wrap items-center gap-1 text-[10px] text-gray-500 sm:gap-2 sm:text-xs"
+									>
 										{#if vodItem.player1Name && vodItem.player2Name}
-											<span class="hidden rounded bg-white/5 px-1.5 py-0.5 sm:inline">{vodItem.player1Name} vs {vodItem.player2Name}</span>
+											<span class="hidden rounded bg-white/5 px-1.5 py-0.5 sm:inline"
+												>{vodItem.player1Name} vs {vodItem.player2Name}</span
+											>
 										{/if}
 										{#if vodItem.player1Hero || vodItem.player2Hero}
 											<span class="hidden text-gray-600 md:inline">
@@ -380,7 +446,8 @@
 								{:else}
 									<button
 										onclick={() => updateFilters({ page: p })}
-										class="h-8 min-w-8 rounded-lg text-xs transition-colors sm:text-sm {p === pagination.page
+										class="h-8 min-w-8 rounded-lg text-xs transition-colors sm:text-sm {p ===
+										pagination.page
 											? 'border border-red-500/50 bg-red-500/10 font-semibold text-red-400'
 											: 'border border-white/10 text-gray-400 hover:bg-white/5 hover:text-white'}"
 									>
@@ -402,8 +469,16 @@
 					{/if}
 				{:else if filters.q || filters.hero || filters.event}
 					<!-- No results with active filters -->
-					<div class="flex flex-col items-center justify-center rounded-xl border border-white/5 bg-gray-900/40 px-4 py-16 text-center">
-						<svg class="mb-3 h-12 w-12 text-gray-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+					<div
+						class="flex flex-col items-center justify-center rounded-xl border border-white/5 bg-gray-900/40 px-4 py-16 text-center"
+					>
+						<svg
+							class="mb-3 h-12 w-12 text-gray-600"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							viewBox="0 0 24 24"
+						>
 							<path stroke-linecap="round" stroke-linejoin="round" d={icons.magnifyingGlass} />
 						</svg>
 						<p class="text-sm font-medium text-gray-400">No VODs match your filters</p>
@@ -417,12 +492,22 @@
 					</div>
 				{:else}
 					<!-- No VODs at all -->
-					<div class="flex flex-col items-center justify-center rounded-xl border border-white/5 bg-gray-900/40 px-4 py-16 text-center">
-						<svg class="mb-3 h-12 w-12 text-gray-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+					<div
+						class="flex flex-col items-center justify-center rounded-xl border border-white/5 bg-gray-900/40 px-4 py-16 text-center"
+					>
+						<svg
+							class="mb-3 h-12 w-12 text-gray-600"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							viewBox="0 0 24 24"
+						>
 							<path stroke-linecap="round" stroke-linejoin="round" d={icons.playCircle} />
 						</svg>
 						<p class="text-sm font-medium text-gray-400">Tournament VODs coming soon</p>
-						<p class="mt-1 text-xs text-gray-500">Premium members will get full access to all tournament recordings</p>
+						<p class="mt-1 text-xs text-gray-500">
+							Premium members will get full access to all tournament recordings
+						</p>
 					</div>
 				{/if}
 			</div>
@@ -433,7 +518,13 @@
 				<div class="rounded-xl border border-white/10 bg-gray-900/50 p-4">
 					<h3 class="mb-3 text-xs font-semibold tracking-wide text-gray-400 uppercase">Search</h3>
 					<div class="relative">
-						<svg class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+						<svg
+							class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-500"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							viewBox="0 0 24 24"
+						>
 							<path stroke-linecap="round" stroke-linejoin="round" d={icons.magnifyingGlass} />
 						</svg>
 						<input
@@ -441,7 +532,7 @@
 							placeholder="Title or player name..."
 							value={filters.q}
 							oninput={handleSearch}
-							class="w-full rounded-lg border border-white/10 bg-gray-800/60 py-2 pr-4 pl-9 text-sm text-white placeholder-gray-500 focus:border-red-500/50 focus:outline-none focus:ring-1 focus:ring-red-500/50"
+							class="w-full rounded-lg border border-white/10 bg-gray-800/60 py-2 pr-4 pl-9 text-sm text-white placeholder-gray-500 focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 focus:outline-none"
 						/>
 					</div>
 				</div>
@@ -453,7 +544,8 @@
 						{#each [{ value: 'newest', label: 'Newest First' }, { value: 'oldest', label: 'Oldest First' }, { value: 'longest', label: 'Longest First' }] as option}
 							<button
 								onclick={() => updateFilters({ sort: option.value })}
-								class="w-full rounded-lg px-3 py-2 text-left text-sm transition-colors {filters.sort === option.value
+								class="w-full rounded-lg px-3 py-2 text-left text-sm transition-colors {filters.sort ===
+								option.value
 									? 'bg-red-500/10 font-medium text-red-400'
 									: 'text-gray-400 hover:bg-white/5 hover:text-white'}"
 							>
@@ -470,7 +562,7 @@
 						<select
 							value={filters.hero}
 							onchange={(e) => updateFilters({ hero: e.target.value || null })}
-							class="w-full rounded-lg border border-white/10 bg-gray-800/60 px-3 py-2 text-sm text-white focus:border-red-500/50 focus:outline-none focus:ring-1 focus:ring-red-500/50"
+							class="w-full rounded-lg border border-white/10 bg-gray-800/60 px-3 py-2 text-sm text-white focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 focus:outline-none"
 						>
 							<option value="">All Heroes</option>
 							{#each heroes as h}
@@ -487,7 +579,7 @@
 						<select
 							value={filters.event}
 							onchange={(e) => updateFilters({ event: e.target.value || null })}
-							class="w-full rounded-lg border border-white/10 bg-gray-800/60 px-3 py-2 text-sm text-white focus:border-red-500/50 focus:outline-none focus:ring-1 focus:ring-red-500/50"
+							class="w-full rounded-lg border border-white/10 bg-gray-800/60 px-3 py-2 text-sm text-white focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 focus:outline-none"
 						>
 							<option value="">All Events</option>
 							{#each events as ev}
@@ -509,26 +601,30 @@
 
 				<!-- Premium CTA -->
 				{#if !isPremiumUser}
-				<div class="relative isolate overflow-hidden rounded-xl border border-emerald-500/20 bg-gray-900/50 p-4">
-					<div class="pointer-events-none absolute top-0 right-0 h-24 w-24 rounded-full bg-emerald-500/10 blur-2xl"></div>
-					<div class="relative">
-						<div class="mb-2 flex items-center gap-2">
-							<svg class="h-4 w-4 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
-								<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
-							</svg>
-							<h3 class="text-sm font-semibold text-white">AGE Premium</h3>
+					<div
+						class="relative isolate overflow-hidden rounded-xl border border-emerald-500/20 bg-gray-900/50 p-4"
+					>
+						<div
+							class="pointer-events-none absolute top-0 right-0 h-24 w-24 rounded-full bg-emerald-500/10 blur-2xl"
+						></div>
+						<div class="relative">
+							<div class="mb-2 flex items-center gap-2">
+								<svg class="h-4 w-4 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+									<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
+								</svg>
+								<h3 class="text-sm font-semibold text-white">AGE Premium</h3>
+							</div>
+							<p class="mb-3 text-xs text-gray-400">
+								Unlock all tournament VODs and premium content.
+							</p>
+							<a
+								href="/premium"
+								class="block rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 py-2 text-center text-xs font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:from-emerald-400 hover:to-green-500"
+							>
+								Get Premium
+							</a>
 						</div>
-						<p class="mb-3 text-xs text-gray-400">
-							Unlock all tournament VODs and premium content.
-						</p>
-						<a
-							href="/premium"
-							class="block rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 py-2 text-center text-xs font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:from-emerald-400 hover:to-green-500"
-						>
-							Get Premium
-						</a>
 					</div>
-				</div>
 				{/if}
 
 				<!-- Back to Studios -->
@@ -537,7 +633,13 @@
 					class="group flex items-center gap-3 rounded-xl border border-white/10 bg-gray-900/50 p-3 transition-all hover:border-white/20"
 				>
 					<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-800">
-						<svg class="h-4 w-4 text-gray-400 transition-colors group-hover:text-white" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+						<svg
+							class="h-4 w-4 text-gray-400 transition-colors group-hover:text-white"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							viewBox="0 0 24 24"
+						>
 							<path stroke-linecap="round" stroke-linejoin="round" d={icons.arrowLeft} />
 						</svg>
 					</div>

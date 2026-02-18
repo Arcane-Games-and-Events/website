@@ -39,10 +39,11 @@
 		if (!query) {
 			return data.allUsers || [];
 		}
-		return (data.allUsers || []).filter((user) =>
-			user.email.toLowerCase().includes(query) ||
-			(user.first_name && user.first_name.toLowerCase().includes(query)) ||
-			(user.last_name && user.last_name.toLowerCase().includes(query))
+		return (data.allUsers || []).filter(
+			(user) =>
+				user.email.toLowerCase().includes(query) ||
+				(user.first_name && user.first_name.toLowerCase().includes(query)) ||
+				(user.last_name && user.last_name.toLowerCase().includes(query))
 		);
 	});
 
@@ -114,13 +115,32 @@
 			{#if successMessage}
 				<div class="mb-6 rounded-lg border border-green-500/30 bg-green-500/10 p-4">
 					<div class="flex items-center gap-3">
-						<svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+						<svg
+							class="h-5 w-5 text-green-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M5 13l4 4L19 7"
+							/>
 						</svg>
 						<p class="text-sm text-green-400">{successMessage}</p>
-						<button onclick={() => (successMessage = '')} class="ml-auto text-green-400 hover:text-green-300" aria-label="Dismiss success message">
+						<button
+							onclick={() => (successMessage = '')}
+							class="ml-auto text-green-400 hover:text-green-300"
+							aria-label="Dismiss success message"
+						>
 							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M6 18L18 6M6 6l12 12"
+								/>
 							</svg>
 						</button>
 					</div>
@@ -132,12 +152,26 @@
 				<div class="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 p-4">
 					<div class="flex items-center gap-3">
 						<svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+							/>
 						</svg>
 						<p class="text-sm text-red-400">{errorMessage}</p>
-						<button onclick={() => (errorMessage = '')} class="ml-auto text-red-400 hover:text-red-300" aria-label="Dismiss error message">
+						<button
+							onclick={() => (errorMessage = '')}
+							class="ml-auto text-red-400 hover:text-red-300"
+							aria-label="Dismiss error message"
+						>
 							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M6 18L18 6M6 6l12 12"
+								/>
 							</svg>
 						</button>
 					</div>
@@ -202,19 +236,34 @@
 							{#if userSearchLoading}
 								<div class="absolute top-1/2 right-3 -translate-y-1/2">
 									<svg class="h-5 w-5 animate-spin text-blue-400" fill="none" viewBox="0 0 24 24">
-										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+										<circle
+											class="opacity-25"
+											cx="12"
+											cy="12"
+											r="10"
+											stroke="currentColor"
+											stroke-width="4"
+										></circle>
+										<path
+											class="opacity-75"
+											fill="currentColor"
+											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+										></path>
 									</svg>
 								</div>
 							{/if}
 						</div>
 						{#if userSearchQuery.length >= 2 && userSearchResults !== null}
 							<p class="mt-2 text-xs text-gray-500">
-								Searching all {data.stats.totalUsers} users · Found {filteredUsers.length} result{filteredUsers.length !== 1 ? 's' : ''}
+								Searching all {data.stats.totalUsers} users · Found {filteredUsers.length} result{filteredUsers.length !==
+								1
+									? 's'
+									: ''}
 							</p>
 						{:else if userSearchQuery.length >= 2}
 							<p class="mt-2 text-xs text-gray-500">
-								Filtering from recent {(data.allUsers || []).length} users · Type to search all {data.stats.totalUsers}
+								Filtering from recent {(data.allUsers || []).length} users · Type to search all {data
+									.stats.totalUsers}
 							</p>
 						{/if}
 					</div>
@@ -276,12 +325,10 @@
 												class="flex-1 rounded-lg border border-gray-700 bg-gray-800 px-2 py-1.5 text-base text-gray-100 focus:border-blue-500 focus:outline-none sm:text-xs"
 											>
 												<option value="free" selected={user.role === 'free'}>Free</option>
-												<option value="premium" selected={user.role === 'premium'}>Premium</option
-												>
+												<option value="premium" selected={user.role === 'premium'}>Premium</option>
 												<option value="writer" selected={user.role === 'writer'}>Writer</option>
-												<option
-													value="tournament staff"
-													selected={user.role === 'tournament staff'}>Staff</option
+												<option value="tournament staff" selected={user.role === 'tournament staff'}
+													>Staff</option
 												>
 												<option value="admin" selected={user.role === 'admin'}>Admin</option>
 											</select>
@@ -412,11 +459,9 @@
 															>
 															<option
 																value="tournament staff"
-																selected={user.role === 'tournament staff'}
-																>Tournament Staff</option
+																selected={user.role === 'tournament staff'}>Tournament Staff</option
 															>
-															<option value="admin" selected={user.role === 'admin'}>Admin</option
-															>
+															<option value="admin" selected={user.role === 'admin'}>Admin</option>
 														</select>
 														<button
 															type="submit"

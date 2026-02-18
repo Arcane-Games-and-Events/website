@@ -667,11 +667,15 @@
 								</div>
 							{/if}
 
-							<form method="POST" action="?/updateProfile" use:enhance={() => {
-								return async ({ update }) => {
-									await update({ reset: false });
-								};
-							}}>
+							<form
+								method="POST"
+								action="?/updateProfile"
+								use:enhance={() => {
+									return async ({ update }) => {
+										await update({ reset: false });
+									};
+								}}
+							>
 								<div class="space-y-6">
 									<div class="grid gap-6 sm:grid-cols-2">
 										<div>

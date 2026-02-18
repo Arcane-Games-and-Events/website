@@ -32,10 +32,7 @@ export async function load({ params, locals }) {
 	// Load related VODs (same category or event, excluding current)
 	let relatedVods = [];
 	try {
-		const conditions = [
-			eq(vod.isPublished, true),
-			eq(vod.status, 'ready')
-		];
+		const conditions = [eq(vod.isPublished, true), eq(vod.status, 'ready')];
 
 		relatedVods = await db
 			.select()
@@ -53,12 +50,8 @@ export async function load({ params, locals }) {
 				const bPlayers = [b.player1Name, b.player2Name].filter(Boolean);
 				const aPlayerOverlap = aPlayers.filter((p) => vodPlayers.includes(p)).length;
 				const bPlayerOverlap = bPlayers.filter((p) => vodPlayers.includes(p)).length;
-				const aScore =
-					aPlayerOverlap * 2 +
-					(a.eventId && a.eventId === vodItem.eventId ? 3 : 0);
-				const bScore =
-					bPlayerOverlap * 2 +
-					(b.eventId && b.eventId === vodItem.eventId ? 3 : 0);
+				const aScore = aPlayerOverlap * 2 + (a.eventId && a.eventId === vodItem.eventId ? 3 : 0);
+				const bScore = bPlayerOverlap * 2 + (b.eventId && b.eventId === vodItem.eventId ? 3 : 0);
 				return bScore - aScore;
 			})
 			.slice(0, 4);

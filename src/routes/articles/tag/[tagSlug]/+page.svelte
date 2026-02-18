@@ -284,9 +284,7 @@
 							>
 								<!-- Thumbnail (16:9) -->
 								<a href="/articles/{article.slug}" class="shrink-0">
-									<div
-										class="relative w-32 overflow-hidden rounded-lg bg-gray-800 sm:w-44"
-									>
+									<div class="relative w-32 overflow-hidden rounded-lg bg-gray-800 sm:w-44">
 										<div class="aspect-video">
 											{#if article.coverImage?.src}
 												<FadeImage

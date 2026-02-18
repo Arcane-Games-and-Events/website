@@ -338,8 +338,7 @@
 					if (item.type !== 'listitem') return renderLexicalNode(item);
 
 					const children = item.children || [];
-					const hasOnlyNestedList =
-						children.length === 1 && children[0].type === 'list';
+					const hasOnlyNestedList = children.length === 1 && children[0].type === 'list';
 
 					if (hasOnlyNestedList) {
 						return renderLexicalNode(children[0]);
@@ -615,13 +614,29 @@
 </svelte:head>
 
 <!-- Preview Banner - Fixed at top -->
-<div class="fixed top-0 left-0 right-0 z-[100] border-b border-amber-600/50 bg-amber-500 text-black">
+<div
+	class="fixed top-0 right-0 left-0 z-[100] border-b border-amber-600/50 bg-amber-500 text-black"
+>
 	<div class="mx-auto max-w-7xl px-4 py-2.5 sm:px-6 lg:px-8">
 		<div class="flex items-center justify-between gap-4">
 			<div class="flex items-center gap-3">
-				<svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-					<path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+				<svg
+					class="h-5 w-5 flex-shrink-0"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					viewBox="0 0 24 24"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+					/>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+					/>
 				</svg>
 				<div class="flex items-center gap-2">
 					<span class="font-bold">PREVIEW MODE</span>
@@ -630,7 +645,9 @@
 					{/if}
 				</div>
 			</div>
-			<span class="hidden text-sm opacity-75 sm:block">This is how your article will appear when published</span>
+			<span class="hidden text-sm opacity-75 sm:block"
+				>This is how your article will appear when published</span
+			>
 		</div>
 	</div>
 </div>
@@ -667,7 +684,13 @@
 					href="/articles"
 					class="absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 text-xs text-white/80 backdrop-blur-sm transition-all hover:bg-black/60 hover:text-white sm:top-4 sm:left-4 sm:text-sm"
 				>
-					<svg class="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+					<svg
+						class="h-3.5 w-3.5 sm:h-4 sm:w-4"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						viewBox="0 0 24 24"
+					>
 						<path
 							stroke-linecap="round"
 							stroke-linejoin="round"
@@ -683,12 +706,15 @@
 						<!-- Tags & Premium Badge -->
 						<div class="mb-3 flex flex-wrap items-center gap-2 sm:mb-4 sm:gap-3">
 							{#if data.article.tags && data.article.tags.length > 0}
-								<span class="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-bold tracking-wider text-blue-400 uppercase backdrop-blur-sm sm:bg-transparent sm:px-0 sm:py-0 sm:text-sm">
+								<span
+									class="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-bold tracking-wider text-blue-400 uppercase backdrop-blur-sm sm:bg-transparent sm:px-0 sm:py-0 sm:text-sm"
+								>
 									{data.article.tags[0].name}
 								</span>
 							{/if}
 							<span
-								class="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold backdrop-blur-sm sm:bg-transparent sm:px-0 sm:py-0 sm:text-sm {data.article.accessMode === 'Premium'
+								class="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold backdrop-blur-sm sm:bg-transparent sm:px-0 sm:py-0 sm:text-sm {data
+									.article.accessMode === 'Premium'
 									? 'bg-emerald-500/20 text-emerald-400'
 									: 'bg-white/10 text-gray-200 sm:text-blue-400'}"
 							>
@@ -756,14 +782,15 @@
 		<div class="lg:grid lg:grid-cols-[180px_1fr] lg:gap-8 xl:gap-12">
 			<!-- Left Sidebar - Table of Contents -->
 			<aside class="hidden lg:block">
-				<div class="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-hide">
+				<div class="scrollbar-hide sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
 					{#if tableOfContents.length > 0}
 						<nav>
 							<div class="space-y-1 pb-8">
 								{#each tableOfContents as heading}
 									<a
 										href="#{heading.id}"
-										class="block py-1 text-sm leading-normal transition-colors {activeSection === heading.id
+										class="block py-1 text-sm leading-normal transition-colors {activeSection ===
+										heading.id
 											? 'text-white'
 											: 'text-gray-500 hover:text-gray-300'}"
 										style="padding-left: {(heading.level - 2) * 12}px"
@@ -782,22 +809,22 @@
 				<div class="relative">
 					<!-- Article content using Tailwind Typography -->
 					<div
-						class="prose prose-lg prose-invert mx-auto max-w-[65ch] lg:prose-xl
-						[&>:first-child]:mt-0
-						prose-p:font-normal prose-p:text-[1.125rem] prose-p:leading-[1.8] prose-p:tracking-[-0.01em] prose-p:text-gray-200
-						prose-headings:scroll-mt-24 prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-white
-						prose-h2:mt-16 prose-h2:mb-6 prose-h2:text-[1.75rem] sm:prose-h2:text-[2rem]
-						prose-h3:mt-12 prose-h3:mb-4 prose-h3:text-[1.375rem] sm:prose-h3:text-[1.5rem]
-						prose-h4:mt-10 prose-h4:mb-3 prose-h4:text-[1.125rem] sm:prose-h4:text-[1.25rem]
-						prose-a:text-blue-400 prose-a:no-underline
-						prose-blockquote:border-l-2 prose-blockquote:border-gray-600 prose-blockquote:pl-6 prose-blockquote:not-italic prose-blockquote:text-gray-300
-						prose-strong:font-semibold prose-strong:text-white
-						prose-em:text-gray-200
-						prose-code:rounded prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:text-orange-400 prose-code:before:content-none prose-code:after:content-none
-						prose-pre:rounded-xl prose-pre:border prose-pre:border-white/10 prose-pre:bg-gray-900
-						prose-li:text-gray-200 prose-li:marker:text-gray-500
-						prose-img:rounded-xl
-						prose-hr:border-gray-800"
+						class="mx-auto prose prose-lg max-w-[65ch] prose-invert lg:prose-xl
+						prose-headings:scroll-mt-24
+						prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-white prose-h2:mt-16 prose-h2:mb-6
+						prose-h2:text-[1.75rem] sm:prose-h2:text-[2rem] prose-h3:mt-12 prose-h3:mb-4
+						prose-h3:text-[1.375rem] sm:prose-h3:text-[1.5rem] prose-h4:mt-10 prose-h4:mb-3
+						prose-h4:text-[1.125rem] sm:prose-h4:text-[1.25rem] prose-p:text-[1.125rem] prose-p:leading-[1.8]
+						prose-p:font-normal prose-p:tracking-[-0.01em] prose-p:text-gray-200 prose-a:text-blue-400
+						prose-a:no-underline prose-blockquote:border-l-2
+						prose-blockquote:border-gray-600 prose-blockquote:pl-6 prose-blockquote:text-gray-300 prose-blockquote:not-italic prose-strong:font-semibold
+						prose-strong:text-white prose-em:text-gray-200
+						prose-code:rounded
+						prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:text-orange-400 prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-xl
+						prose-pre:border prose-pre:border-white/10 prose-pre:bg-gray-900 prose-li:text-gray-200
+						prose-li:marker:text-gray-500 prose-img:rounded-xl
+						prose-hr:border-gray-800
+						[&>:first-child]:mt-0"
 					>
 						{#if data.article.content}
 							{#if renderBlocks.length > 0}
@@ -833,7 +860,9 @@
 						</h3>
 						<div class="flex flex-wrap gap-2">
 							{#each data.article.tags as tag}
-								<span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-gray-300 sm:px-4 sm:py-1.5">
+								<span
+									class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-medium text-gray-300 sm:px-4 sm:py-1.5"
+								>
 									{tag.name}
 								</span>
 							{/each}
@@ -845,17 +874,31 @@
 				{#if data.article.author}
 					<div class="mt-8 sm:mt-12">
 						<div class="mb-4 flex items-center gap-3">
-							<div class="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-							<span class="text-xs font-semibold tracking-wider text-gray-500 uppercase">About the Author</span>
-							<div class="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+							<div
+								class="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+							></div>
+							<span class="text-xs font-semibold tracking-wider text-gray-500 uppercase"
+								>About the Author</span
+							>
+							<div
+								class="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+							></div>
 						</div>
 
-						<div class="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-gray-900/80 via-gray-900/60 to-gray-800/40 p-5 sm:p-8">
-							<div class="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-blue-500/5 blur-2xl"></div>
-							<div class="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-purple-500/5 blur-2xl"></div>
+						<div
+							class="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-gray-900/80 via-gray-900/60 to-gray-800/40 p-5 sm:p-8"
+						>
+							<div
+								class="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-blue-500/5 blur-2xl"
+							></div>
+							<div
+								class="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-purple-500/5 blur-2xl"
+							></div>
 
 							<div class="relative">
-								<div class="flex flex-col items-center text-center sm:flex-row sm:items-start sm:gap-6 sm:text-left">
+								<div
+									class="flex flex-col items-center text-center sm:flex-row sm:items-start sm:gap-6 sm:text-left"
+								>
 									<div class="shrink-0">
 										{#if data.article.author.profilePicture}
 											<img
@@ -864,7 +907,9 @@
 												class="h-20 w-20 rounded-2xl object-cover ring-2 ring-white/10 sm:h-24 sm:w-24"
 											/>
 										{:else}
-											<div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 ring-2 ring-white/10 sm:h-24 sm:w-24">
+											<div
+												class="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 ring-2 ring-white/10 sm:h-24 sm:w-24"
+											>
 												<span class="text-2xl font-bold text-white sm:text-3xl">
 													{data.article.author.name.charAt(0).toUpperCase()}
 												</span>
@@ -883,7 +928,9 @@
 											</div>
 										{/if}
 
-										<div class="mt-4 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+										<div
+											class="mt-4 flex flex-wrap items-center justify-center gap-3 sm:justify-start"
+										>
 											{#if data.article.author.socialLinks && data.article.author.socialLinks.length > 0}
 												{#each data.article.author.socialLinks as link}
 													{@const iconConfig = getLinkIcon(link)}

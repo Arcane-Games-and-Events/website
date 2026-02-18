@@ -19,22 +19,23 @@ export async function load({ locals }) {
 		// Compute user and ticket growth (RPC only computes revenue growth)
 		const newThisMonth = data.users?.newThisMonth || 0;
 		const newLastMonth = data.users?.newLastMonth || 0;
-		const userGrowth = newLastMonth > 0
-			? (((newThisMonth - newLastMonth) / newLastMonth) * 100).toFixed(1)
-			: null;
+		const userGrowth =
+			newLastMonth > 0 ? (((newThisMonth - newLastMonth) / newLastMonth) * 100).toFixed(1) : null;
 
 		const ticketsThisMonth = data.tickets?.thisMonth || 0;
 		const ticketsLastMonth = data.tickets?.lastMonth || 0;
-		const ticketGrowth = ticketsLastMonth > 0
-			? (((ticketsThisMonth - ticketsLastMonth) / ticketsLastMonth) * 100).toFixed(1)
-			: null;
+		const ticketGrowth =
+			ticketsLastMonth > 0
+				? (((ticketsThisMonth - ticketsLastMonth) / ticketsLastMonth) * 100).toFixed(1)
+				: null;
 
 		// Compute top customers avg order value
 		const topCustomers = data.customers?.topCustomers || [];
 		const totalOrders = topCustomers.reduce((s, c) => s + (c.orderCount || 0), 0);
-		const avgOrderValue = totalOrders > 0
-			? (topCustomers.reduce((s, c) => s + (c.totalSpent || 0), 0) / totalOrders).toFixed(2)
-			: '0.00';
+		const avgOrderValue =
+			totalOrders > 0
+				? (topCustomers.reduce((s, c) => s + (c.totalSpent || 0), 0) / totalOrders).toFixed(2)
+				: '0.00';
 
 		// Compute premium metrics from the new premium section
 		const p = data.premium || {};
@@ -43,16 +44,15 @@ export async function load({ locals }) {
 		const mrr = paidMonthlyActive * 9.99 + paidYearlyActive * 8.25;
 		const paidActive = parseInt(p.paidActive) || 0;
 		const paidCancelled = parseInt(p.paidCancelled) || 0;
-		const churn = paidActive + paidCancelled > 0
-			? ((paidCancelled / (paidActive + paidCancelled)) * 100).toFixed(1)
-			: '0.0';
+		const churn =
+			paidActive + paidCancelled > 0
+				? ((paidCancelled / (paidActive + paidCancelled)) * 100).toFixed(1)
+				: '0.0';
 
 		// Ticket refund rate
 		const ticketTotal = parseInt(data.tickets?.total) || 0;
 		const ticketRefunded = parseInt(data.tickets?.refunded) || 0;
-		const refundRate = ticketTotal > 0
-			? ((ticketRefunded / ticketTotal) * 100).toFixed(1)
-			: '0.0';
+		const refundRate = ticketTotal > 0 ? ((ticketRefunded / ticketTotal) * 100).toFixed(1) : '0.0';
 
 		return {
 			user: locals.user,

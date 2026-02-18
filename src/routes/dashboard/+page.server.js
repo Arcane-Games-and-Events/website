@@ -198,10 +198,7 @@ export async function load({ locals, fetch }) {
 				.select()
 				.from(podcastEpisode)
 				.where(
-					and(
-						eq(podcastEpisode.podcastId, podcastInfo.id),
-						eq(podcastEpisode.isPublished, true)
-					)
+					and(eq(podcastEpisode.podcastId, podcastInfo.id), eq(podcastEpisode.isPublished, true))
 				)
 				.orderBy(desc(podcastEpisode.publishedAt))
 				.limit(1);
@@ -239,10 +236,7 @@ export async function load({ locals, fetch }) {
 	// --- Leaderboard (top 5 aggregated) ---
 	let leaderboard = [];
 	try {
-		const allStandings = await db
-			.select()
-			.from(standing)
-			.orderBy(desc(standing.totalPoints));
+		const allStandings = await db.select().from(standing).orderBy(desc(standing.totalPoints));
 		const statsMap = new Map();
 		for (const s of allStandings) {
 			const key = s.gemId || s.playerName;
@@ -278,9 +272,7 @@ export async function load({ locals, fetch }) {
 		upcomingEvents = await db
 			.select()
 			.from(event)
-			.where(
-				and(gte(event.eventDate, now), or(eq(event.status, 'upcoming'), isNull(event.status)))
-			)
+			.where(and(gte(event.eventDate, now), or(eq(event.status, 'upcoming'), isNull(event.status))))
 			.orderBy(asc(event.eventDate))
 			.limit(3);
 	} catch (err) {

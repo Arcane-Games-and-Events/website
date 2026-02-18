@@ -59,7 +59,11 @@ export async function load({ params, locals }) {
 		// Respect manually set statuses (completed, cancelled, in_progress)
 		// Only auto-compute if status is 'upcoming' or not set
 		let computedStatus = eventData.status;
-		if (eventData.status === 'completed' || eventData.status === 'cancelled' || eventData.status === 'in_progress') {
+		if (
+			eventData.status === 'completed' ||
+			eventData.status === 'cancelled' ||
+			eventData.status === 'in_progress'
+		) {
 			computedStatus = eventData.status; // Keep manually set status
 		} else {
 			// Auto-compute for 'upcoming' or null status based on date
