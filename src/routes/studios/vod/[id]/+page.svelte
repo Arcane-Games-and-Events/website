@@ -86,11 +86,11 @@
 </svelte:head>
 
 <div class="min-h-screen">
-	<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+	<div class="mx-auto max-w-7xl px-4 py-4 sm:py-6 sm:px-6 lg:px-8">
 		<!-- Back link -->
 		<a
 			href="/studios"
-			class="mb-6 inline-flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
+			class="mb-4 inline-flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white sm:mb-6"
 		>
 			<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" d={icons.arrowLeft} />
@@ -98,7 +98,7 @@
 			Back to Studios
 		</a>
 
-		<div class="grid gap-8 lg:grid-cols-3 lg:gap-10">
+		<div class="grid gap-6 sm:gap-8 lg:grid-cols-3 lg:gap-10">
 			<!-- Main Content (2/3) -->
 			<div class="lg:col-span-2">
 				<!-- Video Player / Paywall -->
@@ -179,68 +179,66 @@
 				</div>
 
 				<!-- Video Info -->
-				<div class="mt-6">
-					<div class="flex flex-wrap items-start gap-3">
-						<div class="min-w-0 flex-1">
-							<h1 class="text-xl font-bold text-white sm:text-2xl">{vodItem.title}</h1>
-							<div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-400">
-								{#if vodItem.publishedAt}
-									<span>{formatDate(vodItem.publishedAt)}</span>
-								{/if}
-								{#if vodItem.duration}
-									<span class="flex items-center gap-1">
-										<svg
-											class="h-3.5 w-3.5"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="1.5"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-											/>
-										</svg>
-										{formatDuration(vodItem.duration)}
-									</span>
-								{/if}
-								{#if vodItem.player1Name && vodItem.player2Name}
-									<span>{vodItem.player1Name} vs {vodItem.player2Name}</span>
-								{/if}
-							</div>
-						</div>
-						<!-- Badges -->
-						<div class="flex flex-wrap gap-2">
-							{#if vodItem.player1Hero}
-								<span
-									class="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-gray-300"
+				<div class="mt-4 sm:mt-6">
+					<h1 class="text-lg font-bold text-white sm:text-2xl">{vodItem.title}</h1>
+
+					<div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400 sm:text-sm">
+						{#if vodItem.publishedAt}
+							<span>{formatDate(vodItem.publishedAt)}</span>
+						{/if}
+						{#if vodItem.duration}
+							<span class="flex items-center gap-1">
+								<svg
+									class="h-3.5 w-3.5"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.5"
+									viewBox="0 0 24 24"
 								>
-									{vodItem.player1Hero}
-								</span>
-							{/if}
-							{#if vodItem.player2Hero}
-								<span
-									class="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-gray-300"
-								>
-									{vodItem.player2Hero}
-								</span>
-							{/if}
-							{#if vodItem.isPremium}
-								<span
-									class="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400"
-								>
-									<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
-										<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
-									</svg>
-									Premium
-								</span>
-							{/if}
-						</div>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+									/>
+								</svg>
+								{formatDuration(vodItem.duration)}
+							</span>
+						{/if}
+						{#if vodItem.player1Name && vodItem.player2Name}
+							<span>{vodItem.player1Name} vs {vodItem.player2Name}</span>
+						{/if}
+					</div>
+
+					<!-- Badges -->
+					<div class="mt-3 flex flex-wrap gap-2">
+						{#if vodItem.player1Hero}
+							<span
+								class="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-gray-300"
+							>
+								{vodItem.player1Hero}
+							</span>
+						{/if}
+						{#if vodItem.player2Hero}
+							<span
+								class="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-gray-300"
+							>
+								{vodItem.player2Hero}
+							</span>
+						{/if}
+						{#if vodItem.isPremium}
+							<span
+								class="flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-400"
+							>
+								<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+									<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
+								</svg>
+								Premium
+							</span>
+						{/if}
 					</div>
 
 					{#if vodItem.description}
-						<div class="mt-4 rounded-xl border border-white/5 bg-gray-900/40 p-4">
+						<div class="mt-4 rounded-xl border border-white/5 bg-gray-900/40 p-3 sm:p-4">
 							<p class="text-sm leading-relaxed whitespace-pre-line text-gray-300">
 								{vodItem.description}
 							</p>
@@ -250,20 +248,20 @@
 			</div>
 
 			<!-- Sidebar (1/3) -->
-			<div class="space-y-6">
+			<div class="space-y-5 sm:space-y-6">
 				<!-- Related VODs -->
 				{#if relatedVods.length > 0}
 					<div>
-						<h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-400 uppercase">
+						<h3 class="mb-3 text-sm font-semibold tracking-wide text-gray-400 uppercase sm:mb-4">
 							Related Videos
 						</h3>
-						<div class="space-y-3">
+						<div class="grid grid-cols-2 gap-3 sm:grid-cols-1 sm:gap-3">
 							{#each relatedVods as related (related.id)}
 								<a
 									href="/studios/vod/{related.id}"
-									class="group flex items-center gap-3 rounded-xl border border-white/5 bg-gray-900/40 p-2 transition-all hover:border-white/15 hover:bg-gray-900/60"
+									class="group flex flex-col rounded-xl border border-white/5 bg-gray-900/40 transition-all hover:border-white/15 hover:bg-gray-900/60 sm:flex-row sm:items-center sm:gap-3 sm:p-2"
 								>
-									<div class="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-gray-800">
+									<div class="relative aspect-video w-full shrink-0 overflow-hidden rounded-t-xl bg-gray-800 sm:h-16 sm:w-28 sm:rounded-lg">
 										{#if related.muxPlaybackId}
 											<img
 												src="https://image.mux.com/{related.muxPlaybackId}/thumbnail.webp?width=224&height=128&fit_mode=smartcrop{related.thumbnailToken
@@ -297,15 +295,15 @@
 											</div>
 										{/if}
 									</div>
-									<div class="min-w-0 flex-1">
+									<div class="min-w-0 flex-1 p-2 sm:p-0">
 										<h4
-											class="line-clamp-2 text-sm font-medium text-white transition-colors group-hover:text-red-400"
+											class="line-clamp-2 text-xs font-medium text-white transition-colors group-hover:text-red-400 sm:text-sm"
 										>
 											{related.title}
 										</h4>
-										<div class="mt-1 flex items-center gap-2 text-xs text-gray-500">
+										<div class="mt-1 flex items-center gap-2 text-[11px] text-gray-500 sm:text-xs">
 											{#if related.player1Name && related.player2Name}
-												<span>{related.player1Name} vs {related.player2Name}</span>
+												<span class="truncate">{related.player1Name} vs {related.player2Name}</span>
 											{/if}
 										</div>
 									</div>
@@ -317,7 +315,7 @@
 
 				<!-- Premium CTA (if not premium) -->
 				{#if !canWatch || !data.user || (data.user.role !== 'premium' && data.user.role !== 'admin')}
-					<div class="rounded-xl border border-emerald-500/20 bg-gray-900/50 p-5">
+					<div class="rounded-xl border border-emerald-500/20 bg-gray-900/50 p-4 sm:p-5">
 						<div class="mb-3 flex items-center gap-2">
 							<svg class="h-5 w-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
 								<path fill-rule="evenodd" d={icons.boltSolid} clip-rule="evenodd" />
@@ -339,7 +337,7 @@
 				<!-- Back to Studios -->
 				<a
 					href="/studios"
-					class="group flex items-center gap-3 rounded-xl border border-white/10 bg-gray-900/50 p-4 transition-all hover:border-white/20"
+					class="group flex items-center gap-3 rounded-xl border border-white/10 bg-gray-900/50 p-3 transition-all hover:border-white/20 sm:p-4"
 				>
 					<div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-800">
 						<svg
