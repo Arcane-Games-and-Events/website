@@ -4,6 +4,7 @@ import { db } from '$lib/server/db/index.js';
 import { user as userTable } from '$lib/server/db/schema.js';
 import { eq, isNotNull, and, ne } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
+import { sendPaymentFailedEmail } from '$lib/server/email.js';
 
 /**
  * Sync subscription statuses from Authorize.net
@@ -56,12 +57,12 @@ export async function GET({ request, locals }) {
 
 				// Authorize.net statuses: active, expired, suspended, cancelled, terminated
 				if (authnetStatus === 'active') {
-					if (user.subscriptionStatus !== 'active') {
+					if (user.subscriptionStatus !== 'active' && user.subscriptionStatus !== 'payment_failed') {
 						// Subscription is active in Authorize.net but not locally
 						newStatus = 'active';
 						shouldUpdate = true;
 					}
-					// Always sync billing date for active subscriptions
+					// Always sync billing date and check transaction history for active subscriptions
 					shouldSyncBillingDate = true;
 				} else if (authnetStatus === 'expired' || authnetStatus === 'terminated') {
 					// Subscription has ended
@@ -88,13 +89,22 @@ export async function GET({ request, locals }) {
 						const sortedTx = [...subDetails.transactions].sort((a, b) => b.payNum - a.payNum);
 						const latestTx = sortedTx[0];
 
-						// If there's a successful transaction, update billing date
-						// Response from ARB transactions is text like "This transaction has been approved."
+						// Check if the latest transaction was approved
 						const isApproved =
 							latestTx.response === '1' ||
 							latestTx.response === 1 ||
 							(typeof latestTx.response === 'string' &&
 								latestTx.response.toLowerCase().includes('approved'));
+
+						// Check if the latest transaction was declined/failed
+						const isDeclined =
+							latestTx.response === '2' ||
+							latestTx.response === '3' ||
+							latestTx.response === 2 ||
+							latestTx.response === 3 ||
+							(typeof latestTx.response === 'string' &&
+								latestTx.response.toLowerCase().includes('decline'));
+
 						if (isApproved) {
 							const txDate = new Date(latestTx.submitTimeUTC);
 							// Calculate next billing based on subscription type
@@ -108,6 +118,20 @@ export async function GET({ request, locals }) {
 								nextBillingDate = new Date(txDate);
 								nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
 							}
+
+							// Latest transaction approved — if user was payment_failed, restore to active
+							if (user.subscriptionStatus === 'payment_failed') {
+								newStatus = 'active';
+								shouldUpdate = true;
+							}
+						}
+
+						// If Authorize.net says "active" but the latest transaction was declined,
+						// override to payment_failed. This catches the case where Authorize.net
+						// keeps the subscription active during its retry period.
+						if (authnetStatus === 'active' && isDeclined && user.subscriptionStatus !== 'payment_failed') {
+							newStatus = 'payment_failed';
+							shouldUpdate = true;
 						}
 					}
 
@@ -153,6 +177,22 @@ export async function GET({ request, locals }) {
 							updateData.role = 'free';
 							updateData.subscriptionStatus = 'expired';
 							updateData.subscriptionId = null;
+						}
+					}
+
+					// Send payment failed email if transitioning to payment_failed
+					if (
+						updateData.subscriptionStatus === 'payment_failed' &&
+						user.subscriptionStatus !== 'payment_failed'
+					) {
+						try {
+							const baseUrl = env.PUBLIC_BASE_URL || 'https://www.age.events';
+							await sendPaymentFailedEmail(user.email, {
+								gracePeriodEnd: updateData.subscriptionEndDate || user.subscriptionEndDate,
+								updatePaymentUrl: `${baseUrl}/account/billing`
+							});
+						} catch (emailErr) {
+							console.error(`Failed to send payment failed email to ${user.email}:`, emailErr.message);
 						}
 					}
 

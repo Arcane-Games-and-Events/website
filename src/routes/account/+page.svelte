@@ -275,6 +275,8 @@
 
 	const isPremium = hasPremiumAccess(data.user);
 	const isCancelled = data.user?.subscriptionStatus === 'cancelled';
+	const isPaymentFailed = data.user?.subscriptionStatus === 'payment_failed';
+	const isExpired = data.user?.subscriptionStatus === 'expired';
 
 	// Format date for display
 	function formatDate(date) {
@@ -1002,6 +1004,116 @@
 				<!-- Plan/Subscription Tab -->
 				{#if activeTab === 'plan'}
 					<div class="space-y-6">
+						<!-- Payment Failed Notice -->
+						{#if isPaymentFailed}
+							<div
+								class="rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-500/10 to-orange-500/5 p-6 shadow-xl"
+							>
+								<div class="flex items-start gap-4">
+									<div
+										class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-500/20"
+									>
+										<svg
+											class="h-6 w-6 text-red-400"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
+											/>
+										</svg>
+									</div>
+									<div class="flex-1">
+										<h4 class="text-lg font-semibold text-red-300">Payment Declined</h4>
+										<p class="mt-1 text-sm text-red-200/80">
+											Your most recent payment was declined.
+											{#if subscriptionEndDate && getDaysRemaining() > 0}
+												You have <span class="font-semibold text-red-200">{getDaysRemaining()} days</span> to update your payment method before your premium access is removed.
+											{:else}
+												Please update your payment method to restore your premium access.
+											{/if}
+										</p>
+										<a
+											href="/account?tab=cards"
+											on:click|preventDefault={() => (activeTab = 'cards')}
+											class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-red-400 transition-colors hover:text-red-300"
+										>
+											Update payment method
+											<svg
+												class="h-4 w-4"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												viewBox="0 0 24 24"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+												/>
+											</svg>
+										</a>
+									</div>
+								</div>
+							</div>
+						{/if}
+
+						<!-- Expired / Downgraded Notice -->
+						{#if isExpired && data.user?.role === 'free'}
+							<div
+								class="rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-500/10 to-rose-500/5 p-6 shadow-xl"
+							>
+								<div class="flex items-start gap-4">
+									<div
+										class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-500/20"
+									>
+										<svg
+											class="h-6 w-6 text-red-400"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												stroke-width="2"
+												d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636"
+											/>
+										</svg>
+									</div>
+									<div class="flex-1">
+										<h4 class="text-lg font-semibold text-red-300">Premium Membership Ended</h4>
+										<p class="mt-1 text-sm text-red-200/80">
+											Your premium subscription has ended due to a payment issue. Resubscribe to regain access to premium articles, exclusive VODs, and event discounts.
+										</p>
+										<a
+											href="/premium"
+											class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-red-400 transition-colors hover:text-red-300"
+										>
+											Resubscribe now
+											<svg
+												class="h-4 w-4"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												viewBox="0 0 24 24"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+												/>
+											</svg>
+										</a>
+									</div>
+								</div>
+							</div>
+						{/if}
+
 						<!-- Cancellation Notice -->
 						{#if isCancelled && isPremium}
 							<div
@@ -1129,7 +1241,19 @@
 											<p class="text-sm text-gray-400">Your subscription details</p>
 										</div>
 									</div>
-									{#if isPremium && !isCancelled}
+									{#if isPaymentFailed}
+										<span
+											class="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400"
+										>
+											Payment Failed
+										</span>
+									{:else if isExpired && data.user?.role === 'free'}
+										<span
+											class="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400"
+										>
+											Expired
+										</span>
+									{:else if isPremium && !isCancelled}
 										<span
 											class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400"
 										>
