@@ -155,9 +155,16 @@ export async function GET({ request, locals }) {
 								updateData.subscriptionId = null;
 							}
 						} else if (newStatus === 'payment_failed') {
-							// Set grace period if not already set
+							// Set grace period based on when the payment actually failed, not when we detected it
 							if (!user.subscriptionEndDate) {
-								const gracePeriodEnd = new Date();
+								const sortedTx = subDetails.transactions
+									? [...subDetails.transactions].sort((a, b) => b.payNum - a.payNum)
+									: [];
+								const declinedTx = sortedTx[0];
+								const failedDate = declinedTx?.submitTimeUTC
+									? new Date(declinedTx.submitTimeUTC)
+									: new Date();
+								const gracePeriodEnd = new Date(failedDate);
 								gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
 								updateData.subscriptionEndDate = gracePeriodEnd;
 							}
