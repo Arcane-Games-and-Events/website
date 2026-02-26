@@ -175,12 +175,39 @@ export async function GET({ request, locals }) {
 					}
 
 					// For payment_failed users past their grace period, downgrade
+					// Always recalculate from the actual declined transaction date to avoid
+					// stale grace periods set by earlier runs
 					if (
 						(newStatus === 'payment_failed' || user.subscriptionStatus === 'payment_failed') &&
 						user.role === 'premium'
 					) {
-						const endDate = updateData.subscriptionEndDate || user.subscriptionEndDate;
-						if (endDate && new Date() >= new Date(endDate)) {
+						let shouldDowngrade = false;
+						const sortedTx = subDetails.transactions
+							? [...subDetails.transactions].sort((a, b) => b.payNum - a.payNum)
+							: [];
+						const latestTx = sortedTx[0];
+
+						if (latestTx?.submitTimeUTC) {
+							// Calculate grace period from the actual failed transaction date
+							const failedDate = new Date(latestTx.submitTimeUTC);
+							const gracePeriodEnd = new Date(failedDate);
+							gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
+
+							// Update subscriptionEndDate to reflect the correct grace period
+							updateData.subscriptionEndDate = gracePeriodEnd;
+
+							if (new Date() >= gracePeriodEnd) {
+								shouldDowngrade = true;
+							}
+						} else {
+							// No transaction date available — fall back to stored end date
+							const endDate = updateData.subscriptionEndDate || user.subscriptionEndDate;
+							if (endDate && new Date() >= new Date(endDate)) {
+								shouldDowngrade = true;
+							}
+						}
+
+						if (shouldDowngrade) {
 							updateData.role = 'free';
 							updateData.subscriptionStatus = 'expired';
 							updateData.subscriptionId = null;
