@@ -45,31 +45,29 @@ export const handle = async ({ event, resolve }) => {
 		}
 
 		// Check for expired subscriptions (cancelled or payment_failed) and downgrade to free
-		if (user && user.role === 'premium' && user.subscriptionEndDate) {
+		if (user && user.role === 'premium') {
 			const now = new Date();
-			const endDate = new Date(user.subscriptionEndDate);
+			let shouldDowngrade = false;
 
-			// Handle cancelled subscriptions that have reached their end date
-			if (user.subscriptionStatus === 'cancelled' && now >= endDate) {
-				await db
-					.update(userTable)
-					.set({
-						role: 'free',
-						subscriptionStatus: 'expired',
-						subscriptionId: null
-					})
-					.where(eq(userTable.id, user.id));
+			if (user.subscriptionEndDate) {
+				const endDate = new Date(user.subscriptionEndDate);
 
-				user = {
-					...user,
-					role: 'free',
-					subscriptionStatus: 'expired',
-					subscriptionId: null
-				};
+				// Handle cancelled subscriptions that have reached their end date
+				if (user.subscriptionStatus === 'cancelled' && now >= endDate) {
+					shouldDowngrade = true;
+				}
+
+				// Handle payment_failed subscriptions that have exceeded grace period
+				if (user.subscriptionStatus === 'payment_failed' && now >= endDate) {
+					shouldDowngrade = true;
+				}
+			} else if (user.subscriptionStatus === 'payment_failed') {
+				// payment_failed but no subscriptionEndDate was ever set (e.g. webhook missed)
+				// Downgrade immediately — there's no valid grace period
+				shouldDowngrade = true;
 			}
 
-			// Handle payment_failed subscriptions that have exceeded grace period
-			if (user.subscriptionStatus === 'payment_failed' && now >= endDate) {
+			if (shouldDowngrade) {
 				await db
 					.update(userTable)
 					.set({

@@ -119,15 +119,40 @@ export async function GET({ request, locals }) {
 						updateData.subscriptionStatus = newStatus;
 
 						// Update role based on status
-						if (newStatus === 'expired' || newStatus === 'cancelled') {
+						if (newStatus === 'expired') {
+							// Subscription ended — downgrade immediately
+							updateData.role = 'free';
+							updateData.subscriptionId = null;
+						} else if (newStatus === 'cancelled') {
 							// Check if past end date
 							const now = new Date();
 							if (user.subscriptionEndDate && now >= new Date(user.subscriptionEndDate)) {
-								updateData.role = 'user';
+								updateData.role = 'free';
+								updateData.subscriptionId = null;
+							}
+						} else if (newStatus === 'payment_failed') {
+							// Set grace period if not already set
+							if (!user.subscriptionEndDate) {
+								const gracePeriodEnd = new Date();
+								gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
+								updateData.subscriptionEndDate = gracePeriodEnd;
 							}
 						} else if (newStatus === 'active') {
 							updateData.role = 'premium';
 							updateData.subscriptionEndDate = null;
+						}
+					}
+
+					// For payment_failed users past their grace period, downgrade
+					if (
+						(newStatus === 'payment_failed' || user.subscriptionStatus === 'payment_failed') &&
+						user.role === 'premium'
+					) {
+						const endDate = updateData.subscriptionEndDate || user.subscriptionEndDate;
+						if (endDate && new Date() >= new Date(endDate)) {
+							updateData.role = 'free';
+							updateData.subscriptionStatus = 'expired';
+							updateData.subscriptionId = null;
 						}
 					}
 
@@ -144,7 +169,7 @@ export async function GET({ request, locals }) {
 						results.details.push({
 							email: user.email,
 							oldStatus: user.subscriptionStatus,
-							newStatus: shouldUpdate ? newStatus : user.subscriptionStatus,
+							newStatus: updateData.subscriptionStatus || user.subscriptionStatus,
 							authnetStatus,
 							billingDateUpdated: !!updateData.nextBillingDate
 						});

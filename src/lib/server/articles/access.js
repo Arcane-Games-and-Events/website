@@ -32,7 +32,9 @@ export function userHasPremiumAccess(user) {
 
 	// Premium with payment_failed - check if within grace period
 	// Users get a 7-day grace period to update their payment method
-	if (user.subscriptionStatus === 'payment_failed' && user.subscriptionEndDate) {
+	if (user.subscriptionStatus === 'payment_failed') {
+		// No grace period set (webhook missed) — deny access
+		if (!user.subscriptionEndDate) return false;
 		const endDate = new Date(user.subscriptionEndDate);
 		const now = new Date();
 		return now < endDate;
