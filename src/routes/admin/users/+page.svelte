@@ -14,6 +14,64 @@
 	let successMessage = $state('');
 	let errorMessage = $state('');
 
+	// Delete confirmation state
+	let deleteTarget = $state(null); // User object to delete
+	let deleteStep = $state(0); // 0 = hidden, 1 = first confirm, 2 = email confirm
+	let deleteConfirmEmail = $state('');
+	let deleteLoading = $state(false);
+
+	function openDeleteModal(userObj) {
+		deleteTarget = userObj;
+		deleteStep = 1;
+		deleteConfirmEmail = '';
+	}
+
+	function closeDeleteModal() {
+		deleteTarget = null;
+		deleteStep = 0;
+		deleteConfirmEmail = '';
+		deleteLoading = false;
+	}
+
+	function proceedToEmailConfirm() {
+		deleteStep = 2;
+		deleteConfirmEmail = '';
+	}
+
+	async function confirmDelete() {
+		if (!deleteTarget || deleteConfirmEmail !== deleteTarget.email) return;
+
+		deleteLoading = true;
+		try {
+			const formData = new FormData();
+			formData.append('userId', deleteTarget.id);
+			formData.append('confirmEmail', deleteConfirmEmail);
+
+			const response = await fetch('?/deleteUser', {
+				method: 'POST',
+				body: formData
+			});
+
+			const text = await response.text();
+			const result = deserialize(text);
+
+			if (result.type === 'success') {
+				successMessage = result.data?.message || 'User deleted successfully';
+				setTimeout(() => (successMessage = ''), 5000);
+				closeDeleteModal();
+				invalidateAll();
+			} else if (result.type === 'failure') {
+				errorMessage = result.data?.error || 'Failed to delete user';
+				setTimeout(() => (errorMessage = ''), 5000);
+				closeDeleteModal();
+			}
+		} catch (err) {
+			errorMessage = 'An error occurred while deleting the user';
+			setTimeout(() => (errorMessage = ''), 5000);
+			closeDeleteModal();
+		}
+	}
+
 	// Auto-dismiss banners
 	$effect(() => {
 		if (form?.success) {
@@ -348,6 +406,14 @@
 									>
 										View
 									</a>
+									{#if user.id !== data.user.id}
+										<button
+											onclick={() => openDeleteModal(user)}
+											class="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition-all hover:border-red-500/50 hover:bg-red-500/20"
+										>
+											Delete
+										</button>
+									{/if}
 								</div>
 							</div>
 						{:else}
@@ -481,6 +547,14 @@
 												>
 													View
 												</a>
+												{#if user.id !== data.user.id}
+													<button
+														onclick={() => openDeleteModal(user)}
+														class="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition-all hover:border-red-500/50 hover:bg-red-500/20"
+													>
+														Delete
+													</button>
+												{/if}
 											</div>
 										</td>
 									</tr>
@@ -519,3 +593,134 @@
 		</main>
 	</div>
 </div>
+
+<!-- Delete Confirmation Modal -->
+{#if deleteStep > 0 && deleteTarget}
+	<!-- Backdrop -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+		onkeydown={(e) => e.key === 'Escape' && closeDeleteModal()}
+	>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<div class="absolute inset-0" onclick={closeDeleteModal}></div>
+
+		<div class="relative w-full max-w-md rounded-xl border border-gray-700 bg-gray-900 shadow-2xl">
+			{#if deleteStep === 1}
+				<!-- Step 1: Initial Confirmation -->
+				<div class="p-6">
+					<div class="mb-4 flex items-center gap-3">
+						<div
+							class="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20"
+						>
+							<svg
+								class="h-5 w-5 text-red-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+								/>
+							</svg>
+						</div>
+						<h3 class="text-lg font-semibold text-white">Delete User</h3>
+					</div>
+					<p class="mb-2 text-sm text-gray-300">
+						Are you sure you want to delete this user?
+					</p>
+					<div
+						class="mb-4 rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3"
+					>
+						<p class="font-medium text-white">{deleteTarget.email}</p>
+						{#if deleteTarget.first_name || deleteTarget.last_name}
+							<p class="text-sm text-gray-400">
+								{deleteTarget.first_name || ''} {deleteTarget.last_name || ''}
+							</p>
+						{/if}
+					</div>
+					<p class="mb-6 text-xs text-red-400/80">
+						This will permanently delete the user account, their sessions, saved cards, and entitlements. Tickets and orders will be preserved for audit purposes.
+					</p>
+					<div class="flex justify-end gap-3">
+						<button
+							onclick={closeDeleteModal}
+							class="rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 transition-all hover:border-gray-600 hover:text-white"
+						>
+							Cancel
+						</button>
+						<button
+							onclick={proceedToEmailConfirm}
+							class="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-red-600"
+						>
+							Yes, Delete User
+						</button>
+					</div>
+				</div>
+			{:else if deleteStep === 2}
+				<!-- Step 2: Email Confirmation -->
+				<div class="p-6">
+					<div class="mb-4 flex items-center gap-3">
+						<div
+							class="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20"
+						>
+							<svg
+								class="h-5 w-5 text-red-400"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+								/>
+							</svg>
+						</div>
+						<h3 class="text-lg font-semibold text-white">Confirm Deletion</h3>
+					</div>
+					<p class="mb-4 text-sm text-gray-300">
+						Type the user's email address to confirm deletion:
+					</p>
+					<p class="mb-3 text-xs font-mono text-gray-500">
+						{deleteTarget.email}
+					</p>
+					<input
+						type="text"
+						bind:value={deleteConfirmEmail}
+						placeholder="Type email to confirm..."
+						class="mb-6 w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-sm text-gray-100 placeholder-gray-500 transition-all focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:outline-none"
+						onkeydown={(e) => {
+							if (e.key === 'Enter' && deleteConfirmEmail === deleteTarget.email) {
+								confirmDelete();
+							}
+						}}
+					/>
+					<div class="flex justify-end gap-3">
+						<button
+							onclick={() => (deleteStep = 1)}
+							class="rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 transition-all hover:border-gray-600 hover:text-white"
+						>
+							Back
+						</button>
+						<button
+							onclick={confirmDelete}
+							disabled={deleteConfirmEmail !== deleteTarget.email || deleteLoading}
+							class="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+						>
+							{#if deleteLoading}
+								Deleting...
+							{:else}
+								Permanently Delete
+							{/if}
+						</button>
+					</div>
+				</div>
+			{/if}
+		</div>
+	</div>
+{/if}

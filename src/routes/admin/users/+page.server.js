@@ -1,6 +1,19 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { user } from '$lib/server/db/schema.js';
+import {
+	user,
+	session,
+	ticket,
+	entitlement,
+	passwordResetToken,
+	eventStaff,
+	decklist,
+	event,
+	lssEvent,
+	podcast,
+	podcastEpisode,
+	vod
+} from '$lib/server/db/schema.js';
 import { eq, or, ilike, sql } from 'drizzle-orm';
 
 // Helper to add timeout to promises
@@ -138,6 +151,89 @@ export const actions = {
 		} catch (err) {
 			console.error('Error searching users:', err);
 			return fail(500, { error: 'Failed to search users' });
+		}
+	},
+
+	// Delete a user and clean up related records
+	deleteUser: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const userId = formData.get('userId');
+		const confirmEmail = formData.get('confirmEmail');
+
+		if (!userId || !confirmEmail) {
+			return fail(400, { error: 'User ID and confirmation email are required' });
+		}
+
+		// Prevent admin from deleting themselves
+		if (userId === locals.user.id) {
+			return fail(400, { error: 'Cannot delete your own account' });
+		}
+
+		try {
+			// Fetch the user to verify email matches
+			const [targetUser] = await db
+				.select({ id: user.id, email: user.email })
+				.from(user)
+				.where(eq(user.id, userId))
+				.limit(1);
+
+			if (!targetUser) {
+				return fail(404, { error: 'User not found' });
+			}
+
+			if (targetUser.email !== confirmEmail) {
+				return fail(400, { error: 'Email confirmation does not match' });
+			}
+
+			// Clean up related records in order
+			// 1. Delete sessions
+			await db.delete(session).where(eq(session.userId, userId));
+
+			// 2. Delete password reset tokens
+			await db.delete(passwordResetToken).where(eq(passwordResetToken.userId, userId));
+
+			// 3. Delete entitlements
+			await db.delete(entitlement).where(eq(entitlement.userId, userId));
+
+			// 4. Delete staff assignments
+			await db.delete(eventStaff).where(eq(eventStaff.userId, userId));
+
+			// 5. Nullify references in tickets (keep for audit)
+			await db.update(ticket).set({ userId: null }).where(eq(ticket.userId, userId));
+
+			// 6. Nullify references in decklists (keep for public display)
+			await db.update(decklist).set({ userId: null }).where(eq(decklist.userId, userId));
+
+			// 7. Nullify references in events
+			await db.update(event).set({ closedBy: null }).where(eq(event.closedBy, userId));
+			await db.update(event).set({ createdBy: null }).where(eq(event.createdBy, userId));
+
+			// 8. Nullify references in other tables
+			await db.update(lssEvent).set({ createdBy: null }).where(eq(lssEvent.createdBy, userId));
+			await db.update(podcast).set({ createdBy: null }).where(eq(podcast.createdBy, userId));
+			await db
+				.update(podcastEpisode)
+				.set({ createdBy: null })
+				.where(eq(podcastEpisode.createdBy, userId));
+			await db.update(vod).set({ createdBy: null }).where(eq(vod.createdBy, userId));
+
+			// 9. Nullify assignedBy in staff assignments
+			await db
+				.update(eventStaff)
+				.set({ assignedBy: null })
+				.where(eq(eventStaff.assignedBy, userId));
+
+			// 10. Delete the user (savedCard cascades automatically)
+			await db.delete(user).where(eq(user.id, userId));
+
+			return { success: true, message: `User ${targetUser.email} has been deleted` };
+		} catch (err) {
+			console.error('Error deleting user:', err);
+			return fail(500, { error: 'Failed to delete user. ' + err.message });
 		}
 	}
 };

@@ -5,18 +5,33 @@ import { db } from '$lib/server/db';
 import { user } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { fail, redirect } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
+import { verifyTurnstileToken } from '$lib/server/turnstile.js';
+
+export function load() {
+	return {
+		turnstileSiteKey: env.TURNSTILE_SITE_KEY || ''
+	};
+}
 
 export const actions = {
-	default: async ({ request, cookies, url }) => {
+	default: async ({ request, cookies, url, getClientAddress }) => {
 		const form = await request.formData();
 		const firstName = form.get('firstName');
 		const lastName = form.get('lastName');
 		const email = form.get('email');
 		const gemId = form.get('gemId');
 		const password = form.get('password');
+		const turnstileToken = form.get('cf-turnstile-response');
 
 		// Get redirect URL from query params (default to home)
 		const redirectTo = url.searchParams.get('redirect') || '/';
+
+		// Verify CAPTCHA before expensive operations
+		const turnstileResult = await verifyTurnstileToken(turnstileToken, getClientAddress());
+		if (!turnstileResult.success) {
+			return fail(400, { error: turnstileResult.error });
+		}
 
 		// Validate required fields
 		if (

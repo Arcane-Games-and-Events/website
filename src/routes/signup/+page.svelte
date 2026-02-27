@@ -1,10 +1,12 @@
 <script>
 	import '../../app.css';
 	export let form;
+	export let data;
 </script>
 
 <svelte:head>
 	<title>Sign Up - AGE</title>
+	<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </svelte:head>
 
 <div class="relative min-h-screen w-full overflow-hidden bg-gray-950">
@@ -184,6 +186,17 @@
 								>
 							</label>
 						</div>
+
+						<!-- Turnstile CAPTCHA -->
+						{#if data.turnstileSiteKey}
+							<div class="flex justify-center pt-2">
+								<div
+									class="cf-turnstile"
+									data-sitekey={data.turnstileSiteKey}
+									data-theme="dark"
+								></div>
+							</div>
+						{/if}
 
 						<!-- Submit Button -->
 						<button
