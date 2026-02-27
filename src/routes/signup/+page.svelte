@@ -189,11 +189,13 @@
 
 						<!-- Turnstile CAPTCHA -->
 						{#if data.turnstileSiteKey}
-							<div class="flex justify-center pt-2">
+							<div class="pt-2">
 								<div
 									class="cf-turnstile"
 									data-sitekey={data.turnstileSiteKey}
 									data-theme="dark"
+									data-size="flexible"
+									data-appearance="interaction-only"
 								></div>
 							</div>
 						{/if}
