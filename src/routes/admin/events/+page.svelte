@@ -5,7 +5,7 @@
 
 	// ========== EVENT MANAGEMENT STATE ==========
 	let eventsSearchQuery = $state('');
-	let eventsStatusFilter = $state('upcoming'); // 'all', 'upcoming', 'in_progress', 'completed', 'cancelled'
+	let eventsStatusFilter = $state('active'); // 'all', 'active', 'upcoming', 'in_progress', 'completed', 'cancelled'
 	let eventsCircuitFilter = $state('all'); // 'all' or specific circuit
 	let eventsPage = $state(1);
 	let eventsPerPage = 10;
@@ -25,7 +25,9 @@
 				// Status filter
 				if (eventsStatusFilter !== 'all') {
 					const status = evt.status || 'upcoming';
-					if (status !== eventsStatusFilter) return false;
+					if (eventsStatusFilter === 'active') {
+						if (status !== 'upcoming' && status !== 'in_progress') return false;
+					} else if (status !== eventsStatusFilter) return false;
 				}
 				// Circuit filter
 				if (eventsCircuitFilter !== 'all' && evt.circuit !== eventsCircuitFilter) return false;
@@ -307,6 +309,7 @@
 							bind:value={eventsStatusFilter}
 							class="rounded-lg border border-white/10 bg-gray-800 px-3 py-2 text-sm text-white focus:border-cyan-500 focus:outline-none"
 						>
+							<option value="active">Active</option>
 							<option value="all">All Status</option>
 							<option value="upcoming">Upcoming</option>
 							<option value="in_progress">In Progress</option>
