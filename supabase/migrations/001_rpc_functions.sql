@@ -329,14 +329,14 @@ BEGIN
         ),
         'orders', (
             SELECT COALESCE(json_agg(row_to_json(o) ORDER BY created_at DESC), '[]'::json)
-            FROM (SELECT * FROM "order" ORDER BY created_at DESC LIMIT 200) o
+            FROM (SELECT * FROM "order" ORDER BY created_at DESC) o
         ),
         'users', (
             SELECT COALESCE(json_agg(json_build_object(
                 'id', id, 'email', email, 'role', role, 'createdAt', created_at,
                 'first_name', first_name, 'last_name', last_name
             ) ORDER BY created_at DESC), '[]'::json)
-            FROM (SELECT id, email, role, created_at, first_name, last_name FROM "user" ORDER BY created_at DESC LIMIT 200) u
+            FROM (SELECT id, email, role, created_at, first_name, last_name FROM "user" ORDER BY created_at DESC) u
         ),
         'lssEvents', (
             SELECT COALESCE(json_agg(row_to_json(s) ORDER BY start_date DESC), '[]'::json)

@@ -5,7 +5,7 @@
 
 	// ========== EVENT MANAGEMENT STATE ==========
 	let eventsSearchQuery = $state('');
-	let eventsStatusFilter = $state('all'); // 'all', 'upcoming', 'in_progress', 'completed', 'cancelled'
+	let eventsStatusFilter = $state('upcoming'); // 'all', 'upcoming', 'in_progress', 'completed', 'cancelled'
 	let eventsCircuitFilter = $state('all'); // 'all' or specific circuit
 	let eventsPage = $state(1);
 	let eventsPerPage = 10;
@@ -32,13 +32,13 @@
 				return true;
 			})
 			.sort((a, b) => {
-				// Sort by event date descending (upcoming first), then by creation date
+				// Sort by event date ascending (nearest upcoming first), then by creation date
 				if (a.eventDate && b.eventDate) {
-					return new Date(b.eventDate) - new Date(a.eventDate);
+					return new Date(a.eventDate) - new Date(b.eventDate);
 				}
 				if (a.eventDate) return -1;
 				if (b.eventDate) return 1;
-				return new Date(b.createdAt) - new Date(a.createdAt);
+				return new Date(a.createdAt) - new Date(b.createdAt);
 			})
 	);
 

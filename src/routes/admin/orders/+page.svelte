@@ -85,9 +85,10 @@
 				if (ordersSearchResults === null && ordersSearchQuery) {
 					const q = ordersSearchQuery.toLowerCase();
 					const matchesEmail = ord.userEmail?.toLowerCase().includes(q);
+					const matchesName = getUserName(ord.userEmail).toLowerCase().includes(q);
 					const matchesId = ord.id?.toLowerCase().includes(q);
 					const matchesTxn = ord.providerRef?.toLowerCase().includes(q);
-					if (!matchesEmail && !matchesId && !matchesTxn) return false;
+					if (!matchesEmail && !matchesName && !matchesId && !matchesTxn) return false;
 				}
 				// Type filter
 				if (ordersTypeFilter !== 'all' && ord.meta?.type !== ordersTypeFilter) return false;
@@ -343,10 +344,10 @@
 									<div
 										class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-700/50 text-sm font-bold text-gray-300"
 									>
-										{order.userEmail?.charAt(0).toUpperCase() || '?'}
+										{getUserName(order.userEmail).charAt(0).toUpperCase()}
 									</div>
 									<div class="min-w-0">
-										<p class="truncate text-sm font-medium text-white">{order.userEmail}</p>
+										<p class="truncate text-sm font-medium text-white">{getUserName(order.userEmail)}</p>
 										<p class="text-xs text-gray-500">{formatDate(order.createdAt)}</p>
 									</div>
 								</div>
@@ -518,9 +519,9 @@
 												<div
 													class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-700/50 text-sm font-bold text-gray-300"
 												>
-													{order.userEmail?.charAt(0).toUpperCase() || '?'}
+													{getUserName(order.userEmail).charAt(0).toUpperCase()}
 												</div>
-												<span class="text-sm text-gray-300 hover:text-white">{order.userEmail}</span
+												<span class="text-sm text-gray-300 hover:text-white">{getUserName(order.userEmail)}</span
 												>
 											</a>
 										</td>

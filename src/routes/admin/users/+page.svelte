@@ -86,6 +86,10 @@
 		}
 	});
 
+	// Pagination state
+	let usersPage = $state(1);
+	let usersPerPage = 20;
+
 	// Filter users - use server results if available, otherwise filter locally
 	let filteredUsers = $derived.by(() => {
 		// If we have server search results, use those
@@ -104,6 +108,12 @@
 				(user.last_name && user.last_name.toLowerCase().includes(query))
 		);
 	});
+
+	// Paginated users
+	let paginatedUsers = $derived(
+		filteredUsers.slice((usersPage - 1) * usersPerPage, usersPage * usersPerPage)
+	);
+	let totalUsersPages = $derived(Math.ceil(filteredUsers.length / usersPerPage));
 
 	// Debounced server-side search for users
 	async function searchUsersOnServer(query) {
@@ -143,6 +153,7 @@
 	function handleUserSearch(event) {
 		const query = event.target.value;
 		userSearchQuery = query;
+		usersPage = 1;
 
 		// Clear previous timeout
 		if (userSearchTimeout) {
@@ -328,7 +339,7 @@
 
 					<!-- Users - Mobile Card View -->
 					<div class="space-y-3 lg:hidden">
-						{#each filteredUsers.slice(0, 20) as user}
+						{#each paginatedUsers as user}
 							<div class="rounded-lg border border-gray-700 bg-gray-800/30 p-4">
 								<div class="flex items-start justify-between gap-3">
 									<a href="/admin/customers/{user.id}" class="flex min-w-0 items-center gap-3">
@@ -342,10 +353,12 @@
 														? 'from-green-500 to-emerald-600'
 														: 'from-gray-500 to-gray-600'} text-sm font-bold text-white"
 										>
-											{user.email.charAt(0).toUpperCase()}
+											{(user.first_name || user.email).charAt(0).toUpperCase()}
 										</div>
 										<div class="min-w-0">
-											<p class="truncate text-sm font-medium text-white">{user.email}</p>
+											<p class="truncate text-sm font-medium text-white">
+												{user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.email}
+											</p>
 											<p class="text-xs text-gray-500">
 												Joined {new Date(user.createdAt).toLocaleDateString('en-US', {
 													month: 'short',
@@ -421,11 +434,27 @@
 								<p class="text-gray-400">No users found</p>
 							</div>
 						{/each}
-						{#if filteredUsers.length > 20}
-							<div class="rounded-lg border border-gray-700 bg-gray-800/30 p-3 text-center">
+						{#if totalUsersPages > 1}
+							<div class="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-800/30 p-3">
 								<p class="text-sm text-gray-400">
-									Showing 20 of {filteredUsers.length}. Use search to find more.
+									Showing {(usersPage - 1) * usersPerPage + 1}–{Math.min(usersPage * usersPerPage, filteredUsers.length)} of {filteredUsers.length}
 								</p>
+								<div class="flex gap-2">
+									<button
+										onclick={() => usersPage--}
+										disabled={usersPage <= 1}
+										class="rounded-lg border border-gray-700 px-3 py-1 text-sm text-gray-300 transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+									>
+										Previous
+									</button>
+									<button
+										onclick={() => usersPage++}
+										disabled={usersPage >= totalUsersPages}
+										class="rounded-lg border border-gray-700 px-3 py-1 text-sm text-gray-300 transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+									>
+										Next
+									</button>
+								</div>
 							</div>
 						{/if}
 					</div>
@@ -454,7 +483,7 @@
 								</tr>
 							</thead>
 							<tbody class="divide-y divide-gray-800">
-								{#each filteredUsers.slice(0, 20) as user}
+								{#each paginatedUsers as user}
 									<tr class="group transition-colors hover:bg-gray-800/50">
 										<td class="px-6 py-4">
 											<a
@@ -471,12 +500,13 @@
 																? 'from-green-500 to-emerald-600'
 																: 'from-gray-500 to-gray-600'} text-sm font-bold text-white"
 												>
-													{user.email.charAt(0).toUpperCase()}
+													{(user.first_name || user.email).charAt(0).toUpperCase()}
 												</div>
 												<div>
 													<div class="text-sm font-medium text-white hover:text-blue-400">
-														{user.email}
+														{user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.email}
 													</div>
+													<div class="text-xs text-gray-500">{user.email}</div>
 													{#if user.id === data.user.id}
 														<span class="text-xs text-blue-400">You</span>
 													{/if}
@@ -561,11 +591,28 @@
 								{/each}
 							</tbody>
 						</table>
-						{#if filteredUsers.length > 20}
-							<div class="border-t border-gray-800 bg-gray-800/30 p-4 text-center">
+						{#if totalUsersPages > 1}
+							<div class="flex items-center justify-between border-t border-gray-800 bg-gray-800/30 p-4">
 								<p class="text-sm text-gray-400">
-									Showing first 20 of {filteredUsers.length} users. Use search to find more.
+									Showing {(usersPage - 1) * usersPerPage + 1}–{Math.min(usersPage * usersPerPage, filteredUsers.length)} of {filteredUsers.length} users
 								</p>
+								<div class="flex items-center gap-2">
+									<button
+										onclick={() => usersPage--}
+										disabled={usersPage <= 1}
+										class="rounded-lg border border-gray-700 px-3 py-1.5 text-sm text-gray-300 transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+									>
+										Previous
+									</button>
+									<span class="text-sm text-gray-500">Page {usersPage} of {totalUsersPages}</span>
+									<button
+										onclick={() => usersPage++}
+										disabled={usersPage >= totalUsersPages}
+										class="rounded-lg border border-gray-700 px-3 py-1.5 text-sm text-gray-300 transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+									>
+										Next
+									</button>
+								</div>
 							</div>
 						{/if}
 						{#if filteredUsers.length === 0}
