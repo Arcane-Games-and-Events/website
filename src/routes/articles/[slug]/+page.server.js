@@ -3,6 +3,7 @@ import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow, userHasPremiumAccess } from '$lib/server/articles/access.js';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 import { resolveCardImage } from '$lib/server/cards/index.js';
+import { enrichPageViewWithArticle } from '$lib/server/analytics.js';
 
 /**
  * Truncate Lexical content to only show first few paragraphs for preview
@@ -325,11 +326,24 @@ export async function load({ params, locals, setHeaders }) {
 			});
 		}
 
+		// Enrich the page view with article metadata (fire-and-forget)
+		const pageViewId = locals.pageViewId || null;
+		if (pageViewId) {
+			const tagNames = tags.map((t) => t.name).join(',');
+			enrichPageViewWithArticle(pageViewId, {
+				title: article.title,
+				author: author?.name || null,
+				tags: tagNames || null,
+				accessMode: article.accessMode || null
+			});
+		}
+
 		return {
 			article,
 			isPremium,
 			isPreview,
 			cardImages,
+			pageViewId,
 			user: user ? { role: user.role } : null
 		};
 	} catch (err) {

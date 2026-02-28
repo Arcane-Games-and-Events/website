@@ -481,3 +481,62 @@ export const eventPlayerHero = pgTable(
 		uniqueEventPlayer: unique().on(table.season, table.circuit, table.month, table.gemId)
 	})
 );
+
+// PAGE VIEW - site-wide page view tracking
+export const pageView = pgTable('page_view', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	userId: text('user_id').references(() => user.id),
+	sessionId: text('session_id'),
+	path: text('path').notNull(),
+	referrer: text('referrer'),
+	referrerDomain: text('referrer_domain'),
+	utmSource: text('utm_source'),
+	utmMedium: text('utm_medium'),
+	utmCampaign: text('utm_campaign'),
+	deviceType: text('device_type'),
+	browser: text('browser'),
+	country: text('country'),
+	isNewVisitor: boolean('is_new_visitor').default(false),
+	articleSlug: text('article_slug'),
+	articleTitle: text('article_title'),
+	articleAuthor: text('article_author'),
+	articleTags: text('article_tags'),
+	articleAccessMode: text('article_access_mode'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// ARTICLE ENGAGEMENT - deep per-article reading behavior
+export const articleEngagement = pgTable('article_engagement', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	pageViewId: uuid('page_view_id').references(() => pageView.id),
+	userId: text('user_id').references(() => user.id),
+	sessionId: text('session_id'),
+	articleSlug: text('article_slug').notNull(),
+	timeOnPageSeconds: integer('time_on_page_seconds'),
+	maxScrollDepth: integer('max_scroll_depth'),
+	readCompleted: boolean('read_completed').default(false),
+	contentEngaged: boolean('content_engaged').default(false),
+	exitedTo: text('exited_to'),
+	shareClicked: text('share_clicked'),
+	premiumCtaViewed: boolean('premium_cta_viewed').default(false),
+	premiumCtaClicked: boolean('premium_cta_clicked').default(false),
+	decklistInteractions: integer('decklist_interactions').default(0),
+	cardHovers: integer('card_hovers').default(0),
+	userRoleAtRead: text('user_role_at_read'),
+	signedUpAfter: boolean('signed_up_after').default(false),
+	upgradedAfter: boolean('upgraded_after').default(false),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// ANALYTICS EVENT - flexible event tracking for interactions across the site
+export const analyticsEvent = pgTable('analytics_event', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	pageViewId: uuid('page_view_id').references(() => pageView.id),
+	userId: text('user_id').references(() => user.id),
+	sessionId: text('session_id'),
+	eventType: text('event_type').notNull(),
+	eventData: jsonb('event_data'),
+	path: text('path'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});

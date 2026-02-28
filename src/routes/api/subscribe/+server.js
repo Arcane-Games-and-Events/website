@@ -1,9 +1,9 @@
 import { json } from '@sveltejs/kit';
 import { authnet } from '$lib/server/authnet/client.js';
 import { db } from '$lib/server/db/index.js';
-import { user as userTable, order, savedCard } from '$lib/server/db/schema.js';
+import { user as userTable, order, savedCard, articleEngagement } from '$lib/server/db/schema.js';
 import { auth } from '$lib/server/lucia.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, gte } from 'drizzle-orm';
 
 /**
  * Calculate the next billing date based on subscription type
@@ -227,6 +227,22 @@ export async function POST({ request, locals }) {
 			});
 
 			console.log('Order recorded in database');
+
+			// Conversion attribution: mark recent article reads as leading to upgrade
+			try {
+				const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+				await db
+					.update(articleEngagement)
+					.set({ upgradedAfter: true })
+					.where(
+						and(
+							eq(articleEngagement.userId, currentUser.id),
+							gte(articleEngagement.createdAt, sevenDaysAgo)
+						)
+					);
+			} catch {
+				// Silent fail — conversion attribution should never block subscription
+			}
 
 			return json(
 				{

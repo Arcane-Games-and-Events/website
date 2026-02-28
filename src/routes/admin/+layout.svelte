@@ -27,6 +27,7 @@
 		if (pathname.startsWith('/admin/vods')) return 'vods';
 		if (pathname.startsWith('/admin/users')) return 'users';
 		if (pathname.startsWith('/admin/import-matches')) return 'import-matches';
+		if (pathname.startsWith('/admin/content-analytics')) return 'content-analytics';
 		if (pathname.startsWith('/admin/analytics')) return 'analytics';
 		if (pathname.startsWith('/admin/cards')) return 'cards';
 		return 'analytics';
@@ -37,6 +38,8 @@
 		switch (currentPage) {
 			case 'analytics':
 				return 'Analytics';
+			case 'content-analytics':
+				return 'Content Analytics';
 			case 'events':
 				return 'Events';
 			case 'orders':

@@ -1,10 +1,23 @@
 <script>
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
 	import Decklist from '$lib/components/Decklist.svelte';
 	import CardHover from '$lib/components/CardHover.svelte';
 
 	export let data;
+
+	// --- Engagement tracking state ---
+	let engagementId = null;
+	let engagementInterval = null;
+	let activeTime = 0;
+	let activeTimerRunning = false;
+	let activeTimerInterval = null;
+	let maxScrollDepth = 0;
+	let shareClickedType = null;
+	let premiumCtaViewed = false;
+	let premiumCtaClicked = false;
+	let decklistInteractionCount = 0;
+	let cardHoverCount = 0;
 
 	// Card images map from server for hover tooltips
 	$: cardImages = data.cardImages || {};
@@ -292,11 +305,13 @@
 
 	function copyLink() {
 		navigator.clipboard.writeText(window.location.href);
+		shareClickedType = 'copy_link';
 	}
 
 	function shareTwitter() {
 		const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(data.article.title)}`;
 		window.open(url, '_blank', 'width=550,height=420');
+		shareClickedType = 'twitter';
 	}
 
 	/**
@@ -734,6 +749,133 @@
 			.replace(/"/g, '&quot;')
 			.replace(/'/g, '&#039;');
 	}
+
+	// --- Engagement tracking ---
+	function getEngagementPayload() {
+		const readTime = data.article.readTime || 5;
+		const estimatedReadSeconds = readTime * 60;
+		return {
+			action: 'engagement_update',
+			engagementId,
+			pageViewId: data.pageViewId || null,
+			articleSlug: data.article.slug,
+			timeOnPageSeconds: Math.round(activeTime),
+			maxScrollDepth,
+			readCompleted: maxScrollDepth >= 90 && activeTime >= estimatedReadSeconds * 0.5,
+			contentEngaged: activeTime > 30 && maxScrollDepth > 50,
+			shareClicked: shareClickedType,
+			premiumCtaViewed,
+			premiumCtaClicked,
+			decklistInteractions: decklistInteractionCount,
+			cardHovers: cardHoverCount
+		};
+	}
+
+	async function sendEngagement() {
+		try {
+			const payload = getEngagementPayload();
+			const res = await fetch('/api/analytics/event', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload)
+			});
+			const result = await res.json();
+			if (result.engagementId && !engagementId) {
+				engagementId = result.engagementId;
+			}
+		} catch {
+			// Silent fail
+		}
+	}
+
+	function sendBeaconEngagement() {
+		try {
+			const payload = getEngagementPayload();
+			navigator.sendBeacon('/api/analytics/event', JSON.stringify(payload));
+		} catch {
+			// Silent fail
+		}
+	}
+
+	onMount(() => {
+		// --- Active time tracking (pauses when tab is hidden) ---
+		activeTimerRunning = true;
+		activeTimerInterval = setInterval(() => {
+			if (activeTimerRunning) activeTime += 1;
+		}, 1000);
+
+		function handleVisibility() {
+			activeTimerRunning = !document.hidden;
+		}
+		document.addEventListener('visibilitychange', handleVisibility);
+
+		// --- Scroll depth tracking ---
+		function handleScrollDepth() {
+			const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+			if (docHeight > 0) {
+				const scrolled = Math.round((window.scrollY / docHeight) * 100);
+				if (scrolled > maxScrollDepth) maxScrollDepth = scrolled;
+			}
+		}
+		window.addEventListener('scroll', handleScrollDepth, { passive: true });
+
+		// --- Premium CTA tracking (IntersectionObserver) ---
+		let ctaObserver = null;
+		const ctaEl = document.querySelector('[data-premium-cta]');
+		if (ctaEl) {
+			ctaObserver = new IntersectionObserver(
+				(entries) => {
+					if (entries[0].isIntersecting) {
+						premiumCtaViewed = true;
+					}
+				},
+				{ threshold: 0.5 }
+			);
+			ctaObserver.observe(ctaEl);
+		}
+
+		// --- Decklist & card hover tracking (event delegation) ---
+		function handleDecklistClick(e) {
+			if (e.target.closest('[data-decklist-toggle]')) {
+				decklistInteractionCount += 1;
+			}
+		}
+		function handleCardHover(e) {
+			if (e.target.closest('[data-card-hover]')) {
+				cardHoverCount += 1;
+			}
+		}
+		document.addEventListener('click', handleDecklistClick);
+		document.addEventListener('mouseenter', handleCardHover, true);
+
+		// --- Periodic engagement updates (every 30s) ---
+		engagementInterval = setInterval(sendEngagement, 30000);
+
+		// --- Send final state on page unload ---
+		function handleBeforeUnload() {
+			sendBeaconEngagement();
+		}
+		window.addEventListener('beforeunload', handleBeforeUnload);
+
+		// --- Cleanup ---
+		return () => {
+			document.removeEventListener('visibilitychange', handleVisibility);
+			window.removeEventListener('scroll', handleScrollDepth);
+			document.removeEventListener('click', handleDecklistClick);
+			document.removeEventListener('mouseenter', handleCardHover, true);
+			window.removeEventListener('beforeunload', handleBeforeUnload);
+			if (ctaObserver) ctaObserver.disconnect();
+			clearInterval(activeTimerInterval);
+			clearInterval(engagementInterval);
+		};
+	});
+
+	onDestroy(() => {
+		// Send final engagement when navigating away within SPA
+		if (typeof window !== 'undefined') {
+			sendBeaconEngagement();
+		}
+	});
 </script>
 
 <svelte:head>
@@ -1090,7 +1232,7 @@
 
 				<!-- Premium Subscription CTA for preview mode -->
 				{#if data.isPreview}
-					<div class="relative z-10 -mt-12">
+					<div class="relative z-10 -mt-12" data-premium-cta>
 						<div
 							class="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-900/30 via-gray-900 to-purple-900/20 p-6 text-center sm:p-8"
 						>
@@ -1198,6 +1340,7 @@
 										<!-- User is logged in but not premium -->
 										<a
 											href="/premium"
+											on:click={() => { premiumCtaClicked = true; }}
 											class="rounded-xl bg-gradient-to-r from-emerald-600 to-green-700 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:from-emerald-500 hover:to-green-600 hover:shadow-xl hover:shadow-emerald-500/30"
 										>
 											Subscribe to Premium
@@ -1206,6 +1349,7 @@
 										<!-- User is not logged in -->
 										<a
 											href="/premium"
+											on:click={() => { premiumCtaClicked = true; }}
 											class="rounded-xl bg-gradient-to-r from-emerald-600 to-green-700 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:from-emerald-500 hover:to-green-600 hover:shadow-xl hover:shadow-emerald-500/30"
 										>
 											Join Premium

@@ -2,11 +2,12 @@
 import { auth } from '$lib/server/lucia';
 import { Argon2id } from 'oslo/password';
 import { db } from '$lib/server/db';
-import { user } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { user, articleEngagement } from '$lib/server/db/schema';
+import { eq, and, gte } from 'drizzle-orm';
 import { fail, redirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { verifyTurnstileToken } from '$lib/server/turnstile.js';
+import { getSessionId } from '$lib/server/analytics.js';
 
 export function load() {
 	return {
@@ -69,6 +70,23 @@ export const actions = {
 		const session = await auth.createSession(id, {});
 		const cookie = auth.createSessionCookie(session.id); // ← pass session.id
 		cookies.set(cookie.name, cookie.value, { ...cookie.attributes, path: '/' });
+
+		// Conversion attribution: mark recent article reads as leading to signup
+		try {
+			const sessionId = getSessionId({ request, getClientAddress });
+			const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+			await db
+				.update(articleEngagement)
+				.set({ signedUpAfter: true })
+				.where(
+					and(
+						eq(articleEngagement.sessionId, sessionId),
+						gte(articleEngagement.createdAt, oneDayAgo)
+					)
+				);
+		} catch {
+			// Silent fail — conversion attribution should never block signup
+		}
 
 		// Validate redirect URL is a local path (security measure)
 		const safeRedirect = redirectTo.startsWith('/') ? redirectTo : '/';
