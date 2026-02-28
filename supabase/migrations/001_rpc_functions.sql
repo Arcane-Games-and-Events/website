@@ -184,6 +184,49 @@ BEGIN
                 )
             )
             FROM "order"
+        ),
+        'premium', json_build_object(
+            'totalPremium', (SELECT COUNT(*) FROM "user" WHERE role = 'premium'),
+            'paidPremium', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_id IS NOT NULL),
+            'assignedPremium', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_id IS NULL),
+            'paidActive', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_status = 'active'),
+            'paidCancelled', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_status = 'cancelled'),
+            'paidExpired', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_status = 'expired'),
+            'paidPaymentFailed', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_status = 'payment_failed'),
+            'paidMonthlyActive', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_type = 'monthly' AND subscription_status = 'active'),
+            'paidYearlyActive', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_type = 'yearly' AND subscription_status = 'active'),
+            'paidMonthlyCancelled', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_type = 'monthly' AND subscription_status = 'cancelled'),
+            'paidYearlyCancelled', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_type = 'yearly' AND subscription_status = 'cancelled'),
+            'recentSignups', (
+                SELECT COALESCE(json_agg(json_build_object(
+                    'email', email, 'firstName', first_name, 'lastName', last_name,
+                    'type', 'paid', 'subscriptionType', subscription_type,
+                    'subscriptionStatus', subscription_status, 'createdAt', subscription_start_date
+                ) ORDER BY subscription_start_date DESC NULLS LAST), '[]'::json)
+                FROM (
+                    SELECT email, first_name, last_name, subscription_type, subscription_status, subscription_start_date
+                    FROM "user"
+                    WHERE role = 'premium' AND subscription_id IS NOT NULL
+                    ORDER BY subscription_start_date DESC NULLS LAST
+                    LIMIT 10
+                ) rs
+            ),
+            'monthlyTrend', (
+                SELECT COALESCE(json_agg(json_build_object(
+                    'month', m, 'monthName', mn,
+                    'paid', paid, 'assigned', assigned, 'total', paid + assigned
+                ) ORDER BY m), '[]'::json)
+                FROM (
+                    SELECT TO_CHAR(subscription_start_date, 'YYYY-MM') as m,
+                           TO_CHAR(subscription_start_date, 'Mon YYYY') as mn,
+                           COUNT(*) FILTER (WHERE subscription_id IS NOT NULL) as paid,
+                           COUNT(*) FILTER (WHERE subscription_id IS NULL) as assigned
+                    FROM "user"
+                    WHERE role = 'premium' AND subscription_start_date IS NOT NULL
+                    GROUP BY m, mn
+                    ORDER BY m DESC LIMIT 12
+                ) mt
+            )
         )
     ) INTO result;
 
