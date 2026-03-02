@@ -53,10 +53,15 @@ export function getBrowser(ua) {
 }
 
 /**
- * Extract country code from Cloudflare CF-IPCountry header.
+ * Extract country code from geolocation headers.
+ * Checks Vercel (x-vercel-ip-country) and Cloudflare (cf-ipcountry).
  */
 export function getCountry(event) {
-	return event.request.headers.get('cf-ipcountry') || null;
+	return (
+		event.request.headers.get('x-vercel-ip-country') ||
+		event.request.headers.get('cf-ipcountry') ||
+		null
+	);
 }
 
 /**
