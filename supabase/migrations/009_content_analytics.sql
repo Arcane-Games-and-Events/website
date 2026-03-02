@@ -184,12 +184,12 @@ BEGIN
             -- Top countries
             'topCountries', (
                 SELECT COALESCE(json_agg(json_build_object(
-                    'country', COALESCE(country, 'unknown'),
+                    'country', country,
                     'count', cnt
                 )), '[]'::json)
                 FROM (
                     SELECT country, COUNT(*) as cnt
-                    FROM page_view WHERE created_at >= thirty_days_ago
+                    FROM page_view WHERE created_at >= thirty_days_ago AND country IS NOT NULL
                     GROUP BY country ORDER BY cnt DESC
                     LIMIT 20
                 ) co
