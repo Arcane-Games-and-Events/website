@@ -4,6 +4,9 @@
 	export let event;
 
 	$: circuit = getCircuit(event?.circuit);
+	$: isFull =
+		event?.playerCap != null &&
+		event.playerCap - (event.registeredCount || 0) <= 0;
 </script>
 
 {#if event}
@@ -48,11 +51,19 @@
 		>
 
 		<!-- Sign Up Button -->
-		<span
-			class="ml-auto shrink-0 rounded-md {circuit.colors
-				.bg} px-3 py-1 text-xs font-semibold text-white transition-transform group-hover:scale-105"
-		>
-			Sign Up
-		</span>
+		{#if isFull}
+			<span
+				class="ml-auto shrink-0 rounded-md bg-red-500/20 px-3 py-1 text-xs font-semibold text-red-400"
+			>
+				FULL
+			</span>
+		{:else}
+			<span
+				class="ml-auto shrink-0 rounded-md {circuit.colors
+					.bg} px-3 py-1 text-xs font-semibold text-white transition-transform group-hover:scale-105"
+			>
+				Sign Up
+			</span>
+		{/if}
 	</a>
 {/if}

@@ -33,6 +33,8 @@
 	let isEditMode = $state(false);
 	let premiumDiscount = $derived(data.event.premiumDiscount);
 	let gemIdRequired = $derived(data.event.gemIdRequired);
+	let hasPlayerCap = $state(!!data.event.playerCap);
+	let playerCapValue = $state(data.event.playerCap || '');
 
 	// Sorting state for registrations
 	let sortColumn = $state('createdAt');
@@ -932,6 +934,26 @@
 								/>
 								<span class="text-sm font-medium text-gray-300">10% Premium Discount</span>
 							</label>
+							<div class="flex items-center gap-3">
+								<label class="flex cursor-pointer items-center gap-3">
+									<input
+										type="checkbox"
+										bind:checked={hasPlayerCap}
+										class="h-4 w-4 border-gray-600 bg-gray-800 text-orange-500"
+									/>
+									<span class="text-sm font-medium text-gray-300">Player Cap</span>
+								</label>
+								{#if hasPlayerCap}
+									<input
+										type="number"
+										name="playerCap"
+										min="1"
+										bind:value={playerCapValue}
+										placeholder="e.g., 32"
+										class="w-24 rounded-lg border border-white/10 bg-gray-800/50 px-3 py-1.5 text-sm text-white placeholder:text-gray-500 focus:border-orange-500 focus:ring-1 focus:ring-orange-500/50 focus:outline-none"
+									/>
+								{/if}
+							</div>
 						</div>
 
 						<div class="flex gap-3 pt-4">
@@ -1035,6 +1057,13 @@
 									{/if}
 									Premium Discount
 								</span>
+								{#if data.event.playerCap}
+									<span
+										class="inline-flex items-center gap-1.5 rounded-full bg-orange-500/20 px-3 py-1 text-xs font-medium text-orange-400"
+									>
+										Cap: {data.event.playerCap} players
+									</span>
+								{/if}
 							</div>
 						</div>
 						{#if data.event.description}
@@ -1094,7 +1123,7 @@
 					</div>
 					<h2 class="text-xl font-semibold text-white">Registered Players</h2>
 					<span class="rounded-full bg-blue-500/20 px-2.5 py-0.5 text-sm font-medium text-blue-400"
-						>{data.tickets.length}</span
+						>{data.tickets.length}{#if data.event.playerCap}/{data.event.playerCap}{/if}</span
 					>
 				</div>
 

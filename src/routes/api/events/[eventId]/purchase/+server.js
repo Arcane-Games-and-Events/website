@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import { authnet } from '$lib/server/authnet/client.js';
 import { db } from '$lib/server/db/index.js';
 import { ticket, order, event as eventTable, savedCard, user } from '$lib/server/db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 
 /**
@@ -45,6 +45,18 @@ export async function POST({ params, request, locals }) {
 		// Validate Gem ID if required
 		if (eventData.gemIdRequired && !gemId) {
 			return json({ error: 'Gem ID is required for this event' }, { status: 400 });
+		}
+
+		// Check capacity if player cap is set
+		if (eventData.playerCap !== null && eventData.playerCap !== undefined) {
+			const [{ count: activeTicketCount }] = await db
+				.select({ count: sql`count(*)::int` })
+				.from(ticket)
+				.where(and(eq(ticket.eventId, eventId), eq(ticket.refunded, false)));
+
+			if (activeTicketCount >= eventData.playerCap) {
+				return json({ error: 'Event is full', full: true }, { status: 409 });
+			}
 		}
 
 		// Calculate expected price with premium discount

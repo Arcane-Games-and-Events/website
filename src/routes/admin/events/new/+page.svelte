@@ -6,6 +6,8 @@
 	// Checkbox state variables
 	let gemIdRequired = false;
 	let premiumDiscount = false;
+	let hasPlayerCap = false;
+	let playerCapValue = '';
 
 	const circuits = getCircuitNames();
 
@@ -417,6 +419,59 @@
 							<p class="mt-1 text-sm text-gray-400">
 								Premium members will receive a 10% discount on the entry fee
 							</p>
+						</div>
+					</label>
+
+					<!-- Player Cap -->
+					<label
+						class="group flex cursor-pointer items-start gap-4 rounded-lg border border-white/10 bg-gray-800/30 p-4 transition-colors hover:border-orange-500/30"
+					>
+						<div class="relative flex items-center justify-center">
+							<input
+								type="checkbox"
+								bind:checked={hasPlayerCap}
+								class="peer sr-only"
+							/>
+							<div
+								class="flex h-5 w-5 items-center justify-center rounded border-2 border-gray-600 bg-gray-800 transition-colors peer-checked:border-orange-500 peer-checked:bg-orange-500"
+							>
+								{#if hasPlayerCap}
+									<svg
+										class="h-3 w-3 text-white"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="3"
+											d="M5 13l4 4L19 7"
+										/>
+									</svg>
+								{/if}
+							</div>
+						</div>
+						<div class="flex-1">
+							<span class="font-medium text-white transition-colors group-hover:text-orange-400">
+								Player Cap
+							</span>
+							<p class="mt-1 text-sm text-gray-400">
+								Limit the number of registered players for this event
+							</p>
+							{#if hasPlayerCap}
+								<div class="mt-3">
+									<input
+										type="number"
+										name="playerCap"
+										min="1"
+										bind:value={playerCapValue}
+										placeholder="e.g., 32"
+										class="w-32 rounded-lg border border-white/10 bg-gray-800/50 px-4 py-2 text-white transition-colors placeholder:text-gray-500 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/50 focus:outline-none"
+										on:click|stopPropagation
+									/>
+								</div>
+							{/if}
 						</div>
 					</label>
 				</div>

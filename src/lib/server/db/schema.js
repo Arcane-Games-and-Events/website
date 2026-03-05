@@ -82,6 +82,7 @@ export const event = pgTable('events', {
 	eventDate: timestamp('event_date', { withTimezone: true, mode: 'date' }), // Nullable for migration
 	description: text('description'),
 	premiumDiscount: boolean('premium_discount').default(false), // 10% discount for premium users
+	playerCap: integer('player_cap'), // null = unlimited
 
 	// Event status for closeout workflow
 	status: text('status').default('upcoming'), // 'upcoming', 'in_progress', 'completed', 'cancelled'

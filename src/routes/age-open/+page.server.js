@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db/index.js';
-import { event, match, decklist, standing, lssEvent } from '$lib/server/db/schema.js';
+import { event, match, decklist, standing, lssEvent, ticket } from '$lib/server/db/schema.js';
 import { calculateFinalStandings } from '$lib/server/tournament-processor.js';
 import { asc, desc, eq, and, sql, gt, gte } from 'drizzle-orm';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
@@ -88,13 +88,14 @@ export async function load({ url, setHeaders }) {
 	try {
 		// Fetch raw data with Redis caching (5 minute TTL)
 		// This caches the expensive database queries
-		const [events, allEventMatches, allStandings, decklists, lssEvents] = await Promise.all([
-			// Get events sorted by date (cached)
-			getCachedOrFetch(
-				`${CACHE_KEYS.EVENTS}:all`,
-				() => db.select().from(event).orderBy(asc(event.eventDate)),
-				CACHE_TTL.MEDIUM
-			),
+		const [events, allEventMatches, allStandings, decklists, lssEvents, ticketCounts] =
+			await Promise.all([
+				// Get events sorted by date (cached)
+				getCachedOrFetch(
+					`${CACHE_KEYS.EVENTS}:all`,
+					() => db.select().from(event).orderBy(asc(event.eventDate)),
+					CACHE_TTL.MEDIUM
+				),
 			// Get ALL event matches in one query (cached with shorter TTL for real-time updates)
 			getCachedOrFetch(
 				`${CACHE_KEYS.EVENTS}:matches:all`,
@@ -143,8 +144,28 @@ export async function load({ url, setHeaders }) {
 						.where(eq(lssEvent.isActive, true))
 						.orderBy(asc(lssEvent.startDate)),
 				CACHE_TTL.MEDIUM
-			)
-		]);
+				),
+				// Get active ticket counts per event (short cache for accurate capacity)
+				getCachedOrFetch(
+					`${CACHE_KEYS.EVENTS}:ticket-counts`,
+					() =>
+						db
+							.select({
+								eventId: ticket.eventId,
+								count: sql`count(*)::int`
+							})
+							.from(ticket)
+							.where(eq(ticket.refunded, false))
+							.groupBy(ticket.eventId),
+					CACHE_TTL.SHORT
+				)
+			]);
+
+		// Build ticket count lookup map
+		const ticketCountMap = new Map();
+		for (const tc of ticketCounts) {
+			ticketCountMap.set(tc.eventId, tc.count);
+		}
 
 		// Extract unique seasons and circuits from standings data (dynamic filters)
 		const uniqueSeasons = [...new Set(allStandings.map((s) => s.season))]
@@ -501,8 +522,13 @@ export async function load({ url, setHeaders }) {
 			return new Date(b.event.eventDate) - new Date(a.event.eventDate);
 		});
 
-		// Filter events to only show upcoming ones for the events list
-		const upcomingEvents = events.filter((e) => e.status === 'upcoming');
+		// Filter events to only show upcoming ones for the events list, with ticket counts
+		const upcomingEvents = events
+			.filter((e) => e.status === 'upcoming')
+			.map((e) => ({
+				...e,
+				registeredCount: ticketCountMap.get(e.id) || 0
+			}));
 
 		return {
 			events: upcomingEvents,

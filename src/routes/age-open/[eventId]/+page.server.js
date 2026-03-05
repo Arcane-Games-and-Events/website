@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { event, savedCard, ticket } from '$lib/server/db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 
 export async function load({ params, locals }) {
@@ -21,6 +21,16 @@ export async function load({ params, locals }) {
 		let finalPrice = parseFloat(eventData.price);
 		if (hasPremiumDiscount) {
 			finalPrice = finalPrice * 0.9;
+		}
+
+		// Get capacity info if player cap is set
+		let registeredCount = 0;
+		if (eventData.playerCap != null) {
+			const [{ count }] = await db
+				.select({ count: sql`count(*)::int` })
+				.from(ticket)
+				.where(and(eq(ticket.eventId, params.eventId), eq(ticket.refunded, false)));
+			registeredCount = count;
 		}
 
 		// Get user's GEM ID if they have one linked to their account
@@ -63,6 +73,7 @@ export async function load({ params, locals }) {
 			userLastName,
 			savedCards: userSavedCards,
 			userTicket,
+			registeredCount,
 			isSandbox: env.AUTHNET_ENVIRONMENT === 'sandbox'
 		};
 	} catch (err) {

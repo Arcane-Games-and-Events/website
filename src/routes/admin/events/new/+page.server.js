@@ -34,6 +34,8 @@ export const actions = {
 		const description = formData.get('description');
 		const gemIdRequired = formData.get('gemIdRequired') === 'on';
 		const premiumDiscount = formData.get('premiumDiscount') === 'on';
+		const playerCapRaw = formData.get('playerCap');
+		const playerCap = playerCapRaw ? parseInt(playerCapRaw) : null;
 
 		// Validation
 		if (!title || !location || !price || !format || !eventDate) {
@@ -89,6 +91,7 @@ export const actions = {
 				description: description || null,
 				gemIdRequired,
 				premiumDiscount,
+				playerCap,
 				createdBy: locals.user.id
 			});
 		} catch (err) {

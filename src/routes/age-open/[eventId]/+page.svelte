@@ -77,6 +77,11 @@
 			return eventDate < new Date();
 		})();
 
+	// Capacity
+	$: hasPlayerCap = data.event.playerCap != null;
+	$: spotsRemaining = hasPlayerCap ? data.event.playerCap - data.registeredCount : null;
+	$: isFull = hasPlayerCap && spotsRemaining <= 0;
+
 	function formatDate(dateStr) {
 		if (!dateStr) return 'TBA';
 		const date = new Date(dateStr);
@@ -170,6 +175,27 @@
 							>
 								Premium: 10% Off
 							</span>
+						{/if}
+						{#if hasPlayerCap}
+							{#if isFull}
+								<span
+									class="rounded-full border border-red-500/30 bg-red-500/20 px-3 py-1 text-sm font-medium text-red-400"
+								>
+									FULL
+								</span>
+							{:else if spotsRemaining <= 5}
+								<span
+									class="rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1 text-sm font-medium text-amber-400"
+								>
+									{spotsRemaining} spot{spotsRemaining !== 1 ? 's' : ''} left
+								</span>
+							{:else}
+								<span
+									class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-sm font-medium text-white backdrop-blur-sm"
+								>
+									{data.registeredCount}/{data.event.playerCap} registered
+								</span>
+							{/if}
 						{/if}
 						{#if isPastEvent}
 							<span class="rounded-full bg-gray-600 px-3 py-1 text-sm font-medium text-gray-300">
@@ -390,6 +416,57 @@
 									{#if data.event.address}
 										<p class="text-sm text-gray-500">{data.event.address}</p>
 									{/if}
+								</div>
+							</div>
+						{/if}
+						{#if hasPlayerCap}
+							<div
+								class="flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-800/30 p-3"
+							>
+								<div
+									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {isFull ? 'bg-red-500/20' : 'bg-purple-500/20'}"
+								>
+									<svg
+										class="h-4 w-4 {isFull ? 'text-red-400' : 'text-purple-400'}"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+										/>
+									</svg>
+								</div>
+								<div class="flex-1">
+									<p class="text-xs text-gray-500">Capacity</p>
+									<div class="flex items-center gap-2">
+										<p class="font-medium {isFull ? 'text-red-400' : 'text-white'}">
+											{data.registeredCount} / {data.event.playerCap} players
+										</p>
+										{#if isFull}
+											<span
+												class="rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-red-400"
+											>
+												FULL
+											</span>
+										{:else if spotsRemaining <= 5}
+											<span
+												class="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-400"
+											>
+												{spotsRemaining} left
+											</span>
+										{/if}
+									</div>
+									<!-- Progress bar -->
+									<div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-700">
+										<div
+											class="h-full rounded-full transition-all {isFull ? 'bg-red-500' : spotsRemaining <= 5 ? 'bg-amber-500' : 'bg-purple-500'}"
+											style="width: {Math.min((data.registeredCount / data.event.playerCap) * 100, 100)}%"
+										></div>
+									</div>
 								</div>
 							</div>
 						{/if}

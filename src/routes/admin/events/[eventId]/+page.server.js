@@ -322,6 +322,8 @@ export const actions = {
 		const description = formData.get('description');
 		const gemIdRequired = formData.get('gemIdRequired') === 'on';
 		const premiumDiscount = formData.get('premiumDiscount') === 'on';
+		const playerCapRaw = formData.get('playerCap');
+		const playerCap = playerCapRaw ? parseInt(playerCapRaw) : null;
 
 		try {
 			const updateData = {
@@ -334,7 +336,8 @@ export const actions = {
 				eventDate: parseDatetimeLocal(eventDate),
 				description: description || null,
 				gemIdRequired,
-				premiumDiscount
+				premiumDiscount,
+				playerCap
 			};
 
 			if (isAdmin) {
