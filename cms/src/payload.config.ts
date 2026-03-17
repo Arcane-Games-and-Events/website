@@ -1,6 +1,7 @@
 import { s3Storage } from '@payloadcms/storage-s3'
 import { postgresAdapter } from '@payloadcms/db-postgres'
-import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import type { Field } from 'payload'
+import { lexicalEditor, LinkFeature } from '@payloadcms/richtext-lexical'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
@@ -43,7 +44,21 @@ export default buildConfig({
     process.env.FRONTEND_URL,
   ].filter(Boolean) as string[],
   collections: [Users, Posts, Authors, Tags, Media],
-  editor: lexicalEditor(),
+  editor: lexicalEditor({
+    features: ({ defaultFeatures }) =>
+      defaultFeatures.map((feature) =>
+        feature.key === 'link'
+          ? LinkFeature({
+              fields: ({ defaultFields }) =>
+                defaultFields.map((field) =>
+                  'name' in field && field.name === 'url'
+                    ? { ...field, defaultValue: '' } as Field
+                    : field,
+                ),
+            })
+          : feature,
+      ),
+  }),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
