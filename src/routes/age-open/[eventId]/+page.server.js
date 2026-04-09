@@ -3,6 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { event, savedCard, ticket } from '$lib/server/db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
+import { calculatePremiumDiscount } from '$lib/server/premium-discount.js';
 
 export async function load({ params, locals }) {
 	try {
@@ -19,8 +20,13 @@ export async function load({ params, locals }) {
 
 		// Calculate discounted price if applicable
 		let finalPrice = parseFloat(eventData.price);
+		let discountAmount = 0;
+		let discountLabel = '';
 		if (hasPremiumDiscount) {
-			finalPrice = finalPrice * 0.9;
+			const discount = calculatePremiumDiscount(finalPrice, eventData.eventDate);
+			finalPrice = discount.finalPrice;
+			discountAmount = discount.discountAmount;
+			discountLabel = discount.discountLabel;
 		}
 
 		// Get capacity info if player cap is set
@@ -68,6 +74,8 @@ export async function load({ params, locals }) {
 			isPremium,
 			hasPremiumDiscount,
 			finalPrice: finalPrice.toFixed(2),
+			discountAmount: discountAmount.toFixed(2),
+			discountLabel,
 			userGemId,
 			userFirstName,
 			userLastName,

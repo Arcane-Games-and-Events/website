@@ -3,6 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { event, savedCard, ticket } from '$lib/server/db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
+import { calculatePremiumDiscount } from '$lib/server/premium-discount.js';
 
 export async function load({ params, locals }) {
 	// Require authentication
@@ -41,16 +42,24 @@ export async function load({ params, locals }) {
 		// Calculate price (with premium discount if applicable)
 		let finalPrice = parseFloat(eventData.price);
 		const isPremium = locals.user.role === 'premium' || locals.user.role === 'admin';
+		const hasPremiumDiscount = eventData.premiumDiscount && isPremium;
 
-		if (eventData.premiumDiscount && isPremium) {
-			finalPrice = finalPrice * 0.9; // 10% discount
+		let discountAmount = 0;
+		let discountLabel = '';
+		if (hasPremiumDiscount) {
+			const discount = calculatePremiumDiscount(finalPrice, eventData.eventDate);
+			finalPrice = discount.finalPrice;
+			discountAmount = discount.discountAmount;
+			discountLabel = discount.discountLabel;
 		}
 
 		return {
 			user: locals.user,
 			event: eventData,
 			finalPrice: finalPrice.toFixed(2),
-			hasPremiumDiscount: eventData.premiumDiscount && isPremium,
+			hasPremiumDiscount,
+			discountAmount: discountAmount.toFixed(2),
+			discountLabel,
 			savedCards: userSavedCards,
 			isSandbox: env.AUTHNET_ENVIRONMENT === 'sandbox'
 		};

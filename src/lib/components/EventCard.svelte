@@ -267,7 +267,7 @@
 									<span
 										class="rounded border border-amber-500/30 bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-medium text-amber-300"
 									>
-										-10%
+										PREMIUM
 									</span>
 								{/if}
 								{#if isFull}

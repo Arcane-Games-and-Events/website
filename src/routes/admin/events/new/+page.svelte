@@ -401,7 +401,7 @@
 						<div class="flex-1">
 							<div class="flex items-center gap-2">
 								<span class="font-medium text-white transition-colors group-hover:text-emerald-400">
-									10% Premium Member Discount
+									Premium Member Discount
 								</span>
 								<span
 									class="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-400"
@@ -417,7 +417,7 @@
 								</span>
 							</div>
 							<p class="mt-1 text-sm text-gray-400">
-								Premium members will receive a 10% discount on the entry fee
+								Premium members will receive a discount on the entry fee
 							</p>
 						</div>
 					</label>

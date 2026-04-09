@@ -4,6 +4,7 @@ import { db } from '$lib/server/db/index.js';
 import { ticket, order, event as eventTable, savedCard, user } from '$lib/server/db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
+import { calculatePremiumDiscount } from '$lib/server/premium-discount.js';
 
 /**
  * Purchase event tickets (one-time payment)
@@ -64,7 +65,8 @@ export async function POST({ params, request, locals }) {
 		const isPremium = currentUser.role === 'premium' || currentUser.role === 'admin';
 
 		if (eventData.premiumDiscount && isPremium) {
-			expectedPrice = expectedPrice * 0.9; // 10% discount
+			const discount = calculatePremiumDiscount(expectedPrice, eventData.eventDate);
+			expectedPrice = discount.finalPrice;
 		}
 
 		// Validate amount matches expected price

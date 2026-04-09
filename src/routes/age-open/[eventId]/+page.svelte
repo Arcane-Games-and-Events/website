@@ -173,7 +173,7 @@
 							<span
 								class="rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1 text-sm font-medium text-amber-400"
 							>
-								Premium: 10% Off
+								Premium: {data.discountLabel} Off
 							</span>
 						{/if}
 						{#if hasPlayerCap}
@@ -887,7 +887,7 @@
 												</svg>
 												<span class="text-sm text-green-400">Premium Discount (1st ticket)</span>
 											</div>
-											<span class="text-sm font-medium text-green-400">-10%</span>
+											<span class="text-sm font-medium text-green-400">-${data.discountAmount}</span>
 										</div>
 									{/if}
 
@@ -1057,7 +1057,7 @@
 											</svg>
 											<span class="text-sm text-green-400">Premium Discount (1st ticket)</span>
 										</div>
-										<span class="text-sm font-medium text-green-400">-10%</span>
+										<span class="text-sm font-medium text-green-400">-${data.discountAmount}</span>
 									</div>
 								{/if}
 

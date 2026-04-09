@@ -437,11 +437,11 @@
 												/>
 											</svg>
 											<span class="text-sm font-medium text-emerald-400"
-												>Premium Discount (10%)</span
+												>Premium Discount ({data.discountLabel})</span
 											>
 										</div>
 										<span class="font-semibold text-emerald-400"
-											>-${(parseFloat(data.event.price) * 0.1).toFixed(2)}</span
+											>-${data.discountAmount}</span
 										>
 									</div>
 								{/if}

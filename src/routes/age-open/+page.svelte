@@ -840,9 +840,14 @@
 	$: stlCount = stlEvents.length;
 	$: neCount = neEvents.length;
 
-	// All upcoming events sorted by date (filter by future date, closest first)
+	// All upcoming events sorted by date (show until end of event day, closest first)
 	$: upcomingEvents = (data.events || [])
-		.filter((e) => e.eventDate && new Date(e.eventDate) >= new Date())
+		.filter((e) => {
+			if (!e.eventDate) return false;
+			const eventEnd = new Date(e.eventDate);
+			eventEnd.setUTCHours(23, 59, 59, 999);
+			return eventEnd >= new Date();
+		})
 		.sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate));
 
 	// Circuit slots configuration (8 guaranteed opens per circuit)
