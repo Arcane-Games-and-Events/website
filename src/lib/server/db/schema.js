@@ -36,6 +36,9 @@ export const user = pgTable('user', {
 	subscriptionEndDate: timestamp('subscription_end_date', { withTimezone: true, mode: 'date' }), // When access expires (for cancelled subs)
 	nextBillingDate: timestamp('next_billing_date', { withTimezone: true, mode: 'date' }),
 
+	// Partner program — tracks the partner code a user redeemed (one per user, ever)
+	usedPartnerCode: text('used_partner_code'),
+
 	createdAt: timestamp('created_at', {
 		withTimezone: true,
 		mode: 'date'
@@ -539,5 +542,42 @@ export const analyticsEvent = pgTable('analytics_event', {
 	eventType: text('event_type').notNull(),
 	eventData: jsonb('event_data'),
 	path: text('path'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// AGE PARTNER PROGRAM
+// 1:1 with a user. Partners get a custom promo code that gives new premium
+// signups $5 off the first charge, and the partner earns $5 commission.
+export const partner = pgTable('partner', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.unique()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	code: text('code').notNull().unique(), // stored uppercase
+	displayName: text('display_name'), // Public-facing handle (podcast, brand, IG handle). Falls back to user's first name.
+	isActive: boolean('is_active').default(true),
+	payoutNotes: text('payout_notes'), // QuickBooks reference, direct deposit info, etc.
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	createdBy: text('created_by').references(() => user.id)
+});
+
+// One row per redemption. Commission earned on first successful charge only.
+export const partnerReferral = pgTable('partner_referral', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	partnerId: uuid('partner_id')
+		.notNull()
+		.references(() => partner.id),
+	referredUserId: text('referred_user_id')
+		.notNull()
+		.references(() => user.id),
+	code: text('code').notNull(), // snapshot at time of redemption
+	subscriptionType: text('subscription_type').notNull(), // 'monthly' | 'yearly'
+	discountAmount: decimal('discount_amount', { precision: 10, scale: 2 }).notNull(),
+	commissionAmount: decimal('commission_amount', { precision: 10, scale: 2 }).notNull(),
+	firstChargeOrderId: uuid('first_charge_order_id').references(() => order.id),
+	payoutStatus: text('payout_status').default('pending'), // 'pending' | 'paid'
+	paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
+	paidNotes: text('paid_notes'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });

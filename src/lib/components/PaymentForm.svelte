@@ -9,6 +9,7 @@
 	export let savedCards = []; // Array of saved cards
 	export let showSaveCardOption = true; // Whether to show "save card" checkbox
 	export let showTestData = false; // Show test card info (only in sandbox/dev)
+	export let extraFields = {}; // Additional fields to send with the request body
 
 	let loading = false;
 	let error = '';
@@ -74,7 +75,8 @@
 					useSavedCard: true,
 					savedCardId: selectedCardId,
 					customerProfileId: selectedCard?.customerProfileId,
-					paymentProfileId: selectedCard?.paymentProfileId
+					paymentProfileId: selectedCard?.paymentProfileId,
+					...extraFields
 				};
 			} else {
 				// Pay with new card
@@ -95,7 +97,8 @@
 						zip: formData.zip
 					},
 					// Option to save the card
-					saveCard: saveCard && showSaveCardOption
+					saveCard: saveCard && showSaveCardOption,
+					...extraFields
 				};
 			}
 

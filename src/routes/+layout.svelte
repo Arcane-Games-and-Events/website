@@ -39,7 +39,11 @@
 	<slot />
 {:else if useTopbar}
 	<!-- TOPBAR LAYOUT (Preview Mode) -->
-	<Topbar user={data.user} assignedEventsCount={data.assignedEventsCount}>
+	<Topbar
+		user={data.user}
+		assignedEventsCount={data.assignedEventsCount}
+		isPartner={data.isPartner}
+	>
 		<div class="flex min-h-screen flex-col bg-gray-950">
 			<main id="main-content" class="flex-1 pb-16">
 				<slot />
@@ -49,7 +53,11 @@
 	</Topbar>
 {:else}
 	<!-- SIDEBAR LAYOUT (Original) -->
-	<Sidebar user={data.user} assignedEventsCount={data.assignedEventsCount}>
+	<Sidebar
+		user={data.user}
+		assignedEventsCount={data.assignedEventsCount}
+		isPartner={data.isPartner}
+	>
 		<div class="flex min-h-screen flex-col bg-gray-950">
 			<main id="main-content" class="flex-1 pb-16">
 				<slot />

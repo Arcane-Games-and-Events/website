@@ -2,7 +2,7 @@
 	import AdminSidebar from '$lib/components/AdminSidebar.svelte';
 	import { page, navigating } from '$app/stores';
 
-	let { children } = $props();
+	let { children, data } = $props();
 
 	// Sidebar state
 	let sidebarOpen = $state(false);
@@ -30,6 +30,7 @@
 		if (pathname.startsWith('/admin/content-analytics')) return 'content-analytics';
 		if (pathname.startsWith('/admin/analytics')) return 'analytics';
 		if (pathname.startsWith('/admin/cards')) return 'cards';
+		if (pathname.startsWith('/admin/partners')) return 'partners';
 		return 'analytics';
 	});
 
@@ -58,6 +59,8 @@
 				return 'Card Database';
 			case 'import-matches':
 				return 'Import Matches';
+			case 'partners':
+				return 'Partners';
 			default:
 				return 'Admin';
 		}
@@ -71,7 +74,12 @@
 	</div>
 {/if}
 
-<AdminSidebar {currentPage} {sidebarOpen} onClose={closeSidebar} />
+<AdminSidebar
+	{currentPage}
+	{sidebarOpen}
+	onClose={closeSidebar}
+	badges={{ partners: data?.partnerPayoutsSoon || 0 }}
+/>
 
 <div class="min-h-screen bg-gray-950 pl-0 lg:pl-64">
 	<!-- Mobile Header with Hamburger Menu -->

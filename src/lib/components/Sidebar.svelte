@@ -5,9 +5,15 @@
 
 	export let user;
 	export let assignedEventsCount = 0;
+	export let isPartner = false;
 
 	// Sidebar state
 	let mobileOpen = false;
+
+	// Quietly mark isPartner as referenced — the sidebar variant doesn't show a
+	// dedicated partner link (the profile dropdown in Topbar does), but the root
+	// layout passes this prop to both variants for parity.
+	$: _isPartner = isPartner;
 
 	function toggleCollapse() {
 		sidebarCollapsed.update((v) => !v);
