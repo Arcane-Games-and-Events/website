@@ -32,9 +32,13 @@ export const load = async ({ locals }) => {
 		}
 	}
 
+	const isPremiumMember =
+		locals.user?.role === 'premium' || locals.user?.role === 'admin';
+
 	return {
 		user: locals.user,
 		assignedEventsCount,
-		isPartner
+		isPartner,
+		isPremiumMember
 	};
 };

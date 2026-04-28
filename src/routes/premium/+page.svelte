@@ -2,23 +2,35 @@
 	import PaymentForm from '$lib/components/PaymentForm.svelte';
 	export let data;
 
-	// Partner promo code state. Pre-filled from the dynamic partner link (/premium/[code]).
+	// Promo code state. Pre-filled from /premium/[code] partner link.
 	let promoCode = data.partnerReferral?.code || '';
 	let verifiedCode = data.partnerReferral?.code || null;
 	let verifiedPartnerName = data.partnerReferral?.partnerName || null;
+	let verifiedType = data.partnerReferral?.type || null; // 'partner' | 'member'
 	let promoError = '';
 	let verifying = false;
 
 	$: promoCodeTrimmed = promoCode.trim().toUpperCase();
 	$: hasPromoCode = promoCodeTrimmed.length > 0;
 	$: promoApplied = hasPromoCode && verifiedCode === promoCodeTrimmed;
-	$: discountAmount = promoApplied ? 5 : 0;
-	$: planFirstCharge = (parseFloat(planDetails.amount) - discountAmount).toFixed(2);
+
+	// Discount math
+	// Partner: $5 off either plan
+	// Member monthly: $10 off (entire first month free)
+	// Member yearly: $10 off ($110 - $10 = $100 first charge)
+	$: discountAmount = (() => {
+		if (!promoApplied) return 0;
+		if (verifiedType === 'partner') return 5;
+		if (verifiedType === 'member') return 10;
+		return 0;
+	})();
+	$: planFirstCharge = Math.max(parseFloat(planDetails.amount) - discountAmount, 0).toFixed(2);
 
 	// Clear verified state when user edits the code
 	$: if (hasPromoCode && verifiedCode && verifiedCode !== promoCodeTrimmed) {
 		verifiedCode = null;
 		verifiedPartnerName = null;
+		verifiedType = null;
 		promoError = '';
 	}
 
@@ -26,6 +38,7 @@
 		if (!hasPromoCode) {
 			verifiedCode = null;
 			verifiedPartnerName = null;
+			verifiedType = null;
 			promoError = '';
 			return;
 		}
@@ -41,9 +54,11 @@
 			if (body.valid) {
 				verifiedCode = promoCodeTrimmed;
 				verifiedPartnerName = body.partnerName || null;
+				verifiedType = body.type || null;
 			} else {
 				verifiedCode = null;
 				verifiedPartnerName = null;
+				verifiedType = null;
 				promoError = body.error || 'Invalid promo code';
 			}
 		} catch {
@@ -744,7 +759,7 @@
 										{/if}
 									</div>
 								</div>
-								<!-- Partner promo code -->
+								<!-- Promo code applied banner -->
 								{#if promoApplied}
 									<div
 										class="mb-4 flex items-start gap-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-300"
@@ -757,9 +772,18 @@
 											/>
 										</svg>
 										<div>
-											<p class="font-semibold">Partner referral applied</p>
+											<p class="font-semibold">
+												{verifiedType === 'member' ? 'Friend referral applied' : 'Partner referral applied'}
+											</p>
 											<p class="mt-0.5 text-xs text-emerald-300/80">
-												{#if verifiedPartnerName}
+												{#if verifiedType === 'member'}
+													{#if verifiedPartnerName}
+														{verifiedPartnerName} referred you.
+													{/if}
+													{selectedPlan === 'monthly'
+														? 'Your first month is free.'
+														: '$10 off your first year.'}
+												{:else if verifiedPartnerName}
 													You've been referred by {verifiedPartnerName}. $5 off your first charge.
 												{:else}
 													Promo code <span class="font-mono">{verifiedCode}</span> — $5 off your
@@ -816,8 +840,11 @@
 											<span>${selectedPlan === 'yearly' ? '110.00' : '10.00'}</span>
 										</div>
 										<div class="mb-2 flex items-center justify-between text-emerald-400">
-											<span>Partner discount ({promoCodeTrimmed})</span>
-											<span>-$5.00</span>
+											<span>
+												{verifiedType === 'member' ? 'Friend referral' : 'Partner discount'}
+												({promoCodeTrimmed})
+											</span>
+											<span>-${discountAmount.toFixed(2)}</span>
 										</div>
 										<div class="mt-3 flex items-center justify-between border-t border-gray-800 pt-3 text-base font-semibold">
 											<span class="text-white">Charged today</span>

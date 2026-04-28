@@ -407,6 +407,55 @@ class AuthNetClient {
 	}
 
 	/**
+	 * Update an existing ARB subscription's next start date.
+	 * Used to delay the next charge by N days when delivering a comp-month reward.
+	 *
+	 * @param {Object} options
+	 * @param {string} options.subscriptionId
+	 * @param {string} options.startDate - YYYY-MM-DD, the new next-charge date
+	 * @returns {Promise<Object>}
+	 */
+	async updateSubscriptionStartDate({ subscriptionId, startDate }) {
+		return new Promise((resolve, reject) => {
+			const merchantAuth = this.getMerchantAuth();
+
+			const paymentSchedule = new ApiContracts.PaymentScheduleType();
+			paymentSchedule.setStartDate(startDate);
+
+			const subscription = new ApiContracts.ARBSubscriptionType();
+			subscription.setPaymentSchedule(paymentSchedule);
+
+			const request = new ApiContracts.ARBUpdateSubscriptionRequest();
+			request.setMerchantAuthentication(merchantAuth);
+			request.setSubscriptionId(subscriptionId);
+			request.setSubscription(subscription);
+
+			const ctrl = new ApiControllers.ARBUpdateSubscriptionController(request.getJSON());
+
+			if (this.environment === 'production') {
+				ctrl.setEnvironment(Constants.constants.endpoint.production);
+			} else {
+				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
+			}
+
+			ctrl.execute(() => {
+				const apiResponse = ctrl.getResponse();
+				const response = new ApiContracts.ARBUpdateSubscriptionResponse(apiResponse);
+
+				if (response !== null) {
+					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
+						resolve({ success: true, subscriptionId, startDate });
+					} else {
+						reject(new Error(response.getMessages().getMessage()[0].getText()));
+					}
+				} else {
+					reject(new Error('No response from Authorize.net'));
+				}
+			});
+		});
+	}
+
+	/**
 	 * Void a transaction (for unsettled transactions)
 	 * @param {string} transactionId - Transaction ID to void
 	 * @returns {Promise<Object>} Void result

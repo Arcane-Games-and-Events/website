@@ -93,6 +93,26 @@ export const actions = {
 		return { success: true, message: 'Partner updated' };
 	},
 
+	delete: async ({ locals, params }) => {
+		if (!locals.user || locals.user.role !== 'admin') return fail(403, { error: 'Forbidden' });
+
+		// Block deletion if there are any referrals — preserves audit trail.
+		// Admin should deactivate instead (toggle isActive off).
+		const [{ count }] = await db
+			.select({ count: sql`COUNT(*)::int` })
+			.from(partnerReferral)
+			.where(eq(partnerReferral.partnerId, params.partnerId));
+
+		if (count > 0) {
+			return fail(400, {
+				error: `Can't delete: this partner has ${count} referral${count === 1 ? '' : 's'} on record. Toggle "Active" off instead to disable the code.`
+			});
+		}
+
+		await db.delete(partner).where(eq(partner.id, params.partnerId));
+		throw redirect(303, '/admin/partners');
+	},
+
 	markPaid: async ({ request, locals, params }) => {
 		if (!locals.user || locals.user.role !== 'admin') return fail(403, { error: 'Forbidden' });
 

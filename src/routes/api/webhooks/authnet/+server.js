@@ -1,10 +1,11 @@
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { webhookEvent, user as userTable, ticket } from '$lib/server/db/schema.js';
-import { eq } from 'drizzle-orm';
+import { webhookEvent, user as userTable, ticket, memberReferral } from '$lib/server/db/schema.js';
+import { eq, and } from 'drizzle-orm';
 import crypto from 'crypto';
 import { env } from '$env/dynamic/private';
 import { sendPaymentFailedEmail } from '$lib/server/email.js';
+import { authnet } from '$lib/server/authnet/client.js';
 
 /**
  * Webhook handler for Authorize.net Silent Post URL
@@ -121,6 +122,16 @@ async function handleSubscriptionEvent(payload) {
 				subscriptionEndDate: null
 			})
 			.where(eq(userTable.id, user.id));
+
+		// Member referral reward: when a member-referred user pays for their second
+		// period, the referrer earns one free month. The deferred ARB's first
+		// successful charge is what counts as "they subscribed for the next month."
+		try {
+			await processMemberReferralReward(user);
+		} catch (err) {
+			// Never let a reward failure block the renewal acknowledgement
+			console.error('Member referral reward processing failed:', err);
+		}
 	} else if (responseCode === '2' || responseCode === '3') {
 		// Subscription payment declined or error
 		// Set status to payment_failed - give them a grace period
@@ -158,6 +169,92 @@ async function handleTransactionEvent(payload) {
 	} else if (responseCode === '2') {
 		// Mark any associated tickets/entitlements as voided
 		// This would require tracking transaction IDs in the order meta
+	}
+}
+
+/**
+ * If `referredUser` was signed up via a member referral code and this is their
+ * first successful ARB renewal, deliver the comp month to the referrer by
+ * pushing the referrer's next ARB charge date out by one month.
+ *
+ * Only fires once per referral (status=pending → reward_applied).
+ */
+async function processMemberReferralReward(referredUser) {
+	const [pending] = await db
+		.select()
+		.from(memberReferral)
+		.where(
+			and(
+				eq(memberReferral.referredUserId, referredUser.id),
+				eq(memberReferral.status, 'pending')
+			)
+		)
+		.limit(1);
+
+	if (!pending) return;
+
+	// Look up the referrer to get their subscription details
+	const [referrer] = await db
+		.select()
+		.from(userTable)
+		.where(eq(userTable.id, pending.referrerUserId))
+		.limit(1);
+
+	if (!referrer) {
+		// Referrer was deleted — mark referral cancelled and bail
+		await db
+			.update(memberReferral)
+			.set({ status: 'cancelled' })
+			.where(eq(memberReferral.id, pending.id));
+		return;
+	}
+
+	// Mark earned regardless of whether we can apply (so admin can see history)
+	await db
+		.update(memberReferral)
+		.set({ status: 'reward_earned', rewardEarnedAt: new Date() })
+		.where(eq(memberReferral.id, pending.id));
+
+	// Only deliver the comp month if the referrer has an active subscription
+	if (
+		referrer.subscriptionStatus !== 'active' ||
+		!referrer.subscriptionId ||
+		!referrer.nextBillingDate
+	) {
+		// Reward stays at 'reward_earned' — admin can manually apply later if user resubscribes
+		return;
+	}
+
+	// Push next billing date out by one month
+	const newNext = new Date(referrer.nextBillingDate);
+	newNext.setMonth(newNext.getMonth() + 1);
+	const newStartStr = newNext.toISOString().split('T')[0];
+
+	try {
+		await authnet.updateSubscriptionStartDate({
+			subscriptionId: referrer.subscriptionId,
+			startDate: newStartStr
+		});
+
+		await db
+			.update(userTable)
+			.set({ nextBillingDate: newNext })
+			.where(eq(userTable.id, referrer.id));
+
+		await db
+			.update(memberReferral)
+			.set({ status: 'reward_applied', rewardAppliedAt: new Date() })
+			.where(eq(memberReferral.id, pending.id));
+
+		console.log(
+			`Member referral reward applied: referrer ${referrer.id} next bill pushed to ${newStartStr}`
+		);
+	} catch (err) {
+		console.error(
+			`Failed to update Authorize.net subscription for referrer ${referrer.id}:`,
+			err
+		);
+		// Status stays at 'reward_earned' — can be retried manually
 	}
 }
 

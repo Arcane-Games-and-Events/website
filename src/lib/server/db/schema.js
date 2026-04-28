@@ -562,6 +562,42 @@ export const partner = pgTable('partner', {
 	createdBy: text('created_by').references(() => user.id)
 });
 
+// MEMBER REFERRAL PROGRAM
+// Premium users get a personal code. Friends sign up free for the first month,
+// and once the friend pays for their second month the referrer earns one free
+// month of premium (delivered by extending their next billing date).
+export const memberReferralCode = pgTable('member_referral_code', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.unique()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	code: text('code').notNull().unique(), // unique across BOTH partner.code and this table
+	isActive: boolean('is_active').default(true),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// One row per redemption. status drives reward delivery via the webhook.
+export const memberReferral = pgTable('member_referral', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	referrerUserId: text('referrer_user_id')
+		.notNull()
+		.references(() => user.id),
+	referredUserId: text('referred_user_id')
+		.notNull()
+		.references(() => user.id),
+	code: text('code').notNull(),
+	subscriptionType: text('subscription_type').notNull(), // 'monthly' | 'yearly'
+	// 'pending' — waiting for referred user's first ARB charge
+	// 'reward_earned' — referred user paid second month
+	// 'reward_applied' — comp month delivered to referrer
+	// 'cancelled' — referred user cancelled/refunded before earning
+	status: text('status').default('pending'),
+	rewardEarnedAt: timestamp('reward_earned_at', { withTimezone: true, mode: 'date' }),
+	rewardAppliedAt: timestamp('reward_applied_at', { withTimezone: true, mode: 'date' }),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
 // One row per redemption. Commission earned on first successful charge only.
 export const partnerReferral = pgTable('partner_referral', {
 	id: uuid('id').defaultRandom().primaryKey(),

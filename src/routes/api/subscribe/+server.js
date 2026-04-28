@@ -6,7 +6,8 @@ import {
 	order,
 	savedCard,
 	articleEngagement,
-	partnerReferral
+	partnerReferral,
+	memberReferral
 } from '$lib/server/db/schema.js';
 import { auth } from '$lib/server/lucia.js';
 import { eq, and, gte } from 'drizzle-orm';
@@ -15,6 +16,11 @@ import {
 	normalizePartnerCode,
 	PARTNER_DISCOUNT_AMOUNT
 } from '$lib/server/partner-code.js';
+import {
+	validateMemberReferralCode,
+	getMemberReferralByCode,
+	MEMBER_REFERRAL_DISCOUNT
+} from '$lib/server/member-referral.js';
 
 /**
  * Calculate the next billing date based on subscription type
@@ -75,39 +81,68 @@ export async function POST({ request, locals }) {
 			return json({ error: 'Invalid subscription type' }, { status: 400 });
 		}
 
-		// Validate partner code if supplied
+		// Validate promo code if supplied. Codes share one namespace across the
+		// partner program and member referral program — we try member referrals
+		// first, then fall back to partner codes.
 		let partnerValidation = null;
-		const normalizedCode = normalizePartnerCode(promoCode);
+		let memberValidation = null;
+		const normalizedCode = normalizePartnerCode(promoCode); // same uppercasing
 		if (normalizedCode) {
-			partnerValidation = await validatePartnerCode(normalizedCode, currentUser.id);
-			if (!partnerValidation.valid) {
+			// Look up against the member referral table first
+			const memberLookup = await getMemberReferralByCode(normalizedCode);
+			if (memberLookup) {
+				memberValidation = await validateMemberReferralCode(normalizedCode, currentUser.id);
+			} else {
+				partnerValidation = await validatePartnerCode(normalizedCode, currentUser.id);
+			}
+
+			const validation = memberValidation || partnerValidation;
+			if (validation && !validation.valid) {
 				const messages = {
 					not_found: 'Promo code not found',
 					inactive: 'This promo code is no longer active',
-					already_used: 'You have already used a partner promo code',
-					self_referral: "You can't redeem your own partner code"
+					already_used: 'You have already used a promo code',
+					self_referral: "You can't redeem your own promo code"
 				};
 				return json(
-					{ error: messages[partnerValidation.reason] || 'Invalid promo code' },
+					{ error: messages[validation.reason] || 'Invalid promo code' },
 					{ status: 400 }
 				);
 			}
 		}
 		const hasPartnerDiscount = partnerValidation?.valid === true;
+		const hasMemberDiscount = memberValidation?.valid === true;
+		const hasAnyDiscount = hasPartnerDiscount || hasMemberDiscount;
+
+		// Compute the first-charge amount (real money taken today):
+		// - No code: undefined (the ARB charges immediately at full amount)
+		// - Partner code: $5
+		// - Member code monthly: $0 (entire first month free, no transaction)
+		// - Member code yearly: full price minus $10
+		let firstChargeAmount = null;
+		if (hasPartnerDiscount) {
+			firstChargeAmount = PARTNER_DISCOUNT_AMOUNT;
+		} else if (hasMemberDiscount) {
+			firstChargeAmount =
+				subscriptionType === 'monthly'
+					? 0
+					: Math.max(parseFloat(amount) - MEMBER_REFERRAL_DISCOUNT, 0);
+		}
 
 		// Create recurring subscription with Authorize.net ARB
 		let result;
-		let firstChargeResult = null; // Only set when partner code applied
+		let firstChargeResult = null;
 		try {
 			// Start date logic:
 			// - Normal flow: ARB starts today
-			// - Partner flow: charge $5 today + ARB starts 1 period from now
+			// - Discounted flow: ARB starts 1 period from now (since real first
+			//   charge is handled separately, or skipped entirely for $0 monthly)
 			const today = new Date();
 			const todayStr = today.toISOString().split('T')[0];
 			const deferredStart = calculateNextBillingDate(today, subscriptionType);
 			const deferredStartStr = deferredStart.toISOString().split('T')[0];
 
-			const arbStartDateStr = hasPartnerDiscount ? deferredStartStr : todayStr;
+			const arbStartDateStr = hasAnyDiscount ? deferredStartStr : todayStr;
 
 			// Configure interval based on subscription type
 			const intervalLength = subscriptionType === 'yearly' ? 12 : 1;
@@ -130,13 +165,13 @@ export async function POST({ request, locals }) {
 					return json({ error: 'Saved card not found' }, { status: 404 });
 				}
 
-				// Partner flow: charge $5 one-time first
-				if (hasPartnerDiscount) {
+				// One-time charge today, if any (skipped when member-monthly = $0)
+				if (firstChargeAmount > 0) {
 					firstChargeResult = await authnet.chargeCustomerProfile({
 						customerProfileId: card.customerProfileId,
 						paymentProfileId: card.paymentProfileId,
-						amount: PARTNER_DISCOUNT_AMOUNT.toFixed(2),
-						description: `AGE Premium — First ${subscriptionType === 'yearly' ? 'year' : 'month'} (partner discount)`
+						amount: firstChargeAmount.toFixed(2),
+						description: `AGE Premium — First ${subscriptionType === 'yearly' ? 'year' : 'month'}`
 					});
 					if (!firstChargeResult?.success) {
 						return json(
@@ -164,14 +199,14 @@ export async function POST({ request, locals }) {
 					return json({ error: 'Card details are required' }, { status: 400 });
 				}
 
-				// Partner flow: charge $5 one-time first
-				if (hasPartnerDiscount) {
+				// One-time charge today, if any (skipped when member-monthly = $0)
+				if (firstChargeAmount > 0) {
 					firstChargeResult = await authnet.chargeCard({
 						cardNumber,
 						expirationDate,
 						cardCode,
-						amount: PARTNER_DISCOUNT_AMOUNT.toFixed(2),
-						description: `AGE Premium — First ${subscriptionType === 'yearly' ? 'year' : 'month'} (partner discount)`,
+						amount: firstChargeAmount.toFixed(2),
+						description: `AGE Premium — First ${subscriptionType === 'yearly' ? 'year' : 'month'}`,
 						billTo
 					});
 					if (!firstChargeResult?.success) {
@@ -269,7 +304,8 @@ export async function POST({ request, locals }) {
 				subscriptionEndDate: null, // No end date for active subscriptions
 				nextBillingDate
 			};
-			if (hasPartnerDiscount) {
+			// usedPartnerCode tracks any redeemed promo code (partner OR member referral)
+			if (hasAnyDiscount) {
 				userUpdate.usedPartnerCode = normalizedCode;
 			}
 			await db.update(userTable).set(userUpdate).where(eq(userTable.id, currentUser.id));
@@ -288,39 +324,35 @@ export async function POST({ request, locals }) {
 
 			console.log('New session created with updated role');
 
-			// Partner flow: only record the $5 real charge (the ARB is deferred — no money yet)
-			// Normal flow: record the ARB as today's $10/$110 charge (it charges immediately)
-			if (hasPartnerDiscount && firstChargeResult?.success) {
+			// Order rows reflect REAL money moved today.
+			// - No discount: ARB charged $10/$110 today, record one order
+			// - Partner: $5 charged today, record one order
+			// - Member monthly: $0 charged today, no order
+			// - Member yearly: $100 charged today, record one order
+			let firstChargeOrderId = null;
+			if (hasAnyDiscount && firstChargeResult?.success) {
 				const [firstChargeOrder] = await db
 					.insert(order)
 					.values({
 						provider: 'authnet',
 						providerRef: firstChargeResult.transactionId,
 						userEmail: currentUser.email,
-						amount: PARTNER_DISCOUNT_AMOUNT.toFixed(2),
+						amount: firstChargeAmount.toFixed(2),
 						currency: 'USD',
 						meta: {
-							type: 'subscription_partner_first',
+							type: hasPartnerDiscount
+								? 'subscription_partner_first'
+								: 'subscription_member_first',
 							subscriptionId: result.subscriptionId,
 							subscriptionType,
-							partnerCode: normalizedCode,
+							promoCode: normalizedCode,
 							deferredArbAmount: amount,
-							description: `AGE Premium first ${subscriptionType === 'yearly' ? 'year' : 'month'} (partner discount)`
+							description: `AGE Premium first ${subscriptionType === 'yearly' ? 'year' : 'month'} (${hasPartnerDiscount ? 'partner' : 'member'} discount)`
 						}
 					})
 					.returning({ id: order.id });
-
-				await db.insert(partnerReferral).values({
-					partnerId: partnerValidation.partner.id,
-					referredUserId: currentUser.id,
-					code: normalizedCode,
-					subscriptionType,
-					discountAmount: PARTNER_DISCOUNT_AMOUNT.toFixed(2),
-					commissionAmount: PARTNER_DISCOUNT_AMOUNT.toFixed(2),
-					firstChargeOrderId: firstChargeOrder.id,
-					payoutStatus: 'pending'
-				});
-			} else {
+				firstChargeOrderId = firstChargeOrder.id;
+			} else if (!hasAnyDiscount) {
 				await db.insert(order).values({
 					provider: 'authnet',
 					providerRef: result.subscriptionId,
@@ -333,6 +365,28 @@ export async function POST({ request, locals }) {
 						subscriptionType,
 						description
 					}
+				});
+			}
+
+			// Referral tracking
+			if (hasPartnerDiscount) {
+				await db.insert(partnerReferral).values({
+					partnerId: partnerValidation.partner.id,
+					referredUserId: currentUser.id,
+					code: normalizedCode,
+					subscriptionType,
+					discountAmount: PARTNER_DISCOUNT_AMOUNT.toFixed(2),
+					commissionAmount: PARTNER_DISCOUNT_AMOUNT.toFixed(2),
+					firstChargeOrderId,
+					payoutStatus: 'pending'
+				});
+			} else if (hasMemberDiscount) {
+				await db.insert(memberReferral).values({
+					referrerUserId: memberValidation.referral.userId,
+					referredUserId: currentUser.id,
+					code: normalizedCode,
+					subscriptionType,
+					status: 'pending'
 				});
 			}
 

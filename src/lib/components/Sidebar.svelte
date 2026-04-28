@@ -6,14 +6,16 @@
 	export let user;
 	export let assignedEventsCount = 0;
 	export let isPartner = false;
+	export let isPremiumMember = false;
 
 	// Sidebar state
 	let mobileOpen = false;
 
-	// Quietly mark isPartner as referenced — the sidebar variant doesn't show a
-	// dedicated partner link (the profile dropdown in Topbar does), but the root
-	// layout passes this prop to both variants for parity.
+	// The sidebar variant doesn't show dedicated partner/refer-a-friend links
+	// (the Topbar dropdown does), but the root layout passes these props to both
+	// variants for parity. Mark them as referenced to silence the linter.
 	$: _isPartner = isPartner;
+	$: _isPremiumMember = isPremiumMember;
 
 	function toggleCollapse() {
 		sidebarCollapsed.update((v) => !v);

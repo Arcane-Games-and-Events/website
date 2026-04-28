@@ -58,6 +58,34 @@
 			</p>
 		</div>
 
+		<!-- Paused status banner -->
+		{#if !p.isActive}
+			<div
+				class="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4"
+			>
+				<svg
+					class="mt-0.5 h-5 w-5 shrink-0 text-amber-400"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.5"
+					viewBox="0 0 24 24"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+					/>
+				</svg>
+				<div>
+					<p class="text-sm font-semibold text-amber-300">Your partner status is paused</p>
+					<p class="mt-1 text-xs text-amber-200/80">
+						Your promo code is currently inactive — new signups won't be credited to you. Your past
+						referrals and pending payouts are unaffected. Reach out if you have questions.
+					</p>
+				</div>
+			</div>
+		{/if}
+
 		<!-- Promo link -->
 		<div class="mb-8 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-gray-900 p-6">
 			<p class="text-xs tracking-wider text-emerald-400 uppercase">Your partner link</p>

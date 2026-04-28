@@ -16,6 +16,7 @@
 
 	$: pendingReferrals = referrals.filter((r) => r.payoutStatus === 'pending');
 	$: readyReferrals = referrals.filter((r) => r.readyToPay);
+	$: hasReferrals = referrals.length > 0;
 	$: selectedCount = selectedReferralIds.size;
 	$: selectedTotal = referrals
 		.filter((r) => selectedReferralIds.has(r.id))
@@ -317,5 +318,42 @@
 				{/if}
 			</form>
 		{/if}
+	</div>
+
+	<!-- Danger zone -->
+	<div class="rounded-xl border border-red-500/30 bg-red-500/5 p-6">
+		<h2 class="mb-2 text-lg font-semibold text-red-400">Danger zone</h2>
+		<p class="mb-4 text-sm text-gray-400">
+			{#if hasReferrals}
+				This partner has {referrals.length} referral{referrals.length === 1 ? '' : 's'} on record,
+				so deletion is blocked to preserve the audit trail. Toggle <span
+					class="font-semibold text-white">Active</span
+				> off above to disable the code without losing history.
+			{:else}
+				Permanently delete this partner. This is allowed because they have no referrals yet. The
+				partner's user account is not affected.
+			{/if}
+		</p>
+		<form
+			method="POST"
+			action="?/delete"
+			use:enhance={({ cancel }) => {
+				if (
+					!confirm(
+						`Delete partner "${p.firstName} ${p.lastName}" (code ${p.code})? This cannot be undone.`
+					)
+				) {
+					cancel();
+				}
+			}}
+		>
+			<button
+				type="submit"
+				disabled={hasReferrals}
+				class="rounded-lg bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+			>
+				Delete partner
+			</button>
+		</form>
 	</div>
 </div>
