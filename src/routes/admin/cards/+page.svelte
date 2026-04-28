@@ -146,9 +146,28 @@
 			method="POST"
 			action="?/upload"
 			enctype="multipart/form-data"
-			use:enhance={() => {
+			use:enhance={async ({ formData, cancel }) => {
 				isUploading = true;
 				uploadMessage = null;
+
+				// Gzip the file in the browser to stay under Vercel's 4.5 MB body limit.
+				// JSON typically compresses 5–10x, so even a 10+ MB cards.json fits easily.
+				try {
+					const file = formData.get('cardsFile');
+					if (file instanceof File && file.size > 0 && typeof CompressionStream !== 'undefined') {
+						const compressed = await new Response(
+							file.stream().pipeThrough(new CompressionStream('gzip'))
+						).blob();
+						const gzBlob = new File([compressed], file.name + '.gz', {
+							type: 'application/gzip'
+						});
+						formData.set('cardsFile', gzBlob);
+						formData.set('gzipped', '1');
+					}
+				} catch (err) {
+					console.error('Compression failed, falling back to raw upload:', err);
+				}
+
 				return async ({ update }) => {
 					await update();
 					isUploading = false;

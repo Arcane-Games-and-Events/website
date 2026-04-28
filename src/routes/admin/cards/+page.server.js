@@ -127,17 +127,26 @@ export const actions = {
 
 		const formData = await request.formData();
 		const file = formData.get('cardsFile');
+		const isGzipped = formData.get('gzipped') === '1';
 
 		if (!file || !(file instanceof File)) {
 			return fail(400, { error: 'No file uploaded' });
 		}
 
-		if (!file.name.endsWith('.json')) {
+		if (!isGzipped && !file.name.endsWith('.json')) {
 			return fail(400, { error: 'File must be a JSON file' });
 		}
 
 		try {
-			const text = await file.text();
+			let text;
+			if (isGzipped) {
+				// Decompress on the server using Web Streams API
+				const stream = file.stream().pipeThrough(new DecompressionStream('gzip'));
+				const response = new Response(stream);
+				text = await response.text();
+			} else {
+				text = await file.text();
+			}
 			const cardsData = JSON.parse(text);
 
 			if (!Array.isArray(cardsData)) {

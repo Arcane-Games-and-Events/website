@@ -1,5 +1,5 @@
 <script>
-	let { currentPage = '', sidebarOpen = false, onClose = () => {} } = $props();
+	let { currentPage = '', sidebarOpen = false, onClose = () => {}, badges = {} } = $props();
 
 	const navItems = [
 		{
@@ -41,7 +41,14 @@
 			href: '/admin/vods',
 			color: 'red'
 		},
-		{ id: 'cards', name: 'Cards', icon: 'cards', href: '/admin/cards', color: 'orange' }
+		{ id: 'cards', name: 'Cards', icon: 'cards', href: '/admin/cards', color: 'orange' },
+		{
+			id: 'partners',
+			name: 'Partners',
+			icon: 'users',
+			href: '/admin/partners',
+			color: 'emerald'
+		}
 	];
 
 	function getActiveColor(color) {
@@ -331,7 +338,14 @@
 						</svg>
 					{/if}
 				</div>
-				{item.name}
+				<span class="flex-1">{item.name}</span>
+				{#if badges[item.id] && badges[item.id] > 0}
+					<span
+						class="ml-auto inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-white"
+					>
+						{badges[item.id]}
+					</span>
+				{/if}
 			</a>
 		{/each}
 	</nav>

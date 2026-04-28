@@ -4,6 +4,8 @@
 
 	export let user;
 	export let assignedEventsCount = 0;
+	export let isPartner = false;
+	export let isPremiumMember = false;
 
 	let mobileOpen = false;
 	let userMenuOpen = false;
@@ -216,6 +218,50 @@
 									</svg>
 									Account
 								</a>
+
+								{#if isPartner}
+									<a
+										href="/partner"
+										class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white"
+									>
+										<svg
+											class="h-4 w-4 text-emerald-400"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.5"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+											/>
+										</svg>
+										Partners
+									</a>
+								{/if}
+
+								{#if isPremiumMember}
+									<a
+										href="/account/referrals"
+										class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white"
+									>
+										<svg
+											class="h-4 w-4 text-emerald-400"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.5"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												d="M12 4.5v15m7.5-7.5h-15"
+											/>
+										</svg>
+										Refer a Friend
+									</a>
+								{/if}
 
 								{#if assignedEventsCount > 0}
 									<a
@@ -473,6 +519,50 @@
 								</svg>
 								Account Settings
 							</a>
+							{#if isPartner}
+								<a
+									href="/partner"
+									on:click={closeMobile}
+									class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-400 hover:bg-white/5 hover:text-white"
+								>
+									<svg
+										class="h-5 w-5 text-emerald-400"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.5"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+										/>
+									</svg>
+									Partners
+								</a>
+							{/if}
+							{#if isPremiumMember}
+								<a
+									href="/account/referrals"
+									on:click={closeMobile}
+									class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-400 hover:bg-white/5 hover:text-white"
+								>
+									<svg
+										class="h-5 w-5 text-emerald-400"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.5"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M12 4.5v15m7.5-7.5h-15"
+										/>
+									</svg>
+									Refer a Friend
+								</a>
+							{/if}
 							{#if assignedEventsCount > 0}
 								<a
 									href="/my-age/events"

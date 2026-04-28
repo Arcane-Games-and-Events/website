@@ -1,10 +1,11 @@
 import { db } from '$lib/server/db/index.js';
-import { eventStaff } from '$lib/server/db/schema.js';
+import { eventStaff, partner } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 
 export const load = async ({ locals }) => {
 	// locals.user is set in hooks.server.js by Lucia
 	let assignedEventsCount = 0;
+	let isPartner = false;
 
 	// Check if user has any event staff assignments
 	if (locals.user) {
@@ -17,10 +18,27 @@ export const load = async ({ locals }) => {
 		} catch {
 			// Ignore errors - just don't show the events link
 		}
+
+		// Check if user is an AGE Partner
+		try {
+			const [partnerRow] = await db
+				.select({ id: partner.id })
+				.from(partner)
+				.where(eq(partner.userId, locals.user.id))
+				.limit(1);
+			isPartner = !!partnerRow;
+		} catch {
+			// Silent fail — link is optional
+		}
 	}
+
+	const isPremiumMember =
+		locals.user?.role === 'premium' || locals.user?.role === 'admin';
 
 	return {
 		user: locals.user,
-		assignedEventsCount
+		assignedEventsCount,
+		isPartner,
+		isPremiumMember
 	};
 };

@@ -2,6 +2,72 @@
 	import PaymentForm from '$lib/components/PaymentForm.svelte';
 	export let data;
 
+	// Promo code state. Pre-filled from /premium/[code] partner link.
+	let promoCode = data.partnerReferral?.code || '';
+	let verifiedCode = data.partnerReferral?.code || null;
+	let verifiedPartnerName = data.partnerReferral?.partnerName || null;
+	let verifiedType = data.partnerReferral?.type || null; // 'partner' | 'member'
+	let promoError = '';
+	let verifying = false;
+
+	$: promoCodeTrimmed = promoCode.trim().toUpperCase();
+	$: hasPromoCode = promoCodeTrimmed.length > 0;
+	$: promoApplied = hasPromoCode && verifiedCode === promoCodeTrimmed;
+
+	// Discount math
+	// Partner: $5 off either plan
+	// Member monthly: $10 off (entire first month free)
+	// Member yearly: $10 off ($110 - $10 = $100 first charge)
+	$: discountAmount = (() => {
+		if (!promoApplied) return 0;
+		if (verifiedType === 'partner') return 5;
+		if (verifiedType === 'member') return 10;
+		return 0;
+	})();
+	$: planFirstCharge = Math.max(parseFloat(planDetails.amount) - discountAmount, 0).toFixed(2);
+
+	// Clear verified state when user edits the code
+	$: if (hasPromoCode && verifiedCode && verifiedCode !== promoCodeTrimmed) {
+		verifiedCode = null;
+		verifiedPartnerName = null;
+		verifiedType = null;
+		promoError = '';
+	}
+
+	async function verifyPromoCode() {
+		if (!hasPromoCode) {
+			verifiedCode = null;
+			verifiedPartnerName = null;
+			verifiedType = null;
+			promoError = '';
+			return;
+		}
+		if (verifiedCode === promoCodeTrimmed) return;
+
+		verifying = true;
+		promoError = '';
+		try {
+			const res = await fetch(
+				`/api/partner-code/validate?code=${encodeURIComponent(promoCodeTrimmed)}`
+			);
+			const body = await res.json();
+			if (body.valid) {
+				verifiedCode = promoCodeTrimmed;
+				verifiedPartnerName = body.partnerName || null;
+				verifiedType = body.type || null;
+			} else {
+				verifiedCode = null;
+				verifiedPartnerName = null;
+				verifiedType = null;
+				promoError = body.error || 'Invalid promo code';
+			}
+		} catch {
+			promoError = 'Could not verify code. Try again.';
+		} finally {
+			verifying = false;
+		}
+	}
+
 	// Check if user has active premium access (not just role)
 	// Cancelled users should see the payment form to resubscribe
 	function hasActivePremium(user) {
@@ -675,24 +741,132 @@
 								<div class="mb-6 flex items-center justify-between">
 									<h3 class="text-xl font-semibold text-white">Payment Details</h3>
 									<div class="text-right">
-										<p class="text-2xl font-bold text-white">
-											{selectedPlan === 'yearly' ? '$110' : '$10'}
-											<span class="text-sm font-normal text-gray-400"
-												>/{selectedPlan === 'yearly' ? 'year' : 'month'}</span
-											>
-										</p>
+										{#if promoApplied}
+											<p class="text-sm text-gray-500 line-through">
+												${selectedPlan === 'yearly' ? '110' : '10'}
+											</p>
+											<p class="text-2xl font-bold text-emerald-400">
+												${planFirstCharge}
+												<span class="text-sm font-normal text-gray-400">today</span>
+											</p>
+										{:else}
+											<p class="text-2xl font-bold text-white">
+												{selectedPlan === 'yearly' ? '$110' : '$10'}
+												<span class="text-sm font-normal text-gray-400"
+													>/{selectedPlan === 'yearly' ? 'year' : 'month'}</span
+												>
+											</p>
+										{/if}
 									</div>
 								</div>
+								<!-- Promo code applied banner -->
+								{#if promoApplied}
+									<div
+										class="mb-4 flex items-start gap-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-300"
+									>
+										<svg class="mt-0.5 h-5 w-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+											<path
+												fill-rule="evenodd"
+												d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+												clip-rule="evenodd"
+											/>
+										</svg>
+										<div>
+											<p class="font-semibold">
+												{verifiedType === 'member' ? 'Friend referral applied' : 'Partner referral applied'}
+											</p>
+											<p class="mt-0.5 text-xs text-emerald-300/80">
+												{#if verifiedType === 'member'}
+													{#if verifiedPartnerName}
+														{verifiedPartnerName} referred you.
+													{/if}
+													{selectedPlan === 'monthly'
+														? 'Your first month is free.'
+														: '$10 off your first year.'}
+												{:else if verifiedPartnerName}
+													You've been referred by {verifiedPartnerName}. $5 off your first charge.
+												{:else}
+													Promo code <span class="font-mono">{verifiedCode}</span> — $5 off your
+													first charge.
+												{/if}
+											</p>
+										</div>
+									</div>
+								{/if}
+								<div class="mb-4">
+									<label
+										for="promoCode"
+										class="mb-1 block text-sm font-medium text-gray-300"
+									>
+										Promo code <span class="text-gray-500">(optional)</span>
+									</label>
+									<div class="flex gap-2">
+										<input
+											type="text"
+											id="promoCode"
+											bind:value={promoCode}
+											on:blur={verifyPromoCode}
+											on:keydown={(e) => e.key === 'Enter' && (e.preventDefault(), verifyPromoCode())}
+											placeholder="Enter partner code"
+											autocomplete="off"
+											class="flex-1 rounded-lg border bg-gray-900 px-3 py-2 text-sm text-white uppercase placeholder:text-gray-500 focus:ring-1 focus:outline-none {promoError
+												? 'border-red-500/60 focus:border-red-500 focus:ring-red-500'
+												: promoApplied
+													? 'border-emerald-500/60 focus:border-emerald-500 focus:ring-emerald-500'
+													: 'border-gray-700 focus:border-emerald-500 focus:ring-emerald-500'}"
+										/>
+										{#if hasPromoCode && !promoApplied && !verifying}
+											<button
+												type="button"
+												on:click={verifyPromoCode}
+												class="rounded-lg bg-gray-700 px-3 py-2 text-sm font-medium text-white hover:bg-gray-600"
+											>
+												Apply
+											</button>
+										{/if}
+									</div>
+									{#if verifying}
+										<p class="mt-1 text-xs text-gray-400">Verifying…</p>
+									{:else if promoError}
+										<p class="mt-1 text-xs text-red-400">{promoError}</p>
+									{/if}
+								</div>
+
+								<!-- Order summary when promo applied -->
+								{#if promoApplied}
+									<div class="mb-4 rounded-lg border border-gray-800 bg-gray-900/60 p-4 text-sm">
+										<div class="mb-2 flex items-center justify-between text-gray-300">
+											<span>AGE Premium ({selectedPlan})</span>
+											<span>${selectedPlan === 'yearly' ? '110.00' : '10.00'}</span>
+										</div>
+										<div class="mb-2 flex items-center justify-between text-emerald-400">
+											<span>
+												{verifiedType === 'member' ? 'Friend referral' : 'Partner discount'}
+												({promoCodeTrimmed})
+											</span>
+											<span>-${discountAmount.toFixed(2)}</span>
+										</div>
+										<div class="mt-3 flex items-center justify-between border-t border-gray-800 pt-3 text-base font-semibold">
+											<span class="text-white">Charged today</span>
+											<span class="text-emerald-400">${planFirstCharge}</span>
+										</div>
+										<p class="mt-2 text-xs text-gray-500">
+											Your subscription renews at ${selectedPlan === 'yearly' ? '110.00/year' : '10.00/month'} starting {selectedPlan === 'yearly' ? 'next year' : 'next month'}.
+										</p>
+									</div>
+								{/if}
+
 								<PaymentForm
 									amount={planDetails.amount}
 									description={planDetails.description}
 									submitUrl="/api/subscribe"
-									submitText={planDetails.buttonText}
+									submitText={promoApplied ? `Subscribe - Pay $${planFirstCharge} today` : planDetails.buttonText}
 									isSubscription={true}
 									subscriptionType={selectedPlan}
 									savedCards={data.savedCards || []}
 									showSaveCardOption={true}
 									showTestData={data.isSandbox}
+									extraFields={hasPromoCode ? { promoCode: promoCodeTrimmed } : {}}
 								/>
 							</div>
 						</div>
