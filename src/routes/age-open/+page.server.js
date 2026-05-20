@@ -86,14 +86,20 @@ export async function load({ url, setHeaders }) {
 	const currentYear = new Date().getFullYear().toString();
 	const selectedSeason = url.searchParams.get('season') || 'all';
 	const selectedCircuit = url.searchParams.get('circuit') || null;
+	// Tab determines which expensive computation paths run. The tournament
+	// archive (eventResults) is only built for the 'results' tab; the AGE
+	// Rating pass over every player is only done for the 'standings' tab.
+	// Every other tab gets a much cheaper page render.
+	const activeTab = url.searchParams.get('tab') || 'overview';
+	const needsArchive = activeTab === 'results';
+	const needsAgeRating = activeTab === 'standings';
 
 	try {
-		// Cache the fully-computed page output by filter combo so Vercel
-		// doesn't rerun the tournament processor (~30 calls, one per past
-		// event) + AGE Rating pass on every request. That CPU work was the
-		// main reason the page felt slow even after the raw-query caches.
+		// Cache the fully-computed page output by tab + filter combo so each
+		// tab returns ready-to-render data on cache hit. Different tabs cache
+		// separately because they carry different payloads.
 		return await getCachedOrFetch(
-			`age-open:page:${selectedSeason}|${selectedCircuit || 'none'}`,
+			`age-open:page:${activeTab}|${selectedSeason}|${selectedCircuit || 'none'}`,
 			async () => {
 				// Fetch raw data with Redis caching (5 minute TTL)
 				// This caches the expensive database queries
@@ -207,82 +213,90 @@ export async function load({ url, setHeaders }) {
 					(e) => (e.status === 'completed' || e.status === 'in_progress') && e.eventDate
 				);
 
-				// Group event matches by eventId
+				// Group event matches by eventId — only needed when computing the
+				// archive Top-8 results below. Skip building the map entirely on
+				// tabs that don't render the archive.
 				const matchesByEventId = new Map();
-				for (const match of allEventMatches) {
-					if (!matchesByEventId.has(match.eventId)) {
-						matchesByEventId.set(match.eventId, []);
+				if (needsArchive) {
+					for (const match of allEventMatches) {
+						if (!matchesByEventId.has(match.eventId)) {
+							matchesByEventId.set(match.eventId, []);
+						}
+						matchesByEventId.get(match.eventId).push(match);
 					}
-					matchesByEventId.get(match.eventId).push(match);
 				}
 
-				// Build results array by computing standings from matches
-				const allResults = archiveEvents
-					.filter((evt) => matchesByEventId.has(evt.id))
-					.map((evt) => {
-						const matches = matchesByEventId.get(evt.id);
+				// Build results array by computing standings from matches. This is
+				// the single biggest CPU cost on this page — ~30 tournament
+				// processor invocations. Only do it for the 'results' tab.
+				const allResults = !needsArchive
+					? []
+					: archiveEvents
+							.filter((evt) => matchesByEventId.has(evt.id))
+							.map((evt) => {
+								const matches = matchesByEventId.get(evt.id);
 
-						// Extract unique players from matches
-						const playerMap = new Map();
-						for (const match of matches) {
-							if (match.player1GemId || match.player1Name) {
-								const key = match.player1GemId || match.player1Name;
-								if (!playerMap.has(key)) {
-									playerMap.set(key, {
-										playerId: match.player1GemId,
-										name: match.player1Name,
-										wins: 0
-									});
+								// Extract unique players from matches
+								const playerMap = new Map();
+								for (const match of matches) {
+									if (match.player1GemId || match.player1Name) {
+										const key = match.player1GemId || match.player1Name;
+										if (!playerMap.has(key)) {
+											playerMap.set(key, {
+												playerId: match.player1GemId,
+												name: match.player1Name,
+												wins: 0
+											});
+										}
+									}
+									if (match.player2GemId || match.player2Name) {
+										const key = match.player2GemId || match.player2Name;
+										if (!playerMap.has(key)) {
+											playerMap.set(key, {
+												playerId: match.player2GemId,
+												name: match.player2Name,
+												wins: 0
+											});
+										}
+									}
 								}
-							}
-							if (match.player2GemId || match.player2Name) {
-								const key = match.player2GemId || match.player2Name;
-								if (!playerMap.has(key)) {
-									playerMap.set(key, {
-										playerId: match.player2GemId,
-										name: match.player2Name,
-										wins: 0
-									});
+
+								// Convert matches to pairings format
+								const pairings = matches.map((m) => ({
+									round: m.round,
+									table: m.table,
+									player1Id: m.player1GemId,
+									player1Name: m.player1Name,
+									player2Id: m.player2GemId,
+									player2Name: m.player2Name,
+									result: m.winner === 'player1' ? '1WIN' : m.winner === 'player2' ? '2WIN' : 'DRAW'
+								}));
+
+								// Calculate standings from matches
+								let computedResults = [];
+								try {
+									const swissStandings = Array.from(playerMap.values());
+									const standings = calculateFinalStandings(swissStandings, pairings);
+									computedResults = standings.results.map((r) => ({
+										playerName: r.name,
+										gemId: r.playerId,
+										placement: r.placement,
+										wins: r.matchesWon,
+										losses: r.matchesPlayed - r.matchesWon,
+										draws: 0,
+										agePoints: r.points,
+										prizeAmount: r.prize
+									}));
+								} catch (err) {
+									console.error(`Error calculating results for event ${evt.id}:`, err);
 								}
-							}
-						}
 
-						// Convert matches to pairings format
-						const pairings = matches.map((m) => ({
-							round: m.round,
-							table: m.table,
-							player1Id: m.player1GemId,
-							player1Name: m.player1Name,
-							player2Id: m.player2GemId,
-							player2Name: m.player2Name,
-							result: m.winner === 'player1' ? '1WIN' : m.winner === 'player2' ? '2WIN' : 'DRAW'
-						}));
-
-						// Calculate standings from matches
-						let computedResults = [];
-						try {
-							const swissStandings = Array.from(playerMap.values());
-							const standings = calculateFinalStandings(swissStandings, pairings);
-							computedResults = standings.results.map((r) => ({
-								playerName: r.name,
-								gemId: r.playerId,
-								placement: r.placement,
-								wins: r.matchesWon,
-								losses: r.matchesPlayed - r.matchesWon,
-								draws: 0,
-								agePoints: r.points,
-								prizeAmount: r.prize
-							}));
-						} catch (err) {
-							console.error(`Error calculating results for event ${evt.id}:`, err);
-						}
-
-						return {
-							event: evt,
-							results: computedResults
-						};
-					})
-					.filter((r) => r.results.length > 0);
+								return {
+									event: evt,
+									results: computedResults
+								};
+							})
+							.filter((r) => r.results.length > 0);
 
 				let standings = [];
 
@@ -389,7 +403,11 @@ export async function load({ url, setHeaders }) {
 				}
 
 				// === Calculate AGE Rating for each player in standings ===
-				if (standings.length > 0) {
+				// The AGE Rating pass is heavy (iterates allStandings several
+				// times, sorts groups, computes percentile arrays). Only run it
+				// for the standings tab — other tabs that show a standings
+				// preview don't display AGE Rating.
+				if (needsAgeRating && standings.length > 0) {
 					// Pre-group standings by circuit/season for efficient rank lookup
 					const standingsByCircuitSeason = new Map();
 					for (const s of allStandings) {
