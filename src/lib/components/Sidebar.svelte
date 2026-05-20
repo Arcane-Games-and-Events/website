@@ -7,6 +7,7 @@
 	export let assignedEventsCount = 0;
 	export let isPartner = false;
 	export let isPremiumMember = false;
+	export let hasCmsAccess = false;
 
 	// Sidebar state
 	let mobileOpen = false;
@@ -16,6 +17,7 @@
 	// variants for parity. Mark them as referenced to silence the linter.
 	$: _isPartner = isPartner;
 	$: _isPremiumMember = isPremiumMember;
+	$: _hasCmsAccess = hasCmsAccess;
 
 	function toggleCollapse() {
 		sidebarCollapsed.update((v) => !v);
@@ -38,6 +40,7 @@
 		{ href: '/articles', label: 'Articles', icon: 'article' },
 		{ href: '/age-open', label: 'AGE Open', icon: 'trophy' },
 		{ href: '/academy', label: 'Academy', icon: 'book' },
+		{ href: '/courses', label: 'Courses', icon: 'book' },
 		{ href: '/studios', label: 'AGE Studios', icon: 'video' }
 	];
 

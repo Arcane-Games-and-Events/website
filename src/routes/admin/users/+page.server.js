@@ -81,7 +81,7 @@ export const actions = {
 		const newRole = formData.get('role');
 
 		// Validate role
-		const validRoles = ['free', 'premium', 'admin', 'writer', 'tournament staff'];
+		const validRoles = ['free', 'premium', 'admin', 'writer', 'creator', 'tournament staff'];
 		if (!validRoles.includes(newRole)) {
 			return fail(400, { error: 'Invalid role' });
 		}
@@ -98,6 +98,35 @@ export const actions = {
 		} catch (err) {
 			console.error('Error updating user role:', err);
 			return fail(500, { error: 'Failed to update user role' });
+		}
+	},
+
+	// Toggle a single additional role on a user (writer / creator extras).
+	updateAdditionalRoles: async ({ request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const userId = formData.get('userId');
+		// Form submits each enabled role as its own value; FormData.getAll returns
+		// the full set so we replace the whole column atomically.
+		const incoming = formData.getAll('additionalRoles').map((v) => String(v));
+		const validExtras = new Set(['writer', 'creator']);
+		const next = Array.from(new Set(incoming.filter((r) => validExtras.has(r))));
+
+		try {
+			await db.update(user).set({ additionalRoles: next }).where(eq(user.id, userId));
+			return {
+				success: true,
+				message:
+					next.length === 0
+						? 'Cleared additional roles'
+						: `Updated additional roles: ${next.join(', ')}`
+			};
+		} catch (err) {
+			console.error('Error updating additional roles:', err);
+			return fail(500, { error: 'Failed to update additional roles' });
 		}
 	},
 
@@ -121,6 +150,7 @@ export const actions = {
 					id: user.id,
 					email: user.email,
 					role: user.role,
+					additionalRoles: user.additionalRoles,
 					createdAt: user.createdAt,
 					first_name: user.firstName,
 					last_name: user.lastName
@@ -143,6 +173,7 @@ export const actions = {
 					id: u.id,
 					email: u.email,
 					role: u.role,
+					additionalRoles: u.additionalRoles || [],
 					createdAt: u.createdAt,
 					first_name: u.first_name,
 					last_name: u.last_name

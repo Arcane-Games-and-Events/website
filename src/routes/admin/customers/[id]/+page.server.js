@@ -29,6 +29,7 @@ export async function load({ params, locals }) {
 					lastName: user.lastName,
 					gemId: user.gemId,
 					role: user.role,
+					additionalRoles: user.additionalRoles,
 					subscriptionId: user.subscriptionId,
 					subscriptionType: user.subscriptionType,
 					subscriptionStatus: user.subscriptionStatus,
@@ -51,6 +52,7 @@ export async function load({ params, locals }) {
 					lastName: user.lastName,
 					gemId: user.gemId,
 					role: user.role,
+					additionalRoles: user.additionalRoles,
 					subscriptionId: user.subscriptionId,
 					subscriptionType: user.subscriptionType,
 					subscriptionStatus: user.subscriptionStatus,
@@ -211,7 +213,7 @@ export const actions = {
 			return fail(400, { error: 'Role is required' });
 		}
 
-		const validRoles = ['free', 'premium', 'writer', 'tournament staff', 'admin'];
+		const validRoles = ['free', 'premium', 'writer', 'creator', 'tournament staff', 'admin'];
 		if (!validRoles.includes(role)) {
 			return fail(400, { error: 'Invalid role' });
 		}
@@ -227,6 +229,43 @@ export const actions = {
 		} catch (err) {
 			console.error('Error updating role:', err);
 			return fail(500, { error: 'Failed to update role' });
+		}
+	},
+
+	// Stacked CMS roles. Replaces additional_roles in one shot — checkboxes
+	// submit zero or more values via FormData.getAll.
+	updateAdditionalRoles: async ({ params, request, locals }) => {
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Admin access required' });
+		}
+
+		const customerId = decodeURIComponent(params.id);
+		const isEmail = customerId.includes('@');
+		const formData = await request.formData();
+		const incoming = formData.getAll('additionalRoles').map((v) => String(v));
+		const validExtras = new Set(['writer', 'creator']);
+		const next = Array.from(new Set(incoming.filter((r) => validExtras.has(r))));
+
+		try {
+			if (isEmail) {
+				await db
+					.update(user)
+					.set({ additionalRoles: next })
+					.where(eq(user.email, customerId));
+			} else {
+				await db
+					.update(user)
+					.set({ additionalRoles: next })
+					.where(eq(user.id, customerId));
+			}
+			return {
+				success: true,
+				message:
+					next.length === 0 ? 'Cleared additional roles' : `Updated: ${next.join(', ')}`
+			};
+		} catch (err) {
+			console.error('Error updating additional roles:', err);
+			return fail(500, { error: 'Failed to update additional roles' });
 		}
 	},
 

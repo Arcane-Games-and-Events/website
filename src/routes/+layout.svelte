@@ -44,6 +44,7 @@
 		assignedEventsCount={data.assignedEventsCount}
 		isPartner={data.isPartner}
 		isPremiumMember={data.isPremiumMember}
+		hasCmsAccess={data.hasCmsAccess}
 	>
 		<div class="flex min-h-screen flex-col bg-gray-950">
 			<main id="main-content" class="flex-1 pb-16">
@@ -59,6 +60,7 @@
 		assignedEventsCount={data.assignedEventsCount}
 		isPartner={data.isPartner}
 		isPremiumMember={data.isPremiumMember}
+		hasCmsAccess={data.hasCmsAccess}
 	>
 		<div class="flex min-h-screen flex-col bg-gray-950">
 			<main id="main-content" class="flex-1 pb-16">

@@ -10,6 +10,7 @@ import {
 	real,
 	unique
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 // User table with auth and role support
 export const user = pgTable('user', {
@@ -23,7 +24,11 @@ export const user = pgTable('user', {
 	lastName: text('last_name').notNull(),
 	gemId: text('gem_id'), // Optional GEM ID for tournament registration
 
-	role: text('role').notNull().default('free'), // Options: 'free', 'premium', 'admin', 'writer', 'tournament staff'
+	role: text('role').notNull().default('free'), // Primary role: 'free', 'premium', 'admin', 'writer', 'creator', 'tournament staff'
+	// Stacked CMS roles. Primary `role` keeps premium/admin/staff semantics; this
+	// list adds extras like 'writer' + 'creator' so a single user can manage
+	// articles AND courses without losing their primary role.
+	additionalRoles: text('additional_roles').array().notNull().default(sql`ARRAY[]::text[]`),
 
 	// Authorize.net Customer Profile (for saved cards)
 	customerProfileId: text('customer_profile_id'), // Authorize.net CIM customer profile ID
@@ -615,5 +620,165 @@ export const partnerReferral = pgTable('partner_referral', {
 	payoutStatus: text('payout_status').default('pending'), // 'pending' | 'paid'
 	paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
 	paidNotes: text('paid_notes'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// ============================================================================
+// CUSTOM CMS — articles, courses, lessons, media
+// Replaces Payload. Articles are published from `cms_article` first, falling
+// back to Payload during the 30-day dual-run window.
+// ============================================================================
+
+// Tags shared between articles (and possibly courses later).
+export const cmsTag = pgTable('cms_tag', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	slug: text('slug').notNull().unique(),
+	name: text('name').notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// Uploaded media (images, attachments). Videos for courses use Mux instead.
+export const cmsMedia = pgTable('cms_media', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	uploadedBy: text('uploaded_by').references(() => user.id),
+	storagePath: text('storage_path').notNull(), // Supabase Storage path
+	url: text('url').notNull(),
+	mimeType: text('mime_type'),
+	width: integer('width'),
+	height: integer('height'),
+	alt: text('alt'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// Blog articles authored in the new CMS.
+// `body` is a Lexical document JSON tree (root + children).
+// `source` lets us tell custom-authored articles apart from migrated Payload imports.
+//
+// Once an article is published or scheduled, further edits are staged into the
+// `draft_*` columns (see updateArticle). The plain columns are what the public
+// site renders; the draft columns are what the editor shows. Admin "approves"
+// the draft to copy it into the live columns.
+export const cmsArticle = pgTable('cms_article', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	slug: text('slug').notNull().unique(),
+	title: text('title').notNull(),
+	excerpt: text('excerpt'),
+	coverImageId: uuid('cover_image_id').references(() => cmsMedia.id),
+	body: jsonb('body'),
+	readTime: integer('read_time'), // derived from body, persisted on save
+	accessMode: text('access_mode').default('free'), // 'free' | 'premium'
+	status: text('status').default('draft'), // 'draft' | 'scheduled' | 'published' | 'archived'
+	publishedAt: timestamp('published_at', { withTimezone: true, mode: 'date' }),
+	scheduledFor: timestamp('scheduled_for', { withTimezone: true, mode: 'date' }),
+	authorId: text('author_id').references(() => user.id),
+	source: text('source').default('custom'), // 'custom' | 'payload'
+
+	// Pending-change buffer. Populated when someone edits a live article. Admin
+	// approves to push these into the matching live columns; admin can also
+	// discard to revert.
+	draftTitle: text('draft_title'),
+	draftExcerpt: text('draft_excerpt'),
+	draftBody: jsonb('draft_body'),
+	draftCoverImageId: uuid('draft_cover_image_id').references(() => cmsMedia.id),
+	draftReadTime: integer('draft_read_time'),
+	draftUpdatedAt: timestamp('draft_updated_at', { withTimezone: true, mode: 'date' }),
+	draftUpdatedBy: text('draft_updated_by').references(() => user.id),
+
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// Many-to-many between cms_article and cms_tag.
+export const cmsArticleTag = pgTable(
+	'cms_article_tag',
+	{
+		articleId: uuid('article_id')
+			.notNull()
+			.references(() => cmsArticle.id, { onDelete: 'cascade' }),
+		tagId: uuid('tag_id')
+			.notNull()
+			.references(() => cmsTag.id, { onDelete: 'cascade' })
+	},
+	(t) => ({
+		pk: unique('cms_article_tag_pk').on(t.articleId, t.tagId)
+	})
+);
+
+// Course (top-level container). Has many modules, each with many lessons.
+export const cmsCourse = pgTable('cms_course', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	slug: text('slug').notNull().unique(),
+	title: text('title').notNull(),
+	description: text('description'),
+	coverImageId: uuid('cover_image_id').references(() => cmsMedia.id),
+	trailerVideoId: text('trailer_video_id'), // Mux asset id
+	price: decimal('price', { precision: 10, scale: 2 }),
+	premiumDiscount: boolean('premium_discount').default(true),
+	status: text('status').default('draft'), // 'draft' | 'published' | 'archived'
+	publishedAt: timestamp('published_at', { withTimezone: true, mode: 'date' }),
+	authorId: text('author_id').references(() => user.id),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// Course module = ordered group of lessons.
+export const cmsModule = pgTable('cms_module', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	courseId: uuid('course_id')
+		.notNull()
+		.references(() => cmsCourse.id, { onDelete: 'cascade' }),
+	title: text('title').notNull(),
+	position: integer('position').notNull().default(0),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// Course lesson = ordered unit within a module. Has a Mux video + Lexical body.
+export const cmsLesson = pgTable('cms_lesson', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	moduleId: uuid('module_id')
+		.notNull()
+		.references(() => cmsModule.id, { onDelete: 'cascade' }),
+	slug: text('slug').notNull(), // unique within course (enforced in app logic)
+	title: text('title').notNull(),
+	body: jsonb('body'),
+	videoId: text('video_id'), // Mux asset id
+	videoDuration: integer('video_duration'), // cached from Mux, seconds
+	position: integer('position').notNull().default(0),
+	isPreview: boolean('is_preview').default(false), // non-purchasers can watch
+	readTime: integer('read_time'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// Per-user lesson progress (resume video, mark complete).
+export const cmsLessonProgress = pgTable(
+	'cms_lesson_progress',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		lessonId: uuid('lesson_id')
+			.notNull()
+			.references(() => cmsLesson.id, { onDelete: 'cascade' }),
+		completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
+		lastPositionSeconds: integer('last_position_seconds').default(0),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+	},
+	(t) => ({
+		userLesson: unique('cms_lesson_progress_user_lesson').on(t.userId, t.lessonId)
+	})
+);
+
+// Snapshot history for articles & lessons. Used for undo / version compare.
+// One row per save (debounced) — kept on the side, never the source of truth.
+export const cmsRevision = pgTable('cms_revision', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	entityType: text('entity_type').notNull(), // 'article' | 'lesson'
+	entityId: uuid('entity_id').notNull(),
+	body: jsonb('body'),
+	savedBy: text('saved_by').references(() => user.id),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });

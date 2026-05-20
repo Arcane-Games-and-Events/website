@@ -248,6 +248,7 @@
 										>Premium</option
 									>
 									<option value="writer" selected={data.customer.role === 'writer'}>Writer</option>
+									<option value="creator" selected={data.customer.role === 'creator'}>Creator</option>
 									<option
 										value="tournament staff"
 										selected={data.customer.role === 'tournament staff'}>Tournament Staff</option
@@ -262,6 +263,58 @@
 									{roleLoading ? 'Updating...' : 'Update Role'}
 								</button>
 							</form>
+
+							<!-- Additional CMS roles (stack on top of the primary role) -->
+							{#if data.customer}
+								{@const additionalRoles = data.customer.additionalRoles || []}
+								<form
+									method="POST"
+									action="?/updateAdditionalRoles"
+									use:enhance={() => {
+										return async ({ update }) => {
+											await update({ reset: false });
+											invalidateAll();
+										};
+									}}
+									class="mt-2 rounded-lg border border-gray-800 bg-gray-900/40 p-3"
+								>
+									<p class="mb-2 text-xs font-medium tracking-wider text-gray-400 uppercase">
+										Additional CMS access
+									</p>
+									<div class="flex flex-wrap items-center gap-3 text-sm">
+										<label class="flex items-center gap-2 text-gray-200">
+											<input
+												type="checkbox"
+												name="additionalRoles"
+												value="writer"
+												checked={additionalRoles.includes('writer')}
+												class="h-4 w-4 border-gray-600 bg-gray-800"
+											/>
+											Writer (articles)
+										</label>
+										<label class="flex items-center gap-2 text-gray-200">
+											<input
+												type="checkbox"
+												name="additionalRoles"
+												value="creator"
+												checked={additionalRoles.includes('creator')}
+												class="h-4 w-4 border-gray-600 bg-gray-800"
+											/>
+											Creator (courses)
+										</label>
+										<button
+											type="submit"
+											class="rounded-lg bg-blue-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-600"
+										>
+											Save
+										</button>
+									</div>
+									<p class="mt-1 text-[11px] text-gray-500">
+										Stacks on top of primary role — useful when one person needs both writer and
+										creator access.
+									</p>
+								</form>
+							{/if}
 						</div>
 					{/if}
 				</div>

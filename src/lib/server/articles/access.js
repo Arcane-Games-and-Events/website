@@ -97,18 +97,18 @@ export function isPremiumNow(post, now = new Date()) {
 		return false;
 	}
 
-	// Premium posts become free after 1 month
+	// Premium posts become free after 60 days.
 	if (accessMode === 'Premium' || accessMode === 'premium') {
 		// If no published date, keep it gated
 		if (!post.publishedAt) return true;
 
-		// Calculate 1 month (30 days) in milliseconds
-		const oneMonthMs = 30 * 24 * 60 * 60 * 1000;
+		// Free window: 60 days from publication.
+		const sixtyDaysMs = 60 * 24 * 60 * 60 * 1000;
 		const publishedTime = new Date(post.publishedAt).getTime();
 		const currentTime = now.getTime();
 
-		// Check if it's been more than 1 month since publication
-		const isPremiumPeriod = currentTime < publishedTime + oneMonthMs;
+		// Premium for the first 60 days; free after that.
+		const isPremiumPeriod = currentTime < publishedTime + sixtyDaysMs;
 		return isPremiumPeriod;
 	}
 

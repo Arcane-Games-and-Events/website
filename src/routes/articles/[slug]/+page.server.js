@@ -4,6 +4,9 @@ import { isPremiumNow, userHasPremiumAccess } from '$lib/server/articles/access.
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 import { resolveCardImage } from '$lib/server/cards/index.js';
 import { enrichPageViewWithArticle } from '$lib/server/analytics.js';
+import { db } from '$lib/server/db/index.js';
+import { cmsArticle, cmsMedia, user as userTable } from '$lib/server/db/schema.js';
+import { eq } from 'drizzle-orm';
 
 /**
  * Truncate Lexical content to only show first few paragraphs for preview
@@ -92,6 +95,41 @@ function extractCardNamesFromContent(node, cardNames = new Set()) {
 		extractCardNamesFromContent(node.root, cardNames);
 	}
 
+	return cardNames;
+}
+
+/**
+ * Walk a Lexical doc and collect cards from any inline `decklist` widget nodes.
+ * Custom-CMS articles store decklists as block nodes inside the Lexical tree
+ * rather than via the legacy `[DECKLIST:n]` token + sidecar array, so this
+ * fills the same role as extractCardNamesFromDecklists for the new path.
+ */
+function extractCardNamesFromInlineDecklists(node, cardNames = new Set()) {
+	if (!node) return cardNames;
+	if (node.type === 'decklist') {
+		const data = node;
+		if (data.hero) cardNames.add(JSON.stringify({ name: data.hero, pitch: null }));
+		const arena = data.parsedCards?.arenaCards || [];
+		for (const card of arena) {
+			cardNames.add(JSON.stringify({ name: card.name, pitch: null }));
+		}
+		const deck = data.parsedCards?.deckCards || [];
+		for (const card of deck) {
+			const pitch =
+				card.color === 'red'
+					? 'r'
+					: card.color === 'yellow'
+						? 'y'
+						: card.color === 'blue'
+							? 'b'
+							: null;
+			cardNames.add(JSON.stringify({ name: card.name, pitch }));
+		}
+	}
+	if (node.children) {
+		node.children.forEach((c) => extractCardNamesFromInlineDecklists(c, cardNames));
+	}
+	if (node.root) extractCardNamesFromInlineDecklists(node.root, cardNames);
 	return cardNames;
 }
 
@@ -208,7 +246,13 @@ export async function load({ params, locals, setHeaders }) {
 	const { slug } = params;
 
 	try {
-		// Cache individual article CMS response (15 minute TTL)
+		// 1. Try the custom CMS first. If a published article exists, serve it.
+		const customArticle = await loadCustomArticle(slug);
+		if (customArticle) {
+			return await renderCustomArticle(customArticle, { locals, setHeaders });
+		}
+
+		// 2. Fall back to Payload (the legacy source) during the dual-run window.
 		const post = await getCachedOrFetch(
 			`${CACHE_KEYS.ARTICLES}:slug:${slug}`,
 			() => payload.getPostBySlug(slug),
@@ -355,4 +399,143 @@ export async function load({ params, locals, setHeaders }) {
 		console.error('Error fetching article:', err);
 		throw error(500, 'Failed to load article');
 	}
+}
+
+/**
+ * Look up a published article in the custom CMS by slug.
+ * Returns the row joined with author info, or null if not found / not published.
+ */
+async function loadCustomArticle(slug) {
+	const [row] = await db
+		.select({
+			id: cmsArticle.id,
+			slug: cmsArticle.slug,
+			title: cmsArticle.title,
+			excerpt: cmsArticle.excerpt,
+			body: cmsArticle.body,
+			readTime: cmsArticle.readTime,
+			accessMode: cmsArticle.accessMode,
+			status: cmsArticle.status,
+			publishedAt: cmsArticle.publishedAt,
+			scheduledFor: cmsArticle.scheduledFor,
+			coverImageId: cmsArticle.coverImageId,
+			authorFirstName: userTable.firstName,
+			authorLastName: userTable.lastName
+		})
+		.from(cmsArticle)
+		.leftJoin(userTable, eq(cmsArticle.authorId, userTable.id))
+		.where(eq(cmsArticle.slug, slug))
+		.limit(1);
+
+	if (!row) return null;
+	// Treat a scheduled article whose start time has passed as published — keeps
+	// us from needing a background job to flip the status flag.
+	const isLive =
+		row.status === 'published' ||
+		(row.status === 'scheduled' &&
+			row.scheduledFor &&
+			new Date(row.scheduledFor).getTime() <= Date.now());
+	if (!isLive) return null;
+
+	if (row.coverImageId) {
+		const [m] = await db
+			.select({ url: cmsMedia.url, alt: cmsMedia.alt, width: cmsMedia.width, height: cmsMedia.height })
+			.from(cmsMedia)
+			.where(eq(cmsMedia.id, row.coverImageId))
+			.limit(1);
+		row.coverMedia = m || null;
+	}
+	return row;
+}
+
+/**
+ * Render a custom CMS article into the same shape the client component expects.
+ * Reuses the existing premium gating + card-image resolution logic.
+ */
+async function renderCustomArticle(row, { locals, setHeaders }) {
+	const processedContent = processContentUrls(row.body);
+	const decklists = []; // custom CMS uses block widgets, not the legacy decklist array
+
+	const contentCardNames = extractCardNamesFromContent(processedContent);
+	const decklistCardNames = extractCardNamesFromInlineDecklists(processedContent);
+	const allCardNames = new Set([...contentCardNames, ...decklistCardNames]);
+	const cardImages = allCardNames.size > 0 ? await resolveCardImages(allCardNames) : {};
+
+	const article = {
+		slug: row.slug,
+		title: row.title,
+		excerpt: row.excerpt,
+		content: processedContent,
+		publishedAt: row.publishedAt,
+		accessMode: row.accessMode,
+		coverImage: row.coverMedia
+			? {
+					src: row.coverMedia.url,
+					srcset: '',
+					width: row.coverMedia.width || 1200,
+					height: row.coverMedia.height || 630
+				}
+			: null,
+		author: row.authorFirstName
+			? {
+					name: [row.authorFirstName, row.authorLastName].filter(Boolean).join(' '),
+					slug: null,
+					bio: null,
+					profilePicture: null,
+					socialLinks: []
+				}
+			: null,
+		tags: [],
+		decklists,
+		readTime: row.readTime || null,
+		source: 'custom'
+	};
+
+	const isPremium = isPremiumNow({
+		accessMode: article.accessMode,
+		publishedAt: article.publishedAt
+	});
+
+	let isPreview = false;
+	let hasPremiumAccess = false;
+	const user = locals.user;
+
+	if (isPremium) {
+		hasPremiumAccess = userHasPremiumAccess(user);
+		if (!hasPremiumAccess) {
+			isPreview = true;
+			article.content = truncateContentForPreview(processedContent);
+		}
+	}
+
+	if (!isPremium) {
+		setHeaders({
+			'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
+			vary: 'Cookie'
+		});
+	} else {
+		setHeaders({
+			'cache-control': 'private, no-store',
+			vary: 'Cookie'
+		});
+	}
+
+	const pageViewId = locals.pageViewId || null;
+	if (pageViewId) {
+		enrichPageViewWithArticle(pageViewId, {
+			title: article.title,
+			author: article.author?.name || null,
+			tags: null,
+			accessMode: article.accessMode || null
+		});
+	}
+
+	return {
+		article,
+		isPremium,
+		isPreview,
+		cardImages,
+		pageViewId,
+		user: user ? { role: user.role } : null
+	};
 }

@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db/index.js';
 import { eventStaff, partner } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
+import { userHasAnyRole } from '$lib/server/guards.js';
 
 export const load = async ({ locals }) => {
 	// locals.user is set in hooks.server.js by Lucia
@@ -35,10 +36,15 @@ export const load = async ({ locals }) => {
 	const isPremiumMember =
 		locals.user?.role === 'premium' || locals.user?.role === 'admin';
 
+	// Surface CMS access for the profile dropdown — true for any user who can
+	// edit articles or courses (writer / creator / admin, including stacked).
+	const hasCmsAccess = userHasAnyRole(locals.user, ['admin', 'writer', 'creator']);
+
 	return {
 		user: locals.user,
 		assignedEventsCount,
 		isPartner,
-		isPremiumMember
+		isPremiumMember,
+		hasCmsAccess
 	};
 };

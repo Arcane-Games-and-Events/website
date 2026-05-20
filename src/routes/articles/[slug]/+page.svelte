@@ -3,6 +3,7 @@
 	import { fade, fly } from 'svelte/transition';
 	import Decklist from '$lib/components/Decklist.svelte';
 	import CardHover from '$lib/components/CardHover.svelte';
+	import RenderLexical from '$lib/cms/render/RenderLexical.svelte';
 
 	export let data;
 
@@ -125,11 +126,11 @@
 		return url;
 	}
 
-	// Calculate when a premium article will become free (30 days from publish)
+	// Calculate when a premium article will become free (60 days from publish).
 	function getFreeDate(publishedAt) {
 		if (!publishedAt) return null;
 		const publishDate = new Date(publishedAt);
-		const freeDate = new Date(publishDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+		const freeDate = new Date(publishDate.getTime() + 60 * 24 * 60 * 60 * 1000);
 		return freeDate;
 	}
 
@@ -1198,7 +1199,12 @@
 						[&>:first-child]:mt-0"
 					>
 						{#if data.article.content}
-							{#if renderBlocks.length > 0}
+							{#if data.article.source === 'custom'}
+								<!-- Custom-CMS articles use the new widget-aware renderer.
+								     This is what makes inline decklist / stats-table / card-link
+								     nodes show up correctly on the public page. -->
+								<RenderLexical content={data.article.content} {cardImages} />
+							{:else if renderBlocks.length > 0}
 								{#each renderBlocks as block}
 									{#if block.type === 'html'}
 										{@html block.content}

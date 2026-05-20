@@ -20,6 +20,7 @@ export const auth = new Lucia(adapter, {
 		lastName: data.lastName,
 		gemId: data.gemId,
 		role: data.role,
+		additionalRoles: data.additionalRoles || [],
 		subscriptionId: data.subscriptionId,
 		subscriptionType: data.subscriptionType,
 		subscriptionStatus: data.subscriptionStatus,

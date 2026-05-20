@@ -1,6 +1,9 @@
 import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow } from '$lib/server/articles/access.js';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+import { db } from '$lib/server/db/index.js';
+import { cmsArticle, user as userTable } from '$lib/server/db/schema.js';
+import { eq, desc, sql, or, and, lte } from 'drizzle-orm';
 
 export async function load({ setHeaders }) {
 	// Cache articles list for 5 minutes, allow stale for 1 hour while revalidating
@@ -71,8 +74,77 @@ export async function load({ setHeaders }) {
 			};
 		});
 
+		// Pull custom-CMS articles too. We dedupe by slug — if the same slug
+		// exists in both sources, the custom CMS row wins (post-migration any
+		// legacy article will have been imported with source='payload', so it
+		// either wins or tie-merges cleanly).
+		let customArticles = [];
+		try {
+			const rows = await db
+				.select({
+					slug: cmsArticle.slug,
+					title: cmsArticle.title,
+					excerpt: cmsArticle.excerpt,
+					publishedAt: cmsArticle.publishedAt,
+					scheduledFor: cmsArticle.scheduledFor,
+					status: cmsArticle.status,
+					accessMode: cmsArticle.accessMode,
+					readTime: cmsArticle.readTime,
+					authorFirstName: userTable.firstName,
+					authorLastName: userTable.lastName
+				})
+				.from(cmsArticle)
+				.leftJoin(userTable, eq(cmsArticle.authorId, userTable.id))
+				// "Live" = published outright, OR scheduled with a start time that
+				// has already passed. The hybrid public route uses the same rule.
+				.where(
+					or(
+						eq(cmsArticle.status, 'published'),
+						and(eq(cmsArticle.status, 'scheduled'), lte(cmsArticle.scheduledFor, sql`NOW()`))
+					)
+				)
+				.orderBy(desc(cmsArticle.publishedAt));
+
+			customArticles = rows.map((r) => ({
+				slug: r.slug,
+				title: r.title,
+				excerpt: r.excerpt,
+				publishedAt: r.publishedAt,
+				accessMode: r.accessMode,
+				coverImage: null,
+				author: r.authorFirstName
+					? {
+							name: [r.authorFirstName, r.authorLastName].filter(Boolean).join(' '),
+							slug: null,
+							profilePicture: null
+						}
+					: null,
+				tags: [],
+				readTime: r.readTime || null,
+				isPremium: isPremiumNow({
+					accessMode: r.accessMode,
+					publishedAt: r.publishedAt
+				})
+			}));
+		} catch (e) {
+			// If cms_article doesn't exist yet (migration not run), fall back to Payload-only.
+			console.warn('cms_article listing skipped:', e.message);
+		}
+
+		// Merge & dedupe: custom CMS wins on slug collision.
+		const customSlugs = new Set(customArticles.map((a) => a.slug));
+		const merged = [
+			...customArticles,
+			...articles.filter((a) => !customSlugs.has(a.slug))
+		];
+		merged.sort((a, b) => {
+			const ad = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+			const bd = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+			return bd - ad;
+		});
+
 		return {
-			articles
+			articles: merged
 		};
 	} catch (error) {
 		console.error('Error fetching articles:', error);

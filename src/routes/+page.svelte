@@ -661,7 +661,7 @@
 								<div>
 									<h3 class="font-display text-lg font-bold text-white">Free to Read</h3>
 									<p class="mt-0.5 text-sm text-gray-400">
-										Premium articles become free after 30 days. Enjoy our best content at no cost.
+										Premium articles become free after 60 days. Enjoy our best content at no cost.
 									</p>
 								</div>
 							</div>

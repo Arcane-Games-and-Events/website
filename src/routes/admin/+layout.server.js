@@ -5,8 +5,8 @@ import { partnerReferral } from '$lib/server/db/schema.js';
 import { sql } from 'drizzle-orm';
 
 export const load = async ({ locals }) => {
-	// Allow both admin and tournament staff to access admin routes
-	// Individual pages will handle specific permission checks (e.g., event assignments for tournament staff)
+	// Admin shell is for admin + tournament staff only. CMS roles (writer,
+	// creator) live at /cms — they don't need admin access.
 	requireRole(locals, ['admin', 'tournament staff']);
 
 	// Count pending referrals whose payout is due within the next 3 days (or already due)
