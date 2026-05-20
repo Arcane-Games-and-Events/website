@@ -311,10 +311,11 @@ export const standing = pgTable(
 
 		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow(),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
-	},
-	(table) => ({
-		uniqueSeasonCircuitPlayer: unique().on(table.season, table.circuit, table.playerName)
-	})
+	}
+	// Uniqueness is enforced in SQL via standings_season_circuit_identity_key,
+	// see supabase/migrations/017_standing_gem_unique.sql. The constraint uses
+	// COALESCE(gem_id, '__name__' || player_name) which Drizzleʼs unique()
+	// helper cannot express, so it lives in the migration only.
 );
 
 // SAVED PAYMENT METHODS (Authorize.net CIM tokens)

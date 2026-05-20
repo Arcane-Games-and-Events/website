@@ -3,6 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { event, match, eventPlayerHero, decklist } from '$lib/server/db/schema.js';
 import { eq, asc, and } from 'drizzle-orm';
 import { calculateFinalStandings } from '$lib/server/tournament-processor.js';
+import { playerKeyFromIdName } from '$lib/server/players/key.js';
 
 /**
  * Convert hero name to static image URL
@@ -59,13 +60,13 @@ export async function load({ params }) {
 			const playerMap = new Map();
 			for (const m of eventMatches) {
 				if (m.player1GemId || m.player1Name) {
-					const key = m.player1GemId || m.player1Name;
+					const key = playerKeyFromIdName(m.player1GemId, m.player1Name);
 					if (!playerMap.has(key)) {
 						playerMap.set(key, { playerId: m.player1GemId, name: m.player1Name, wins: 0 });
 					}
 				}
 				if (m.player2GemId || m.player2Name) {
-					const key = m.player2GemId || m.player2Name;
+					const key = playerKeyFromIdName(m.player2GemId, m.player2Name);
 					if (!playerMap.has(key)) {
 						playerMap.set(key, { playerId: m.player2GemId, name: m.player2Name, wins: 0 });
 					}
@@ -134,8 +135,8 @@ export async function load({ params }) {
 		for (const m of eventMatches) {
 			const p1Hero = getHeroForPlayer(m.player1GemId, m.player1Name);
 			const p2Hero = getHeroForPlayer(m.player2GemId, m.player2Name);
-			const p1Key = m.player1GemId || m.player1Name;
-			const p2Key = m.player2GemId || m.player2Name;
+			const p1Key = playerKeyFromIdName(m.player1GemId, m.player1Name);
+			const p2Key = playerKeyFromIdName(m.player2GemId, m.player2Name);
 
 			// Initialize hero stats if needed
 			for (const hero of [p1Hero, p2Hero]) {
@@ -321,12 +322,12 @@ export async function load({ params }) {
 				// Create player to seed mapping from results
 				const playerSeeds = new Map();
 				top8Players.forEach((p, idx) => {
-					const key = p.gemId || p.playerName;
+					const key = playerKeyFromIdName(p.gemId, p.playerName);
 					playerSeeds.set(key, idx + 1);
 				});
 
 				const getSeed = (gemId, name) => {
-					return playerSeeds.get(gemId || name) || 0;
+					return playerSeeds.get(playerKeyFromIdName(gemId, name)) || 0;
 				};
 
 				// Standard bracket seeding: 1v8, 4v5, 2v7, 3v6

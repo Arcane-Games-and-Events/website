@@ -1,8 +1,9 @@
 import { db } from '$lib/server/db';
 import { standing, match, decklist, event, eventPlayerHero } from '$lib/server/db/schema';
-import { eq, desc, or, asc, inArray } from 'drizzle-orm';
+import { eq, desc, or, asc, inArray, and, isNull } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import { calculatePercentile, calculateRankPercentile } from '$lib/age-rating.js';
+import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
 
 /**
  * Convert hero name to static image URL
@@ -158,8 +159,8 @@ export async function load({ params, locals }) {
 	const derivedStatsCache = new Map();
 
 	for (const standing of allStandings) {
-		// Use gemId || playerName to match standings page logic (include ALL players)
-		const key = standing.gemId || standing.playerName;
+		// Identity by GEM ID; rows without one stay isolated (no name merging).
+		const key = getPlayerKey(standing);
 		if (!key) continue;
 
 		if (!playerStatsMap.has(key)) {
@@ -198,9 +199,9 @@ export async function load({ params, locals }) {
 		for (const standing of playerData.standings) {
 			const circuitSeasonKey = `${standing.season}|${standing.circuit}`;
 			const circuitSeasonStandings = standingsByCircuitSeason.get(circuitSeasonKey) || [];
-			// Match using gemId || playerName to be consistent
+			// Match using the canonical playerKey so both sides use the same identity rule.
 			const rank =
-				circuitSeasonStandings.findIndex((s) => (s.gemId || s.playerName) === playerKey) + 1;
+				circuitSeasonStandings.findIndex((s) => getPlayerKey(s) === playerKey) + 1;
 
 			if (rank > 0) {
 				if (playerData.bestRank === null || rank < playerData.bestRank) {
@@ -258,8 +259,10 @@ export async function load({ params, locals }) {
 	};
 
 	// === MATCH HISTORY ===
-	// Query all matches for this player by GEM ID or ANY player name from their standings
-	// This handles name changes across seasons and legacy matches without GEM IDs
+	// Pull matches that belong to THIS player. The name fallback only applies
+	// to matches where the corresponding player slot has NO GEM ID — otherwise
+	// a same-named different player (e.g., two "John Kim"s with different GEM
+	// IDs) would have their matches incorrectly merged into this profile.
 	const playerMatchesRaw = await db
 		.select()
 		.from(match)
@@ -267,8 +270,8 @@ export async function load({ params, locals }) {
 			or(
 				eq(match.player1GemId, gemId),
 				eq(match.player2GemId, gemId),
-				inArray(match.player1Name, allPlayerNames),
-				inArray(match.player2Name, allPlayerNames)
+				and(isNull(match.player1GemId), inArray(match.player1Name, allPlayerNames)),
+				and(isNull(match.player2GemId), inArray(match.player2Name, allPlayerNames))
 			)
 		)
 		.orderBy(desc(match.year), asc(match.round));
@@ -289,7 +292,9 @@ export async function load({ params, locals }) {
 
 	for (const { match, event: eventData } of playerMatches) {
 		// Check if this player is player1 (by GEM ID or any of their known names)
-		const isPlayer1 = match.player1GemId === gemId || allPlayerNames.includes(match.player1Name);
+		const isPlayer1 =
+			match.player1GemId === gemId ||
+			(!match.player1GemId && allPlayerNames.includes(match.player1Name));
 		const opponentGemId = isPlayer1 ? match.player2GemId : match.player1GemId;
 		const opponentName = isPlayer1 ? match.player2Name : match.player1Name;
 		const won =
@@ -361,7 +366,9 @@ export async function load({ params, locals }) {
 	// For longest streak, iterate chronologically (reversed since matches are sorted desc)
 	const chronologicalMatches = [...playerMatches].reverse();
 	for (const { match } of chronologicalMatches) {
-		const isPlayer1 = match.player1GemId === gemId || allPlayerNames.includes(match.player1Name);
+		const isPlayer1 =
+			match.player1GemId === gemId ||
+			(!match.player1GemId && allPlayerNames.includes(match.player1Name));
 		const won =
 			(isPlayer1 && match.winner === 'player1') || (!isPlayer1 && match.winner === 'player2');
 
@@ -375,7 +382,9 @@ export async function load({ params, locals }) {
 
 	// Current streak (from most recent match backwards)
 	for (const { match } of playerMatches) {
-		const isPlayer1 = match.player1GemId === gemId || allPlayerNames.includes(match.player1Name);
+		const isPlayer1 =
+			match.player1GemId === gemId ||
+			(!match.player1GemId && allPlayerNames.includes(match.player1Name));
 		const won =
 			(isPlayer1 && match.winner === 'player1') || (!isPlayer1 && match.winner === 'player2');
 
@@ -491,7 +500,9 @@ export async function load({ params, locals }) {
 	const opponentEventKeys = new Set();
 	const opponentGemIds = new Set();
 	for (const { match, event: eventData } of playerMatches) {
-		const isPlayer1 = match.player1GemId === gemId || allPlayerNames.includes(match.player1Name);
+		const isPlayer1 =
+			match.player1GemId === gemId ||
+			(!match.player1GemId && allPlayerNames.includes(match.player1Name));
 		const opponentGemId = isPlayer1 ? match.player2GemId : match.player1GemId;
 		if (opponentGemId) {
 			opponentGemIds.add(opponentGemId);

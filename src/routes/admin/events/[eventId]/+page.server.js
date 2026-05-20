@@ -19,6 +19,7 @@ import {
 } from '$lib/server/tournament-processor.js';
 import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
 import { parseDatetimeLocal } from '$lib/server/dates.js';
+import { playerKeyFromIdName } from '$lib/server/players/key.js';
 
 export async function load({ params, locals }) {
 	// Require authentication (admin or tournament staff)
@@ -576,7 +577,7 @@ export const actions = {
 						const oldPlayerStats = new Map();
 						for (const match of existingEventMatches) {
 							// Track player 1
-							const p1Key = match.player1GemId || match.player1Name;
+							const p1Key = playerKeyFromIdName(match.player1GemId, match.player1Name);
 							if (!oldPlayerStats.has(p1Key)) {
 								oldPlayerStats.set(p1Key, {
 									gemId: match.player1GemId,
@@ -590,7 +591,7 @@ export const actions = {
 							if (match.winner === 'player1') p1.wins++;
 
 							// Track player 2
-							const p2Key = match.player2GemId || match.player2Name;
+							const p2Key = playerKeyFromIdName(match.player2GemId, match.player2Name);
 							if (!oldPlayerStats.has(p2Key)) {
 								oldPlayerStats.set(p2Key, {
 									gemId: match.player2GemId,
@@ -627,7 +628,7 @@ export const actions = {
 						};
 						oldSorted.forEach((player, idx) => {
 							const placement = idx + 1;
-							oldPointsMap.set(player.gemId || player.name, {
+							oldPointsMap.set(playerKeyFromIdName(player.gemId, player.name), {
 								points: pointsTable[placement] || 1,
 								wins: player.wins,
 								matches: player.matches
@@ -646,30 +647,33 @@ export const actions = {
 						const monthMatchesWonCol = `${monthKey}MatchesWon`;
 						const monthMatchesCol = `${monthKey}Matches`;
 
-						for (const standing of existingStandings) {
-							const key = standing.gemId || standing.playerName;
+						for (const existingRow of existingStandings) {
+							const key = playerKeyFromIdName(existingRow.gemId, existingRow.playerName);
 							const oldStats = oldPointsMap.get(key);
 							if (oldStats) {
 								await db
 									.update(standing)
 									.set({
-										totalPoints: Math.max(0, (standing.totalPoints || 0) - oldStats.points),
-										matchesWon: Math.max(0, (standing.matchesWon || 0) - oldStats.wins),
-										matchesPlayed: Math.max(0, (standing.matchesPlayed || 0) - oldStats.matches),
+										totalPoints: Math.max(0, (existingRow.totalPoints || 0) - oldStats.points),
+										matchesWon: Math.max(0, (existingRow.matchesWon || 0) - oldStats.wins),
+										matchesPlayed: Math.max(
+											0,
+											(existingRow.matchesPlayed || 0) - oldStats.matches
+										),
 										[monthPointsCol]: Math.max(
 											0,
-											(standing[monthPointsCol] || 0) - oldStats.points
+											(existingRow[monthPointsCol] || 0) - oldStats.points
 										),
 										[monthMatchesWonCol]: Math.max(
 											0,
-											(standing[monthMatchesWonCol] || 0) - oldStats.wins
+											(existingRow[monthMatchesWonCol] || 0) - oldStats.wins
 										),
 										[monthMatchesCol]: Math.max(
 											0,
-											(standing[monthMatchesCol] || 0) - oldStats.matches
+											(existingRow[monthMatchesCol] || 0) - oldStats.matches
 										)
 									})
-									.where(eq(standing.id, standing.id));
+									.where(eq(standing.id, existingRow.id));
 							}
 						}
 					}
@@ -681,11 +685,18 @@ export const actions = {
 						.from(standing)
 						.where(and(eq(standing.season, currentYear), eq(standing.circuit, eventData.circuit)));
 
-					// Build lookup maps for existing standings
+					// Build lookup maps for existing standings.
+					//   - GEM-ID rows are matched only by GEM ID (never by name).
+					//   - GEM-less rows are matched by playerName, and only against
+					//     GEM-less results. A GEM-less result never matches a GEM-ID
+					//     row (and vice versa) — that was the bug that merged two
+					//     same-named players into one row.
 					const byGemId = new Map(
 						existingStandings.filter((s) => s.gemId).map((s) => [s.gemId, s])
 					);
-					const byName = new Map(existingStandings.map((s) => [s.playerName, s]));
+					const byGemlessName = new Map(
+						existingStandings.filter((s) => !s.gemId).map((s) => [s.playerName, s])
+					);
 
 					const monthPointsCol = `${monthKey}Points`;
 					const monthMatchesWonCol = `${monthKey}MatchesWon`;
@@ -693,11 +704,9 @@ export const actions = {
 
 					// Process each result
 					for (const result of resultsJson) {
-						// Find existing standing by gemId first, then by name
-						let existing = result.gemId ? byGemId.get(result.gemId) : null;
-						if (!existing) {
-							existing = byName.get(result.playerName);
-						}
+						const existing = result.gemId
+							? byGemId.get(result.gemId)
+							: byGemlessName.get(result.playerName);
 
 						if (existing) {
 							// Update existing standing - add new points/matches to totals and monthly
@@ -746,7 +755,18 @@ export const actions = {
 								[monthMatchesWonCol]: result.wins,
 								[monthMatchesCol]: result.wins + result.losses
 							};
-							await db.insert(standing).values(insertData);
+							const [inserted] = await db.insert(standing).values(insertData).returning();
+							// Track the freshly-inserted row in the lookup maps so a
+							// duplicate entry later in the same CSV updates this row
+							// instead of attempting another INSERT (which would hit the
+							// unique constraint).
+							if (inserted) {
+								if (inserted.gemId) {
+									byGemId.set(inserted.gemId, inserted);
+								} else {
+									byGemlessName.set(inserted.playerName, inserted);
+								}
+							}
 						}
 					}
 					standingsUpdated = true;

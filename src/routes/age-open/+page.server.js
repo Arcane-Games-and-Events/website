@@ -9,6 +9,8 @@ import {
 	calculatePercentile,
 	calculateRankPercentile
 } from '$lib/age-rating.js';
+// Aliased to avoid colliding with the local `playerKey` loop variable below.
+import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
 
 /**
  * Calculate derived stats from monthly data
@@ -282,7 +284,9 @@ export async function load({ url, setHeaders }) {
 			const careerStatsMap = new Map();
 
 			for (const standing of allStandings) {
-				const key = standing.gemId || standing.playerName; // Use gemId if available, otherwise playerName
+				// Identity by GEM ID. Rows without a GEM ID stay isolated
+				// (see playerKey()) so same-name players don't merge.
+				const key = getPlayerKey(standing);
 
 				if (!careerStatsMap.has(key)) {
 					careerStatsMap.set(key, {
@@ -397,10 +401,10 @@ export async function load({ url, setHeaders }) {
 			// Cache for derived stats to avoid redundant calculations
 			const derivedStatsCache = new Map();
 
-			// Group by gemId/playerName to get aggregate stats (using allStandings from Promise.all)
+			// Group by player identity (GEM ID; GEM-less rows stay isolated).
 			const playerStatsMap = new Map();
 			for (const standing of allStandings) {
-				const key = standing.gemId || standing.playerName;
+				const key = getPlayerKey(standing);
 				if (!key) continue;
 
 				if (!playerStatsMap.has(key)) {
@@ -437,7 +441,7 @@ export async function load({ url, setHeaders }) {
 					const circuitSeasonKey = `${standing.season}|${standing.circuit}`;
 					const circuitSeasonStandings = standingsByCircuitSeason.get(circuitSeasonKey) || [];
 					const rank =
-						circuitSeasonStandings.findIndex((s) => (s.gemId || s.playerName) === playerKey) + 1;
+						circuitSeasonStandings.findIndex((s) => getPlayerKey(s) === playerKey) + 1;
 
 					if (rank > 0) {
 						if (playerData.bestRank === null || rank < playerData.bestRank) {
@@ -467,7 +471,7 @@ export async function load({ url, setHeaders }) {
 
 			// Calculate AGE Rating for each player in standings
 			standings = standings.map((standing) => {
-				const key = standing.gemId || standing.playerName;
+				const key = getPlayerKey(standing);
 				const playerData = playerStatsMap.get(key);
 
 				if (!playerData) {

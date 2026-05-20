@@ -361,14 +361,21 @@ export function calculateFinalStandings(swissStandings, pairings) {
 		});
 	}
 
-	// Get players already placed
-	const placedNames = new Set(results.map((r) => r.name));
+	// Get players already placed. When a player has a GEM ID we identify them
+	// by that ID alone — two players sharing a name must NOT collide on the
+	// name set, otherwise the second one gets filtered out as "already placed."
+	// We only fall back to the name check for legacy GEM-less data.
 	const placedIds = new Set(results.map((r) => r.playerId).filter(Boolean));
+	const placedNamesWithoutId = new Set(
+		results.filter((r) => !r.playerId).map((r) => r.name)
+	);
+	const isAlreadyPlaced = (id, name) =>
+		id ? placedIds.has(id) : !!name && placedNamesWithoutId.has(name);
 
 	// Process remaining players from Swiss standings (9th and below)
 	// Use original Swiss rank if available, otherwise fall back to tiebreaker-based sorting
 	const remainingPlayers = swissStandings
-		.filter((p) => !placedNames.has(p.name) && !placedIds.has(p.playerId))
+		.filter((p) => !isAlreadyPlaced(p.playerId, p.name))
 		.map((p) => ({
 			...p,
 			...(tiebreakers[p.playerId] || tiebreakers[p.name] || {})
@@ -399,8 +406,11 @@ export function calculateFinalStandings(swissStandings, pairings) {
 			...pointsInfo
 		});
 
-		placedNames.add(player.name);
-		if (player.playerId) placedIds.add(player.playerId);
+		if (player.playerId) {
+			placedIds.add(player.playerId);
+		} else if (player.name) {
+			placedNamesWithoutId.add(player.name);
+		}
 		placement++;
 	}
 
@@ -411,8 +421,7 @@ export function calculateFinalStandings(swissStandings, pairings) {
 		// Add player 1
 		if (
 			pairing.player1Name &&
-			!placedNames.has(pairing.player1Name) &&
-			!placedIds.has(pairing.player1Id)
+			!isAlreadyPlaced(pairing.player1Id, pairing.player1Name)
 		) {
 			const key = pairing.player1Id || pairing.player1Name;
 			if (!allParticipants.has(key)) {
@@ -425,8 +434,7 @@ export function calculateFinalStandings(swissStandings, pairings) {
 		// Add player 2
 		if (
 			pairing.player2Name &&
-			!placedNames.has(pairing.player2Name) &&
-			!placedIds.has(pairing.player2Id)
+			!isAlreadyPlaced(pairing.player2Id, pairing.player2Name)
 		) {
 			const key = pairing.player2Id || pairing.player2Name;
 			if (!allParticipants.has(key)) {

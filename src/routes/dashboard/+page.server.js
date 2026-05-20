@@ -13,6 +13,7 @@ import {
 } from '$lib/server/db/schema.js';
 import { eq, and, desc, gte, or, isNull, asc } from 'drizzle-orm';
 import mux from '$lib/server/mux.js';
+import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
 
 /**
  * Tiebreaker logic for standings (same as homepage)
@@ -239,7 +240,7 @@ export async function load({ locals, fetch }) {
 		const allStandings = await db.select().from(standing).orderBy(desc(standing.totalPoints));
 		const statsMap = new Map();
 		for (const s of allStandings) {
-			const key = s.gemId || s.playerName;
+			const key = getPlayerKey(s);
 			if (!statsMap.has(key)) {
 				statsMap.set(key, {
 					gemId: s.gemId,

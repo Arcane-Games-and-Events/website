@@ -2,6 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { standing, match } from '$lib/server/db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
+import { playerKeyFromIdName } from '$lib/server/players/key.js';
 
 // Helper to add timeout to promises
 const withTimeout = (promise, ms, fallback) =>
@@ -534,7 +535,7 @@ export const actions = {
 
 				for (const m of matches) {
 					// Player 1
-					const p1Key = m.player1GemId || m.player1Name;
+					const p1Key = playerKeyFromIdName(m.player1GemId, m.player1Name);
 					if (!monthPlayerStats.has(p1Key)) {
 						monthPlayerStats.set(p1Key, {
 							gemId: m.player1GemId,
@@ -548,7 +549,7 @@ export const actions = {
 					if (m.winner === 'player1') p1.wins++;
 
 					// Player 2
-					const p2Key = m.player2GemId || m.player2Name;
+					const p2Key = playerKeyFromIdName(m.player2GemId, m.player2Name);
 					if (!monthPlayerStats.has(p2Key)) {
 						monthPlayerStats.set(p2Key, {
 							gemId: m.player2GemId,
@@ -569,7 +570,7 @@ export const actions = {
 					const placement = idx + 1;
 					const points = pointsTable[placement] || 1;
 
-					const playerKey = player.gemId || player.name;
+					const playerKey = playerKeyFromIdName(player.gemId, player.name);
 					if (!playerMonthlyStats.has(playerKey)) {
 						playerMonthlyStats.set(playerKey, {
 							gemId: player.gemId,
@@ -593,22 +594,21 @@ export const actions = {
 				.from(standing)
 				.where(and(eq(standing.season, season), eq(standing.circuit, circuit)));
 
-			// Build lookup maps
+			// Build lookup map — GEM ID only. Name fallback was removed because two
+			// players sharing the same name would overwrite each other's standings.
 			const standingByGemId = new Map(
 				existingStandings.filter((s) => s.gemId).map((s) => [s.gemId, s])
 			);
-			const standingByName = new Map(existingStandings.map((s) => [s.playerName, s]));
 
 			let updated = 0;
 			let created = 0;
 
 			// Update each player's standing with calculated monthly stats
 			for (const [playerKey, playerData] of playerMonthlyStats) {
-				// Find existing standing
-				let existingStanding = playerData.gemId ? standingByGemId.get(playerData.gemId) : null;
-				if (!existingStanding) {
-					existingStanding = standingByName.get(playerData.name);
-				}
+				// Match by GEM ID only. GEM-less rows always insert a new standing.
+				const existingStanding = playerData.gemId
+					? standingByGemId.get(playerData.gemId)
+					: null;
 
 				// Calculate totals from monthly data
 				let totalPoints = 0;
@@ -690,19 +690,32 @@ export const actions = {
 				.from(standing)
 				.where(sql`${standing.gemId} IS NOT NULL AND ${standing.gemId} != ''`);
 
-			// Build a map of player name -> GEM ID
-			// Use all names the player has used across all their standings
-			const nameToGemId = new Map();
+			// Build a map of player name -> GEM ID. If the same name maps to MORE
+			// than one GEM ID (two different players share the name) we drop that
+			// name from the map — better to leave the match un-backfilled than to
+			// attribute it to the wrong player.
+			const nameGemIds = new Map(); // name -> Set<gemId>
 			for (const s of allStandings) {
 				if (s.gemId && s.playerName) {
-					// Only set if not already set (prefer existing mapping)
-					if (!nameToGemId.has(s.playerName)) {
-						nameToGemId.set(s.playerName, s.gemId);
+					if (!nameGemIds.has(s.playerName)) {
+						nameGemIds.set(s.playerName, new Set());
 					}
+					nameGemIds.get(s.playerName).add(s.gemId);
+				}
+			}
+			const nameToGemId = new Map();
+			let ambiguousNames = 0;
+			for (const [name, gemIds] of nameGemIds) {
+				if (gemIds.size === 1) {
+					nameToGemId.set(name, gemIds.values().next().value);
+				} else {
+					ambiguousNames++;
 				}
 			}
 
-			console.log(`Found ${nameToGemId.size} unique player name -> GEM ID mappings`);
+			console.log(
+				`Found ${nameToGemId.size} unique player name -> GEM ID mappings (${ambiguousNames} ambiguous names skipped)`
+			);
 
 			// Get all matches that are missing GEM IDs
 			const matchesNeedingUpdate = await db

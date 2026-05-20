@@ -5,6 +5,7 @@ import { event, standing, decklist, podcast, podcastEpisode, vod } from '$lib/se
 import { asc, gte, desc, and, or, eq, isNull, sql } from 'drizzle-orm';
 import mux from '$lib/server/mux.js';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
 
 /**
  * Calculate derived stats from monthly data
@@ -195,10 +196,12 @@ export async function load({ setHeaders, url, locals }) {
 			filteredStandings = filteredStandings.filter((s) => s.circuit === standingsCircuit);
 		}
 
-		// Aggregate stats by gemId/playerName (for career view or filtered view)
+		// Aggregate stats by player identity (for career view or filtered view).
+		// Standings without a GEM ID stay as separate entries — same name does
+		// not imply same player.
 		const statsMap = new Map();
 		for (const standing of filteredStandings) {
-			const key = standing.gemId || standing.playerName;
+			const key = getPlayerKey(standing);
 			if (!statsMap.has(key)) {
 				statsMap.set(key, {
 					gemId: standing.gemId,
@@ -230,7 +233,7 @@ export async function load({ setHeaders, url, locals }) {
 		// Calculate total unique players across all standings (for series stats)
 		const uniquePlayers = new Set();
 		for (const standing of allStandings) {
-			uniquePlayers.add(standing.gemId || standing.playerName);
+			uniquePlayers.add(getPlayerKey(standing));
 		}
 
 		// Fetch featured decklists (last 3 winning decklists) with Redis caching
