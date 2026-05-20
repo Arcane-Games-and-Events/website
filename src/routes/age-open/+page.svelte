@@ -76,7 +76,8 @@
 	// Get active tab from URL, defaulting to 'overview'
 	$: activeTab = $page.url.searchParams.get('tab') || 'overview';
 
-	// Function to switch tabs and update URL
+	// Function to switch tabs and update URL. We pass noScroll so SvelteKit
+	// keeps the user's current scroll position when the URL changes.
 	function switchTab(tabId) {
 		const url = new URL($page.url);
 		if (tabId === 'overview') {
@@ -84,11 +85,7 @@
 		} else {
 			url.searchParams.set('tab', tabId);
 		}
-		goto(url.toString(), { replaceState: false });
-		// Scroll to top when switching tabs
-		if (browser) {
-			window.scrollTo({ top: 0, behavior: 'instant' });
-		}
+		goto(url.toString(), { replaceState: false, noScroll: true });
 	}
 
 	// Handle standings preview filter changes (for sidebar)
