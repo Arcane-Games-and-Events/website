@@ -4,6 +4,7 @@ import { eq, desc, or, asc, inArray, and, isNull } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import { calculatePercentile, calculateRankPercentile } from '$lib/age-rating.js';
 import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
+import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 
 /**
  * Convert hero name to static image URL
@@ -108,7 +109,13 @@ export async function load({ params, locals }) {
 	const isAdmin = locals.user?.role === 'admin';
 
 	// === FETCH ALL STANDINGS ONCE (for rank calculation and percentiles) ===
-	const allStandings = await db.select().from(standing);
+	// Reuse the shared cache populated by the age-open page so we don't
+	// re-pull the entire standings table per profile view.
+	const allStandings = await getCachedOrFetch(
+		`${CACHE_KEYS.STANDINGS}:all`,
+		() => db.select().from(standing).orderBy(desc(standing.totalPoints)),
+		CACHE_TTL.MEDIUM
+	);
 
 	// Group standings by circuit/season for efficient rank lookup
 	const standingsByCircuitSeason = new Map();

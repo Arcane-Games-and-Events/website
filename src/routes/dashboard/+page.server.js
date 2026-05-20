@@ -12,8 +12,9 @@ import {
 	vod
 } from '$lib/server/db/schema.js';
 import { eq, and, desc, gte, or, isNull, asc } from 'drizzle-orm';
-import mux from '$lib/server/mux.js';
+import { getMuxThumbnailToken } from '$lib/server/mux.js';
 import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
+import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 
 /**
  * Tiebreaker logic for standings (same as homepage)
@@ -108,7 +109,11 @@ export async function load({ locals, fetch }) {
 	// --- Articles from Payload CMS ---
 	let articles = [];
 	try {
-		const posts = await payload.getPosts({ limit: 6, fetch });
+		const posts = await getCachedOrFetch(
+			`${CACHE_KEYS.ARTICLES}:dashboard:6`,
+			() => payload.getPosts({ limit: 6, fetch }),
+			CACHE_TTL.LONG
+		);
 		articles = posts
 			.map((post) => {
 				const coverImage = payload.getOptimizedImage(post.coverImage);
@@ -169,10 +174,7 @@ export async function load({ locals, fetch }) {
 			vodRows.map(async (v) => {
 				if (!v.muxPlaybackId) return v;
 				try {
-					const token = await mux.jwt.signPlaybackId(v.muxPlaybackId, {
-						type: 'thumbnail',
-						expiration: '24h'
-					});
+					const token = await getMuxThumbnailToken(v.muxPlaybackId);
 					return { ...v, thumbnailToken: token };
 				} catch {
 					return v;
@@ -237,7 +239,13 @@ export async function load({ locals, fetch }) {
 	// --- Leaderboard (top 5 aggregated) ---
 	let leaderboard = [];
 	try {
-		const allStandings = await db.select().from(standing).orderBy(desc(standing.totalPoints));
+		// Reuse the same cache key the age-open page populates — no need to
+		// re-fetch the full standings table per dashboard load.
+		const allStandings = await getCachedOrFetch(
+			`${CACHE_KEYS.STANDINGS}:all`,
+			() => db.select().from(standing).orderBy(desc(standing.totalPoints)),
+			CACHE_TTL.MEDIUM
+		);
 		const statsMap = new Map();
 		for (const s of allStandings) {
 			const key = getPlayerKey(s);

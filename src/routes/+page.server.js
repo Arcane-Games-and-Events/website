@@ -3,7 +3,7 @@ import { isPremiumNow } from '$lib/server/articles/access.js';
 import { db } from '$lib/server/db/index.js';
 import { event, standing, decklist, podcast, podcastEpisode, vod } from '$lib/server/db/schema.js';
 import { asc, gte, desc, and, or, eq, isNull, sql } from 'drizzle-orm';
-import mux from '$lib/server/mux.js';
+import { getMuxThumbnailToken } from '$lib/server/mux.js';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
 
@@ -312,10 +312,7 @@ export async function load({ setHeaders, url, locals }) {
 				vodRows.map(async (v) => {
 					if (!v.muxPlaybackId) return v;
 					try {
-						const token = await mux.jwt.signPlaybackId(v.muxPlaybackId, {
-							type: 'thumbnail',
-							expiration: '24h'
-						});
+						const token = await getMuxThumbnailToken(v.muxPlaybackId);
 						return { ...v, thumbnailToken: token };
 					} catch {
 						return v;

@@ -25,16 +25,17 @@ class PayloadClient {
 	 * @returns {Promise<Object>}
 	 */
 	async get(endpoint, params = {}, options = {}) {
-		const retries = options.retries ?? 2;
+		const retries = options.retries ?? 1;
 		const fetchFn = options.fetch || fetch;
 		const url = new URL(endpoint, this.baseURL);
 
 		// Convert params to Payload's bracket notation format
 		this.addParamsToURL(url, params);
 
-		// Increased timeout to 15 seconds to handle cold starts
+		// 5s timeout (down from 15s). Combined with 1 retry, worst case is 8s
+		// of blocking on Payload when it's unreachable, vs. 45s before.
 		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 15000);
+		const timeout = setTimeout(() => controller.abort(), 5000);
 
 		try {
 			const response = await fetchFn(url.toString(), {

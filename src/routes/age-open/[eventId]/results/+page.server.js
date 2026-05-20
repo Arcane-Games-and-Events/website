@@ -4,6 +4,7 @@ import { event, match, eventPlayerHero, decklist } from '$lib/server/db/schema.j
 import { eq, asc, and } from 'drizzle-orm';
 import { calculateFinalStandings } from '$lib/server/tournament-processor.js';
 import { playerKeyFromIdName } from '$lib/server/players/key.js';
+import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 
 /**
  * Convert hero name to static image URL
@@ -106,16 +107,21 @@ export async function load({ params }) {
 		let metagameBreakdown = [];
 		if (eventData.circuit && eventData.month && eventData.eventDate) {
 			const season = new Date(eventData.eventDate).getUTCFullYear().toString();
-			heroData = await db
-				.select()
-				.from(eventPlayerHero)
-				.where(
-					and(
-						eq(eventPlayerHero.season, season),
-						eq(eventPlayerHero.circuit, eventData.circuit),
-						eq(eventPlayerHero.month, eventData.month)
-					)
-				);
+			heroData = await getCachedOrFetch(
+				`${CACHE_KEYS.EVENTS}:heroes:${season}|${eventData.circuit}|${eventData.month}`,
+				() =>
+					db
+						.select()
+						.from(eventPlayerHero)
+						.where(
+							and(
+								eq(eventPlayerHero.season, season),
+								eq(eventPlayerHero.circuit, eventData.circuit),
+								eq(eventPlayerHero.month, eventData.month)
+							)
+						),
+				CACHE_TTL.MEDIUM
+			);
 		}
 
 		// Create hero lookup maps

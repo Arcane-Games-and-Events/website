@@ -1,32 +1,48 @@
 import { db } from '$lib/server/db/index.js';
 import { eventStaff, partner } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
+import { getCachedOrFetch, CACHE_TTL } from '$lib/server/redis/index.js';
 
 export const load = async ({ locals }) => {
 	// locals.user is set in hooks.server.js by Lucia
 	let assignedEventsCount = 0;
 	let isPartner = false;
 
-	// Check if user has any event staff assignments
+	// Per-user lookups run on every navigation. They almost never change, so
+	// cache for the full TTL window. If a user is granted/removed as event
+	// staff or partner, they'll see the updated chrome within the TTL.
 	if (locals.user) {
+		const userId = locals.user.id;
+
 		try {
-			const assignments = await db
-				.select({ id: eventStaff.id })
-				.from(eventStaff)
-				.where(eq(eventStaff.userId, locals.user.id));
-			assignedEventsCount = assignments.length;
+			assignedEventsCount = await getCachedOrFetch(
+				`layout:user:${userId}:staff_count`,
+				async () => {
+					const assignments = await db
+						.select({ id: eventStaff.id })
+						.from(eventStaff)
+						.where(eq(eventStaff.userId, userId));
+					return assignments.length;
+				},
+				CACHE_TTL.HOUR
+			);
 		} catch {
 			// Ignore errors - just don't show the events link
 		}
 
-		// Check if user is an AGE Partner
 		try {
-			const [partnerRow] = await db
-				.select({ id: partner.id })
-				.from(partner)
-				.where(eq(partner.userId, locals.user.id))
-				.limit(1);
-			isPartner = !!partnerRow;
+			isPartner = await getCachedOrFetch(
+				`layout:user:${userId}:is_partner`,
+				async () => {
+					const [partnerRow] = await db
+						.select({ id: partner.id })
+						.from(partner)
+						.where(eq(partner.userId, userId))
+						.limit(1);
+					return !!partnerRow;
+				},
+				CACHE_TTL.HOUR
+			);
 		} catch {
 			// Silent fail — link is optional
 		}
