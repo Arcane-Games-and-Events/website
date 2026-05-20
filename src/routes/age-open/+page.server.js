@@ -88,466 +88,476 @@ export async function load({ url, setHeaders }) {
 	const selectedCircuit = url.searchParams.get('circuit') || null;
 
 	try {
-		// Fetch raw data with Redis caching (5 minute TTL)
-		// This caches the expensive database queries
-		const [events, allEventMatches, allStandings, decklists, lssEvents, ticketCounts] =
-			await Promise.all([
-				// Get events sorted by date (cached)
-				getCachedOrFetch(
-					`${CACHE_KEYS.EVENTS}:all`,
-					() => db.select().from(event).orderBy(asc(event.eventDate)),
-					CACHE_TTL.MEDIUM
-				),
-			// Get ALL event matches in one query (cached with shorter TTL for real-time updates)
-			getCachedOrFetch(
-				`${CACHE_KEYS.EVENTS}:matches:all`,
-				() => db.select().from(match).orderBy(asc(match.round)),
-				CACHE_TTL.SHORT
-			),
-			// Get all standings (cached with shorter TTL for real-time tournament updates)
-			getCachedOrFetch(
-				`${CACHE_KEYS.STANDINGS}:all`,
-				() => db.select().from(standing).orderBy(desc(standing.totalPoints)),
-				CACHE_TTL.SHORT
-			),
-			// Get public decklists with event info (cached)
-			getCachedOrFetch(
-				`${CACHE_KEYS.EVENTS}:decklists:public`,
-				() =>
-					db
-						.select({
-							id: decklist.id,
-							eventId: decklist.eventId,
-							playerName: decklist.playerName,
-							gemId: decklist.gemId,
-							hero: decklist.hero,
-							format: decklist.format,
-							placement: decklist.placement,
-							cards: decklist.cards,
-							createdAt: decklist.createdAt,
-							eventTitle: event.title,
-							eventDate: event.eventDate,
-							circuit: event.circuit,
-							month: event.month
-						})
-						.from(decklist)
-						.innerJoin(event, eq(decklist.eventId, event.id))
-						.where(eq(decklist.isPublic, true))
-						.orderBy(desc(decklist.createdAt)),
-				CACHE_TTL.MEDIUM
-			),
-			// Get LSS tournament seasons (cached)
-			getCachedOrFetch(
-				`${CACHE_KEYS.EVENTS}:lss:active`,
-				() =>
-					db
-						.select()
-						.from(lssEvent)
-						.where(eq(lssEvent.isActive, true))
-						.orderBy(asc(lssEvent.startDate)),
-				CACHE_TTL.MEDIUM
-				),
-				// Get active ticket counts per event (short cache for accurate capacity)
-				getCachedOrFetch(
-					`${CACHE_KEYS.EVENTS}:ticket-counts`,
-					() =>
-						db
-							.select({
-								eventId: ticket.eventId,
-								count: sql`count(*)::int`
-							})
-							.from(ticket)
-							.where(eq(ticket.refunded, false))
-							.groupBy(ticket.eventId),
-					CACHE_TTL.SHORT
-				)
-			]);
+		// Cache the fully-computed page output by filter combo so Vercel
+		// doesn't rerun the tournament processor (~30 calls, one per past
+		// event) + AGE Rating pass on every request. That CPU work was the
+		// main reason the page felt slow even after the raw-query caches.
+		return await getCachedOrFetch(
+			`age-open:page:${selectedSeason}|${selectedCircuit || 'none'}`,
+			async () => {
+				// Fetch raw data with Redis caching (5 minute TTL)
+				// This caches the expensive database queries
+				const [events, allEventMatches, allStandings, decklists, lssEvents, ticketCounts] =
+					await Promise.all([
+						// Get events sorted by date (cached)
+						getCachedOrFetch(
+							`${CACHE_KEYS.EVENTS}:all`,
+							() => db.select().from(event).orderBy(asc(event.eventDate)),
+							CACHE_TTL.MEDIUM
+						),
+						// Get ALL event matches in one query (cached with shorter TTL for real-time updates)
+						getCachedOrFetch(
+							`${CACHE_KEYS.EVENTS}:matches:all`,
+							() => db.select().from(match).orderBy(asc(match.round)),
+							CACHE_TTL.SHORT
+						),
+						// Get all standings (cached with shorter TTL for real-time tournament updates)
+						getCachedOrFetch(
+							`${CACHE_KEYS.STANDINGS}:all`,
+							() => db.select().from(standing).orderBy(desc(standing.totalPoints)),
+							CACHE_TTL.SHORT
+						),
+						// Get public decklists with event info (cached)
+						getCachedOrFetch(
+							`${CACHE_KEYS.EVENTS}:decklists:public`,
+							() =>
+								db
+									.select({
+										id: decklist.id,
+										eventId: decklist.eventId,
+										playerName: decklist.playerName,
+										gemId: decklist.gemId,
+										hero: decklist.hero,
+										format: decklist.format,
+										placement: decklist.placement,
+										cards: decklist.cards,
+										createdAt: decklist.createdAt,
+										eventTitle: event.title,
+										eventDate: event.eventDate,
+										circuit: event.circuit,
+										month: event.month
+									})
+									.from(decklist)
+									.innerJoin(event, eq(decklist.eventId, event.id))
+									.where(eq(decklist.isPublic, true))
+									.orderBy(desc(decklist.createdAt)),
+							CACHE_TTL.MEDIUM
+						),
+						// Get LSS tournament seasons (cached)
+						getCachedOrFetch(
+							`${CACHE_KEYS.EVENTS}:lss:active`,
+							() =>
+								db
+									.select()
+									.from(lssEvent)
+									.where(eq(lssEvent.isActive, true))
+									.orderBy(asc(lssEvent.startDate)),
+							CACHE_TTL.MEDIUM
+						),
+						// Get active ticket counts per event (short cache for accurate capacity)
+						getCachedOrFetch(
+							`${CACHE_KEYS.EVENTS}:ticket-counts`,
+							() =>
+								db
+									.select({
+										eventId: ticket.eventId,
+										count: sql`count(*)::int`
+									})
+									.from(ticket)
+									.where(eq(ticket.refunded, false))
+									.groupBy(ticket.eventId),
+							CACHE_TTL.SHORT
+						)
+					]);
 
-		// Build ticket count lookup map
-		const ticketCountMap = new Map();
-		for (const tc of ticketCounts) {
-			ticketCountMap.set(tc.eventId, tc.count);
-		}
-
-		// Extract unique seasons and circuits from standings data (dynamic filters)
-		const uniqueSeasons = [...new Set(allStandings.map((s) => s.season))]
-			.filter(Boolean)
-			.sort()
-			.reverse();
-		const availableSeasons = ['all', ...uniqueSeasons];
-
-		// Build circuits by year dynamically
-		const circuitsByYear = { all: [] };
-		for (const standing of allStandings) {
-			if (!standing.season || !standing.circuit) continue;
-			if (!circuitsByYear[standing.season]) {
-				circuitsByYear[standing.season] = [];
-			}
-			if (!circuitsByYear[standing.season].includes(standing.circuit)) {
-				circuitsByYear[standing.season].push(standing.circuit);
-			}
-			if (!circuitsByYear['all'].includes(standing.circuit)) {
-				circuitsByYear['all'].push(standing.circuit);
-			}
-		}
-		// Sort circuits alphabetically
-		for (const year of Object.keys(circuitsByYear)) {
-			circuitsByYear[year].sort();
-		}
-
-		// Get active/completed events with results for the Tournament Archive tab
-		const archiveEvents = events.filter(
-			(e) => (e.status === 'completed' || e.status === 'in_progress') && e.eventDate
-		);
-
-		// Group event matches by eventId
-		const matchesByEventId = new Map();
-		for (const match of allEventMatches) {
-			if (!matchesByEventId.has(match.eventId)) {
-				matchesByEventId.set(match.eventId, []);
-			}
-			matchesByEventId.get(match.eventId).push(match);
-		}
-
-		// Build results array by computing standings from matches
-		const allResults = archiveEvents
-			.filter((evt) => matchesByEventId.has(evt.id))
-			.map((evt) => {
-				const matches = matchesByEventId.get(evt.id);
-
-				// Extract unique players from matches
-				const playerMap = new Map();
-				for (const match of matches) {
-					if (match.player1GemId || match.player1Name) {
-						const key = match.player1GemId || match.player1Name;
-						if (!playerMap.has(key)) {
-							playerMap.set(key, {
-								playerId: match.player1GemId,
-								name: match.player1Name,
-								wins: 0
-							});
-						}
-					}
-					if (match.player2GemId || match.player2Name) {
-						const key = match.player2GemId || match.player2Name;
-						if (!playerMap.has(key)) {
-							playerMap.set(key, {
-								playerId: match.player2GemId,
-								name: match.player2Name,
-								wins: 0
-							});
-						}
-					}
+				// Build ticket count lookup map
+				const ticketCountMap = new Map();
+				for (const tc of ticketCounts) {
+					ticketCountMap.set(tc.eventId, tc.count);
 				}
 
-				// Convert matches to pairings format
-				const pairings = matches.map((m) => ({
-					round: m.round,
-					table: m.table,
-					player1Id: m.player1GemId,
-					player1Name: m.player1Name,
-					player2Id: m.player2GemId,
-					player2Name: m.player2Name,
-					result: m.winner === 'player1' ? '1WIN' : m.winner === 'player2' ? '2WIN' : 'DRAW'
-				}));
+				// Extract unique seasons and circuits from standings data (dynamic filters)
+				const uniqueSeasons = [...new Set(allStandings.map((s) => s.season))]
+					.filter(Boolean)
+					.sort()
+					.reverse();
+				const availableSeasons = ['all', ...uniqueSeasons];
 
-				// Calculate standings from matches
-				let computedResults = [];
-				try {
-					const swissStandings = Array.from(playerMap.values());
-					const standings = calculateFinalStandings(swissStandings, pairings);
-					computedResults = standings.results.map((r) => ({
-						playerName: r.name,
-						gemId: r.playerId,
-						placement: r.placement,
-						wins: r.matchesWon,
-						losses: r.matchesPlayed - r.matchesWon,
-						draws: 0,
-						agePoints: r.points,
-						prizeAmount: r.prize
+				// Build circuits by year dynamically
+				const circuitsByYear = { all: [] };
+				for (const standing of allStandings) {
+					if (!standing.season || !standing.circuit) continue;
+					if (!circuitsByYear[standing.season]) {
+						circuitsByYear[standing.season] = [];
+					}
+					if (!circuitsByYear[standing.season].includes(standing.circuit)) {
+						circuitsByYear[standing.season].push(standing.circuit);
+					}
+					if (!circuitsByYear['all'].includes(standing.circuit)) {
+						circuitsByYear['all'].push(standing.circuit);
+					}
+				}
+				// Sort circuits alphabetically
+				for (const year of Object.keys(circuitsByYear)) {
+					circuitsByYear[year].sort();
+				}
+
+				// Get active/completed events with results for the Tournament Archive tab
+				const archiveEvents = events.filter(
+					(e) => (e.status === 'completed' || e.status === 'in_progress') && e.eventDate
+				);
+
+				// Group event matches by eventId
+				const matchesByEventId = new Map();
+				for (const match of allEventMatches) {
+					if (!matchesByEventId.has(match.eventId)) {
+						matchesByEventId.set(match.eventId, []);
+					}
+					matchesByEventId.get(match.eventId).push(match);
+				}
+
+				// Build results array by computing standings from matches
+				const allResults = archiveEvents
+					.filter((evt) => matchesByEventId.has(evt.id))
+					.map((evt) => {
+						const matches = matchesByEventId.get(evt.id);
+
+						// Extract unique players from matches
+						const playerMap = new Map();
+						for (const match of matches) {
+							if (match.player1GemId || match.player1Name) {
+								const key = match.player1GemId || match.player1Name;
+								if (!playerMap.has(key)) {
+									playerMap.set(key, {
+										playerId: match.player1GemId,
+										name: match.player1Name,
+										wins: 0
+									});
+								}
+							}
+							if (match.player2GemId || match.player2Name) {
+								const key = match.player2GemId || match.player2Name;
+								if (!playerMap.has(key)) {
+									playerMap.set(key, {
+										playerId: match.player2GemId,
+										name: match.player2Name,
+										wins: 0
+									});
+								}
+							}
+						}
+
+						// Convert matches to pairings format
+						const pairings = matches.map((m) => ({
+							round: m.round,
+							table: m.table,
+							player1Id: m.player1GemId,
+							player1Name: m.player1Name,
+							player2Id: m.player2GemId,
+							player2Name: m.player2Name,
+							result: m.winner === 'player1' ? '1WIN' : m.winner === 'player2' ? '2WIN' : 'DRAW'
+						}));
+
+						// Calculate standings from matches
+						let computedResults = [];
+						try {
+							const swissStandings = Array.from(playerMap.values());
+							const standings = calculateFinalStandings(swissStandings, pairings);
+							computedResults = standings.results.map((r) => ({
+								playerName: r.name,
+								gemId: r.playerId,
+								placement: r.placement,
+								wins: r.matchesWon,
+								losses: r.matchesPlayed - r.matchesWon,
+								draws: 0,
+								agePoints: r.points,
+								prizeAmount: r.prize
+							}));
+						} catch (err) {
+							console.error(`Error calculating results for event ${evt.id}:`, err);
+						}
+
+						return {
+							event: evt,
+							results: computedResults
+						};
+					})
+					.filter((r) => r.results.length > 0);
+
+				let standings = [];
+
+				if (selectedSeason === 'all') {
+					// Group by gemId to aggregate career stats (using allStandings from Promise.all)
+					const careerStatsMap = new Map();
+
+					for (const standing of allStandings) {
+						// Identity by GEM ID. Rows without a GEM ID stay isolated
+						// (see playerKey()) so same-name players don't merge.
+						const key = getPlayerKey(standing);
+
+						if (!careerStatsMap.has(key)) {
+							careerStatsMap.set(key, {
+								gemId: standing.gemId,
+								playerName: standing.playerName,
+								totalPoints: 0,
+								matchesWon: 0,
+								matchesPlayed: 0,
+								eventsPlayed: 0,
+								top8Finishes: 0,
+								seasonsPlayed: new Set(),
+								circuitsPlayed: new Set()
+							});
+						}
+
+						const derived = calculateDerivedStats(standing);
+						const career = careerStatsMap.get(key);
+						career.totalPoints += standing.totalPoints || 0;
+						career.matchesWon += standing.matchesWon || 0;
+						career.matchesPlayed += standing.matchesPlayed || 0;
+						career.eventsPlayed += derived.eventsPlayed;
+						career.top8Finishes += derived.top8Finishes;
+						career.seasonsPlayed.add(standing.season);
+						career.circuitsPlayed.add(standing.circuit);
+					}
+
+					// Convert map to array and calculate win percentage
+					const careerStats = Array.from(careerStatsMap.values()).map((career) => ({
+						...career,
+						winPercentage:
+							career.matchesPlayed > 0
+								? Math.round((career.matchesWon / career.matchesPlayed) * 10000) / 100
+								: null,
+						seasonsPlayed: Array.from(career.seasonsPlayed),
+						circuitsPlayed: Array.from(career.circuitsPlayed)
 					}));
-				} catch (err) {
-					console.error(`Error calculating results for event ${evt.id}:`, err);
-				}
 
-				return {
-					event: evt,
-					results: computedResults
-				};
-			})
-			.filter((r) => r.results.length > 0);
+					// Sort using tiebreaker rules and assign ranks
+					careerStats.sort(compareStandings);
+					standings = careerStats.map((player, index) => ({
+						...player,
+						calculatedRank: index + 1
+					}));
 
-		let standings = [];
+					// Apply circuit filter if selected
+					if (selectedCircuit) {
+						standings = standings.filter((s) => s.circuitsPlayed.includes(selectedCircuit));
+						// Recalculate ranks after filtering
+						standings = standings.map((player, index) => ({
+							...player,
+							calculatedRank: index + 1
+						}));
+					}
+				} else {
+					// Filter standings from already-fetched data (no additional query needed)
+					let rawStandings = allStandings.filter((s) => s.season === selectedSeason);
 
-		if (selectedSeason === 'all') {
-			// Group by gemId to aggregate career stats (using allStandings from Promise.all)
-			const careerStatsMap = new Map();
+					if (selectedCircuit) {
+						rawStandings = rawStandings.filter((s) => s.circuit === selectedCircuit);
+					}
 
-			for (const standing of allStandings) {
-				// Identity by GEM ID. Rows without a GEM ID stay isolated
-				// (see playerKey()) so same-name players don't merge.
-				const key = getPlayerKey(standing);
+					// Pre-calculate seasonPoints from monthly columns (more reliable than totalPoints field)
+					// This fixes cases where totalPoints may have been incorrectly stored
+					rawStandings = rawStandings.map((s) => {
+						const derived = calculateDerivedStats(s);
+						return {
+							...s,
+							// Override totalPoints with calculated seasonPoints for correct display
+							totalPoints: derived.seasonPoints,
+							_eventsPlayed: derived.eventsPlayed,
+							_top8Finishes: derived.top8Finishes
+						};
+					});
 
-				if (!careerStatsMap.has(key)) {
-					careerStatsMap.set(key, {
-						gemId: standing.gemId,
-						playerName: standing.playerName,
-						totalPoints: 0,
-						matchesWon: 0,
-						matchesPlayed: 0,
-						eventsPlayed: 0,
-						top8Finishes: 0,
-						seasonsPlayed: new Set(),
-						circuitsPlayed: new Set()
+					// Sort using tiebreaker rules and assign ranks (now using corrected totalPoints)
+					rawStandings.sort(compareStandings);
+
+					// Calculate ranks and win percentage
+					standings = rawStandings.map((standing, index) => {
+						const winPercentage =
+							standing.matchesPlayed > 0
+								? Math.round((standing.matchesWon / standing.matchesPlayed) * 10000) / 100
+								: null;
+
+						return {
+							...standing,
+							calculatedRank: index + 1,
+							winPercentage: standing.winPercentage || winPercentage,
+							eventsPlayed: standing._eventsPlayed,
+							top8Finishes: standing._top8Finishes
+						};
 					});
 				}
 
-				const derived = calculateDerivedStats(standing);
-				const career = careerStatsMap.get(key);
-				career.totalPoints += standing.totalPoints || 0;
-				career.matchesWon += standing.matchesWon || 0;
-				career.matchesPlayed += standing.matchesPlayed || 0;
-				career.eventsPlayed += derived.eventsPlayed;
-				career.top8Finishes += derived.top8Finishes;
-				career.seasonsPlayed.add(standing.season);
-				career.circuitsPlayed.add(standing.circuit);
-			}
-
-			// Convert map to array and calculate win percentage
-			const careerStats = Array.from(careerStatsMap.values()).map((career) => ({
-				...career,
-				winPercentage:
-					career.matchesPlayed > 0
-						? Math.round((career.matchesWon / career.matchesPlayed) * 10000) / 100
-						: null,
-				seasonsPlayed: Array.from(career.seasonsPlayed),
-				circuitsPlayed: Array.from(career.circuitsPlayed)
-			}));
-
-			// Sort using tiebreaker rules and assign ranks
-			careerStats.sort(compareStandings);
-			standings = careerStats.map((player, index) => ({
-				...player,
-				calculatedRank: index + 1
-			}));
-
-			// Apply circuit filter if selected
-			if (selectedCircuit) {
-				standings = standings.filter((s) => s.circuitsPlayed.includes(selectedCircuit));
-				// Recalculate ranks after filtering
-				standings = standings.map((player, index) => ({
-					...player,
-					calculatedRank: index + 1
-				}));
-			}
-		} else {
-			// Filter standings from already-fetched data (no additional query needed)
-			let rawStandings = allStandings.filter((s) => s.season === selectedSeason);
-
-			if (selectedCircuit) {
-				rawStandings = rawStandings.filter((s) => s.circuit === selectedCircuit);
-			}
-
-			// Pre-calculate seasonPoints from monthly columns (more reliable than totalPoints field)
-			// This fixes cases where totalPoints may have been incorrectly stored
-			rawStandings = rawStandings.map((s) => {
-				const derived = calculateDerivedStats(s);
-				return {
-					...s,
-					// Override totalPoints with calculated seasonPoints for correct display
-					totalPoints: derived.seasonPoints,
-					_eventsPlayed: derived.eventsPlayed,
-					_top8Finishes: derived.top8Finishes
-				};
-			});
-
-			// Sort using tiebreaker rules and assign ranks (now using corrected totalPoints)
-			rawStandings.sort(compareStandings);
-
-			// Calculate ranks and win percentage
-			standings = rawStandings.map((standing, index) => {
-				const winPercentage =
-					standing.matchesPlayed > 0
-						? Math.round((standing.matchesWon / standing.matchesPlayed) * 10000) / 100
-						: null;
-
-				return {
-					...standing,
-					calculatedRank: index + 1,
-					winPercentage: standing.winPercentage || winPercentage,
-					eventsPlayed: standing._eventsPlayed,
-					top8Finishes: standing._top8Finishes
-				};
-			});
-		}
-
-		// === Calculate AGE Rating for each player in standings ===
-		if (standings.length > 0) {
-			// Pre-group standings by circuit/season for efficient rank lookup
-			const standingsByCircuitSeason = new Map();
-			for (const s of allStandings) {
-				const key = `${s.season}|${s.circuit}`;
-				if (!standingsByCircuitSeason.has(key)) {
-					standingsByCircuitSeason.set(key, []);
-				}
-				standingsByCircuitSeason.get(key).push(s);
-			}
-
-			// Sort each circuit/season group once (instead of sorting repeatedly in loop)
-			for (const [key, group] of standingsByCircuitSeason) {
-				group.sort(compareStandings);
-			}
-
-			// Cache for derived stats to avoid redundant calculations
-			const derivedStatsCache = new Map();
-
-			// Group by player identity (GEM ID; GEM-less rows stay isolated).
-			const playerStatsMap = new Map();
-			for (const standing of allStandings) {
-				const key = getPlayerKey(standing);
-				if (!key) continue;
-
-				if (!playerStatsMap.has(key)) {
-					playerStatsMap.set(key, {
-						totalPoints: 0,
-						matchesWon: 0,
-						matchesPlayed: 0,
-						eventsPlayed: 0,
-						top8Finishes: 0,
-						bestRank: null,
-						championshipQualifications: 0,
-						standingsList: []
-					});
-				}
-
-				// Use cached derived stats
-				if (!derivedStatsCache.has(standing.id)) {
-					derivedStatsCache.set(standing.id, calculateDerivedStats(standing));
-				}
-				const derived = derivedStatsCache.get(standing.id);
-
-				const playerData = playerStatsMap.get(key);
-				playerData.totalPoints += standing.totalPoints || 0;
-				playerData.matchesWon += standing.matchesWon || 0;
-				playerData.matchesPlayed += standing.matchesPlayed || 0;
-				playerData.eventsPlayed += derived.eventsPlayed;
-				playerData.top8Finishes += derived.top8Finishes;
-				playerData.standingsList.push(standing);
-			}
-
-			// Calculate ranks using pre-grouped and pre-sorted data (no more O(n*m) filtering)
-			for (const [playerKey, playerData] of playerStatsMap) {
-				for (const standing of playerData.standingsList) {
-					const circuitSeasonKey = `${standing.season}|${standing.circuit}`;
-					const circuitSeasonStandings = standingsByCircuitSeason.get(circuitSeasonKey) || [];
-					const rank =
-						circuitSeasonStandings.findIndex((s) => getPlayerKey(s) === playerKey) + 1;
-
-					if (rank > 0) {
-						if (playerData.bestRank === null || rank < playerData.bestRank) {
-							playerData.bestRank = rank;
+				// === Calculate AGE Rating for each player in standings ===
+				if (standings.length > 0) {
+					// Pre-group standings by circuit/season for efficient rank lookup
+					const standingsByCircuitSeason = new Map();
+					for (const s of allStandings) {
+						const key = `${s.season}|${s.circuit}`;
+						if (!standingsByCircuitSeason.has(key)) {
+							standingsByCircuitSeason.set(key, []);
 						}
-						if (rank <= 16) {
-							playerData.championshipQualifications++;
+						standingsByCircuitSeason.get(key).push(s);
+					}
+
+					// Sort each circuit/season group once (instead of sorting repeatedly in loop)
+					for (const [key, group] of standingsByCircuitSeason) {
+						group.sort(compareStandings);
+					}
+
+					// Cache for derived stats to avoid redundant calculations
+					const derivedStatsCache = new Map();
+
+					// Group by player identity (GEM ID; GEM-less rows stay isolated).
+					const playerStatsMap = new Map();
+					for (const standing of allStandings) {
+						const key = getPlayerKey(standing);
+						if (!key) continue;
+
+						if (!playerStatsMap.has(key)) {
+							playerStatsMap.set(key, {
+								totalPoints: 0,
+								matchesWon: 0,
+								matchesPlayed: 0,
+								eventsPlayed: 0,
+								top8Finishes: 0,
+								bestRank: null,
+								championshipQualifications: 0,
+								standingsList: []
+							});
+						}
+
+						// Use cached derived stats
+						if (!derivedStatsCache.has(standing.id)) {
+							derivedStatsCache.set(standing.id, calculateDerivedStats(standing));
+						}
+						const derived = derivedStatsCache.get(standing.id);
+
+						const playerData = playerStatsMap.get(key);
+						playerData.totalPoints += standing.totalPoints || 0;
+						playerData.matchesWon += standing.matchesWon || 0;
+						playerData.matchesPlayed += standing.matchesPlayed || 0;
+						playerData.eventsPlayed += derived.eventsPlayed;
+						playerData.top8Finishes += derived.top8Finishes;
+						playerData.standingsList.push(standing);
+					}
+
+					// Calculate ranks using pre-grouped and pre-sorted data (no more O(n*m) filtering)
+					for (const [playerKey, playerData] of playerStatsMap) {
+						for (const standing of playerData.standingsList) {
+							const circuitSeasonKey = `${standing.season}|${standing.circuit}`;
+							const circuitSeasonStandings = standingsByCircuitSeason.get(circuitSeasonKey) || [];
+							const rank =
+								circuitSeasonStandings.findIndex((s) => getPlayerKey(s) === playerKey) + 1;
+
+							if (rank > 0) {
+								if (playerData.bestRank === null || rank < playerData.bestRank) {
+									playerData.bestRank = rank;
+								}
+								if (rank <= 16) {
+									playerData.championshipQualifications++;
+								}
+							}
 						}
 					}
+
+					// Extract arrays for percentile calculation
+					const allPlayers = Array.from(playerStatsMap.values()).filter((p) => p.eventsPlayed >= 1);
+					const allWinRates = allPlayers.map((p) =>
+						p.matchesPlayed > 0 ? p.matchesWon / p.matchesPlayed : 0
+					);
+					const allTop8Rates = allPlayers.map((p) =>
+						p.eventsPlayed > 0 ? p.top8Finishes / p.eventsPlayed : 0
+					);
+					const allEventsPlayed = allPlayers.map((p) => p.eventsPlayed);
+					const allBestRanks = allPlayers.filter((p) => p.bestRank !== null).map((p) => p.bestRank);
+					const allAvgPointsPerEvent = allPlayers.map((p) =>
+						p.eventsPlayed > 0 ? p.totalPoints / p.eventsPlayed : 0
+					);
+					const allChampionshipQuals = allPlayers.map((p) => p.championshipQualifications);
+
+					// Calculate AGE Rating for each player in standings
+					standings = standings.map((standing) => {
+						const key = getPlayerKey(standing);
+						const playerData = playerStatsMap.get(key);
+
+						if (!playerData) {
+							return { ...standing, ageRating: null, ratingTier: null };
+						}
+
+						// Calculate metrics for this player
+						const winRate =
+							playerData.matchesPlayed > 0 ? playerData.matchesWon / playerData.matchesPlayed : 0;
+						const top8Rate =
+							playerData.eventsPlayed > 0 ? playerData.top8Finishes / playerData.eventsPlayed : 0;
+						const avgPtsPerEvent =
+							playerData.eventsPlayed > 0 ? playerData.totalPoints / playerData.eventsPlayed : 0;
+
+						// Calculate percentiles
+						const percentiles = {
+							winRate: calculatePercentile(winRate, allWinRates),
+							top8Rate: calculatePercentile(top8Rate, allTop8Rates),
+							experience: calculatePercentile(playerData.eventsPlayed, allEventsPlayed),
+							bestRank:
+								playerData.bestRank !== null
+									? calculateRankPercentile(playerData.bestRank, allBestRanks)
+									: 50,
+							efficiency: calculatePercentile(avgPtsPerEvent, allAvgPointsPerEvent),
+							championship: calculatePercentile(
+								playerData.championshipQualifications,
+								allChampionshipQuals
+							)
+						};
+
+						const ageRating = calculateAgeRatingTotal(percentiles, playerData.eventsPlayed);
+						const ratingTier = getRatingTier(ageRating);
+						const isProvisional = playerData.eventsPlayed < 3;
+
+						return {
+							...standing,
+							ageRating,
+							ratingTier,
+							isProvisional
+						};
+					});
 				}
-			}
 
-			// Extract arrays for percentile calculation
-			const allPlayers = Array.from(playerStatsMap.values()).filter((p) => p.eventsPlayed >= 1);
-			const allWinRates = allPlayers.map((p) =>
-				p.matchesPlayed > 0 ? p.matchesWon / p.matchesPlayed : 0
-			);
-			const allTop8Rates = allPlayers.map((p) =>
-				p.eventsPlayed > 0 ? p.top8Finishes / p.eventsPlayed : 0
-			);
-			const allEventsPlayed = allPlayers.map((p) => p.eventsPlayed);
-			const allBestRanks = allPlayers.filter((p) => p.bestRank !== null).map((p) => p.bestRank);
-			const allAvgPointsPerEvent = allPlayers.map((p) =>
-				p.eventsPlayed > 0 ? p.totalPoints / p.eventsPlayed : 0
-			);
-			const allChampionshipQuals = allPlayers.map((p) => p.championshipQualifications);
+				// decklists and lssEvents already fetched in Promise.all above
 
-			// Calculate AGE Rating for each player in standings
-			standings = standings.map((standing) => {
-				const key = getPlayerKey(standing);
-				const playerData = playerStatsMap.get(key);
+				// Sort results: in_progress events first, then by date (most recent first)
+				const sortedResults = [...allResults].sort((a, b) => {
+					// In-progress events come first
+					if (a.event.status === 'in_progress' && b.event.status !== 'in_progress') return -1;
+					if (a.event.status !== 'in_progress' && b.event.status === 'in_progress') return 1;
+					// Then sort by date (most recent first)
+					return new Date(b.event.eventDate) - new Date(a.event.eventDate);
+				});
 
-				if (!playerData) {
-					return { ...standing, ageRating: null, ratingTier: null };
-				}
-
-				// Calculate metrics for this player
-				const winRate =
-					playerData.matchesPlayed > 0 ? playerData.matchesWon / playerData.matchesPlayed : 0;
-				const top8Rate =
-					playerData.eventsPlayed > 0 ? playerData.top8Finishes / playerData.eventsPlayed : 0;
-				const avgPtsPerEvent =
-					playerData.eventsPlayed > 0 ? playerData.totalPoints / playerData.eventsPlayed : 0;
-
-				// Calculate percentiles
-				const percentiles = {
-					winRate: calculatePercentile(winRate, allWinRates),
-					top8Rate: calculatePercentile(top8Rate, allTop8Rates),
-					experience: calculatePercentile(playerData.eventsPlayed, allEventsPlayed),
-					bestRank:
-						playerData.bestRank !== null
-							? calculateRankPercentile(playerData.bestRank, allBestRanks)
-							: 50,
-					efficiency: calculatePercentile(avgPtsPerEvent, allAvgPointsPerEvent),
-					championship: calculatePercentile(
-						playerData.championshipQualifications,
-						allChampionshipQuals
-					)
-				};
-
-				const ageRating = calculateAgeRatingTotal(percentiles, playerData.eventsPlayed);
-				const ratingTier = getRatingTier(ageRating);
-				const isProvisional = playerData.eventsPlayed < 3;
+				// Filter events to only show upcoming ones for the events list, with ticket counts
+				const upcomingEvents = events
+					.filter((e) => e.status === 'upcoming')
+					.map((e) => ({
+						...e,
+						registeredCount: ticketCountMap.get(e.id) || 0
+					}));
 
 				return {
-					...standing,
-					ageRating,
-					ratingTier,
-					isProvisional
+					events: upcomingEvents,
+					allEvents: events, // All events for circuit tracker
+					archiveEvents,
+					eventResults: sortedResults,
+					standings,
+					decklists,
+					lssEvents,
+					currentYear,
+					selectedSeason,
+					selectedCircuit,
+					availableSeasons,
+					circuitsByYear
 				};
-			});
-		}
-
-		// decklists and lssEvents already fetched in Promise.all above
-
-		// Sort results: in_progress events first, then by date (most recent first)
-		const sortedResults = [...allResults].sort((a, b) => {
-			// In-progress events come first
-			if (a.event.status === 'in_progress' && b.event.status !== 'in_progress') return -1;
-			if (a.event.status !== 'in_progress' && b.event.status === 'in_progress') return 1;
-			// Then sort by date (most recent first)
-			return new Date(b.event.eventDate) - new Date(a.event.eventDate);
-		});
-
-		// Filter events to only show upcoming ones for the events list, with ticket counts
-		const upcomingEvents = events
-			.filter((e) => e.status === 'upcoming')
-			.map((e) => ({
-				...e,
-				registeredCount: ticketCountMap.get(e.id) || 0
-			}));
-
-		return {
-			events: upcomingEvents,
-			allEvents: events, // All events for circuit tracker
-			archiveEvents,
-			eventResults: sortedResults,
-			standings,
-			decklists,
-			lssEvents,
-			currentYear,
-			selectedSeason,
-			selectedCircuit,
-			availableSeasons,
-			circuitsByYear
-		};
+			},
+			CACHE_TTL.SHORT
+		);
 	} catch (error) {
 		console.error('Error loading AGE Open data:', error);
 		return {
