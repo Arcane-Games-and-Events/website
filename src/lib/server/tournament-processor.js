@@ -5,6 +5,18 @@
  * to calculate final standings and distribute AGE Points.
  */
 
+import { playerKeyFromIdName } from './players/key.js';
+
+/**
+ * Canonical identity for a player or pairing slot. Two slots belong to the
+ * same player iff their identities are equal. Identity is the GEM ID when
+ * present, otherwise the name — matching by name alone collided two
+ * different players who happen to share a name (e.g. two "John Kim"s).
+ */
+function identityOf(id, name) {
+	return playerKeyFromIdName(id, name);
+}
+
 // AGE Open Points Structure
 export const AGE_POINTS = {
 	1: { points: 30, prize: 400 }, // Winner
@@ -257,30 +269,26 @@ export function calculateTiebreakers(standings, pairings, swissRounds) {
 
 	// Build player stats from pairings
 	for (const player of standings) {
-		// Get ALL matches for accurate win/loss record
-		const allMatches = pairings.filter(
-			(p) =>
-				p.player1Id === player.playerId ||
-				p.player2Id === player.playerId ||
-				p.player1Name === player.name ||
-				p.player2Name === player.name
-		);
+		const playerIdentity = identityOf(player.playerId, player.name);
+		const isP1 = (p) => identityOf(p.player1Id, p.player1Name) === playerIdentity;
+		const isP2 = (p) => identityOf(p.player2Id, p.player2Name) === playerIdentity;
+
+		// Get ALL matches for accurate win/loss record — identity match only,
+		// so a same-named different player's matches aren't swept in.
+		const allMatches = pairings.filter((p) => isP1(p) || isP2(p));
 
 		// Get Swiss-only matches for tiebreaker calculations
 		const swissMatches = allMatches.filter((p) => p.round <= swissRounds);
 
-		const totalWins = allMatches.filter((m) => {
+		const winnerIsPlayer = (m) => {
 			const winner = getMatchWinner(m);
-			return winner && (winner.id === player.playerId || winner.name === player.name);
-		}).length;
-
-		const swissWins = swissMatches.filter((m) => {
-			const winner = getMatchWinner(m);
-			return winner && (winner.id === player.playerId || winner.name === player.name);
-		}).length;
+			return winner && identityOf(winner.id, winner.name) === playerIdentity;
+		};
+		const totalWins = allMatches.filter(winnerIsPlayer).length;
+		const swissWins = swissMatches.filter(winnerIsPlayer).length;
 
 		const opponents = swissMatches.map((m) => {
-			if (m.player1Id === player.playerId || m.player1Name === player.name) {
+			if (isP1(m)) {
 				return { id: m.player2Id, name: m.player2Name };
 			}
 			return { id: m.player1Id, name: m.player1Name };
@@ -366,9 +374,7 @@ export function calculateFinalStandings(swissStandings, pairings) {
 	// name set, otherwise the second one gets filtered out as "already placed."
 	// We only fall back to the name check for legacy GEM-less data.
 	const placedIds = new Set(results.map((r) => r.playerId).filter(Boolean));
-	const placedNamesWithoutId = new Set(
-		results.filter((r) => !r.playerId).map((r) => r.name)
-	);
+	const placedNamesWithoutId = new Set(results.filter((r) => !r.playerId).map((r) => r.name));
 	const isAlreadyPlaced = (id, name) =>
 		id ? placedIds.has(id) : !!name && placedNamesWithoutId.has(name);
 
@@ -419,10 +425,7 @@ export function calculateFinalStandings(swissStandings, pairings) {
 	const allParticipants = new Map();
 	for (const pairing of pairings) {
 		// Add player 1
-		if (
-			pairing.player1Name &&
-			!isAlreadyPlaced(pairing.player1Id, pairing.player1Name)
-		) {
+		if (pairing.player1Name && !isAlreadyPlaced(pairing.player1Id, pairing.player1Name)) {
 			const key = pairing.player1Id || pairing.player1Name;
 			if (!allParticipants.has(key)) {
 				allParticipants.set(key, {
@@ -432,10 +435,7 @@ export function calculateFinalStandings(swissStandings, pairings) {
 			}
 		}
 		// Add player 2
-		if (
-			pairing.player2Name &&
-			!isAlreadyPlaced(pairing.player2Id, pairing.player2Name)
-		) {
+		if (pairing.player2Name && !isAlreadyPlaced(pairing.player2Id, pairing.player2Name)) {
 			const key = pairing.player2Id || pairing.player2Name;
 			if (!allParticipants.has(key)) {
 				allParticipants.set(key, {
@@ -481,21 +481,21 @@ export function calculateFinalStandings(swissStandings, pairings) {
  * @param {array} allPairings - All pairings including playoffs (optional)
  */
 function findPlayerData(player, swissStandings, tiebreakers, allPairings = []) {
+	const playerIdentity = identityOf(player.id, player.name);
 	const fromTiebreakers = tiebreakers[player.id] || tiebreakers[player.name];
-	const fromSwiss = swissStandings.find((s) => s.playerId === player.id || s.name === player.name);
+	const fromSwiss = swissStandings.find((s) => identityOf(s.playerId, s.name) === playerIdentity);
 
 	// Count ALL matches (Swiss + playoffs) for accurate record
 	let totalMatchesPlayed = fromTiebreakers?.matchesPlayed || 0;
 	let totalMatchesWon = fromTiebreakers?.matchesWon || fromSwiss?.wins || 0;
 
 	if (allPairings.length > 0) {
-		// Find all matches this player participated in
+		// Find all matches this player participated in — identity match only,
+		// so a same-named different player's matches aren't counted.
 		const allPlayerMatches = allPairings.filter(
 			(p) =>
-				p.player1Id === player.id ||
-				p.player2Id === player.id ||
-				p.player1Name === player.name ||
-				p.player2Name === player.name
+				identityOf(p.player1Id, p.player1Name) === playerIdentity ||
+				identityOf(p.player2Id, p.player2Name) === playerIdentity
 		);
 
 		// Count wins from all matches
@@ -506,7 +506,7 @@ function findPlayerData(player, swissStandings, tiebreakers, allPairings = []) {
 					: m.result === '2WIN' || m.result.includes('Player 2')
 						? { name: m.player2Name, id: m.player2Id }
 						: null;
-			return winner && (winner.id === player.id || winner.name === player.name);
+			return winner && identityOf(winner.id, winner.name) === playerIdentity;
 		}).length;
 
 		totalMatchesPlayed = allPlayerMatches.length;
