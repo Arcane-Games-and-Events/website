@@ -376,6 +376,61 @@
 							</div>
 						</div>
 
+						<!-- Recalculate Standings -->
+						<div
+							class="mt-3 flex flex-col gap-2 rounded-lg border border-amber-900/40 bg-amber-950/20 p-3 text-xs text-amber-100/80 sm:flex-row sm:items-center sm:justify-between sm:text-sm"
+						>
+							<div>
+								<strong class="text-amber-200">Recalculate from match data:</strong> rebuilds every player's
+								standing in the selected season + circuit from the source matches. Use this to fix inflated
+								totals after a re-upload. Filter to a specific season and circuit first.
+							</div>
+							<form
+								method="POST"
+								action="?/recalculateStandings"
+								use:enhance={() => {
+									return async ({ result, update }) => {
+										await update();
+										if (result.type === 'success') invalidateAll();
+									};
+								}}
+								onsubmit={(e) => {
+									if (
+										!confirm(
+											`Recalculate every player's standing for ${standingsCircuitFilter} ${standingsSeasonFilter}? This overwrites existing standings rows for that combo.`
+										)
+									) {
+										e.preventDefault();
+									}
+								}}
+							>
+								<input type="hidden" name="season" value={standingsSeasonFilter} />
+								<input type="hidden" name="circuit" value={standingsCircuitFilter} />
+								<button
+									type="submit"
+									disabled={standingsSeasonFilter === 'all' || standingsCircuitFilter === 'all'}
+									class="shrink-0 rounded-md border border-amber-700 bg-amber-900/40 px-3 py-1.5 text-xs font-medium text-amber-100 transition hover:bg-amber-800/60 disabled:cursor-not-allowed disabled:opacity-50"
+								>
+									Recalculate {standingsSeasonFilter !== 'all' ? standingsSeasonFilter : ''}{' '}
+									{standingsCircuitFilter !== 'all' ? standingsCircuitFilter : ''}
+								</button>
+							</form>
+						</div>
+
+						{#if form?.success && form?.message?.includes('Recalculated')}
+							<div
+								class="mt-3 rounded-md border border-green-800 bg-green-950/40 px-3 py-2 text-sm text-green-200"
+							>
+								{form.message}
+							</div>
+						{:else if form?.error && form?.error?.toLowerCase().includes('recalc')}
+							<div
+								class="mt-3 rounded-md border border-red-800 bg-red-950/40 px-3 py-2 text-sm text-red-200"
+							>
+								{form.error}
+							</div>
+						{/if}
+
 						<!-- Standings - Mobile Card View -->
 						<div class="space-y-3 lg:hidden">
 							{#each paginatedAdminStandings as standing}

@@ -3,6 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { standing, match } from '$lib/server/db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
 import { playerKeyFromIdName } from '$lib/server/players/key.js';
+import { calculateFinalStandings } from '$lib/server/tournament-processor.js';
 
 // Helper to add timeout to promises
 const withTimeout = (promise, ms, fallback) =>
@@ -453,40 +454,6 @@ export const actions = {
 		}
 
 		try {
-			// AGE points table based on placement
-			const pointsTable = {
-				1: 30,
-				2: 25,
-				3: 20,
-				4: 20,
-				5: 15,
-				6: 15,
-				7: 15,
-				8: 15,
-				9: 12,
-				10: 12,
-				11: 12,
-				12: 12,
-				13: 8,
-				14: 8,
-				15: 8,
-				16: 8
-			};
-
-			const monthNames = [
-				'January',
-				'February',
-				'March',
-				'April',
-				'May',
-				'June',
-				'July',
-				'August',
-				'September',
-				'October',
-				'November',
-				'December'
-			];
 			const monthKeys = [
 				'january',
 				'february',
@@ -512,80 +479,101 @@ export const actions = {
 				return fail(400, { error: `No matches found for ${circuit} ${season}` });
 			}
 
-			// Group matches by month
-			const matchesByMonth = new Map();
+			// Group matches by event so we can run the real tournament processor
+			// (the same one used on CSV upload) per event. The earlier per-month
+			// wins-sort approximation produced AGE points that didn't match the
+			// real bracket placements, which silently inflated standings over
+			// time.
+			const matchesByEventId = new Map();
 			for (const m of allMatches) {
-				const monthName = m.month;
-				if (!matchesByMonth.has(monthName)) {
-					matchesByMonth.set(monthName, []);
+				if (!m.eventId) continue;
+				if (!matchesByEventId.has(m.eventId)) {
+					matchesByEventId.set(m.eventId, []);
 				}
-				matchesByMonth.get(monthName).push(m);
+				matchesByEventId.get(m.eventId).push(m);
 			}
 
-			// For each month, calculate player stats
-			const playerMonthlyStats = new Map(); // key: gemId or playerName, value: { monthStats }
+			// For each player, accumulate per-month points across events
+			const playerMonthlyStats = new Map();
 
-			for (const [monthName, matches] of matchesByMonth) {
+			for (const [, eventMatches] of matchesByEventId) {
+				const monthName = eventMatches[0]?.month;
+				if (!monthName) continue;
 				const monthKey = monthName.toLowerCase();
-				const monthIndex = monthKeys.indexOf(monthKey);
-				if (monthIndex === -1) continue;
+				if (!monthKeys.includes(monthKey)) continue;
 
-				// Calculate stats for each player in this month
-				const monthPlayerStats = new Map();
-
-				for (const m of matches) {
-					// Player 1
-					const p1Key = playerKeyFromIdName(m.player1GemId, m.player1Name);
-					if (!monthPlayerStats.has(p1Key)) {
-						monthPlayerStats.set(p1Key, {
-							gemId: m.player1GemId,
-							name: m.player1Name,
-							wins: 0,
-							matches: 0
-						});
+				// Build the swiss-standings + pairings shape the processor wants
+				const swissByKey = new Map();
+				for (const m of eventMatches) {
+					if (m.player1GemId || m.player1Name) {
+						const key = m.player1GemId || m.player1Name;
+						if (!swissByKey.has(key)) {
+							swissByKey.set(key, {
+								playerId: m.player1GemId,
+								name: m.player1Name,
+								wins: 0
+							});
+						}
+						if (m.winner === 'player1') swissByKey.get(key).wins++;
 					}
-					const p1 = monthPlayerStats.get(p1Key);
-					p1.matches++;
-					if (m.winner === 'player1') p1.wins++;
-
-					// Player 2
-					const p2Key = playerKeyFromIdName(m.player2GemId, m.player2Name);
-					if (!monthPlayerStats.has(p2Key)) {
-						monthPlayerStats.set(p2Key, {
-							gemId: m.player2GemId,
-							name: m.player2Name,
-							wins: 0,
-							matches: 0
-						});
+					if (m.player2GemId || m.player2Name) {
+						const key = m.player2GemId || m.player2Name;
+						if (!swissByKey.has(key)) {
+							swissByKey.set(key, {
+								playerId: m.player2GemId,
+								name: m.player2Name,
+								wins: 0
+							});
+						}
+						if (m.winner === 'player2') swissByKey.get(key).wins++;
 					}
-					const p2 = monthPlayerStats.get(p2Key);
-					p2.matches++;
-					if (m.winner === 'player2') p2.wins++;
 				}
 
-				// Sort players by wins to determine placement and points
-				const sortedPlayers = Array.from(monthPlayerStats.values()).sort((a, b) => b.wins - a.wins);
+				const pairings = eventMatches.map((m) => ({
+					round: m.round,
+					table: m.table,
+					player1Id: m.player1GemId,
+					player1Name: m.player1Name,
+					player2Id: m.player2GemId,
+					player2Name: m.player2Name,
+					result: m.winner === 'player1' ? '1WIN' : m.winner === 'player2' ? '2WIN' : 'DRAW'
+				}));
 
-				sortedPlayers.forEach((player, idx) => {
-					const placement = idx + 1;
-					const points = pointsTable[placement] || 1;
+				let computed;
+				try {
+					computed = calculateFinalStandings(Array.from(swissByKey.values()), pairings);
+				} catch (err) {
+					console.warn(`Skipping event (processor failed): ${err.message}`);
+					continue;
+				}
 
-					const playerKey = playerKeyFromIdName(player.gemId, player.name);
-					if (!playerMonthlyStats.has(playerKey)) {
-						playerMonthlyStats.set(playerKey, {
-							gemId: player.gemId,
-							name: player.name,
+				for (const r of computed.results) {
+					const key = playerKeyFromIdName(r.playerId, r.name);
+					if (!playerMonthlyStats.has(key)) {
+						playerMonthlyStats.set(key, {
+							gemId: r.playerId,
+							name: r.name,
 							months: {}
 						});
 					}
+					const playerData = playerMonthlyStats.get(key);
 
-					const playerData = playerMonthlyStats.get(playerKey);
-					playerData.months[monthKey] = {
-						points,
-						wins: player.wins,
-						matches: player.matches
+					// Accumulate within the month — handles the (rare) case of
+					// multiple events per circuit per month.
+					const existing = playerData.months[monthKey] || {
+						points: 0,
+						wins: 0,
+						matches: 0
 					};
-				});
+					playerData.months[monthKey] = {
+						points: existing.points + (r.points || 0),
+						wins: existing.wins + (r.matchesWon || 0),
+						matches: existing.matches + (r.matchesPlayed || 0)
+					};
+					// Keep the latest seen player name in case it varies between
+					// events (helps preserve the more recent spelling).
+					if (r.name) playerData.name = r.name;
+				}
 			}
 
 			// Get existing standings for this season/circuit
@@ -594,10 +582,17 @@ export const actions = {
 				.from(standing)
 				.where(and(eq(standing.season, season), eq(standing.circuit, circuit)));
 
-			// Build lookup map — GEM ID only. Name fallback was removed because two
-			// players sharing the same name would overwrite each other's standings.
+			// Lookup maps:
+			//   - GEM-ID rows match only by GEM ID (never by name).
+			//   - GEM-less rows match by playerName, but only against GEM-less
+			//     results. A GEM-less result never matches a GEM-ID row and vice
+			//     versa — that mismatch was the bug that merged two same-named
+			//     players into one row.
 			const standingByGemId = new Map(
 				existingStandings.filter((s) => s.gemId).map((s) => [s.gemId, s])
+			);
+			const standingByGemlessName = new Map(
+				existingStandings.filter((s) => !s.gemId).map((s) => [s.playerName, s])
 			);
 
 			let updated = 0;
@@ -605,10 +600,9 @@ export const actions = {
 
 			// Update each player's standing with calculated monthly stats
 			for (const [playerKey, playerData] of playerMonthlyStats) {
-				// Match by GEM ID only. GEM-less rows always insert a new standing.
 				const existingStanding = playerData.gemId
 					? standingByGemId.get(playerData.gemId)
-					: null;
+					: standingByGemlessName.get(playerData.name);
 
 				// Calculate totals from monthly data
 				let totalPoints = 0;

@@ -573,67 +573,68 @@ export const actions = {
 
 					if (existingEventMatches.length > 0) {
 						isReupload = true;
-						// Calculate old standings contribution from existing matches to subtract
-						const oldPlayerStats = new Map();
-						for (const match of existingEventMatches) {
-							// Track player 1
-							const p1Key = playerKeyFromIdName(match.player1GemId, match.player1Name);
-							if (!oldPlayerStats.has(p1Key)) {
-								oldPlayerStats.set(p1Key, {
-									gemId: match.player1GemId,
-									name: match.player1Name,
-									wins: 0,
-									matches: 0
-								});
-							}
-							const p1 = oldPlayerStats.get(p1Key);
-							p1.matches++;
-							if (match.winner === 'player1') p1.wins++;
 
-							// Track player 2
-							const p2Key = playerKeyFromIdName(match.player2GemId, match.player2Name);
-							if (!oldPlayerStats.has(p2Key)) {
-								oldPlayerStats.set(p2Key, {
-									gemId: match.player2GemId,
-									name: match.player2Name,
-									wins: 0,
-									matches: 0
-								});
+						// Reconstruct the old per-player AGE points using the SAME
+						// formula the addition path uses (calculateFinalStandings).
+						// Previously the subtract step used a simplified wins-sort
+						// table; the resulting subtract amounts didn't match the
+						// add amounts, which inflated standings by the difference
+						// on every re-upload.
+						const oldPlayerMap = new Map();
+						for (const m of existingEventMatches) {
+							if (m.player1GemId || m.player1Name) {
+								const key = m.player1GemId || m.player1Name;
+								if (!oldPlayerMap.has(key)) {
+									oldPlayerMap.set(key, {
+										playerId: m.player1GemId,
+										name: m.player1Name,
+										wins: 0
+									});
+								}
+								if (m.winner === 'player1') oldPlayerMap.get(key).wins++;
 							}
-							const p2 = oldPlayerStats.get(p2Key);
-							p2.matches++;
-							if (match.winner === 'player2') p2.wins++;
+							if (m.player2GemId || m.player2Name) {
+								const key = m.player2GemId || m.player2Name;
+								if (!oldPlayerMap.has(key)) {
+									oldPlayerMap.set(key, {
+										playerId: m.player2GemId,
+										name: m.player2Name,
+										wins: 0
+									});
+								}
+								if (m.winner === 'player2') oldPlayerMap.get(key).wins++;
+							}
 						}
 
-						// Calculate old AGE points for each player (simplified - use same logic as tournament processor)
-						const oldSorted = Array.from(oldPlayerStats.values()).sort((a, b) => b.wins - a.wins);
+						const oldPairings = existingEventMatches.map((m) => ({
+							round: m.round,
+							table: m.table,
+							player1Id: m.player1GemId,
+							player1Name: m.player1Name,
+							player2Id: m.player2GemId,
+							player2Name: m.player2Name,
+							result: m.winner === 'player1' ? '1WIN' : m.winner === 'player2' ? '2WIN' : 'DRAW'
+						}));
+
 						const oldPointsMap = new Map();
-						const pointsTable = {
-							1: 30,
-							2: 25,
-							3: 20,
-							4: 20,
-							5: 15,
-							6: 15,
-							7: 15,
-							8: 15,
-							9: 12,
-							10: 12,
-							11: 12,
-							12: 12,
-							13: 8,
-							14: 8,
-							15: 8,
-							16: 8
-						};
-						oldSorted.forEach((player, idx) => {
-							const placement = idx + 1;
-							oldPointsMap.set(playerKeyFromIdName(player.gemId, player.name), {
-								points: pointsTable[placement] || 1,
-								wins: player.wins,
-								matches: player.matches
-							});
-						});
+						try {
+							const oldComputed = calculateFinalStandings(
+								Array.from(oldPlayerMap.values()),
+								oldPairings
+							);
+							for (const r of oldComputed.results) {
+								oldPointsMap.set(playerKeyFromIdName(r.playerId, r.name), {
+									points: r.points || 0,
+									wins: r.matchesWon || 0,
+									matches: r.matchesPlayed || 0
+								});
+							}
+						} catch (err) {
+							console.warn(
+								'Could not recompute old tournament results for subtraction; falling back to zero subtraction:',
+								err.message
+							);
+						}
 
 						// Subtract old contribution from standings
 						const existingStandings = await db
@@ -656,10 +657,7 @@ export const actions = {
 									.set({
 										totalPoints: Math.max(0, (existingRow.totalPoints || 0) - oldStats.points),
 										matchesWon: Math.max(0, (existingRow.matchesWon || 0) - oldStats.wins),
-										matchesPlayed: Math.max(
-											0,
-											(existingRow.matchesPlayed || 0) - oldStats.matches
-										),
+										matchesPlayed: Math.max(0, (existingRow.matchesPlayed || 0) - oldStats.matches),
 										[monthPointsCol]: Math.max(
 											0,
 											(existingRow[monthPointsCol] || 0) - oldStats.points
