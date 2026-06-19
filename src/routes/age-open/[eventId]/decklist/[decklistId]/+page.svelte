@@ -1,5 +1,6 @@
 <script>
 	// Card images are now resolved server-side - no 12MB JSON import needed!
+	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	let { data } = $props();
 
 	const decklist = $derived(data.decklist);
@@ -180,6 +181,32 @@
 		return colors[circuit] || 'text-gray-300';
 	}
 
+	// Map a hero name (e.g. "Victor Goldmane, High and Mighty") to the
+	// matching local hero portrait under /static/hero_images/. These are
+	// full-resolution illustrations (~1000px wide) — much sharper for
+	// use as the cinematic header backdrop than the small card scans
+	// returned by `resolveCardImage` (which top out around 488px).
+	function getHeroBackdrop(heroName) {
+		if (!heroName) return null;
+		const slug = heroName
+			.toLowerCase()
+			.replace(/ð/g, 'd')
+			.replace(/þ/g, 'th')
+			.replace(/æ/g, 'ae')
+			.replace(/ø/g, 'o')
+			.replace(/å/g, 'a')
+			.normalize('NFD')
+			.replace(/[̀-ͯ]/g, '')
+			.replace(/[!@#$%^&*()+=[\]{}|\\:;<>?/~`]/g, '')
+			.replace(/[,'"]/g, '')
+			.replace(/\s+/g, '-')
+			.replace(/-+/g, '-')
+			.trim();
+		return `/hero_images/${slug}.webp`;
+	}
+
+	const heroBackdrop = $derived(getHeroBackdrop(decklist.hero));
+
 	// Category config - enhanced styling matching site aesthetic
 	// Stripe-style shadow
 	const cardShadow =
@@ -331,12 +358,14 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <svelte:head>
-	<title>{decklist.playerName}'s {decklist.hero || 'Deck'} - AGE Open</title>
+	<title>{decklist.playerName}'s {decklist.hero || 'Deck'} — AGE Open</title>
 	<meta
 		name="description"
 		content="Decklist for {decklist.playerName} playing {decklist.hero || 'Deck'}"
 	/>
-	<!-- Preload hero and first few card images for instant display -->
+	{#if heroBackdrop}
+		<link rel="preload" as="image" href={heroBackdrop} />
+	{/if}
 	{#if heroImage?.imageUrl}
 		<link rel="preload" as="image" href={heroImage.imageUrl} />
 	{/if}
@@ -347,594 +376,493 @@
 	{/each}
 </svelte:head>
 
-<div class="min-h-screen bg-gray-950">
-	<!-- Header with subtle gradient -->
-	<div class="sticky top-0 z-40 border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm">
-		<div class="mx-auto max-w-6xl px-4 py-3 sm:px-6 lg:px-8">
-			<div class="flex items-center justify-between">
-				<a
-					href="/age-open?tab=decklists"
-					class="group flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
+<!--
+	Editorial decklist viewer — matches the rest of the AGE Open redesign:
+	ink/paper palette, hairline column rules, mono uppercase eyebrows,
+	serif Newsreader headings. All colour values are explicit handoff
+	hex values so the page reads identically regardless of theme (this
+	is a content view, not chrome).
+-->
+
+{#snippet placementColor(n)}{n === 1 ? '#C8922E' : n <= 3 ? '#C0461F' : n <= 8 ? '#16489E' : '#56503F'}{/snippet}
+
+<AgeShell active="AGE Open">
+	<!-- ============ BREADCRUMB ROW ============ -->
+	<div class="border-b border-[#C7BFA9]">
+		<div
+			class="mx-auto flex w-full max-w-[min(94vw,1920px)] items-center justify-between gap-3 px-14 py-[14px]"
+		>
+			<a
+				href="/age-open?tab=decklists"
+				class="text-soft hover:text-ink group inline-flex items-center gap-2 text-[11px] font-extrabold tracking-[0.08em] uppercase transition-colors"
+			>
+				<svg
+					class="h-3.5 w-3.5 transition-transform group-hover:-translate-x-1"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.7"
+					viewBox="0 0 24 24"
 				>
-					<svg
-						class="h-4 w-4 transition-transform group-hover:-translate-x-0.5"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
+					<path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+				</svg>
+				Back to Decklists
+			</a>
+			<button
+				type="button"
+				onclick={copyLink}
+				class="border-line2 text-soft hover:border-ink hover:text-ink inline-flex cursor-pointer items-center gap-2 border bg-transparent px-[13px] py-[7px] text-[10.5px] font-extrabold tracking-[0.08em] uppercase transition-colors"
+				title="Copy link"
+			>
+				{#if linkCopied}
+					<svg class="text-prem h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+					</svg>
+					<span class="text-prem">Link copied</span>
+				{:else}
+					<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
 						<path
 							stroke-linecap="round"
 							stroke-linejoin="round"
-							stroke-width="2"
-							d="M10 19l-7-7m0 0l7-7m-7 7h18"
+							d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
 						/>
 					</svg>
-					<span class="font-medium">Decklists</span>
-				</a>
-				<button
-					onclick={copyLink}
-					class="flex items-center gap-2 rounded-lg border border-transparent px-3 py-1.5 text-sm text-gray-400 transition-all hover:border-gray-700 hover:bg-gray-800/80 hover:text-white"
-					title="Copy link"
-				>
-					{#if linkCopied}
-						<svg
-							class="h-4 w-4 text-green-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M5 13l4 4L19 7"
-							/>
-						</svg>
-						<span class="text-green-400">Copied</span>
-					{:else}
-						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-							/>
-						</svg>
-						<span class="hidden sm:inline">Share</span>
-					{/if}
-				</button>
-			</div>
+					Share
+				{/if}
+			</button>
 		</div>
 	</div>
 
-	<!-- Main Content -->
-	<div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-		{#if cardsList.length === 0}
-			<div
-				class="rounded-2xl border border-gray-800 bg-gray-900/60 p-12 text-center backdrop-blur-sm"
-			>
-				<div
-					class="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl border border-gray-700 bg-gradient-to-br from-gray-800 to-gray-900"
-				>
-					<svg
-						class="h-10 w-10 text-gray-600"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="1.5"
-							d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-						/>
-					</svg>
+	<!-- ============ CINEMATIC HEADER ============ -->
+	<!--
+		Dark editorial band with the hero card image as a backdrop and a
+		strong angled gradient over it — same treatment as the Library
+		featured spotlight. The composition strip below the headline
+		sits on the inverted scorecard look so its hex-tinted color
+		chips read as a high-contrast counter to the dark title block.
+	-->
+	<section
+		class="border-ink relative overflow-hidden border-b-[3px] border-double bg-[#0F0E0A]"
+	>
+		<!--
+			Cinematic backdrop. The hero illustration sits at native
+			resolution on the right side of the band — height-constrained,
+			width auto so it stays crisp.
+
+			The trick that kills the abrupt vertical seam: a CSS mask on
+			the image itself. The mask fades from `transparent` at the
+			image's left edge to `black` (opaque) further into the
+			image, so the image's own pixels dissolve into the dark
+			band rather than just dropping off a hard left boundary.
+			`-webkit-mask-image` is the Safari prefix.
+		-->
+		{#if heroBackdrop}
+			<img
+				src={heroBackdrop}
+				alt=""
+				aria-hidden="true"
+				class="absolute top-0 right-0 bottom-0 z-0 h-full w-auto max-w-[65%] object-cover object-[center_25%]"
+				style="-webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 20%, rgba(0,0,0,0.6) 45%, #000 70%); mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 20%, rgba(0,0,0,0.6) 45%, #000 70%);"
+				onerror={(e) => {
+					e.currentTarget.style.display = 'none';
+				}}
+			/>
+		{/if}
+		<!--
+			Thin left-side scrim — keeps the title block on a fully
+			opaque dark for legibility, then quickly steps out of the
+			way so the masked image fade is what the eye sees in the
+			middle / right.
+		-->
+		<span
+			class="pointer-events-none absolute inset-0 z-[1]"
+			style="background: linear-gradient(to right, #0F0E0A 22%, rgba(15,14,10,0.6) 38%, rgba(15,14,10,0) 60%);"
+			aria-hidden="true"
+		></span>
+		<!-- top rust hairline accent matching the editorial header strip -->
+		<span class="bg-warm absolute inset-x-0 top-0 z-[2] h-[2px]" aria-hidden="true"></span>
+
+		<div
+			class="relative z-[2] mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[50px] pb-[36px]"
+		>
+			<div class="text-white max-w-[60%]">
+				<div class="mb-4 inline-flex items-center gap-[10px] text-[10.5px] font-extrabold tracking-[0.2em] text-white uppercase before:block before:h-[2px] before:w-[26px] before:bg-warm before:content-['']">
+					{decklist.circuit ? `${decklist.circuit} · Decklist` : 'AGE Open · Decklist'}
 				</div>
-				<h3 class="mb-2 text-xl font-bold text-white">No Cards Found</h3>
-				<p class="mx-auto max-w-sm text-gray-400">
-					This decklist doesn't have any cards yet. Check back later or contact the tournament
-					organizer.
-				</p>
+				<div class="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+					{#if decklist.gemId}
+						<a
+							href="/player/{decklist.gemId}"
+							class="font-newsreader text-[clamp(48px,7vw,72px)] leading-[0.95] font-semibold tracking-[-0.025em] text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.4)] transition-colors hover:text-[#f4c66a]"
+						>
+							{decklist.playerName}
+						</a>
+					{:else}
+						<span class="font-newsreader text-[clamp(48px,7vw,72px)] leading-[0.95] font-semibold tracking-[-0.025em] text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.4)]">
+							{decklist.playerName}
+						</span>
+					{/if}
+					{#if decklist.placement}
+						{@const _placeColor = decklist.placement === 1 ? '#F4C66A' : decklist.placement <= 3 ? '#E5703E' : decklist.placement <= 8 ? '#7FA6F0' : 'rgba(255,255,255,0.65)'}
+						<span
+							class="font-newsreader text-[clamp(34px,4.5vw,48px)] leading-none font-semibold tracking-[-0.015em] tabular-nums"
+							style="color: {_placeColor};"
+						>
+							{getOrdinal(decklist.placement)}
+						</span>
+					{/if}
+				</div>
+				{#if decklist.hero}
+					<div class="font-newsreader mt-3 text-[24px] leading-[1.15] font-medium italic text-[#E5703E]">
+						{decklist.hero}
+					</div>
+				{/if}
+				<div class="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-bold tracking-[0.08em] uppercase text-white/65">
+					{#if decklist.circuit}
+						{@const _ccColor = (decklist.circuit === 'Los Angeles' && '#7FA6F0') || (decklist.circuit === 'New England' && '#B79BD6') || (decklist.circuit === 'St. Louis' && '#5FC487') || '#FFFFFF'}
+						<span class="inline-flex items-center gap-[7px]" style="color: {_ccColor};">
+							<span class="block h-[8px] w-[8px]" style="background-color: {_ccColor};"></span>
+							{decklist.circuit}
+						</span>
+					{/if}
+					{#if decklist.eventDate}
+						<span class="text-white/30">·</span>
+						<span>{formatDate(decklist.eventDate)}</span>
+					{/if}
+					{#if decklist.month}
+						<span class="text-white/30">·</span>
+						<span>{formatMonth(decklist.month)}</span>
+					{/if}
+					{#if decklist.format}
+						<span class="text-white/30">·</span>
+						<span>{decklist.format}</span>
+					{/if}
+				</div>
 			</div>
-		{:else}
-			<div class="flex flex-col gap-6 lg:flex-row">
-				<!-- Mobile Hero Header -->
-				<div class="lg:hidden">
-					<div class="rounded-xl bg-gray-900/90 p-4 backdrop-blur-sm {cardShadow}">
-						<!-- Player Name & Placement -->
-						<div class="mb-3 flex items-start justify-between gap-3">
-							<div class="min-w-0">
-								{#if decklist.gemId}
-									<a
-										href="/player/{decklist.gemId}"
-										class="block truncate text-lg font-semibold text-white transition-colors hover:text-amber-400"
-									>
-										{decklist.playerName}
-									</a>
-								{:else}
-									<span class="block truncate text-lg font-semibold text-white"
-										>{decklist.playerName}</span
-									>
-								{/if}
-							</div>
-							{#if decklist.placement}
-								<div class="flex-shrink-0 text-right">
-									<span
-										class="text-2xl font-bold {decklist.placement <= 3
-											? 'text-amber-400'
-											: 'text-gray-300'}">{getOrdinal(decklist.placement)}</span
-									>
-								</div>
-							{/if}
-						</div>
 
-						<!-- Event Info -->
-						<div class="mb-3 space-y-1.5 text-sm">
-							<div class="flex items-center gap-2 {getCircuitColor(decklist.circuit)}">
-								<svg
-									class="h-3.5 w-3.5 flex-shrink-0 opacity-60"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-									/>
-								</svg>
-								<span class="truncate font-medium">{decklist.circuit || 'AGE Open'}</span>
-							</div>
-							{#if decklist.eventDate}
-								<div class="flex items-center gap-2 text-gray-400">
-									<svg
-										class="h-3.5 w-3.5 flex-shrink-0 text-gray-500"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-										/>
-									</svg>
-									<span>{formatDate(decklist.eventDate)}</span>
-								</div>
-							{/if}
-							{#if decklist.format}
-								<div class="flex items-center gap-2 text-gray-400">
-									<svg
-										class="h-3.5 w-3.5 flex-shrink-0 text-gray-500"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
-										/>
-									</svg>
-									<span>{decklist.format}</span>
-								</div>
-							{/if}
-						</div>
+		</div>
+	</section>
 
-						<!-- Divider -->
-						<div
-							class="my-3 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"
-						></div>
-
-						<!-- Deck Composition -->
-						<div class="flex items-center justify-between">
-							<div class="flex items-center gap-3">
-								<div class="flex items-center gap-1.5" title="Red">
-									<span class="h-2.5 w-2.5 rounded-full bg-red-500"></span>
-									<span class="text-sm font-medium text-red-400">{groupedCards().red.length}</span>
-								</div>
-								<div class="flex items-center gap-1.5" title="Yellow">
-									<span class="h-2.5 w-2.5 rounded-full bg-yellow-500"></span>
-									<span class="text-sm font-medium text-yellow-400"
-										>{groupedCards().yellow.length}</span
-									>
-								</div>
-								<div class="flex items-center gap-1.5" title="Blue">
-									<span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-									<span class="text-sm font-medium text-blue-400">{groupedCards().blue.length}</span
-									>
-								</div>
-								{#if groupedCards().colorless.length > 0}
-									<div class="flex items-center gap-1.5" title="Colorless">
-										<span class="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
-										<span class="text-sm font-medium text-slate-300"
-											>{groupedCards().colorless.length}</span
-										>
+	<!-- ============ BODY ============ -->
+	{#if cardsList.length === 0}
+		<section class="px-14 py-[60px]">
+			<div class="mx-auto w-full max-w-[min(94vw,1920px)]">
+				<div class="border-line2 bg-paper py-14 text-center">
+					<div class="font-newsreader text-ink mb-2 text-[24px] font-semibold">No cards found</div>
+					<p class="text-soft m-0 mx-auto max-w-[420px] text-[14px] leading-[1.55]">
+						This decklist doesn't have any cards yet. Check back later or contact the tournament
+						organizer.
+					</p>
+				</div>
+			</div>
+		</section>
+	{:else}
+		<div
+			class="mx-auto grid w-full max-w-[min(94vw,1920px)] grid-cols-1 gap-10 px-14 py-[44px] lg:grid-cols-[300px_1fr]"
+		>
+			<!-- ============ LEFT: CARD PREVIEW ============ -->
+			<aside class="hidden lg:block">
+				<div class="sticky top-[24px]">
+					<!-- card preview — floating with a soft shadow for depth -->
+					<div>
+						<div class="relative aspect-[488/680] drop-shadow-[0_24px_42px_rgba(20,16,8,0.22)]">
+							{#if selectedCard && selectedCardImage}
+								{#if !previewImageLoaded && !previewImageError}
+									<div class="absolute inset-0 flex items-center justify-center">
+										<div class="border-line2 border-t-warm h-8 w-8 animate-spin rounded-full border-2"></div>
 									</div>
 								{/if}
-							</div>
-							<span class="text-sm text-gray-500">{totalCards} cards</span>
-						</div>
-					</div>
-				</div>
-
-				<!-- Card Preview Panel (Left - Sticky on Desktop, Hidden on Mobile) -->
-				<div class="hidden flex-shrink-0 lg:block lg:w-72">
-					<div class="lg:sticky lg:top-16">
-						<!-- Card Preview with glow effect -->
-						<div class="group relative">
-							<!-- Subtle glow behind card -->
-							<div
-								class="absolute -inset-1 rounded-2xl bg-gradient-to-br from-amber-500/10 via-transparent to-purple-500/10 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100"
-							></div>
-
-							<div
-								class="relative overflow-hidden rounded-xl bg-gray-900/90 backdrop-blur-sm {cardShadow}"
-							>
-								<div
-									class="relative aspect-[488/680] bg-gradient-to-br from-gray-800/80 to-gray-900/80"
-								>
-									{#if selectedCard && selectedCardImage}
-										{#if !previewImageLoaded && !previewImageError}
-											<div class="absolute inset-0 flex items-center justify-center">
-												<div
-													class="h-8 w-8 animate-spin rounded-full border-2 border-amber-500/50 border-t-amber-500"
-												></div>
-											</div>
-										{/if}
-										{#if previewImageError}
-											<div class="absolute inset-0 flex items-center justify-center">
-												<div class="px-4 text-center">
-													<svg
-														class="mx-auto mb-3 h-10 w-10 text-gray-600"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="1.5"
-															d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-														/>
-													</svg>
-													<p class="text-sm text-gray-500">Image unavailable</p>
-												</div>
-											</div>
-										{/if}
-										{#if previewCurrentUrl}
-											{#key previewCurrentUrl}
-												<img
-													src={previewCurrentUrl}
-													alt={selectedCard.name || selectedCard}
-													class="h-full w-full object-contain {previewImageLoaded
-														? 'opacity-100'
-														: 'opacity-0'} transition-opacity duration-300"
-													onload={handlePreviewLoad}
-													onerror={handlePreviewError}
+								{#if previewImageError}
+									<div class="absolute inset-0 flex items-center justify-center text-center">
+										<div>
+											<svg
+												class="text-fade mx-auto mb-3 h-10 w-10"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="1.5"
+												viewBox="0 0 24 24"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
 												/>
-											{/key}
-										{/if}
-									{:else}
-										<div class="absolute inset-0 flex items-center justify-center">
-											<div class="px-4 text-center">
-												<svg
-													class="mx-auto mb-3 h-10 w-10 text-gray-700"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="1.5"
-														d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-													/>
-												</svg>
-												<p class="text-sm text-gray-500">Select a card to preview</p>
-											</div>
+											</svg>
+											<p class="text-fade text-[12px] font-bold tracking-[0.05em] uppercase">
+												Image unavailable
+											</p>
 										</div>
-									{/if}
+									</div>
+								{/if}
+								{#if previewCurrentUrl}
+									{#key previewCurrentUrl}
+										<img
+											src={previewCurrentUrl}
+											alt={selectedCard.name || selectedCard}
+											class="h-full w-full object-contain transition-opacity duration-300 {previewImageLoaded ? 'opacity-100' : 'opacity-0'}"
+											onload={handlePreviewLoad}
+											onerror={handlePreviewError}
+										/>
+									{/key}
+								{/if}
+							{:else}
+								<div class="absolute inset-0 flex items-center justify-center text-center">
+									<div>
+										<svg
+											class="text-line2 mx-auto mb-3 h-10 w-10"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.5"
+											viewBox="0 0 24 24"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+											/>
+										</svg>
+										<p class="text-fade text-[12px] font-bold tracking-[0.05em] uppercase">
+											Select a card to preview
+										</p>
+									</div>
 								</div>
+							{/if}
+						</div>
+					</div>
+
+					<!--
+						Composition scorecard — moved here from the header so
+						the dark cinematic band can stay focused on the title
+						block + hero art, and the composition stats sit
+						closer to the cards they describe.
+					-->
+					<div class="border-line2 bg-paper-bg border-warm mt-5 border border-t-[3px]">
+						<div class="border-line2 border-b px-5 pt-3 pb-[10px]">
+							<div class="text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+								Composition
+							</div>
+							<div class="font-newsreader text-ink mt-1 text-[22px] font-semibold leading-none tracking-[-0.01em] tabular-nums">
+								{totalCards}
+								<span class="text-fade text-[14px] font-bold tracking-[0.04em] uppercase">
+									cards
+								</span>
 							</div>
 						</div>
-
-						<!-- Player & Event Info Card -->
-						<div class="mt-4 rounded-xl bg-gray-900/90 p-4 backdrop-blur-sm {cardShadow}">
-							<!-- Player Name & Placement -->
-							<div class="mb-3 flex items-start justify-between gap-3">
-								<div class="min-w-0">
-									{#if decklist.gemId}
-										<a
-											href="/player/{decklist.gemId}"
-											class="block truncate text-lg font-semibold text-white transition-colors hover:text-amber-400"
-										>
-											{decklist.playerName}
-										</a>
-									{:else}
-										<span class="block truncate text-lg font-semibold text-white"
-											>{decklist.playerName}</span
-										>
-									{/if}
-								</div>
-								{#if decklist.placement}
-									<div class="flex-shrink-0 text-right">
-										<span
-											class="text-2xl font-bold {decklist.placement <= 3
-												? 'text-amber-400'
-												: 'text-gray-300'}">{getOrdinal(decklist.placement)}</span
-										>
-									</div>
-								{/if}
+						<div
+							class="grid divide-x divide-[#C7BFA9] {groupedCards().colorless.length > 0
+								? 'grid-cols-4'
+								: 'grid-cols-3'}"
+						>
+							<div class="flex flex-col items-center px-3 py-3">
+								<span
+									class="font-newsreader text-[24px] leading-none font-semibold tabular-nums"
+									style="color: #A8392C;"
+								>
+									{groupedCards().red.length}
+								</span>
+								<span
+									class="mt-[6px] inline-flex items-center gap-[5px] text-[9.5px] font-extrabold tracking-[0.14em] uppercase"
+									style="color: #A8392C;"
+								>
+									<span class="block h-[6px] w-[6px]" style="background-color: #A8392C;"></span>
+									Red
+								</span>
 							</div>
-
-							<!-- Event Info -->
-							<div class="mb-3 space-y-1.5 text-sm">
-								<div class="flex items-center gap-2 {getCircuitColor(decklist.circuit)}">
-									<svg
-										class="h-3.5 w-3.5 flex-shrink-0 opacity-60"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
+							<div class="flex flex-col items-center px-3 py-3">
+								<span
+									class="font-newsreader text-[24px] leading-none font-semibold tabular-nums"
+									style="color: #E5703E;"
+								>
+									{groupedCards().yellow.length}
+								</span>
+								<span
+									class="mt-[6px] inline-flex items-center gap-[5px] text-[9.5px] font-extrabold tracking-[0.14em] uppercase"
+									style="color: #E5703E;"
+								>
+									<span class="block h-[6px] w-[6px]" style="background-color: #E5703E;"></span>
+									Yellow
+								</span>
+							</div>
+							<div class="flex flex-col items-center px-3 py-3">
+								<span
+									class="font-newsreader text-[24px] leading-none font-semibold tabular-nums"
+									style="color: #2C5BA8;"
+								>
+									{groupedCards().blue.length}
+								</span>
+								<span
+									class="mt-[6px] inline-flex items-center gap-[5px] text-[9.5px] font-extrabold tracking-[0.14em] uppercase"
+									style="color: #2C5BA8;"
+								>
+									<span class="block h-[6px] w-[6px]" style="background-color: #2C5BA8;"></span>
+									Blue
+								</span>
+							</div>
+							{#if groupedCards().colorless.length > 0}
+								<div class="flex flex-col items-center px-3 py-3">
+									<span
+										class="font-newsreader text-soft text-[24px] leading-none font-semibold tabular-nums"
 									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-										/>
-									</svg>
-									<span class="truncate font-medium">{decklist.circuit || 'AGE Open'}</span>
+										{groupedCards().colorless.length}
+									</span>
+									<span
+										class="text-soft mt-[6px] inline-flex items-center gap-[5px] text-[9.5px] font-extrabold tracking-[0.14em] uppercase"
+									>
+										<span class="bg-soft block h-[6px] w-[6px]"></span>
+										Colorless
+									</span>
 								</div>
-								{#if decklist.eventDate}
-									<div class="flex items-center gap-2 text-gray-400">
-										<svg
-											class="h-3.5 w-3.5 flex-shrink-0 text-gray-500"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-											/>
-										</svg>
-										<span>{formatDate(decklist.eventDate)}</span>
-									</div>
-								{/if}
-								{#if decklist.format}
-									<div class="flex items-center gap-2 text-gray-400">
-										<svg
-											class="h-3.5 w-3.5 flex-shrink-0 text-gray-500"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
-											/>
-										</svg>
-										<span>{decklist.format}</span>
-									</div>
-								{/if}
-							</div>
-
-							<!-- Divider -->
-							<div
-								class="my-3 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"
-							></div>
-
-							<!-- Deck Composition -->
-							<div class="flex items-center justify-between">
-								<div class="flex items-center gap-3">
-									<div class="flex items-center gap-1.5" title="Red">
-										<span class="h-2.5 w-2.5 rounded-full bg-red-500"></span>
-										<span class="text-sm font-medium text-red-400">{groupedCards().red.length}</span
-										>
-									</div>
-									<div class="flex items-center gap-1.5" title="Yellow">
-										<span class="h-2.5 w-2.5 rounded-full bg-yellow-500"></span>
-										<span class="text-sm font-medium text-yellow-400"
-											>{groupedCards().yellow.length}</span
-										>
-									</div>
-									<div class="flex items-center gap-1.5" title="Blue">
-										<span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-										<span class="text-sm font-medium text-blue-400"
-											>{groupedCards().blue.length}</span
-										>
-									</div>
-									{#if groupedCards().colorless.length > 0}
-										<div class="flex items-center gap-1.5" title="Colorless">
-											<span class="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
-											<span class="text-sm font-medium text-slate-300"
-												>{groupedCards().colorless.length}</span
-											>
-										</div>
-									{/if}
-								</div>
-								<span class="text-sm text-gray-500">{totalCards} cards</span>
-							</div>
+							{/if}
 						</div>
 					</div>
 				</div>
+			</aside>
 
-				<!-- Card List (Right) -->
-				<div class="min-w-0 flex-1 space-y-5">
-					<!-- Hero & Equipment Panel -->
-					<div class="rounded-xl bg-gray-900/90 p-4 backdrop-blur-sm {cardShadow}">
-						<div class="mb-3 flex items-center gap-2">
-							<svg
-								class="h-4 w-4 text-amber-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-								/>
-							</svg>
-							<span class="text-xs font-semibold tracking-wider text-gray-400 uppercase"
-								>Hero & Equipment</span
-							>
-						</div>
-						<div class="flex flex-wrap items-center gap-2">
-							<!-- Hero -->
-							{#if heroCard()}
-								<button
-									class="cursor-pointer rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-sm font-medium text-amber-400 transition-all hover:border-amber-500/30 hover:bg-amber-500/20"
-									onclick={() => {
-										selectCard(heroCard());
-										if (window.innerWidth < 1024) openCardModal(heroCard());
-									}}
-								>
-									{decklist.hero}
-								</button>
-							{/if}
-
-							<!-- Equipment -->
-							{#if groupedCards().equipment.length > 0}
-								{#each groupedCards().equipment as card}
-									<button
-										class="cursor-pointer rounded-lg border border-gray-700/50 bg-gray-800/80 px-2 py-1 text-sm text-gray-300 transition-all hover:border-gray-600 hover:bg-gray-700/80 hover:text-white"
-										onclick={() => {
-											selectCard(card);
-											if (window.innerWidth < 1024) openCardModal(card);
-										}}>{card.quantity || 1}x {card.name}</button
-									>
-								{/each}
-							{/if}
-						</div>
+			<!-- ============ RIGHT: CARD LIST ============ -->
+			<div class="min-w-0">
+				<!--
+					Hero & Equipment — bordered card with the warm/rust
+					top rule to anchor the "loadout" section. The same
+					color treatment as the pitched cards below, but rust
+					(the Hero accent) instead of red/yellow/blue.
+				-->
+				<div class="border-line2 bg-paper-bg border-t-warm mb-5 border border-t-[3px]">
+					<div
+						class="bg-paper text-ink flex items-baseline justify-between border-b border-[#C7BFA9] px-6 py-[12px] text-[12px] font-extrabold tracking-[0.18em] uppercase"
+					>
+						<span class="text-warm">Hero · Equipment</span>
+						<span class="font-mono-system text-fade text-[12px] font-bold tracking-[0.05em]">
+							{(decklist.hero ? 1 : 0) + groupedCards().equipment.length} pieces
+						</span>
 					</div>
+					<div class="flex flex-wrap gap-x-9 px-6 py-3 sm:columns-2 sm:gap-x-9">
+						{#if heroCard()}
+							{@const _isSelected = selectedCard === heroCard()}
+							<button
+								type="button"
+								onclick={() => {
+									selectCard(heroCard());
+									if (window.innerWidth < 1024) openCardModal(heroCard());
+								}}
+								class="border-line flex w-full cursor-pointer items-baseline gap-3 border-b py-[3px] text-left last:border-b-0 {_isSelected ? 'text-warm' : 'text-ink hover:text-warm'} transition-colors"
+							>
+								<span class="font-mono-system text-warm w-[26px] flex-shrink-0 text-[11px] font-extrabold tracking-[0.06em] uppercase">
+									Hero
+								</span>
+								<span class="truncate text-[14.5px] font-extrabold">{decklist.hero}</span>
+							</button>
+						{/if}
+						{#each groupedCards().equipment as card (card.name)}
+							{@const _isSelected = selectedCard === card}
+							<button
+								type="button"
+								onclick={() => {
+									selectCard(card);
+									if (window.innerWidth < 1024) openCardModal(card);
+								}}
+								class="border-line flex w-full cursor-pointer items-baseline gap-3 border-b py-[3px] text-left last:border-b-0 {_isSelected ? 'text-warm' : 'text-ink hover:text-warm'} transition-colors"
+							>
+								<span class="font-mono-system text-fade w-[26px] flex-shrink-0 text-[12px] font-bold tabular-nums">
+									{card.quantity || 1}×
+								</span>
+								<span class="truncate text-[14px] font-bold">{card.name}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
 
-					<!-- Pitched Cards - Single column on mobile, smart layout on desktop -->
-					{#if columnLayout().columns.length > 0}
-						<div class="space-y-3 lg:hidden">
-							<!-- Mobile: Single column with all categories stacked -->
-							{#each columnLayout().columns as column}
-								{#each column as colorGroup}
-									{@const config = categoryConfig[colorGroup.key]}
-									<div class="rounded-xl {config.bg} overflow-hidden {cardShadow}">
-										<div class="px-4 py-2 {config.headerBg} flex items-center gap-2.5">
-											<span class="h-2 w-2 rounded-full {config.accent} shadow-sm"></span>
-											<span class="text-sm font-semibold {config.text}">{config.label}</span>
-											<span class="ml-auto text-xs font-medium text-gray-500"
-												>{colorGroup.cards.reduce((s, c) => s + (c.quantity || 1), 0)} cards</span
+				<!--
+					Pitched cards — each color section gets its own bordered
+					card with a 3px colored top rule (Red / Yellow / Blue)
+					so the color identity reads at a glance before you
+					even read the label. Rows now get a tinted hover
+					background in the matching color and an inline
+					"selected" left-border accent on the active card.
+				-->
+				{#if columnLayout().columns.length > 0}
+					{@const _COLOR_HEX = {
+						red: '#A8392C',
+						yellow: '#E5703E',
+						blue: '#2C5BA8',
+						colorless: '#56503F'
+					}}
+					{@const _activeCols = columnLayout().columns}
+					<div
+						class="grid grid-cols-1 gap-5 md:grid-cols-{_activeCols.length}"
+					>
+						{#each _activeCols as column, ci (ci)}
+							<div class="space-y-5">
+								{#each column as colorGroup, gi (colorGroup.key)}
+									{@const _hex = _COLOR_HEX[colorGroup.key]}
+									{@const _label = colorGroup.key.charAt(0).toUpperCase() + colorGroup.key.slice(1)}
+									{@const _count = colorGroup.cards.reduce((s, c) => s + (c.quantity || 1), 0)}
+									<div
+										class="border-line2 bg-paper-bg border border-t-[3px] shadow-[0_1px_0_rgba(20,16,8,0.03)]"
+										style="border-top-color: {_hex};"
+									>
+										<div
+											class="bg-paper flex items-baseline justify-between border-b border-[#C7BFA9] px-6 py-[12px]"
+										>
+											<span
+												class="text-[12px] font-extrabold tracking-[0.18em] uppercase"
+												style="color: {_hex};"
 											>
+												{_label}
+											</span>
+											<span class="font-mono-system text-fade text-[12px] font-bold">
+												{_count} cards
+											</span>
 										</div>
-										<div class="p-1">
-											{#each colorGroup.cards as card}
-												{@const isSelected = selectedCard === card}
+										<div class="px-3 py-[6px]">
+											{#each colorGroup.cards as card (card.name)}
+												{@const _isSelected = selectedCard === card}
 												<button
 													type="button"
-													class="flex w-full items-center gap-2 rounded-lg px-2.5 py-1 text-left transition-all
-														{isSelected ? 'bg-white/5' : config.hover}
-														group cursor-pointer"
 													onclick={() => {
 														selectCard(card);
 														if (window.innerWidth < 1024) openCardModal(card);
 													}}
+													class="flex w-full cursor-pointer items-baseline gap-3 border-l-[3px] px-3 py-[4px] text-left transition-colors"
+													style={_isSelected
+														? `border-left-color: ${_hex}; background-color: color-mix(in srgb, ${_hex} 9%, transparent); color: ${_hex};`
+														: `border-left-color: transparent;`}
+													onmouseenter={(e) => {
+														if (!_isSelected) {
+															e.currentTarget.style.backgroundColor = `color-mix(in srgb, ${_hex} 5%, transparent)`;
+															e.currentTarget.style.color = _hex;
+														}
+													}}
+													onmouseleave={(e) => {
+														if (!_isSelected) {
+															e.currentTarget.style.backgroundColor = '';
+															e.currentTarget.style.color = '';
+														}
+													}}
 												>
-													<span class="w-5 text-center text-xs font-bold {config.badge} opacity-80">
-														{card.quantity || 1}x
-													</span>
 													<span
-														class="flex-1 truncate text-sm text-gray-200 transition-colors group-hover:text-white"
+														class="font-mono-system w-[24px] flex-shrink-0 text-[12px] font-bold tabular-nums"
+														style="color: {_isSelected ? _hex : 'var(--ed-fade)'};"
 													>
-														{card.name || card}
+														{card.quantity || 1}×
 													</span>
-													{#if isSelected}
-														<span
-															class="h-1.5 w-1.5 flex-shrink-0 animate-pulse rounded-full bg-amber-400"
-														></span>
-													{/if}
+													<span class="truncate text-[13.5px] font-bold">{card.name}</span>
 												</button>
 											{/each}
 										</div>
 									</div>
 								{/each}
-							{/each}
-						</div>
-
-						<!-- Desktop: Smart column layout -->
-						<div
-							class="hidden gap-4 lg:grid"
-							style="grid-template-columns: repeat({columnLayout().columns
-								.length}, minmax(0, 1fr));"
-						>
-							{#each columnLayout().columns as column}
-								<div class="space-y-3">
-									{#each column as colorGroup}
-										{@const config = categoryConfig[colorGroup.key]}
-										<div class="rounded-xl {config.bg} overflow-hidden {cardShadow}">
-											<!-- Category Header -->
-											<div class="px-4 py-2.5 {config.headerBg} flex items-center gap-2.5">
-												<span class="h-2 w-2 rounded-full {config.accent} shadow-sm"></span>
-												<span class="text-sm font-semibold {config.text}">{config.label}</span>
-												<span class="ml-auto text-xs font-medium text-gray-500"
-													>{colorGroup.cards.reduce((s, c) => s + (c.quantity || 1), 0)} cards</span
-												>
-											</div>
-
-											<!-- Cards List -->
-											<div class="p-1">
-												{#each colorGroup.cards as card}
-													{@const isSelected = selectedCard === card}
-													<button
-														type="button"
-														class="flex w-full items-center gap-2 rounded-lg px-2.5 py-1 text-left transition-all
-															{isSelected ? 'bg-white/5' : config.hover}
-															group cursor-pointer"
-														onclick={() => {
-															selectCard(card);
-															if (window.innerWidth < 1024) openCardModal(card);
-														}}
-													>
-														<span
-															class="w-5 text-center text-xs font-bold {config.badge} opacity-80"
-														>
-															{card.quantity || 1}x
-														</span>
-														<span
-															class="flex-1 truncate text-sm text-gray-200 transition-colors group-hover:text-white"
-														>
-															{card.name || card}
-														</span>
-														{#if isSelected}
-															<span
-																class="h-1.5 w-1.5 flex-shrink-0 animate-pulse rounded-full bg-amber-400"
-															></span>
-														{/if}
-													</button>
-												{/each}
-											</div>
-										</div>
-									{/each}
-								</div>
-							{/each}
-						</div>
-					{/if}
-				</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
 			</div>
-		{/if}
-	</div>
-</div>
+		</div>
+	{/if}
+</AgeShell>
 
-<!-- Card Preview Modal (Mobile) -->
+<!-- ============ MOBILE CARD MODAL ============ -->
 {#if showModal}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
 		onclick={handleBackdropClick}
 		onkeydown={handleKeydown}
 		role="dialog"
@@ -943,52 +871,44 @@
 		tabindex="-1"
 	>
 		<div class="relative w-full max-w-sm">
-			<!-- Close Button -->
 			<button
+				type="button"
 				onclick={closeModal}
-				class="absolute -top-12 right-0 z-10 rounded-full bg-gray-800/80 p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
+				class="absolute -top-12 right-0 z-10 border border-white/30 bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
 				aria-label="Close modal"
 			>
-				<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M6 18L18 6M6 6l12 12"
-					/>
+				<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
 				</svg>
 			</button>
 
-			<!-- Card Image Container -->
-			<div
-				class="overflow-hidden rounded-2xl bg-gray-900 shadow-[0_0_0_1px_rgba(0,0,0,0.1),0_8px_16px_rgba(0,0,0,0.15),0_24px_48px_rgba(0,0,0,0.2)]"
-			>
-				<div class="relative aspect-[488/680] bg-gradient-to-br from-gray-800 to-gray-900">
+			<div class="border-ink border bg-paper-bg">
+				<div class="relative aspect-[488/680] bg-[#FBFAF6]">
 					{#if modalCard && modalCardImage}
 						{#if !modalImageLoaded && !modalImageError}
 							<div class="absolute inset-0 flex items-center justify-center">
-								<div
-									class="h-10 w-10 animate-spin rounded-full border-2 border-amber-500/50 border-t-amber-500"
-								></div>
+								<div class="border-line2 border-t-warm h-10 w-10 animate-spin rounded-full border-2"></div>
 							</div>
 						{/if}
 						{#if modalImageError}
-							<div class="absolute inset-0 flex items-center justify-center">
-								<div class="px-4 text-center">
+							<div class="absolute inset-0 flex items-center justify-center text-center">
+								<div>
 									<svg
-										class="mx-auto mb-3 h-12 w-12 text-gray-600"
+										class="text-fade mx-auto mb-3 h-12 w-12"
 										fill="none"
 										stroke="currentColor"
+										stroke-width="1.5"
 										viewBox="0 0 24 24"
 									>
 										<path
 											stroke-linecap="round"
 											stroke-linejoin="round"
-											stroke-width="1.5"
 											d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
 										/>
 									</svg>
-									<p class="text-sm text-gray-400">Image unavailable</p>
+									<p class="text-fade text-[12px] font-bold tracking-[0.05em] uppercase">
+										Image unavailable
+									</p>
 								</div>
 							</div>
 						{/if}
@@ -997,35 +917,26 @@
 								<img
 									src={modalCurrentUrl}
 									alt={modalCard.name || modalCard}
-									class="h-full w-full object-contain {modalImageLoaded
-										? 'opacity-100'
-										: 'opacity-0'} transition-opacity duration-300"
+									class="h-full w-full object-contain transition-opacity duration-300 {modalImageLoaded ? 'opacity-100' : 'opacity-0'}"
 									onload={handleModalLoad}
 									onerror={handleModalError}
 								/>
 							{/key}
 						{/if}
-					{:else}
-						<div class="absolute inset-0 flex items-center justify-center">
-							<div class="px-4 text-center">
-								<svg
-									class="mx-auto mb-3 h-12 w-12 text-gray-700"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="1.5"
-										d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-									/>
-								</svg>
-								<p class="text-sm text-gray-500">No card selected</p>
-							</div>
-						</div>
 					{/if}
 				</div>
+				{#if modalCard}
+					<div class="border-line2 border-t px-4 py-3">
+						<div class="font-newsreader text-ink text-[16px] font-semibold tracking-[-0.01em]">
+							{modalCard.name || modalCard}
+						</div>
+						{#if modalCard.quantity > 1}
+							<div class="text-fade font-mono-system mt-[2px] text-[10.5px] font-bold tracking-[0.05em]">
+								{modalCard.quantity}× in deck
+							</div>
+						{/if}
+					</div>
+				{/if}
 			</div>
 		</div>
 	</div>

@@ -681,7 +681,7 @@
 
 				<!-- Discreet Back Link -->
 				<a
-					href="/articles"
+					href="/library"
 					class="absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 text-xs text-white/80 backdrop-blur-sm transition-all hover:bg-black/60 hover:text-white sm:top-4 sm:left-4 sm:text-sm"
 				>
 					<svg

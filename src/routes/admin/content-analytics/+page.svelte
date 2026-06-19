@@ -425,7 +425,7 @@
 											<tr class="border-b border-white/5 hover:bg-white/5">
 												<td class="max-w-[200px] truncate py-2 pr-4 text-gray-300">
 													<a
-														href="/articles/{article.slug}"
+														href="/library/{article.slug}"
 														class="hover:text-white"
 														target="_blank"
 													>

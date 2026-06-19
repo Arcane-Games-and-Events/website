@@ -18,7 +18,7 @@
 	$: primaryTag = article.tags?.[0]?.name || null;
 </script>
 
-<a href="/articles/{article.slug}" class="group block">
+<a href="/library/{article.slug}" class="group block">
 	<div
 		class="relative aspect-video overflow-hidden rounded-xl border border-gray-800 bg-gray-900 transition-all hover:border-gray-700 sm:rounded-2xl"
 	>

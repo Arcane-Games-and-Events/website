@@ -1,8 +1,10 @@
 <script>
-	import PaymentForm from '$lib/components/PaymentForm.svelte';
+	import AgeShell from '$lib/components/age/AgeShell.svelte';
+	import EditorialPaymentForm from '$lib/components/age/premium/EditorialPaymentForm.svelte';
+
 	export let data;
 
-	// Promo code state. Pre-filled from /premium/[code] partner link.
+	// ============ promo / referral state ============
 	let promoCode = data.partnerReferral?.code || '';
 	let verifiedCode = data.partnerReferral?.code || null;
 	let verifiedPartnerName = data.partnerReferral?.partnerName || null;
@@ -14,19 +16,18 @@
 	$: hasPromoCode = promoCodeTrimmed.length > 0;
 	$: promoApplied = hasPromoCode && verifiedCode === promoCodeTrimmed;
 
-	// Discount math
-	// Partner: $5 off either plan
-	// Member monthly: $10 off (entire first month free)
-	// Member yearly: $10 off ($110 - $10 = $100 first charge)
+	// Partner: $5 off either plan. Member: $10 off.
 	$: discountAmount = (() => {
 		if (!promoApplied) return 0;
 		if (verifiedType === 'partner') return 5;
 		if (verifiedType === 'member') return 10;
 		return 0;
 	})();
-	$: planFirstCharge = Math.max(parseFloat(planDetails.amount) - discountAmount, 0).toFixed(2);
+	$: planFirstCharge = Math.max(
+		parseFloat(planDetails.amount) - discountAmount,
+		0
+	).toFixed(2);
 
-	// Clear verified state when user edits the code
 	$: if (hasPromoCode && verifiedCode && verifiedCode !== promoCodeTrimmed) {
 		verifiedCode = null;
 		verifiedPartnerName = null;
@@ -68,850 +69,482 @@
 		}
 	}
 
-	// Check if user has active premium access (not just role)
-	// Cancelled users should see the payment form to resubscribe
+	// ============ premium state ============
 	function hasActivePremium(user) {
 		if (!user) return false;
 		if (user.role === 'admin') return true;
 		if (user.role !== 'premium') return false;
-
-		// Active subscription
 		if (user.subscriptionStatus === 'active') return true;
-
-		// Cancelled subscription - they need to resubscribe
 		if (user.subscriptionStatus === 'cancelled') return false;
-
-		// Legacy: has subscriptionId but no status (backwards compatibility)
 		if (user.subscriptionId && !user.subscriptionStatus) return true;
-
-		// Legacy: premium role with no subscription tracking (manual upgrade)
 		if (!user.subscriptionId && !user.subscriptionStatus) return true;
-
 		return false;
 	}
 
 	const isPremium = hasActivePremium(data.user);
 	const isCancelled = data.user?.subscriptionStatus === 'cancelled';
 
-	// Selected plan state
-	let selectedPlan = 'yearly'; // 'monthly' or 'yearly'
+	// ============ plan selection ============
+	let annual = true;
+	$: selectedPlan = annual ? 'yearly' : 'monthly';
+	$: planDetails = annual
+		? {
+				amount: '110.00',
+				description: 'Premium Yearly Subscription',
+				buttonText: 'Subscribe for $110/year'
+			}
+		: {
+				amount: '10.00',
+				description: 'Premium Monthly Subscription',
+				buttonText: 'Subscribe for $10/month'
+			};
 
-	$: planDetails =
-		selectedPlan === 'yearly'
-			? {
-					amount: '110.00',
-					description: 'Premium Yearly Subscription',
-					buttonText: 'Subscribe for $110/year'
-				}
-			: {
-					amount: '10.00',
-					description: 'Premium Monthly Subscription',
-					buttonText: 'Subscribe for $10/month'
-				};
-
-	const benefits = [
+	// ============ static editorial content ============
+	const opens = [
 		{
-			icon: 'article',
-			title: 'Premium Articles',
-			description: 'Access exclusive strategy guides, meta analysis, and expert content'
+			t1: 'Premium articles, ',
+			t2: 'day one',
+			d: 'Every Pro Insight and feature the moment it publishes — written by the players who define the format.'
 		},
 		{
-			icon: 'ticket',
-			title: '10% Off Event Tickets',
-			description: 'Save on all AGE Open Series and tournament registrations'
+			t1: 'The full ',
+			t2: 'match library',
+			d: 'Every bonus VOD from every AGE Open, archived and ready to rewatch. Members only.'
 		},
 		{
-			icon: 'matches',
-			title: 'Extended Match Access',
-			description: 'Watch more matches from the AGE Open tournament series'
+			t1: 'Academy course ',
+			t2: 'updates',
+			d: "Buy a course once and own it for life — Premium adds the author's regular updates as the meta moves, at no extra cost."
 		},
 		{
-			icon: 'academy',
-			title: 'AGE Academy Early Access',
-			description: 'Be first to access upcoming training and educational features',
-			comingSoon: true
-		},
-		{
-			icon: 'discount',
-			title: 'Course Discounts',
-			description: 'Special pricing on AGE Academy courses and learning materials',
-			comingSoon: true
-		},
-		{
-			icon: 'graphics',
-			title: 'Real Time Graphics Engine',
-			description: 'Coming soon - Advanced visualization tools for your gameplay',
-			comingSoon: true
+			t1: 'Discounts at ',
+			t2: 'the AGE Opens',
+			d: 'Reduced entry on tournament registration across all three circuits, all season long.'
 		}
 	];
+
+	const included = [
+		'Premium articles, day one',
+		'The full match library',
+		"Author updates on your courses",
+		'AGE Open discounts'
+	];
+
+	// Promo code collapses by default — the email-confirmed user just sees
+	// a small "+ Have a promo code?" link, matching the mockup.
+	let promoOpen = !!data.partnerReferral?.code;
 </script>
 
 <svelte:head>
-	<title>Premium Membership - AGE</title>
+	<title>Premium Membership — AGE</title>
 	<meta
 		name="description"
-		content="Unlock exclusive content, event discounts, and premium features with AGE Premium membership."
+		content="Premium powers AGE — independent, member-supported coverage and education for the Flesh and Blood community."
 	/>
 </svelte:head>
 
-<div class="relative min-h-screen w-full overflow-hidden bg-gray-950">
-	<!-- Background with gradient -->
-	<div class="absolute inset-0">
-		<img
-			src="/images/circuits/los-angeles.webp"
-			alt=""
-			class="h-full w-full object-cover opacity-20"
-		/>
-		<div
-			class="absolute inset-0 bg-gradient-to-b from-gray-950/60 via-gray-950/90 to-gray-950"
-		></div>
-	</div>
-
-	<!-- Decorative elements -->
-	<div class="pointer-events-none absolute inset-0 overflow-hidden">
-		<div class="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl"></div>
-		<div
-			class="absolute right-1/4 bottom-1/4 h-96 w-96 rounded-full bg-green-500/10 blur-3xl"
-		></div>
-		<div
-			class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]"
-		></div>
-	</div>
-
-	<div class="relative z-10">
-		{#if isPremium}
-			<!-- Premium User View -->
-			<div class="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-				<!-- Header -->
-				<div class="mb-12 text-center">
-					<div
-						class="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-gradient-to-r from-emerald-500/20 to-green-500/20 px-4 py-2"
-					>
-						<svg class="h-5 w-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
-							<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-						</svg>
-						<span class="text-sm font-semibold text-emerald-300">Premium Member</span>
+<AgeShell>
+	{#if isPremium}
+		<!-- ============ PREMIUM WELCOME ============ -->
+		<div class="border-ink border-b-[3px] border-double">
+			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-[80px]">
+				<div class="mx-auto max-w-[820px] text-center">
+					<div class="text-prem mb-7 inline-flex items-center gap-[11px] text-[10.5px] font-bold tracking-[0.2em] uppercase">
+						<span class="bg-prem inline-block h-[7px] w-[7px] rounded-full"></span>
+						Premium member
 					</div>
-					<h1 class="mb-4 text-4xl font-bold text-white sm:text-5xl">Welcome Back!</h1>
-					<p class="text-lg text-gray-400">You have full access to all premium features.</p>
-				</div>
-
-				<!-- Quick Links Grid -->
-				<div class="mb-12 grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<a
-						href="/articles"
-						class="group relative rounded-xl border border-gray-800 bg-gray-900/50 p-6 backdrop-blur-sm transition-all duration-300 hover:border-emerald-500/50"
+					<h1
+						class="font-newsreader mb-5 text-[58px] leading-[1.02] font-medium tracking-[-0.025em]"
 					>
-						<div
-							class="absolute inset-0 rounded-xl bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
-						></div>
-						<div class="relative flex items-center gap-4">
-							<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/20">
-								<svg
-									class="h-6 w-6 text-emerald-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-									/>
-								</svg>
-							</div>
-							<div>
-								<h3 class="font-semibold text-white transition-colors group-hover:text-emerald-300">
-									Premium Articles
-								</h3>
-								<p class="text-sm text-gray-400">Browse exclusive content</p>
-							</div>
-							<svg
-								class="ml-auto h-5 w-5 text-gray-600 transition-colors group-hover:text-emerald-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M9 5l7 7-7 7"
-								/>
-							</svg>
-						</div>
-					</a>
-
-					<a
-						href="/age-open"
-						class="group relative rounded-xl border border-gray-800 bg-gray-900/50 p-6 backdrop-blur-sm transition-all duration-300 hover:border-blue-500/50"
-					>
-						<div
-							class="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
-						></div>
-						<div class="relative flex items-center gap-4">
-							<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500/20">
-								<svg
-									class="h-6 w-6 text-blue-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
-									/>
-								</svg>
-							</div>
-							<div>
-								<h3 class="font-semibold text-white transition-colors group-hover:text-blue-300">
-									AGE Open Events
-								</h3>
-								<p class="text-sm text-gray-400">10% off all tickets</p>
-							</div>
-							<svg
-								class="ml-auto h-5 w-5 text-gray-600 transition-colors group-hover:text-blue-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M9 5l7 7-7 7"
-								/>
-							</svg>
-						</div>
-					</a>
-
-					<a
-						href="/academy"
-						class="group relative rounded-xl border border-gray-800 bg-gray-900/50 p-6 backdrop-blur-sm transition-all duration-300 hover:border-green-500/50"
-					>
-						<div
-							class="absolute inset-0 rounded-xl bg-gradient-to-br from-green-500/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
-						></div>
-						<div class="relative flex items-center gap-4">
-							<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500/20">
-								<svg
-									class="h-6 w-6 text-green-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 14l9-5-9-5-9 5 9 5z"
-									/>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"
-									/>
-								</svg>
-							</div>
-							<div>
-								<h3 class="font-semibold text-white transition-colors group-hover:text-green-300">
-									AGE Academy
-								</h3>
-								<p class="text-sm text-gray-400">Courses & training</p>
-							</div>
-							<svg
-								class="ml-auto h-5 w-5 text-gray-600 transition-colors group-hover:text-green-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M9 5l7 7-7 7"
-								/>
-							</svg>
-						</div>
-					</a>
-
-					<a
-						href="/account"
-						class="group relative rounded-xl border border-gray-800 bg-gray-900/50 p-6 backdrop-blur-sm transition-all duration-300 hover:border-gray-600"
-					>
-						<div class="relative flex items-center gap-4">
-							<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-700/50">
-								<svg
-									class="h-6 w-6 text-gray-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-									/>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-									/>
-								</svg>
-							</div>
-							<div>
-								<h3 class="font-semibold text-white transition-colors group-hover:text-gray-200">
-									Account Settings
-								</h3>
-								<p class="text-sm text-gray-400">Manage subscription</p>
-							</div>
-							<svg
-								class="ml-auto h-5 w-5 text-gray-600 transition-colors group-hover:text-gray-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M9 5l7 7-7 7"
-								/>
-							</svg>
-						</div>
-					</a>
-				</div>
-
-				<!-- Benefits Reminder -->
-				<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-8 backdrop-blur-sm">
-					<h2 class="mb-6 flex items-center gap-2 text-xl font-semibold text-white">
-						<svg class="h-5 w-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
-							<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-						</svg>
-						Your Premium Benefits
-					</h2>
-					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-						{#each benefits as benefit}
-							<div class="flex items-start gap-3">
-								<svg
-									class="mt-0.5 h-5 w-5 shrink-0 text-green-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M5 13l4 4L19 7"
-									/>
-								</svg>
-								<div>
-									<span class="text-gray-200">{benefit.title}</span>
-									{#if benefit.comingSoon}
-										<span class="ml-2 text-xs font-medium text-amber-400">Coming Soon</span>
-									{/if}
-								</div>
-							</div>
-						{/each}
-					</div>
-				</div>
-			</div>
-		{:else}
-			<!-- Non-Premium User - Sales Page -->
-			<div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-				<!-- Resubscribe Banner for Cancelled Users -->
-				{#if isCancelled}
-					<div
-						class="mb-8 rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-green-500/10 p-6 text-center"
-					>
-						<div class="mb-2 flex items-center justify-center gap-2">
-							<svg class="h-5 w-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
-								<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-							</svg>
-							<h3 class="text-lg font-semibold text-white">Welcome Back!</h3>
-						</div>
-						<p class="text-gray-300">
-							Your previous subscription was cancelled. Resubscribe below to continue enjoying
-							premium benefits.
-						</p>
-					</div>
-				{/if}
-
-				<!-- Hero Section -->
-				<div class="mb-16 text-center">
-					<div
-						class="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-gradient-to-r from-emerald-500/20 to-green-500/20 px-4 py-2"
-					>
-						<svg class="h-5 w-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
-							<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-						</svg>
-						<span class="text-sm font-semibold text-emerald-300">AGE Premium</span>
-					</div>
-					<h1 class="mb-6 text-4xl font-bold text-white sm:text-5xl lg:text-6xl">
-						Elevate Your <span
-							class="bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent"
-							>Game</span
-						>
+						You're <em class="text-prem font-medium italic">in</em>.
 					</h1>
-					<p class="mx-auto max-w-2xl text-xl text-gray-400">
-						Unlock exclusive content, event discounts, and premium features to take your competitive
-						journey to the next level.
+					<p class="text-soft m-0 mx-auto max-w-[520px] text-[18px] leading-[1.6]">
+						Full access to every article, every bonus match, every course update. Pick up where
+						you left off.
 					</p>
 				</div>
 
-				<!-- Benefits Grid -->
-				<div class="mb-16 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-					{#each benefits as benefit}
-						<div
-							class="relative rounded-xl border border-gray-800 bg-gray-900/50 p-6 backdrop-blur-sm transition-colors hover:border-gray-700"
+				<div class="mt-[60px] grid grid-cols-1 gap-[1px] bg-line2 border border-line2 sm:grid-cols-2">
+					{#each [{ href: '/library', label: 'Library', desc: 'Read every Premium article, browse the match library, and pick up where you left off.' }, { href: '/academy', label: 'Academy', desc: 'Continue your courses with author updates included for life as a Premium member.' }, { href: '/age-open', label: 'AGE Open', desc: 'Standings, results, and member-only event registration discounts.' }, { href: '/account', label: 'Account', desc: 'Manage your subscription, saved cards, and billing details.' }] as link (link.href)}
+						<a
+							href={link.href}
+							class="group bg-paper-bg flex flex-col px-8 py-[26px] transition-colors hover:bg-paper"
 						>
-							{#if benefit.comingSoon}
-								<div class="absolute top-4 right-4">
-									<span
-										class="rounded-full bg-amber-500/20 px-2 py-1 text-xs font-medium text-amber-400"
-										>Coming Soon</span
-									>
-								</div>
-							{/if}
-							<div
-								class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/20 to-green-500/20"
-							>
-								{#if benefit.icon === 'article'}
-									<svg
-										class="h-6 w-6 text-emerald-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-										/>
-									</svg>
-								{:else if benefit.icon === 'ticket'}
-									<svg
-										class="h-6 w-6 text-blue-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
-										/>
-									</svg>
-								{:else if benefit.icon === 'matches'}
-									<svg
-										class="h-6 w-6 text-green-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-										/>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-										/>
-									</svg>
-								{:else if benefit.icon === 'academy'}
-									<svg
-										class="h-6 w-6 text-amber-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M12 14l9-5-9-5-9 5 9 5z"
-										/>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"
-										/>
-									</svg>
-								{:else if benefit.icon === 'discount'}
-									<svg
-										class="h-6 w-6 text-pink-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-										/>
-									</svg>
-								{:else if benefit.icon === 'graphics'}
-									<svg
-										class="h-6 w-6 text-cyan-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-										/>
-									</svg>
-								{/if}
+							<div class="text-accent mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase">
+								{link.label}
 							</div>
-							<h3 class="mb-2 text-lg font-semibold text-white">{benefit.title}</h3>
-							<p class="text-sm text-gray-400">{benefit.description}</p>
-						</div>
+							<h3 class="font-newsreader text-[24px] leading-[1.1] font-semibold tracking-[-0.01em] mb-[8px]">
+								Open {link.label.toLowerCase()} →
+							</h3>
+							<p class="text-soft m-0 text-[13.5px] leading-[1.55]">{link.desc}</p>
+						</a>
 					{/each}
 				</div>
 
-				<!-- Pricing Section -->
-				<div class="mx-auto max-w-4xl">
-					<div class="mb-8 text-center">
-						<h2 class="mb-4 text-3xl font-bold text-white">Choose Your Plan</h2>
-						<p class="text-gray-400">Cancel anytime. No hidden fees.</p>
+				{#if isCancelled}
+					<div class="border-warm/40 bg-warm/10 mt-10 border-[1.5px] px-6 py-4 text-center">
+						<div class="text-warm text-[10.5px] font-bold tracking-[0.16em] uppercase mb-1">
+							Subscription cancelled
+						</div>
+						<p class="text-soft m-0 text-[13.5px]">
+							Your access continues until the end of your current billing period. Want to come
+							back? Re-subscribe below.
+						</p>
 					</div>
+				{/if}
+			</div>
+		</div>
+	{:else}
+		<!-- ============ HERO ============ -->
+		<!--
+			When the user is signed in, weight the grid toward the form
+			column and widen the join box so the entire checkout form sits
+			above the fold without scrolling. Signed-out viewers see the
+			narrower box because their version is just a single sign-in CTA.
+		-->
+		<div class="border-line2 border-b">
+			<div
+				class="mx-auto grid w-full max-w-[min(94vw,1920px)] grid-cols-1 items-center gap-[56px] px-14 py-[74px] {data.user
+					? 'lg:grid-cols-[0.85fr_1.15fr]'
+					: 'lg:grid-cols-[1.05fr_0.95fr]'}"
+			>
+				<div>
+					<div class="text-prem mb-7 inline-flex items-center gap-[11px] text-[10.5px] font-bold tracking-[0.2em] uppercase">
+						<span class="bg-prem inline-block h-[7px] w-[7px] rounded-full"></span>
+						Membership · Since 2021
+					</div>
+					<h1
+						class="font-newsreader mb-6 text-[58px] leading-[1.02] font-medium tracking-[-0.025em]"
+					>
+						Made by players. <em class="text-prem font-medium italic">For players.</em>
+					</h1>
+					<p class="text-soft mb-7 max-w-[468px] text-[18px] leading-[1.62]">
+						Every article, every broadcast, every AGE Open is the work of players who love this
+						game — made for the community that plays it. Your membership is what keeps it going.
+					</p>
+					<div class="text-fade text-[13px] font-semibold">
+						<b class="text-soft font-semibold">Join in under a minute.</b> Cancel anytime · instant
+						access.
+					</div>
+				</div>
 
-					<!-- Pricing Cards - Always visible -->
-					<div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-						<!-- Monthly Plan -->
-						<button
-							type="button"
-							on:click={() => (selectedPlan = 'monthly')}
-							class="relative rounded-2xl border-2 p-6 text-left transition-all duration-300 {selectedPlan ===
-							'monthly'
-								? 'border-emerald-500 bg-emerald-500/10'
-								: 'border-gray-800 bg-gray-900/50 hover:border-gray-700'}"
+				<!-- join box (centered in column so it reads as the primary CTA) -->
+				<div class="flex justify-center">
+					<div
+						class="border-ink bg-paper-bg w-full {data.user
+							? 'max-w-[640px]'
+							: 'max-w-[512px]'} border shadow-[0_38px_60px_-44px_rgba(20,16,8,0.42)]"
+					>
+						<!-- plan toggle -->
+						<div
+							class="border-line bg-paper relative mt-6 mx-9 flex border p-[5px]"
 						>
-							<div class="mb-4 flex items-start justify-between">
-								<div>
-									<h3 class="text-xl font-bold text-white">Monthly</h3>
-									<p class="text-sm text-gray-400">Flexible, cancel anytime</p>
-								</div>
-								<div
-									class="flex h-6 w-6 items-center justify-center rounded-full border-2 {selectedPlan ===
-									'monthly'
-										? 'border-emerald-500 bg-emerald-500'
-										: 'border-gray-600'}"
+							<button
+								type="button"
+								onclick={() => (annual = false)}
+								class="text-soft hover:text-ink relative z-[1] flex h-[50px] flex-1 cursor-pointer items-center justify-center gap-[9px] border-none bg-none text-[14px] font-bold transition-colors {!annual
+									? 'text-ink bg-paper-bg shadow-[0_1px_0_rgba(20,16,8,0.06),0_3px_9px_-4px_rgba(20,16,8,0.32)]'
+									: ''}"
+							>
+								Monthly
+							</button>
+							<button
+								type="button"
+								onclick={() => (annual = true)}
+								class="text-soft hover:text-ink relative z-[1] flex h-[50px] flex-1 cursor-pointer items-center justify-center gap-[9px] border-none bg-none text-[14px] font-bold transition-colors {annual
+									? 'text-ink bg-paper-bg shadow-[0_1px_0_rgba(20,16,8,0.06),0_3px_9px_-4px_rgba(20,16,8,0.32)]'
+									: ''}"
+							>
+								Annual
+								<em
+									class="text-prem border-prem/30 bg-prem/15 inline-block border px-[6px] py-[3px] text-[9.5px] font-extrabold tracking-[0.06em] uppercase not-italic"
 								>
-									{#if selectedPlan === 'monthly'}
-										<svg
-											class="h-4 w-4 text-white"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="3"
-												d="M5 13l4 4L19 7"
-											/>
-										</svg>
-									{/if}
-								</div>
-							</div>
-							<div class="flex items-baseline gap-1">
-								<span class="text-4xl font-bold text-white">$10</span>
-								<span class="text-gray-400">/month</span>
-							</div>
-						</button>
+									Save $10
+								</em>
+							</button>
+						</div>
 
-						<!-- Yearly Plan -->
-						<button
-							type="button"
-							on:click={() => (selectedPlan = 'yearly')}
-							class="relative rounded-2xl border-2 p-6 text-left transition-all duration-300 {selectedPlan ===
-							'yearly'
-								? 'border-emerald-500 bg-emerald-500/10'
-								: 'border-gray-800 bg-gray-900/50 hover:border-gray-700'}"
-						>
-							<div class="absolute -top-3 left-4">
+						<div class="px-9 pt-7 pb-8">
+							<!-- price -->
+							<div class="mb-1 flex items-baseline justify-center gap-[9px]">
 								<span
-									class="rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-3 py-1 text-xs font-bold text-white shadow-lg"
+									class="font-newsreader text-ink text-[58px] leading-[0.85] font-medium tracking-[-0.02em]"
 								>
-									SAVE $10
+									${annual ? '110' : '10'}
+								</span>
+								<span class="text-fade text-[14px] font-bold whitespace-nowrap">
+									/ {annual ? 'year' : 'month'}
 								</span>
 							</div>
-							<div class="mb-4 flex items-start justify-between">
-								<div>
-									<h3 class="text-xl font-bold text-white">Yearly</h3>
-									<p class="text-sm text-gray-400">1 month free!</p>
-								</div>
-								<div
-									class="flex h-6 w-6 items-center justify-center rounded-full border-2 {selectedPlan ===
-									'yearly'
-										? 'border-emerald-500 bg-emerald-500'
-										: 'border-gray-600'}"
-								>
-									{#if selectedPlan === 'yearly'}
-										<svg
-											class="h-4 w-4 text-white"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="3"
-												d="M5 13l4 4L19 7"
-											/>
-										</svg>
-									{/if}
-								</div>
+							<div class="text-fade mb-5 min-h-[17px] text-center text-[12.5px]">
+								{annual
+									? "Billed $110 once a year — that's just $9.17/month."
+									: 'Billed monthly. Go annual for $110 — one month free.'}
 							</div>
-							<div class="flex items-baseline gap-1">
-								<span class="text-4xl font-bold text-white">$110</span>
-								<span class="text-gray-400">/year</span>
-							</div>
-							<p class="mt-2 text-xs text-emerald-400">That's just $9.17/month</p>
-						</button>
-					</div>
 
-					{#if !data.user}
-						<!-- Not logged in - Show sign in prompt -->
-						<div
-							class="relative rounded-2xl border border-gray-800 bg-gray-900/80 p-8 text-center backdrop-blur-xl"
-						>
-							<div
-								class="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-b from-white/5 via-transparent to-black/20"
-							></div>
-							<div class="relative">
-								<div
-									class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20"
+							{#if !data.user}
+								<!-- not signed in -->
+								<a
+									href="/login?redirect=/premium"
+									class="border-prem bg-prem hover:brightness-110 mb-3 inline-flex w-full items-center justify-center gap-2 border-[1.5px] py-[16px] text-[13px] font-bold tracking-[0.05em] text-white uppercase transition-[filter]"
 								>
-									<svg class="h-6 w-6 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
-										<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-									</svg>
-								</div>
-								<h3 class="mb-2 text-xl font-bold text-white">Ready to subscribe?</h3>
-								<p class="mb-6 text-gray-400">
-									Sign in or create an account to get started with {selectedPlan === 'yearly'
-										? 'yearly'
-										: 'monthly'} premium
-								</p>
-								<div class="flex flex-col justify-center gap-3 sm:flex-row">
-									<a
-										href="/login?redirect=/premium"
-										class="rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:from-emerald-400 hover:to-green-500 hover:shadow-xl hover:shadow-emerald-500/30"
-									>
-										Sign In to Subscribe
-									</a>
-									<a
-										href="/signup?redirect=/premium"
-										class="rounded-xl border border-gray-700 bg-gray-800/50 px-8 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-gray-700"
-									>
-										Create Account
+									Sign in to continue →
+								</a>
+								<div class="text-fade text-center text-[12px]">
+									Don't have an account?
+									<a class="text-accent font-bold" href="/signup?redirect=/premium">
+										Create one
 									</a>
 								</div>
-							</div>
-						</div>
-					{:else}
-						<!-- Logged in - show payment form -->
-						<div
-							class="relative rounded-2xl border border-gray-800 bg-gray-900/80 p-8 backdrop-blur-xl"
-						>
-							<div
-								class="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-b from-white/5 via-transparent to-black/20"
-							></div>
-							<div class="relative">
-								<div class="mb-6 flex items-center justify-between">
-									<h3 class="text-xl font-semibold text-white">Payment Details</h3>
-									<div class="text-right">
-										{#if promoApplied}
-											<p class="text-sm text-gray-500 line-through">
-												${selectedPlan === 'yearly' ? '110' : '10'}
-											</p>
-											<p class="text-2xl font-bold text-emerald-400">
-												${planFirstCharge}
-												<span class="text-sm font-normal text-gray-400">today</span>
-											</p>
-										{:else}
-											<p class="text-2xl font-bold text-white">
-												{selectedPlan === 'yearly' ? '$110' : '$10'}
-												<span class="text-sm font-normal text-gray-400"
-													>/{selectedPlan === 'yearly' ? 'year' : 'month'}</span
-												>
-											</p>
-										{/if}
-									</div>
-								</div>
-								<!-- Promo code applied banner -->
-								{#if promoApplied}
-									<div
-										class="mb-4 flex items-start gap-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-300"
+							{:else}
+								<!-- email confirmed -->
+								<div
+									class="border-line bg-paper mb-[18px] flex items-center gap-[11px] border-[1.5px] px-[15px] py-[13px] text-[13.5px] font-semibold"
+								>
+									<span
+										class="bg-prem inline-flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full text-[10px] text-white"
 									>
-										<svg class="mt-0.5 h-5 w-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-											<path
-												fill-rule="evenodd"
-												d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-												clip-rule="evenodd"
+										✓
+									</span>
+									<span class="text-ink min-w-0 flex-1 truncate">{data.user.email}</span>
+									<a
+										href="/account"
+										class="text-prem flex-shrink-0 cursor-pointer border-none bg-transparent p-0 text-[11px] font-extrabold tracking-[0.05em] uppercase"
+									>
+										Edit
+									</a>
+								</div>
+
+								<!-- promo code: collapsed by default -->
+								<div class="mb-[18px]">
+									{#if !promoOpen}
+										<button
+											type="button"
+											onclick={() => (promoOpen = true)}
+											class="text-prem inline-flex cursor-pointer items-center gap-[7px] border-none bg-transparent p-0 text-[12.5px] font-bold"
+										>
+											+ Have a promo code?
+										</button>
+									{:else}
+										<div class="flex">
+											<input
+												id="promoCode"
+												type="text"
+												bind:value={promoCode}
+												onblur={verifyPromoCode}
+												onkeydown={(e) =>
+													e.key === 'Enter' && (e.preventDefault(), verifyPromoCode())}
+												placeholder="Enter partner code"
+												class="border-line2 hover:border-ink focus:border-ink bg-paper-bg text-ink placeholder:text-fade h-[48px] min-w-0 flex-1 border-[1.5px] border-r-0 px-[15px] text-[13px] font-bold tracking-[0.05em] uppercase outline-none transition-colors"
 											/>
-										</svg>
-										<div>
-											<p class="font-semibold">
-												{verifiedType === 'member' ? 'Friend referral applied' : 'Partner referral applied'}
-											</p>
-											<p class="mt-0.5 text-xs text-emerald-300/80">
-												{#if verifiedType === 'member'}
-													{#if verifiedPartnerName}
-														{verifiedPartnerName} referred you.
-													{/if}
-													{selectedPlan === 'monthly'
-														? 'Your first month is free.'
-														: '$10 off your first year.'}
-												{:else if verifiedPartnerName}
-													You've been referred by {verifiedPartnerName}. $5 off your first charge.
-												{:else}
-													Promo code <span class="font-mono">{verifiedCode}</span> — $5 off your
-													first charge.
-												{/if}
-											</p>
-										</div>
-									</div>
-								{/if}
-								<div class="mb-4">
-									<label
-										for="promoCode"
-										class="mb-1 block text-sm font-medium text-gray-300"
-									>
-										Promo code <span class="text-gray-500">(optional)</span>
-									</label>
-									<div class="flex gap-2">
-										<input
-											type="text"
-											id="promoCode"
-											bind:value={promoCode}
-											on:blur={verifyPromoCode}
-											on:keydown={(e) => e.key === 'Enter' && (e.preventDefault(), verifyPromoCode())}
-											placeholder="Enter partner code"
-											autocomplete="off"
-											class="flex-1 rounded-lg border bg-gray-900 px-3 py-2 text-sm text-white uppercase placeholder:text-gray-500 focus:ring-1 focus:outline-none {promoError
-												? 'border-red-500/60 focus:border-red-500 focus:ring-red-500'
-												: promoApplied
-													? 'border-emerald-500/60 focus:border-emerald-500 focus:ring-emerald-500'
-													: 'border-gray-700 focus:border-emerald-500 focus:ring-emerald-500'}"
-										/>
-										{#if hasPromoCode && !promoApplied && !verifying}
 											<button
 												type="button"
-												on:click={verifyPromoCode}
-												class="rounded-lg bg-gray-700 px-3 py-2 text-sm font-medium text-white hover:bg-gray-600"
+												onclick={verifyPromoCode}
+												disabled={verifying || !hasPromoCode}
+												class="border-ink bg-ink text-paper-bg h-[48px] flex-shrink-0 cursor-pointer border-[1.5px] px-[22px] text-[11px] font-extrabold tracking-[0.07em] uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
 											>
-												Apply
+												{verifying ? '…' : 'Apply'}
 											</button>
+										</div>
+										{#if promoError}
+											<div class="text-warm mt-2 text-[11.5px] font-semibold">{promoError}</div>
 										{/if}
-									</div>
-									{#if verifying}
-										<p class="mt-1 text-xs text-gray-400">Verifying…</p>
-									{:else if promoError}
-										<p class="mt-1 text-xs text-red-400">{promoError}</p>
 									{/if}
 								</div>
 
-								<!-- Order summary when promo applied -->
-								{#if promoApplied}
-									<div class="mb-4 rounded-lg border border-gray-800 bg-gray-900/60 p-4 text-sm">
-										<div class="mb-2 flex items-center justify-between text-gray-300">
-											<span>AGE Premium ({selectedPlan})</span>
-											<span>${selectedPlan === 'yearly' ? '110.00' : '10.00'}</span>
+								{#if verifiedPartnerName}
+									<div
+										class="border-prem/40 bg-prem/10 mb-[18px] flex items-center justify-between gap-3 border-[1.5px] px-4 py-3 text-[13px]"
+									>
+										<div>
+											<div class="text-prem text-[10px] font-extrabold tracking-[0.1em] uppercase">
+												{verifiedType === 'member' ? 'Friend referral' : 'Partner code'} applied
+											</div>
+											<div class="text-ink mt-[2px] font-semibold">
+												{verifiedPartnerName} · ${discountAmount} off first {annual
+													? 'year'
+													: 'month'}
+											</div>
 										</div>
-										<div class="mb-2 flex items-center justify-between text-emerald-400">
-											<span>
-												{verifiedType === 'member' ? 'Friend referral' : 'Partner discount'}
-												({promoCodeTrimmed})
-											</span>
-											<span>-${discountAmount.toFixed(2)}</span>
+										<div
+											class="text-prem font-newsreader text-[20px] font-semibold tracking-[-0.01em]"
+										>
+											${planFirstCharge}
 										</div>
-										<div class="mt-3 flex items-center justify-between border-t border-gray-800 pt-3 text-base font-semibold">
-											<span class="text-white">Charged today</span>
-											<span class="text-emerald-400">${planFirstCharge}</span>
-										</div>
-										<p class="mt-2 text-xs text-gray-500">
-											Your subscription renews at ${selectedPlan === 'yearly' ? '110.00/year' : '10.00/month'} starting {selectedPlan === 'yearly' ? 'next year' : 'next month'}.
-										</p>
 									</div>
 								{/if}
 
-								<PaymentForm
+								<EditorialPaymentForm
 									amount={planDetails.amount}
 									description={planDetails.description}
 									submitUrl="/api/subscribe"
-									submitText={promoApplied ? `Subscribe - Pay $${planFirstCharge} today` : planDetails.buttonText}
+									submitText={promoApplied
+										? `Get Premium · $${planFirstCharge} today`
+										: `Get Premium · $${annual ? 110 : 10} / ${annual ? 'yr' : 'mo'}`}
 									isSubscription={true}
 									subscriptionType={selectedPlan}
-									savedCards={data.savedCards || []}
-									showSaveCardOption={true}
 									showTestData={data.isSandbox}
 									extraFields={hasPromoCode ? { promoCode: promoCodeTrimmed } : {}}
 								/>
+							{/if}
+
+							<div class="text-fade mt-4 text-center text-[11.5px] leading-[1.5]">
+								Cancel anytime · instant access
 							</div>
 						</div>
-					{/if}
-				</div>
 
-				<!-- Trust Indicators -->
-				<div class="mt-12 text-center">
-					<div class="flex flex-wrap items-center justify-center gap-8 text-sm text-gray-500">
-						<div class="flex items-center gap-2">
-							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-								/>
-							</svg>
-							Secure payment
-						</div>
-						<div class="flex items-center gap-2">
-							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-								/>
-							</svg>
-							Cancel anytime
-						</div>
-						<div class="flex items-center gap-2">
-							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-								/>
-							</svg>
-							Powered by Authorize.net
+						<!-- included perks -->
+						<div class="border-line border-t px-9 pt-[22px] pb-[26px]">
+							<div class="text-fade mb-[14px] text-[10px] font-extrabold tracking-[0.14em] uppercase">
+								Everything included
+							</div>
+							<ul class="m-0 grid list-none grid-cols-2 gap-x-[22px] gap-y-[11px] p-0">
+								{#each included as item (item)}
+									<li class="text-ink flex items-start gap-[10px] text-[13px] font-semibold leading-[1.35]">
+										<span class="bg-prem mt-[6px] block h-[5px] w-[5px] flex-shrink-0 rounded-full"></span>
+										<span>{item}</span>
+									</li>
+								{/each}
+							</ul>
 						</div>
 					</div>
 				</div>
 			</div>
-		{/if}
-	</div>
-</div>
+		</div>
+
+		<!-- ============ STATEMENT ============ -->
+		<div class="border-line2 border-b">
+			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-[104px] text-center">
+				<div class="mx-auto max-w-[860px]">
+					<div class="text-prem mb-[30px] text-[10.5px] font-bold tracking-[0.2em] uppercase">
+						Why it matters
+					</div>
+					<blockquote
+						class="font-newsreader text-ink m-0 text-[42px] leading-[1.3] font-normal tracking-[-0.012em]"
+					>
+						AGE belongs to the players who love this game — and it keeps going because of <em
+							class="text-prem italic font-medium">the members who believe in it</em
+						>.
+					</blockquote>
+					<p
+						class="text-soft mx-auto mt-[34px] max-w-[560px] text-[15.5px] leading-[1.65]"
+					>
+						The people writing, filming, casting, and teaching are the same people sitting across
+						the table from you at an AGE Open. We serve the players first — because we are the
+						players.
+					</p>
+				</div>
+			</div>
+		</div>
+
+		<!-- ============ OPENS ============ -->
+		<div class="border-line2 grid grid-cols-1 border-b lg:grid-cols-[0.92fr_1.08fr]">
+			<div
+				class="border-line2 relative min-h-[660px] bg-cover bg-center lg:border-r"
+				style="background-image: url('https://www.age.events/banner/age-open-banner.webp');"
+			>
+				<div
+					class="font-mono-system text-paper-bg absolute bottom-0 left-0 bg-black/40 px-3 py-[7px] text-[10px] tracking-[0.1em] uppercase backdrop-blur-sm"
+				>
+					AGE Open · Los Angeles
+				</div>
+			</div>
+			<div class="flex flex-col justify-center px-[60px] py-[96px]">
+				<div class="text-prem mb-4 text-[10.5px] font-bold tracking-[0.2em] uppercase">
+					What membership opens
+				</div>
+				<h2
+					class="font-newsreader mb-[14px] text-[40px] leading-[1.04] font-medium tracking-[-0.02em]"
+				>
+					One membership. The <em class="text-prem italic font-medium">whole</em> of AGE.
+				</h2>
+				<p class="text-soft mb-[30px] max-w-[430px] text-[15px] leading-[1.6]">
+					Four things your membership unlocks across AGE — made by players who love this game, and
+					kept going by members like you.
+				</p>
+				{#each opens as row, i (i)}
+					<div
+						class="border-line grid grid-cols-[30px_1fr] items-baseline gap-[18px] border-t py-[22px] {i ===
+						opens.length - 1
+							? 'border-b'
+							: ''}"
+					>
+						<div class="font-newsreader text-prem text-[15px] font-medium tabular-nums">
+							{String(i + 1).padStart(2, '0')}
+						</div>
+						<div>
+							<h3 class="text-ink mb-[7px] text-[16.5px] font-bold tracking-[-0.01em]">
+								{row.t1}<span class="text-prem">{row.t2}</span>
+							</h3>
+							<p class="text-soft m-0 max-w-[480px] text-[14px] leading-[1.55]">{row.d}</p>
+						</div>
+					</div>
+				{/each}
+			</div>
+		</div>
+
+		<!-- ============ VOICE / TESTIMONIAL ============ -->
+		<div class="border-line2 bg-paper border-b">
+			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-[90px] text-center">
+				<div class="font-newsreader text-prem mb-2 text-[64px] leading-[0.4] h-[30px]">
+					&ldquo;
+				</div>
+				<blockquote
+					class="font-newsreader text-ink m-0 mx-auto mb-[26px] max-w-[760px] text-[30px] leading-[1.36] font-normal tracking-[-0.01em]"
+				>
+					Ten dollars a month to keep coverage of this game open to everyone is the easiest yes in
+					my whole collection.
+				</blockquote>
+				<div class="text-soft text-[13px] font-extrabold tracking-[0.04em] uppercase">
+					Sam K.
+					<span class="text-fade ml-[10px] font-semibold">Member since 2021</span>
+				</div>
+			</div>
+		</div>
+
+		<!-- ============ CLOSING CTA ============ -->
+		<div class="relative overflow-hidden">
+			<div
+				class="absolute inset-0 bg-cover bg-center"
+				style="background-image: url('https://www.age.events/banner/articles-banner.webp'); background-position: center 30%;"
+				aria-hidden="true"
+			></div>
+			<div
+				class="absolute inset-0"
+				style="background: linear-gradient(180deg, rgba(15,12,6,0.62), rgba(15,12,6,0.78));"
+				aria-hidden="true"
+			></div>
+			<div
+				class="relative mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-[132px] text-center"
+			>
+				<div class="mx-auto max-w-[680px] text-[#f4f0e6]">
+					<div class="mb-[22px] text-[10.5px] font-bold tracking-[0.2em] text-[#9fe3bc] uppercase">
+						Made possible by members like you
+					</div>
+					<h2
+						class="font-newsreader mb-[18px] text-[52px] leading-[1.04] font-medium tracking-[-0.02em] text-[#fbfaf6]"
+					>
+						Join something <em class="font-medium italic text-[#9fe3bc]">we're building together</em>.
+					</h2>
+					<p class="mx-auto mb-8 max-w-[520px] text-[16px] leading-[1.6] text-[#e4decf]">
+						Made by players, for players — writing, video, events, and education across Flesh and
+						Blood, kept going by members like you.
+					</p>
+					<a
+						href="#top"
+						onclick={(e) => {
+							e.preventDefault();
+							window.scrollTo({ top: 0, behavior: 'smooth' });
+						}}
+						class="border-prem bg-prem hover:brightness-110 mx-auto inline-flex items-center gap-2 border-[1.5px] px-8 py-4 text-[13px] font-bold tracking-[0.05em] text-white uppercase transition-[filter]"
+					>
+						Get Premium · ${annual ? 110 : 10}/{annual ? 'yr' : 'mo'} →
+					</a>
+					<div class="mt-[18px] text-[12px] font-semibold text-[#b6ae9a]">
+						Cancel anytime · instant access
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
+</AgeShell>

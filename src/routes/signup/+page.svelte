@@ -1,235 +1,194 @@
 <script>
-	import '../../app.css';
+	import { page } from '$app/stores';
+	import AgeShell from '$lib/components/age/AgeShell.svelte';
+	import AuthSplit from '$lib/components/age/auth/AuthSplit.svelte';
+
 	export let form;
 	export let data;
+
+	let showPassword = false;
+	$: redirectParam = $page.url.searchParams.get('redirect') || '';
+	$: loginHref = redirectParam ? `/login?redirect=${encodeURIComponent(redirectParam)}` : '/login';
+
+	function togglePassword() {
+		showPassword = !showPassword;
+	}
 </script>
 
 <svelte:head>
-	<title>Sign Up - AGE</title>
+	<title>Create your account — AGE</title>
 	<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </svelte:head>
 
-<div class="relative min-h-screen w-full overflow-hidden bg-gray-950">
-	<!-- Background with circuit-style imagery -->
-	<div class="absolute inset-0">
-		<img
-			src="/images/circuits/new-england.webp"
-			alt=""
-			class="h-full w-full object-cover opacity-30"
-		/>
-		<div
-			class="absolute inset-0 bg-gradient-to-br from-gray-950 via-gray-950/95 to-gray-950/90"
-		></div>
-	</div>
+<AgeShell>
+	<AuthSplit
+		image="https://www.age.events/banner/articles-banner.webp"
+		vlabel="Join · AGE"
+		kicker="Create your account"
+		bullets={[
+			'Read free articles and follow standings',
+			'Track Academy progress across every course',
+			'Register for AGE Open events near you',
+			'Upgrade to Premium any time for the full experience'
+		]}
+	>
+		{#snippet headline()}
+			Free to join. <em class="text-[#f4c66a] italic font-medium">Member-supported</em> by choice.
+		{/snippet}
 
-	<!-- Decorative elements -->
-	<div class="pointer-events-none absolute inset-0 overflow-hidden">
-		<div class="absolute top-1/4 right-1/4 h-96 w-96 rounded-full bg-purple-500/10 blur-3xl"></div>
-		<div class="absolute bottom-0 left-1/4 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl"></div>
-		<!-- Subtle grid pattern -->
-		<div
-			class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]"
-		></div>
-	</div>
-
-	<!-- Main content -->
-	<div class="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
-		<div class="w-full max-w-md">
-			<!-- Logo -->
-			<div class="mb-8 text-center">
-				<a href="/" class="inline-block">
-					<img src="/logo.svg" alt="AGE" class="mx-auto h-10 w-auto" />
-				</a>
-			</div>
-
-			<!-- Sign Up Card -->
-			<div
-				class="relative rounded-2xl border border-white/10 bg-gray-900/80 p-8 shadow-2xl shadow-black/50 backdrop-blur-xl"
-			>
-				<!-- Glassmorphic gradient overlay -->
-				<div
-					class="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-b from-white/5 via-transparent to-black/20"
-				></div>
-				<!-- Subtle glow on border -->
-				<div
-					class="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-b from-purple-500/20 via-blue-500/10 to-purple-500/20 opacity-0 transition-opacity duration-500 hover:opacity-100"
-				></div>
-
-				<div class="relative">
-					<!-- Header -->
-					<div class="mb-8 text-center">
-						<h1 class="text-2xl font-bold text-white">Create Account</h1>
-						<p class="mt-2 text-sm text-gray-400">Join the AGE community today</p>
-					</div>
-
-					<!-- Error Message -->
-					{#if form?.error}
-						<div class="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
-							<div class="flex items-center gap-3">
-								<svg
-									class="h-5 w-5 shrink-0 text-red-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-									/>
-								</svg>
-								<p class="text-sm text-red-300">{form.error}</p>
-							</div>
-						</div>
-					{/if}
-
-					<form method="POST" class="space-y-4">
-						<!-- Name Fields Row -->
-						<div class="grid grid-cols-2 gap-3">
-							<div>
-								<label for="firstName" class="mb-1.5 block text-sm font-medium text-gray-300"
-									>First Name</label
-								>
-								<input
-									id="firstName"
-									type="text"
-									name="firstName"
-									required
-									placeholder="John"
-									autocomplete="given-name"
-									class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-								/>
-							</div>
-							<div>
-								<label for="lastName" class="mb-1.5 block text-sm font-medium text-gray-300"
-									>Last Name</label
-								>
-								<input
-									id="lastName"
-									type="text"
-									name="lastName"
-									required
-									placeholder="Doe"
-									autocomplete="family-name"
-									class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-								/>
-							</div>
-						</div>
-
-						<!-- Email Field -->
-						<div>
-							<label for="email" class="mb-1.5 block text-sm font-medium text-gray-300">Email</label
-							>
-							<input
-								id="email"
-								type="email"
-								name="email"
-								required
-								placeholder="you@example.com"
-								autocomplete="email"
-								class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-							/>
-						</div>
-
-						<!-- GEM ID Field (Optional) -->
-						<div>
-							<label for="gemId" class="mb-1.5 block text-sm font-medium text-gray-300">
-								GEM ID <span class="font-normal text-gray-500">(Optional)</span>
-							</label>
-							<input
-								id="gemId"
-								type="text"
-								name="gemId"
-								placeholder="12345678"
-								class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-							/>
-							<p class="mt-1 text-xs text-gray-500">
-								Link your GEM Player ID for tournament registration
-							</p>
-						</div>
-
-						<!-- Password Field -->
-						<div>
-							<label for="password" class="mb-1.5 block text-sm font-medium text-gray-300"
-								>Password</label
-							>
-							<input
-								id="password"
-								type="password"
-								name="password"
-								minlength="6"
-								required
-								placeholder="At least 6 characters"
-								autocomplete="new-password"
-								class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-							/>
-						</div>
-
-						<!-- Terms Checkbox -->
-						<div class="flex items-start gap-3 pt-2">
-							<input
-								id="terms"
-								type="checkbox"
-								name="terms"
-								required
-								class="mt-0.5 h-4 w-4 border-gray-700 bg-gray-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
-							/>
-							<label for="terms" class="text-sm leading-tight text-gray-400">
-								I agree to the <a
-									href="/terms"
-									class="text-blue-400 transition-colors hover:text-blue-300">Terms of Service</a
-								>
-								and
-								<a href="/privacy" class="text-blue-400 transition-colors hover:text-blue-300"
-									>Privacy Policy</a
-								>
-							</label>
-						</div>
-
-						<!-- Turnstile CAPTCHA -->
-						{#if data.turnstileSiteKey}
-							<div class="pt-2">
-								<div
-									class="cf-turnstile"
-									data-sitekey={data.turnstileSiteKey}
-									data-theme="dark"
-									data-size="flexible"
-									data-appearance="interaction-only"
-								></div>
-							</div>
-						{/if}
-
-						<!-- Submit Button -->
-						<button
-							type="submit"
-							class="mt-6 w-full rounded-xl bg-gradient-to-r from-purple-500 to-blue-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-purple-500/25 transition-all duration-300 hover:from-purple-400 hover:to-blue-500 hover:shadow-xl hover:shadow-purple-500/30"
-						>
-							Create Account
-						</button>
-					</form>
-
-					<!-- Login Link -->
-					<p class="mt-8 text-center text-sm text-gray-400">
-						Already have an account?
-						<a
-							href="/login"
-							class="font-semibold text-blue-400 transition-colors hover:text-blue-300"
-						>
-							Sign in
-						</a>
-					</p>
+		{#snippet formContent()}
+			<header class="mb-[30px]">
+				<div class="text-accent mb-3 text-[10.5px] font-bold tracking-[0.2em] uppercase">
+					Sign up
 				</div>
-			</div>
+				<h1
+					class="font-newsreader mb-[10px] text-[42px] leading-none font-semibold tracking-[-0.02em]"
+				>
+					Join the AGE community.
+				</h1>
+				<div class="text-soft text-sm leading-[1.5]">
+					Already have an account?
+					<a class="text-accent font-bold" href={loginHref}>Sign in</a>.
+				</div>
+			</header>
 
-			<!-- Footer -->
-			<div class="mt-8 flex items-center justify-center gap-4 text-xs text-gray-500">
-				<span>&copy; {new Date().getFullYear()} AGE</span>
-				<span class="text-gray-700">|</span>
-				<a href="/privacy" class="transition-colors hover:text-gray-400">Privacy Policy</a>
-				<span class="text-gray-700">|</span>
-				<a href="/terms" class="transition-colors hover:text-gray-400">Terms</a>
-			</div>
-		</div>
-	</div>
-</div>
+			{#if form?.error}
+				<div
+					class="border-warm bg-warm/10 text-warm mb-5 border-[1.5px] px-4 py-3 text-[12px] font-semibold tracking-[0.04em] uppercase"
+				>
+					{form.error}
+				</div>
+			{/if}
+
+			<form method="POST">
+				<!-- name (two-up) -->
+				<div class="mb-4 grid grid-cols-2 gap-[14px]">
+					<div>
+						<label
+							for="firstName"
+							class="text-soft mb-[7px] block text-[11px] font-extrabold tracking-[0.08em] uppercase"
+						>
+							First name
+						</label>
+						<input
+							id="firstName"
+							name="firstName"
+							type="text"
+							autocomplete="given-name"
+							required
+							placeholder="Zachary"
+							class="border-line2 hover:border-ink focus:border-ink bg-paper text-ink placeholder:text-fade w-full border-[1.5px] px-[15px] py-[13px] text-sm transition-colors outline-none"
+						/>
+					</div>
+					<div>
+						<label
+							for="lastName"
+							class="text-soft mb-[7px] block text-[11px] font-extrabold tracking-[0.08em] uppercase"
+						>
+							Last name
+						</label>
+						<input
+							id="lastName"
+							name="lastName"
+							type="text"
+							autocomplete="family-name"
+							required
+							placeholder="Wallach"
+							class="border-line2 hover:border-ink focus:border-ink bg-paper text-ink placeholder:text-fade w-full border-[1.5px] px-[15px] py-[13px] text-sm transition-colors outline-none"
+						/>
+					</div>
+				</div>
+
+				<!-- email -->
+				<div class="mb-4">
+					<label
+						for="email"
+						class="text-soft mb-[7px] block text-[11px] font-extrabold tracking-[0.08em] uppercase"
+					>
+						Email
+					</label>
+					<input
+						id="email"
+						name="email"
+						type="email"
+						autocomplete="email"
+						required
+						placeholder="you@example.com"
+						class="border-line2 hover:border-ink focus:border-ink bg-paper text-ink placeholder:text-fade w-full border-[1.5px] px-[15px] py-[13px] text-sm transition-colors outline-none"
+					/>
+				</div>
+
+				<!-- gem id (optional) -->
+				<div class="mb-4">
+					<label
+						for="gemId"
+						class="text-soft mb-[7px] flex items-center justify-between text-[11px] font-extrabold tracking-[0.08em] uppercase"
+					>
+						<span>GEM ID</span>
+						<span class="text-fade text-[10px] tracking-[0.06em]">Optional</span>
+					</label>
+					<input
+						id="gemId"
+						name="gemId"
+						type="text"
+						autocomplete="off"
+						placeholder="Your Legend Story Studios GEM ID"
+						class="border-line2 hover:border-ink focus:border-ink bg-paper text-ink placeholder:text-fade w-full border-[1.5px] px-[15px] py-[13px] text-sm transition-colors outline-none"
+					/>
+				</div>
+
+				<!-- password -->
+				<div class="mb-[18px]">
+					<label
+						for="password"
+						class="text-soft mb-[7px] flex items-center justify-between text-[11px] font-extrabold tracking-[0.08em] uppercase"
+					>
+						<span>Password</span>
+						<button
+							type="button"
+							onclick={togglePassword}
+							class="text-accent text-[11px] font-bold tracking-[0.04em] uppercase"
+						>
+							{showPassword ? 'Hide' : 'Show'}
+						</button>
+					</label>
+					<input
+						id="password"
+						name="password"
+						type={showPassword ? 'text' : 'password'}
+						autocomplete="new-password"
+						minlength="6"
+						required
+						placeholder="At least 8 characters"
+						class="border-line2 hover:border-ink focus:border-ink bg-paper text-ink placeholder:text-fade w-full border-[1.5px] px-[15px] py-[13px] text-sm transition-colors outline-none"
+					/>
+				</div>
+
+				{#if data?.turnstileSiteKey}
+					<div class="mb-[18px]">
+						<div
+							class="cf-turnstile"
+							data-sitekey={data.turnstileSiteKey}
+							data-size="flexible"
+							data-appearance="interaction-only"
+						></div>
+					</div>
+				{/if}
+
+				<button
+					type="submit"
+					class="border-prem bg-prem hover:brightness-110 inline-flex w-full items-center justify-center gap-2 border-[1.5px] px-[26px] py-[16px] text-[13px] font-bold tracking-[0.05em] text-white uppercase transition-[filter]"
+				>
+					Create free account →
+				</button>
+
+				<div class="text-fade mt-[22px] text-[11.5px] leading-[1.5]">
+					By creating an account you agree to AGE's
+					<a class="text-soft underline" href="/terms">Terms of Service</a> and
+					<a class="text-soft underline" href="/privacy">Privacy Policy</a>. We'll send occasional
+					event and strategy updates — unsubscribe anytime.
+				</div>
+			</form>
+		{/snippet}
+	</AuthSplit>
+</AgeShell>

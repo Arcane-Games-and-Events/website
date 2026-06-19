@@ -166,57 +166,109 @@
 	}
 </script>
 
-<div
-	class="relative my-8 overflow-hidden rounded-2xl border border-white/10 bg-gray-900/50 shadow-xl"
->
-	<!-- Header with custom deck name and creator -->
+<!--
+	Editorial decklist module — matches the design handoff (`mz-deck`)
+	exactly. All colours are explicit hex values from the handoff's
+	LIGHT palette so the module reads the same in light + dark modes
+	(it's a content card, not chrome — it shouldn't flip).
+
+	Palette (handoff light):
+	- ink         #17150F   — header bg + body text
+	- bg          #FBFAF6   — body bg
+	- paper       #F4F0E6   — footer bg
+	- line        #E4DECF   — hairline rules between cards
+	- line2       #C7BFA9   — section dividers
+	- soft        #56503F   — footer italic credit
+	- fade        #928B79   — counts + quantities
+	- gold accent #F4C66A   — hero name in header
+	- red         #A8392C   — RED column
+	- yellow      #E5703E   — YELLOW column
+	- blue        #2C5BA8   — BLUE column
+	- prem green  #1C7A4B   — Fabrary link
+	- hover warm  #C0461F   — card-link hover
+-->
+<!--
+	`not-prose` opts the entire decklist out of the article body's
+	prose-* link styling (which would otherwise paint every <a> blue
+	with an underline). Card names stay black with no underline, which
+	matches the handoff screenshot.
+-->
+<div class="not-prose my-8 border border-[#17150F] bg-[#FBFAF6]">
+	<!-- ============ HEADER ============ -->
 	{#if isNewFormat}
 		{#if deckName || hero || format}
-			<div
-				class="border-b border-white/10 bg-gradient-to-r from-blue-600/20 via-purple-600/10 to-transparent px-5 py-3"
-			>
-				{#if deckName}
-					<h3 class="text-base leading-tight font-bold text-white">
-						{deckName}
-						{#if creator}
-							<span class="ml-2 text-sm font-normal text-gray-400">by {creator}</span>
-						{/if}
-					</h3>
-				{/if}
-				{#if hero || format}
-					<div class="mt-1 flex items-center gap-2 text-xs">
-						{#if hero}
-							<span class="font-medium text-gray-300">{hero}</span>
-						{/if}
-						{#if hero && format}
-							<span class="text-gray-600">·</span>
-						{/if}
-						{#if format}
-							<span class="text-blue-400">{format}</span>
-						{/if}
+			<div class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 bg-[#17150F] px-7 py-6">
+				<div>
+					{#if deckName}
+						<h3 class="font-newsreader m-0 text-[26px] font-semibold leading-[1.05] tracking-[-0.01em] text-white">
+							{deckName}
+						</h3>
+					{/if}
+					{#if hero || format || creator}
+						<div class="mt-2 flex flex-wrap items-center gap-3 text-[13px] font-semibold">
+							{#if hero}
+								<span class="font-bold tracking-[0.02em] text-[#F4C66A]">
+									{hero}
+								</span>
+							{/if}
+							{#if hero && (format || creator)}
+								<span class="text-white/40">·</span>
+							{/if}
+							{#if format}
+								<span class="text-white/70">{format}</span>
+							{/if}
+							{#if (hero || format) && creator}
+								<span class="text-white/40">·</span>
+							{/if}
+							{#if creator}
+								<span class="text-white/70">by {creator}</span>
+							{/if}
+						</div>
+					{/if}
+				</div>
+				{#if totalCards > 0}
+					<div class="font-mono-system text-[13px] font-bold text-white">
+						<span>{totalCards}</span>
+						<span class="ml-1 text-white/60">cards</span>
 					</div>
 				{/if}
 			</div>
 		{/if}
 	{:else if decklist.title}
-		<div
-			class="border-b border-white/10 bg-gradient-to-r from-blue-600/20 via-purple-600/10 to-transparent px-5 py-3"
-		>
-			<h3 class="text-base font-bold text-white">
+		<div class="flex items-baseline justify-between gap-x-6 bg-[#17150F] px-7 py-6">
+			<h3 class="font-newsreader m-0 text-[26px] font-semibold leading-[1.05] tracking-[-0.01em] text-white">
 				{decklist.title}
 			</h3>
+			{#if totalCards > 0}
+				<div class="font-mono-system text-[13px] font-bold text-white">
+					<span>{totalCards}</span>
+					<span class="ml-1 text-white/60">cards</span>
+				</div>
+			{/if}
 		</div>
 	{/if}
 
-	<div class="p-5">
-		{#if isNewFormat}
-			<!-- New Format: Arena Cards as inline list -->
-			{#if processedCards.arena && processedCards.arena.length > 0}
-				<div class="mb-5 rounded-xl bg-white/5 p-4">
-					<div class="mb-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">Arena</div>
-					<div class="flex flex-wrap gap-2">
-						{#each processedCards.arena as card}
-							{@const arenaCardImg = getCardImage(card.name, null)}
+	<!-- ============ BODY ============ -->
+	{#if isNewFormat}
+		<!-- Arena · Equipment — full-width strip with 2-col list -->
+		{#if processedCards.arena && processedCards.arena.length > 0}
+			{@const _arenaCount = processedCards.arena.reduce((s, c) => s + (c.quantity || 1), 0)}
+			<div class="border-b border-[#C7BFA9] px-6 pt-4 pb-3">
+				<div class="mb-2 flex items-baseline justify-between gap-3">
+					<span class="text-[11px] font-extrabold tracking-[0.16em] uppercase text-[#17150F]">
+						Arena · Equipment
+					</span>
+					<span class="font-mono-system text-[12px] font-bold text-[#928B79]">
+						{_arenaCount} {_arenaCount === 1 ? 'piece' : 'pieces'}
+					</span>
+				</div>
+				<div class="columns-1 gap-x-9 sm:columns-2">
+					{#each processedCards.arena as card (card.name)}
+						{@const arenaCardImg = getCardImage(card.name, null)}
+						<div class="flex items-baseline gap-3 break-inside-avoid border-b border-[#E4DECF] py-[3px] last:border-b-0">
+							<span class="font-mono-system w-[26px] flex-shrink-0 text-[12px] font-bold tabular-nums text-[#928B79]">
+								{card.quantity}×
+							</span>
 							<a
 								href={getSearchUrl(card.name)}
 								target="_blank"
@@ -224,134 +276,129 @@
 								data-card-name={card.name}
 								data-card-image={arenaCardImg?.imageUrl || null}
 								data-card-fallback={arenaCardImg?.fallbackUrl || null}
-								class="card-link rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm !text-white !no-underline transition-all duration-150 hover:border-yellow-500/50 hover:bg-yellow-500/10 hover:!text-yellow-300"
+								class="card-link !no-underline truncate text-[14.5px] font-bold !text-[#17150F] transition-colors hover:!text-[#C0461F]"
+								title={card.name}
 							>
-								{#if card.quantity > 1}<span class="mr-1 text-gray-400">{card.quantity}×</span
-									>{/if}{card.name}
+								{card.name}
 							</a>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
+
+		<!-- Three colour columns -->
+		{@const _colourColors = {
+			red: '#A8392C',
+			yellow: '#E5703E',
+			blue: '#2C5BA8',
+			colorless: '#56503F'
+		}}
+		{@const _activeColors = colorOrder.filter((c) => processedCards.deck[c] && processedCards.deck[c].length > 0)}
+		{#if _activeColors.length > 0}
+			<div class="grid grid-cols-1 md:grid-cols-3">
+				{#each _activeColors as color, i (color)}
+					{@const _count = processedCards.deck[color].reduce((s, c) => s + c.quantity, 0)}
+					{@const _hex = _colourColors[color]}
+					<div
+						class="border-t border-[#C7BFA9] {i < _activeColors.length - 1
+							? 'md:border-r'
+							: ''} px-6 pt-4 pb-4 md:border-t-0 md:first:border-t-0"
+					>
+						<div class="mb-2 flex items-baseline justify-between gap-3">
+							<span
+								class="text-[12px] font-extrabold tracking-[0.16em] uppercase"
+								style="color: {_hex};"
+							>
+								{colorLabels[color]}
+							</span>
+							<span class="font-mono-system text-[12px] font-bold text-[#928B79]">
+								{_count} cards
+							</span>
+						</div>
+						{#each processedCards.deck[color] as card (card.name)}
+							{@const deckCardImg = getCardImage(card.name, colorToPitchLetter(color))}
+							<div class="flex items-baseline gap-3 border-t border-[#E4DECF] py-[3px] first:border-t-0">
+								<span class="font-mono-system w-[24px] flex-shrink-0 text-[12px] font-bold tabular-nums text-[#928B79]">
+									{card.quantity}×
+								</span>
+								<a
+									href={getSearchUrl(card.name)}
+									target="_blank"
+									rel="noopener noreferrer"
+									data-card-name={card.name}
+									data-card-pitch={colorToPitch(color)}
+									data-card-image={deckCardImg?.imageUrl || null}
+									data-card-fallback={deckCardImg?.fallbackUrl || null}
+									class="card-link !no-underline truncate text-[13.5px] font-bold !text-[#17150F] transition-colors hover:!text-[#C0461F]"
+									title={card.name}
+								>
+									{card.name}
+								</a>
+							</div>
 						{/each}
 					</div>
-				</div>
-			{/if}
-
-			<!-- Deck Cards grouped by color -->
-			<div class="space-y-5">
-				{#each colorOrder as color}
-					{#if processedCards.deck[color] && processedCards.deck[color].length > 0}
-						<div>
-							<!-- Full-width color header with fading gradient -->
-							<div
-								class="-mx-5 mb-3 bg-gradient-to-r px-5 py-2 {color === 'red'
-									? 'from-red-500/25 via-red-500/10 to-transparent'
-									: color === 'yellow'
-										? 'from-yellow-500/25 via-yellow-500/10 to-transparent'
-										: color === 'blue'
-											? 'from-blue-500/25 via-blue-500/10 to-transparent'
-											: 'from-gray-500/25 via-gray-500/10 to-transparent'}"
-							>
-								<span
-									class="text-sm font-semibold {color === 'red'
-										? 'text-red-400'
-										: color === 'yellow'
-											? 'text-yellow-300'
-											: color === 'blue'
-												? 'text-blue-400'
-												: 'text-gray-400'}"
-								>
-									{colorLabels[color]}
-									<span class="ml-2 font-normal text-gray-400">
-										— <span class="font-medium text-white/70"
-											>{processedCards.deck[color].reduce((sum, c) => sum + c.quantity, 0)}</span
-										> cards
-									</span>
-								</span>
-							</div>
-							<div class="grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2 md:grid-cols-3">
-								{#each processedCards.deck[color] as card}
-									{@const deckCardImg = getCardImage(card.name, colorToPitchLetter(color))}
-									<div class="flex min-w-0 items-baseline gap-2">
-										<span class="w-5 shrink-0 text-right text-xs font-medium text-gray-500"
-											>{card.quantity}×</span
-										>
-										<a
-											href={getSearchUrl(card.name)}
-											target="_blank"
-											rel="noopener noreferrer"
-											data-card-name={card.name}
-											data-card-pitch={colorToPitch(color)}
-											data-card-image={deckCardImg?.imageUrl || null}
-											data-card-fallback={deckCardImg?.fallbackUrl || null}
-											class="card-link truncate !text-white !underline !decoration-white/40 transition-colors duration-150 hover:!text-yellow-400 hover:!decoration-yellow-400/60"
-											title={card.name}>{card.name}</a
-										>
-									</div>
-								{/each}
-							</div>
-						</div>
-					{/if}
-				{/each}
-			</div>
-		{:else}
-			<!-- Legacy Format: Cards grouped by type in compact grid -->
-			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-				{#each sortedTypes as type}
-					{#if groupedCards[type] && groupedCards[type].length > 0}
-						<div class="min-w-0">
-							<h4 class="mb-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">
-								{typeLabels[type] || type}
-							</h4>
-							<div class="space-y-1 text-sm">
-								{#each groupedCards[type] as card}
-									{@const legacyCardImg = getCardImage(card.name, null)}
-									<div class="flex items-baseline gap-2">
-										<span class="w-5 shrink-0 text-right text-xs font-medium text-gray-500"
-											>{card.quantity}×</span
-										>
-										<a
-											href={card.url ||
-												`https://cards.fabtcg.com/results/?q=${encodeURIComponent(card.id || card.name)}`}
-											target="_blank"
-											rel="noopener noreferrer"
-											data-card-name={card.name}
-											data-card-image={legacyCardImg?.imageUrl || null}
-											data-card-fallback={legacyCardImg?.fallbackUrl || null}
-											class="card-link truncate !text-white !underline !decoration-white/40 transition-colors duration-150 hover:!text-yellow-400 hover:!decoration-yellow-400/60"
-											title={card.name}>{card.name}</a
-										>
-									</div>
-								{/each}
-							</div>
-						</div>
-					{/if}
 				{/each}
 			</div>
 		{/if}
-	</div>
+	{:else}
+		<!-- Legacy Format: Cards grouped by type, editorial column layout -->
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+			{#each sortedTypes as type, i (type)}
+				{#if groupedCards[type] && groupedCards[type].length > 0}
+					<div
+						class="border-t border-[#C7BFA9] {i % 3 !== 2 ? 'lg:border-r' : ''} {i % 2 !== 1
+							? 'md:border-r'
+							: ''} px-6 pt-4 pb-4 md:first:border-t-0"
+					>
+						<div class="mb-2 text-[12px] font-extrabold tracking-[0.16em] uppercase text-[#17150F]">
+							{typeLabels[type] || type}
+						</div>
+						{#each groupedCards[type] as card (card.name)}
+							{@const legacyCardImg = getCardImage(card.name, null)}
+							<div class="flex items-baseline gap-3 border-t border-[#E4DECF] py-[3px] first:border-t-0">
+								<span class="font-mono-system w-[24px] flex-shrink-0 text-[12px] font-bold tabular-nums text-[#928B79]">
+									{card.quantity}×
+								</span>
+								<a
+									href={card.url ||
+										`https://cards.fabtcg.com/results/?q=${encodeURIComponent(card.id || card.name)}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									data-card-name={card.name}
+									data-card-image={legacyCardImg?.imageUrl || null}
+									data-card-fallback={legacyCardImg?.fallbackUrl || null}
+									class="card-link !no-underline truncate text-[13.5px] font-bold !text-[#17150F] transition-colors hover:!text-[#C0461F]"
+									title={card.name}
+								>
+									{card.name}
+								</a>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			{/each}
+		</div>
+	{/if}
 
-	<!-- Footer -->
-	{#if totalCards > 0 || fabraryUrl}
-		<div
-			class="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-gray-800/30 px-5 py-3"
-		>
-			<span class="text-sm text-gray-400">
-				<span class="font-semibold text-white">{totalCards}</span> cards
-			</span>
+	<!-- ============ FOOTER ============ -->
+	{#if fabraryUrl || (isNewFormat && creator)}
+		<div class="flex flex-wrap items-center justify-between gap-3 border-t-2 border-[#17150F] bg-[#F4F0E6] px-6 py-[14px]">
+			{#if isNewFormat && creator}
+				<span class="font-newsreader text-[13px] italic text-[#56503F]">
+					Based on {creator}'s list
+				</span>
+			{:else}
+				<span></span>
+			{/if}
 			{#if fabraryUrl}
 				<a
 					href={fabraryUrl}
 					target="_blank"
 					rel="noopener noreferrer"
-					class="inline-flex items-center gap-1.5 text-sm font-medium text-yellow-400 no-underline transition-colors duration-150 hover:text-yellow-300"
+					class="text-[11px] font-extrabold tracking-[0.06em] uppercase text-[#1C7A4B] no-underline transition-[filter] hover:brightness-110"
 				>
-					View on FaBrary
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-						/>
-					</svg>
+					Open in Fabrary →
 				</a>
 			{/if}
 		</div>

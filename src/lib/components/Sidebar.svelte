@@ -35,7 +35,7 @@
 	// Navigation items grouped by section
 	const mainNavItems = [
 		{ href: '/', label: 'Home', icon: 'home' },
-		{ href: '/articles', label: 'Articles', icon: 'article' },
+		{ href: '/library', label: 'Articles', icon: 'article' },
 		{ href: '/age-open', label: 'AGE Open', icon: 'trophy' },
 		{ href: '/academy', label: 'Academy', icon: 'book' },
 		{ href: '/studios', label: 'AGE Studios', icon: 'video' }

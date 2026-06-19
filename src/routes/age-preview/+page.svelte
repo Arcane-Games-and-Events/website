@@ -17,23 +17,28 @@
 	let { data } = $props();
 
 	// Adapt the existing homepage server data into the Dispatch component
-	// prop shapes. Sections without real data (Academy + Forge) fall back
-	// to the components' built-in mocks for the visual rhythm — those
-	// will be replaced when the underlying systems exist.
+	// prop shapes. Sections without real data (Academy + Forge) fall back to
+	// the components' built-in mocks for the design preview — those need
+	// real systems before they ship to /.
 	let frontData = $derived(toFrontData(data));
 	let hubData = $derived(toHubData(data));
 	let studiosData = $derived(toStudiosData(data));
 </script>
 
-<AgeShell>
+<svelte:head>
+	<title>AGE — Editorial Preview</title>
+</svelte:head>
+
+<AgeShell active="Library">
 	<DispatchFront data={frontData} />
 	<DispatchHub data={hubData} />
 	<DispatchSubline />
 
 	<!--
-		Academy + Forge render with the components' built-in mock data
-		because the courses and AGE Labs systems don't exist yet. The
-		layout still reads cleanly; we'll wire them when the data lands.
+		Academy + Forge keep their mock data because the underlying systems
+		(courses + AGE Labs) don't exist yet. They render here so we can
+		eyeball the full editorial layout, but they won't ship to the real
+		homepage until the data exists.
 	-->
 	<DispatchAcademy />
 	<DispatchForge />

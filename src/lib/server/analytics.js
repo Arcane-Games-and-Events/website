@@ -139,8 +139,8 @@ export function logPageView(event, user) {
 			// searchParams restricted during prerendering
 		}
 
-		// Determine if this is an article page
-		const articleMatch = path.match(/^\/articles\/(.+)$/);
+		// Determine if this is an article page (now served under /library/)
+		const articleMatch = path.match(/^\/library\/(.+)$/);
 		const articleSlug = articleMatch ? articleMatch[1] : null;
 
 		// Generate UUID synchronously so it's available immediately

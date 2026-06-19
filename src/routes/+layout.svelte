@@ -16,6 +16,26 @@
 
 	// Admin pages have their own layout
 	$: isAdminPage = $page.url.pathname.startsWith('/admin');
+
+	// Routes that render the editorial redesign chrome (AgeShell) and
+	// therefore opt out of the global Topbar + Footer wrapper. Extend
+	// this list as the redesign rolls out to more routes.
+	//
+	// Note: auth routes (login/signup) already bypass the global chrome
+	// via `isAuthPage` above, so they don't need to be listed here —
+	// they render the editorial chrome by virtue of wrapping their own
+	// markup in <AgeShell>.
+	const editorialRoutes = ['/', '/age-preview', '/premium', '/age-open', '/library'];
+	const editorialPrefixes = ['/account', '/library/', '/player/'];
+	// Substring tests for paths that don't fit a clean prefix — e.g. the
+	// AGE Open decklist viewer lives under `/age-open/[eventId]/decklist/
+	// [decklistId]`, where the prefix would catch sibling pages that
+	// haven't been redesigned yet.
+	const editorialContains = ['/decklist/'];
+	$: isEditorialPage =
+		editorialRoutes.includes($page.url.pathname) ||
+		editorialPrefixes.some((p) => $page.url.pathname.startsWith(p)) ||
+		editorialContains.some((s) => $page.url.pathname.includes(s));
 </script>
 
 <!-- Skip to content link for accessibility -->
@@ -36,6 +56,8 @@
 {#if isAuthPage}
 	<slot />
 {:else if isAdminPage}
+	<slot />
+{:else if isEditorialPage}
 	<slot />
 {:else if useTopbar}
 	<!-- TOPBAR LAYOUT (Preview Mode) -->

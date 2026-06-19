@@ -1,199 +1,149 @@
 <script>
 	import { page } from '$app/stores';
-	import '../../app.css';
+	import AgeShell from '$lib/components/age/AgeShell.svelte';
+	import AuthSplit from '$lib/components/age/auth/AuthSplit.svelte';
 
 	export let form;
 
-	// Check for password reset success
+	let showPassword = false;
 	$: resetSuccess = $page.url.searchParams.get('reset') === 'success';
+	$: redirectParam = $page.url.searchParams.get('redirect') || '';
+	$: signupHref = redirectParam ? `/signup?redirect=${encodeURIComponent(redirectParam)}` : '/signup';
+
+	function togglePassword() {
+		showPassword = !showPassword;
+	}
 </script>
 
 <svelte:head>
-	<title>Login - AGE</title>
+	<title>Sign in — AGE</title>
 </svelte:head>
 
-<div class="relative min-h-screen w-full overflow-hidden bg-gray-950">
-	<!-- Background with circuit-style imagery -->
-	<div class="absolute inset-0">
-		<img
-			src="/images/circuits/los-angeles.webp"
-			alt=""
-			class="h-full w-full object-cover opacity-30"
-		/>
-		<div
-			class="absolute inset-0 bg-gradient-to-br from-gray-950 via-gray-950/95 to-gray-950/90"
-		></div>
-	</div>
+<AgeShell>
+	<AuthSplit
+		image="https://www.age.events/banner/age-open-banner.webp"
+		vlabel="Members · AGE"
+		kicker="Welcome back"
+		bullets={[
+			'Pick up every course and article in progress',
+			'Your saved VODs and watch-later queue',
+			'Standings and events for your circuit'
+		]}
+	>
+		{#snippet headline()}
+			All of AGE, <em class="text-[#f4c66a] italic font-medium">where you left off</em>.
+		{/snippet}
 
-	<!-- Decorative elements -->
-	<div class="pointer-events-none absolute inset-0 overflow-hidden">
-		<div class="absolute top-0 left-1/4 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl"></div>
-		<div
-			class="absolute right-1/4 bottom-1/4 h-96 w-96 rounded-full bg-purple-500/10 blur-3xl"
-		></div>
-		<!-- Subtle grid pattern -->
-		<div
-			class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]"
-		></div>
-	</div>
-
-	<!-- Main content -->
-	<div class="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
-		<div class="w-full max-w-md">
-			<!-- Logo -->
-			<div class="mb-8 text-center">
-				<a href="/" class="inline-block">
-					<img src="/logo.svg" alt="AGE" class="mx-auto h-10 w-auto" />
-				</a>
-			</div>
-
-			<!-- Login Card -->
-			<div
-				class="relative rounded-2xl border border-white/10 bg-gray-900/80 p-8 shadow-2xl shadow-black/50 backdrop-blur-xl"
-			>
-				<!-- Glassmorphic gradient overlay -->
-				<div
-					class="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-b from-white/5 via-transparent to-black/20"
-				></div>
-				<!-- Subtle glow on border -->
-				<div
-					class="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-b from-blue-500/20 via-purple-500/10 to-blue-500/20 opacity-0 transition-opacity duration-500 hover:opacity-100"
-				></div>
-
-				<div class="relative">
-					<!-- Header -->
-					<div class="mb-8 text-center">
-						<h1 class="text-2xl font-bold text-white">Welcome Back</h1>
-						<p class="mt-2 text-sm text-gray-400">Sign in to your account to continue</p>
-					</div>
-
-					<!-- Password Reset Success Message -->
-					{#if resetSuccess}
-						<div class="mb-6 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
-							<div class="flex items-center gap-3">
-								<svg
-									class="h-5 w-5 shrink-0 text-green-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M5 13l4 4L19 7"
-									/>
-								</svg>
-								<p class="text-sm text-green-300">
-									Password reset successful. Please sign in with your new password.
-								</p>
-							</div>
-						</div>
-					{/if}
-
-					<!-- Error Message -->
-					{#if form?.error}
-						<div class="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
-							<div class="flex items-center gap-3">
-								<svg
-									class="h-5 w-5 shrink-0 text-red-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-									/>
-								</svg>
-								<p class="text-sm text-red-300">{form.error}</p>
-							</div>
-						</div>
-					{/if}
-
-					<form method="POST" class="space-y-5">
-						<!-- Email Field -->
-						<div>
-							<label for="email" class="mb-1.5 block text-sm font-medium text-gray-300">Email</label
-							>
-							<input
-								id="email"
-								type="email"
-								name="email"
-								required
-								placeholder="you@example.com"
-								autocomplete="email"
-								class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-							/>
-						</div>
-
-						<!-- Password Field -->
-						<div>
-							<label for="password" class="mb-1.5 block text-sm font-medium text-gray-300"
-								>Password</label
-							>
-							<input
-								id="password"
-								type="password"
-								name="password"
-								required
-								placeholder="Enter your password"
-								autocomplete="current-password"
-								class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-							/>
-						</div>
-
-						<!-- Remember Me & Forgot Password -->
-						<div class="flex items-center justify-between">
-							<label class="flex cursor-pointer items-center gap-2">
-								<input
-									type="checkbox"
-									name="remember-me"
-									class="h-4 w-4 border-gray-700 bg-gray-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
-								/>
-								<span class="text-sm text-gray-400">Remember me</span>
-							</label>
-
-							<a
-								href="/forgot-password"
-								class="text-sm font-medium text-blue-400 transition-colors hover:text-blue-300"
-							>
-								Forgot password?
-							</a>
-						</div>
-
-						<!-- Submit Button -->
-						<button
-							type="submit"
-							class="w-full rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all duration-300 hover:from-blue-400 hover:to-purple-500 hover:shadow-xl hover:shadow-blue-500/30"
-						>
-							Sign In
-						</button>
-					</form>
-
-					<!-- Sign Up Link -->
-					<p class="mt-8 text-center text-sm text-gray-400">
-						Don't have an account?
-						<a
-							href="/signup"
-							class="font-semibold text-blue-400 transition-colors hover:text-blue-300"
-						>
-							Create one
-						</a>
-					</p>
+		{#snippet formContent()}
+			<header class="mb-[30px]">
+				<div class="text-accent mb-3 text-[10.5px] font-bold tracking-[0.2em] uppercase">
+					Sign in
 				</div>
-			</div>
+				<h1
+					class="font-newsreader mb-[10px] text-[42px] leading-none font-semibold tracking-[-0.02em]"
+				>
+					Welcome back to AGE.
+				</h1>
+				<div class="text-soft text-sm leading-[1.5]">
+					New to AGE? <a class="text-accent font-bold" href={signupHref}>Create an account</a> — it's
+					free.
+				</div>
+			</header>
 
-			<!-- Footer -->
-			<div class="mt-8 flex items-center justify-center gap-4 text-xs text-gray-500">
-				<span>&copy; {new Date().getFullYear()} AGE</span>
-				<span class="text-gray-700">|</span>
-				<a href="/privacy" class="transition-colors hover:text-gray-400">Privacy Policy</a>
-				<span class="text-gray-700">|</span>
-				<a href="/terms" class="transition-colors hover:text-gray-400">Terms</a>
+			{#if resetSuccess}
+				<div
+					class="border-prem bg-prem/10 text-prem mb-5 border-[1.5px] px-4 py-3 text-[12px] font-semibold tracking-[0.04em] uppercase"
+				>
+					Password reset complete. You can sign in now.
+				</div>
+			{/if}
+
+			{#if form?.error}
+				<div
+					class="border-warm bg-warm/10 text-warm mb-5 border-[1.5px] px-4 py-3 text-[12px] font-semibold tracking-[0.04em] uppercase"
+				>
+					{form.error}
+				</div>
+			{/if}
+
+			<form method="POST">
+				<!-- email -->
+				<div class="mb-4">
+					<label
+						for="email"
+						class="text-soft mb-[7px] block text-[11px] font-extrabold tracking-[0.08em] uppercase"
+					>
+						Email
+					</label>
+					<input
+						id="email"
+						name="email"
+						type="email"
+						autocomplete="email"
+						required
+						placeholder="you@example.com"
+						class="border-line2 hover:border-ink focus:border-ink bg-paper text-ink placeholder:text-fade w-full border-[1.5px] px-[15px] py-[13px] text-sm transition-colors outline-none"
+					/>
+				</div>
+
+				<!-- password -->
+				<div class="mb-4">
+					<label
+						for="password"
+						class="text-soft mb-[7px] flex items-center justify-between text-[11px] font-extrabold tracking-[0.08em] uppercase"
+					>
+						<span>Password</span>
+						<button
+							type="button"
+							onclick={togglePassword}
+							class="text-accent text-[11px] font-bold tracking-[0.04em] uppercase"
+						>
+							{showPassword ? 'Hide' : 'Show'}
+						</button>
+					</label>
+					<input
+						id="password"
+						name="password"
+						type={showPassword ? 'text' : 'password'}
+						autocomplete="current-password"
+						required
+						placeholder="••••••••"
+						class="border-line2 hover:border-ink focus:border-ink bg-paper text-ink placeholder:text-fade w-full border-[1.5px] px-[15px] py-[13px] text-sm transition-colors outline-none"
+					/>
+				</div>
+
+				<div class="mb-[22px] flex items-center justify-between text-[12.5px]">
+					<label
+						class="text-soft inline-flex cursor-pointer items-center gap-[9px] font-semibold select-none"
+					>
+						<input
+							type="checkbox"
+							name="remember-me"
+							class="peer sr-only"
+						/>
+						<span
+							class="border-line2 peer-checked:bg-prem peer-checked:border-prem flex h-[17px] w-[17px] items-center justify-center border-[1.5px] text-[11px] font-extrabold text-white"
+						>
+							<span class="hidden peer-checked:[&]:inline">✓</span>
+						</span>
+						Keep me signed in
+					</label>
+
+					<a class="text-accent font-bold" href="/forgot-password">Forgot password?</a>
+				</div>
+
+				<button
+					type="submit"
+					class="border-prem bg-prem hover:brightness-110 inline-flex w-full items-center justify-center gap-2 border-[1.5px] px-[26px] py-[16px] text-[13px] font-bold tracking-[0.05em] text-white uppercase transition-[filter]"
+				>
+					Sign in →
+				</button>
+			</form>
+
+			<div class="text-soft mt-6 text-center text-[13px]">
+				Trouble signing in?
+				<a href="/contact" class="text-accent font-bold">Contact support</a>
 			</div>
-		</div>
-	</div>
-</div>
+		{/snippet}
+	</AuthSplit>
+</AgeShell>

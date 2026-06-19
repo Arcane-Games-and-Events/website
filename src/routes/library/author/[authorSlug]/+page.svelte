@@ -163,7 +163,7 @@
 	<div class="border-b border-white/10 bg-gray-900/50">
 		<div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
 			<a
-				href="/articles"
+				href="/library"
 				class="inline-flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
 			>
 				<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -362,7 +362,7 @@
 								class="group -m-3 flex gap-5 rounded-xl p-3 transition-colors hover:bg-white/5"
 							>
 								<!-- Thumbnail (16:9) -->
-								<a href="/articles/{article.slug}" class="shrink-0">
+								<a href="/library/{article.slug}" class="shrink-0">
 									<div class="relative w-32 overflow-hidden rounded-lg bg-gray-800 sm:w-44">
 										<div class="aspect-video">
 											{#if article.coverImage?.src}
@@ -414,7 +414,7 @@
 									<!-- Tag -->
 									{#if article.tags && article.tags.length > 0}
 										<a
-											href="/articles/tag/{article.tags[0].slug}"
+											href="/library/tag/{article.tags[0].slug}"
 											class="mb-1 w-fit text-xs font-bold tracking-wider text-blue-400 uppercase transition-colors hover:text-blue-300"
 										>
 											{article.tags[0].name}
@@ -422,7 +422,7 @@
 									{/if}
 
 									<!-- Title -->
-									<a href="/articles/{article.slug}">
+									<a href="/library/{article.slug}">
 										<h3
 											class="line-clamp-2 text-lg leading-snug font-bold text-white transition-colors group-hover:text-gray-300"
 										>
@@ -453,7 +453,7 @@
 
 								<!-- Arrow (hidden on mobile) -->
 								<a
-									href="/articles/{article.slug}"
+									href="/library/{article.slug}"
 									class="hidden items-center sm:flex"
 									aria-label="Read {article.title}"
 								>

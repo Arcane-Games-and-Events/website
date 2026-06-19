@@ -2,10 +2,96 @@
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 
+/* Gate the `dark:` Tailwind variant behind an opt-in `.dark` class
+ * that we never set anywhere. The site ships light-only; this line
+ * exists so any stray `dark:foo` utility (e.g. in admin pages) stays
+ * a no-op rather than activating off the OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============ EDITORIAL THEME TOKENS ============
+ * AGE editorial design — light "paper" palette only. The site no
+ * longer ships a dark variant; tokens are defined once on :root and
+ * exposed to Tailwind via @theme inline below.
+ */
+:root {
+	--ed-bg: #fbfaf6;
+	--ed-paper: #f4f0e6;
+	--ed-panel: #efeadc;
+	--ed-ink: #17150f;
+	--ed-soft: #56503f;
+	--ed-fade: #928b79;
+	--ed-line: #e4decf;
+	--ed-line2: #c7bfa9;
+	--ed-accent: #16489e;
+	--ed-warm: #c0461f;
+	--ed-gold: #c8922e;
+	--ed-prem: #1c7a4b;
+
+	/* circuit accents */
+	--ed-cc-la: #1b4f9c;
+	--ed-cc-stl: #2f7d46;
+	--ed-cc-ne: #6a4a86;
+
+	/* hero-guide accents */
+	--ed-hero-rb: #c0461f;
+	--ed-hero-wz: #2c5ba8;
+	--ed-hero-as: #6a4a86;
+}
+
+@theme inline {
+	--color-paper-bg: var(--ed-bg);
+	--color-paper: var(--ed-paper);
+	--color-panel: var(--ed-panel);
+	--color-ink: var(--ed-ink);
+	--color-soft: var(--ed-soft);
+	--color-fade: var(--ed-fade);
+	--color-line: var(--ed-line);
+	--color-line2: var(--ed-line2);
+	--color-accent: var(--ed-accent);
+	--color-warm: var(--ed-warm);
+	--color-gold: var(--ed-gold);
+	--color-prem: var(--ed-prem);
+
+	--color-cc-la: var(--ed-cc-la);
+	--color-cc-stl: var(--ed-cc-stl);
+	--color-cc-ne: var(--ed-cc-ne);
+
+	--color-hero-rb: var(--ed-hero-rb);
+	--color-hero-wz: var(--ed-hero-wz);
+	--color-hero-as: var(--ed-hero-as);
+
+	--font-newsreader: 'Newsreader', Georgia, serif;
+	--font-libre: 'Libre Franklin', system-ui, sans-serif;
+	--font-archivo: 'Archivo', system-ui, sans-serif;
+	--font-mono-system: ui-monospace, 'SF Mono', Menlo, monospace;
+
+	--animate-marquee: marquee 32s linear infinite;
+	--animate-pulse-dot: pulse-dot 1.7s infinite;
+}
+
 @theme {
 	--radius: 0.5rem;
 	--font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 	--font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+
+@keyframes marquee {
+	from {
+		transform: translateX(0);
+	}
+	to {
+		transform: translateX(-50%);
+	}
+}
+
+@keyframes pulse-dot {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.25;
+	}
 }
 
 html,
@@ -48,62 +134,4 @@ button,
 
 .animate-loading-bar {
 	animation: loading-bar 2s ease-in-out infinite;
-}
-
-/* Headings use Space Grotesk */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-	font-family: var(--font-display);
-}
-
-/* Article prose styles - The Ringer inspired typography */
-.prose {
-	font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-	font-optical-sizing: auto;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
-}
-
-.prose h1,
-.prose h2,
-.prose h3,
-.prose h4,
-.prose h5,
-.prose h6 {
-	font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
-	letter-spacing: -0.02em;
-}
-
-/* Remove underlines from all prose links */
-.prose a {
-	text-decoration: none !important;
-}
-
-.prose a:hover {
-	text-decoration: none !important;
-}
-
-/* Card links (for card tooltips) - use blue to match other links */
-.prose a.card-link {
-	@apply cursor-pointer font-medium text-blue-400;
-	text-decoration: none !important;
-}
-
-.prose a.card-link:hover {
-	@apply text-blue-300;
-	text-decoration: none !important;
-}
-
-/* Hide scrollbar but keep scroll functionality */
-.scrollbar-hide {
-	-ms-overflow-style: none; /* IE and Edge */
-	scrollbar-width: none; /* Firefox */
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-	display: none; /* Chrome, Safari and Opera */
 }

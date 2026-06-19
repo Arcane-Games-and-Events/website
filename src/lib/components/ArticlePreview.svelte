@@ -21,7 +21,7 @@
 
 {#if variant === 'hero'}
 	<!-- Hero Article - Card style on mobile, overlay style on desktop -->
-	<a href="/articles/{article.slug}" class="group block">
+	<a href="/library/{article.slug}" class="group block">
 		<!-- Mobile: Card Layout (shown on small screens) -->
 		<article class="h-full sm:hidden">
 			{#if article.coverImage?.src}
@@ -209,7 +209,7 @@
 	</a>
 {:else if variant === 'card'}
 	<!-- Card Article (16:9 image above text) -->
-	<a href="/articles/{article.slug}" class="group block">
+	<a href="/library/{article.slug}" class="group block">
 		<article class="h-full">
 			{#if article.coverImage?.src}
 				<div class="relative mb-3 aspect-video overflow-hidden rounded-lg bg-gray-800">
@@ -295,7 +295,7 @@
 	</a>
 {:else}
 	<!-- Compact Article (Horizontal with 16:9 thumbnail) -->
-	<a href="/articles/{article.slug}" class="group block">
+	<a href="/library/{article.slug}" class="group block">
 		<article class="flex gap-4">
 			{#if article.coverImage?.src}
 				<div class="relative w-28 shrink-0 overflow-hidden rounded-lg bg-gray-800 sm:w-36">

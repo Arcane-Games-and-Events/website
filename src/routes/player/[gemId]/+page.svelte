@@ -4,6 +4,44 @@
 	import { page } from '$app/stores';
 	import { calculateAgeRating } from '$lib/age-rating.js';
 	import DecklistCard from '$lib/components/DecklistCard.svelte';
+	import AgeShell from '$lib/components/age/AgeShell.svelte';
+
+	// ============ helpers for editorial template ============
+	function heroSlug(name) {
+		if (!name) return null;
+		return name
+			.toLowerCase()
+			.replace(/[,'"]/g, '')
+			.replace(/\s+/g, '-')
+			.replace(/[^a-z0-9-]/g, '')
+			.replace(/-+/g, '-')
+			.trim();
+	}
+	function heroBackdropUrl(name) {
+		const slug = heroSlug(name);
+		return slug ? `/hero_images/${slug}.webp` : null;
+	}
+	function circuitHex(circuit) {
+		return (
+			{ 'Los Angeles': '#1B4F9C', 'New England': '#6A4A86', 'St. Louis': '#2F7D46' }[circuit] ||
+			'#17150F'
+		);
+	}
+	function tierHex(label) {
+		return (
+			{
+				Provisional: '#928B79',
+				Elite: '#C8922E',
+				Premier: '#6A4A86',
+				Distinguished: '#2C5BA8',
+				Competitive: '#1C7A4B',
+				Established: '#C8922E',
+				Rising: '#56503F',
+				Newcomer: '#56503F',
+				Unranked: '#928B79'
+			}[label] || '#56503F'
+		);
+	}
 
 	let { data } = $props();
 
@@ -544,2837 +582,1522 @@
 </script>
 
 <svelte:head>
-	<title>{data.displayName} ({ageRating().total} AGE) - Player Profile</title>
+	<title>{data.displayName} ({ageRating().total} AGE) — Player Profile</title>
 	<meta
 		name="description"
-		content="{data.displayName}'s competitive profile. AGE Rating: {ageRating()
-			.total}/100 ({ratingTier().label}). {data.totalStats
-			.totalPoints} total points, {winRate}% win rate, {data.totalStats
-			.top8Finishes} Top 8 finishes."
+		content="{data.displayName}'s competitive profile. AGE Rating: {ageRating().total}/100. {data.totalStats.totalPoints} total points across {data.totalStats.eventsPlayed} events."
 	/>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-950">
-	<!-- Hero Banner -->
-	<div class="relative overflow-x-clip">
-		<!-- Animated background -->
-		<div
-			class="absolute inset-0 bg-gradient-to-br from-blue-900/40 via-purple-900/30 to-gray-950"
-		></div>
-		<div
-			class="bg-[url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%239C92AC%22 fill-opacity=%220.05%22%3E%3Cpath d=%22M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] absolute inset-0 opacity-50"
-		></div>
+<!--
+	"Sports Stats" variation of the player profile. Compact dark hero
+	card with a stat line, then table-heavy sections (Season Standings,
+	Box Score, Rating Percentiles, Heroes, Head-to-Head) styled like a
+	sports almanac / media guide.
+-->
 
-		<!-- Glowing orbs -->
-		<div
-			class="absolute top-20 left-1/4 h-96 w-96 animate-pulse rounded-full bg-blue-500/20 blur-3xl"
-		></div>
-		<div
-			class="absolute top-40 right-1/4 h-80 w-80 animate-pulse rounded-full bg-purple-500/20 blur-3xl"
-			style="animation-delay: 1s;"
-		></div>
+<AgeShell active="AGE Open">
+	{@const _tier = ratingTier()}
+	{@const _tierLabel = _tier.label}
+	{@const _tierHex = tierHex(_tierLabel)}
+	{@const _rating = ageRating()}
+	{@const _primary = data.standings[0]}
+	{@const _primaryCircuit = _primary?.circuit}
+	{@const _primaryCircuitHex = _primaryCircuit ? circuitHex(_primaryCircuit) : null}
+	{@const _qualifiedSeasons = data.standings.filter((s) => s.calculatedRank && s.calculatedRank <= 16)}
+	{@const _losses = (data.totalStats.matchesPlayed || 0) - (data.totalStats.matchesWon || 0)}
+	{@const _firstName = data.displayName.split(' ')[0] || ''}
+	{@const _lastName = data.displayName.split(' ').slice(1).join(' ') || ''}
 
-		<div class="relative mx-auto max-w-6xl px-4 pt-8 pb-16 sm:px-6 sm:pt-12 sm:pb-24 lg:px-8">
-			<!-- Back to Standings Link -->
+	<!-- ============ COMPACT SPORTS-CARD HERO ============ -->
+	<section
+		class="relative overflow-hidden border-b-[3px] bg-[#0E1220] text-white"
+		style="border-bottom-color: {_tierHex};"
+	>
+		<!-- background grid -->
+		<div
+			class="pointer-events-none absolute inset-0 z-0"
+			style="background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 48px 48px;"
+			aria-hidden="true"
+		></div>
+		<!-- corner glow -->
+		<div
+			class="pointer-events-none absolute z-0"
+			style="top: -55%; right: -4%; width: 560px; height: 560px; background: radial-gradient(circle, color-mix(in srgb, {_tierHex} 34%, transparent), transparent 68%);"
+			aria-hidden="true"
+		></div>
+		<!-- giant watermark rating number -->
+		<span
+			class="font-archivo pointer-events-none absolute right-9 -bottom-[78px] z-0 text-[280px] leading-[0.7] font-black tabular-nums"
+			style="color: color-mix(in srgb, {_tierHex} 13%, transparent); letter-spacing: -0.04em;"
+			aria-hidden="true"
+		>
+			{_rating.total}
+		</span>
+
+		<!-- back link -->
+		<div class="relative z-[1] mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-5">
 			<a
 				href="/age-open?tab=standings"
-				class="group mb-6 inline-flex items-center gap-2 text-gray-400 transition-colors hover:text-white"
+				class="font-mono-system hover:text-white inline-flex items-center gap-2 text-[11px] font-bold tracking-[0.08em] text-[#aeb6c6] uppercase transition-colors"
 			>
-				<svg
-					class="h-4 w-4 transition-transform group-hover:-translate-x-1"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M10 19l-7-7m0 0l7-7m-7 7h18"
-					/>
-				</svg>
-				<span class="text-sm font-medium">Back to Standings</span>
+				← Back to Standings
 			</a>
-
-			<div class="flex flex-col items-center gap-8 lg:flex-row">
-				<!-- AGE Rating Badge (Primary) -->
-				<div class="group relative cursor-pointer">
-					<div
-						class="h-32 w-32 rounded-2xl bg-gradient-to-br sm:h-40 sm:w-40 {ratingTier()
-							.bg} border-3 {ratingTier()
-							.border} flex flex-col items-center justify-center shadow-2xl shadow-purple-500/25 backdrop-blur-sm transition-transform hover:scale-105"
-					>
-						<span class="text-5xl font-black sm:text-6xl {ratingTier().color}"
-							>{ageRating().total}</span
-						>
-						<span class="mt-1 text-xs font-bold tracking-widest text-gray-400 uppercase sm:text-sm"
-							>AGE Rating</span
-						>
-						<span
-							class="mt-2 rounded-full bg-gray-900/60 px-3 py-1 {ratingTier()
-								.color} text-xs font-bold">{ratingTier().label}</span
-						>
-					</div>
-					<!-- Tooltip on hover -->
-					<div
-						class="pointer-events-none absolute top-full left-1/2 z-50 mt-3 hidden -translate-x-1/2 group-hover:block"
-					>
-						<div
-							class="min-w-[200px] rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 shadow-2xl"
-						>
-							<div class="mb-2 text-center">
-								<span class="{ratingTier().color} font-bold">{ratingTier().label}</span>
-								<span class="ml-1 text-xs text-gray-500">- {ratingTier().description}</span>
-							</div>
-							<div class="mb-3 text-center text-xs text-gray-500">
-								vs {ageRating().totalPlayers} players
-							</div>
-							<div class="space-y-1.5 text-xs">
-								<div class="flex items-center justify-between">
-									<div class="flex items-center gap-2">
-										<div class="h-2 w-2 rounded-full bg-blue-400"></div>
-										<span class="text-gray-400">Win Rate</span>
-									</div>
-									<span class="font-medium text-white"
-										>{ageRating().percentiles.winRate}th %ile</span
-									>
-								</div>
-								<div class="flex items-center justify-between">
-									<div class="flex items-center gap-2">
-										<div class="h-2 w-2 rounded-full bg-purple-400"></div>
-										<span class="text-gray-400">Top 8</span>
-									</div>
-									<span class="font-medium text-white"
-										>{ageRating().percentiles.top8Rate}th %ile</span
-									>
-								</div>
-								<div class="flex items-center justify-between">
-									<div class="flex items-center gap-2">
-										<div class="h-2 w-2 rounded-full bg-emerald-400"></div>
-										<span class="text-gray-400">Peak</span>
-									</div>
-									<span class="font-medium text-white"
-										>{ageRating().percentiles.bestRank}th %ile</span
-									>
-								</div>
-							</div>
-							{#if ageRating().eventPenalty}
-								<div
-									class="mt-2 border-t border-gray-800 pt-2 text-center text-xs text-amber-500/80"
-								>
-									Rating reduced (need 3+ events)
-								</div>
-							{/if}
-						</div>
-					</div>
-				</div>
-
-				<!-- Player Info -->
-				<div class="flex-1 text-center lg:text-left">
-					<h1 class="mb-3 text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
-						{data.displayName}
-					</h1>
-
-					<!-- Championship Badges -->
-					{#if qualifiedSeasons.length > 0}
-						<div class="mb-4 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-							{#each qualifiedSeasons as qualifiedSeason}
-								<span
-									class="inline-flex items-center gap-1.5 rounded-full border border-yellow-500/30 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 px-3 py-1 text-xs font-bold text-yellow-400"
-								>
-									<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
-										<path
-											d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-										/>
-									</svg>
-									{qualifiedSeason} Players Championship
-								</span>
-							{/each}
-						</div>
-					{/if}
-
-					<!-- GEM ID and Aliases -->
-					<div class="mb-4 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-						<span
-							class="inline-flex items-center gap-2 rounded-lg bg-blue-500/20 px-3 py-1.5 text-sm font-medium text-blue-400"
-						>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"
-								/>
-							</svg>
-							GEM ID: {data.gemId}
-						</span>
-					</div>
-
-					<!-- Action Buttons -->
-					<div class="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-						<!-- Refresh Button -->
-						<button
-							onclick={refreshData}
-							disabled={isRefreshing}
-							class="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/80 px-3 py-2 text-sm font-medium text-gray-300 transition-all hover:bg-gray-700 hover:text-white disabled:opacity-50"
-							title="Refresh data"
-						>
-							<svg
-								class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-								/>
-							</svg>
-							<span class="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
-						</button>
-
-						{#if data.isAdmin}
-							<button
-								onclick={() => (editMode = !editMode)}
-								class="inline-flex items-center gap-2 rounded-lg px-4 py-2 {editMode
-									? 'border-red-500/30 bg-red-500/20 text-red-400'
-									: 'border-gray-700 bg-gray-800 text-gray-300'} hover:bg-opacity-80 border text-sm font-medium transition-all"
-							>
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									{#if editMode}
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M6 18L18 6M6 6l12 12"
-										/>
-									{:else}
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-										/>
-									{/if}
-								</svg>
-								{editMode ? 'Exit Edit Mode' : 'Edit Profile'}
-							</button>
-						{/if}
-
-						<!-- Share Buttons -->
-						<button
-							onclick={copyLink}
-							class="inline-flex items-center gap-2 rounded-lg px-3 py-2 {linkCopied
-								? 'border-emerald-500/30 bg-emerald-500/20 text-emerald-400'
-								: 'border-gray-700 bg-gray-800/80 text-gray-300 hover:bg-gray-700 hover:text-white'} border text-sm font-medium transition-all"
-							title="Copy link"
-						>
-							{#if linkCopied}
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M5 13l4 4L19 7"
-									/>
-								</svg>
-								<span class="hidden sm:inline">Copied!</span>
-							{:else}
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-									/>
-								</svg>
-								<span class="hidden sm:inline">Copy Link</span>
-							{/if}
-						</button>
-						<a
-							href={xShareUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/80 px-3 py-2 text-sm font-medium text-gray-300 transition-all hover:bg-gray-700 hover:text-white"
-							title="Share on X"
-						>
-							<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-								<path
-									d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"
-								/>
-							</svg>
-							<span class="hidden sm:inline">Share</span>
-						</a>
-						<a
-							href={blueskyShareUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="inline-flex items-center gap-2 rounded-lg border border-sky-500/30 bg-sky-500/20 px-3 py-2 text-sm font-medium text-sky-400 transition-all hover:bg-sky-500/30"
-							title="Share on Bluesky"
-						>
-							<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 568 501">
-								<path
-									d="M123.121 33.664C188.241 82.553 258.281 181.681 284 234.873c25.719-53.192 95.759-152.32 160.879-201.21C491.866-1.612 568-28.906 568 57.947c0 17.345-9.945 145.713-15.778 166.555-20.275 72.453-94.155 90.933-159.875 79.748 114.875 19.551 144.097 84.311 80.986 149.071-119.86 122.992-172.272-30.859-185.702-70.281-2.462-9.223-3.614-13.522-3.631-11.4-.017-2.122-1.169 2.177-3.631 11.4-13.43 39.422-65.842 193.273-185.702 70.281-63.111-64.76-33.889-129.52 80.986-149.071-65.72 11.185-139.6-7.295-159.875-79.748C9.945 203.659 0 75.291 0 57.946 0-28.906 76.135-1.612 123.121 33.664z"
-								/>
-							</svg>
-							<span class="hidden sm:inline">Share</span>
-						</a>
-					</div>
-				</div>
-			</div>
 		</div>
-	</div>
 
-	<!-- Stats Cards -->
-	<div class="relative z-10 mx-auto -mt-8 max-w-6xl px-4 sm:px-6 lg:px-8">
-		<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-			<!-- Total Points -->
+		<!-- main content row -->
+		<div class="relative z-[1] mx-auto flex w-full max-w-[min(94vw,1920px)] flex-wrap items-center gap-8 px-14 pt-[22px] pb-[30px]">
+			<!-- rating badge card -->
 			<div
-				class="group relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-900/50 to-gray-900 p-5 transition-all hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10"
+				class="relative w-[152px] flex-shrink-0 overflow-hidden border bg-[#0F172A] px-[18px] pt-5 pb-[18px] text-center"
+				style="border-color: color-mix(in srgb, {_tierHex} 48%, #1e293b); background: linear-gradient(158deg, color-mix(in srgb, {_tierHex} 18%, #0f172a), #020617 82%);"
 			>
+				<span class="absolute inset-x-0 top-0 h-[3px]" style="background-color: {_tierHex};"></span>
 				<div
-					class="absolute top-0 right-0 h-20 w-20 rounded-full bg-emerald-500/10 blur-2xl transition-all group-hover:bg-emerald-500/20"
-				></div>
-				<div class="relative">
-					<div class="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-400">
-						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-							/>
-						</svg>
-						Total Points
-					</div>
-					<div class="text-3xl font-bold text-white sm:text-4xl">{data.totalStats.totalPoints}</div>
-				</div>
-			</div>
-
-			<!-- Win Rate -->
-			<div
-				class="group relative overflow-hidden rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-900/50 to-gray-900 p-5 transition-all hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10"
-			>
-				<div
-					class="absolute top-0 right-0 h-20 w-20 rounded-full bg-blue-500/10 blur-2xl transition-all group-hover:bg-blue-500/20"
-				></div>
-				<div class="relative">
-					<div class="mb-2 flex items-center gap-2 text-sm font-medium text-blue-400">
-						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-							/>
-						</svg>
-						Win Rate
-					</div>
-					<div class="text-3xl font-bold text-white sm:text-4xl">{winRate}%</div>
-				</div>
-			</div>
-
-			<!-- Match Record -->
-			<div
-				class="group relative overflow-hidden rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-900/50 to-gray-900 p-5 transition-all hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10"
-			>
-				<div
-					class="absolute top-0 right-0 h-20 w-20 rounded-full bg-purple-500/10 blur-2xl transition-all group-hover:bg-purple-500/20"
-				></div>
-				<div class="relative">
-					<div class="mb-2 flex items-center gap-2 text-sm font-medium text-purple-400">
-						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-							/>
-						</svg>
-						Match Record
-					</div>
-					<div class="text-3xl font-bold text-white sm:text-4xl">
-						<span class="text-green-400">{data.totalStats.matchesWon}</span>
-						<span class="mx-1 text-xl text-gray-500">-</span>
-						<span class="text-red-400"
-							>{data.totalStats.matchesPlayed - data.totalStats.matchesWon}</span
-						>
-					</div>
-				</div>
-			</div>
-
-			<!-- Events Played -->
-			<div
-				class="group relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-900/50 to-gray-900 p-5 transition-all hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10"
-			>
-				<div
-					class="absolute top-0 right-0 h-20 w-20 rounded-full bg-amber-500/10 blur-2xl transition-all group-hover:bg-amber-500/20"
-				></div>
-				<div class="relative">
-					<div class="mb-2 flex items-center gap-2 text-sm font-medium text-amber-400">
-						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-							/>
-						</svg>
-						Events
-					</div>
-					<div class="text-3xl font-bold text-white sm:text-4xl">
-						{data.totalStats.eventsPlayed}
-					</div>
-				</div>
-			</div>
-
-			<!-- Top 8 Finishes -->
-			<div
-				class="group relative col-span-2 overflow-hidden rounded-2xl border border-rose-500/30 bg-gradient-to-br from-rose-900/50 to-gray-900 p-5 transition-all hover:border-rose-500/50 hover:shadow-lg hover:shadow-rose-500/10 sm:col-span-1"
-			>
-				<div
-					class="absolute top-0 right-0 h-20 w-20 rounded-full bg-rose-500/10 blur-2xl transition-all group-hover:bg-rose-500/20"
-				></div>
-				<div class="relative">
-					<div class="mb-2 flex items-center gap-2 text-sm font-medium text-rose-400">
-						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-							/>
-						</svg>
-						Top 8 Finishes
-					</div>
-					<div class="text-3xl font-bold text-white sm:text-4xl">
-						{data.totalStats.top8Finishes}
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- Performance Analytics Section -->
-	<div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-		<h2 class="mb-6 flex items-center gap-3 text-2xl font-bold text-white">
-			<svg class="h-6 w-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-				/>
-			</svg>
-			Performance Analytics
-		</h2>
-
-		<!-- AGE Rating Breakdown - Compact Visual Grid -->
-		<div class="mb-6 rounded-2xl border border-gray-800 bg-gray-900/50">
-			<div class="flex items-center justify-between border-b border-gray-800 px-6 py-4">
-				<h3 class="flex items-center gap-2 text-lg font-semibold text-white">
-					<svg class="h-5 w-5 {ratingTier().color}" fill="currentColor" viewBox="0 0 24 24">
-						<path
-							d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-						/>
-					</svg>
-					Rating Breakdown
-				</h3>
-				<span class="rounded-full bg-gray-800 px-3 py-1 text-xs text-gray-500"
-					>vs {ageRating().totalPlayers} players</span
+					class="font-archivo text-[66px] leading-[0.78] font-black tracking-[-0.03em] tabular-nums"
+					style="color: {_tierHex};"
 				>
-			</div>
-			<div class="overflow-visible p-4 sm:p-6">
-				<div class="grid grid-cols-2 gap-3 overflow-visible sm:grid-cols-3 lg:grid-cols-6">
-					<!-- Win Rate -->
-					<div
-						class="group relative cursor-help rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-900/40 to-gray-900 p-4 transition-all hover:border-blue-500/40"
-					>
-						<div class="flex flex-col items-center text-center">
-							<div
-								class="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/20"
-							>
-								<span class="text-lg font-bold text-blue-400"
-									>{ageRating().breakdown.winRate.toFixed(0)}</span
-								>
-							</div>
-							<div class="text-xs font-medium text-gray-400">Win Rate</div>
-							<div class="mt-1 text-[10px] text-blue-400/80">
-								{ageRating().percentiles.winRate}th %ile
-							</div>
-						</div>
-						<!-- Tooltip -->
-						<div
-							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
-						>
-							<div
-								class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs whitespace-nowrap shadow-xl"
-							>
-								<div class="font-semibold text-blue-400">Win Rate Score</div>
-								<div class="text-gray-300">{ageRating().breakdown.winRate.toFixed(1)} / 25 pts</div>
-								<div class="text-gray-500">Match win percentage</div>
-							</div>
-						</div>
-					</div>
-
-					<!-- Top 8 -->
-					<div
-						class="group relative cursor-help rounded-xl border border-purple-500/20 bg-gradient-to-br from-purple-900/40 to-gray-900 p-4 transition-all hover:border-purple-500/40"
-					>
-						<div class="flex flex-col items-center text-center">
-							<div
-								class="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-purple-500/20"
-							>
-								<span class="text-lg font-bold text-purple-400"
-									>{ageRating().breakdown.top8.toFixed(0)}</span
-								>
-							</div>
-							<div class="text-xs font-medium text-gray-400">Top 8</div>
-							<div class="mt-1 text-[10px] text-purple-400/80">
-								{ageRating().percentiles.top8Rate}th %ile
-							</div>
-						</div>
-						<!-- Tooltip -->
-						<div
-							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
-						>
-							<div
-								class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs whitespace-nowrap shadow-xl"
-							>
-								<div class="font-semibold text-purple-400">Top 8 Conversion</div>
-								<div class="text-gray-300">{ageRating().breakdown.top8.toFixed(1)} / 25 pts</div>
-								<div class="text-gray-500">Playoff consistency</div>
-							</div>
-						</div>
-					</div>
-
-					<!-- Peak -->
-					<div
-						class="group relative cursor-help rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-900/40 to-gray-900 p-4 transition-all hover:border-emerald-500/40"
-					>
-						<div class="flex flex-col items-center text-center">
-							<div
-								class="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20"
-							>
-								<span class="text-lg font-bold text-emerald-400"
-									>{ageRating().breakdown.peak.toFixed(0)}</span
-								>
-							</div>
-							<div class="text-xs font-medium text-gray-400">Peak</div>
-							<div class="mt-1 text-[10px] text-emerald-400/80">
-								{ageRating().percentiles.bestRank}th %ile
-							</div>
-						</div>
-						<!-- Tooltip -->
-						<div
-							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
-						>
-							<div
-								class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs whitespace-nowrap shadow-xl"
-							>
-								<div class="font-semibold text-emerald-400">Peak Performance</div>
-								<div class="text-gray-300">{ageRating().breakdown.peak.toFixed(1)} / 20 pts</div>
-								<div class="text-gray-500">Best circuit rank achieved</div>
-							</div>
-						</div>
-					</div>
-
-					<!-- Experience -->
-					<div
-						class="group relative cursor-help rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-900/40 to-gray-900 p-4 transition-all hover:border-amber-500/40"
-					>
-						<div class="flex flex-col items-center text-center">
-							<div
-								class="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/20"
-							>
-								<span class="text-lg font-bold text-amber-400"
-									>{ageRating().breakdown.experience.toFixed(0)}</span
-								>
-							</div>
-							<div class="text-xs font-medium text-gray-400">Experience</div>
-							<div class="mt-1 text-[10px] text-amber-400/80">
-								{ageRating().percentiles.experience}th %ile
-							</div>
-						</div>
-						<!-- Tooltip -->
-						<div
-							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
-						>
-							<div
-								class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs whitespace-nowrap shadow-xl"
-							>
-								<div class="font-semibold text-amber-400">Experience</div>
-								<div class="text-gray-300">
-									{ageRating().breakdown.experience.toFixed(1)} / 10 pts
-								</div>
-								<div class="text-gray-500">Total events played</div>
-							</div>
-						</div>
-					</div>
-
-					<!-- Efficiency -->
-					<div
-						class="group relative cursor-help rounded-xl border border-cyan-500/20 bg-gradient-to-br from-cyan-900/40 to-gray-900 p-4 transition-all hover:border-cyan-500/40"
-					>
-						<div class="flex flex-col items-center text-center">
-							<div
-								class="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-cyan-500/20"
-							>
-								<span class="text-lg font-bold text-cyan-400"
-									>{ageRating().breakdown.efficiency.toFixed(0)}</span
-								>
-							</div>
-							<div class="text-xs font-medium text-gray-400">Efficiency</div>
-							<div class="mt-1 text-[10px] text-cyan-400/80">
-								{ageRating().percentiles.efficiency}th %ile
-							</div>
-						</div>
-						<!-- Tooltip -->
-						<div
-							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
-						>
-							<div
-								class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs whitespace-nowrap shadow-xl"
-							>
-								<div class="font-semibold text-cyan-400">Points Efficiency</div>
-								<div class="text-gray-300">
-									{ageRating().breakdown.efficiency.toFixed(1)} / 15 pts
-								</div>
-								<div class="text-gray-500">Avg points per event</div>
-							</div>
-						</div>
-					</div>
-
-					<!-- Championship -->
-					<div
-						class="group relative cursor-help rounded-xl border border-yellow-500/20 bg-gradient-to-br from-yellow-900/40 to-gray-900 p-4 transition-all hover:border-yellow-500/40"
-					>
-						<div class="flex flex-col items-center text-center">
-							<div
-								class="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-yellow-500/20"
-							>
-								<span class="text-lg font-bold text-yellow-400"
-									>{ageRating().breakdown.championship.toFixed(0)}</span
-								>
-							</div>
-							<div class="text-xs font-medium text-gray-400">Champ</div>
-							<div class="mt-1 text-[10px] text-yellow-400/80">
-								{ageRating().percentiles.championship}th %ile
-							</div>
-						</div>
-						<!-- Tooltip -->
-						<div
-							class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
-						>
-							<div
-								class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-xs whitespace-nowrap shadow-xl"
-							>
-								<div class="font-semibold text-yellow-400">Championship Bonus</div>
-								<div class="text-gray-300">
-									{ageRating().breakdown.championship.toFixed(1)} / 5 pts
-								</div>
-								<div class="text-gray-500">Top 16 qualifications</div>
-							</div>
-						</div>
-					</div>
+					{_rating.total}
 				</div>
-
-				<!-- Rating Explanation -->
-				<div class="mt-4 border-t border-gray-800/50 pt-4">
-					<div class="space-y-2 text-xs leading-relaxed text-gray-500">
-						<p>
-							<span class="font-medium text-gray-400">How AGE Rating works:</span> Your rating uses a
-							harsh power curve that makes high scores extremely difficult to achieve. Percentiles are
-							compressed (50th %ile = ~35% credit, 90th %ile = ~85% credit).
-						</p>
-						<p>
-							<span class="font-medium text-gray-400">Weights:</span> Win Rate (25), Top 8 Rate (25),
-							Peak Rank (20), Efficiency (15), Experience (10), Championship (5). Players with fewer
-							than 3 events receive a penalty.
-						</p>
-						<p>
-							<span class="font-medium text-gray-400">Tiers:</span> Elite (90+), Premier (80+), Distinguished
-							(70+), Competitive (60+), Established (50+), Rising (40+), Developing (30+), Newcomer (20+).
-						</p>
-					</div>
-					{#if ageRating().eventPenalty}
-						<p class="mt-2 flex items-center gap-1 text-xs text-amber-500/80">
-							<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-								<path
-									fill-rule="evenodd"
-									d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-									clip-rule="evenodd"
-								/>
-							</svg>
-							Rating reduced - need 3+ events for full credit
-						</p>
-					{/if}
+				<div class="font-mono-system mt-3 text-[9px] font-bold tracking-[0.2em] text-[#94a3b8] uppercase">
+					AGE Rating
 				</div>
-			</div>
-		</div>
-
-		<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-			<!-- Performance Stats Grid -->
-			<div class="rounded-2xl border border-gray-800 bg-gray-900/50 p-6">
-				<h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
-					<svg class="h-5 w-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M13 10V3L4 14h7v7l9-11h-7z"
-						/>
-					</svg>
-					Performance Stats
-				</h3>
-				<div class="grid grid-cols-2 gap-4">
-					<!-- Top 8 Conversion -->
-					<div
-						class="rounded-xl border border-cyan-500/20 bg-gradient-to-br from-cyan-900/30 to-gray-900 p-4"
-					>
-						<div class="mb-1 text-xs font-medium tracking-wide text-cyan-400/80 uppercase">
-							Top 8 Rate
-						</div>
-						<div class="text-2xl font-bold text-white">{top8ConversionRate}%</div>
-						<div class="mt-1 text-xs text-gray-500">
-							{data.totalStats.top8Finishes} / {data.totalStats.eventsPlayed} events
-						</div>
-					</div>
-
-					<!-- Avg Points Per Event -->
-					<div
-						class="rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-900/30 to-gray-900 p-4"
-					>
-						<div class="mb-1 text-xs font-medium tracking-wide text-emerald-400/80 uppercase">
-							Avg Pts/Event
-						</div>
-						<div class="text-2xl font-bold text-white">{avgPointsPerEvent}</div>
-						<div class="mt-1 text-xs text-gray-500">per tournament</div>
-					</div>
-
-					<!-- Best Rank -->
-					<div
-						class="rounded-xl border border-yellow-500/20 bg-gradient-to-br from-yellow-900/30 to-gray-900 p-4"
-					>
-						<div class="mb-1 text-xs font-medium tracking-wide text-yellow-400/80 uppercase">
-							Best Rank
-						</div>
-						<div class="text-2xl font-bold text-white">
-							{#if bestRank()}
-								#{bestRank()}
-							{:else}
-								—
-							{/if}
-						</div>
-						<div class="mt-1 text-xs text-gray-500">circuit standing</div>
-					</div>
-
-					<!-- Average Rank -->
-					<div
-						class="rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-900/30 to-gray-900 p-4"
-					>
-						<div class="mb-1 text-xs font-medium tracking-wide text-violet-400/80 uppercase">
-							Avg Rank
-						</div>
-						<div class="text-2xl font-bold text-white">
-							{#if avgRank()}
-								#{avgRank()}
-							{:else}
-								—
-							{/if}
-						</div>
-						<div class="mt-1 text-xs text-gray-500">across circuits</div>
-					</div>
-
-					<!-- Circuits Played -->
-					<div
-						class="rounded-xl border border-pink-500/20 bg-gradient-to-br from-pink-900/30 to-gray-900 p-4"
-					>
-						<div class="mb-1 text-xs font-medium tracking-wide text-pink-400/80 uppercase">
-							Circuits
-						</div>
-						<div class="text-2xl font-bold text-white">{circuitsPlayed.length}</div>
-						<div class="mt-1 truncate text-xs text-gray-500" title={circuitsPlayed.join(', ')}>
-							{circuitsPlayed.slice(0, 2).join(', ')}{circuitsPlayed.length > 2 ? '...' : ''}
-						</div>
-					</div>
-
-					<!-- Seasons Played -->
-					<div
-						class="rounded-xl border border-orange-500/20 bg-gradient-to-br from-orange-900/30 to-gray-900 p-4"
-					>
-						<div class="mb-1 text-xs font-medium tracking-wide text-orange-400/80 uppercase">
-							Seasons
-						</div>
-						<div class="text-2xl font-bold text-white">{seasonsPlayed.length}</div>
-						<div class="mt-1 text-xs text-gray-500">
-							{seasonsPlayed[0] || '—'}{seasonsPlayed.length > 1
-								? ` - ${seasonsPlayed[seasonsPlayed.length - 1]}`
-								: ''}
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Historical Performance Chart -->
-			<div class="rounded-2xl border border-gray-800 bg-gray-900/50 p-4 sm:p-6">
-				<h3
-					class="mb-4 flex flex-wrap items-center gap-2 text-base font-semibold text-white sm:text-lg"
+				<div
+					class="mt-[13px] inline-block px-[13px] py-[6px] text-[10.5px] font-extrabold tracking-[0.08em] text-[#0E1220] uppercase"
+					style="background-color: {_tierHex};"
 				>
-					<svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
-						/>
-					</svg>
-					Performance History
-					{#if performanceTrend() === 'up'}
-						<span
-							class="ml-auto flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-1 text-xs text-emerald-400"
-						>
-							<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-								/>
-							</svg>
-							Trending Up
-						</span>
-					{:else if performanceTrend() === 'down'}
-						<span
-							class="ml-auto flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-1 text-xs text-red-400"
-						>
-							<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
-								/>
-							</svg>
-							Trending Down
-						</span>
-					{/if}
-				</h3>
-
-				<!-- Match Stats Row -->
-				{#if data.matchHistory}
-					<div class="mb-4 grid grid-cols-2 gap-2 sm:mb-5 sm:grid-cols-4 sm:gap-3">
-						<!-- Total Matches -->
-						<div class="rounded-lg bg-gray-800/50 p-2.5 text-center sm:p-3">
-							<div class="text-lg font-bold text-white tabular-nums sm:text-xl">
-								{data.matchHistory.totalMatches}
-							</div>
-							<div
-								class="text-[9px] font-medium tracking-wide text-gray-500 uppercase sm:text-[10px]"
-							>
-								Matches
-							</div>
-						</div>
-						<!-- Unique Opponents -->
-						<div class="rounded-lg bg-gray-800/50 p-2.5 text-center sm:p-3">
-							<div class="text-lg font-bold text-blue-400 tabular-nums sm:text-xl">
-								{data.matchHistory.headToHead?.length || 0}
-							</div>
-							<div
-								class="text-[9px] font-medium tracking-wide text-gray-500 uppercase sm:text-[10px]"
-							>
-								Opponents
-							</div>
-						</div>
-						<!-- Current Streak -->
-						<div class="rounded-lg bg-gray-800/50 p-2.5 text-center sm:p-3">
-							<div
-								class="text-lg font-bold tabular-nums sm:text-xl {data.matchHistory
-									.currentWinStreak > 0
-									? 'text-emerald-400'
-									: 'text-gray-400'}"
-							>
-								{data.matchHistory.currentWinStreak > 0 ? data.matchHistory.currentWinStreak : '—'}
-							</div>
-							<div
-								class="text-[9px] font-medium tracking-wide text-gray-500 uppercase sm:text-[10px]"
-							>
-								Streak
-							</div>
-						</div>
-						<!-- Longest Streak -->
-						<div class="rounded-lg bg-gray-800/50 p-2.5 text-center sm:p-3">
-							<div class="text-lg font-bold text-yellow-400 tabular-nums sm:text-xl">
-								{data.matchHistory.longestWinStreak || '—'}
-							</div>
-							<div
-								class="text-[9px] font-medium tracking-wide text-gray-500 uppercase sm:text-[10px]"
-							>
-								Best Run
-							</div>
-						</div>
-					</div>
-
-					<!-- Recent Form -->
-					{#if data.matchHistory.recentMatches?.length > 0}
-						<div class="mb-4 sm:mb-5">
-							<div class="mb-2 text-[10px] font-medium text-gray-500 sm:text-xs">Recent Form</div>
-							<div class="flex flex-wrap items-center gap-1 sm:gap-1.5">
-								{#each data.matchHistory.recentMatches.slice(0, 10) as { match }, i}
-									{@const isPlayer1 = match.player1GemId === data.gemId}
-									{@const won =
-										(isPlayer1 && match.winner === 'player1') ||
-										(!isPlayer1 && match.winner === 'player2')}
-									{@const lost =
-										(isPlayer1 && match.winner === 'player2') ||
-										(!isPlayer1 && match.winner === 'player1')}
-									<div
-										class="flex h-5 w-5 items-center justify-center rounded text-[9px] font-bold sm:h-6 sm:w-6 sm:text-[10px]
-											{won
-											? 'bg-green-500/20 text-green-400'
-											: lost
-												? 'bg-red-500/20 text-red-400'
-												: 'bg-gray-700 text-gray-400'}"
-										title="Match {i + 1}"
-									>
-										{won ? 'W' : lost ? 'L' : 'D'}
-									</div>
-								{/each}
-								{#if data.matchHistory.recentMatches.length > 10}
-									<span class="text-[10px] text-gray-600 sm:text-xs"
-										>+{data.matchHistory.recentMatches.length - 10}</span
-									>
-								{/if}
-							</div>
-						</div>
-					{/if}
-				{/if}
-
-				{#if hasMonthlyData()}
-					<!-- Historical Timeline Chart (Monthly) -->
-					<div class="relative">
-						<!-- Scrollable container for many data points -->
-						<div class="-mx-2 overflow-x-auto px-2 pb-2">
-							<div
-								class="mb-2 flex items-end gap-1"
-								style="height: 120px; min-width: {Math.max(
-									historicalPerformance().length * 36,
-									100
-								)}px"
-							>
-								{#each historicalPerformance() as dataPoint, i}
-									{@const heightPx =
-										maxMonthlyPoints() > 0
-											? Math.max((dataPoint.points / maxMonthlyPoints()) * 100, 10)
-											: 10}
-									{@const prevSeason = i > 0 ? historicalPerformance()[i - 1].season : null}
-									{@const isNewSeason = dataPoint.season !== prevSeason}
-									<div
-										class="group relative flex h-full flex-col items-center justify-end {isNewSeason &&
-										i > 0
-											? 'ml-2 border-l border-gray-700 pl-2 sm:ml-3 sm:pl-3'
-											: ''}"
-										style="min-width: 32px; flex: 1;"
-									>
-										<!-- Tooltip -->
-										<div
-											class="absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 group-hover:block"
-										>
-											<div
-												class="max-w-[220px] min-w-[160px] rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs shadow-xl"
-											>
-												<div class="mb-1 font-semibold text-white">{dataPoint.label}</div>
-												<div class="text-emerald-400">{dataPoint.points} pts</div>
-												{#if dataPoint.matches > 0}
-													<div class="text-gray-400">
-														{dataPoint.wins}W-{dataPoint.matches - dataPoint.wins}L ({dataPoint.winRate}%)
-													</div>
-												{/if}
-											</div>
-										</div>
-										<!-- Bar -->
-										<div
-											class="w-full max-w-6 rounded-t bg-gradient-to-t from-blue-600 to-blue-400 transition-all duration-300 group-hover:from-blue-500 group-hover:to-blue-300"
-											style="height: {heightPx}px"
-										></div>
-									</div>
-								{/each}
-							</div>
-							<!-- Labels -->
-							<div
-								class="flex gap-1"
-								style="min-width: {Math.max(historicalPerformance().length * 36, 100)}px"
-							>
-								{#each historicalPerformance() as dataPoint, i}
-									{@const prevSeason = i > 0 ? historicalPerformance()[i - 1].season : null}
-									{@const isNewSeason = dataPoint.season !== prevSeason}
-									<div
-										class="flex flex-col items-center {isNewSeason && i > 0
-											? 'ml-2 border-l border-gray-700 pl-2 sm:ml-3 sm:pl-3'
-											: ''}"
-										style="min-width: 32px; flex: 1;"
-									>
-										<span class="text-[9px] text-gray-500 sm:text-[10px]"
-											>{dataPoint.shortLabel}</span
-										>
-										{#if isNewSeason}
-											<span class="text-[8px] font-medium text-blue-400 sm:text-[9px]"
-												>{dataPoint.season}</span
-											>
-										{/if}
-									</div>
-								{/each}
-							</div>
-						</div>
-						<!-- Scroll hint for mobile -->
-						{#if historicalPerformance().length > 8}
-							<div
-								class="pointer-events-none absolute top-0 right-0 bottom-8 flex w-8 items-center justify-center bg-gradient-to-l from-gray-900/90 to-transparent sm:hidden"
-							>
-								<svg
-									class="h-4 w-4 animate-pulse text-gray-500"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M9 5l7 7-7 7"
-									/>
-								</svg>
-							</div>
-						{/if}
-					</div>
-
-					<!-- Best Month Highlight -->
-					{#if bestMonth()}
-						<div class="mt-3 border-t border-gray-800 pt-3 sm:mt-4 sm:pt-4">
-							<div class="flex items-center justify-between gap-2">
-								<div class="text-xs text-gray-400 sm:text-sm">Best Month</div>
-								<div class="flex items-center gap-1.5 sm:gap-2">
-									<span class="text-sm font-bold text-yellow-400 sm:text-lg"
-										>{bestMonth().label}</span
-									>
-									<span class="text-xs text-gray-500 sm:text-sm">•</span>
-									<span class="text-sm font-semibold text-emerald-400"
-										>{bestMonth().points} pts</span
-									>
-								</div>
-							</div>
-						</div>
-					{/if}
-				{:else if seasonPerformance().length > 0}
-					<!-- Season-Level Chart (Fallback when no monthly data) -->
-					<div class="relative">
-						<div class="mb-2 flex items-end justify-center gap-2 sm:gap-4" style="height: 120px;">
-							{#each seasonPerformance() as seasonData}
-								{@const heightPx =
-									maxSeasonPoints() > 0
-										? Math.max((seasonData.points / maxSeasonPoints()) * 100, 10)
-										: 10}
-								<div
-									class="group relative flex h-full flex-col items-center justify-end"
-									style="min-width: 60px; max-width: 100px; flex: 1;"
-								>
-									<!-- Tooltip -->
-									<div
-										class="absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 group-hover:block"
-									>
-										<div
-											class="max-w-[220px] min-w-[160px] rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs shadow-xl"
-										>
-											<div class="mb-1 font-semibold text-white">{seasonData.season} Season</div>
-											<div class="text-emerald-400">{seasonData.points} pts</div>
-											<div class="text-gray-400">
-												{seasonData.wins}W-{seasonData.matches - seasonData.wins}L ({seasonData.winRate}%)
-											</div>
-											<div class="mt-1 text-gray-500">
-												{seasonData.events} events • {seasonData.circuits.join(', ')}
-											</div>
-										</div>
-									</div>
-									<!-- Bar -->
-									<div
-										class="w-full max-w-16 rounded-t bg-gradient-to-t from-purple-600 to-purple-400 transition-all duration-300 group-hover:from-purple-500 group-hover:to-purple-300"
-										style="height: {heightPx}px"
-									></div>
-								</div>
-							{/each}
-						</div>
-						<!-- Season Labels -->
-						<div class="flex justify-center gap-4">
-							{#each seasonPerformance() as seasonData}
-								<div
-									class="flex flex-col items-center"
-									style="min-width: 80px; max-width: 120px; flex: 1;"
-								>
-									<span class="text-sm font-medium text-blue-400">{seasonData.season}</span>
-									<span class="text-xs text-gray-500">{seasonData.points} pts</span>
-								</div>
-							{/each}
-						</div>
-					</div>
-
-					<!-- Best Season Highlight -->
-					{@const bestSeason = seasonPerformance().reduce(
-						(best, current) => (current.points > best.points ? current : best),
-						seasonPerformance()[0]
-					)}
-					{#if bestSeason && bestSeason.points > 0}
-						<div class="mt-4 border-t border-gray-800 pt-4">
-							<div class="flex items-center justify-between">
-								<div class="text-sm text-gray-400">Best Season</div>
-								<div class="flex items-center gap-2">
-									<span class="text-lg font-bold text-yellow-400">{bestSeason.season}</span>
-									<span class="text-sm text-gray-500">•</span>
-									<span class="font-semibold text-emerald-400">{bestSeason.points} pts</span>
-								</div>
-							</div>
-						</div>
-					{/if}
-
-					<p class="mt-3 text-center text-xs text-gray-600">
-						Monthly breakdown available after event closeouts
-					</p>
-				{:else if !data.matchHistory}
-					<!-- No Data State (no match or performance data at all) -->
-					<div class="flex flex-col items-center justify-center py-8 text-center">
-						<div
-							class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-800/50"
-						>
-							<svg
-								class="h-8 w-8 text-gray-600"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="1.5"
-									d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-								/>
-							</svg>
-						</div>
-						<p class="text-sm font-medium text-gray-400">No match history yet</p>
-						<p class="mt-1 text-xs text-gray-600">
-							Performance data appears after events are processed
-						</p>
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Player vs Player Stats -->
-		<div class="mt-6 rounded-2xl border border-gray-800 bg-gray-900/50 p-6">
-			<h3 class="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
-				<svg class="h-5 w-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-					/>
-				</svg>
-				Player vs Player
-				{#if data.matchHistory?.headToHead?.length > 0}
-					<span class="ml-auto rounded-full bg-gray-800 px-2.5 py-1 text-xs text-gray-400">
-						{data.matchHistory.headToHead.length} opponents faced
-					</span>
-				{/if}
-			</h3>
-
-			{#if data.matchHistory?.headToHead?.length > 0}
-				<!-- Nemesis & Best Matchup Cards -->
-				<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<!-- Nemesis -->
-					<div
-						class="rounded-xl border border-red-500/20 bg-gradient-to-br from-red-900/20 to-gray-900 p-4"
-					>
-						<div class="flex items-start justify-between">
-							<div class="min-w-0 flex-1">
-								<div class="mb-2 flex items-center gap-2">
-									<span class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/20">
-										<svg
-											class="h-4 w-4 text-red-400"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M13 10V3L4 14h7v7l9-11h-7z"
-											/>
-										</svg>
-									</span>
-									<span class="text-xs font-semibold tracking-wide text-red-400 uppercase"
-										>Nemesis</span
-									>
-								</div>
-								{#if data.matchHistory.nemesis}
-									<div class="truncate text-lg font-bold text-white">
-										{#if data.matchHistory.nemesis.opponentGemId}
-											<a
-												href="/player/{data.matchHistory.nemesis.opponentGemId}"
-												class="hover:text-red-400"
-											>
-												{data.matchHistory.nemesis.opponentName}
-											</a>
-										{:else}
-											{data.matchHistory.nemesis.opponentName}
-										{/if}
-									</div>
-									<div class="mt-1 flex items-center gap-2 text-sm">
-										<span
-											class="rounded bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400"
-										>
-											{data.matchHistory.nemesis.losses}L
-										</span>
-										<span class="text-gray-500">vs</span>
-										<span class="text-green-400">{data.matchHistory.nemesis.wins}W</span>
-									</div>
-								{:else}
-									<div class="text-gray-500">No nemesis yet</div>
-								{/if}
-							</div>
-						</div>
-					</div>
-
-					<!-- Best Matchup -->
-					<div
-						class="rounded-xl border border-green-500/20 bg-gradient-to-br from-green-900/20 to-gray-900 p-4"
-					>
-						<div class="flex items-start justify-between">
-							<div class="min-w-0 flex-1">
-								<div class="mb-2 flex items-center gap-2">
-									<span class="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/20">
-										<svg class="h-4 w-4 text-green-400" fill="currentColor" viewBox="0 0 24 24">
-											<path
-												d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-											/>
-										</svg>
-									</span>
-									<span class="text-xs font-semibold tracking-wide text-green-400 uppercase"
-										>Best Matchup</span
-									>
-								</div>
-								{#if data.matchHistory.bestMatchup}
-									<div class="truncate text-lg font-bold text-white">
-										{#if data.matchHistory.bestMatchup.opponentGemId}
-											<a
-												href="/player/{data.matchHistory.bestMatchup.opponentGemId}"
-												class="hover:text-green-400"
-											>
-												{data.matchHistory.bestMatchup.opponentName}
-											</a>
-										{:else}
-											{data.matchHistory.bestMatchup.opponentName}
-										{/if}
-									</div>
-									<div class="mt-1 flex items-center gap-2 text-sm">
-										<span
-											class="rounded bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400"
-										>
-											{data.matchHistory.bestMatchup.wins}W
-										</span>
-										<span class="text-gray-500">vs</span>
-										<span class="text-red-400">{data.matchHistory.bestMatchup.losses}L</span>
-									</div>
-								{:else}
-									<div class="text-gray-500">No best matchup yet</div>
-								{/if}
-							</div>
-						</div>
-					</div>
+					{_tierLabel}
 				</div>
-
-				<!-- Top Opponents Lists -->
-				<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					<!-- Most Wins Against -->
-					<div class="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4">
-						<h4 class="mb-3 flex items-center gap-2 text-sm font-medium text-gray-400">
-							<svg
-								class="h-4 w-4 text-green-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M5 13l4 4L19 7"
-								/>
-							</svg>
-							Most Wins Against
-						</h4>
-						<div class="space-y-2">
-							{#each [...data.matchHistory.headToHead]
-								.sort((a, b) => b.wins - a.wins)
-								.slice(0, 3) as opponent, i}
-								<div class="flex items-center gap-3 rounded-lg bg-gray-900/50 px-3 py-2">
-									<span
-										class="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20 text-xs font-bold text-green-400"
-									>
-										{i + 1}
-									</span>
-									<div class="min-w-0 flex-1">
-										{#if opponent.opponentGemId}
-											<a
-												href="/player/{opponent.opponentGemId}"
-												class="block truncate text-sm font-medium text-white hover:text-green-400"
-											>
-												{opponent.opponentName}
-											</a>
-										{:else}
-											<span class="block truncate text-sm font-medium text-white"
-												>{opponent.opponentName}</span
-											>
-										{/if}
-									</div>
-									<span class="text-sm font-bold text-green-400">{opponent.wins}W</span>
-								</div>
-							{/each}
-						</div>
-					</div>
-
-					<!-- Most Losses Against -->
-					<div class="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4">
-						<h4 class="mb-3 flex items-center gap-2 text-sm font-medium text-gray-400">
-							<svg
-								class="h-4 w-4 text-red-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M6 18L18 6M6 6l12 12"
-								/>
-							</svg>
-							Most Losses Against
-						</h4>
-						<div class="space-y-2">
-							{#each [...data.matchHistory.headToHead]
-								.sort((a, b) => b.losses - a.losses)
-								.slice(0, 3) as opponent, i}
-								<div class="flex items-center gap-3 rounded-lg bg-gray-900/50 px-3 py-2">
-									<span
-										class="flex h-6 w-6 items-center justify-center rounded-full bg-red-500/20 text-xs font-bold text-red-400"
-									>
-										{i + 1}
-									</span>
-									<div class="min-w-0 flex-1">
-										{#if opponent.opponentGemId}
-											<a
-												href="/player/{opponent.opponentGemId}"
-												class="block truncate text-sm font-medium text-white hover:text-red-400"
-											>
-												{opponent.opponentName}
-											</a>
-										{:else}
-											<span class="block truncate text-sm font-medium text-white"
-												>{opponent.opponentName}</span
-											>
-										{/if}
-									</div>
-									<span class="text-sm font-bold text-red-400">{opponent.losses}L</span>
-								</div>
-							{/each}
-						</div>
-					</div>
-
-					<!-- Most Played -->
-					<div
-						class="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4 sm:col-span-2 lg:col-span-1"
-					>
-						<h4 class="mb-3 flex items-center gap-2 text-sm font-medium text-gray-400">
-							<svg
-								class="h-4 w-4 text-blue-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-								/>
-							</svg>
-							Most Played
-						</h4>
-						<div class="space-y-2">
-							{#each [...data.matchHistory.headToHead]
-								.sort((a, b) => b.wins + b.losses + b.draws - (a.wins + a.losses + a.draws))
-								.slice(0, 3) as opponent, i}
-								{@const totalGames = opponent.wins + opponent.losses + opponent.draws}
-								<div class="flex items-center gap-3 rounded-lg bg-gray-900/50 px-3 py-2">
-									<span
-										class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/20 text-xs font-bold text-blue-400"
-									>
-										{i + 1}
-									</span>
-									<div class="min-w-0 flex-1">
-										{#if opponent.opponentGemId}
-											<a
-												href="/player/{opponent.opponentGemId}"
-												class="block truncate text-sm font-medium text-white hover:text-blue-400"
-											>
-												{opponent.opponentName}
-											</a>
-										{:else}
-											<span class="block truncate text-sm font-medium text-white"
-												>{opponent.opponentName}</span
-											>
-										{/if}
-									</div>
-									<span class="text-xs text-gray-400">{totalGames} games</span>
-								</div>
-							{/each}
-						</div>
-					</div>
-				</div>
-
-				<!-- Head-to-Head Lookup -->
-				<div class="border-t border-gray-800 pt-4">
-					<div class="mb-3 flex items-center justify-between">
-						<h4 class="text-sm font-medium text-gray-400">Look Up Opponent</h4>
-						<span class="text-xs text-gray-500"
-							>{data.matchHistory.headToHead.length} opponents</span
-						>
-					</div>
-					<!-- Combobox Search + Select -->
-					<div class="relative">
-						<div class="relative">
-							<svg
-								class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-500"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-								/>
-							</svg>
-							<input
-								type="text"
-								bind:value={opponentSearchQuery}
-								onfocus={() => (showOpponentDropdown = true)}
-								oninput={() => {
-									showOpponentDropdown = true;
-									if (
-										selectedOpponent() &&
-										opponentSearchQuery !== selectedOpponent().opponentName
-									) {
-										selectedOpponentKey = '';
-									}
-								}}
-								placeholder="Search opponent..."
-								class="w-full rounded-lg border border-gray-700 bg-gray-800 py-2 pr-8 pl-10 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-							/>
-							{#if opponentSearchQuery}
-								<button
-									type="button"
-									onclick={clearOpponentSelection}
-									aria-label="Clear search"
-									class="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-gray-500 hover:text-gray-300"
-								>
-									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M6 18L18 6M6 6l12 12"
-										/>
-									</svg>
-								</button>
-							{/if}
-						</div>
-						<!-- Dropdown -->
-						{#if showOpponentDropdown && filteredHeadToHead().length > 0}
-							<div
-								class="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-700 bg-gray-800 py-1 shadow-xl"
-							>
-								{#each filteredHeadToHead() as h2h}
-									{@const isSelected =
-										selectedOpponentKey === (h2h.opponentGemId || h2h.opponentName)}
-									<button
-										type="button"
-										onclick={() => selectOpponent(h2h)}
-										class="w-full px-3 py-2 text-left text-sm transition-colors {isSelected
-											? 'bg-blue-600/20 text-blue-400'
-											: 'text-white hover:bg-gray-700'}"
-									>
-										{h2h.opponentName}
-									</button>
-								{/each}
-							</div>
-						{/if}
-						{#if showOpponentDropdown && opponentSearchQuery && filteredHeadToHead().length === 0}
-							<div
-								class="absolute z-20 mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-3 text-center text-sm text-gray-500 shadow-xl"
-							>
-								No opponents found
-							</div>
-						{/if}
-					</div>
-					<!-- Click outside to close dropdown -->
-					{#if showOpponentDropdown}
-						<button
-							type="button"
-							class="fixed inset-0 z-10 cursor-default"
-							onclick={() => (showOpponentDropdown = false)}
-							aria-label="Close dropdown"
-						></button>
-					{/if}
-
-					<!-- Selected Opponent Breakdown -->
-					{#if selectedOpponent()}
-						{@const opponent = selectedOpponent()}
-						{@const totalGames = opponent.wins + opponent.losses + opponent.draws}
-						{@const winPct = totalGames > 0 ? Math.round((opponent.wins / totalGames) * 100) : 0}
-						<div class="mt-3 rounded-xl border border-gray-700 bg-gray-800/50 p-4">
-							<div class="mb-3 flex items-center justify-between">
-								<div>
-									<p class="font-semibold text-white">
-										vs
-										{#if opponent.opponentGemId}
-											<a href="/player/{opponent.opponentGemId}" class="hover:text-blue-400">
-												{opponent.opponentName}
-											</a>
-										{:else}
-											{opponent.opponentName}
-										{/if}
-									</p>
-									<p class="mt-1 flex items-center gap-2 text-sm">
-										<span
-											class="rounded bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400"
-											>{opponent.wins}W</span
-										>
-										<span class="rounded bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400"
-											>{opponent.losses}L</span
-										>
-										{#if opponent.draws > 0}
-											<span
-												class="rounded bg-gray-500/20 px-2 py-0.5 text-xs font-medium text-gray-400"
-												>{opponent.draws}D</span
-											>
-										{/if}
-									</p>
-								</div>
-								<div
-									class="flex items-center justify-center rounded-lg px-3 py-2 {winPct >= 50
-										? 'bg-green-500/20'
-										: 'bg-red-500/20'}"
-								>
-									<span class="text-lg font-bold {winPct >= 50 ? 'text-green-400' : 'text-red-400'}"
-										>{winPct}%</span
-									>
-								</div>
-							</div>
-
-							{#if opponentMatches().length > 0}
-								<div class="border-t border-gray-700 pt-3">
-									<p class="mb-2 text-xs font-medium text-gray-500 uppercase">Match History</p>
-									<div class="max-h-48 space-y-1.5 overflow-y-auto">
-										{#each opponentMatches() as { match, event }}
-											{@const isPlayer1 = match.player1GemId === data.gemId}
-											{@const opponentGemId = isPlayer1 ? match.player2GemId : match.player1GemId}
-											{@const opponentHero = getOpponentHero(
-												opponentGemId,
-												event.year,
-												event.circuit,
-												event.month
-											)}
-											{@const playerHero = getHeroForEvent(event.year, event.circuit, event.month)}
-											{@const won =
-												(isPlayer1 && match.winner === 'player1') ||
-												(!isPlayer1 && match.winner === 'player2')}
-											{@const lost =
-												(isPlayer1 && match.winner === 'player2') ||
-												(!isPlayer1 && match.winner === 'player1')}
-											<div class="rounded-lg bg-gray-900/50 px-3 py-2 text-sm">
-												<div class="flex items-center gap-3">
-													<span
-														class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-xs font-bold {won
-															? 'bg-green-500/20 text-green-400'
-															: lost
-																? 'bg-red-500/20 text-red-400'
-																: 'bg-gray-500/20 text-gray-400'}"
-													>
-														{won ? 'W' : lost ? 'L' : 'D'}
-													</span>
-													<div class="min-w-0 flex-1">
-														<p class="truncate text-gray-300">{event.circuit} {event.month} Open</p>
-														<p class="text-xs text-gray-500">
-															{event.year} · Round {match.round}
-															{#if match.table}· Table {match.table}{/if}
-														</p>
-													</div>
-												</div>
-												<!-- Hero matchup display -->
-												{#if playerHero || opponentHero}
-													<div
-														class="mt-2 flex items-center gap-2 rounded-lg border border-gray-700/50 bg-gray-800/50 px-2 py-1.5"
-													>
-														<!-- Player's hero -->
-														<div class="flex min-w-0 flex-1 items-center gap-2">
-															{#if playerHero}
-																<div
-																	class="h-5 w-5 flex-shrink-0 overflow-hidden rounded-full border border-amber-500/50 bg-gray-700"
-																	title={playerHero.hero}
-																>
-																	<img
-																		src={playerHero.imageUrl}
-																		alt={playerHero.hero}
-																		class="h-full w-full object-cover object-right"
-																		onerror={(e) => (e.target.style.display = 'none')}
-																	/>
-																</div>
-															{/if}
-															<div class="min-w-0">
-																<p class="truncate text-xs font-medium text-amber-400">
-																	{data.displayName?.split(' ')[0] || 'You'}
-																</p>
-																{#if playerHero}
-																	<p class="truncate text-xs text-gray-400">{playerHero.hero}</p>
-																{:else}
-																	<p class="text-xs text-gray-600">Unknown hero</p>
-																{/if}
-															</div>
-														</div>
-														<span class="flex-shrink-0 text-xs font-medium text-gray-500">vs</span>
-														<!-- Opponent's hero -->
-														<div
-															class="flex min-w-0 flex-1 items-center justify-end gap-2 text-right"
-														>
-															<div class="min-w-0">
-																<p class="truncate text-xs font-medium text-purple-400">
-																	{selectedOpponent()?.opponentName.split(' ')[0] || 'Opponent'}
-																</p>
-																{#if opponentHero}
-																	<p class="truncate text-xs text-gray-400">{opponentHero.hero}</p>
-																{:else}
-																	<p class="text-xs text-gray-600">Unknown hero</p>
-																{/if}
-															</div>
-															{#if opponentHero}
-																<div
-																	class="h-5 w-5 flex-shrink-0 overflow-hidden rounded-full border border-purple-500/50 bg-gray-700"
-																	title={opponentHero.hero}
-																>
-																	<img
-																		src={opponentHero.imageUrl}
-																		alt={opponentHero.hero}
-																		class="h-full w-full object-cover object-right"
-																		onerror={(e) => (e.target.style.display = 'none')}
-																	/>
-																</div>
-															{/if}
-														</div>
-													</div>
-												{/if}
-											</div>
-										{/each}
-									</div>
-								</div>
-							{/if}
-						</div>
-					{/if}
-				</div>
-			{:else}
-				<div class="py-8 text-center">
-					<svg
-						class="mx-auto mb-3 h-12 w-12 text-gray-600"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="1.5"
-							d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-						/>
-					</svg>
-					<p class="text-gray-500">No head-to-head data available yet</p>
-					<p class="mt-1 text-xs text-gray-600">Match data will appear once imported</p>
-				</div>
-			{/if}
-		</div>
-	</div>
-
-	<!-- Decklists Section -->
-	{#if data.decklists && data.decklists.length > 0}
-		<div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-			<div class="mb-6 flex items-center justify-between">
-				<h2 class="flex items-center gap-3 text-2xl font-bold text-white">
-					<svg
-						class="h-6 w-6 text-purple-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-						/>
-					</svg>
-					Tournament Decklists
-				</h2>
-				{#if data.decklists.length > 3}
-					<a
-						href="/age-open?tab=decklists"
-						class="flex items-center gap-1 text-sm text-purple-400 hover:text-purple-300"
-					>
-						View all
-						<svg
-							class="h-4 w-4"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							viewBox="0 0 24 24"
-						>
-							<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-						</svg>
-					</a>
-				{/if}
 			</div>
 
-			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				{#each data.decklists.slice(0, 3) as { decklist, event: eventData }}
-					<DecklistCard
-						{decklist}
-						eventId={eventData?.id}
-						eventName={eventData?.circuit
-							? `${eventData.circuit} ${eventData.month || ''} Open`
-							: 'AGE Open'}
-						eventCircuit={eventData?.circuit}
-						showPlayerName={false}
-						showCardCount={true}
-					/>
-				{/each}
-			</div>
-		</div>
-	{/if}
-
-	<!-- Hero History Section -->
-	{#if data.heroHistory && data.heroHistory.length > 0}
-		{@const totalEvents = data.heroHistory.length}
-		{@const primaryHero = data.heroUsage?.[0]}
-		{@const primaryHeroPercentage = primaryHero
-			? Math.round((primaryHero.count / totalEvents) * 100)
-			: 0}
-		{@const isOneHeroPlayer = data.heroUsage?.length === 1}
-		{@const hasDominantHero = primaryHeroPercentage >= 60}
-
-		<div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-			<div class="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/50">
-				<!-- Header -->
-				<div class="flex items-center justify-between border-b border-gray-800 px-6 py-4">
-					<h2 class="flex items-center gap-3 text-xl font-bold text-white">
-						<svg
-							class="h-5 w-5 text-amber-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-							/>
-						</svg>
-						Hero History
-					</h2>
-					<span class="text-sm text-gray-400"
-						>{totalEvents} {totalEvents === 1 ? 'event' : 'events'}</span
-					>
+			<!-- who -->
+			<div class="min-w-0 flex-1">
+				<div class="font-mono-system mb-3 text-[10.5px] font-bold tracking-[0.16em] uppercase" style="color: color-mix(in srgb, {_tierHex} 60%, #9aa1b3);">
+					AGE Open · Player Card · {data.standings[data.standings.length - 1]?.season || ''} – {data.standings[0]?.season || ''}
 				</div>
-
-				<div class="overflow-hidden p-6">
-					{#if isOneHeroPlayer}
-						<!-- Single Hero Player - Compact display with hero image -->
-						<div class="flex min-w-0 items-center gap-5 overflow-hidden">
-							<div
-								class="h-16 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-800 shadow-lg ring-2 ring-amber-500/30"
-							>
-								{#if primaryHero.imageUrl}
-									<img
-										src={primaryHero.imageUrl}
-										alt={primaryHero.hero}
-										class="h-full w-full object-cover object-right"
-									/>
-								{:else}
-									<div
-										class="flex h-full w-full items-center justify-center bg-gradient-to-br from-amber-500/20 to-orange-500/20"
-									>
-										<span class="px-1 text-center text-xs font-medium text-amber-400"
-											>{primaryHero.hero}</span
-										>
-									</div>
-								{/if}
-							</div>
-							<div class="min-w-0 flex-1">
-								<p class="mb-1 text-xs tracking-wider text-amber-400/80 uppercase">
-									Dedicated Main
-								</p>
-								<p class="truncate text-2xl font-bold text-white">{primaryHero.hero}</p>
-								<p class="mt-1 text-sm text-gray-400">
-									{totalEvents} consecutive {totalEvents === 1 ? 'event' : 'events'}
-								</p>
-							</div>
-						</div>
-					{:else if hasDominantHero}
-						<!-- Dominant Hero with Others -->
-						<div class="grid gap-6 overflow-hidden lg:grid-cols-3">
-							<!-- Primary Hero with Image -->
-							<div class="min-w-0 lg:col-span-1">
-								<div
-									class="overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/20 to-orange-500/10 p-4"
-								>
-									<div class="flex min-w-0 gap-4">
-										<div
-											class="h-14 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gray-800 shadow-md"
-										>
-											{#if primaryHero.imageUrl}
-												<img
-													src={primaryHero.imageUrl}
-													alt={primaryHero.hero}
-													class="h-full w-full object-cover object-right"
-												/>
-											{:else}
-												<div class="flex h-full w-full items-center justify-center bg-gray-700">
-													<span class="px-1 text-center text-xs text-gray-400"
-														>{primaryHero.hero}</span
-													>
-												</div>
-											{/if}
-										</div>
-										<div class="min-w-0 flex-1">
-											<p class="mb-1 text-xs tracking-wider text-amber-400/80 uppercase">
-												Main Hero
-											</p>
-											<p class="truncate text-lg font-bold text-white">{primaryHero.hero}</p>
-											<div class="mt-1 flex items-baseline gap-2">
-												<span class="text-2xl font-bold text-amber-400"
-													>{primaryHeroPercentage}%</span
-												>
-												<span class="text-xs text-gray-400">({primaryHero.count})</span>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-
-							<!-- Other Heroes with small images -->
-							<div class="min-w-0 overflow-hidden lg:col-span-2">
-								<p class="mb-3 text-xs tracking-wider text-gray-500 uppercase">Also Played</p>
-								<div class="space-y-2">
-									{#each data.heroUsage.slice(1) as usage}
-										{@const percentage = Math.round((usage.count / totalEvents) * 100)}
-										<div class="flex min-w-0 items-center gap-3 overflow-hidden">
-											<div class="h-8 w-12 flex-shrink-0 overflow-hidden rounded bg-gray-800">
-												{#if usage.imageUrl}
-													<img
-														src={usage.imageUrl}
-														alt={usage.hero}
-														class="h-full w-full object-cover object-right"
-													/>
-												{:else}
-													<div
-														class="flex h-full w-full items-center justify-center bg-gray-700 text-[8px] text-gray-500"
-													>
-														?
-													</div>
-												{/if}
-											</div>
-											<div class="min-w-0 flex-1">
-												<div class="mb-1 flex min-w-0 items-center justify-between gap-2">
-													<span class="min-w-0 truncate text-sm font-medium text-gray-300"
-														>{usage.hero}</span
-													>
-													<span class="flex-shrink-0 text-xs text-gray-500"
-														>{usage.count} ({percentage}%)</span
-													>
-												</div>
-												<div class="h-1.5 overflow-hidden rounded-full bg-gray-800">
-													<div
-														class="h-full rounded-full bg-gray-600"
-														style="width: {percentage}%"
-													></div>
-												</div>
-											</div>
-										</div>
-									{/each}
-								</div>
-							</div>
-						</div>
+				<h1 class="font-newsreader text-[clamp(40px,5vw,62px)] leading-[0.9] font-semibold tracking-[-0.025em] text-white">
+					{#if _lastName}
+						<span class="text-white/80 font-medium italic">{_firstName}</span> {_lastName}
 					{:else}
-						<!-- Diverse Hero Pool with images -->
-						<div class="overflow-hidden">
-							<p class="mb-4 text-xs tracking-wider text-gray-500 uppercase">Hero Distribution</p>
-							<div class="grid gap-3 overflow-hidden sm:grid-cols-2 lg:grid-cols-3">
-								{#each data.heroUsage as usage, idx}
-									{@const percentage = Math.round((usage.count / totalEvents) * 100)}
-									{@const isTop = idx === 0}
-									<div
-										class="flex min-w-0 items-center gap-3 overflow-hidden rounded-lg p-3 {isTop
-											? 'border border-amber-500/20 bg-amber-500/10'
-											: 'bg-gray-800/50'}"
-									>
-										<div
-											class="h-10 w-14 flex-shrink-0 overflow-hidden rounded bg-gray-800 {isTop
-												? 'ring-2 ring-amber-500/40'
-												: ''}"
-										>
-											{#if usage.imageUrl}
-												<img
-													src={usage.imageUrl}
-													alt={usage.hero}
-													class="h-full w-full object-cover object-right"
-												/>
-											{:else}
-												<div class="flex h-full w-full items-center justify-center bg-gray-700">
-													<span class="text-center text-[10px] text-gray-500">{idx + 1}</span>
-												</div>
-											{/if}
-										</div>
-										<div class="min-w-0 flex-1">
-											<div class="flex min-w-0 items-center justify-between gap-2">
-												<span
-													class="min-w-0 truncate font-medium {isTop
-														? 'text-white'
-														: 'text-gray-300'} text-sm">{usage.hero}</span
-												>
-												<span
-													class="flex-shrink-0 text-sm {isTop ? 'text-amber-400' : 'text-gray-500'}"
-													>{usage.count}×</span
-												>
-											</div>
-											<div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-700">
-												<div
-													class="h-full rounded-full {isTop
-														? 'bg-gradient-to-r from-amber-500 to-orange-500'
-														: 'bg-gray-500'}"
-													style="width: {percentage}%"
-												></div>
-											</div>
-										</div>
-									</div>
-								{/each}
-							</div>
-						</div>
+						{_firstName}
 					{/if}
-
-					<!-- Expandable Event History (only show if multiple events) -->
-					{#if totalEvents > 1}
-						<details class="group mt-6">
-							<summary
-								class="flex cursor-pointer items-center gap-2 text-sm text-gray-400 transition-colors hover:text-gray-300"
-							>
-								<svg
-									class="h-4 w-4 transition-transform group-open:rotate-90"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M9 5l7 7-7 7"
-									/>
-								</svg>
-								View event-by-event breakdown
-							</summary>
-							<div class="mt-4 overflow-hidden rounded-lg border border-gray-800">
-								<!-- Mobile: Card layout -->
-								<div class="divide-y divide-gray-800 sm:hidden">
-									{#each sortedHeroHistory() as entry}
-										<div class="flex items-center justify-between gap-3 px-4 py-3">
-											<div class="min-w-0 flex-1">
-												<p class="text-sm font-medium text-gray-300">{entry.circuit}</p>
-												<p class="text-xs text-gray-500">{entry.month} {entry.season}</p>
-											</div>
-											<span
-												class="flex-shrink-0 rounded-full bg-amber-500/20 px-2.5 py-1 text-xs font-medium text-amber-400"
-											>
-												{entry.hero.split(',')[0]}
-											</span>
-										</div>
-									{/each}
-								</div>
-								<!-- Desktop: Table layout -->
-								<table class="hidden w-full text-sm sm:table">
-									<thead>
-										<tr class="bg-gray-800/50">
-											<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"
-												>Event</th
-											>
-											<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"
-												>Hero</th
-											>
-										</tr>
-									</thead>
-									<tbody class="divide-y divide-gray-800">
-										{#each sortedHeroHistory() as entry}
-											<tr class="hover:bg-gray-800/30">
-												<td class="px-4 py-2 text-gray-400">
-													{entry.circuit}
-													{entry.month}
-													{entry.season}
-												</td>
-												<td class="px-4 py-2">
-													<span class="text-gray-200">{entry.hero}</span>
-												</td>
-											</tr>
-										{/each}
-									</tbody>
-								</table>
-							</div>
-						</details>
+				</h1>
+				<div class="mt-[18px] flex flex-wrap items-center gap-x-3 gap-y-2 text-[13px] font-semibold text-[#aeb6c6]">
+					<span class="font-mono-system text-[#8c94a6] tracking-[0.03em]">GEM {data.gemId}</span>
+					{#if _primaryCircuit}
+						<span class="text-white/25">·</span>
+						<span class="inline-flex items-center gap-[7px] font-bold text-[#cdd4e2]">
+							<span class="block h-[9px] w-[9px]" style="background-color: {_primaryCircuitHex};"></span>
+							{_primaryCircuit}
+						</span>
 					{/if}
+					<span class="text-white/25">·</span>
+					<span>vs {_rating.totalPlayers} rated players</span>
 				</div>
-			</div>
-		</div>
-	{/if}
 
-	<!-- Season Standings -->
-	<div class="mx-auto max-w-6xl px-4 pb-12 sm:px-6 lg:px-8">
-		<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-			<div>
-				<h2 class="text-xl font-bold text-white sm:text-2xl">Season Standings</h2>
-			</div>
-			{#if editMode}
-				<button
-					onclick={() => (showAddStanding = true)}
-					class="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/20 px-4 py-2.5 text-sm font-medium text-emerald-400 transition-all hover:bg-emerald-500/30"
-				>
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 4v16m8-8H4"
-						/>
-					</svg>
-					Add Standing
-				</button>
-			{/if}
-		</div>
-
-		{#if Object.keys(standingsBySeason).length === 0}
-			<div class="rounded-2xl border border-gray-800 bg-gray-900/50 py-16 text-center">
-				<svg
-					class="mx-auto mb-4 h-16 w-16 text-gray-600"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="1.5"
-						d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-					/>
-				</svg>
-				<p class="text-lg text-gray-500">No standings data yet</p>
-				{#if editMode}
-					<button
-						onclick={() => (showAddStanding = true)}
-						class="mt-4 inline-flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/20 px-4 py-2 text-sm font-medium text-blue-400 transition-all hover:bg-blue-500/30"
-					>
-						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M12 4v16m8-8H4"
-							/>
-						</svg>
-						Add First Standing
-					</button>
+				<!-- championships -->
+				{#if _qualifiedSeasons.length > 0}
+					<div class="mt-4 flex flex-wrap items-center gap-2">
+						<span class="font-mono-system inline-flex items-center gap-2 text-[9.5px] font-bold tracking-[0.13em] text-[#8c94a6] uppercase after:block after:h-[13px] after:w-px after:bg-white/20 after:content-['']">
+							Championship Qualifier
+						</span>
+						{#each _qualifiedSeasons as q (q.id)}
+							<span class="hover:bg-[#F4C66A] hover:text-[#1a1305] inline-flex items-center gap-[6px] border border-[#F4C66A]/40 px-[10px] py-[5px] text-[11px] font-extrabold tracking-[0.03em] text-[#F4C66A] transition-colors">
+								<b class="text-[10px] leading-none">★</b>{q.season}
+							</span>
+						{/each}
+					</div>
 				{/if}
 			</div>
-		{:else}
-			<div class="space-y-4">
-				{#each Object.entries(standingsBySeason).sort( (a, b) => b[0].localeCompare(a[0]) ) as [season, seasonStandings]}
-					<!-- Season Label -->
-					<div class="flex items-center gap-3 pt-2 first:pt-0">
-						<h3 class="text-sm font-medium text-gray-500">{season}</h3>
-						<div class="h-px flex-1 bg-gray-800"></div>
+
+			<!-- share actions -->
+			<div class="flex flex-shrink-0 flex-col items-stretch gap-2 self-center">
+				<button
+					type="button"
+					onclick={refreshData}
+					disabled={isRefreshing}
+					class="px-4 py-[10px] text-center text-[10.5px] font-extrabold tracking-[0.04em] uppercase whitespace-nowrap text-[#0E1220] transition-colors disabled:opacity-50"
+					style="background-color: {_tierHex}; border: 1px solid {_tierHex};"
+				>
+					{isRefreshing ? '↻ Refreshing' : '↻ Refresh'}
+				</button>
+				<a
+					href={xShareUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="hover:bg-white hover:border-white hover:text-[#0E1220] border border-white/25 px-4 py-[10px] text-center text-[10.5px] font-bold tracking-[0.04em] text-white uppercase transition-colors"
+				>
+					Share on X
+				</a>
+				<a
+					href={blueskyShareUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="hover:bg-white hover:border-white hover:text-[#0E1220] border border-white/25 px-4 py-[10px] text-center text-[10.5px] font-bold tracking-[0.04em] text-white uppercase transition-colors"
+				>
+					Bluesky
+				</a>
+			</div>
+		</div>
+
+		<!-- stat line -->
+		<div class="relative z-[1] mx-auto grid w-full max-w-[min(94vw,1920px)] grid-cols-3 px-14 pb-[36px] md:grid-cols-6">
+			{#each [
+				{ v: data.totalStats.totalPoints, l: 'Total Points', hl: true },
+				{ v: data.totalStats.top8Finishes, l: "Top 8's" },
+				{ v: `${winRate}%`, l: 'Win Rate' },
+				{ v: `${data.totalStats.matchesWon}–${_losses}`, l: 'Match Record' },
+				{ v: seasonsPlayed.length, l: 'Seasons' },
+				{ v: data.totalStats.eventsPlayed, l: 'Events' }
+			] as t, i (i)}
+				<div class="border-r border-white/10 pt-[18px] pr-[22px] pb-1 first:pl-0 not-first:pl-[22px] last:border-r-0">
+					<div class="font-archivo text-[26px] leading-[0.85] font-black tracking-[-0.02em] tabular-nums {t.hl ? 'text-[#F4C66A]' : 'text-white'}">
+						{t.v}
 					</div>
+					<div class="mt-[9px] text-[9px] font-extrabold tracking-[0.1em] text-[#9aa1b3] uppercase">
+						{t.l}
+					</div>
+				</div>
+			{/each}
+		</div>
+		<!-- top border of stat line -->
+		<div class="absolute right-14 left-14 z-[1] border-t border-white/15" style="top: calc(100% - 100px - 1px);" aria-hidden="true"></div>
+	</section>
 
-					<!-- Circuit Cards -->
-					<div class="space-y-3">
-						{#each seasonStandings as standing}
-							{@const stats = calculateDerivedStats(standing)}
-							{@const isExpanded = expandedSeasonId === standing.id}
-							<button
-								onclick={() => (expandedSeasonId = isExpanded ? null : standing.id)}
-								class="group w-full overflow-hidden rounded-xl border text-left transition-all duration-200
-									{isExpanded
-									? 'border-blue-500/40 bg-gray-900/80 ring-1 ring-blue-500/20'
-									: 'border-gray-800 bg-gray-900/40 hover:border-gray-700 hover:bg-gray-900/60'}"
-							>
-								<!-- Card Content -->
-								<div class="flex items-center gap-3 p-3 sm:gap-4 sm:p-4">
-									<!-- Points - Hero stat -->
-									<div
-										class="flex h-12 w-12 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 sm:h-16 sm:w-16"
-									>
-										<span class="text-lg font-bold text-emerald-400 tabular-nums sm:text-2xl"
-											>{standing.totalPoints || 0}</span
-										>
-										<span class="text-[9px] font-medium text-emerald-500/70 sm:text-[10px]"
-											>PTS</span
-										>
-									</div>
+	<!-- ============ SEASON STANDINGS TABLE ============ -->
+	{#if data.standings && data.standings.length > 0}
+		{@const _careerWinPct = data.totalStats.matchesPlayed > 0
+			? ((data.totalStats.matchesWon / data.totalStats.matchesPlayed) * 100).toFixed(1)
+			: '0.0'}
+		<section class="border-ink border-b-[3px] border-double px-14 py-[40px]">
+			<div class="mb-5 flex flex-wrap items-end justify-between gap-5">
+				<div>
+					<div class="text-accent mb-[7px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
+						Career
+					</div>
+					<h2 class="font-newsreader text-[30px] font-semibold leading-none tracking-[-0.02em]">
+						Season Standings
+					</h2>
+				</div>
+				<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.04em] uppercase">
+					Per-season totals
+				</span>
+			</div>
 
-									<!-- Info -->
-									<div class="min-w-0 flex-1">
-										<!-- Circuit + Rank -->
-										<div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
-											<h4 class="truncate text-sm font-semibold text-white sm:text-base">
-												{standing.circuit}
-											</h4>
-											{#if standing.calculatedRank && standing.calculatedRank <= 16}
-												<span
-													class="inline-flex items-center gap-0.5 rounded bg-yellow-500/20 px-1.5 py-0.5 text-[10px] font-bold text-yellow-400 sm:text-xs"
-												>
-													<svg
-														class="h-2 w-2 sm:h-2.5 sm:w-2.5"
-														fill="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-														/>
-													</svg>
-													{standing.calculatedRank}
-												</span>
-											{:else if standing.calculatedRank}
-												<span class="text-[10px] text-gray-500 sm:text-xs"
-													>#{standing.calculatedRank}</span
-												>
-											{/if}
-										</div>
-
-										<!-- Stats row -->
-										<div
-											class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs sm:mt-1.5 sm:gap-x-4 sm:text-sm"
-										>
-											<span class="tabular-nums">
-												<span class="font-medium text-green-400">{standing.matchesWon || 0}</span
-												><span class="text-gray-600">-</span><span class="font-medium text-red-400"
-													>{(standing.matchesPlayed || 0) - (standing.matchesWon || 0)}</span
-												>
-											</span>
-											<span class="hidden text-gray-600 sm:inline">·</span>
-											<span class="text-gray-400"
-												>{stats.eventsPlayed} event{stats.eventsPlayed !== 1 ? 's' : ''}</span
-											>
-										</div>
-									</div>
-
-									<!-- Expand indicator -->
-									<div class="flex-shrink-0">
-										<svg
-											class="h-4 w-4 text-gray-500 transition-transform duration-200 group-hover:text-gray-400 sm:h-5 sm:w-5 {isExpanded
-												? 'rotate-180'
-												: ''}"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M19 9l-7 7-7-7"
-											/>
-										</svg>
-									</div>
-								</div>
-							</button>
-
-							<!-- Expanded Details -->
-							{#if isExpanded}
-								<div
-									class="mt-2 mb-1 overflow-hidden rounded-xl border border-gray-800 bg-gray-900/60"
+			<div class="border-line2 overflow-hidden border bg-paper-bg">
+				<table class="w-full border-collapse">
+					<thead>
+						<tr>
+							{#each [
+								{ k: 'Season', l: true },
+								{ k: 'Circuit', l: true },
+								{ k: 'EV' },
+								{ k: 'W' },
+								{ k: 'L' },
+								{ k: 'Win %' },
+								{ k: 'Pts' },
+								{ k: 'Finish', l: true }
+							] as h (h.k)}
+								<th
+									class="bg-ink text-paper-bg whitespace-nowrap px-[14px] py-3 text-[10px] font-extrabold tracking-[0.1em] uppercase {h.l ? 'text-left' : 'text-right'}"
 								>
-									<div class="p-4">
-										<!-- Player Info Editing (Admin Only) -->
-										{#if editMode}
-											<div class="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-												<h4
-													class="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-400"
-												>
-													<svg
-														class="h-4 w-4"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-														/>
-													</svg>
-													Player Info
-												</h4>
-												<div class="grid gap-4 sm:grid-cols-2">
-													<form
-														method="POST"
-														action="?/updateStanding"
-														use:enhance={() => {
-															return async ({ result, update }) => {
-																if (result.type === 'success') {
-																	await update();
-																	await invalidateAll();
-																}
-															};
-														}}
-														class="space-y-1"
-													>
-														<input type="hidden" name="standingId" value={standing.id} />
-														<input type="hidden" name="field" value="playerName" />
-														<label class="block text-xs text-gray-400">
-															Player Name
-															<input
-																type="text"
-																name="value"
-																value={standing.playerName || ''}
-																onchange={(e) => e.target.form.requestSubmit()}
-																class="mt-1 w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-base text-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none sm:text-sm"
-																placeholder="Enter player name"
-															/>
-														</label>
-													</form>
-													<form
-														method="POST"
-														action="?/updateStanding"
-														use:enhance={() => {
-															return async ({ result, update }) => {
-																if (result.type === 'success') {
-																	await update();
-																	await invalidateAll();
-																}
-															};
-														}}
-														class="space-y-1"
-													>
-														<input type="hidden" name="standingId" value={standing.id} />
-														<input type="hidden" name="field" value="gemId" />
-														<label class="block text-xs text-gray-400">
-															GEM ID
-															<input
-																type="text"
-																name="value"
-																value={standing.gemId || ''}
-																onchange={(e) => e.target.form.requestSubmit()}
-																class="mt-1 w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 font-mono text-base text-blue-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none sm:text-sm"
-																placeholder="e.g., GEM00000001"
-															/>
-														</label>
-													</form>
-												</div>
-												<p class="mt-3 text-xs text-amber-400/70">
-													<svg
-														class="mr-1 inline h-3 w-3"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-														/>
-													</svg>
-													Changing GEM ID will affect how this standing is linked to the player profile.
-												</p>
-											</div>
+									{h.k}
+								</th>
+							{/each}
+						</tr>
+					</thead>
+					<tbody>
+						{#each data.standings as s, i (s.id)}
+							{@const _ccColor = circuitHex(s.circuit)}
+							{@const _sLosses = (s.matchesPlayed || 0) - (s.matchesWon || 0)}
+							{@const _winPct = (s.matchesWon || 0) + _sLosses > 0
+								? (((s.matchesWon || 0) / ((s.matchesWon || 0) + _sLosses)) * 100).toFixed(1)
+								: '—'}
+							{@const _isChamp = s.calculatedRank === 1}
+							{@const _isTop8 = s.calculatedRank && s.calculatedRank <= 8}
+							{@const _isOpen = expandedSeasonId === s.id}
+							{@const _allMonths = [
+								{ k: 'january', n: 'Jan' },
+								{ k: 'february', n: 'Feb' },
+								{ k: 'march', n: 'Mar' },
+								{ k: 'april', n: 'Apr' },
+								{ k: 'may', n: 'May' },
+								{ k: 'june', n: 'Jun' },
+								{ k: 'july', n: 'Jul' },
+								{ k: 'august', n: 'Aug' },
+								{ k: 'september', n: 'Sep' },
+								{ k: 'october', n: 'Oct' },
+								{ k: 'november', n: 'Nov' },
+								{ k: 'december', n: 'Dec' }
+							]}
+							{@const _months = _allMonths.filter((m) => (s[`${m.k}Points`] || 0) > 0 || (s[`${m.k}Matches`] || 0) > 0)}
+							<tr
+								class="border-line {_isOpen ? 'bg-accent/8' : i % 2 === 1 ? 'bg-ink/3' : ''} {_months.length > 0 ? 'cursor-pointer' : ''} hover:bg-accent/10 group border-t transition-colors"
+								onclick={() => {
+									if (_months.length > 0) expandedSeasonId = _isOpen ? null : s.id;
+								}}
+							>
+								<td class="text-ink px-[14px] py-[13px] text-left">
+									<span class="font-archivo text-[15px] font-black tracking-[-0.01em]">
+										{s.season}
+									</span>
+								</td>
+								<td class="text-ink px-[14px] py-[13px] text-left">
+									<span class="inline-flex items-center gap-2 text-[14px] font-bold" style="color: {_ccColor};">
+										<span class="block h-[9px] w-[9px]" style="background-color: {_ccColor};"></span>
+										{s.circuit}
+									</span>
+								</td>
+								<td class="font-mono-system text-ink px-[14px] py-[13px] text-right text-[14px] font-bold tabular-nums">
+									{calculateDerivedStats(s).eventsPlayed}
+								</td>
+								<td class="font-mono-system text-prem px-[14px] py-[13px] text-right text-[14px] font-bold tabular-nums">
+									{s.matchesWon || 0}
+								</td>
+								<td class="font-mono-system text-warm px-[14px] py-[13px] text-right text-[14px] font-bold tabular-nums">
+									{_sLosses}
+								</td>
+								<td class="font-mono-system text-ink px-[14px] py-[13px] text-right text-[14px] font-bold tabular-nums">
+									{_winPct}
+								</td>
+								<td class="font-mono-system text-accent px-[14px] py-[13px] text-right text-[14px] font-bold tabular-nums">
+									{s.totalPoints || 0}
+								</td>
+								<td class="px-[14px] py-[13px] text-left">
+									<span class="inline-flex items-center gap-2">
+										<span
+											class="inline-block px-[7px] py-[3px] text-[10px] font-extrabold tracking-[0.05em] uppercase"
+											style={_isChamp
+												? 'background-color: #C8922E; color: #17150F;'
+												: _isTop8
+													? 'background-color: color-mix(in srgb, #16489E 16%, transparent); color: #16489E;'
+													: 'border: 1px solid var(--ed-line2); color: var(--ed-soft);'}
+										>
+											{s.calculatedRank === 1
+												? '1st'
+												: s.calculatedRank === 2
+													? '2nd'
+													: s.calculatedRank === 3
+														? '3rd'
+														: `#${s.calculatedRank || '—'}`}
+										</span>
+										{#if _months.length > 0}
+											<span class="text-fade group-hover:text-accent inline-block text-[12px] transition-transform {_isOpen ? 'rotate-180 text-accent' : ''}" aria-hidden="true">
+												⌄
+											</span>
 										{/if}
-										<!-- Main Stats Grid -->
-										{#if editMode}
-											<div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-												<form
-													method="POST"
-													action="?/updateStanding"
-													use:enhance={() => {
-														return async ({ result, update }) => {
-															if (result.type === 'success') {
-																await update();
-																await invalidateAll();
-															}
-														};
-													}}
-													class="space-y-1"
-												>
-													<input type="hidden" name="standingId" value={standing.id} />
-													<input type="hidden" name="field" value="totalPoints" />
-													<label class="block text-xs text-gray-500">
-														Total Points
-														<input
-															type="number"
-															name="value"
-															value={standing.totalPoints || 0}
-															onchange={(e) => e.target.form.requestSubmit()}
-															class="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-center font-bold text-emerald-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 focus:outline-none"
-														/>
-													</label>
-												</form>
-												<form
-													method="POST"
-													action="?/updateStanding"
-													use:enhance={() => {
-														return async ({ result, update }) => {
-															if (result.type === 'success') {
-																await update();
-																await invalidateAll();
-															}
-														};
-													}}
-													class="space-y-1"
-												>
-													<input type="hidden" name="standingId" value={standing.id} />
-													<input type="hidden" name="field" value="winPercentage" />
-													<label class="block text-xs text-gray-500">
-														Win %
-														<input
-															type="number"
-															step="0.01"
-															name="value"
-															value={standing.winPercentage || ''}
-															placeholder="-"
-															onchange={(e) => e.target.form.requestSubmit()}
-															class="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-center text-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
-														/>
-													</label>
-												</form>
-												<form
-													method="POST"
-													action="?/updateStanding"
-													use:enhance={() => {
-														return async ({ result, update }) => {
-															if (result.type === 'success') {
-																await update();
-																await invalidateAll();
-															}
-														};
-													}}
-													class="space-y-1"
-												>
-													<input type="hidden" name="standingId" value={standing.id} />
-													<input type="hidden" name="field" value="matchesWon" />
-													<label class="block text-xs text-gray-500">
-														Matches Won
-														<input
-															type="number"
-															name="value"
-															value={standing.matchesWon || 0}
-															onchange={(e) => e.target.form.requestSubmit()}
-															class="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-center text-green-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
-														/>
-													</label>
-												</form>
-												<form
-													method="POST"
-													action="?/updateStanding"
-													use:enhance={() => {
-														return async ({ result, update }) => {
-															if (result.type === 'success') {
-																await update();
-																await invalidateAll();
-															}
-														};
-													}}
-													class="space-y-1"
-												>
-													<input type="hidden" name="standingId" value={standing.id} />
-													<input type="hidden" name="field" value="matchesPlayed" />
-													<label class="block text-xs text-gray-500">
-														Matches Played
-														<input
-															type="number"
-															name="value"
-															value={standing.matchesPlayed || 0}
-															onchange={(e) => e.target.form.requestSubmit()}
-															class="mt-1 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-center text-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
-														/>
-													</label>
-												</form>
-											</div>
-										{/if}
+									</span>
+								</td>
+							</tr>
 
-										<!-- Monthly Breakdown -->
-										<div>
-											<div class="mb-3 flex items-center justify-between">
-												<h4 class="text-xs font-medium tracking-wide text-gray-500 uppercase">
+							{#if _isOpen && _months.length > 0}
+								<!--
+									Expansion row — monthly results strip for
+									the season. Each cell shows the hero
+									portrait, total matches as a badge, month
+									label, monthly points (or "0" for inactive
+									months), and the hero name in rust. Clicking
+									an active cell selects it and opens a black
+									detail header + round-by-round match table
+									below (rounds pulled from
+									`data.matchHistory.matchesByEvent`).
+								-->
+								{@const _selKey = `${s.id}|${(expandedMonthKey || '').split('|')[1] || ''}`}
+								{@const _selMonthName = (expandedMonthKey || '').startsWith(`${s.id}|`)
+									? (expandedMonthKey || '').split('|')[1]
+									: null}
+								<tr class="bg-paper">
+									<td colspan="8" class="p-0">
+										<div class="border-line2 border-t px-7 py-5">
+											<div class="mb-3 flex flex-wrap items-baseline justify-between gap-3">
+												<div class="text-soft text-[10px] font-extrabold tracking-[0.18em] uppercase">
 													Monthly Results
-												</h4>
-												<span class="text-[10px] text-gray-600 italic">Tap month for details</span>
+												</div>
+												<div class="font-newsreader text-fade text-[12px] italic">
+													Tap a month for details
+												</div>
 											</div>
-											<div class="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-12">
-												{#each months as month}
-													{@const points = standing[`${month.key}Points`] || 0}
-													{@const wins = standing[`${month.key}MatchesWon`] || 0}
-													{@const matches = standing[`${month.key}Matches`] || 0}
-													{@const hasData = points > 0 || wins > 0 || matches > 0}
-													{@const eventMatches = getMatchesForEvent(
-														standing.season,
-														standing.circuit,
-														month.key
-													)}
-													{@const hasMatches = eventMatches.length > 0}
-													{@const isExpanded = expandedMonthKey === `${standing.id}|${month.key}`}
-													{@const monthHero = getHeroForEvent(
-														standing.season,
-														standing.circuit,
-														month.key
-													)}
-													{#if editMode}
-														<div
-															class="rounded-lg border p-2 text-center {hasData
-																? 'border-gray-700 bg-gray-800/50'
-																: 'border-gray-800/50 bg-gray-900/30'}"
-														>
-															<div
-																class="text-xs font-medium {hasData
-																	? 'text-blue-400'
-																	: 'text-gray-600'} mb-1"
-															>
-																{month.label}
-															</div>
-															<!-- Points input -->
-															<form
-																method="POST"
-																action="?/updateStanding"
-																use:enhance={() => {
-																	return async ({ result, update }) => {
-																		if (result.type === 'success') {
-																			await update();
-																			await invalidateAll();
-																		}
-																	};
-																}}
-															>
-																<input type="hidden" name="standingId" value={standing.id} />
-																<input type="hidden" name="field" value="{month.key}Points" />
-																<input
-																	type="text"
-																	inputmode="numeric"
-																	pattern="[0-9]*"
-																	name="value"
-																	value={points}
-																	onchange={(e) => e.target.form.requestSubmit()}
-																	class="mb-1 w-full rounded border border-gray-700 bg-gray-900 px-2 py-1.5 text-center text-sm font-bold text-emerald-400 focus:border-emerald-500 focus:outline-none"
-																	title="Points"
-																/>
-															</form>
-															<!-- Matches Won / Matches Played inputs -->
-															<div class="flex items-center justify-center gap-1">
-																<form
-																	method="POST"
-																	action="?/updateStanding"
-																	use:enhance={() => {
-																		return async ({ result, update }) => {
-																			if (result.type === 'success') {
-																				await update();
-																				await invalidateAll();
-																			}
-																		};
-																	}}
-																	class="flex-1"
-																>
-																	<input type="hidden" name="standingId" value={standing.id} />
-																	<input type="hidden" name="field" value="{month.key}MatchesWon" />
-																	<input
-																		type="text"
-																		inputmode="numeric"
-																		pattern="[0-9]*"
-																		name="value"
-																		value={wins}
-																		onchange={(e) => e.target.form.requestSubmit()}
-																		class="w-full rounded border border-gray-700 bg-gray-900 px-1 py-1 text-center text-sm text-green-400 focus:border-green-500 focus:outline-none"
-																		title="Matches Won"
-																	/>
-																</form>
-																<span class="text-sm font-medium text-gray-500">/</span>
-																<form
-																	method="POST"
-																	action="?/updateStanding"
-																	use:enhance={() => {
-																		return async ({ result, update }) => {
-																			if (result.type === 'success') {
-																				await update();
-																				await invalidateAll();
-																			}
-																		};
-																	}}
-																	class="flex-1"
-																>
-																	<input type="hidden" name="standingId" value={standing.id} />
-																	<input type="hidden" name="field" value="{month.key}Matches" />
-																	<input
-																		type="text"
-																		inputmode="numeric"
-																		pattern="[0-9]*"
-																		name="value"
-																		value={matches}
-																		onchange={(e) => e.target.form.requestSubmit()}
-																		class="w-full rounded border border-gray-700 bg-gray-900 px-1 py-1 text-center text-sm text-gray-300 focus:border-blue-500 focus:outline-none"
-																		title="Matches Played"
-																	/>
-																</form>
-															</div>
-														</div>
-													{:else}
+
+											<!-- 12-column month strip -->
+											<div class="grid grid-cols-6 gap-2 md:grid-cols-12">
+												{#each _allMonths as m (m.k)}
+													{@const _pts = s[`${m.k}Points`] || 0}
+													{@const _mp = s[`${m.k}Matches`] || 0}
+													{@const _mw = s[`${m.k}MatchesWon`] || 0}
+													{@const _ml = Math.max(0, _mp - _mw)}
+													{@const _active = _pts > 0 || _mp > 0}
+													{@const _heroEntry = getHeroForEvent(s.season, s.circuit, m.k)}
+													{@const _isSel = _selMonthName === m.k}
+													{#if _active}
 														<button
 															type="button"
-															onclick={() =>
-																hasMatches && toggleMonthExpand(standing.id, month.key)}
-															disabled={!hasMatches}
-															class="group relative rounded-xl border p-2 text-center transition-all {isExpanded
-																? 'border-blue-500 bg-blue-900/30 ring-1 ring-blue-500/20'
-																: hasData
-																	? 'border-gray-700 bg-gray-800/50'
-																	: 'border-gray-800/30 bg-gray-900/20'} {hasMatches
-																? 'cursor-pointer hover:border-blue-500/50 hover:bg-gray-800/70 active:scale-95'
-																: 'cursor-default'}"
+															onclick={(e) => {
+																e.stopPropagation();
+																toggleMonthExpand(s.id, m.k);
+															}}
+															class="border-line2 bg-paper-bg hover:border-accent {_isSel ? 'border-[2px] border-accent shadow-[0_0_0_3px_color-mix(in_srgb,var(--ed-accent)_15%,transparent)]' : 'border'} relative flex min-h-[120px] cursor-pointer flex-col items-center justify-end px-2 pt-3 pb-2 transition-all"
 														>
-															<!-- Hero image (if available) -->
-															{#if monthHero && hasData}
-																<div
-																	class="mx-auto mb-1 h-6 w-6 overflow-hidden rounded-full border border-gray-600 bg-gray-700"
-																>
-																	<img
-																		src={monthHero.imageUrl}
-																		alt={monthHero.hero}
-																		class="h-full w-full object-cover object-right"
-																		onerror={(e) => (e.target.style.display = 'none')}
-																	/>
-																</div>
+															<!-- score badge top-right -->
+															<span class="bg-accent text-paper-bg absolute top-0 right-0 px-[6px] py-[2px] text-[10px] font-extrabold tabular-nums">
+																{_mp}
+															</span>
+															<!--
+																Hero portrait — render only when an image is
+																available. Unknown / missing heroes simply
+																skip the portrait and let the cell hug the
+																label/points compactly.
+															-->
+															{#if _heroEntry?.imageUrl}
+																<!--
+																	Hero image: square crop, focal point
+																	pinned to the right-center of the source
+																	so the character's face dominates the
+																	cell instead of being cut off.
+																-->
+																<span
+																	class="border-line2 bg-panel h-[40px] w-[40px] border"
+																	style={`background-image: url('${_heroEntry.imageUrl}'); background-size: cover; background-position: right center;`}
+																></span>
 															{/if}
-															<!-- Month label -->
-															<div
-																class="mb-0.5 text-[10px] font-medium {isExpanded
-																	? 'text-blue-300'
-																	: hasData
-																		? 'text-blue-400'
-																		: 'text-gray-600'}"
-															>
-																{month.label}
-															</div>
-															<!-- Points - main value -->
-															<div
-																class="text-sm font-bold tabular-nums {hasData
-																	? 'text-emerald-400'
-																	: 'text-gray-700'}"
-															>
-																{points}
-															</div>
-															<!-- Hero name or Record -->
-															<div
-																class="mt-0.5 text-[10px] {hasData
-																	? monthHero
-																		? 'font-bold text-amber-400'
-																		: 'text-gray-400'
-																	: 'text-gray-700'} max-w-full truncate"
-																title={monthHero?.hero || `${wins}/${matches}`}
-															>
-																{#if monthHero}
-																	{monthHero.hero.split(',')[0]}
-																{:else}
-																	{wins}/{matches}
-																{/if}
-															</div>
-															<!-- Tap indicator for months with matches -->
-															{#if hasMatches && !isExpanded}
-																<div
-																	class="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-blue-500 text-[8px] font-bold text-white shadow"
-																>
-																	{eventMatches.length}
-																</div>
+															<!-- month abbreviation -->
+															<span class="font-mono-system text-accent mt-[8px] text-[11.5px] font-extrabold tracking-[0.06em] uppercase">
+																{m.n}
+															</span>
+															<!-- points -->
+															<span class="font-newsreader text-ink mt-[1px] text-[24px] leading-[1] font-semibold tabular-nums">
+																{_pts}
+															</span>
+															<!-- hero name -->
+															{#if _heroEntry?.hero}
+																<span class="text-warm mt-[5px] line-clamp-1 max-w-full text-center text-[9px] font-extrabold tracking-[0.07em] uppercase">
+																	{_heroEntry.hero.split(',')[0]}
+																</span>
+															{:else}
+																<span class="text-fade mt-[5px] text-[9px] font-extrabold tracking-[0.07em] uppercase">
+																	—
+																</span>
 															{/if}
 														</button>
+													{:else}
+														<!--
+															Inactive month — no portrait, just the
+															faded label / "0" / "0–0" stack.
+														-->
+														<div class="border-line bg-paper flex min-h-[120px] flex-col items-center justify-end px-2 pt-3 pb-2 opacity-50">
+															<span class="text-fade text-[11.5px] font-extrabold tracking-[0.06em] uppercase">
+																{m.n}
+															</span>
+															<span class="font-newsreader text-fade mt-[1px] text-[24px] leading-[1] font-semibold tabular-nums">
+																0
+															</span>
+															<span class="font-mono-system text-fade mt-[5px] text-[9px] font-bold tabular-nums">
+																0–0
+															</span>
+														</div>
 													{/if}
 												{/each}
 											</div>
 
-											<!-- Expanded Matches Section -->
-											{#each months as month}
-												{@const eventMatches = getMatchesForEvent(
-													standing.season,
-													standing.circuit,
-													month.key
-												)}
-												{@const isExpanded = expandedMonthKey === `${standing.id}|${month.key}`}
-												{@const expandedMonthHero = getHeroForEvent(
-													standing.season,
-													standing.circuit,
-													month.key
-												)}
-												{#if isExpanded && eventMatches.length > 0}
-													<div
-														class="mt-3 overflow-hidden rounded-xl border border-blue-500/30 bg-gradient-to-b from-blue-900/20 to-gray-900/50 sm:mt-4"
-													>
-														<!-- Header -->
-														<div
-															class="flex flex-col gap-1 border-b border-blue-500/20 bg-blue-900/30 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-2.5"
-														>
-															<h5 class="text-xs font-semibold text-blue-300 sm:text-sm">
-																{month.label}
-																{standing.season}
-															</h5>
-															{#if expandedMonthHero}
-																<span
-																	class="w-fit rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400 sm:text-xs"
-																>
-																	{expandedMonthHero.hero}
-																</span>
-															{:else}
-																<span
-																	class="w-fit rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-medium text-blue-400 sm:text-xs"
-																>
-																	{eventMatches.length} match{eventMatches.length !== 1 ? 'es' : ''}
-																</span>
-															{/if}
+											<!-- selected month detail -->
+											{#if _selMonthName}
+												{@const _selMatches = getMatchesForEvent(s.season, s.circuit, _selMonthName)}
+												{@const _selHero = getHeroForEvent(s.season, s.circuit, _selMonthName)}
+												{@const _selMonthMeta = _allMonths.find((m) => m.k === _selMonthName)}
+												<div class="border-ink mt-5 border bg-paper-bg">
+													<!-- black header bar -->
+													<div class="bg-ink flex flex-wrap items-center justify-between gap-3 px-6 py-[14px]">
+														<div class="font-newsreader text-paper-bg text-[22px] font-semibold leading-none tracking-[-0.01em]">
+															{_selMonthMeta?.n} {s.season}
 														</div>
-														<!-- Match list -->
-														<div class="divide-y divide-gray-800/50">
-															{#each eventMatches.sort((a, b) => a.match.round - b.match.round) as { match, event }}
-																{@const isPlayer1 = match.player1GemId === data.gemId}
-																{@const opponent = isPlayer1
-																	? match.player2Name
-																	: match.player1Name}
-																{@const opponentGemId = isPlayer1
-																	? match.player2GemId
-																	: match.player1GemId}
-																{@const opponentHero = getOpponentHero(
-																	opponentGemId,
-																	event.year,
-																	event.circuit,
-																	event.month
-																)}
-																{@const won =
-																	(isPlayer1 && match.winner === 'player1') ||
-																	(!isPlayer1 && match.winner === 'player2')}
-																{@const lost =
-																	(isPlayer1 && match.winner === 'player2') ||
-																	(!isPlayer1 && match.winner === 'player1')}
-																<div
-																	class="flex items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3"
-																>
-																	<!-- Round number -->
-																	<span
-																		class="w-6 flex-shrink-0 text-[10px] font-medium text-gray-500 sm:w-8 sm:text-xs"
-																		>R{match.round}</span
-																	>
-																	<!-- Result badge -->
-																	<span
-																		class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg text-[10px] font-bold sm:h-7 sm:w-7 sm:text-xs {won
-																			? 'bg-green-500/20 text-green-400 ring-1 ring-green-500/30'
-																			: lost
-																				? 'bg-red-500/20 text-red-400 ring-1 ring-red-500/30'
-																				: 'bg-gray-500/20 text-gray-400 ring-1 ring-gray-500/30'}"
-																	>
-																		{won ? 'W' : lost ? 'L' : 'D'}
-																	</span>
-																	<!-- Opponent with hero -->
-																	<div class="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2">
-																		<span class="text-[10px] text-gray-500 sm:text-xs">vs</span>
-																		{#if opponentHero}
-																			<div
-																				class="hidden h-5 w-5 flex-shrink-0 overflow-hidden rounded-full border border-purple-500/50 bg-gray-700 sm:block sm:h-6 sm:w-6"
-																				title={opponentHero.hero}
-																			>
-																				<img
-																					src={opponentHero.imageUrl}
-																					alt={opponentHero.hero}
-																					class="h-full w-full object-cover object-right"
-																					onerror={(e) => (e.target.style.display = 'none')}
-																				/>
-																			</div>
-																		{/if}
-																		<div class="min-w-0 flex-1">
-																			{#if opponentGemId}
-																				<a
-																					href="/player/{opponentGemId}"
-																					class="block truncate text-xs font-medium text-white hover:text-blue-400 sm:text-sm"
-																				>
-																					{opponent}
-																				</a>
-																			{:else}
-																				<span
-																					class="block truncate text-xs font-medium text-white sm:text-sm"
-																					>{opponent}</span
-																				>
-																			{/if}
-																			{#if opponentHero}
-																				<span
-																					class="block truncate text-[10px] text-yellow-400 sm:inline sm:text-xs"
-																				>
-																					{opponentHero.hero}
-																				</span>
-																			{/if}
-																		</div>
-																	</div>
-																	<!-- Table (if available) -->
-																	{#if match.table}
-																		<span class="hidden text-xs text-gray-600 sm:block"
-																			>T{match.table}</span
-																		>
-																	{/if}
-																</div>
-															{/each}
-														</div>
+														{#if _selHero?.hero}
+															<span class="inline-flex items-center bg-[#C8922E] px-[14px] py-[7px] text-[12px] font-extrabold tracking-[0.02em] text-[#17150F]">
+																{_selHero.hero}
+															</span>
+														{/if}
 													</div>
-												{/if}
-											{/each}
-										</div>
 
-										<!-- Delete Button -->
-										{#if editMode}
-											<div class="mt-4 border-t border-gray-700/50 pt-4">
-												<button
-													type="button"
-													onclick={() => {
-														if (confirm('Delete this standing record?')) {
-															const form = document.createElement('form');
-															form.method = 'POST';
-															form.action = '?/deleteStanding';
-															const input = document.createElement('input');
-															input.type = 'hidden';
-															input.name = 'standingId';
-															input.value = standing.id;
-															form.appendChild(input);
-															document.body.appendChild(form);
-															form.submit();
-														}
-													}}
-													class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition-all hover:bg-red-500/20"
-												>
-													<svg
-														class="h-3.5 w-3.5"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-														/>
-													</svg>
-													Delete
-												</button>
-											</div>
-										{/if}
-									</div>
-								</div>
+													<!-- round-by-round table -->
+													{#if _selMatches.length > 0}
+														<table class="w-full border-collapse">
+															<tbody>
+																{#each _selMatches as { match }, mi (mi)}
+																	{@const _isP1 = match.player1GemId === data.gemId
+																		|| (!match.player1GemId && match.player1Name && match.player1Name === data.displayName)}
+																	{@const _won = (_isP1 && match.winner === 'player1') || (!_isP1 && match.winner === 'player2')}
+																	{@const _lost = (_isP1 && match.winner === 'player2') || (!_isP1 && match.winner === 'player1')}
+																	{@const _opponentName = _isP1 ? match.player2Name : match.player1Name}
+																	{@const _opponentGemId = _isP1 ? match.player2GemId : match.player1GemId}
+																	{@const _opponentHero = getOpponentHero(_opponentGemId, match.year, match.circuit, match.month)}
+																	{@const _opponentRank = _isP1 ? match.player2Standing : match.player1Standing}
+																	<tr class="border-line hover:bg-paper border-b last:border-b-0">
+																		<!-- round -->
+																		<td class="font-mono-system text-fade px-6 py-[14px] text-left text-[11.5px] font-extrabold tracking-[0.06em] uppercase">
+																			R{match.round}
+																		</td>
+																		<!-- result badge -->
+																		<td class="px-3 py-[14px] text-center">
+																			<span
+																				class="font-archivo inline-flex h-[26px] w-[26px] items-center justify-center text-[13px] font-black text-white"
+																				style={_won
+																					? 'background-color: var(--ed-prem);'
+																					: _lost
+																						? 'background-color: var(--ed-warm);'
+																						: 'background-color: var(--ed-fade);'}
+																			>
+																				{_won ? 'W' : _lost ? 'L' : 'D'}
+																			</span>
+																		</td>
+																		<!-- vs label -->
+																		<td class="font-mono-system text-fade px-3 py-[14px] text-left text-[10.5px] font-extrabold tracking-[0.08em] uppercase">
+																			vs
+																		</td>
+																		<!-- opponent block -->
+																		<td class="px-3 py-[14px] text-left">
+																			<div class="flex items-center gap-3">
+																				{#if _opponentHero?.imageUrl}
+																					<span
+																						class="border-line2 bg-panel h-[36px] w-[36px] flex-shrink-0 border"
+																						style={`background-image: url('${_opponentHero.imageUrl}'); background-size: cover; background-position: right center;`}
+																					></span>
+																				{/if}
+																				<div class="min-w-0">
+																					{#if _opponentGemId}
+																						<a href="/player/{_opponentGemId}" class="text-ink hover:text-warm block text-[14.5px] font-extrabold transition-colors">
+																							{_opponentName}
+																						</a>
+																					{:else}
+																						<span class="text-ink block text-[14.5px] font-extrabold">
+																							{_opponentName}
+																						</span>
+																					{/if}
+																					{#if _opponentHero?.hero}
+																						<span class="text-warm mt-[2px] block text-[12.5px] font-bold">
+																							{_opponentHero.hero}
+																						</span>
+																					{/if}
+																				</div>
+																			</div>
+																		</td>
+																		<!-- opponent final standing -->
+																		<td class="font-mono-system text-fade px-6 py-[14px] text-right text-[11.5px] font-extrabold tracking-[0.06em] uppercase">
+																			{#if _opponentRank}
+																				T{_opponentRank}
+																			{/if}
+																		</td>
+																	</tr>
+																{/each}
+															</tbody>
+														</table>
+													{:else}
+														<div class="text-fade px-6 py-8 text-center text-[13px]">
+															No round-by-round data for {_selMonthMeta?.n} {s.season}.
+														</div>
+													{/if}
+												</div>
+											{/if}
+										</div>
+									</td>
+								</tr>
 							{/if}
 						{/each}
+						<tr class="border-ink bg-panel border-t-[3px] border-double">
+							<td class="text-ink px-[14px] py-[13px] text-left text-[14px] font-extrabold">
+								Career
+							</td>
+							<td class="text-fade font-mono-system px-[14px] py-[13px] text-left text-[13px] font-semibold">
+								{seasonsPlayed.length} seasons
+							</td>
+							<td class="font-mono-system text-ink px-[14px] py-[13px] text-right text-[15px] font-extrabold tabular-nums">
+								{data.totalStats.eventsPlayed}
+							</td>
+							<td class="font-mono-system text-prem px-[14px] py-[13px] text-right text-[15px] font-extrabold tabular-nums">
+								{data.totalStats.matchesWon}
+							</td>
+							<td class="font-mono-system text-warm px-[14px] py-[13px] text-right text-[15px] font-extrabold tabular-nums">
+								{_losses}
+							</td>
+							<td class="font-mono-system text-ink px-[14px] py-[13px] text-right text-[15px] font-extrabold tabular-nums">
+								{_careerWinPct}
+							</td>
+							<td class="font-mono-system text-accent px-[14px] py-[13px] text-right text-[15px] font-extrabold tabular-nums">
+								{data.totalStats.totalPoints}
+							</td>
+							<td class="px-[14px] py-[13px]"></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+	{/if}
+
+	<!-- ============ BOX SCORE ============ -->
+	{@const _winPct = data.totalStats.matchesPlayed > 0
+		? Math.round((data.totalStats.matchesWon / data.totalStats.matchesPlayed) * 100)
+		: 0}
+	{@const _top8Rate = data.totalStats.eventsPlayed > 0
+		? Math.round((data.totalStats.top8Finishes / data.totalStats.eventsPlayed) * 100)
+		: 0}
+	{@const _avgPts = data.totalStats.eventsPlayed > 0
+		? (data.totalStats.totalPoints / data.totalStats.eventsPlayed).toFixed(1)
+		: '0.0'}
+	{@const _bestRank = data.standings.reduce(
+		(min, s) => (s.calculatedRank && s.calculatedRank < min ? s.calculatedRank : min),
+		Infinity
+	)}
+	{@const _avgRank = data.standings.length > 0
+		? (
+				data.standings.reduce((sum, s) => sum + (s.calculatedRank || 0), 0) / data.standings.length
+			).toFixed(1)
+		: '—'}
+	{@const _uniqCircuits = [...new Set(data.standings.map((s) => s.circuit))]}
+	{@const _opponentsFaced = data.matchHistory?.headToHead?.length || 0}
+	{@const _longestRun = data.matchHistory?.longestWinStreak || 0}
+	{@const _currentStreak = data.matchHistory?.currentWinStreak || 0}
+	<section class="bg-paper border-ink border-b-[3px] border-double px-14 py-[40px]">
+		<div class="mb-7 flex flex-wrap items-end justify-between gap-5">
+			<div>
+				<div class="text-accent mb-[7px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
+					Box Score
+				</div>
+				<h2 class="font-newsreader text-[30px] font-semibold leading-none tracking-[-0.02em]">
+					By the Numbers
+				</h2>
+			</div>
+			<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.04em] uppercase">
+				Career performance metrics
+			</span>
+		</div>
+
+		<!--
+			Reorganized into a magazine-style "stat spread":
+			(1) a wide hero panel that anchors the eye with the most
+			notable rate stat + a visual progress bar, and (2) three
+			labeled category bands (Output / Reach / Peak) — each
+			grouped on a colored top-rule so a reader can scan
+			"how productive, how broad, how high" in three lateral
+			passes instead of reading 10 cards in a flat grid.
+		-->
+
+		<!-- ============ HERO STAT ============ -->
+		<div class="border-ink relative mb-5 overflow-hidden border bg-[#080B15] text-white">
+			<!-- background watermark -->
+			<span
+				class="font-archivo pointer-events-none absolute -top-12 right-[40px] z-0 text-[280px] leading-[0.7] font-black tabular-nums opacity-[0.04]"
+				aria-hidden="true"
+			>
+				{_top8Rate}
+			</span>
+
+			<div class="relative z-[1] grid grid-cols-1 gap-y-6 px-9 py-7 md:grid-cols-[1.1fr_1fr] md:items-center md:gap-x-10">
+				<!-- left: featured -->
+				<div>
+					<div class="mb-3 inline-flex items-center gap-[10px] text-[10px] font-extrabold tracking-[0.18em] text-[#F4C66A] uppercase before:block before:h-[2px] before:w-[22px] before:bg-[#F4C66A] before:content-['']">
+						Featured Metric · Conversion
+					</div>
+					<div class="flex items-baseline gap-3">
+						<span class="font-archivo text-[88px] leading-[0.78] font-black tracking-[-0.03em] tabular-nums text-[#F4C66A]">
+							{_top8Rate}<span class="text-[44px] text-[#F4C66A]/70">%</span>
+						</span>
+					</div>
+					<div class="mt-3 text-[13px] font-extrabold tracking-[0.05em] uppercase text-white">
+						Top 8 Rate
+					</div>
+					<div class="text-fade mt-[6px] text-[13px] font-semibold" style="color: #8C93A6;">
+						{data.totalStats.top8Finishes} Top 8 finish{data.totalStats.top8Finishes === 1 ? '' : 'es'} across {data.totalStats.eventsPlayed} events
+					</div>
+				</div>
+
+				<!-- right: progress bar visualization -->
+				<div>
+					<div class="font-mono-system mb-[10px] flex items-baseline justify-between gap-2 text-[9.5px] font-bold tracking-[0.1em] uppercase">
+						<span style="color: #8C93A6;">Conversion scale</span>
+						<span class="text-[#F4C66A]">{_top8Rate} / 100</span>
+					</div>
+					<div class="relative h-[14px] overflow-hidden bg-white/10">
+						<span
+							class="absolute inset-y-0 left-0 block bg-[#F4C66A]"
+							style="width: {_top8Rate}%;"
+						></span>
+						<!-- tick marks at 25 / 50 / 75 -->
+						{#each [25, 50, 75] as t (t)}
+							<span class="absolute inset-y-0 w-px bg-white/30" style="left: {t}%;" aria-hidden="true"></span>
+						{/each}
+					</div>
+					<div class="font-mono-system mt-[6px] flex justify-between text-[9.5px] font-bold tabular-nums" style="color: #6B7280;">
+						<span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- ============ CATEGORY GROUPS ============ -->
+		<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+			<!-- ============ OUTPUT ============ -->
+			<div class="border-line2 bg-paper-bg border">
+				<div class="border-line2 flex items-baseline justify-between border-b px-5 py-[10px]">
+					<span class="font-mono-system inline-flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.16em] uppercase" style="color: #1C7A4B;">
+						<span class="block h-[8px] w-[8px]" style="background-color: #1C7A4B;"></span>
+						Output
+					</span>
+					<span class="text-fade text-[10.5px] font-bold tracking-[0.04em] uppercase">
+						how productive
+					</span>
+				</div>
+				<div class="grid grid-cols-2 divide-x divide-[#E4DECF]">
+					<div class="flex flex-col items-start justify-center px-5 py-[18px]">
+						<div class="font-archivo text-[38px] leading-[0.85] font-black tracking-[-0.03em] tabular-nums" style="color: #1C7A4B;">
+							{_winPct}<span class="text-[22px] text-[#1C7A4B]/65">%</span>
+						</div>
+						<div class="text-ink mt-[10px] text-[11px] font-extrabold tracking-[0.1em] uppercase">
+							Win Rate
+						</div>
+						<div class="text-fade mt-[3px] text-[11px] font-semibold">
+							{data.totalStats.matchesWon} of {data.totalStats.matchesPlayed} matches
+						</div>
+					</div>
+					<div class="flex flex-col items-start justify-center px-5 py-[18px]">
+						<div class="font-archivo text-ink text-[38px] leading-[0.85] font-black tracking-[-0.03em] tabular-nums">
+							{_avgPts}
+						</div>
+						<div class="text-ink mt-[10px] text-[11px] font-extrabold tracking-[0.1em] uppercase">
+							Avg Pts / Event
+						</div>
+						<div class="text-fade mt-[3px] text-[11px] font-semibold">
+							{data.totalStats.totalPoints} total ÷ {data.totalStats.eventsPlayed} events
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- ============ REACH ============ -->
+			<div class="border-line2 bg-paper-bg border">
+				<div class="border-line2 flex items-baseline justify-between border-b px-5 py-[10px]">
+					<span class="font-mono-system inline-flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.16em] uppercase" style="color: #16489E;">
+						<span class="block h-[8px] w-[8px]" style="background-color: #16489E;"></span>
+						Reach
+					</span>
+					<span class="text-fade text-[10.5px] font-bold tracking-[0.04em] uppercase">
+						how broad
+					</span>
+				</div>
+				<div class="grid grid-cols-3 divide-x divide-[#E4DECF]">
+					<div class="flex flex-col items-start justify-center px-4 py-[18px]">
+						<div class="font-archivo text-ink text-[34px] leading-[0.85] font-black tracking-[-0.03em] tabular-nums">
+							{data.totalStats.eventsPlayed}
+						</div>
+						<div class="text-ink mt-[10px] text-[10px] font-extrabold tracking-[0.1em] uppercase">
+							Events
+						</div>
+						<div class="text-fade mt-[3px] text-[10.5px] font-semibold">
+							{seasonsPlayed.length} seasons
+						</div>
+					</div>
+					<div class="flex flex-col items-start justify-center px-4 py-[18px]">
+						<div class="font-archivo text-ink text-[34px] leading-[0.85] font-black tracking-[-0.03em] tabular-nums">
+							{data.totalStats.matchesPlayed || 0}
+						</div>
+						<div class="text-ink mt-[10px] text-[10px] font-extrabold tracking-[0.1em] uppercase">
+							Matches
+						</div>
+						<div class="text-fade mt-[3px] text-[10.5px] font-semibold">
+							games logged
+						</div>
+					</div>
+					<div class="flex flex-col items-start justify-center px-4 py-[18px]">
+						<div class="font-archivo text-ink text-[34px] leading-[0.85] font-black tracking-[-0.03em] tabular-nums">
+							{_opponentsFaced}
+						</div>
+						<div class="text-ink mt-[10px] text-[10px] font-extrabold tracking-[0.1em] uppercase">
+							Opponents
+						</div>
+						<div class="text-fade mt-[3px] text-[10.5px] font-semibold">
+							faced
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- ============ PEAK ============ -->
+			<div class="border-line2 bg-paper-bg border">
+				<div class="border-line2 flex items-baseline justify-between border-b px-5 py-[10px]">
+					<span class="font-mono-system inline-flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.16em] uppercase" style="color: #C0461F;">
+						<span class="block h-[8px] w-[8px]" style="background-color: #C0461F;"></span>
+						Peak
+					</span>
+					<span class="text-fade text-[10.5px] font-bold tracking-[0.04em] uppercase">
+						how high
+					</span>
+				</div>
+				<div class="grid grid-cols-3 divide-x divide-[#E4DECF]">
+					<div class="flex flex-col items-start justify-center px-4 py-[18px]">
+						<div class="font-archivo text-[34px] leading-[0.85] font-black tracking-[-0.03em] tabular-nums" style="color: #C8922E;">
+							{_bestRank === Infinity ? '—' : `#${_bestRank}`}
+						</div>
+						<div class="text-ink mt-[10px] text-[10px] font-extrabold tracking-[0.1em] uppercase">
+							Best Rank
+						</div>
+						<div class="text-fade mt-[3px] text-[10.5px] font-semibold">
+							avg #{_avgRank}
+						</div>
+					</div>
+					<div class="flex flex-col items-start justify-center px-4 py-[18px]">
+						<div class="font-archivo text-warm text-[34px] leading-[0.85] font-black tracking-[-0.03em] tabular-nums">
+							{_longestRun}
+						</div>
+						<div class="text-ink mt-[10px] text-[10px] font-extrabold tracking-[0.1em] uppercase">
+							Best Run
+						</div>
+						<div class="text-fade mt-[3px] text-[10.5px] font-semibold">
+							consecutive wins
+						</div>
+					</div>
+					<div class="flex flex-col items-start justify-center px-4 py-[18px]">
+						<div class="font-archivo text-[34px] leading-[0.85] font-black tracking-[-0.03em] tabular-nums {_currentStreak > 0 ? 'text-warm' : 'text-fade'}">
+							{_currentStreak > 0 ? `W${_currentStreak}` : '—'}
+						</div>
+						<div class="text-ink mt-[10px] text-[10px] font-extrabold tracking-[0.1em] uppercase">
+							Current
+						</div>
+						<div class="text-fade mt-[3px] text-[10.5px] font-semibold">
+							active streak
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ============ RATING PERCENTILES TABLE ============ -->
+	<section class="border-ink border-b-[3px] border-double px-14 py-[40px]">
+		<div class="mb-5 flex flex-wrap items-end justify-between gap-5">
+			<div>
+				<div class="text-accent mb-[7px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
+					Advanced
+				</div>
+				<h2 class="font-newsreader text-[30px] font-semibold leading-none tracking-[-0.02em]">
+					AGE Rating — Component Percentiles
+				</h2>
+			</div>
+			<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.04em] uppercase">
+				Percentile vs {_rating.totalPlayers} rated players
+			</span>
+		</div>
+
+		<div class="border-line2 grid grid-cols-1 border bg-paper-bg lg:grid-cols-[1.7fr_1fr]">
+			<!-- table -->
+			<div class="border-line2 overflow-hidden lg:border-r">
+				<table class="w-full border-collapse">
+					<thead>
+						<tr>
+							{#each [
+								{ k: 'Component', l: true },
+								{ k: 'WT' },
+								{ k: 'Score' },
+								{ k: '%ile' },
+								{ k: 'Distribution', l: true, w: 'w-[150px]' }
+							] as h (h.k)}
+								<th
+									class="bg-ink text-paper-bg whitespace-nowrap px-[14px] py-3 text-[10px] font-extrabold tracking-[0.1em] uppercase {h.l ? 'text-left' : 'text-right'} {h.w || ''}"
+								>
+									{h.k}
+								</th>
+							{/each}
+						</tr>
+					</thead>
+					<tbody>
+						{#each [
+							{ nm: 'Win Rate', wt: 25, sc: _rating.breakdown.winRate, mx: 25, pc: _rating.percentiles.winRate },
+							{ nm: 'Top 8 Rate', wt: 25, sc: _rating.breakdown.top8, mx: 25, pc: _rating.percentiles.top8Rate },
+							{ nm: 'Peak Rank', wt: 20, sc: _rating.breakdown.peak, mx: 20, pc: _rating.percentiles.bestRank },
+							{ nm: 'Efficiency', wt: 15, sc: _rating.breakdown.efficiency, mx: 15, pc: _rating.percentiles.efficiency },
+							{ nm: 'Experience', wt: 10, sc: _rating.breakdown.experience, mx: 10, pc: _rating.percentiles.experience },
+							{ nm: 'Championship', wt: 5, sc: _rating.breakdown.championship, mx: 5, pc: _rating.percentiles.championship }
+						] as r, i (r.nm)}
+							<tr class="border-line {i % 2 === 1 ? 'bg-ink/3' : ''} hover:bg-accent/10 border-t transition-colors">
+								<td class="text-ink px-[14px] py-[12px] text-left text-[13.5px] font-bold">
+									{r.nm}
+								</td>
+								<td class="font-mono-system text-fade px-[14px] py-[12px] text-right text-[13.5px] font-semibold tabular-nums">
+									{r.wt}
+								</td>
+								<td class="font-mono-system text-ink px-[14px] py-[12px] text-right text-[13.5px] font-bold tabular-nums">
+									{r.sc.toFixed(1)}
+									<span class="text-fade font-semibold"> / {r.mx}</span>
+								</td>
+								<td class="font-mono-system px-[14px] py-[12px] text-right text-[13.5px] font-bold tabular-nums {r.pc >= 90 ? 'text-[#C8922E]' : 'text-accent'}">
+									{Math.round(r.pc)}<sup class="text-[9px]">{r.pc >= 90 ? 'th' : Math.round(r.pc) % 10 === 1 && Math.round(r.pc) !== 11 ? 'st' : Math.round(r.pc) % 10 === 2 && Math.round(r.pc) !== 12 ? 'nd' : Math.round(r.pc) % 10 === 3 && Math.round(r.pc) !== 13 ? 'rd' : 'th'}</sup>
+								</td>
+								<td class="px-[14px] py-[12px]">
+									<span class="bg-panel relative inline-block h-[7px] w-[110px] align-middle">
+										<span class="bg-accent absolute inset-y-0 left-0 block" style="width: {r.pc}%;"></span>
+										<span class="bg-ink/45 absolute top-[-3px] bottom-[-3px] w-[2px]" style="left: 50%;"></span>
+									</span>
+								</td>
+							</tr>
+						{/each}
+						<tr class="border-ink bg-panel border-t-[3px] border-double">
+							<td class="text-ink px-[14px] py-[13px] text-left text-[14px] font-extrabold">
+								AGE Rating
+							</td>
+							<td class="font-mono-system text-ink px-[14px] py-[13px] text-right text-[14px] font-extrabold tabular-nums">
+								100
+							</td>
+							<td class="font-mono-system text-[#C8922E] px-[14px] py-[13px] text-right text-[14px] font-extrabold tabular-nums">
+								{_rating.total.toFixed(1)}
+							</td>
+							<td class="px-[14px] py-[13px] text-right text-[14px] font-extrabold tabular-nums" style="color: {_tierHex};">
+								— · {_tierLabel}
+							</td>
+							<td class="text-fade px-[14px] py-[13px] text-left text-[12px] font-semibold">
+								{_tier.description}
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<!-- summary -->
+			<div class="bg-paper flex flex-col p-6">
+				<div class="font-archivo text-[84px] leading-[0.8] font-black tracking-[-0.03em] tabular-nums" style="color: {_tierHex};">
+					{_rating.total}<sup class="text-fade ml-1 text-[24px] font-extrabold">/100</sup>
+				</div>
+				<span
+					class="font-mono-system mt-4 mb-[14px] inline-flex items-center gap-2 self-start px-[12px] py-[6px] text-[11px] font-bold tracking-[0.1em] text-[#0E1220] uppercase"
+					style="background-color: {_tierHex};"
+				>
+					★ {_tierLabel} Tier
+				</span>
+				<p class="text-soft text-[13px] leading-[1.6]">
+					Weighted across <b class="text-ink">six components</b>; a harsh power curve makes high
+					scores hard to reach — the median player credits ~35%.
+				</p>
+				<div class="text-soft border-line2 mt-auto border-t pt-4 text-[11px] leading-[1.55]">
+					<b class="text-ink">Tiers:</b> Elite 90+ · Premier 80+ · Distinguished 70+ · Competitive 60+.
+					The dark tick marks league median (50th).
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ============ ARSENAL ============ -->
+	{#if data.heroUsage && data.heroUsage.length > 0}
+		{@const _maxUse = Math.max(...data.heroUsage.map((h) => h.count))}
+		{@const _sig = data.heroUsage[0]}
+		{@const _sigBackdrop = heroBackdropUrl(_sig.hero)}
+		{@const _best = data.decklists?.[0] || null}
+		{@const _bestBackdrop = _best ? heroBackdropUrl(_best.decklist.hero) : null}
+		<section class="bg-paper border-ink border-b-[3px] border-double px-14 py-[40px]">
+			<div class="mb-5 flex flex-wrap items-end justify-between gap-5">
+				<div>
+					<div class="text-accent mb-[7px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
+						Arsenal
+					</div>
+					<h2 class="font-newsreader text-[30px] font-semibold leading-none tracking-[-0.02em]">
+						Heroes Played
+					</h2>
+				</div>
+				<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.04em] uppercase">
+					Usage · {data.heroUsage.reduce((s, h) => s + h.count, 0)} logged events
+				</span>
+			</div>
+
+			<div class="grid grid-cols-1 gap-6 lg:grid-cols-[1.55fr_1fr]">
+				<!-- heroes table -->
+				<div class="border-line2 overflow-hidden border bg-paper-bg">
+					<table class="w-full border-collapse">
+						<thead>
+							<tr>
+								<th class="bg-ink text-paper-bg whitespace-nowrap px-[14px] py-3 text-left text-[10px] font-extrabold tracking-[0.1em] uppercase">
+									Hero
+								</th>
+								<th class="bg-ink text-paper-bg whitespace-nowrap px-[14px] py-3 text-right text-[10px] font-extrabold tracking-[0.1em] uppercase">
+									Events
+								</th>
+								<th class="bg-ink text-paper-bg whitespace-nowrap w-[150px] px-[14px] py-3 text-left text-[10px] font-extrabold tracking-[0.1em] uppercase">
+									Usage
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each data.heroUsage as h, i (h.hero)}
+								<tr class="border-line {i % 2 === 1 ? 'bg-ink/3' : ''} hover:bg-accent/10 border-t transition-colors">
+									<td class="px-[14px] py-[12px] text-left">
+										<span class="inline-flex items-center gap-[11px]">
+											<span class="border-line2 bg-panel h-[30px] w-[30px] flex-shrink-0 rounded-full border bg-cover bg-top" style={h.imageUrl ? `background-image: url('${h.imageUrl}');` : ''}></span>
+											<span class="text-ink text-[13.5px] font-bold">{h.hero}</span>
+										</span>
+									</td>
+									<td class="font-mono-system text-ink px-[14px] py-[12px] text-right text-[14px] font-bold tabular-nums">
+										{h.count}×
+									</td>
+									<td class="px-[14px] py-[12px]">
+										<span class="bg-panel relative inline-block h-[8px] w-[120px] align-middle">
+											<span class="bg-warm absolute inset-y-0 left-0 block" style="width: {(h.count / _maxUse) * 100}%;"></span>
+										</span>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+
+				<!-- callouts -->
+				<div class="flex flex-col gap-4">
+					<div
+						class="border-line2 relative flex min-h-[150px] flex-1 items-end overflow-hidden border bg-[#17150F] bg-cover bg-top"
+						style={_sigBackdrop ? `background-image: url('${_sigBackdrop}');` : ''}
+					>
+						<span class="pointer-events-none absolute inset-0" style="background: linear-gradient(0deg, rgba(12,13,18,0.92) 16%, rgba(12,13,18,0.15) 75%);" aria-hidden="true"></span>
+						<div class="relative z-[1] p-5 text-white">
+							<div class="font-mono-system mb-[7px] text-[9.5px] font-bold tracking-[0.14em] uppercase" style="color: #F4C66A;">
+								Signature Hero · Most Played
+							</div>
+							<h4 class="font-newsreader text-[22px] leading-[1.02] font-semibold text-white">
+								{_sig.hero}
+							</h4>
+							<div class="mt-[7px] text-[11.5px] font-semibold" style="color: #C7BFA9;">
+								{_sig.count} event{_sig.count === 1 ? '' : 's'}
+							</div>
+						</div>
+					</div>
+
+					{#if _best}
+						<a
+							href="/age-open/{_best.event?.id}/decklist/{_best.decklist.id}"
+							class="border-line2 relative flex min-h-[150px] flex-1 items-end overflow-hidden border bg-[#17150F] bg-cover bg-top"
+							style={_bestBackdrop ? `background-image: url('${_bestBackdrop}');` : ''}
+						>
+							<span class="pointer-events-none absolute inset-0" style="background: linear-gradient(0deg, rgba(12,13,18,0.92) 16%, rgba(12,13,18,0.15) 75%);" aria-hidden="true"></span>
+							{#if _best.decklist.placement && _best.decklist.placement <= 3}
+								<span class="font-archivo absolute top-0 left-0 z-[1] px-[9px] py-[5px] text-[11px] font-black uppercase" style="background-color: #C8922E; color: #17150F;">
+									{_best.decklist.placement === 1 ? '1st' : _best.decklist.placement === 2 ? '2nd' : '3rd'}
+								</span>
+							{/if}
+							<div class="relative z-[1] p-5 text-white">
+								<div class="font-mono-system mb-[7px] text-[9.5px] font-bold tracking-[0.14em] uppercase" style="color: #F4C66A;">
+									Best Result · Decklist
+								</div>
+								<h4 class="font-newsreader text-[22px] leading-[1.02] font-semibold text-white">
+									{_best.decklist.hero || 'Decklist'}
+								</h4>
+								<div class="mt-[7px] text-[11.5px] font-semibold" style="color: #C7BFA9;">
+									{_best.event?.circuit || ''}{_best.decklist.format ? ` · ${_best.decklist.format}` : ''}
+								</div>
+							</div>
+						</a>
+					{/if}
+				</div>
+			</div>
+		</section>
+	{/if}
+
+	<!-- ============ HEAD TO HEAD ============ -->
+	{#if data.matchHistory && data.matchHistory.headToHead && data.matchHistory.headToHead.length > 0}
+		{@const _nem = data.matchHistory.nemesis}
+		{@const _best = data.matchHistory.bestMatchup}
+		{@const _topWins = [...data.matchHistory.headToHead].filter((h) => h.wins > 0).sort((a, b) => b.wins - a.wins).slice(0, 4)}
+		{@const _topLoss = [...data.matchHistory.headToHead].filter((h) => h.losses > 0).sort((a, b) => b.losses - a.losses).slice(0, 4)}
+		{@const _topPlayed = [...data.matchHistory.headToHead].sort((a, b) => (b.wins + b.losses + b.draws) - (a.wins + a.losses + a.draws)).slice(0, 4)}
+		<section class="border-ink border-b-[3px] border-double px-14 py-[40px]">
+			<div class="mb-5 flex flex-wrap items-end justify-between gap-5">
+				<div>
+					<div class="text-accent mb-[7px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
+						Head to Head
+					</div>
+					<h2 class="font-newsreader text-[30px] font-semibold leading-none tracking-[-0.02em]">
+						Player vs Player
+					</h2>
+				</div>
+				<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.04em] uppercase">
+					{data.matchHistory.headToHead.length} opponents faced
+				</span>
+			</div>
+
+			<!-- ============ H2H LOOKUP ============ -->
+			<!--
+				Searchable opponent lookup. Filtered by `opponentSearchQuery`
+				through the existing `filteredHeadToHead` derived value;
+				picking a row populates `selectedOpponent`, which drives
+				the result card below (summary + meeting table from
+				`data.matchHistory.matchesByEvent`).
+			-->
+			<div class="mb-6">
+				<div class="mb-3 flex flex-wrap items-baseline gap-3">
+					<span class="text-ink text-[13px] font-extrabold tracking-[0.02em]">
+						Look up an opponent
+					</span>
+					<span class="text-soft text-[12.5px]">
+						Search any of the {data.matchHistory.headToHead.length} players for a full head-to-head breakdown.
+					</span>
+				</div>
+
+				<div
+					class="border-ink bg-paper-bg relative flex h-[54px] items-center gap-3 border-[1.5px] px-4 {showOpponentDropdown ? 'outline-[3px] outline-accent/20' : ''}"
+				>
+					<svg class="text-fade h-[19px] w-[19px] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+						<circle cx="11" cy="11" r="7" />
+						<line x1="21" y1="21" x2="16.5" y2="16.5" />
+					</svg>
+					<input
+						type="text"
+						bind:value={opponentSearchQuery}
+						placeholder="Search a player you've faced…"
+						oninput={() => (showOpponentDropdown = true)}
+						onfocus={() => (showOpponentDropdown = true)}
+						onblur={() => setTimeout(() => (showOpponentDropdown = false), 140)}
+						class="text-ink placeholder:text-fade min-w-0 flex-1 appearance-none border-0 bg-transparent text-[16px] font-semibold shadow-none outline-none focus:border-0 focus:shadow-none focus:ring-0 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
+					/>
+					{#if opponentSearchQuery}
+						<button
+							type="button"
+							onmousedown={(e) => {
+								e.preventDefault();
+								clearOpponentSelection();
+							}}
+							class="bg-panel text-soft hover:bg-ink hover:text-paper-bg flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center border-0 text-[15px] leading-none"
+							aria-label="Clear search"
+						>
+							×
+						</button>
+					{/if}
+
+					{#if showOpponentDropdown}
+						{@const _matches = filteredHeadToHead().slice(0, 30)}
+						<!-- dropdown panel -->
+						<div
+							class="border-ink bg-paper-bg absolute -inset-x-[1.5px] top-[calc(100%+5px)] z-30 max-h-[288px] overflow-auto border-[1.5px] shadow-[0_18px_40px_rgba(23,21,15,0.16)]"
+						>
+							{#if _matches.length === 0}
+								<div class="text-soft px-4 py-4 text-[13px]">
+									No faced opponent matches “{opponentSearchQuery}”.
+								</div>
+							{:else}
+								{#each _matches as m, mi (m.opponentGemId || m.opponentName)}
+									{@const _games = m.wins + m.losses + (m.draws || 0)}
+									{@const _isAct = selectedOpponentKey === (m.opponentGemId || m.opponentName)}
+									<button
+										type="button"
+										onmousedown={(e) => {
+											e.preventDefault();
+											selectOpponent(m);
+										}}
+										class="border-line {_isAct ? 'bg-paper' : 'hover:bg-paper'} grid w-full grid-cols-[1fr_auto] items-center gap-3 border-0 border-b bg-transparent px-4 py-3 text-left cursor-pointer last:border-b-0"
+									>
+										<div>
+											<div class="font-newsreader text-ink text-[17px] font-semibold">
+												{m.opponentName}
+											</div>
+											<div class="text-fade mt-[2px] text-[11.5px] font-semibold">
+												{_games} game{_games === 1 ? '' : 's'}
+												{#if m.opponentGemId} · GEM {m.opponentGemId}{/if}
+											</div>
+										</div>
+										<div class="font-mono-system text-[14px] font-bold tabular-nums">
+											<span class="text-prem">{m.wins}</span>
+											<span class="text-fade">–</span>
+											<span class="text-warm">{m.losses}</span>
+										</div>
+									</button>
+								{/each}
+							{/if}
+						</div>
+					{/if}
+				</div>
+
+				<!-- result card -->
+				{#if selectedOpponent()}
+					{@const o = selectedOpponent()}
+					{@const _games = o.wins + o.losses + (o.draws || 0)}
+					{@const _wr = _games ? Math.round((o.wins / _games) * 100) : 0}
+					{@const _lead = o.wins > o.losses
+						? `${data.displayName} leads the series`
+						: o.wins < o.losses
+							? `${data.displayName} trails the series`
+							: 'Series even'}
+					{@const _meetings = opponentMatches()}
+					{@const _lastResult = _meetings[0]?.match.winner
+						? (_meetings[0].match.player1GemId === data.gemId
+								? _meetings[0].match.winner === 'player1'
+								: _meetings[0].match.winner === 'player2')
+							? 'Won'
+							: 'Lost'
+						: '—'}
+					<div class="border-ink bg-paper mt-[18px] border-[1.5px]">
+						<!-- header -->
+						<div class="border-line2 flex flex-wrap items-center justify-between gap-6 border-b px-[26px] py-[22px]">
+							<div>
+								<div class="text-accent mb-[9px] text-[10px] font-extrabold tracking-[0.14em] uppercase">
+									Head-to-Head Record
+								</div>
+								<div class="font-newsreader text-[28px] font-semibold leading-[1.1] tracking-[-0.01em]">
+									{data.displayName}
+									<span class="font-newsreader text-fade text-[20px] italic font-normal">vs</span>
+									{#if o.opponentGemId}
+										<a href="/player/{o.opponentGemId}" class="hover:text-warm transition-colors">
+											{o.opponentName}
+										</a>
+									{:else}
+										{o.opponentName}
+									{/if}
+								</div>
+								<div class="text-soft mt-[11px] text-[12.5px] font-semibold">
+									{#if o.opponentGemId}GEM {o.opponentGemId}{:else}Local opponent{/if}
+								</div>
+							</div>
+							<div class="flex-shrink-0 text-right">
+								<div class="font-archivo text-[52px] leading-[0.85] font-black tracking-[-0.03em] tabular-nums">
+									<span class="text-prem">{o.wins}</span>
+									<span class="text-line2 mx-1">–</span>
+									<span class="text-warm">{o.losses}</span>
+								</div>
+								<div class="font-mono-system text-soft mt-[9px] text-[10px] font-bold tracking-[0.08em] uppercase">
+									{_lead}
+								</div>
+							</div>
+						</div>
+
+						<!-- mini stat row -->
+						<div class="border-line2 grid grid-cols-2 border-b sm:grid-cols-4">
+							{#each [
+								{ v: _games, l: 'Matches', cls: '' },
+								{ v: `${_wr}%`, l: 'Win Rate', cls: _wr >= 50 ? 'text-prem' : 'text-warm' },
+								{ v: _lastResult, l: 'Last Meeting', cls: _lastResult === 'Won' ? 'text-prem' : _lastResult === 'Lost' ? 'text-warm' : '' },
+								{ v: _meetings.length, l: 'On Record', cls: '' }
+							] as st (st.l)}
+								<div class="border-line border-r px-5 py-[15px] last:border-r-0">
+									<div class="font-archivo text-[23px] leading-[0.85] font-black tabular-nums {st.cls || ''}">
+										{st.v}
+									</div>
+									<div class="text-fade mt-2 text-[9px] font-extrabold tracking-[0.1em] uppercase">
+										{st.l}
+									</div>
+								</div>
+							{/each}
+						</div>
+
+						<!--
+							Meetings table — for each match, show the year and
+							round/table on the left, then this player and the
+							opponent side-by-side with their hero portraits
+							pulled from `heroByEvent` / `opponentHeroMap`,
+							then the result badge from this player's POV.
+						-->
+						{#if _meetings.length > 0}
+							<table class="w-full border-collapse">
+								<thead>
+									<tr>
+										{#each [
+											{ k: 'Year', l: true },
+											{ k: 'Round / Table', l: true },
+											{ k: data.displayName, l: true },
+											{ k: o.opponentName, l: true },
+											{ k: 'Result' }
+										] as h (h.k)}
+											<th class="border-line2 text-fade border-b px-[20px] py-[11px] text-[9.5px] font-extrabold tracking-[0.12em] uppercase {h.l ? 'text-left' : 'text-right'}">
+												{h.k}
+											</th>
+										{/each}
+									</tr>
+								</thead>
+								<tbody>
+									{#each _meetings as { match, event }, mi (mi)}
+										{@const _isP1 = match.player1GemId === data.gemId
+											|| (!match.player1GemId && match.player1Name && match.player1Name === data.displayName)}
+										{@const _won = (_isP1 && match.winner === 'player1') || (!_isP1 && match.winner === 'player2')}
+										{@const _lost = (_isP1 && match.winner === 'player2') || (!_isP1 && match.winner === 'player1')}
+										{@const _myHero = getHeroForEvent(event.year, event.circuit, event.month)}
+										{@const _opponentGemId = _isP1 ? match.player2GemId : match.player1GemId}
+										{@const _theirHero = getOpponentHero(_opponentGemId, event.year, event.circuit, event.month)}
+										<tr class="border-line hover:bg-paper-bg border-b last:border-b-0">
+											<!-- year -->
+											<td class="font-mono-system text-soft px-[20px] py-[14px] text-left align-middle text-[12.5px] font-bold tabular-nums">
+												<div class="text-ink text-[13.5px] font-extrabold">
+													{event.year}
+												</div>
+												<div class="text-fade mt-[2px] text-[10.5px] font-bold tracking-[0.04em] uppercase">
+													{event.month?.slice(0, 3) || ''}
+												</div>
+											</td>
+											<!-- round / table -->
+											<td class="px-[20px] py-[14px] text-left align-middle">
+												<div class="font-mono-system text-ink text-[12.5px] font-extrabold tracking-[0.06em] uppercase">
+													R{match.round}
+												</div>
+												{#if match.table}
+													<div class="font-mono-system text-fade mt-[2px] text-[10.5px] font-bold tracking-[0.04em] uppercase">
+														Table {match.table}
+													</div>
+												{/if}
+											</td>
+											<!-- player's hero -->
+											<td class="px-[20px] py-[14px] text-left align-middle">
+												<div class="flex items-center gap-3">
+													{#if _myHero?.imageUrl}
+														<span
+															class="border-line2 bg-panel h-[32px] w-[32px] flex-shrink-0 rounded-full border bg-cover bg-top"
+															style={`background-image: url('${_myHero.imageUrl}');`}
+														></span>
+													{/if}
+													<div class="min-w-0">
+														<div class="text-ink truncate text-[13px] font-extrabold leading-tight">
+															{data.displayName}
+														</div>
+														{#if _myHero?.hero}
+															<div class="text-warm mt-[2px] truncate text-[11.5px] font-bold leading-tight">
+																{_myHero.hero}
+															</div>
+														{/if}
+													</div>
+												</div>
+											</td>
+											<!-- opponent's hero -->
+											<td class="px-[20px] py-[14px] text-left align-middle">
+												<div class="flex items-center gap-3">
+													{#if _theirHero?.imageUrl}
+														<span
+															class="border-line2 bg-panel h-[32px] w-[32px] flex-shrink-0 rounded-full border bg-cover bg-top"
+															style={`background-image: url('${_theirHero.imageUrl}');`}
+														></span>
+													{/if}
+													<div class="min-w-0">
+														{#if _opponentGemId}
+															<a href="/player/{_opponentGemId}" class="text-ink hover:text-warm block truncate text-[13px] font-extrabold leading-tight transition-colors">
+																{o.opponentName}
+															</a>
+														{:else}
+															<span class="text-ink block truncate text-[13px] font-extrabold leading-tight">
+																{o.opponentName}
+															</span>
+														{/if}
+														{#if _theirHero?.hero}
+															<div class="text-warm mt-[2px] truncate text-[11.5px] font-bold leading-tight">
+																{_theirHero.hero}
+															</div>
+														{/if}
+													</div>
+												</div>
+											</td>
+											<!-- result -->
+											<td class="px-[20px] py-[14px] text-right align-middle">
+												<span
+													class="font-archivo inline-flex h-[26px] w-[26px] items-center justify-center text-[13px] font-black text-white"
+													style={_won
+														? 'background-color: var(--ed-prem);'
+														: _lost
+															? 'background-color: var(--ed-warm);'
+															: 'background-color: var(--ed-fade);'}
+												>
+													{_won ? 'W' : _lost ? 'L' : 'D'}
+												</span>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						{/if}
+					</div>
+				{/if}
+			</div>
+
+			<div class="grid grid-cols-1 gap-[18px] mb-6 md:grid-cols-2">
+				{#if _nem}
+					<div class="border-line2 border-warm bg-paper-bg flex items-center justify-between border border-l-[4px] px-[22px] py-5">
+						<div>
+							<div class="text-fade text-[10px] font-extrabold tracking-[0.12em] uppercase">
+								Nemesis
+							</div>
+							{#if _nem.opponentGemId}
+								<a href="/player/{_nem.opponentGemId}" class="font-newsreader hover:text-warm mt-2 block text-[24px] font-semibold transition-colors">
+									{_nem.opponentName}
+								</a>
+							{:else}
+								<div class="font-newsreader mt-2 text-[24px] font-semibold">{_nem.opponentName}</div>
+							{/if}
+						</div>
+						<div class="text-right">
+							<div class="font-mono-system text-[15px] font-bold tabular-nums">
+								<span class="text-warm">{_nem.losses}</span>
+								<span class="text-fade">–</span>
+								<span class="text-prem">{_nem.wins}</span>
+							</div>
+							<div class="text-fade mt-[5px] text-[9px] font-extrabold tracking-[0.1em] uppercase">
+								Player record
+							</div>
+						</div>
+					</div>
+				{/if}
+				{#if _best}
+					<div class="border-line2 border-prem bg-paper-bg flex items-center justify-between border border-l-[4px] px-[22px] py-5">
+						<div>
+							<div class="text-fade text-[10px] font-extrabold tracking-[0.12em] uppercase">
+								Best Matchup
+							</div>
+							{#if _best.opponentGemId}
+								<a href="/player/{_best.opponentGemId}" class="font-newsreader hover:text-warm mt-2 block text-[24px] font-semibold transition-colors">
+									{_best.opponentName}
+								</a>
+							{:else}
+								<div class="font-newsreader mt-2 text-[24px] font-semibold">{_best.opponentName}</div>
+							{/if}
+						</div>
+						<div class="text-right">
+							<div class="font-mono-system text-[15px] font-bold tabular-nums">
+								<span class="text-prem">{_best.wins}</span>
+								<span class="text-fade">–</span>
+								<span class="text-warm">{_best.losses}</span>
+							</div>
+							<div class="text-fade mt-[5px] text-[9px] font-extrabold tracking-[0.1em] uppercase">
+								Player record
+							</div>
+						</div>
+					</div>
+				{/if}
+			</div>
+
+			<!-- mini tables -->
+			<div class="grid grid-cols-1 gap-[18px] md:grid-cols-3">
+				{#each [
+					{ title: 'Most Wins Against', col3: 'W–L', rows: _topWins, color: 'text-accent', fmt: (r) => `${r.wins}–${r.losses}` },
+					{ title: 'Most Losses Against', col3: 'W–L', rows: _topLoss, color: 'text-warm', fmt: (r) => `${r.wins}–${r.losses}` },
+					{ title: 'Most Played', col3: 'Games', rows: _topPlayed, color: 'text-accent', fmt: (r) => r.wins + r.losses + r.draws }
+				] as t, i (i)}
+					<div class="border-line2 overflow-hidden border bg-paper-bg">
+						<table class="w-full border-collapse">
+							<thead>
+								<tr>
+									<th class="bg-ink text-paper-bg px-[14px] py-3 text-right text-[10px] font-extrabold tracking-[0.1em] uppercase">#</th>
+									<th class="bg-ink text-paper-bg px-[14px] py-3 text-left text-[10px] font-extrabold tracking-[0.1em] uppercase">
+										{t.title}
+									</th>
+									<th class="bg-ink text-paper-bg px-[14px] py-3 text-right text-[10px] font-extrabold tracking-[0.1em] uppercase">
+										{t.col3}
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each t.rows as r, ri (r.opponentName + ri)}
+									<tr class="border-line {ri % 2 === 1 ? 'bg-ink/3' : ''} border-t">
+										<td class="font-mono-system text-fade px-[14px] py-[13px] text-right text-[13px] font-bold tabular-nums">
+											{ri + 1}
+										</td>
+										<td class="text-ink px-[14px] py-[13px] text-left text-[13px] font-bold">
+											{#if r.opponentGemId}
+												<a href="/player/{r.opponentGemId}" class="hover:text-warm transition-colors">
+													{r.opponentName}
+												</a>
+											{:else}
+												{r.opponentName}
+											{/if}
+										</td>
+										<td class="font-mono-system px-[14px] py-[13px] text-right text-[13px] font-bold tabular-nums {t.color}">
+											{t.fmt(r)}
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
 					</div>
 				{/each}
 			</div>
-		{/if}
-	</div>
-
-	<!-- Add Standing Modal -->
-	{#if showAddStanding}
-		<div
-			class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-		>
-			<div class="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-900 shadow-2xl">
-				<div class="border-b border-gray-700 px-6 py-4">
-					<h3 class="text-lg font-semibold text-white">Add New Standing</h3>
-				</div>
-				<form
-					method="POST"
-					action="?/addStanding"
-					use:enhance={() => {
-						return async ({ result, update }) => {
-							if (result.type === 'success') {
-								showAddStanding = false;
-								await update();
-								await invalidateAll();
-							}
-						};
-					}}
-					class="space-y-4 p-6"
-				>
-					<label class="block">
-						<span class="mb-2 block text-sm font-medium text-gray-400">Season</span>
-						<input
-							type="text"
-							name="season"
-							placeholder="e.g., 2025"
-							required
-							class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
-						/>
-					</label>
-					<label class="block">
-						<span class="mb-2 block text-sm font-medium text-gray-400">Circuit</span>
-						<select
-							name="circuit"
-							required
-							class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
-						>
-							<option value="">Select a circuit</option>
-							<option value="Los Angeles">Los Angeles</option>
-							<option value="New England">New England</option>
-							<option value="St. Louis">St. Louis</option>
-						</select>
-					</label>
-					<label class="block">
-						<span class="mb-2 block text-sm font-medium text-gray-400">Player Name</span>
-						<input
-							type="text"
-							name="playerName"
-							value={data.displayName}
-							required
-							class="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
-						/>
-					</label>
-					<div class="flex gap-3 pt-4">
-						<button
-							type="button"
-							onclick={() => (showAddStanding = false)}
-							class="flex-1 rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 font-medium text-gray-300 transition-all hover:bg-gray-700"
-						>
-							Cancel
-						</button>
-						<button
-							type="submit"
-							class="flex-1 rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition-all hover:bg-blue-500"
-						>
-							Add Standing
-						</button>
-					</div>
-				</form>
-			</div>
-		</div>
+		</section>
 	{/if}
-</div>
+
+	<!-- ============ DECKLISTS ============ -->
+	{#if data.decklists && data.decklists.length > 0}
+		<section class="bg-paper border-ink border-b-[3px] border-double px-14 py-[40px]">
+			<div class="mb-5 flex flex-wrap items-end justify-between gap-5">
+				<div>
+					<div class="text-accent mb-[7px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
+						Tournament Lists
+					</div>
+					<h2 class="font-newsreader text-[30px] font-semibold leading-none tracking-[-0.02em]">
+						Decklists
+					</h2>
+				</div>
+				<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.04em] uppercase">
+					{data.decklists.length} {data.decklists.length === 1 ? 'list' : 'lists'}
+				</span>
+			</div>
+
+			<div class="border-line2 overflow-hidden border bg-paper-bg">
+				<table class="w-full border-collapse">
+					<thead>
+						<tr>
+							<th class="bg-ink text-paper-bg whitespace-nowrap px-[14px] py-3 text-left text-[10px] font-extrabold tracking-[0.1em] uppercase">
+								Hero
+							</th>
+							<th class="bg-ink text-paper-bg whitespace-nowrap px-[14px] py-3 text-left text-[10px] font-extrabold tracking-[0.1em] uppercase">
+								Event
+							</th>
+							<th class="bg-ink text-paper-bg whitespace-nowrap px-[14px] py-3 text-left text-[10px] font-extrabold tracking-[0.1em] uppercase">
+								Date
+							</th>
+							<th class="bg-ink text-paper-bg whitespace-nowrap px-[14px] py-3 text-right text-[10px] font-extrabold tracking-[0.1em] uppercase">
+								Finish
+							</th>
+							<th class="bg-ink text-paper-bg whitespace-nowrap px-[14px] py-3 text-right text-[10px] font-extrabold tracking-[0.1em] uppercase"></th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each data.decklists.slice(0, 20) as { decklist, event }, i (decklist.id)}
+							{@const _hb = heroBackdropUrl(decklist.hero)}
+							{@const _ccColor = event?.circuit ? circuitHex(event.circuit) : 'var(--ed-soft)'}
+							{@const _isChamp = decklist.placement === 1}
+							<tr class="border-line {i % 2 === 1 ? 'bg-ink/3' : ''} hover:bg-accent/10 border-t transition-colors">
+								<td class="px-[14px] py-[12px] text-left">
+									<span class="inline-flex items-center gap-[11px]">
+										<span class="border-line2 bg-panel h-[30px] w-[30px] flex-shrink-0 rounded-full border bg-cover bg-top" style={_hb ? `background-image: url('${_hb}');` : ''}></span>
+										<span class="text-ink text-[13.5px] font-bold">{decklist.hero || '—'}</span>
+									</span>
+								</td>
+								<td class="px-[14px] py-[12px] text-left">
+									{#if event?.circuit}
+										<span class="inline-flex items-center gap-2 text-[13px] font-bold" style="color: {_ccColor};">
+											<span class="block h-[8px] w-[8px]" style="background-color: {_ccColor};"></span>
+											{event.circuit}
+										</span>
+									{:else}
+										<span class="text-fade">—</span>
+									{/if}
+								</td>
+								<td class="font-mono-system text-soft px-[14px] py-[12px] text-left text-[12.5px] font-bold tabular-nums">
+									{event?.eventDate
+										? new Date(event.eventDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+										: '—'}
+								</td>
+								<td class="px-[14px] py-[12px] text-right">
+									<span
+										class="inline-block px-[7px] py-[3px] text-[10px] font-extrabold tracking-[0.05em] uppercase"
+										style={_isChamp
+											? 'background-color: #C8922E; color: #17150F;'
+											: decklist.placement && decklist.placement <= 8
+												? 'background-color: color-mix(in srgb, #16489E 16%, transparent); color: #16489E;'
+												: 'border: 1px solid var(--ed-line2); color: var(--ed-soft);'}
+									>
+										{decklist.placement
+											? decklist.placement === 1
+												? 'Champion'
+												: decklist.placement === 2
+													? '2nd'
+													: decklist.placement === 3
+														? '3rd'
+														: `#${decklist.placement}`
+											: '—'}
+									</span>
+								</td>
+								<td class="px-[14px] py-[12px] text-right">
+									<a
+										href="/age-open/{event?.id}/decklist/{decklist.id}"
+										class="text-accent hover:text-warm text-[11px] font-extrabold tracking-[0.07em] uppercase transition-colors"
+									>
+										View →
+									</a>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		</section>
+	{/if}
+</AgeShell>
