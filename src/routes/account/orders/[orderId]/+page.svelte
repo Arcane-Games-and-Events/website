@@ -1,5 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
+	import AgeShell from '$lib/components/age/AgeShell.svelte';
+
 	export let data;
 	export let form;
 
@@ -41,7 +43,7 @@
 		data.order.meta?.type !== 'subscription' &&
 		(!data.additionalData?.ticket || !data.additionalData.ticket.refunded);
 
-	// Get order type display name
+	// Order type display name
 	function getOrderTypeName(type) {
 		const types = {
 			ticket: 'Event Ticket',
@@ -51,436 +53,295 @@
 		return types[type] || 'Purchase';
 	}
 
-	// Get order type icon and color
-	function getOrderTypeStyle(type) {
-		const styles = {
-			ticket: {
-				color: 'blue',
-				icon: 'M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z'
-			},
-			course: {
-				color: 'emerald',
-				icon: 'M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5'
-			},
-			subscription: { color: 'emerald', icon: 'M13 2L3 14h9l-1 8 10-12h-9l1-8z', isFilled: true }
-		};
-		return (
-			styles[type] || {
-				color: 'gray',
-				icon: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z'
-			}
-		);
+	// Editorial accent color per order type. Used for the eyebrow line
+	// and the top hairline of the header section.
+	function getOrderAccent(type) {
+		if (type === 'ticket') return 'var(--ed-accent)';
+		if (type === 'course') return '#C8922E';
+		if (type === 'subscription') return 'var(--ed-prem)';
+		return 'var(--ed-ink)';
 	}
 
-	const typeStyle = getOrderTypeStyle(data.order.meta?.type);
+	const accent = getOrderAccent(data.order.meta?.type);
+
+	function formatDateLong(d) {
+		return new Date(d).toLocaleDateString('en-US', {
+			weekday: 'long',
+			year: 'numeric',
+			month: 'long',
+			day: 'numeric'
+		});
+	}
+	function formatDateShort(d) {
+		return new Date(d).toLocaleDateString('en-US', {
+			year: 'numeric',
+			month: 'long',
+			day: 'numeric'
+		});
+	}
+	function formatTime(d) {
+		return new Date(d).toLocaleTimeString('en-US', {
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
 </script>
 
 <svelte:head>
-	<title>Order Details - AGE</title>
+	<title>Order Details — AGE</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950">
-	<div class="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-		<!-- Back Button -->
-		<div class="mb-6">
+<AgeShell active="Account">
+	<!--
+		Order detail header — editorial paper field with a colored top
+		hairline keyed to the order type (accent blue for tickets, gold
+		for courses, prem-green for subscriptions). Reads as a printed
+		receipt with the order type as the section name and the amount
+		as the dominant Archivo numeral.
+	-->
+	<section class="bg-paper border-ink relative overflow-hidden border-b-[3px] border-double">
+		<div class="absolute inset-x-0 top-0 z-[1] h-[4px]" style="background: {accent};"></div>
+
+		<div class="relative z-[1] mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[44px] pb-[42px]">
+			<!-- Back link -->
 			<a
 				href="/account?tab=billing"
-				class="group inline-flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
+				class="text-fade hover:text-ink font-mono-system inline-flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors"
 			>
-				<div
-					class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 transition-colors group-hover:bg-white/10"
-				>
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M15 19l-7-7 7-7"
-						/>
-					</svg>
-				</div>
-				Back to Purchase History
+				← Purchase history
 			</a>
-		</div>
 
-		<!-- Order Header Card -->
-		<div
-			class="relative mb-6 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-gray-800/50 via-gray-900 to-gray-950 shadow-2xl shadow-black/20"
-		>
-			<!-- Decorative elements -->
-			<div class="pointer-events-none absolute inset-0 overflow-hidden">
-				<div
-					class="absolute -top-32 -right-32 h-96 w-96 bg-{typeStyle.color}-500/5 rounded-full blur-3xl"
-				></div>
-				<div
-					class="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-purple-500/5 blur-3xl"
-				></div>
-				<div
-					class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:32px_32px]"
-				></div>
+			<!-- Eyebrow — sits as its own row between the back link and
+				 the serif headline so the order type + ID reads cleanly
+				 without a colored gutter mark next to it. -->
+			<div
+				class="font-mono-system mt-6 block text-[11px] font-extrabold tracking-[0.18em] uppercase"
+				style="color: {accent};"
+			>
+				{getOrderTypeName(data.order.meta?.type)} · Order #{data.order.id.substring(0, 8)}
 			</div>
 
-			<div class="relative px-6 py-8 sm:px-10 sm:py-10">
-				<div class="flex flex-col gap-6 sm:flex-row sm:items-start">
-					<!-- Order Type Icon -->
-					<div class="relative shrink-0">
-						<div
-							class="flex h-16 w-16 items-center justify-center rounded-2xl shadow-2xl
-							{typeStyle.color === 'blue'
-								? 'bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 shadow-blue-500/20'
-								: ''}
-							{typeStyle.color === 'emerald'
-								? 'bg-gradient-to-br from-emerald-500 via-green-600 to-emerald-600 shadow-emerald-500/20'
-								: ''}
-							{typeStyle.color === 'gray'
-								? 'bg-gradient-to-br from-gray-500 via-gray-600 to-gray-700 shadow-gray-500/20'
-								: ''}"
-						>
-							{#if typeStyle.isFilled}
-								<svg class="h-8 w-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-									<path d={typeStyle.icon} />
-								</svg>
-							{:else}
-								<svg
-									class="h-8 w-8 text-white"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="1.5"
-									viewBox="0 0 24 24"
-								>
-									<path stroke-linecap="round" stroke-linejoin="round" d={typeStyle.icon} />
-								</svg>
-							{/if}
-						</div>
-					</div>
-
-					<!-- Order Info -->
-					<div class="min-w-0 flex-1">
-						<div class="mb-2 flex flex-wrap items-center gap-3">
-							<h1 class="text-2xl font-bold text-white sm:text-3xl">
-								{getOrderTypeName(data.order.meta?.type)}
-							</h1>
-							{#if data.additionalData?.ticket?.refunded}
-								<span
-									class="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-400"
-								>
-									<svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
-										<path
-											fill-rule="evenodd"
-											d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM8.28 7.22a.75.75 0 0 0-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L10 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L11.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L10 8.94 8.28 7.22Z"
-											clip-rule="evenodd"
-										/>
-									</svg>
-									Refunded
-								</span>
-							{:else if data.order.meta?.type === 'subscription'}
-								{#if data.user.subscriptionStatus === 'cancelled'}
-									<span
-										class="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400"
-									>
-										<svg
-											class="h-3.5 w-3.5"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
-											/>
-										</svg>
-										Cancelled
-									</span>
-								{:else if data.user.subscriptionStatus === 'payment_failed'}
-									<span
-										class="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-400"
-									>
-										<svg
-											class="h-3.5 w-3.5"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
-											/>
-										</svg>
-										Payment Failed
-									</span>
-								{:else if data.user.subscriptionStatus === 'expired'}
-									<span
-										class="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-400"
-									>
-										<svg
-											class="h-3.5 w-3.5"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												d="M6 18 18 6M6 6l12 12"
-											/>
-										</svg>
-										Expired
-									</span>
-								{:else}
-									<span
-										class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400"
-									>
-										<svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
-											<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-										</svg>
-										Active
-									</span>
-								{/if}
-							{:else}
-								<span
-									class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400"
-								>
-									<svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
-										<path
-											fill-rule="evenodd"
-											d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
-											clip-rule="evenodd"
-										/>
-									</svg>
-									Completed
-								</span>
-							{/if}
-						</div>
-						<p class="mb-4 text-sm text-gray-400">
-							Order placed on {new Date(data.order.createdAt).toLocaleDateString('en-US', {
-								year: 'numeric',
-								month: 'long',
-								day: 'numeric'
-							})}
-						</p>
-						<div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-500">
-							<span class="flex items-center gap-2">
-								<svg
-									class="h-4 w-4 text-gray-600"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="1.5"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z"
-									/>
-								</svg>
-								<span class="font-mono text-xs">#{data.order.id.substring(0, 8)}</span>
-							</span>
-							<span class="flex items-center gap-2">
-								<svg
-									class="h-4 w-4 text-gray-600"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="1.5"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-									/>
-								</svg>
-								{new Date(data.order.createdAt).toLocaleTimeString('en-US', {
-									hour: '2-digit',
-									minute: '2-digit'
-								})}
-							</span>
-						</div>
-					</div>
-
-					<!-- Amount -->
-					<div
-						class="rounded-xl border border-white/5 bg-white/5 px-4 py-3 text-center sm:text-right"
+			<!-- Title row: serif headline + amount column -->
+			<div class="mt-[10px] flex flex-wrap items-end justify-between gap-7">
+				<div class="min-w-0 flex-1">
+					<h1
+						class="font-newsreader text-[clamp(34px,4.5vw,52px)] leading-[0.96] font-semibold tracking-[-0.02em]"
 					>
-						<div class="text-3xl font-bold text-white">
-							${parseFloat(data.order.amount).toFixed(2)}
-						</div>
-						<div class="mt-0.5 text-xs text-gray-500">{data.order.currency}</div>
+						{getOrderTypeName(data.order.meta?.type)}
+					</h1>
+					<div class="text-soft mt-3 text-[14px] font-semibold">
+						Placed on {formatDateLong(data.order.createdAt)} at {formatTime(data.order.createdAt)}
 					</div>
 				</div>
+				<div class="text-right">
+					<div
+						class="font-archivo text-[56px] font-black leading-[0.85] tabular-nums tracking-[-0.03em]"
+					>
+						${parseFloat(data.order.amount).toFixed(2)}
+					</div>
+					<div
+						class="text-fade font-mono-system mt-1 text-[10px] font-extrabold tracking-[0.14em] uppercase"
+					>
+						{data.order.currency}
+					</div>
+				</div>
+			</div>
+
+			<!-- Status chip strip -->
+			<div class="mt-7 flex flex-wrap items-center gap-2">
+				{#if data.additionalData?.ticket?.refunded}
+					<span
+						class="bg-warm inline-flex items-center px-[14px] py-[7px] text-[11px] font-extrabold tracking-[0.12em] text-white uppercase"
+					>
+						Refunded
+					</span>
+				{:else if data.order.meta?.type === 'subscription'}
+					{#if data.user.subscriptionStatus === 'cancelled'}
+						<span
+							class="border-warm text-warm inline-flex items-center border bg-transparent px-[14px] py-[7px] text-[11px] font-extrabold tracking-[0.12em] uppercase"
+						>
+							Cancelled
+						</span>
+					{:else if data.user.subscriptionStatus === 'payment_failed'}
+						<span
+							class="bg-warm inline-flex items-center px-[14px] py-[7px] text-[11px] font-extrabold tracking-[0.12em] text-white uppercase"
+						>
+							Payment Failed
+						</span>
+					{:else if data.user.subscriptionStatus === 'expired'}
+						<span
+							class="border-line2 text-fade inline-flex items-center border bg-transparent px-[14px] py-[7px] text-[11px] font-extrabold tracking-[0.12em] uppercase"
+						>
+							Expired
+						</span>
+					{:else}
+						<span
+							class="bg-prem inline-flex items-center px-[14px] py-[7px] text-[11px] font-extrabold tracking-[0.12em] text-white uppercase"
+						>
+							Active
+						</span>
+					{/if}
+				{:else}
+					<span
+						class="bg-prem inline-flex items-center px-[14px] py-[7px] text-[11px] font-extrabold tracking-[0.12em] text-white uppercase"
+					>
+						Completed
+					</span>
+				{/if}
+				<span
+					class="border-line2 text-ink font-mono-system inline-flex items-center border bg-transparent px-[14px] py-[7px] text-[11px] font-extrabold tracking-[0.12em] uppercase"
+				>
+					{data.order.provider}
+				</span>
 			</div>
 		</div>
+	</section>
 
-		<!-- Success/Error Messages -->
-		{#if form?.success}
-			<div class="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-				<div class="flex items-center gap-3">
-					<svg class="h-5 w-5 shrink-0 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
-						<path
-							fill-rule="evenodd"
-							d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-					<p class="text-sm font-medium text-emerald-300">{form.message}</p>
-				</div>
-			</div>
-		{/if}
-
-		{#if form?.error}
-			<div class="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
-				<div class="flex items-center gap-3">
-					<svg class="h-5 w-5 shrink-0 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-						<path
-							fill-rule="evenodd"
-							d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-					<p class="text-sm font-medium text-red-300">{form.error}</p>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Order Details Card -->
-		<div
-			class="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-gray-800/30 to-gray-900/50 shadow-xl"
-		>
-			<!-- Order Information Section -->
-			<div class="border-b border-white/5 bg-white/[0.02] px-6 py-5">
-				<div class="flex items-center gap-3">
+	<!-- Form messages -->
+	{#if form?.success}
+		<section class="bg-paper-bg border-ink border-b-[3px] border-double">
+			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-6">
+				<div class="bg-paper border-prem border-line2 border-l-[3px] border px-5 py-4">
 					<div
-						class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400"
+						class="text-prem font-mono-system mb-1 text-[10px] font-extrabold tracking-[0.16em] uppercase"
 					>
-						<svg
-							class="h-5 w-5"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							viewBox="0 0 24 24"
+						Refund processed
+					</div>
+					<p class="text-soft text-[13.5px] leading-[1.5] font-semibold">{form.message}</p>
+				</div>
+			</div>
+		</section>
+	{/if}
+
+	{#if form?.error}
+		<section class="bg-paper-bg border-ink border-b-[3px] border-double">
+			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-6">
+				<div class="bg-paper border-warm border-line2 border-l-[3px] border px-5 py-4">
+					<div
+						class="text-warm font-mono-system mb-1 text-[10px] font-extrabold tracking-[0.16em] uppercase"
+					>
+						Refund error
+					</div>
+					<p class="text-soft text-[13.5px] leading-[1.5] font-semibold">{form.error}</p>
+				</div>
+			</div>
+		</section>
+	{/if}
+
+	<!-- Body — stacked editorial sections -->
+	<section class="bg-paper-bg border-ink border-b-[3px] border-double">
+		<div class="mx-auto w-full max-w-[min(94vw,1920px)] space-y-7 px-14 py-10">
+			<!--
+				Order Information — editorial card with mono labels and
+				ink values. Same dl pattern used on the event signup
+				and results pages.
+			-->
+			<div class="border-line2 bg-paper border">
+				<div class="border-line2 flex items-baseline justify-between border-b px-6 py-[14px]">
+					<h2 class="font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
+						Order Information
+					</h2>
+					<span
+						class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
+					>
+						Transaction details
+					</span>
+				</div>
+				<dl class="grid grid-cols-1 sm:grid-cols-2">
+					<div class="border-line2 -mt-px -ml-px border px-6 py-5">
+						<dt
+							class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
 						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
-							/>
-						</svg>
+							Order ID
+						</dt>
+						<dd
+							class="font-mono-system text-ink text-[13.5px] font-bold tracking-[0.02em] break-all"
+						>
+							{data.order.id}
+						</dd>
 					</div>
-					<div>
-						<h2 class="text-lg font-semibold text-white">Order Information</h2>
-						<p class="text-sm text-gray-400">Transaction and payment details</p>
+					<div class="border-line2 -mt-px -ml-px border px-6 py-5">
+						<dt
+							class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+						>
+							Transaction ID
+						</dt>
+						<dd
+							class="font-mono-system text-soft text-[13.5px] font-bold tracking-[0.02em] break-all"
+						>
+							{data.order.providerRef}
+						</dd>
 					</div>
-				</div>
-			</div>
-
-			<div class="p-6">
-				<div class="grid gap-4 sm:grid-cols-2">
-					<div class="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-						<div class="mb-1 text-xs tracking-wider text-gray-500 uppercase">Order ID</div>
-						<div class="font-mono text-sm text-white">{data.order.id.substring(0, 13)}...</div>
-					</div>
-					<div class="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-						<div class="mb-1 text-xs tracking-wider text-gray-500 uppercase">Transaction ID</div>
-						<div class="font-mono text-sm text-gray-400">{data.order.providerRef}</div>
-					</div>
-					<div class="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-						<div class="mb-1 text-xs tracking-wider text-gray-500 uppercase">Date & Time</div>
-						<div class="text-sm font-medium text-white">
-							{new Date(data.order.createdAt).toLocaleDateString('en-US', {
-								year: 'numeric',
-								month: 'long',
-								day: 'numeric'
-							})}
-						</div>
-						<div class="mt-0.5 text-xs text-gray-500">
-							{new Date(data.order.createdAt).toLocaleTimeString('en-US', {
-								hour: '2-digit',
-								minute: '2-digit'
-							})}
+					<div class="border-line2 -mt-px -ml-px border px-6 py-5">
+						<dt
+							class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+						>
+							Date &amp; Time
+						</dt>
+						<dd class="font-newsreader text-[18px] font-semibold tracking-[-0.01em]">
+							{formatDateShort(data.order.createdAt)}
+						</dd>
+						<div class="text-fade font-mono-system mt-1 text-[11px] font-bold">
+							{formatTime(data.order.createdAt)}
 						</div>
 					</div>
-					<div class="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-						<div class="mb-1 text-xs tracking-wider text-gray-500 uppercase">Payment Provider</div>
-						<div class="text-sm font-medium text-white capitalize">{data.order.provider}</div>
+					<div class="border-line2 -mt-px -ml-px border px-6 py-5">
+						<dt
+							class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+						>
+							Payment Provider
+						</dt>
+						<dd
+							class="font-newsreader text-[18px] font-semibold tracking-[-0.01em] capitalize"
+						>
+							{data.order.provider}
+						</dd>
 					</div>
-				</div>
+				</dl>
 			</div>
 
-			<!-- Type-Specific Details -->
+			<!-- Ticket details -->
 			{#if data.order.meta?.type === 'ticket' && data.additionalData?.ticket}
-				<div class="border-t border-white/5 bg-white/[0.02] px-6 py-5">
-					<div class="flex items-center gap-3">
-						<div
-							class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400"
+				<div class="border-line2 bg-paper border">
+					<div class="border-line2 flex items-baseline justify-between border-b px-6 py-[14px]">
+						<h2 class="font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
+							Ticket Details
+						</h2>
+						<span
+							class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
 						>
-							<svg
-								class="h-5 w-5"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="1.5"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z"
-								/>
-							</svg>
-						</div>
-						<div>
-							<h2 class="text-lg font-semibold text-white">Ticket Details</h2>
-							<p class="text-sm text-gray-400">Event registration information</p>
-						</div>
+							Registration
+						</span>
 					</div>
-				</div>
-
-				<div class="border-t border-white/5 p-6">
-					<div class="grid gap-4 sm:grid-cols-2">
-						<div class="rounded-xl border border-white/5 bg-white/[0.02] p-4 sm:col-span-2">
-							<div class="flex items-start justify-between gap-4">
-								<div class="flex-1">
-									<div class="mb-1 text-xs tracking-wider text-gray-500 uppercase">Event</div>
-									<div class="text-sm font-medium text-white">{data.order.meta.eventTitle}</div>
-									<!-- Event Details -->
+					<div class="px-6 py-6 space-y-5">
+						<!-- Event block -->
+						<div class="border-line2 bg-paper-bg/40 border px-5 py-5">
+							<div class="flex flex-wrap items-start justify-between gap-3">
+								<div class="min-w-0 flex-1">
+									<div
+										class="text-fade font-mono-system mb-[5px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+									>
+										Event
+									</div>
+									<div
+										class="font-newsreader text-[22px] font-semibold leading-[1.1] tracking-[-0.01em]"
+									>
+										{data.order.meta.eventTitle}
+									</div>
 									{#if data.additionalData?.event}
-										<div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
+										<div
+											class="text-fade font-mono-system mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-extrabold tracking-[0.08em] uppercase"
+										>
 											{#if data.additionalData.event.circuit}
-												<span class="flex items-center gap-1.5">
-													<svg
-														class="h-3.5 w-3.5 text-emerald-400"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-														/>
-													</svg>
-													{data.additionalData.event.circuit}
-												</span>
+												<span style="color: {accent};">{data.additionalData.event.circuit}</span>
+											{/if}
+											{#if data.additionalData.event.format}
+												<span class="text-fade">·</span>
+												<span class="text-soft">{data.additionalData.event.format}</span>
 											{/if}
 											{#if data.additionalData.event.eventDate}
-												<span class="flex items-center gap-1.5">
-													<svg
-														class="h-3.5 w-3.5 text-purple-400"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-														/>
-													</svg>
+												<span class="text-fade">·</span>
+												<span class="text-soft normal-case tracking-[0.04em]">
 													{new Date(data.additionalData.event.eventDate).toLocaleDateString(
 														'en-US',
 														{
@@ -494,633 +355,425 @@
 												</span>
 											{/if}
 											{#if data.additionalData.event.location}
-												<span class="flex items-center gap-1.5">
-													<svg
-														class="h-3.5 w-3.5 text-cyan-400"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-														/>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-														/>
-													</svg>
+												<span class="text-fade">·</span>
+												<span class="text-soft normal-case tracking-[0.04em]">
 													{data.additionalData.event.location}
-												</span>
-											{/if}
-											{#if data.additionalData.event.address}
-												<span class="flex items-center gap-1.5">
-													<svg
-														class="h-3.5 w-3.5 text-orange-400"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-														/>
-													</svg>
-													{data.additionalData.event.address}
-												</span>
-											{/if}
-											{#if data.additionalData.event.format}
-												<span class="flex items-center gap-1.5">
-													<svg
-														class="h-3.5 w-3.5 text-blue-400"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"
-														/>
-													</svg>
-													{data.additionalData.event.format}
 												</span>
 											{/if}
 										</div>
 									{/if}
 								</div>
-								<!-- View Event Link -->
 								{#if data.additionalData?.event?.id}
 									<a
 										href="/age-open/{data.additionalData.event.id}"
-										class="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
+										class="border-ink text-ink hover:bg-ink hover:text-paper-bg font-mono-system inline-flex shrink-0 items-center gap-2 border-[1.5px] bg-transparent px-4 py-[8px] text-[10.5px] font-extrabold tracking-[0.08em] uppercase transition-colors"
 									>
-										<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-											/>
-										</svg>
-										View Event
+										View event →
 									</a>
 								{/if}
 							</div>
 						</div>
-						<div class="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-							<div class="mb-1 text-xs tracking-wider text-blue-500/80 uppercase">Ticket Code</div>
-							<div class="font-mono text-sm font-bold text-blue-400">
-								{data.additionalData.ticket.code}
+
+						<!-- Ticket info grid -->
+						<dl class="grid grid-cols-1 sm:grid-cols-2">
+							<div class="border-line2 -mt-px -ml-px border px-5 py-4" style="border-color: color-mix(in srgb, var(--ed-accent) 35%, transparent); background-color: color-mix(in srgb, var(--ed-accent) 6%, transparent);">
+								<dt
+									class="text-accent font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Ticket Code
+								</dt>
+								<dd
+									class="font-mono-system text-accent text-[15px] font-extrabold tracking-[0.04em]"
+								>
+									{data.additionalData.ticket.code}
+								</dd>
 							</div>
-						</div>
-						{#if data.additionalData.ticket.firstName}
-							<div class="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-								<div class="mb-1 text-xs tracking-wider text-gray-500 uppercase">Player Name</div>
-								<div class="text-sm font-medium text-white">
-									{data.additionalData.ticket.firstName}
-									{data.additionalData.ticket.lastName}
+							{#if data.additionalData.ticket.firstName}
+								<div class="border-line2 -mt-px -ml-px border px-5 py-4">
+									<dt
+										class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+									>
+										Player Name
+									</dt>
+									<dd class="font-newsreader text-[16px] font-semibold">
+										{data.additionalData.ticket.firstName}
+										{data.additionalData.ticket.lastName}
+									</dd>
 								</div>
-							</div>
-						{/if}
-						{#if data.additionalData.ticket.gemId}
-							<div class="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-								<div class="mb-1 text-xs tracking-wider text-gray-500 uppercase">GEM ID</div>
-								<div class="text-sm font-medium text-white">{data.additionalData.ticket.gemId}</div>
-							</div>
-						{/if}
-						{#if data.additionalData.ticket.refunded}
-							<div class="rounded-xl border border-red-500/20 bg-red-500/5 p-4 sm:col-span-2">
-								<div class="mb-1 text-xs tracking-wider text-red-500/80 uppercase">Refunded On</div>
-								<div class="text-sm font-medium text-red-400">
-									{new Date(data.additionalData.ticket.refundedAt).toLocaleDateString('en-US', {
-										year: 'numeric',
-										month: 'long',
-										day: 'numeric'
-									})}
+							{/if}
+							{#if data.additionalData.ticket.gemId}
+								<div class="border-line2 -mt-px -ml-px border px-5 py-4">
+									<dt
+										class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+									>
+										GEM ID
+									</dt>
+									<dd class="font-mono-system text-ink text-[14px] font-bold">
+										{data.additionalData.ticket.gemId}
+									</dd>
 								</div>
-							</div>
-						{/if}
+							{/if}
+							{#if data.additionalData.ticket.refunded}
+								<div
+									class="border-warm -mt-px -ml-px border border-l-[3px] px-5 py-4 sm:col-span-2"
+									style="background-color: color-mix(in srgb, var(--ed-warm) 6%, transparent);"
+								>
+									<dt
+										class="text-warm font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+									>
+										Refunded On
+									</dt>
+									<dd class="font-newsreader text-warm text-[16px] font-semibold">
+										{formatDateShort(data.additionalData.ticket.refundedAt)}
+									</dd>
+								</div>
+							{/if}
+						</dl>
 					</div>
 				</div>
 			{:else if data.order.meta?.type === 'course'}
-				<div class="border-t border-white/5 bg-white/[0.02] px-6 py-5">
-					<div class="flex items-center gap-3">
-						<div
-							class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400"
+				<div class="border-line2 bg-paper border">
+					<div class="border-line2 flex items-baseline justify-between border-b px-6 py-[14px]">
+						<h2 class="font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
+							Course Details
+						</h2>
+						<span
+							class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
 						>
-							<svg
-								class="h-5 w-5"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="1.5"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5"
-								/>
-							</svg>
-						</div>
-						<div>
-							<h2 class="text-lg font-semibold text-white">Course Details</h2>
-							<p class="text-sm text-gray-400">Course access information</p>
-						</div>
+							Access
+						</span>
 					</div>
-				</div>
-
-				<div class="border-t border-white/5 p-6">
-					<div class="grid gap-4 sm:grid-cols-2">
-						<div class="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-							<div class="mb-1 text-xs tracking-wider text-gray-500 uppercase">Course ID</div>
-							<div class="font-mono text-sm text-white">{data.order.meta.courseId}</div>
+					<dl class="grid grid-cols-1 sm:grid-cols-2">
+						<div class="border-line2 -mt-px -ml-px border px-6 py-5">
+							<dt
+								class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+							>
+								Course ID
+							</dt>
+							<dd
+								class="font-mono-system text-ink text-[13.5px] font-bold tracking-[0.02em] break-all"
+							>
+								{data.order.meta.courseId}
+							</dd>
 						</div>
 						{#if data.additionalData?.entitlement}
-							<div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-								<div class="mb-1 text-xs tracking-wider text-emerald-500/80 uppercase">Status</div>
-								<div class="text-sm font-medium text-emerald-400">Active Access</div>
+							<div
+								class="border-line2 -mt-px -ml-px border px-6 py-5"
+								style="border-color: color-mix(in srgb, var(--ed-prem) 35%, transparent); background-color: color-mix(in srgb, var(--ed-prem) 6%, transparent);"
+							>
+								<dt
+									class="text-prem font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Status
+								</dt>
+								<dd class="text-prem font-newsreader text-[18px] font-semibold">
+									Active access
+								</dd>
 							</div>
 						{:else}
-							<div class="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
-								<div class="mb-1 text-xs tracking-wider text-red-500/80 uppercase">Status</div>
-								<div class="text-sm font-medium text-red-400">Access Revoked</div>
+							<div
+								class="border-line2 -mt-px -ml-px border px-6 py-5"
+								style="border-color: color-mix(in srgb, var(--ed-warm) 35%, transparent); background-color: color-mix(in srgb, var(--ed-warm) 6%, transparent);"
+							>
+								<dt
+									class="text-warm font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Status
+								</dt>
+								<dd class="text-warm font-newsreader text-[18px] font-semibold">
+									Access revoked
+								</dd>
 							</div>
 						{/if}
-					</div>
+					</dl>
 				</div>
 			{:else if data.order.meta?.type === 'subscription'}
-				<div
-					class="border-t border-white/5 bg-gradient-to-r from-emerald-500/5 to-green-500/5 px-6 py-5"
-				>
-					<div class="flex items-center gap-3">
-						<div
-							class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 text-emerald-400"
+				<div class="border-line2 bg-paper border">
+					<div class="border-line2 flex items-baseline justify-between border-b px-6 py-[14px]">
+						<h2 class="font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
+							Premium Subscription
+						</h2>
+						<span
+							class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
 						>
-							<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-								<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-							</svg>
-						</div>
-						<div>
-							<h2 class="text-lg font-semibold text-white">Premium Subscription</h2>
-							<p class="text-sm text-gray-400">AGE Premium membership details</p>
-						</div>
+							Membership
+						</span>
 					</div>
-				</div>
-
-				<div class="border-t border-white/5 p-6">
-					<div class="grid gap-4 sm:grid-cols-2">
-						<div class="rounded-xl border border-white/5 bg-white/[0.02] p-4">
-							<div class="mb-1 text-xs tracking-wider text-gray-500 uppercase">Subscription ID</div>
-							<div class="font-mono text-sm text-white">{data.order.meta.subscriptionId}</div>
+					<dl class="grid grid-cols-1 sm:grid-cols-2">
+						<div class="border-line2 -mt-px -ml-px border px-6 py-5">
+							<dt
+								class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+							>
+								Subscription ID
+							</dt>
+							<dd
+								class="font-mono-system text-ink text-[13.5px] font-bold tracking-[0.02em] break-all"
+							>
+								{data.order.meta.subscriptionId}
+							</dd>
 						</div>
-						<div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-							<div class="mb-1 text-xs tracking-wider text-emerald-500/80 uppercase">Plan</div>
-							<div class="text-sm font-medium text-emerald-400">
+						<div
+							class="border-line2 -mt-px -ml-px border px-6 py-5"
+							style="border-color: color-mix(in srgb, var(--ed-prem) 35%, transparent); background-color: color-mix(in srgb, var(--ed-prem) 6%, transparent);"
+						>
+							<dt
+								class="text-prem font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+							>
+								Plan
+							</dt>
+							<dd class="text-prem font-newsreader text-[18px] font-semibold">
 								{data.order.meta.subscriptionType === 'yearly' ? 'Annual' : 'Monthly'} Premium
-							</div>
+							</dd>
 						</div>
-						<!-- Subscription Status -->
+						<!-- Subscription state -->
 						{#if data.user.subscriptionStatus === 'cancelled'}
-							<div class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 sm:col-span-2">
-								<div class="mb-1 text-xs tracking-wider text-amber-500/80 uppercase">Status</div>
-								<div class="flex items-center gap-2">
-									<svg
-										class="h-4 w-4 text-amber-400"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
-										/>
-									</svg>
-									<span class="text-sm font-medium text-amber-400">Cancelled</span>
-								</div>
+							<div
+								class="border-warm -mt-px -ml-px border border-l-[3px] px-6 py-5 sm:col-span-2"
+								style="background-color: color-mix(in srgb, var(--ed-warm) 6%, transparent);"
+							>
+								<dt
+									class="text-warm font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Cancelled
+								</dt>
 								{#if data.user.subscriptionEndDate}
-									<p class="mt-1 text-xs text-gray-400">
-										Access until {new Date(data.user.subscriptionEndDate).toLocaleDateString(
-											'en-US',
-											{ year: 'numeric', month: 'long', day: 'numeric' }
-										)}
-									</p>
+									<dd class="text-soft text-[13px] font-semibold">
+										Access until {formatDateShort(data.user.subscriptionEndDate)}.
+									</dd>
 								{/if}
 							</div>
 						{:else if data.user.subscriptionStatus === 'payment_failed'}
-							<div class="rounded-xl border border-red-500/20 bg-red-500/5 p-4 sm:col-span-2">
-								<div class="mb-1 text-xs tracking-wider text-red-500/80 uppercase">Status</div>
-								<div class="flex items-center gap-2">
-									<svg
-										class="h-4 w-4 text-red-400"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
-										/>
-									</svg>
-									<span class="text-sm font-medium text-red-400">Payment Failed</span>
-								</div>
-								<p class="mt-1 text-xs text-gray-400">
-									Your last payment failed. Please <a
+							<div
+								class="border-warm -mt-px -ml-px border border-l-[3px] px-6 py-5 sm:col-span-2"
+								style="background-color: color-mix(in srgb, var(--ed-warm) 6%, transparent);"
+							>
+								<dt
+									class="text-warm font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Payment failed
+								</dt>
+								<dd class="text-soft text-[13px] font-semibold leading-[1.5]">
+									Your last payment failed. <a
 										href="/account?tab=plan"
-										class="text-emerald-400 underline hover:text-emerald-300"
-										>update your payment method</a
-									>
-									to avoid losing access.
+										class="text-accent font-extrabold tracking-[0.04em] uppercase">Update your payment method →</a
+									> to avoid losing access.
 									{#if data.user.subscriptionEndDate}
-										<br />Grace period ends {new Date(
-											data.user.subscriptionEndDate
-										).toLocaleDateString('en-US', {
-											year: 'numeric',
-											month: 'long',
-											day: 'numeric'
-										})}.
+										<br />Grace period ends {formatDateShort(data.user.subscriptionEndDate)}.
 									{/if}
-								</p>
+								</dd>
 							</div>
 						{:else if data.user.subscriptionStatus === 'expired'}
-							<div class="rounded-xl border border-red-500/20 bg-red-500/5 p-4 sm:col-span-2">
-								<div class="mb-1 text-xs tracking-wider text-red-500/80 uppercase">Status</div>
-								<div class="flex items-center gap-2">
-									<svg
-										class="h-4 w-4 text-red-400"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										viewBox="0 0 24 24"
-									>
-										<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-									</svg>
-									<span class="text-sm font-medium text-red-400">Expired</span>
-								</div>
-								<p class="mt-1 text-xs text-gray-400">
-									Your subscription has ended. <a
+							<div
+								class="border-warm -mt-px -ml-px border border-l-[3px] px-6 py-5 sm:col-span-2"
+								style="background-color: color-mix(in srgb, var(--ed-warm) 6%, transparent);"
+							>
+								<dt
+									class="text-warm font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Expired
+								</dt>
+								<dd class="text-soft text-[13px] font-semibold">
+									Your subscription has ended.
+									<a
 										href="/premium"
-										class="text-emerald-400 underline hover:text-emerald-300">Resubscribe</a
-									> to regain access.
-								</p>
+										class="text-accent font-extrabold tracking-[0.04em] uppercase">Resubscribe →</a
+									>
+								</dd>
 							</div>
 						{:else if data.user.subscriptionStatus === 'active'}
 							<div
-								class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 sm:col-span-2"
+								class="border-line2 -mt-px -ml-px border border-l-[3px] px-6 py-5 sm:col-span-2"
+								style="border-left-color: var(--ed-prem); background-color: color-mix(in srgb, var(--ed-prem) 5%, transparent);"
 							>
-								<div class="mb-1 text-xs tracking-wider text-emerald-500/80 uppercase">Status</div>
-								<div class="flex items-center gap-2">
-									<svg class="h-4 w-4 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
-										<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-									</svg>
-									<span class="text-sm font-medium text-emerald-400">Active</span>
-								</div>
+								<dt
+									class="text-prem font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Active
+								</dt>
 								{#if data.user.nextBillingDate}
-									<p class="mt-1 text-xs text-gray-400">
-										Next billing: {new Date(data.user.nextBillingDate).toLocaleDateString('en-US', {
-											year: 'numeric',
-											month: 'long',
-											day: 'numeric'
-										})}
-									</p>
+									<dd class="text-soft text-[13px] font-semibold">
+										Next billing: {formatDateShort(data.user.nextBillingDate)}
+									</dd>
 								{/if}
 							</div>
 						{/if}
-					</div>
-
-					<div
-						class="mt-6 rounded-xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 to-green-500/10 p-4"
-					>
-						<div class="flex items-start gap-3">
-							<svg
-								class="mt-0.5 h-5 w-5 shrink-0 text-emerald-400"
-								fill="currentColor"
-								viewBox="0 0 24 24"
+					</dl>
+					<div class="border-line2 border-t px-6 py-5">
+						<p class="text-soft text-[13px] leading-[1.55] font-medium">
+							To manage or cancel your subscription, visit the
+							<a
+								href="/account?tab=plan"
+								class="text-accent font-extrabold tracking-[0.04em] uppercase"
+								>Subscription</a
 							>
-								<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-							</svg>
-							<p class="text-sm text-gray-300">
-								To manage or cancel your subscription, visit the
-								<a
-									href="/account?tab=plan"
-									class="font-medium text-emerald-400 underline hover:text-emerald-300"
-									>Subscription</a
-								>
-								section of your account.
-							</p>
-						</div>
+							section of your account.
+						</p>
 					</div>
 				</div>
 			{/if}
 
-			<!-- Refund Action -->
+			<!-- Refund section -->
 			{#if showRefundSection && !form?.success}
-				<div class="border-t border-white/5 bg-white/[0.02] px-6 py-5">
-					<div class="flex items-center gap-3">
-						<div
-							class="flex h-10 w-10 items-center justify-center rounded-xl {isWithin24Hours
-								? 'bg-amber-500/10 text-amber-400'
-								: 'bg-red-500/10 text-red-400'}"
+				<div class="border-line2 bg-paper border">
+					<div class="border-line2 flex items-baseline justify-between border-b px-6 py-[14px]">
+						<h2 class="font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
+							{isWithin24Hours ? 'Refund Request' : 'Request Refund'}
+						</h2>
+						<span
+							class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
 						>
-							<svg
-								class="h-5 w-5"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="1.5"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
-								/>
-							</svg>
-						</div>
-						<div>
-							<h2 class="text-lg font-semibold text-white">
-								{isWithin24Hours ? 'Refund Request' : 'Request Refund'}
-							</h2>
-							<p class="text-sm text-gray-400">
-								{isWithin24Hours
-									? 'Contact us for refund assistance'
-									: 'Refund this order and revoke access'}
-							</p>
-						</div>
+							{isWithin24Hours ? 'Contact support' : 'Self-service'}
+						</span>
 					</div>
-				</div>
-
-				<div class="border-t border-white/5 p-6">
-					{#if isWithin24Hours}
-						<!-- Within 24 hours - show contact message -->
-						<div class="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-							<div class="flex items-start gap-3">
-								<svg
-									class="mt-0.5 h-5 w-5 shrink-0 text-amber-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-									/>
-								</svg>
-								<div>
-									<p class="mb-1 text-sm font-medium text-amber-300">
-										{isEventPassed
-											? 'This event has already occurred'
-											: 'This event starts within 24 hours'}
-									</p>
-									<p class="text-sm text-gray-400">
-										Self-service refunds are only available until 24 hours before the event starts.
-										To request a refund, please contact our support team.
-									</p>
-								</div>
-							</div>
-						</div>
-
-						<a
-							href="mailto:info@age.events?subject=Refund Request - Order #{data.order.id.substring(
-								0,
-								8
-							)}&body=Hi, I would like to request a refund for my ticket purchase.%0A%0AOrder ID: {data
-								.order.id}%0AEvent: {data.order.meta?.eventTitle ||
-								'N/A'}%0A%0APlease let me know if you need any additional information."
-							class="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-6 py-3 text-sm font-semibold text-amber-400 transition-all hover:bg-amber-500/20"
-						>
-							<svg
-								class="h-4 w-4"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								viewBox="0 0 24 24"
+					<div class="px-6 py-6">
+						{#if isWithin24Hours}
+							<div
+								class="border-warm border-line2 mb-5 border border-l-[3px] bg-paper-bg/40 px-5 py-4"
 							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
-								/>
-							</svg>
-							Contact Support
-						</a>
-					{:else}
-						<!-- Outside 24 hours - show refund button -->
-						<div class="mb-4 rounded-xl border border-red-500/20 bg-red-500/5 p-4">
-							<div class="flex items-start gap-3">
-								<svg
-									class="mt-0.5 h-5 w-5 shrink-0 text-red-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
+								<div
+									class="text-warm font-mono-system mb-1 text-[10px] font-extrabold tracking-[0.14em] uppercase"
 								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-									/>
-								</svg>
-								<p class="text-sm text-red-300">
+									{isEventPassed ? 'Event has occurred' : 'Within 24 hours'}
+								</div>
+								<p class="text-soft text-[13.5px] leading-[1.55] font-semibold">
+									Self-service refunds are only available until 24 hours before the event starts.
+									To request a refund, please contact our support team.
+								</p>
+							</div>
+							<a
+								href={`mailto:info@arcanegamesandevents.com?subject=Refund Request - Order #${data.order.id.substring(0, 8)}&body=Hi, I would like to request a refund for my ticket purchase.%0A%0AOrder ID: ${data.order.id}%0AEvent: ${data.order.meta?.eventTitle || 'N/A'}%0A%0APlease let me know if you need any additional information.`}
+								class="border-ink text-ink hover:bg-ink hover:text-paper-bg font-mono-system inline-flex items-center gap-2 border-[1.5px] bg-transparent px-6 py-[12px] text-[11px] font-extrabold tracking-[0.08em] uppercase transition-colors"
+							>
+								Contact support →
+							</a>
+						{:else}
+							<div
+								class="border-warm border-line2 mb-5 border border-l-[3px] bg-paper-bg/40 px-5 py-4"
+							>
+								<div
+									class="text-warm font-mono-system mb-1 text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Permanent action
+								</div>
+								<p class="text-soft text-[13.5px] leading-[1.55] font-semibold">
 									This action cannot be undone. Refunding this order will permanently revoke any
 									access or benefits granted by this purchase.
 								</p>
 							</div>
-						</div>
 
-						<form method="POST" action="?/refund" use:enhance bind:this={refundFormRef}>
-							<button
-								type="button"
-								onclick={openRefundModal}
-								disabled={refunding}
-								class="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-6 py-3 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-							>
-								{#if refunding}
-									<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-										<circle
-											class="opacity-25"
-											cx="12"
-											cy="12"
-											r="10"
-											stroke="currentColor"
-											stroke-width="4"
-										></circle>
-										<path
-											class="opacity-75"
-											fill="currentColor"
-											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-										></path>
-									</svg>
-									Processing Refund...
-								{:else}
-									<svg
-										class="h-4 w-4"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
-										/>
-									</svg>
-									Request Refund
-								{/if}
-							</button>
-						</form>
-					{/if}
+							<form method="POST" action="?/refund" use:enhance bind:this={refundFormRef}>
+								<button
+									type="button"
+									onclick={openRefundModal}
+									disabled={refunding}
+									class="bg-warm border-warm font-mono-system inline-flex items-center gap-2 border-[1.5px] px-6 py-[12px] text-[11px] font-extrabold tracking-[0.08em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+								>
+									{#if refunding}
+										<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+											<circle
+												class="opacity-25"
+												cx="12"
+												cy="12"
+												r="10"
+												stroke="currentColor"
+												stroke-width="4"
+											></circle>
+											<path
+												class="opacity-75"
+												fill="currentColor"
+												d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+											></path>
+										</svg>
+										Processing refund…
+									{:else}
+										Request refund →
+									{/if}
+								</button>
+							</form>
+						{/if}
+					</div>
 				</div>
 			{/if}
 
-			<!-- Footer -->
-			<div class="border-t border-white/5 bg-white/[0.01] px-6 py-4">
-				<div class="flex items-center justify-center gap-4 text-xs text-gray-500">
-					<span class="flex items-center gap-1.5">
-						<svg class="h-4 w-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-							<path
-								fill-rule="evenodd"
-								d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z"
-								clip-rule="evenodd"
-							/>
-						</svg>
-						Secure transaction
-					</span>
-					<span class="text-gray-700">|</span>
-					<span>Powered by Authorize.net</span>
-				</div>
+			<!-- Secure transaction footnote -->
+			<div
+				class="text-fade font-mono-system text-center text-[10px] font-bold tracking-[0.14em] uppercase"
+			>
+				Secure transaction · Authorize.Net
 			</div>
 		</div>
-	</div>
-</div>
+	</section>
+</AgeShell>
 
-<!-- Refund Confirmation Modal -->
+<!-- Refund confirmation modal — editorial paper card with ink hairlines. -->
 {#if showRefundModal}
-	<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-		<!-- Backdrop -->
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center p-4"
+		onkeydown={(e) => e.key === 'Escape' && closeRefundModal()}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
 		<button
 			type="button"
-			class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+			class="absolute inset-0 cursor-default bg-ink/70"
 			onclick={closeRefundModal}
 			aria-label="Close modal"
 		></button>
 
-		<!-- Modal Content -->
 		<div
-			class="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-gray-900 shadow-2xl"
+			class="border-ink bg-paper text-ink relative w-full max-w-md overflow-hidden border-[1.5px] shadow-2xl"
 		>
-			<!-- Header -->
-			<div class="flex items-center gap-4 border-b border-white/5 bg-red-500/5 px-6 py-5">
-				<div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/20">
-					<svg
-						class="h-6 w-6 text-red-400"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
-						/>
-					</svg>
+			<!-- Header — warm top rule signals the destructive action -->
+			<div
+				class="border-line2 border-b border-t-[3px] px-6 py-5"
+				style="border-top-color: var(--ed-warm);"
+			>
+				<div
+					class="text-warm font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.18em] uppercase"
+				>
+					Confirm refund
 				</div>
-				<div>
-					<h3 class="text-lg font-bold text-white">Confirm Refund</h3>
-					<p class="text-sm text-gray-400">This action cannot be undone</p>
-				</div>
+				<h3
+					class="font-newsreader text-[24px] font-semibold leading-[1.05] tracking-[-0.01em]"
+				>
+					This action cannot be undone.
+				</h3>
 			</div>
 
 			<!-- Body -->
 			<div class="px-6 py-5">
-				<p class="mb-4 text-sm text-gray-300">
-					Are you sure you want to refund this order? This will:
+				<p class="text-soft mb-4 text-[13.5px] leading-[1.55] font-semibold">
+					Refunding this order will:
 				</p>
-				<ul class="space-y-2 text-sm text-gray-400">
-					<li class="flex items-start gap-2">
-						<svg
-							class="mt-0.5 h-5 w-5 shrink-0 text-red-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M6 18L18 6M6 6l12 12"
-							/>
-						</svg>
-						<span>Cancel your ticket/registration for this event</span>
-					</li>
-					<li class="flex items-start gap-2">
-						<svg
-							class="mt-0.5 h-5 w-5 shrink-0 text-red-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M6 18L18 6M6 6l12 12"
-							/>
-						</svg>
-						<span
-							>Issue a refund of <strong class="text-white"
-								>${parseFloat(data.order.amount).toFixed(2)}</strong
-							> to your payment method</span
-						>
-					</li>
-					<li class="flex items-start gap-2">
-						<svg
-							class="mt-0.5 h-5 w-5 shrink-0 text-red-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M6 18L18 6M6 6l12 12"
-							/>
-						</svg>
-						<span>Permanently revoke any access granted by this purchase</span>
-					</li>
+				<ul class="space-y-3 text-[13px] font-medium">
+					{#each [`Cancel your ticket / registration for this event`, `Issue a refund of $${parseFloat(data.order.amount).toFixed(2)} to your payment method`, `Permanently revoke any access granted by this purchase`] as line, i (i)}
+						<li class="flex items-start gap-3">
+							<span
+								class="bg-warm mt-[6px] inline-block h-[6px] w-[6px] shrink-0 rounded-full"
+								aria-hidden="true"
+							></span>
+							<span class="text-soft leading-[1.55]">{@html line}</span>
+						</li>
+					{/each}
 				</ul>
 			</div>
 
 			<!-- Footer -->
-			<div class="flex gap-3 border-t border-white/5 bg-gray-950/50 px-6 py-4">
+			<div class="border-line2 flex gap-3 border-t bg-paper-bg/40 px-6 py-4">
 				<button
 					type="button"
 					onclick={closeRefundModal}
-					class="flex-1 rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-300 transition-colors hover:bg-gray-700 hover:text-white"
+					class="border-ink text-ink hover:bg-ink hover:text-paper-bg font-mono-system flex-1 border-[1.5px] bg-transparent px-4 py-[12px] text-[11px] font-extrabold tracking-[0.08em] uppercase transition-colors"
 				>
 					Cancel
 				</button>
 				<button
 					type="button"
 					onclick={confirmRefund}
-					class="flex-1 rounded-xl bg-red-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-600"
+					class="bg-warm border-warm font-mono-system flex-1 border-[1.5px] px-4 py-[12px] text-[11px] font-extrabold tracking-[0.08em] text-white uppercase transition-[filter] hover:brightness-110"
 				>
-					Yes, Refund Order
+					Yes, refund order
 				</button>
 			</div>
 		</div>

@@ -188,22 +188,6 @@
 								</div>
 
 								<a
-									href="/dashboard"
-									class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white"
-								>
-									<svg
-										class="h-4 w-4"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="1.5"
-										viewBox="0 0 24 24"
-									>
-										<path stroke-linecap="round" stroke-linejoin="round" d={icons.dashboard} />
-									</svg>
-									Dashboard
-								</a>
-
-								<a
 									href="/account"
 									class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white"
 								>
@@ -487,22 +471,6 @@
 							Account
 						</p>
 						<div class="space-y-1">
-							<a
-								href="/dashboard"
-								on:click={closeMobile}
-								class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-400 hover:bg-white/5 hover:text-white"
-							>
-								<svg
-									class="h-5 w-5"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="1.5"
-									viewBox="0 0 24 24"
-								>
-									<path stroke-linecap="round" stroke-linejoin="round" d={icons.dashboard} />
-								</svg>
-								Dashboard
-							</a>
 							<a
 								href="/account"
 								on:click={closeMobile}

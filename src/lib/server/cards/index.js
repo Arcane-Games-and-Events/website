@@ -173,8 +173,41 @@ export async function resolveCardImage(input, options = {}) {
 }
 
 /**
- * Batch resolve multiple cards at once
+ * Run `fn` over `items` with a hard concurrency cap. Used here so a
+ * 70+ card article doesn't slam every available DB connection at once
+ * (which on cold cache would saturate the local Postgres pool and
+ * make the request hang). Returns results in input order.
+ *
+ * Implementation is a simple chunked Promise.all — process `limit`
+ * items at a time, wait for each batch to finish before starting the
+ * next. Slightly less efficient than a streaming worker pool (one
+ * slow item blocks its batch from advancing), but much easier to
+ * reason about and immune to subtle scheduling bugs.
+ *
+ * @template T, R
+ * @param {T[]} items
+ * @param {number} limit  Max in-flight calls at any time
+ * @param {(item: T, index: number) => Promise<R>} fn
+ * @returns {Promise<R[]>}
+ */
+export async function mapWithConcurrency(items, limit, fn) {
+	const list = Array.isArray(items) ? items : Array.from(items);
+	const results = new Array(list.length);
+	for (let start = 0; start < list.length; start += limit) {
+		const end = Math.min(start + limit, list.length);
+		const indices = [];
+		for (let i = start; i < end; i++) indices.push(i);
+		const chunkResults = await Promise.all(indices.map((i) => fn(list[i], i)));
+		for (let j = 0; j < chunkResults.length; j++) {
+			results[start + j] = chunkResults[j];
+		}
+	}
+	return results;
+}
+
+/**
+ * Batch resolve multiple cards at once, capped at 8 in-flight lookups.
  */
 export async function resolveCardImages(cards) {
-	return Promise.all(cards.map((card) => resolveCardImage(card)));
+	return mapWithConcurrency(cards, 8, (card) => resolveCardImage(card));
 }

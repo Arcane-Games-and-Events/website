@@ -2,11 +2,18 @@
 	import { fade, scale } from 'svelte/transition';
 	import { getCircuit, DEFAULT_CIRCUIT } from '$lib/data/circuits.js';
 	import DecklistCard from '$lib/components/DecklistCard.svelte';
+	import AgeShell from '$lib/components/age/AgeShell.svelte';
 
 	let { data } = $props();
 
 	let activeTab = $state('standings');
 	let selectedHeroModal = $state(null);
+
+	// Matches tab — round selector + player search. Default to the most
+	// recent round (last one with matches) so users land on the freshest
+	// data instead of all-rounds-at-once.
+	let selectedMatchRound = $state(/** @type {number | 'all'} */ ('all'));
+	let matchesSearch = $state('');
 
 	function formatDate(date) {
 		if (!date) return '';
@@ -29,6 +36,16 @@
 		};
 	}
 
+	// Editorial circuit color tokens — matches the rest of the editorial chrome.
+	const EDITORIAL_CIRCUIT = {
+		'Los Angeles': 'var(--ed-cc-la)',
+		'St. Louis': 'var(--ed-cc-stl)',
+		'New England': 'var(--ed-cc-ne)'
+	};
+	function editorialCircuitColor(name) {
+		return EDITORIAL_CIRCUIT[name] ?? 'var(--ed-accent)';
+	}
+
 	function openHeroModal(heroData) {
 		selectedHeroModal = heroData;
 	}
@@ -38,6 +55,7 @@
 	}
 
 	const circuitConfig = $derived(getCircuitConfig(data.event.circuit));
+	const edCircuit = $derived(editorialCircuitColor(data.event.circuit));
 
 	// Check if we have bracket data
 	const hasBracket = $derived(data.top8Bracket !== null);
@@ -78,7 +96,7 @@
 			.replace(/ø/g, 'o')
 			.replace(/å/g, 'a')
 			.normalize('NFD')
-			.replace(/[\u0300-\u036f]/g, '')
+			.replace(/[̀-ͯ]/g, '')
 			.replace(/[!@#$%^&*()+=[\]{}|\\:;<>?/~`]/g, '')
 			.replace(/[,'"]/g, '')
 			.replace(/\s+/g, '-')
@@ -86,416 +104,303 @@
 			.trim();
 		return `/hero_images/${slug}.webp`;
 	}
+
+	/**
+	 * Split a Flesh and Blood hero name into "proper name" + "epithet"
+	 * — same pattern used by the DecklistCard. Promotes the name to the
+	 * headline and demotes the epithet to a mono caption.
+	 */
+	function splitHero(name) {
+		if (!name) return { primary: '—', secondary: null };
+		const idx = name.indexOf(',');
+		if (idx === -1) return { primary: name, secondary: null };
+		return { primary: name.slice(0, idx).trim(), secondary: name.slice(idx + 1).trim() };
+	}
+
+	/**
+	 * Performance tier color for a hero based on win rate. Used to
+	 * color the top rule + win-rate stat so cards are visually sorted
+	 * by quality at a glance.
+	 */
+	function performanceColor(heroData) {
+		if (!heroData || heroData.totalMatches < 3) return 'var(--ed-fade)';
+		const wr = parseFloat(heroData.winRate);
+		if (wr >= 60) return 'var(--ed-prem)';
+		if (wr >= 50) return '#C8922E';
+		if (wr >= 40) return 'var(--ed-ink)';
+		return 'var(--ed-warm)';
+	}
+
+	function performanceLabel(heroData) {
+		if (!heroData || heroData.totalMatches < 3) return 'Small sample';
+		const wr = parseFloat(heroData.winRate);
+		if (wr >= 60) return 'Top performer';
+		if (wr >= 50) return 'Above average';
+		if (wr >= 40) return 'Around even';
+		return 'Below 40%';
+	}
+
+	// Per-rank pill color, matching the standings table treatment.
+	function rankColor(placement) {
+		if (placement === 1) return '#C8922E';
+		if (placement === 2) return '#928B79';
+		if (placement === 3) return '#C0461F';
+		if (placement <= 8) return '#16489E';
+		return 'var(--ed-fade)';
+	}
+
+	// Stat strip values + tab list — derived in script so the template
+	// stays out of trouble with `{@const}` placement rules.
+	const firstPrize = $derived(data.results.find((r) => r.placement === 1)?.prizeAmount || 0);
+	const firstPts = $derived(data.results.find((r) => r.placement === 1)?.agePoints || 0);
+	const heroStats = $derived([
+		{ label: 'Players', value: data.results.length, color: 'var(--ed-ink)' },
+		{ label: 'Rounds', value: data.totalRounds, color: 'var(--ed-ink)' },
+		{ label: '1st Prize', value: `$${firstPrize}`, color: 'var(--ed-prem)' },
+		{ label: '1st AGE Pts', value: `+${firstPts}`, color: 'var(--ed-accent)' }
+	]);
+	const visibleTabs = $derived(
+		[
+			{ id: 'standings', label: 'Standings', visible: true },
+			{ id: 'metagame', label: 'Metagame', visible: hasMetagame },
+			{ id: 'matches', label: 'Matches', visible: hasMatches },
+			{ id: 'top8', label: 'Top 8', visible: hasBracket },
+			{ id: 'decklists', label: `Decklists · ${data.decklists.length}`, visible: hasDecklists }
+		].filter((t) => t.visible)
+	);
+	// Round filter + search reactive list. Each round entry carries a
+	// stats line (decided / draws / pending) so the round header can
+	// summarize before the user scans the row list.
+	const filteredMatchRounds = $derived(() => {
+		const q = matchesSearch.trim().toLowerCase();
+		return (data.matchesByRound || [])
+			.filter((r) => selectedMatchRound === 'all' || r.round === selectedMatchRound)
+			.map((r) => {
+				const matches = q
+					? r.matches.filter((m) => {
+							const p1 = (m.player1?.name || '').toLowerCase();
+							const p2 = (m.player2?.name || '').toLowerCase();
+							const h1 = (m.player1?.hero || '').toLowerCase();
+							const h2 = (m.player2?.hero || '').toLowerCase();
+							return p1.includes(q) || p2.includes(q) || h1.includes(q) || h2.includes(q);
+						})
+					: r.matches;
+				const decided = matches.filter((m) => m.winner && !m.isDraw).length;
+				const draws = matches.filter((m) => m.isDraw).length;
+				const pending = matches.filter((m) => !m.winner && !m.isDraw).length;
+				return { round: r.round, matches, decided, draws, pending };
+			})
+			.filter((r) => r.matches.length > 0);
+	});
+
+	// Per-stat treatments for the metagame strip — different visual
+	// language for plain counts vs. hero-name stats.
+	const metaTopHero = $derived(data.metagameBreakdown?.[0] ?? null);
+	const metaTopHeroSplit = $derived(splitHero(metaTopHero?.hero));
+	const metaBestWrSplit = $derived(splitHero(bestWinRateHero?.hero));
 </script>
 
 <svelte:head>
-	<title>{data.event.title} Results - AGE Open</title>
+	<title>{data.event.title} Results — AGE Open</title>
 	<meta name="description" content="Tournament results for {data.event.title}" />
 </svelte:head>
 
-<div class="min-h-screen bg-gray-950">
-	<!-- Hero Section with Circuit Background -->
-	<div class="relative overflow-hidden">
-		<!-- Circuit Background Image -->
+<AgeShell active="AGE Open">
+	<!--
+		Hero band — paper background with a circuit-colored top hairline,
+		a back link, chip strip with circuit + format + status, big
+		serif title, and date/location/players quick-info strip.
+		Circuit image bleeds in from the right with a mask so the
+		photograph reads without competing with type.
+	-->
+	<section class="bg-paper border-ink relative overflow-hidden border-b-[3px] border-double">
+		<!-- circuit accent top rule -->
+		<div class="absolute inset-x-0 top-0 z-[1] h-[4px]" style="background: {edCircuit};"></div>
+
+		<!-- Right-side image backdrop -->
 		{#if data.event.circuit && circuitConfig.image}
-			<div class="absolute inset-0">
-				<img src={circuitConfig.image} alt="" class="h-full w-full object-cover opacity-50" />
+			<div class="pointer-events-none absolute inset-0" aria-hidden="true">
+				<img
+					src={circuitConfig.image}
+					alt=""
+					class="absolute top-0 right-0 h-full w-[55%] object-cover opacity-40"
+					style="-webkit-mask-image: linear-gradient(to right, transparent 0%, black 40%, black 100%); mask-image: linear-gradient(to right, transparent 0%, black 40%, black 100%);"
+				/>
 				<div
-					class="absolute inset-0 bg-gradient-to-b from-gray-950/40 via-gray-950/70 to-gray-950"
+					class="absolute top-0 right-0 h-full w-[55%]"
+					style="background: linear-gradient(to right, transparent 0%, color-mix(in srgb, var(--ed-paper) 38%, transparent) 40%, color-mix(in srgb, var(--ed-paper) 55%, transparent) 100%);"
+				></div>
+				<div
+					class="absolute inset-x-0 bottom-0 h-[36%]"
+					style="background: linear-gradient(to bottom, transparent 0%, var(--ed-paper) 100%);"
 				></div>
 			</div>
-		{:else}
-			<div class="absolute inset-0 bg-gradient-to-b from-gray-900 to-gray-950"></div>
 		{/if}
 
-		<div class="relative mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-			<!-- Back Link -->
-			<div class="mb-6">
-				<a
-					href="/age-open?tab=results"
-					class="inline-flex items-center text-sm font-medium text-gray-400 transition-colors hover:text-white"
-				>
-					<svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M10 19l-7-7m0 0l7-7m-7 7h18"
-						/>
-					</svg>
-					Back to Tournament Archive
-				</a>
-			</div>
+		<div class="relative z-[1] mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[44px] pb-[42px]">
+			<!-- Back link -->
+			<a
+				href="/age-open?tab=results"
+				class="text-fade hover:text-ink font-mono-system inline-flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors"
+			>
+				← Tournament archive
+			</a>
 
-			<!-- Badges -->
-			<div class="mb-4 flex flex-wrap gap-2">
+			<h1
+				class="font-newsreader mt-[20px] text-[clamp(40px,5.5vw,68px)] leading-[0.96] font-semibold tracking-[-0.02em]"
+			>
+				{data.event.title}
+			</h1>
+
+			<!-- Chip strip: circuit (dominant) + format + status -->
+			<div class="mt-6 flex flex-wrap items-center gap-2">
+				{#if data.event.circuit}
+					<span
+						class="relative inline-flex items-center gap-[10px] px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] text-white uppercase shadow-[0_0_0_3px_var(--ed-paper),0_0_0_4px_currentColor]"
+						style="background: {edCircuit}; color: {edCircuit};"
+					>
+						<span class="inline-block h-[9px] w-[9px] rounded-full bg-white" aria-hidden="true"></span>
+						<span class="text-white">{data.event.circuit}</span>
+					</span>
+				{/if}
 				{#if data.event.format}
 					<span
-						class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-sm font-medium text-white backdrop-blur-sm"
+						class="border-line2 text-ink inline-flex items-center border bg-transparent px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] uppercase"
 					>
 						{data.event.format}
 					</span>
 				{/if}
 				{#if data.event.status === 'in_progress'}
 					<span
-						class="animate-pulse rounded-full border border-blue-500/30 bg-blue-500/20 px-3 py-1 text-sm font-medium text-blue-400 backdrop-blur-sm"
+						class="bg-warm inline-flex animate-pulse items-center gap-2 px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] text-white uppercase"
 					>
-						LIVE
+						<span class="inline-block h-[8px] w-[8px] rounded-full bg-white"></span>
+						Live
 					</span>
 				{:else if data.event.status === 'completed'}
 					<span
-						class="rounded-full border border-green-500/30 bg-green-500/20 px-3 py-1 text-sm font-medium text-green-400 backdrop-blur-sm"
+						class="bg-prem inline-flex items-center px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] text-white uppercase"
 					>
 						Completed
 					</span>
 				{/if}
 			</div>
 
-			<!-- Event Title -->
-			<h1 class="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-				{data.event.title}
-			</h1>
-
-			<!-- Circuit Badge - Prominent -->
-			{#if data.event.circuit}
-				<div class="mt-4">
-					<div
-						class="inline-flex items-center gap-3 {circuitConfig.bg} rounded-lg px-4 py-2.5 shadow-lg"
-					>
-						<svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-							/>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-							/>
-						</svg>
-						<span class="text-base font-black tracking-wider text-white uppercase">
-							{data.event.circuit} Circuit
-						</span>
-					</div>
+			<!-- Date · Location strip -->
+			{#if data.event.eventDate || data.event.location}
+				<div
+					class="border-line2 mt-9 grid grid-cols-1 gap-x-10 gap-y-5 border-t pt-6 sm:grid-cols-2"
+				>
+					{#if data.event.eventDate}
+						<div>
+							<div
+								class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.16em] uppercase"
+							>
+								Date
+							</div>
+							<div class="font-newsreader text-[20px] leading-[1.15] font-semibold tracking-[-0.01em]">
+								{formatDate(data.event.eventDate)}
+							</div>
+						</div>
+					{/if}
+					{#if data.event.location}
+						<div>
+							<div
+								class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.16em] uppercase"
+							>
+								Venue
+							</div>
+							<div class="font-newsreader text-[20px] leading-[1.15] font-semibold tracking-[-0.01em]">
+								{data.event.location}
+							</div>
+						</div>
+					{/if}
 				</div>
 			{/if}
-
-			<!-- Quick Info -->
-			<div class="mt-6 flex flex-wrap gap-6 text-gray-300">
-				{#if data.event.eventDate}
-					<div class="flex items-center gap-2">
-						<svg
-							class="h-5 w-5 text-gray-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-							/>
-						</svg>
-						<span>{formatDate(data.event.eventDate)}</span>
-					</div>
-				{/if}
-				{#if data.event.location}
-					<div class="flex items-center gap-2">
-						<svg
-							class="h-5 w-5 text-gray-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-							/>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-							/>
-						</svg>
-						<span>{data.event.location}</span>
-					</div>
-				{/if}
-			</div>
 		</div>
-	</div>
+	</section>
 
-	<!-- Main Content -->
-	<div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-		<!-- Stats Summary Cards -->
-		<div class="mb-6 grid grid-cols-2 gap-2 sm:mb-8 sm:grid-cols-4 sm:gap-4">
-			<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-3 sm:p-4">
-				<div class="flex items-center gap-2 sm:gap-3">
-					<div
-						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/20 sm:h-10 sm:w-10"
-					>
-						<svg
-							class="h-4 w-4 text-blue-400 sm:h-5 sm:w-5"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
+	<!--
+		Stat strip — four key tournament numbers in editorial paper
+		cards with mono uppercase labels and Archivo black numerals.
+	-->
+	<section class="bg-paper-bg border-ink border-b-[3px] border-double">
+		<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-9">
+			<dl class="grid grid-cols-2 md:grid-cols-4">
+				{#each heroStats as stat (stat.label)}
+					<div class="border-line2 -mt-px -ml-px border bg-paper px-6 py-5">
+						<dt
+							class="text-fade font-mono-system mb-[8px] text-[10px] font-extrabold tracking-[0.16em] uppercase"
 						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-							/>
-						</svg>
-					</div>
-					<div>
-						<p class="text-xl font-bold text-white sm:text-2xl">{data.results.length}</p>
-						<p class="text-[10px] text-gray-500 sm:text-xs">Players</p>
-					</div>
-				</div>
-			</div>
-			<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-3 sm:p-4">
-				<div class="flex items-center gap-2 sm:gap-3">
-					<div
-						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-500/20 sm:h-10 sm:w-10"
-					>
-						<svg
-							class="h-4 w-4 text-purple-400 sm:h-5 sm:w-5"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
+							{stat.label}
+						</dt>
+						<dd
+							class="font-archivo text-[34px] font-black leading-none tabular-nums tracking-[-0.02em]"
+							style="color: {stat.color};"
 						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-							/>
-						</svg>
+							{stat.value}
+						</dd>
 					</div>
-					<div>
-						<p class="text-xl font-bold text-white sm:text-2xl">{data.totalRounds}</p>
-						<p class="text-[10px] text-gray-500 sm:text-xs">Rounds</p>
-					</div>
-				</div>
-			</div>
-			<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-3 sm:p-4">
-				<div class="flex items-center gap-2 sm:gap-3">
-					<div
-						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-500/20 sm:h-10 sm:w-10"
-					>
-						<svg
-							class="h-4 w-4 text-green-400 sm:h-5 sm:w-5"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-							/>
-						</svg>
-					</div>
-					<div>
-						<p class="text-xl font-bold text-green-400 sm:text-2xl">
-							${data.results.find((r) => r.placement === 1)?.prizeAmount || 0}
-						</p>
-						<p class="text-[10px] text-gray-500 sm:text-xs">1st Prize</p>
-					</div>
-				</div>
-			</div>
-			<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-3 sm:p-4">
-				<div class="flex items-center gap-2 sm:gap-3">
-					<div
-						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 sm:h-10 sm:w-10"
-					>
-						<svg
-							class="h-4 w-4 text-amber-400 sm:h-5 sm:w-5"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-							/>
-						</svg>
-					</div>
-					<div>
-						<p class="text-xl font-bold text-amber-400 sm:text-2xl">
-							+{data.results.find((r) => r.placement === 1)?.agePoints || 0}
-						</p>
-						<p class="text-[10px] text-gray-500 sm:text-xs">1st AGE Pts</p>
-					</div>
-				</div>
-			</div>
+				{/each}
+			</dl>
 		</div>
+	</section>
 
-		<!-- Tab Navigation -->
-		<div class="mb-6">
-			<nav
-				class="scrollbar-hide flex w-full max-w-full overflow-x-auto rounded-xl bg-gray-800/80 p-1.5"
-				aria-label="Tabs"
-			>
-				<button
-					onclick={() => (activeTab = 'standings')}
-					class="flex shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap sm:gap-2 sm:px-4 sm:text-sm md:flex-1
-						{activeTab === 'standings'
-						? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
-						: 'bg-transparent text-gray-300'}"
-				>
-					<svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-						/>
-					</svg>
-					Standings
-				</button>
-				{#if hasMetagame}
+	<!--
+		Tab navigation — editorial square buttons. Active tab fills
+		with ink + paper text, inactive sits in a paper outline.
+	-->
+	<section class="bg-paper border-ink border-b-[3px] border-double">
+		<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-7">
+			<nav class="flex flex-wrap gap-2" aria-label="Results tabs">
+				{#each visibleTabs as tab (tab.id)}
 					<button
-						onclick={() => (activeTab = 'metagame')}
-						class="flex shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap sm:gap-2 sm:px-4 sm:text-sm md:flex-1
-							{activeTab === 'metagame'
-							? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
-							: 'bg-transparent text-gray-300'}"
+						type="button"
+						onclick={() => (activeTab = tab.id)}
+						class="font-mono-system cursor-pointer border-[1.5px] px-[18px] py-[10px] text-[11px] font-extrabold tracking-[0.1em] uppercase transition-colors {activeTab ===
+						tab.id
+							? 'border-ink bg-ink text-paper-bg'
+							: 'border-line2 text-soft hover:border-ink hover:text-ink'}"
 					>
-						<svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"
-							/>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"
-							/>
-						</svg>
-						Metagame
+						{tab.label}
 					</button>
-				{/if}
-				{#if hasMatches}
-					<button
-						onclick={() => (activeTab = 'matches')}
-						class="flex shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap sm:gap-2 sm:px-4 sm:text-sm md:flex-1
-							{activeTab === 'matches'
-							? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
-							: 'bg-transparent text-gray-300'}"
-					>
-						<svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-							/>
-						</svg>
-						Matches
-					</button>
-				{/if}
-				{#if hasBracket}
-					<button
-						onclick={() => (activeTab = 'top8')}
-						class="flex shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap sm:gap-2 sm:px-4 sm:text-sm md:flex-1
-							{activeTab === 'top8'
-							? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
-							: 'bg-transparent text-gray-300'}"
-					>
-						<svg class="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-							<path
-								d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 0 7.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 0 0 2.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 0 1 2.916.52 6.003 6.003 0 0 1-5.395 4.972m0 0a6.726 6.726 0 0 1-2.749 1.35m0 0a6.772 6.772 0 0 1-2.992 0"
-							/>
-						</svg>
-						Top 8
-					</button>
-				{/if}
-				{#if hasDecklists}
-					<button
-						onclick={() => (activeTab = 'decklists')}
-						class="flex shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap sm:gap-2 sm:px-4 sm:text-sm md:flex-1
-							{activeTab === 'decklists'
-							? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
-							: 'bg-transparent text-gray-300'}"
-					>
-						<svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-							/>
-						</svg>
-						Decks
-						<span class="rounded-full bg-gray-700/80 px-1.5 py-0.5 text-[10px] sm:text-xs"
-							>{data.decklists.length}</span
-						>
-					</button>
-				{/if}
+				{/each}
 			</nav>
 		</div>
-		<!-- Standings Tab -->
-		{#if activeTab === 'standings'}
-			<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
-				<div class="border-b border-gray-800 px-6 py-4">
-					<h2 class="flex items-center gap-2 text-lg font-semibold text-white">
-						<svg
-							class="h-5 w-5 text-gray-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-							/>
-						</svg>
-						Final Standings
+	</section>
+
+	<!--
+		STANDINGS TAB — editorial table mirroring the AGE Open
+		standings table treatment (rounded container, mono headers,
+		podium pills for top 3, soft zebra rows, hover lift).
+	-->
+	{#if activeTab === 'standings'}
+		<section class="bg-paper-bg border-ink border-b-[3px] border-double">
+			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-10">
+				<div class="mb-6">
+					<div
+						class="text-accent font-mono-system mb-3 text-[10.5px] font-extrabold tracking-[0.2em] uppercase"
+					>
+						Final Order
+					</div>
+					<h2 class="font-newsreader m-0 text-[34px] font-semibold leading-none tracking-[-0.02em]">
+						Standings
 					</h2>
 				</div>
 
 				{#if data.results.length === 0}
-					<div class="p-12 text-center">
-						<div
-							class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-800"
-						>
-							<svg
-								class="h-8 w-8 text-gray-600"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-								/>
-							</svg>
+					<div class="border-line2 bg-paper border py-14 text-center">
+						<div class="font-newsreader text-ink mb-2 text-[22px] font-semibold">
+							No results yet.
 						</div>
-						<h3 class="mb-2 text-xl font-semibold text-white">No Results Yet</h3>
-						<p class="text-gray-400">Results will appear once the tournament has match data.</p>
+						<p class="text-soft mx-auto max-w-[420px] text-[13px] leading-[1.55]">
+							Results will appear once match data is in.
+						</p>
 					</div>
 				{:else}
-					<!-- Mobile Card View -->
-					<div class="block divide-y divide-gray-800 md:hidden">
-						{#each data.results as result, i}
+					<!-- Mobile card stack -->
+					<div class="space-y-3 md:hidden">
+						{#each data.results as result, i (result.id || i)}
 							{@const winPct =
 								result.wins + result.losses > 0
 									? Math.round((result.wins / (result.wins + result.losses)) * 100)
@@ -503,83 +408,75 @@
 							{@const playerDecklist = hasMetagame
 								? getPlayerDecklist(result.gemId, result.playerName)
 								: null}
-							<div class="p-4 {result.placement <= 8 ? 'bg-gray-800/20' : ''}">
-								<div class="flex items-start gap-3">
-									<!-- Placement Badge -->
-									<span
-										class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold
-										{result.placement === 1
-											? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-black'
-											: result.placement === 2
-												? 'bg-gradient-to-br from-gray-300 to-gray-500 text-black'
-												: result.placement === 3
-													? 'bg-gradient-to-br from-amber-500 to-amber-700 text-black'
-													: result.placement <= 8
-														? 'bg-blue-500/20 text-blue-400'
-														: 'bg-gray-800 text-gray-400'}"
-									>
-										{result.placement}
-									</span>
-									<!-- Player Info -->
-									<div class="min-w-0 flex-1">
-										<div class="flex items-center gap-2">
-											{#if result.gemId}
-												<a
-													href="/player/{result.gemId}"
-													class="truncate font-semibold text-white transition-colors hover:text-blue-400"
-												>
-													{result.playerName}
-												</a>
-											{:else}
-												<span class="truncate font-semibold text-white">{result.playerName}</span>
-											{/if}
+							{@const _rankColor = rankColor(result.placement)}
+							<div
+								class="border-line2 bg-paper grid grid-cols-[44px_1fr_auto] items-start gap-3 border border-t-[3px] px-4 py-4"
+								style="border-top-color: {_rankColor};"
+							>
+								<span
+									class="font-newsreader text-[30px] font-semibold leading-[0.85] tabular-nums"
+									style="color: {_rankColor};"
+								>
+									{result.placement}
+								</span>
+								<div class="min-w-0">
+									{#if result.gemId}
+										<a
+											href="/player/{result.gemId}"
+											class="text-ink hover:text-warm block truncate text-[15px] font-extrabold transition-colors"
+										>
+											{result.playerName}
+										</a>
+									{:else}
+										<span class="text-ink truncate text-[15px] font-extrabold">{result.playerName}</span>
+									{/if}
+									{#if result.hero}
+										<div class="text-fade mt-1 truncate text-[12px] font-semibold">
+											{result.hero}
 										</div>
-										{#if result.hero}
-											<p class="mt-0.5 truncate text-xs text-gray-400">{result.hero}</p>
-										{/if}
-										<!-- Stats Row -->
-										<div class="mt-2 flex items-center gap-3 text-sm">
-											<span class="text-gray-400">
-												<span class="font-medium text-white">{result.wins}</span>-<span
-													class="font-medium text-white">{result.losses}</span
-												>{result.draws > 0 ? `-${result.draws}` : ''}
-											</span>
-											<span
-												class={winPct >= 70
-													? 'text-green-400'
-													: winPct >= 50
-														? 'text-gray-300'
-														: 'text-gray-500'}
-											>
-												{winPct}%
-											</span>
+									{/if}
+								</div>
+								<div class="text-right">
+									{#if result.agePoints > 0}
+										<div class="text-accent font-archivo text-[15px] font-black tabular-nums">
+											+{result.agePoints}
+										</div>
+									{/if}
+									{#if result.prizeAmount > 0}
+										<div class="text-prem font-archivo text-[15px] font-black tabular-nums">
+											${result.prizeAmount}
+										</div>
+									{/if}
+								</div>
+								<div class="border-line col-span-3 mt-3 grid grid-cols-3 gap-2 border-t pt-3 text-center">
+									<div>
+										<div class="text-[13px] font-bold tabular-nums">
+											<span class="text-prem">{result.wins}</span>
+											<span class="text-fade">–</span>
+											<span class="text-warm">{result.losses}{result.draws > 0 ? `–${result.draws}` : ''}</span>
+										</div>
+										<div class="text-fade mt-[2px] text-[9px] font-extrabold tracking-[0.1em] uppercase">
+											Record
 										</div>
 									</div>
-									<!-- Points, Prize & Decklist -->
-									<div class="flex shrink-0 flex-col items-end gap-1 text-right">
-										{#if result.agePoints > 0}
-											<span class="text-sm font-semibold text-blue-400"
-												>+{result.agePoints} pts</span
-											>
-										{/if}
-										{#if result.prizeAmount > 0}
-											<span class="text-sm font-semibold text-green-400">${result.prizeAmount}</span
-											>
-										{/if}
+									<div>
+										<div
+											class="text-[13px] font-bold tabular-nums"
+											style="color: {winPct >= 70 ? 'var(--ed-prem)' : winPct >= 50 ? 'var(--ed-ink)' : 'var(--ed-warm)'};"
+										>
+											{winPct}%
+										</div>
+										<div class="text-fade mt-[2px] text-[9px] font-extrabold tracking-[0.1em] uppercase">
+											Win %
+										</div>
+									</div>
+									<div>
 										{#if playerDecklist}
 											<a
 												href="/age-open/{data.event.id}/decklist/{playerDecklist.id}"
-												class="inline-flex items-center gap-1 text-xs text-blue-400 transition-colors hover:text-blue-300"
+												class="text-accent text-[10.5px] font-extrabold tracking-[0.07em] uppercase"
 											>
-												<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-													/>
-												</svg>
-												Decklist
+												Decklist →
 											</a>
 										{/if}
 									</div>
@@ -588,157 +485,156 @@
 						{/each}
 					</div>
 
-					<!-- Desktop Table View -->
-					<div class="hidden overflow-x-auto md:block">
+					<!-- Desktop table -->
+					<div
+						class="border-line2 bg-paper hidden overflow-hidden rounded-[6px] border md:block"
+					>
 						<table class="w-full">
 							<thead>
-								<tr class="border-b border-gray-700 bg-gray-800/50">
+								<tr
+									class="border-line2 border-b"
+									style="background: color-mix(in srgb, var(--ed-paper-bg) 60%, transparent);"
+								>
 									<th
-										class="px-4 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase lg:px-6"
-										>Place</th
+										class="text-fade font-mono-system w-[68px] px-5 py-[14px] text-left text-[10px] font-extrabold tracking-[0.16em] uppercase"
 									>
+										#
+									</th>
 									<th
-										class="px-4 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase lg:px-6"
-										>Player</th
+										class="text-fade font-mono-system px-5 py-[14px] text-left text-[10px] font-extrabold tracking-[0.16em] uppercase"
 									>
+										Player
+									</th>
 									{#if hasMetagame}
 										<th
-											class="px-4 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase lg:px-6"
-											>Hero</th
+											class="text-fade font-mono-system px-5 py-[14px] text-left text-[10px] font-extrabold tracking-[0.16em] uppercase"
 										>
+											Hero
+										</th>
 									{/if}
 									<th
-										class="px-4 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase lg:px-6"
-										>Record</th
+										class="text-fade font-mono-system px-5 py-[14px] text-center text-[10px] font-extrabold tracking-[0.16em] uppercase"
 									>
+										Record
+									</th>
 									<th
-										class="px-4 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase lg:px-6"
-										>Win %</th
+										class="text-fade font-mono-system px-5 py-[14px] text-center text-[10px] font-extrabold tracking-[0.16em] uppercase"
 									>
+										Win %
+									</th>
 									<th
-										class="px-4 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase lg:px-6"
-										>AGE Pts</th
+										class="text-fade font-mono-system px-5 py-[14px] text-center text-[10px] font-extrabold tracking-[0.16em] uppercase"
 									>
+										AGE Pts
+									</th>
 									<th
-										class="px-4 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase lg:px-6"
-										>Prize</th
+										class="text-fade font-mono-system px-5 py-[14px] text-center text-[10px] font-extrabold tracking-[0.16em] uppercase"
 									>
+										Prize
+									</th>
 								</tr>
 							</thead>
-							<tbody class="divide-y divide-gray-800">
-								{#each data.results as result, i}
+							<tbody>
+								{#each data.results as result, i (result.id || i)}
 									{@const winPct =
 										result.wins + result.losses > 0
 											? Math.round((result.wins / (result.wins + result.losses)) * 100)
 											: 0}
+									{@const _rankColor = rankColor(result.placement)}
+									{@const _isTop3 = result.placement <= 3}
+									{@const playerDecklist = getPlayerDecklist(result.gemId, result.playerName)}
 									<tr
-										class="transition-colors hover:bg-gray-800/50 {result.placement <= 8
-											? 'bg-gray-800/20'
-											: ''}"
+										class="border-line2 odd:bg-paper even:bg-paper-bg/40 hover:!bg-paper-bg group transition-colors {i ===
+										data.results.length - 1
+											? ''
+											: 'border-b'}"
 									>
-										<td class="px-4 py-4 whitespace-nowrap lg:px-6">
-											<span
-												class="inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold
-												{result.placement === 1
-													? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-black'
-													: result.placement === 2
-														? 'bg-gradient-to-br from-gray-300 to-gray-500 text-black'
-														: result.placement === 3
-															? 'bg-gradient-to-br from-amber-500 to-amber-700 text-black'
-															: result.placement <= 8
-																? 'bg-blue-500/20 text-blue-400'
-																: 'bg-gray-800 text-gray-400'}"
-											>
-												{result.placement}
-											</span>
+										<td class="px-5 py-[16px]">
+											{#if _isTop3}
+												<span
+													class="font-newsreader inline-flex h-[34px] w-[34px] items-center justify-center rounded-full text-[15px] font-semibold leading-none tabular-nums"
+													style="background: color-mix(in srgb, {_rankColor} 14%, transparent); color: {_rankColor};"
+												>
+													{result.placement}
+												</span>
+											{:else}
+												<span
+													class="font-mono-system inline-flex h-[34px] w-[34px] items-center justify-center text-[14px] font-bold leading-none tabular-nums"
+													style="color: {_rankColor};"
+												>
+													{result.placement}
+												</span>
+											{/if}
 										</td>
-										<td class="px-4 py-4 lg:px-6">
-											<div class="flex items-center gap-3">
-												<div>
-													{#if result.gemId}
-														<a
-															href="/player/{result.gemId}"
-															class="font-medium text-white transition-colors hover:text-blue-400"
-														>
-															{result.playerName}
-														</a>
-													{:else}
-														<span class="font-medium text-white">{result.playerName}</span>
-													{/if}
-													{#if result.gemId}
-														<p class="text-xs text-gray-500">{result.gemId}</p>
-													{/if}
+										<td class="px-5 py-[16px]">
+											{#if result.gemId}
+												<a
+													href="/player/{result.gemId}"
+													class="text-ink group-hover:text-warm block text-[15px] font-bold transition-colors"
+												>
+													{result.playerName}
+												</a>
+												<div class="text-fade font-mono-system mt-[2px] text-[10px] font-bold tracking-[0.05em]">
+													GEM {result.gemId}
 												</div>
-											</div>
+											{:else}
+												<span class="text-ink text-[15px] font-bold">{result.playerName}</span>
+											{/if}
 										</td>
 										{#if hasMetagame}
-											<td class="px-4 py-4 lg:px-6">
+											<td class="px-5 py-[16px]">
 												{#if result.hero}
-													{@const playerDecklist = getPlayerDecklist(
-														result.gemId,
-														result.playerName
-													)}
-													<div>
-														<span class="text-sm text-gray-300">{result.hero}</span>
-														{#if playerDecklist}
-															<a
-																href="/age-open/{data.event.id}/decklist/{playerDecklist.id}"
-																class="mt-0.5 flex items-center gap-1 text-xs text-blue-400 transition-colors hover:text-blue-300"
-															>
-																<svg
-																	class="h-3 w-3"
-																	fill="none"
-																	stroke="currentColor"
-																	viewBox="0 0 24 24"
-																>
-																	<path
-																		stroke-linecap="round"
-																		stroke-linejoin="round"
-																		stroke-width="2"
-																		d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-																	/>
-																</svg>
-																View Decklist
-															</a>
-														{/if}
+													<div class="text-ink text-[13.5px] font-semibold">
+														{result.hero}
 													</div>
+													{#if playerDecklist}
+														<a
+															href="/age-open/{data.event.id}/decklist/{playerDecklist.id}"
+															class="text-accent mt-[3px] inline-flex items-center text-[10.5px] font-extrabold tracking-[0.07em] uppercase"
+														>
+															Decklist →
+														</a>
+													{/if}
 												{:else}
-													<span class="text-gray-600">-</span>
+													<span class="text-fade">—</span>
 												{/if}
 											</td>
 										{/if}
-										<td class="px-4 py-4 text-center lg:px-6">
-											<span class="font-medium text-white">{result.wins}</span>
-											<span class="text-gray-500">-</span>
-											<span class="font-medium text-white">{result.losses}</span>
-											{#if result.draws > 0}
-												<span class="text-gray-500">-</span>
-												<span class="font-medium text-white">{result.draws}</span>
-											{/if}
+										<td class="px-5 py-[16px] text-center">
+											<span class="font-mono-system text-[13.5px] font-bold tabular-nums">
+												<span class="text-prem">{result.wins}</span>
+												<span class="text-fade mx-[2px]">–</span>
+												<span class="text-warm">{result.losses}</span>
+												{#if result.draws > 0}
+													<span class="text-fade mx-[2px]">–</span>
+													<span class="text-soft">{result.draws}</span>
+												{/if}
+											</span>
 										</td>
-										<td class="px-4 py-4 text-center lg:px-6">
+										<td class="px-5 py-[16px] text-center">
 											<span
-												class={winPct >= 70
-													? 'text-green-400'
-													: winPct >= 50
-														? 'text-white'
-														: 'text-gray-400'}
+												class="text-[13.5px] font-bold tabular-nums"
+												style="color: {winPct >= 70 ? 'var(--ed-prem)' : winPct >= 50 ? 'var(--ed-ink)' : 'var(--ed-warm)'};"
 											>
 												{winPct}%
 											</span>
 										</td>
-										<td class="px-4 py-4 text-center lg:px-6">
+										<td class="px-5 py-[16px] text-center">
 											{#if result.agePoints > 0}
-												<span class="font-semibold text-blue-400">+{result.agePoints}</span>
+												<span class="text-accent font-archivo text-[15px] font-black tabular-nums">
+													+{result.agePoints}
+												</span>
 											{:else}
-												<span class="text-gray-500">-</span>
+												<span class="text-fade">—</span>
 											{/if}
 										</td>
-										<td class="px-4 py-4 text-center lg:px-6">
+										<td class="px-5 py-[16px] text-center">
 											{#if result.prizeAmount > 0}
-												<span class="font-semibold text-green-400">${result.prizeAmount}</span>
+												<span class="text-prem font-archivo text-[15px] font-black tabular-nums">
+													${result.prizeAmount}
+												</span>
 											{:else}
-												<span class="text-gray-500">-</span>
+												<span class="text-fade">—</span>
 											{/if}
 										</td>
 									</tr>
@@ -748,775 +644,741 @@
 					</div>
 				{/if}
 			</div>
-		{/if}
+		</section>
+	{/if}
 
-		<!-- Metagame Tab -->
-		{#if activeTab === 'metagame' && hasMetagame}
-			<div class="space-y-4 sm:space-y-6">
-				<!-- Overview Stats - Enhanced cards like player profile -->
-				<div class="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
+	<!--
+		METAGAME TAB — editorial stat strip + hero distribution grid.
+		Clicking a hero opens the player records modal.
+	-->
+	{#if activeTab === 'metagame' && hasMetagame}
+		<section class="bg-paper-bg border-ink border-b-[3px] border-double">
+			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-10">
+				<div class="mb-6">
 					<div
-						class="group relative overflow-hidden rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-900/50 to-gray-900 p-3 transition-all hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 sm:rounded-2xl sm:p-5"
+						class="text-accent font-mono-system mb-3 text-[10.5px] font-extrabold tracking-[0.2em] uppercase"
 					>
-						<div
-							class="absolute top-0 right-0 h-16 w-16 rounded-full bg-purple-500/10 blur-2xl transition-all group-hover:bg-purple-500/20 sm:h-20 sm:w-20"
-						></div>
-						<div class="relative">
-							<div
-								class="mb-1 flex items-center gap-1.5 text-xs font-medium text-purple-400 sm:mb-2 sm:gap-2 sm:text-sm"
-							>
-								<svg
-									class="h-3.5 w-3.5 sm:h-4 sm:w-4"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-									/>
-								</svg>
-								<span class="xs:inline hidden">Unique</span> Heroes
-							</div>
-							<div class="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
-								{data.metagameBreakdown.length}
-							</div>
-						</div>
+						Hero Field
 					</div>
-					<div
-						class="group relative overflow-hidden rounded-xl border border-blue-500/30 bg-gradient-to-br from-blue-900/50 to-gray-900 p-3 transition-all hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 sm:rounded-2xl sm:p-5"
-					>
-						<div
-							class="absolute top-0 right-0 h-16 w-16 rounded-full bg-blue-500/10 blur-2xl transition-all group-hover:bg-blue-500/20 sm:h-20 sm:w-20"
-						></div>
-						<div class="relative">
-							<div
-								class="mb-1 flex items-center gap-1.5 text-xs font-medium text-blue-400 sm:mb-2 sm:gap-2 sm:text-sm"
-							>
-								<svg
-									class="h-3.5 w-3.5 sm:h-4 sm:w-4"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-									/>
-								</svg>
-								<span class="xs:inline hidden">Total</span> Players
-							</div>
-							<div class="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
-								{data.totalPlayers}
-							</div>
-						</div>
-					</div>
-					<div
-						class="group relative overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-900/50 to-gray-900 p-3 transition-all hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/10 sm:rounded-2xl sm:p-5"
-					>
-						<div
-							class="absolute top-0 right-0 h-16 w-16 rounded-full bg-amber-500/10 blur-2xl transition-all group-hover:bg-amber-500/20 sm:h-20 sm:w-20"
-						></div>
-						<div class="relative">
-							<div
-								class="mb-1 flex items-center gap-1.5 text-xs font-medium text-amber-400 sm:mb-2 sm:gap-2 sm:text-sm"
-							>
-								<svg class="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="currentColor" viewBox="0 0 24 24">
-									<path
-										d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-									/>
-								</svg>
-								Most Played
-							</div>
-							<div class="truncate text-base font-bold text-white sm:text-xl lg:text-2xl">
-								{data.metagameBreakdown[0]?.hero || '-'}
-							</div>
-							<div class="mt-0.5 text-[10px] text-gray-500 sm:mt-1 sm:text-xs">
-								{data.metagameBreakdown[0]?.count || 0} players
-							</div>
-						</div>
-					</div>
-					<div
-						class="group relative overflow-hidden rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-900/50 to-gray-900 p-3 transition-all hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10 sm:rounded-2xl sm:p-5"
-					>
-						<div
-							class="absolute top-0 right-0 h-16 w-16 rounded-full bg-emerald-500/10 blur-2xl transition-all group-hover:bg-emerald-500/20 sm:h-20 sm:w-20"
-						></div>
-						<div class="relative">
-							<div
-								class="mb-1 flex items-center gap-1.5 text-xs font-medium text-emerald-400 sm:mb-2 sm:gap-2 sm:text-sm"
-							>
-								<svg
-									class="h-3.5 w-3.5 sm:h-4 sm:w-4"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-									/>
-								</svg>
-								Best Win Rate
-							</div>
-							<div class="truncate text-base font-bold text-white sm:text-xl lg:text-2xl">
-								{bestWinRateHero?.hero || '-'}
-							</div>
-							<div class="mt-0.5 text-[10px] text-emerald-400 sm:mt-1 sm:text-xs">
-								{bestWinRateHero?.winRate || 0}% WR
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Hero Distribution - Card Grid like player profile -->
-				<div
-					class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50 sm:rounded-2xl"
-				>
-					<div
-						class="flex items-center justify-between border-b border-gray-800 px-4 py-3 sm:px-6 sm:py-4"
-					>
-						<h2 class="flex items-center gap-2 text-base font-bold text-white sm:gap-3 sm:text-xl">
-							<svg
-								class="h-4 w-4 text-amber-400 sm:h-5 sm:w-5"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-								/>
-							</svg>
-							Hero Distribution
-						</h2>
-						<span class="text-xs text-gray-400 sm:text-sm"
-							>{data.metagameBreakdown.length} heroes</span
-						>
-					</div>
-					<div class="p-3 sm:p-6">
-						<p
-							class="mb-3 text-[10px] font-medium tracking-wider text-gray-500 uppercase sm:mb-4 sm:text-xs"
-						>
-							Tap a hero to view player records
-						</p>
-						<div class="grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
-							{#each data.metagameBreakdown as heroData, idx}
-								{@const isTop = idx === 0}
-								{@const isTopThree = idx < 3}
-								<button
-									onclick={() => openHeroModal(heroData)}
-									class="group relative overflow-hidden rounded-xl {isTop
-										? 'border border-amber-500/30 sm:col-span-2 lg:col-span-1'
-										: isTopThree
-											? 'border border-gray-700/50'
-											: 'border border-gray-800/50'} bg-gray-800/30 text-left transition-colors hover:bg-white/5"
-								>
-									<div class="flex">
-										<!-- Left side: Data -->
-										<div class="min-w-0 flex-1 p-4 pr-2">
-											<!-- Hero Name -->
-											<h3
-												class="truncate text-base font-semibold {isTop
-													? 'text-amber-400'
-													: 'text-white'} mb-2"
-											>
-												{heroData.hero}
-											</h3>
-
-											<!-- Stats Grid -->
-											<div class="space-y-1.5">
-												<!-- Player Count & Field % -->
-												<div class="flex items-center gap-2 text-sm">
-													<span class="text-gray-400"
-														>{heroData.count} player{heroData.count !== 1 ? 's' : ''}</span
-													>
-													<span class="text-gray-600">•</span>
-													<span class="text-gray-500">{heroData.percentage}%</span>
-												</div>
-
-												<!-- Record & Win Rate -->
-												{#if heroData.totalMatches > 0}
-													<div class="flex items-center gap-2">
-														<span class="text-sm text-gray-400"
-															>{heroData.wins}W-{heroData.losses}L{heroData.draws > 0
-																? `-${heroData.draws}D`
-																: ''}</span
-														>
-														<span
-															class="rounded-full px-2 py-0.5 text-xs font-medium {parseFloat(
-																heroData.winRate
-															) >= 55
-																? 'bg-green-500/20 text-green-400'
-																: parseFloat(heroData.winRate) >= 45
-																	? 'bg-gray-700/80 text-gray-300'
-																	: 'bg-red-500/20 text-red-400'}"
-														>
-															{heroData.winRate}% WR
-														</span>
-													</div>
-												{/if}
-											</div>
-
-											<!-- View players hint -->
-											{#if heroData.players?.length > 0}
-												<div class="mt-3 flex items-center gap-1 text-xs text-gray-500">
-													<span
-														>View {heroData.players.length} player{heroData.players.length !== 1
-															? 's'
-															: ''}</span
-													>
-													<svg
-														class="h-3 w-3"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M9 5l7 7-7 7"
-														/>
-													</svg>
-												</div>
-											{/if}
-										</div>
-
-										<!-- Right side: Hero Image -->
-										<div class="relative w-28 shrink-0 sm:w-32">
-											{#if heroData.imageUrl}
-												<img
-													src={heroData.imageUrl}
-													alt={heroData.hero}
-													class="absolute inset-0 h-full w-full object-cover object-right transition-transform group-hover:scale-105"
-													onerror={(e) => (e.target.style.display = 'none')}
-												/>
-											{:else}
-												<div
-													class="absolute inset-0 {isTop
-														? 'bg-gradient-to-br from-amber-500/30 to-orange-500/20'
-														: 'bg-gradient-to-br from-gray-700/50 to-gray-800/30'}"
-												></div>
-											{/if}
-											{#if isTop}
-												<div
-													class="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold text-gray-900"
-												>
-													<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
-														<path
-															d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-														/>
-													</svg>
-													#1
-												</div>
-											{/if}
-										</div>
-									</div>
-								</button>
-							{/each}
-						</div>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Matches Tab -->
-		{#if activeTab === 'matches' && hasMatches}
-			<!-- Match Card Snippet -->
-			{#snippet matchPlayer(player, isWinner, isDraw, align = 'left')}
-				{@const alignRight = align === 'right'}
-				<div class="flex items-center gap-2 sm:gap-3 {alignRight ? 'flex-row-reverse' : ''}">
-					<!-- Hero Image -->
-					{#if player.hero}
-						<div class="relative shrink-0">
-							<img
-								src={getHeroImageUrl(player.hero)}
-								alt=""
-								class="h-8 w-8 rounded-lg object-cover object-right ring-2 sm:h-10 sm:w-10 {isWinner
-									? 'shadow-lg shadow-emerald-500/30 ring-emerald-500'
-									: 'ring-gray-700/50'}"
-								onerror={(e) => (e.target.style.display = 'none')}
-							/>
-							{#if isWinner}
-								<div
-									class="absolute -bottom-1 {alignRight
-										? '-left-1'
-										: '-right-1'} flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 shadow-lg ring-2 shadow-emerald-500/50 ring-gray-900 sm:h-5 sm:w-5"
-								>
-									<svg
-										class="h-2.5 w-2.5 text-white sm:h-3 sm:w-3"
-										fill="currentColor"
-										viewBox="0 0 20 20"
-									>
-										<path
-											fill-rule="evenodd"
-											d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-											clip-rule="evenodd"
-										/>
-									</svg>
-								</div>
-							{/if}
-						</div>
-					{:else}
-						<div
-							class="h-8 w-8 shrink-0 rounded-lg bg-gray-800/80 ring-2 sm:h-10 sm:w-10 {isWinner
-								? 'ring-emerald-500/50'
-								: 'ring-gray-700/50'}"
-						></div>
-					{/if}
-					<!-- Player Info -->
-					<div class="min-w-0 flex-1 {alignRight ? 'text-right' : ''}">
-						{#if player.gemId}
-							<a
-								href="/player/{player.gemId}"
-								class="block truncate text-xs font-bold transition-colors sm:text-sm {isWinner
-									? 'text-emerald-400'
-									: isDraw
-										? 'text-amber-400'
-										: 'text-white hover:text-blue-400'}"
-							>
-								{player.name}
-							</a>
-						{:else}
-							<span
-								class="block truncate text-xs font-bold sm:text-sm {isWinner
-									? 'text-emerald-400'
-									: isDraw
-										? 'text-amber-400'
-										: 'text-white'}"
-							>
-								{player.name}
-							</span>
-						{/if}
-						{#if player.hero}
-							<p
-								class="text-[10px] sm:text-xs {isWinner
-									? 'text-emerald-400/60'
-									: 'text-gray-500'} truncate"
-							>
-								{player.hero}
-							</p>
-						{/if}
-					</div>
-					<!-- Winner Badge - Icon only on mobile -->
-					{#if isWinner}
-						<div
-							class="flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-emerald-400 uppercase sm:px-2"
-						>
-							<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-								<path
-									fill-rule="evenodd"
-									d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-									clip-rule="evenodd"
-								/>
-							</svg>
-							<span class="hidden sm:inline">Win</span>
-						</div>
-					{/if}
-				</div>
-			{/snippet}
-
-			<div class="space-y-4 sm:space-y-6">
-				{#each data.matchesByRound as roundData}
-					<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
-						<!-- Round Header -->
-						<div
-							class="flex items-center justify-between border-b border-gray-800 bg-gradient-to-r from-gray-800/50 to-transparent px-4 py-3 sm:px-6 sm:py-4"
-						>
-							<h3
-								class="flex items-center gap-2 text-base font-semibold text-white sm:gap-3 sm:text-lg"
-							>
-								<div
-									class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500/30 to-purple-500/30 ring-1 ring-blue-500/20 sm:h-10 sm:w-10 sm:rounded-xl"
-								>
-									<span class="text-sm font-bold text-blue-400 sm:text-base">{roundData.round}</span
-									>
-								</div>
-								<div>
-									<span>Round {roundData.round}</span>
-									<p class="text-[10px] font-normal text-gray-500 sm:text-xs">
-										{roundData.matches.length} matches
-									</p>
-								</div>
-							</h3>
-						</div>
-
-						<!-- Matches Grid -->
-						<div class="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2 sm:gap-3 sm:p-4 lg:grid-cols-3">
-							{#each roundData.matches as match}
-								<div
-									class="group relative overflow-hidden rounded-lg bg-gray-800/30 ring-1 ring-gray-700/30 transition-all hover:ring-gray-600/50 sm:rounded-xl"
-								>
-									<!-- Match Content -->
-									<div class="p-3 sm:p-4">
-										<!-- Player 1 (Left aligned) -->
-										<div
-											class="relative rounded-lg {match.winner === 'player1'
-												? '-mx-2 bg-gradient-to-r from-emerald-500/10 to-transparent px-2 py-2'
-												: 'py-1'}"
-										>
-											{#if match.winner === 'player1'}
-												<div
-													class="absolute top-1 bottom-1 left-0 w-1 rounded-full bg-emerald-500"
-												></div>
-											{/if}
-											{@render matchPlayer(
-												match.player1,
-												match.winner === 'player1',
-												match.isDraw,
-												'left'
-											)}
-										</div>
-
-										<!-- VS Divider -->
-										<div class="my-2 flex items-center gap-3">
-											<div
-												class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-700 to-transparent"
-											></div>
-											<span class="text-[10px] font-bold tracking-wider text-gray-600 uppercase"
-												>vs</span
-											>
-											<div
-												class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-700 to-transparent"
-											></div>
-										</div>
-
-										<!-- Player 2 (Right aligned - mirrored) -->
-										<div
-											class="relative rounded-lg {match.winner === 'player2'
-												? '-mx-2 bg-gradient-to-l from-emerald-500/10 to-transparent px-2 py-2'
-												: 'py-1'}"
-										>
-											{#if match.winner === 'player2'}
-												<div
-													class="absolute top-1 right-0 bottom-1 w-1 rounded-full bg-emerald-500"
-												></div>
-											{/if}
-											{@render matchPlayer(
-												match.player2,
-												match.winner === 'player2',
-												match.isDraw,
-												'right'
-											)}
-										</div>
-									</div>
-
-									<!-- Match Footer -->
-									<div
-										class="flex items-center justify-between border-t border-gray-700/30 bg-gray-800/20 px-3 py-1.5 sm:px-4 sm:py-2"
-									>
-										{#if match.table}
-											<span
-												class="text-[9px] font-medium tracking-wider text-gray-600 uppercase sm:text-[10px]"
-												>Table {match.table}</span
-											>
-										{:else}
-											<span></span>
-										{/if}
-										{#if match.isDraw}
-											<span
-												class="flex items-center gap-1 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-amber-400 sm:px-2 sm:text-[10px]"
-											>
-												<svg
-													class="h-2.5 w-2.5 sm:h-3 sm:w-3"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-													/>
-												</svg>
-												Draw
-											</span>
-										{:else if !match.winner}
-											<span class="text-[9px] font-medium text-gray-600 sm:text-[10px]"
-												>Pending</span
-											>
-										{/if}
-									</div>
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/each}
-			</div>
-		{/if}
-
-		<!-- Top 8 Bracket Tab -->
-		{#if activeTab === 'top8' && hasBracket}
-			{@const bracket = data.top8Bracket}
-
-			<!-- Bracket Match Component -->
-			{#snippet bracketMatch(match, variant = 'default')}
-				{@const isFinals = variant === 'finals'}
-				<div
-					class="overflow-hidden rounded-lg {isFinals
-						? 'bg-gray-800/80 ring-1 ring-white/20'
-						: 'bg-gray-800/50'}"
-				>
-					{#each [match.player1, match.player2] as player, idx}
-						<div
-							class="flex items-center gap-2 px-2.5 py-1.5 {idx === 0
-								? 'border-b border-gray-700/40'
-								: ''} {player.isWinner ? 'bg-emerald-500/10' : ''}"
-						>
-							<!-- Seed -->
-							<span class="w-3 text-center text-[10px] font-medium text-gray-600"
-								>{player.seed}</span
-							>
-							<!-- Hero Image -->
-							{#if player.hero}
-								<img
-									src={getHeroImageUrl(player.hero)}
-									alt=""
-									class="h-7 w-7 shrink-0 rounded object-cover object-right"
-									onerror={(e) => (e.target.style.display = 'none')}
-								/>
-							{:else}
-								<div class="h-7 w-7 shrink-0 rounded bg-gray-700/50"></div>
-							{/if}
-							<!-- Player Info -->
-							<div class="min-w-0 flex-1">
-								{#if player.gemId}
-									<a
-										href="/player/{player.gemId}"
-										class="block truncate text-[13px] font-medium {player.isWinner
-											? 'text-emerald-400'
-											: 'text-gray-200'} transition-colors hover:text-white"
-									>
-										{player.name}
-									</a>
-								{:else}
-									<span
-										class="block truncate text-[13px] font-medium {player.isWinner
-											? 'text-emerald-400'
-											: 'text-gray-200'}"
-									>
-										{player.name}
-									</span>
-								{/if}
-								{#if player.hero}
-									<p class="truncate text-[10px] text-gray-500">{player.hero}</p>
-								{/if}
-							</div>
-							<!-- Winner Check -->
-							{#if player.isWinner}
-								<svg
-									class="h-3.5 w-3.5 shrink-0 text-emerald-400"
-									fill="currentColor"
-									viewBox="0 0 20 20"
-								>
-									<path
-										fill-rule="evenodd"
-										d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-										clip-rule="evenodd"
-									/>
-								</svg>
-							{/if}
-						</div>
-					{/each}
-				</div>
-			{/snippet}
-
-			<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
-				<div class="border-b border-gray-800 px-6 py-4">
-					<h2 class="flex items-center gap-2 text-lg font-semibold text-white">
-						<svg class="h-5 w-5 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
-							<path
-								d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 0 7.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 0 0 2.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 0 1 2.916.52 6.003 6.003 0 0 1-5.395 4.972m0 0a6.726 6.726 0 0 1-2.749 1.35m0 0a6.772 6.772 0 0 1-2.992 0"
-							/>
-						</svg>
-						Top 8 Elimination Bracket
+					<h2 class="font-newsreader m-0 text-[34px] font-semibold leading-none tracking-[-0.02em]">
+						Metagame
 					</h2>
 				</div>
 
-				<!-- Champion Banner -->
-				{#if data.top8Bracket.champion}
-					<div
-						class="border-b border-gray-800 bg-gradient-to-r from-yellow-500/10 via-yellow-500/5 to-transparent px-6 py-5"
-					>
-						<div class="flex items-center gap-4">
-							{#if data.top8Bracket.champion.hero}
-								<div class="relative">
-									<img
-										src={getHeroImageUrl(data.top8Bracket.champion.hero)}
-										alt=""
-										class="h-16 w-16 rounded-xl object-cover object-right shadow-lg ring-2 shadow-yellow-500/20 ring-yellow-500/50"
-										onerror={(e) => (e.target.style.display = 'none')}
-									/>
+				<!--
+					Stat strip — each card uses a layout tuned to its data
+					type. Plain counts get a huge Archivo numeral; named
+					stats (Most Played / Best Win Rate) lead with the hero
+					name in serif and surface the actual metric in a smaller
+					colored value beneath. Differentiated visual treatments
+					stop the row from reading as four interchangeable cards.
+				-->
+				<dl class="mb-9 grid grid-cols-1 gap-px bg-line2 sm:grid-cols-2 lg:grid-cols-4">
+					<!-- Unique heroes -->
+					<div class="bg-paper flex flex-col justify-between px-6 py-5">
+						<div
+							class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.18em] uppercase"
+						>
+							Unique Heroes
+						</div>
+						<div class="font-archivo text-ink mt-2 text-[52px] font-black leading-[0.85] tabular-nums tracking-[-0.04em]">
+							{data.metagameBreakdown.length}
+						</div>
+						<div class="text-fade font-mono-system mt-2 text-[10px] font-bold tracking-[0.1em] uppercase">
+							in the field
+						</div>
+					</div>
+
+					<!-- Total players -->
+					<div class="bg-paper flex flex-col justify-between px-6 py-5">
+						<div
+							class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.18em] uppercase"
+						>
+							Total Players
+						</div>
+						<div class="font-archivo text-ink mt-2 text-[52px] font-black leading-[0.85] tabular-nums tracking-[-0.04em]">
+							{data.totalPlayers}
+						</div>
+						<div class="text-fade font-mono-system mt-2 text-[10px] font-bold tracking-[0.1em] uppercase">
+							competed
+						</div>
+					</div>
+
+					<!-- Most played hero -->
+					<div class="bg-paper relative flex flex-col justify-between px-6 py-5">
+						<div
+							class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.18em] uppercase"
+						>
+							Most Played
+						</div>
+						{#if metaTopHero}
+							<div class="mt-2 flex flex-col gap-[3px]">
+								<div class="font-newsreader text-ink truncate text-[22px] font-semibold leading-[1.1] tracking-[-0.01em]" title={metaTopHero.hero}>
+									{metaTopHeroSplit.primary}
+								</div>
+								{#if metaTopHeroSplit.secondary}
 									<div
-										class="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg"
+										class="text-warm font-mono-system truncate text-[9.5px] font-extrabold tracking-[0.08em] uppercase"
+										title={metaTopHeroSplit.secondary}
 									>
-										<svg class="h-3.5 w-3.5 text-black" fill="currentColor" viewBox="0 0 20 20">
-											<path
-												fill-rule="evenodd"
-												d="M10 1l2.928 6.472L20 8.236l-5 4.584L16.18 20 10 16.416 3.82 20 5 12.82 0 8.236l7.072-.764L10 1z"
-												clip-rule="evenodd"
-											/>
-										</svg>
+										{metaTopHeroSplit.secondary}
 									</div>
-								</div>
-							{:else}
-								<div
-									class="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600 shadow-lg shadow-yellow-500/25"
-								>
-									<svg class="h-8 w-8 text-black" fill="currentColor" viewBox="0 0 20 20">
-										<path
-											fill-rule="evenodd"
-											d="M10 1l2.928 6.472L20 8.236l-5 4.584L16.18 20 10 16.416 3.82 20 5 12.82 0 8.236l7.072-.764L10 1z"
-											clip-rule="evenodd"
-										/>
-									</svg>
-								</div>
-							{/if}
-							<div>
-								<p class="text-xs font-semibold tracking-wider text-yellow-400/80 uppercase">
-									Champion
-								</p>
-								{#if data.top8Bracket.champion.gemId}
-									<a
-										href="/player/{data.top8Bracket.champion.gemId}"
-										class="text-xl font-bold text-white transition-colors hover:text-yellow-400 sm:text-2xl"
-									>
-										{data.top8Bracket.champion.name}
-									</a>
-								{:else}
-									<p class="text-xl font-bold text-white sm:text-2xl">
-										{data.top8Bracket.champion.name}
-									</p>
-								{/if}
-								{#if data.top8Bracket.champion.hero}
-									<p class="text-sm text-yellow-400/60">{data.top8Bracket.champion.hero}</p>
 								{/if}
 							</div>
+							<div class="font-mono-system mt-2 text-[10px] font-extrabold tracking-[0.1em] uppercase">
+								<span class="font-archivo text-ink text-[14px] tabular-nums">{metaTopHero.count}</span>
+								<span class="text-soft ml-[5px]">players</span>
+								<span class="text-fade ml-2">·</span>
+								<span class="text-fade ml-2">{metaTopHero.percentage}% field</span>
+							</div>
+						{:else}
+							<div class="text-fade font-newsreader mt-2 text-[22px] font-semibold">—</div>
+						{/if}
+					</div>
+
+					<!-- Best win rate -->
+					<div class="bg-paper relative flex flex-col justify-between px-6 py-5">
+						<div
+							class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.18em] uppercase"
+						>
+							Best Win Rate
+						</div>
+						{#if bestWinRateHero}
+							<div class="mt-2 flex items-baseline gap-3">
+								<span
+									class="font-archivo text-[42px] font-black leading-[0.85] tabular-nums tracking-[-0.04em]"
+									style="color: var(--ed-prem);"
+								>
+									{bestWinRateHero.winRate}%
+								</span>
+								<div class="min-w-0 flex-1 flex flex-col gap-[2px]">
+									<div class="font-newsreader text-ink truncate text-[14px] font-semibold leading-[1.05]" title={bestWinRateHero.hero}>
+										{metaBestWrSplit.primary}
+									</div>
+									{#if metaBestWrSplit.secondary}
+										<div
+											class="text-warm font-mono-system truncate text-[9px] font-extrabold tracking-[0.08em] uppercase"
+											title={metaBestWrSplit.secondary}
+										>
+											{metaBestWrSplit.secondary}
+										</div>
+									{/if}
+								</div>
+							</div>
+							<div class="text-fade font-mono-system mt-2 text-[10px] font-bold tracking-[0.08em] uppercase">
+								<span class="text-prem font-mono-system font-extrabold tabular-nums">{bestWinRateHero.wins}</span><span class="text-fade">–</span><span class="text-warm font-mono-system font-extrabold tabular-nums">{bestWinRateHero.losses}</span>
+								<span class="ml-2">record</span>
+							</div>
+						{:else}
+							<div class="text-fade font-newsreader mt-2 text-[22px] font-semibold">—</div>
+						{/if}
+					</div>
+				</dl>
+
+				<!--
+					Hero distribution grid — 2 columns on lg+ (was 3) so
+					each card has more room for a clean 3-stat tile. Card
+					layout: left hero image (full height, masked), right
+					title + 3-stat block + action footer. The top rule is
+					colored by the hero's win-rate tier so the page reads
+					as a sorted tier list at a glance.
+				-->
+				<div class="border-line2 mb-4 flex flex-wrap items-baseline justify-between gap-3 border-b pb-3">
+					<h3 class="font-newsreader text-[24px] font-semibold leading-none tracking-[-0.01em]">
+						Hero Distribution
+					</h3>
+					<span
+						class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
+					>
+						Tap a hero to view player records
+					</span>
+				</div>
+				<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+					{#each data.metagameBreakdown as heroData, idx (heroData.hero)}
+						{@const isTop = idx === 0}
+						{@const split = splitHero(heroData.hero)}
+						{@const tierColor = performanceColor(heroData)}
+						{@const tierLabel = performanceLabel(heroData)}
+						{@const hasMatches = heroData.totalMatches > 0}
+						<button
+							type="button"
+							onclick={() => openHeroModal(heroData)}
+							class="group border-line2 bg-paper hover:border-ink relative grid cursor-pointer grid-cols-[140px_1fr] overflow-hidden border text-left transition-colors"
+							style="border-top: 3px solid {isTop ? '#C8922E' : tierColor};"
+						>
+							<!-- Left: hero portrait (full card height) -->
+							<div class="bg-panel relative">
+								{#if heroData.imageUrl}
+									<img
+										src={heroData.imageUrl}
+										alt={heroData.hero}
+										class="absolute inset-0 h-full w-full object-cover object-right transition-transform duration-500 group-hover:scale-[1.04]"
+										onerror={(e) => (e.target.style.display = 'none')}
+									/>
+								{/if}
+								{#if isTop}
+									<span
+										class="absolute top-2 left-2 z-[1] font-mono-system inline-flex items-center px-[7px] py-[3px] text-[9px] font-extrabold tracking-[0.1em] text-white uppercase"
+										style="background: #C8922E;"
+									>
+										Most Played
+									</span>
+								{/if}
+							</div>
+
+							<!-- Right: title + stat tile + action -->
+							<div class="flex min-w-0 flex-col px-5 pt-4 pb-4">
+								<!-- Title block -->
+								<div class="mb-4 flex items-start justify-between gap-3">
+									<div class="min-w-0 flex-1">
+										<h3
+											class="font-newsreader text-ink group-hover:text-warm truncate text-[20px] font-semibold leading-[1.05] tracking-[-0.01em] transition-colors"
+											title={heroData.hero}
+										>
+											{split.primary}
+										</h3>
+										{#if split.secondary}
+											<div
+												class="text-warm font-mono-system mt-[3px] truncate text-[10px] font-extrabold tracking-[0.1em] uppercase"
+												title={split.secondary}
+											>
+												{split.secondary}
+											</div>
+										{/if}
+									</div>
+									{#if hasMatches}
+										<span
+											class="font-mono-system shrink-0 border px-[8px] py-[3px] text-[9.5px] font-extrabold tracking-[0.08em] uppercase whitespace-nowrap"
+											style="color: {tierColor}; border-color: color-mix(in srgb, {tierColor} 45%, transparent); background-color: color-mix(in srgb, {tierColor} 8%, transparent);"
+										>
+											{tierLabel}
+										</span>
+									{/if}
+								</div>
+
+								<!--
+									3-stat tile — Players · Win Rate · Record.
+									Each stat sits in the same vertical
+									position with the same caption pattern so
+									the cards scan as a small table.
+								-->
+								<div class="border-line2 grid grid-cols-3 divide-x divide-[#E4DECF] border-y bg-paper-bg/40">
+									<!-- Players -->
+									<div class="px-3 py-3 text-center">
+										<div class="font-archivo text-ink text-[22px] font-black leading-none tabular-nums tracking-[-0.02em]">
+											{heroData.count}
+										</div>
+										<div
+											class="text-fade font-mono-system mt-[6px] text-[9px] font-extrabold tracking-[0.14em] uppercase"
+										>
+											Players
+										</div>
+										<div
+											class="text-fade font-mono-system mt-[3px] text-[9px] font-bold tracking-[0.06em] tabular-nums uppercase"
+										>
+											{heroData.percentage}% field
+										</div>
+									</div>
+									<!-- Win Rate -->
+									<div class="px-3 py-3 text-center">
+										{#if hasMatches}
+											<div
+												class="font-archivo text-[22px] font-black leading-none tabular-nums tracking-[-0.02em]"
+												style="color: {tierColor};"
+											>
+												{heroData.winRate}%
+											</div>
+											<div
+												class="text-fade font-mono-system mt-[6px] text-[9px] font-extrabold tracking-[0.14em] uppercase"
+											>
+												Win Rate
+											</div>
+											<div
+												class="text-fade font-mono-system mt-[3px] text-[9px] font-bold tracking-[0.06em] uppercase"
+											>
+												{heroData.totalMatches} games
+											</div>
+										{:else}
+											<div class="text-fade font-archivo text-[22px] font-black leading-none">
+												—
+											</div>
+											<div
+												class="text-fade font-mono-system mt-[6px] text-[9px] font-extrabold tracking-[0.14em] uppercase"
+											>
+												Win Rate
+											</div>
+											<div
+												class="text-fade font-mono-system mt-[3px] text-[9px] font-bold tracking-[0.06em] uppercase"
+											>
+												No data
+											</div>
+										{/if}
+									</div>
+									<!-- Record -->
+									<div class="px-3 py-3 text-center">
+										{#if hasMatches}
+											<div class="font-archivo text-[22px] font-black leading-none tabular-nums tracking-[-0.02em]">
+												<span class="text-prem">{heroData.wins}</span><span class="text-fade mx-[1px]">–</span><span class="text-warm">{heroData.losses}</span>
+											</div>
+											<div
+												class="text-fade font-mono-system mt-[6px] text-[9px] font-extrabold tracking-[0.14em] uppercase"
+											>
+												Record
+											</div>
+											<div
+												class="text-fade font-mono-system mt-[3px] text-[9px] font-bold tracking-[0.06em] uppercase"
+											>
+												{heroData.draws > 0 ? `${heroData.draws} draws` : 'no draws'}
+											</div>
+										{:else}
+											<div class="text-fade font-archivo text-[22px] font-black leading-none">
+												—
+											</div>
+											<div
+												class="text-fade font-mono-system mt-[6px] text-[9px] font-extrabold tracking-[0.14em] uppercase"
+											>
+												Record
+											</div>
+											<div
+												class="text-fade font-mono-system mt-[3px] text-[9px] font-bold tracking-[0.06em] uppercase"
+											>
+												No data
+											</div>
+										{/if}
+									</div>
+								</div>
+
+								<!-- Footer: action hint, brightens on hover -->
+								{#if heroData.players?.length > 0}
+									<div
+										class="text-accent font-mono-system mt-[14px] flex items-center justify-between text-[10px] font-extrabold tracking-[0.12em] uppercase"
+									>
+										<span>
+											View {heroData.players.length} player{heroData.players.length !== 1 ? 's' : ''}
+										</span>
+										<span class="opacity-60 transition-opacity group-hover:opacity-100">→</span>
+									</div>
+								{/if}
+							</div>
+						</button>
+					{/each}
+				</div>
+			</div>
+		</section>
+	{/if}
+
+	<!--
+		MATCHES TAB — round selector + search filter at the top, then a
+		flat list of compact match rows. One row per match makes the
+		page scannable; the round pills + search input let users
+		drill into a specific subset instead of scrolling all rounds.
+		The old 3-up grid of bordered cards is gone — single horizontal
+		rows are denser and faster to scan when there's lots of data.
+	-->
+	{#if activeTab === 'matches' && hasMatches}
+		{#snippet playerSide(player, isWinner, isDraw, align = 'left')}
+			{@const alignRight = align === 'right'}
+			<div class="flex min-w-0 items-center gap-[10px] {alignRight ? 'flex-row-reverse' : ''}">
+				{#if player.hero}
+					<img
+						src={getHeroImageUrl(player.hero)}
+						alt=""
+						class="border-line2 h-[36px] w-[36px] shrink-0 border object-cover object-right {isWinner
+							? 'ring-1 ring-prem'
+							: ''}"
+						onerror={(e) => (e.target.style.display = 'none')}
+					/>
+				{:else}
+					<div class="border-line2 bg-panel h-[36px] w-[36px] shrink-0 border"></div>
+				{/if}
+				<div class="min-w-0 {alignRight ? 'text-right' : ''}">
+					{#if player.gemId}
+						<a
+							href="/player/{player.gemId}"
+							class="block truncate text-[13.5px] font-bold transition-colors {isWinner
+								? 'text-prem'
+								: isDraw
+									? 'text-warm'
+									: 'text-ink hover:text-accent'}"
+						>
+							{player.name}
+						</a>
+					{:else}
+						<span
+							class="block truncate text-[13.5px] font-bold {isWinner
+								? 'text-prem'
+								: isDraw
+									? 'text-warm'
+									: 'text-ink'}"
+						>
+							{player.name}
+						</span>
+					{/if}
+					{#if player.hero}
+						<div class="text-fade truncate text-[10.5px] font-semibold">{player.hero}</div>
+					{/if}
+				</div>
+			</div>
+		{/snippet}
+
+		<section class="bg-paper-bg border-ink border-b-[3px] border-double">
+			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-10">
+				<div class="mb-6 flex flex-wrap items-end justify-between gap-5">
+					<div>
+						<div
+							class="text-accent font-mono-system mb-3 text-[10.5px] font-extrabold tracking-[0.2em] uppercase"
+						>
+							Round by round
+						</div>
+						<h2 class="font-newsreader m-0 text-[34px] font-semibold leading-none tracking-[-0.02em]">
+							Matches
+						</h2>
+					</div>
+					<!-- Player search -->
+					<div
+						class="border-line2 bg-paper focus-within:border-ink relative flex items-center border"
+					>
+						<span class="text-fade pl-3 text-[14px]" aria-hidden="true">⌕</span>
+						<input
+							type="search"
+							bind:value={matchesSearch}
+							placeholder="Search players or heroes"
+							class="text-ink placeholder:text-fade h-[40px] w-[260px] appearance-none border-0 bg-transparent px-2 text-[12px] font-bold shadow-none outline-none focus:border-0 focus:shadow-none focus:ring-0 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
+						/>
+					</div>
+				</div>
+
+				<!-- Round selector pills -->
+				<div class="mb-7 flex flex-wrap items-center gap-[6px]">
+					<button
+						type="button"
+						onclick={() => (selectedMatchRound = 'all')}
+						class="font-mono-system cursor-pointer border-[1.5px] px-[14px] py-[8px] text-[10.5px] font-extrabold tracking-[0.1em] uppercase transition-colors {selectedMatchRound ===
+						'all'
+							? 'border-ink bg-ink text-paper-bg'
+							: 'border-line2 text-soft hover:border-ink hover:text-ink'}"
+					>
+						All rounds
+					</button>
+					{#each data.matchesByRound as roundData (roundData.round)}
+						<button
+							type="button"
+							onclick={() => (selectedMatchRound = roundData.round)}
+							class="font-mono-system inline-flex cursor-pointer items-center gap-2 border-[1.5px] px-[14px] py-[8px] text-[10.5px] font-extrabold tracking-[0.1em] uppercase transition-colors {selectedMatchRound ===
+							roundData.round
+								? 'border-ink bg-ink text-paper-bg'
+								: 'border-line2 text-soft hover:border-ink hover:text-ink'}"
+						>
+							R{roundData.round}
+							<span
+								class="font-mono-system text-[9.5px] tabular-nums {selectedMatchRound ===
+								roundData.round
+									? 'opacity-70'
+									: 'opacity-60'}"
+							>
+								{roundData.matches.length}
+							</span>
+						</button>
+					{/each}
+				</div>
+
+				{#if filteredMatchRounds().length === 0}
+					<div class="border-line2 bg-paper border py-12 text-center">
+						<div class="font-newsreader text-ink mb-2 text-[20px] font-semibold">
+							No matches found.
+						</div>
+						<p class="text-soft mx-auto max-w-[380px] text-[13px] leading-[1.55]">
+							Try a different round, or clear the search.
+						</p>
+					</div>
+				{:else}
+					<div class="space-y-9">
+						{#each filteredMatchRounds() as roundData (roundData.round)}
+							<div>
+								<!-- Round header: title + stats line (decided · draws · pending) -->
+								<div class="border-line2 mb-3 flex flex-wrap items-baseline justify-between gap-3 border-b pb-[10px]">
+									<h3 class="font-newsreader text-[22px] font-semibold leading-none tracking-[-0.01em]">
+										Round {roundData.round}
+									</h3>
+									<div class="font-mono-system flex items-center gap-3 text-[10.5px] font-extrabold tracking-[0.1em] uppercase">
+										<span class="text-soft">
+											<span class="text-ink font-archivo text-[15px] tabular-nums">{roundData.matches.length}</span>
+											Matches
+										</span>
+										{#if roundData.decided > 0}
+											<span class="text-fade" aria-hidden="true">·</span>
+											<span class="text-prem">
+												<span class="font-archivo text-[15px] tabular-nums">{roundData.decided}</span>
+												Decided
+											</span>
+										{/if}
+										{#if roundData.draws > 0}
+											<span class="text-fade" aria-hidden="true">·</span>
+											<span class="text-warm">
+												<span class="font-archivo text-[15px] tabular-nums">{roundData.draws}</span>
+												Draws
+											</span>
+										{/if}
+										{#if roundData.pending > 0}
+											<span class="text-fade" aria-hidden="true">·</span>
+											<span class="text-fade">
+												<span class="font-archivo text-[15px] tabular-nums">{roundData.pending}</span>
+												Pending
+											</span>
+										{/if}
+									</div>
+								</div>
+
+								<!-- Compact match rows -->
+								<div class="border-line2 bg-paper overflow-hidden border">
+									{#each roundData.matches as match, mi (mi)}
+										{@const p1Wins = match.winner === 'player1'}
+										{@const p2Wins = match.winner === 'player2'}
+										{@const noWinner = !match.winner && !match.isDraw}
+										<div
+											class="border-line2 grid grid-cols-[60px_1fr_60px_1fr_120px] items-center {mi >
+											0
+												? 'border-t'
+												: ''}"
+										>
+											<!-- Table # -->
+											<div class="text-fade font-mono-system py-[14px] text-center text-[10px] font-extrabold tracking-[0.1em] uppercase tabular-nums">
+												{#if match.table}
+													T{match.table}
+												{:else}
+													—
+												{/if}
+											</div>
+											<!-- Player 1 (left) — subtle prem-green tint when winning -->
+											<div class="px-3 py-[12px] {p1Wins ? 'bg-prem/[0.06]' : ''}">
+												{@render playerSide(match.player1, p1Wins, match.isDraw, 'left')}
+											</div>
+											<!-- vs marker — bigger if undecided -->
+											<div class="font-mono-system flex flex-col items-center justify-center py-[12px] text-center">
+												{#if match.isDraw}
+													<span class="font-archivo text-warm text-[13px] font-black tracking-[0.04em] uppercase">=</span>
+												{:else if p1Wins}
+													<span class="text-prem text-[14px] font-bold" aria-hidden="true">←</span>
+												{:else if p2Wins}
+													<span class="text-prem text-[14px] font-bold" aria-hidden="true">→</span>
+												{:else}
+													<span class="text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">vs</span>
+												{/if}
+											</div>
+											<!-- Player 2 (right) -->
+											<div class="px-3 py-[12px] {p2Wins ? 'bg-prem/[0.06]' : ''}">
+												{@render playerSide(match.player2, p2Wins, match.isDraw, 'right')}
+											</div>
+											<!-- Result pill — single clear badge per row -->
+											<div class="border-line2 flex items-center justify-center border-l py-[12px]">
+												{#if match.isDraw}
+													<span
+														class="border-warm bg-warm/[0.08] text-warm font-mono-system inline-flex items-center border px-[10px] py-[5px] text-[10px] font-extrabold tracking-[0.1em] uppercase"
+													>
+														Draw
+													</span>
+												{:else if p1Wins || p2Wins}
+													<span
+														class="border-prem bg-prem font-mono-system inline-flex items-center px-[10px] py-[5px] text-[10px] font-extrabold tracking-[0.1em] text-white uppercase"
+													>
+														✓ {p1Wins ? 'P1' : 'P2'} wins
+													</span>
+												{:else}
+													<span
+														class="border-line2 text-fade font-mono-system inline-flex items-center border px-[10px] py-[5px] text-[10px] font-extrabold tracking-[0.1em] uppercase"
+													>
+														Pending
+													</span>
+												{/if}
+											</div>
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		</section>
+	{/if}
+
+	<!--
+		TOP 8 BRACKET TAB — editorial bracket layout. Champion banner
+		sits above the bracket; SVG connectors use a paper-toned hairline
+		so the bracket reads as a printed chart, not a glowing app UI.
+	-->
+	{#if activeTab === 'top8' && hasBracket}
+		{@const bracket = data.top8Bracket}
+
+		{#snippet bracketMatch(match, variant = 'default')}
+			{@const isFinals = variant === 'finals'}
+			<div class="border-line2 bg-paper border {isFinals ? '!border-[#C8922E]' : ''}">
+				{#each [match.player1, match.player2] as player, idx}
+					<div
+						class="flex items-center gap-2 px-3 py-[8px] {idx === 0 ? 'border-line2 border-b' : ''} {player.isWinner
+							? 'bg-prem/5'
+							: ''}"
+					>
+						<span class="text-fade font-mono-system w-4 text-center text-[10px] font-bold tabular-nums">
+							{player.seed}
+						</span>
+						{#if player.hero}
+							<img
+								src={getHeroImageUrl(player.hero)}
+								alt=""
+								class="h-7 w-7 shrink-0 object-cover object-right"
+								onerror={(e) => (e.target.style.display = 'none')}
+							/>
+						{:else}
+							<div class="bg-panel h-7 w-7 shrink-0"></div>
+						{/if}
+						<div class="min-w-0 flex-1">
+							{#if player.gemId}
+								<a
+									href="/player/{player.gemId}"
+									class="block truncate text-[13px] font-bold {player.isWinner
+										? 'text-prem'
+										: 'text-ink'} transition-colors hover:text-accent"
+								>
+									{player.name}
+								</a>
+							{:else}
+								<span
+									class="block truncate text-[13px] font-bold {player.isWinner
+										? 'text-prem'
+										: 'text-ink'}"
+								>
+									{player.name}
+								</span>
+							{/if}
+							{#if player.hero}
+								<div class="text-fade truncate text-[10px] font-semibold">{player.hero}</div>
+							{/if}
+						</div>
+						{#if player.isWinner}
+							<span class="text-prem text-[13px] font-bold" aria-hidden="true">✓</span>
+						{/if}
+					</div>
+				{/each}
+			</div>
+		{/snippet}
+
+		<section class="bg-paper-bg border-ink border-b-[3px] border-double">
+			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-10">
+				<div class="mb-6">
+					<div
+						class="text-accent font-mono-system mb-3 text-[10.5px] font-extrabold tracking-[0.2em] uppercase"
+					>
+						Single elimination
+					</div>
+					<h2 class="font-newsreader m-0 text-[34px] font-semibold leading-none tracking-[-0.02em]">
+						Top 8 Bracket
+					</h2>
+				</div>
+
+				<!-- Champion banner -->
+				{#if data.top8Bracket.champion}
+					<div
+						class="border-ink relative mb-8 flex flex-wrap items-center gap-5 overflow-hidden border-l-[3px] bg-paper p-6"
+						style="border-left-color: #C8922E;"
+					>
+						{#if data.top8Bracket.champion.hero}
+							<img
+								src={getHeroImageUrl(data.top8Bracket.champion.hero)}
+								alt=""
+								class="border-line2 h-[80px] w-[80px] shrink-0 border object-cover object-right"
+								onerror={(e) => (e.target.style.display = 'none')}
+							/>
+						{/if}
+						<div class="flex-1 min-w-0">
+							<div
+								class="font-mono-system mb-[6px] text-[10.5px] font-extrabold tracking-[0.18em] uppercase"
+								style="color: #C8922E;"
+							>
+								Champion
+							</div>
+							{#if data.top8Bracket.champion.gemId}
+								<a
+									href="/player/{data.top8Bracket.champion.gemId}"
+									class="font-newsreader text-ink hover:text-[#C8922E] text-[32px] font-semibold leading-[1.05] tracking-[-0.01em] transition-colors"
+								>
+									{data.top8Bracket.champion.name}
+								</a>
+							{:else}
+								<div class="font-newsreader text-ink text-[32px] font-semibold leading-[1.05] tracking-[-0.01em]">
+									{data.top8Bracket.champion.name}
+								</div>
+							{/if}
+							{#if data.top8Bracket.champion.hero}
+								<div class="text-soft mt-[6px] text-[14px] font-semibold">
+									{data.top8Bracket.champion.hero}
+								</div>
+							{/if}
 						</div>
 					</div>
 				{/if}
 
-				<!-- Bracket Visualization -->
-				<div class="hidden overflow-x-auto p-4 sm:block sm:p-6">
+				<!-- Desktop bracket visualization -->
+				<div class="hidden overflow-x-auto md:block">
 					<div class="min-w-[700px]">
-						<!-- Column Headers -->
 						<div class="mb-4 grid grid-cols-[1fr_40px_1fr_40px_1fr] gap-0">
-							<div
-								class="text-center text-[11px] font-semibold tracking-wider text-gray-600 uppercase"
-							>
-								Quarterfinals
-							</div>
-							<div></div>
-							<div
-								class="text-center text-[11px] font-semibold tracking-wider text-gray-600 uppercase"
-							>
-								Semifinals
-							</div>
-							<div></div>
-							<div
-								class="text-center text-[11px] font-semibold tracking-wider text-gray-600 uppercase"
-							>
-								Finals
-							</div>
+							{#each ['Quarterfinals', 'Semifinals', 'Finals'] as label, i (label)}
+								{#if i === 0}
+									<div
+										class="text-fade font-mono-system text-center text-[10px] font-extrabold tracking-[0.16em] uppercase"
+									>
+										{label}
+									</div>
+								{:else}
+									<div></div>
+									<div
+										class="text-fade font-mono-system text-center text-[10px] font-extrabold tracking-[0.16em] uppercase"
+									>
+										{label}
+									</div>
+								{/if}
+							{/each}
 						</div>
 
-						<!-- Bracket Grid -->
 						<div class="grid grid-cols-[1fr_40px_1fr_40px_1fr] gap-0">
-							<!-- QF Column -->
+							<!-- QF column -->
 							<div class="flex flex-col justify-between gap-3">
-								{#if bracket.quarterfinals[0]}
-									{@render bracketMatch(bracket.quarterfinals[0])}
-								{/if}
-								{#if bracket.quarterfinals[1]}
-									{@render bracketMatch(bracket.quarterfinals[1])}
-								{/if}
-								{#if bracket.quarterfinals[2]}
-									{@render bracketMatch(bracket.quarterfinals[2])}
-								{/if}
-								{#if bracket.quarterfinals[3]}
-									{@render bracketMatch(bracket.quarterfinals[3])}
-								{/if}
+								{#each bracket.quarterfinals as qf, i (i)}
+									{#if qf}
+										{@render bracketMatch(qf)}
+									{/if}
+								{/each}
 							</div>
 
-							<!-- Connector QF -> SF -->
+							<!-- QF -> SF connector -->
 							<div class="relative">
 								<svg class="absolute inset-0 h-full w-full" preserveAspectRatio="none">
-									<!-- Top bracket connector -->
-									<path
-										d="M 0 12.5% L 50% 12.5% L 50% 37.5% L 100% 37.5%"
-										fill="none"
-										stroke="rgb(55, 65, 81)"
-										stroke-width="1.5"
-									/>
-									<path
-										d="M 0 37.5% L 50% 37.5%"
-										fill="none"
-										stroke="rgb(55, 65, 81)"
-										stroke-width="1.5"
-									/>
-									<!-- Bottom bracket connector -->
-									<path
-										d="M 0 62.5% L 50% 62.5% L 50% 87.5% L 100% 87.5%"
-										fill="none"
-										stroke="rgb(55, 65, 81)"
-										stroke-width="1.5"
-									/>
-									<path
-										d="M 0 87.5% L 50% 87.5%"
-										fill="none"
-										stroke="rgb(55, 65, 81)"
-										stroke-width="1.5"
-									/>
+									<path d="M 0 12.5% L 50% 12.5% L 50% 37.5% L 100% 37.5%" fill="none" stroke="var(--ed-line2)" stroke-width="1.5" />
+									<path d="M 0 37.5% L 50% 37.5%" fill="none" stroke="var(--ed-line2)" stroke-width="1.5" />
+									<path d="M 0 62.5% L 50% 62.5% L 50% 87.5% L 100% 87.5%" fill="none" stroke="var(--ed-line2)" stroke-width="1.5" />
+									<path d="M 0 87.5% L 50% 87.5%" fill="none" stroke="var(--ed-line2)" stroke-width="1.5" />
 								</svg>
 							</div>
 
-							<!-- SF Column -->
+							<!-- SF column -->
 							<div class="flex flex-col justify-around gap-3 py-[12%]">
-								{#if bracket.semifinals[0]}
-									{@render bracketMatch(bracket.semifinals[0])}
-								{/if}
-								{#if bracket.semifinals[1]}
-									{@render bracketMatch(bracket.semifinals[1])}
-								{/if}
+								{#each bracket.semifinals as sf, i (i)}
+									{#if sf}
+										{@render bracketMatch(sf)}
+									{/if}
+								{/each}
 							</div>
 
-							<!-- Connector SF -> Finals -->
+							<!-- SF -> Finals connector -->
 							<div class="relative">
 								<svg class="absolute inset-0 h-full w-full" preserveAspectRatio="none">
-									<path
-										d="M 0 37.5% L 50% 37.5% L 50% 62.5% L 100% 62.5%"
-										fill="none"
-										stroke="rgb(55, 65, 81)"
-										stroke-width="1.5"
-									/>
-									<path
-										d="M 0 62.5% L 50% 62.5%"
-										fill="none"
-										stroke="rgb(55, 65, 81)"
-										stroke-width="1.5"
-									/>
-									<line
-										x1="50%"
-										y1="50%"
-										x2="100%"
-										y2="50%"
-										stroke="rgb(55, 65, 81)"
-										stroke-width="1.5"
-									/>
+									<path d="M 0 37.5% L 50% 37.5% L 50% 62.5% L 100% 62.5%" fill="none" stroke="var(--ed-line2)" stroke-width="1.5" />
+									<path d="M 0 62.5% L 50% 62.5%" fill="none" stroke="var(--ed-line2)" stroke-width="1.5" />
+									<line x1="50%" y1="50%" x2="100%" y2="50%" stroke="var(--ed-line2)" stroke-width="1.5" />
 								</svg>
 							</div>
 
-							<!-- Finals Column -->
+							<!-- Finals column -->
 							<div class="flex items-center justify-center">
 								{#if bracket.finals}
 									<div class="w-full">
@@ -1528,448 +1390,66 @@
 					</div>
 				</div>
 
-				<!-- Alternative: Enhanced List View for Mobile -->
-				<div class="block border-t border-gray-800 p-4 sm:hidden">
-					<p class="mb-4 text-sm font-semibold tracking-wider text-gray-400 uppercase">
-						All Matches
-					</p>
-					<div class="space-y-6">
-						<!-- Quarterfinals -->
+				<!-- Mobile list view -->
+				<div class="space-y-6 md:hidden">
+					{#each [{ label: 'Quarterfinals', list: bracket.quarterfinals }, { label: 'Semifinals', list: bracket.semifinals }, { label: 'Finals', list: bracket.finals ? [bracket.finals] : [] }] as round (round.label)}
 						<div>
-							<p class="mb-3 text-xs font-semibold tracking-wider text-amber-500 uppercase">
-								Quarterfinals
-							</p>
-							<div class="space-y-3">
-								{#each bracket.quarterfinals as qf, i}
-									{#if qf}
-										<div class="rounded-lg bg-gray-800/50 p-3">
-											<div class="flex items-center justify-between gap-2">
-												<!-- Player 1 -->
-												<div
-													class="flex min-w-0 flex-1 items-center gap-2 {qf.player1.isWinner
-														? ''
-														: 'opacity-60'}"
-												>
-													{#if qf.player1.hero}
-														<img
-															src={getHeroImageUrl(qf.player1.hero)}
-															alt={qf.player1.hero}
-															class="h-10 w-10 rounded-full border-2 object-cover object-right {qf
-																.player1.isWinner
-																? 'border-green-500'
-																: 'border-gray-600'}"
-														/>
-													{:else}
-														<div
-															class="h-10 w-10 rounded-full border-2 bg-gray-700 {qf.player1
-																.isWinner
-																? 'border-green-500'
-																: 'border-gray-600'}"
-														></div>
-													{/if}
-													<div class="min-w-0">
-														{#if qf.player1.gemId}
-															<a
-																href="/player/{qf.player1.gemId}"
-																class="block truncate text-sm font-medium hover:underline {qf
-																	.player1.isWinner
-																	? 'text-green-400'
-																	: 'text-gray-300'}">{qf.player1.name}</a
-															>
-														{:else}
-															<p
-																class="truncate text-sm font-medium {qf.player1.isWinner
-																	? 'text-green-400'
-																	: 'text-gray-300'}"
-															>
-																{qf.player1.name}
-															</p>
-														{/if}
-														{#if qf.player1.hero}
-															<p class="truncate text-xs text-gray-500">{qf.player1.hero}</p>
-														{/if}
-													</div>
-												</div>
-												<!-- VS -->
-												<span class="shrink-0 text-xs font-bold text-gray-600">VS</span>
-												<!-- Player 2 -->
-												<div
-													class="flex min-w-0 flex-1 items-center justify-end gap-2 {qf.player2
-														.isWinner
-														? ''
-														: 'opacity-60'}"
-												>
-													<div class="min-w-0 text-right">
-														{#if qf.player2.gemId}
-															<a
-																href="/player/{qf.player2.gemId}"
-																class="block truncate text-sm font-medium hover:underline {qf
-																	.player2.isWinner
-																	? 'text-green-400'
-																	: 'text-gray-300'}">{qf.player2.name}</a
-															>
-														{:else}
-															<p
-																class="truncate text-sm font-medium {qf.player2.isWinner
-																	? 'text-green-400'
-																	: 'text-gray-300'}"
-															>
-																{qf.player2.name}
-															</p>
-														{/if}
-														{#if qf.player2.hero}
-															<p class="truncate text-xs text-gray-500">{qf.player2.hero}</p>
-														{/if}
-													</div>
-													{#if qf.player2.hero}
-														<img
-															src={getHeroImageUrl(qf.player2.hero)}
-															alt={qf.player2.hero}
-															class="h-10 w-10 rounded-full border-2 object-cover object-right {qf
-																.player2.isWinner
-																? 'border-green-500'
-																: 'border-gray-600'}"
-														/>
-													{:else}
-														<div
-															class="h-10 w-10 rounded-full border-2 bg-gray-700 {qf.player2
-																.isWinner
-																? 'border-green-500'
-																: 'border-gray-600'}"
-														></div>
-													{/if}
-												</div>
-											</div>
-										</div>
+							<div
+								class="text-fade font-mono-system mb-3 text-[10px] font-extrabold tracking-[0.16em] uppercase"
+							>
+								{round.label}
+							</div>
+							<div class="space-y-2">
+								{#each round.list as m, i (i)}
+									{#if m}
+										{@render bracketMatch(m, round.label === 'Finals' ? 'finals' : 'default')}
 									{/if}
 								{/each}
 							</div>
 						</div>
-
-						<!-- Semifinals -->
-						<div>
-							<p class="mb-3 text-xs font-semibold tracking-wider text-amber-500 uppercase">
-								Semifinals
-							</p>
-							<div class="space-y-3">
-								{#each bracket.semifinals as sf, i}
-									{#if sf}
-										<div class="rounded-lg bg-gray-800/50 p-3">
-											<div class="flex items-center justify-between gap-2">
-												<!-- Player 1 -->
-												<div
-													class="flex min-w-0 flex-1 items-center gap-2 {sf.player1.isWinner
-														? ''
-														: 'opacity-60'}"
-												>
-													{#if sf.player1.hero}
-														<img
-															src={getHeroImageUrl(sf.player1.hero)}
-															alt={sf.player1.hero}
-															class="h-10 w-10 rounded-full border-2 object-cover object-right {sf
-																.player1.isWinner
-																? 'border-green-500'
-																: 'border-gray-600'}"
-														/>
-													{:else}
-														<div
-															class="h-10 w-10 rounded-full border-2 bg-gray-700 {sf.player1
-																.isWinner
-																? 'border-green-500'
-																: 'border-gray-600'}"
-														></div>
-													{/if}
-													<div class="min-w-0">
-														{#if sf.player1.gemId}
-															<a
-																href="/player/{sf.player1.gemId}"
-																class="block truncate text-sm font-medium hover:underline {sf
-																	.player1.isWinner
-																	? 'text-green-400'
-																	: 'text-gray-300'}">{sf.player1.name}</a
-															>
-														{:else}
-															<p
-																class="truncate text-sm font-medium {sf.player1.isWinner
-																	? 'text-green-400'
-																	: 'text-gray-300'}"
-															>
-																{sf.player1.name}
-															</p>
-														{/if}
-														{#if sf.player1.hero}
-															<p class="truncate text-xs text-gray-500">{sf.player1.hero}</p>
-														{/if}
-													</div>
-												</div>
-												<!-- VS -->
-												<span class="shrink-0 text-xs font-bold text-gray-600">VS</span>
-												<!-- Player 2 -->
-												<div
-													class="flex min-w-0 flex-1 items-center justify-end gap-2 {sf.player2
-														.isWinner
-														? ''
-														: 'opacity-60'}"
-												>
-													<div class="min-w-0 text-right">
-														{#if sf.player2.gemId}
-															<a
-																href="/player/{sf.player2.gemId}"
-																class="block truncate text-sm font-medium hover:underline {sf
-																	.player2.isWinner
-																	? 'text-green-400'
-																	: 'text-gray-300'}">{sf.player2.name}</a
-															>
-														{:else}
-															<p
-																class="truncate text-sm font-medium {sf.player2.isWinner
-																	? 'text-green-400'
-																	: 'text-gray-300'}"
-															>
-																{sf.player2.name}
-															</p>
-														{/if}
-														{#if sf.player2.hero}
-															<p class="truncate text-xs text-gray-500">{sf.player2.hero}</p>
-														{/if}
-													</div>
-													{#if sf.player2.hero}
-														<img
-															src={getHeroImageUrl(sf.player2.hero)}
-															alt={sf.player2.hero}
-															class="h-10 w-10 rounded-full border-2 object-cover object-right {sf
-																.player2.isWinner
-																? 'border-green-500'
-																: 'border-gray-600'}"
-														/>
-													{:else}
-														<div
-															class="h-10 w-10 rounded-full border-2 bg-gray-700 {sf.player2
-																.isWinner
-																? 'border-green-500'
-																: 'border-gray-600'}"
-														></div>
-													{/if}
-												</div>
-											</div>
-										</div>
-									{/if}
-								{/each}
-							</div>
-						</div>
-
-						<!-- Finals -->
-						<div>
-							<p class="mb-3 text-xs font-semibold tracking-wider text-amber-500 uppercase">
-								Finals
-							</p>
-							{#if bracket.finals}
-								<div
-									class="rounded-lg border border-amber-500/20 bg-gradient-to-r from-amber-500/10 to-orange-500/10 p-3"
-								>
-									<div class="flex items-center justify-between gap-2">
-										<!-- Player 1 -->
-										<div
-											class="flex min-w-0 flex-1 items-center gap-2 {bracket.finals.player1.isWinner
-												? ''
-												: 'opacity-60'}"
-										>
-											{#if bracket.finals.player1.hero}
-												<img
-													src={getHeroImageUrl(bracket.finals.player1.hero)}
-													alt={bracket.finals.player1.hero}
-													class="h-10 w-10 rounded-full border-2 object-cover object-right {bracket
-														.finals.player1.isWinner
-														? 'border-amber-500'
-														: 'border-gray-600'}"
-												/>
-											{:else}
-												<div
-													class="h-10 w-10 rounded-full border-2 bg-gray-700 {bracket.finals.player1
-														.isWinner
-														? 'border-amber-500'
-														: 'border-gray-600'}"
-												></div>
-											{/if}
-											<div class="min-w-0">
-												{#if bracket.finals.player1.gemId}
-													<a
-														href="/player/{bracket.finals.player1.gemId}"
-														class="block truncate text-sm font-medium hover:underline {bracket
-															.finals.player1.isWinner
-															? 'text-amber-400'
-															: 'text-gray-300'}">{bracket.finals.player1.name}</a
-													>
-												{:else}
-													<p
-														class="truncate text-sm font-medium {bracket.finals.player1.isWinner
-															? 'text-amber-400'
-															: 'text-gray-300'}"
-													>
-														{bracket.finals.player1.name}
-													</p>
-												{/if}
-												{#if bracket.finals.player1.hero}
-													<p class="truncate text-xs text-gray-500">
-														{bracket.finals.player1.hero}
-													</p>
-												{/if}
-											</div>
-										</div>
-										<!-- VS -->
-										<span class="shrink-0 text-xs font-bold text-gray-600">VS</span>
-										<!-- Player 2 -->
-										<div
-											class="flex min-w-0 flex-1 items-center justify-end gap-2 {bracket.finals
-												.player2.isWinner
-												? ''
-												: 'opacity-60'}"
-										>
-											<div class="min-w-0 text-right">
-												{#if bracket.finals.player2.gemId}
-													<a
-														href="/player/{bracket.finals.player2.gemId}"
-														class="block truncate text-sm font-medium hover:underline {bracket
-															.finals.player2.isWinner
-															? 'text-amber-400'
-															: 'text-gray-300'}">{bracket.finals.player2.name}</a
-													>
-												{:else}
-													<p
-														class="truncate text-sm font-medium {bracket.finals.player2.isWinner
-															? 'text-amber-400'
-															: 'text-gray-300'}"
-													>
-														{bracket.finals.player2.name}
-													</p>
-												{/if}
-												{#if bracket.finals.player2.hero}
-													<p class="truncate text-xs text-gray-500">
-														{bracket.finals.player2.hero}
-													</p>
-												{/if}
-											</div>
-											{#if bracket.finals.player2.hero}
-												<img
-													src={getHeroImageUrl(bracket.finals.player2.hero)}
-													alt={bracket.finals.player2.hero}
-													class="h-10 w-10 rounded-full border-2 object-cover object-right {bracket
-														.finals.player2.isWinner
-														? 'border-amber-500'
-														: 'border-gray-600'}"
-												/>
-											{:else}
-												<div
-													class="h-10 w-10 rounded-full border-2 bg-gray-700 {bracket.finals.player2
-														.isWinner
-														? 'border-amber-500'
-														: 'border-gray-600'}"
-												></div>
-											{/if}
-										</div>
-									</div>
-								</div>
-							{/if}
-						</div>
-
-						<!-- Champion -->
-						{#if bracket.champion}
-							<div class="pt-2">
-								<p class="mb-3 text-xs font-semibold tracking-wider text-amber-500 uppercase">
-									Champion
-								</p>
-								<div
-									class="rounded-lg border border-amber-500/30 bg-gradient-to-r from-amber-500/20 to-orange-500/20 p-4"
-								>
-									<div class="flex items-center gap-3">
-										{#if bracket.champion.hero}
-											<img
-												src={getHeroImageUrl(bracket.champion.hero)}
-												alt={bracket.champion.hero}
-												class="h-14 w-14 rounded-full border-2 border-amber-500 object-cover object-right shadow-lg shadow-amber-500/30"
-											/>
-										{:else}
-											<div
-												class="h-14 w-14 rounded-full border-2 border-amber-500 bg-gray-700"
-											></div>
-										{/if}
-										<div>
-											{#if bracket.champion.gemId}
-												<a
-													href="/player/{bracket.champion.gemId}"
-													class="text-lg font-bold text-amber-400 hover:underline"
-													>{bracket.champion.name}</a
-												>
-											{:else}
-												<p class="text-lg font-bold text-amber-400">{bracket.champion.name}</p>
-											{/if}
-											{#if bracket.champion.hero}
-												<p class="text-sm text-gray-400">{bracket.champion.hero}</p>
-											{/if}
-										</div>
-										<svg
-											class="ml-auto h-6 w-6 text-amber-500"
-											fill="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"
-											/>
-										</svg>
-									</div>
-								</div>
-							</div>
-						{/if}
-					</div>
+					{/each}
 				</div>
 			</div>
-		{/if}
+		</section>
+	{/if}
 
-		<!-- Decklists Tab -->
-		{#if activeTab === 'decklists' && hasDecklists}
-			<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
-				<div class="border-b border-gray-800 px-6 py-4">
-					<h2 class="flex items-center gap-2 text-lg font-semibold text-white">
-						<svg
-							class="h-5 w-5 text-gray-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
+	<!-- DECKLISTS TAB — grid of DecklistCard components. -->
+	{#if activeTab === 'decklists' && hasDecklists}
+		<section class="bg-paper-bg border-ink border-b-[3px] border-double">
+			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-10">
+				<div class="mb-6 flex flex-wrap items-baseline justify-between gap-4">
+					<div>
+						<div
+							class="text-accent font-mono-system mb-3 text-[10.5px] font-extrabold tracking-[0.2em] uppercase"
 						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-							/>
-						</svg>
-						Top 8 Decklists
-						<span class="rounded-full bg-white/10 px-2 py-0.5 text-xs text-gray-400"
-							>{data.decklists.length}</span
-						>
-					</h2>
-				</div>
-
-				<div class="p-6">
-					<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-						{#each data.decklists as decklistItem (decklistItem.id)}
-							<DecklistCard
-								decklist={decklistItem}
-								eventId={data.event.id}
-								eventName={data.event.title}
-								eventCircuit={data.event.circuit}
-								showPlayerName={true}
-								showEventName={false}
-							/>
-						{/each}
+							Top finishers
+						</div>
+						<h2 class="font-newsreader m-0 text-[34px] font-semibold leading-none tracking-[-0.02em]">
+							Decklists
+						</h2>
 					</div>
+					<span class="text-fade font-mono-system text-[11px] font-extrabold tracking-[0.14em] uppercase">
+						{data.decklists.length} on file
+					</span>
+				</div>
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+					{#each data.decklists as decklistItem (decklistItem.id)}
+						<DecklistCard
+							decklist={decklistItem}
+							eventId={data.event.id}
+							eventName={data.event.title}
+							eventCircuit={data.event.circuit}
+							showPlayerName={true}
+							showEventName={false}
+						/>
+					{/each}
 				</div>
 			</div>
-		{/if}
-	</div>
-</div>
+		</section>
+	{/if}
+</AgeShell>
 
-<!-- Hero Player Records Modal -->
+<!-- Hero player records modal — editorial paper card with ink hairlines. -->
 {#if selectedHeroModal}
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -1978,147 +1458,127 @@
 		aria-modal="true"
 		tabindex="-1"
 	>
-		<!-- Backdrop (clickable to close) -->
 		<button
 			transition:fade={{ duration: 200 }}
-			class="absolute inset-0 cursor-default bg-black/90 backdrop-blur-sm"
+			class="absolute inset-0 cursor-default bg-ink/70"
 			onclick={closeHeroModal}
 			aria-label="Close modal"
 		></button>
 
-		<!-- Modal Content -->
 		<div
-			transition:scale={{ duration: 200, start: 0.95 }}
-			class="relative max-h-[85vh] w-full max-w-lg overflow-hidden rounded-2xl border border-gray-700 bg-gray-900 shadow-2xl"
+			transition:scale={{ duration: 200, start: 0.96 }}
+			class="border-ink bg-paper text-ink relative max-h-[85vh] w-full max-w-lg overflow-hidden border-[1.5px] shadow-2xl"
 		>
-			<!-- Hero Header with Image -->
-			<div class="relative h-32 overflow-hidden">
+			<!--
+				Header — clean hero portrait cover, no paper fade overlay.
+				The hero name now sits in its own paper section below the
+				image so it always reads against an ink-on-paper field
+				instead of fighting the bottom of the photograph.
+			-->
+			<div class="border-line2 relative h-[160px] overflow-hidden border-b">
 				{#if selectedHeroModal.imageUrl}
 					<img
 						src={selectedHeroModal.imageUrl}
 						alt={selectedHeroModal.hero}
 						class="absolute inset-0 h-full w-full object-cover object-right"
 					/>
-					<div
-						class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent"
-					></div>
 				{:else}
-					<div class="absolute inset-0 bg-gradient-to-br from-purple-500/30 to-pink-500/20"></div>
+					<div class="bg-panel absolute inset-0"></div>
 				{/if}
 
-				<!-- Close Button -->
 				<button
 					onclick={closeHeroModal}
 					aria-label="Close hero details"
-					class="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+					class="border-line2 bg-paper text-ink hover:bg-ink hover:text-paper-bg absolute top-3 right-3 z-[1] flex h-9 w-9 items-center justify-center border-[1.5px] text-[16px] font-bold transition-colors"
 				>
-					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M6 18L18 6M6 6l12 12"
-						/>
-					</svg>
+					×
 				</button>
+			</div>
 
-				<!-- Hero Info -->
-				<div class="absolute right-0 bottom-0 left-0 p-4">
-					<h3 class="text-xl font-bold text-white">{selectedHeroModal.hero}</h3>
-					<div class="mt-1 flex items-center gap-3 text-sm">
-						<span class="text-gray-300"
-							>{selectedHeroModal.count} player{selectedHeroModal.count !== 1 ? 's' : ''}</span
+			<!-- Hero name + summary -->
+			<div class="border-line2 border-b px-6 py-5">
+				<h3 class="font-newsreader text-ink text-[26px] font-semibold leading-[1.05] tracking-[-0.01em]">
+					{selectedHeroModal.hero}
+				</h3>
+				<div class="text-soft mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-semibold">
+					<span>{selectedHeroModal.count} player{selectedHeroModal.count !== 1 ? 's' : ''}</span>
+					<span class="text-fade">·</span>
+					<span class="text-fade">{selectedHeroModal.percentage}% of field</span>
+					{#if selectedHeroModal.totalMatches > 0}
+						{@const _wr = parseFloat(selectedHeroModal.winRate)}
+						<span class="text-fade">·</span>
+						<span
+							class="font-mono-system border px-[7px] py-[2px] text-[10px] font-extrabold tracking-[0.06em] uppercase"
+							style="color: {_wr >= 55 ? 'var(--ed-prem)' : _wr >= 45 ? 'var(--ed-ink)' : 'var(--ed-warm)'}; border-color: color-mix(in srgb, {_wr >= 55 ? 'var(--ed-prem)' : _wr >= 45 ? 'var(--ed-ink)' : 'var(--ed-warm)'} 40%, transparent);"
 						>
-						<span class="text-gray-500">•</span>
-						<span class="text-gray-400">{selectedHeroModal.percentage}% of field</span>
-						{#if selectedHeroModal.totalMatches > 0}
-							<span class="text-gray-500">•</span>
-							<span
-								class="rounded-full px-2 py-0.5 text-xs font-medium {parseFloat(
-									selectedHeroModal.winRate
-								) >= 55
-									? 'bg-green-500/20 text-green-400'
-									: parseFloat(selectedHeroModal.winRate) >= 45
-										? 'bg-gray-700 text-gray-300'
-										: 'bg-red-500/20 text-red-400'}"
-							>
-								{selectedHeroModal.winRate}% WR
-							</span>
-						{/if}
-					</div>
+							{selectedHeroModal.winRate}% WR
+						</span>
+					{/if}
 				</div>
 			</div>
 
-			<!-- Stats Bar -->
+			<!-- Stats bar -->
 			{#if selectedHeroModal.totalMatches > 0}
-				<div
-					class="flex items-center justify-around border-b border-gray-800 bg-gray-800/50 px-4 py-3"
-				>
-					<div class="text-center">
-						<p class="text-lg font-bold text-green-400">{selectedHeroModal.wins}</p>
-						<p class="text-xs text-gray-500">Wins</p>
-					</div>
-					<div class="text-center">
-						<p class="text-lg font-bold text-red-400">{selectedHeroModal.losses}</p>
-						<p class="text-xs text-gray-500">Losses</p>
-					</div>
-					{#if selectedHeroModal.draws > 0}
-						<div class="text-center">
-							<p class="text-lg font-bold text-amber-400">{selectedHeroModal.draws}</p>
-							<p class="text-xs text-gray-500">Draws</p>
+				<div class="border-line2 grid grid-cols-3 divide-x divide-[#E4DECF] border-b bg-paper-bg/40">
+					{#each [{ label: 'Wins', value: selectedHeroModal.wins, color: 'var(--ed-prem)' }, { label: 'Losses', value: selectedHeroModal.losses, color: 'var(--ed-warm)' }, { label: 'Matches', value: selectedHeroModal.totalMatches, color: 'var(--ed-ink)' }] as stat (stat.label)}
+						<div class="px-4 py-3 text-center">
+							<div
+								class="font-archivo text-[20px] font-black leading-none tabular-nums"
+								style="color: {stat.color};"
+							>
+								{stat.value}
+							</div>
+							<div
+								class="text-fade font-mono-system mt-[6px] text-[9px] font-extrabold tracking-[0.14em] uppercase"
+							>
+								{stat.label}
+							</div>
 						</div>
-					{/if}
-					<div class="text-center">
-						<p class="text-lg font-bold text-white">{selectedHeroModal.totalMatches}</p>
-						<p class="text-xs text-gray-500">Matches</p>
-					</div>
+					{/each}
 				</div>
 			{/if}
 
-			<!-- Player List -->
-			<div class="max-h-[45vh] overflow-y-auto p-4">
-				<p class="mb-3 text-xs font-medium tracking-wider text-gray-500 uppercase">
-					Player Records
-				</p>
+			<!-- Player list -->
+			<div class="max-h-[45vh] overflow-y-auto px-6 py-5">
+				<div
+					class="text-fade font-mono-system mb-3 text-[10px] font-extrabold tracking-[0.16em] uppercase"
+				>
+					Player records
+				</div>
 				{#if selectedHeroModal.players?.length > 0}
 					<div class="space-y-2">
-						{#each selectedHeroModal.players as player}
+						{#each selectedHeroModal.players as player, i (i)}
 							{@const playerWinPct = parseFloat(player.winRate)}
 							<div
-								class="flex items-center gap-3 rounded-lg bg-gray-800/50 px-3 py-2.5 transition-colors hover:bg-gray-800"
+								class="border-line2 hover:bg-paper-bg flex items-center gap-3 border bg-paper px-3 py-[10px] transition-colors"
 							>
 								<div class="min-w-0 flex-1">
 									{#if player.gemId}
 										<a
 											href="/player/{player.gemId}"
-											class="block truncate text-sm font-medium text-white transition-colors hover:text-blue-400"
+											class="text-ink hover:text-accent block truncate text-[14px] font-bold transition-colors"
 											onclick={closeHeroModal}
 										>
 											{player.name}
 										</a>
 									{:else}
-										<span class="block truncate text-sm font-medium text-white">{player.name}</span>
+										<span class="text-ink block truncate text-[14px] font-bold">{player.name}</span>
 									{/if}
 								</div>
-								<div class="flex shrink-0 items-center gap-3">
-									<span class="text-sm text-gray-400"
-										>{player.wins}-{player.losses}{player.draws > 0 ? `-${player.draws}` : ''}</span
-									>
-									<span
-										class="rounded-full px-2 py-0.5 text-xs font-medium {playerWinPct >= 60
-											? 'bg-green-500/20 text-green-400'
-											: playerWinPct >= 40
-												? 'bg-gray-700 text-gray-300'
-												: 'bg-red-500/20 text-red-400'}"
-									>
-										{player.winRate}%
-									</span>
-								</div>
+								<span class="font-mono-system text-[12px] font-bold tabular-nums">
+									<span class="text-prem">{player.wins}</span><span class="text-fade">–</span><span class="text-warm">{player.losses}</span>{player.draws > 0 ? `–${player.draws}` : ''}
+								</span>
+								<span
+									class="font-mono-system border px-[7px] py-[2px] text-[10px] font-extrabold tracking-[0.06em] uppercase"
+									style="color: {playerWinPct >= 60 ? 'var(--ed-prem)' : playerWinPct >= 40 ? 'var(--ed-ink)' : 'var(--ed-warm)'}; border-color: color-mix(in srgb, {playerWinPct >= 60 ? 'var(--ed-prem)' : playerWinPct >= 40 ? 'var(--ed-ink)' : 'var(--ed-warm)'} 40%, transparent);"
+								>
+									{player.winRate}%
+								</span>
 							</div>
 						{/each}
 					</div>
 				{:else}
-					<p class="text-sm text-gray-500">No match data available for this hero.</p>
+					<p class="text-soft text-[13px] font-medium">No match data available for this hero.</p>
 				{/if}
 			</div>
 		</div>

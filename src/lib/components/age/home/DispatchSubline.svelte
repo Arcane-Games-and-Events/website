@@ -10,12 +10,20 @@
 	let { price = 10, cadence = '/ month' } = $props();
 </script>
 
-<div class="bg-paper border-ink border-t-[3px] border-b-[3px] border-double">
+<!--
+	Subline banner — green premium-tone background to match the rest of
+	the site's premium surfaces (DispatchPledge band, premium pill
+	chips, /premium page hero). Copy color flips to white / light-green
+	tints for legibility; the price callout on the right stays on a
+	paper-bg card so the CTA still reads as a discrete buy box and the
+	price/cadence numbers remain high-contrast.
+-->
+<div class="bg-prem border-ink border-t-[3px] border-b-[3px] border-double text-white">
 <!--
 	Inner cap is intentionally tighter than the 1920px body cap so the
 	copy and the price card stay visually grouped on wide screens —
 	otherwise the two halves drift to opposite gutters and the banner
-	feels disjointed. The paper band still spans the viewport via the
+	feels disjointed. The premium band still spans the viewport via the
 	full-bleed outer wrapper.
 -->
 <div
@@ -23,18 +31,18 @@
 >
 	<div>
 		<span
-			class="bg-prem mb-[15px] inline-block px-[10px] py-[5px] text-[10px] font-extrabold tracking-[0.14em] text-white uppercase"
+			class="text-prem mb-[15px] inline-block bg-white px-[10px] py-[5px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
 		>
 			AGE Premium
 		</span>
 		<h3
-			class="font-newsreader m-0 mb-[13px] text-[41px] leading-none font-semibold tracking-[-0.02em]"
+			class="font-newsreader m-0 mb-[13px] text-[41px] leading-none font-semibold tracking-[-0.02em] text-white"
 		>
 			Members make
-			<em class="text-prem font-medium italic">AGE</em>
+			<em class="font-medium italic" style="color: #d6eedf;">AGE</em>
 			happen.
 		</h3>
-		<p class="text-soft m-0 mb-[18px] max-w-[580px] text-[15px] leading-[1.55]">
+		<p class="m-0 mb-[18px] max-w-[580px] text-[15px] leading-[1.55]" style="color: #d6eedf;">
 			Every event, broadcast, and article is funded by members like you. Go Premium to keep
 			independent, paywall-free coverage open for the whole community — and get the best of AGE in
 			return.
@@ -42,9 +50,10 @@
 		<div class="flex flex-wrap gap-x-[9px] gap-y-2">
 			{#each ['Premium articles', 'Bonus matches', 'Course updates', 'AGE Open discounts'] as perk (perk)}
 				<span
-					class="border-line2 text-soft inline-flex items-center gap-[7px] border px-[11px] py-[5px] text-[10.5px] font-bold tracking-[0.05em] uppercase"
+					class="inline-flex items-center gap-[7px] border px-[11px] py-[5px] text-[10.5px] font-bold tracking-[0.05em] uppercase"
+					style="border-color: rgba(255,255,255,0.3); color: #ffffff;"
 				>
-					<span class="text-prem text-[10px] font-extrabold">✓</span>
+					<span class="text-[10px] font-extrabold text-white">✓</span>
 					{perk}
 				</span>
 			{/each}

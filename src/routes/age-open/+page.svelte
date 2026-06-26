@@ -16,6 +16,7 @@
 	import NextEventBanner from '$lib/components/NextEventBanner.svelte';
 	import EventCard from '$lib/components/EventCard.svelte';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
+	import EventRow from '$lib/components/age/EventRow.svelte';
 
 	export let data;
 
@@ -1345,61 +1346,33 @@
 						</button>
 					</div>
 
+					<!--
+						Overview tab's upcoming events preview — uses the
+						shared EventRow component so this list matches the
+						events tab list, the homepage Across AGE digest,
+						and the Hub sidebar.
+					-->
 					{#if upcomingEvents.length > 0}
-						<div>
-							{#each upcomingEvents.slice(0, 5) as ev, i (ev.id)}
-								{@const _cc = ev.circuit ? getCircuit(ev.circuit) : null}
-								{@const _ccColor = _cc?.color || '#17150F'}
+						<div class="border-line2 border-t border-b">
+							{#each upcomingEvents.slice(0, 5) as ev (ev.id)}
 								{@const _date = new Date(ev.eventDate)}
-								<a
-									href="/age-open/{ev.id}"
-									class="border-line2 grid grid-cols-[74px_1fr_auto_auto] items-center gap-6 border-b py-5 transition-colors hover:bg-paper-bg {i ===
-									0
-										? 'border-t'
-										: ''}"
-								>
-									<div
-										class="flex h-16 flex-col items-center justify-center border"
-										style="color: {_ccColor}; background-color: color-mix(in srgb, {_ccColor} 13%, var(--ed-paper-bg)); border-color: color-mix(in srgb, {_ccColor} 34%, transparent);"
-									>
-										<div class="font-newsreader text-[28px] font-semibold leading-[0.8]">
-											{_date.toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
-										</div>
-										<div
-											class="mt-[3px] text-[9px] font-extrabold tracking-[0.1em] uppercase"
-											style="color: color-mix(in srgb, {_ccColor} 55%, var(--ed-fade));"
-										>
-											{_date.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase()}
-										</div>
-									</div>
-									<div>
-										<h4 class="font-newsreader m-0 flex flex-wrap items-center gap-[11px] text-[23px] font-semibold">
-											{ev.title || `AGE Open · ${ev.circuit || ev.location || ''}`}
-											{#if ev.format}
-												<span class="border-line2 text-soft border px-[7px] py-[2px] text-[9.5px] font-extrabold tracking-[0.07em] uppercase">
-													{ev.format === 'Classic Constructed' ? 'CC' : ev.format}
-												</span>
-											{/if}
-										</h4>
-										<div class="mt-[6px] flex items-center gap-[9px]">
-											<span class="text-fade text-[12.5px] font-semibold">
-												{ev.venueName || ev.location || ''}
-											</span>
-										</div>
-									</div>
-									<div class="font-newsreader text-[24px] font-semibold">
-										{#if ev.price}
-											${formatPrice(ev.price)}
-										{:else}
-											—
-										{/if}
-									</div>
-									<span
-										class="border-accent bg-accent text-[11px] font-bold tracking-[0.05em] uppercase text-white inline-flex items-center gap-2 border-[1.5px] px-[13px] py-[7px] transition-[filter] hover:brightness-110"
-									>
-										Sign Up →
-									</span>
-								</a>
+								{@const _day = _date.toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
+								{@const _mo = _date
+									.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
+									.toUpperCase()}
+								<div class="border-line2 border-b last:border-b-0">
+									<EventRow
+										day={_day}
+										month={_mo}
+										circuit={ev.circuit}
+										title={ev.title || `AGE Open · ${ev.circuit || ev.location || ''}`}
+										format={ev.format}
+										venue={ev.venueName || ev.location || ''}
+										price={ev.price ? `$${formatPrice(ev.price)}` : null}
+										href={`/age-open/${ev.id}`}
+										size="lg"
+									/>
+								</div>
 							{/each}
 						</div>
 					{:else}
@@ -1612,64 +1585,35 @@
 						{/each}
 					</div>
 
-					<!-- events list -->
+					<!--
+						Events list — uses the shared EventRow component
+						(solid circuit-colored date tile) so this list,
+						the homepage Across AGE digest, and the Hub
+						sidebar all render the same row treatment. The
+						`lg` variant adds the price column + Sign Up CTA
+						on the right.
+					-->
 					{#if filteredEventsTabList.length > 0}
-						<div>
-							{#each filteredEventsTabList as ev, i (ev.id)}
-								{@const _cc = ev.circuit ? getCircuit(ev.circuit) : null}
-								{@const _ccColor = _cc?.color || '#17150F'}
+						<div class="border-line2 border-t border-b">
+							{#each filteredEventsTabList as ev (ev.id)}
 								{@const _date = new Date(ev.eventDate)}
-								<a
-									href="/age-open/{ev.id}"
-									class="border-line2 hover:bg-paper grid grid-cols-[74px_1fr_auto_auto] items-center gap-6 border-b py-5 transition-colors {i ===
-									0
-										? 'border-t'
-										: ''}"
-								>
-									<div
-										class="flex h-16 flex-col items-center justify-center border"
-										style="color: {_ccColor}; background-color: color-mix(in srgb, {_ccColor} 13%, var(--ed-paper-bg)); border-color: color-mix(in srgb, {_ccColor} 34%, transparent);"
-									>
-										<div class="font-newsreader text-[28px] font-semibold leading-[0.8]">
-											{_date.toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
-										</div>
-										<div
-											class="mt-[3px] text-[9px] font-extrabold tracking-[0.1em] uppercase"
-											style="color: color-mix(in srgb, {_ccColor} 55%, var(--ed-fade));"
-										>
-											{_date
-												.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
-												.toUpperCase()}
-										</div>
-									</div>
-									<div>
-										<h4 class="font-newsreader m-0 flex flex-wrap items-center gap-[11px] text-[23px] font-semibold">
-											{ev.title || `AGE Open · ${ev.circuit || ev.location || ''}`}
-											{#if ev.format}
-												<span class="border-line2 text-soft border px-[7px] py-[2px] text-[9.5px] font-extrabold tracking-[0.07em] uppercase">
-													{ev.format === 'Classic Constructed' ? 'CC' : ev.format}
-												</span>
-											{/if}
-										</h4>
-										<div class="mt-[6px] flex items-center gap-[9px]">
-											<span class="text-fade text-[12.5px] font-semibold">
-												{ev.venueName || ev.location || ''}
-											</span>
-										</div>
-									</div>
-									<div class="font-newsreader text-[24px] font-semibold">
-										{#if ev.price}
-											${formatPrice(ev.price)}
-										{:else}
-											—
-										{/if}
-									</div>
-									<span
-										class="border-accent bg-accent inline-flex items-center gap-2 border-[1.5px] px-[13px] py-[7px] text-[11px] font-bold tracking-[0.05em] uppercase text-white transition-[filter] hover:brightness-110"
-									>
-										Sign Up →
-									</span>
-								</a>
+								{@const _day = _date.toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
+								{@const _mo = _date
+									.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
+									.toUpperCase()}
+								<div class="border-line2 border-b last:border-b-0">
+									<EventRow
+										day={_day}
+										month={_mo}
+										circuit={ev.circuit}
+										title={ev.title || `AGE Open · ${ev.circuit || ev.location || ''}`}
+										format={ev.format}
+										venue={ev.venueName || ev.location || ''}
+										price={ev.price ? `$${formatPrice(ev.price)}` : null}
+										href={`/age-open/${ev.id}`}
+										size="lg"
+									/>
+								</div>
 							{/each}
 						</div>
 					{:else}
@@ -1686,7 +1630,16 @@
 					{/if}
 				</section>
 
-				<!-- ============ CIRCUIT SEASON TRACKER ============ -->
+				<!--
+					CIRCUIT SEASON TRACKER — each circuit now shows a
+					three-segment progress bar (done / upcoming / open
+					slots), a numeric stat strip ("5 DONE · 2 UPCOMING ·
+					1 OPEN"), and slot tiles whose fill, border, top bar,
+					and label all switch with state so the season-progress
+					reads at a glance instead of through a tiny corner
+					dot. Legend at the top mirrors the slot fills exactly
+					so the chrome teaches the visual language.
+				-->
 				<section class="bg-paper border-ink border-b-[3px] border-double px-14 py-[50px]">
 					<div class="mb-7 flex flex-wrap items-end justify-between gap-6">
 						<div>
@@ -1701,99 +1654,169 @@
 							</p>
 						</div>
 
-						<!-- legend -->
-						<div class="flex flex-wrap items-center gap-5 text-[11px] font-semibold">
+						<!-- legend — mirrors the slot fills so users can
+							 decode the per-circuit grid from this row. -->
+						<div class="flex flex-wrap items-center gap-4 text-[11px] font-semibold">
 							<span class="text-soft inline-flex items-center gap-2">
-								<span class="bg-prem block h-[10px] w-[10px]"></span>
-								Completed
+								<span
+									class="block h-[14px] w-[14px] border"
+									style="background-color: color-mix(in srgb, var(--ed-prem) 18%, var(--ed-paper)); border-color: color-mix(in srgb, var(--ed-prem) 55%, transparent);"
+								></span>
+								Done
 							</span>
 							<span class="text-soft inline-flex items-center gap-2">
-								<span class="bg-warm block h-[10px] w-[10px]"></span>
+								<span
+									class="block h-[14px] w-[14px] border"
+									style="background-color: color-mix(in srgb, var(--ed-warm) 18%, var(--ed-paper)); border-color: color-mix(in srgb, var(--ed-warm) 55%, transparent);"
+								></span>
 								Upcoming
 							</span>
 							<span class="text-soft inline-flex items-center gap-2">
-								<span class="border-line2 block h-[10px] w-[10px] border bg-paper-bg"></span>
-								TBA
+								<span
+									class="border-line2 bg-paper-bg block h-[14px] w-[14px] border border-dashed"
+								></span>
+								Open slot
 							</span>
 						</div>
 					</div>
 
-					<div class="space-y-7">
+					<div class="space-y-9">
 						{#each [{ name: 'Los Angeles', code: 'LA', slots: laSlots, count: laCount }, { name: 'New England', code: 'NE', slots: neSlots, count: neCount }, { name: 'St. Louis', code: 'STL', slots: stlSlots, count: stlCount }] as circ (circ.code)}
 							{@const _ccColor = getCircuit(circ.name)?.color || '#17150F'}
-							<div>
-								<!-- circuit header row -->
-								<div class="mb-3 flex items-center gap-[14px]">
+							{@const _doneCount = circ.slots.filter((s) => s && (s.status === 'completed' || s.status === 'in_progress')).length}
+							{@const _upcomingCount = circ.slots.filter((s) => s && !(s.status === 'completed' || s.status === 'in_progress')).length}
+							{@const _openCount = circ.slots.filter((s) => !s).length}
+							<div class="border-line2 bg-paper-bg border p-5">
+								<!--
+									Circuit header row — circuit chip, name,
+									numeric stat strip on the right, then a
+									three-segment progress bar underneath
+									sized by done / upcoming / open ratios.
+								-->
+								<div class="mb-4 flex flex-wrap items-center gap-[14px]">
 									<span
-										class="font-archivo flex h-[34px] w-[34px] items-center justify-center text-[12px] font-black tracking-[0.04em] uppercase text-white"
+										class="font-archivo flex h-[40px] w-[40px] items-center justify-center text-[13px] font-black tracking-[0.04em] uppercase text-white"
 										style="background-color: {_ccColor};"
 									>
 										{circ.code}
 									</span>
-									<div class="flex-1">
-										<div class="flex items-center justify-between">
-											<span class="text-[14px] font-extrabold">{circ.name}</span>
-											<span class="text-[11px] font-extrabold tracking-[0.06em] uppercase" style="color: {_ccColor};">
-												{circ.count} / 8 Opens
-											</span>
+									<div class="flex-1 min-w-0">
+										<div class="font-newsreader text-[20px] font-semibold leading-none tracking-[-0.01em]">
+											{circ.name}
 										</div>
-										<div class="border-line2 mt-2 h-[3px] w-full border bg-paper-bg overflow-hidden">
-											<div
-												class="h-full transition-[width] duration-500"
-												style="width: {(circ.count / 8) * 100}%; background-color: {_ccColor};"
-											></div>
+										<div class="text-fade font-mono-system mt-[5px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase">
+											{circ.count} of 8 Opens scheduled
 										</div>
+									</div>
+									<!-- Stat strip — three-number breakdown -->
+									<div class="font-mono-system flex items-center gap-4 text-[11px] font-extrabold tracking-[0.1em] uppercase">
+										<span class="inline-flex items-center gap-[6px] text-prem">
+											<span class="font-archivo text-[18px] tabular-nums">{_doneCount}</span>
+											Done
+										</span>
+										<span class="text-line2" aria-hidden="true">·</span>
+										<span class="inline-flex items-center gap-[6px] text-warm">
+											<span class="font-archivo text-[18px] tabular-nums">{_upcomingCount}</span>
+											Upcoming
+										</span>
+										<span class="text-line2" aria-hidden="true">·</span>
+										<span class="text-fade inline-flex items-center gap-[6px]">
+											<span class="font-archivo text-[18px] tabular-nums">{_openCount}</span>
+											Open
+										</span>
 									</div>
 								</div>
 
+								<!-- Three-segment progress bar — done | upcoming | open. -->
+								<div
+									class="border-line2 flex h-[10px] w-full overflow-hidden border bg-paper"
+								>
+									{#if _doneCount > 0}
+										<div
+											class="bg-prem h-full transition-[width] duration-500"
+											style="width: {(_doneCount / 8) * 100}%;"
+											title="{_doneCount} done"
+										></div>
+									{/if}
+									{#if _upcomingCount > 0}
+										<div
+											class="bg-warm h-full transition-[width] duration-500"
+											style="width: {(_upcomingCount / 8) * 100}%;"
+											title="{_upcomingCount} upcoming"
+										></div>
+									{/if}
+									{#if _openCount > 0}
+										<div
+											class="h-full transition-[width] duration-500"
+											style="width: {(_openCount / 8) * 100}%; background-color: var(--ed-paper-bg);"
+											title="{_openCount} open"
+										></div>
+									{/if}
+								</div>
+
 								<!-- 8 slot grid -->
-								<div class="grid grid-cols-4 gap-2 sm:grid-cols-8">
+								<div class="mt-5 grid grid-cols-4 gap-2 sm:grid-cols-8">
 									{#each circ.slots as slot, i (i)}
 										{#if slot}
-											{@const _isCompleted =
+											{@const _isDone =
 												slot.status === 'completed' || slot.status === 'in_progress'}
+											{@const _stateColor = _isDone ? 'var(--ed-prem)' : 'var(--ed-warm)'}
+											{@const _stateLabel = _isDone ? 'Done' : 'Upcoming'}
 											<a
-												href={_isCompleted
+												href={_isDone
 													? `/age-open/${slot.id}/results`
 													: `/age-open/${slot.id}`}
-												class="border-line2 hover:border-ink relative flex flex-col items-center border bg-paper-bg p-[10px] transition-colors"
+												class="group relative flex flex-col items-center overflow-hidden border bg-paper px-2 pt-[14px] pb-[8px] transition-[transform,box-shadow] hover:-translate-y-[2px]"
+												style="background-color: color-mix(in srgb, {_stateColor} 12%, var(--ed-paper)); border-color: color-mix(in srgb, {_stateColor} 50%, transparent);"
 											>
+												<!-- top status bar -->
+												<span
+													class="absolute inset-x-0 top-0 block h-[4px]"
+													style="background-color: {_stateColor};"
+													aria-hidden="true"
+												></span>
+												<!-- slot number -->
 												<div
-													class="font-newsreader text-[20px] font-semibold leading-none"
-													style="color: {_ccColor};"
+													class="font-newsreader text-[24px] font-semibold leading-none tabular-nums"
+													style="color: {_stateColor};"
 												>
 													{i + 1}
 												</div>
-												<div class="text-fade mt-1 truncate text-center text-[10px] font-semibold tabular-nums">
+												<!-- date -->
+												<div class="text-ink font-mono-system mt-[6px] truncate text-center text-[10px] font-extrabold tracking-[0.05em] tabular-nums uppercase">
 													{new Date(slot.eventDate).toLocaleDateString('en-US', {
 														month: 'short',
 														day: 'numeric',
 														timeZone: 'UTC'
 													})}
 												</div>
+												<!-- state label -->
 												<div
-													class="mt-[2px] text-[9px] font-extrabold tracking-[0.08em] uppercase"
-													style="color: {_isCompleted ? 'var(--ed-prem)' : 'var(--ed-warm)'};"
+													class="font-mono-system mt-[6px] inline-flex items-center gap-[5px] text-[9px] font-extrabold tracking-[0.1em] uppercase"
+													style="color: {_stateColor};"
 												>
-													{_isCompleted ? 'Done' : 'Soon'}
+													{#if _isDone}
+														<span aria-hidden="true">✓</span>
+													{:else}
+														<span class="block h-[6px] w-[6px] rounded-full" style="background-color: {_stateColor};" aria-hidden="true"></span>
+													{/if}
+													{_stateLabel}
 												</div>
-												<span
-													class="absolute -top-[5px] -right-[5px] block h-[10px] w-[10px]"
-													style="background-color: {_isCompleted
-														? 'var(--ed-prem)'
-														: 'var(--ed-warm)'};"
-													aria-hidden="true"
-												></span>
 											</a>
 										{:else}
+											<!-- Open slot — dashed paper tile, no link -->
 											<div
-												class="border-line2 bg-paper-bg flex flex-col items-center justify-center border border-dashed p-[10px]"
+												class="border-line2 bg-paper-bg flex flex-col items-center justify-center border border-dashed px-2 pt-[14px] pb-[8px]"
+												aria-label="Open slot {i + 1}"
 											>
-												<div class="text-fade font-newsreader text-[20px] font-semibold leading-none">
+												<div class="text-fade font-newsreader text-[24px] font-semibold leading-none tabular-nums">
 													{i + 1}
 												</div>
-												<div class="text-fade mt-1 text-[9px] font-extrabold tracking-[0.08em] uppercase">
-													TBA
+												<div class="text-fade font-mono-system mt-[6px] text-[10px] font-extrabold tracking-[0.1em] uppercase">
+													—
+												</div>
+												<div class="text-fade font-mono-system mt-[6px] text-[9px] font-extrabold tracking-[0.1em] uppercase">
+													Open
 												</div>
 											</div>
 										{/if}
@@ -2562,90 +2585,155 @@
 							{/each}
 						</div>
 
-						<!-- ===== DESKTOP: editorial table ===== -->
-						<div class="border-ink hidden overflow-x-auto border md:block">
+						<!--
+							DESKTOP: catalog-style standings table.
+							Borrows the visual register of a modern catalog
+							(soft container border with rounded corners,
+							subtle zebra rows, light hover lift, mono
+							column headers, refined sort indicators) while
+							keeping the editorial paper palette + every
+							existing column / sort handler.
+						-->
+						<div
+							class="border-line2 bg-paper hidden overflow-hidden rounded-[6px] border md:block"
+						>
 							<table class="w-full">
 								<thead>
-									<tr class="border-ink border-b-2 bg-paper">
-										<th class="text-fade px-4 py-[14px] text-left text-[10.5px] font-extrabold tracking-[0.14em] uppercase">
-											Rank
+									<tr class="border-line2 border-b" style="background: color-mix(in srgb, var(--ed-paper-bg) 60%, transparent);">
+										<th
+											class="text-fade font-mono-system w-[68px] px-5 py-[14px] text-left text-[10px] font-extrabold tracking-[0.16em] uppercase"
+										>
+											#
 										</th>
-										<th class="text-fade px-4 py-[14px] text-left text-[10.5px] font-extrabold tracking-[0.14em] uppercase">
+										<th
+											class="text-fade font-mono-system px-5 py-[14px] text-left text-[10px] font-extrabold tracking-[0.16em] uppercase"
+										>
 											Player
 										</th>
-										<th class="text-fade px-4 py-[14px] text-right text-[10.5px] font-extrabold tracking-[0.14em] uppercase">
+										<th
+											class="text-fade font-mono-system px-5 py-[14px] text-right text-[10px] font-extrabold tracking-[0.16em] uppercase"
+										>
 											<button
 												type="button"
 												onclick={() => toggleSort('points')}
-												class="hover:text-ink inline-flex cursor-pointer items-center gap-1 transition-colors {sortColumn === 'points' ? 'text-ink' : ''}"
+												class="hover:text-ink ml-auto inline-flex cursor-pointer items-center gap-[6px] transition-colors {sortColumn ===
+												'points'
+													? 'text-ink'
+													: ''}"
 											>
 												Points
-												<svg class="h-3 w-3 {sortDirection === 'asc' && sortColumn === 'points' ? 'rotate-180' : ''} {sortColumn !== 'points' ? 'opacity-30' : ''}" fill="currentColor" viewBox="0 0 20 20">
-													<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-												</svg>
+												<span
+													class="text-[9px] leading-none tracking-normal {sortColumn === 'points' ? 'opacity-100' : 'opacity-30'}"
+													aria-hidden="true"
+												>
+													{sortColumn === 'points' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+												</span>
 											</button>
 										</th>
-										<th class="text-fade px-4 py-[14px] text-center text-[10.5px] font-extrabold tracking-[0.14em] uppercase">
+										<th
+											class="text-fade font-mono-system px-5 py-[14px] text-center text-[10px] font-extrabold tracking-[0.16em] uppercase"
+										>
 											<button
 												type="button"
 												onclick={() => toggleSort('record')}
-												class="hover:text-ink inline-flex cursor-pointer items-center gap-1 transition-colors {sortColumn === 'record' ? 'text-ink' : ''}"
+												class="hover:text-ink mx-auto inline-flex cursor-pointer items-center gap-[6px] transition-colors {sortColumn ===
+												'record'
+													? 'text-ink'
+													: ''}"
 											>
 												Record
-												<svg class="h-3 w-3 {sortDirection === 'asc' && sortColumn === 'record' ? 'rotate-180' : ''} {sortColumn !== 'record' ? 'opacity-30' : ''}" fill="currentColor" viewBox="0 0 20 20">
-													<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-												</svg>
+												<span
+													class="text-[9px] leading-none tracking-normal {sortColumn === 'record' ? 'opacity-100' : 'opacity-30'}"
+													aria-hidden="true"
+												>
+													{sortColumn === 'record' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+												</span>
 											</button>
 										</th>
-										<th class="text-fade px-4 py-[14px] text-center text-[10.5px] font-extrabold tracking-[0.14em] uppercase">
+										<th
+											class="text-fade font-mono-system px-5 py-[14px] text-center text-[10px] font-extrabold tracking-[0.16em] uppercase"
+										>
 											<button
 												type="button"
 												onclick={() => toggleSort('winPct')}
-												class="hover:text-ink inline-flex cursor-pointer items-center gap-1 transition-colors {sortColumn === 'winPct' ? 'text-ink' : ''}"
+												class="hover:text-ink mx-auto inline-flex cursor-pointer items-center gap-[6px] transition-colors {sortColumn ===
+												'winPct'
+													? 'text-ink'
+													: ''}"
 											>
 												Win %
-												<svg class="h-3 w-3 {sortDirection === 'asc' && sortColumn === 'winPct' ? 'rotate-180' : ''} {sortColumn !== 'winPct' ? 'opacity-30' : ''}" fill="currentColor" viewBox="0 0 20 20">
-													<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-												</svg>
+												<span
+													class="text-[9px] leading-none tracking-normal {sortColumn === 'winPct' ? 'opacity-100' : 'opacity-30'}"
+													aria-hidden="true"
+												>
+													{sortColumn === 'winPct' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+												</span>
 											</button>
 										</th>
-										<th class="text-fade px-4 py-[14px] text-center text-[10.5px] font-extrabold tracking-[0.14em] uppercase">
+										<th
+											class="text-fade font-mono-system px-5 py-[14px] text-center text-[10px] font-extrabold tracking-[0.16em] uppercase"
+										>
 											<button
 												type="button"
 												onclick={() => toggleSort('events')}
-												class="hover:text-ink inline-flex cursor-pointer items-center gap-1 transition-colors {sortColumn === 'events' ? 'text-ink' : ''}"
+												class="hover:text-ink mx-auto inline-flex cursor-pointer items-center gap-[6px] transition-colors {sortColumn ===
+												'events'
+													? 'text-ink'
+													: ''}"
 											>
 												Events
-												<svg class="h-3 w-3 {sortDirection === 'asc' && sortColumn === 'events' ? 'rotate-180' : ''} {sortColumn !== 'events' ? 'opacity-30' : ''}" fill="currentColor" viewBox="0 0 20 20">
-													<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-												</svg>
+												<span
+													class="text-[9px] leading-none tracking-normal {sortColumn === 'events' ? 'opacity-100' : 'opacity-30'}"
+													aria-hidden="true"
+												>
+													{sortColumn === 'events' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+												</span>
 											</button>
 										</th>
-										<th class="text-fade px-4 py-[14px] text-center text-[10.5px] font-extrabold tracking-[0.14em] uppercase">
+										<th
+											class="text-fade font-mono-system px-5 py-[14px] text-center text-[10px] font-extrabold tracking-[0.16em] uppercase"
+										>
 											<button
 												type="button"
 												onclick={() => toggleSort('top8')}
-												class="hover:text-ink inline-flex cursor-pointer items-center gap-1 transition-colors {sortColumn === 'top8' ? 'text-ink' : ''}"
+												class="hover:text-ink mx-auto inline-flex cursor-pointer items-center gap-[6px] transition-colors {sortColumn ===
+												'top8'
+													? 'text-ink'
+													: ''}"
 											>
 												Top 8
-												<svg class="h-3 w-3 {sortDirection === 'asc' && sortColumn === 'top8' ? 'rotate-180' : ''} {sortColumn !== 'top8' ? 'opacity-30' : ''}" fill="currentColor" viewBox="0 0 20 20">
-													<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-												</svg>
+												<span
+													class="text-[9px] leading-none tracking-normal {sortColumn === 'top8' ? 'opacity-100' : 'opacity-30'}"
+													aria-hidden="true"
+												>
+													{sortColumn === 'top8' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+												</span>
 											</button>
 										</th>
-										<th class="text-fade px-4 py-[14px] text-center text-[10.5px] font-extrabold tracking-[0.14em] uppercase">
+										<th
+											class="text-fade font-mono-system px-5 py-[14px] text-center text-[10px] font-extrabold tracking-[0.16em] uppercase"
+										>
 											<button
 												type="button"
 												onclick={() => toggleSort('ageRating')}
-												class="hover:text-ink inline-flex cursor-pointer items-center gap-1 transition-colors {sortColumn === 'ageRating' ? 'text-ink' : ''}"
+												class="hover:text-ink mx-auto inline-flex cursor-pointer items-center gap-[6px] transition-colors {sortColumn ===
+												'ageRating'
+													? 'text-ink'
+													: ''}"
 											>
 												Rating
-												<svg class="h-3 w-3 {sortDirection === 'asc' && sortColumn === 'ageRating' ? 'rotate-180' : ''} {sortColumn !== 'ageRating' ? 'opacity-30' : ''}" fill="currentColor" viewBox="0 0 20 20">
-													<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-												</svg>
+												<span
+													class="text-[9px] leading-none tracking-normal {sortColumn === 'ageRating' ? 'opacity-100' : 'opacity-30'}"
+													aria-hidden="true"
+												>
+													{sortColumn === 'ageRating' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕'}
+												</span>
 											</button>
 										</th>
-										<th class="text-fade px-4 py-[14px] text-right text-[10.5px] font-extrabold tracking-[0.14em] uppercase"></th>
+										<th
+											class="w-[44px] px-3 py-[14px]"
+											aria-hidden="true"
+										></th>
 									</tr>
 								</thead>
 								<tbody>
@@ -2655,114 +2743,160 @@
 										{@const _ccColor = player.circuit ? getCircuit(player.circuit)?.color : null}
 										{@const _rankColor = rank === 1 ? '#C8922E' : rank === 2 ? '#928B79' : rank === 3 ? '#C0461F' : rank <= 16 ? '#16489E' : 'var(--ed-fade)'}
 										{@const _initials = (player.playerName || '').split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+										{@const _isTop3 = rank <= 3}
 										<tr
-											class="border-line {i === paginatedStandings.length - 1 ? '' : 'border-b'} hover:bg-paper group transition-colors"
+											class="group border-line2 transition-colors {i === paginatedStandings.length - 1 ? '' : 'border-b'} odd:bg-paper even:bg-paper-bg/40 hover:!bg-paper-bg"
 										>
-											<td class="px-4 py-[14px]">
-												<span
-													class="font-newsreader text-[26px] font-semibold leading-none tracking-[-0.01em] tabular-nums"
-													style="color: {_rankColor};"
-												>
-													{rank}
-												</span>
+											<!-- Rank cell -->
+											<td class="px-5 py-[16px]">
+												{#if _isTop3}
+													<span
+														class="font-newsreader inline-flex h-[34px] w-[34px] items-center justify-center rounded-full text-[15px] font-semibold leading-none tracking-[-0.01em] tabular-nums"
+														style="background: color-mix(in srgb, {_rankColor} 14%, transparent); color: {_rankColor};"
+													>
+														{rank}
+													</span>
+												{:else}
+													<span
+														class="font-mono-system inline-flex h-[34px] w-[34px] items-center justify-center text-[14px] font-bold leading-none tabular-nums"
+														style="color: {_rankColor};"
+													>
+														{rank}
+													</span>
+												{/if}
 											</td>
-											<td class="px-4 py-[14px]">
+											<!-- Player cell -->
+											<td class="px-5 py-[16px]">
 												<div class="flex items-center gap-3">
 													<span
-														class="border-line2 bg-paper-bg flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-full border text-[10px] font-extrabold"
-														style={_ccColor ? `border-color: ${_ccColor}; color: ${_ccColor}; background-color: color-mix(in srgb, ${_ccColor} 10%, var(--ed-paper-bg));` : ''}
+														class="border-line2 bg-paper-bg flex h-[36px] w-[36px] flex-shrink-0 items-center justify-center rounded-full border text-[10px] font-extrabold"
+														style={_ccColor
+															? `border-color: color-mix(in srgb, ${_ccColor} 55%, transparent); color: ${_ccColor}; background-color: color-mix(in srgb, ${_ccColor} 9%, var(--ed-paper-bg));`
+															: ''}
 													>
 														{_initials}
 													</span>
-													<div>
-														<div class="text-ink text-[15px] font-extrabold group-hover:text-warm transition-colors">
+													<div class="min-w-0">
+														<div
+															class="text-ink group-hover:text-warm text-[15px] font-bold transition-colors"
+														>
 															{player.playerName}
 														</div>
 														{#if player.circuit && _ccColor}
-															<div class="mt-[2px] inline-flex items-center gap-[6px] text-[10px] font-extrabold tracking-[0.08em] uppercase" style="color: {_ccColor};">
-																<span class="block h-[7px] w-[7px]" style="background-color: {_ccColor};"></span>
+															<div
+																class="mt-[3px] inline-flex items-center gap-[6px] text-[10px] font-extrabold tracking-[0.08em] uppercase"
+																style="color: {_ccColor};"
+															>
+																<span
+																	class="block h-[6px] w-[6px] rounded-full"
+																	style="background-color: {_ccColor};"
+																></span>
 																{player.circuit}
 															</div>
 														{:else if player.circuitsPlayed && player.circuitsPlayed.length > 0}
-															<div class="text-fade mt-[2px] text-[10px] font-bold tracking-[0.04em] uppercase">
+															<div
+																class="text-fade mt-[3px] text-[10px] font-bold tracking-[0.04em] uppercase"
+															>
 																{player.circuitsPlayed.join(' · ')}
 															</div>
 														{/if}
 													</div>
 												</div>
 											</td>
-											<td class="px-4 py-[14px] text-right">
-												<span class="font-newsreader text-prem text-[22px] font-semibold leading-none tabular-nums">
+											<!-- Points -->
+											<td class="px-5 py-[16px] text-right">
+												<span
+													class="text-ink text-[18px] font-bold leading-none tabular-nums"
+												>
 													{player.totalPoints || 0}
 												</span>
+												<div
+													class="text-fade font-mono-system mt-[2px] text-[9px] font-bold tracking-[0.1em] uppercase"
+												>
+													pts
+												</div>
 											</td>
-											<td class="px-4 py-[14px] text-center">
-												<span class="font-bold tabular-nums">
+											<!-- Record -->
+											<td class="px-5 py-[16px] text-center">
+												<span class="font-mono-system text-[13.5px] font-bold tabular-nums">
 													<span class="text-prem">{player.matchesWon || 0}</span>
-													<span class="text-fade">–</span>
+													<span class="text-fade mx-[2px]">–</span>
 													<span class="text-warm">{losses}</span>
 												</span>
 											</td>
-											<td class="px-4 py-[14px] text-center">
+											<!-- Win % -->
+											<td class="px-5 py-[16px] text-center">
 												{#if player.winPercentage}
-													<span class="font-bold tabular-nums" style="color: {player.winPercentage >= 60 ? 'var(--ed-prem)' : player.winPercentage >= 50 ? '#C8922E' : 'var(--ed-warm)'};">
+													<span
+														class="text-[13.5px] font-bold tabular-nums"
+														style="color: {player.winPercentage >= 60
+															? 'var(--ed-prem)'
+															: player.winPercentage >= 50
+																? '#C8922E'
+																: 'var(--ed-warm)'};"
+													>
 														{player.winPercentage}%
 													</span>
 												{:else}
 													<span class="text-fade">—</span>
 												{/if}
 											</td>
-											<td class="px-4 py-[14px] text-center">
-												<span class="text-ink text-[14px] font-bold tabular-nums">
+											<!-- Events -->
+											<td class="px-5 py-[16px] text-center">
+												<span class="text-ink text-[13.5px] font-bold tabular-nums">
 													{player.eventsPlayed || 0}
 												</span>
 											</td>
-											<td class="px-4 py-[14px] text-center">
-												<span class="text-warm text-[14px] font-bold tabular-nums">
+											<!-- Top 8 -->
+											<td class="px-5 py-[16px] text-center">
+												<span class="text-warm text-[13.5px] font-bold tabular-nums">
 													{player.top8Finishes || 0}
 												</span>
 											</td>
-											<td class="px-4 py-[14px] text-center">
+											<!-- Rating -->
+											<td class="px-5 py-[16px] text-center">
 												{#if player.ageRating !== null && player.ageRating !== undefined}
-													{@const _tierHex = player.isProvisional ? '#928B79' : (
-														{ yellow: '#C8922E', purple: '#6A4A86', cyan: '#2C5BA8', teal: '#1C7A4B', amber: '#E5703E', orange: '#C0461F' }[player.ratingTier?.color] || '#56503F'
-													)}
+													{@const _tierHex = player.isProvisional ? '#928B79' : ({ yellow: '#C8922E', purple: '#6A4A86', cyan: '#2C5BA8', teal: '#1C7A4B', amber: '#E5703E', orange: '#C0461F' }[player.ratingTier?.color] || '#56503F')}
 													<!--
-														Fixed width so every rating badge is identical
-														regardless of tier-label length (shortest
-														"Gold" through longest "Provisional"). Inner
-														label uses whitespace-nowrap + truncate so a
-														rare longer label still won't blow out the
-														chip; numeric rating stays tabular-nums.
+														Fixed-width chip so every rating badge holds the
+														same footprint regardless of tier-label length.
+														Rounded corners + tinted fill match the catalog's
+														chip language; numeric rating stays tabular-nums.
 													-->
 													<div
-														class="inline-flex w-[110px] flex-col items-center border px-2 py-[3px]"
-														style="border-color: color-mix(in srgb, {_tierHex} 40%, transparent); background-color: color-mix(in srgb, {_tierHex} 8%, transparent);"
+														class="mx-auto inline-flex w-[104px] flex-col items-center rounded-[4px] border px-2 py-[10px]"
+														style="border-color: color-mix(in srgb, {_tierHex} 38%, transparent); background-color: color-mix(in srgb, {_tierHex} 8%, transparent);"
 													>
 														<span
-															class="font-newsreader text-[16px] font-semibold leading-none tabular-nums"
+															class="font-newsreader text-[15px] font-semibold leading-none tabular-nums"
 															style="color: {_tierHex};"
 														>
 															{player.ageRating}
 														</span>
 														<span
-															class="mt-[3px] block w-full truncate text-center text-[9px] font-extrabold tracking-[0.08em] whitespace-nowrap uppercase"
+															class="font-mono-system mt-[3px] block w-full truncate text-center text-[9px] font-extrabold tracking-[0.08em] whitespace-nowrap uppercase"
 															style="color: {_tierHex};"
 														>
-															{player.isProvisional ? 'Provisional' : player.ratingTier?.label || 'Unranked'}
+															{player.isProvisional
+																? 'Provisional'
+																: player.ratingTier?.label || 'Unranked'}
 														</span>
 													</div>
 												{:else}
 													<span class="text-fade">—</span>
 												{/if}
 											</td>
-											<td class="px-4 py-[14px] text-right">
+											<!-- Profile chevron — subtle, always reserves space,
+												 darkens on hover. Same affordance as a Linear-style
+												 row-action button without needing to fade in. -->
+											<td class="px-3 py-[16px] text-right">
 												{#if player.gemId}
 													<a
 														href="/player/{player.gemId}"
-														class="text-accent text-[11px] font-extrabold tracking-[0.07em] uppercase opacity-0 transition-opacity group-hover:opacity-100"
+														class="text-fade hover:text-ink inline-flex h-[28px] w-[28px] items-center justify-center text-[15px] font-bold transition-colors"
+														aria-label="View {player.playerName} profile"
 													>
-														Profile →
+														→
 													</a>
 												{/if}
 											</td>
@@ -3528,7 +3662,7 @@
 						</p>
 						<div class="mt-7 flex flex-wrap items-center justify-center gap-3">
 							<a
-								href="mailto:info@age.events"
+								href="mailto:info@arcanegamesandevents.com"
 								class="border-warm bg-warm hover:brightness-110 inline-flex items-center gap-2 border-[1.5px] px-6 py-3 text-[12px] font-bold tracking-[0.06em] text-white uppercase transition-[filter]"
 							>
 								Contact Us

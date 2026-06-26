@@ -1,7 +1,15 @@
 <script>
 	/**
-	 * DecklistCard - Reusable decklist card component matching EventCard style
-	 * Used in FeaturedDecklists and player profile Tournament Decklists
+	 * DecklistCard — editorial decklist tile. Same prop API as the
+	 * legacy dark version; just the visual register changed to match
+	 * the rest of the editorial chrome (paper bg, ink hairlines,
+	 * Newsreader headlines, mono captions, square corners, hero image
+	 * masked into the right side).
+	 *
+	 * Used by:
+	 *   - /age-open/[eventId]/results decklists tab (grid)
+	 *   - /player/[gemId] tournament decklists section
+	 *   - FeaturedDecklists block on the homepage
 	 */
 	import { getCircuit } from '$lib/data/circuits.js';
 
@@ -23,7 +31,7 @@
 			.replace(/ø/g, 'o')
 			.replace(/å/g, 'a')
 			.normalize('NFD')
-			.replace(/[\u0300-\u036f]/g, '')
+			.replace(/[̀-ͯ]/g, '')
 			.replace(/[!@#$%^&*()+=[\]{}|\\:;<>?/~`]/g, '')
 			.replace(/[,'"]/g, '')
 			.replace(/\s+/g, '-')
@@ -39,13 +47,60 @@
 		return `#${placement}`;
 	}
 
-	// Computed values
+	/**
+	 * Split a Flesh and Blood hero name into "proper name" + "epithet".
+	 * Most heroes follow the pattern "Name, Title" — e.g.
+	 *   "Kayo, Armed & Dangerous" → { primary: "Kayo", secondary: "Armed & Dangerous" }
+	 *   "Prism, Awakener of Sol"  → { primary: "Prism", secondary: "Awakener of Sol" }
+	 * We promote the name to the headline and demote the epithet to a
+	 * mono caption — same vocabulary a playbill / portrait label uses.
+	 * Heroes without a comma read as a single headline (with line-clamp
+	 * fallback in the template so anything truly long can wrap rather
+	 * than truncate.)
+	 * @param {string | null | undefined} name
+	 */
+	function splitHeroName(name) {
+		if (!name) return { primary: 'Unknown Hero', secondary: null };
+		const idx = name.indexOf(',');
+		if (idx === -1) return { primary: name, secondary: null };
+		return {
+			primary: name.slice(0, idx).trim(),
+			secondary: name.slice(idx + 1).trim()
+		};
+	}
+
+	// Editorial circuit colors — fall back to accent blue.
+	const EDITORIAL_CIRCUIT = {
+		'Los Angeles': 'var(--ed-cc-la)',
+		'St. Louis': 'var(--ed-cc-stl)',
+		'New England': 'var(--ed-cc-ne)'
+	};
+
+	// Placement → color treatment. Top 3 get gold/silver/bronze fills;
+	// 4–8 reads as a navy "top finisher" outline; 9+ falls to a quiet
+	// ink outline so a long list still has visual hierarchy.
+	function placementTheme(placement) {
+		if (placement === 1) return { fill: '#C8922E', text: 'white', label: 'Champion' };
+		if (placement === 2) return { fill: '#928B79', text: 'white', label: 'Runner-up' };
+		if (placement === 3) return { fill: '#C0461F', text: 'white', label: 'Bronze' };
+		if (placement && placement <= 8)
+			return { fill: 'transparent', text: '#16489E', label: 'Top 8' };
+		return { fill: 'transparent', text: 'var(--ed-fade)', label: '' };
+	}
+
 	const heroImage = $derived(getHeroImage(decklist.hero));
 	const circuit = $derived(getCircuit(eventCircuit || decklist.eventCircuit));
 	const resolvedEventId = $derived(eventId || decklist.eventId);
 	const resolvedEventCircuit = $derived(eventCircuit || decklist.eventCircuit);
+	const edCircuit = $derived(
+		EDITORIAL_CIRCUIT[resolvedEventCircuit] ?? 'var(--ed-accent)'
+	);
+	const placementInfo = $derived(placementTheme(decklist.placement));
+	const formatLabel = $derived(
+		decklist.format === 'Classic Constructed' ? 'CC' : decklist.format || 'CC'
+	);
+	const heroName = $derived(splitHeroName(decklist.hero));
 
-	// Card count calculation
 	const totalCards = $derived(
 		showCardCount && decklist.cards && Array.isArray(decklist.cards)
 			? decklist.cards.reduce((sum, c) => sum + (c.quantity || 0), 0)
@@ -53,155 +108,169 @@
 	);
 </script>
 
-<a href="/age-open/{resolvedEventId}/decklist/{decklist.id}" class="group block">
-	<div
-		class="relative overflow-hidden rounded-xl border border-gray-800 bg-gray-900/80 transition-all hover:border-gray-700"
-	>
-		<!-- Solid background on left -->
-		<div class="absolute inset-0 bg-gray-900"></div>
-
-		<!-- Hero Image on right half only -->
-		<div class="absolute inset-y-0 right-0 w-1/2 overflow-hidden">
-			{#if heroImage}
-				<img
-					src={heroImage}
-					alt={decklist.hero}
-					class="h-full w-full object-cover object-top opacity-60 transition-transform duration-500 group-hover:scale-105"
-					loading="lazy"
-				/>
-			{/if}
-			<!-- Fade to solid on left edge -->
+<a
+	href="/age-open/{resolvedEventId}/decklist/{decklist.id}"
+	class="group border-line2 hover:border-ink bg-paper relative block overflow-hidden border transition-colors"
+	style={decklist.placement === 1
+		? 'border-top: 3px solid #C8922E;'
+		: decklist.placement === 2
+			? 'border-top: 3px solid #928B79;'
+			: decklist.placement === 3
+				? 'border-top: 3px solid #C0461F;'
+				: ''}
+>
+	<!--
+		Hero image — atmospheric right-side layer. The mask uses multi-
+		stop alpha values to approximate an ease-out curve instead of a
+		single linear ramp, so the image dissolves into paper across the
+		full width of the image region rather than ramping up sharply
+		over the first half. Paper scrim follows the same multi-stop
+		shape for a unified transition.
+	-->
+	{#if heroImage}
+		<div class="pointer-events-none absolute inset-0" aria-hidden="true">
+			<img
+				src={heroImage}
+				alt=""
+				class="absolute top-0 right-0 h-full w-[60%] object-cover object-right transition-transform duration-500 group-hover:scale-[1.04]"
+				style="-webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.05) 15%, rgba(0,0,0,0.2) 32%, rgba(0,0,0,0.5) 52%, rgba(0,0,0,0.82) 75%, black 100%); mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.05) 15%, rgba(0,0,0,0.2) 32%, rgba(0,0,0,0.5) 52%, rgba(0,0,0,0.82) 75%, black 100%);"
+				loading="lazy"
+				onerror={(e) => (e.target.style.display = 'none')}
+			/>
+			<!-- Paper scrim — same easing shape so the type area still
+				 reads on lighter image regions without creating a second,
+				 competing fade boundary. -->
 			<div
-				class="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/70 to-gray-900/30"
+				class="absolute top-0 right-0 h-full w-[60%]"
+				style="background: linear-gradient(to right, transparent 0%, color-mix(in srgb, var(--ed-paper) 10%, transparent) 30%, color-mix(in srgb, var(--ed-paper) 22%, transparent) 55%, color-mix(in srgb, var(--ed-paper) 30%, transparent) 80%, color-mix(in srgb, var(--ed-paper) 35%, transparent) 100%);"
 			></div>
 		</div>
+	{/if}
 
-		<!-- Mobile Layout (compact single row) -->
-		<div class="relative z-10 flex items-center gap-2 p-2 sm:hidden">
-			<!-- Placement Block -->
-			{#if decklist.placement}
+	<!-- ===== Mobile compact row ===== -->
+	<div class="relative z-[1] flex items-center gap-3 px-3 py-[10px] sm:hidden">
+		{#if decklist.placement}
+			<span
+				class="font-mono-system inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center border text-[10px] font-extrabold tracking-[0.06em] uppercase"
+				style="background-color: {placementInfo.fill}; color: {placementInfo.text}; border-color: {placementInfo.fill === 'transparent'
+					? 'color-mix(in srgb, ' + placementInfo.text + ' 50%, transparent)'
+					: placementInfo.fill};"
+			>
+				{formatPlacement(decklist.placement)}
+			</span>
+		{:else}
+			<span
+				class="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center border"
+				style="background-color: color-mix(in srgb, {edCircuit} 10%, transparent); border-color: color-mix(in srgb, {edCircuit} 45%, transparent);"
+			>
+				<span
+					class="block h-[8px] w-[8px] rounded-full"
+					style="background-color: {edCircuit};"
+				></span>
+			</span>
+		{/if}
+		<div class="min-w-0 flex-1">
+			<div
+				class="font-newsreader text-ink truncate text-[15px] font-semibold leading-[1.1] tracking-[-0.01em]"
+				title={decklist.hero || ''}
+			>
+				{heroName.primary}
+			</div>
+			{#if heroName.secondary}
 				<div
-					class="flex w-11 shrink-0 flex-col items-center justify-center rounded-md bg-yellow-500/20 py-1.5 backdrop-blur-sm"
+					class="text-warm font-mono-system truncate text-[9.5px] font-extrabold tracking-[0.08em] uppercase"
+					title={heroName.secondary}
 				>
-					<svg class="h-3 w-3 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-						<path
-							d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"
-						/>
-					</svg>
-					<span class="text-sm font-bold text-yellow-400"
-						>{formatPlacement(decklist.placement)}</span
-					>
-				</div>
-			{:else}
-				<div
-					class="flex w-11 shrink-0 flex-col items-center justify-center rounded-md {circuit.colors
-						.bgLight} py-1.5 backdrop-blur-sm"
-				>
-					<span class="h-3 w-3 rounded-full {circuit.colors.bg}"></span>
+					{heroName.secondary}
 				</div>
 			{/if}
+			<div class="text-fade font-mono-system mt-[3px] flex items-center gap-2 truncate text-[10px] font-bold tracking-[0.06em] uppercase">
+				{#if showPlayerName && decklist.playerName}
+					<span class="text-ink truncate">{decklist.playerName}</span>
+					<span class="text-fade" aria-hidden="true">·</span>
+				{/if}
+				<span>{formatLabel}</span>
+			</div>
+		</div>
+	</div>
 
-			<!-- Hero & Details -->
-			<div class="min-w-0 flex-1">
-				<h4 class="truncate text-xs font-semibold text-white">{decklist.hero || 'Unknown Hero'}</h4>
-				<div class="mt-0.5 flex items-center gap-2 text-[10px] text-gray-400">
-					{#if showPlayerName && decklist.playerName}
-						<span class="truncate text-white/80">{decklist.playerName}</span>
-						<span>·</span>
+	<!-- ===== Desktop card ===== -->
+	<div class="relative z-[1] hidden h-full sm:flex sm:flex-col sm:justify-between sm:px-5 sm:pt-[16px] sm:pb-[18px]">
+		<!-- Top row: placement chip + circuit chip -->
+		<div class="flex items-center justify-between gap-3">
+			{#if decklist.placement}
+				<span
+					class="font-mono-system inline-flex items-center gap-[7px] border px-[10px] py-[5px] text-[10.5px] font-extrabold tracking-[0.1em] uppercase"
+					style="background-color: {placementInfo.fill}; color: {placementInfo.text}; border-color: {placementInfo.fill === 'transparent'
+						? 'color-mix(in srgb, ' + placementInfo.text + ' 50%, transparent)'
+						: placementInfo.fill};"
+				>
+					{formatPlacement(decklist.placement)}
+					{#if placementInfo.label}
+						<span class="opacity-70">·</span>
+						<span>{placementInfo.label}</span>
 					{/if}
-					<span>{decklist.format || 'CC'}</span>
+				</span>
+			{:else}
+				<span
+					class="font-mono-system inline-flex items-center gap-[7px] border px-[10px] py-[5px] text-[10.5px] font-extrabold tracking-[0.1em] uppercase"
+					style="color: {edCircuit}; border-color: color-mix(in srgb, {edCircuit} 50%, transparent); background-color: color-mix(in srgb, {edCircuit} 8%, transparent);"
+				>
+					<span class="block h-[6px] w-[6px] rounded-full" style="background-color: {edCircuit};"></span>
+					{circuit.abbreviation}
+				</span>
+			{/if}
+			{#if decklist.placement && resolvedEventCircuit}
+				<span
+					class="font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase"
+					style="color: {edCircuit};"
+				>
+					{circuit.abbreviation}
+				</span>
+			{/if}
+		</div>
+
+		<!-- Main content. Hero name splits at the comma: proper name
+			 gets the serif headline treatment, epithet falls below as a
+			 mono caption. Names without a comma render as a single
+			 headline that line-clamps to 2 lines instead of truncating
+			 with an ellipsis. -->
+		<div class="mt-[14px] flex flex-col gap-[4px] max-w-[68%]">
+			<h4
+				class="font-newsreader text-ink group-hover:text-warm overflow-hidden text-[20px] font-semibold leading-[1.05] tracking-[-0.01em] transition-colors"
+				style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;"
+				title={decklist.hero || ''}
+			>
+				{heroName.primary}
+			</h4>
+			{#if heroName.secondary}
+				<div
+					class="text-warm font-mono-system overflow-hidden text-[10.5px] font-extrabold tracking-[0.1em] uppercase leading-[1.25]"
+					style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;"
+					title={heroName.secondary}
+				>
+					{heroName.secondary}
 				</div>
+			{/if}
+			{#if showPlayerName && decklist.playerName}
+				<div class="text-soft mt-[6px] truncate text-[13px] font-bold">
+					{decklist.playerName}
+				</div>
+			{/if}
+			<div class="text-fade font-mono-system mt-[4px] flex flex-wrap items-center gap-2 text-[10px] font-extrabold tracking-[0.1em] uppercase">
+				<span>{formatLabel}</span>
+				{#if showCardCount && totalCards > 0}
+					<span class="text-fade" aria-hidden="true">·</span>
+					<span>{totalCards} cards</span>
+				{/if}
 			</div>
 		</div>
 
-		<!-- Desktop Layout (horizontal) -->
-		<div class="relative z-10 hidden sm:flex">
-			<!-- Placement/Circuit Block -->
-			{#if decklist.placement}
-				<div
-					class="flex w-20 shrink-0 flex-col items-center justify-center border-r border-gray-800/50 bg-yellow-500/10 px-3 py-3 backdrop-blur-sm"
-				>
-					<svg class="h-4 w-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-						<path
-							d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"
-						/>
-					</svg>
-					<span class="text-lg font-bold text-yellow-400"
-						>{formatPlacement(decklist.placement)}</span
-					>
-					<span class="text-[10px] text-yellow-500/70">Place</span>
-				</div>
-			{:else}
-				<div
-					class="flex w-20 shrink-0 flex-col items-center justify-center border-r border-gray-800/50 {circuit
-						.colors.bgLight} px-3 py-3 backdrop-blur-sm"
-				>
-					<span class="h-4 w-4 rounded-full {circuit.colors.bg}"></span>
-					<span class="mt-1 text-[10px] font-medium {circuit.colors.text}"
-						>{circuit.abbreviation}</span
-					>
-				</div>
-			{/if}
-
-			<!-- Main Content -->
-			<div class="flex min-w-0 flex-1 items-center gap-4 px-4 py-3">
-				<!-- Decklist Details -->
-				<div class="min-w-0 flex-1">
-					<!-- Hero Name -->
-					<h4
-						class="truncate text-sm font-semibold text-white transition-colors group-hover:text-blue-400"
-					>
-						{decklist.hero || 'Unknown Hero'}
-					</h4>
-
-					<!-- Key Details Row -->
-					<div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-						<!-- Circuit -->
-						<div class="flex items-center gap-1.5">
-							<span class="h-2 w-2 rounded-full {circuit.colors.bg}"></span>
-							<span class="{circuit.colors.text} font-medium"
-								>{resolvedEventCircuit || 'AGE Open'}</span
-							>
-						</div>
-
-						<!-- Format -->
-						<div class="flex items-center gap-1.5 text-gray-400">
-							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="1.5"
-									d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"
-								/>
-							</svg>
-							<span>{decklist.format || 'Classic Constructed'}</span>
-							{#if showCardCount && totalCards > 0}
-								<span class="text-gray-500">• {totalCards} cards</span>
-							{/if}
-						</div>
-
-						<!-- Player Name -->
-						{#if showPlayerName && decklist.playerName}
-							<div class="flex items-center gap-1.5 text-gray-500">
-								<svg
-									class="h-3.5 w-3.5 shrink-0"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="1.5"
-										d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-									/>
-								</svg>
-								<span class="max-w-[150px] truncate">{decklist.playerName}</span>
-							</div>
-						{/if}
-					</div>
-				</div>
-			</div>
+		<!-- Bottom hover affordance — accent arrow slides in -->
+		<div
+			class="text-accent mt-[18px] font-mono-system inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.1em] uppercase opacity-0 transition-opacity group-hover:opacity-100"
+		>
+			View decklist →
 		</div>
 	</div>
 </a>

@@ -1,8 +1,22 @@
 <script>
 	import PaymentForm from '$lib/components/PaymentForm.svelte';
+	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import { getCircuit, DEFAULT_CIRCUIT } from '$lib/data/circuits.js';
 
 	export let data;
+
+	// Editorial circuit token (CSS variable) lookup. Maps the circuit
+	// names used by `circuits.js` onto the editorial `--ed-cc-*` palette
+	// so the page accent matches the dispatched-color treatment used on
+	// the homepage's Across AGE events row + Hub sidebar.
+	const EDITORIAL_CIRCUIT = {
+		'Los Angeles': 'var(--ed-cc-la)',
+		'St. Louis': 'var(--ed-cc-stl)',
+		'New England': 'var(--ed-cc-ne)'
+	};
+	function editorialCircuitColor(name) {
+		return EDITORIAL_CIRCUIT[name] ?? 'var(--ed-accent)';
+	}
 
 	// Get circuit config with colors and image
 	function getCircuitConfig(circuit) {
@@ -117,642 +131,515 @@
 
 	// Get circuit config reactively
 	$: circuitConfig = getCircuitConfig(data.event.circuit);
+	$: edCircuit = editorialCircuitColor(data.event.circuit);
+	$: circuitAbbr = (getCircuit(data.event.circuit) || DEFAULT_CIRCUIT).abbreviation;
+
+	// Capacity percentage for the progress bar.
+	$: capacityPct = hasPlayerCap
+		? Math.min((data.registeredCount / data.event.playerCap) * 100, 100)
+		: 0;
 </script>
 
 <svelte:head>
-	<title>{data.event.title} - AGE Open Series</title>
+	<title>{data.event.title} — AGE Open</title>
 	<meta
 		name="description"
-		content={data.event.description || `Register for ${data.event.title} - AGE Open Series event`}
+		content={data.event.description || `Register for ${data.event.title} — AGE Open Series event`}
 	/>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-950">
-	<!-- Hero Section with Circuit Background -->
-	<div class="relative overflow-hidden">
-		<!-- Circuit Background Image -->
-		<div class="absolute inset-0">
-			<img src={circuitConfig.image} alt="" class="h-full w-full object-cover opacity-50" />
+<AgeShell active="AGE Open">
+	<!--
+		Hero band — paper background with a circuit-colored top hairline,
+		a back link, eyebrow with circuit name, serif headline, chip
+		strip, and a three-column date/time/location strip separated by
+		ink hairlines. Optional event description renders with the
+		drop-cap pattern used on DispatchFront's lead paragraph.
+	-->
+	<section class="bg-paper border-ink relative overflow-hidden border-b-[3px] border-double">
+		<!--
+			Circuit image backdrop — contained to the right half of the
+			hero so the low-resolution source isn't stretched across the
+			full width. A CSS mask fades its left edge into transparent
+			so the photograph blends cleanly into the paper field instead
+			of stopping at a hard seam. A bottom vertical fade closes
+			the image into the next section without a visible boundary.
+			`aria-hidden` on the figure since it's purely decorative.
+		-->
+		<div class="pointer-events-none absolute inset-0" aria-hidden="true">
+			<img
+				src={circuitConfig.image}
+				alt=""
+				class="absolute top-0 right-0 h-full w-[60%] object-cover opacity-45"
+				style="-webkit-mask-image: linear-gradient(to right, transparent 0%, black 40%, black 100%); mask-image: linear-gradient(to right, transparent 0%, black 40%, black 100%);"
+			/>
+			<!-- Paper tint sitting only over the image area — lifts the
+				 text contrast on the right half of the hero where the date
+				 strip + description can overlap the photograph. -->
 			<div
-				class="absolute inset-0 bg-gradient-to-b from-gray-950/40 via-gray-950/70 to-gray-950"
+				class="absolute top-0 right-0 h-full w-[60%]"
+				style="background: linear-gradient(to right, transparent 0%, color-mix(in srgb, var(--ed-paper) 38%, transparent) 40%, color-mix(in srgb, var(--ed-paper) 50%, transparent) 100%);"
+			></div>
+			<!-- Bottom-edge fade into paper to close the section seam -->
+			<div
+				class="absolute inset-x-0 bottom-0 h-[38%]"
+				style="background: linear-gradient(to bottom, transparent 0%, var(--ed-paper) 100%);"
 			></div>
 		</div>
 
-		<div class="relative mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-			<!-- Back Link -->
-			<div class="mb-6">
-				<a
-					href="/age-open"
-					class="inline-flex items-center text-sm font-medium text-gray-400 transition-colors hover:text-white"
-				>
-					<svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M10 19l-7-7m0 0l7-7m-7 7h18"
-						/>
-					</svg>
-					Back to Events
-				</a>
-			</div>
+		<!-- circuit accent top rule (4px) sits above the backdrop -->
+		<div class="absolute inset-x-0 top-0 z-[1] h-[4px]" style="background: {edCircuit};"></div>
 
-			<!-- Event Header -->
-			<div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
-				<div class="flex-1">
-					<!-- Badges -->
-					<div class="mb-4 flex flex-wrap gap-2">
-						{#if data.event.format}
-							<span
-								class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-sm font-medium text-white backdrop-blur-sm"
-							>
-								{data.event.format}
-							</span>
-						{/if}
-						{#if data.event.premiumDiscount}
-							<span
-								class="rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1 text-sm font-medium text-amber-400"
-							>
-								Premium: {data.discountLabel} Off
-							</span>
-						{/if}
-						{#if hasPlayerCap}
-							{#if isFull}
-								<span
-									class="rounded-full border border-red-500/30 bg-red-500/20 px-3 py-1 text-sm font-medium text-red-400"
-								>
-									FULL
-								</span>
-							{:else if spotsRemaining <= 5}
-								<span
-									class="rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1 text-sm font-medium text-amber-400"
-								>
-									{spotsRemaining} spot{spotsRemaining !== 1 ? 's' : ''} left
-								</span>
-							{:else}
-								<span
-									class="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-sm font-medium text-white backdrop-blur-sm"
-								>
-									{data.registeredCount}/{data.event.playerCap} registered
-								</span>
-							{/if}
-						{/if}
-						{#if isPastEvent}
-							<span class="rounded-full bg-gray-600 px-3 py-1 text-sm font-medium text-gray-300">
-								Past Event
-							</span>
-						{/if}
-					</div>
+		<div class="relative z-[1] mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[44px] pb-[42px]">
+			<!-- Back link -->
+			<a
+				href="/age-open"
+				class="text-fade hover:text-ink font-mono-system inline-flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors"
+			>
+				← All AGE Open events
+			</a>
 
-					<!-- Title -->
-					<h1 class="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-						{data.event.title}
-					</h1>
+			<!-- Title -->
+			<h1
+				class="font-newsreader mt-[20px] text-[clamp(40px,5.5vw,68px)] leading-[0.96] font-semibold tracking-[-0.02em]"
+			>
+				{data.event.title}
+			</h1>
 
-					<!-- Circuit Badge - Prominent -->
-					<div class="mt-4">
-						<div
-							class="inline-flex items-center gap-3 {circuitConfig.bg} rounded-lg px-4 py-2.5 shadow-lg"
+			<!--
+				Chip strip — Format and Circuit sit side-by-side as the
+				primary identifiers. The Circuit chip carries the
+				circuit's tint as its background so the page color-codes
+				against the rest of the editorial chrome (homepage
+				events row, Hub sidebar, etc.) at a glance.
+			-->
+			<div class="mt-6 flex flex-wrap items-center gap-2">
+				{#if data.event.circuit}
+					<!--
+						Circuit chip — promoted to the dominant chip in the
+						strip so a user lands on the page and immediately
+						knows which AGE Open they're looking at. Larger
+						font + heavier padding, a leading white dot for
+						glanceability, and an outer ring in the circuit
+						tint that bleeds into the page accent.
+					-->
+					<span
+						class="relative inline-flex items-center gap-[10px] px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] text-white uppercase shadow-[0_0_0_3px_color-mix(in_srgb,var(--ed-paper)_100%,transparent),0_0_0_4px_currentColor]"
+						style="background: {edCircuit}; color: {edCircuit};"
+					>
+						<span
+							class="inline-block h-[9px] w-[9px] rounded-full bg-white"
+							aria-hidden="true"
+						></span>
+						<span class="text-white">{data.event.circuit}</span>
+					</span>
+				{/if}
+				{#if data.event.format}
+					<span
+						class="border-line2 text-ink inline-flex items-center border bg-transparent px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] uppercase"
+					>
+						{data.event.format}
+					</span>
+				{/if}
+				{#if data.event.premiumDiscount}
+					<span
+						class="bg-prem inline-flex items-center px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] text-white uppercase"
+					>
+						Premium · {data.discountLabel} off
+					</span>
+				{/if}
+				{#if hasPlayerCap}
+					{#if isFull}
+						<span
+							class="bg-ink text-paper-bg inline-flex items-center px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] uppercase"
 						>
-							<svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-								/>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-								/>
-							</svg>
-							<span class="text-base font-black tracking-wider text-white uppercase">
-								{data.event.circuit || 'AGE Open'} Circuit
-							</span>
-						</div>
-					</div>
-
-					<!-- Quick Info -->
-					<div class="mt-6 flex flex-wrap gap-6 text-gray-300">
-						{#if data.event.eventDate}
-							<div class="flex items-center gap-2">
-								<svg
-									class="h-5 w-5 text-gray-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-									/>
-								</svg>
-								<span>{formatDate(data.event.eventDate)}</span>
-							</div>
-							<div class="flex items-center gap-2">
-								<svg
-									class="h-5 w-5 text-gray-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-									/>
-								</svg>
-								<span>{formatTime(data.event.eventDate)}</span>
-							</div>
-						{/if}
-						{#if data.event.location}
-							<div class="flex items-center gap-2">
-								<svg
-									class="h-5 w-5 text-gray-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-									/>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-									/>
-								</svg>
-								<span>{data.event.location}</span>
-							</div>
-						{/if}
-					</div>
-
-					<!-- Description -->
-					{#if data.event.description}
-						<p class="mt-6 max-w-2xl leading-relaxed text-gray-400">
-							{data.event.description}
-						</p>
+							Full
+						</span>
+					{:else if spotsRemaining <= 5}
+						<span
+							class="bg-warm inline-flex items-center px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] text-white uppercase"
+						>
+							{spotsRemaining} spot{spotsRemaining !== 1 ? 's' : ''} left
+						</span>
+					{:else}
+						<span
+							class="border-line2 text-soft inline-flex items-center border px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] uppercase"
+						>
+							{data.registeredCount} / {data.event.playerCap} registered
+						</span>
 					{/if}
-				</div>
+				{/if}
+				{#if isPastEvent}
+					<span
+						class="border-line2 text-fade inline-flex items-center border px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] uppercase"
+					>
+						Past event
+					</span>
+				{/if}
 			</div>
-		</div>
-	</div>
 
-	<!-- Main Content -->
-	<div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-		<div class="grid gap-8 lg:grid-cols-3">
-			<!-- Left Column - Event Details & Ticket Form -->
-			<div class="space-y-6 lg:col-span-2">
-				<!-- Event Details Card -->
-				<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
-					<h2 class="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
-						<svg
-							class="h-5 w-5 text-gray-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
+			<!-- Description with drop cap -->
+			{#if data.event.description}
+				<p
+					class="text-soft first-letter:font-newsreader mt-7 max-w-[760px] text-[17px] leading-[1.55] first-letter:float-left first-letter:mt-[6px] first-letter:mr-3 first-letter:text-[60px] first-letter:leading-[0.7] first-letter:font-semibold"
+					style="--first-letter-color: {edCircuit};"
+				>
+					{data.event.description}
+				</p>
+			{/if}
+		</div>
+	</section>
+
+	<!-- Main 2-column grid -->
+	<section class="bg-paper-bg">
+		<div
+			class="mx-auto grid w-full max-w-[min(94vw,1920px)] gap-10 px-14 py-[44px] lg:grid-cols-[1fr_360px]"
+		>
+			<!-- ============ LEFT COLUMN ============ -->
+			<div class="min-w-0 space-y-7">
+				<!-- Event Details — bordered card with stat grid -->
+				<div class="border-line2 bg-paper border">
+					<div class="border-line2 flex items-baseline justify-between border-b px-6 py-[14px]">
+						<h2
+							class="font-newsreader text-[22px] font-semibold tracking-[-0.01em]"
 						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-							/>
-						</svg>
-						Event Details
-					</h2>
-					<div class="grid gap-4 sm:grid-cols-2">
+							Event Details
+						</h2>
+						<span
+							class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase"
+						>
+							{circuitAbbr}
+						</span>
+					</div>
+					<!--
+						Stat grid uses a flat 2-column layout with explicit
+						top/right hairline borders so every cell reads as a
+						single "page" in a printed almanac. Full-width
+						rows (Venue, Capacity, single-row Entry Fee when
+						Format is missing) use `sm:col-span-2`. Cells get
+						`-mt-px -ml-px` so collapsed borders don't double
+						along shared edges.
+					-->
+					<dl class="grid grid-cols-1 sm:grid-cols-2">
+						{#if data.event.eventDate}
+							<div
+								class="border-line2 -mt-px -ml-px border px-6 py-5"
+							>
+								<dt
+									class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Date
+								</dt>
+								<dd class="font-newsreader text-[20px] leading-[1.15] font-semibold tracking-[-0.01em]">
+									{formatDate(data.event.eventDate)}
+								</dd>
+							</div>
+							<div
+								class="border-line2 -mt-px -ml-px border px-6 py-5"
+							>
+								<dt
+									class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Players Meeting
+								</dt>
+								<dd class="font-newsreader text-[20px] leading-[1.15] font-semibold tracking-[-0.01em]">
+									{formatTime(data.event.eventDate)}
+								</dd>
+							</div>
+						{/if}
+						{#if data.event.location}
+							<div
+								class="border-line2 -mt-px -ml-px border px-6 py-5 sm:col-span-2"
+							>
+								<dt
+									class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Venue
+								</dt>
+								<dd class="font-newsreader text-[20px] leading-[1.15] font-semibold tracking-[-0.01em]">
+									{data.event.location}
+								</dd>
+								{#if data.event.address}
+									<div class="text-soft mt-1 text-[13px] font-medium">{data.event.address}</div>
+								{/if}
+							</div>
+						{/if}
 						{#if data.event.format}
 							<div
-								class="flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-800/30 p-3"
+								class="border-line2 -mt-px -ml-px border px-6 py-5"
 							>
-								<div
-									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/20"
+								<dt
+									class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
 								>
-									<svg
-										class="h-4 w-4 text-blue-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"
-										/>
-									</svg>
-								</div>
-								<div>
-									<p class="text-xs text-gray-500">Format</p>
-									<p class="font-medium text-white">{data.event.format}</p>
-								</div>
+									Format
+								</dt>
+								<dd class="font-newsreader text-[20px] font-semibold tracking-[-0.01em]">
+									{data.event.format}
+								</dd>
 							</div>
 						{/if}
 						<div
-							class="flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-800/30 p-3"
+							class="border-line2 -mt-px -ml-px border px-6 py-5 {data.event.format
+								? ''
+								: 'sm:col-span-2'}"
 						>
-							<div
-								class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-500/20"
+							<dt
+								class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
 							>
-								<svg
-									class="h-4 w-4 text-green-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-									/>
-								</svg>
-							</div>
-							<div>
-								<p class="text-xs text-gray-500">Entry Fee</p>
-								<p class="font-medium text-white">${formatPrice(data.event.price)}</p>
-							</div>
+								Entry Fee
+							</dt>
+							<dd class="font-archivo text-[22px] font-black tabular-nums tracking-[-0.02em]">
+								${formatPrice(data.event.price)}
+								{#if data.hasPremiumDiscount}
+									<span class="text-prem ml-2 text-[14px] font-bold">
+										→ ${data.finalPrice} for Premium
+									</span>
+								{/if}
+							</dd>
 						</div>
-						{#if data.event.location}
+						{#if hasPlayerCap}
 							<div
-								class="flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-800/30 p-3 sm:col-span-2"
+								class="border-line2 -mt-px -ml-px border px-6 py-5 sm:col-span-2"
 							>
-								<div
-									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-500/20"
+								<dt
+									class="text-fade font-mono-system mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
 								>
-									<svg
-										class="h-4 w-4 text-cyan-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-										/>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-										/>
-									</svg>
-								</div>
-								<div>
-									<p class="text-xs text-gray-500">Location</p>
-									<p class="font-medium text-white">{data.event.location}</p>
-									{#if data.event.address}
-										<p class="text-sm text-gray-500">{data.event.address}</p>
+									Capacity
+								</dt>
+								<div class="flex items-baseline justify-between gap-3">
+									<dd class="font-archivo text-[22px] font-black tabular-nums tracking-[-0.02em]">
+										{data.registeredCount} / {data.event.playerCap}
+										<span class="text-fade ml-1 text-[13px] font-bold">players</span>
+									</dd>
+									{#if isFull}
+										<span
+											class="bg-ink text-paper-bg px-[8px] py-[3px] text-[9px] font-extrabold tracking-[0.1em] uppercase"
+										>
+											Full
+										</span>
+									{:else if spotsRemaining <= 5}
+										<span
+											class="bg-warm px-[8px] py-[3px] text-[9px] font-extrabold tracking-[0.1em] text-white uppercase"
+										>
+											{spotsRemaining} left
+										</span>
 									{/if}
 								</div>
-							</div>
-						{/if}
-						{#if hasPlayerCap}
-							<div
-								class="flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-800/30 p-3"
-							>
-								<div
-									class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {isFull ? 'bg-red-500/20' : 'bg-purple-500/20'}"
-								>
-									<svg
-										class="h-4 w-4 {isFull ? 'text-red-400' : 'text-purple-400'}"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-										/>
-									</svg>
-								</div>
-								<div class="flex-1">
-									<p class="text-xs text-gray-500">Capacity</p>
-									<div class="flex items-center gap-2">
-										<p class="font-medium {isFull ? 'text-red-400' : 'text-white'}">
-											{data.registeredCount} / {data.event.playerCap} players
-										</p>
-										{#if isFull}
-											<span
-												class="rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-red-400"
-											>
-												FULL
-											</span>
-										{:else if spotsRemaining <= 5}
-											<span
-												class="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-400"
-											>
-												{spotsRemaining} left
-											</span>
-										{/if}
-									</div>
-									<!-- Progress bar -->
-									<div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-700">
-										<div
-											class="h-full rounded-full transition-all {isFull ? 'bg-red-500' : spotsRemaining <= 5 ? 'bg-amber-500' : 'bg-purple-500'}"
-											style="width: {Math.min((data.registeredCount / data.event.playerCap) * 100, 100)}%"
-										></div>
-									</div>
+								<!-- Capacity bar -->
+								<div class="bg-line mt-3 h-[5px] overflow-hidden">
+									<div
+										class="h-full transition-all"
+										style="width: {capacityPct}%; background: {isFull
+											? 'var(--ed-ink)'
+											: spotsRemaining <= 5
+												? 'var(--ed-warm)'
+												: edCircuit};"
+									></div>
 								</div>
 							</div>
 						{/if}
-					</div>
+					</dl>
 				</div>
 
-				<!-- Registration Section -->
+				<!-- Registration section — branches on isPastEvent / data.user / data.userTicket -->
 				{#if !isPastEvent}
 					{#if !data.user}
 						<!-- Login Required -->
-						<div class="rounded-xl border border-amber-500/30 bg-amber-950/20 p-6">
-							<div class="mb-4 flex items-center gap-3">
-								<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20">
-									<svg
-										class="h-5 w-5 text-amber-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-										/>
-									</svg>
-								</div>
-								<div>
-									<h2 class="text-lg font-semibold text-white">Login Required</h2>
-									<p class="text-sm text-gray-400">Sign in to register for this event</p>
-								</div>
-							</div>
-							<a
-								href="/login?redirect=/age-open/{data.event.id}"
-								class="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 font-medium text-black transition-colors hover:bg-amber-400"
+						<div class="bg-paper border-l-[3px] border-warm border border-line2 px-7 py-7">
+							<div
+								class="text-warm font-mono-system mb-[10px] text-[10px] font-extrabold tracking-[0.16em] uppercase"
 							>
-								Sign In to Register
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M9 5l7 7-7 7"
-									/>
-								</svg>
-							</a>
+								Sign in required
+							</div>
+							<h2 class="font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
+								You need an AGE account to register.
+							</h2>
+							<p class="text-soft mt-3 max-w-[460px] text-[14.5px] leading-[1.55]">
+								Sign in to claim your seat, save your ticket to your account, and pick up Premium
+								member discounts when applicable.
+							</p>
+							<div class="mt-6 flex flex-wrap items-center gap-3">
+								<a
+									href="/login?redirect=/age-open/{data.event.id}"
+									class="bg-ink text-paper-bg border-ink inline-flex items-center gap-2 border-[1.5px] px-6 py-[12px] text-[12px] font-bold tracking-[0.06em] uppercase transition-[filter] hover:brightness-110"
+								>
+									Sign in to register →
+								</a>
+								<a
+									href="/signup?redirect=/age-open/{data.event.id}"
+									class="border-ink text-ink hover:bg-ink hover:text-paper-bg inline-flex items-center gap-2 border-[1.5px] bg-transparent px-6 py-[12px] text-[12px] font-bold tracking-[0.06em] uppercase transition-colors"
+								>
+									Create account
+								</a>
+							</div>
 						</div>
 					{:else if data.userTicket}
 						<!-- Already Registered -->
-						<div class="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-6">
-							<div class="flex items-start gap-4">
-								<div
-									class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20"
-								>
-									<svg
-										class="h-6 w-6 text-emerald-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-										/>
-									</svg>
-								</div>
-								<div class="flex-1">
-									<h2 class="mb-2 text-xl font-bold text-white">You're Signed Up!</h2>
-									<p class="leading-relaxed text-gray-300">
-										We'll see you at <span class="font-semibold text-white"
-											>{data.event.location}</span
-										>
-										{#if data.event.eventDate}
-											at <span class="font-semibold text-white"
-												>{formatTime(data.event.eventDate)}</span
+						<div class="bg-paper border-l-[3px] border-prem border border-line2 px-7 py-7">
+							<div
+								class="text-prem font-mono-system mb-[10px] text-[10px] font-extrabold tracking-[0.16em] uppercase"
+							>
+								You're in
+							</div>
+							<h2 class="font-newsreader text-[28px] font-semibold tracking-[-0.01em]">
+								See you at <span class="text-ink">{data.event.location}</span
+								>{#if data.event.eventDate}
+									at <span class="text-ink">{formatTime(data.event.eventDate)}</span
+									>{/if}.
+							</h2>
+
+							<!-- Ticket details — one block per ticket -->
+							<div class="mt-6 space-y-4">
+								{#each data.userTicket as ticket, index}
+									<div class="border-line2 bg-paper-bg border px-5 py-[18px]">
+										{#if data.userTicket.length > 1}
+											<div
+												class="text-prem font-mono-system mb-3 text-[9.5px] font-extrabold tracking-[0.16em] uppercase"
 											>
-										{/if}. Good luck!
-									</p>
-
-									<!-- Ticket Details -->
-									<div class="mt-4 space-y-3">
-										{#each data.userTicket as ticket, index}
-											<div class="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4">
-												{#if data.userTicket.length > 1}
-													<p
-														class="mb-3 text-xs font-medium tracking-wider text-emerald-400 uppercase"
-													>
-														Ticket {index + 1} of {data.userTicket.length}
-													</p>
-												{/if}
-												<div class="grid gap-3 sm:grid-cols-2">
-													<div>
-														<p class="mb-1 text-xs tracking-wider text-gray-500 uppercase">
-															Ticket Code
-														</p>
-														<p class="font-mono font-bold text-emerald-400">{ticket.code}</p>
-													</div>
-													<div>
-														<p class="mb-1 text-xs tracking-wider text-gray-500 uppercase">
-															Player Name
-														</p>
-														<p class="font-medium text-white">
-															{ticket.firstName}
-															{ticket.lastName}
-														</p>
-													</div>
-													{#if ticket.gemId}
-														<div>
-															<p class="mb-1 text-xs tracking-wider text-gray-500 uppercase">
-																GEM ID
-															</p>
-															<p class="font-medium text-white">{ticket.gemId}</p>
-														</div>
-													{/if}
+												Ticket {index + 1} of {data.userTicket.length}
+											</div>
+										{/if}
+										<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+											<div>
+												<div
+													class="text-fade font-mono-system mb-[5px] text-[9.5px] font-extrabold tracking-[0.14em] uppercase"
+												>
+													Ticket Code
 												</div>
-
-												<!-- GEM Status -->
-												<div class="mt-3 border-t border-emerald-500/10 pt-3">
-													{#if ticket.enteredIntoGem}
-														<div class="flex items-start gap-2">
-															<svg
-																class="mt-0.5 h-4 w-4 shrink-0 text-emerald-400"
-																fill="currentColor"
-																viewBox="0 0 20 20"
-															>
-																<path
-																	fill-rule="evenodd"
-																	d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z"
-																	clip-rule="evenodd"
-																/>
-															</svg>
-															<p class="text-sm text-emerald-300">Checked in on GEM</p>
-														</div>
-													{:else}
-														<div class="flex items-start gap-2">
-															<svg
-																class="mt-0.5 h-4 w-4 shrink-0 text-amber-400"
-																fill="none"
-																stroke="currentColor"
-																viewBox="0 0 24 24"
-															>
-																<path
-																	stroke-linecap="round"
-																	stroke-linejoin="round"
-																	stroke-width="2"
-																	d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-																/>
-															</svg>
-															<p class="text-sm text-amber-300">Pending GEM check-in</p>
-														</div>
-													{/if}
+												<div class="text-prem font-mono-system text-[15px] font-extrabold">
+													{ticket.code}
 												</div>
 											</div>
-										{/each}
+											<div>
+												<div
+													class="text-fade font-mono-system mb-[5px] text-[9.5px] font-extrabold tracking-[0.14em] uppercase"
+												>
+													Player
+												</div>
+												<div class="font-newsreader text-[16px] font-semibold">
+													{ticket.firstName}
+													{ticket.lastName}
+												</div>
+											</div>
+											{#if ticket.gemId}
+												<div>
+													<div
+														class="text-fade font-mono-system mb-[5px] text-[9.5px] font-extrabold tracking-[0.14em] uppercase"
+													>
+														GEM ID
+													</div>
+													<div class="font-mono-system text-[14px] font-bold">
+														{ticket.gemId}
+													</div>
+												</div>
+											{/if}
+										</div>
+										<!-- GEM status -->
+										<div class="border-line2 mt-4 border-t pt-3">
+											{#if ticket.enteredIntoGem}
+												<div
+													class="text-prem inline-flex items-center gap-2 text-[12px] font-semibold"
+												>
+													<span class="bg-prem inline-block h-[8px] w-[8px]"></span>
+													Checked in on GEM
+												</div>
+											{:else}
+												<div
+													class="text-warm inline-flex items-center gap-2 text-[12px] font-semibold"
+												>
+													<span class="bg-warm inline-block h-[8px] w-[8px]"></span>
+													Pending GEM check-in
+												</div>
+											{/if}
+										</div>
 									</div>
-
-									<!-- GEM Info Note (show once if any ticket is not entered) -->
-									{#if data.userTicket.some((t) => !t.enteredIntoGem)}
-										<p class="mt-3 text-xs text-gray-400">
-											Keep an eye on your GEM account before the event. If you don't see it after
-											check-in, please see a judge when you arrive.
-										</p>
-									{/if}
-
-									<!-- View Order Link -->
-									{#if data.userTicket[0]?.orderId}
-										<a
-											href="/account/orders/{data.userTicket[0].orderId}"
-											class="mt-4 inline-flex items-center gap-2 text-sm font-medium text-emerald-400 transition-colors hover:text-emerald-300"
-										>
-											<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-												/>
-											</svg>
-											View Order Details
-										</a>
-									{/if}
-								</div>
+								{/each}
 							</div>
+
+							{#if data.userTicket.some((t) => !t.enteredIntoGem)}
+								<p class="text-fade mt-4 text-[12px] leading-[1.5]">
+									Keep an eye on your GEM account before the event. If you don't see it after
+									check-in, please see a judge when you arrive.
+								</p>
+							{/if}
+
+							{#if data.userTicket[0]?.orderId}
+								<a
+									href="/account/orders/{data.userTicket[0].orderId}"
+									class="text-accent mt-5 inline-flex items-center gap-2 text-[12px] font-extrabold tracking-[0.05em] uppercase"
+								>
+									View order details →
+								</a>
+							{/if}
 						</div>
 					{:else}
 						<!-- Ticket Entry Form -->
-						<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
-							<div class="mb-6 flex items-center justify-between">
-								<h2 class="flex items-center gap-2 text-lg font-semibold text-white">
-									<svg
-										class="h-5 w-5 text-gray-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
-										/>
-									</svg>
+						<div class="border-line2 bg-paper border">
+							<div class="border-line2 flex items-baseline justify-between border-b px-6 py-[14px]">
+								<h2
+									class="font-newsreader text-[22px] font-semibold tracking-[-0.01em]"
+								>
 									Player Registration
 								</h2>
-								<span class="text-sm text-gray-500"
-									>{tickets.length} ticket{tickets.length > 1 ? 's' : ''}</span
+								<span
+									class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
 								>
+									{tickets.length} ticket{tickets.length > 1 ? 's' : ''}
+								</span>
 							</div>
 
-							<!-- Tickets -->
-							<div class="space-y-4">
+							<div class="space-y-5 px-6 py-6">
 								{#each tickets as ticket, index (ticket.id)}
-									<!-- Premium Discount Notice - shown above second player -->
+									<!-- Premium notice above second ticket -->
 									{#if data.hasPremiumDiscount && index === 1}
-										<div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-											<div class="flex gap-3">
-												<svg
-													class="mt-0.5 h-5 w-5 shrink-0 text-amber-400"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-													/>
-												</svg>
-												<div>
-													<p class="text-sm font-medium text-amber-300">
-														Premium discount applies to your first ticket only
-													</p>
-													<p class="mt-1 text-xs text-amber-200/70">
-														Other players can register from their own accounts to receive their
-														discounts.
-													</p>
-												</div>
+										<div class="border-l-[3px] border-warm border border-line2 bg-paper-bg px-4 py-3">
+											<div
+												class="text-warm font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
+											>
+												Premium discount
 											</div>
+											<p class="text-soft mt-1 text-[13px] leading-[1.5]">
+												Premium discount applies to your first ticket only. Other players can register
+												from their own accounts to receive their own discounts.
+											</p>
 										</div>
 									{/if}
-									<div class="rounded-lg border border-gray-700 bg-gray-800/50 p-4">
+
+									<div class="border-line2 bg-paper-bg border px-5 py-5">
 										<div class="mb-4 flex items-center justify-between">
-											<h3 class="font-medium text-white">
+											<h3
+												class="font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] uppercase"
+											>
 												{#if tickets.length > 1}
 													Player {index + 1}
 												{:else}
-													Player Information
+													Player Info
 												{/if}
 												{#if ticket.isFromAccount}
-													<span class="ml-2 text-xs text-green-400">(From your account)</span>
+													<span class="text-prem ml-2 text-[10px] font-bold tracking-[0.05em] normal-case">
+														From your account
+													</span>
 												{/if}
 											</h3>
 											{#if tickets.length > 1}
 												<button
 													type="button"
 													on:click={() => removeTicket(ticket.id)}
-													class="text-gray-500 transition-colors hover:text-red-400"
+													class="text-fade hover:text-warm font-mono-system text-[10px] font-extrabold tracking-[0.1em] uppercase transition-colors"
 													aria-label="Remove player {index + 1}"
 												>
-													<svg
-														class="h-5 w-5"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M6 18L18 6M6 6l12 12"
-														/>
-													</svg>
+													Remove
 												</button>
 											{/if}
 										</div>
 
-										<div class="grid gap-4 sm:grid-cols-2">
+										<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 											<div>
 												<label
 													for="firstName-{ticket.id}"
-													class="mb-1 block text-sm font-medium text-gray-300"
+													class="text-fade font-mono-system mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase"
 												>
-													First Name <span class="text-red-400">*</span>
+													First Name <span class="text-warm">*</span>
 												</label>
 												<input
 													type="text"
@@ -760,15 +647,15 @@
 													bind:value={ticket.firstName}
 													required
 													placeholder="Enter first name"
-													class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+													class="border-line2 bg-paper text-ink placeholder:text-fade focus:border-ink w-full border px-3 py-[10px] text-[14px] focus:outline-none"
 												/>
 											</div>
 											<div>
 												<label
 													for="lastName-{ticket.id}"
-													class="mb-1 block text-sm font-medium text-gray-300"
+													class="text-fade font-mono-system mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase"
 												>
-													Last Name <span class="text-red-400">*</span>
+													Last Name <span class="text-warm">*</span>
 												</label>
 												<input
 													type="text"
@@ -776,16 +663,16 @@
 													bind:value={ticket.lastName}
 													required
 													placeholder="Enter last name"
-													class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+													class="border-line2 bg-paper text-ink placeholder:text-fade focus:border-ink w-full border px-3 py-[10px] text-[14px] focus:outline-none"
 												/>
 											</div>
 											{#if data.event.gemIdRequired}
 												<div class="sm:col-span-2">
 													<label
 														for="gemId-{ticket.id}"
-														class="mb-1 block text-sm font-medium text-gray-300"
+														class="text-fade font-mono-system mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase"
 													>
-														GEM ID <span class="text-amber-400">*</span>
+														GEM ID <span class="text-warm">*</span>
 													</label>
 													<input
 														type="text"
@@ -793,9 +680,9 @@
 														bind:value={ticket.gemId}
 														required
 														placeholder="Enter GEM ID"
-														class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder:text-gray-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+														class="border-line2 bg-paper text-ink placeholder:text-fade focus:border-ink w-full border px-3 py-[10px] text-[14px] focus:outline-none"
 													/>
-													<p class="mt-1 text-xs text-gray-500">
+													<p class="text-fade mt-1 text-[11px]">
 														Required for tournament registration and pairing
 													</p>
 												</div>
@@ -803,73 +690,59 @@
 										</div>
 									</div>
 								{/each}
-							</div>
 
-							<!-- Add Another Ticket Button -->
-							<button
-								type="button"
-								on:click={addTicket}
-								class="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-gray-700 py-3 text-sm font-medium text-gray-400 transition-colors hover:border-gray-600 hover:text-gray-300"
-							>
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 4v16m8-8H4"
-									/>
-								</svg>
-								Add Another Player
-							</button>
+								<!-- Add another player -->
+								<button
+									type="button"
+									on:click={addTicket}
+									class="border-line2 text-fade hover:text-ink hover:border-ink flex w-full items-center justify-center gap-2 border border-dashed px-4 py-[14px] text-[11px] font-extrabold tracking-[0.1em] uppercase transition-colors"
+								>
+									+ Add another player
+								</button>
+							</div>
 						</div>
 
-						<!-- Mobile Order Summary (shown above payment form on mobile, only if not already registered) -->
+						<!-- Mobile order summary (above payment form, only on mobile) -->
 						{#if showPaymentForm && !data.userTicket}
-							<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6 lg:hidden">
-								<h2 class="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
-									<svg
-										class="h-5 w-5 text-gray-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-										/>
-									</svg>
-									Order Summary
-								</h2>
-
-								<div class="space-y-3">
+							<div class="border-line2 bg-paper border lg:hidden">
+								<div class="border-line2 border-b px-6 py-[14px]">
+									<h2 class="font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
+										Order Summary
+									</h2>
+								</div>
+								<div class="px-6 py-5">
 									{#each tickets as ticket, index}
 										<div
 											class="flex items-center justify-between py-2 {index > 0
-												? 'border-t border-gray-800'
+												? 'border-line border-t'
 												: ''}"
 										>
 											<div class="min-w-0 flex-1">
-												<p class="truncate text-sm text-white">
+												<div class="text-ink truncate text-[13px] font-semibold">
 													{ticket.firstName || ticket.lastName
 														? `${ticket.firstName} ${ticket.lastName}`.trim()
 														: `Player ${index + 1}`}
-												</p>
+												</div>
 												{#if ticket.gemId}
-													<p class="text-xs text-gray-500">GEM: {ticket.gemId}</p>
+													<div
+														class="text-fade font-mono-system text-[10px] font-bold tracking-[0.05em]"
+													>
+														GEM {ticket.gemId}
+													</div>
 												{/if}
 											</div>
 											<div class="ml-4 text-right">
 												{#if data.hasPremiumDiscount && index === 0}
-													<p class="text-xs text-gray-500 line-through">
+													<div class="text-fade text-[11px] line-through tabular-nums">
 														${formatPrice(data.event.price)}
-													</p>
-													<p class="text-sm font-medium text-white">${data.finalPrice}</p>
+													</div>
+													<div class="text-ink font-archivo text-[14px] font-black tabular-nums">
+														${data.finalPrice}
+													</div>
 												{:else}
-													<p class="text-sm font-medium text-white">
+													<div class="text-ink font-archivo text-[14px] font-black tabular-nums">
 														${formatPrice(data.event.price)}
-													</p>
+													</div>
 												{/if}
 											</div>
 										</div>
@@ -877,34 +750,34 @@
 
 									{#if data.hasPremiumDiscount}
 										<div
-											class="flex items-center justify-between rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2"
+											class="border-prem text-prem mt-3 flex items-center justify-between border px-3 py-2 text-[12px] font-bold"
 										>
-											<div class="flex items-center gap-2">
-												<svg class="h-4 w-4 text-green-400" fill="currentColor" viewBox="0 0 24 24">
-													<path
-														d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-													/>
-												</svg>
-												<span class="text-sm text-green-400">Premium Discount (1st ticket)</span>
-											</div>
-											<span class="text-sm font-medium text-green-400">-${data.discountAmount}</span>
+											<span>Premium discount · 1st ticket</span>
+											<span>−${data.discountAmount}</span>
 										</div>
 									{/if}
 
-									<div class="mt-4 border-t border-gray-700 pt-4">
+									<div class="border-ink mt-4 border-t pt-4">
 										<div class="flex items-center justify-between">
-											<span class="text-base font-semibold text-white">Total</span>
-											<span class="text-2xl font-bold text-white">${totalAmount}</span>
+											<span
+												class="font-mono-system text-[11px] font-extrabold tracking-[0.14em] uppercase"
+											>
+												Total
+											</span>
+											<span
+												class="font-archivo text-[26px] font-black tabular-nums tracking-[-0.02em]"
+											>
+												${totalAmount}
+											</span>
 										</div>
 										{#if data.hasPremiumDiscount && hasMultipleTickets}
-											<p class="mt-1 text-xs text-gray-500">
-												1 @ ${data.finalPrice} + {tickets.length - 1} @ ${formatPrice(
-													data.event.price
-												)}
+											<p class="text-fade mt-1 text-[11px]">
+												1 @ ${data.finalPrice} + {tickets.length - 1} @ ${formatPrice(data.event.price)}
 											</p>
 										{:else}
-											<p class="mt-1 text-xs text-gray-500">
-												{tickets.length} ticket{tickets.length > 1 ? 's' : ''} @ ${data.finalPrice} each
+											<p class="text-fade mt-1 text-[11px]">
+												{tickets.length} ticket{tickets.length > 1 ? 's' : ''} @ ${data.finalPrice}
+												each
 											</p>
 										{/if}
 									</div>
@@ -912,279 +785,202 @@
 							</div>
 						{/if}
 
-						<!-- Payment Form (shown when tickets are valid) -->
+						<!-- Payment Form (when tickets valid) -->
 						{#if showPaymentForm}
-							<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
-								<div class="mb-6 flex items-center gap-3">
-									<div
-										class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20"
-									>
-										<svg
-											class="h-5 w-5 text-green-400"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-											/>
-										</svg>
-									</div>
-									<div>
-										<h2 class="text-lg font-semibold text-white">Payment Information</h2>
-										<p class="text-sm text-gray-400">Complete your registration</p>
-									</div>
+							<div class="border-line2 bg-paper border">
+								<div class="border-line2 border-b px-6 py-[14px]">
+									<h2 class="font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
+										Payment
+									</h2>
+									<p class="text-fade mt-1 text-[12px] font-medium">
+										Complete your registration. Secured by Authorize.Net.
+									</p>
 								</div>
-
-								<PaymentForm
-									amount={totalAmount}
-									description={`${tickets.length}x Ticket for ${data.event.title}`}
-									submitUrl={`/api/events/${data.event.id}/purchase`}
-									submitText="Complete Purchase - ${totalAmount}"
-									gemId={gemIdsForPayment}
-									savedCards={data.savedCards || []}
-									showSaveCardOption={true}
-									showTestData={data.isSandbox}
-								/>
+								<div class="px-6 py-6">
+									<PaymentForm
+										amount={totalAmount}
+										description={`${tickets.length}x Ticket for ${data.event.title}`}
+										submitUrl={`/api/events/${data.event.id}/purchase`}
+										submitText="Complete Purchase - ${totalAmount}"
+										gemId={gemIdsForPayment}
+										savedCards={data.savedCards || []}
+										showSaveCardOption={true}
+										showTestData={data.isSandbox}
+									/>
+								</div>
 							</div>
 						{/if}
 					{/if}
 				{:else}
 					<!-- Past Event -->
-					<div class="rounded-xl border border-gray-700 bg-gray-800/50 p-6 text-center">
-						<svg
-							class="mx-auto mb-4 h-12 w-12 text-gray-500"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
+					<div class="border-line2 bg-paper border px-7 py-9 text-center">
+						<div
+							class="text-fade font-mono-system mb-3 text-[10px] font-extrabold tracking-[0.18em] uppercase"
 						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-							/>
-						</svg>
-						<h3 class="mb-2 text-lg font-semibold text-white">Event Has Ended</h3>
-						<p class="text-gray-400">Registration for this event is closed.</p>
+							Past event
+						</div>
+						<h3 class="font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
+							Registration for this event is closed.
+						</h3>
 						<a
 							href="/age-open"
-							class="mt-4 inline-flex items-center gap-2 font-medium text-blue-400 hover:text-blue-300"
+							class="text-accent mt-5 inline-flex items-center gap-2 text-[11px] font-extrabold tracking-[0.07em] uppercase"
 						>
-							View Upcoming Events
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M9 5l7 7-7 7"
-								/>
-							</svg>
+							View upcoming events →
 						</a>
 					</div>
 				{/if}
 			</div>
 
-			<!-- Right Column - Order Summary Sidebar (Desktop Only) -->
-			<div class="hidden lg:col-span-1 lg:block">
-				<div class="sticky top-6 space-y-6">
-					<!-- Order Summary (only show if not already registered) -->
-					{#if !data.userTicket}
-						<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
-							<h2 class="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
-								<svg
-									class="h-5 w-5 text-gray-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-									/>
-								</svg>
+			<!-- ============ RIGHT COLUMN — sticky sidebar on lg+ ============ -->
+			<aside class="space-y-6 lg:sticky lg:top-6 lg:self-start">
+				<!-- Order Summary (only show if not already registered) -->
+				{#if !data.userTicket && !isPastEvent}
+					<div class="border-line2 bg-paper border">
+						<div class="border-line2 border-b px-6 py-[14px]">
+							<h2 class="font-newsreader text-[20px] font-semibold tracking-[-0.01em]">
 								Order Summary
 							</h2>
-
-							<div class="space-y-3">
-								<!-- Line Items -->
-								{#each tickets as ticket, index}
-									<div
-										class="flex items-center justify-between py-2 {index > 0
-											? 'border-t border-gray-800'
-											: ''}"
-									>
-										<div class="min-w-0 flex-1">
-											<p class="truncate text-sm text-white">
-												{ticket.firstName || ticket.lastName
-													? `${ticket.firstName} ${ticket.lastName}`.trim()
-													: `Player ${index + 1}`}
-											</p>
-											{#if ticket.gemId}
-												<p class="text-xs text-gray-500">GEM: {ticket.gemId}</p>
-											{/if}
+						</div>
+						<div class="px-6 py-5">
+							{#each tickets as ticket, index}
+								<div
+									class="flex items-center justify-between py-2 {index > 0
+										? 'border-line border-t'
+										: ''}"
+								>
+									<div class="min-w-0 flex-1">
+										<div class="text-ink truncate text-[13px] font-semibold">
+											{ticket.firstName || ticket.lastName
+												? `${ticket.firstName} ${ticket.lastName}`.trim()
+												: `Player ${index + 1}`}
 										</div>
-										<div class="ml-4 text-right">
-											{#if data.hasPremiumDiscount && index === 0}
-												<p class="text-xs text-gray-500 line-through">
-													${formatPrice(data.event.price)}
-												</p>
-												<p class="text-sm font-medium text-white">${data.finalPrice}</p>
-											{:else}
-												<p class="text-sm font-medium text-white">
-													${formatPrice(data.event.price)}
-												</p>
-											{/if}
-										</div>
+										{#if ticket.gemId}
+											<div
+												class="text-fade font-mono-system text-[10px] font-bold tracking-[0.05em]"
+											>
+												GEM {ticket.gemId}
+											</div>
+										{/if}
 									</div>
-								{/each}
-
-								<!-- Premium Discount Note -->
-								{#if data.hasPremiumDiscount}
-									<div
-										class="flex items-center justify-between rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2"
-									>
-										<div class="flex items-center gap-2">
-											<svg class="h-4 w-4 text-green-400" fill="currentColor" viewBox="0 0 24 24">
-												<path
-													d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-												/>
-											</svg>
-											<span class="text-sm text-green-400">Premium Discount (1st ticket)</span>
-										</div>
-										<span class="text-sm font-medium text-green-400">-${data.discountAmount}</span>
+									<div class="ml-4 text-right">
+										{#if data.hasPremiumDiscount && index === 0}
+											<div class="text-fade text-[11px] line-through tabular-nums">
+												${formatPrice(data.event.price)}
+											</div>
+											<div class="text-ink font-archivo text-[14px] font-black tabular-nums">
+												${data.finalPrice}
+											</div>
+										{:else}
+											<div class="text-ink font-archivo text-[14px] font-black tabular-nums">
+												${formatPrice(data.event.price)}
+											</div>
+										{/if}
 									</div>
-								{/if}
-
-								<!-- Total -->
-								<div class="mt-4 border-t border-gray-700 pt-4">
-									<div class="flex items-center justify-between">
-										<span class="text-base font-semibold text-white">Total</span>
-										<span class="text-2xl font-bold text-white">${totalAmount}</span>
-									</div>
-									{#if data.hasPremiumDiscount && hasMultipleTickets}
-										<p class="mt-1 text-xs text-gray-500">
-											1 @ ${data.finalPrice} + {tickets.length - 1} @ ${formatPrice(
-												data.event.price
-											)}
-										</p>
-									{:else}
-										<p class="mt-1 text-xs text-gray-500">
-											{tickets.length} ticket{tickets.length > 1 ? 's' : ''} @ ${data.finalPrice} each
-										</p>
-									{/if}
 								</div>
-							</div>
+							{/each}
 
-							<!-- Validation Status -->
-							{#if !isPastEvent && data.user && !allTicketsValid}
-								<div class="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
-									<p class="flex items-center gap-2 text-sm text-amber-400">
-										<svg
-											class="h-4 w-4 shrink-0"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-											/>
-										</svg>
-										Complete player info to proceed
-									</p>
+							{#if data.hasPremiumDiscount}
+								<div
+									class="border-prem text-prem mt-3 flex items-center justify-between border px-3 py-2 text-[12px] font-bold"
+								>
+									<span>Premium · 1st ticket</span>
+									<span>−${data.discountAmount}</span>
 								</div>
 							{/if}
 
-							<!-- Security Badge -->
-							<div class="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500">
-								<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-									/>
-								</svg>
-								<span>Secure checkout via Authorize.net</span>
+							<div class="border-ink mt-4 border-t pt-4">
+								<div class="flex items-center justify-between">
+									<span
+										class="font-mono-system text-[11px] font-extrabold tracking-[0.14em] uppercase"
+									>
+										Total
+									</span>
+									<span
+										class="font-archivo text-[28px] font-black tabular-nums tracking-[-0.02em]"
+									>
+										${totalAmount}
+									</span>
+								</div>
+								{#if data.hasPremiumDiscount && hasMultipleTickets}
+									<p class="text-fade mt-1 text-[11px]">
+										1 @ ${data.finalPrice} + {tickets.length - 1} @ ${formatPrice(data.event.price)}
+									</p>
+								{:else}
+									<p class="text-fade mt-1 text-[11px]">
+										{tickets.length} ticket{tickets.length > 1 ? 's' : ''} @ ${data.finalPrice} each
+									</p>
+								{/if}
+							</div>
+
+							<!-- Validation hint -->
+							{#if data.user && !allTicketsValid}
+								<div
+									class="border-warm text-warm mt-4 border px-3 py-2 text-[12px] font-semibold"
+								>
+									Complete player info to proceed.
+								</div>
+							{/if}
+
+							<!-- Security note -->
+							<div
+								class="text-fade font-mono-system mt-4 text-center text-[9.5px] font-bold tracking-[0.12em] uppercase"
+							>
+								Secure checkout · Authorize.Net
 							</div>
 						</div>
-					{/if}
+					</div>
+				{/if}
 
-					<!-- Prize Info Card -->
-					<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
-						<h3 class="mb-4 flex items-center gap-2 font-semibold text-white">
-							<svg class="h-5 w-5 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
-								<path
-									d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 0 7.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 0 0 2.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 0 1 2.916.52 6.003 6.003 0 0 1-5.395 4.972m0 0a6.726 6.726 0 0 1-2.749 1.35m0 0a6.772 6.772 0 0 1-2.992 0"
-								/>
-							</svg>
-							Prizes & Points
+				<!-- Prizes & Points -->
+				<div class="border-line2 bg-paper border">
+					<div class="border-line2 border-b px-6 py-[14px]">
+						<h3 class="font-newsreader text-[20px] font-semibold tracking-[-0.01em]">
+							Prizes &amp; Points
 						</h3>
-						<div class="space-y-2 text-sm">
-							<div class="flex items-center justify-between">
-								<span class="text-gray-400">1st Place</span>
-								<div class="text-right">
-									<span class="font-medium text-green-400">$400</span>
-									<span class="ml-2 text-amber-400">+30 pts</span>
-								</div>
-							</div>
-							<div class="flex items-center justify-between">
-								<span class="text-gray-400">2nd Place</span>
-								<div class="text-right">
-									<span class="font-medium text-green-400">$200</span>
-									<span class="ml-2 text-amber-400">+25 pts</span>
-								</div>
-							</div>
-							<div class="flex items-center justify-between">
-								<span class="text-gray-400">3rd-4th</span>
-								<div class="text-right">
-									<span class="font-medium text-green-400">$100</span>
-									<span class="ml-2 text-amber-400">+20 pts</span>
-								</div>
-							</div>
-							<div class="flex items-center justify-between">
-								<span class="text-gray-400">5th-8th</span>
-								<div class="text-right">
-									<span class="font-medium text-green-400">$50</span>
-									<span class="ml-2 text-amber-400">+15 pts</span>
-								</div>
-							</div>
-							<div class="flex items-center justify-between">
-								<span class="text-gray-400">Top 12</span>
-								<span class="text-amber-400">+12 pts</span>
-							</div>
-							<div class="flex items-center justify-between">
-								<span class="text-gray-400">Top 16</span>
-								<span class="text-amber-400">+8 pts</span>
-							</div>
-							<div class="mt-2 flex items-center justify-between border-t border-gray-800 pt-2">
-								<span class="text-gray-400">Participation</span>
-								<span class="text-amber-400">+1 pt</span>
-							</div>
-						</div>
 					</div>
-
-					<!-- Need Help -->
-					<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-6">
-						<h3 class="mb-2 font-semibold text-white">Need Help?</h3>
-						<p class="mb-3 text-sm text-gray-400">Questions about registration or the event?</p>
-						<a
-							href="/age-open?tab=rules"
-							class="text-sm font-medium text-blue-400 transition-colors hover:text-blue-300"
-						>
-							View Rules & Info →
-						</a>
-					</div>
+					<dl class="divide-y divide-[#E4DECF]">
+						{#each [{ p: '1st Place', prize: '$400', pts: '+30 pts' }, { p: '2nd Place', prize: '$200', pts: '+25 pts' }, { p: '3rd–4th', prize: '$100', pts: '+20 pts' }, { p: '5th–8th', prize: '$50', pts: '+15 pts' }, { p: 'Top 12', prize: '', pts: '+12 pts' }, { p: 'Top 16', prize: '', pts: '+8 pts' }, { p: 'Participation', prize: '', pts: '+1 pt' }] as row (row.p)}
+							<div class="flex items-baseline justify-between px-6 py-[10px] text-[13px]">
+								<dt class="text-soft font-semibold">{row.p}</dt>
+								<dd class="text-right">
+									{#if row.prize}
+										<span class="text-prem font-archivo font-extrabold tabular-nums">{row.prize}</span>
+										<span class="text-fade ml-2 text-[12px] font-semibold">{row.pts}</span>
+									{:else}
+										<span class="text-fade text-[12px] font-semibold">{row.pts}</span>
+									{/if}
+								</dd>
+							</div>
+						{/each}
+					</dl>
 				</div>
-			</div>
+
+				<!-- Need Help -->
+				<div class="border-line2 bg-paper border px-6 py-6">
+					<h3
+						class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase"
+					>
+						Need help?
+					</h3>
+					<p class="text-ink mt-2 text-[14px] leading-[1.5] font-semibold">
+						Questions about registration or the event?
+					</p>
+					<a
+						href="/age-open?tab=rules"
+						class="text-accent mt-3 inline-flex items-center gap-2 text-[11px] font-extrabold tracking-[0.07em] uppercase"
+					>
+						View rules &amp; info →
+					</a>
+				</div>
+			</aside>
 		</div>
-	</div>
-</div>
+	</section>
+</AgeShell>
+
+<style>
+	/* Tint the drop-cap initial with the circuit color via inline CSS var. */
+	:global(.bg-paper p[style*='--first-letter-color']::first-letter) {
+		color: var(--first-letter-color);
+	}
+</style>

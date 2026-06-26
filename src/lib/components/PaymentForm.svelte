@@ -1,4 +1,11 @@
 <script>
+	/**
+	 * Payment form — editorial styling (matches the player registration
+	 * form on the AGE Open event signup page). Supports both one-off
+	 * card payments and subscription flows via the `isSubscription` prop.
+	 * Submit contract / API request shape is unchanged from the legacy
+	 * version; only the presentation moved to the editorial palette.
+	 */
 	export let amount = '0.00';
 	export let description = '';
 	export let submitUrl = '';
@@ -36,20 +43,19 @@
 		paymentMethod = 'saved';
 	}
 
-	// Get card icon based on card type
-	function getCardIcon(cardType) {
+	function cardTypeLabel(cardType) {
 		switch (cardType?.toLowerCase()) {
 			case 'visa':
-				return '💳 Visa';
+				return 'Visa';
 			case 'mastercard':
-				return '💳 Mastercard';
+				return 'Mastercard';
 			case 'amex':
 			case 'american express':
-				return '💳 Amex';
+				return 'Amex';
 			case 'discover':
-				return '💳 Discover';
+				return 'Discover';
 			default:
-				return '💳 Card';
+				return 'Card';
 		}
 	}
 
@@ -141,111 +147,106 @@
 </script>
 
 {#if success}
-	<div class="rounded-xl border border-green-500/30 bg-green-500/10 p-8 text-center">
+	<!-- Success card — prem-green editorial confirmation. Mirrors the
+		 "already registered" surface on the event page so the user reads
+		 the post-purchase state in the same visual register. -->
+	<div class="border-prem bg-paper-bg border-l-[3px] border border-line2 px-7 py-7 text-center">
 		<div
-			class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20"
+			class="text-prem font-mono-system mb-2 text-[10px] font-extrabold tracking-[0.16em] uppercase"
 		>
-			<svg class="h-8 w-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-			</svg>
+			Payment successful
 		</div>
-		<h3 class="mb-2 text-2xl font-bold text-white">Payment Successful!</h3>
-		<p class="text-green-300">
-			Thank you for your purchase. You will receive a confirmation email shortly.
+		<h3 class="font-newsreader text-[24px] font-semibold tracking-[-0.01em]">
+			Thank you for your purchase.
+		</h3>
+		<p class="text-soft mt-3 text-[14px] leading-[1.55]">
+			You'll receive a confirmation email shortly with your order details.
 		</p>
 	</div>
 {:else}
 	<form on:submit={handleSubmit} class="space-y-6">
 		{#if error}
-			<div class="flex items-start gap-3 rounded-lg border border-red-500/30 bg-red-500/10 p-4">
-				<svg
-					class="mt-0.5 h-5 w-5 shrink-0 text-red-400"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
+			<!-- Error notice — warm-bordered editorial alert (same pattern
+				 the player registration form uses for premium upsells / hints). -->
+			<div class="border-warm bg-paper-bg border-l-[3px] border border-line2 px-4 py-3">
+				<div
+					class="text-warm font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
 				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-					/>
-				</svg>
-				<p class="text-sm text-red-300">{error}</p>
+					Payment error
+				</div>
+				<p class="text-soft mt-1 text-[13px] leading-[1.5]">{error}</p>
 			</div>
 		{/if}
 
-		<!-- Payment Method Selection (only show if user has saved cards) -->
+		<!-- Payment method tabs — only when the user has saved cards -->
 		{#if savedCards.length > 0}
 			<div class="space-y-4">
-				<div class="flex items-center gap-2">
-					<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-						/>
-					</svg>
-					<h3 class="text-base font-semibold text-white">Payment Method</h3>
+				<div
+					class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+				>
+					Payment Method
 				</div>
 
-				<!-- Payment method tabs -->
-				<div class="flex gap-2">
+				<!-- Editorial tab pair: two square ink-bordered tabs, active
+					 tab fills with ink + paper text. Same square-button
+					 language used elsewhere in the editorial chrome. -->
+				<div class="border-line2 grid grid-cols-2 gap-px border bg-[#E4DECF]">
 					<button
 						type="button"
 						on:click={() => (paymentMethod = 'saved')}
-						class="flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition-all {paymentMethod ===
+						class="font-mono-system px-4 py-3 text-[11px] font-extrabold tracking-[0.1em] uppercase transition-colors {paymentMethod ===
 						'saved'
-							? 'border-blue-500 bg-blue-500/10 text-blue-400'
-							: 'border-gray-700 bg-gray-900 text-gray-400 hover:border-gray-600'}"
+							? 'bg-ink text-paper-bg'
+							: 'bg-paper text-soft hover:text-ink'}"
 					>
-						Saved Card
+						Saved card
 					</button>
 					<button
 						type="button"
 						on:click={() => (paymentMethod = 'new')}
-						class="flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition-all {paymentMethod ===
+						class="font-mono-system px-4 py-3 text-[11px] font-extrabold tracking-[0.1em] uppercase transition-colors {paymentMethod ===
 						'new'
-							? 'border-blue-500 bg-blue-500/10 text-blue-400'
-							: 'border-gray-700 bg-gray-900 text-gray-400 hover:border-gray-600'}"
+							? 'bg-ink text-paper-bg'
+							: 'bg-paper text-soft hover:text-ink'}"
 					>
-						New Card
+						New card
 					</button>
 				</div>
 
-				<!-- Saved cards list -->
+				<!-- Saved cards list — radio rows -->
 				{#if paymentMethod === 'saved'}
 					<div class="space-y-2">
 						{#each savedCards as card (card.id)}
 							<label
-								class="flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-all {selectedCardId ===
+								class="border-line2 bg-paper-bg flex cursor-pointer items-center gap-3 border px-4 py-[14px] transition-colors {selectedCardId ===
 								card.id
-									? 'border-blue-500 bg-blue-500/10'
-									: 'border-gray-700 bg-gray-900 hover:border-gray-600'}"
+									? '!border-ink'
+									: 'hover:border-ink/40'}"
 							>
 								<input
 									type="radio"
 									name="savedCard"
 									value={card.id}
 									bind:group={selectedCardId}
-									class="h-4 w-4 border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+									class="text-ink focus:ring-ink h-4 w-4 border-line2 bg-paper focus:ring-offset-0"
 								/>
 								<div class="min-w-0 flex-1">
 									<div class="flex items-center gap-2">
-										<span class="font-medium text-white">
-											{getCardIcon(card.cardType)} •••• {card.lastFour}
+										<span class="text-ink font-semibold">
+											{cardTypeLabel(card.cardType)} <span class="text-fade font-mono-system">•••• {card.lastFour}</span>
 										</span>
 										{#if card.isDefault}
-											<span class="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs text-blue-400"
-												>Default</span
+											<span
+												class="border-line2 text-fade font-mono-system border px-[7px] py-[2px] text-[9px] font-extrabold tracking-[0.1em] uppercase"
 											>
+												Default
+											</span>
 										{/if}
 									</div>
-									<div class="text-sm text-gray-400">
+									<div class="text-fade mt-[3px] text-[12px] font-semibold">
 										Expires {card.expirationMonth}/{card.expirationYear}
 										{#if card.nickname}
-											<span class="text-gray-500">• {card.nickname}</span>
+											<span class="text-fade">· {card.nickname}</span>
 										{/if}
 									</div>
 								</div>
@@ -256,53 +257,40 @@
 			</div>
 		{/if}
 
-		<!-- New Card Form (show if no saved cards or "new card" selected) -->
+		<!-- New card branch — shown when no saved cards or "new" tab is active -->
 		{#if savedCards.length === 0 || paymentMethod === 'new'}
-			<!-- Test Data Helper (only shown in sandbox/dev) -->
+			<!-- Test data helper — only renders in sandbox/dev. Editorial
+				 warm-bordered card matching the Premium notice pattern. -->
 			{#if showTestData}
-				<div class="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
-					<div class="mb-2 flex items-center gap-2">
-						<svg
-							class="h-4 w-4 text-amber-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-							/>
-						</svg>
-						<p class="text-sm font-semibold text-amber-300">Test Mode</p>
+				<div class="border-warm bg-paper-bg border-l-[3px] border border-line2 px-4 py-3">
+					<div
+						class="text-warm font-mono-system mb-2 text-[10px] font-extrabold tracking-[0.16em] uppercase"
+					>
+						Test mode
 					</div>
-					<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-amber-200/80">
-						<div><span class="text-amber-300">Card:</span> 4007 0000 0002 7</div>
-						<div><span class="text-amber-300">Exp:</span> 12/2028</div>
-						<div><span class="text-amber-300">CVV:</span> 123</div>
-						<div><span class="text-amber-300">ZIP:</span> 12345</div>
+					<div class="text-soft grid grid-cols-2 gap-x-4 gap-y-[3px] text-[12px]">
+						<div><span class="text-fade">Card:</span> <span class="font-mono-system">4007 0000 0002 7</span></div>
+						<div><span class="text-fade">Exp:</span> <span class="font-mono-system">12/2028</span></div>
+						<div><span class="text-fade">CVV:</span> <span class="font-mono-system">123</span></div>
+						<div><span class="text-fade">ZIP:</span> <span class="font-mono-system">12345</span></div>
 					</div>
 				</div>
 			{/if}
 
 			<!-- Card Information -->
-			<div class="space-y-4">
-				<div class="flex items-center gap-2">
-					<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-						/>
-					</svg>
-					<h3 class="text-base font-semibold text-white">Card Information</h3>
-				</div>
+			<fieldset class="space-y-4">
+				<legend
+					class="text-fade font-mono-system mb-[6px] block text-[10px] font-extrabold tracking-[0.16em] uppercase"
+				>
+					Card Information
+				</legend>
 
 				<div>
-					<label for="cardNumber" class="mb-1.5 block text-sm font-medium text-gray-300">
-						Card Number <span class="text-red-400">*</span>
+					<label
+						for="cardNumber"
+						class="text-fade font-mono-system mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase"
+					>
+						Card Number <span class="text-warm">*</span>
 					</label>
 					<input
 						id="cardNumber"
@@ -313,22 +301,25 @@
 						bind:value={formData.cardNumber}
 						on:input={formatCardNumber}
 						placeholder="1234 5678 9012 3456"
-						class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+						class="border-line2 bg-paper text-ink placeholder:text-fade focus:border-ink font-mono-system w-full border px-3 py-[10px] text-[14px] tracking-[0.04em] focus:outline-none"
 					/>
 				</div>
 
 				<div class="grid grid-cols-3 gap-3">
 					<div>
-						<label for="expMonth" class="mb-1.5 block text-sm font-medium text-gray-300">
-							Month <span class="text-red-400">*</span>
+						<label
+							for="expMonth"
+							class="text-fade font-mono-system mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase"
+						>
+							Month <span class="text-warm">*</span>
 						</label>
 						<select
 							id="expMonth"
 							required={paymentMethod === 'new'}
 							bind:value={formData.expirationMonth}
-							class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2.5 text-white transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+							class="border-line2 bg-paper text-ink focus:border-ink w-full border px-3 py-[10px] text-[14px] focus:outline-none"
 						>
-							<option value="" class="text-gray-500">MM</option>
+							<option value="">MM</option>
 							{#each Array(12) as _, i}
 								<option value={String(i + 1).padStart(2, '0')}
 									>{String(i + 1).padStart(2, '0')}</option
@@ -338,16 +329,19 @@
 					</div>
 
 					<div>
-						<label for="expYear" class="mb-1.5 block text-sm font-medium text-gray-300">
-							Year <span class="text-red-400">*</span>
+						<label
+							for="expYear"
+							class="text-fade font-mono-system mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase"
+						>
+							Year <span class="text-warm">*</span>
 						</label>
 						<select
 							id="expYear"
 							required={paymentMethod === 'new'}
 							bind:value={formData.expirationYear}
-							class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2.5 text-white transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+							class="border-line2 bg-paper text-ink focus:border-ink w-full border px-3 py-[10px] text-[14px] focus:outline-none"
 						>
-							<option value="" class="text-gray-500">YYYY</option>
+							<option value="">YYYY</option>
 							{#each years as year}
 								<option value={String(year)}>{year}</option>
 							{/each}
@@ -355,8 +349,11 @@
 					</div>
 
 					<div>
-						<label for="cardCode" class="mb-1.5 block text-sm font-medium text-gray-300">
-							CVV <span class="text-red-400">*</span>
+						<label
+							for="cardCode"
+							class="text-fade font-mono-system mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase"
+						>
+							CVV <span class="text-warm">*</span>
 						</label>
 						<input
 							id="cardCode"
@@ -367,58 +364,61 @@
 							required={paymentMethod === 'new'}
 							bind:value={formData.cardCode}
 							placeholder="123"
-							class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+							class="border-line2 bg-paper text-ink placeholder:text-fade focus:border-ink font-mono-system w-full border px-3 py-[10px] text-[14px] focus:outline-none"
 						/>
 					</div>
 				</div>
-			</div>
+			</fieldset>
 
 			<!-- Billing Information -->
-			<div class="space-y-4">
-				<div class="flex items-center gap-2">
-					<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-						/>
-					</svg>
-					<h3 class="text-base font-semibold text-white">Billing Info</h3>
-				</div>
+			<fieldset class="space-y-4">
+				<legend
+					class="text-fade font-mono-system mb-[6px] block text-[10px] font-extrabold tracking-[0.16em] uppercase"
+				>
+					Billing Information
+				</legend>
 
-				<div class="grid grid-cols-5 gap-3">
-					<div class="col-span-2">
-						<label for="firstName" class="mb-1.5 block text-sm font-medium text-gray-300">
-							First Name <span class="text-red-400">*</span>
+				<div class="grid grid-cols-1 gap-3 sm:grid-cols-5">
+					<div class="sm:col-span-2">
+						<label
+							for="firstName"
+							class="text-fade font-mono-system mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase"
+						>
+							First Name <span class="text-warm">*</span>
 						</label>
 						<input
 							id="firstName"
 							type="text"
 							required={paymentMethod === 'new'}
 							bind:value={formData.firstName}
-							placeholder="John"
-							class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+							placeholder="Enter first name"
+							class="border-line2 bg-paper text-ink placeholder:text-fade focus:border-ink w-full border px-3 py-[10px] text-[14px] focus:outline-none"
 						/>
 					</div>
 
-					<div class="col-span-2">
-						<label for="lastName" class="mb-1.5 block text-sm font-medium text-gray-300">
-							Last Name <span class="text-red-400">*</span>
+					<div class="sm:col-span-2">
+						<label
+							for="lastName"
+							class="text-fade font-mono-system mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase"
+						>
+							Last Name <span class="text-warm">*</span>
 						</label>
 						<input
 							id="lastName"
 							type="text"
 							required={paymentMethod === 'new'}
 							bind:value={formData.lastName}
-							placeholder="Doe"
-							class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+							placeholder="Enter last name"
+							class="border-line2 bg-paper text-ink placeholder:text-fade focus:border-ink w-full border px-3 py-[10px] text-[14px] focus:outline-none"
 						/>
 					</div>
 
-					<div class="col-span-1">
-						<label for="zip" class="mb-1.5 block text-sm font-medium text-gray-300">
-							ZIP <span class="text-red-400">*</span>
+					<div class="sm:col-span-1">
+						<label
+							for="zip"
+							class="text-fade font-mono-system mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase"
+						>
+							ZIP <span class="text-warm">*</span>
 						</label>
 						<input
 							id="zip"
@@ -428,38 +428,37 @@
 							maxlength="10"
 							bind:value={formData.zip}
 							placeholder="90001"
-							class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-2.5 text-white transition-colors placeholder:text-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+							class="border-line2 bg-paper text-ink placeholder:text-fade focus:border-ink font-mono-system w-full border px-3 py-[10px] text-[14px] focus:outline-none"
 						/>
 					</div>
 				</div>
-			</div>
+			</fieldset>
 
-			<!-- Save Card Option -->
+			<!-- Save card option -->
 			{#if showSaveCardOption}
-				<label class="group flex cursor-pointer items-center gap-3">
+				<label class="group flex cursor-pointer items-center gap-3 pt-1">
 					<input
 						type="checkbox"
 						bind:checked={saveCard}
-						class="h-4 w-4 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+						class="border-line2 bg-paper text-ink focus:ring-ink h-[16px] w-[16px] focus:ring-offset-0"
 					/>
-					<span class="text-sm text-gray-300 transition-colors group-hover:text-white">
+					<span class="text-soft group-hover:text-ink text-[13px] font-medium transition-colors">
 						Save this card for faster checkout next time
 					</span>
 				</label>
 			{/if}
 		{/if}
 
-		<!-- Submit Button -->
+		<!-- Submit button — solid prem-green for both purchases and
+			 subscriptions, matching the "Get Premium" / "Become a member"
+			 CTAs elsewhere in the editorial chrome. -->
 		<button
 			type="submit"
 			disabled={loading}
-			class="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r px-6 py-4 text-lg font-semibold text-white shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg
-				{isSubscription
-				? 'from-emerald-500 to-green-600 shadow-emerald-500/25 hover:from-emerald-400 hover:to-green-500 hover:shadow-emerald-500/30'
-				: 'from-blue-500 to-blue-600 shadow-blue-500/25 hover:from-blue-400 hover:to-blue-500 hover:shadow-blue-500/30'}"
+			class="bg-prem border-prem inline-flex w-full items-center justify-center gap-2 border-[1.5px] px-6 py-[14px] text-[12px] font-bold tracking-[0.06em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
 		>
 			{#if loading}
-				<svg class="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+				<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
 					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
 					></circle>
 					<path
@@ -468,31 +467,17 @@
 						d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 					></path>
 				</svg>
-				Processing...
+				Processing…
 			{:else}
-				<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-					/>
-				</svg>
 				{submitText}
 			{/if}
 		</button>
 
-		<!-- Security Note -->
-		<div class="flex items-center justify-center gap-2 text-xs text-gray-500">
-			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-				/>
-			</svg>
-			<span>Secure 256-bit SSL encryption powered by Authorize.net</span>
+		<!-- Security note — mono caption, same pattern as the order summary -->
+		<div
+			class="text-fade font-mono-system flex items-center justify-center gap-2 text-center text-[10px] font-bold tracking-[0.12em] uppercase"
+		>
+			Secure 256-bit SSL · Authorize.Net
 		</div>
 	</form>
 {/if}

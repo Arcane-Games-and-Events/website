@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit';
 import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow, userHasPremiumAccess } from '$lib/server/articles/access.js';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
-import { resolveCardImage } from '$lib/server/cards/index.js';
+import { resolveCardImage, mapWithConcurrency } from '$lib/server/cards/index.js';
 import { enrichPageViewWithArticle } from '$lib/server/analytics.js';
 
 /**
@@ -135,35 +135,38 @@ function extractCardNamesFromDecklists(decklists) {
 }
 
 /**
- * Resolve card images for a set of card names
- * Returns a map of "cardName:pitch" -> { imageUrl, fallbackUrl }
+ * Resolve card images for a set of card names.
+ * Returns a map of "cardName:pitch" -> { imageUrl, fallbackUrl }.
+ *
+ * Concurrency is capped at 8 in-flight lookups via `mapWithConcurrency`
+ * so a deck-tech article with 70+ unique cards doesn't fire 70+
+ * simultaneous DB lookups on a cold cache — that used to saturate the
+ * Postgres connection pool and make the `load` function hang.
  */
 async function resolveCardImages(cardNamesSet) {
 	const cardImages = {};
 	const cards = Array.from(cardNamesSet).map((json) => JSON.parse(json));
 
-	await Promise.all(
-		cards.map(async ({ name, pitch }) => {
-			const pitchNum = pitch === 'r' ? 1 : pitch === 'y' ? 2 : pitch === 'b' ? 3 : null;
-			const resolved = await resolveCardImage({ name, pitch: pitchNum });
+	await mapWithConcurrency(cards, 8, async ({ name, pitch }) => {
+		const pitchNum = pitch === 'r' ? 1 : pitch === 'y' ? 2 : pitch === 'b' ? 3 : null;
+		const resolved = await resolveCardImage({ name, pitch: pitchNum });
 
-			if (resolved.found) {
-				// Store with pitch key for specific lookups
-				const key = pitch ? `${name.toLowerCase()}:${pitch}` : name.toLowerCase();
-				cardImages[key] = {
+		if (resolved.found) {
+			// Store with pitch key for specific lookups
+			const key = pitch ? `${name.toLowerCase()}:${pitch}` : name.toLowerCase();
+			cardImages[key] = {
+				imageUrl: resolved.imageUrl,
+				fallbackUrl: resolved.fallbackUrl
+			};
+			// Also store without pitch for fallback
+			if (pitch && !cardImages[name.toLowerCase()]) {
+				cardImages[name.toLowerCase()] = {
 					imageUrl: resolved.imageUrl,
 					fallbackUrl: resolved.fallbackUrl
 				};
-				// Also store without pitch for fallback
-				if (pitch && !cardImages[name.toLowerCase()]) {
-					cardImages[name.toLowerCase()] = {
-						imageUrl: resolved.imageUrl,
-						fallbackUrl: resolved.fallbackUrl
-					};
-				}
 			}
-		})
-	);
+		}
+	});
 
 	return cardImages;
 }

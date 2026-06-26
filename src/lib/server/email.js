@@ -21,7 +21,7 @@ export async function sendPasswordResetEmail(email, resetUrl) {
 
 	try {
 		await resend.emails.send({
-			from: env.EMAIL_FROM || 'AGE <noreply@arcanegamesandevents.com>',
+			from: env.EMAIL_FROM || 'AGE <info@arcanegamesandevents.com>',
 			to: email,
 			subject: 'Reset Your Password - AGE',
 			html: `
@@ -105,7 +105,7 @@ export async function sendPaymentFailedEmail(email, { gracePeriodEnd, updatePaym
 
 	try {
 		await resend.emails.send({
-			from: env.EMAIL_FROM || 'AGE <noreply@arcanegamesandevents.com>',
+			from: env.EMAIL_FROM || 'AGE <info@arcanegamesandevents.com>',
 			to: email,
 			subject: 'Action Required: Payment Failed - AGE',
 			html: `
@@ -117,7 +117,7 @@ export async function sendPaymentFailedEmail(email, { gracePeriodEnd, updatePaym
 						Update Payment Method
 					</a>
 					<p style="color: #666; font-size: 14px;">
-						If you believe this is an error or need assistance, please contact us at support@arcanegamesandevents.com.
+						If you believe this is an error or need assistance, please contact us at info@arcanegamesandevents.com.
 					</p>
 					<hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
 					<p style="color: #999; font-size: 12px;">

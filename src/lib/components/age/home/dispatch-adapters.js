@@ -36,6 +36,25 @@ function eventDay(date) {
 }
 
 /**
+ * Abbreviate a format name for tight surfaces (e.g. the homepage Hub
+ * sidebar). Longer-form names stay as-is so unknown formats still read
+ * with their full name.
+ * @param {string | null | undefined} format
+ * @returns {string}
+ */
+function abbreviateFormat(format) {
+	if (!format) return '';
+	switch (format) {
+		case 'Classic Constructed':
+			return 'CC';
+		case 'Silver Age':
+			return 'SAGE';
+		default:
+			return format;
+	}
+}
+
+/**
  * Build a Mux thumbnail URL for a VOD row.
  * @param {{ muxPlaybackId?: string | null, thumbnailToken?: string | null } | null | undefined} v
  * @returns {string}
@@ -72,77 +91,136 @@ function vodTitle(v) {
 }
 
 /**
- * @param {{ articles?: any[], vods?: any[], events?: any[], podcastInfo?: any, latestPodcastEpisode?: any }} data
+ * Pick the newest "Library" piece of content for the "Latest" row in
+ * the Across AGE digest. Returns null when there's no content.
+ *
+ * Today this means: the newest article. We intentionally exclude the
+ * VOD pool here — every VOD currently in the system is a tournament
+ * backup recording that isn't promoted as Library content. When the
+ * VOD schema grows a "library / featured" flag, expand this to also
+ * accept VODs that carry that flag and compare by publish date.
+ *
+ * @param {any[] | undefined} articles
+ */
+function pickLatestContent(articles) {
+	const a = articles?.[0];
+	if (!a) return null;
+	return { kind: /** @type {const} */ ('article'), src: a };
+}
+
+/**
+ * @param {{ articles?: any[], recentVods?: any[], events?: any[], podcastInfo?: any, latestPodcastEpisode?: any }} data
  */
 export function toFrontData(data) {
-	const lead = data.vods?.[0];
-	const nextEvent = data.events?.[0];
-	const article = data.articles?.[0];
+	const articles = data.articles ?? [];
+	const vods = data.recentVods ?? [];
+	const events = data.events ?? [];
+
+	// "Lead" drives the big featured pane at the top-left of the Front
+	// section (the one labeled "New from AGE" in the vertical gutter).
+	// It should always show Library content — currently that's articles
+	// only. Backup tournament VODs are excluded for the same reason
+	// they're excluded from `pickLatestContent` above. When a "library
+	// video" flag lands on the VOD schema, expand this to consider
+	// flagged VODs alongside articles and pick the newest by date.
+	const article = articles[0];
+
+	// "Latest" — the newest Library article. VODs are excluded here
+	// (see `pickLatestContent` for why).
+	const pick = pickLatestContent(articles);
+	const latest = pick
+		? {
+				type: /** @type {const} */ ('article'),
+				title: pick.src.title,
+				meta: `${pick.src.author?.name || 'AGE Staff'}${
+					pick.src.readTime ? ` · ${pick.src.readTime} min read` : ''
+				}`,
+				image: articleImage(pick.src),
+				href: pick.src.slug ? `/library/${pick.src.slug}` : '/library'
+			}
+		: null;
+
+	// Bonus-match row — the latest VOD. No dedup against `latest`
+	// anymore since `latest` can no longer be a video.
+	const bonusVod = vods[0] ?? null;
+	const bonusMatch = bonusVod
+		? {
+				title: vodTitle(bonusVod),
+				meta:
+					[
+						bonusVod.duration ? formatDuration(bonusVod.duration) : '',
+						bonusVod.event || bonusVod.circuit || 'Bonus match'
+					]
+						.filter(Boolean)
+						.join(' · ') || 'Bonus match',
+				image: muxThumb(bonusVod),
+				duration: bonusVod.duration ? formatDuration(bonusVod.duration) : '',
+				href: '/library'
+			}
+		: null;
+
+	// Next 3 upcoming events. Server already returns them date-asc and
+	// capped at 3, but slice defensively in case the cap changes.
+	// `href` points at the event detail / signup page (`/age-open/[eventId]`)
+	// when an event id is present, falling back to the AGE Open index when
+	// it isn't — so a row always has somewhere to go.
+	//
+	// Title slot is the event title (so each row reads with the
+	// official event name, not the location). The meta slot's second
+	// position uses the event format (CC / Blitz / etc.) instead of
+	// seat counts so the row tells the reader *what* the event is at
+	// a glance rather than how full it is — capacity already lives on
+	// the event detail page.
+	const eventsList = events.slice(0, 3).map((e) => ({
+		...eventDay(e.eventDate),
+		city: e.title || e.location || 'TBD',
+		venue: e.location || '',
+		seats: e.format || '',
+		circuit: circuitSlug(e.circuit),
+		href: e.id ? `/age-open/${e.id}` : '/age-open'
+	}));
+
 	return {
-		lead: lead
+		lead: article
 			? {
-					title: vodTitle(lead),
-					eyebrow: '▶ Featured Match',
-					image: muxThumb(lead),
-					duration: lead.duration ? formatDuration(lead.duration) : '—',
-					stand:
-						lead.description ||
-						`${lead.player1Name || ''} vs ${lead.player2Name || ''}` ||
-						'',
-					event: `${lead.circuit || 'AGE Open'}${lead.month ? ` · ${lead.month}` : ''}`
-				}
-			: {
-					title: article?.title ?? 'AGE Open coverage',
-					eyebrow: 'Cover Story',
+					type: /** @type {const} */ ('article'),
+					title: article.title,
+					eyebrow: article.tags?.[0]?.name || 'Cover Story',
 					image: articleImage(article),
-					duration: article?.readTime ? `${article.readTime} min` : '—',
-					stand: article?.excerpt || '',
-					event: 'Coverage'
-				},
-		watch: lead
-			? {
-					image: muxThumb(lead),
-					title: vodTitle(lead),
-					meta: `${lead.duration ? formatDuration(lead.duration) : ''}${lead.event ? ` · ${lead.event}` : ''}`
+					readTime: article.readTime ? `${article.readTime} min read` : '',
+					author: article.author?.name || 'AGE Staff',
+					stand: article.excerpt || '',
+					event:
+						article.tags?.[0]?.name ||
+						(article.author?.name ? `By ${article.author.name}` : 'Library'),
+					href: article.slug ? `/library/${article.slug}` : '/library',
+					premium: !!article.isPremium
 				}
 			: {
-					image: 'https://www.age.events/banner/studios-banner.webp',
-					title: 'AGE Studios',
-					meta: 'Bonus matches, original series & podcasts'
+					type: /** @type {const} */ ('article'),
+					title: 'AGE Open coverage',
+					eyebrow: 'Cover Story',
+					image: 'https://www.age.events/banner/articles-banner.webp',
+					readTime: '',
+					author: 'AGE Staff',
+					stand: '',
+					event: 'Library',
+					href: '/library',
+					premium: false
 				},
-		event: nextEvent
-			? {
-					...eventDay(nextEvent.eventDate),
-					city: nextEvent.location || nextEvent.title || 'TBD',
-					venue: nextEvent.location || '',
-					seats:
-						nextEvent.playerCap && nextEvent.registeredCount != null
-							? `${nextEvent.registeredCount} / ${nextEvent.playerCap}`
-							: 'Open',
-					circuit: circuitSlug(nextEvent.circuit)
-				}
-			: {
-					day: '--',
-					month: '---',
-					city: 'No upcoming events',
-					venue: '',
-					seats: '',
-					circuit: 'la'
-				},
-		academy: {
-			image: 'https://www.age.events/banner/academy-banner.webp',
-			title: 'Coming soon',
-			progress: 0
-		},
+		latest,
+		events: eventsList,
+		bonusMatch,
 		podcast: data.podcastInfo
 			? {
 					show: data.podcastInfo.name || 'Podcast',
 					ep: data.latestPodcastEpisode?.episodeNumber ?? '—',
 					duration: data.latestPodcastEpisode?.duration
 						? formatDuration(data.latestPodcastEpisode.duration)
-						: '—'
+						: '—',
+					href: '/podcasts'
 				}
-			: { show: 'AGE Podcast', ep: '—', duration: '—' }
+			: { show: 'AGE Podcast', ep: '—', duration: '—', href: '/podcasts' }
 	};
 }
 
@@ -157,68 +235,141 @@ function articleLibraryItem(a) {
 		premium: !!a.isPremium,
 		image: articleImage(a),
 		title: a.title,
+		// `summary` is the excerpt shown beneath the title in card
+		// surfaces like "More to read" — empty string when an article
+		// has no excerpt so the cards collapse cleanly.
+		summary: a.excerpt || '',
 		meta: `${a.author?.name || 'AGE Staff'} · ${a.readTime ? `${a.readTime} min` : '—'}`,
 		href: a.slug ? `/library/${a.slug}` : '/library'
 	};
 }
 
 /**
- * @param {{ articles?: any[], standings?: any[], events?: any[], featuredDecklists?: any[] }} data
+ * Build a library item from a VOD row so the unified "latest" feed can
+ * mix articles + videos cleanly.
+ * @param {any} v
+ */
+function vodLibraryItem(v) {
+	const dur = v?.duration ? formatDuration(v.duration) : '';
+	return {
+		type: /** @type {const} */ ('video'),
+		premium: !!v?.isPremium,
+		image: muxThumb(v),
+		title: vodTitle(v),
+		// summary feeds the big featured preview pane
+		summary:
+			v?.description ||
+			[v?.player1Name || v?.player1Hero, v?.player2Name || v?.player2Hero]
+				.filter(Boolean)
+				.join(' vs ') ||
+			'',
+		event: v?.event || v?.circuit || '',
+		meta: [dur || null, v?.event || v?.circuit || null].filter(Boolean).join(' · '),
+		duration: dur,
+		// VODs don't have a public reader route yet, so link to the
+		// Studios surface as the closest fit. Replace with a per-VOD URL
+		// once that route lands.
+		href: '/studios',
+		publishedAt: v?.publishedAt
+	};
+}
+
+/**
+ * Interleave articles + VODs into a single feed sorted newest-first.
+ * @param {any[]} articles
+ * @param {any[]} vods
+ * @param {number} count
+ */
+function buildLatestFeed(articles, vods, count) {
+	const items = [
+		...articles.map((a) => ({
+			...articleLibraryItem(a),
+			summary: a?.excerpt || '',
+			event: a?.tags?.[0]?.name || '',
+			publishedAt: a?.publishedDate || a?.publishedAt
+		})),
+		...vods.map(vodLibraryItem)
+	];
+	items.sort((a, b) => {
+		const ta = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+		const tb = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+		return tb - ta;
+	});
+	return items.slice(0, count);
+}
+
+/**
+ * @param {{ articles?: any[], recentVods?: any[], standings?: any[], events?: any[], featuredDecklists?: any[] }} data
  */
 export function toHubData(data) {
 	const articles = data.articles ?? [];
+	const vods = data.recentVods ?? [];
 
-	// Article-first Library: featured = first article, queue = next 3,
-	// grid = next 3. The component supports videos in the featured slot,
-	// but we don't have video data, so everything comes from Payload.
-	const feat = articles[0];
-	const featured = feat
-		? {
-				type: /** @type {const} */ ('article'),
-				premium: !!feat.isPremium,
-				image: articleImage(feat),
-				title: feat.title,
-				summary: feat.excerpt || '',
-				event: feat.tags?.[0]?.name || '',
-				meta: `${feat.author?.name || 'AGE Staff'} · ${feat.readTime ? `${feat.readTime} min` : '—'}`,
-				href: feat.slug ? `/library/${feat.slug}` : '/library'
-			}
-		: {
-				type: /** @type {const} */ ('article'),
-				premium: false,
-				image: 'https://www.age.events/banner/articles-banner.webp',
-				title: 'No articles yet',
-				summary: '',
-				event: '',
-				meta: '',
-				href: '/library'
-			};
+	// "Latest in the Library" — interleaved article + video feed, newest
+	// first. The featured preview on the left cycles through these
+	// items; the right column lists all of them as hover/click targets.
+	const LATEST_COUNT = 6;
+	const latest = buildLatestFeed(articles, vods, LATEST_COUNT);
 
-	const queue = articles.slice(1, 4).map(articleLibraryItem);
-	const grid = articles.slice(4, 7).map(articleLibraryItem);
+	// Featured stays as a sensible default so the component renders
+	// even before the cycling state mounts (SSR + first paint).
+	const featured =
+		latest[0] ?? {
+			type: /** @type {const} */ ('article'),
+			premium: false,
+			image: 'https://www.age.events/banner/articles-banner.webp',
+			title: 'No content yet',
+			summary: '',
+			event: '',
+			meta: '',
+			href: '/library'
+		};
+
+	// keys of items already in the latest feed so we don't repeat them
+	// in the follow-on "more to read / more to watch" sections.
+	const latestKeys = new Set(latest.map((i) => `${i.type}:${i.href}:${i.title}`));
+
+	const moreToRead = articles
+		.map(articleLibraryItem)
+		.filter((a) => !latestKeys.has(`article:${a.href}:${a.title}`))
+		.slice(0, 3);
+
+	const moreToWatch = vods
+		.map(vodLibraryItem)
+		.filter((v) => !latestKeys.has(`video:${v.href}:${v.title}`))
+		.slice(0, 3);
 
 	return {
 		featured,
-		queue,
-		grid,
+		latest,
+		moreToRead,
+		moreToWatch,
+		// Legacy keys kept as harmless fallbacks for any other consumers.
+		queue: latest.slice(1, 4),
+		grid: moreToRead.slice(0, 3),
 		standings: (data.standings ?? []).slice(0, 5).map((s) => ({
 			rank: s.rank ?? 0,
 			name: s.playerName,
 			points: s.totalPoints || 0
 		})),
+		// Sidebar event rows. Title slot is the event title (matches the
+		// Across AGE treatment); the format renders as an inline chip
+		// next to the title (abbreviated — "Classic Constructed" →
+		// "CC", "Silver Age" → "SAGE") so the meta line is left clean
+		// for the venue alone.
 		events: (data.events ?? []).slice(0, 4).map((e) => ({
 			...eventDay(e.eventDate),
-			city: e.location || e.title || 'TBD',
-			format: e.format || 'CC',
+			city: e.title || e.location || 'TBD',
+			format: abbreviateFormat(e.format) || 'CC',
 			venue: e.location || '',
-			seats:
-				e.playerCap && e.registeredCount != null
-					? `${e.registeredCount} / ${e.playerCap}`
-					: 'Open',
+			seats: '',
 			status: /** @type {const} */ (
 				e.playerCap && e.registeredCount >= e.playerCap ? 'closed' : 'open'
 			),
-			circuit: circuitSlug(e.circuit)
+			circuit: circuitSlug(e.circuit),
+			// Link the row to the event detail / signup page when we have
+			// an event id; otherwise fall through to the AGE Open index.
+			href: e.id ? `/age-open/${e.id}` : '/age-open'
 		})),
 		decklists: (data.featuredDecklists ?? []).slice(0, 3).map((d) => ({
 			image:

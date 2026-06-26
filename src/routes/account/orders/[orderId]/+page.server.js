@@ -137,7 +137,7 @@ export const actions = {
 						if (hoursUntilEvent <= 24) {
 							return fail(400, {
 								error:
-									'Self-service refunds are not available within 24 hours of the event. Please contact us at support@arcanegamesandevents.com for assistance.'
+									'Self-service refunds are not available within 24 hours of the event. Please contact us at info@arcanegamesandevents.com for assistance.'
 							});
 						}
 					}

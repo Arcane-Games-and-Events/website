@@ -1,438 +1,598 @@
+<script>
+	import AgeShell from '$lib/components/age/AgeShell.svelte';
+
+	// ============ placeholder data ============
+	// Academy launches with the rest of the editorial site; until the
+	// courses CMS is wired, the markup runs on these realistic-looking
+	// placeholder objects so the page reads complete. Swap the arrays
+	// for loaded data once the backend is ready — the templates below
+	// already take the shapes we'll ship.
+
+	const STATS = [
+		{ n: '38', l: 'Courses' },
+		{ n: '410+', l: 'Lessons' },
+		{ n: '12k', l: 'Learners' }
+	];
+
+	// Current learner's in-progress course (drives the "Continue Learning" card)
+	const CURRENT = {
+		title: 'Reading the Board: Decision-Making in CC',
+		level: 'Intermediate',
+		lessons: 14,
+		progress: 42,
+		coverImage: 'https://www.age.events/banner/academy-banner.webp',
+		syllabus: [
+			{ title: 'What tempo actually means', done: true, time: '6 min' },
+			{ title: 'Counting cards & blocking math', done: true, time: '9 min' },
+			{ title: 'When to go wide vs. tall', now: true, time: '8 min' },
+			{ title: 'Arsenal as a tempo tool', time: '7 min' }
+		]
+	};
+
+	const TRACKS = [
+		{
+			title: 'Fundamentals',
+			body: 'Pitch math, blocking calculus, and tempo — the foundation every competitive player needs.',
+			courses: 6,
+			color: '#2F7D46'
+		},
+		{
+			title: 'Competitive Calling',
+			body: 'Sideboarding, hero matchups, and tournament prep for AGE Open contenders.',
+			courses: 9,
+			color: '#16489E'
+		},
+		{
+			title: 'Format Mastery',
+			body: 'Deep dives by format — Classic Constructed, Blitz, Living Legend, and Sealed.',
+			courses: 12,
+			color: '#C0461F'
+		}
+	];
+
+	const COURSES = [
+		{
+			title: 'Punishing the Mirror',
+			level: 'Advanced',
+			lessons: 9,
+			minutes: 84,
+			rating: 4.9,
+			students: 1840,
+			progress: 0,
+			free: false,
+			price: 24,
+			image: 'https://www.age.events/banner/articles-banner.webp'
+		},
+		{
+			title: 'Reading the Board: Decision-Making in CC',
+			level: 'Intermediate',
+			lessons: 14,
+			minutes: 126,
+			rating: 4.8,
+			students: 3210,
+			progress: 42,
+			free: false,
+			price: 32,
+			image: 'https://www.age.events/banner/academy-banner.webp'
+		},
+		{
+			title: 'Sideboarding for Sealed',
+			level: 'Beginner',
+			lessons: 7,
+			minutes: 48,
+			rating: 4.7,
+			students: 2470,
+			progress: 0,
+			free: true,
+			price: 0,
+			image: 'https://www.age.events/banner/studios-banner.webp'
+		},
+		{
+			title: 'Tempo & Tempo Loss',
+			level: 'Intermediate',
+			lessons: 11,
+			minutes: 92,
+			rating: 4.9,
+			students: 1990,
+			progress: 100,
+			free: false,
+			price: 28,
+			image: 'https://www.age.events/banner/age-open-banner.webp'
+		},
+		{
+			title: 'Mulligan Theory',
+			level: 'Beginner',
+			lessons: 5,
+			minutes: 34,
+			rating: 4.6,
+			students: 4120,
+			progress: 0,
+			free: true,
+			price: 0,
+			image: 'https://www.age.events/hero_images/prism-awakener-of-sol.webp'
+		},
+		{
+			title: 'Calling the Bluff — Reads & Tells',
+			level: 'Advanced',
+			lessons: 8,
+			minutes: 71,
+			rating: 4.9,
+			students: 920,
+			progress: 18,
+			free: false,
+			price: 36,
+			image: 'https://www.age.events/hero_images/arakni-marionette.webp'
+		}
+	];
+
+	const VODS = [
+		{
+			title: 'The LA Open final, in full',
+			meta: '58 min · AGE Studios · LA Open',
+			image: 'https://www.age.events/banner/age-open-banner.webp',
+			duration: '58:00'
+		},
+		{
+			title: 'How Wesley netdecked Memphis',
+			meta: '34 min · Deck Tech · Wesley Dong',
+			image: 'https://www.age.events/banner/articles-banner.webp',
+			duration: '34:18'
+		},
+		{
+			title: 'Behind the booth — Top 8 of NE',
+			meta: '21 min · AGE Studios · NE Open',
+			image: 'https://www.age.events/banner/studios-banner.webp',
+			duration: '21:42'
+		}
+	];
+
+	const ARTICLES = [
+		{
+			title: 'They Reminisce Over You',
+			author: 'Wesley Dong',
+			read: '31 min read',
+			premium: true
+		},
+		{
+			title: "Sideboarding for the Calling — what's changing in 2026",
+			author: 'Marco Marcelli',
+			read: '12 min read',
+			premium: false
+		},
+		{
+			title: 'The case for slow Briar in Classic Constructed',
+			author: 'Justin Liwag',
+			read: '18 min read',
+			premium: true
+		},
+		{
+			title: 'Counting cards: tempo math that actually matters',
+			author: 'AGE Studios',
+			read: '9 min read',
+			premium: false
+		}
+	];
+
+	// progress-ring math for the Continue Learning card — computed
+	// once since CURRENT is static placeholder data
+	const RING_R = 24;
+	const RING_C = 2 * Math.PI * RING_R;
+	const RING_OFFSET = RING_C * (1 - CURRENT.progress / 100);
+</script>
+
 <svelte:head>
-	<title>Academy - AGE</title>
+	<title>Academy — AGE</title>
 	<meta
 		name="description"
-		content="Learn from the best Flesh and Blood players. AGE Academy - a curated marketplace of courses from top competitive players."
+		content="A structured course platform built with the players who define the format. Buy a course once and it's yours for life — Premium members get every author update."
 	/>
 </svelte:head>
 
-<div class="min-h-screen">
-	<!-- Hero Section -->
-	<section class="relative overflow-hidden bg-gray-900">
-		<!-- Background gradients -->
+<AgeShell active="Academy">
+	<!-- ============ HERO + CONTINUE LEARNING ============ -->
+	<section class="border-ink border-b-[3px] border-double">
 		<div
-			class="absolute inset-0 bg-gradient-to-br from-purple-900/40 via-gray-900 to-gray-900"
-		></div>
-		<div
-			class="absolute inset-0 bg-gradient-to-r from-gray-900/80 via-gray-900/40 to-transparent"
-		></div>
-
-		<!-- Decorative elements -->
-		<div
-			class="absolute top-0 right-0 h-[600px] w-[600px] translate-x-1/4 -translate-y-1/2 rounded-full bg-gradient-to-bl from-purple-500/30 to-violet-600/20 opacity-40 blur-3xl"
-		></div>
-		<div
-			class="absolute bottom-0 left-1/4 hidden h-96 w-96 rounded-full bg-gradient-to-t from-purple-500/20 to-violet-500/10 opacity-30 blur-3xl md:block"
-		></div>
-		<div
-			class="absolute top-1/2 left-0 h-72 w-72 rounded-full bg-gradient-to-r from-blue-500/20 to-cyan-500/10 opacity-20 blur-3xl"
-		></div>
-
-		<!-- Grid pattern overlay -->
-		<div
-			class="absolute inset-0 bg-[linear-gradient(rgba(139,92,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(139,92,246,0.03)_1px,transparent_1px)] bg-[size:50px_50px]"
-		></div>
-
-		<div class="relative z-10 px-4 py-16 md:px-8 md:py-24 lg:px-12 lg:py-32">
-			<div class="mx-auto max-w-5xl text-center">
-				<!-- Coming Soon Badge -->
-				<div
-					class="mb-6 inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/10 px-4 py-2 backdrop-blur-sm"
-				>
-					<span class="relative flex h-2 w-2">
-						<span
-							class="absolute inline-flex h-full w-full animate-ping rounded-full bg-purple-400 opacity-75"
-						></span>
-						<span class="relative inline-flex h-2 w-2 rounded-full bg-purple-500"></span>
-					</span>
-					<span class="text-sm font-semibold tracking-wider text-purple-300 uppercase"
-						>Coming Soon</span
-					>
+			class="mx-auto grid w-full max-w-[min(94vw,1920px)] grid-cols-1 items-center gap-10 px-14 pt-[50px] pb-[52px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-12"
+		>
+			<!-- left: copy + stats -->
+			<div>
+				<div class="mb-4 inline-flex items-center gap-[10px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase before:block before:h-[2px] before:w-[22px] before:content-['']" style="color: #C8922E;">
+					<span class="block h-[2px] w-[22px]" style="background-color: #C8922E;"></span>
+					AGE Academy
 				</div>
-
-				<!-- Main Heading -->
-				<h1 class="mb-4 text-4xl font-bold text-white md:text-5xl lg:text-6xl">AGE Academy</h1>
-				<p
-					class="mb-6 bg-gradient-to-r from-purple-400 via-violet-400 to-purple-400 bg-clip-text text-2xl font-semibold text-transparent md:text-3xl lg:text-4xl"
-				>
-					Learn from the Best
+				<h1 class="font-newsreader text-[clamp(46px,5.5vw,62px)] leading-[0.96] font-semibold tracking-[-0.02em]">
+					Master the game, one
+					<em class="text-[#C8922E] italic font-medium">lesson</em>
+					at a time.
+				</h1>
+				<p class="text-soft mt-5 max-w-[500px] text-[18px] leading-[1.6]">
+					A structured course platform built with the players who define the format. Buy a course
+					once and it's yours for life — Premium members get the author's regular updates as the
+					game evolves.
 				</p>
-
-				<!-- Description -->
-				<p class="mx-auto mb-10 max-w-3xl text-lg leading-relaxed text-gray-300 md:text-xl">
-					A curated marketplace featuring exclusive courses from the top Flesh and Blood players in
-					the world. Master your game with structured lessons, pro strategies, and insider knowledge
-					from competitive champions.
-				</p>
-
-				<!-- Stats/Features Row -->
-				<div class="flex flex-wrap justify-center gap-6 md:gap-12">
-					<div class="flex items-center gap-3">
-						<div
-							class="flex h-12 w-12 items-center justify-center rounded-xl border border-purple-500/30 bg-purple-500/20"
-						>
-							<svg
-								class="h-6 w-6 text-purple-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-								/>
-							</svg>
-						</div>
-						<div class="text-left">
-							<p class="text-sm text-gray-400">Curated</p>
-							<p class="font-semibold text-white">Pro Courses</p>
-						</div>
-					</div>
-					<div class="flex items-center gap-3">
-						<div
-							class="flex h-12 w-12 items-center justify-center rounded-xl border border-violet-500/30 bg-violet-500/20"
-						>
-							<svg
-								class="h-6 w-6 text-violet-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-								/>
-							</svg>
-						</div>
-						<div class="text-left">
-							<p class="text-sm text-gray-400">World-Class</p>
-							<p class="font-semibold text-white">Instructors</p>
-						</div>
-					</div>
-					<div class="flex items-center gap-3">
-						<div
-							class="flex h-12 w-12 items-center justify-center rounded-xl border border-blue-500/30 bg-blue-500/20"
-						>
-							<svg
-								class="h-6 w-6 text-blue-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-								/>
-							</svg>
-						</div>
-						<div class="text-left">
-							<p class="text-sm text-gray-400">Proven</p>
-							<p class="font-semibold text-white">Strategies</p>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</section>
-
-	<!-- What is Academy Section -->
-	<section class="relative bg-gray-950 py-16 md:py-24">
-		<div class="absolute inset-0 bg-gradient-to-b from-gray-900/50 to-transparent"></div>
-
-		<div class="relative z-10 px-4 md:px-8 lg:px-12">
-			<div class="mx-auto max-w-6xl">
-				<div class="mb-12 text-center">
-					<h2 class="mb-4 text-3xl font-bold text-white md:text-4xl">What is AGE Academy?</h2>
-					<p class="mx-auto max-w-3xl text-lg text-gray-400">
-						More than just tutorials — a premium learning platform where competitive excellence
-						meets structured education.
-					</p>
-				</div>
-
-				<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-					<!-- Card 1 -->
-					<div
-						class="group relative overflow-hidden rounded-2xl border border-gray-800 bg-gradient-to-br from-gray-900 to-gray-950 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10"
+				<div class="mt-7 flex flex-wrap gap-3">
+					<a
+						href="#catalog"
+						class="inline-flex items-center gap-2 border-[1.5px] px-5 py-[13px] text-[12px] font-bold tracking-[0.05em] text-white uppercase transition-[filter] hover:brightness-110"
+						style="background-color: #C8922E; border-color: #C8922E;"
 					>
-						<div
-							class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-						></div>
-						<div
-							class="absolute top-0 right-0 h-32 w-32 rounded-full bg-purple-500/10 opacity-0 blur-2xl transition-opacity group-hover:opacity-100"
-						></div>
-
-						<div class="relative">
-							<div
-								class="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 shadow-lg shadow-purple-500/30 transition-transform group-hover:scale-110"
-							>
-								<svg
-									class="h-7 w-7 text-white"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-									/>
-								</svg>
-							</div>
-							<h3 class="mb-3 text-xl font-bold text-white">Elite Instructors</h3>
-							<p class="leading-relaxed text-gray-400">
-								Learn directly from Pro Tour champions, World Championship competitors, and the most
-								accomplished players in Flesh and Blood history.
-							</p>
-						</div>
-					</div>
-
-					<!-- Card 2 -->
-					<div
-						class="group relative overflow-hidden rounded-2xl border border-gray-800 bg-gradient-to-br from-gray-900 to-gray-950 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-violet-500/50 hover:shadow-lg hover:shadow-violet-500/10"
+						Start learning — free
+					</a>
+					<a
+						href="#catalog"
+						class="border-ink text-ink hover:bg-ink hover:text-paper-bg inline-flex items-center gap-2 border-[1.5px] bg-transparent px-5 py-[13px] text-[12px] font-bold tracking-[0.05em] uppercase transition-colors"
 					>
-						<div
-							class="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-						></div>
-						<div
-							class="absolute top-0 right-0 h-32 w-32 rounded-full bg-violet-500/10 opacity-0 blur-2xl transition-opacity group-hover:opacity-100"
-						></div>
-
-						<div class="relative">
-							<div
-								class="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/30 transition-transform group-hover:scale-110"
-							>
-								<svg
-									class="h-7 w-7 text-white"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-									/>
-								</svg>
-							</div>
-							<h3 class="mb-3 text-xl font-bold text-white">Structured Curriculum</h3>
-							<p class="leading-relaxed text-gray-400">
-								No random videos — complete courses with progressive lessons, practical exercises,
-								and clear learning paths from beginner to expert.
-							</p>
-						</div>
-					</div>
-
-					<!-- Card 3 -->
-					<div
-						class="group relative overflow-hidden rounded-2xl border border-gray-800 bg-gradient-to-br from-gray-900 to-gray-950 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10"
-					>
-						<div
-							class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-						></div>
-						<div
-							class="absolute top-0 right-0 h-32 w-32 rounded-full bg-blue-500/10 opacity-0 blur-2xl transition-opacity group-hover:opacity-100"
-						></div>
-
-						<div class="relative">
-							<div
-								class="mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 shadow-lg shadow-blue-500/30 transition-transform group-hover:scale-110"
-							>
-								<svg
-									class="h-7 w-7 text-white"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-									/>
-								</svg>
-							</div>
-							<h3 class="mb-3 text-xl font-bold text-white">Curated Quality</h3>
-							<p class="leading-relaxed text-gray-400">
-								Every course is vetted for quality. We only partner with proven players who can
-								truly help you level up your competitive game.
-							</p>
-						</div>
-					</div>
+						Browse catalog
+					</a>
 				</div>
-			</div>
-		</div>
-	</section>
-
-	<!-- Course Topics Preview -->
-	<section class="relative bg-gray-950 py-16 md:py-24">
-		<div class="px-4 md:px-8 lg:px-12">
-			<div class="mx-auto max-w-6xl">
-				<div class="mb-12 text-center">
-					<h2 class="mb-4 text-3xl font-bold text-white md:text-4xl">Course Topics</h2>
-					<p class="mx-auto max-w-2xl text-lg text-gray-400">
-						Deep-dive courses covering every aspect of competitive Flesh and Blood
-					</p>
-				</div>
-
-				<div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-					{#each [{ name: 'Deck Building', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10', color: 'purple' }, { name: 'Hero Mastery', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z', color: 'violet' }, { name: 'Matchup Theory', icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z', color: 'blue' }, { name: 'Sideboarding', icon: 'M4 6h16M4 10h16M4 14h16M4 18h16', color: 'cyan' }, { name: 'Tournament Prep', icon: 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z', color: 'green' }, { name: 'Meta Analysis', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', color: 'amber' }, { name: 'Card Evaluation', icon: 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01', color: 'orange' }, { name: 'Mental Game', icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', color: 'pink' }] as topic}
-						{@const colors = {
-							purple: 'border-purple-500/30 bg-purple-500/10 text-purple-400',
-							violet: 'border-violet-500/30 bg-violet-500/10 text-violet-400',
-							blue: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
-							cyan: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-400',
-							green: 'border-green-500/30 bg-green-500/10 text-green-400',
-							amber: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
-							orange: 'border-orange-500/30 bg-orange-500/10 text-orange-400',
-							pink: 'border-pink-500/30 bg-pink-500/10 text-pink-400'
-						}}
-						<div
-							class="group rounded-xl border {colors[
-								topic.color
-							]} p-4 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-						>
-							<div class="flex items-center gap-3">
-								<svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d={topic.icon}
-									/>
-								</svg>
-								<span class="text-sm font-medium text-white">{topic.name}</span>
+				<div class="border-line2 mt-[34px] flex flex-wrap gap-x-8 gap-y-4 border-t pt-[18px]">
+					{#each STATS as st, i (st.l)}
+						<div class="border-line2 {i === STATS.length - 1 ? '' : 'border-r'} pr-8">
+							<div class="font-newsreader text-[38px] leading-[0.85] font-semibold tabular-nums">
+								{st.n}
+							</div>
+							<div class="text-fade mt-2 text-[11px] font-extrabold tracking-[0.1em] uppercase">
+								{st.l}
 							</div>
 						</div>
 					{/each}
 				</div>
 			</div>
+
+			<!-- right: Continue Learning card -->
+			<aside
+				class="bg-paper p-[26px]"
+				style="border: 1px solid var(--ed-line2); border-top: 3px solid #C8922E;"
+			>
+				<div class="text-fade mb-4 text-[10.5px] font-extrabold tracking-[0.16em] uppercase">
+					Continue learning
+				</div>
+
+				<!-- course header -->
+				<div class="mb-5 flex items-center gap-4">
+					<div
+						class="border-line2 bg-panel h-[76px] w-[104px] flex-shrink-0 border bg-cover bg-center"
+						style="background-image: url('{CURRENT.coverImage}');"
+					></div>
+					<div class="min-w-0 flex-1">
+						<div class="text-[10px] font-extrabold tracking-[0.08em] uppercase" style="color: #C8922E;">
+							{CURRENT.level}
+						</div>
+						<h3 class="font-newsreader text-[23px] leading-[1.05] font-semibold tracking-[-0.01em] mt-[5px]">
+							{CURRENT.title}
+						</h3>
+						<div class="text-fade mt-[5px] text-[12px] font-bold">
+							Lesson 3 of {CURRENT.lessons}
+						</div>
+					</div>
+					<!-- progress ring -->
+					<svg width="56" height="56" viewBox="0 0 56 56" class="flex-shrink-0">
+						<circle
+							cx="28"
+							cy="28"
+							r="24"
+							fill="none"
+							stroke="rgba(146,139,121,0.3)"
+							stroke-width="6"
+						/>
+						<circle
+							cx="28"
+							cy="28"
+							r="24"
+							fill="none"
+							stroke="#C8922E"
+							stroke-width="6"
+							stroke-linecap="round"
+							stroke-dasharray={RING_C}
+							stroke-dashoffset={RING_OFFSET}
+							transform="rotate(-90 28 28)"
+						/>
+						<text
+							x="50%"
+							y="53%"
+							dominant-baseline="middle"
+							text-anchor="middle"
+							class="text-ink font-libre"
+							style="font-size: 13px; font-weight: 800; fill: currentColor;"
+						>
+							{CURRENT.progress}%
+						</text>
+					</svg>
+				</div>
+
+				<!-- syllabus -->
+				<div>
+					{#each CURRENT.syllabus as item, i (i)}
+						<div
+							class="border-line flex items-center gap-3 border-t py-[11px] text-[14px] {item.done
+								? ''
+								: item.now
+									? 'font-extrabold'
+									: 'font-semibold'} {i === 0 ? '!border-t border-[#C7BFA9]' : ''}"
+							style={item.now ? 'color: #C8922E;' : ''}
+						>
+							<span
+								class="flex h-[21px] w-[21px] flex-shrink-0 items-center justify-center rounded-full border-[1.5px] text-[10px] font-extrabold"
+								style={item.done
+									? 'background-color: var(--ed-prem); border-color: var(--ed-prem); color: white;'
+									: item.now
+										? 'border-color: #C8922E; color: #C8922E;'
+										: 'border-color: var(--ed-line2); color: var(--ed-fade);'}
+							>
+								{item.done ? '✓' : item.now ? '▶' : i + 1}
+							</span>
+							<span>{item.title}</span>
+							<span class="text-fade ml-auto text-[12px] font-bold">{item.time}</span>
+						</div>
+					{/each}
+				</div>
+
+				<a
+					href="#catalog"
+					class="mt-5 inline-flex w-full items-center justify-center gap-2 border-[1.5px] px-5 py-[12px] text-[12px] font-bold tracking-[0.05em] text-white uppercase transition-[filter] hover:brightness-110"
+					style="background-color: #C8922E; border-color: #C8922E;"
+				>
+					Resume lesson →
+				</a>
+			</aside>
 		</div>
 	</section>
 
-	<!-- Become an Instructor CTA -->
-	<section class="relative overflow-hidden bg-gray-950 py-16 md:py-24">
-		<!-- Background decoration -->
-		<div
-			class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-900/10 to-transparent"
-		></div>
-		<div
-			class="absolute top-1/2 left-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-purple-500/10 via-violet-500/10 to-purple-500/10 blur-3xl"
-		></div>
-
-		<div class="relative z-10 px-4 md:px-8 lg:px-12">
-			<div class="mx-auto max-w-4xl">
-				<div
-					class="relative overflow-hidden rounded-3xl border border-purple-500/30 bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900 p-8 md:p-12"
-				>
-					<!-- Inner glow -->
-					<div
-						class="absolute top-0 right-0 h-64 w-64 rounded-full bg-purple-500/20 blur-3xl"
-					></div>
-					<div
-						class="absolute bottom-0 left-0 h-48 w-48 rounded-full bg-violet-500/20 blur-3xl"
-					></div>
-
-					<div class="relative z-10 text-center">
-						<div
-							class="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2"
-						>
-							<svg
-								class="h-4 w-4 text-amber-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"
-								/>
-							</svg>
-							<span class="text-sm font-semibold tracking-wider text-amber-300 uppercase"
-								>For Content Creators</span
-							>
-						</div>
-
-						<h2 class="mb-4 text-3xl font-bold text-white md:text-4xl">Become an Instructor</h2>
-						<p class="mx-auto mb-8 max-w-2xl text-lg leading-relaxed text-gray-300">
-							Are you a competitive Flesh and Blood player with knowledge to share? We're building a
-							roster of elite instructors for our launch. Join us and reach thousands of players
-							looking to improve their game.
-						</p>
-
-						<a
-							href="mailto:info@age.events?subject=Academy%20Instructor%20Interest"
-							class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-500 to-violet-600 px-8 py-4 font-semibold text-white shadow-lg shadow-purple-500/30 transition-all duration-300 hover:scale-105 hover:shadow-purple-500/50"
-						>
-							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-								/>
-							</svg>
-							Get in Touch
-						</a>
+	<!-- ============ TRACKS ============ -->
+	<section class="border-ink border-b-[3px] border-double">
+		<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[46px] pb-[22px]">
+			<div class="flex flex-wrap items-end justify-between gap-5">
+				<div>
+					<div class="mb-[9px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase" style="color: #C8922E;">
+						Guided paths
 					</div>
+					<h2 class="font-newsreader text-[38px] font-semibold leading-none tracking-[-0.02em]">
+						Learning tracks
+					</h2>
+					<p class="text-soft mt-2 max-w-[520px] text-[14px] leading-[1.5]">
+						Sequenced courses that take you from one milestone to the next.
+					</p>
 				</div>
+				<a href="#catalog" class="text-[11px] font-extrabold tracking-[0.07em] whitespace-nowrap uppercase" style="color: #C8922E;">
+					All tracks →
+				</a>
+			</div>
+		</div>
+
+		<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 pb-[46px]">
+			<div class="border-line2 grid grid-cols-1 gap-[1px] border bg-[#C7BFA9] md:grid-cols-3">
+				{#each TRACKS as track, i (track.title)}
+					<a
+						href="#catalog"
+						class="bg-paper-bg hover:bg-paper group flex min-h-[180px] flex-col px-7 py-7 transition-colors"
+						style="border-top: 4px solid {track.color};"
+					>
+						<div
+							class="font-archivo text-[30px] leading-[0.8] font-black tracking-[-0.02em] tabular-nums"
+							style="color: {track.color};"
+						>
+							{String(i + 1).padStart(2, '0')}
+						</div>
+						<h3 class="font-newsreader mt-4 mb-[9px] text-[24px] font-semibold leading-[1.1]">
+							{track.title}
+						</h3>
+						<p class="text-soft m-0 mb-auto max-w-[280px] text-[13.5px] leading-[1.5]">
+							{track.body}
+						</p>
+						<div
+							class="mt-5 text-[11px] font-extrabold tracking-[0.06em] uppercase"
+							style="color: {track.color};"
+						>
+							{track.courses} courses →
+						</div>
+					</a>
+				{/each}
 			</div>
 		</div>
 	</section>
 
-	<!-- Stay Updated Section -->
-	<section class="relative border-t border-gray-800 bg-gray-950 py-16 md:py-24">
-		<div class="px-4 md:px-8 lg:px-12">
-			<div class="mx-auto max-w-3xl text-center">
-				<div
-					class="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2"
-				>
-					<svg class="h-4 w-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-						/>
-					</svg>
-					<span class="text-sm font-semibold tracking-wider text-blue-300 uppercase"
-						>Be First to Know</span
-					>
+	<!-- ============ CATALOG ============ -->
+	<section id="catalog" class="border-ink border-b-[3px] border-double">
+		<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[46px] pb-[22px]">
+			<div class="flex flex-wrap items-end justify-between gap-5">
+				<div>
+					<div class="mb-[9px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase" style="color: #C8922E;">
+						Course catalog
+					</div>
+					<h2 class="font-newsreader text-[38px] font-semibold leading-none tracking-[-0.02em]">
+						Start anywhere
+					</h2>
+					<p class="text-soft mt-2 max-w-[520px] text-[14px] leading-[1.5]">
+						Free and paid courses across every skill level — buy once, own for life, and your
+						progress is saved as you go.
+					</p>
 				</div>
+				<a href="#catalog" class="text-[11px] font-extrabold tracking-[0.07em] whitespace-nowrap uppercase" style="color: #C8922E;">
+					Filter &amp; browse →
+				</a>
+			</div>
+		</div>
 
-				<h2 class="mb-4 text-3xl font-bold text-white md:text-4xl">Get Early Access</h2>
-				<p class="mb-8 text-lg text-gray-400">
-					Premium members will get first access to Academy courses and exclusive launch discounts.
-				</p>
+		<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 pb-[46px]">
+			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+				{#each COURSES as c (c.title)}
+					<a
+						href="#catalog"
+						class="border-line2 bg-paper-bg group hover:border-ink flex flex-col border transition-colors"
+					>
+						<div
+							class="border-line2 relative h-[150px] border-b bg-cover bg-center"
+							style="background-image: url('{c.image}');"
+						>
+							<span class="bg-paper-bg text-ink absolute top-[11px] left-[11px] px-[9px] py-[4px] text-[9.5px] font-extrabold tracking-[0.07em] uppercase">
+								{c.level}
+							</span>
+							{#if c.free}
+								<span
+									class="bg-prem absolute top-[11px] right-[11px] px-[9px] py-[4px] text-[9.5px] font-extrabold tracking-[0.05em] text-white uppercase"
+								>
+									Free
+								</span>
+							{/if}
+						</div>
+						<div class="flex flex-1 flex-col px-5 py-[20px]">
+							<h4 class="font-newsreader group-hover:text-[#C8922E] text-[21px] leading-[1.06] font-semibold transition-colors mb-2">
+								{c.title}
+							</h4>
+							<div class="text-fade mb-[14px] flex gap-2 text-[12px] font-bold">
+								<span>{c.lessons} lessons · {c.minutes} min</span>
+								<span style="color: #C8922E;">★ {c.rating}</span>
+							</div>
+							<div class="bg-line mt-auto h-[5px] overflow-hidden">
+								<span
+									class="block h-full"
+									style="width: {c.progress}%; background-color: #C8922E;"
+								></span>
+							</div>
+							<div class="text-soft mt-[10px] flex items-center justify-between text-[11px] font-extrabold tracking-[0.04em] uppercase">
+								<span>
+									{c.progress === 100
+										? 'Completed'
+										: c.progress > 0
+											? `${c.progress}% complete`
+											: `${c.students.toLocaleString()} enrolled`}
+								</span>
+								<span style="color: #C8922E;">
+									{c.free ? 'Free' : `$${c.price}`}
+								</span>
+							</div>
+						</div>
+					</a>
+				{/each}
+			</div>
+		</div>
+	</section>
+
+	<!--
+		WATCH + READ — the two-column split now sits inside the same
+		`max-w-[min(94vw,1920px)]` cap as the hero and the rest of the
+		sections, so the columns line up with the page's content gutter
+		on wide screens instead of stretching to the viewport edges.
+	-->
+	<section class="border-ink border-b-[3px] border-double">
+		<div
+			class="mx-auto grid w-full max-w-[min(94vw,1920px)] grid-cols-1 px-14 lg:grid-cols-2"
+		>
+			<!-- watch -->
+			<div class="border-line2 py-[40px] lg:border-r lg:pr-12">
+			<div class="mb-6 flex items-baseline justify-between">
+				<h3 class="font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
+					Watch to learn
+				</h3>
+				<a href="/studios" class="text-[11px] font-extrabold tracking-[0.06em] uppercase" style="color: #C8922E;">
+					AGE Studios →
+				</a>
+			</div>
+			{#each VODS as v, i (v.title)}
+				<a
+					href="/studios"
+					class="border-line group flex items-center gap-[15px] border-t py-[14px] first:border-t-0 first:pt-0"
+				>
+					<div
+						class="border-line2 bg-panel relative h-[72px] w-[124px] flex-shrink-0 border bg-cover bg-center"
+						style="background-image: url('{v.image}');"
+					>
+						<span
+							class="absolute top-1/2 left-1/2 flex h-[30px] w-[30px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-paper-bg/90 text-[11px] text-ink"
+							aria-hidden="true"
+						>
+							▶
+						</span>
+						<span class="absolute right-[5px] bottom-[5px] bg-black/80 px-[5px] py-[1px] text-[9.5px] font-bold text-white">
+							{v.duration}
+						</span>
+					</div>
+					<div>
+						<h4 class="font-newsreader text-[17px] leading-[1.12] font-semibold group-hover:text-[#C8922E] transition-colors">
+							{v.title}
+						</h4>
+						<div class="text-fade mt-[5px] text-[11px] font-bold">
+							{v.meta}
+						</div>
+					</div>
+				</a>
+			{/each}
+		</div>
+
+		<!-- read -->
+		<div class="py-[40px] lg:pl-12">
+			<div class="mb-6 flex items-baseline justify-between">
+				<h3 class="font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
+					Read to improve
+				</h3>
+				<a href="/library" class="text-[11px] font-extrabold tracking-[0.06em] uppercase" style="color: #C8922E;">
+					All articles →
+				</a>
+			</div>
+			{#each ARTICLES as a, i (a.title)}
+				<a
+					href="/library"
+					class="border-line group grid grid-cols-[1fr_auto] items-start gap-[14px] border-t py-[14px] first:border-t-0 first:pt-0"
+				>
+					<div>
+						<h4 class="font-newsreader text-[18px] leading-[1.1] font-semibold group-hover:text-warm transition-colors">
+							{a.title}
+						</h4>
+						<div class="text-fade mt-[6px] text-[11px] font-bold tracking-[0.04em] uppercase">
+							{a.author} · {a.read}
+						</div>
+					</div>
+					<span
+						class="text-[9.5px] font-extrabold tracking-[0.07em] uppercase px-[8px] py-[3px]"
+						style={a.premium
+							? 'background-color: var(--ed-prem); color: white;'
+							: 'border: 1px solid var(--ed-line2); color: var(--ed-soft);'}
+					>
+						{a.premium ? 'Premium' : 'Free'}
+					</span>
+				</a>
+			{/each}
+		</div>
+		</div>
+	</section>
+
+	<!-- ============ PLEDGE BAND ============ -->
+	<section class="px-14 py-[44px]">
+		<div class="mx-auto w-full max-w-[min(94vw,1920px)]">
+			<div
+				class="bg-ink text-paper-bg relative flex flex-wrap items-center justify-between gap-11 overflow-hidden px-14 py-[52px]"
+			>
+				<!-- gold ring ornament -->
+				<div
+					class="pointer-events-none absolute -top-[90px] -right-[90px] h-[300px] w-[300px] rounded-full"
+					style="border: 42px solid rgba(200, 146, 46, 0.16);"
+					aria-hidden="true"
+				></div>
+
+				<div class="relative z-[1] max-w-[680px]">
+					<div class="mb-3 text-[10.5px] font-extrabold tracking-[0.18em] uppercase" style="color: #F4C66A;">
+						Premium · Always up to date
+					</div>
+					<h2 class="font-newsreader text-[40px] leading-[1.05] font-semibold tracking-[-0.01em] text-white">
+						Your courses, kept
+						<em class="font-medium italic" style="color: #F4C66A;">current</em>
+						— for as long as you play.
+					</h2>
+					<p class="mt-[14px] max-w-[560px] text-[14.5px] leading-[1.55]" style="color: #C7BFA9;">
+						Every course is yours to keep the day you buy it. Premium members get the authors'
+						regular updates on top — new lines, fresh matchups, and meta calls added as the
+						format moves, at no extra cost.
+					</p>
+				</div>
 
 				<a
 					href="/premium"
-					class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-8 py-4 font-semibold text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-105 hover:shadow-blue-500/50"
+					class="relative z-[1] inline-flex flex-shrink-0 items-center gap-2 border-[1.5px] px-7 py-[14px] text-[13px] font-bold tracking-[0.05em] uppercase transition-[filter] hover:brightness-110"
+					style="background-color: #C8922E; border-color: #C8922E; color: white;"
 				>
-					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-						/>
-					</svg>
-					Become a Premium Member
+					Become a member →
 				</a>
-
-				<p class="mt-6 text-sm text-gray-500">
-					Already premium? You'll be notified automatically when Academy launches.
-				</p>
 			</div>
 		</div>
 	</section>
-</div>
+</AgeShell>

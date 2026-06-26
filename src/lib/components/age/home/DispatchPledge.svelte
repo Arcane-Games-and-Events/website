@@ -2,8 +2,8 @@
 	/**
 	 * A3 unified homepage — Pledge band. Tailwind-only.
 	 *
-	 * Full-width green premium pitch with a giant decorative ampersand,
-	 * eyebrow, headline, perks checklist, and two CTAs.
+	 * Full-width green premium pitch with eyebrow, headline, perks
+	 * checklist, and two CTAs.
 	 */
 </script>
 
@@ -11,13 +11,6 @@
 	class="bg-prem border-ink relative overflow-hidden border-b-[3px] border-double py-[62px] text-white"
 >
 <div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14">
-	<div
-		class="font-newsreader pointer-events-none absolute top-[-60px] right-[30px] text-[340px] leading-none font-semibold text-white/10"
-		aria-hidden="true"
-	>
-		&amp;
-	</div>
-
 	<div class="relative z-[1] max-w-[900px]">
 		<div
 			class="text-[10.5px] font-bold tracking-[0.2em] text-[#d6eedf] uppercase"

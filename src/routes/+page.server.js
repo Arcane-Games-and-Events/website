@@ -308,14 +308,14 @@ async function fetchPodcastBundle() {
 async function fetchRecentVods() {
 	try {
 		const vodRows = await getCachedOrFetch(
-			`vods:home:latest:3`,
+			`vods:home:latest:12`,
 			() =>
 				db
 					.select()
 					.from(vod)
 					.where(and(eq(vod.isPublished, true), eq(vod.status, 'ready')))
 					.orderBy(desc(vod.publishedAt))
-					.limit(3),
+					.limit(12),
 			CACHE_TTL.MEDIUM
 		);
 

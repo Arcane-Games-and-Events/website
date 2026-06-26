@@ -54,7 +54,6 @@
 	const isAdmin = $derived(user?.role === 'admin');
 
 	const ITEMS = $derived([
-		{ label: 'Dashboard', href: '/dashboard' },
 		{ label: 'Account', href: '/account' },
 		{ label: 'Refer a Friend', href: '/account/referrals' },
 		...(isAdmin ? [{ label: 'Admin', href: '/admin' }] : [])

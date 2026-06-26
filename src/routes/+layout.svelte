@@ -25,17 +25,33 @@
 	// via `isAuthPage` above, so they don't need to be listed here —
 	// they render the editorial chrome by virtue of wrapping their own
 	// markup in <AgeShell>.
-	const editorialRoutes = ['/', '/age-preview', '/premium', '/age-open', '/library'];
+	const editorialRoutes = ['/', '/age-preview', '/premium', '/age-open', '/library', '/academy'];
 	const editorialPrefixes = ['/account', '/library/', '/player/'];
 	// Substring tests for paths that don't fit a clean prefix — e.g. the
 	// AGE Open decklist viewer lives under `/age-open/[eventId]/decklist/
 	// [decklistId]`, where the prefix would catch sibling pages that
 	// haven't been redesigned yet.
 	const editorialContains = ['/decklist/'];
+	// Exact regex patterns for cases where the path's segment shape
+	// matters — used here to mark the event signup page (`/age-open/
+	// [eventId]`) and event results page (`/age-open/[eventId]/results`)
+	// as editorial without catching `/checkout` siblings that haven't
+	// been redesigned yet.
+	const editorialPatterns = [
+		/^\/age-open\/[^/]+\/?$/,
+		/^\/age-open\/[^/]+\/results\/?$/
+	];
 	$: isEditorialPage =
 		editorialRoutes.includes($page.url.pathname) ||
 		editorialPrefixes.some((p) => $page.url.pathname.startsWith(p)) ||
-		editorialContains.some((s) => $page.url.pathname.includes(s));
+		editorialContains.some((s) => $page.url.pathname.includes(s)) ||
+		editorialPatterns.some((re) => re.test($page.url.pathname));
+
+	// Error pages (404 / 500 / 403 / etc.) render their own AgeShell
+	// chrome — skip the legacy Sidebar/Topbar wrapper so we don't end
+	// up with two stacked navbars on error responses thrown from any
+	// route, including the routes that haven't been redesigned yet.
+	$: isErrorPage = !!$page.error;
 </script>
 
 <!-- Skip to content link for accessibility -->
@@ -57,7 +73,7 @@
 	<slot />
 {:else if isAdminPage}
 	<slot />
-{:else if isEditorialPage}
+{:else if isEditorialPage || isErrorPage}
 	<slot />
 {:else if useTopbar}
 	<!-- TOPBAR LAYOUT (Preview Mode) -->

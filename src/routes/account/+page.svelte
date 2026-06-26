@@ -813,7 +813,7 @@
 									<h3 class="font-newsreader text-[22px] font-semibold">What's included</h3>
 								</div>
 								<div class="grid grid-cols-1 gap-x-[26px] gap-y-3 md:grid-cols-2">
-									{#each ['Articles from the best players', 'Bonus matches', 'AGE Open entry discounts', 'The whole Academy, unlocked', 'Read Premium on release day', 'Ad-free across AGE'] as item (item)}
+									{#each ['Articles from the best players in the game', 'Bonus matches', 'Author updates on your courses', 'Discounts on AGE Open events'] as item (item)}
 										<span class="text-soft flex items-center gap-[11px] text-[14px] font-semibold">
 											<span class="text-prem font-extrabold">✓</span>
 											{item}

@@ -147,6 +147,24 @@
 	// Process content blocks for inline decklists
 	let renderBlocks = [];
 	let tableOfContents = [];
+
+	/**
+	 * Per-render heading-id counter. Articles can have two headings
+	 * with identical text ("Round 1" / "Round 1"), and slugify() would
+	 * collapse them to the same id — that crashes the keyed {#each}
+	 * over `tableOfContents` (duplicate keys) and produces invalid
+	 * duplicate-id attributes in the rendered HTML. We dedupe by
+	 * appending an index ("round-1" / "round-1-1" / ...). This map is
+	 * reset at the start of every renderBlocks pass so reactive
+	 * re-renders don't accumulate counts across articles.
+	 */
+	let headingIdCounts = new Map();
+	function nextHeadingId(base) {
+		const safeBase = base || 'section';
+		const n = headingIdCounts.get(safeBase) ?? 0;
+		headingIdCounts.set(safeBase, n + 1);
+		return n === 0 ? safeBase : `${safeBase}-${n}`;
+	}
 	// Map of heading.id → top-level (h2) number. Only h2 entries get a number;
 	// sub-headings (h3+) get a small bullet instead so the hierarchy reads at
 	// a glance in the TOC sidebar.
@@ -261,6 +279,19 @@
 			});
 		}
 
+		// Dedupe ids using the same counter algorithm renderLexicalNode
+		// uses. Both walks are depth-first in the same order, so the
+		// resulting ids match between the TOC and the rendered article
+		// body — anchor links keep working even when two headings
+		// share the same text.
+		const counts = new Map();
+		for (const h of headings) {
+			const base = h.id || 'section';
+			const n = counts.get(base) ?? 0;
+			if (n > 0) h.id = `${base}-${n}`;
+			counts.set(base, n + 1);
+		}
+
 		return headings;
 	}
 
@@ -351,6 +382,12 @@
 		if (!content) {
 			return [{ type: 'html', content: '' }];
 		}
+
+		// Reset the heading-id dedupe counter for this render pass so
+		// the rendered HTML's `id` attributes line up with the TOC's
+		// deduped ids (extractHeadings runs its own walk in the same
+		// order and produces matching ids).
+		headingIdCounts = new Map();
 
 		// Render the full content to HTML first
 		const fullHtml = renderContent(content);
@@ -460,7 +497,7 @@
 			const tag = node.tag || 'h2';
 			const children = renderLexicalChildren(node.children);
 			const text = extractLexicalText(node.children);
-			const id = slugify(text);
+			const id = nextHeadingId(slugify(text));
 			return `<${tag} id="${id}">${children}</${tag}>`;
 		}
 

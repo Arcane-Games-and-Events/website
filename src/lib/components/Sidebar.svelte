@@ -42,7 +42,6 @@
 	];
 
 	const personalNavItems = [
-		{ href: '/dashboard', label: 'Dashboard', icon: 'dashboard', requiresAuth: true },
 		{ href: '/account', label: 'Account', icon: 'user', requiresAuth: true }
 	];
 

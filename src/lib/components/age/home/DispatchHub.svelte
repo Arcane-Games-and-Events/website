@@ -1,10 +1,25 @@
 <script>
+	import { onMount } from 'svelte';
+	import { fade } from 'svelte/transition';
+	import EventRow from '$lib/components/age/EventRow.svelte';
+
 	/**
 	 * A3 unified homepage — Hub section. Tailwind-only.
 	 *
-	 * Two-column grid: main column = unified Library feed (featured video +
-	 * queue + 3-up grid). Right column = sidebar (standings, upcoming
-	 * events with circuit colors, featured decklists, premium card).
+	 * Two-column grid: main column = unified Library feed. Right column =
+	 * sidebar (standings, upcoming events with circuit colors, featured
+	 * decklists, premium card).
+	 *
+	 * Library section structure:
+	 *  1. "Latest in the Library" — interleaved article + video feed,
+	 *     newest first. Left pane shows a big preview that cycles
+	 *     slowly through items; right pane lists every item as a
+	 *     hover / click target. Hovering an item pins the preview to
+	 *     that item; clicking navigates to its `href`.
+	 *  2. "More to read" — articles that didn't make it into the
+	 *     Latest feed.
+	 *  3. "More to watch" — videos that didn't make it into the
+	 *     Latest feed.
 	 */
 
 	/**
@@ -25,10 +40,13 @@
 	/**
 	 * @typedef {Object} HubData
 	 * @property {FeaturedLibraryItem} featured
-	 * @property {LibraryItem[]} queue
-	 * @property {LibraryItem[]} grid
+	 * @property {FeaturedLibraryItem[]} [latest]
+	 * @property {LibraryItem[]} [moreToRead]
+	 * @property {LibraryItem[]} [moreToWatch]
+	 * @property {LibraryItem[]} [queue]
+	 * @property {LibraryItem[]} [grid]
 	 * @property {{ rank: number, name: string, points: number }[]} standings
-	 * @property {{ day: string, month: string, city: string, format: string, venue: string, seats: string, status: 'open' | 'closed', circuit: 'la' | 'stl' | 'ne' }[]} events
+	 * @property {{ day: string, month: string, city: string, format: string, venue: string, seats: string, status: 'open' | 'closed', circuit: 'la' | 'stl' | 'ne', href?: string }[]} events
 	 * @property {{ image: string, hero: string, format: string, by: string, city: string }[]} decklists
 	 */
 
@@ -182,7 +200,44 @@
 		return type === 'video' ? '▶ Video' : 'Article';
 	}
 
-	const F = $derived(D.featured);
+	// "Latest" feed drives the cycling preview pane. Fall back to a
+	// single-item array containing the static featured item so the
+	// component still renders sensibly when the new adapter shape
+	// isn't present.
+	const LATEST = $derived(
+		Array.isArray(D.latest) && D.latest.length > 0 ? D.latest : [D.featured]
+	);
+
+	let activeIdx = $state(0);
+	// Cycle every 7s — slow enough to read a card, fast enough to
+	// hint that the preview is alive.
+	const CYCLE_MS = 7000;
+	// Pause cycling while the user is interacting with the queue list
+	// so a hovered preview stays put as long as they want it.
+	let isPaused = $state(false);
+
+	onMount(() => {
+		if (typeof window === 'undefined') return;
+		const id = window.setInterval(() => {
+			if (isPaused) return;
+			const len = LATEST.length;
+			if (len <= 1) return;
+			activeIdx = (activeIdx + 1) % len;
+		}, CYCLE_MS);
+		return () => window.clearInterval(id);
+	});
+
+	/** @param {number} i */
+	function pinPreview(i) {
+		if (i >= 0 && i < LATEST.length) activeIdx = i;
+		isPaused = true;
+	}
+
+	function resumeCycle() {
+		isPaused = false;
+	}
+
+	const F = $derived(LATEST[activeIdx] ?? D.featured);
 	const isFeaturedVideo = $derived(F?.type === 'video');
 </script>
 
@@ -194,7 +249,7 @@
 			 left gutter so the line reads as part of the page chrome on
 			 wide screens. -->
 		<div
-			class="border-ink bg-ink/0 relative mb-[26px] flex items-end justify-between border-b-2 px-[44px] pt-[30px] pb-[14px] before:absolute before:right-full before:bottom-[-2px] before:h-[2px] before:w-screen before:bg-ink before:content-['']"
+			class="border-ink bg-ink/0 relative mb-[26px] flex items-baseline justify-between border-b-2 px-[44px] pt-[30px] pb-[14px] before:absolute before:right-full before:bottom-[-2px] before:h-[2px] before:w-screen before:bg-ink before:content-['']"
 		>
 			<div class="flex items-baseline gap-[14px]">
 				<h2
@@ -215,121 +270,116 @@
 		</div>
 
 		<div class="px-[44px]">
-			<!-- bcchips -->
-			<div class="m-0 mb-[22px] flex flex-wrap gap-2">
-				<a
-					href="/library"
-					class="border-ink bg-ink text-paper-bg cursor-pointer border px-[13px] py-[7px] text-[10.5px] font-extrabold tracking-[0.08em] uppercase"
-				>
-					All
-				</a>
-				<a
-					href="/library?seg=videos"
-					class="border-line2 text-soft hover:text-ink cursor-pointer border px-[13px] py-[7px] text-[10.5px] font-extrabold tracking-[0.08em] uppercase transition-colors"
-				>
-					Videos
-				</a>
-				<a
-					href="/library?seg=articles"
-					class="border-line2 text-soft hover:text-ink cursor-pointer border px-[13px] py-[7px] text-[10.5px] font-extrabold tracking-[0.08em] uppercase transition-colors"
-				>
-					Articles
-				</a>
-				<span class="ml-auto flex items-center gap-2">
-					<span
-						class="border-line2 text-soft border px-[9px] py-[5px] text-[9px] font-extrabold tracking-[0.08em] uppercase"
-					>
-						Free
-					</span>
-					<span
-						class="border-prem bg-prem border px-[9px] py-[5px] text-[9px] font-extrabold tracking-[0.08em] text-white uppercase"
-					>
-						Premium
-					</span>
-				</span>
-			</div>
-
 			<!-- vwatch: featured library item + queue -->
 			<div class="border-line2 bg-paper mb-[30px] grid grid-cols-[1fr_344px] border">
-				<!-- featured (article or video) -->
+				<!--
+					Featured preview. The <a> shell stays in place across
+					cycle ticks (href updates reactively) while the cover
+					image and text body live inside `{#key activeIdx}`
+					wrappers so they crossfade in/out via Svelte's fade
+					transition. We absolute-position the keyed content so
+					old and new can co-exist during the transition without
+					pushing layout — the parent containers (`aspect-video`
+					cover, fixed min-height text area) reserve the space.
+				-->
 				<a
 					href={F.href ?? '/library'}
 					class="group border-line2 flex flex-col border-r"
 				>
-					<div
-						class="bg-panel relative flex aspect-video items-center justify-center bg-cover bg-center"
-						style="background-image: url('{F.image}');"
-					>
-						{#if isFeaturedVideo}
-							<span
-								class="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent to-[54%]"
-								aria-hidden="true"
-							></span>
-							<span
-								class="bg-warm absolute top-[14px] left-[14px] z-[1] inline-flex items-center gap-[7px] px-[11px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] text-white uppercase"
+					<!-- COVER — cross-fades on activeIdx change -->
+					<div class="bg-panel relative aspect-video overflow-hidden">
+						{#key activeIdx}
+							<div
+								class="absolute inset-0 flex items-center justify-center bg-cover bg-center"
+								style="background-image: url('{F.image}');"
+								in:fade={{ duration: 420 }}
+								out:fade={{ duration: 420 }}
 							>
-								<span class="inline-block h-[7px] w-[7px] rounded-full bg-white"></span>
-								Featured · Video
-							</span>
-							<span
-								class="text-ink relative z-[1] flex h-20 w-20 items-center justify-center rounded-full bg-white/95 pl-[5px] text-[25px] transition-transform group-hover:scale-[1.07]"
-							>
-								▶
-							</span>
-							{#if F.duration}
-								<span
-									class="absolute right-[14px] bottom-[14px] z-[1] bg-black/85 px-[10px] py-[4px] text-[11.5px] font-bold text-white"
-								>
-									{F.duration}
-								</span>
-							{/if}
-						{:else}
-							<span
-								class="bg-accent absolute top-[14px] left-[14px] z-[1] inline-flex items-center gap-[7px] px-[11px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] text-white uppercase"
-							>
-								Featured · Article
-							</span>
-						{/if}
+								{#if isFeaturedVideo}
+									<span
+										class="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent to-[54%]"
+										aria-hidden="true"
+									></span>
+									<span
+										class="bg-warm absolute top-[14px] left-[14px] z-[1] inline-flex items-center gap-[7px] px-[11px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] text-white uppercase"
+									>
+										<span class="inline-block h-[7px] w-[7px] rounded-full bg-white"></span>
+										Featured · Video
+									</span>
+									<span
+										class="text-ink relative z-[1] flex h-20 w-20 items-center justify-center rounded-full bg-white/95 pl-[5px] text-[25px] transition-transform group-hover:scale-[1.07]"
+									>
+										▶
+									</span>
+									{#if F.duration}
+										<span
+											class="absolute right-[14px] bottom-[14px] z-[1] bg-black/85 px-[10px] py-[4px] text-[11.5px] font-bold text-white"
+										>
+											{F.duration}
+										</span>
+									{/if}
+								{:else}
+									<span
+										class="bg-accent absolute top-[14px] left-[14px] z-[1] inline-flex items-center gap-[7px] px-[11px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] text-white uppercase"
+									>
+										Featured · Article
+									</span>
+								{/if}
+							</div>
+						{/key}
 					</div>
-					<div class="flex flex-col px-8 pt-[26px] pb-7">
-						<div class="mb-[14px] flex gap-[7px]">
-							<span
-								class="inline-flex items-center gap-1.5 px-[9px] py-1 text-[9px] font-extrabold tracking-[0.09em] text-white uppercase {isFeaturedVideo
-									? 'bg-warm'
-									: 'bg-accent'}"
+
+					<!-- TEXT — cross-fades on activeIdx change. min-height
+						 reserves vertical space for the absolutely-positioned
+						 keyed content so the row doesn't collapse during the
+						 transition. -->
+					<div class="relative flex-1" style="min-height: 260px;">
+						{#key activeIdx}
+							<div
+								class="absolute inset-0 flex flex-col px-8 pt-[26px] pb-7"
+								in:fade={{ duration: 420 }}
+								out:fade={{ duration: 420 }}
 							>
-								{isFeaturedVideo ? '▶ Video' : 'Article'}
-							</span>
-							<span
-								class="border px-[9px] py-1 text-[10px] font-extrabold tracking-[0.08em] uppercase {F.premium
-									? 'bg-prem border-prem text-white'
-									: 'border-line2 text-soft'}"
-							>
-								{F.premium ? 'Premium' : 'Free'}
-							</span>
-						</div>
-						<h3
-							class="font-newsreader group-hover:text-accent m-0 mb-3 text-4xl leading-none font-semibold tracking-[-0.02em] transition-colors"
-						>
-							{F.title}
-						</h3>
-						{#if F.summary}
-							<div class="text-soft m-0 mb-4 text-[14.5px] leading-[1.55]">{F.summary}</div>
-						{/if}
-						<div
-							class="text-fade mb-5 flex flex-wrap items-center gap-2 text-[12.5px] font-semibold"
-						>
-							{#if F.event}
-								<b class="text-ink font-bold">{F.event}</b>
-								<span>·</span>
-							{/if}
-							<span>{F.meta}</span>
-						</div>
-						<span
-							class="text-accent mt-auto text-[11px] font-extrabold tracking-[0.08em] uppercase"
-						>
-							{isFeaturedVideo ? 'Watch now' : 'Read now'} →
-						</span>
+								<div class="mb-[14px] flex gap-[7px]">
+									<span
+										class="inline-flex items-center gap-1.5 px-[9px] py-1 text-[9px] font-extrabold tracking-[0.09em] text-white uppercase {isFeaturedVideo
+											? 'bg-warm'
+											: 'bg-accent'}"
+									>
+										{isFeaturedVideo ? '▶ Video' : 'Article'}
+									</span>
+									<span
+										class="border px-[9px] py-1 text-[10px] font-extrabold tracking-[0.08em] uppercase {F.premium
+											? 'bg-prem border-prem text-white'
+											: 'border-line2 text-soft'}"
+									>
+										{F.premium ? 'Premium' : 'Free'}
+									</span>
+								</div>
+								<h3
+									class="font-newsreader group-hover:text-accent m-0 mb-3 text-4xl leading-none font-semibold tracking-[-0.02em] transition-colors"
+								>
+									{F.title}
+								</h3>
+								{#if F.summary}
+									<div class="text-soft m-0 mb-4 text-[14.5px] leading-[1.55]">{F.summary}</div>
+								{/if}
+								<div
+									class="text-fade mb-5 flex flex-wrap items-center gap-2 text-[12.5px] font-semibold"
+								>
+									{#if F.event}
+										<b class="text-ink font-bold">{F.event}</b>
+										<span>·</span>
+									{/if}
+									<span>{F.meta}</span>
+								</div>
+								<span
+									class="text-accent mt-auto text-[11px] font-extrabold tracking-[0.08em] uppercase"
+								>
+									{isFeaturedVideo ? 'Watch now' : 'Read now'} →
+								</span>
+							</div>
+						{/key}
 					</div>
 				</a>
 
@@ -349,10 +399,22 @@
 							Browse →
 						</a>
 					</div>
-					{#each D.queue as item, i (i)}
+					<!--
+						Each row pins the preview on hover (mouseenter) and
+						resumes the slow auto-cycle on mouse leave. The whole
+						row is an <a> so click navigates to the item itself.
+					-->
+					{#each LATEST as item, i (item.href + ':' + item.title)}
 						<a
-							href="/library"
-							class="group border-line hover:bg-panel grid grid-cols-[116px_1fr] items-center gap-[14px] border-b px-[18px] py-[14px] transition-colors last:border-b-0"
+							href={item.href ?? '/library'}
+							onmouseenter={() => pinPreview(i)}
+							onmouseleave={resumeCycle}
+							onfocus={() => pinPreview(i)}
+							onblur={resumeCycle}
+							class="group border-line grid grid-cols-[116px_1fr] items-center gap-[14px] border-b px-[18px] py-[14px] transition-colors last:border-b-0 {i ===
+							activeIdx
+								? 'bg-panel'
+								: 'hover:bg-panel'}"
 						>
 							<div
 								class="bg-panel relative flex aspect-video items-center justify-center bg-cover bg-center"
@@ -360,7 +422,10 @@
 							>
 								{#if item.type === 'video'}
 									<span
-										class="text-ink flex h-[30px] w-[30px] items-center justify-center rounded-full bg-white/95 pl-[2px] text-[10px] opacity-0 transition-opacity group-hover:opacity-100"
+										class="text-ink flex h-[30px] w-[30px] items-center justify-center rounded-full bg-white/95 pl-[2px] text-[10px] {i ===
+										activeIdx
+											? 'opacity-100'
+											: 'opacity-0 transition-opacity group-hover:opacity-100'}"
 									>
 										▶
 									</span>
@@ -394,7 +459,10 @@
 									</span>
 								</div>
 								<h4
-									class="font-newsreader group-hover:text-accent text-[15px] leading-[1.1] font-semibold tracking-[-0.01em] transition-colors"
+									class="font-newsreader text-[15px] leading-[1.1] font-semibold tracking-[-0.01em] transition-colors {i ===
+									activeIdx
+										? 'text-accent'
+										: 'group-hover:text-accent'}"
 								>
 									{item.title}
 								</h4>
@@ -411,74 +479,136 @@
 				</div>
 			</div>
 
-			<!-- bcsub -->
-			<div class="border-line2 mt-9 mb-[18px] flex items-baseline justify-between border-b pb-[11px]">
-				<h3
-					class="font-newsreader flex items-center gap-3 text-[26px] font-semibold tracking-[-0.01em]"
-				>
-					More in the Library
-				</h3>
-				<a class="text-accent text-[11px] font-bold tracking-[0.07em] uppercase" href="/library">
-					Browse all →
-				</a>
-			</div>
-
-			<!-- libgrid: 3-up unified cards -->
-			<div class="border-line2 bg-line2 grid grid-cols-3 gap-px border">
-				{#each D.grid as item, i (i)}
-					<a
-						href="/library"
-						class="group bg-paper-bg flex flex-col border-t-[3px] {item.type === 'video'
-							? 'border-t-warm'
-							: 'border-t-accent'}"
+			<!--
+				More to Read — articles that didn't make the Latest feed.
+				Skipped entirely when there's nothing to show so we don't
+				leave an empty header sitting on the page.
+			-->
+			{#if D.moreToRead && D.moreToRead.length > 0}
+				<div class="border-line2 mt-9 mb-[18px] flex items-baseline justify-between border-b pb-[11px]">
+					<h3
+						class="font-newsreader flex items-center gap-3 text-[26px] font-semibold tracking-[-0.01em]"
 					>
-						<div
-							class="bg-panel relative flex aspect-video items-center justify-center bg-cover bg-center"
-							style="background-image: url('{item.image}');"
+						More to read
+					</h3>
+					<a class="text-accent text-[11px] font-bold tracking-[0.07em] uppercase" href="/library">
+						All articles →
+					</a>
+				</div>
+
+				<div class="border-line2 bg-line2 grid grid-cols-3 gap-px border">
+					{#each D.moreToRead as item (item.href + ':' + item.title)}
+						<a
+							href={item.href ?? '/library'}
+							class="group bg-paper-bg flex flex-col border-t-[3px] border-t-accent"
 						>
-							{#if item.type === 'video'}
+							<div
+								class="bg-panel relative flex aspect-video items-center justify-center bg-cover bg-center"
+								style="background-image: url('{item.image}');"
+							></div>
+							<div class="flex flex-1 flex-col px-5 pt-4 pb-5">
+								<div class="mb-[11px] flex items-center gap-[7px]">
+									<span
+										class="bg-accent inline-flex items-center gap-1.5 px-[9px] py-1 text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
+									>
+										Article
+									</span>
+									<span
+										class="border-line2 text-soft border px-[9px] py-[3px] text-[10px] font-extrabold tracking-[0.08em] uppercase {item.premium
+											? 'bg-prem border-prem !text-white'
+											: ''}"
+									>
+										{item.premium ? 'Premium' : 'Free'}
+									</span>
+								</div>
+								<h4
+									class="font-newsreader group-hover:text-accent mb-[9px] text-[19px] leading-[1.1] font-semibold tracking-[-0.01em] transition-colors"
+								>
+									{item.title}
+								</h4>
+								<!--
+									Article excerpt — clamped to 3 lines so cards
+									within a row keep their bottoms aligned even
+									when summaries vary in length. Skipped entirely
+									when the article has no excerpt.
+								-->
+								{#if item.summary}
+									<p
+										class="text-soft mb-[10px] overflow-hidden text-[12.5px] leading-[1.45]"
+										style="display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;"
+									>
+										{item.summary}
+									</p>
+								{/if}
+								<div class="text-fade mt-auto text-[11px] font-semibold">{item.meta}</div>
+							</div>
+						</a>
+					{/each}
+				</div>
+			{/if}
+
+			<!-- More to Watch — VODs that didn't make the Latest feed -->
+			{#if D.moreToWatch && D.moreToWatch.length > 0}
+				<div class="border-line2 mt-10 mb-[18px] flex items-baseline justify-between border-b pb-[11px]">
+					<h3
+						class="font-newsreader flex items-center gap-3 text-[26px] font-semibold tracking-[-0.01em]"
+					>
+						More to watch
+					</h3>
+					<a class="text-accent text-[11px] font-bold tracking-[0.07em] uppercase" href="/library">
+						All videos →
+					</a>
+				</div>
+
+				<div class="border-line2 bg-line2 grid grid-cols-3 gap-px border">
+					{#each D.moreToWatch as item (item.href + ':' + item.title)}
+						<a
+							href={item.href ?? '/studios'}
+							class="group bg-paper-bg flex flex-col border-t-[3px] border-t-warm"
+						>
+							<div
+								class="bg-panel relative flex aspect-video items-center justify-center bg-cover bg-center"
+								style="background-image: url('{item.image}');"
+							>
 								<span
 									class="text-ink flex h-[46px] w-[46px] items-center justify-center rounded-full bg-white/95 pl-[3px] text-sm"
 								>
 									▶
 								</span>
-							{/if}
-							{#if item.duration}
-								<span
-									class="absolute right-2 bottom-2 bg-black/85 px-1.5 py-[2px] text-[10.5px] font-semibold text-white"
-								>
-									{item.duration}
-								</span>
-							{/if}
-						</div>
-						<div class="flex flex-1 flex-col px-5 pt-4 pb-5">
-							<div class="mb-[11px] flex items-center gap-[7px]">
-								<span
-									class="inline-flex items-center gap-1.5 px-[9px] py-1 text-[9px] font-extrabold tracking-[0.09em] text-white uppercase {item.type ===
-									'video'
-										? 'bg-warm'
-										: 'bg-accent'}"
-								>
-									{fmtLabel(item.type)}
-								</span>
-								<span
-									class="border-line2 text-soft border px-[9px] py-[3px] text-[10px] font-extrabold tracking-[0.08em] uppercase {item.premium
-										? 'bg-prem border-prem !text-white'
-										: ''}"
-								>
-									{item.premium ? 'Premium' : 'Free'}
-								</span>
+								{#if item.duration}
+									<span
+										class="absolute right-2 bottom-2 bg-black/85 px-1.5 py-[2px] text-[10.5px] font-semibold text-white"
+									>
+										{item.duration}
+									</span>
+								{/if}
 							</div>
-							<h4
-								class="font-newsreader group-hover:text-accent mb-[9px] text-[19px] leading-[1.1] font-semibold tracking-[-0.01em] transition-colors"
-							>
-								{item.title}
-							</h4>
-							<div class="text-fade mt-auto text-[11px] font-semibold">{item.meta}</div>
-						</div>
-					</a>
-				{/each}
-			</div>
+							<div class="flex flex-1 flex-col px-5 pt-4 pb-5">
+								<div class="mb-[11px] flex items-center gap-[7px]">
+									<span
+										class="bg-warm inline-flex items-center gap-1.5 px-[9px] py-1 text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
+									>
+										▶ Video
+									</span>
+									<span
+										class="border-line2 text-soft border px-[9px] py-[3px] text-[10px] font-extrabold tracking-[0.08em] uppercase {item.premium
+											? 'bg-prem border-prem !text-white'
+											: ''}"
+									>
+										{item.premium ? 'Premium' : 'Free'}
+									</span>
+								</div>
+								<h4
+									class="font-newsreader group-hover:text-accent mb-[9px] text-[19px] leading-[1.1] font-semibold tracking-[-0.01em] transition-colors"
+								>
+									{item.title}
+								</h4>
+								<div class="text-fade mt-auto text-[11px] font-semibold">{item.meta}</div>
+							</div>
+						</a>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	</div>
 
@@ -524,49 +654,19 @@
 				</a>
 			</div>
 			{#each D.events as e, i (i)}
-				{@const cc = CIRCUIT_HEX[e.circuit]}
-				<a
-					href="/age-open"
-					class="border-line grid grid-cols-[50px_1fr] items-center gap-[13px] border-t py-3 first:border-t-0"
-				>
-					<div
-						class="flex h-full flex-col items-center justify-center self-stretch border px-[2px] py-2"
-						style="background: color-mix(in srgb, {cc} 13%, var(--ed-bg)); border-color: color-mix(in srgb, {cc} 34%, transparent); color: {cc};"
-					>
-						<div class="font-newsreader text-center text-[26px] leading-[0.8] font-semibold">
-							{e.day}
-						</div>
-						<div
-							class="mt-[3px] text-center text-[9px] font-extrabold tracking-[0.05em]"
-							style="color: color-mix(in srgb, {cc} 55%, var(--ed-fade));"
-						>
-							{e.month}
-						</div>
-					</div>
-					<div>
-						<h4
-							class="font-newsreader flex flex-wrap items-center gap-2 text-sm font-semibold"
-						>
-							{e.city}
-							<span
-								class="font-libre border-line2 text-soft border px-[6px] py-px text-[9px] font-extrabold tracking-[0.07em] uppercase"
-							>
-								{e.format}
-							</span>
-						</h4>
-						<div class="text-fade mt-[2px] flex items-center gap-1.5 text-[10.5px] font-semibold">
-							<span>{e.venue}</span>
-							<span>·</span>
-							<span
-								class={e.status === 'open'
-									? 'text-accent font-extrabold tracking-[0.05em] uppercase'
-									: ''}
-							>
-								{e.seats}
-							</span>
-						</div>
-					</div>
-				</a>
+				<div class={i === 0 ? '' : 'mt-[8px]'}>
+					<EventRow
+						day={e.day}
+						month={e.month}
+						circuit={e.circuit}
+						title={e.city}
+						format={e.format}
+						venue={e.venue}
+						href={e.href ?? '/age-open'}
+						size="sm"
+						showEyebrow={true}
+					/>
+				</div>
 			{/each}
 		</div>
 
