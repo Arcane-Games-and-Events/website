@@ -147,7 +147,7 @@
 	{#if isPremium}
 		<!-- ============ PREMIUM WELCOME ============ -->
 		<div class="border-ink border-b-[3px] border-double">
-			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-[80px]">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[80px]">
 				<div class="mx-auto max-w-[820px] text-center">
 					<div class="text-prem mb-7 inline-flex items-center gap-[11px] text-[10.5px] font-bold tracking-[0.2em] uppercase">
 						<span class="bg-prem inline-block h-[7px] w-[7px] rounded-full"></span>
@@ -204,7 +204,7 @@
 		-->
 		<div class="border-line2 border-b">
 			<div
-				class="mx-auto grid w-full max-w-[min(94vw,1920px)] grid-cols-1 items-center gap-[56px] px-14 py-[74px] {data.user
+				class="mx-auto grid w-full max-w-[1600px] grid-cols-1 items-center gap-[56px] px-14 py-[74px] {data.user
 					? 'lg:grid-cols-[0.85fr_1.15fr]'
 					: 'lg:grid-cols-[1.05fr_0.95fr]'}"
 			>
@@ -414,7 +414,7 @@
 
 		<!-- ============ STATEMENT ============ -->
 		<div class="border-line2 border-b">
-			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-[104px] text-center">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[104px] text-center">
 				<div class="mx-auto max-w-[860px]">
 					<div class="text-prem mb-[30px] text-[10.5px] font-bold tracking-[0.2em] uppercase">
 						Why it matters
@@ -485,7 +485,7 @@
 
 		<!-- ============ VOICE / TESTIMONIAL ============ -->
 		<div class="border-line2 bg-paper border-b">
-			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-[90px] text-center">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[90px] text-center">
 				<div class="font-newsreader text-prem mb-2 text-[64px] leading-[0.4] h-[30px]">
 					&ldquo;
 				</div>
@@ -515,7 +515,7 @@
 				aria-hidden="true"
 			></div>
 			<div
-				class="relative mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-[132px] text-center"
+				class="relative mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[132px] text-center"
 			>
 				<div class="mx-auto max-w-[680px] text-[#f4f0e6]">
 					<div class="mb-[22px] text-[10.5px] font-bold tracking-[0.2em] text-[#9fe3bc] uppercase">

@@ -201,194 +201,79 @@
 	<title>Tournament Update - {data.event.title}</title>
 </svelte:head>
 
-<div class="px-4 py-8 sm:px-6 lg:px-8">
-	<div class="mx-auto max-w-7xl">
-		<!-- Back Link -->
-		<div class="mb-4">
-			<a
-				href="/admin/events/{data.event.id}"
-				class="group inline-flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
-			>
-				<svg
-					class="h-4 w-4 transition-transform group-hover:-translate-x-1"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M15 19l-7-7 7-7"
-					/>
-				</svg>
-				Back to Event
-			</a>
-		</div>
+<!-- ============ HEADER ============ -->
+<header class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[42px] pb-[28px]">
+	<a
+		href="/admin/events/{data.event.id}"
+		class="font-mono-system text-fade hover:text-ink inline-flex items-center text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors"
+	>
+		← Back to Event
+	</a>
+	<div class="mt-[18px] mb-[18px] flex flex-wrap items-center gap-[16px]">
+		<span class="font-mono-system text-warm text-[11px] font-extrabold tracking-[0.16em] uppercase">
+			Tournament Update
+		</span>
+		<span class="bg-line2 hidden h-[1px] flex-1 md:block"></span>
+		{#if isCompleted}
+			<span class="font-mono-system bg-prem inline-flex items-center px-[10px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase text-white">Finalized</span>
+		{:else if isInProgress}
+			<span class="font-mono-system bg-accent inline-flex items-center px-[10px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase text-white">In Progress</span>
+		{:else}
+			<span class="font-mono-system bg-warm inline-flex items-center px-[10px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase text-white">Upcoming</span>
+		{/if}
+	</div>
+	<h1 class="font-newsreader text-[clamp(32px,4.8vw,52px)] leading-[0.95] font-semibold tracking-[-0.02em]">
+		{data.event.title}
+	</h1>
+	<p class="font-mono-system text-fade mt-[10px] text-[11px] font-bold tracking-[0.08em] uppercase">
+		{formatDate(data.event.eventDate)}
+	</p>
+</header>
 
-		<!-- Header -->
-		<div
-			class="relative mb-8 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-900/30 via-gray-900 to-gray-950 p-6 shadow-2xl shadow-indigo-500/5"
-		>
-			<!-- Decorative elements -->
-			<div
-				class="absolute top-0 right-0 -mt-16 -mr-16 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl"
-			></div>
-			<div
-				class="absolute bottom-0 left-0 -mb-16 -ml-16 h-48 w-48 rounded-full bg-purple-500/10 blur-3xl"
-			></div>
-
-			<div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div class="flex items-center gap-4">
-					<div
-						class="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/25"
-					>
-						<svg class="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-							/>
-						</svg>
-					</div>
-					<div>
-						<h1 class="text-2xl font-bold text-white sm:text-3xl">{data.event.title}</h1>
-						<p class="mt-1 text-gray-400">Tournament Update - {formatDate(data.event.eventDate)}</p>
-					</div>
-				</div>
-				<div class="flex items-center gap-4">
-					<!-- Event Status Badge -->
-					{#if isCompleted}
-						<span
-							class="inline-flex items-center gap-2 rounded-full bg-green-500/20 px-3 py-1.5 text-sm font-medium text-green-400"
-						>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M5 13l4 4L19 7"
-								/>
-							</svg>
-							Finalized
-						</span>
-					{:else if isInProgress}
-						<span
-							class="inline-flex items-center gap-2 rounded-full bg-blue-500/20 px-3 py-1.5 text-sm font-medium text-blue-400"
-						>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-								/>
-							</svg>
-							In Progress
-						</span>
-					{:else}
-						<span
-							class="inline-flex items-center gap-2 rounded-full bg-yellow-500/20 px-3 py-1.5 text-sm font-medium text-yellow-400"
-						>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-								/>
-							</svg>
-							Upcoming
-						</span>
+{#if form?.success}
+	<section class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[12px] overflow-x-clip">
+		<div class="border-ink bg-prem border-[1.5px] p-4 text-white">
+			<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: #d6eedf;">Success</span>
+			<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{form.message}</p>
+			{#if form.details}
+				<ul class="font-mono-system mt-[8px] ml-4 list-disc text-[11px] font-bold tracking-[0.06em] uppercase" style="color: #d6eedf;">
+					<li>Players updated: {form.details.playersUpdated}</li>
+					<li>New players added: {form.details.playersCreated}</li>
+					{#if form.details.errors?.length > 0}
+						<li>Errors: {form.details.errors.length}</li>
 					{/if}
-				</div>
-			</div>
+				</ul>
+			{/if}
 		</div>
-
-		<!-- Success/Error Messages -->
-		{#if form?.success}
-			<div class="mb-6 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
-				<div class="flex items-center gap-3">
-					<svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-					<p class="text-sm text-green-400">{form.message}</p>
-				</div>
-				{#if form.details}
-					<ul class="mt-2 ml-8 list-inside list-disc text-sm text-green-300">
-						<li>Players updated: {form.details.playersUpdated}</li>
-						<li>New players added: {form.details.playersCreated}</li>
-						{#if form.details.errors?.length > 0}
-							<li class="text-red-400">Errors: {form.details.errors.length}</li>
-						{/if}
-					</ul>
-				{/if}
-			</div>
-		{/if}
-
-		{#if form?.error}
-			<div class="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
-				<div class="flex items-center gap-3">
-					<svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-					<p class="text-sm text-red-400">{form.error}</p>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Tabs -->
-		<div
-			class="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-white/10 bg-gray-900/50 p-1"
-		>
-			<button
-				on:click={() => (activeTab = 'import')}
-				class="rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition-all {activeTab ===
-				'import'
-					? 'bg-indigo-500/20 text-indigo-400'
-					: 'text-gray-400 hover:bg-white/5 hover:text-white'}"
-			>
-				Import CSV
-			</button>
-			<button
-				on:click={() => (activeTab = 'results')}
-				class="rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition-all {activeTab ===
-				'results'
-					? 'bg-indigo-500/20 text-indigo-400'
-					: 'text-gray-400 hover:bg-white/5 hover:text-white'}"
-			>
-				Results ({data.existingResults?.length || 0})
-			</button>
-			<button
-				on:click={() => (activeTab = 'decklists')}
-				class="rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition-all {activeTab ===
-				'decklists'
-					? 'bg-indigo-500/20 text-indigo-400'
-					: 'text-gray-400 hover:bg-white/5 hover:text-white'}"
-			>
-				Decklists ({data.existingDecklists?.length || 0})
-			</button>
-			<button
-				on:click={() => (activeTab = 'finalize')}
-				class="rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition-all {activeTab ===
-				'finalize'
-					? 'bg-indigo-500/20 text-indigo-400'
-					: 'text-gray-400 hover:bg-white/5 hover:text-white'}"
-			>
-				Finalize
-			</button>
+	</section>
+{/if}
+{#if form?.error}
+	<section class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[12px] overflow-x-clip">
+		<div class="border-ink bg-warm border-[1.5px] p-4 text-white">
+			<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: rgba(255,255,255,0.75);">Error</span>
+			<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{form.error}</p>
 		</div>
+	</section>
+{/if}
+
+<!-- ============ TABS ============ -->
+<section class="border-ink border-y-[3px] border-double overflow-x-clip">
+	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[16px]">
+		<div class="flex gap-1 overflow-x-auto whitespace-nowrap">
+			{#each [{ id: 'import', label: 'Import CSV' }, { id: 'results', label: `Results · ${data.existingResults?.length || 0}` }, { id: 'decklists', label: `Decklists · ${data.existingDecklists?.length || 0}` }, { id: 'finalize', label: 'Finalize' }] as tab (tab.id)}
+				<button
+					on:click={() => (activeTab = tab.id)}
+					class="font-mono-system relative px-[16px] py-[10px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors {activeTab === tab.id ? 'text-ink' : 'text-fade hover:text-ink'}"
+				>
+					{tab.label}
+					{#if activeTab === tab.id}<span class="bg-warm absolute inset-x-[10px] bottom-0 h-[2px]"></span>{/if}
+				</button>
+			{/each}
+		</div>
+	</div>
+</section>
+
+<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[36px]">
 
 		<!-- CSV Import Tab -->
 		{#if activeTab === 'import'}
@@ -1247,5 +1132,4 @@
 				</div>
 			</div>
 		{/if}
-	</div>
 </div>

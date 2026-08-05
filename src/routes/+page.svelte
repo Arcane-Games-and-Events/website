@@ -4,7 +4,6 @@
 	import DispatchHub from '$lib/components/age/home/DispatchHub.svelte';
 	import DispatchSubline from '$lib/components/age/home/DispatchSubline.svelte';
 	import DispatchAcademy from '$lib/components/age/home/DispatchAcademy.svelte';
-	import DispatchForge from '$lib/components/age/home/DispatchForge.svelte';
 	import DispatchStudios from '$lib/components/age/home/DispatchStudios.svelte';
 	import DispatchPledge from '$lib/components/age/home/DispatchPledge.svelte';
 	import {
@@ -17,9 +16,8 @@
 	let { data } = $props();
 
 	// Adapt the existing homepage server data into the Dispatch component
-	// prop shapes. Sections without real data (Academy + Forge) fall back
-	// to the components' built-in mocks for the visual rhythm — those
-	// will be replaced when the underlying systems exist.
+	// prop shapes. Academy still renders with its built-in mock data
+	// because the courses system doesn't exist yet.
 	let frontData = $derived(toFrontData(data));
 	let hubData = $derived(toHubData(data));
 	let studiosData = $derived(toStudiosData(data));
@@ -29,14 +27,7 @@
 	<DispatchFront data={frontData} />
 	<DispatchHub data={hubData} />
 	<DispatchSubline />
-
-	<!--
-		Academy + Forge render with the components' built-in mock data
-		because the courses and AGE Labs systems don't exist yet. The
-		layout still reads cleanly; we'll wire them when the data lands.
-	-->
 	<DispatchAcademy />
-	<DispatchForge />
 
 	{#if studiosData}
 		<DispatchStudios data={studiosData} />

@@ -192,7 +192,7 @@
 	<!-- ============ HERO + CONTINUE LEARNING ============ -->
 	<section class="border-ink border-b-[3px] border-double">
 		<div
-			class="mx-auto grid w-full max-w-[min(94vw,1920px)] grid-cols-1 items-center gap-10 px-14 pt-[50px] pb-[52px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-12"
+			class="mx-auto grid w-full max-w-[1600px] grid-cols-1 items-center gap-10 px-14 pt-[50px] pb-[52px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-12"
 		>
 			<!-- left: copy + stats -->
 			<div>
@@ -340,7 +340,7 @@
 
 	<!-- ============ TRACKS ============ -->
 	<section class="border-ink border-b-[3px] border-double">
-		<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[46px] pb-[22px]">
+		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[46px] pb-[22px]">
 			<div class="flex flex-wrap items-end justify-between gap-5">
 				<div>
 					<div class="mb-[9px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase" style="color: #C8922E;">
@@ -359,7 +359,7 @@
 			</div>
 		</div>
 
-		<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 pb-[46px]">
+		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[46px]">
 			<div class="border-line2 grid grid-cols-1 gap-[1px] border bg-[#C7BFA9] md:grid-cols-3">
 				{#each TRACKS as track, i (track.title)}
 					<a
@@ -393,7 +393,7 @@
 
 	<!-- ============ CATALOG ============ -->
 	<section id="catalog" class="border-ink border-b-[3px] border-double">
-		<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[46px] pb-[22px]">
+		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[46px] pb-[22px]">
 			<div class="flex flex-wrap items-end justify-between gap-5">
 				<div>
 					<div class="mb-[9px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase" style="color: #C8922E;">
@@ -413,7 +413,7 @@
 			</div>
 		</div>
 
-		<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 pb-[46px]">
+		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[46px]">
 			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
 				{#each COURSES as c (c.title)}
 					<a
@@ -470,13 +470,13 @@
 
 	<!--
 		WATCH + READ — the two-column split now sits inside the same
-		`max-w-[min(94vw,1920px)]` cap as the hero and the rest of the
+		`max-w-[1600px]` cap as the hero and the rest of the
 		sections, so the columns line up with the page's content gutter
 		on wide screens instead of stretching to the viewport edges.
 	-->
 	<section class="border-ink border-b-[3px] border-double">
 		<div
-			class="mx-auto grid w-full max-w-[min(94vw,1920px)] grid-cols-1 px-14 lg:grid-cols-2"
+			class="mx-auto grid w-full max-w-[1600px] grid-cols-1 px-14 lg:grid-cols-2"
 		>
 			<!-- watch -->
 			<div class="border-line2 py-[40px] lg:border-r lg:pr-12">
@@ -558,7 +558,7 @@
 
 	<!-- ============ PLEDGE BAND ============ -->
 	<section class="px-14 py-[44px]">
-		<div class="mx-auto w-full max-w-[min(94vw,1920px)]">
+		<div class="mx-auto w-full max-w-[1600px]">
 			<div
 				class="bg-ink text-paper-bg relative flex flex-wrap items-center justify-between gap-11 overflow-hidden px-14 py-[52px]"
 			>

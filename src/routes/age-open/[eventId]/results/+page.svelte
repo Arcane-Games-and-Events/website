@@ -237,7 +237,7 @@
 			</div>
 		{/if}
 
-		<div class="relative z-[1] mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[44px] pb-[42px]">
+		<div class="relative z-[1] mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[44px] pb-[42px]">
 			<!-- Back link -->
 			<a
 				href="/age-open?tab=results"
@@ -325,7 +325,7 @@
 		cards with mono uppercase labels and Archivo black numerals.
 	-->
 	<section class="bg-paper-bg border-ink border-b-[3px] border-double">
-		<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-9">
+		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-9">
 			<dl class="grid grid-cols-2 md:grid-cols-4">
 				{#each heroStats as stat (stat.label)}
 					<div class="border-line2 -mt-px -ml-px border bg-paper px-6 py-5">
@@ -351,7 +351,7 @@
 		with ink + paper text, inactive sits in a paper outline.
 	-->
 	<section class="bg-paper border-ink border-b-[3px] border-double">
-		<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-7">
+		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-7">
 			<nav class="flex flex-wrap gap-2" aria-label="Results tabs">
 				{#each visibleTabs as tab (tab.id)}
 					<button
@@ -376,7 +376,7 @@
 	-->
 	{#if activeTab === 'standings'}
 		<section class="bg-paper-bg border-ink border-b-[3px] border-double">
-			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-10">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-10">
 				<div class="mb-6">
 					<div
 						class="text-accent font-mono-system mb-3 text-[10.5px] font-extrabold tracking-[0.2em] uppercase"
@@ -653,7 +653,7 @@
 	-->
 	{#if activeTab === 'metagame' && hasMetagame}
 		<section class="bg-paper-bg border-ink border-b-[3px] border-double">
-			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-10">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-10">
 				<div class="mb-6">
 					<div
 						class="text-accent font-mono-system mb-3 text-[10.5px] font-extrabold tracking-[0.2em] uppercase"
@@ -1022,7 +1022,7 @@
 		{/snippet}
 
 		<section class="bg-paper-bg border-ink border-b-[3px] border-double">
-			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-10">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-10">
 				<div class="mb-6 flex flex-wrap items-end justify-between gap-5">
 					<div>
 						<div
@@ -1264,7 +1264,7 @@
 		{/snippet}
 
 		<section class="bg-paper-bg border-ink border-b-[3px] border-double">
-			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-10">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-10">
 				<div class="mb-6">
 					<div
 						class="text-accent font-mono-system mb-3 text-[10.5px] font-extrabold tracking-[0.2em] uppercase"
@@ -1416,7 +1416,7 @@
 	<!-- DECKLISTS TAB — grid of DecklistCard components. -->
 	{#if activeTab === 'decklists' && hasDecklists}
 		<section class="bg-paper-bg border-ink border-b-[3px] border-double">
-			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-10">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-10">
 				<div class="mb-6 flex flex-wrap items-baseline justify-between gap-4">
 					<div>
 						<div

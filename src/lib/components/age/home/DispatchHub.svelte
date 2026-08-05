@@ -242,22 +242,22 @@
 </script>
 
 <div class="border-ink border-b-[3px] border-double">
-<div class="mx-auto grid w-full max-w-[min(94vw,1920px)] grid-cols-[1fr_350px]">
+<div class="mx-auto grid w-full max-w-[1600px] grid-cols-1 lg:grid-cols-[1fr_350px]">
 	<!-- main column -->
-	<div class="border-ink border-r pb-8">
+	<div class="pb-8 lg:border-ink lg:border-r">
 		<!-- mhead — its bottom ink rule extends past the cap into the
 			 left gutter so the line reads as part of the page chrome on
 			 wide screens. -->
 		<div
-			class="border-ink bg-ink/0 relative mb-[26px] flex items-baseline justify-between border-b-2 px-[44px] pt-[30px] pb-[14px] before:absolute before:right-full before:bottom-[-2px] before:h-[2px] before:w-screen before:bg-ink before:content-['']"
+			class="border-ink relative mb-[26px] flex flex-wrap items-baseline justify-between gap-3 border-b-2 px-4 pt-6 pb-[14px] md:px-10 md:pt-[30px] lg:px-[44px] lg:before:absolute lg:before:right-full lg:before:bottom-[-2px] lg:before:h-[2px] lg:before:w-screen lg:before:bg-ink lg:before:content-['']"
 		>
-			<div class="flex items-baseline gap-[14px]">
+			<div class="flex flex-wrap items-baseline gap-[14px]">
 				<h2
-					class="font-newsreader text-[40px] font-semibold tracking-[-0.02em]"
+					class="font-newsreader text-[clamp(28px,4.5vw,40px)] font-semibold tracking-[-0.02em]"
 				>
 					Library
 				</h2>
-				<span class="text-fade text-xs font-bold">
+				<span class="text-fade hidden text-xs font-bold sm:inline">
 					Articles, matches & shows — one collection, free and Premium
 				</span>
 			</div>
@@ -269,9 +269,9 @@
 			</a>
 		</div>
 
-		<div class="px-[44px]">
+		<div class="px-4 md:px-10 lg:px-[44px]">
 			<!-- vwatch: featured library item + queue -->
-			<div class="border-line2 bg-paper mb-[30px] grid grid-cols-[1fr_344px] border">
+			<div class="border-line2 bg-paper mb-[30px] grid grid-cols-1 border md:grid-cols-[1fr_344px]">
 				<!--
 					Featured preview. The <a> shell stays in place across
 					cycle ticks (href updates reactively) while the cover
@@ -284,7 +284,7 @@
 				-->
 				<a
 					href={F.href ?? '/library'}
-					class="group border-line2 flex flex-col border-r"
+					class="group border-line2 flex flex-col border-b md:border-r md:border-b-0"
 				>
 					<!-- COVER — cross-fades on activeIdx change -->
 					<div class="bg-panel relative aspect-video overflow-hidden">
@@ -329,11 +329,16 @@
 						{/key}
 					</div>
 
-					<!-- TEXT — cross-fades on activeIdx change. min-height
-						 reserves vertical space for the absolutely-positioned
-						 keyed content so the row doesn't collapse during the
-						 transition. -->
-					<div class="relative flex-1" style="min-height: 260px;">
+					<!--
+						TEXT — cross-fades on activeIdx change. The parent
+						reserves a fixed height AND clips overflow, so an
+						unusually long title or summary in one carousel item
+						can't push its box past the reserved footprint and
+						overlap the "More in the Library" grid below.
+						Title + summary are individually line-clamped so
+						they never approach that ceiling in the first place.
+					-->
+					<div class="relative flex-1 overflow-hidden" style="min-height: 400px;">
 						{#key activeIdx}
 							<div
 								class="absolute inset-0 flex flex-col px-8 pt-[26px] pb-7"
@@ -357,12 +362,18 @@
 									</span>
 								</div>
 								<h3
-									class="font-newsreader group-hover:text-accent m-0 mb-3 text-4xl leading-none font-semibold tracking-[-0.02em] transition-colors"
+									class="font-newsreader group-hover:text-accent m-0 mb-3 overflow-hidden text-4xl leading-[1.05] font-semibold tracking-[-0.02em] transition-colors"
+									style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;"
 								>
 									{F.title}
 								</h3>
 								{#if F.summary}
-									<div class="text-soft m-0 mb-4 text-[14.5px] leading-[1.55]">{F.summary}</div>
+									<div
+										class="text-soft m-0 mb-4 overflow-hidden text-[14.5px] leading-[1.55]"
+										style="display:-webkit-box; -webkit-line-clamp:7; -webkit-box-orient:vertical;"
+									>
+										{F.summary}
+									</div>
 								{/if}
 								<div
 									class="text-fade mb-5 flex flex-wrap items-center gap-2 text-[12.5px] font-semibold"
@@ -496,7 +507,7 @@
 					</a>
 				</div>
 
-				<div class="border-line2 bg-line2 grid grid-cols-3 gap-px border">
+				<div class="border-line2 bg-line2 grid grid-cols-1 gap-px border sm:grid-cols-2 md:grid-cols-3">
 					{#each D.moreToRead as item (item.href + ':' + item.title)}
 						<a
 							href={item.href ?? '/library'}
@@ -560,7 +571,7 @@
 					</a>
 				</div>
 
-				<div class="border-line2 bg-line2 grid grid-cols-3 gap-px border">
+				<div class="border-line2 bg-line2 grid grid-cols-1 gap-px border sm:grid-cols-2 md:grid-cols-3">
 					{#each D.moreToWatch as item (item.href + ':' + item.title)}
 						<a
 							href={item.href ?? '/studios'}
@@ -618,8 +629,7 @@
 		 off the sidebar against the gutter, mirroring the divider on
 		 the main column. -->
 	<aside
-		class="bg-paper border-ink relative border-r"
-		style="box-shadow: 100vw 0 0 var(--ed-paper);"
+		class="bg-paper relative border-t lg:border-ink lg:border-t-0 lg:border-r lg:shadow-[100vw_0_0_var(--ed-paper)]"
 	>
 		<!-- Standings -->
 		<div class="border-line2 border-b px-7 pt-[22px] pb-6">
@@ -701,8 +711,12 @@
 			{/each}
 		</div>
 
-		<!-- Premium card -->
-		<div class="bg-prem px-7 py-6 text-white">
+		<!--
+			Premium card — hidden on mobile because the page already ends
+			with the full-width DispatchPledge Premium band; showing this
+			smaller card too on phones is redundant.
+		-->
+		<div class="bg-prem hidden px-7 py-6 text-white lg:block">
 			<span
 				class="text-prem mb-3 inline-block bg-white px-[10px] py-[5px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
 			>

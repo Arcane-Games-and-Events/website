@@ -273,7 +273,7 @@
 </svelte:head>
 
 <AgeShell>
-	<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-10 pb-[52px]">
+	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-10 pb-[52px]">
 		<!-- ============ PROFILE HEADER ============ -->
 		<div
 			class="bg-paper border-line2 border-t-prem mb-[34px] grid grid-cols-1 items-center gap-7 border border-t-[3px] px-[34px] py-[30px] md:grid-cols-[auto_1fr_auto]"

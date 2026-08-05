@@ -119,9 +119,9 @@
 		</div>
 	</div>
 
-	<div class="relative z-[1] mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[42px] pb-[50px]">
+	<div class="relative z-[1] mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[42px] pb-[50px]">
 		<!-- head -->
-		<div class="mb-[30px] flex items-end justify-between gap-[30px]">
+		<div class="mb-[30px] flex flex-wrap items-end justify-between gap-[30px]">
 			<div>
 				<div
 					class="font-mono-system mb-3 text-[11px] font-bold tracking-[0.26em] text-[{FG_ACC}] uppercase"
@@ -129,7 +129,7 @@
 					Interactive
 				</div>
 				<h2
-					class="font-archivo m-0 text-[68px] leading-[0.86] font-extrabold tracking-[-0.035em] text-white uppercase"
+					class="font-archivo m-0 text-[clamp(40px,7vw,68px)] leading-[0.86] font-extrabold tracking-[-0.035em] text-white uppercase"
 				>
 					AGE Labs
 				</h2>
@@ -149,7 +149,7 @@
 
 		<!-- featured project -->
 		<div
-			class="mb-[22px] grid grid-cols-[0.9fr_1.1fr] border border-[#232a3b] bg-[#080b15]"
+			class="mb-[22px] grid grid-cols-1 border border-[#232a3b] bg-[#080b15] lg:grid-cols-[0.9fr_1.1fr]"
 		>
 			<div
 				class="relative min-h-[404px] bg-cover bg-center"
@@ -178,7 +178,7 @@
 					{D.featured.tag}
 				</div>
 				<h3
-					class="font-archivo m-0 mb-[11px] text-[38px] leading-[0.98] font-extrabold tracking-[-0.02em] text-white"
+					class="font-archivo m-0 mb-[11px] text-[clamp(26px,4.5vw,38px)] leading-[0.98] font-extrabold tracking-[-0.02em] text-white"
 				>
 					{D.featured.title}
 				</h3>
@@ -217,7 +217,7 @@
 		</div>
 
 		<!-- rail -->
-		<div class="grid grid-cols-2 gap-5">
+		<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
 			{#each D.rail as p, i (i)}
 				<a
 					href="/labs"

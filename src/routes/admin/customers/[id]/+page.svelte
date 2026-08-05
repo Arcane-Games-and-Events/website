@@ -10,12 +10,8 @@
 	let copySuccess = $state(false);
 
 	function formatCurrency(amount) {
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD'
-		}).format(amount || 0);
+		return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
 	}
-
 	function formatDate(date, options = {}) {
 		if (!date) return 'N/A';
 		return new Date(date).toLocaleDateString('en-US', {
@@ -26,542 +22,386 @@
 		});
 	}
 
-	function formatDateTime(date) {
-		if (!date) return 'N/A';
-		return new Date(date).toLocaleString('en-US', {
-			month: 'long',
-			day: 'numeric',
-			year: 'numeric',
-			hour: 'numeric',
-			minute: '2-digit'
-		});
-	}
-
 	async function copyEmail() {
 		await navigator.clipboard.writeText(data.customerEmail);
 		copySuccess = true;
 		setTimeout(() => (copySuccess = false), 2000);
 	}
 
-	function getRoleBadgeClasses(role) {
+	function roleChip(role) {
 		switch (role) {
 			case 'admin':
-				return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+				return 'bg-warm text-white';
 			case 'premium':
-				return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+				return 'bg-prem text-white';
 			case 'tournament staff':
-				return 'bg-green-500/20 text-green-400 border-green-500/30';
+				return 'bg-accent text-white';
 			case 'writer':
-				return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+				return 'bg-ink text-white';
 			default:
-				return 'bg-gray-700 text-gray-400 border-gray-600';
+				return 'border-line2 text-fade border';
 		}
 	}
-
-	function getSubscriptionStatusClasses(status) {
+	function subStatusChip(status) {
 		switch (status) {
 			case 'active':
-				return 'bg-green-500/20 text-green-400';
+				return 'bg-prem text-white';
 			case 'cancelled':
-				return 'bg-red-500/20 text-red-400';
-			case 'expired':
-				return 'bg-gray-500/20 text-gray-400';
+				return 'bg-warm text-white';
 			default:
-				return 'bg-gray-700 text-gray-400';
+				return 'border-line2 text-fade border';
 		}
 	}
-
-	function getAvatarGradient(role) {
-		switch (role) {
-			case 'admin':
-				return 'from-purple-500 to-violet-600';
-			case 'premium':
-				return 'from-blue-500 to-cyan-600';
-			case 'tournament staff':
-				return 'from-green-500 to-emerald-600';
+	function orderTypeChip(t) {
+		switch (t) {
+			case 'ticket':
+				return 'bg-warm text-white';
+			case 'course':
+				return 'bg-accent text-white';
+			case 'subscription':
+				return 'bg-prem text-white';
 			default:
-				return 'from-gray-500 to-gray-600';
+				return 'border-line2 text-fade border';
 		}
 	}
 </script>
 
 <svelte:head>
-	<title
-		>{data.customer ? `${data.customer.firstName} ${data.customer.lastName}` : data.customerEmail} |
-		Admin</title
-	>
+	<title>{data.customer ? `${data.customer.firstName} ${data.customer.lastName}` : data.customerEmail} · AGE Ops</title>
 </svelte:head>
 
-<div class="px-4 py-8 sm:px-6 lg:px-8">
-	<div class="mx-auto max-w-6xl">
-		<!-- Breadcrumb -->
-		<nav class="mb-6 flex items-center gap-2 text-sm">
-			<a href="/admin/users" class="text-gray-400 transition-colors hover:text-white">Users</a>
-			<svg class="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-			</svg>
-			<span class="text-white"
-				>{data.customer
-					? `${data.customer.firstName || ''} ${data.customer.lastName || ''}`.trim() ||
-						data.customerEmail
-					: data.customerEmail}</span
+<!-- ============ HEADER ============ -->
+<header class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[42px] pb-[28px]">
+	<nav class="font-mono-system text-fade flex items-center gap-2 text-[10px] font-extrabold tracking-[0.14em] uppercase">
+		<a href="/admin/users" class="hover:text-ink transition-colors">Users</a>
+		<span>›</span>
+		<span class="text-warm truncate">
+			{data.customer ? `${data.customer.firstName || ''} ${data.customer.lastName || ''}`.trim() || data.customerEmail : data.customerEmail}
+		</span>
+	</nav>
+
+	{#if form?.success}
+		<div class="border-ink bg-prem mt-[18px] border-[1.5px] p-4 text-white">
+			<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: #d6eedf;">Success</span>
+			<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{form.message}</p>
+		</div>
+	{/if}
+	{#if form?.error}
+		<div class="border-ink bg-warm mt-[18px] border-[1.5px] p-4 text-white">
+			<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: rgba(255,255,255,0.75);">Error</span>
+			<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{form.error}</p>
+		</div>
+	{/if}
+
+	<div class="mt-[18px] flex flex-wrap items-start justify-between gap-[18px]">
+		<div class="flex items-start gap-[18px]">
+			<div class="border-ink bg-panel font-newsreader flex h-[72px] w-[72px] items-center justify-center border-[1.5px] text-[26px] font-semibold">
+				{#if data.customer}
+					{data.customer.firstName.charAt(0)}{data.customer.lastName.charAt(0)}
+				{:else}
+					{data.customerEmail.charAt(0).toUpperCase()}
+				{/if}
+			</div>
+			<div class="min-w-0">
+				<div class="mb-[8px] flex flex-wrap items-center gap-[10px]">
+					<span class="font-mono-system text-warm text-[11px] font-extrabold tracking-[0.16em] uppercase">
+						Customer
+					</span>
+				</div>
+				<h1 class="font-newsreader text-[clamp(32px,4.8vw,52px)] leading-[0.95] font-semibold tracking-[-0.02em]">
+					{#if data.customer}{data.customer.firstName} {data.customer.lastName}{:else}Guest Customer{/if}
+				</h1>
+				<div class="mt-[10px] flex flex-wrap items-center gap-[10px]">
+					<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.06em] uppercase">
+						{data.customerEmail}
+					</span>
+					<button
+						onclick={copyEmail}
+						class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[8px] py-[3px] text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+						title="Copy email"
+					>
+						{copySuccess ? 'Copied' : 'Copy'}
+					</button>
+				</div>
+				<div class="mt-[10px] flex flex-wrap items-center gap-[8px]">
+					{#if data.customer}
+						<span class="font-mono-system inline-flex items-center px-[9px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase {roleChip(data.customer.role)}">
+							{data.customer.role}
+						</span>
+						{#if data.customer.gemId}
+							<span class="font-mono-system border-line2 text-warm inline-flex items-center border px-[9px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase">
+								GEM · {data.customer.gemId}
+							</span>
+						{/if}
+					{:else}
+						<span class="font-mono-system border-line2 text-fade inline-flex items-center border px-[9px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase">
+							No Account
+						</span>
+					{/if}
+				</div>
+				<p class="font-mono-system text-fade mt-[10px] text-[10px] font-bold tracking-[0.06em] uppercase">
+					{#if data.customer}
+						Member since {formatDate(data.customer.createdAt)}
+					{:else if data.stats.firstOrder}
+						First order {formatDate(data.stats.firstOrder.createdAt)}
+					{/if}
+				</p>
+			</div>
+		</div>
+
+		{#if data.customer}
+			<form
+				method="POST"
+				action="?/updateRole"
+				use:enhance={() => {
+					roleLoading = true;
+					return async ({ update }) => {
+						await update();
+						roleLoading = false;
+						invalidateAll();
+					};
+				}}
+				class="flex items-center gap-2"
 			>
-		</nav>
-
-		<!-- Success/Error Messages -->
-		{#if form?.success}
-			<div class="mb-6 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
-				<p class="text-green-400">{form.message}</p>
-			</div>
+				<select
+					name="role"
+					class="border-ink bg-paper-bg text-ink font-mono-system border-[1.5px] px-[12px] py-[9px] text-[11px] font-bold tracking-[0.06em] uppercase focus:outline-none"
+				>
+					<option value="free" selected={data.customer.role === 'free'}>Free</option>
+					<option value="premium" selected={data.customer.role === 'premium'}>Premium</option>
+					<option value="writer" selected={data.customer.role === 'writer'}>Writer</option>
+					<option value="tournament staff" selected={data.customer.role === 'tournament staff'}>Tournament Staff</option>
+					<option value="admin" selected={data.customer.role === 'admin'}>Admin</option>
+				</select>
+				<button
+					type="submit"
+					disabled={roleLoading}
+					class="bg-ink font-mono-system inline-flex items-center px-[14px] py-[9px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125 disabled:opacity-50"
+				>
+					{roleLoading ? 'Updating…' : 'Update Role'}
+				</button>
+			</form>
 		{/if}
-		{#if form?.error}
-			<div class="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
-				<p class="text-red-400">{form.error}</p>
+	</div>
+</header>
+
+<!-- ============ STATS ============ -->
+<section class="border-ink border-y-[3px] border-double overflow-x-clip">
+	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[28px]">
+		<div class="grid grid-cols-2 gap-[24px] md:grid-cols-4">
+			<div>
+				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">Lifetime Value</span>
+				<div class="font-archivo text-prem mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+					{formatCurrency(data.stats.totalSpent)}
+				</div>
 			</div>
-		{/if}
+			<div>
+				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">Total Orders</span>
+				<div class="font-archivo text-ink mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+					{data.stats.totalOrders}
+				</div>
+			</div>
+			<div>
+				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">Avg Order</span>
+				<div class="font-archivo text-ink mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+					{formatCurrency(data.stats.avgOrderValue)}
+				</div>
+			</div>
+			<div>
+				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">Active Tickets</span>
+				<div class="font-archivo text-ink mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+					{data.activeTicketsCount}
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
 
-		<!-- Customer Header -->
-		<div
-			class="relative mb-8 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-purple-900/30 via-gray-900 to-gray-950 shadow-2xl shadow-purple-500/5"
-		>
-			<!-- Decorative elements -->
-			<div
-				class="absolute top-0 right-0 -mt-16 -mr-16 h-64 w-64 rounded-full bg-purple-500/10 blur-3xl"
-			></div>
-			<div
-				class="absolute bottom-0 left-0 -mb-16 -ml-16 h-48 w-48 rounded-full bg-violet-500/10 blur-3xl"
-			></div>
-
-			<div class="relative p-6">
-				<div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-					<!-- Customer Info -->
-					<div class="flex items-start gap-4">
-						<div
-							class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br text-2xl font-bold text-white {getAvatarGradient(
-								data.customer?.role
-							)}"
-						>
-							{#if data.customer}
-								{data.customer.firstName.charAt(0)}{data.customer.lastName.charAt(0)}
-							{:else}
-								{data.customerEmail.charAt(0).toUpperCase()}
-							{/if}
+<!-- ============ SUBSCRIPTION ============ -->
+{#if data.customer && (data.customer.subscriptionId || data.customer.subscriptionStatus)}
+	<section class="border-ink border-b-[3px] border-double overflow-x-clip">
+		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[28px]">
+			<div class="mb-[18px]">
+				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+					Subscription
+				</span>
+				<h2 class="font-newsreader mt-[6px] text-[26px] font-semibold tracking-[-0.01em]">
+					Membership.
+				</h2>
+			</div>
+			<div class="border-ink border-[1.5px] p-6 overflow-hidden">
+				<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+					<div class="grid grid-cols-2 gap-[24px] sm:grid-cols-4">
+						<div>
+							<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Status</span>
+							<div class="mt-[6px]">
+								<span class="font-mono-system inline-flex items-center px-[9px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase {subStatusChip(data.customer.subscriptionStatus)}">
+									{data.customer.subscriptionStatus || 'None'}
+								</span>
+							</div>
 						</div>
 						<div>
-							{#if data.customer}
-								<h1 class="text-2xl font-bold text-white">
-									{data.customer.firstName}
-									{data.customer.lastName}
-								</h1>
-							{:else}
-								<h1 class="text-2xl font-bold text-white">Guest Customer</h1>
-							{/if}
-							<div class="mt-1 flex items-center gap-2">
-								<p class="text-gray-400">{data.customerEmail}</p>
-								<button
-									onclick={copyEmail}
-									class="rounded p-1 text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-300"
-									title="Copy email"
-								>
-									{#if copySuccess}
-										<svg
-											class="h-4 w-4 text-green-400"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M5 13l4 4L19 7"
-											/>
-										</svg>
-									{:else}
-										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-											/>
-										</svg>
-									{/if}
-								</button>
-							</div>
-							<div class="mt-2 flex flex-wrap items-center gap-2">
-								{#if data.customer}
-									<span
-										class="inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium capitalize {getRoleBadgeClasses(
-											data.customer.role
-										)}"
-									>
-										{data.customer.role}
-									</span>
-									{#if data.customer.gemId}
-										<span
-											class="inline-flex items-center rounded-full bg-amber-500/20 px-3 py-1 text-sm text-amber-400"
-										>
-											GEM: {data.customer.gemId}
-										</span>
-									{/if}
-								{:else}
-									<span
-										class="inline-flex items-center rounded-full border border-gray-600 bg-gray-700 px-3 py-1 text-sm font-medium text-gray-400"
-									>
-										No Account
-									</span>
-								{/if}
-							</div>
-							<p class="mt-2 text-sm text-gray-500">
-								{#if data.customer}
-									Member since {formatDate(data.customer.createdAt)}
-								{:else if data.stats.firstOrder}
-									First order {formatDate(data.stats.firstOrder.createdAt)}
-								{/if}
+							<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Type</span>
+							<p class="font-newsreader mt-[6px] text-[16px] font-semibold capitalize">
+								{data.customer.subscriptionType || 'N/A'}
 							</p>
 						</div>
-					</div>
-
-					<!-- Role Update Form (only if user has account) -->
-					{#if data.customer}
-						<div class="flex flex-col gap-3">
-							<form
-								method="POST"
-								action="?/updateRole"
-								use:enhance={() => {
-									roleLoading = true;
-									return async ({ update }) => {
-										await update();
-										roleLoading = false;
-										invalidateAll();
-									};
-								}}
-								class="flex items-center gap-2"
-							>
-								<select
-									name="role"
-									class="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-100 transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
-								>
-									<option value="free" selected={data.customer.role === 'free'}>Free</option>
-									<option value="premium" selected={data.customer.role === 'premium'}
-										>Premium</option
-									>
-									<option value="writer" selected={data.customer.role === 'writer'}>Writer</option>
-									<option
-										value="tournament staff"
-										selected={data.customer.role === 'tournament staff'}>Tournament Staff</option
-									>
-									<option value="admin" selected={data.customer.role === 'admin'}>Admin</option>
-								</select>
-								<button
-									type="submit"
-									disabled={roleLoading}
-									class="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-blue-600 disabled:opacity-50"
-								>
-									{roleLoading ? 'Updating...' : 'Update Role'}
-								</button>
-							</form>
+						<div>
+							<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Started</span>
+							<p class="font-newsreader mt-[6px] text-[16px] font-semibold">{formatDate(data.customer.subscriptionStartDate)}</p>
 						</div>
+						<div>
+							<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Next Billing</span>
+							<p class="font-newsreader mt-[6px] text-[16px] font-semibold">{formatDate(data.customer.nextBillingDate)}</p>
+						</div>
+					</div>
+					{#if data.customer.subscriptionStatus === 'active'}
+						<form
+							method="POST"
+							action="?/cancelSubscription"
+							use:enhance={() => {
+								if (!confirm('Cancel this subscription? The user will be downgraded to the free tier.')) {
+									return () => {};
+								}
+								cancelLoading = true;
+								return async ({ update }) => {
+									await update();
+									cancelLoading = false;
+									invalidateAll();
+								};
+							}}
+						>
+							<button
+								type="submit"
+								disabled={cancelLoading}
+								class="bg-warm font-mono-system inline-flex items-center px-[18px] py-[11px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase text-white transition-[filter] hover:brightness-110 disabled:opacity-50"
+							>
+								{cancelLoading ? 'Cancelling…' : 'Cancel Subscription'}
+							</button>
+						</form>
 					{/if}
 				</div>
 			</div>
 		</div>
+	</section>
+{/if}
 
-		<!-- Stats Cards -->
-		<div class="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-			<div class="rounded-xl border border-white/10 bg-gray-900/50 p-4">
-				<p class="text-sm text-gray-400">Lifetime Value</p>
-				<p class="mt-1 text-2xl font-bold text-emerald-400">
-					{formatCurrency(data.stats.totalSpent)}
-				</p>
+<!-- ============ ORDER BREAKDOWN ============ -->
+<section class="border-ink border-b-[3px] border-double overflow-x-clip">
+	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[28px]">
+		<div class="mb-[18px]">
+			<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+				Order Breakdown
+			</span>
+			<h2 class="font-newsreader mt-[6px] text-[26px] font-semibold tracking-[-0.01em]">
+				Where it went.
+			</h2>
+		</div>
+		<div class="grid grid-cols-1 gap-[18px] sm:grid-cols-3">
+			<div class="border-ink border-[1.5px] p-5 overflow-hidden">
+				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Tickets</span>
+				<div class="font-archivo text-ink mt-[6px] text-[clamp(22px,3vw,32px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+					{data.ordersByType.ticket.count}
+					<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.06em] uppercase">orders</span>
+				</div>
+				<span class="font-mono-system text-warm mt-[6px] block text-[12px] font-bold tracking-[0.06em] uppercase">
+					{formatCurrency(data.ordersByType.ticket.total)}
+				</span>
 			</div>
-			<div class="rounded-xl border border-white/10 bg-gray-900/50 p-4">
-				<p class="text-sm text-gray-400">Total Orders</p>
-				<p class="mt-1 text-2xl font-bold text-white">{data.stats.totalOrders}</p>
+			<div class="border-ink border-[1.5px] p-5 overflow-hidden">
+				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Courses</span>
+				<div class="font-archivo text-ink mt-[6px] text-[clamp(22px,3vw,32px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+					{data.ordersByType.course.count}
+					<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.06em] uppercase">orders</span>
+				</div>
+				<span class="font-mono-system text-accent mt-[6px] block text-[12px] font-bold tracking-[0.06em] uppercase">
+					{formatCurrency(data.ordersByType.course.total)}
+				</span>
 			</div>
-			<div class="rounded-xl border border-white/10 bg-gray-900/50 p-4">
-				<p class="text-sm text-gray-400">Avg Order Value</p>
-				<p class="mt-1 text-2xl font-bold text-white">{formatCurrency(data.stats.avgOrderValue)}</p>
-			</div>
-			<div class="rounded-xl border border-white/10 bg-gray-900/50 p-4">
-				<p class="text-sm text-gray-400">Active Tickets</p>
-				<p class="mt-1 text-2xl font-bold text-white">{data.activeTicketsCount}</p>
+			<div class="border-ink border-[1.5px] p-5 overflow-hidden">
+				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Subscriptions</span>
+				<div class="font-archivo text-ink mt-[6px] text-[clamp(22px,3vw,32px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+					{data.ordersByType.subscription.count}
+					<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.06em] uppercase">orders</span>
+				</div>
+				<span class="font-mono-system text-prem mt-[6px] block text-[12px] font-bold tracking-[0.06em] uppercase">
+					{formatCurrency(data.ordersByType.subscription.total)}
+				</span>
 			</div>
 		</div>
+	</div>
+</section>
 
-		<!-- Subscription Section (only if user has account with subscription) -->
-		{#if data.customer && (data.customer.subscriptionId || data.customer.subscriptionStatus)}
-			<div class="mb-8 overflow-hidden rounded-xl border border-white/10 bg-gray-900/50">
-				<div class="border-b border-white/10 bg-gray-800/30 px-6 py-4">
-					<h2 class="text-lg font-semibold text-white">Subscription</h2>
-				</div>
-				<div class="p-6">
-					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-						<div class="grid grid-cols-2 gap-6 sm:grid-cols-4">
-							<div>
-								<p class="text-sm text-gray-400">Status</p>
-								<span
-									class="mt-1 inline-flex items-center rounded-full px-2.5 py-1 text-sm font-medium capitalize {getSubscriptionStatusClasses(
-										data.customer.subscriptionStatus
-									)}"
-								>
-									{data.customer.subscriptionStatus || 'None'}
-								</span>
-							</div>
-							<div>
-								<p class="text-sm text-gray-400">Type</p>
-								<p class="mt-1 font-medium text-white capitalize">
-									{data.customer.subscriptionType || 'N/A'}
-								</p>
-							</div>
-							<div>
-								<p class="text-sm text-gray-400">Start Date</p>
-								<p class="mt-1 font-medium text-white">
-									{formatDate(data.customer.subscriptionStartDate)}
-								</p>
-							</div>
-							<div>
-								<p class="text-sm text-gray-400">Next Billing</p>
-								<p class="mt-1 font-medium text-white">
-									{formatDate(data.customer.nextBillingDate)}
-								</p>
-							</div>
-						</div>
-						{#if data.customer.subscriptionStatus === 'active'}
-							<form
-								method="POST"
-								action="?/cancelSubscription"
-								use:enhance={() => {
-									if (
-										!confirm(
-											'Are you sure you want to cancel this subscription? The user will be downgraded to the free tier.'
-										)
-									) {
-										return () => {};
-									}
-									cancelLoading = true;
-									return async ({ update }) => {
-										await update();
-										cancelLoading = false;
-										invalidateAll();
-									};
-								}}
-							>
-								<button
-									type="submit"
-									disabled={cancelLoading}
-									class="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 transition-all hover:bg-red-500/20 disabled:opacity-50"
-								>
-									{cancelLoading ? 'Cancelling...' : 'Cancel Subscription'}
-								</button>
-							</form>
-						{/if}
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Order Breakdown -->
-		<div class="mb-8 overflow-hidden rounded-xl border border-white/10 bg-gray-900/50">
-			<div class="border-b border-white/10 bg-gray-800/30 px-6 py-4">
-				<h2 class="text-lg font-semibold text-white">Order Breakdown</h2>
-			</div>
-			<div class="grid divide-y divide-white/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-				<div class="p-6">
-					<div class="flex items-center gap-3">
-						<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20">
-							<svg
-								class="h-5 w-5 text-purple-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
-								/>
-							</svg>
-						</div>
-						<div>
-							<p class="text-sm text-gray-400">Tickets</p>
-							<p class="text-lg font-semibold text-white">
-								{data.ordersByType.ticket.count} orders
-								<span class="text-sm font-normal text-gray-400"
-									>({formatCurrency(data.ordersByType.ticket.total)})</span
-								>
-							</p>
-						</div>
-					</div>
-				</div>
-				<div class="p-6">
-					<div class="flex items-center gap-3">
-						<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/20">
-							<svg
-								class="h-5 w-5 text-cyan-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-								/>
-							</svg>
-						</div>
-						<div>
-							<p class="text-sm text-gray-400">Courses</p>
-							<p class="text-lg font-semibold text-white">
-								{data.ordersByType.course.count} orders
-								<span class="text-sm font-normal text-gray-400"
-									>({formatCurrency(data.ordersByType.course.total)})</span
-								>
-							</p>
-						</div>
-					</div>
-				</div>
-				<div class="p-6">
-					<div class="flex items-center gap-3">
-						<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20">
-							<svg
-								class="h-5 w-5 text-amber-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-								/>
-							</svg>
-						</div>
-						<div>
-							<p class="text-sm text-gray-400">Subscriptions</p>
-							<p class="text-lg font-semibold text-white">
-								{data.ordersByType.subscription.count} orders
-								<span class="text-sm font-normal text-gray-400"
-									>({formatCurrency(data.ordersByType.subscription.total)})</span
-								>
-							</p>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Tabs -->
-		<div class="mb-6 flex gap-1 rounded-xl border border-white/10 bg-gray-900/50 p-1">
+<!-- ============ TABS ============ -->
+<section class="overflow-x-clip">
+	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[36px]">
+		<div class="border-ink mb-[24px] flex gap-1 border-b-[1.5px]">
 			<button
 				onclick={() => (activeTab = 'orders')}
-				class="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all {activeTab ===
-				'orders'
-					? 'bg-purple-500/20 text-purple-400'
-					: 'text-gray-400 hover:bg-white/5 hover:text-white'}"
+				class="font-mono-system relative px-[16px] py-[12px] text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors {activeTab === 'orders' ? 'text-ink' : 'text-fade hover:text-ink'}"
 			>
-				Orders ({data.orders.length})
+				Orders · {data.orders.length}
+				{#if activeTab === 'orders'}<span class="bg-warm absolute inset-x-[10px] bottom-[-1.5px] h-[2px]"></span>{/if}
 			</button>
 			<button
 				onclick={() => (activeTab = 'tickets')}
-				class="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all {activeTab ===
-				'tickets'
-					? 'bg-purple-500/20 text-purple-400'
-					: 'text-gray-400 hover:bg-white/5 hover:text-white'}"
+				class="font-mono-system relative px-[16px] py-[12px] text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors {activeTab === 'tickets' ? 'text-ink' : 'text-fade hover:text-ink'}"
 			>
-				Tickets ({data.tickets.length})
+				Tickets · {data.tickets.length}
+				{#if activeTab === 'tickets'}<span class="bg-warm absolute inset-x-[10px] bottom-[-1.5px] h-[2px]"></span>{/if}
 			</button>
 			{#if data.customer}
 				<button
 					onclick={() => (activeTab = 'courses')}
-					class="flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all {activeTab ===
-					'courses'
-						? 'bg-purple-500/20 text-purple-400'
-						: 'text-gray-400 hover:bg-white/5 hover:text-white'}"
+					class="font-mono-system relative px-[16px] py-[12px] text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors {activeTab === 'courses' ? 'text-ink' : 'text-fade hover:text-ink'}"
 				>
-					Courses ({data.entitlements.length})
+					Courses · {data.entitlements.length}
+					{#if activeTab === 'courses'}<span class="bg-warm absolute inset-x-[10px] bottom-[-1.5px] h-[2px]"></span>{/if}
 				</button>
 			{/if}
 		</div>
 
-		<!-- Orders Tab -->
 		{#if activeTab === 'orders'}
-			<div class="overflow-hidden rounded-xl border border-white/10 bg-gray-900/50">
+			<div class="border-ink border-[1.5px] overflow-hidden">
 				{#if data.orders.length === 0}
 					<div class="p-12 text-center">
-						<svg
-							class="mx-auto mb-4 h-12 w-12 text-gray-600"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-							/>
-						</svg>
-						<p class="text-gray-400">No orders found</p>
+						<p class="font-newsreader text-soft text-[19px] italic">No orders found.</p>
 					</div>
 				{:else}
 					<div class="overflow-x-auto">
-						<table class="w-full">
-							<thead class="bg-gray-800/50">
-								<tr>
-									<th
-										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-										>Date</th
-									>
-									<th
-										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-										>Type</th
-									>
-									<th
-										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-										>Description</th
-									>
-									<th
-										class="px-6 py-4 text-right text-xs font-semibold tracking-wider text-gray-400 uppercase"
-										>Amount</th
-									>
-									<th
-										class="px-6 py-4 text-right text-xs font-semibold tracking-wider text-gray-400 uppercase"
-										>Actions</th
-									>
+						<table class="w-full min-w-[720px]">
+							<thead class="border-ink border-b-[1.5px]">
+								<tr class="text-left">
+									<th class="font-mono-system text-fade px-5 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Date</th>
+									<th class="font-mono-system text-fade px-5 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Type</th>
+									<th class="font-mono-system text-fade px-5 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Description</th>
+									<th class="font-mono-system text-fade px-5 py-[12px] text-right text-[10px] font-extrabold tracking-[0.14em] uppercase">Amount</th>
+									<th class="px-5 py-[12px]"></th>
 								</tr>
 							</thead>
-							<tbody class="divide-y divide-white/10">
-								{#each data.orders as order}
-									<tr class="transition-colors hover:bg-white/5">
-										<td class="px-6 py-4 text-sm text-gray-300">{formatDate(order.createdAt)}</td>
-										<td class="px-6 py-4">
-											<span
-												class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize
-												{order.meta?.type === 'ticket' ? 'bg-purple-500/20 text-purple-400' : ''}
-												{order.meta?.type === 'course' ? 'bg-cyan-500/20 text-cyan-400' : ''}
-												{order.meta?.type === 'subscription' ? 'bg-amber-500/20 text-amber-400' : ''}
-												{!order.meta?.type ? 'bg-gray-700 text-gray-400' : ''}"
-											>
+							<tbody>
+								{#each data.orders as order (order.id)}
+									<tr class="border-line2 hover:bg-panel border-b transition-colors">
+										<td class="font-mono-system text-fade px-5 py-[14px] text-[10.5px] font-bold tracking-[0.06em] uppercase">
+											{formatDate(order.createdAt)}
+										</td>
+										<td class="px-5 py-[14px]">
+											<span class="font-mono-system inline-flex items-center px-[9px] py-[4px] text-[10px] font-bold tracking-[0.08em] uppercase {orderTypeChip(order.meta?.type)}">
 												{order.meta?.type || 'unknown'}
 											</span>
 										</td>
-										<td class="max-w-xs truncate px-6 py-4 text-sm text-gray-400">
+										<td class="font-newsreader max-w-xs truncate px-5 py-[14px] text-[15px]">
 											{order.meta?.eventTitle || order.meta?.product || order.meta?.plan || 'Order'}
 										</td>
-										<td class="px-6 py-4 text-right text-sm font-medium text-white"
-											>{formatCurrency(order.amount)}</td
-										>
-										<td class="px-6 py-4 text-right">
+										<td class="font-archivo text-prem px-5 py-[14px] text-right text-[15px] font-extrabold tracking-[-0.01em]">
+											{formatCurrency(order.amount)}
+										</td>
+										<td class="px-5 py-[14px] text-right">
 											<a
 												href="/admin/orders/{order.id}"
-												class="text-sm text-blue-400 transition-colors hover:text-blue-300"
+												class="font-mono-system text-warm hover:text-ink text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors"
 											>
-												View
+												View →
 											</a>
 										</td>
 									</tr>
@@ -573,91 +413,51 @@
 			</div>
 		{/if}
 
-		<!-- Tickets Tab -->
 		{#if activeTab === 'tickets'}
-			<div class="overflow-hidden rounded-xl border border-white/10 bg-gray-900/50">
+			<div class="border-ink border-[1.5px] overflow-hidden">
 				{#if data.tickets.length === 0}
 					<div class="p-12 text-center">
-						<svg
-							class="mx-auto mb-4 h-12 w-12 text-gray-600"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
-							/>
-						</svg>
-						<p class="text-gray-400">No tickets found</p>
+						<p class="font-newsreader text-soft text-[19px] italic">No tickets found.</p>
 					</div>
 				{:else}
 					<div class="overflow-x-auto">
-						<table class="w-full">
-							<thead class="bg-gray-800/50">
-								<tr>
-									<th
-										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-										>Event</th
-									>
-									<th
-										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-										>Ticket Code</th
-									>
-									<th
-										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-										>Player</th
-									>
-									<th
-										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-										>Date</th
-									>
-									<th
-										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-										>Status</th
-									>
+						<table class="w-full min-w-[860px]">
+							<thead class="border-ink border-b-[1.5px]">
+								<tr class="text-left">
+									<th class="font-mono-system text-fade px-5 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Event</th>
+									<th class="font-mono-system text-fade px-5 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Ticket Code</th>
+									<th class="font-mono-system text-fade px-5 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Player</th>
+									<th class="font-mono-system text-fade px-5 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Date</th>
+									<th class="font-mono-system text-fade px-5 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Status</th>
 								</tr>
 							</thead>
-							<tbody class="divide-y divide-white/10">
-								{#each data.tickets as { ticket, event }}
-									<tr class="transition-colors hover:bg-white/5">
-										<td class="px-6 py-4 text-sm font-medium text-white"
-											>{event?.title || 'Unknown Event'}</td
-										>
-										<td class="px-6 py-4">
-											<code class="rounded bg-gray-800 px-2 py-1 text-sm text-gray-300"
-												>{ticket.code}</code
-											>
+							<tbody>
+								{#each data.tickets as { ticket, event } (ticket.id)}
+									<tr class="border-line2 hover:bg-panel border-b transition-colors">
+										<td class="font-newsreader px-5 py-[14px] text-[15px] font-semibold">
+											{event?.title || 'Unknown Event'}
 										</td>
-										<td class="px-6 py-4 text-sm text-gray-300">
-											{ticket.firstName}
-											{ticket.lastName}
+										<td class="px-5 py-[14px]">
+											<code class="font-mono-system border-line2 text-warm bg-panel inline-block border px-[8px] py-[3px] text-[11px] font-bold tracking-[0.04em]">
+												{ticket.code}
+											</code>
+										</td>
+										<td class="font-newsreader px-5 py-[14px] text-[15px]">
+											{ticket.firstName} {ticket.lastName}
 											{#if ticket.gemId}
-												<span class="ml-2 text-xs text-amber-400">(GEM: {ticket.gemId})</span>
+												<span class="font-mono-system text-warm ml-2 text-[10px] font-bold tracking-[0.06em] uppercase">GEM · {ticket.gemId}</span>
 											{/if}
 										</td>
-										<td class="px-6 py-4 text-sm text-gray-400">{formatDate(event?.eventDate)}</td>
-										<td class="px-6 py-4">
+										<td class="font-mono-system text-fade px-5 py-[14px] text-[10.5px] font-bold tracking-[0.06em] uppercase">
+											{formatDate(event?.eventDate)}
+										</td>
+										<td class="px-5 py-[14px]">
 											{#if ticket.refunded}
-												<span
-													class="inline-flex items-center rounded-full bg-red-500/20 px-2.5 py-1 text-xs font-medium text-red-400"
-												>
-													Refunded
-												</span>
+												<span class="font-mono-system bg-warm inline-flex items-center px-[9px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase text-white">Refunded</span>
 											{:else if event?.eventDate && new Date(event.eventDate) < new Date()}
-												<span
-													class="inline-flex items-center rounded-full bg-gray-500/20 px-2.5 py-1 text-xs font-medium text-gray-400"
-												>
-													Past Event
-												</span>
+												<span class="font-mono-system border-line2 text-fade inline-flex items-center border px-[9px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase">Past Event</span>
 											{:else}
-												<span
-													class="inline-flex items-center rounded-full bg-green-500/20 px-2.5 py-1 text-xs font-medium text-green-400"
-												>
-													Active
-												</span>
+												<span class="font-mono-system bg-prem inline-flex items-center px-[9px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase text-white">Active</span>
 											{/if}
 										</td>
 									</tr>
@@ -669,54 +469,23 @@
 			</div>
 		{/if}
 
-		<!-- Courses Tab -->
 		{#if activeTab === 'courses' && data.customer}
-			<div class="overflow-hidden rounded-xl border border-white/10 bg-gray-900/50">
+			<div class="border-ink border-[1.5px] overflow-hidden">
 				{#if data.entitlements.length === 0}
 					<div class="p-12 text-center">
-						<svg
-							class="mx-auto mb-4 h-12 w-12 text-gray-600"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-							/>
-						</svg>
-						<p class="text-gray-400">No courses purchased</p>
+						<p class="font-newsreader text-soft text-[19px] italic">No courses purchased.</p>
 					</div>
 				{:else}
-					<div class="divide-y divide-white/10">
-						{#each data.entitlements as ent}
-							<div class="flex items-center justify-between p-6">
-								<div class="flex items-center gap-4">
-									<div class="flex h-12 w-12 items-center justify-center rounded-lg bg-cyan-500/20">
-										<svg
-											class="h-6 w-6 text-cyan-400"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-											/>
-										</svg>
-									</div>
-									<div>
-										<p class="font-medium text-white">{ent.product}</p>
-										<p class="text-sm text-gray-400">Purchased {formatDate(ent.createdAt)}</p>
-									</div>
+					<div>
+						{#each data.entitlements as ent (ent.id || ent.product + ent.createdAt)}
+							<div class="border-line2 flex items-center justify-between border-b p-5 last:border-b-0">
+								<div>
+									<p class="font-newsreader text-[16px] font-semibold">{ent.product}</p>
+									<p class="font-mono-system text-fade mt-[4px] text-[10px] font-bold tracking-[0.06em] uppercase">
+										Purchased {formatDate(ent.createdAt)}
+									</p>
 								</div>
-								<span
-									class="inline-flex items-center rounded-full bg-green-500/20 px-3 py-1 text-sm font-medium text-green-400"
-								>
+								<span class="font-mono-system bg-prem inline-flex items-center px-[9px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase text-white">
 									Active
 								</span>
 							</div>
@@ -726,4 +495,4 @@
 			</div>
 		{/if}
 	</div>
-</div>
+</section>

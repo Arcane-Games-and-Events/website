@@ -27,7 +27,7 @@
 	full-bleed outer wrapper.
 -->
 <div
-	class="mx-auto grid w-full max-w-[1200px] grid-cols-[1fr_348px] items-center gap-10 px-14 py-[42px]"
+	class="mx-auto grid w-full max-w-[1600px] grid-cols-1 items-center gap-10 px-4 md:px-10 lg:grid-cols-[1fr_348px] lg:px-14 py-[42px]"
 >
 	<div>
 		<span
@@ -36,7 +36,7 @@
 			AGE Premium
 		</span>
 		<h3
-			class="font-newsreader m-0 mb-[13px] text-[41px] leading-none font-semibold tracking-[-0.02em] text-white"
+			class="font-newsreader m-0 mb-[13px] text-[clamp(28px,5vw,41px)] leading-none font-semibold tracking-[-0.02em] text-white"
 		>
 			Members make
 			<em class="font-medium italic" style="color: #d6eedf;">AGE</em>

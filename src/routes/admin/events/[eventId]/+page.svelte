@@ -1,6 +1,4 @@
 <script>
-	import { browser } from '$app/environment';
-	import { onMount } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { enhance, deserialize } from '$app/forms';
 	import heroes from '$lib/data/heroes.json';
@@ -14,19 +12,12 @@
 
 	let { data, form } = $props();
 
-	// Tab state - persist to sessionStorage to survive reloads
-	const storageKey = $derived(`event-tab-${data.event.id}`);
+	// Always start on Overview when navigating to an event.
+	// Tab state is not persisted — clicks within the page swap it in memory only.
 	let activeTab = $state('overview');
-	onMount(() => {
-		const saved = sessionStorage.getItem(storageKey);
-		if (saved) activeTab = saved;
-	});
 
 	function setActiveTab(tab) {
 		activeTab = tab;
-		if (browser) {
-			sessionStorage.setItem(storageKey, tab);
-		}
 	}
 
 	// Edit mode for event details
@@ -431,434 +422,230 @@
 	<title>{data.event.title} - Event Management</title>
 </svelte:head>
 
-<div class="px-4 py-8 sm:px-6 lg:px-8">
-	<div class="mx-auto max-w-7xl">
-		<!-- Back Link -->
-		<div class="mb-4">
-			<a
-				href="/admin/events"
-				class="group inline-flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
+<!-- ============ HEADER ============ -->
+<header class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[42px] pb-[28px]">
+	<a
+		href="/admin/events"
+		class="font-mono-system text-fade hover:text-ink inline-flex items-center text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors"
+	>
+		← Back to Events
+	</a>
+	<div class="mt-[18px] mb-[18px] flex flex-wrap items-center gap-[16px]">
+		<span class="font-mono-system text-warm text-[11px] font-extrabold tracking-[0.16em] uppercase">
+			Event
+		</span>
+		<span class="bg-line2 hidden h-[1px] flex-1 md:block"></span>
+		<div class="flex flex-wrap items-center gap-[10px]">
+			<form
+				method="POST"
+				action="?/updateStatus"
+				class="inline-flex items-center gap-2"
+				bind:this={statusForm}
 			>
-				<svg
-					class="h-4 w-4 transition-transform group-hover:-translate-x-1"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
+				<select
+					name="status"
+					value={displayStatus}
+					onchange={() => statusForm.submit()}
+					class="border-ink bg-paper-bg text-ink font-mono-system border-[1.5px] py-[7px] pr-[24px] pl-[10px] text-[10.5px] font-bold tracking-[0.08em] uppercase focus:outline-none"
 				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M15 19l-7-7 7-7"
-					/>
-				</svg>
-				Back to Events
-			</a>
+					<option value="upcoming">Upcoming</option>
+					<option value="in_progress">In Progress</option>
+					<option value="completed">Completed</option>
+					<option value="cancelled">Cancelled</option>
+				</select>
+			</form>
+
+			{#if !isCompleted && hasWinner}
+				<button
+					type="button"
+					onclick={() => (showCloseConfirm = true)}
+					class="bg-prem font-mono-system inline-flex items-center px-[14px] py-[8px] text-[10px] font-extrabold tracking-[0.12em] uppercase text-white transition-[filter] hover:brightness-110"
+				>
+					Close Event ✓
+				</button>
+			{:else if !isCompleted && !hasWinner && hasResults}
+				<span
+					class="border-line2 text-fade font-mono-system inline-flex cursor-not-allowed items-center border px-[14px] py-[8px] text-[10px] font-bold tracking-[0.1em] uppercase"
+					title="Finals match required to close event"
+				>
+					Awaiting Finals
+				</span>
+			{:else if isCompleted && data.isAdmin}
+				<form method="POST" action="?/reopenEvent" class="inline">
+					<button
+						type="submit"
+						class="border-warm text-warm hover:bg-warm hover:text-white font-mono-system inline-flex items-center border px-[14px] py-[8px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+					>
+						Reopen
+					</button>
+				</form>
+			{/if}
 		</div>
+	</div>
+	<h1 class="font-newsreader text-[clamp(32px,4.8vw,52px)] leading-[0.95] font-semibold tracking-[-0.02em]">
+		{data.event.title}
+	</h1>
+	<p class="font-mono-system text-fade mt-[10px] text-[11px] font-bold tracking-[0.08em] uppercase">
+		{formatDate(data.event.eventDate)}
+	</p>
+</header>
 
-		<!-- Header -->
-		<div
-			class="relative mb-6 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-900/30 via-gray-900 to-gray-950 p-6 shadow-2xl shadow-cyan-500/5"
-		>
-			<!-- Decorative elements -->
-			<div
-				class="absolute top-0 right-0 -mt-16 -mr-16 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl"
-			></div>
-			<div
-				class="absolute bottom-0 left-0 -mb-16 -ml-16 h-48 w-48 rounded-full bg-blue-500/10 blur-3xl"
-			></div>
-
-			<div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div class="flex items-center gap-4">
-					<div
-						class="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg shadow-cyan-500/25"
-					>
-						<svg class="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
-							/>
-						</svg>
-					</div>
-					<div>
-						<h1 class="text-2xl font-bold text-white sm:text-3xl">{data.event.title}</h1>
-						<p class="mt-1 text-gray-400">{formatDate(data.event.eventDate)}</p>
-					</div>
-				</div>
-				<div class="flex items-center gap-3">
-					<!-- Event Status Dropdown -->
-					<form
-						method="POST"
-						action="?/updateStatus"
-						class="inline-flex items-center gap-2"
-						bind:this={statusForm}
-					>
-						<select
-							name="status"
-							value={displayStatus}
-							onchange={() => statusForm.submit()}
-							class="rounded-lg border border-white/10 bg-gray-800 py-1.5 pr-8 pl-3 text-sm font-medium transition-colors hover:bg-gray-700 focus:ring-2 focus:ring-cyan-500 focus:outline-none {displayStatus ===
-							'completed'
-								? 'text-green-400'
-								: displayStatus === 'in_progress'
-									? 'text-blue-400'
-									: displayStatus === 'cancelled'
-										? 'text-red-400'
-										: 'text-yellow-400'}"
-						>
-							<option value="upcoming" class="bg-gray-800 text-yellow-400">Upcoming</option>
-							<option value="in_progress" class="bg-gray-800 text-blue-400">In Progress</option>
-							<option value="completed" class="bg-gray-800 text-green-400">Completed</option>
-							<option value="cancelled" class="bg-gray-800 text-red-400">Cancelled</option>
-						</select>
-					</form>
-
-					<!-- Close Event Button (shows when not completed AND has a winner) -->
-					{#if !isCompleted && hasWinner}
-						<button
-							type="button"
-							onclick={() => (showCloseConfirm = true)}
-							class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-green-600 to-green-500 px-4 py-1.5 text-sm font-medium text-white shadow-lg transition-all hover:from-green-500 hover:to-green-400"
-						>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M5 13l4 4L19 7"
-								/>
-							</svg>
-							Close Event
-						</button>
-					{:else if !isCompleted && !hasWinner && hasResults}
-						<!-- Show disabled state with tooltip when results exist but no winner -->
-						<span
-							class="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-1.5 text-sm font-medium text-gray-400"
-							title="Finals match required to close event"
-						>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M12 15v2m0 0v2m0-2h2m-2 0H10m10-6a8 8 0 11-16 0 8 8 0 0116 0z"
-								/>
-							</svg>
-							Awaiting Finals
-						</span>
-					{:else if isCompleted && data.isAdmin}
-						<form method="POST" action="?/reopenEvent" class="inline">
-							<button
-								type="submit"
-								class="inline-flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-sm font-medium text-yellow-400 transition-colors hover:bg-yellow-500/20"
-							>
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-									/>
-								</svg>
-								Reopen
-							</button>
-						</form>
+{#if form?.success}
+	<section class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[12px] overflow-x-clip">
+		<div class="border-ink bg-prem border-[1.5px] p-4 text-white">
+			<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: #d6eedf;">Success</span>
+			<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{form.message}</p>
+			{#if form.details}
+				<ul class="font-mono-system mt-[8px] ml-4 list-disc text-[11px] font-bold tracking-[0.06em] uppercase" style="color: #d6eedf;">
+					<li>Players updated: {form.details.playersUpdated}</li>
+					<li>New players added: {form.details.playersCreated}</li>
+					{#if form.details.errors?.length > 0}
+						<li>Errors: {form.details.errors.length}</li>
 					{/if}
-				</div>
-			</div>
+				</ul>
+			{/if}
 		</div>
+	</section>
+{/if}
+{#if form?.error}
+	<section class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[12px] overflow-x-clip">
+		<div class="border-ink bg-warm border-[1.5px] p-4 text-white">
+			<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: rgba(255,255,255,0.75);">Error</span>
+			<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{form.error}</p>
+		</div>
+	</section>
+{/if}
 
-		<!-- Success/Error Messages -->
-		{#if form?.success}
-			<div class="mb-6 rounded-lg border border-green-500/30 bg-green-500/10 p-4">
-				<div class="flex items-center gap-3">
-					<svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-					<p class="text-sm text-green-400">{form.message}</p>
-				</div>
-				{#if form.details}
-					<ul class="mt-2 ml-8 list-inside list-disc text-sm text-green-300">
-						<li>Players updated: {form.details.playersUpdated}</li>
-						<li>New players added: {form.details.playersCreated}</li>
-						{#if form.details.errors?.length > 0}
-							<li class="text-red-400">Errors: {form.details.errors.length}</li>
-						{/if}
-					</ul>
-				{/if}
-			</div>
-		{/if}
-
-		{#if form?.error}
-			<div class="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 p-4">
-				<div class="flex items-center gap-3">
-					<svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-					<p class="text-sm text-red-400">{form.error}</p>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Tabs Navigation -->
-		<div
-			class="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-white/10 bg-gray-900/50 p-1"
-		>
-			{#each [{ id: 'overview', label: 'Overview' }, { id: 'registrations', label: `Registrations (${data.stats.totalTickets})` }, { id: 'import', label: 'Import CSV' }, { id: 'results', label: `Results (${data.existingResults?.length || 0})` }, { id: 'decklists', label: `Decklists (${data.existingDecklists?.length || 0})` }, { id: 'metagame', label: `Metagame (${data.existingHeroes?.length || 0})` }, ...(data.isAdmin ? [{ id: 'staff', label: `Staff (${data.assignedStaff?.length || 0})` }] : [])] as tab}
+<!-- ============ TABS ============ -->
+<section class="border-ink border-y-[3px] border-double overflow-x-clip">
+	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[16px]">
+		<div class="flex gap-1 overflow-x-auto whitespace-nowrap">
+			{#each [{ id: 'overview', label: 'Overview' }, { id: 'registrations', label: `Registrations · ${data.stats.totalTickets}` }, { id: 'import', label: 'Import CSV' }, { id: 'results', label: `Results · ${data.existingResults?.length || 0}` }, { id: 'decklists', label: `Decklists · ${data.existingDecklists?.length || 0}` }, { id: 'metagame', label: `Metagame · ${data.existingHeroes?.length || 0}` }, ...(data.isAdmin ? [{ id: 'staff', label: `Staff · ${data.assignedStaff?.length || 0}` }] : [])] as tab (tab.id)}
 				<button
 					onclick={() => setActiveTab(tab.id)}
-					class="rounded-lg px-4 py-2 text-sm font-medium whitespace-nowrap transition-all {activeTab ===
-					tab.id
-						? 'bg-cyan-500/20 text-cyan-400'
-						: 'text-gray-400 hover:bg-white/5 hover:text-white'}"
+					class="font-mono-system relative px-[16px] py-[10px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors {activeTab === tab.id ? 'text-ink' : 'text-fade hover:text-ink'}"
 				>
 					{tab.label}
+					{#if activeTab === tab.id}<span class="bg-warm absolute inset-x-[10px] bottom-0 h-[2px]"></span>{/if}
 				</button>
 			{/each}
 		</div>
+	</div>
+</section>
+
+<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[36px]">
 
 		<!-- Tab Content -->
 
 		<!-- Overview Tab -->
 		{#if activeTab === 'overview'}
-			<!-- Statistics Cards -->
-			<div
-				class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 {data.isAdmin ? 'lg:grid-cols-3' : ''}"
-			>
-				{#if data.isAdmin}
-					<div
-						class="group relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-950 p-6 transition-all hover:border-green-500/50"
-					>
-						<div
-							class="absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-green-500/10 blur-2xl"
-						></div>
-						<div class="relative flex items-center justify-between">
-							<div>
-								<p class="text-sm font-medium text-gray-400">Total Revenue</p>
-								<p class="mt-2 text-3xl font-bold text-white">${data.stats.totalRevenue}</p>
+			<!-- Stat Strip -->
+			<div class="border-ink border-[1.5px] mb-[24px] overflow-hidden">
+				<div class="grid grid-cols-2 divide-x divide-line2 {data.isAdmin ? 'md:grid-cols-3' : ''}">
+					{#if data.isAdmin}
+						<div class="p-5">
+							<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">Total Revenue</span>
+							<div class="font-archivo text-prem mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+								${data.stats.totalRevenue}
 							</div>
-							<div class="rounded-xl bg-green-500/20 p-3">
-								<svg
-									class="h-6 w-6 text-green-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-									/>
-								</svg>
-							</div>
+							<span class="font-mono-system text-fade mt-[4px] block text-[10px] font-bold tracking-[0.08em] uppercase">
+								before refunds
+							</span>
 						</div>
+					{/if}
+					<div class="p-5">
+						<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">Tickets Sold</span>
+						<div class="font-archivo text-ink mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+							{data.stats.totalTickets}
+						</div>
+						{#if data.event.playerCap}
+							<span class="font-mono-system text-fade mt-[4px] block text-[10px] font-bold tracking-[0.08em] uppercase">
+								of {data.event.playerCap} cap
+							</span>
+						{:else}
+							<span class="font-mono-system text-fade mt-[4px] block text-[10px] font-bold tracking-[0.08em] uppercase">
+								no cap
+							</span>
+						{/if}
 					</div>
-				{/if}
-
-				<div
-					class="group relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-950 p-6 transition-all hover:border-blue-500/50"
-				>
-					<div
-						class="absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-blue-500/10 blur-2xl"
-					></div>
-					<div class="relative flex items-center justify-between">
-						<div>
-							<p class="text-sm font-medium text-gray-400">Tickets Sold</p>
-							<p class="mt-2 text-3xl font-bold text-white">{data.stats.totalTickets}</p>
+					<div class="p-5">
+						<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">Refunds</span>
+						<div class="font-archivo {data.stats.totalRefunded > 0 ? 'text-warm' : 'text-ink'} mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+							{data.stats.totalRefunded}
 						</div>
-						<div class="rounded-xl bg-blue-500/20 p-3">
-							<svg
-								class="h-6 w-6 text-blue-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
-								/>
-							</svg>
-						</div>
-					</div>
-				</div>
-
-				<div
-					class="group relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-950 p-6 transition-all hover:border-red-500/50"
-				>
-					<div
-						class="absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-red-500/10 blur-2xl"
-					></div>
-					<div class="relative flex items-center justify-between">
-						<div>
-							<p class="text-sm font-medium text-gray-400">Refunds</p>
-							<p class="mt-2 text-3xl font-bold text-white">{data.stats.totalRefunded}</p>
-						</div>
-						<div class="rounded-xl bg-red-500/20 p-3">
-							<svg
-								class="h-6 w-6 text-red-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z"
-								/>
-							</svg>
-						</div>
+						<span class="font-mono-system text-fade mt-[4px] block text-[10px] font-bold tracking-[0.08em] uppercase">
+							refunded tickets
+						</span>
 					</div>
 				</div>
 			</div>
 
 			<!-- Event Details -->
-			<div
-				class="rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-950 p-6"
-			>
-				<div class="mb-6 flex items-center justify-between">
-					<div class="flex items-center gap-3">
-						<div class="rounded-lg bg-purple-500/20 p-2">
-							<svg
-								class="h-5 w-5 text-purple-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-								/>
-							</svg>
-						</div>
-						<h2 class="text-xl font-semibold text-white">Event Details</h2>
+			<div class="border-ink border-[1.5px] overflow-hidden">
+				<div class="border-line2 border-b p-5 flex items-center justify-between gap-3">
+					<div>
+						<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+							Event Details
+						</span>
+						<h2 class="font-newsreader mt-[4px] text-[22px] font-semibold tracking-[-0.01em]">
+							Configuration.
+						</h2>
 					</div>
 					<button
 						onclick={() => (isEditMode = !isEditMode)}
-						class="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-gray-700"
+						class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[14px] py-[8px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors"
 					>
-						{#if isEditMode}
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M6 18L18 6M6 6l12 12"
-								/>
-							</svg>
-							Cancel
-						{:else}
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-								/>
-							</svg>
-							Edit
-						{/if}
+						{isEditMode ? 'Cancel' : 'Edit'}
 					</button>
 				</div>
 
 				{#if isEditMode}
-					<form method="POST" action="?/updateEvent" class="space-y-4">
-						<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+					<form method="POST" action="?/updateEvent" class="p-5 space-y-[18px]">
+						<div class="grid grid-cols-1 gap-[16px] md:grid-cols-2">
 							<div>
-								<label for="title" class="mb-2 block text-sm font-medium text-gray-300"
-									>Event Name *</label
-								>
-								<input
-									type="text"
-									id="title"
-									name="title"
-									required
-									value={data.event.title}
-									class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none"
-								/>
+								<label for="title" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+									Event Name <span class="text-warm">*</span>
+								</label>
+								<input type="text" id="title" name="title" required value={data.event.title}
+									class="border-ink bg-paper-bg text-ink font-newsreader w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none" />
 							</div>
 							<div>
-								<label for="location" class="mb-2 block text-sm font-medium text-gray-300"
-									>Venue Name *</label
-								>
-								<input
-									type="text"
-									id="location"
-									name="location"
-									required
-									value={data.event.location}
-									class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none"
-								/>
+								<label for="location" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+									Venue Name <span class="text-warm">*</span>
+								</label>
+								<input type="text" id="location" name="location" required value={data.event.location}
+									class="border-ink bg-paper-bg text-ink font-newsreader w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none" />
 							</div>
 							<div>
-								<label for="address" class="mb-2 block text-sm font-medium text-gray-300"
-									>Address</label
-								>
-								<input
-									type="text"
-									id="address"
-									name="address"
-									value={data.event.address || ''}
-									class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none"
-								/>
+								<label for="address" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Address</label>
+								<input type="text" id="address" name="address" value={data.event.address || ''}
+									class="border-ink bg-paper-bg text-ink font-newsreader w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none" />
 							</div>
 							<div>
-								<label for="format" class="mb-2 block text-sm font-medium text-gray-300"
-									>Format *</label
-								>
-								<select
-									id="format"
-									name="format"
-									required
-									class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none"
-								>
+								<label for="format" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+									Format <span class="text-warm">*</span>
+								</label>
+								<select id="format" name="format" required
+									class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[12px] py-[10px] text-[13px] font-bold tracking-[0.06em] uppercase focus:outline-none">
 									{#each formats as format}
 										<option value={format} selected={data.event.format === format}>{format}</option>
 									{/each}
 								</select>
 							</div>
 							<div>
-								<label for="circuit" class="mb-2 block text-sm font-medium text-gray-300"
-									>Circuit</label
-								>
-								<select
-									id="circuit"
-									name="circuit"
-									class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none"
-								>
+								<label for="circuit" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Circuit</label>
+								<select id="circuit" name="circuit"
+									class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[12px] py-[10px] text-[13px] font-bold tracking-[0.06em] uppercase focus:outline-none">
 									<option value="">No circuit</option>
 									{#each circuits as circuit}
-										<option value={circuit} selected={data.event.circuit === circuit}
-											>{circuit}</option
-										>
+										<option value={circuit} selected={data.event.circuit === circuit}>{circuit}</option>
 									{/each}
 								</select>
 							</div>
 							<div>
-								<label for="month" class="mb-2 block text-sm font-medium text-gray-300">Month</label
-								>
-								<select
-									id="month"
-									name="month"
-									class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none"
-								>
+								<label for="month" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Month</label>
+								<select id="month" name="month"
+									class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[12px] py-[10px] text-[13px] font-bold tracking-[0.06em] uppercase focus:outline-none">
 									<option value="">Select month</option>
 									{#each months as month}
 										<option value={month} selected={data.event.month === month}>{month}</option>
@@ -866,234 +653,142 @@
 								</select>
 							</div>
 							<div>
-								<label for="eventDate" class="mb-2 block text-sm font-medium text-gray-300"
-									>Event Date & Time *</label
-								>
-								<input
-									type="datetime-local"
-									id="eventDate"
-									name="eventDate"
-									required
-									value={formatDateForInput(data.event.eventDate)}
-									class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none"
-								/>
+								<label for="eventDate" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+									Event Date & Time <span class="text-warm">*</span>
+								</label>
+								<input type="datetime-local" id="eventDate" name="eventDate" required value={formatDateForInput(data.event.eventDate)}
+									class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[14px] py-[10px] text-[13px] focus:outline-none" />
 							</div>
 							<div>
-								<label for="price" class="mb-2 block text-sm font-medium text-gray-300">
-									Entry Fee ($) * {#if data.isTournamentStaff}<span class="text-xs text-gray-500"
-											>(Read-only)</span
-										>{/if}
+								<label for="price" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+									Entry Fee ($) <span class="text-warm">*</span>
+									{#if data.isTournamentStaff}<span class="text-fade normal-case tracking-normal italic">(read-only)</span>{/if}
 								</label>
-								<input
-									type="number"
-									id="price"
-									name="price"
-									required
-									min="0"
-									step="0.01"
-									value={data.event.price}
-									disabled={data.isTournamentStaff}
-									class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none {data.isTournamentStaff
-										? 'cursor-not-allowed opacity-60'
-										: ''}"
-								/>
+								<input type="number" id="price" name="price" required min="0" step="0.01" value={data.event.price} disabled={data.isTournamentStaff}
+									class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[14px] py-[10px] text-[13px] focus:outline-none {data.isTournamentStaff ? 'cursor-not-allowed opacity-60' : ''}" />
 							</div>
 						</div>
 
 						<div>
-							<label for="description" class="mb-2 block text-sm font-medium text-gray-300"
-								>Description</label
-							>
-							<textarea
-								id="description"
-								name="description"
-								rows="3"
-								value={data.event.description || ''}
-								class="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-white focus:border-blue-500 focus:outline-none"
-							></textarea>
+							<label for="description" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Description</label>
+							<textarea id="description" name="description" rows="3" value={data.event.description || ''}
+								class="border-ink bg-paper-bg text-ink font-newsreader w-full border-[1.5px] px-[14px] py-[10px] text-[15px] leading-[1.5] focus:outline-none"></textarea>
 						</div>
 
-						<div class="flex flex-wrap gap-4 pt-2">
-							<label class="flex cursor-pointer items-center gap-3">
-								<input
-									type="checkbox"
-									id="gemIdRequired"
-									name="gemIdRequired"
-									bind:checked={gemIdRequired}
-									class="h-4 w-4 border-gray-600 bg-gray-800 text-blue-500"
-								/>
-								<span class="text-sm font-medium text-gray-300">GEM ID Required</span>
+						<div class="border-line2 border-t pt-[16px] flex flex-wrap gap-[18px]">
+							<label class="flex cursor-pointer items-center gap-2">
+								<input type="checkbox" id="gemIdRequired" name="gemIdRequired" bind:checked={gemIdRequired}
+									class="border-ink h-[16px] w-[16px] accent-[color:var(--ed-ink)]" />
+								<span class="font-newsreader text-[14px] font-semibold">GEM ID Required</span>
 							</label>
-							<label class="flex cursor-pointer items-center gap-3">
-								<input
-									type="checkbox"
-									id="premiumDiscount"
-									name="premiumDiscount"
-									bind:checked={premiumDiscount}
-									class="h-4 w-4 border-gray-600 bg-gray-800 text-blue-500"
-								/>
-								<span class="text-sm font-medium text-gray-300">Premium Discount</span>
+							<label class="flex cursor-pointer items-center gap-2">
+								<input type="checkbox" id="premiumDiscount" name="premiumDiscount" bind:checked={premiumDiscount}
+									class="border-ink h-[16px] w-[16px] accent-[color:var(--ed-prem)]" />
+								<span class="font-newsreader text-[14px] font-semibold">Premium Discount</span>
 							</label>
 							<div class="flex items-center gap-3">
-								<label class="flex cursor-pointer items-center gap-3">
-									<input
-										type="checkbox"
-										bind:checked={hasPlayerCap}
-										class="h-4 w-4 border-gray-600 bg-gray-800 text-orange-500"
-									/>
-									<span class="text-sm font-medium text-gray-300">Player Cap</span>
+								<label class="flex cursor-pointer items-center gap-2">
+									<input type="checkbox" bind:checked={hasPlayerCap}
+										class="border-ink h-[16px] w-[16px] accent-[color:var(--ed-warm)]" />
+									<span class="font-newsreader text-[14px] font-semibold">Player Cap</span>
 								</label>
 								{#if hasPlayerCap}
-									<input
-										type="number"
-										name="playerCap"
-										min="1"
-										bind:value={playerCapValue}
-										placeholder="e.g., 32"
-										class="w-24 rounded-lg border border-white/10 bg-gray-800/50 px-3 py-1.5 text-sm text-white placeholder:text-gray-500 focus:border-orange-500 focus:ring-1 focus:ring-orange-500/50 focus:outline-none"
-									/>
+									<input type="number" name="playerCap" min="1" bind:value={playerCapValue} placeholder="e.g., 32"
+										class="border-ink bg-paper-bg text-ink font-mono-system w-[100px] border-[1.5px] px-[10px] py-[6px] text-[12px] focus:outline-none" />
 								{/if}
 							</div>
 						</div>
 
-						<div class="flex gap-3 pt-4">
-							<button
-								type="button"
-								onclick={() => (isEditMode = false)}
-								class="rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700"
-							>
+						<div class="border-line2 border-t pt-[16px] flex gap-3">
+							<button type="button" onclick={() => (isEditMode = false)}
+								class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[18px] py-[11px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors">
 								Cancel
 							</button>
-							<button
-								type="submit"
-								class="rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-all hover:from-blue-500 hover:to-blue-400"
-							>
-								Save Changes
+							<button type="submit"
+								class="bg-ink font-mono-system inline-flex items-center px-[22px] py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125">
+								Save Changes →
 							</button>
 						</div>
 					</form>
 				{:else}
-					<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-						<div class="rounded-lg bg-gray-800/30 p-3">
-							<p class="text-xs font-medium tracking-wider text-gray-500 uppercase">Location</p>
-							<p class="mt-1 font-medium text-white">{data.event.location || 'N/A'}</p>
+					<dl class="grid grid-cols-1 gap-0 md:grid-cols-3">
+						<div class="border-line2 border-b border-r p-5">
+							<dt class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Location</dt>
+							<dd class="font-newsreader mt-[6px] text-[16px] font-semibold">{data.event.location || 'N/A'}</dd>
 							{#if data.event.address}
-								<p class="text-sm text-gray-400">{data.event.address}</p>
+								<dd class="text-fade mt-[2px] text-[12px]">{data.event.address}</dd>
 							{/if}
 						</div>
-						<div class="rounded-lg bg-gray-800/30 p-3">
-							<p class="text-xs font-medium tracking-wider text-gray-500 uppercase">Format</p>
-							<p class="mt-1 font-medium text-white">{data.event.format || 'N/A'}</p>
+						<div class="border-line2 border-b border-r p-5">
+							<dt class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Format</dt>
+							<dd class="font-newsreader mt-[6px] text-[16px] font-semibold">{data.event.format || 'N/A'}</dd>
+						</div>
+						<div class="border-line2 border-b p-5">
+							{#if data.event.circuit}
+								<dt class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Circuit</dt>
+								<dd class="font-newsreader mt-[6px] text-[16px] font-semibold">{data.event.circuit}</dd>
+								{#if data.event.month}
+									<dd class="font-mono-system text-fade mt-[2px] text-[10px] font-bold tracking-[0.06em] uppercase">{data.event.month}</dd>
+								{/if}
+							{:else}
+								<dt class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Entry Fee</dt>
+								<dd class="font-archivo text-prem mt-[6px] text-[20px] font-extrabold tracking-[-0.01em]">
+									${parseFloat(data.event.price).toFixed(2)}
+								</dd>
+							{/if}
 						</div>
 						{#if data.event.circuit}
-							<div class="rounded-lg bg-gray-800/30 p-3">
-								<p class="text-xs font-medium tracking-wider text-gray-500 uppercase">Circuit</p>
-								<p class="mt-1 font-medium text-white">{data.event.circuit}</p>
-								{#if data.event.month}
-									<p class="text-sm text-gray-400">{data.event.month}</p>
-								{/if}
+							<div class="border-line2 border-b border-r p-5 md:col-span-3">
+								<dt class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Entry Fee</dt>
+								<dd class="font-archivo text-prem mt-[6px] text-[20px] font-extrabold tracking-[-0.01em]">
+									${parseFloat(data.event.price).toFixed(2)}
+								</dd>
 							</div>
 						{/if}
-						<div class="rounded-lg bg-gray-800/30 p-3">
-							<p class="text-xs font-medium tracking-wider text-gray-500 uppercase">Entry Fee</p>
-							<p class="mt-1 text-lg font-bold text-green-400">
-								${parseFloat(data.event.price).toFixed(2)}
-							</p>
-						</div>
-						<div class="rounded-lg bg-gray-800/30 p-3 md:col-span-2">
-							<p class="text-xs font-medium tracking-wider text-gray-500 uppercase">Settings</p>
-							<div class="mt-2 flex flex-wrap gap-2">
-								<span
-									class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium {data
-										.event.gemIdRequired
-										? 'bg-blue-500/20 text-blue-400'
-										: 'bg-gray-700 text-gray-400'}"
-								>
-									{#if data.event.gemIdRequired}
-										<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-											><path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M5 13l4 4L19 7"
-											/></svg
-										>
-									{:else}
-										<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-											><path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M6 18L18 6M6 6l12 12"
-											/></svg
-										>
-									{/if}
-									GEM ID Required
+						<div class="p-5 md:col-span-3">
+							<dt class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Settings</dt>
+							<dd class="mt-[10px] flex flex-wrap gap-[8px]">
+								<span class="font-mono-system inline-flex items-center gap-[6px] px-[10px] py-[5px] text-[10px] font-bold tracking-[0.1em] uppercase {data.event.gemIdRequired ? 'bg-accent text-white' : 'border-line2 text-fade border'}">
+									{data.event.gemIdRequired ? '✓' : '—'} GEM ID Required
 								</span>
-								<span
-									class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium {data
-										.event.premiumDiscount
-										? 'bg-amber-500/20 text-amber-400'
-										: 'bg-gray-700 text-gray-400'}"
-								>
-									{#if data.event.premiumDiscount}
-										<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-											><path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M5 13l4 4L19 7"
-											/></svg
-										>
-									{:else}
-										<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-											><path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M6 18L18 6M6 6l12 12"
-											/></svg
-										>
-									{/if}
-									Premium Discount
+								<span class="font-mono-system inline-flex items-center gap-[6px] px-[10px] py-[5px] text-[10px] font-bold tracking-[0.1em] uppercase {data.event.premiumDiscount ? 'bg-prem text-white' : 'border-line2 text-fade border'}">
+									{data.event.premiumDiscount ? '✓' : '—'} Premium Discount
 								</span>
 								{#if data.event.playerCap}
-									<span
-										class="inline-flex items-center gap-1.5 rounded-full bg-orange-500/20 px-3 py-1 text-xs font-medium text-orange-400"
-									>
-										Cap: {data.event.playerCap} players
+									<span class="font-mono-system bg-warm inline-flex items-center px-[10px] py-[5px] text-[10px] font-bold tracking-[0.1em] uppercase text-white">
+										Cap · {data.event.playerCap} players
 									</span>
 								{/if}
-							</div>
+							</dd>
 						</div>
 						{#if data.event.description}
-							<div class="rounded-lg bg-gray-800/30 p-3 md:col-span-3">
-								<p class="text-xs font-medium tracking-wider text-gray-500 uppercase">
-									Description
-								</p>
-								<p class="mt-2 text-gray-300">{data.event.description}</p>
+							<div class="border-line2 border-t p-5 md:col-span-3">
+								<dt class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Description</dt>
+								<dd class="font-newsreader text-soft mt-[8px] text-[16px] leading-[1.55]">
+									{data.event.description}
+								</dd>
 							</div>
 						{/if}
-					</div>
+					</dl>
 				{/if}
 			</div>
 
-			<!-- Delete Event Button (Admin Only) -->
+			<!-- Danger zone -->
 			{#if data.isAdmin}
-				<div class="mt-6 flex justify-end">
+				<div class="border-warm mt-[24px] border-[1.5px] p-5 flex flex-wrap items-center justify-between gap-3">
+					<div>
+						<span class="font-mono-system text-warm text-[10px] font-extrabold tracking-[0.16em] uppercase">
+							Danger Zone
+						</span>
+						<p class="text-soft mt-[4px] text-[13px] leading-[1.5]">
+							Permanently delete this event and all its tickets, results, decklists, and staff assignments.
+						</p>
+					</div>
 					<button
 						type="button"
 						onclick={() => (showDeleteConfirm = true)}
-						class="inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20"
+						class="bg-warm font-mono-system inline-flex items-center px-[18px] py-[10px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-110"
 					>
-						<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-							/>
-						</svg>
 						Delete Event
 					</button>
 				</div>
@@ -1102,132 +797,62 @@
 
 		<!-- Registrations Tab -->
 		{#if activeTab === 'registrations'}
-			<div
-				class="rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-950 p-6"
-			>
-				<div class="mb-6 flex items-center gap-3">
-					<div class="rounded-lg bg-blue-500/20 p-2">
-						<svg
-							class="h-5 w-5 text-blue-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-							/>
-						</svg>
+			<div class="border-ink border-[1.5px] overflow-hidden">
+				<div class="border-line2 border-b p-5 flex flex-wrap items-center justify-between gap-3">
+					<div>
+						<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+							Registered Players
+						</span>
+						<h2 class="font-newsreader mt-[4px] text-[22px] font-semibold tracking-[-0.01em]">
+							The roster.
+						</h2>
 					</div>
-					<h2 class="text-xl font-semibold text-white">Registered Players</h2>
-					<span class="rounded-full bg-blue-500/20 px-2.5 py-0.5 text-sm font-medium text-blue-400"
-						>{data.tickets.length}{#if data.event.playerCap}/{data.event.playerCap}{/if}</span
-					>
+					<span class="font-mono-system bg-ink inline-flex items-center px-[10px] py-[5px] text-[10px] font-bold tracking-[0.1em] uppercase text-white">
+						{data.tickets.length}{#if data.event.playerCap}/{data.event.playerCap}{/if} players
+					</span>
 				</div>
 
 				{#if data.tickets.length === 0}
-					<div class="py-12 text-center">
-						<div
-							class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-800"
-						>
-							<svg
-								class="h-8 w-8 text-gray-500"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
-								/>
-							</svg>
-						</div>
-						<p class="text-gray-400">No tickets sold yet</p>
-						<p class="mt-1 text-sm text-gray-500">Registrations will appear here</p>
+					<div class="p-12 text-center">
+						<p class="font-newsreader text-soft text-[19px] italic">No tickets sold yet.</p>
+						<p class="text-fade mt-2 text-[13px]">Registrations will appear here.</p>
 					</div>
 				{:else}
 					<!-- Mobile Card View -->
-					<div class="space-y-3 lg:hidden">
+					<div class="lg:hidden">
 						{#each sortedTickets as ticket}
-							<div
-								class="rounded-lg border {ticket.refunded
-									? 'border-red-500/30 bg-red-500/5'
-									: 'border-gray-700 bg-gray-800/50'} p-4"
-							>
+							<div class="border-line2 border-b p-4 last:border-b-0 {ticket.refunded ? 'bg-panel' : ''}">
 								<div class="flex items-start justify-between gap-3">
 									<div class="min-w-0 flex-1">
-										<p class="truncate font-medium text-white">
-											{ticket.firstName || 'N/A'}
-											{ticket.lastName || 'N/A'}
-										</p>
+										<div class="font-newsreader truncate text-[16px] font-semibold">
+											{ticket.firstName || 'N/A'} {ticket.lastName || 'N/A'}
+										</div>
 										<div class="mt-1 flex items-center gap-2">
-											<span class="truncate font-mono text-xs text-gray-400"
-												>{ticket.gemId || 'N/A'}</span
-											>
+											<code class="font-mono-system text-warm text-[11px] font-bold tracking-[0.04em] truncate">
+												{ticket.gemId || 'N/A'}
+											</code>
 											{#if ticket.gemId && ticket.gemId !== 'N/A'}
 												<button
 													type="button"
 													onclick={(e) => copyGemId(ticket.gemId, e)}
-													class="-m-1 flex-shrink-0 touch-manipulation rounded-lg p-2 text-gray-500 transition-colors hover:bg-blue-500/10 hover:text-blue-400 active:bg-blue-500/20"
+													class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[7px] py-[2px] text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors"
 													title="Copy GEM ID"
 												>
-													{#if copiedGemId === ticket.gemId}
-														<svg
-															class="h-4 w-4 text-green-400"
-															fill="none"
-															stroke="currentColor"
-															viewBox="0 0 24 24"
-														>
-															<path
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																stroke-width="2"
-																d="M5 13l4 4L19 7"
-															/>
-														</svg>
-													{:else}
-														<svg
-															class="h-4 w-4"
-															fill="none"
-															stroke="currentColor"
-															viewBox="0 0 24 24"
-														>
-															<path
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																stroke-width="2"
-																d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-															/>
-														</svg>
-													{/if}
+													{copiedGemId === ticket.gemId ? 'Copied' : 'Copy'}
 												</button>
 											{/if}
 										</div>
 									</div>
-									<div class="flex-shrink-0">
-										{#if ticket.refunded}
-											<span
-												class="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400"
-											>
-												Refunded
-											</span>
-										{:else}
-											<span
-												class="inline-flex items-center gap-1 rounded-full bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400"
-											>
-												Paid
-											</span>
-										{/if}
-									</div>
+									<span class="font-mono-system inline-flex items-center px-[9px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase {ticket.refunded ? 'bg-warm text-white' : 'bg-prem text-white'}">
+										{ticket.refunded ? 'Refunded' : 'Paid'}
+									</span>
 								</div>
-								<div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
-									<span>{formatShortDate(ticket.createdAt)}</span>
+								<div class="border-line2 mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-3">
+									<span class="font-mono-system text-fade text-[10px] font-bold tracking-[0.06em] uppercase">
+										{formatShortDate(ticket.createdAt)}
+									</span>
 									<div class="flex items-center gap-2">
-										<span>In GEM:</span>
+										<span class="font-mono-system text-fade text-[10px] font-bold tracking-[0.08em] uppercase">In GEM:</span>
 										<button
 											type="button"
 											onclick={(e) => {
@@ -1236,342 +861,77 @@
 												toggleGemEntry(ticket.ticketId, gemEntryStatus[ticket.ticketId]);
 											}}
 											disabled={gemEntryLoading[ticket.ticketId]}
-											class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors {gemEntryStatus[
-												ticket.ticketId
-											]
-												? 'bg-green-600'
-												: 'bg-gray-600'} {gemEntryLoading[ticket.ticketId] ? 'opacity-50' : ''}"
+											class="relative inline-flex h-[20px] w-[36px] items-center border {gemEntryStatus[ticket.ticketId] ? 'bg-prem border-prem' : 'bg-line2 border-line2'} transition-colors {gemEntryLoading[ticket.ticketId] ? 'opacity-50' : ''}"
 											aria-label="Toggle entered into Gem"
 										>
-											<span
-												class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform {gemEntryStatus[
-													ticket.ticketId
-												]
-													? 'translate-x-4'
-													: 'translate-x-1'}"
-											></span>
+											<span class="inline-block h-[14px] w-[14px] bg-white transition-transform {gemEntryStatus[ticket.ticketId] ? 'translate-x-[19px]' : 'translate-x-[2px]'}"></span>
 										</button>
 									</div>
-								</div>
-								{#if !ticket.refunded}
-									<div class="mt-3 border-t border-gray-700 pt-3">
-										<form
-											method="POST"
-											action="?/refund"
-											onsubmit={(e) => {
-												if (!confirmRefund(ticket.ticketCode)) e.preventDefault();
-											}}
-											class="inline-block"
-										>
+									{#if !ticket.refunded}
+										<form method="POST" action="?/refund" onsubmit={(e) => { if (!confirmRefund(ticket.ticketCode)) e.preventDefault(); }} class="ml-auto">
 											<input type="hidden" name="ticketId" value={ticket.ticketId} />
-											<button
-												type="submit"
-												class="rounded-lg bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/20"
-											>
+											<button type="submit" class="bg-warm font-mono-system inline-flex items-center px-[10px] py-[5px] text-[10px] font-extrabold tracking-[0.12em] uppercase text-white hover:brightness-110 transition-[filter]">
 												Refund
 											</button>
 										</form>
-									</div>
-								{/if}
+									{/if}
+								</div>
 							</div>
 						{/each}
 					</div>
 
 					<!-- Desktop Table View -->
-					<div class="-mx-6 hidden overflow-x-auto px-6 lg:block">
-						<table class="w-full text-sm">
-							<thead>
-								<tr class="border-b border-white/10">
-									<th class="p-3 text-left font-semibold text-gray-400">
-										<button
-											onclick={() => sortBy('firstName')}
-											class="flex items-center gap-1 transition-colors hover:text-white"
-										>
-											First Name
-											{#if sortColumn === 'firstName'}
-												<svg
-													class="h-4 w-4 text-blue-400"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													{#if sortDirection === 'asc'}
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M5 15l7-7 7 7"
-														/>
-													{:else}
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M19 9l-7 7-7-7"
-														/>
-													{/if}
-												</svg>
-											{/if}
-										</button>
-									</th>
-									<th class="p-3 text-left font-semibold text-gray-400">
-										<button
-											onclick={() => sortBy('lastName')}
-											class="flex items-center gap-1 transition-colors hover:text-white"
-										>
-											Last Name
-											{#if sortColumn === 'lastName'}
-												<svg
-													class="h-4 w-4 text-blue-400"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													{#if sortDirection === 'asc'}
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M5 15l7-7 7 7"
-														/>
-													{:else}
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M19 9l-7 7-7-7"
-														/>
-													{/if}
-												</svg>
-											{/if}
-										</button>
-									</th>
-									<th class="p-3 text-left font-semibold text-gray-400">
-										<button
-											onclick={() => sortBy('gemId')}
-											class="flex items-center gap-1 transition-colors hover:text-white"
-										>
-											Gem ID
-											{#if sortColumn === 'gemId'}
-												<svg
-													class="h-4 w-4 text-blue-400"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													{#if sortDirection === 'asc'}
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M5 15l7-7 7 7"
-														/>
-													{:else}
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M19 9l-7 7-7-7"
-														/>
-													{/if}
-												</svg>
-											{/if}
-										</button>
-									</th>
-									<th class="p-3 text-left font-semibold text-gray-400">
-										<button
-											onclick={() => sortBy('createdAt')}
-											class="flex items-center gap-1 transition-colors hover:text-white"
-										>
-											Purchase Date
-											{#if sortColumn === 'createdAt'}
-												<svg
-													class="h-4 w-4 text-blue-400"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													{#if sortDirection === 'asc'}
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M5 15l7-7 7 7"
-														/>
-													{:else}
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M19 9l-7 7-7-7"
-														/>
-													{/if}
-												</svg>
-											{/if}
-										</button>
-									</th>
-									<th class="p-3 text-left font-semibold text-gray-400">
-										<button
-											onclick={() => sortBy('status')}
-											class="flex items-center gap-1 transition-colors hover:text-white"
-										>
-											Status
-											{#if sortColumn === 'status'}
-												<svg
-													class="h-4 w-4 text-blue-400"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													{#if sortDirection === 'asc'}
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M5 15l7-7 7 7"
-														/>
-													{:else}
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M19 9l-7 7-7-7"
-														/>
-													{/if}
-												</svg>
-											{/if}
-										</button>
-									</th>
-									<th class="p-3 text-left font-semibold text-gray-400">
-										<button
-											onclick={() => sortBy('enteredIntoGem')}
-											class="flex items-center gap-1 transition-colors hover:text-white"
-										>
-											In GEM
-											{#if sortColumn === 'enteredIntoGem'}
-												<svg
-													class="h-4 w-4 text-blue-400"
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-												>
-													{#if sortDirection === 'asc'}
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M5 15l7-7 7 7"
-														/>
-													{:else}
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M19 9l-7 7-7-7"
-														/>
-													{/if}
-												</svg>
-											{/if}
-										</button>
-									</th>
-									<th class="p-3 text-right font-semibold text-gray-400">Actions</th>
+					<div class="hidden lg:block overflow-x-auto">
+						<table class="w-full">
+							<thead class="border-line2 border-b-[1.5px]">
+								<tr class="text-left">
+									{#each [{ id: 'firstName', label: 'First Name' }, { id: 'lastName', label: 'Last Name' }, { id: 'gemId', label: 'GEM ID' }, { id: 'createdAt', label: 'Purchased' }, { id: 'status', label: 'Status' }, { id: 'enteredIntoGem', label: 'In GEM' }] as col (col.id)}
+										<th class="px-4 py-[12px]">
+											<button
+												onclick={() => sortBy(col.id)}
+												class="font-mono-system inline-flex items-center gap-1 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {sortColumn === col.id ? 'text-ink' : 'text-fade hover:text-ink'}"
+											>
+												{col.label}
+												{#if sortColumn === col.id}
+													<span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+												{/if}
+											</button>
+										</th>
+									{/each}
+									<th class="font-mono-system text-fade px-4 py-[12px] text-right text-[10px] font-extrabold tracking-[0.14em] uppercase">Actions</th>
 								</tr>
 							</thead>
-							<tbody class="divide-y divide-gray-800/50">
-								{#each sortedTickets as ticket}
-									<tr
-										class="transition-colors {ticket.refunded
-											? 'bg-red-500/5'
-											: ''} hover:bg-gray-800/50"
-									>
-										<td class="p-3 font-medium text-white">{ticket.firstName || 'N/A'}</td>
-										<td class="p-3 font-medium text-white">{ticket.lastName || 'N/A'}</td>
-										<td class="p-3">
-											<div class="flex items-center gap-2">
-												<span class="font-mono text-sm text-gray-400">{ticket.gemId || 'N/A'}</span>
+							<tbody>
+								{#each sortedTickets as ticket (ticket.ticketId)}
+									<tr class="border-line2 hover:bg-panel border-b transition-colors {ticket.refunded ? 'bg-panel' : ''}">
+										<td class="font-newsreader px-4 py-[12px] text-[15px] font-semibold">{ticket.firstName || 'N/A'}</td>
+										<td class="font-newsreader px-4 py-[12px] text-[15px] font-semibold">{ticket.lastName || 'N/A'}</td>
+										<td class="px-4 py-[12px]">
+											<div class="inline-flex items-center gap-2">
+												<code class="font-mono-system text-warm text-[12px] font-bold tracking-[0.04em]">
+													{ticket.gemId || 'N/A'}
+												</code>
 												{#if ticket.gemId && ticket.gemId !== 'N/A'}
 													<button
 														type="button"
 														onclick={(e) => copyGemId(ticket.gemId, e)}
-														class="rounded p-1 text-gray-500 transition-colors hover:bg-blue-500/10 hover:text-blue-400"
+														class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[7px] py-[2px] text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors"
 														title="Copy GEM ID"
 													>
-														{#if copiedGemId === ticket.gemId}
-															<svg
-																class="h-4 w-4 text-green-400"
-																fill="none"
-																stroke="currentColor"
-																viewBox="0 0 24 24"
-															>
-																<path
-																	stroke-linecap="round"
-																	stroke-linejoin="round"
-																	stroke-width="2"
-																	d="M5 13l4 4L19 7"
-																/>
-															</svg>
-														{:else}
-															<svg
-																class="h-4 w-4"
-																fill="none"
-																stroke="currentColor"
-																viewBox="0 0 24 24"
-															>
-																<path
-																	stroke-linecap="round"
-																	stroke-linejoin="round"
-																	stroke-width="2"
-																	d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-																/>
-															</svg>
-														{/if}
+														{copiedGemId === ticket.gemId ? '✓' : 'Copy'}
 													</button>
 												{/if}
 											</div>
 										</td>
-										<td class="p-3 text-xs text-gray-500">{formatShortDate(ticket.createdAt)}</td>
-										<td class="p-3">
-											{#if ticket.refunded}
-												<span
-													class="inline-flex items-center gap-1.5 rounded-full bg-red-500/20 px-2.5 py-1 text-xs font-medium text-red-400"
-												>
-													<svg
-														class="h-3 w-3"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M6 18L18 6M6 6l12 12"
-														/>
-													</svg>
-													Refunded
-												</span>
-											{:else}
-												<span
-													class="inline-flex items-center gap-1.5 rounded-full bg-green-500/20 px-2.5 py-1 text-xs font-medium text-green-400"
-												>
-													<svg
-														class="h-3 w-3"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M5 13l4 4L19 7"
-														/>
-													</svg>
-													Paid
-												</span>
-											{/if}
+										<td class="font-mono-system text-fade px-4 py-[12px] text-[10.5px] font-bold tracking-[0.06em] uppercase">
+											{formatShortDate(ticket.createdAt)}
 										</td>
-										<td class="p-3">
+										<td class="px-4 py-[12px]">
+											<span class="font-mono-system inline-flex items-center px-[9px] py-[3px] text-[10px] font-bold tracking-[0.1em] uppercase {ticket.refunded ? 'bg-warm text-white' : 'bg-prem text-white'}">
+												{ticket.refunded ? 'Refunded' : 'Paid'}
+											</span>
+										</td>
+										<td class="px-4 py-[12px]">
 											<button
 												type="button"
 												onclick={(e) => {
@@ -1580,37 +940,17 @@
 													toggleGemEntry(ticket.ticketId, gemEntryStatus[ticket.ticketId]);
 												}}
 												disabled={gemEntryLoading[ticket.ticketId]}
-												class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors {gemEntryStatus[
-													ticket.ticketId
-												]
-													? 'bg-green-600'
-													: 'bg-gray-600'} {gemEntryLoading[ticket.ticketId] ? 'opacity-50' : ''}"
+												class="relative inline-flex h-[22px] w-[40px] items-center border {gemEntryStatus[ticket.ticketId] ? 'bg-prem border-prem' : 'bg-line2 border-line2'} transition-colors {gemEntryLoading[ticket.ticketId] ? 'opacity-50' : ''}"
 												aria-label="Toggle entered into Gem"
 											>
-												<span
-													class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform {gemEntryStatus[
-														ticket.ticketId
-													]
-														? 'translate-x-6'
-														: 'translate-x-1'}"
-												></span>
+												<span class="inline-block h-[16px] w-[16px] bg-white transition-transform {gemEntryStatus[ticket.ticketId] ? 'translate-x-[21px]' : 'translate-x-[2px]'}"></span>
 											</button>
 										</td>
-										<td class="p-3 text-right">
+										<td class="px-4 py-[12px] text-right">
 											{#if !ticket.refunded}
-												<form
-													method="POST"
-													action="?/refund"
-													onsubmit={(e) => {
-														if (!confirmRefund(ticket.ticketCode)) e.preventDefault();
-													}}
-													class="inline-block"
-												>
+												<form method="POST" action="?/refund" onsubmit={(e) => { if (!confirmRefund(ticket.ticketCode)) e.preventDefault(); }} class="inline-block">
 													<input type="hidden" name="ticketId" value={ticket.ticketId} />
-													<button
-														type="submit"
-														class="rounded-lg bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/20"
-													>
+													<button type="submit" class="bg-warm font-mono-system inline-flex items-center px-[10px] py-[5px] text-[10px] font-extrabold tracking-[0.12em] uppercase text-white hover:brightness-110 transition-[filter]">
 														Refund
 													</button>
 												</form>
@@ -1629,617 +969,343 @@
 		{#if activeTab === 'import'}
 			<div class="mx-auto max-w-4xl">
 				{#if isCompleted}
-					<div class="rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-8 text-center">
-						<div
-							class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-yellow-500/20"
-						>
-							<svg
-								class="h-8 w-8 text-yellow-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M12 15v2m0 0v2m0-2h2m-2 0H10m4-6a4 4 0 11-8 0 4 4 0 018 0z"
-								/>
-							</svg>
-						</div>
-						<h2 class="mb-2 text-xl font-semibold text-white">Event Finalized</h2>
-						<p class="text-gray-400">
-							This event is finalized. Reopen the event from the Finalize tab to import new results.
+					<div class="border-warm border-[1.5px] p-8 text-center">
+						<span class="font-mono-system text-warm text-[10px] font-extrabold tracking-[0.16em] uppercase">
+							Event Finalized
+						</span>
+						<h2 class="font-newsreader mt-[6px] text-[26px] font-semibold tracking-[-0.01em]">
+							Locked.
+						</h2>
+						<p class="font-newsreader text-soft mt-[10px] text-[16px] italic">
+							This event is finalized. Reopen from the Finalize tab to import new results.
 						</p>
 					</div>
 				{:else}
-					<!-- Success Message -->
 					{#if form?.processedResults}
-						<div
-							class="mb-8 rounded-xl border border-green-500/30 bg-gradient-to-br from-green-500/10 to-emerald-500/5 p-6"
-						>
-							<div class="flex items-start gap-4">
-								<div
-									class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-green-500/20"
-								>
-									<svg
-										class="h-6 w-6 text-green-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M5 13l4 4L19 7"
-										/>
-									</svg>
-								</div>
-								<div class="flex-1">
-									<h3 class="mb-3 text-lg font-semibold text-green-400">
-										Results Imported Successfully
-									</h3>
-									<div class="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-										<div class="rounded-lg bg-gray-900/50 p-3 text-center">
-											<p class="text-2xl font-bold text-white">
-												{form.processedResults.totalPlayers}
-											</p>
-											<p class="text-xs text-gray-400">Players</p>
-										</div>
-										<div class="rounded-lg bg-gray-900/50 p-3 text-center">
-											<p class="text-2xl font-bold text-white">
-												{form.processedResults.totalRounds}
-											</p>
-											<p class="text-xs text-gray-400">Rounds</p>
-										</div>
-										<div class="rounded-lg bg-gray-900/50 p-3 text-center">
-											<p class="text-2xl font-bold text-blue-400">
-												{form.processedResults.totalPointsDistributed}
-											</p>
-											<p class="text-xs text-gray-400">AGE Points</p>
-										</div>
-										<div class="rounded-lg bg-gray-900/50 p-3 text-center">
-											<p class="text-2xl font-bold text-green-400">
-												${form.processedResults.totalPrizeDistributed}
-											</p>
-											<p class="text-xs text-gray-400">Prize Pool</p>
-										</div>
+						<div class="border-ink bg-prem mb-[24px] border-[1.5px] p-6 text-white">
+							<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: #d6eedf;">
+								Success
+							</span>
+							<h3 class="font-newsreader mt-[4px] text-[22px] font-semibold">
+								Results imported.
+							</h3>
+							<div class="mt-[16px] grid grid-cols-2 gap-[14px] sm:grid-cols-4">
+								<div class="border border-white/30 p-3 text-center">
+									<div class="font-archivo text-[24px] font-extrabold tracking-[-0.02em]">
+										{form.processedResults.totalPlayers}
 									</div>
-									<button
-										onclick={() => setActiveTab('results')}
-										class="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-sm text-white transition-colors hover:bg-gray-700"
-									>
-										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-											/>
-										</svg>
-										Review Results
-									</button>
+									<span class="font-mono-system mt-[4px] block text-[10px] font-bold tracking-[0.08em] uppercase" style="color: #d6eedf;">
+										Players
+									</span>
+								</div>
+								<div class="border border-white/30 p-3 text-center">
+									<div class="font-archivo text-[24px] font-extrabold tracking-[-0.02em]">
+										{form.processedResults.totalRounds}
+									</div>
+									<span class="font-mono-system mt-[4px] block text-[10px] font-bold tracking-[0.08em] uppercase" style="color: #d6eedf;">
+										Rounds
+									</span>
+								</div>
+								<div class="border border-white/30 p-3 text-center">
+									<div class="font-archivo text-[24px] font-extrabold tracking-[-0.02em]">
+										{form.processedResults.totalPointsDistributed}
+									</div>
+									<span class="font-mono-system mt-[4px] block text-[10px] font-bold tracking-[0.08em] uppercase" style="color: #d6eedf;">
+										AGE Points
+									</span>
+								</div>
+								<div class="border border-white/30 p-3 text-center">
+									<div class="font-archivo text-[24px] font-extrabold tracking-[-0.02em]">
+										${form.processedResults.totalPrizeDistributed}
+									</div>
+									<span class="font-mono-system mt-[4px] block text-[10px] font-bold tracking-[0.08em] uppercase" style="color: #d6eedf;">
+										Prize Pool
+									</span>
 								</div>
 							</div>
+							<button
+								onclick={() => setActiveTab('results')}
+								class="bg-white text-prem font-mono-system mt-[18px] inline-flex items-center px-[16px] py-[9px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-[filter] hover:brightness-95"
+							>
+								Review Results →
+							</button>
 						</div>
 					{/if}
 
-					<form method="POST" action="?/processCSV" enctype="multipart/form-data" class="space-y-4">
-						<!-- Compact Header -->
-						<div class="mb-2 flex items-center gap-3">
-							<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20">
-								<svg
-									class="h-5 w-5 text-blue-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-									/>
-								</svg>
-							</div>
-							<div>
-								<h2 class="text-lg font-semibold text-white">Import Tournament Results</h2>
-								<p class="text-xs text-gray-500">
-									Upload GEM CSV exports to calculate standings and record matches
-								</p>
-							</div>
+					<div class="border-ink border-[1.5px] overflow-hidden">
+						<div class="border-line2 border-b p-5">
+							<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+								Import Tournament Results
+							</span>
+							<h2 class="font-newsreader mt-[4px] text-[22px] font-semibold tracking-[-0.01em]">
+								GEM CSV upload.
+							</h2>
+							<p class="text-soft mt-[6px] text-[13px] leading-[1.5]">
+								Upload GEM CSV exports to calculate standings and record matches.
+							</p>
 						</div>
+						<form method="POST" action="?/processCSV" enctype="multipart/form-data" class="p-5 space-y-[18px]">
+							<div class="grid gap-[14px] sm:grid-cols-2">
+								<!-- Swiss Standings -->
+								<div class="border-line2 border-dashed hover:border-ink bg-panel border-[1.5px] p-4 transition-colors {swissStandingsFile && swissStandingsFile.length > 0 ? 'border-prem bg-prem/10' : ''}">
+									<input type="file" id="swissStandings" name="swissStandings" accept=".csv" required bind:files={swissStandingsFile} class="sr-only" />
+									<label for="swissStandings" class="flex cursor-pointer items-center gap-3">
+										<span class="font-mono-system inline-flex h-[32px] w-[32px] shrink-0 items-center justify-center text-[13px] font-extrabold {swissStandingsFile && swissStandingsFile.length > 0 ? 'bg-prem text-white' : 'border-line2 text-fade border'}">
+											{swissStandingsFile && swissStandingsFile.length > 0 ? '✓' : '01'}
+										</span>
+										<div class="min-w-0 flex-1">
+											<div class="font-newsreader text-[15px] font-semibold">
+												Swiss Standings <span class="text-warm">*</span>
+											</div>
+											{#if swissStandingsFile && swissStandingsFile.length > 0}
+												<p class="font-mono-system text-prem mt-[2px] truncate text-[11px] font-bold tracking-[0.02em]">
+													{swissStandingsFile[0].name}
+												</p>
+											{:else}
+												<p class="text-fade mt-[2px] text-[12px]">Click to select CSV</p>
+											{/if}
+										</div>
+									</label>
+								</div>
 
-						<!-- Compact File Uploads -->
-						<div class="grid gap-3 sm:grid-cols-2">
-							<!-- Swiss Standings -->
-							<div
-								class="rounded-lg border border-dashed border-gray-700 bg-gray-900/50 p-3 transition-colors hover:border-gray-600 {swissStandingsFile &&
-								swissStandingsFile.length > 0
-									? 'border-green-500/50 bg-green-500/5'
-									: ''}"
-							>
-								<input
-									type="file"
-									id="swissStandings"
-									name="swissStandings"
-									accept=".csv"
-									required
-									bind:files={swissStandingsFile}
-									class="sr-only"
-								/>
-								<label for="swissStandings" class="flex cursor-pointer items-center gap-3">
-									<div
-										class="h-8 w-8 flex-shrink-0 rounded-lg {swissStandingsFile &&
-										swissStandingsFile.length > 0
-											? 'bg-green-500/20'
-											: 'bg-gray-800'} flex items-center justify-center"
-									>
-										{#if swissStandingsFile && swissStandingsFile.length > 0}
-											<svg
-												class="h-4 w-4 text-green-400"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M5 13l4 4L19 7"
-												/>
-											</svg>
-										{:else}
-											<svg
-												class="h-4 w-4 text-gray-400"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-												/>
-											</svg>
-										{/if}
-									</div>
-									<div class="min-w-0 flex-1">
-										<p class="text-sm font-medium text-white">
-											Swiss Standings <span class="text-red-400">*</span>
-										</p>
-										{#if swissStandingsFile && swissStandingsFile.length > 0}
-											<p class="truncate text-xs text-green-400">{swissStandingsFile[0].name}</p>
-										{:else}
-											<p class="text-xs text-gray-500">Click to select CSV</p>
-										{/if}
-									</div>
-								</label>
+								<!-- Pairings -->
+								<div class="border-line2 border-dashed hover:border-ink bg-panel border-[1.5px] p-4 transition-colors {pairingsFile && pairingsFile.length > 0 ? 'border-prem bg-prem/10' : ''}">
+									<input type="file" id="pairings" name="pairings" accept=".csv" required bind:files={pairingsFile} class="sr-only" />
+									<label for="pairings" class="flex cursor-pointer items-center gap-3">
+										<span class="font-mono-system inline-flex h-[32px] w-[32px] shrink-0 items-center justify-center text-[13px] font-extrabold {pairingsFile && pairingsFile.length > 0 ? 'bg-prem text-white' : 'border-line2 text-fade border'}">
+											{pairingsFile && pairingsFile.length > 0 ? '✓' : '02'}
+										</span>
+										<div class="min-w-0 flex-1">
+											<div class="font-newsreader text-[15px] font-semibold">
+												Pairings Data <span class="text-warm">*</span>
+											</div>
+											{#if pairingsFile && pairingsFile.length > 0}
+												<p class="font-mono-system text-prem mt-[2px] truncate text-[11px] font-bold tracking-[0.02em]">
+													{pairingsFile[0].name}
+												</p>
+											{:else}
+												<p class="text-fade mt-[2px] text-[12px]">Click to select CSV</p>
+											{/if}
+										</div>
+									</label>
+								</div>
 							</div>
 
-							<!-- Pairings -->
-							<div
-								class="rounded-lg border border-dashed border-gray-700 bg-gray-900/50 p-3 transition-colors hover:border-gray-600 {pairingsFile &&
-								pairingsFile.length > 0
-									? 'border-green-500/50 bg-green-500/5'
-									: ''}"
-							>
-								<input
-									type="file"
-									id="pairings"
-									name="pairings"
-									accept=".csv"
-									required
-									bind:files={pairingsFile}
-									class="sr-only"
-								/>
-								<label for="pairings" class="flex cursor-pointer items-center gap-3">
-									<div
-										class="h-8 w-8 flex-shrink-0 rounded-lg {pairingsFile && pairingsFile.length > 0
-											? 'bg-green-500/20'
-											: 'bg-gray-800'} flex items-center justify-center"
-									>
-										{#if pairingsFile && pairingsFile.length > 0}
-											<svg
-												class="h-4 w-4 text-green-400"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M5 13l4 4L19 7"
-												/>
-											</svg>
-										{:else}
-											<svg
-												class="h-4 w-4 text-gray-400"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-												/>
-											</svg>
-										{/if}
-									</div>
-									<div class="min-w-0 flex-1">
-										<p class="text-sm font-medium text-white">
-											Pairings Data <span class="text-red-400">*</span>
-										</p>
-										{#if pairingsFile && pairingsFile.length > 0}
-											<p class="truncate text-xs text-green-400">{pairingsFile[0].name}</p>
-										{:else}
-											<p class="text-xs text-gray-500">Click to select CSV</p>
-										{/if}
-									</div>
-								</label>
-							</div>
-						</div>
-
-						<!-- Warning (if exists) -->
-						{#if data.existingResults && data.existingResults.length > 0}
-							<div
-								class="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-400"
-							>
-								<svg
-									class="h-4 w-4 flex-shrink-0"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-									/>
-								</svg>
-								<span>This will replace {data.existingResults.length} existing results</span>
-							</div>
-						{/if}
-
-						<!-- Submit Button -->
-						<button
-							type="submit"
-							disabled={csvProcessing || !swissStandingsFile || !pairingsFile}
-							class="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
-						>
-							{#if csvProcessing}
-								<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-									<circle
-										class="opacity-25"
-										cx="12"
-										cy="12"
-										r="10"
-										stroke="currentColor"
-										stroke-width="4"
-									></circle>
-									<path
-										class="opacity-75"
-										fill="currentColor"
-										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-									></path>
-								</svg>
-								Processing...
-							{:else}
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-									/>
-								</svg>
-								Import Results
+							{#if data.existingResults && data.existingResults.length > 0}
+								<div class="border-warm bg-warm/10 border-[1.5px] p-3">
+									<p class="font-mono-system text-warm text-[10.5px] font-bold tracking-[0.08em] uppercase">
+										Warning · will replace {data.existingResults.length} existing results
+									</p>
+								</div>
 							{/if}
-						</button>
-					</form>
+
+							<button
+								type="submit"
+								disabled={csvProcessing || !swissStandingsFile || !pairingsFile}
+								class="bg-ink font-mono-system flex w-full items-center justify-center gap-2 px-[22px] py-[13px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-50"
+							>
+								{csvProcessing ? 'Processing…' : 'Import Results →'}
+							</button>
+						</form>
+					</div>
 				{/if}
 			</div>
 		{/if}
 
 		<!-- Results Tab -->
 		{#if activeTab === 'results'}
-			<div class="space-y-6">
-				<!-- Stats Header -->
-				{#if sortedResults.length > 0}
-					<div class="flex items-center justify-between">
-						<div class="flex items-center gap-4">
-							<span class="text-sm text-gray-400">
-								{sortedResults.length} players • {data.existingMatches?.length || 0} matches recorded
-							</span>
-						</div>
+			<div class="border-ink border-[1.5px] overflow-hidden">
+				<div class="border-line2 border-b p-5 flex flex-wrap items-center justify-between gap-3">
+					<div>
+						<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+							Tournament Results
+						</span>
+						<h2 class="font-newsreader mt-[4px] text-[22px] font-semibold tracking-[-0.01em]">
+							The final standings.
+						</h2>
 					</div>
-				{/if}
+					{#if sortedResults.length > 0}
+						<span class="font-mono-system text-fade text-[10.5px] font-bold tracking-[0.08em] uppercase">
+							{sortedResults.length} players · {data.existingMatches?.length || 0} matches
+						</span>
+					{/if}
+				</div>
 
-				<!-- Results List -->
-				<div class="rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-950">
-					{#if sortedResults.length === 0}
-						<div class="p-12 text-center">
-							<svg
-								class="mx-auto h-12 w-12 text-gray-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-								/>
-							</svg>
-							<p class="mt-4 text-gray-400">No results recorded yet</p>
-							<p class="mt-2 text-sm text-gray-500">
-								Import tournament CSV files to see results here
-							</p>
-						</div>
-					{:else}
-						<!-- Mobile Card View -->
-						<div class="space-y-3 p-4 lg:hidden">
-							{#each sortedResults as result}
-								<div class="rounded-lg border border-gray-700 bg-gray-800/50 p-4">
-									<div class="flex items-start gap-3">
-										<span
-											class="inline-flex h-10 w-10 items-center justify-center rounded-full {result.placement ===
-											1
-												? 'bg-yellow-500/20 text-yellow-400'
-												: result.placement === 2
-													? 'bg-gray-400/20 text-gray-300'
-													: result.placement === 3
-														? 'bg-amber-600/20 text-amber-500'
-														: 'bg-gray-800 text-gray-400'} flex-shrink-0 text-lg font-bold"
-										>
-											{result.placement}
+				{#if sortedResults.length === 0}
+					<div class="p-12 text-center">
+						<p class="font-newsreader text-soft text-[19px] italic">No results recorded yet.</p>
+						<p class="text-fade mt-2 text-[13px]">
+							Import tournament CSV files to see results here.
+						</p>
+					</div>
+				{:else}
+					<!-- Mobile -->
+					<div class="lg:hidden">
+						{#each sortedResults as result (result.playerName + result.placement)}
+							<div class="border-line2 flex items-start gap-3 border-b p-4 last:border-b-0">
+								<span class="font-mono-system inline-flex h-[36px] w-[36px] shrink-0 items-center justify-center text-[13px] font-extrabold {result.placement === 1 ? 'bg-warm text-white' : result.placement <= 3 ? 'bg-ink text-white' : 'border-line2 text-fade border'}">
+									{result.placement}
+								</span>
+								<div class="min-w-0 flex-1">
+									<div class="font-newsreader truncate text-[16px] font-semibold">
+										{result.playerName}
+									</div>
+									<div class="mt-[3px] flex items-center gap-2">
+										<code class="font-mono-system text-warm text-[11px] font-bold tracking-[0.04em]">
+											{result.gemId || '—'}
+										</code>
+										{#if result.gemId && result.gemId !== '-'}
+											<button
+												type="button"
+												onclick={(e) => copyGemId(result.gemId, e)}
+												class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[7px] py-[2px] text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+												title="Copy GEM ID"
+											>
+												{copiedGemId === result.gemId ? '✓' : 'Copy'}
+											</button>
+										{/if}
+									</div>
+									<div class="mt-[10px] flex flex-wrap items-center gap-x-4 gap-y-1">
+										<span class="font-mono-system text-fade text-[10px] font-bold tracking-[0.08em] uppercase">
+											Record <span class="text-ink font-archivo text-[12px] tracking-[-0.01em]">
+												{result.wins}-{result.losses}{result.draws > 0 ? `-${result.draws}` : ''}
+											</span>
 										</span>
-										<div class="min-w-0 flex-1">
-											<p class="truncate font-medium text-white">{result.playerName}</p>
-											<div class="mt-1 flex items-center gap-2">
-												<span class="font-mono text-xs text-gray-400">{result.gemId || '-'}</span>
+										<span class="font-mono-system text-fade text-[10px] font-bold tracking-[0.08em] uppercase">
+											AGE Pts <span class="text-accent font-archivo text-[12px] tracking-[-0.01em]">{result.agePoints}</span>
+										</span>
+										{#if result.prizeAmount}
+											<span class="font-mono-system text-fade text-[10px] font-bold tracking-[0.08em] uppercase">
+												Prize <span class="text-prem font-archivo text-[12px] tracking-[-0.01em]">${result.prizeAmount}</span>
+											</span>
+										{/if}
+									</div>
+								</div>
+							</div>
+						{/each}
+					</div>
+
+					<!-- Desktop -->
+					<div class="hidden lg:block overflow-x-auto">
+						<table class="w-full">
+							<thead class="border-line2 border-b-[1.5px]">
+								<tr class="text-left">
+									<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Place</th>
+									<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Player</th>
+									<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">GEM ID</th>
+									<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Record</th>
+									<th class="font-mono-system text-fade px-4 py-[12px] text-right text-[10px] font-extrabold tracking-[0.14em] uppercase">AGE Pts</th>
+									<th class="font-mono-system text-fade px-4 py-[12px] text-right text-[10px] font-extrabold tracking-[0.14em] uppercase">Prize</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each sortedResults as result (result.playerName + result.placement)}
+									<tr class="border-line2 hover:bg-panel border-b transition-colors">
+										<td class="px-4 py-[12px]">
+											<span class="font-mono-system inline-flex h-[28px] w-[28px] items-center justify-center text-[11px] font-extrabold {result.placement === 1 ? 'bg-warm text-white' : result.placement <= 3 ? 'bg-ink text-white' : 'border-line2 text-fade border'}">
+												{result.placement}
+											</span>
+										</td>
+										<td class="font-newsreader px-4 py-[12px] text-[15px] font-semibold">{result.playerName}</td>
+										<td class="px-4 py-[12px]">
+											<div class="inline-flex items-center gap-2">
+												<code class="font-mono-system text-warm text-[12px] font-bold tracking-[0.04em]">
+													{result.gemId || '—'}
+												</code>
 												{#if result.gemId && result.gemId !== '-'}
 													<button
 														type="button"
 														onclick={(e) => copyGemId(result.gemId, e)}
-														class="-m-1 touch-manipulation rounded-lg p-2 text-gray-500 transition-colors hover:bg-blue-500/10 hover:text-blue-400 active:bg-blue-500/20"
+														class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[7px] py-[2px] text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors"
 														title="Copy GEM ID"
 													>
-														{#if copiedGemId === result.gemId}
-															<svg
-																class="h-4 w-4 text-green-400"
-																fill="none"
-																stroke="currentColor"
-																viewBox="0 0 24 24"
-															>
-																<path
-																	stroke-linecap="round"
-																	stroke-linejoin="round"
-																	stroke-width="2"
-																	d="M5 13l4 4L19 7"
-																/>
-															</svg>
-														{:else}
-															<svg
-																class="h-4 w-4"
-																fill="none"
-																stroke="currentColor"
-																viewBox="0 0 24 24"
-															>
-																<path
-																	stroke-linecap="round"
-																	stroke-linejoin="round"
-																	stroke-width="2"
-																	d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-																/>
-															</svg>
-														{/if}
+														{copiedGemId === result.gemId ? '✓' : 'Copy'}
 													</button>
 												{/if}
 											</div>
-										</div>
-									</div>
-									<div class="mt-3 flex flex-wrap items-center gap-3 text-sm">
-										<span class="text-gray-400"
-											>Record: <span class="text-white"
-												>{result.wins}-{result.losses}{result.draws > 0
-													? `-${result.draws}`
-													: ''}</span
-											></span
-										>
-										<span class="text-gray-400"
-											>AGE Pts: <span class="font-medium text-blue-400">{result.agePoints}</span
-											></span
-										>
-										{#if result.prizeAmount}
-											<span class="text-gray-400"
-												>Prize: <span class="text-green-400">${result.prizeAmount}</span></span
-											>
-										{/if}
-									</div>
-								</div>
-							{/each}
-						</div>
-
-						<!-- Desktop Table View -->
-						<div class="hidden overflow-x-auto lg:block">
-							<table class="w-full text-sm">
-								<thead>
-									<tr class="border-b border-gray-700">
-										<th class="p-4 text-left font-semibold text-gray-100">Place</th>
-										<th class="p-4 text-left font-semibold text-gray-100">Player</th>
-										<th class="p-4 text-left font-semibold text-gray-100">GEM ID</th>
-										<th class="p-4 text-left font-semibold text-gray-100">Record</th>
-										<th class="p-4 text-left font-semibold text-gray-100">AGE Pts</th>
-										<th class="p-4 text-left font-semibold text-gray-100">Prize</th>
+										</td>
+										<td class="font-archivo text-ink px-4 py-[12px] text-[15px] font-extrabold tracking-[-0.01em]">
+											{result.wins}-{result.losses}{result.draws > 0 ? `-${result.draws}` : ''}
+										</td>
+										<td class="font-archivo text-accent px-4 py-[12px] text-right text-[15px] font-extrabold tracking-[-0.01em]">
+											{result.agePoints}
+										</td>
+										<td class="font-archivo text-prem px-4 py-[12px] text-right text-[15px] font-extrabold tracking-[-0.01em]">
+											{result.prizeAmount ? `$${result.prizeAmount}` : '—'}
+										</td>
 									</tr>
-								</thead>
-								<tbody>
-									{#each sortedResults as result}
-										<tr class="border-b border-white/10 hover:bg-gray-900">
-											<td class="p-4">
-												<span
-													class="inline-flex h-8 w-8 items-center justify-center rounded-full {result.placement ===
-													1
-														? 'bg-yellow-500/20 text-yellow-400'
-														: result.placement === 2
-															? 'bg-gray-400/20 text-gray-300'
-															: result.placement === 3
-																? 'bg-amber-600/20 text-amber-500'
-																: 'bg-gray-800 text-gray-400'} font-bold"
-												>
-													{result.placement}
-												</span>
-											</td>
-											<td class="p-4 font-medium text-gray-100">{result.playerName}</td>
-											<td class="p-4">
-												<div class="flex items-center gap-2">
-													<span class="text-gray-400">{result.gemId || '-'}</span>
-													{#if result.gemId && result.gemId !== '-'}
-														<button
-															type="button"
-															onclick={(e) => copyGemId(result.gemId, e)}
-															class="rounded p-1 text-gray-500 transition-colors hover:bg-blue-500/10 hover:text-blue-400"
-															title="Copy GEM ID"
-														>
-															{#if copiedGemId === result.gemId}
-																<svg
-																	class="h-4 w-4 text-green-400"
-																	fill="none"
-																	stroke="currentColor"
-																	viewBox="0 0 24 24"
-																>
-																	<path
-																		stroke-linecap="round"
-																		stroke-linejoin="round"
-																		stroke-width="2"
-																		d="M5 13l4 4L19 7"
-																	/>
-																</svg>
-															{:else}
-																<svg
-																	class="h-4 w-4"
-																	fill="none"
-																	stroke="currentColor"
-																	viewBox="0 0 24 24"
-																>
-																	<path
-																		stroke-linecap="round"
-																		stroke-linejoin="round"
-																		stroke-width="2"
-																		d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-																	/>
-																</svg>
-															{/if}
-														</button>
-													{/if}
-												</div>
-											</td>
-											<td class="p-4 text-gray-100"
-												>{result.wins}-{result.losses}{result.draws > 0
-													? `-${result.draws}`
-													: ''}</td
-											>
-											<td class="p-4 font-medium text-blue-400">{result.agePoints}</td>
-											<td class="p-4 text-green-400"
-												>{result.prizeAmount ? `$${result.prizeAmount}` : '-'}</td
-											>
-										</tr>
-									{/each}
-								</tbody>
-							</table>
-						</div>
-					{/if}
-				</div>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				{/if}
 			</div>
 		{/if}
 
 		<!-- Decklists Tab -->
 		{#if activeTab === 'decklists'}
-			<div class="space-y-6">
-				{#if !isCompleted}
-					<div class="flex justify-end">
+			<div class="space-y-[24px]">
+				<div class="flex flex-wrap items-baseline justify-between gap-3">
+					<div>
+						<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+							Decklists
+						</span>
+						<h2 class="font-newsreader mt-[4px] text-[22px] font-semibold tracking-[-0.01em]">
+							The bring-list.
+						</h2>
+					</div>
+					{#if !isCompleted}
 						<button
 							onclick={startNewDecklist}
-							class="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-900 transition-opacity hover:opacity-90"
+							class="bg-ink font-mono-system inline-flex items-center px-[14px] py-[9px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125"
 						>
 							+ Add Decklist
 						</button>
-					</div>
-				{/if}
+					{/if}
+				</div>
 
 				<!-- Decklist Form Modal -->
 				{#if showDecklistForm}
-					<div class="rounded-xl border border-gray-700 bg-gray-900 p-6">
-						<h3 class="mb-4 text-lg font-semibold text-white">
-							{editingDecklist ? 'Edit Decklist' : 'Add Decklist'}
+					<div class="border-ink border-[1.5px] p-6 overflow-hidden">
+						<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+							{editingDecklist ? 'Edit Decklist' : 'New Decklist'}
+						</span>
+						<h3 class="font-newsreader mb-[18px] mt-[4px] text-[20px] font-semibold tracking-[-0.01em]">
+							{editingDecklist ? editingDecklist.playerName : 'Details.'}
 						</h3>
 
 						{#if data.participants.length > 0 && !editingDecklist}
-							<div class="mb-4">
-								<label
-									for="participantSearchInput"
-									class="mb-2 block text-sm font-medium text-gray-100"
-									>Select from registered players</label
-								>
+							<div class="mb-[16px]">
+								<label for="participantSearchInput" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+									Select from Registered Players
+								</label>
 								<div class="relative">
-									<div class="relative">
-										<svg
-											class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-500"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
+									<input
+										type="text"
+										id="participantSearchInput"
+										bind:value={participantSearch}
+										onfocus={() => (showParticipantDropdown = true)}
+										placeholder="Search by name or GEM ID"
+										class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none"
+									/>
+									{#if participantSearch}
+										<button
+											type="button"
+											onclick={() => { participantSearch = ''; }}
+											aria-label="Clear search"
+											class="text-fade hover:text-ink absolute top-1/2 right-3 -translate-y-1/2 text-[14px]"
 										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-											/>
-										</svg>
-										<input
-											type="text"
-											id="participantSearchInput"
-											bind:value={participantSearch}
-											onfocus={() => (showParticipantDropdown = true)}
-											placeholder="Search by name or GEM ID..."
-											class="w-full rounded-lg border border-gray-700 bg-gray-950 py-2.5 pr-4 pl-10 text-gray-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
-										/>
-										{#if participantSearch}
-											<button
-												type="button"
-												onclick={() => {
-													participantSearch = '';
-												}}
-												aria-label="Clear search"
-												class="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-											>
-												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M6 18L18 6M6 6l12 12"
-													/>
-												</svg>
-											</button>
-										{/if}
-									</div>
+											×
+										</button>
+									{/if}
 									{#if showParticipantDropdown}
-										<div
-											class="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-gray-700 bg-gray-900 shadow-xl"
-										>
+										<div class="border-ink bg-paper-bg absolute z-10 mt-1 max-h-48 w-full overflow-auto border-[1.5px] shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
 											{#if filteredParticipants.length === 0}
-												<div class="px-4 py-3 text-sm text-gray-500">No matching players found</div>
+												<div class="text-fade font-newsreader px-4 py-3 text-[14px] italic">
+													No matching players found
+												</div>
 											{:else}
-												{#each filteredParticipants as participant}
+												{#each filteredParticipants as participant (participant.id || participant.playerName)}
 													<button
 														type="button"
 														onclick={() => {
@@ -2247,13 +1313,13 @@
 															participantSearch = '';
 															showParticipantDropdown = false;
 														}}
-														class="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left transition-colors hover:bg-gray-800"
+														class="hover:bg-panel flex w-full items-center justify-between gap-2 px-[14px] py-[8px] text-left transition-colors"
 													>
-														<span class="font-medium text-gray-100">{participant.playerName}</span>
+														<span class="font-newsreader text-[14px] font-semibold">{participant.playerName}</span>
 														{#if participant.gemId}
-															<span class="font-mono text-xs text-gray-500"
-																>{participant.gemId}</span
-															>
+															<code class="font-mono-system text-warm text-[11px] font-bold tracking-[0.04em]">
+																{participant.gemId}
+															</code>
 														{/if}
 													</button>
 												{/each}
@@ -2262,7 +1328,6 @@
 									{/if}
 								</div>
 								{#if showParticipantDropdown}
-									<!-- Invisible overlay to close dropdown when clicking outside -->
 									<button
 										type="button"
 										class="fixed inset-0 z-0 cursor-default"
@@ -2271,7 +1336,9 @@
 										aria-label="Close dropdown"
 									></button>
 								{/if}
-								<p class="mt-2 text-xs text-gray-500">Or enter details manually below</p>
+								<p class="font-mono-system text-fade mt-[8px] text-[10px] font-bold tracking-[0.08em] uppercase">
+									Or enter details manually below
+								</p>
 							</div>
 						{/if}
 
@@ -2298,11 +1365,11 @@
 							<input type="hidden" name="isPublic" value={decklistForm.isPublic} />
 							<input type="hidden" name="hero" value={decklistForm.hero} />
 
-							<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+							<div class="grid grid-cols-1 gap-[16px] md:grid-cols-2">
 								<div>
-									<label for="deckPlayerName" class="mb-2 block text-sm font-medium text-gray-100"
-										>Player Name *</label
-									>
+									<label for="deckPlayerName" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+										Player Name <span class="text-warm">*</span>
+									</label>
 									<input
 										type="text"
 										id="deckPlayerName"
@@ -2311,18 +1378,18 @@
 										bind:value={decklistForm.playerName}
 										list="participantNames"
 										autocomplete="off"
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:ring-2 focus:ring-gray-300 focus:outline-none"
+										class="border-ink bg-paper-bg text-ink font-newsreader w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none"
 									/>
 									<datalist id="participantNames">
-										{#each data.participants as participant}
+										{#each data.participants as participant (participant.id || participant.playerName)}
 											<option value={participant.playerName}></option>
 										{/each}
 									</datalist>
 								</div>
 								<div>
-									<label for="deckGemId" class="mb-2 block text-sm font-medium text-gray-100"
-										>GEM ID</label
-									>
+									<label for="deckGemId" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+										GEM ID
+									</label>
 									<input
 										type="text"
 										id="deckGemId"
@@ -2330,22 +1397,22 @@
 										bind:value={decklistForm.gemId}
 										list="participantGemIds"
 										autocomplete="off"
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:ring-2 focus:ring-gray-300 focus:outline-none"
+										class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[14px] py-[10px] text-[13px] focus:outline-none"
 									/>
 									<datalist id="participantGemIds">
-										{#each data.participants.filter((p) => p.gemId) as participant}
+										{#each data.participants.filter((p) => p.gemId) as participant (participant.gemId)}
 											<option value={participant.gemId}>{participant.playerName}</option>
 										{/each}
 									</datalist>
 								</div>
 							</div>
 
-							<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-								<!-- Hero Combo Search/Select -->
+							<div class="grid grid-cols-1 gap-[16px] md:grid-cols-3">
+								<!-- Hero -->
 								<div class="relative">
-									<label for="heroSearch" class="mb-2 block text-sm font-medium text-gray-100"
-										>Hero *</label
-									>
+									<label for="heroSearch" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+										Hero <span class="text-warm">*</span>
+									</label>
 									<div class="relative">
 										<input
 											type="text"
@@ -2356,55 +1423,44 @@
 												showHeroDropdown = true;
 												decklistForm.hero = heroSearch;
 											}}
-											placeholder="Search hero..."
+											placeholder="Search hero"
 											autocomplete="off"
-											class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 focus:outline-none"
+											class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none"
 										/>
 										{#if heroSearch}
 											<button
 												type="button"
-												onclick={() => {
-													heroSearch = '';
-													decklistForm.hero = '';
-												}}
-												class="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+												onclick={() => { heroSearch = ''; decklistForm.hero = ''; }}
+												class="text-fade hover:text-ink absolute top-1/2 right-3 -translate-y-1/2 text-[14px]"
 												aria-label="Clear hero search"
 											>
-												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														stroke-width="2"
-														d="M6 18L18 6M6 6l12 12"
-													/>
-												</svg>
+												×
 											</button>
 										{/if}
 									</div>
 									{#if showHeroDropdown}
-										<div
-											class="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-gray-700 bg-gray-900 shadow-xl"
-										>
+										<div class="border-ink bg-paper-bg absolute z-20 mt-1 max-h-48 w-full overflow-auto border-[1.5px] shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
 											{#if filteredHeroes.length === 0}
-												<div class="px-4 py-3 text-sm text-gray-500">No matching heroes</div>
+												<div class="text-fade font-newsreader px-4 py-3 text-[14px] italic">
+													No matching heroes
+												</div>
 											{:else}
-												{#each filteredHeroes.slice(0, 20) as hero}
+												{#each filteredHeroes.slice(0, 20) as hero (hero.name)}
 													<button
 														type="button"
 														onclick={() => selectHero(hero.name)}
-														class="w-full px-4 py-2.5 text-left text-gray-100 transition-colors hover:bg-gray-800"
+														class="hover:bg-panel font-newsreader w-full px-[14px] py-[7px] text-left text-[14px] transition-colors"
 													>
 														{hero.name}
 													</button>
 												{/each}
 												{#if filteredHeroes.length > 20}
-													<div class="border-t border-gray-800 px-4 py-2 text-xs text-gray-500">
-														+{filteredHeroes.length - 20} more...
+													<div class="border-line2 text-fade font-mono-system border-t px-4 py-2 text-[10px] font-bold tracking-[0.06em] uppercase">
+														+{filteredHeroes.length - 20} more…
 													</div>
 												{/if}
 											{/if}
 										</div>
-										<!-- Invisible overlay to close dropdown -->
 										<button
 											type="button"
 											class="fixed inset-0 z-10 cursor-default"
@@ -2415,18 +1471,17 @@
 									{/if}
 								</div>
 
-								<!-- Placement Dropdown -->
 								<div>
-									<label for="placement" class="mb-2 block text-sm font-medium text-gray-100"
-										>Placement</label
-									>
+									<label for="placement" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+										Placement
+									</label>
 									<select
 										id="placement"
 										name="placement"
 										bind:value={decklistForm.placement}
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:ring-2 focus:ring-gray-300 focus:outline-none"
+										class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[12px] py-[10px] text-[13px] font-bold tracking-[0.06em] uppercase focus:outline-none"
 									>
-										<option value="">Select placement...</option>
+										<option value="">Select…</option>
 										<option value="1">1st Place</option>
 										<option value="2">2nd Place</option>
 										<option value="3">3rd Place</option>
@@ -2438,29 +1493,28 @@
 									</select>
 								</div>
 
-								<!-- Format -->
 								<div>
-									<label for="deckFormat" class="mb-2 block text-sm font-medium text-gray-100"
-										>Format</label
-									>
+									<label for="deckFormat" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+										Format
+									</label>
 									<select
 										id="deckFormat"
 										name="format"
 										bind:value={decklistForm.format}
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 text-gray-100 focus:ring-2 focus:ring-gray-300 focus:outline-none"
+										class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[12px] py-[10px] text-[13px] font-bold tracking-[0.06em] uppercase focus:outline-none"
 									>
-										{#each formats as fmt}
+										{#each formats as fmt (fmt)}
 											<option value={fmt}>{fmt}</option>
 										{/each}
 									</select>
 								</div>
 							</div>
 
-							<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+							<div class="grid grid-cols-1 gap-[24px] lg:grid-cols-2">
 								<!-- Cards Textarea -->
 								<div>
-									<label for="cardsText" class="mb-2 block text-sm font-medium text-gray-100">
-										Decklist (GEM Format) *
+									<label for="cardsText" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+										Decklist · GEM Format <span class="text-warm">*</span>
 									</label>
 									<textarea
 										id="cardsText"
@@ -2475,102 +1529,91 @@ Pitch 0/1 (Red)
 3 Blade Flurry
 3 Sharpen Steel
 ..."
-										class="w-full rounded-lg border border-gray-700 bg-gray-950 px-4 py-2.5 font-mono text-sm text-gray-100 focus:ring-2 focus:ring-gray-300 focus:outline-none"
+										class="border-ink bg-paper-bg text-ink font-mono-system placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[12px] leading-[1.5] focus:outline-none"
 									></textarea>
-									<p class="mt-2 text-xs text-gray-500">Paste decklist directly from GEM export</p>
+									<p class="font-mono-system text-fade mt-[8px] text-[10px] font-bold tracking-[0.08em] uppercase">
+										Paste decklist directly from GEM export
+									</p>
 								</div>
 
 								<!-- Live Preview -->
 								<div>
-									<span class="mb-2 block text-sm font-medium text-gray-100">Preview</span>
-									<div
-										class="h-[400px] overflow-auto rounded-lg border border-gray-700 bg-gray-950 p-4"
-									>
+									<span class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+										Preview
+									</span>
+									<div class="border-ink bg-panel h-[400px] overflow-auto border-[1.5px] p-4">
 										{#if decklistPreview.totals.total === 0}
-											<p class="text-sm text-gray-500">Paste a decklist to see preview...</p>
+											<p class="font-newsreader text-soft text-[15px] italic">
+												Paste a decklist to see preview…
+											</p>
 										{:else}
-											<div class="space-y-4 text-sm">
-												<!-- Equipment Section -->
+											<div class="space-y-[16px]">
 												{#if decklistPreview.equipment.length > 0}
 													<div>
-														<h4
-															class="mb-2 text-xs font-semibold tracking-wider text-gray-400 uppercase"
-														>
-															Equipment ({decklistPreview.totals.equipment})
+														<h4 class="font-mono-system text-fade mb-[8px] text-[10px] font-extrabold tracking-[0.14em] uppercase">
+															Equipment · {decklistPreview.totals.equipment}
 														</h4>
-														<div class="space-y-1">
-															{#each decklistPreview.equipment as card}
-																<div class="flex justify-between text-gray-300">
+														<div class="space-y-[3px]">
+															{#each decklistPreview.equipment as card, i (card.name + i)}
+																<div class="font-newsreader flex justify-between text-[13px]">
 																	<span>{card.name}</span>
-																	<span class="text-gray-500">{card.quantity}</span>
+																	<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.04em]">{card.quantity}</span>
 																</div>
 															{/each}
 														</div>
 													</div>
 												{/if}
-
-												<!-- Red Cards -->
 												{#if decklistPreview.red.length > 0}
 													<div>
-														<h4
-															class="mb-2 text-xs font-semibold tracking-wider text-red-400 uppercase"
-														>
-															Red ({decklistPreview.totals.red})
+														<h4 class="font-mono-system text-warm mb-[8px] text-[10px] font-extrabold tracking-[0.14em] uppercase">
+															Red · {decklistPreview.totals.red}
 														</h4>
-														<div class="space-y-1">
-															{#each decklistPreview.red as card}
-																<div class="flex justify-between text-gray-300">
+														<div class="space-y-[3px]">
+															{#each decklistPreview.red as card, i (card.name + i)}
+																<div class="font-newsreader flex justify-between text-[13px]">
 																	<span>{card.name}</span>
-																	<span class="text-gray-500">{card.quantity}</span>
+																	<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.04em]">{card.quantity}</span>
 																</div>
 															{/each}
 														</div>
 													</div>
 												{/if}
-
-												<!-- Yellow Cards -->
 												{#if decklistPreview.yellow.length > 0}
 													<div>
-														<h4
-															class="mb-2 text-xs font-semibold tracking-wider text-yellow-400 uppercase"
-														>
-															Yellow ({decklistPreview.totals.yellow})
+														<h4 class="font-mono-system text-accent mb-[8px] text-[10px] font-extrabold tracking-[0.14em] uppercase">
+															Yellow · {decklistPreview.totals.yellow}
 														</h4>
-														<div class="space-y-1">
-															{#each decklistPreview.yellow as card}
-																<div class="flex justify-between text-gray-300">
+														<div class="space-y-[3px]">
+															{#each decklistPreview.yellow as card, i (card.name + i)}
+																<div class="font-newsreader flex justify-between text-[13px]">
 																	<span>{card.name}</span>
-																	<span class="text-gray-500">{card.quantity}</span>
+																	<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.04em]">{card.quantity}</span>
 																</div>
 															{/each}
 														</div>
 													</div>
 												{/if}
-
-												<!-- Blue Cards -->
 												{#if decklistPreview.blue.length > 0}
 													<div>
-														<h4
-															class="mb-2 text-xs font-semibold tracking-wider text-blue-400 uppercase"
-														>
-															Blue ({decklistPreview.totals.blue})
+														<h4 class="font-mono-system text-prem mb-[8px] text-[10px] font-extrabold tracking-[0.14em] uppercase">
+															Blue · {decklistPreview.totals.blue}
 														</h4>
-														<div class="space-y-1">
-															{#each decklistPreview.blue as card}
-																<div class="flex justify-between text-gray-300">
+														<div class="space-y-[3px]">
+															{#each decklistPreview.blue as card, i (card.name + i)}
+																<div class="font-newsreader flex justify-between text-[13px]">
 																	<span>{card.name}</span>
-																	<span class="text-gray-500">{card.quantity}</span>
+																	<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.04em]">{card.quantity}</span>
 																</div>
 															{/each}
 														</div>
 													</div>
 												{/if}
-
-												<!-- Total -->
-												<div class="border-t border-gray-700 pt-3">
-													<div class="flex justify-between font-semibold text-white">
-														<span>Total Cards</span>
-														<span>{decklistPreview.totals.total}</span>
+												<div class="border-line2 border-t pt-[10px]">
+													<div class="flex justify-between">
+														<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Total Cards</span>
+														<span class="font-archivo text-ink text-[15px] font-extrabold tracking-[-0.01em]">
+															{decklistPreview.totals.total}
+														</span>
 													</div>
 												</div>
 											</div>
@@ -2579,88 +1622,67 @@ Pitch 0/1 (Red)
 								</div>
 							</div>
 
-							<div class="flex items-center gap-3">
+							<label class="flex items-center gap-2">
 								<input
 									type="checkbox"
 									id="isPublicCheck"
 									bind:checked={decklistForm.isPublic}
-									class="h-4 w-4 border-gray-700"
+									class="border-ink h-[16px] w-[16px] accent-[color:var(--ed-warm)]"
 								/>
-								<label for="isPublicCheck" class="text-sm text-gray-100"
-									>Make this decklist public</label
-								>
-							</div>
+								<span class="font-newsreader text-[14px] font-semibold">
+									Make this decklist public
+								</span>
+							</label>
 
-							<div class="flex justify-end gap-3 pt-4">
+							<div class="border-line2 border-t pt-[16px] flex justify-end gap-3">
 								<button
 									type="button"
 									onclick={cancelDecklistForm}
-									class="rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium text-white hover:bg-gray-600"
-									>Cancel</button
+									class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[18px] py-[11px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors"
 								>
+									Cancel
+								</button>
 								<button
 									type="submit"
-									class="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:opacity-90"
-									>Save Decklist</button
+									class="bg-ink font-mono-system inline-flex items-center px-[22px] py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125"
 								>
+									Save Decklist →
+								</button>
 							</div>
 						</form>
 					</div>
 				{/if}
 
 				<!-- Decklists Grid -->
-				<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+				<div class="grid grid-cols-1 gap-[16px] md:grid-cols-2 lg:grid-cols-3">
 					{#if data.existingDecklists?.length === 0}
-						<div
-							class="col-span-full rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-950 p-12 text-center"
-						>
-							<svg
-								class="mx-auto h-12 w-12 text-gray-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-								/>
-							</svg>
-							<p class="mt-4 text-gray-400">No decklists recorded yet</p>
+						<div class="border-ink col-span-full border-[1.5px] p-12 text-center">
+							<p class="font-newsreader text-soft text-[19px] italic">No decklists recorded yet.</p>
 							{#if !isCompleted}
 								<button
 									onclick={startNewDecklist}
-									class="mt-4 text-sm font-medium text-blue-400 hover:text-blue-300"
-									>Add the first decklist</button
+									class="font-mono-system text-warm hover:text-ink mt-4 text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors"
 								>
+									Add the first decklist →
+								</button>
 							{/if}
 						</div>
 					{:else}
-						{#each data.existingDecklists.sort((a, b) => (a.placement || 99) - (b.placement || 99)) as decklist}
-							<div
-								class="rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-950 p-4"
-							>
-								<div class="mb-3 flex items-start justify-between">
+						{#each data.existingDecklists.sort((a, b) => (a.placement || 99) - (b.placement || 99)) as decklist (decklist.id)}
+							<div class="border-ink border-[1.5px] p-4 overflow-hidden">
+								<div class="mb-[10px] flex items-start justify-between">
 									<div class="flex items-start gap-3">
 										{#if decklist.placement}
-											<div
-												class="flex h-8 w-8 items-center justify-center rounded-lg {decklist.placement ===
-												1
-													? 'bg-yellow-500/20 text-yellow-400'
-													: decklist.placement === 2
-														? 'bg-gray-400/20 text-gray-300'
-														: decklist.placement === 3
-															? 'bg-amber-600/20 text-amber-500'
-															: 'bg-gray-700 text-gray-400'} text-sm font-bold"
-											>
+											<span class="font-mono-system inline-flex h-[28px] w-[28px] items-center justify-center text-[11px] font-extrabold {decklist.placement === 1 ? 'bg-warm text-white' : decklist.placement <= 3 ? 'bg-ink text-white' : 'border-line2 text-fade border'}">
 												{decklist.placement}
-											</div>
+											</span>
 										{/if}
 										<div>
-											<h4 class="font-semibold text-white">{decklist.playerName}</h4>
+											<h4 class="font-newsreader text-[16px] font-semibold">{decklist.playerName}</h4>
 											{#if decklist.hero}
-												<p class="text-sm text-blue-400">{decklist.hero}</p>
+												<p class="font-mono-system text-warm mt-[2px] text-[11px] font-bold tracking-[0.06em] uppercase">
+													{decklist.hero}
+												</p>
 											{/if}
 										</div>
 									</div>
@@ -2668,8 +1690,10 @@ Pitch 0/1 (Red)
 										<div class="flex gap-2">
 											<button
 												onclick={() => editDecklist(decklist)}
-												class="text-xs text-gray-400 hover:text-white">Edit</button
+												class="font-mono-system text-fade hover:text-ink text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors"
 											>
+												Edit
+											</button>
 											<form
 												method="POST"
 												action="?/deleteDecklist"
@@ -2683,24 +1707,26 @@ Pitch 0/1 (Red)
 												}}
 											>
 												<input type="hidden" name="decklistId" value={decklist.id} />
-												<button type="submit" class="text-xs text-red-400 hover:text-red-300">
-													Delete
+												<button type="submit" class="font-mono-system text-warm hover:text-ink text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors">
+													Del
 												</button>
 											</form>
 										</div>
 									{/if}
 								</div>
-								<div class="flex items-center gap-2 text-xs text-gray-500">
+								<div class="border-line2 flex items-center gap-2 border-t pt-[10px] font-mono-system text-fade text-[10px] font-bold tracking-[0.06em] uppercase">
 									<span>{decklist.cards?.reduce((sum, c) => sum + c.quantity, 0) || 0} cards</span>
-									<span>•</span>
-									<span>{decklist.format || 'Unknown format'}</span>
+									<span>·</span>
+									<span>{decklist.format || 'Unknown'}</span>
 									{#if decklist.gemId}
-										<span>•</span>
-										<span class="font-mono">{decklist.gemId}</span>
+										<span>·</span>
+										<span class="text-warm">{decklist.gemId}</span>
 									{/if}
 								</div>
 								{#if !decklist.isPublic}
-									<span class="mt-2 inline-block text-xs text-yellow-500">Private</span>
+									<span class="font-mono-system bg-warm mt-[8px] inline-block px-[7px] py-[2px] text-[9px] font-bold tracking-[0.1em] uppercase text-white">
+										Private
+									</span>
 								{/if}
 							</div>
 						{/each}
@@ -2711,246 +1737,140 @@ Pitch 0/1 (Red)
 
 		<!-- Metagame Tab -->
 		{#if activeTab === 'metagame'}
-			<div class="space-y-6">
-				<!-- Hero Upload Section -->
-				<div
-					class="rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-950 p-6"
-				>
-					<div class="mb-4 flex items-center gap-3">
-						<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20">
-							<svg
-								class="h-5 w-5 text-purple-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-								/>
-							</svg>
-						</div>
-						<div>
-							<h3 class="text-lg font-semibold text-white">Upload Hero Data</h3>
-							<p class="text-sm text-gray-400">Import hero choices from GEM export</p>
-						</div>
+			<div class="space-y-[24px]">
+				<!-- Upload -->
+				<div class="border-ink border-[1.5px] overflow-hidden">
+					<div class="border-line2 border-b p-5">
+						<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+							Upload Hero Data
+						</span>
+						<h2 class="font-newsreader mt-[4px] text-[22px] font-semibold tracking-[-0.01em]">
+							Hero roster.
+						</h2>
+						<p class="text-soft mt-[6px] text-[13px] leading-[1.5]">
+							Import hero choices from the GEM export.
+						</p>
 					</div>
 
-					{#if !data.event.circuit || !data.event.month}
-						<div
-							class="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-400"
-						>
-							<p class="font-medium">Event Setup Required</p>
-							<p class="mt-1 text-amber-400/80">
-								Set the Circuit and Month in the Overview tab before uploading hero data.
-							</p>
-						</div>
-					{:else}
-						<form
-							method="POST"
-							action="?/uploadHeroes"
-							enctype="multipart/form-data"
-							class="space-y-4"
-						>
-							<div
-								class="rounded-lg border border-dashed border-gray-700 bg-gray-900/50 p-4 transition-colors hover:border-gray-600 {heroesFile &&
-								heroesFile.length > 0
-									? 'border-purple-500/50 bg-purple-500/5'
-									: ''}"
-							>
-								<input
-									type="file"
-									id="heroesFile"
-									name="heroesFile"
-									accept=".csv"
-									required
-									bind:files={heroesFile}
-									class="sr-only"
-								/>
-								<label for="heroesFile" class="flex cursor-pointer items-center gap-4">
-									<div
-										class="h-10 w-10 flex-shrink-0 rounded-lg {heroesFile && heroesFile.length > 0
-											? 'bg-purple-500/20'
-											: 'bg-gray-800'} flex items-center justify-center"
-									>
-										{#if heroesFile && heroesFile.length > 0}
-											<svg
-												class="h-5 w-5 text-purple-400"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M5 13l4 4L19 7"
-												/>
-											</svg>
-										{:else}
-											<svg
-												class="h-5 w-5 text-gray-400"
-												fill="none"
-												stroke="currentColor"
-												viewBox="0 0 24 24"
-											>
-												<path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													stroke-width="2"
-													d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-												/>
-											</svg>
-										{/if}
-									</div>
-									<div class="min-w-0 flex-1">
-										{#if heroesFile && heroesFile.length > 0}
-											<p class="truncate text-sm text-purple-400">{heroesFile[0].name}</p>
-										{:else}
-											<p class="text-sm text-gray-300">Heroes CSV</p>
-											<p class="text-xs text-gray-500">
-												Player Name, Player ID, Country/Region, Hero
-											</p>
-										{/if}
-									</div>
-								</label>
+					<div class="p-5">
+						{#if !data.event.circuit || !data.event.month}
+							<div class="border-warm bg-warm/10 border-[1.5px] p-4">
+								<span class="font-mono-system text-warm text-[10px] font-extrabold tracking-[0.14em] uppercase">
+									Setup Required
+								</span>
+								<p class="text-soft mt-[6px] text-[13px] leading-[1.5]">
+									Set the Circuit and Month in the Overview tab before uploading hero data.
+								</p>
 							</div>
-
-							{#if data.existingHeroes?.length > 0}
-								<div
-									class="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-400"
-								>
-									<svg
-										class="h-4 w-4 flex-shrink-0"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-										/>
-									</svg>
-									<span>This will replace {data.existingHeroes.length} existing hero entries</span>
+						{:else}
+							<form method="POST" action="?/uploadHeroes" enctype="multipart/form-data" class="space-y-[16px]">
+								<div class="border-line2 border-dashed hover:border-ink bg-panel border-[1.5px] p-4 transition-colors {heroesFile && heroesFile.length > 0 ? 'border-prem bg-prem/10' : ''}">
+									<input type="file" id="heroesFile" name="heroesFile" accept=".csv" required bind:files={heroesFile} class="sr-only" />
+									<label for="heroesFile" class="flex cursor-pointer items-center gap-3">
+										<span class="font-mono-system inline-flex h-[36px] w-[36px] shrink-0 items-center justify-center text-[13px] font-extrabold {heroesFile && heroesFile.length > 0 ? 'bg-prem text-white' : 'border-line2 text-fade border'}">
+											{heroesFile && heroesFile.length > 0 ? '✓' : 'CSV'}
+										</span>
+										<div class="min-w-0 flex-1">
+											{#if heroesFile && heroesFile.length > 0}
+												<p class="font-mono-system text-prem truncate text-[13px] font-bold tracking-[0.02em]">
+													{heroesFile[0].name}
+												</p>
+											{:else}
+												<div class="font-newsreader text-[15px] font-semibold">Heroes CSV</div>
+												<p class="text-fade mt-[2px] text-[11px]">
+													Player Name, Player ID, Country/Region, Hero
+												</p>
+											{/if}
+										</div>
+									</label>
 								</div>
-							{/if}
-
-							<div class="flex gap-3">
-								<button
-									type="submit"
-									disabled={heroesProcessing || !heroesFile}
-									class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
-								>
-									{#if heroesProcessing}
-										<svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-											<circle
-												class="opacity-25"
-												cx="12"
-												cy="12"
-												r="10"
-												stroke="currentColor"
-												stroke-width="4"
-											></circle>
-											<path
-												class="opacity-75"
-												fill="currentColor"
-												d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-											></path>
-										</svg>
-										Processing...
-									{:else}
-										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-											/>
-										</svg>
-										Upload Heroes
-									{/if}
-								</button>
 
 								{#if data.existingHeroes?.length > 0}
+									<div class="border-warm bg-warm/10 border-[1.5px] p-3">
+										<p class="font-mono-system text-warm text-[10.5px] font-bold tracking-[0.08em] uppercase">
+											Warning · will replace {data.existingHeroes.length} existing entries
+										</p>
+									</div>
+								{/if}
+
+								<div class="flex gap-3">
 									<button
 										type="submit"
-										formaction="?/deleteHeroes"
-										class="rounded-lg border border-red-500/30 px-4 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10"
+										disabled={heroesProcessing || !heroesFile}
+										class="bg-ink font-mono-system inline-flex flex-1 items-center justify-center px-[22px] py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-50"
 									>
-										Clear All
+										{heroesProcessing ? 'Processing…' : 'Upload Heroes →'}
 									</button>
-								{/if}
-							</div>
-						</form>
-					{/if}
+									{#if data.existingHeroes?.length > 0}
+										<button
+											type="submit"
+											formaction="?/deleteHeroes"
+											class="border-warm text-warm hover:bg-warm hover:text-white font-mono-system inline-flex items-center border px-[14px] py-[11px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+										>
+											Clear All
+										</button>
+									{/if}
+								</div>
+							</form>
+						{/if}
+					</div>
 				</div>
 
 				<!-- Metagame Breakdown -->
-				<div class="rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-950">
-					<div class="border-b border-white/10 p-4">
-						<h3 class="text-lg font-semibold text-white">Metagame Breakdown</h3>
-						<p class="mt-1 text-sm text-gray-400">
+				<div class="border-ink border-[1.5px] overflow-hidden">
+					<div class="border-line2 border-b p-5">
+						<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+							Metagame Breakdown
+						</span>
+						<h2 class="font-newsreader mt-[4px] text-[22px] font-semibold tracking-[-0.01em]">
+							The field.
+						</h2>
+						<p class="font-mono-system text-fade mt-[6px] text-[10.5px] font-bold tracking-[0.08em] uppercase">
 							{data.existingHeroes?.length || 0} players registered
 						</p>
 					</div>
 
 					{#if !data.existingHeroes?.length}
 						<div class="p-12 text-center">
-							<svg
-								class="mx-auto h-12 w-12 text-gray-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-								/>
-							</svg>
-							<p class="mt-4 text-gray-400">No hero data uploaded yet</p>
-							<p class="mt-2 text-sm text-gray-500">
-								Upload a heroes CSV to see the metagame breakdown
+							<p class="font-newsreader text-soft text-[19px] italic">No hero data uploaded yet.</p>
+							<p class="text-fade mt-2 text-[13px]">
+								Upload a heroes CSV to see the metagame breakdown.
 							</p>
 						</div>
 					{:else}
-						<div class="space-y-3 p-4">
-							{#each heroBreakdown() as { hero, count, percentage }, idx}
+						<div class="space-y-[14px] p-5">
+							{#each heroBreakdown() as { hero, count, percentage }, idx (hero + idx)}
 								<div class="flex items-center gap-4">
-									<span class="w-6 text-right text-sm font-medium text-gray-500">{idx + 1}.</span>
+									<span class="font-mono-system text-fade w-[24px] text-right text-[11px] font-extrabold tracking-[0.06em]">
+										{idx + 1}
+									</span>
 									<div class="min-w-0 flex-1">
-										<div class="mb-1 flex items-center justify-between">
-											<span class="truncate text-sm font-medium text-white">{hero}</span>
-											<span class="ml-2 flex-shrink-0 text-sm text-gray-400"
-												>{count} ({percentage}%)</span
-											>
+										<div class="mb-[6px] flex items-baseline justify-between gap-3">
+											<span class="font-newsreader truncate text-[15px] font-semibold">{hero}</span>
+											<span class="font-mono-system text-fade shrink-0 text-[10.5px] font-bold tracking-[0.08em] uppercase">
+												{count}
+												<span class="text-warm">· {percentage}%</span>
+											</span>
 										</div>
-										<div class="h-2 overflow-hidden rounded-full bg-gray-800">
-											<div
-												class="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500"
-												style="width: {percentage}%"
-											></div>
+										<div class="bg-line2 h-[6px]">
+											<div class="bg-warm h-full" style="width: {percentage}%"></div>
 										</div>
 									</div>
 								</div>
 							{/each}
 						</div>
 
-						<!-- Player List -->
-						<div class="border-t border-white/10 p-4">
-							<h4 class="mb-3 text-sm font-medium text-gray-400">All Players</h4>
-							<div
-								class="grid max-h-96 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3"
-							>
-								{#each data.existingHeroes.sort( (a, b) => a.playerName.localeCompare(b.playerName) ) as entry}
-									<div class="flex items-center gap-2 rounded-lg bg-gray-800/50 p-2 text-sm">
-										<span class="flex-1 truncate text-white">{entry.playerName}</span>
-										<span class="truncate text-xs text-gray-400">{entry.hero}</span>
+						<div class="border-line2 border-t p-5">
+							<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+								All Players
+							</span>
+							<div class="mt-[14px] grid max-h-96 grid-cols-1 gap-[8px] overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
+								{#each data.existingHeroes.sort((a, b) => a.playerName.localeCompare(b.playerName)) as entry (entry.playerName + entry.hero)}
+									<div class="border-line2 bg-panel flex items-center gap-2 border p-2">
+										<span class="font-newsreader flex-1 truncate text-[13px] font-semibold">{entry.playerName}</span>
+										<span class="font-mono-system text-warm truncate text-[10.5px] font-bold tracking-[0.04em] uppercase">
+											{entry.hero}
+										</span>
 									</div>
 								{/each}
 							</div>
@@ -2962,62 +1882,36 @@ Pitch 0/1 (Red)
 
 		<!-- Staff Tab (Admin Only) -->
 		{#if activeTab === 'staff' && data.isAdmin}
-			<div class="space-y-6">
-				<!-- Assigned Staff Section -->
-				<div
-					class="overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-950"
-				>
-					<div class="border-b border-white/10 bg-gray-800/50 px-6 py-4">
-						<div class="flex items-center gap-3">
-							<div class="rounded-lg bg-purple-500/20 p-2">
-								<svg
-									class="h-5 w-5 text-purple-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-									/>
-								</svg>
-							</div>
-							<div>
-								<h3 class="text-lg font-semibold text-white">Assigned Staff</h3>
-								<p class="text-sm text-gray-400">Tournament staff assigned to manage this event</p>
-							</div>
-						</div>
+			<div class="space-y-[24px]">
+				<!-- Assigned Staff -->
+				<div class="border-ink border-[1.5px] overflow-hidden">
+					<div class="border-line2 border-b p-5">
+						<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+							Assigned Staff
+						</span>
+						<h2 class="font-newsreader mt-[4px] text-[22px] font-semibold tracking-[-0.01em]">
+							Who's on the desk.
+						</h2>
 					</div>
-					<div class="p-6">
+					<div class="p-5">
 						{#if data.assignedStaff?.length > 0}
-							<div class="space-y-3">
-								{#each data.assignedStaff as staff}
-									<div
-										class="flex items-center justify-between rounded-lg border border-white/10 bg-gray-800/50 px-4 py-3"
-									>
+							<div class="space-y-[10px]">
+								{#each data.assignedStaff as staff (staff.userId)}
+									<div class="border-line2 flex items-center justify-between border p-4">
 										<div class="flex items-center gap-3">
-											<div
-												class="flex h-10 w-10 items-center justify-center rounded-full bg-purple-500/20"
-											>
-												<span class="text-sm font-medium text-purple-400"
-													>{staff.userEmail?.charAt(0).toUpperCase() || '?'}</span
-												>
-											</div>
+											<span class="border-ink font-newsreader flex h-[36px] w-[36px] items-center justify-center border-[1.5px] bg-panel text-[15px] font-semibold">
+												{staff.userEmail?.charAt(0).toUpperCase() || '?'}
+											</span>
 											<div>
-												<p class="font-medium text-white">{staff.userEmail}</p>
-												<p class="text-xs text-gray-500">
+												<div class="font-newsreader text-[15px] font-semibold">{staff.userEmail}</div>
+												<div class="font-mono-system text-fade mt-[2px] text-[10px] font-bold tracking-[0.06em] uppercase">
 													Assigned {formatShortDate(staff.createdAt)}
-												</p>
+												</div>
 											</div>
 										</div>
 										<form method="POST" action="?/unassignStaff">
 											<input type="hidden" name="staffId" value={staff.userId} />
-											<button
-												type="submit"
-												class="rounded-lg bg-red-500/20 px-3 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30"
-											>
+											<button type="submit" class="bg-warm font-mono-system inline-flex items-center px-[12px] py-[7px] text-[10px] font-extrabold tracking-[0.12em] uppercase text-white hover:brightness-110 transition-[filter]">
 												Remove
 											</button>
 										</form>
@@ -3025,223 +1919,133 @@ Pitch 0/1 (Red)
 								{/each}
 							</div>
 						{:else}
-							<div class="py-8 text-center">
-								<svg
-									class="mx-auto mb-3 h-12 w-12 text-gray-600"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-									/>
-								</svg>
-								<p class="text-gray-400">No staff assigned to this event</p>
-								<p class="mt-1 text-sm text-gray-500">
-									Use the form below to assign tournament staff
+							<div class="p-8 text-center">
+								<p class="font-newsreader text-soft text-[19px] italic">No staff assigned to this event.</p>
+								<p class="text-fade mt-2 text-[13px]">
+									Use the search below to assign tournament staff.
 								</p>
 							</div>
 						{/if}
 					</div>
 				</div>
 
-				<!-- Add Staff Section -->
-				<div
-					class="overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-950"
-				>
-					<div class="border-b border-white/10 bg-gray-800/50 px-6 py-4">
-						<div class="flex items-center gap-3">
-							<div class="rounded-lg bg-green-500/20 p-2">
-								<svg
-									class="h-5 w-5 text-green-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-									/>
-								</svg>
-							</div>
-							<div>
-								<h3 class="text-lg font-semibold text-white">Add Staff</h3>
-								<p class="text-sm text-gray-400">
-									Search any user by email to assign them to this event
-								</p>
-							</div>
-						</div>
+				<!-- Add Staff -->
+				<div class="border-ink border-[1.5px] overflow-hidden">
+					<div class="border-line2 border-b p-5">
+						<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+							Add Staff
+						</span>
+						<h2 class="font-newsreader mt-[4px] text-[22px] font-semibold tracking-[-0.01em]">
+							Bring someone in.
+						</h2>
+						<p class="text-soft mt-[6px] text-[13px] leading-[1.5]">
+							Search any user by email to assign them to this event.
+						</p>
 					</div>
-					<div class="p-6">
-						<!-- Email Search Input -->
-						<div class="mb-4">
+					<div class="p-5">
+						<div class="mb-[16px]">
+							<label for="staff-search" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+								Search by Email
+							</label>
 							<div class="relative">
-								<svg
-									class="absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-gray-500"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-									/>
-								</svg>
 								<input
+									id="staff-search"
 									type="email"
 									value={staffSearch}
 									oninput={(e) => handleStaffSearchInput(e.target.value)}
-									placeholder="Search by email address (min 3 characters)..."
-									class="w-full rounded-lg border border-white/10 bg-gray-800 py-2.5 pr-4 pl-10 text-white placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none"
+									placeholder="Email address · min 3 characters"
+									class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none"
 								/>
 								{#if staffSearchLoading}
 									<div class="absolute top-1/2 right-3 -translate-y-1/2">
-										<svg
-											class="h-5 w-5 animate-spin text-purple-400"
-											fill="none"
-											viewBox="0 0 24 24"
-										>
-											<circle
-												class="opacity-25"
-												cx="12"
-												cy="12"
-												r="10"
-												stroke="currentColor"
-												stroke-width="4"
-											></circle>
-											<path
-												class="opacity-75"
-												fill="currentColor"
-												d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-											></path>
+										<svg class="text-warm h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+											<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+											<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
 										</svg>
 									</div>
 								{/if}
 							</div>
-							<p class="mt-1.5 text-xs text-gray-500">Type at least 3 characters to search</p>
+							<p class="font-mono-system text-fade mt-[8px] text-[10px] font-bold tracking-[0.08em] uppercase">
+								Type at least 3 characters
+							</p>
 						</div>
 
-						<!-- Search Results -->
 						{#if staffSearchResults.length > 0}
-							<div class="max-h-64 space-y-2 overflow-y-auto">
-								{#each staffSearchResults as userResult}
+							<div class="max-h-64 space-y-[8px] overflow-y-auto">
+								{#each staffSearchResults as userResult (userResult.id)}
 									<form
 										method="POST"
 										action="?/assignStaff"
 										use:enhance={handleStaffAssign}
-										class="flex items-center justify-between rounded-lg border border-white/10 bg-gray-800/30 px-4 py-3 transition-colors hover:bg-gray-800/50"
+										class="border-line2 hover:border-ink flex items-center justify-between border p-3 transition-colors"
 									>
 										<input type="hidden" name="staffId" value={userResult.id} />
 										<div class="flex items-center gap-3">
-											<div
-												class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-700"
-											>
-												<span class="text-sm font-medium text-gray-300"
-													>{userResult.email?.charAt(0).toUpperCase() || '?'}</span
-												>
-											</div>
+											<span class="border-line2 font-newsreader flex h-[36px] w-[36px] items-center justify-center border bg-panel text-[15px] font-semibold">
+												{userResult.email?.charAt(0).toUpperCase() || '?'}
+											</span>
 											<div>
-												<p class="font-medium text-white">{userResult.email}</p>
-												<p class="text-xs text-gray-500">Role: {userResult.role || 'user'}</p>
+												<div class="font-newsreader text-[15px] font-semibold">{userResult.email}</div>
+												<div class="font-mono-system text-fade mt-[2px] text-[10px] font-bold tracking-[0.08em] uppercase">
+													Role · {userResult.role || 'user'}
+												</div>
 											</div>
 										</div>
-										<button
-											type="submit"
-											class="rounded-lg bg-green-500/20 px-3 py-1.5 text-sm font-medium text-green-400 transition-colors hover:bg-green-500/30"
-										>
+										<button type="submit" class="bg-prem font-mono-system inline-flex items-center px-[14px] py-[7px] text-[10px] font-extrabold tracking-[0.12em] uppercase text-white hover:brightness-110 transition-[filter]">
 											Assign
 										</button>
 									</form>
 								{/each}
 							</div>
 						{:else if staffSearch.length >= 3 && !staffSearchLoading}
-							<div class="py-6 text-center">
-								<svg
-									class="mx-auto mb-2 h-10 w-10 text-gray-600"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-									/>
-								</svg>
-								<p class="text-gray-400">No users found matching "{staffSearch}"</p>
+							<div class="p-6 text-center">
+								<p class="font-newsreader text-soft text-[17px] italic">
+									No users found matching "{staffSearch}".
+								</p>
 							</div>
 						{:else if staffSearch.length === 0}
-							<div class="py-6 text-center">
-								<svg
-									class="mx-auto mb-2 h-10 w-10 text-gray-600"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-									/>
-								</svg>
-								<p class="text-gray-400">Enter an email address to search for users</p>
+							<div class="p-6 text-center">
+								<p class="font-newsreader text-soft text-[17px] italic">
+									Enter an email address to search.
+								</p>
 							</div>
 						{/if}
 					</div>
 				</div>
 			</div>
 		{/if}
-	</div>
 </div>
 
 <!-- Delete Confirmation Modal -->
 {#if showDeleteConfirm}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-		<div
-			class="mx-4 w-full max-w-md rounded-xl border border-red-500/30 bg-gray-900 p-6 shadow-2xl"
-		>
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/20">
-					<svg class="h-6 w-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-						/>
-					</svg>
-				</div>
-				<div>
-					<h3 class="text-lg font-bold text-white">Delete Event</h3>
-					<p class="text-sm text-gray-400">This action cannot be undone</p>
-				</div>
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+		<div class="border-ink bg-paper-bg w-full max-w-md border-[3px] border-double shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+			<div class="border-line2 border-b p-6">
+				<span class="font-mono-system text-warm text-[10px] font-extrabold tracking-[0.16em] uppercase">
+					Danger Zone
+				</span>
+				<h3 class="font-newsreader mt-[6px] text-[26px] font-semibold tracking-[-0.01em]">
+					Delete this event?
+				</h3>
+				<p class="font-newsreader text-soft mt-[4px] text-[15px] italic">This action cannot be undone.</p>
 			</div>
-			<p class="mb-6 text-gray-300">
-				Are you sure you want to delete <strong class="text-white">{data.event.title}</strong>? This
-				will permanently remove the event and all associated tickets, results, decklists, and staff
-				assignments.
-			</p>
-			<div class="flex justify-end gap-3">
+			<div class="p-6">
+				<p class="font-newsreader text-ink text-[16px] leading-[1.55]">
+					You're about to delete <strong>{data.event.title}</strong>. All associated tickets, results, decklists, and staff assignments will be removed permanently.
+				</p>
+			</div>
+			<div class="border-line2 flex justify-end gap-3 border-t p-6">
 				<button
 					type="button"
 					onclick={() => (showDeleteConfirm = false)}
-					class="rounded-lg border border-white/10 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700"
+					class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[16px] py-[10px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors"
 				>
 					Cancel
 				</button>
 				<form method="POST" action="?/deleteEvent">
 					<button
 						type="submit"
-						class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+						class="bg-warm font-mono-system inline-flex items-center px-[18px] py-[10px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white hover:brightness-110 transition-[filter]"
 					>
 						Delete Event
 					</button>
@@ -3253,80 +2057,82 @@ Pitch 0/1 (Red)
 
 <!-- Close Event Confirmation Modal -->
 {#if showCloseConfirm}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-		<div
-			class="mx-4 w-full max-w-lg rounded-xl border border-green-500/30 bg-gray-900 p-6 shadow-2xl"
-		>
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-500/20">
-					<svg class="h-6 w-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-				</div>
-				<div>
-					<h3 class="text-lg font-bold text-white">Close Event</h3>
-					<p class="text-sm text-gray-400">Update season standings with results</p>
-				</div>
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+		<div class="border-ink bg-paper-bg w-full max-w-lg border-[3px] border-double shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+			<div class="border-line2 border-b p-6">
+				<span class="font-mono-system text-prem text-[10px] font-extrabold tracking-[0.16em] uppercase">
+					Finalize
+				</span>
+				<h3 class="font-newsreader mt-[6px] text-[26px] font-semibold tracking-[-0.01em]">
+					Close this event?
+				</h3>
+				<p class="font-newsreader text-soft mt-[4px] text-[15px] italic">
+					Season standings will be updated with results.
+				</p>
 			</div>
 
-			<!-- Summary -->
-			<div class="mb-4 rounded-lg bg-gray-800/50 p-4">
-				<h4 class="mb-2 font-medium text-white">Summary</h4>
-				<ul class="space-y-1 text-sm text-gray-300">
-					<li class="flex justify-between">
-						<span>Results Recorded:</span><span class="font-medium"
-							>{data.existingResults?.length || 0}</span
-						>
-					</li>
-					<li class="flex justify-between">
-						<span>Decklists Recorded:</span><span class="font-medium"
-							>{data.existingDecklists?.length || 0}</span
-						>
-					</li>
-					<li class="flex justify-between">
-						<span>Registered Players:</span><span class="font-medium"
-							>{data.participants?.length || 0}</span
-						>
-					</li>
-					<li class="flex justify-between">
-						<span>Circuit:</span><span class="font-medium">{data.event.circuit || 'Not set'}</span>
-					</li>
-				</ul>
+			<div class="p-6 space-y-[16px]">
+				<!-- Summary -->
+				<div class="border-line2 bg-panel border p-4">
+					<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">
+						Summary
+					</span>
+					<dl class="mt-[10px] space-y-[6px]">
+						<div class="flex justify-between">
+							<dt class="font-mono-system text-fade text-[11px] font-bold tracking-[0.06em] uppercase">Results Recorded</dt>
+							<dd class="font-archivo text-ink text-[14px] font-extrabold tracking-[-0.01em]">
+								{data.existingResults?.length || 0}
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="font-mono-system text-fade text-[11px] font-bold tracking-[0.06em] uppercase">Decklists Recorded</dt>
+							<dd class="font-archivo text-ink text-[14px] font-extrabold tracking-[-0.01em]">
+								{data.existingDecklists?.length || 0}
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="font-mono-system text-fade text-[11px] font-bold tracking-[0.06em] uppercase">Registered Players</dt>
+							<dd class="font-archivo text-ink text-[14px] font-extrabold tracking-[-0.01em]">
+								{data.participants?.length || 0}
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="font-mono-system text-fade text-[11px] font-bold tracking-[0.06em] uppercase">Circuit</dt>
+							<dd class="font-newsreader text-ink text-[13px] font-semibold">
+								{data.event.circuit || 'Not set'}
+							</dd>
+						</div>
+					</dl>
+				</div>
+
+				{#if !hasResults}
+					<div class="border-warm border-[1.5px] p-3">
+						<span class="font-mono-system text-warm text-[10px] font-extrabold tracking-[0.14em] uppercase">Warning</span>
+						<p class="text-soft mt-[2px] text-[13px]">
+							No results recorded yet. Import CSV or add results before closing.
+						</p>
+					</div>
+				{/if}
+
+				{#if !data.event.circuit}
+					<div class="bg-warm border-[1.5px] border-warm p-3 text-white">
+						<span class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase" style="color: rgba(255,255,255,0.75);">Error</span>
+						<p class="font-newsreader mt-[2px] text-[14px] font-semibold">
+							This event has no circuit assigned. Edit the event to add one before closing.
+						</p>
+					</div>
+				{/if}
+
+				<p class="text-soft text-[13px] leading-[1.5]">
+					Closing will update season standings with AGE points and match data for all players.
+				</p>
 			</div>
 
-			{#if !hasResults}
-				<div class="mb-4 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3">
-					<p class="text-sm text-yellow-400">
-						<strong>Warning:</strong> No results have been recorded yet. Import CSV or add results before
-						closing.
-					</p>
-				</div>
-			{/if}
-
-			{#if !data.event.circuit}
-				<div class="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3">
-					<p class="text-sm text-red-400">
-						<strong>Error:</strong> This event has no circuit assigned. Please edit the event to add
-						a circuit before closing.
-					</p>
-				</div>
-			{/if}
-
-			<p class="mb-4 text-sm text-gray-400">
-				Closing the event will update season standings with AGE points and match data for all
-				players.
-			</p>
-
-			<div class="flex justify-end gap-3">
+			<div class="border-line2 flex justify-end gap-3 border-t p-6">
 				<button
 					type="button"
 					onclick={() => (showCloseConfirm = false)}
-					class="rounded-lg border border-white/10 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700"
+					class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[16px] py-[10px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors"
 				>
 					Cancel
 				</button>
@@ -3334,9 +2140,9 @@ Pitch 0/1 (Red)
 					<button
 						type="submit"
 						disabled={!hasResults || !data.event.circuit}
-						class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+						class="bg-prem font-mono-system inline-flex items-center px-[18px] py-[10px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white hover:brightness-110 transition-[filter] disabled:cursor-not-allowed disabled:opacity-50"
 					>
-						Close Event
+						Close Event →
 					</button>
 				</form>
 			</div>

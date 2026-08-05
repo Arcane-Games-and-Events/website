@@ -169,7 +169,7 @@
 			same width as the article grid below (max-w + px-14).
 		-->
 		<div class="border-ink border-b-[3px] border-double">
-		<section class="mx-auto grid w-full max-w-[min(94vw,1920px)] grid-cols-1 px-14 lg:grid-cols-[1.62fr_1fr]">
+		<section class="mx-auto grid w-full max-w-[1600px] grid-cols-1 px-14 lg:grid-cols-[1.62fr_1fr]">
 			<!-- featured hero -->
 			<a
 				href="/library/{featured.slug}"
@@ -259,7 +259,7 @@
 			<!-- editor's picks rail -->
 			<aside class="bg-paper flex flex-col">
 				<div
-					class="border-ink flex items-baseline justify-between border-b-2 px-6 py-[16px]"
+					class="border-ink flex items-baseline justify-between border-b-2 px-4 md:px-6 py-[16px]"
 				>
 					<span class="text-ink text-[11px] font-extrabold tracking-[0.14em] uppercase">
 						Editor's Picks
@@ -271,7 +271,7 @@
 				{#each editorPicks as p (p.slug)}
 					<a
 						href="/library/{p.slug}"
-						class="border-line group grid items-center gap-[15px] border-b px-6 py-4 last:border-b-0 hover:bg-panel grid-cols-[132px_minmax(0,1fr)]"
+						class="border-line group grid items-center gap-[15px] border-b px-4 md:px-6 py-4 last:border-b-0 hover:bg-panel grid-cols-[132px_minmax(0,1fr)]"
 					>
 						<div
 							class="border-line2 bg-panel relative aspect-video border bg-cover bg-center"
@@ -330,7 +330,7 @@
 	-->
 	<div
 		bind:this={libraryAnchorEl}
-		class="mx-auto w-full max-w-[min(94vw,1920px)] scroll-mt-[24px] px-14 pt-[44px] pb-[2px]"
+		class="mx-auto w-full max-w-[1600px] scroll-mt-[24px] px-14 pt-[44px] pb-[2px]"
 	>
 		<div class="text-warm mb-[11px] text-[11px] font-extrabold tracking-[0.16em] uppercase">
 			Read &amp; Watch
@@ -350,7 +350,7 @@
 		class="bg-paper border-ink sticky top-0 z-[5] border-b-2"
 	>
 		<div
-			class="mx-auto flex w-full max-w-[min(94vw,1920px)] flex-wrap items-center gap-3 px-14 py-[14px]"
+			class="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-3 px-14 py-[14px]"
 		>
 			<!-- segment (just Articles for now, since no video data yet) -->
 			<div class="flex gap-[5px]">
@@ -421,7 +421,7 @@
 
 	<!-- ============ RESULT LINE ============ -->
 	<div
-		class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[26px] text-[11.5px] font-bold tracking-[0.05em] text-fade uppercase"
+		class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[26px] text-[11.5px] font-bold tracking-[0.05em] text-fade uppercase"
 	>
 		Showing
 		<b class="text-ink">
@@ -434,7 +434,7 @@
 
 	<!-- ============ GRID ============ -->
 	<div
-		class="mx-auto grid w-full max-w-[min(94vw,1920px)] grid-cols-1 gap-6 px-14 pt-[22px] pb-[8px] md:grid-cols-2 lg:grid-cols-3"
+		class="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-6 px-14 pt-[22px] pb-[8px] md:grid-cols-2 lg:grid-cols-3"
 	>
 		{#if shown.length === 0}
 			<div
@@ -545,7 +545,7 @@
 	<!-- ============ PAGINATION ============ -->
 	{#if pageCount > 1}
 		<div
-			class="mx-auto flex w-full max-w-[min(94vw,1920px)] items-center justify-center gap-[18px] px-14 pt-[30px] pb-[52px]"
+			class="mx-auto flex w-full max-w-[1600px] items-center justify-center gap-[18px] px-14 pt-[30px] pb-[52px]"
 		>
 			<button
 				type="button"
@@ -601,7 +601,7 @@
 			class="border-ink border-y-[3px] border-double bg-[#0F1320] py-[44px] text-white"
 		>
 			<div
-				class="mx-auto w-full max-w-[min(94vw,1920px)] px-14"
+				class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14"
 			>
 				<div class="mb-[26px] flex flex-wrap items-end justify-between gap-[26px] border-b border-white/15 pb-[18px]">
 					<div>
@@ -633,7 +633,7 @@
 				<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
 					{#each data.vods as v (v.id)}
 						<a
-							href="/studios/vod/{v.id}"
+							href="/library/{v.id}"
 							class="group flex flex-col border border-[#232A3B] bg-[#161B2B] border-t-[3px] border-t-[#E5703E] transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[0_26px_44px_-28px_rgba(0,0,0,0.7)]"
 						>
 							<!-- thumbnail -->

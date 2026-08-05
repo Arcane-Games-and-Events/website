@@ -44,7 +44,7 @@
 
 <div class="border-ink border-t-[3px] border-double">
 <div
-	class="mx-auto grid w-full max-w-[min(94vw,1920px)] grid-cols-[2fr_1fr_1fr_1fr] gap-8 px-14 py-[46px]"
+	class="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-8 px-4 py-10 sm:grid-cols-2 md:px-10 md:py-[38px] lg:grid-cols-[2fr_1fr_1fr_1fr] lg:px-14 lg:py-[46px]"
 >
 	<div>
 		<a href="/" aria-label="AGE home" class="inline-block">
@@ -93,7 +93,7 @@
 
 <div class="border-line2 border-t">
 	<div
-		class="text-fade mx-auto flex w-full max-w-[min(94vw,1920px)] justify-between px-14 py-4 text-[11px] font-semibold"
+		class="text-fade mx-auto flex w-full max-w-[1600px] flex-wrap gap-2 justify-between px-4 md:px-10 lg:px-14 py-4 text-[11px] font-semibold"
 	>
 		<span>© {year} Arcane Games and Events LLC · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></span>
 		<span>Flesh and Blood is a trademark of Legend Story Studios</span>

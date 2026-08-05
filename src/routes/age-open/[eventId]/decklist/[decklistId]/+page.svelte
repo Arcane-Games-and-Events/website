@@ -390,7 +390,7 @@
 	<!-- ============ BREADCRUMB ROW ============ -->
 	<div class="border-b border-[#C7BFA9]">
 		<div
-			class="mx-auto flex w-full max-w-[min(94vw,1920px)] items-center justify-between gap-3 px-14 py-[14px]"
+			class="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-14 py-[14px]"
 		>
 			<a
 				href="/age-open?tab=decklists"
@@ -482,7 +482,7 @@
 		<span class="bg-warm absolute inset-x-0 top-0 z-[2] h-[2px]" aria-hidden="true"></span>
 
 		<div
-			class="relative z-[2] mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[50px] pb-[36px]"
+			class="relative z-[2] mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[50px] pb-[36px]"
 		>
 			<div class="text-white max-w-[60%]">
 				<div class="mb-4 inline-flex items-center gap-[10px] text-[10.5px] font-extrabold tracking-[0.2em] text-white uppercase before:block before:h-[2px] before:w-[26px] before:bg-warm before:content-['']">
@@ -545,7 +545,7 @@
 	<!-- ============ BODY ============ -->
 	{#if cardsList.length === 0}
 		<section class="px-14 py-[60px]">
-			<div class="mx-auto w-full max-w-[min(94vw,1920px)]">
+			<div class="mx-auto w-full max-w-[1600px]">
 				<div class="border-line2 bg-paper py-14 text-center">
 					<div class="font-newsreader text-ink mb-2 text-[24px] font-semibold">No cards found</div>
 					<p class="text-soft m-0 mx-auto max-w-[420px] text-[14px] leading-[1.55]">
@@ -557,7 +557,7 @@
 		</section>
 	{:else}
 		<div
-			class="mx-auto grid w-full max-w-[min(94vw,1920px)] grid-cols-1 gap-10 px-14 py-[44px] lg:grid-cols-[300px_1fr]"
+			class="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-10 px-14 py-[44px] lg:grid-cols-[300px_1fr]"
 		>
 			<!-- ============ LEFT: CARD PREVIEW ============ -->
 			<aside class="hidden lg:block">

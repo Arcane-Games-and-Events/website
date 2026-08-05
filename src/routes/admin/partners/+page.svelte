@@ -1,8 +1,16 @@
 <script>
-	export let data;
+	let { data } = $props();
 
-	$: partners = data.partners || [];
-	$: totals = data.totals || { totalReferrals: 0, totalPending: 0, totalPaid: 0 };
+	const partners = $derived(data.partners || []);
+	const totals = $derived(
+		data.totals || {
+			totalReferrals: 0,
+			totalPending: 0,
+			totalPaid: 0,
+			readyToPayAmount: 0,
+			readyToPayCount: 0
+		}
+	);
 
 	function fmt(amount) {
 		const n = Number(amount || 0);
@@ -19,135 +27,188 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Partners - Admin</title>
-</svelte:head>
+<svelte:head><title>Partners · AGE Ops</title></svelte:head>
 
-<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-	<!-- Header -->
-	<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-		<div>
-			<h1 class="text-2xl font-bold text-white">AGE Partners</h1>
-			<p class="mt-1 text-sm text-gray-400">
-				Manage partner accounts, promo codes, and commission payouts.
-			</p>
-		</div>
+<!-- ============ HEADER ============ -->
+<header class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[42px] pb-[28px]">
+	<div class="mb-[18px] flex flex-wrap items-center gap-[16px]">
+		<span class="font-mono-system text-warm text-[11px] font-extrabold tracking-[0.16em] uppercase">
+			Partners
+		</span>
+		<span class="bg-line2 hidden h-[1px] flex-1 md:block"></span>
 		<a
 			href="/admin/partners/new"
-			class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
+			class="bg-ink font-mono-system inline-flex items-center px-[14px] py-[9px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125"
 		>
 			+ New Partner
 		</a>
 	</div>
+	<h1
+		class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]"
+	>
+		AGE Partners.
+	</h1>
+	<p class="font-newsreader text-soft mt-3 max-w-[680px] text-[19px] leading-[1.42] italic">
+		Partner accounts, promo codes, and commission payouts.
+	</p>
+</header>
 
-	<!-- Ready to pay alert -->
-	{#if totals.readyToPayCount > 0}
-		<div
-			class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-500/40 bg-blue-500/10 p-4"
-		>
+{#if totals.readyToPayCount > 0}
+	<section class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[18px] overflow-x-clip">
+		<div class="border-ink bg-prem flex flex-wrap items-center justify-between gap-3 border-[1.5px] p-4 text-white">
 			<div>
-				<p class="text-sm font-semibold text-blue-300">
-					{totals.readyToPayCount} referral{totals.readyToPayCount === 1 ? '' : 's'} ready to pay
-				</p>
-				<p class="text-xs text-blue-200/70">
-					Total due: <span class="font-semibold text-white">{fmt(totals.readyToPayAmount)}</span>
-					· Payout date (creation date + 30 days) has passed.
+				<span
+					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+					style="color: #d6eedf;"
+				>
+					Payout Due
+				</span>
+				<p class="font-newsreader mt-[2px] text-[18px] font-semibold">
+					{totals.readyToPayCount} referral{totals.readyToPayCount === 1 ? '' : 's'} ready to pay ·
+					{fmt(totals.readyToPayAmount)}
 				</p>
 			</div>
+			<span
+				class="font-mono-system text-[10px] font-bold tracking-[0.1em] uppercase"
+				style="color: #d6eedf;"
+			>
+				Payout date (created + 30d) has passed.
+			</span>
 		</div>
-	{/if}
+	</section>
+{/if}
 
-	<!-- Totals -->
-	<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
-		<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-4">
-			<p class="text-xs tracking-wider text-gray-500 uppercase">Total Referrals</p>
-			<p class="mt-1 text-2xl font-bold text-white">{totals.totalReferrals}</p>
-		</div>
-		<div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-			<p class="text-xs tracking-wider text-amber-400 uppercase">Pending Payout</p>
-			<p class="mt-1 text-2xl font-bold text-white">{fmt(totals.totalPending)}</p>
-		</div>
-		<div class="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4">
-			<p class="text-xs tracking-wider text-blue-400 uppercase">Ready to Pay</p>
-			<p class="mt-1 text-2xl font-bold text-white">{fmt(totals.readyToPayAmount)}</p>
-		</div>
-		<div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-			<p class="text-xs tracking-wider text-emerald-400 uppercase">Total Paid Out</p>
-			<p class="mt-1 text-2xl font-bold text-white">{fmt(totals.totalPaid)}</p>
+<!-- ============ TOTALS ============ -->
+<section class="border-ink border-y-[3px] border-double overflow-x-clip">
+	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[28px]">
+		<div class="grid grid-cols-2 gap-x-[24px] gap-y-[22px] md:grid-cols-4">
+			<div>
+				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+					Total Referrals
+				</span>
+				<div class="font-archivo text-ink mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+					{totals.totalReferrals}
+				</div>
+			</div>
+			<div>
+				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+					Pending Payout
+				</span>
+				<div class="font-archivo text-warm mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+					{fmt(totals.totalPending)}
+				</div>
+			</div>
+			<div>
+				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+					Ready to Pay
+				</span>
+				<div class="font-archivo text-accent mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+					{fmt(totals.readyToPayAmount)}
+				</div>
+			</div>
+			<div>
+				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+					Total Paid Out
+				</span>
+				<div class="font-archivo text-prem mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+					{fmt(totals.totalPaid)}
+				</div>
+			</div>
 		</div>
 	</div>
+</section>
 
-	<!-- Partners table -->
-	<div class="overflow-hidden rounded-xl border border-gray-800 bg-gray-900/50">
+<!-- ============ PARTNERS TABLE ============ -->
+<section class="overflow-x-clip">
+	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[36px]">
 		{#if partners.length === 0}
-			<div class="p-8 text-center text-gray-400">
-				No partners yet. <a href="/admin/partners/new" class="text-emerald-400 hover:text-emerald-300"
-					>Create the first one</a
-				>.
+			<div class="border-ink border-[1.5px] p-8 text-center overflow-hidden">
+				<p class="font-newsreader text-soft text-[19px] italic">
+					No partners yet. <a
+						href="/admin/partners/new"
+						class="text-warm hover:text-ink underline underline-offset-2"
+					>
+						Create the first one
+					</a>.
+				</p>
 			</div>
 		{:else}
-			<table class="w-full text-sm">
-				<thead class="border-b border-gray-800 bg-gray-900/80 text-left text-xs tracking-wider text-gray-500 uppercase">
-					<tr>
-						<th class="px-4 py-3">Partner</th>
-						<th class="px-4 py-3">Code</th>
-						<th class="px-4 py-3 text-right">Referrals</th>
-						<th class="px-4 py-3 text-right">Pending</th>
-						<th class="px-4 py-3 text-right">Paid</th>
-						<th class="px-4 py-3">Status</th>
-						<th class="px-4 py-3">Created</th>
-						<th class="px-4 py-3"></th>
-					</tr>
-				</thead>
-				<tbody class="divide-y divide-gray-800">
-					{#each partners as p}
-						<tr class="transition-colors hover:bg-gray-800/40">
-							<td class="px-4 py-3">
-								<div class="font-medium text-white">{p.firstName} {p.lastName}</div>
-								{#if p.displayName}
-									<div class="text-xs text-emerald-400">as "{p.displayName}"</div>
-								{/if}
-								<div class="text-xs text-gray-500">{p.email}</div>
-							</td>
-							<td class="px-4 py-3">
-								<code class="rounded bg-gray-800 px-2 py-1 font-mono text-xs text-emerald-400"
-									>{p.code}</code
-								>
-							</td>
-							<td class="px-4 py-3 text-right text-white">{p.referralCount}</td>
-							<td class="px-4 py-3 text-right">
-								<div class="text-amber-400">{fmt(p.pendingCommission)}</div>
-								{#if Number(p.readyToPayAmount) > 0}
-									<div class="mt-0.5 text-[10px] font-semibold text-blue-400">
-										{fmt(p.readyToPayAmount)} ready
-									</div>
-								{/if}
-							</td>
-							<td class="px-4 py-3 text-right text-emerald-400">{fmt(p.paidCommission)}</td>
-							<td class="px-4 py-3">
-								{#if p.isActive}
-									<span
-										class="rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-400"
-										>Active</span
-									>
-								{:else}
-									<span
-										class="rounded-full bg-gray-500/20 px-2 py-0.5 text-xs font-medium text-gray-400"
-										>Inactive</span
-									>
-								{/if}
-							</td>
-							<td class="px-4 py-3 text-xs text-gray-400">{fmtDate(p.createdAt)}</td>
-							<td class="px-4 py-3 text-right">
-								<a
-									href="/admin/partners/{p.id}"
-									class="text-sm font-medium text-emerald-400 hover:text-emerald-300">Manage →</a
-								>
-							</td>
+			<div class="border-ink border-[1.5px] overflow-x-auto">
+				<table class="w-full min-w-[900px]">
+					<thead class="border-ink border-b-[1.5px]">
+						<tr class="text-left">
+							<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Partner</th>
+							<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Code</th>
+							<th class="font-mono-system text-fade px-4 py-[12px] text-right text-[10px] font-extrabold tracking-[0.14em] uppercase">Referrals</th>
+							<th class="font-mono-system text-fade px-4 py-[12px] text-right text-[10px] font-extrabold tracking-[0.14em] uppercase">Pending</th>
+							<th class="font-mono-system text-fade px-4 py-[12px] text-right text-[10px] font-extrabold tracking-[0.14em] uppercase">Paid</th>
+							<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Status</th>
+							<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Created</th>
+							<th class="font-mono-system px-4 py-[12px]"></th>
 						</tr>
-					{/each}
-				</tbody>
-			</table>
+					</thead>
+					<tbody>
+						{#each partners as p (p.id)}
+							<tr class="border-line2 hover:bg-panel border-b transition-colors">
+								<td class="px-4 py-[14px]">
+									<div class="font-newsreader text-[16px] font-semibold">
+										{p.firstName} {p.lastName}
+									</div>
+									{#if p.displayName}
+										<div class="font-mono-system text-warm mt-[2px] text-[10px] font-bold tracking-[0.06em] uppercase">
+											as "{p.displayName}"
+										</div>
+									{/if}
+									<div class="text-fade mt-[2px] text-[12px]">{p.email}</div>
+								</td>
+								<td class="px-4 py-[14px]">
+									<code class="font-mono-system border-line2 text-warm inline-block border bg-panel px-[8px] py-[4px] text-[11px] font-bold tracking-[0.06em]">
+										{p.code}
+									</code>
+								</td>
+								<td class="font-archivo text-ink px-4 py-[14px] text-right text-[16px] font-extrabold tracking-[-0.01em]">
+									{p.referralCount}
+								</td>
+								<td class="px-4 py-[14px] text-right">
+									<div class="font-archivo text-warm text-[15px] font-extrabold tracking-[-0.01em]">
+										{fmt(p.pendingCommission)}
+									</div>
+									{#if Number(p.readyToPayAmount) > 0}
+										<div class="font-mono-system text-accent mt-[2px] text-[10px] font-bold tracking-[0.08em] uppercase">
+											{fmt(p.readyToPayAmount)} ready
+										</div>
+									{/if}
+								</td>
+								<td class="font-archivo text-prem px-4 py-[14px] text-right text-[15px] font-extrabold tracking-[-0.01em]">
+									{fmt(p.paidCommission)}
+								</td>
+								<td class="px-4 py-[14px]">
+									{#if p.isActive}
+										<span class="font-mono-system bg-prem inline-flex items-center px-[9px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase text-white">
+											Active
+										</span>
+									{:else}
+										<span class="font-mono-system border-line2 text-fade inline-flex items-center border px-[9px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase">
+											Inactive
+										</span>
+									{/if}
+								</td>
+								<td class="font-mono-system text-fade px-4 py-[14px] text-[10.5px] font-bold tracking-[0.06em] uppercase">
+									{fmtDate(p.createdAt)}
+								</td>
+								<td class="px-4 py-[14px] text-right">
+									<a
+										href="/admin/partners/{p.id}"
+										class="font-mono-system text-warm hover:text-ink text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+									>
+										Manage →
+									</a>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
 		{/if}
 	</div>
-</div>
+</section>

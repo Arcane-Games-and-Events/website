@@ -346,8 +346,14 @@ export async function load({ params, locals, setHeaders }) {
 			isPremium,
 			isPreview,
 			cardImages,
-			pageViewId,
-			user: user ? { role: user.role } : null
+			pageViewId
+			// `user` intentionally not returned here — SvelteKit merges
+			// data from the root layout (`+layout.server.js`) into
+			// `$page.data`, so the full user object (with firstName +
+			// role) flows through. Returning a stripped-down `{ role }`
+			// override here used to clobber the layout's user, which
+			// made `<AgeHeader>` fall back to the "Account" label
+			// instead of the reader's name.
 		};
 	} catch (err) {
 		// Re-throw SvelteKit errors

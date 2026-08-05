@@ -39,7 +39,7 @@
 	stretching edge to edge.
 -->
 <div class="border-ink border-b-[3px] border-double">
-<div class="mx-auto w-full max-w-[min(94vw,1920px)]">
+<div class="mx-auto w-full max-w-[1600px]">
 <div class="grid min-h-[760px] grid-cols-1 lg:grid-cols-2">
 	<!-- brand panel -->
 	<div

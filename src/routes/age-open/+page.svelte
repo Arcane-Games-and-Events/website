@@ -993,7 +993,7 @@
 			aria-hidden="true"
 		></span>
 		<div class="relative z-[1] w-full">
-			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-[56px]">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[56px]">
 				<div class="max-w-[820px] text-white">
 					<span
 						class="bg-warm inline-flex items-center px-[10px] py-[5px] text-[10px] font-extrabold tracking-[0.14em] uppercase text-white"
@@ -1065,7 +1065,7 @@
 		{@const _next = upcomingEvents[0]}
 		<div class="bg-ink text-paper-bg">
 			<div
-				class="mx-auto flex w-full max-w-[min(94vw,1920px)] flex-wrap items-center justify-between gap-5 px-14 py-[13px]"
+				class="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-5 px-14 py-[13px]"
 			>
 				<div class="flex flex-wrap items-center gap-4 text-[13.5px] font-bold">
 					<span class="text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: #f4c66a;">
@@ -1099,7 +1099,7 @@
 	<nav
 		class="bg-paper border-ink sticky top-0 z-[5] flex items-center gap-[2px] border-b-[2px] overflow-x-auto"
 	>
-		<div class="mx-auto flex w-full max-w-[min(94vw,1920px)] items-center gap-[2px] px-14">
+		<div class="mx-auto flex w-full max-w-[1600px] items-center gap-[2px] px-14">
 			{#each tabs as tab (tab.id)}
 				<button
 					type="button"
@@ -1117,7 +1117,7 @@
 
 	<!-- ============ TAB CONTENT ============ -->
 	<div class="bg-paper-bg">
-		<div class="mx-auto w-full max-w-[min(94vw,1920px)]">
+		<div class="mx-auto w-full max-w-[1600px]">
 			<!-- Overview Tab -->
 			{#if activeTab === 'overview'}
 				<!-- ============ QUICK DIRECTORY ============ -->

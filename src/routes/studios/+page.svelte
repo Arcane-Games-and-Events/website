@@ -189,7 +189,7 @@
 							<div class="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3">
 								{#each vods as vodItem (vodItem.id)}
 									<a
-										href="/studios/vod/{vodItem.id}"
+										href="/library/{vodItem.id}"
 										class="group min-w-0 overflow-hidden rounded-lg border border-white/5 bg-gray-900/40 transition-all hover:border-white/15 hover:bg-gray-900/60 sm:rounded-xl"
 									>
 										<!-- Thumbnail -->

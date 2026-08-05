@@ -956,7 +956,7 @@
 	{#if data.article.publishedAt}
 		{@const _pub = new Date(data.article.publishedAt)}
 		<!-- ============ HEADER ============ -->
-		<header class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[46px] pb-[34px]">
+		<header class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[46px] pb-[34px]">
 			<!-- kicker rail -->
 			<div class="mb-[22px] flex items-center gap-[18px]">
 				{#if data.article.tags && data.article.tags.length > 0}
@@ -1043,27 +1043,27 @@
 
 	<!-- ============ HERO FIGURE ============ -->
 	{#if data.article.coverImage?.src}
-		<figure class="border-ink m-0 border-y-[3px] border-double">
-			<img
-				src={data.article.coverImage.src}
-				srcset={data.article.coverImage.srcset}
-				sizes="100vw"
-				alt={data.article.title}
-				loading="eager"
-				class="aspect-video w-full object-cover"
-			/>
-			<figcaption
-				class="mx-auto flex w-full max-w-[min(94vw,1920px)] gap-3 px-14 py-3"
-			>
-				<span
-					class="font-mono-system text-warm pt-[2px] text-[10px] font-bold tracking-[0.14em] whitespace-nowrap uppercase"
-				>
-					Cover
-				</span>
-				<span class="font-newsreader text-soft text-[13px] italic">
-					{data.article.title}
-				</span>
-			</figcaption>
+		<figure class="mx-auto m-0 w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
+			<div class="border-ink border-y-[3px] border-double">
+				<img
+					src={data.article.coverImage.src}
+					srcset={data.article.coverImage.srcset}
+					sizes="(min-width: 1600px) 1488px, 100vw"
+					alt={data.article.title}
+					loading="eager"
+					class="aspect-video w-full object-cover"
+				/>
+				<figcaption class="flex gap-3 py-3">
+					<span
+						class="font-mono-system text-warm pt-[2px] text-[10px] font-bold tracking-[0.14em] whitespace-nowrap uppercase"
+					>
+						Cover
+					</span>
+					<span class="font-newsreader text-soft text-[13px] italic">
+						{data.article.title}
+					</span>
+				</figcaption>
+			</div>
 		</figure>
 	{/if}
 
@@ -1076,7 +1076,7 @@
 		TOC scroll away with the page on the previous pass.
 	-->
 	<div
-		class="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-[72px] px-6 pt-[60px] pb-[30px] md:px-14 lg:grid-cols-[232px_minmax(0,1fr)]"
+		class="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-[72px] px-4 pt-[60px] pb-[30px] md:px-14 lg:grid-cols-[232px_minmax(0,1fr)]"
 	>
 		<!-- ============ RAIL ============ -->
 		<aside class="hidden lg:block">
@@ -1354,7 +1354,7 @@
 	<!-- ============ COLOPHON (about the author) ============ -->
 	{#if !data.isPreview && data.article.author}
 		<div
-			class="bg-ink border-warm mx-auto mt-11 grid w-full max-w-[min(94vw,1920px)] grid-cols-1 items-center gap-[26px] border-t-[5px] px-9 py-8 text-white md:mx-14 md:grid-cols-[auto_1fr_auto]"
+			class="bg-ink border-warm mx-auto mt-11 grid w-full max-w-[1600px] grid-cols-1 items-center gap-[26px] border-t-[5px] px-9 py-8 text-white md:mx-14 md:grid-cols-[auto_1fr_auto]"
 		>
 			{#if data.article.author.profilePicture}
 				<a

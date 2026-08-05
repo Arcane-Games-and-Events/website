@@ -636,7 +636,7 @@
 		</span>
 
 		<!-- back link -->
-		<div class="relative z-[1] mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-5">
+		<div class="relative z-[1] mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-5">
 			<a
 				href="/age-open?tab=standings"
 				class="font-mono-system hover:text-white inline-flex items-center gap-2 text-[11px] font-bold tracking-[0.08em] text-[#aeb6c6] uppercase transition-colors"
@@ -646,7 +646,7 @@
 		</div>
 
 		<!-- main content row -->
-		<div class="relative z-[1] mx-auto flex w-full max-w-[min(94vw,1920px)] flex-wrap items-center gap-8 px-14 pt-[22px] pb-[30px]">
+		<div class="relative z-[1] mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-8 px-4 md:px-10 lg:px-14 pt-[22px] pb-[30px]">
 			<!-- rating badge card -->
 			<div
 				class="relative w-[152px] flex-shrink-0 overflow-hidden border bg-[#0F172A] px-[18px] pt-5 pb-[18px] text-center"
@@ -741,7 +741,7 @@
 		</div>
 
 		<!-- stat line -->
-		<div class="relative z-[1] mx-auto grid w-full max-w-[min(94vw,1920px)] grid-cols-3 px-14 pb-[36px] md:grid-cols-6">
+		<div class="relative z-[1] mx-auto grid w-full max-w-[1600px] grid-cols-3 px-4 md:px-10 lg:px-14 pb-[36px] md:grid-cols-6">
 			{#each [
 				{ v: data.totalStats.totalPoints, l: 'Total Points', hl: true },
 				{ v: data.totalStats.top8Finishes, l: "Top 8's" },
@@ -769,7 +769,8 @@
 		{@const _careerWinPct = data.totalStats.matchesPlayed > 0
 			? ((data.totalStats.matchesWon / data.totalStats.matchesPlayed) * 100).toFixed(1)
 			: '0.0'}
-		<section class="border-ink border-b-[3px] border-double px-14 py-[40px]">
+		<section class="border-ink border-b-[3px] border-double">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[40px]">
 			<div class="mb-5 flex flex-wrap items-end justify-between gap-5">
 				<div>
 					<div class="text-accent mb-[7px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
@@ -1127,6 +1128,7 @@
 					</tbody>
 				</table>
 			</div>
+			</div>
 		</section>
 	{/if}
 
@@ -1153,7 +1155,8 @@
 	{@const _opponentsFaced = data.matchHistory?.headToHead?.length || 0}
 	{@const _longestRun = data.matchHistory?.longestWinStreak || 0}
 	{@const _currentStreak = data.matchHistory?.currentWinStreak || 0}
-	<section class="bg-paper border-ink border-b-[3px] border-double px-14 py-[40px]">
+	<section class="bg-paper border-ink border-b-[3px] border-double">
+		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[40px]">
 		<div class="mb-7 flex flex-wrap items-end justify-between gap-5">
 			<div>
 				<div class="text-accent mb-[7px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
@@ -1365,10 +1368,12 @@
 				</div>
 			</div>
 		</div>
+		</div>
 	</section>
 
 	<!-- ============ RATING PERCENTILES TABLE ============ -->
-	<section class="border-ink border-b-[3px] border-double px-14 py-[40px]">
+	<section class="border-ink border-b-[3px] border-double">
+		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[40px]">
 		<div class="mb-5 flex flex-wrap items-end justify-between gap-5">
 			<div>
 				<div class="text-accent mb-[7px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
@@ -1477,6 +1482,7 @@
 				</div>
 			</div>
 		</div>
+		</div>
 	</section>
 
 	<!-- ============ ARSENAL ============ -->
@@ -1486,7 +1492,8 @@
 		{@const _sigBackdrop = heroBackdropUrl(_sig.hero)}
 		{@const _best = data.decklists?.[0] || null}
 		{@const _bestBackdrop = _best ? heroBackdropUrl(_best.decklist.hero) : null}
-		<section class="bg-paper border-ink border-b-[3px] border-double px-14 py-[40px]">
+		<section class="bg-paper border-ink border-b-[3px] border-double">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[40px]">
 			<div class="mb-5 flex flex-wrap items-end justify-between gap-5">
 				<div>
 					<div class="text-accent mb-[7px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
@@ -1588,6 +1595,7 @@
 					{/if}
 				</div>
 			</div>
+			</div>
 		</section>
 	{/if}
 
@@ -1598,7 +1606,8 @@
 		{@const _topWins = [...data.matchHistory.headToHead].filter((h) => h.wins > 0).sort((a, b) => b.wins - a.wins).slice(0, 4)}
 		{@const _topLoss = [...data.matchHistory.headToHead].filter((h) => h.losses > 0).sort((a, b) => b.losses - a.losses).slice(0, 4)}
 		{@const _topPlayed = [...data.matchHistory.headToHead].sort((a, b) => (b.wins + b.losses + b.draws) - (a.wins + a.losses + a.draws)).slice(0, 4)}
-		<section class="border-ink border-b-[3px] border-double px-14 py-[40px]">
+		<section class="border-ink border-b-[3px] border-double">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[40px]">
 			<div class="mb-5 flex flex-wrap items-end justify-between gap-5">
 				<div>
 					<div class="text-accent mb-[7px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
@@ -1999,12 +2008,14 @@
 					</div>
 				{/each}
 			</div>
+			</div>
 		</section>
 	{/if}
 
 	<!-- ============ DECKLISTS ============ -->
 	{#if data.decklists && data.decklists.length > 0}
-		<section class="bg-paper border-ink border-b-[3px] border-double px-14 py-[40px]">
+		<section class="bg-paper border-ink border-b-[3px] border-double">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[40px]">
 			<div class="mb-5 flex flex-wrap items-end justify-between gap-5">
 				<div>
 					<div class="text-accent mb-[7px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
@@ -2097,6 +2108,7 @@
 						{/each}
 					</tbody>
 				</table>
+			</div>
 			</div>
 		</section>
 	{/if}

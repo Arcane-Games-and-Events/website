@@ -187,9 +187,9 @@
 </script>
 
 <div class="bg-paper-bg text-ink border-ink border-b-[3px] border-double">
-<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[46px] pb-[50px]">
+<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[46px] pb-[50px]">
 	<!-- top bar -->
-	<div class="border-t-gold mb-[30px] flex items-center justify-between border-t-2 pt-[13px]">
+	<div class="border-t-gold mb-[30px] flex flex-wrap items-center justify-between gap-3 border-t-2 pt-[13px]">
 		<div class="inline-flex flex-col items-stretch gap-[9px] leading-none">
 			<span
 				class="font-archivo text-gold flex items-center gap-[13px] text-[11px] font-extrabold tracking-[0.44em] uppercase"
@@ -210,10 +210,10 @@
 	</div>
 
 	<!-- headline + browse all -->
-	<div class="mb-[30px] flex items-end justify-between gap-[30px]">
+	<div class="mb-[30px] flex flex-wrap items-end justify-between gap-[30px]">
 		<div>
 			<h2
-				class="font-newsreader text-ink m-0 mb-3 max-w-[820px] text-[54px] leading-[0.98] font-semibold tracking-[-0.02em]"
+				class="font-newsreader text-ink m-0 mb-3 max-w-[820px] text-[clamp(32px,5.5vw,54px)] leading-[0.98] font-semibold tracking-[-0.02em]"
 			>
 				Learn from the players who
 				<em class="text-gold font-medium italic">define</em>
@@ -233,7 +233,7 @@
 	</div>
 
 	<!-- featured course + side list -->
-	<div class="mb-[22px] grid grid-cols-[1.55fr_1fr] gap-[22px]">
+	<div class="mb-[22px] grid grid-cols-1 gap-[22px] lg:grid-cols-[1.55fr_1fr]">
 		<a
 			href="/academy"
 			class="group relative flex min-h-[448px] items-end overflow-hidden bg-cover bg-center"
@@ -251,7 +251,7 @@
 					★ Featured Masterclass
 				</span>
 				<h3
-					class="font-newsreader my-[15px] mb-4 text-[46px] leading-none font-semibold tracking-[-0.02em] text-white"
+					class="font-newsreader my-[15px] mb-4 text-[clamp(28px,5vw,46px)] leading-none font-semibold tracking-[-0.02em] text-white"
 				>
 					{D.featured.title}
 				</h3>
@@ -367,10 +367,10 @@
 	</div>
 
 	<!-- Hero Guides grid -->
-	<div class="grid grid-cols-[1.5fr_1fr] items-start gap-[22px]">
+	<div class="grid grid-cols-1 items-start gap-[22px] lg:grid-cols-[1.5fr_1fr]">
 		<a
 			href="/library"
-			class="bg-paper border-line2 grid cursor-pointer grid-cols-[45%_1fr] overflow-hidden border border-t-[3px] transition-transform hover:-translate-y-[2px]"
+			class="bg-paper border-line2 grid cursor-pointer grid-cols-1 overflow-hidden border border-t-[3px] transition-transform hover:-translate-y-[2px] sm:grid-cols-[45%_1fr]"
 			style="border-top-color: {HERO_VAR[D.featuredGuide.accent]};"
 		>
 			<div
@@ -392,7 +392,7 @@
 					</span>
 				</div>
 				<h3
-					class="font-newsreader text-ink m-0 mb-[11px] text-[34px] leading-none font-semibold tracking-[-0.01em]"
+					class="font-newsreader text-ink m-0 mb-[11px] text-[clamp(24px,4vw,34px)] leading-none font-semibold tracking-[-0.01em]"
 				>
 					{D.featuredGuide.hero}
 				</h3>

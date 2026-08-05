@@ -94,9 +94,9 @@
 </script>
 
 <div class="border-ink border-b-[3px] border-double">
-<div class="mx-auto grid w-full max-w-[min(94vw,1920px)] grid-cols-[30px_1.55fr_1fr]">
-	<!-- gutter -->
-	<div class="border-line flex items-start justify-center border-r pt-[34px]">
+<div class="mx-auto grid w-full max-w-[1600px] grid-cols-1 lg:grid-cols-[30px_1.55fr_1fr]">
+	<!-- gutter — hidden on mobile; the vertical label doesn't add value in a stacked layout -->
+	<div class="border-line hidden items-start justify-center border-r pt-[34px] lg:flex">
 		<span
 			class="text-fade text-[10px] font-extrabold tracking-[0.32em] uppercase"
 			style="writing-mode: vertical-rl; transform: rotate(180deg);"
@@ -115,7 +115,7 @@
 	-->
 	<a
 		href={D.lead.href ?? '/library'}
-		class="group border-line2 relative block border-r pt-[34px] pr-[44px] pb-[40px] pl-[36px]"
+		class="group border-line2 relative block pt-8 pr-4 pb-10 pl-4 md:pt-[34px] md:pr-[44px] md:pb-[40px] md:pl-[36px] lg:border-r"
 	>
 		<div
 			class="bg-panel relative z-[1] aspect-video w-full bg-cover bg-center"
@@ -164,7 +164,7 @@
 			{/if}
 		</div>
 
-		<div class="bg-paper-bg relative z-[2] mt-[-72px] mr-10 pt-[22px] pr-7">
+		<div class="bg-paper-bg relative z-[2] -mt-8 pt-4 sm:mr-6 md:mt-[-72px] md:mr-10 md:pt-[22px] md:pr-7">
 			<span
 				class="mb-[14px] inline-block px-[10px] py-[5px] text-[10px] font-extrabold tracking-[0.14em] text-white uppercase {leadIsVideo
 					? 'bg-warm'
@@ -173,14 +173,14 @@
 				{D.lead.eyebrow}
 			</span>
 			<h1
-				class="font-newsreader text-[62px] leading-[0.96] font-semibold tracking-[-0.01em]"
+				class="font-newsreader text-[clamp(32px,6vw,62px)] leading-[0.96] font-semibold tracking-[-0.01em]"
 			>
 				{D.lead.title}
 			</h1>
 		</div>
 
 		<p
-			class="text-soft my-[18px] max-w-[640px] text-[19px] leading-[1.55] first-letter:font-newsreader first-letter:float-left first-letter:mt-[7px] first-letter:mr-3 first-letter:text-[62px] first-letter:leading-[0.7] first-letter:font-semibold {leadIsVideo
+			class="text-soft my-[18px] max-w-[640px] text-[16px] leading-[1.55] first-letter:font-newsreader first-letter:float-left first-letter:mt-[7px] first-letter:mr-3 first-letter:text-[clamp(40px,7vw,62px)] first-letter:leading-[0.7] first-letter:font-semibold sm:text-[19px] {leadIsVideo
 				? 'first-letter:text-warm'
 				: 'first-letter:text-accent'}"
 		>
@@ -218,7 +218,7 @@
 		 to the viewport edge so the column doesn't get visually cut off
 		 in the right gutter on wide screens. -->
 	<div
-		class="bg-paper relative flex flex-col pt-[30px] pr-14 pb-[34px] pl-10 before:absolute before:inset-y-0 before:left-full before:w-screen before:bg-paper before:content-['']"
+		class="bg-paper relative flex flex-col px-4 pt-6 pb-8 sm:px-10 md:pr-14 md:pl-10 md:pt-[30px] md:pb-[34px] lg:before:absolute lg:before:inset-y-0 lg:before:left-full lg:before:w-screen lg:before:bg-paper lg:before:content-['']"
 	>
 		<header class="mb-[6px]">
 			<div

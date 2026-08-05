@@ -97,11 +97,11 @@
 </script>
 
 <div class="bg-paper-bg border-ink border-b-[3px] border-double">
-<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[42px] pb-[48px]">
+<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[42px] pb-[48px]">
 	<!-- studhead / podnetsub -->
-	<div class="border-ink mb-[26px] flex items-end justify-between border-b-2 pb-[14px]">
+	<div class="border-ink mb-[26px] flex flex-wrap items-end justify-between gap-3 border-b-2 pb-[14px]">
 		<div class="flex flex-wrap items-baseline gap-5">
-			<h2 class="font-newsreader text-[40px] font-semibold tracking-[-0.02em]">
+			<h2 class="font-newsreader text-[clamp(28px,4.5vw,40px)] font-semibold tracking-[-0.02em]">
 				AGE Podcast Network
 			</h2>
 			<span class="flex gap-4">
@@ -123,7 +123,7 @@
 	<!-- featured podcast -->
 	<a
 		href="/podcasts"
-		class="group border-t-warm mb-[30px] grid grid-cols-[300px_1fr] border-t-[3px] bg-[#17150f] text-white"
+		class="group border-t-warm mb-[30px] grid grid-cols-1 border-t-[3px] bg-[#17150f] text-white md:grid-cols-[300px_1fr]"
 	>
 		<div
 			class="relative aspect-square bg-cover bg-center bg-[#23201a]"
@@ -192,7 +192,7 @@
 	</a>
 
 	<!-- network grid -->
-	<div class="border-line2 bg-line2 grid grid-cols-2 gap-px border">
+	<div class="border-line2 bg-line2 grid grid-cols-1 gap-px border sm:grid-cols-2">
 		{#each D.shows as s, i (i)}
 			<a
 				href="/podcasts"

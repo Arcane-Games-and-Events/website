@@ -190,7 +190,7 @@
 		<!-- circuit accent top rule (4px) sits above the backdrop -->
 		<div class="absolute inset-x-0 top-0 z-[1] h-[4px]" style="background: {edCircuit};"></div>
 
-		<div class="relative z-[1] mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[44px] pb-[42px]">
+		<div class="relative z-[1] mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[44px] pb-[42px]">
 			<!-- Back link -->
 			<a
 				href="/age-open"
@@ -293,7 +293,7 @@
 	<!-- Main 2-column grid -->
 	<section class="bg-paper-bg">
 		<div
-			class="mx-auto grid w-full max-w-[min(94vw,1920px)] gap-10 px-14 py-[44px] lg:grid-cols-[1fr_360px]"
+			class="mx-auto grid w-full max-w-[1600px] gap-10 px-14 py-[44px] lg:grid-cols-[1fr_360px]"
 		>
 			<!-- ============ LEFT COLUMN ============ -->
 			<div class="min-w-0 space-y-7">

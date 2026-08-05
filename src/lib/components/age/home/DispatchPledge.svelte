@@ -8,9 +8,9 @@
 </script>
 
 <div
-	class="bg-prem border-ink relative overflow-hidden border-b-[3px] border-double py-[62px] text-white"
+	class="bg-prem border-ink relative overflow-hidden border-b-[3px] border-double py-12 text-white md:py-[62px]"
 >
-<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14">
+<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
 	<div class="relative z-[1] max-w-[900px]">
 		<div
 			class="text-[10.5px] font-bold tracking-[0.2em] text-[#d6eedf] uppercase"
@@ -18,7 +18,7 @@
 			Powered by members
 		</div>
 		<h2
-			class="font-newsreader my-[14px] mb-4 text-[50px] leading-[1.02] font-semibold tracking-[-0.01em]"
+			class="font-newsreader my-[14px] mb-4 text-[clamp(30px,5vw,50px)] leading-[1.02] font-semibold tracking-[-0.01em]"
 		>
 			Premium is what makes AGE possible.
 		</h2>

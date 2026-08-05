@@ -155,7 +155,7 @@ export function toFrontData(data) {
 						.join(' · ') || 'Bonus match',
 				image: muxThumb(bonusVod),
 				duration: bonusVod.duration ? formatDuration(bonusVod.duration) : '',
-				href: '/library'
+				href: bonusVod.id ? `/library/${bonusVod.id}` : '/library'
 			}
 		: null;
 
@@ -266,10 +266,7 @@ function vodLibraryItem(v) {
 		event: v?.event || v?.circuit || '',
 		meta: [dur || null, v?.event || v?.circuit || null].filter(Boolean).join(' · '),
 		duration: dur,
-		// VODs don't have a public reader route yet, so link to the
-		// Studios surface as the closest fit. Replace with a per-VOD URL
-		// once that route lands.
-		href: '/studios',
+		href: v?.id ? `/library/${v.id}` : '/library',
 		publishedAt: v?.publishedAt
 	};
 }

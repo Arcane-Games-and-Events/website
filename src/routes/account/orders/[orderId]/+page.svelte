@@ -102,7 +102,7 @@
 	<section class="bg-paper border-ink relative overflow-hidden border-b-[3px] border-double">
 		<div class="absolute inset-x-0 top-0 z-[1] h-[4px]" style="background: {accent};"></div>
 
-		<div class="relative z-[1] mx-auto w-full max-w-[min(94vw,1920px)] px-14 pt-[44px] pb-[42px]">
+		<div class="relative z-[1] mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[44px] pb-[42px]">
 			<!-- Back link -->
 			<a
 				href="/account?tab=billing"
@@ -200,7 +200,7 @@
 	<!-- Form messages -->
 	{#if form?.success}
 		<section class="bg-paper-bg border-ink border-b-[3px] border-double">
-			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-6">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-6">
 				<div class="bg-paper border-prem border-line2 border-l-[3px] border px-5 py-4">
 					<div
 						class="text-prem font-mono-system mb-1 text-[10px] font-extrabold tracking-[0.16em] uppercase"
@@ -215,7 +215,7 @@
 
 	{#if form?.error}
 		<section class="bg-paper-bg border-ink border-b-[3px] border-double">
-			<div class="mx-auto w-full max-w-[min(94vw,1920px)] px-14 py-6">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-6">
 				<div class="bg-paper border-warm border-line2 border-l-[3px] border px-5 py-4">
 					<div
 						class="text-warm font-mono-system mb-1 text-[10px] font-extrabold tracking-[0.16em] uppercase"
@@ -230,7 +230,7 @@
 
 	<!-- Body — stacked editorial sections -->
 	<section class="bg-paper-bg border-ink border-b-[3px] border-double">
-		<div class="mx-auto w-full max-w-[min(94vw,1920px)] space-y-7 px-14 py-10">
+		<div class="mx-auto w-full max-w-[1600px] space-y-7 px-14 py-10">
 			<!--
 				Order Information — editorial card with mono labels and
 				ink values. Same dl pattern used on the event signup

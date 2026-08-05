@@ -51,6 +51,18 @@
 		return a + b || (user?.email?.charAt(0).toUpperCase() ?? '?');
 	}
 
+	// Trigger-chip label. Prefer first name; if it's missing, fall back
+	// to the email's local part so the chip never renders the generic
+	// "Account" word — the user's identity should be the primary label
+	// on every page.
+	function triggerLabel() {
+		const first = (user?.firstName || '').trim();
+		if (first) return first;
+		const email = user?.email || '';
+		if (email.includes('@')) return email.split('@')[0];
+		return email || 'Account';
+	}
+
 	const isAdmin = $derived(user?.role === 'admin');
 
 	const ITEMS = $derived([
@@ -80,7 +92,7 @@
 				></span>
 			{/if}
 		</span>
-		<span class="hidden sm:inline">{user?.firstName || 'Account'}</span>
+		<span class="hidden sm:inline">{triggerLabel()}</span>
 		<svg
 			class="hidden h-[8px] w-[10px] sm:block"
 			viewBox="0 0 10 8"
