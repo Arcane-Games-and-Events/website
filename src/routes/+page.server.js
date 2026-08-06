@@ -362,14 +362,15 @@ export async function load({ setHeaders, url, locals }) {
 			fetchRecentVods()
 		]);
 
-		// IMPORTANT: Only use public caching for anonymous users
-		// Logged-in users must get private responses to prevent user data leaking between sessions
-		if (locals.user) {
-			setHeaders({
-				'cache-control': 'private, no-cache, no-store, must-revalidate',
-				vary: 'Cookie'
-			});
-		} else if (articles.length > 0) {
+		// Edge-cache for 5 minutes with an hour of stale-while-revalidate.
+		// `Vary: Cookie` keeps one entry per cookie fingerprint, so an
+		// anonymous visitor's HTML never gets served to a logged-in one
+		// (or vice versa). Logged-in visitors still benefit — their own
+		// second navigation is edge-served.
+		//
+		// If the article fetch failed and we returned an empty page, skip
+		// caching so we don't lock in the empty state.
+		if (articles.length > 0) {
 			setHeaders({
 				'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
 				vary: 'Cookie'

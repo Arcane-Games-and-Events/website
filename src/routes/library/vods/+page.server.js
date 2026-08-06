@@ -4,7 +4,7 @@ import { eq, and, or, ilike, asc, desc, sql } from 'drizzle-orm';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 import { getMuxThumbnailToken } from '$lib/server/mux.js';
 
-export async function load({ locals, url }) {
+export async function load({ locals, url, setHeaders }) {
 	// Parse filter params
 	const q = url.searchParams.get('q')?.trim() || '';
 	const eventId = url.searchParams.get('event') || '';
@@ -12,6 +12,15 @@ export async function load({ locals, url }) {
 	const sort = url.searchParams.get('sort') || 'newest';
 	const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
 	const perPage = 12;
+
+	// Edge-cache the rendered list for 5 minutes with an hour of
+	// stale-while-revalidate. Admin VOD writes bust the Redis layer
+	// (via `vods:list:*` prefix); the edge just waits out its TTL.
+	// 5 min is short enough that publishing feels near-immediate.
+	setHeaders({
+		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
+		vary: 'Cookie'
+	});
 
 	// One filter combo = one cache entry. SHORT TTL (60s) keeps memory
 	// bounded even under q-search cardinality; admin VOD writes bust

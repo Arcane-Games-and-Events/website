@@ -9,6 +9,24 @@ import { logPageView } from '$lib/server/analytics.js';
 // Paths exempt from CSRF protection (external webhooks)
 const CSRF_EXEMPT_PATHS = ['/api/webhooks/'];
 
+// Paths where the response MUST never be cached by any shared cache
+// (Vercel edge, ISPs, corporate proxies). These are the routes that
+// serve per-user private state — auth flows, admin surfaces, checkout,
+// server APIs. Everything else lets its page-level `setHeaders` decide
+// whether it can be edge-cached.
+const NEVER_CACHE_PREFIXES = [
+	'/account',
+	'/admin',
+	'/api',
+	'/staff',
+	'/checkout',
+	'/login',
+	'/signup',
+	'/logout',
+	'/reset-password',
+	'/forgot-password'
+];
+
 export const handle = async ({ event, resolve }) => {
 	// Custom CSRF protection (exempts webhook paths)
 	const { request, url } = event;
@@ -103,13 +121,22 @@ export const handle = async ({ event, resolve }) => {
 	// Resolve the request
 	const response = await resolve(event);
 
-	// CRITICAL: Always set Vary: Cookie so CDN caches separate versions
-	// for logged-in vs logged-out users. This ensures the sidebar updates
-	// immediately after login/logout.
+	// CRITICAL: Always set Vary: Cookie so shared caches (Vercel edge)
+	// keep separate entries for logged-in vs logged-out visitors — and
+	// for different users when both are logged in. This means public
+	// pages get one shared entry for anonymous traffic and one entry
+	// per cookie fingerprint for authed traffic. Anonymous is the big
+	// win; authed users benefit on their second navigation.
 	response.headers.set('vary', 'Cookie');
 
-	// For authenticated users, also prevent any CDN caching
-	if (user) {
+	// Sensitive routes are always uncached, regardless of auth state
+	// (an unauthed hit still gets `no-store` on `/account` — the redirect
+	// itself shouldn't be cached either). Non-sensitive routes let the
+	// page's own `setHeaders({...})` decide whether it's edge-cacheable.
+	// This is the change that finally lets `/`, `/library`, `/age-open`
+	// etc. serve from Vercel's edge for logged-in members.
+	const isSensitive = NEVER_CACHE_PREFIXES.some((p) => url.pathname.startsWith(p));
+	if (isSensitive) {
 		response.headers.set('cache-control', 'private, no-cache, no-store, must-revalidate');
 	}
 

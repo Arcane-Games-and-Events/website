@@ -29,7 +29,7 @@ function getHeroImageUrl(heroName) {
 	return `/hero_images/${slug}.webp`;
 }
 
-export async function load({ params }) {
+export async function load({ params, setHeaders }) {
 	try {
 		// Peek the event row uncached so we can pick the right TTL: in-progress
 		// events still change, completed events never do. This one lookup is
@@ -49,8 +49,21 @@ export async function load({ params }) {
 		}
 
 		// Completed events: cache for a day (their data is frozen). Live
-		// events: 5 min so scoring updates surface quickly.
-		const ttl = eventPeek.status === 'completed' ? CACHE_TTL.DAY : CACHE_TTL.MEDIUM;
+		// events: 5 min so scoring updates surface quickly. Both layers
+		// use the same TTL — Redis (server-side) and Vercel edge.
+		const isCompleted = eventPeek.status === 'completed';
+		const ttl = isCompleted ? CACHE_TTL.DAY : CACHE_TTL.MEDIUM;
+
+		// Edge cache directive matches the Redis TTL. Completed events get
+		// aggressive edge caching (1 day fresh, 1 week stale-revalidate);
+		// live events get MEDIUM freshness with a 5-min stale window so
+		// updates from admin CSV processing surface quickly at the edge.
+		setHeaders({
+			'cache-control': isCompleted
+				? 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800'
+				: 'public, max-age=0, s-maxage=300, stale-while-revalidate=300',
+			vary: 'Cookie'
+		});
 
 		return await getCachedOrFetch(
 			`${CACHE_KEYS.EVENTS}:results:${params.eventId}`,
