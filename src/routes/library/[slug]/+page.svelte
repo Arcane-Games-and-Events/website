@@ -1053,17 +1053,17 @@
 					loading="eager"
 					class="aspect-video w-full object-cover"
 				/>
-				<figcaption class="flex gap-3 py-3">
-					<span
-						class="font-mono-system text-warm pt-[2px] text-[10px] font-bold tracking-[0.14em] whitespace-nowrap uppercase"
-					>
-						Cover
-					</span>
-					<span class="font-newsreader text-soft text-[13px] italic">
-						{data.article.title}
-					</span>
-				</figcaption>
 			</div>
+			<figcaption class="flex gap-3 py-3">
+				<span
+					class="font-mono-system text-warm pt-[2px] text-[10px] font-bold tracking-[0.14em] whitespace-nowrap uppercase"
+				>
+					Cover
+				</span>
+				<span class="font-newsreader text-soft text-[13px] italic">
+					{data.article.title}
+				</span>
+			</figcaption>
 		</figure>
 	{/if}
 

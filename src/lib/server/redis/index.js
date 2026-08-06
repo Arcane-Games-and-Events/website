@@ -8,24 +8,6 @@ import { env } from '$env/dynamic/private';
 // accidentally poison the prod keyspace.
 const APP_ENV = env.APP_ENV === 'prod' ? 'prod' : 'dev';
 
-// Redis is now required in both dev and prod. The old in-process memory
-// fallback made local dev behave nothing like prod and hid bugs (stale
-// keys, missed invalidations, cross-process cache divergence). If you're
-// running the site locally and don't have Upstash configured, point at
-// the same instance prod uses with `APP_ENV=dev` — the env prefix keeps
-// your writes off prod's keys.
-if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
-	throw new Error(
-		'UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be set. ' +
-			'Redis is required in every environment. See .env.example.'
-	);
-}
-
-const redis = new Redis({
-	url: env.UPSTASH_REDIS_REST_URL,
-	token: env.UPSTASH_REDIS_REST_TOKEN
-});
-
 // Cache key prefixes for organization. Every cache key in the app is
 // built by concatenating one of these with a suffix, e.g.
 // `${CACHE_KEYS.ARTICLES}:latest:12`. Adding a new cached surface? Add
@@ -51,6 +33,36 @@ export const CACHE_TTL = {
 	DAY: 86400 // 24 hours — near-static data (card lookups etc.)
 };
 
+// Lazy Redis client. We deliberately do NOT instantiate at module load
+// time — SvelteKit + adapter-vercel both import server modules during
+// the build's static-analysis pass, and that pass doesn't always have
+// the runtime env vars available. Throwing at import time turns any
+// deploy without perfectly-scoped env vars into a hard build failure.
+// Instantiating on first use means the module always imports cleanly;
+// a genuinely missing config surfaces on the first cache call, and the
+// primitives' try/catch below converts that into a graceful DB fallback
+// (with a loud console warning) rather than a site-wide outage.
+let _client = null;
+let _warned = false;
+function getRedis() {
+	if (_client) return _client;
+	if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
+		if (!_warned) {
+			console.warn(
+				'[redis] UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN missing — ' +
+					'cache primitives will bypass Redis and hit the DB directly. See .env.example.'
+			);
+			_warned = true;
+		}
+		return null;
+	}
+	_client = new Redis({
+		url: env.UPSTASH_REDIS_REST_URL,
+		token: env.UPSTASH_REDIS_REST_TOKEN
+	});
+	return _client;
+}
+
 /**
  * Prefix a bare cache key with the current env namespace. Call sites
  * pass unprefixed keys (`events:upcoming:3`); this returns the full
@@ -66,24 +78,26 @@ export function k(key) {
 
 /**
  * Read `key` from Redis. On a miss, run `fetchFn`, cache the result for
- * `ttl` seconds, and return it. On any Redis error, fall through to
- * `fetchFn` so cache outages never break the site.
+ * `ttl` seconds, and return it. If Redis is unconfigured or errors, we
+ * fall through to `fetchFn` so cache outages never break the site.
  *
  * @param {string} key   Unprefixed cache key.
  * @param {() => Promise<any>} fetchFn  Producer for cache misses.
  * @param {number} ttl   Seconds to keep the result. Defaults to MEDIUM (5 min).
  */
 export async function getCachedOrFetch(key, fetchFn, ttl = CACHE_TTL.MEDIUM) {
+	const client = getRedis();
+	if (!client) return fetchFn();
 	const prefixed = k(key);
 	try {
-		const cached = await redis.get(prefixed);
+		const cached = await client.get(prefixed);
 		if (cached !== null) return cached;
 
 		const freshData = await fetchFn();
 
 		// Fire-and-forget cache write. A slow write shouldn't hold up
 		// the request; a failed one shouldn't crash it.
-		redis.set(prefixed, freshData, { ex: ttl }).catch(() => {});
+		client.set(prefixed, freshData, { ex: ttl }).catch(() => {});
 
 		return freshData;
 	} catch (err) {
@@ -97,8 +111,10 @@ export async function getCachedOrFetch(key, fetchFn, ttl = CACHE_TTL.MEDIUM) {
  * mustn't break the write action that triggered them.
  */
 export async function invalidateCache(key) {
+	const client = getRedis();
+	if (!client) return;
 	try {
-		await redis.del(k(key));
+		await client.del(k(key));
 	} catch {
 		// Silent — cache invalidation errors shouldn't break the app
 	}
@@ -113,17 +129,19 @@ export async function invalidateCache(key) {
  * Silent on error — same rationale as `invalidateCache`.
  */
 export async function invalidateByPrefix(prefix) {
+	const client = getRedis();
+	if (!client) return;
 	const pattern = `${k(prefix)}*`;
 	try {
 		let cursor = 0;
 		do {
-			const [nextCursor, keys] = await redis.scan(cursor, {
+			const [nextCursor, keys] = await client.scan(cursor, {
 				match: pattern,
 				count: 100
 			});
 			cursor = typeof nextCursor === 'string' ? parseInt(nextCursor, 10) : Number(nextCursor);
 			if (keys.length > 0) {
-				await redis.del(...keys);
+				await client.del(...keys);
 			}
 		} while (cursor !== 0);
 	} catch (err) {
@@ -131,8 +149,9 @@ export async function invalidateByPrefix(prefix) {
 	}
 }
 
-// Raw client export — reserved for internal tooling that legitimately
+// Raw client accessor — reserved for internal tooling that legitimately
 // needs low-level access (e.g. a future admin cache-inspector page).
 // If you use this directly, remember: keys you pass are NOT env-prefixed
-// automatically. Use `k(key)` to build them.
-export { redis };
+// automatically. Use `k(key)` to build them. Returns null when Redis
+// is not configured.
+export { getRedis };
