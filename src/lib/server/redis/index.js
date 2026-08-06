@@ -1,19 +1,30 @@
 import { Redis } from '@upstash/redis';
 import { env } from '$env/dynamic/private';
 
-// Initialize Redis client (only if credentials are available)
-const redis =
-	env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN
-		? new Redis({
-				url: env.UPSTASH_REDIS_REST_URL,
-				token: env.UPSTASH_REDIS_REST_TOKEN
-			})
-		: null;
+// APP_ENV isolates dev and prod key namespaces so a single Upstash
+// instance can safely serve both — dev writes land under `dev:`, prod
+// writes under `prod:`. Anything other than the literal string `prod`
+// is treated as `dev` so a forgotten or misspelled setting can't ever
+// accidentally poison the prod keyspace.
+const APP_ENV = env.APP_ENV === 'prod' ? 'prod' : 'dev';
 
-// In-memory cache fallback for local development (when Redis is not available)
-// This prevents database connection pool exhaustion during rapid page loads
-const memoryCache = new Map();
-const memoryCacheExpiry = new Map();
+// Redis is now required in both dev and prod. The old in-process memory
+// fallback made local dev behave nothing like prod and hid bugs (stale
+// keys, missed invalidations, cross-process cache divergence). If you're
+// running the site locally and don't have Upstash configured, point at
+// the same instance prod uses with `APP_ENV=dev` — the env prefix keeps
+// your writes off prod's keys.
+if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
+	throw new Error(
+		'UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be set. ' +
+			'Redis is required in every environment. See .env.example.'
+	);
+}
+
+const redis = new Redis({
+	url: env.UPSTASH_REDIS_REST_URL,
+	token: env.UPSTASH_REDIS_REST_TOKEN
+});
 
 // Cache key prefixes for organization. Every cache key in the app is
 // built by concatenating one of these with a suffix, e.g.
@@ -31,104 +42,97 @@ export const CACHE_KEYS = {
 	HEROES: 'heroes'
 };
 
-// Default TTL values (in seconds)
+// Default TTL values (in seconds).
 export const CACHE_TTL = {
-	SHORT: 60, // 1 minute - for frequently changing data
-	MEDIUM: 300, // 5 minutes - for standings, events
-	LONG: 900, // 15 minutes - for articles
-	HOUR: 3600 // 1 hour - for rarely changing data
+	SHORT: 60, // 1 minute — frequently-changing data
+	MEDIUM: 300, // 5 minutes — standings, events
+	LONG: 900, // 15 minutes — articles
+	HOUR: 3600, // 1 hour — rarely-changing data
+	DAY: 86400 // 24 hours — near-static data (card lookups etc.)
 };
 
 /**
- * Get from memory cache if valid
- * @param {string} key - Cache key
- * @returns {any|null} - Cached value or null if expired/missing
+ * Prefix a bare cache key with the current env namespace. Call sites
+ * pass unprefixed keys (`events:upcoming:3`); this returns the full
+ * key that actually lives in Redis (`prod:events:upcoming:3` or
+ * `dev:events:upcoming:3`). The `getCachedOrFetch`, `invalidateCache`,
+ * and `invalidateByPrefix` primitives already apply this internally —
+ * export it for the rare case where you need to construct a key by
+ * hand (e.g. debug tooling, admin cache page).
  */
-function getFromMemoryCache(key) {
-	const expiry = memoryCacheExpiry.get(key);
-	if (expiry && Date.now() < expiry) {
-		return memoryCache.get(key);
-	}
-	// Expired or missing - clean up
-	memoryCache.delete(key);
-	memoryCacheExpiry.delete(key);
-	return null;
+export function k(key) {
+	return `${APP_ENV}:${key}`;
 }
 
 /**
- * Set in memory cache
- * @param {string} key - Cache key
- * @param {any} value - Value to cache
- * @param {number} ttl - Time to live in seconds
- */
-function setInMemoryCache(key, value, ttl) {
-	memoryCache.set(key, value);
-	memoryCacheExpiry.set(key, Date.now() + ttl * 1000);
-}
-
-/**
- * Get cached data or fetch fresh data
- * @param {string} key - Cache key
- * @param {Function} fetchFn - Function to fetch fresh data if cache miss
- * @param {number} ttl - Time to live in seconds (default: 5 minutes)
- * @returns {Promise<any>} - Cached or fresh data
+ * Read `key` from Redis. On a miss, run `fetchFn`, cache the result for
+ * `ttl` seconds, and return it. On any Redis error, fall through to
+ * `fetchFn` so cache outages never break the site.
+ *
+ * @param {string} key   Unprefixed cache key.
+ * @param {() => Promise<any>} fetchFn  Producer for cache misses.
+ * @param {number} ttl   Seconds to keep the result. Defaults to MEDIUM (5 min).
  */
 export async function getCachedOrFetch(key, fetchFn, ttl = CACHE_TTL.MEDIUM) {
-	// Try Redis first if available
-	if (redis) {
-		try {
-			const cached = await redis.get(key);
-			if (cached !== null) {
-				return cached;
-			}
+	const prefixed = k(key);
+	try {
+		const cached = await redis.get(prefixed);
+		if (cached !== null) return cached;
 
-			// Cache miss - fetch fresh data
-			const freshData = await fetchFn();
+		const freshData = await fetchFn();
 
-			// Store in cache (don't await - fire and forget)
-			redis.set(key, freshData, { ex: ttl }).catch(() => {
-				// Silent fail - Redis errors shouldn't break the app
-			});
+		// Fire-and-forget cache write. A slow write shouldn't hold up
+		// the request; a failed one shouldn't crash it.
+		redis.set(prefixed, freshData, { ex: ttl }).catch(() => {});
 
-			return freshData;
-		} catch (error) {
-			// On Redis error, fall through to memory cache or direct fetch
-			console.warn('Redis error, falling back to memory cache:', error.message);
-		}
+		return freshData;
+	} catch (err) {
+		console.warn(`Redis error on ${prefixed}, bypassing cache:`, err.message);
+		return fetchFn();
 	}
-
-	// Fallback: Use in-memory cache (for local development without Redis)
-	const memoryCached = getFromMemoryCache(key);
-	if (memoryCached !== null) {
-		return memoryCached;
-	}
-
-	// Cache miss - fetch fresh data
-	const freshData = await fetchFn();
-
-	// Store in memory cache
-	setInMemoryCache(key, freshData, ttl);
-
-	return freshData;
 }
 
 /**
- * Invalidate cache for a specific key or pattern
- * @param {string} key - Cache key to invalidate
+ * Delete a single cache key. Silent on error — invalidation failures
+ * mustn't break the write action that triggered them.
  */
 export async function invalidateCache(key) {
-	// Invalidate memory cache
-	memoryCache.delete(key);
-	memoryCacheExpiry.delete(key);
-
-	// Invalidate Redis cache if available
-	if (!redis) return;
-
 	try {
-		await redis.del(key);
-	} catch (error) {
-		// Silent fail - cache invalidation errors shouldn't break the app
+		await redis.del(k(key));
+	} catch {
+		// Silent — cache invalidation errors shouldn't break the app
 	}
 }
 
+/**
+ * Delete every cache key whose (unprefixed) name starts with `prefix`.
+ * Uses SCAN + batched DEL so large keyspaces don't block Redis. Scoped
+ * to the current APP_ENV automatically — `invalidateByPrefix('user:abc:')`
+ * on dev cannot touch prod entries.
+ *
+ * Silent on error — same rationale as `invalidateCache`.
+ */
+export async function invalidateByPrefix(prefix) {
+	const pattern = `${k(prefix)}*`;
+	try {
+		let cursor = 0;
+		do {
+			const [nextCursor, keys] = await redis.scan(cursor, {
+				match: pattern,
+				count: 100
+			});
+			cursor = typeof nextCursor === 'string' ? parseInt(nextCursor, 10) : Number(nextCursor);
+			if (keys.length > 0) {
+				await redis.del(...keys);
+			}
+		} while (cursor !== 0);
+	} catch (err) {
+		console.warn(`Redis SCAN/DEL failed for pattern ${pattern}:`, err.message);
+	}
+}
+
+// Raw client export — reserved for internal tooling that legitimately
+// needs low-level access (e.g. a future admin cache-inspector page).
+// If you use this directly, remember: keys you pass are NOT env-prefixed
+// automatically. Use `k(key)` to build them.
 export { redis };
