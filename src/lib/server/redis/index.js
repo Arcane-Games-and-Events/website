@@ -89,21 +89,28 @@ export async function getCachedOrFetch(key, fetchFn, ttl = CACHE_TTL.MEDIUM) {
 	const client = getRedis();
 	if (!client) return fetchFn();
 	const prefixed = k(key);
+
+	// Try the cache. A Redis failure degrades to cache-miss silently —
+	// we deliberately DON'T wrap `fetchFn` in the same try/catch, because
+	// swallowing app errors here and retrying `fetchFn` doubled the work
+	// on any cold-cache slowness (a partial DB run that timed out would
+	// be retried, blowing past Vercel's serverless timeout and hanging
+	// the page). App errors from `fetchFn` propagate normally.
+	let cached = null;
 	try {
-		const cached = await client.get(prefixed);
-		if (cached !== null) return cached;
-
-		const freshData = await fetchFn();
-
-		// Fire-and-forget cache write. A slow write shouldn't hold up
-		// the request; a failed one shouldn't crash it.
-		client.set(prefixed, freshData, { ex: ttl }).catch(() => {});
-
-		return freshData;
+		cached = await client.get(prefixed);
 	} catch (err) {
-		console.warn(`Redis error on ${prefixed}, bypassing cache:`, err.message);
-		return fetchFn();
+		console.warn(`Redis GET error on ${prefixed}, will bypass cache:`, err.message);
 	}
+	if (cached !== null) return cached;
+
+	const freshData = await fetchFn();
+
+	// Fire-and-forget cache write. A slow write shouldn't hold up the
+	// request; a failed one shouldn't crash it.
+	client.set(prefixed, freshData, { ex: ttl }).catch(() => {});
+
+	return freshData;
 }
 
 /**
