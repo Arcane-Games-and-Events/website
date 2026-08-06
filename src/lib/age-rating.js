@@ -114,31 +114,94 @@ export function getRatingTier(rating) {
 	return { label: 'Unranked', color: 'slate' };
 }
 
+// Binary-search helpers for the ...FromSorted percentile functions.
+// Both assume `sorted` is ascending.
+function lowerBound(sorted, value) {
+	let lo = 0;
+	let hi = sorted.length;
+	while (lo < hi) {
+		const mid = (lo + hi) >>> 1;
+		if (sorted[mid] < value) lo = mid + 1;
+		else hi = mid;
+	}
+	return lo;
+}
+
+function upperBound(sorted, value) {
+	let lo = 0;
+	let hi = sorted.length;
+	while (lo < hi) {
+		const mid = (lo + hi) >>> 1;
+		if (sorted[mid] <= value) lo = mid + 1;
+		else hi = mid;
+	}
+	return lo;
+}
+
 /**
- * Calculate percentile rank (0-100) for a value in an array
- * Higher percentile = better
+ * Percentile of `value` against an already-sorted ascending array. Higher
+ * percentile = better. Uses two binary searches, O(log N) per call —
+ * intended for hot loops where you sort the reference array once and then
+ * ask about many values.
+ * @param {number} value
+ * @param {number[]} sortedAscending
+ * @returns {number} 0-100
+ */
+export function calculatePercentileFromSorted(value, sortedAscending) {
+	if (sortedAscending.length === 0) return 50;
+	const below = lowerBound(sortedAscending, value);
+	const equal = upperBound(sortedAscending, value) - below;
+	return ((below + equal / 2) / sortedAscending.length) * 100;
+}
+
+/**
+ * Rank-percentile of `rank` against an already-sorted ascending array of
+ * ranks (lower rank = better). Two binary searches, O(log N) per call.
+ * @param {number|null} rank
+ * @param {number[]} sortedAscending
+ * @returns {number} 0-100
+ */
+export function calculateRankPercentileFromSorted(rank, sortedAscending) {
+	if (sortedAscending.length === 0 || rank === null) return 50;
+	const upper = upperBound(sortedAscending, rank);
+	const lower = lowerBound(sortedAscending, rank);
+	const worse = sortedAscending.length - upper;
+	const equal = upper - lower;
+	return ((worse + equal / 2) / sortedAscending.length) * 100;
+}
+
+/**
+ * Calculate percentile rank (0-100) for a value in an array.
+ * Higher percentile = better.
+ *
+ * NOTE: sorts the array internally, so this is O(N log N) per call — do
+ * NOT use inside a per-player loop where the reference array is the
+ * same each time. For that case, sort ONCE outside the loop and call
+ * `calculatePercentileFromSorted` — otherwise you're stacking O(N log N)
+ * sorts per player which can push a serverless function past its timeout.
+ * The single-call callers (like /player/[gemId]) can keep using this.
+ *
  * @param {number} value - The value to find percentile for
  * @param {number[]} allValues - Array of all values
  * @returns {number} - Percentile (0-100)
  */
 export function calculatePercentile(value, allValues) {
-	if (allValues.length === 0) return 50;
 	const sorted = [...allValues].sort((a, b) => a - b);
-	const belowCount = sorted.filter((v) => v < value).length;
-	const equalCount = sorted.filter((v) => v === value).length;
-	return ((belowCount + equalCount / 2) / sorted.length) * 100;
+	return calculatePercentileFromSorted(value, sorted);
 }
 
 /**
- * Calculate percentile rank for rank values (lower rank = better)
+ * Calculate percentile rank for rank values (lower rank = better).
+ *
+ * Same warning as `calculatePercentile` — this sorts internally. Use the
+ * `FromSorted` variant in hot loops.
+ *
  * @param {number} rank - The rank to find percentile for
  * @param {number[]} allRanks - Array of all ranks
  * @returns {number} - Percentile (0-100)
  */
 export function calculateRankPercentile(rank, allRanks) {
-	if (allRanks.length === 0 || rank === null) return 50;
+	if (rank === null) return 50;
 	const sorted = [...allRanks].sort((a, b) => a - b);
-	const worseCount = sorted.filter((r) => r > rank).length;
-	const equalCount = sorted.filter((r) => r === rank).length;
-	return ((worseCount + equalCount / 2) / sorted.length) * 100;
+	return calculateRankPercentileFromSorted(rank, sorted);
 }

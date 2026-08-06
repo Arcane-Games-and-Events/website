@@ -6,8 +6,8 @@ import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index
 import {
 	calculateAgeRatingTotal,
 	getRatingTier,
-	calculatePercentile,
-	calculateRankPercentile
+	calculatePercentileFromSorted,
+	calculateRankPercentileFromSorted
 } from '$lib/age-rating.js';
 // Aliased to avoid colliding with the local `playerKey` loop variable below.
 import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
@@ -483,20 +483,34 @@ export async function load({ url, setHeaders }) {
 						}
 					}
 
-					// Extract arrays for percentile calculation
+					// Extract arrays for percentile calculation. Sort each ONCE
+					// out here — the previous `calculatePercentile` implementation
+					// sorted its input on every call, so with ~6 percentile lookups
+					// per player and hundreds of players this loop was doing
+					// millions of unnecessary sort operations and pushing the
+					// serverless function past its timeout on the standings tab.
+					// The `FromSorted` variants use binary search: O(log N) per
+					// call after one O(N log N) sort — thousandfold speedup at
+					// realistic player counts.
 					const allPlayers = Array.from(playerStatsMap.values()).filter((p) => p.eventsPlayed >= 1);
-					const allWinRates = allPlayers.map((p) =>
-						p.matchesPlayed > 0 ? p.matchesWon / p.matchesPlayed : 0
-					);
-					const allTop8Rates = allPlayers.map((p) =>
-						p.eventsPlayed > 0 ? p.top8Finishes / p.eventsPlayed : 0
-					);
-					const allEventsPlayed = allPlayers.map((p) => p.eventsPlayed);
-					const allBestRanks = allPlayers.filter((p) => p.bestRank !== null).map((p) => p.bestRank);
-					const allAvgPointsPerEvent = allPlayers.map((p) =>
-						p.eventsPlayed > 0 ? p.totalPoints / p.eventsPlayed : 0
-					);
-					const allChampionshipQuals = allPlayers.map((p) => p.championshipQualifications);
+					const numAsc = (a, b) => a - b;
+					const sortedWinRates = allPlayers
+						.map((p) => (p.matchesPlayed > 0 ? p.matchesWon / p.matchesPlayed : 0))
+						.sort(numAsc);
+					const sortedTop8Rates = allPlayers
+						.map((p) => (p.eventsPlayed > 0 ? p.top8Finishes / p.eventsPlayed : 0))
+						.sort(numAsc);
+					const sortedEventsPlayed = allPlayers.map((p) => p.eventsPlayed).sort(numAsc);
+					const sortedBestRanks = allPlayers
+						.filter((p) => p.bestRank !== null)
+						.map((p) => p.bestRank)
+						.sort(numAsc);
+					const sortedAvgPointsPerEvent = allPlayers
+						.map((p) => (p.eventsPlayed > 0 ? p.totalPoints / p.eventsPlayed : 0))
+						.sort(numAsc);
+					const sortedChampionshipQuals = allPlayers
+						.map((p) => p.championshipQualifications)
+						.sort(numAsc);
 
 					// Calculate AGE Rating for each player in standings
 					standings = standings.map((standing) => {
@@ -515,19 +529,22 @@ export async function load({ url, setHeaders }) {
 						const avgPtsPerEvent =
 							playerData.eventsPlayed > 0 ? playerData.totalPoints / playerData.eventsPlayed : 0;
 
-						// Calculate percentiles
+						// Calculate percentiles (binary search into pre-sorted arrays).
 						const percentiles = {
-							winRate: calculatePercentile(winRate, allWinRates),
-							top8Rate: calculatePercentile(top8Rate, allTop8Rates),
-							experience: calculatePercentile(playerData.eventsPlayed, allEventsPlayed),
+							winRate: calculatePercentileFromSorted(winRate, sortedWinRates),
+							top8Rate: calculatePercentileFromSorted(top8Rate, sortedTop8Rates),
+							experience: calculatePercentileFromSorted(
+								playerData.eventsPlayed,
+								sortedEventsPlayed
+							),
 							bestRank:
 								playerData.bestRank !== null
-									? calculateRankPercentile(playerData.bestRank, allBestRanks)
+									? calculateRankPercentileFromSorted(playerData.bestRank, sortedBestRanks)
 									: 50,
-							efficiency: calculatePercentile(avgPtsPerEvent, allAvgPointsPerEvent),
-							championship: calculatePercentile(
+							efficiency: calculatePercentileFromSorted(avgPtsPerEvent, sortedAvgPointsPerEvent),
+							championship: calculatePercentileFromSorted(
 								playerData.championshipQualifications,
-								allChampionshipQuals
+								sortedChampionshipQuals
 							)
 						};
 
