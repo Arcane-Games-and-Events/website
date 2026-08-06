@@ -7,7 +7,11 @@ import {
 	AGE_POINTS,
 	PARTICIPATION_POINTS
 } from '$lib/server/tournament-processor.js';
-import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
+import {
+	invalidateCache,
+	invalidateByPrefix,
+	CACHE_KEYS
+} from '$lib/server/redis/index.js';
 
 export async function load({ params, locals }) {
 	// Require authentication (admin or tournament staff)
@@ -546,6 +550,10 @@ export const actions = {
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:matches:all`);
 			await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
+			// Finalizing an event mutates standings AND freezes results —
+			// wipe the profile + event-result caches so both refresh.
+			await invalidateByPrefix(`${CACHE_KEYS.PLAYER}:`);
+			await invalidateByPrefix(`${CACHE_KEYS.EVENTS}:results:`);
 
 			let message = `Event finalized. ${playersUpdated} players updated, ${playersCreated} new players added.`;
 			if (errors.length > 0) {

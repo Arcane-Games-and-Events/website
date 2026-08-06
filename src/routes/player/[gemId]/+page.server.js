@@ -4,7 +4,22 @@ import { eq, desc, or, asc, inArray, and, isNull } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import { calculatePercentile, calculateRankPercentile } from '$lib/age-rating.js';
 import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
-import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+import {
+	getCachedOrFetch,
+	invalidateCache,
+	invalidateByPrefix,
+	CACHE_KEYS,
+	CACHE_TTL
+} from '$lib/server/redis/index.js';
+
+// Any admin edit that touches standings/matches invalidates the whole
+// `player:*` prefix — cheaper than trying to figure out which gemIds
+// were affected, and profile edits happen rarely.
+const PLAYER_PREFIX = `${CACHE_KEYS.PLAYER}:`;
+async function bustPlayerCaches() {
+	await invalidateByPrefix(PLAYER_PREFIX);
+	await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
+}
 
 /**
  * Convert hero name to static image URL
@@ -94,6 +109,28 @@ function compareStandings(a, b) {
 export async function load({ params, locals }) {
 	const { gemId } = params;
 
+	// Check if user is admin — pulled OUT of the cache since it's the
+	// only per-viewer bit of state. Everything else on this page is
+	// public data derived from standings/matches/decklists.
+	const isAdmin = locals.user?.role === 'admin';
+
+	// Cache the entire (public) load payload under `player:{gemId}`. On
+	// hit this returns instantly; on miss we run the full pipeline.
+	// Admin actions that touch standings/matches (imports, event
+	// finalization, per-standing edits) invalidate the whole `player:*`
+	// prefix so every profile refreshes at once.
+	const cached = await getCachedOrFetch(
+		`${CACHE_KEYS.PLAYER}:${gemId}`,
+		() => buildPlayerProfile(gemId),
+		CACHE_TTL.MEDIUM
+	);
+
+	if (!cached) throw error(404, 'Player not found');
+
+	return { ...cached, isAdmin };
+}
+
+async function buildPlayerProfile(gemId) {
 	// Get all standings for this GEM ID - this is now the single source of truth
 	const standings = await db
 		.select()
@@ -102,11 +139,8 @@ export async function load({ params, locals }) {
 		.orderBy(desc(standing.season), standing.circuit);
 
 	if (!standings.length) {
-		throw error(404, 'Player not found');
+		return null;
 	}
-
-	// Check if user is admin
-	const isAdmin = locals.user?.role === 'admin';
 
 	// === FETCH ALL STANDINGS ONCE (for rank calculation and percentiles) ===
 	// Reuse the shared cache populated by the age-open page so we don't
@@ -544,7 +578,6 @@ export async function load({ params, locals }) {
 		displayName,
 		standings: standingsWithRank,
 		totalStats,
-		isAdmin,
 		percentiles,
 		matchHistory,
 		decklists: playerDecklists,
@@ -664,6 +697,7 @@ export const actions = {
 						.where(eq(standing.id, standingId));
 				}
 
+				await bustPlayerCaches();
 				return { success: true, message: 'GEM ID updated across all seasons' };
 			}
 
@@ -680,6 +714,7 @@ export const actions = {
 						.update(standing)
 						.set({ playerName: parsedValue, updatedAt: new Date() })
 						.where(eq(standing.id, standingId));
+					await bustPlayerCaches();
 					return { success: true };
 				}
 
@@ -698,6 +733,7 @@ export const actions = {
 						.update(standing)
 						.set({ playerName: parsedValue, updatedAt: new Date() })
 						.where(eq(standing.id, standingId));
+					await bustPlayerCaches();
 					return { success: true };
 				} else {
 					return fail(400, {
@@ -782,6 +818,7 @@ export const actions = {
 				}
 			}
 
+			await bustPlayerCaches();
 			return { success: true };
 		} catch (err) {
 			console.error('Failed to update standing:', err);
@@ -814,6 +851,7 @@ export const actions = {
 				matchesPlayed: 0
 			});
 
+			await bustPlayerCaches();
 			return { success: true, message: 'Standing added successfully' };
 		} catch (err) {
 			console.error('Failed to add standing:', err);
@@ -838,6 +876,7 @@ export const actions = {
 
 		try {
 			await db.delete(standing).where(eq(standing.id, standingId));
+			await bustPlayerCaches();
 			return { success: true };
 		} catch (err) {
 			console.error('Failed to delete standing:', err);

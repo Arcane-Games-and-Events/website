@@ -17,7 +17,11 @@ import {
 	parseSwissStandings,
 	parsePairings
 } from '$lib/server/tournament-processor.js';
-import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
+import {
+	invalidateCache,
+	invalidateByPrefix,
+	CACHE_KEYS
+} from '$lib/server/redis/index.js';
 import { parseDatetimeLocal } from '$lib/server/dates.js';
 import { playerKeyFromIdName } from '$lib/server/players/key.js';
 
@@ -838,6 +842,10 @@ export const actions = {
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:matches:all`);
 			await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
+			// CSV processing can shift every player's standings — wipe
+			// the profile cache and this event's results cache.
+			await invalidateByPrefix(`${CACHE_KEYS.PLAYER}:`);
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:results:${params.eventId}`);
 
 			const standingsMessage = standingsUpdated
 				? ' Standings updated.'
@@ -1345,6 +1353,9 @@ export const actions = {
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:decklists:public`);
 			await invalidateCache(`${CACHE_KEYS.DECKLISTS}:featured:3`);
 			await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
+			// Cascade: profile pages and per-event result caches now stale.
+			await invalidateByPrefix(`${CACHE_KEYS.PLAYER}:`);
+			await invalidateByPrefix(`${CACHE_KEYS.EVENTS}:results:`);
 
 			// Redirect to events list
 			throw redirect(302, '/admin/events');

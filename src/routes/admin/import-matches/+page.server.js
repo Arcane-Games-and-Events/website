@@ -3,7 +3,11 @@ import { db } from '$lib/server/db/index.js';
 import { match, standing, event, eventPlayerHero } from '$lib/server/db/schema.js';
 import { eq, and, count, sql } from 'drizzle-orm';
 import { parsePairings } from '$lib/server/tournament-processor.js';
-import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
+import {
+	invalidateCache,
+	invalidateByPrefix,
+	CACHE_KEYS
+} from '$lib/server/redis/index.js';
 
 const MONTHS = [
 	'january',
@@ -343,6 +347,8 @@ export const actions = {
 					await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
 					await invalidateCache(`${CACHE_KEYS.EVENTS}:matches:all`);
 					await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
+					await invalidateByPrefix(`${CACHE_KEYS.PLAYER}:`);
+					await invalidateByPrefix(`${CACHE_KEYS.EVENTS}:results:`);
 
 					return {
 						success: true,
@@ -411,6 +417,8 @@ export const actions = {
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:matches:all`);
 			await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
+			await invalidateByPrefix(`${CACHE_KEYS.PLAYER}:`);
+			await invalidateByPrefix(`${CACHE_KEYS.EVENTS}:results:`);
 
 			return {
 				success: true,
@@ -537,6 +545,8 @@ export const actions = {
 			// season/circuit/month so we don't have a bulk key to bust —
 			// the per-filter keys expire naturally after 5 min.
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
+			await invalidateByPrefix(`${CACHE_KEYS.PLAYER}:`);
+			await invalidateByPrefix(`${CACHE_KEYS.EVENTS}:results:`);
 
 			return {
 				success: true,

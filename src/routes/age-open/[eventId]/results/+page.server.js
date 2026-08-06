@@ -31,8 +31,43 @@ function getHeroImageUrl(heroName) {
 
 export async function load({ params }) {
 	try {
+		// Peek the event row uncached so we can pick the right TTL: in-progress
+		// events still change, completed events never do. This one lookup is
+		// cheap (single row by primary key) and avoids caching completed-vs-
+		// in-progress state under one TTL.
+		const [eventPeek] = await db
+			.select({ status: event.status })
+			.from(event)
+			.where(eq(event.id, params.eventId))
+			.limit(1);
+
+		if (!eventPeek) {
+			throw error(404, 'Event not found');
+		}
+		if (eventPeek.status !== 'completed' && eventPeek.status !== 'in_progress') {
+			throw error(404, 'Results not available for this event');
+		}
+
+		// Completed events: cache for a day (their data is frozen). Live
+		// events: 5 min so scoring updates surface quickly.
+		const ttl = eventPeek.status === 'completed' ? CACHE_TTL.DAY : CACHE_TTL.MEDIUM;
+
+		return await getCachedOrFetch(
+			`${CACHE_KEYS.EVENTS}:results:${params.eventId}`,
+			() => buildEventResults(params.eventId),
+			ttl
+		);
+	} catch (err) {
+		if (err.status === 404) throw err;
+		console.error('Error loading event results:', err);
+		throw error(500, 'Failed to load event results');
+	}
+}
+
+async function buildEventResults(eventId) {
+	try {
 		// Fetch the event
-		const [eventData] = await db.select().from(event).where(eq(event.id, params.eventId)).limit(1);
+		const [eventData] = await db.select().from(event).where(eq(event.id, eventId)).limit(1);
 
 		if (!eventData) {
 			throw error(404, 'Event not found');
@@ -47,7 +82,7 @@ export async function load({ params }) {
 		const eventMatches = await db
 			.select()
 			.from(match)
-			.where(eq(match.eventId, params.eventId))
+			.where(eq(match.eventId, eventId))
 			.orderBy(asc(match.round));
 
 		// Use stored tournament results if available (preserves correct Swiss standings order)
@@ -385,7 +420,7 @@ export async function load({ params }) {
 		const eventDecklists = await db
 			.select()
 			.from(decklist)
-			.where(and(eq(decklist.eventId, params.eventId), eq(decklist.isPublic, true)))
+			.where(and(eq(decklist.eventId, eventId), eq(decklist.isPublic, true)))
 			.orderBy(asc(decklist.placement));
 
 		// Add hero image URLs to decklists

@@ -4,7 +4,7 @@ import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index
 import { db } from '$lib/server/db/index.js';
 import { vod, event } from '$lib/server/db/schema.js';
 import { and, desc, eq, sql } from 'drizzle-orm';
-import mux from '$lib/server/mux.js';
+import { getMuxThumbnailToken } from '$lib/server/mux.js';
 
 export async function load({ setHeaders }) {
 	// Cache articles list for 5 minutes, allow stale for 1 hour while revalidating
@@ -111,20 +111,15 @@ export async function load({ setHeaders }) {
 
 		vodTotal = countResult[0]?.count || 0;
 
-		// Sign Mux thumbnail tokens (24h expiry — Mux's max). Failure on a
-		// single VOD is silent; the card falls back to the stored thumbnail.
+		// Sign Mux thumbnail tokens via the cached helper (12h Redis cache
+		// under `mux:thumbnail:{playbackId}` — one sign per playbackId per
+		// half-day, not per request). Failure on a single VOD is silent;
+		// the card falls back to the stored thumbnail.
 		vods = await Promise.all(
 			recentVods.map(async (v) => {
 				if (!v.muxPlaybackId) return v;
-				try {
-					const token = await mux.jwt.signPlaybackId(v.muxPlaybackId, {
-						type: 'thumbnail',
-						expiration: '24h'
-					});
-					return { ...v, thumbnailToken: token };
-				} catch {
-					return v;
-				}
+				const token = await getMuxThumbnailToken(v.muxPlaybackId);
+				return token ? { ...v, thumbnailToken: token } : v;
 			})
 		);
 	} catch (err) {
