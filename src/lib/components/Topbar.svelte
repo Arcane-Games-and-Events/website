@@ -249,7 +249,7 @@
 
 								{#if assignedEventsCount > 0}
 									<a
-										href="/my-age/events"
+										href="/staff"
 										class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white"
 									>
 										<svg
@@ -533,7 +533,7 @@
 							{/if}
 							{#if assignedEventsCount > 0}
 								<a
-									href="/my-age/events"
+									href="/staff"
 									on:click={closeMobile}
 									class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-gray-400 hover:bg-white/5 hover:text-white"
 								>

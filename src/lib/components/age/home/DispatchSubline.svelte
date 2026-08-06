@@ -4,11 +4,18 @@
 	 *
 	 * Left column: editorial copy + perks chips.
 	 * Right column: boxed price card with the Premium CTA.
+	 *
+	 * Suppressed for members who already have premium access.
 	 */
+	import { page } from '$app/stores';
 
 	/** @type {{ price?: number, cadence?: string }} */
 	let { price = 10, cadence = '/ month' } = $props();
+
+	const isPremiumMember = $derived($page.data?.isPremiumMember ?? false);
 </script>
+
+{#if !isPremiumMember}
 
 <!--
 	Subline banner — green premium-tone background to match the rest of
@@ -86,3 +93,4 @@
 	</div>
 </div>
 </div>
+{/if}

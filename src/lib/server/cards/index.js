@@ -1,19 +1,11 @@
 import { db } from '$lib/server/db/index.js';
 import { fabCardLookup } from '$lib/server/db/schema.js';
-import { eq, ilike } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { getCachedOrFetch, CACHE_TTL } from '$lib/server/redis/index.js';
-
-/**
- * Configuration for FAB card images
- */
-export const FAB_IMAGE_CDN = 'https://d2wlb52bya4y8z.cloudfront.net/media/cards/large';
 
 const pitchToSection = { 1: 'red', 2: 'yellow', 3: 'blue' };
 
-/**
- * Normalize pitch/color input to pitch number (1, 2, 3) or null
- */
-export function normalizePitch(input) {
+function normalizePitch(input) {
 	if (input === null || input === undefined || input === '') return null;
 
 	if (typeof input === 'number') {
@@ -70,7 +62,7 @@ async function lookupCardFromDb(lookupKey) {
 /**
  * Find a card by name, optionally filtering by pitch
  */
-export async function findCard(cardName, options = {}) {
+async function findCard(cardName, options = {}) {
 	const { pitch } = options;
 	const normalizedName = cardName.trim().toLowerCase();
 
@@ -98,38 +90,6 @@ export async function findCard(cardName, options = {}) {
 	}
 
 	return null;
-}
-
-/**
- * Search for cards by partial name match
- */
-export async function searchCards(searchTerm, limit = 10) {
-	const cacheKey = `card:search:${searchTerm.toLowerCase()}:${limit}`;
-
-	return getCachedOrFetch(
-		cacheKey,
-		async () => {
-			const results = await db
-				.select({
-					name: fabCardLookup.name,
-					imageUrl: fabCardLookup.imageUrl,
-					fallbackUrl: fabCardLookup.fallbackUrl,
-					pitch: fabCardLookup.pitch
-				})
-				.from(fabCardLookup)
-				.where(ilike(fabCardLookup.name, `%${searchTerm}%`))
-				.limit(limit);
-
-			// Deduplicate by name (since we have both "snatch" and "snatch:red" entries)
-			const seen = new Set();
-			return results.filter((r) => {
-				if (seen.has(r.name)) return false;
-				seen.add(r.name);
-				return true;
-			});
-		},
-		CACHE_TTL.MEDIUM
-	);
 }
 
 /**
@@ -205,9 +165,3 @@ export async function mapWithConcurrency(items, limit, fn) {
 	return results;
 }
 
-/**
- * Batch resolve multiple cards at once, capped at 8 in-flight lookups.
- */
-export async function resolveCardImages(cards) {
-	return mapWithConcurrency(cards, 8, (card) => resolveCardImage(card));
-}

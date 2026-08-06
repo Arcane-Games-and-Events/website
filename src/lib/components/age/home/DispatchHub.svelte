@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
+	import { page } from '$app/stores';
 	import EventRow from '$lib/components/age/EventRow.svelte';
 
 	/**
@@ -207,6 +208,8 @@
 	const LATEST = $derived(
 		Array.isArray(D.latest) && D.latest.length > 0 ? D.latest : [D.featured]
 	);
+
+	const isPremiumMember = $derived($page.data?.isPremiumMember ?? false);
 
 	let activeIdx = $state(0);
 	// Cycle every 7s — slow enough to read a card, fast enough to
@@ -714,8 +717,10 @@
 		<!--
 			Premium card — hidden on mobile because the page already ends
 			with the full-width DispatchPledge Premium band; showing this
-			smaller card too on phones is redundant.
+			smaller card too on phones is redundant. Hidden entirely for
+			members who already have Premium.
 		-->
+		{#if !isPremiumMember}
 		<div class="bg-prem hidden px-7 py-6 text-white lg:block">
 			<span
 				class="text-prem mb-3 inline-block bg-white px-[10px] py-[5px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
@@ -747,6 +752,7 @@
 				Get Premium →
 			</a>
 		</div>
+		{/if}
 	</aside>
 </div>
 </div>

@@ -123,39 +123,4 @@ export async function invalidateCache(key) {
 	}
 }
 
-/**
- * Invalidate all cache keys matching a prefix
- * @param {string} prefix - Key prefix to match
- */
-export async function invalidateCacheByPrefix(prefix) {
-	// Invalidate matching memory cache keys
-	for (const key of memoryCache.keys()) {
-		if (key.startsWith(prefix)) {
-			memoryCache.delete(key);
-			memoryCacheExpiry.delete(key);
-		}
-	}
-
-	if (!redis) return;
-
-	// Upstash REST API doesn't support SCAN, so pattern-based invalidation
-	// requires tracking keys manually. For now, use specific invalidateCache calls.
-}
-
-/**
- * Clear all memory cache (useful for testing or forced refresh)
- */
-export function clearMemoryCache() {
-	memoryCache.clear();
-	memoryCacheExpiry.clear();
-}
-
-/**
- * Check if Redis is available
- * @returns {boolean}
- */
-export function isRedisAvailable() {
-	return redis !== null;
-}
-
 export { redis };

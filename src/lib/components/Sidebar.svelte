@@ -315,10 +315,10 @@
 						{#if assignedEventsCount > 0}
 							<li>
 								<a
-									href="/my-age/events"
+									href="/staff"
 									on:click={closeMobile}
 									class="flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all duration-200
-									{checkActive('/my-age/events', $page.url.pathname)
+									{checkActive('/staff', $page.url.pathname)
 										? 'border-white/10 bg-gradient-to-r from-blue-500/20 to-purple-500/10 text-white shadow-lg shadow-blue-500/10'
 										: 'border-transparent text-gray-400 hover:border-white/5 hover:bg-white/5 hover:text-white'}"
 								>
@@ -669,13 +669,13 @@
 						{#if assignedEventsCount > 0}
 							<li>
 								<a
-									href="/my-age/events"
+									href="/staff"
 									class="flex items-center {collapsed
 										? 'justify-center'
 										: 'gap-3'} rounded-lg {collapsed
 										? 'px-2'
 										: 'px-3'} border py-2.5 text-sm font-medium transition-all duration-200
-									{checkActive('/my-age/events', $page.url.pathname)
+									{checkActive('/staff', $page.url.pathname)
 										? 'border-white/10 bg-gradient-to-r from-blue-500/20 to-purple-500/10 text-white shadow-lg shadow-blue-500/10'
 										: 'border-transparent text-gray-400 hover:border-white/5 hover:bg-white/5 hover:text-white'}"
 									title={collapsed ? 'My Events' : ''}

@@ -1,8 +1,11 @@
 <script>
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
+	import { page as pageStore } from '$app/stores';
 	import { fade, fly } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
 	import { quintOut } from 'svelte/easing';
+
+	$: isPremiumMember = $pageStore.data?.isPremiumMember ?? false;
 
 	// One smooth easing curve + matched durations for in / out / flip
 	// so the grid feels like a single choreographed motion rather than
@@ -706,6 +709,7 @@
 	{/if}
 
 	<!-- ============ PREMIUM BAND ============ -->
+	{#if !isPremiumMember}
 	<section
 		class="bg-prem border-ink relative overflow-hidden border-t-[3px] border-double px-14 py-[58px] text-center text-white"
 	>
@@ -734,4 +738,5 @@
 			</a>
 		</div>
 	</section>
+	{/if}
 </AgeShell>

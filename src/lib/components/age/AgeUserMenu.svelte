@@ -9,10 +9,14 @@
 	 *
 	 * The dropdown closes on outside click and on Escape.
 	 */
+	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 
 	/** @type {{ user: any, isPremium?: boolean }} */
 	let { user, isPremium = false } = $props();
+
+	const assignedEventsCount = $derived($page.data?.assignedEventsCount ?? 0);
+	const isStaff = $derived(assignedEventsCount > 0);
 
 	let open = $state(false);
 
@@ -68,6 +72,7 @@
 	const ITEMS = $derived([
 		{ label: 'Account', href: '/account' },
 		{ label: 'Refer a Friend', href: '/account/referrals' },
+		...(isStaff ? [{ label: 'Staff', href: '/staff', badge: assignedEventsCount }] : []),
 		...(isAdmin ? [{ label: 'Admin', href: '/admin' }] : [])
 	]);
 </script>
@@ -138,10 +143,19 @@
 							role="menuitem"
 							href={item.href}
 							onclick={close}
-							class="text-soft hover:bg-ink hover:text-paper-bg flex items-center justify-between px-4 py-[11px] text-[11px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+							class="text-soft hover:bg-ink hover:text-paper-bg flex items-center justify-between gap-3 px-4 py-[11px] text-[11px] font-extrabold tracking-[0.12em] uppercase transition-colors"
 						>
 							<span>{item.label}</span>
-							<span class="opacity-60" aria-hidden="true">→</span>
+							<span class="ml-auto flex items-center gap-[10px]">
+								{#if item.badge}
+									<span
+										class="border-prem/40 bg-prem/10 text-prem inline-flex items-center border px-[6px] py-[1px] text-[9px] font-extrabold tabular-nums"
+									>
+										{item.badge}
+									</span>
+								{/if}
+								<span class="opacity-60" aria-hidden="true">→</span>
+							</span>
 						</a>
 					</li>
 				{/each}

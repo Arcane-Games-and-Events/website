@@ -52,37 +52,6 @@ export function userHasPremiumAccess(user) {
 }
 
 /**
- * Check if a user's premium subscription is expired
- * Returns true if they had premium but it has expired
- *
- * @param {Object|null} user - The user object from locals.user
- * @returns {boolean} Whether the subscription is expired
- */
-export function isPremiumExpired(user) {
-	if (!user) return false;
-	if (user.role !== 'premium') return false;
-
-	// Cancelled and past end date
-	if (user.subscriptionStatus === 'cancelled' && user.subscriptionEndDate) {
-		const endDate = new Date(user.subscriptionEndDate);
-		const now = new Date();
-		return now >= endDate;
-	}
-
-	// Payment failed and past grace period
-	if (user.subscriptionStatus === 'payment_failed' && user.subscriptionEndDate) {
-		const endDate = new Date(user.subscriptionEndDate);
-		const now = new Date();
-		return now >= endDate;
-	}
-
-	// Status is 'expired'
-	if (user.subscriptionStatus === 'expired') return true;
-
-	return false;
-}
-
-/**
  * Check if an article requires premium access based on its settings
  */
 export function isPremiumNow(post, now = new Date()) {

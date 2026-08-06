@@ -1,5 +1,8 @@
 <script>
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
+	import { page } from '$app/stores';
+
+	const isPremiumMember = $derived($page.data?.isPremiumMember ?? false);
 
 	// ============ placeholder data ============
 	// Academy launches with the rest of the editorial site; until the
@@ -557,6 +560,7 @@
 	</section>
 
 	<!-- ============ PLEDGE BAND ============ -->
+	{#if !isPremiumMember}
 	<section class="px-14 py-[44px]">
 		<div class="mx-auto w-full max-w-[1600px]">
 			<div
@@ -595,4 +599,5 @@
 			</div>
 		</div>
 	</section>
+	{/if}
 </AgeShell>

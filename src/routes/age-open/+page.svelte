@@ -11,10 +11,6 @@
 		getCircuitNames,
 		buildCircuitColorsMap
 	} from '$lib/data/circuits.js';
-	import StandingsCard from '$lib/components/StandingsCard.svelte';
-	import UpcomingEvents from '$lib/components/UpcomingEvents.svelte';
-	import NextEventBanner from '$lib/components/NextEventBanner.svelte';
-	import EventCard from '$lib/components/EventCard.svelte';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import EventRow from '$lib/components/age/EventRow.svelte';
 

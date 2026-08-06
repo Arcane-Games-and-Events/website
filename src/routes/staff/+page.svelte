@@ -1,213 +1,224 @@
 <script>
-	export let data;
+	import AgeShell from '$lib/components/age/AgeShell.svelte';
+	import { getCircuit } from '$lib/data/circuits.js';
+
+	let { data } = $props();
+
+	const events = $derived(data.assignedEvents || []);
 
 	function formatDate(dateStr) {
-		if (!dateStr) return 'TBA';
-		const date = new Date(dateStr);
-		return new Intl.DateTimeFormat('en-US', {
-			weekday: 'long',
-			month: 'long',
-			day: 'numeric',
-			year: 'numeric',
-			hour: 'numeric',
-			minute: '2-digit',
-			hour12: true
-		}).format(date);
-	}
-
-	function formatShortDate(dateStr) {
-		if (!dateStr) return 'TBA';
-		const date = new Date(dateStr);
-		return new Intl.DateTimeFormat('en-US', {
+		if (!dateStr) return 'TBD';
+		return new Date(dateStr).toLocaleDateString('en-US', {
+			weekday: 'short',
 			month: 'short',
 			day: 'numeric',
-			year: 'numeric'
-		}).format(date);
+			year: 'numeric',
+			timeZone: 'UTC'
+		});
+	}
+
+	function statusChip(status) {
+		switch (status) {
+			case 'upcoming':
+				return { label: 'Upcoming', tone: 'accent' };
+			case 'in_progress':
+				return { label: 'In Progress', tone: 'prem' };
+			case 'completed':
+				return { label: 'Completed', tone: 'soft' };
+			case 'cancelled':
+				return { label: 'Cancelled', tone: 'warm' };
+			default:
+				return { label: status || 'Draft', tone: 'soft' };
+		}
+	}
+
+	function chipClass(tone) {
+		if (tone === 'accent') return 'text-accent border-accent/40 bg-accent/10';
+		if (tone === 'prem') return 'text-prem border-prem/40 bg-prem/10';
+		if (tone === 'warm') return 'text-warm border-warm/40 bg-warm/10';
+		return 'text-soft border-line2 bg-paper-bg';
 	}
 </script>
 
 <svelte:head>
-	<title>Tournament Staff Dashboard</title>
+	<title>Staff — AGE</title>
 </svelte:head>
 
-<div class="container mx-auto max-w-6xl px-2 py-8">
-	<h1 class="mb-8 text-4xl font-bold text-gray-100">Tournament Staff Dashboard</h1>
-	<p class="mb-8 text-gray-400">Hi {data.user.email}. Here are your assigned events.</p>
-
-	<!-- Debug Info -->
-	<div class="mb-6 rounded-lg border border-yellow-500 bg-yellow-50 p-4 dark:bg-yellow-900/20">
-		<p class="mb-2 text-xs font-semibold text-yellow-800 dark:text-yellow-400">
-			Debug Info (for troubleshooting)
-		</p>
-		<p class="font-mono text-xs text-yellow-800 dark:text-yellow-400">
-			Your User ID: {data.user.id}
-		</p>
-		<p class="font-mono text-xs text-yellow-800 dark:text-yellow-400">
-			Your Email: {data.user.email}
-		</p>
-		<p class="font-mono text-xs text-yellow-800 dark:text-yellow-400">
-			Your Role: {data.user.role}
-		</p>
-		<p class="font-mono text-xs text-yellow-800 dark:text-yellow-400">
-			Assigned Events Count: {data.assignedEvents.length}
-		</p>
-	</div>
-
-	<!-- Assigned Events -->
-	<section>
-		<h2 class="mb-4 text-2xl font-bold text-gray-100">My Assigned Events</h2>
-
-		{#if data.assignedEvents.length === 0}
-			<div class="rounded-lg border border-gray-700 bg-gray-950 p-12 text-center">
-				<svg
-					class="mx-auto mb-4 h-12 w-12 text-gray-400"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-					/>
-				</svg>
-				<p class="text-gray-400">No events assigned yet. An admin will assign you to events.</p>
-			</div>
-		{:else}
-			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-				{#each data.assignedEvents as event}
-					<a
-						href="/admin/events/{event.id}"
-						class="rounded-lg border border-gray-700 bg-gray-950 p-6 transition-colors hover:bg-gray-800"
+<AgeShell active="">
+	<div class="mx-auto w-full max-w-[1600px] px-4 pt-10 pb-[52px] md:px-10 lg:px-14">
+		<!-- ============ HEADER ============ -->
+		<div
+			class="bg-paper border-line2 border-t-prem mb-[34px] grid grid-cols-1 items-center gap-7 border border-t-[3px] px-[34px] py-[30px] md:grid-cols-[1fr_auto]"
+		>
+			<div>
+				<div class="mb-2 flex flex-wrap items-center gap-[14px]">
+					<span
+						class="text-fade font-mono-system inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.16em] uppercase"
 					>
-						<div class="mb-4">
-							<h3 class="mb-2 text-xl font-bold text-gray-100">{event.title}</h3>
-							<div class="flex items-center gap-2 text-sm text-gray-400">
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
+						<span class="bg-prem inline-block h-[6px] w-[6px] rounded-full"></span>
+						Staff Console
+					</span>
+				</div>
+				<h1
+					class="font-newsreader mb-2 text-[38px] leading-[0.9] font-semibold tracking-[-0.02em] sm:text-[46px]"
+				>
+					My Events
+				</h1>
+				<div class="text-soft text-[14px]">
+					Events you've been assigned to help run. Limited access — check-in players and mark GEM
+					entry.
+				</div>
+			</div>
+
+			<div
+				class="border-line2 flex flex-col items-center justify-center self-stretch border px-[26px] py-[18px] text-center"
+			>
+				<div class="font-newsreader text-[42px] leading-[0.8] font-semibold tabular-nums">
+					{events.length}
+				</div>
+				<div class="text-fade mt-2 text-[10px] font-extrabold tracking-[0.12em] uppercase">
+					{events.length === 1 ? 'Assignment' : 'Assignments'}
+				</div>
+			</div>
+		</div>
+
+		<!-- ============ EVENTS LIST ============ -->
+		{#if events.length > 0}
+			<div class="grid grid-cols-1 gap-[18px] lg:grid-cols-2">
+				{#each events as ev (ev.eventId)}
+					{@const circuit = getCircuit(ev.eventCircuit)}
+					{@const chip = statusChip(ev.computedStatus)}
+					<a
+						href="/staff/{ev.eventId}"
+						class="group bg-paper border-line2 hover:border-ink relative flex flex-col overflow-hidden border transition-colors"
+					>
+						<span class="{circuit.colors.bg} h-[3px] w-full"></span>
+
+						<div class="flex-1 px-[26px] pt-[22px] pb-[24px]">
+							<div class="mb-3 flex flex-wrap items-start justify-between gap-3">
+								<span
+									class="inline-flex items-center gap-[7px] border px-[11px] py-[5px] text-[10px] font-extrabold tracking-[0.08em] uppercase {chipClass(
+										chip.tone
+									)}"
+								>
+									{chip.label}
+								</span>
+								{#if ev.eventCircuit}
+									<span
+										class="border-line2 bg-paper-bg text-soft inline-flex items-center gap-[7px] border px-[11px] py-[5px] text-[10px] font-extrabold tracking-[0.08em] uppercase"
+									>
+										<span class="h-[6px] w-[6px] rounded-full {circuit.colors.bg}"></span>
+										{ev.eventCircuit}
+									</span>
+								{/if}
+							</div>
+
+							<h3
+								class="font-newsreader text-ink group-hover:text-warm mb-3 text-[26px] leading-[1] font-semibold tracking-[-0.01em] transition-colors"
+							>
+								{ev.eventTitle}
+							</h3>
+
+							<div class="text-soft flex flex-wrap gap-x-[22px] gap-y-[8px] text-[13px]">
+								<span class="flex items-center gap-[8px]">
+									<svg
+										viewBox="0 0 24 24"
+										class="h-[14px] w-[14px] opacity-70"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.7"
 										stroke-linecap="round"
 										stroke-linejoin="round"
-										stroke-width="2"
-										d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-									/>
-								</svg>
-								{formatShortDate(event.eventDate)}
+									>
+										<rect x="3" y="5" width="18" height="16" />
+										<path d="M3 9h18M8 3v4M16 3v4" />
+									</svg>
+									{formatDate(ev.eventDate)}
+								</span>
+								{#if ev.eventLocation}
+									<span class="flex items-center gap-[8px]">
+										<svg
+											viewBox="0 0 24 24"
+											class="h-[14px] w-[14px] opacity-70"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.7"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										>
+											<path d="M12 21s-7-6.5-7-12a7 7 0 0114 0c0 5.5-7 12-7 12z" />
+											<circle cx="12" cy="9" r="2.5" />
+										</svg>
+										{ev.eventLocation}
+									</span>
+								{/if}
+								{#if ev.eventFormat}
+									<span class="flex items-center gap-[8px]">
+										<svg
+											viewBox="0 0 24 24"
+											class="h-[14px] w-[14px] opacity-70"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.7"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										>
+											<rect x="4" y="4" width="16" height="16" rx="2" />
+											<path d="M9 9h6M9 13h6M9 17h4" />
+										</svg>
+										{ev.eventFormat}
+									</span>
+								{/if}
 							</div>
 						</div>
 
-						<div class="mb-4 space-y-2">
-							{#if event.location}
-								<div class="flex items-center gap-2 text-sm">
-									<svg
-										class="h-4 w-4 text-gray-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-										/>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-										/>
-									</svg>
-									<span class="text-gray-100">{event.location}</span>
-								</div>
-							{/if}
-
-							{#if event.format}
-								<div class="flex items-center gap-2 text-sm">
-									<svg
-										class="h-4 w-4 text-gray-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-										/>
-									</svg>
-									<span class="text-gray-100">{event.format}</span>
-								</div>
-							{/if}
-
-							{#if event.circuit}
-								<div class="flex items-center gap-2 text-sm">
-									<svg
-										class="h-4 w-4 text-gray-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-										/>
-									</svg>
-									<span class="text-gray-100">{event.circuit}</span>
-								</div>
-							{/if}
-						</div>
-
-						<!-- Stats -->
-						<div class="grid grid-cols-2 gap-4 border-t border-gray-700 pt-4">
-							<div>
-								<p class="text-xs text-gray-400">Tickets Sold</p>
-								<p class="text-lg font-bold text-gray-100">{event.ticketCount || 0}</p>
-							</div>
-							<div>
-								<p class="text-xs text-gray-400">Refunds</p>
-								<p class="text-lg font-bold text-gray-100">{event.refundCount || 0}</p>
-							</div>
-						</div>
-
-						<div class="mt-4">
-							<span class="inline-flex items-center gap-2 text-sm font-medium text-white">
-								Manage Event
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M9 5l7 7-7 7"
-									/>
-								</svg>
-							</span>
+						<div
+							class="border-line2 bg-paper-bg/50 text-fade group-hover:text-ink flex items-center justify-between border-t px-[26px] py-[14px] text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors"
+						>
+							<span>Open Console</span>
+							<svg
+								viewBox="0 0 24 24"
+								class="h-[14px] w-[14px]"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							>
+								<path d="M5 12h14M13 5l7 7-7 7" />
+							</svg>
 						</div>
 					</a>
 				{/each}
 			</div>
+		{:else}
+			<div
+				class="bg-paper border-line2 flex flex-col items-center border px-6 py-[68px] text-center"
+			>
+				<span
+					class="border-line2 text-fade mb-5 flex h-[52px] w-[52px] items-center justify-center border"
+				>
+					<svg
+						viewBox="0 0 24 24"
+						class="h-6 w-6"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<path d="M9 5h6l2 2h3v13H4V7h3z" />
+						<path d="M9 12h6M9 16h4" />
+					</svg>
+				</span>
+				<h3 class="font-newsreader mb-2 text-[26px] leading-[1] font-semibold tracking-[-0.01em]">
+					No events assigned
+				</h3>
+				<p class="text-soft mx-auto max-w-[420px] text-[14px]">
+					You haven't been assigned to any events yet. Reach out to an administrator to be added to
+					an event's staff roster.
+				</p>
+			</div>
 		{/if}
-	</section>
-
-	<!-- Quick Actions -->
-	<section class="mt-8">
-		<h2 class="mb-4 text-2xl font-bold text-gray-100">Quick Actions</h2>
-		<div class="grid grid-cols-2 gap-4 md:grid-cols-3">
-			<a
-				href="/age-open"
-				class="rounded-lg border border-gray-700 bg-gray-950 p-4 text-center text-gray-100 transition-colors hover:bg-gray-800"
-			>
-				View All Events
-			</a>
-			<a
-				href="/account"
-				class="rounded-lg border border-gray-700 bg-gray-950 p-4 text-center text-gray-100 transition-colors hover:bg-gray-800"
-			>
-				Account Settings
-			</a>
-		</div>
-	</section>
-</div>
+	</div>
+</AgeShell>

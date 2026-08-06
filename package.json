@@ -19,8 +19,6 @@
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
 		"@eslint/js": "^9.22.0",
-		"@oslojs/crypto": "^1.0.1",
-		"@oslojs/encoding": "^1.1.0",
 		"@sveltejs/adapter-auto": "^6.0.0",
 		"@sveltejs/adapter-vercel": "^6.1.2",
 		"@sveltejs/kit": "^2.22.0",
@@ -44,21 +42,16 @@
 		"vite": "^7.0.4"
 	},
 	"dependencies": {
-		"@flesh-and-blood/cards": "^3.6.158",
 		"@lucia-auth/adapter-drizzle": "^1.1.0",
 		"@mux/mux-node": "^12.8.1",
 		"@mux/mux-player": "^3.11.4",
 		"@mux/upchunk": "^3.5.0",
 		"@upstash/redis": "^1.35.7",
 		"authorizenet": "^1.0.10",
-		"bcryptjs": "^3.0.2",
 		"dotenv": "^17.2.2",
-		"fab-cards": "^8.0.147",
-		"leaflet": "^1.9.4",
 		"lucia": "^3.2.2",
 		"nanoid": "^5.1.6",
 		"oslo": "^1.2.1",
-		"playwright": "^1.57.0",
 		"postgres": "^3.4.5",
 		"resend": "^6.5.2"
 	}

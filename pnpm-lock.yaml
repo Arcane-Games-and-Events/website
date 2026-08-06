@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@flesh-and-blood/cards':
-        specifier: ^3.6.158
-        version: 3.6.168
       '@lucia-auth/adapter-drizzle':
         specifier: ^1.1.0
         version: 1.1.0(drizzle-orm@0.40.1(gel@2.2.0)(postgres@3.4.7))(lucia@3.2.2)
@@ -29,18 +26,9 @@ importers:
       authorizenet:
         specifier: ^1.0.10
         version: 1.0.10
-      bcryptjs:
-        specifier: ^3.0.2
-        version: 3.0.3
       dotenv:
         specifier: ^17.2.2
         version: 17.2.3
-      fab-cards:
-        specifier: ^8.0.147
-        version: 8.0.147
-      leaflet:
-        specifier: ^1.9.4
-        version: 1.9.4
       lucia:
         specifier: ^3.2.2
         version: 3.2.2
@@ -50,9 +38,6 @@ importers:
       oslo:
         specifier: ^1.2.1
         version: 1.2.1
-      playwright:
-        specifier: ^1.57.0
-        version: 1.57.0
       postgres:
         specifier: ^3.4.5
         version: 3.4.7
@@ -66,12 +51,6 @@ importers:
       '@eslint/js':
         specifier: ^9.22.0
         version: 9.39.2
-      '@oslojs/crypto':
-        specifier: ^1.0.1
-        version: 1.0.1
-      '@oslojs/encoding':
-        specifier: ^1.1.0
-        version: 1.1.0
       '@sveltejs/adapter-auto':
         specifier: ^6.0.0
         version: 6.1.1(@sveltejs/kit@2.49.2(@sveltejs/vite-plugin-svelte@6.2.1(svelte@5.46.0)(vite@7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.46.0)(vite@7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2)))
@@ -637,12 +616,6 @@ packages:
   '@eslint/plugin-kit@0.4.1':
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-
-  '@flesh-and-blood/cards@3.6.168':
-    resolution: {integrity: sha512-siB2QJ3UemizymL8onzd13v1HyFUTsdO/PfYT5O6445nfysXQUf89j2zvsH7Q3sKht8y6XtSYSdk8SBqoKlKVA==}
-
-  '@flesh-and-blood/types@3.6.167':
-    resolution: {integrity: sha512-6A6pBy6NSj8tuviNluoSZYeFsKYncXpM78UkmXYZeQJv+2BbfiGfqmgGgErNTyUH8GULaHRmmJPNCPa3AiBs0g==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -1418,10 +1391,6 @@ packages:
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
 
-  bcryptjs@3.0.3:
-    resolution: {integrity: sha512-GlF5wPWnSa/X5LKM1o0wz0suXIINz1iHRLvTS+sLyi7XPbe5ycmYI3DlZqVGZZtDgl4DmasFg7gOB3JYbphV5g==}
-    hasBin: true
-
   bindings@1.5.0:
     resolution: {integrity: sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==}
 
@@ -1769,9 +1738,6 @@ packages:
     resolution: {integrity: sha512-8q3LsZjRezbFZ2PN+uP+Q7pnHUMmAOziU2vA2OwoFaKIXxlxl38IylhSSgUorWu/rf4er67w0ikBqjBFk/pomA==}
     engines: {node: '>=10.13.0'}
 
-  fab-cards@8.0.147:
-    resolution: {integrity: sha512-Isi0eheMEzmA6LscmeBGjfU/TztqLt8uorKcn0I1OmjmJanPxOFM0BprHeIxr5B0uG9QOpAkV9Bk9xTOs2aJxw==}
-
   fast-deep-equal@3.1.3:
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
 
@@ -1842,11 +1808,6 @@ packages:
 
   fs-monkey@1.1.0:
     resolution: {integrity: sha512-QMUezzXWII9EV5aTFXW1UBVUO77wYPpjqIF8/AviUCThNeSYZykpoTixUeaNNBwmCev0AMDWMAni+f8Hxb1IFw==}
-
-  fsevents@2.3.2:
-    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
-    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
-    os: [darwin]
 
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
@@ -1996,9 +1957,6 @@ packages:
 
   kuler@2.0.0:
     resolution: {integrity: sha512-Xq9nH7KlWZmXAtodXDDRE7vs6DU1gTU8zYDHDiWLSip45Egwq3plLHzPn27NgvzL2r1LMPC1vdqh98sQxtqj4A==}
-
-  leaflet@1.9.4:
-    resolution: {integrity: sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA==}
 
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
@@ -2257,16 +2215,6 @@ packages:
 
   player.style@0.3.1:
     resolution: {integrity: sha512-z/T8hJGaTkHT9vdXgWdOgF37eB1FV7/j52VXQZ2lgEhpru9oT8TaUWIxp6GoxTnhPBM4X6nSbpkAHrT7UTjUKg==}
-
-  playwright-core@1.57.0:
-    resolution: {integrity: sha512-agTcKlMw/mjBWOnD6kFZttAAGHgi/Nw0CZ2o6JqWSbMlI219lAFLZZCyqByTsvVAJq5XA5H8cA6PrvBRpBWEuQ==}
-    engines: {node: '>=18'}
-    hasBin: true
-
-  playwright@1.57.0:
-    resolution: {integrity: sha512-ilYQj1s8sr2ppEJ2YVadYBN0Mb3mdo9J0wQ+UuDhzYqURwSoW4n1Xs5vs7ORwgDGmyEh33tRMeS8KhdkMoLXQw==}
-    engines: {node: '>=18'}
-    hasBin: true
 
   postcss-load-config@3.1.4:
     resolution: {integrity: sha512-6DiM4E7v4coTE4uzA8U//WhtPwyhiim3eyjEMFCnUpzbrkK9wJHgKDT2mR+HbtSrd/NubVaYTOpSpjUl8NQeRg==}
@@ -2982,12 +2930,6 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@flesh-and-blood/cards@3.6.168':
-    dependencies:
-      '@flesh-and-blood/types': 3.6.167
-
-  '@flesh-and-blood/types@3.6.167': {}
-
   '@humanfs/core@0.19.1': {}
 
   '@humanfs/node@0.16.7':
@@ -3664,8 +3606,6 @@ snapshots:
 
   balanced-match@1.0.2: {}
 
-  bcryptjs@3.0.3: {}
-
   bindings@1.5.0:
     dependencies:
       file-uri-to-path: 1.0.0
@@ -3998,8 +3938,6 @@ snapshots:
 
   event-target-shim@6.0.2: {}
 
-  fab-cards@8.0.147: {}
-
   fast-deep-equal@3.1.3: {}
 
   fast-json-stable-stringify@2.1.0: {}
@@ -4056,9 +3994,6 @@ snapshots:
       web-streams-polyfill: 4.0.0-beta.3
 
   fs-monkey@1.1.0:
-    optional: true
-
-  fsevents@2.3.2:
     optional: true
 
   fsevents@2.3.3:
@@ -4199,8 +4134,6 @@ snapshots:
   known-css-properties@0.37.0: {}
 
   kuler@2.0.0: {}
-
-  leaflet@1.9.4: {}
 
   levn@0.4.1:
     dependencies:
@@ -4418,14 +4351,6 @@ snapshots:
       media-chrome: 4.16.1(react@19.2.4)
     transitivePeerDependencies:
       - react
-
-  playwright-core@1.57.0: {}
-
-  playwright@1.57.0:
-    dependencies:
-      playwright-core: 1.57.0
-    optionalDependencies:
-      fsevents: 2.3.2
 
   postcss-load-config@3.1.4(postcss@8.5.6):
     dependencies:

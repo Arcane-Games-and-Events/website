@@ -1085,12 +1085,14 @@
 									or course.
 								</p>
 								<div class="flex flex-wrap items-center justify-center gap-3">
-									<a
-										href="/premium"
-										class="border-prem bg-prem inline-flex items-center gap-2 border-[1.5px] px-5 py-[10px] text-[11px] font-extrabold tracking-[0.07em] text-white uppercase transition-[filter] hover:brightness-110"
-									>
-										Get Premium
-									</a>
+									{#if !isPremium}
+										<a
+											href="/premium"
+											class="border-prem bg-prem inline-flex items-center gap-2 border-[1.5px] px-5 py-[10px] text-[11px] font-extrabold tracking-[0.07em] text-white uppercase transition-[filter] hover:brightness-110"
+										>
+											Get Premium
+										</a>
+									{/if}
 									<a
 										href="/age-open"
 										class="border-line2 hover:border-ink inline-flex items-center gap-2 border-[1.5px] bg-transparent px-5 py-[10px] text-[11px] font-extrabold tracking-[0.07em] uppercase transition-colors"

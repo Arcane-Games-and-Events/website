@@ -1353,8 +1353,9 @@
 
 	<!-- ============ COLOPHON (about the author) ============ -->
 	{#if !data.isPreview && data.article.author}
+	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 mt-11">
 		<div
-			class="bg-ink border-warm mx-auto mt-11 grid w-full max-w-[1600px] grid-cols-1 items-center gap-[26px] border-t-[5px] px-9 py-8 text-white md:mx-14 md:grid-cols-[auto_1fr_auto]"
+			class="bg-ink border-warm grid w-full grid-cols-1 items-center gap-[26px] border-t-[5px] px-9 py-8 text-white md:grid-cols-[auto_1fr_auto]"
 		>
 			{#if data.article.author.profilePicture}
 				<a
@@ -1425,6 +1426,7 @@
 				</a>
 			</div>
 		</div>
+	</div>
 	{/if}
 </AgeShell>
 

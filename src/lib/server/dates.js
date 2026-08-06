@@ -27,23 +27,3 @@ export function parseDatetimeLocal(datetimeLocalValue) {
 	return new Date(datetimeLocalValue + ':00Z');
 }
 
-/**
- * Format a Date object to datetime-local input value (UTC)
- *
- * @param {Date|string} date - Date to format
- * @returns {string} String suitable for datetime-local input value
- */
-export function formatDatetimeLocal(date) {
-	if (!date) return '';
-
-	const d = typeof date === 'string' ? new Date(date) : date;
-
-	// Format using UTC to get back the original wall clock time
-	const year = d.getUTCFullYear();
-	const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-	const day = String(d.getUTCDate()).padStart(2, '0');
-	const hours = String(d.getUTCHours()).padStart(2, '0');
-	const minutes = String(d.getUTCMinutes()).padStart(2, '0');
-
-	return `${year}-${month}-${day}T${hours}:${minutes}`;
-}

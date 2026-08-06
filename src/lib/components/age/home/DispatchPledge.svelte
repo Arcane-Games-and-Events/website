@@ -3,10 +3,14 @@
 	 * A3 unified homepage — Pledge band. Tailwind-only.
 	 *
 	 * Full-width green premium pitch with eyebrow, headline, perks
-	 * checklist, and two CTAs.
+	 * checklist, and two CTAs. Suppressed for members who already have
+	 * premium access — no reason to pitch them what they already own.
 	 */
+	import { page } from '$app/stores';
+	const isPremiumMember = $derived($page.data?.isPremiumMember ?? false);
 </script>
 
+{#if !isPremiumMember}
 <div
 	class="bg-prem border-ink relative overflow-hidden border-b-[3px] border-double py-12 text-white md:py-[62px]"
 >
@@ -55,3 +59,4 @@
 	</div>
 </div>
 </div>
+{/if}
