@@ -3,6 +3,12 @@ import { env } from '$env/dynamic/private';
 import { db } from '$lib/server/db/index.js';
 import { podcast, podcastEpisode } from '$lib/server/db/schema.js';
 import { eq, desc, inArray } from 'drizzle-orm';
+import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
+
+// The homepage caches "latest podcast + latest episode" under this
+// exact key. Every mutation below must bust it or new podcasts/episodes
+// take up to 5 min (MEDIUM TTL) to surface on the homepage.
+const HOMEPAGE_PODCAST_KEY = `${CACHE_KEYS.PODCASTS}:home:latest`;
 
 export async function load({ locals }) {
 	if (!locals.user || locals.user.role !== 'admin') {
@@ -57,6 +63,7 @@ export const actions = {
 				})
 				.returning();
 
+			await invalidateCache(HOMEPAGE_PODCAST_KEY);
 			return { success: true, podcast: newPodcast };
 		} catch (err) {
 			console.error('Error creating podcast:', err);
@@ -94,6 +101,7 @@ export const actions = {
 				.where(eq(podcast.id, podcastId))
 				.returning();
 
+			await invalidateCache(HOMEPAGE_PODCAST_KEY);
 			return { success: true, podcast: updated };
 		} catch (err) {
 			console.error('Error updating podcast:', err);
@@ -116,6 +124,7 @@ export const actions = {
 
 		try {
 			await db.delete(podcast).where(eq(podcast.id, podcastId));
+			await invalidateCache(HOMEPAGE_PODCAST_KEY);
 			return { success: true };
 		} catch (err) {
 			console.error('Error deleting podcast:', err);
@@ -177,6 +186,7 @@ export const actions = {
 				})
 				.returning();
 
+			await invalidateCache(HOMEPAGE_PODCAST_KEY);
 			return { success: true, episode: newEpisode };
 		} catch (err) {
 			console.error('Error creating podcast episode:', err);
@@ -220,6 +230,7 @@ export const actions = {
 				.where(eq(podcastEpisode.id, episodeId))
 				.returning();
 
+			await invalidateCache(HOMEPAGE_PODCAST_KEY);
 			return { success: true, episode: updated };
 		} catch (err) {
 			console.error('Error updating podcast episode:', err);
@@ -242,6 +253,7 @@ export const actions = {
 
 		try {
 			await db.delete(podcastEpisode).where(eq(podcastEpisode.id, episodeId));
+			await invalidateCache(HOMEPAGE_PODCAST_KEY);
 			return { success: true };
 		} catch (err) {
 			console.error('Error deleting podcast episode:', err);
@@ -412,6 +424,7 @@ export const actions = {
 
 			await db.insert(podcastEpisode).values(episodesToInsert);
 
+			await invalidateCache(HOMEPAGE_PODCAST_KEY);
 			return {
 				success: true,
 				syncResult: {

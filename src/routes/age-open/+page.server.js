@@ -117,11 +117,15 @@ export async function load({ url, setHeaders }) {
 							() => db.select().from(match).orderBy(asc(match.round)),
 							CACHE_TTL.SHORT
 						),
-						// Get all standings (cached with shorter TTL for real-time tournament updates)
+						// Get all standings — MUST match the TTL used by the homepage
+						// and player profile so whichever caller fills this shared
+						// key first doesn't set a stricter or laxer freshness
+						// policy for everyone else. Admin standings-import
+						// actions invalidate this key so 5 min is fine.
 						getCachedOrFetch(
 							`${CACHE_KEYS.STANDINGS}:all`,
 							() => db.select().from(standing).orderBy(desc(standing.totalPoints)),
-							CACHE_TTL.SHORT
+							CACHE_TTL.MEDIUM
 						),
 						// Get public decklists with event info (cached)
 						getCachedOrFetch(

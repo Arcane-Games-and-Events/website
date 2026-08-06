@@ -15,12 +15,20 @@ const redis =
 const memoryCache = new Map();
 const memoryCacheExpiry = new Map();
 
-// Cache key prefixes for organization
+// Cache key prefixes for organization. Every cache key in the app is
+// built by concatenating one of these with a suffix, e.g.
+// `${CACHE_KEYS.ARTICLES}:latest:12`. Adding a new cached surface? Add
+// its prefix here first — no magic strings anywhere else.
 export const CACHE_KEYS = {
 	STANDINGS: 'standings',
 	EVENTS: 'events',
 	ARTICLES: 'articles',
-	PLAYER: 'player'
+	PLAYER: 'player',
+	DECKLISTS: 'decklists',
+	PODCASTS: 'podcasts',
+	VODS: 'vods',
+	LSS: 'lss',
+	HEROES: 'heroes'
 };
 
 // Default TTL values (in seconds)

@@ -164,7 +164,7 @@
 								Tournament VODs
 							</h2>
 							<a
-								href="/studios/vods"
+								href="/library/vods"
 								class="flex items-center gap-1 text-[10px] text-gray-500 transition-colors hover:text-red-400 sm:text-xs"
 							>
 								{#if vodTotal > 0}

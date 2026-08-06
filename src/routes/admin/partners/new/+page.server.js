@@ -3,6 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { partner, user } from '$lib/server/db/schema.js';
 import { eq, sql, ilike, or } from 'drizzle-orm';
 import { normalizePartnerCode } from '$lib/server/partner-code.js';
+import { invalidateCache } from '$lib/server/redis/index.js';
 
 export async function load({ locals, url }) {
 	if (!locals.user || locals.user.role !== 'admin') {
@@ -98,6 +99,11 @@ export const actions = {
 				createdBy: locals.user.id
 			})
 			.returning({ id: partner.id });
+
+		// Bust this user's layout is_partner cache so the partner-only
+		// nav link shows up on their next navigation instead of after
+		// the 1h TTL.
+		await invalidateCache(`layout:user:${userId}:is_partner`);
 
 		throw redirect(303, `/admin/partners/${created.id}`);
 	}

@@ -52,21 +52,19 @@ export const load = async ({ locals }) => {
 		locals.user?.role === 'premium' || locals.user?.role === 'admin';
 
 	// Next upcoming event powers the marquee banner in the header.
-	// Cached 5 min via the shared `EVENTS:upcoming:1` key so the layout
-	// query stays cheap on every navigation.
+	// Shares the `EVENTS:upcoming:3` cache with the homepage so admin
+	// invalidations reach both surfaces in one shot — we just take the
+	// first row.
 	let nextEvent = null;
 	try {
-		const [row] = await getCachedOrFetch(
-			`${CACHE_KEYS.EVENTS}:upcoming:1`,
+		const rows = await getCachedOrFetch(
+			`${CACHE_KEYS.EVENTS}:upcoming:3`,
 			async () => {
 				const now = new Date();
+				// Match the homepage's fuller `.select()` shape so both
+				// surfaces populate this key identically.
 				return db
-					.select({
-						id: event.id,
-						title: event.title,
-						circuit: event.circuit,
-						eventDate: event.eventDate
-					})
+					.select()
 					.from(event)
 					.where(
 						and(
@@ -75,11 +73,19 @@ export const load = async ({ locals }) => {
 						)
 					)
 					.orderBy(asc(event.eventDate))
-					.limit(1);
+					.limit(3);
 			},
-			CACHE_TTL.MEDIUM
+			CACHE_TTL.SHORT
 		);
-		if (row) nextEvent = row;
+		if (rows && rows.length > 0) {
+			const row = rows[0];
+			nextEvent = {
+				id: row.id,
+				title: row.title,
+				circuit: row.circuit,
+				eventDate: row.eventDate
+			};
+		}
 	} catch {
 		// Silent — banner just hides the event link if we couldn't load
 	}

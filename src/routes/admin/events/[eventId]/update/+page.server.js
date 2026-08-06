@@ -135,6 +135,9 @@ export const actions = {
 				await db.insert(decklist).values(decklistData);
 			}
 
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:decklists:public`);
+			await invalidateCache(`${CACHE_KEYS.DECKLISTS}:featured:3`);
+
 			return { success: true, message: 'Decklist saved successfully' };
 		} catch (err) {
 			console.error('Error saving decklist:', err);
@@ -153,6 +156,8 @@ export const actions = {
 
 		try {
 			await db.delete(decklist).where(eq(decklist.id, decklistId));
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:decklists:public`);
+			await invalidateCache(`${CACHE_KEYS.DECKLISTS}:featured:3`);
 			return { success: true, message: 'Decklist deleted' };
 		} catch (err) {
 			console.error('Error deleting decklist:', err);
@@ -534,10 +539,12 @@ export const actions = {
 				})
 				.where(eq(event.id, params.eventId));
 
-			// Invalidate all relevant caches so updates appear immediately
+			// Invalidate all relevant caches so updates appear immediately.
+			// Dropped `EVENTS:results:all` — nothing writes that key, so
+			// deleting it was misleading dead code.
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:results:all`);
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:matches:all`);
 			await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
 
 			let message = `Event finalized. ${playersUpdated} players updated, ${playersCreated} new players added.`;

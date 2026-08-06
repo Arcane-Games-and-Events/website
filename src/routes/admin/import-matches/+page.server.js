@@ -341,7 +341,8 @@ export const actions = {
 
 				if (rpcResult?.success) {
 					await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
-					await invalidateCache(`${CACHE_KEYS.EVENTS}:results:all`);
+					await invalidateCache(`${CACHE_KEYS.EVENTS}:matches:all`);
+					await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
 
 					return {
 						success: true,
@@ -408,7 +409,8 @@ export const actions = {
 			});
 
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:results:all`);
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:matches:all`);
+			await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
 
 			return {
 				success: true,
@@ -531,9 +533,10 @@ export const actions = {
 				await tx.insert(eventPlayerHero).values(heroEntries);
 			});
 
-			// Invalidate relevant caches
+			// Invalidate relevant caches. Hero data is filtered by
+			// season/circuit/month so we don't have a bulk key to bust —
+			// the per-filter keys expire naturally after 5 min.
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:results:all`);
 
 			return {
 				success: true,

@@ -236,7 +236,7 @@ function fetchUpcomingEvents() {
 function fetchFeaturedDecklists() {
 	return withTimeout(
 		getCachedOrFetch(
-			`${CACHE_KEYS.DECKLISTS || 'decklists'}:featured:3`,
+			`${CACHE_KEYS.DECKLISTS}:featured:3`,
 			() =>
 				db
 					.select({
@@ -266,7 +266,7 @@ function fetchFeaturedDecklists() {
 async function fetchPodcastBundle() {
 	try {
 		return await getCachedOrFetch(
-			`podcast:home:latest`,
+			`${CACHE_KEYS.PODCASTS}:home:latest`,
 			async () => {
 				const activePodcasts = await db
 					.select()
@@ -308,7 +308,7 @@ async function fetchPodcastBundle() {
 async function fetchRecentVods() {
 	try {
 		const vodRows = await getCachedOrFetch(
-			`vods:home:latest:12`,
+			`${CACHE_KEYS.VODS}:home:latest:12`,
 			() =>
 				db
 					.select()

@@ -7,6 +7,7 @@ import {
 	calculatePayoutDueDate,
 	isReadyToPayOut
 } from '$lib/server/partner-code.js';
+import { invalidateCache } from '$lib/server/redis/index.js';
 
 export async function load({ locals, params }) {
 	if (!locals.user || locals.user.role !== 'admin') {
@@ -109,7 +110,21 @@ export const actions = {
 			});
 		}
 
+		// Read the userId before deletion so we can bust their layout
+		// is_partner cache — otherwise the partner nav sticks around
+		// for up to 1h after their partner status is revoked.
+		const [row] = await db
+			.select({ userId: partner.userId })
+			.from(partner)
+			.where(eq(partner.id, params.partnerId))
+			.limit(1);
+
 		await db.delete(partner).where(eq(partner.id, params.partnerId));
+
+		if (row?.userId) {
+			await invalidateCache(`layout:user:${row.userId}:is_partner`);
+		}
+
 		throw redirect(303, '/admin/partners');
 	},
 

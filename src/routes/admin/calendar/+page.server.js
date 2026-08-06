@@ -2,6 +2,12 @@ import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { lssEvent } from '$lib/server/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
+import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
+
+// The AGE Open page caches active LSS events under this key. Any admin
+// LSS write below must bust it so the calendar reflects the change on
+// the next navigation instead of after the 5-min TTL.
+const LSS_ACTIVE_KEY = `${CACHE_KEYS.EVENTS}:lss:active`;
 
 // Helper to add timeout to promises
 const withTimeout = (promise, ms, fallback) =>
@@ -109,6 +115,7 @@ export const actions = {
 				createdBy: locals.user.id
 			});
 
+			await invalidateCache(LSS_ACTIVE_KEY);
 			return { success: true, message: 'LSS event created successfully' };
 		} catch (err) {
 			console.error('Error creating LSS event:', err);
@@ -161,6 +168,7 @@ export const actions = {
 				})
 				.where(eq(lssEvent.id, seasonId));
 
+			await invalidateCache(LSS_ACTIVE_KEY);
 			return { success: true, message: 'LSS event updated successfully' };
 		} catch (err) {
 			console.error('Error updating LSS event:', err);
@@ -184,6 +192,7 @@ export const actions = {
 		try {
 			await db.delete(lssEvent).where(eq(lssEvent.id, seasonId));
 
+			await invalidateCache(LSS_ACTIVE_KEY);
 			return { success: true, message: 'LSS season deleted successfully' };
 		} catch (err) {
 			console.error('Error deleting LSS season:', err);

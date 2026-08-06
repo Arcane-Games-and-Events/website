@@ -460,8 +460,11 @@ export const actions = {
 				await db.insert(decklist).values(decklistData);
 			}
 
-			// Invalidate the public decklists cache so the age-open page updates
+			// Invalidate the public decklists cache so the age-open page
+			// updates, plus the homepage's featured-decklists cache since
+			// placement / isPublic may have changed.
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:decklists:public`);
+			await invalidateCache(`${CACHE_KEYS.DECKLISTS}:featured:3`);
 
 			return { success: true, message: 'Decklist saved successfully' };
 		} catch (err) {
@@ -482,8 +485,11 @@ export const actions = {
 		try {
 			await db.delete(decklist).where(eq(decklist.id, decklistId));
 
-			// Invalidate the public decklists cache so the age-open page updates
+			// Invalidate both the public decklists cache and the homepage's
+			// featured-decklists cache (deleting a placement=1 public decklist
+			// changes what the homepage should render).
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:decklists:public`);
+			await invalidateCache(`${CACHE_KEYS.DECKLISTS}:featured:3`);
 
 			return { success: true, message: 'Decklist deleted' };
 		} catch (err) {
@@ -825,9 +831,11 @@ export const actions = {
 				.set({ tournamentResults: resultsJson })
 				.where(eq(event.id, params.eventId));
 
-			// Invalidate caches so changes appear immediately
+			// Invalidate caches so changes appear immediately.
+			// `matches:{eventId}` is not a key we actually set anywhere,
+			// so we drop it here — leaving it in would suggest a per-event
+			// matches cache exists when it doesn't.
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:matches:${params.eventId}`);
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:matches:all`);
 			await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
 
@@ -894,10 +902,17 @@ export const actions = {
 				.where(eq(event.id, params.eventId));
 
 			// Remove all staff assignments for this event now that it's closed
+			const affectedStaff = await db
+				.select({ userId: eventStaff.userId })
+				.from(eventStaff)
+				.where(eq(eventStaff.eventId, params.eventId));
 			await db.delete(eventStaff).where(eq(eventStaff.eventId, params.eventId));
 
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
+			await Promise.all(
+				affectedStaff.map((s) => invalidateCache(`layout:user:${s.userId}:staff_count`))
+			);
 
 			return {
 				success: true,
@@ -964,12 +979,20 @@ export const actions = {
 			await db.update(event).set(updateData).where(eq(event.id, params.eventId));
 
 			// Remove staff assignments when event is completed or cancelled
+			let affectedStaff = [];
 			if (newStatus === 'completed' || newStatus === 'cancelled') {
+				affectedStaff = await db
+					.select({ userId: eventStaff.userId })
+					.from(eventStaff)
+					.where(eq(eventStaff.eventId, params.eventId));
 				await db.delete(eventStaff).where(eq(eventStaff.eventId, params.eventId));
 			}
 
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
 			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
+			await Promise.all(
+				affectedStaff.map((s) => invalidateCache(`layout:user:${s.userId}:staff_count`))
+			);
 
 			const statusMessage =
 				newStatus === 'completed' || newStatus === 'cancelled'
@@ -1018,6 +1041,8 @@ export const actions = {
 				assignedBy: locals.user.id
 			});
 
+			await invalidateCache(`layout:user:${staffId}:staff_count`);
+
 			return { success: true, message: 'Staff assigned successfully' };
 		} catch (err) {
 			console.error('Error assigning staff:', err);
@@ -1042,6 +1067,8 @@ export const actions = {
 			await db
 				.delete(eventStaff)
 				.where(and(eq(eventStaff.userId, staffId), eq(eventStaff.eventId, params.eventId)));
+
+			await invalidateCache(`layout:user:${staffId}:staff_count`);
 
 			return { success: true, message: 'Staff unassigned successfully' };
 		} catch (err) {
@@ -1309,6 +1336,15 @@ export const actions = {
 
 			// 6. Finally delete the event
 			await db.delete(event).where(eq(event.id, params.eventId));
+
+			// Deleting a whole event blows through decklists, matches, and
+			// standings, so bust every downstream cache in one shot.
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:matches:all`);
+			await invalidateCache(`${CACHE_KEYS.EVENTS}:decklists:public`);
+			await invalidateCache(`${CACHE_KEYS.DECKLISTS}:featured:3`);
+			await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
 
 			// Redirect to events list
 			throw redirect(302, '/admin/events');

@@ -31,16 +31,18 @@ export async function POST({ request }) {
 				await invalidateCache(`${CACHE_KEYS.ARTICLES}:slug:${doc.slug}`);
 			}
 
-			// Always invalidate the articles list caches
+			// Always invalidate the articles list caches. The homepage
+			// remembers `:latest:12` — using any other suffix here means
+			// new posts never surface until the TTL expires.
 			await invalidateCache(`${CACHE_KEYS.ARTICLES}:all`);
-			await invalidateCache(`${CACHE_KEYS.ARTICLES}:latest:3`);
+			await invalidateCache(`${CACHE_KEYS.ARTICLES}:latest:12`);
 		}
 
 		// Handle authors collection
 		if (collection === 'authors') {
 			// If author is updated, refresh articles since author info is embedded
 			await invalidateCache(`${CACHE_KEYS.ARTICLES}:all`);
-			await invalidateCache(`${CACHE_KEYS.ARTICLES}:latest:3`);
+			await invalidateCache(`${CACHE_KEYS.ARTICLES}:latest:12`);
 		}
 
 		// Handle tags collection

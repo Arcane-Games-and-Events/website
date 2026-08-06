@@ -622,7 +622,7 @@
 						</p>
 					</div>
 					<a
-						href="/studios/vods"
+						href="/library/vods"
 						class="hover:text-ink whitespace-nowrap border-[1.5px] border-white/40 px-[19px] py-[13px] text-[11px] font-extrabold tracking-[0.06em] uppercase text-white transition-colors hover:bg-white"
 					>
 						{#if data.vodTotal && data.vodTotal > data.vods.length}

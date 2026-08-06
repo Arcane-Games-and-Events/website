@@ -364,7 +364,7 @@
 							Related Videos
 						</span>
 						<a
-							href="/library"
+							href="/library/vods"
 							class="font-mono-system text-warm hover:text-accent text-[10px] font-bold tracking-[0.08em] uppercase"
 						>
 							All →
@@ -432,17 +432,17 @@
 			{/if}
 
 			<a
-				href="/library"
+				href="/library/vods"
 				class="border-line2 hover:border-ink group flex items-center justify-between border p-4 transition-colors"
 			>
 				<div>
 					<div class="font-newsreader text-[16px] font-semibold tracking-[-0.01em]">
-						Browse the Library
+						Browse VODs
 					</div>
 					<div
 						class="font-mono-system text-fade mt-[3px] text-[10px] font-bold tracking-[0.08em] uppercase"
 					>
-						Articles · Videos · Coverage
+						Every match on tape
 					</div>
 				</div>
 				<span
