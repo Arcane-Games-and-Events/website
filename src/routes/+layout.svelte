@@ -52,6 +52,31 @@
 	// up with two stacked navbars on error responses thrown from any
 	// route, including the routes that haven't been redesigned yet.
 	$: isErrorPage = !!$page.error;
+
+	// Debounce the loading bar so fast navigations don't flash a bar
+	// that appears and disappears in ~200 ms. Only show when a
+	// navigation has been in flight for at least 150 ms — that's long
+	// enough that a bar is genuinely useful feedback, short enough
+	// that slow loads still surface it before the user starts wondering
+	// if the click registered.
+	let showLoadingBar = false;
+	let loadingBarTimer = null;
+	$: {
+		if ($navigating) {
+			if (!loadingBarTimer && !showLoadingBar) {
+				loadingBarTimer = setTimeout(() => {
+					showLoadingBar = true;
+					loadingBarTimer = null;
+				}, 150);
+			}
+		} else {
+			if (loadingBarTimer) {
+				clearTimeout(loadingBarTimer);
+				loadingBarTimer = null;
+			}
+			showLoadingBar = false;
+		}
+	}
 </script>
 
 <!-- Skip to content link for accessibility -->
@@ -62,10 +87,12 @@
 	Skip to main content
 </a>
 
-<!-- Navigation Loading Indicator -->
-{#if $navigating}
+<!-- Navigation Loading Indicator — gated on the debounced flag above,
+	 not on `$navigating` directly, so quick page transitions don't flash
+	 a bar that appears and disappears faster than the eye can process. -->
+{#if showLoadingBar}
 	<div class="fixed top-0 right-0 left-0 z-[9999] h-0.5">
-		<div class="animate-loading-bar h-full bg-blue-500"></div>
+		<div class="animate-loading-bar bg-warm h-full"></div>
 	</div>
 {/if}
 

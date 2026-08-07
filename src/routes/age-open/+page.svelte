@@ -33,10 +33,16 @@
 
 	function startAutoRefresh() {
 		if (autoRefreshInterval) return;
-		// Refresh every 30 seconds for live events
+		// Refresh every 60 seconds for live events. Skip the tick if a
+		// previous refresh is still in flight — otherwise SvelteKit's
+		// `$navigating` store stays truthy across stacked invalidations
+		// and the top-of-page loading bar never settles. `refreshStandings`
+		// already guards internally, but checking here also stops the
+		// timer's overhead when the previous invalidation is still busy.
 		autoRefreshInterval = setInterval(() => {
+			if (isRefreshing) return;
 			refreshStandings();
-		}, 30000);
+		}, 60000);
 	}
 
 	function stopAutoRefresh() {
@@ -2973,164 +2979,182 @@
 
 			<!-- Tournament Archive Tab -->
 			{#if activeTab === 'results'}
-				<div class="space-y-8">
-					<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+				<!-- ============ HEADER ============ -->
+				<section class="border-ink border-b-[3px] border-double px-14 pt-[44px] pb-[36px]">
+					<div class="flex flex-wrap items-end justify-between gap-6">
 						<div>
-							<h2 class="mb-2 text-3xl font-bold text-white">Tournament Archive</h2>
-							<p class="text-gray-400">
-								Live standings from in-progress events and results from completed tournaments
+							<div class="text-accent mb-3 text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
+								Tournament Archive
+							</div>
+							<h2
+								class="font-newsreader m-0 text-[42px] font-semibold leading-none tracking-[-0.02em]"
+							>
+								Every Open on record.
+							</h2>
+							<p class="text-soft mt-[9px] max-w-[620px] text-[15px] leading-[1.55]">
+								Live standings from in-progress events and final results from completed tournaments.
 							</p>
 						</div>
 						<div class="flex items-center gap-3">
 							{#if hasLiveEvents}
 								<span
-									class="inline-flex items-center gap-2 rounded-full bg-blue-500/20 px-3 py-1 text-sm font-medium text-blue-400"
+									class="border-warm/40 bg-warm/10 text-warm font-mono-system inline-flex items-center gap-2 border px-[11px] py-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
 								>
-									<span class="h-2 w-2 animate-pulse rounded-full bg-blue-400"></span>
+									<span class="bg-warm inline-block h-[6px] w-[6px] animate-pulse rounded-full"
+									></span>
 									Auto-refreshing
 								</span>
 							{/if}
 							<button
+								type="button"
 								onclick={refreshStandings}
 								disabled={isRefreshing}
-								class="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700 disabled:opacity-50"
+								class="border-line2 text-soft hover:border-ink hover:text-ink inline-flex cursor-pointer items-center gap-2 border bg-transparent px-4 py-[10px] text-[11px] font-extrabold tracking-[0.06em] uppercase transition-colors disabled:opacity-40"
+								title="Refresh results"
 							>
 								<svg
-									class="h-4 w-4 {isRefreshing ? 'animate-spin' : ''}"
+									class="h-3.5 w-3.5 {isRefreshing ? 'animate-spin' : ''}"
 									fill="none"
 									stroke="currentColor"
+									stroke-width="1.8"
 									viewBox="0 0 24 24"
+									aria-hidden="true"
 								>
 									<path
 										stroke-linecap="round"
 										stroke-linejoin="round"
-										stroke-width="2"
 										d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
 									/>
 								</svg>
-								{isRefreshing ? 'Refreshing...' : 'Refresh'}
+								{isRefreshing ? 'Refreshing…' : 'Refresh'}
 							</button>
 						</div>
 					</div>
+				</section>
 
+				<!-- ============ RESULTS ============ -->
+				<section class="border-ink border-b-[3px] border-double px-14 py-[36px]">
 					{#if (data.eventResults || []).length === 0}
-						<div class="rounded-lg border border-gray-800 bg-gray-900 p-12 text-center">
-							<div
-								class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-800"
+						<div class="bg-paper border-line2 flex flex-col items-center border px-6 py-[64px] text-center">
+							<span
+								class="border-line2 text-fade mb-5 flex h-[52px] w-[52px] items-center justify-center border"
 							>
 								<svg
-									class="h-8 w-8 text-gray-600"
+									viewBox="0 0 24 24"
+									class="h-6 w-6"
 									fill="none"
 									stroke="currentColor"
-									viewBox="0 0 24 24"
+									stroke-width="1.5"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"
 								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-									/>
+									<path d="M9 12l2 2 4-4" />
+									<circle cx="12" cy="12" r="9" />
 								</svg>
-							</div>
-							<h3 class="mb-2 text-xl font-semibold text-white">No Results Yet</h3>
-							<p class="text-gray-400">Results from completed events will appear here.</p>
+							</span>
+							<h3
+								class="font-newsreader mb-2 text-[26px] leading-[1] font-semibold tracking-[-0.01em]"
+							>
+								No results yet
+							</h3>
+							<p class="text-soft mx-auto max-w-[420px] text-[14px]">
+								Results from completed events will appear here as tournaments wrap up.
+							</p>
 						</div>
 					{:else}
-						<!-- Mobile Card View -->
-						<div class="space-y-3 md:hidden">
-							{#each data.eventResults as eventData}
+						<!-- Mobile card view -->
+						<div class="grid grid-cols-1 gap-[14px] md:hidden">
+							{#each data.eventResults as eventData (eventData.event.id)}
 								{@const winner = eventData.results.find((r) => r.placement === 1)}
 								{@const colors = getCircuitColor(eventData.event.circuit)}
+								{@const isLive = eventData.event.status === 'in_progress'}
 								<a
 									href="/age-open/{eventData.event.id}/results"
-									class="block overflow-hidden rounded-xl border border-gray-800 bg-gray-900 hover:bg-gray-800/50"
+									class="group bg-paper border-line2 hover:border-ink flex flex-col overflow-hidden border transition-colors"
 								>
-									<div class="flex">
-										<!-- Circuit Color Accent -->
-										<div class="w-1 shrink-0 {colors.bg}"></div>
-										<div class="flex-1 p-4">
-											<!-- Top Row: Status + Circuit -->
-											<div class="mb-3 flex items-center justify-between">
-												<div class="flex items-center gap-2">
-													{#if eventData.event.circuit}
-														<span
-															class="rounded-full {colors.bg} px-2.5 py-0.5 text-xs font-medium text-white"
-														>
-															{eventData.event.circuit}
-														</span>
-													{/if}
-													{#if eventData.event.format}
-														<span
-															class="rounded-full bg-gray-700 px-2.5 py-0.5 text-xs font-medium text-gray-200"
-														>
-															{eventData.event.format}
-														</span>
-													{/if}
-												</div>
-												{#if eventData.event.status === 'in_progress'}
+									<span class="{colors.bg} h-[3px] w-full"></span>
+									<div class="flex-1 px-[22px] pt-[18px] pb-[20px]">
+										<div class="mb-[10px] flex flex-wrap items-center justify-between gap-[8px]">
+											<div class="flex flex-wrap items-center gap-[6px]">
+												{#if eventData.event.circuit}
 													<span
-														class="animate-pulse rounded-full bg-blue-500/20 px-2.5 py-0.5 text-xs font-medium text-blue-400"
+														class="border-line2 bg-paper-bg text-soft inline-flex items-center gap-[6px] border px-[9px] py-[3px] text-[10px] font-extrabold tracking-[0.08em] uppercase"
 													>
-														LIVE
+														<span class="h-[6px] w-[6px] rounded-full {colors.bg}"></span>
+														{eventData.event.circuit}
 													</span>
-												{:else}
+												{/if}
+												{#if eventData.event.format}
 													<span
-														class="rounded-full bg-green-500/20 px-2.5 py-0.5 text-xs font-medium text-green-400"
+														class="border-line2 bg-paper-bg text-soft inline-flex items-center border px-[9px] py-[3px] text-[10px] font-extrabold tracking-[0.08em] uppercase"
 													>
-														Completed
+														{eventData.event.format}
 													</span>
 												{/if}
 											</div>
+											{#if isLive}
+												<span
+													class="border-warm/40 bg-warm/10 text-warm inline-flex items-center gap-[6px] border px-[9px] py-[3px] text-[10px] font-extrabold tracking-[0.1em] uppercase"
+												>
+													<span class="bg-warm inline-block h-[5px] w-[5px] animate-pulse rounded-full"
+													></span>
+													Live
+												</span>
+											{:else}
+												<span
+													class="border-prem/40 bg-prem/10 text-prem inline-flex items-center border px-[9px] py-[3px] text-[10px] font-extrabold tracking-[0.1em] uppercase"
+												>
+													Completed
+												</span>
+											{/if}
+										</div>
 
-											<!-- Event Title -->
-											<h3 class="mb-1 text-base font-semibold text-white">
-												{eventData.event.title}
-											</h3>
+										<h3
+											class="font-newsreader text-ink group-hover:text-warm mb-[8px] text-[22px] leading-[1.05] font-semibold tracking-[-0.01em] transition-colors"
+										>
+											{eventData.event.title}
+										</h3>
 
-											<!-- Date & Location -->
-											<div class="mb-3 text-sm text-gray-400">
-												{#if eventData.event.eventDate}
-													{formatDateShort(eventData.event.eventDate)}
-												{/if}
-												{#if eventData.event.location}
-													<span class="text-gray-600"> · </span>{eventData.event.location}
-												{/if}
-											</div>
+										<div
+											class="text-fade font-mono-system mb-[14px] flex flex-wrap items-center gap-x-[10px] gap-y-[4px] text-[10.5px] font-bold tracking-[0.06em] uppercase"
+										>
+											{#if eventData.event.eventDate}
+												<span>{formatDateShort(eventData.event.eventDate)}</span>
+											{/if}
+											{#if eventData.event.location}
+												<span class="opacity-60" aria-hidden="true">·</span>
+												<span>{eventData.event.location}</span>
+											{/if}
+										</div>
 
-											<!-- Winner & Players -->
-											<div class="flex items-center justify-between">
-												{#if winner}
-													<div class="flex items-center gap-2">
-														<span
-															class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-yellow-500/20 text-yellow-400"
-														>
-															<svg class="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 24 24">
-																<path
-																	d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-																/>
-															</svg>
-														</span>
-														<span class="text-sm font-medium text-white">{winner.playerName}</span>
-													</div>
-												{:else}
-													<span></span>
-												{/if}
-												<div class="flex items-center gap-1 text-sm text-gray-500">
-													<svg
-														class="h-4 w-4"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
+										<div
+											class="border-line2 flex items-center justify-between gap-3 border-t pt-[12px]"
+										>
+											{#if winner}
+												<div class="flex min-w-0 items-center gap-[8px]">
+													<span
+														class="border-warm/40 bg-warm/10 text-warm inline-flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center border"
+														aria-hidden="true"
 													>
-														<path
-															stroke-linecap="round"
-															stroke-linejoin="round"
-															stroke-width="2"
-															d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-														/>
-													</svg>
-													{eventData.results.length}
+														<svg viewBox="0 0 24 24" class="h-[11px] w-[11px]" fill="currentColor">
+															<path
+																d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+															/>
+														</svg>
+													</span>
+													<span class="text-ink truncate text-[13px] font-semibold">
+														{winner.playerName}
+													</span>
 												</div>
+											{:else}
+												<span class="text-fade text-[12px]">—</span>
+											{/if}
+											<div
+												class="text-fade font-mono-system flex flex-shrink-0 items-center gap-[6px] text-[10.5px] font-extrabold tracking-[0.08em] uppercase"
+											>
+												<span class="tabular-nums">{eventData.results.length}</span>
+												<span>Players</span>
 											</div>
 										</div>
 									</div>
@@ -3138,145 +3162,187 @@
 							{/each}
 						</div>
 
-						<!-- Desktop Table View -->
-						<div
-							class="hidden overflow-hidden rounded-xl border border-gray-800 bg-gray-900 md:block"
-						>
+						<!-- Desktop table view -->
+						<div class="bg-paper border-line2 hidden overflow-hidden border md:block">
 							<div class="overflow-x-auto">
 								<table class="w-full min-w-[900px]">
 									<thead>
-										<tr class="border-b border-gray-700 bg-gray-800">
+										<tr
+											class="border-line2 border-b"
+											style="background: color-mix(in srgb, var(--ed-paper-bg) 60%, transparent);"
+										>
 											<th
-												class="min-w-[200px] px-4 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-												>Event</th
+												class="text-fade font-mono-system min-w-[220px] px-5 py-[14px] text-left text-[10px] font-extrabold tracking-[0.16em] uppercase"
 											>
+												Event
+											</th>
 											<th
-												class="min-w-[100px] px-4 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-												>Date</th
+												class="text-fade font-mono-system min-w-[110px] px-5 py-[14px] text-left text-[10px] font-extrabold tracking-[0.16em] uppercase"
 											>
+												Date
+											</th>
 											<th
-												class="px-4 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase"
-												>Circuit</th
+												class="text-fade font-mono-system px-5 py-[14px] text-left text-[10px] font-extrabold tracking-[0.16em] uppercase"
 											>
+												Circuit
+											</th>
 											<th
-												class="px-4 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase"
-												>Format</th
+												class="text-fade font-mono-system px-5 py-[14px] text-left text-[10px] font-extrabold tracking-[0.16em] uppercase"
 											>
+												Format
+											</th>
 											<th
-												class="w-16 px-4 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase"
-												>Players</th
+												class="text-fade font-mono-system w-[80px] px-5 py-[14px] text-center text-[10px] font-extrabold tracking-[0.16em] uppercase"
 											>
+												Players
+											</th>
 											<th
-												class="min-w-[140px] px-4 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-												>Winner</th
+												class="text-fade font-mono-system min-w-[160px] px-5 py-[14px] text-left text-[10px] font-extrabold tracking-[0.16em] uppercase"
 											>
+												Winner
+											</th>
 											<th
-												class="px-4 py-4 text-center text-xs font-semibold tracking-wider text-gray-400 uppercase"
-												>Status</th
+												class="text-fade font-mono-system px-5 py-[14px] text-center text-[10px] font-extrabold tracking-[0.16em] uppercase"
 											>
+												Status
+											</th>
 											<th
-												class="w-32 px-4 py-4 text-right text-xs font-semibold tracking-wider text-gray-400 uppercase"
+												class="w-[120px] px-5 py-[14px] text-right"
+												aria-label="View event"
 											></th>
 										</tr>
 									</thead>
-									<tbody class="divide-y divide-gray-800">
-										{#each data.eventResults as eventData}
+									<tbody>
+										{#each data.eventResults as eventData, i (eventData.event.id)}
 											{@const winner = eventData.results.find((r) => r.placement === 1)}
 											{@const colors = getCircuitColor(eventData.event.circuit)}
-											<tr class="border-l-4 hover:bg-gray-800/50 {colors.borderLeft}">
-												<td class="px-4 py-4">
-													<div class="font-medium text-white">{eventData.event.title}</div>
-													{#if eventData.event.location}
-														<div class="mt-0.5 text-xs text-gray-500">
-															{eventData.event.location}
+											{@const isLive = eventData.event.status === 'in_progress'}
+											<tr
+												class="border-line2 odd:bg-paper even:bg-paper-bg/40 hover:!bg-paper-bg group transition-colors {i ===
+												data.eventResults.length - 1
+													? ''
+													: 'border-b'}"
+											>
+												<td class="px-5 py-[16px]">
+													<a
+														href="/age-open/{eventData.event.id}/results"
+														class="block"
+													>
+														<div
+															class="font-newsreader text-ink group-hover:text-warm text-[17px] font-semibold tracking-[-0.01em] transition-colors"
+														>
+															{eventData.event.title}
 														</div>
-													{/if}
+														{#if eventData.event.location}
+															<div
+																class="text-fade font-mono-system mt-[3px] text-[10px] font-bold tracking-[0.06em] uppercase"
+															>
+																{eventData.event.location}
+															</div>
+														{/if}
+													</a>
 												</td>
-												<td class="px-4 py-4 text-sm whitespace-nowrap text-gray-300">
+												<td class="px-5 py-[16px]">
 													{#if eventData.event.eventDate}
-														{formatDateShort(eventData.event.eventDate)}
+														<span
+															class="text-soft font-mono-system text-[11.5px] font-bold tracking-[0.02em] tabular-nums uppercase"
+														>
+															{formatDateShort(eventData.event.eventDate)}
+														</span>
 													{:else}
-														<span class="text-gray-500">-</span>
+														<span class="text-fade">—</span>
 													{/if}
 												</td>
-												<td class="px-4 py-4 text-center">
+												<td class="px-5 py-[16px]">
 													{#if eventData.event.circuit}
 														<span
-															class="inline-block rounded-full whitespace-nowrap {colors.bg} px-2.5 py-1 text-xs font-medium text-white"
+															class="border-line2 bg-paper-bg text-soft inline-flex items-center gap-[7px] border px-[10px] py-[4px] text-[10px] font-extrabold tracking-[0.08em] uppercase"
 														>
+															<span class="h-[6px] w-[6px] rounded-full {colors.bg}"></span>
 															{eventData.event.circuit}
 														</span>
 													{:else}
-														<span class="text-gray-500">-</span>
+														<span class="text-fade">—</span>
 													{/if}
 												</td>
-												<td class="px-4 py-4 text-center">
+												<td class="px-5 py-[16px]">
 													{#if eventData.event.format}
 														<span
-															class="inline-block rounded-full bg-gray-700 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-gray-200"
+															class="border-line2 bg-paper-bg text-soft inline-flex items-center border px-[10px] py-[4px] text-[10px] font-extrabold tracking-[0.08em] uppercase"
 														>
 															{eventData.event.format}
 														</span>
 													{:else}
-														<span class="text-gray-500">-</span>
+														<span class="text-fade">—</span>
 													{/if}
 												</td>
-												<td class="px-4 py-4 text-center text-sm font-medium text-gray-300">
-													{eventData.results.length}
+												<td class="px-5 py-[16px] text-center">
+													<span
+														class="text-ink font-mono-system text-[13.5px] font-bold tabular-nums"
+													>
+														{eventData.results.length}
+													</span>
 												</td>
-												<td class="px-4 py-4">
+												<td class="px-5 py-[16px]">
 													{#if winner}
-														<div class="flex items-center gap-2">
+														<div class="flex items-center gap-[9px]">
 															<span
-																class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-yellow-500/20 text-yellow-400"
+																class="border-warm/40 bg-warm/10 text-warm inline-flex h-[24px] w-[24px] flex-shrink-0 items-center justify-center border"
+																aria-hidden="true"
 															>
-																<svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+																<svg
+																	viewBox="0 0 24 24"
+																	class="h-[12px] w-[12px]"
+																	fill="currentColor"
+																>
 																	<path
 																		d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
 																	/>
 																</svg>
 															</span>
-															<span class="truncate text-sm font-medium text-white"
-																>{winner.playerName}</span
-															>
+															<span class="text-ink truncate text-[13.5px] font-semibold">
+																{winner.playerName}
+															</span>
 														</div>
 													{:else}
-														<span class="text-gray-500">-</span>
+														<span class="text-fade">—</span>
 													{/if}
 												</td>
-												<td class="px-4 py-4 text-center">
-													{#if eventData.event.status === 'in_progress'}
+												<td class="px-5 py-[16px] text-center">
+													{#if isLive}
 														<span
-															class="inline-block animate-pulse rounded-full bg-blue-500/20 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-blue-400"
+															class="border-warm/40 bg-warm/10 text-warm inline-flex items-center gap-[6px] border px-[10px] py-[4px] text-[10px] font-extrabold tracking-[0.1em] uppercase"
 														>
-															LIVE
+															<span
+																class="bg-warm inline-block h-[5px] w-[5px] animate-pulse rounded-full"
+															></span>
+															Live
 														</span>
 													{:else}
 														<span
-															class="inline-block rounded-full bg-green-500/20 px-2.5 py-1 text-xs font-medium whitespace-nowrap text-green-400"
+															class="border-prem/40 bg-prem/10 text-prem inline-flex items-center border px-[10px] py-[4px] text-[10px] font-extrabold tracking-[0.1em] uppercase"
 														>
 															Completed
 														</span>
 													{/if}
 												</td>
-												<td class="px-4 py-4 text-right">
+												<td class="px-5 py-[16px] text-right">
 													<a
 														href="/age-open/{eventData.event.id}/results"
-														class="inline-flex items-center gap-1.5 rounded-lg bg-blue-500/10 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-blue-400 hover:bg-blue-500/20"
+														class="text-accent group-hover:text-warm inline-flex items-center gap-[6px] text-[10.5px] font-extrabold tracking-[0.08em] uppercase transition-colors"
 													>
 														View
 														<svg
-															class="h-4 w-4"
+															viewBox="0 0 24 24"
+															class="h-[11px] w-[11px]"
 															fill="none"
 															stroke="currentColor"
-															viewBox="0 0 24 24"
+															stroke-width="2.5"
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															aria-hidden="true"
 														>
-															<path
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																stroke-width="2"
-																d="M9 5l7 7-7 7"
-															/>
+															<path d="M9 5l7 7-7 7" />
 														</svg>
 													</a>
 												</td>
@@ -3287,7 +3353,7 @@
 							</div>
 						</div>
 					{/if}
-				</div>
+				</section>
 			{/if}
 
 			<!-- Rules & Info Tab -->
@@ -3561,7 +3627,7 @@
 							</h2>
 							<p class="text-soft mt-5 max-w-[520px] text-[16px] leading-[1.6]">
 								At the end of the season, the top 16 players by AGE Open points in each circuit
-								are invited to compete in the Player's Championship for a $3,000 prize pool. The
+								are invited to compete in the Player's Championship for a $2,000 prize pool. The
 								event crowns the AGE Open Series champion and celebrates the season's strongest
 								competitors.
 							</p>
@@ -3585,7 +3651,7 @@
 									Prize Pool
 								</div>
 								<h3 class="font-newsreader text-[24px] font-semibold leading-none tracking-[-0.01em]">
-									$3,000 to the table.
+									$2,000 to the table.
 								</h3>
 								<p class="text-soft m-0 text-[14px] leading-[1.55]">
 									Distributed to top finishers, with the champion earning the title of AGE Open

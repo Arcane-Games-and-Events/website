@@ -355,76 +355,79 @@ async function buildEventResults(eventId) {
 				thirdLastRoundMatches.length === 4;
 
 			if (hasTop8Pattern) {
-				// Build bracket structure
-				const formatBracketMatch = (m, seed1, seed2) => ({
-					player1: {
-						seed: seed1,
-						name: m.player1Name,
-						gemId: m.player1GemId,
-						hero: getHeroForPlayer(m.player1GemId, m.player1Name),
-						isWinner: m.winner === 'player1'
-					},
-					player2: {
-						seed: seed2,
-						name: m.player2Name,
-						gemId: m.player2GemId,
-						hero: getHeroForPlayer(m.player2GemId, m.player2Name),
-						isWinner: m.winner === 'player2'
-					}
-				});
+				// Hard-coded top-8 bracket display, top-to-bottom:
+				//   1v8 / 4v5 / 3v6 / 2v7.
+				// We don't try to match this back to whichever actual pairings
+				// the tournament ran — we just render the traditional bracket
+				// shape using the top-8 finishers by placement, and infer
+				// winners from placement (seeds 1–4 won their QF, seeds 5–8
+				// lost). This gives every event a clean, consistent bracket
+				// visual regardless of how re-seeding or upsets played out.
+				const HARDCODED_QF_PAIRS = [
+					[1, 8],
+					[4, 5],
+					[3, 6],
+					[2, 7]
+				];
 
-				// Create player to seed mapping from results
-				const playerSeeds = new Map();
-				top8Players.forEach((p, idx) => {
-					const key = playerKeyFromIdName(p.gemId, p.playerName);
-					playerSeeds.set(key, idx + 1);
-				});
+				// top8Players is already sorted by placement — index 0 is the
+				// event winner (seed 1), index 7 is 8th place (seed 8).
+				const bySeed = (seed) => top8Players[seed - 1] || null;
 
-				const getSeed = (gemId, name) => {
-					return playerSeeds.get(playerKeyFromIdName(gemId, name)) || 0;
+				const virtualBracketPlayer = (seed) => {
+					const p = bySeed(seed);
+					if (!p) return { seed, name: null, gemId: null, hero: null, isWinner: false };
+					return {
+						seed,
+						name: p.playerName,
+						gemId: p.gemId,
+						// Prefer the hero already enriched onto the placement
+						// row; fall back to a fresh lookup if it's missing.
+						hero: p.hero || getHeroForPlayer(p.gemId, p.playerName),
+						// Seeds 1–4 all advanced past QF (finished in top 4).
+						isWinner: seed <= 4
+					};
 				};
 
-				// Standard bracket seeding: 1v8, 4v5, 2v7, 3v6
-				const qfMatches = thirdLastRoundMatches.sort((a, b) => (a.table || 0) - (b.table || 0));
-				const sfMatches = secondLastRoundMatches.sort((a, b) => (a.table || 0) - (b.table || 0));
-				const finalsMatch = lastRoundMatches[0];
+				const virtualSFPlayer = (seed) => {
+					// Seeds 1–2 advanced past SF (finished in top 2).
+					const base = virtualBracketPlayer(seed);
+					return { ...base, isWinner: seed <= 2 };
+				};
+
+				const virtualFinalsPlayer = (seed) => {
+					// Only seed 1 advanced past finals.
+					const base = virtualBracketPlayer(seed);
+					return { ...base, isWinner: seed === 1 };
+				};
 
 				top8Bracket = {
-					quarterfinals: qfMatches.map((m) => {
-						const seed1 = getSeed(m.player1GemId, m.player1Name);
-						const seed2 = getSeed(m.player2GemId, m.player2Name);
-						return formatBracketMatch(m, seed1, seed2);
-					}),
-					semifinals: sfMatches.map((m) => {
-						const seed1 = getSeed(m.player1GemId, m.player1Name);
-						const seed2 = getSeed(m.player2GemId, m.player2Name);
-						return formatBracketMatch(m, seed1, seed2);
-					}),
-					finals: (() => {
-						const seed1 = getSeed(finalsMatch.player1GemId, finalsMatch.player1Name);
-						const seed2 = getSeed(finalsMatch.player2GemId, finalsMatch.player2Name);
-						return formatBracketMatch(finalsMatch, seed1, seed2);
-					})(),
-					champion: {
-						name:
-							finalsMatch.winner === 'player1' ? finalsMatch.player1Name : finalsMatch.player2Name,
-						gemId:
-							finalsMatch.winner === 'player1'
-								? finalsMatch.player1GemId
-								: finalsMatch.player2GemId,
-						hero: getHeroForPlayer(
-							finalsMatch.winner === 'player1'
-								? finalsMatch.player1GemId
-								: finalsMatch.player2GemId,
-							finalsMatch.winner === 'player1' ? finalsMatch.player1Name : finalsMatch.player2Name
-						),
-						seed: getSeed(
-							finalsMatch.winner === 'player1'
-								? finalsMatch.player1GemId
-								: finalsMatch.player2GemId,
-							finalsMatch.winner === 'player1' ? finalsMatch.player1Name : finalsMatch.player2Name
-						)
-					}
+					quarterfinals: HARDCODED_QF_PAIRS.map(([sA, sB]) => ({
+						player1: virtualBracketPlayer(sA),
+						player2: virtualBracketPlayer(sB)
+					})),
+					// SF top: winners of the 1v8 and 4v5 slots (seeds 1 and 4).
+					// SF bottom: winners of the 3v6 and 2v7 slots (seeds 3 and 2).
+					semifinals: [
+						{ player1: virtualSFPlayer(1), player2: virtualSFPlayer(4) },
+						{ player1: virtualSFPlayer(3), player2: virtualSFPlayer(2) }
+					],
+					// Finals: seeds 1 and 2 meet.
+					finals: {
+						player1: virtualFinalsPlayer(1),
+						player2: virtualFinalsPlayer(2)
+					},
+					champion: (() => {
+						const champ = top8Players[0] || null;
+						return champ
+							? {
+									name: champ.playerName,
+									gemId: champ.gemId,
+									hero: champ.hero || getHeroForPlayer(champ.gemId, champ.playerName),
+									seed: 1
+								}
+							: null;
+					})()
 				};
 			}
 		}

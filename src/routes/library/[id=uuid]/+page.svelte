@@ -180,8 +180,8 @@
 	</header>
 
 	<!-- ============ PLAYER ============ -->
-	<figure class="border-ink m-0 border-y-[3px] border-double bg-black">
-		<div class="vod-player-wrapper mx-auto w-full max-w-[1600px]">
+	<figure class="mx-auto m-0 w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
+		<div class="border-ink vod-player-wrapper border-y-[3px] border-double bg-black">
 			{#if canWatch && vodItem.muxPlaybackId}
 				<mux-player
 					playback-id={vodItem.muxPlaybackId}
