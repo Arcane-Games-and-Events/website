@@ -42,25 +42,29 @@ export const CACHE_TTL = {
 // a genuinely missing config surfaces on the first cache call, and the
 // primitives' try/catch below converts that into a graceful DB fallback
 // (with a loud console warning) rather than a site-wide outage.
-let _client = null;
-let _warned = false;
+//
+// The client and warning flag are cached on globalThis so Vite HMR
+// doesn't create a new client on every server-file save. Upstash uses
+// HTTP so old clients wouldn't leak connections, but we still want the
+// warning to only fire once per Node process lifetime.
+const g = /** @type {any} */ (globalThis);
 function getRedis() {
-	if (_client) return _client;
+	if (g.__ageRedisClient) return g.__ageRedisClient;
 	if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
-		if (!_warned) {
+		if (!g.__ageRedisWarned) {
 			console.warn(
 				'[redis] UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN missing — ' +
 					'cache primitives will bypass Redis and hit the DB directly. See .env.example.'
 			);
-			_warned = true;
+			g.__ageRedisWarned = true;
 		}
 		return null;
 	}
-	_client = new Redis({
+	g.__ageRedisClient = new Redis({
 		url: env.UPSTASH_REDIS_REST_URL,
 		token: env.UPSTASH_REDIS_REST_TOKEN
 	});
-	return _client;
+	return g.__ageRedisClient;
 }
 
 /**

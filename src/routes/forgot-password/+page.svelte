@@ -1,163 +1,128 @@
 <script>
-	import '../../app.css';
+	import AgeShell from '$lib/components/age/AgeShell.svelte';
+	import AuthSplit from '$lib/components/age/auth/AuthSplit.svelte';
+
 	export let form;
 </script>
 
 <svelte:head>
-	<title>Forgot Password - AGE</title>
+	<title>Forgot password — AGE</title>
 </svelte:head>
 
-<!-- Full page background - placeholder for custom bg image -->
-<div class="relative min-h-screen w-full bg-gray-950">
-	<!-- Background placeholder - replace with actual image -->
-	<div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-950 to-black">
-		<!-- Decorative elements -->
-		<div class="absolute inset-0 opacity-30">
-			<div class="absolute top-0 left-0 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl"></div>
-			<div class="absolute right-0 bottom-0 h-96 w-96 rounded-full bg-purple-500/10 blur-3xl"></div>
-		</div>
-	</div>
+<AgeShell>
+	<AuthSplit
+		image="https://www.age.events/banner/age-open-banner.webp"
+		vlabel="Account · AGE"
+		kicker="Password reset"
+		bullets={[
+			"We'll email you a link to set a new password",
+			'The link expires within 30 minutes for security',
+			'Same account, same content, same standings'
+		]}
+	>
+		{#snippet headline()}
+			Let's get you <em class="text-[#f4c66a] italic font-medium">back in</em>.
+		{/snippet}
 
-	<!-- Main content -->
-	<div class="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
-		<!-- Split Card Container -->
-		<div class="flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl shadow-2xl lg:flex-row">
-			<!-- Left Side - Promotional Panel -->
-			<div
-				class="relative flex min-h-[200px] w-full flex-col justify-between bg-gray-900 p-8 lg:min-h-[500px] lg:w-5/12 lg:p-10"
-			>
-				<!-- Logo -->
-				<div>
-					<a href="/">
-						<img src="/logo.svg" alt="AGE" class="h-8 w-auto" />
-					</a>
-					<h1 class="mt-8 text-4xl leading-tight font-bold text-white lg:text-5xl">
-						Reset<br />Password
-					</h1>
-					<p class="mt-4 text-gray-400">We'll help you get back into your account.</p>
-				</div>
-
-				<!-- Decorative Image Placeholder -->
-				<div class="pointer-events-none absolute inset-0 overflow-hidden">
-					<!-- Placeholder for decorative wave/particle image -->
+		{#snippet formContent()}
+			{#if form?.success}
+				<!-- Success state — email dispatched (or would have been if the address is valid) -->
+				<div class="text-center">
 					<div
-						class="absolute right-0 bottom-0 left-0 h-2/3 bg-gradient-to-t from-blue-500/5 to-transparent"
-					></div>
-					<svg
-						class="absolute right-0 bottom-0 left-0 h-48 w-full text-blue-500/20"
-						viewBox="0 0 400 200"
-						preserveAspectRatio="none"
+						class="border-prem/40 bg-prem/10 text-prem mx-auto mb-[26px] flex h-[64px] w-[64px] items-center justify-center border"
 					>
-						<path
-							d="M0,100 C100,150 200,50 300,100 C350,125 380,90 400,100 L400,200 L0,200 Z"
-							fill="currentColor"
+						<svg
+							viewBox="0 0 24 24"
+							class="h-8 w-8"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.8"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M5 13l4 4L19 7" />
+						</svg>
+					</div>
+					<div class="text-accent mb-3 text-[10.5px] font-bold tracking-[0.2em] uppercase">
+						Check your email
+					</div>
+					<h1
+						class="font-newsreader mb-[14px] text-[38px] leading-[1] font-semibold tracking-[-0.02em]"
+					>
+						On its way.
+					</h1>
+					<p class="text-soft mx-auto mb-[28px] max-w-[380px] text-[14px] leading-[1.55]">
+						If an account exists for that email, we've sent password reset instructions. The link
+						will expire in 30 minutes — check your spam folder if it doesn't show up in a few
+						minutes.
+					</p>
+					<a
+						href="/login"
+						class="border-ink text-ink hover:bg-ink hover:text-paper-bg inline-flex items-center justify-center gap-2 border-[1.5px] bg-transparent px-[26px] py-[13px] text-[12px] font-extrabold tracking-[0.06em] uppercase transition-colors"
+					>
+						← Back to sign in
+					</a>
+				</div>
+			{:else}
+				<header class="mb-[30px]">
+					<div class="text-accent mb-3 text-[10.5px] font-bold tracking-[0.2em] uppercase">
+						Password reset
+					</div>
+					<h1
+						class="font-newsreader mb-[10px] text-[42px] leading-none font-semibold tracking-[-0.02em]"
+					>
+						Forgot your password?
+					</h1>
+					<div class="text-soft text-sm leading-[1.5]">
+						Enter the email tied to your AGE account and we'll send you a reset link.
+					</div>
+				</header>
+
+				{#if form?.error}
+					<div
+						class="border-warm bg-warm/10 text-warm mb-5 border-[1.5px] px-4 py-3 text-[12px] font-semibold tracking-[0.04em] uppercase"
+					>
+						{form.error}
+					</div>
+				{/if}
+
+				<form method="POST">
+					<!-- email -->
+					<div class="mb-[22px]">
+						<label
+							for="email"
+							class="text-soft mb-[7px] block text-[11px] font-extrabold tracking-[0.08em] uppercase"
+						>
+							Email
+						</label>
+						<input
+							id="email"
+							name="email"
+							type="email"
+							autocomplete="email"
+							required
+							placeholder="you@example.com"
+							class="border-line2 hover:border-ink focus:border-ink bg-paper text-ink placeholder:text-fade w-full border-[1.5px] px-[15px] py-[13px] text-sm transition-colors outline-none"
 						/>
-					</svg>
-				</div>
-			</div>
-
-			<!-- Right Side - Forgot Password Form -->
-			<div
-				class="w-full border-l border-white/5 bg-gray-900/50 p-8 backdrop-blur-sm lg:w-7/12 lg:p-12"
-			>
-				<div class="mx-auto max-w-sm">
-					{#if form?.success}
-						<!-- Success State -->
-						<div class="py-8 text-center">
-							<div
-								class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20"
-							>
-								<svg
-									class="h-8 w-8 text-green-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M5 13l4 4L19 7"
-									/>
-								</svg>
-							</div>
-							<h2 class="mb-2 text-2xl font-bold text-white">Check your email</h2>
-							<p class="mb-8 text-sm text-gray-400">
-								If an account exists with that email, we've sent password reset instructions.
-							</p>
-							<a
-								href="/login"
-								class="inline-flex justify-center rounded-lg bg-gray-800 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-700"
-							>
-								Back to login
-							</a>
-						</div>
-					{:else}
-						<!-- Header -->
-						<div class="mb-8 text-center">
-							<h2 class="text-2xl font-bold text-white">Forgot Password</h2>
-							<p class="mt-2 text-sm text-gray-400">
-								Enter your email to receive reset instructions.
-							</p>
-						</div>
-
-						<!-- Error Message -->
-						{#if form?.error}
-							<div class="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
-								<p class="text-sm text-red-400">{form.error}</p>
-							</div>
-						{/if}
-
-						<form method="POST" class="space-y-6">
-							<!-- Email Field -->
-							<div>
-								<label for="email" class="mb-1.5 block text-sm font-medium text-gray-300"
-									>Email</label
-								>
-								<input
-									id="email"
-									type="email"
-									name="email"
-									required
-									placeholder="you@example.com"
-									autocomplete="email"
-									class="block w-full rounded-lg bg-white/5 px-4 py-3 text-base text-white outline outline-1 -outline-offset-1 outline-gray-700 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-500 sm:text-sm"
-								/>
-								<p class="mt-2 text-xs text-gray-500">
-									Enter the email address associated with your account.
-								</p>
-							</div>
-
-							<!-- Submit Button -->
-							<button
-								type="submit"
-								class="flex w-full justify-center rounded-lg bg-gray-800 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-							>
-								Send Reset Link
-							</button>
-						</form>
-
-						<!-- Back to Login Link -->
-						<p class="mt-8 text-center text-sm text-gray-400">
-							Remember your password?
-							<a
-								href="/login"
-								class="font-semibold text-white transition-colors hover:text-blue-400"
-							>
-								Sign in
-							</a>
+						<p class="text-fade mt-[8px] text-[11.5px] font-semibold">
+							The email address associated with your account.
 						</p>
-					{/if}
-				</div>
-			</div>
-		</div>
+					</div>
 
-		<!-- Footer -->
-		<div
-			class="absolute right-0 bottom-4 left-0 flex items-center justify-between px-8 text-xs text-gray-500"
-		>
-			<p>Copyright &copy;{new Date().getFullYear()} AGE</p>
-			<a href="/privacy" class="transition-colors hover:text-gray-400">Privacy policy</a>
-		</div>
-	</div>
-</div>
+					<button
+						type="submit"
+						class="border-prem bg-prem inline-flex w-full items-center justify-center gap-2 border-[1.5px] px-[26px] py-[16px] text-[13px] font-bold tracking-[0.05em] text-white uppercase transition-[filter] hover:brightness-110"
+					>
+						Send reset link →
+					</button>
+				</form>
+
+				<div class="text-soft mt-6 text-center text-[13px]">
+					Remembered it?
+					<a class="text-accent font-bold" href="/login">Sign in</a>
+				</div>
+			{/if}
+		{/snippet}
+	</AuthSplit>
+</AgeShell>

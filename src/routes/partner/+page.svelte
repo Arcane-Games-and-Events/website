@@ -1,5 +1,7 @@
 <script>
+	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import { onMount } from 'svelte';
+
 	export let data;
 
 	$: p = data.partner;
@@ -32,168 +34,380 @@
 			day: 'numeric'
 		});
 	}
+
+	function statusChip(status, readyToPay) {
+		if (status === 'paid') return { label: 'Paid', tone: 'prem' };
+		if (readyToPay) return { label: 'Processing', tone: 'accent' };
+		return { label: 'Pending', tone: 'warm' };
+	}
+
+	function chipClass(tone) {
+		if (tone === 'accent') return 'text-accent border-accent/40 bg-accent/10';
+		if (tone === 'prem') return 'text-prem border-prem/40 bg-prem/10';
+		if (tone === 'warm') return 'text-warm border-warm/40 bg-warm/10';
+		return 'text-soft border-line2 bg-paper-bg';
+	}
 </script>
 
 <svelte:head>
-	<title>Partner Dashboard - AGE</title>
+	<title>Partner Dashboard — AGE</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-950">
-	<div class="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-		<!-- Header -->
-		<div class="mb-8">
-			<div class="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1">
-				<svg class="h-4 w-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
-					<path
-						fill-rule="evenodd"
-						d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-						clip-rule="evenodd"
-					/>
-				</svg>
-				<span class="text-xs font-semibold text-emerald-400">AGE Partner</span>
+<AgeShell active="">
+	<div class="mx-auto w-full max-w-[1600px] px-4 pt-10 pb-[52px] md:px-10 lg:px-14">
+		<!-- ============ HEADER ============ -->
+		<div
+			class="bg-paper border-line2 border-t-prem mb-[26px] grid grid-cols-1 items-end gap-6 border border-t-[3px] px-[26px] py-[26px] md:grid-cols-[1fr_auto] md:px-[34px] md:py-[30px]"
+		>
+			<div>
+				<div class="mb-[10px] flex flex-wrap items-center gap-[10px]">
+					<span
+						class="text-fade font-mono-system inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.16em] uppercase"
+					>
+						<span class="bg-prem inline-block h-[6px] w-[6px] rounded-full"></span>
+						AGE Partner
+					</span>
+					{#if p.isActive}
+						<span
+							class="border-prem/40 bg-prem/10 text-prem inline-flex items-center gap-[6px] border px-[10px] py-[4px] text-[10px] font-extrabold tracking-[0.1em] uppercase"
+						>
+							Active
+						</span>
+					{:else}
+						<span
+							class="border-warm/40 bg-warm/10 text-warm inline-flex items-center gap-[6px] border px-[10px] py-[4px] text-[10px] font-extrabold tracking-[0.1em] uppercase"
+						>
+							Paused
+						</span>
+					{/if}
+				</div>
+				<h1
+					class="font-newsreader mb-2 text-[38px] leading-[0.9] font-semibold tracking-[-0.02em] sm:text-[46px]"
+				>
+					Partner Dashboard
+				</h1>
+				<p class="text-soft max-w-[560px] text-[14.5px] leading-[1.5]">
+					Track your referrals and earnings. Payouts are sent every 30 days via direct deposit.
+				</p>
 			</div>
-			<h1 class="text-3xl font-bold text-white sm:text-4xl">Partner Dashboard</h1>
-			<p class="mt-2 text-gray-400">
-				Track your referrals and earnings. Payouts are sent every 30 days via direct deposit.
-			</p>
+
+			<div
+				class="border-line2 flex flex-col items-center justify-center self-stretch border px-[22px] py-[16px] text-center"
+			>
+				<div class="font-newsreader text-[38px] leading-[0.8] font-semibold tabular-nums">
+					{totals.count}
+				</div>
+				<div class="text-fade mt-2 text-[10px] font-extrabold tracking-[0.12em] uppercase">
+					Referrals
+				</div>
+			</div>
 		</div>
 
-		<!-- Paused status banner -->
+		<!-- ============ PAUSED WARNING ============ -->
 		{#if !p.isActive}
 			<div
-				class="mb-6 flex items-start gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4"
+				class="border-warm/40 bg-warm/10 text-warm mb-[26px] flex items-start gap-[14px] border-[1.5px] px-[22px] py-[16px]"
 			>
 				<svg
-					class="mt-0.5 h-5 w-5 shrink-0 text-amber-400"
+					viewBox="0 0 24 24"
+					class="mt-[2px] h-5 w-5 flex-shrink-0"
 					fill="none"
 					stroke="currentColor"
-					stroke-width="1.5"
-					viewBox="0 0 24 24"
+					stroke-width="1.8"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
 				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-					/>
+					<circle cx="12" cy="12" r="9" />
+					<path d="M12 8v5M12 16h.01" />
 				</svg>
-				<div>
-					<p class="text-sm font-semibold text-amber-300">Your partner status is paused</p>
-					<p class="mt-1 text-xs text-amber-200/80">
+				<div class="text-[13px] leading-[1.5]">
+					<div class="mb-[3px] font-extrabold tracking-[0.02em] uppercase">
+						Your partner status is paused
+					</div>
+					<div class="text-warm/90 font-semibold">
 						Your promo code is currently inactive — new signups won't be credited to you. Your past
 						referrals and pending payouts are unaffected. Reach out if you have questions.
-					</p>
+					</div>
 				</div>
 			</div>
 		{/if}
 
-		<!-- Promo link -->
-		<div class="mb-8 rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-gray-900 p-6">
-			<p class="text-xs tracking-wider text-emerald-400 uppercase">Your partner link</p>
-			<div class="mt-3 flex items-center gap-3">
+		<!-- ============ PARTNER LINK CARD ============ -->
+		<div
+			class="bg-paper border-line2 mb-[26px] border p-[24px] md:p-[30px]"
+		>
+			<div class="mb-[14px] flex flex-wrap items-baseline justify-between gap-3">
+				<div class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase">
+					Your partner link
+				</div>
+				<div class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase">
+					Promo Code
+					<span class="text-ink ml-[6px] font-bold tracking-[0.04em]">{p.code}</span>
+				</div>
+			</div>
+			<div class="flex flex-col gap-[10px] sm:flex-row sm:items-stretch">
 				<code
-					class="flex-1 truncate rounded-lg border border-gray-800 bg-gray-900 px-4 py-3 font-mono text-sm text-white"
-					>{partnerLink}</code
+					class="border-line2 bg-paper-bg text-ink font-mono-system min-w-0 flex-1 truncate border px-[15px] py-[13px] text-[13px] font-bold tracking-[0.02em]"
 				>
+					{partnerLink}
+				</code>
 				<button
 					type="button"
-					on:click={copyLink}
-					class="rounded-lg bg-emerald-500 px-4 py-3 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
+					onclick={copyLink}
+					class="border-prem bg-prem inline-flex items-center justify-center gap-2 border-[1.5px] px-[22px] py-[13px] text-[11px] font-extrabold tracking-[0.08em] text-white uppercase transition-[filter] hover:brightness-110"
 				>
-					{copied ? 'Copied!' : 'Copy'}
+					{copied ? '✓ Copied' : 'Copy link'}
 				</button>
 			</div>
-			<p class="mt-3 text-sm text-gray-400">
+			<p class="text-soft mt-[16px] text-[13.5px] leading-[1.55]">
 				Share this link in your content and social media. Anyone who signs up for AGE Premium
-				through it gets <span class="font-semibold text-white">$5 off</span> their first charge,
-				and you earn a <span class="font-semibold text-emerald-400">$5 commission</span>.
-			</p>
-			<p class="mt-2 text-xs text-gray-500">
-				Promo code: <code class="font-mono font-medium text-emerald-400">{p.code}</code>
+				through it gets <span class="text-ink font-bold">$5 off</span> their first charge, and you
+				earn a <span class="text-prem font-bold">$5 commission</span>.
 			</p>
 		</div>
 
-		<!-- Totals -->
-		<div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-			<div class="rounded-xl border border-gray-800 bg-gray-900/50 p-5">
-				<p class="text-xs tracking-wider text-gray-500 uppercase">Total Referrals</p>
-				<p class="mt-1 text-3xl font-bold text-white">{totals.count}</p>
+		<!-- ============ TOTALS ============ -->
+		<div class="mb-[26px] grid grid-cols-1 gap-[14px] sm:grid-cols-3">
+			<div class="bg-paper border-line2 border p-[22px]">
+				<div class="text-fade font-mono-system mb-2 text-[10px] font-extrabold tracking-[0.16em] uppercase">
+					Total Referrals
+				</div>
+				<div class="font-newsreader text-[36px] leading-[0.8] font-semibold tabular-nums">
+					{totals.count}
+				</div>
 			</div>
-			<div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5">
-				<p class="text-xs tracking-wider text-amber-400 uppercase">Pending Payout</p>
-				<p class="mt-1 text-3xl font-bold text-white">{fmt(totals.pending)}</p>
+			<div class="bg-paper border-line2 border-t-warm border border-t-[3px] p-[22px]">
+				<div class="text-warm font-mono-system mb-2 text-[10px] font-extrabold tracking-[0.16em] uppercase">
+					Pending Payout
+				</div>
+				<div class="text-warm font-newsreader text-[36px] leading-[0.8] font-semibold tabular-nums">
+					{fmt(totals.pending)}
+				</div>
 			</div>
-			<div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-5">
-				<p class="text-xs tracking-wider text-emerald-400 uppercase">Total Earned</p>
-				<p class="mt-1 text-3xl font-bold text-white">{fmt(totals.paid)}</p>
+			<div class="bg-paper border-line2 border-t-prem border border-t-[3px] p-[22px]">
+				<div class="text-prem font-mono-system mb-2 text-[10px] font-extrabold tracking-[0.16em] uppercase">
+					Total Earned
+				</div>
+				<div class="text-prem font-newsreader text-[36px] leading-[0.8] font-semibold tabular-nums">
+					{fmt(totals.paid)}
+				</div>
 			</div>
 		</div>
 
-		<!-- Referrals list -->
-		<div class="rounded-xl border border-gray-800 bg-gray-900/50">
-			<div class="border-b border-gray-800 px-6 py-4">
-				<h2 class="text-lg font-semibold text-white">Your Referrals</h2>
-			</div>
+		<!-- ============ REFERRALS ============ -->
+		<section class="bg-paper border-line2 overflow-hidden border">
+			<header
+				class="border-line2 flex flex-wrap items-center justify-between gap-3 border-b px-[24px] py-[16px]"
+			>
+				<h3
+					class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+				>
+					Your Referrals
+				</h3>
+				<span
+					class="text-fade font-mono-system text-[11px] font-bold tracking-[0.06em] tabular-nums uppercase"
+				>
+					{referrals.length} on record
+				</span>
+			</header>
 
 			{#if referrals.length === 0}
-				<div class="px-6 py-12 text-center text-gray-400">
-					<p>No referrals yet. Share your link to start earning!</p>
+				<div class="flex flex-col items-center px-6 py-[60px] text-center">
+					<span
+						class="border-line2 text-fade mb-4 flex h-[52px] w-[52px] items-center justify-center border"
+					>
+						<svg
+							viewBox="0 0 24 24"
+							class="h-6 w-6"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<circle cx="9" cy="8" r="3" />
+							<path d="M3 20c0-3 3-5 6-5s6 2 6 5" />
+							<circle cx="17" cy="8" r="2.5" />
+							<path d="M15 20c0-2.5 2-4 4-4s4 1.5 4 4" />
+						</svg>
+					</span>
+					<h4
+						class="font-newsreader mb-2 text-[22px] leading-[1] font-semibold tracking-[-0.01em]"
+					>
+						No referrals yet
+					</h4>
+					<p class="text-soft text-[13.5px]">
+						Share your link to start earning — new signups appear here immediately.
+					</p>
 				</div>
 			{:else}
-				<table class="w-full text-sm">
-					<thead
-						class="border-b border-gray-800 text-left text-xs tracking-wider text-gray-500 uppercase"
-					>
-						<tr>
-							<th class="px-6 py-3">Referred</th>
-							<th class="px-6 py-3">Plan</th>
-							<th class="px-6 py-3 text-right">Commission</th>
-							<th class="px-6 py-3">Signed up</th>
-							<th class="px-6 py-3">Payout due</th>
-							<th class="px-6 py-3">Status</th>
-						</tr>
-					</thead>
-					<tbody class="divide-y divide-gray-800">
-						{#each referrals as r}
-							<tr class="hover:bg-gray-800/30">
-								<td class="px-6 py-3 text-white">{r.referredFirstName || '—'}</td>
-								<td class="px-6 py-3 text-gray-300 capitalize">{r.subscriptionType}</td>
-								<td class="px-6 py-3 text-right text-white">{fmt(r.commissionAmount)}</td>
-								<td class="px-6 py-3 text-xs text-gray-400">{fmtDate(r.createdAt)}</td>
-								<td class="px-6 py-3 text-xs">
-									{#if r.payoutStatus === 'paid'}
-										<span class="text-gray-500">—</span>
-									{:else}
-										<span class="text-gray-300">{fmtDate(r.payoutDueAt)}</span>
-									{/if}
-								</td>
-								<td class="px-6 py-3">
-									{#if r.payoutStatus === 'paid'}
-										<span
-											class="rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-medium text-emerald-400"
-										>
-											Paid {r.paidAt ? fmtDate(r.paidAt) : ''}
-										</span>
-									{:else if r.readyToPay}
-										<span
-											class="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400"
-											>Processing payout</span
-										>
-									{:else}
-										<span
-											class="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-400"
-											>Pending</span
-										>
-									{/if}
-								</td>
+				<!-- Desktop table -->
+				<div class="hidden overflow-x-auto md:block">
+					<table class="w-full">
+						<thead>
+							<tr
+								class="border-line2 border-b"
+								style="background: color-mix(in srgb, var(--ed-paper-bg) 60%, transparent);"
+							>
+								<th
+									class="text-fade font-mono-system px-[20px] py-[14px] text-left text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Referred
+								</th>
+								<th
+									class="text-fade font-mono-system px-[20px] py-[14px] text-left text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Plan
+								</th>
+								<th
+									class="text-fade font-mono-system px-[20px] py-[14px] text-right text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Commission
+								</th>
+								<th
+									class="text-fade font-mono-system px-[20px] py-[14px] text-left text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Signed up
+								</th>
+								<th
+									class="text-fade font-mono-system px-[20px] py-[14px] text-left text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Payout due
+								</th>
+								<th
+									class="text-fade font-mono-system px-[20px] py-[14px] text-center text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								>
+									Status
+								</th>
 							</tr>
-						{/each}
-					</tbody>
-				</table>
-			{/if}
-		</div>
+						</thead>
+						<tbody>
+							{#each referrals as r, i (r.id)}
+								{@const chip = statusChip(r.payoutStatus, r.readyToPay)}
+								<tr
+									class="border-line2 odd:bg-paper even:bg-paper-bg/40 hover:!bg-paper-bg transition-colors {i ===
+									referrals.length - 1
+										? ''
+										: 'border-b'}"
+								>
+									<td class="px-[20px] py-[16px]">
+										<span class="text-ink text-[14px] font-semibold">
+											{r.referredFirstName || '—'}
+										</span>
+									</td>
+									<td class="px-[20px] py-[16px]">
+										<span
+											class="border-line2 bg-paper-bg text-soft font-mono-system inline-block border px-[9px] py-[3px] text-[10px] font-extrabold tracking-[0.08em] uppercase"
+										>
+											{r.subscriptionType}
+										</span>
+									</td>
+									<td class="px-[20px] py-[16px] text-right">
+										<span class="text-ink font-mono-system text-[14px] font-bold tabular-nums">
+											{fmt(r.commissionAmount)}
+										</span>
+									</td>
+									<td class="text-soft font-mono-system px-[20px] py-[16px] text-[11.5px] font-bold tracking-[0.02em] tabular-nums uppercase">
+										{fmtDate(r.createdAt)}
+									</td>
+									<td class="px-[20px] py-[16px]">
+										{#if r.payoutStatus === 'paid'}
+											<span class="text-fade">—</span>
+										{:else}
+											<span
+												class="text-soft font-mono-system text-[11.5px] font-bold tracking-[0.02em] tabular-nums uppercase"
+											>
+												{fmtDate(r.payoutDueAt)}
+											</span>
+										{/if}
+									</td>
+									<td class="px-[20px] py-[16px] text-center">
+										<span
+											class="inline-flex items-center gap-[6px] border px-[10px] py-[4px] text-[10px] font-extrabold tracking-[0.1em] uppercase {chipClass(
+												chip.tone
+											)}"
+										>
+											{chip.label}
+											{#if r.payoutStatus === 'paid' && r.paidAt}
+												<span class="opacity-70">· {fmtDate(r.paidAt)}</span>
+											{/if}
+										</span>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
 
-		<p class="mt-6 text-center text-xs text-gray-500">
+				<!-- Mobile cards -->
+				<div class="divide-line2 divide-y md:hidden">
+					{#each referrals as r (r.id)}
+						{@const chip = statusChip(r.payoutStatus, r.readyToPay)}
+						<div class="px-[20px] py-[18px]">
+							<div class="mb-[10px] flex items-start justify-between gap-3">
+								<div class="min-w-0">
+									<div class="text-ink text-[15px] font-semibold">
+										{r.referredFirstName || '—'}
+									</div>
+									<div class="text-fade font-mono-system mt-[3px] text-[10.5px] font-bold tracking-[0.06em] uppercase">
+										{r.subscriptionType} · {fmtDate(r.createdAt)}
+									</div>
+								</div>
+								<span
+									class="inline-flex flex-shrink-0 items-center gap-[6px] border px-[9px] py-[4px] text-[10px] font-extrabold tracking-[0.08em] uppercase {chipClass(
+										chip.tone
+									)}"
+								>
+									{chip.label}
+								</span>
+							</div>
+							<div class="border-line2 mt-[10px] flex items-center justify-between border-t pt-[10px]">
+								<span
+									class="text-fade font-mono-system text-[10.5px] font-bold tracking-[0.08em] uppercase"
+								>
+									Commission
+								</span>
+								<span class="text-ink font-mono-system text-[14px] font-bold tabular-nums">
+									{fmt(r.commissionAmount)}
+								</span>
+							</div>
+							{#if r.payoutStatus !== 'paid'}
+								<div class="flex items-center justify-between mt-[6px]">
+									<span
+										class="text-fade font-mono-system text-[10.5px] font-bold tracking-[0.08em] uppercase"
+									>
+										Payout due
+									</span>
+									<span
+										class="text-soft font-mono-system text-[11.5px] font-bold tracking-[0.02em] tabular-nums uppercase"
+									>
+										{fmtDate(r.payoutDueAt)}
+									</span>
+								</div>
+							{:else if r.paidAt}
+								<div class="flex items-center justify-between mt-[6px]">
+									<span
+										class="text-fade font-mono-system text-[10.5px] font-bold tracking-[0.08em] uppercase"
+									>
+										Paid on
+									</span>
+									<span
+										class="text-soft font-mono-system text-[11.5px] font-bold tracking-[0.02em] tabular-nums uppercase"
+									>
+										{fmtDate(r.paidAt)}
+									</span>
+								</div>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</section>
+
+		<p class="text-fade mt-[26px] text-center text-[12px] font-semibold tracking-[0.02em]">
 			Questions about the program? Reach out to us directly for support.
 		</p>
 	</div>
-</div>
+</AgeShell>

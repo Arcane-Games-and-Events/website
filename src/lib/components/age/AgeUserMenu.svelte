@@ -17,6 +17,7 @@
 
 	const assignedEventsCount = $derived($page.data?.assignedEventsCount ?? 0);
 	const isStaff = $derived(assignedEventsCount > 0);
+	const isPartner = $derived($page.data?.isPartner ?? false);
 
 	let open = $state(false);
 
@@ -72,6 +73,7 @@
 	const ITEMS = $derived([
 		{ label: 'Account', href: '/account' },
 		{ label: 'Refer a Friend', href: '/account/referrals' },
+		...(isPartner ? [{ label: 'Partner', href: '/partner' }] : []),
 		...(isStaff ? [{ label: 'Staff', href: '/staff', badge: assignedEventsCount }] : []),
 		...(isAdmin ? [{ label: 'Admin', href: '/admin' }] : [])
 	]);
