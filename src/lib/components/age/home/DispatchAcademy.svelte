@@ -60,7 +60,7 @@
 			image: 'https://www.age.events/banner/academy-banner.webp',
 			instructor: {
 				image: 'https://www.age.events/banner/academy-banner.webp',
-				name: 'Hayley Neighbors',
+				name: 'Morgan Ellis',
 				role: 'Pro player · Lead instructor',
 				course: 'Reading the Board'
 			},
@@ -77,7 +77,7 @@
 				image: 'https://www.age.events/banner/articles-banner.webp',
 				instructor: {
 					image: '',
-					name: 'Peter Buddensiek',
+					name: 'Jordan Reeves',
 					role: 'AGE Open finalist',
 					course: 'Punishing the Mirror'
 				},
@@ -93,7 +93,7 @@
 				image: 'https://www.age.events/banner/studios-banner.webp',
 				instructor: {
 					image: '',
-					name: 'Brian Gutierrez',
+					name: 'Sam Whitfield',
 					role: 'Coach',
 					course: 'Sideboarding for Sealed'
 				},
@@ -109,7 +109,7 @@
 				image: 'https://www.age.events/banner/age-open-banner.webp',
 				instructor: {
 					image: '',
-					name: 'Ian Hsu',
+					name: 'Casey Marchetti',
 					role: 'Theory crafter',
 					course: 'Tempo & Tempo Loss'
 				},
@@ -128,7 +128,7 @@
 			accent: 'rb',
 			blurb:
 				"The complete pilot's guide to Kayo — gameplan, lines, matchups and sideboard, distilled from a season of AGE Open data.",
-			author: 'Hayley Neighbors',
+			author: 'Morgan Ellis',
 			read: '14 min'
 		},
 		restGuides: [
@@ -139,7 +139,7 @@
 				accent: 'wz',
 				blurb:
 					'Hold the spell stack, force the trades you want, and close out long games on your terms.',
-				author: 'Ian Hsu',
+				author: 'Casey Marchetti',
 				read: '11 min'
 			},
 			{
@@ -148,32 +148,32 @@
 				cls: 'Assassin',
 				accent: 'as',
 				blurb: 'A treatise on threat density, attack budgeting, and finding lethal a turn early.',
-				author: 'Alexander Vore',
+				author: 'Riley Delacroix',
 				read: '10 min'
 			}
 		],
 		instructors: [
 			{
 				image: 'https://www.age.events/banner/articles-banner.webp',
-				name: 'Hayley Neighbors',
+				name: 'Morgan Ellis',
 				role: 'Pro player',
 				course: 'Reading the Board'
 			},
 			{
 				image: 'https://www.age.events/banner/age-open-banner.webp',
-				name: 'Ian Hsu',
+				name: 'Casey Marchetti',
 				role: 'Theory crafter',
 				course: 'Tempo & Tempo Loss'
 			},
 			{
 				image: 'https://www.age.events/banner/studios-banner.webp',
-				name: 'Brian Gutierrez',
+				name: 'Sam Whitfield',
 				role: 'Coach',
 				course: 'Sideboarding for Sealed'
 			},
 			{
 				image: 'https://www.age.events/banner/academy-banner.webp',
-				name: 'Peter Buddensiek',
+				name: 'Jordan Reeves',
 				role: 'AGE Open finalist',
 				course: 'Punishing the Mirror'
 			}
