@@ -8,8 +8,11 @@ import {
 	boolean,
 	decimal,
 	real,
-	unique
+	unique,
+	primaryKey,
+	index
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 // User table with auth and role support
 export const user = pgTable('user', {
@@ -23,7 +26,18 @@ export const user = pgTable('user', {
 	lastName: text('last_name').notNull(),
 	gemId: text('gem_id'), // Optional GEM ID for tournament registration
 
-	role: text('role').notNull().default('free'), // Options: 'free', 'premium', 'admin', 'writer', 'tournament staff'
+	// Billing tier — the paywall gate. Exactly one value per user.
+	role: text('role').notNull().default('free'), // 'free' | 'premium' | 'admin'
+
+	// Capability roles — stackable, independent of billing tier. A user
+	// can hold any combination of these AND their primary billing role.
+	// Options: 'writer' (author library entries), 'creator' (author
+	// courses), 'tournament staff' (event operations). Empty array = no
+	// capability roles. See src/lib/server/auth/roles.js for guards.
+	additionalRoles: text('additional_roles')
+		.array()
+		.notNull()
+		.default(sql`ARRAY[]::text[]`),
 
 	// Authorize.net Customer Profile (for saved cards)
 	customerProfileId: text('customer_profile_id'), // Authorize.net CIM customer profile ID
@@ -618,3 +632,276 @@ export const partnerReferral = pgTable('partner_referral', {
 	paidNotes: text('paid_notes'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
+
+// ============================================================================
+// CUSTOM CMS — Phase 1 foundation
+// ============================================================================
+// Powers the /cms authoring surface (writers + creators + admins) and the
+// public /library reader surface. Entries can be article-only, video-only,
+// or article+video; the video slot supports Mux upload OR pasted YouTube
+// URL (chosen per entry). Courses group multi-lesson programs; each lesson
+// reuses the same body + video model as entries.
+//
+// See docs/cms-plan.md (or /Users/justinliwag/.claude/plans/shimmering-
+// herding-map.md) for the full data model and phased rollout.
+// ============================================================================
+
+// Uploaded media — images. Videos go through Mux directly, not this table.
+// One row per uploaded file; the file itself lives in Supabase Storage.
+export const cmsMedia = pgTable('cms_media', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	uploadedBy: text('uploaded_by').references(() => user.id),
+	storagePath: text('storage_path').notNull(), // path inside the Supabase Storage bucket
+	url: text('url').notNull(), // public URL (or signed URL for private buckets)
+	mimeType: text('mime_type'),
+	width: integer('width'),
+	height: integer('height'),
+	alt: text('alt'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// Tags shared across entries. Slug uniqueness is enforced at the DB layer.
+export const cmsTag = pgTable('cms_tag', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	slug: text('slug').notNull().unique(),
+	name: text('name').notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// Library entry — the flagship content object. One row per article, video,
+// or article+video piece. Nullable body + nullable video fields let the
+// same table serve all three shapes without a discriminator column.
+//
+// Draft-buffer columns hold staged edits to already-published entries;
+// they don't affect the live version until an admin approves. On draft
+// entries (status='draft'), the primary columns hold the current draft
+// state and the `draft_*` columns stay null.
+export const cmsEntry = pgTable(
+	'cms_entry',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		slug: text('slug').notNull().unique(),
+		title: text('title').notNull(),
+		excerpt: text('excerpt'),
+
+		// Images. Thumbnail defaults to cover at render time when null.
+		coverImageId: uuid('cover_image_id').references(() => cmsMedia.id),
+		thumbnailImageId: uuid('thumbnail_image_id').references(() => cmsMedia.id),
+
+		// Article body — Lexical JSON tree. Null for video-only entries.
+		body: jsonb('body'),
+		readTime: integer('read_time'), // minutes, auto-calculated
+
+		// Featured video slot. `video_provider` is 'mux' | 'youtube' | null.
+		// Only one provider's columns are populated at a time.
+		videoProvider: text('video_provider'),
+		// Mux-side
+		muxUploadId: text('mux_upload_id'),
+		muxAssetId: text('mux_asset_id'),
+		muxPlaybackId: text('mux_playback_id'),
+		videoStatus: text('video_status'), // 'preparing' | 'ready' | 'errored'
+		videoDuration: integer('video_duration'), // seconds
+		videoAspectRatio: text('video_aspect_ratio'),
+		// YouTube-side (metadata cached on paste)
+		youtubeUrl: text('youtube_url'),
+		youtubeVideoId: text('youtube_video_id'),
+		youtubeTitle: text('youtube_title'),
+		youtubeThumbnailUrl: text('youtube_thumbnail_url'),
+		youtubeDuration: integer('youtube_duration'), // seconds
+
+		// Access + workflow
+		accessMode: text('access_mode').notNull().default('free'), // 'free' | 'premium'
+		status: text('status').notNull().default('draft'), // 'draft' | 'scheduled' | 'published' | 'archived'
+		publishedAt: timestamp('published_at', { withTimezone: true, mode: 'date' }),
+		scheduledFor: timestamp('scheduled_for', { withTimezone: true, mode: 'date' }),
+
+		authorId: text('author_id').references(() => user.id),
+
+		// Draft buffer — populated on edits to a published/scheduled entry;
+		// admin approve/discard collapses back into the primary columns.
+		draftTitle: text('draft_title'),
+		draftExcerpt: text('draft_excerpt'),
+		draftBody: jsonb('draft_body'),
+		draftCoverImageId: uuid('draft_cover_image_id').references(() => cmsMedia.id),
+		draftThumbnailImageId: uuid('draft_thumbnail_image_id').references(() => cmsMedia.id),
+		draftReadTime: integer('draft_read_time'),
+		draftUpdatedAt: timestamp('draft_updated_at', { withTimezone: true, mode: 'date' }),
+		draftUpdatedBy: text('draft_updated_by').references(() => user.id),
+
+		// Provenance — 'custom' for CMS-native, 'payload' for migrated content
+		source: text('source').notNull().default('custom'),
+
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+	},
+	(t) => [
+		index('cms_entry_status_idx').on(t.status),
+		index('cms_entry_published_at_idx').on(t.publishedAt),
+		index('cms_entry_author_idx').on(t.authorId),
+		index('cms_entry_draft_updated_idx').on(t.draftUpdatedAt)
+	]
+);
+
+// Many-to-many join between entries and tags. Composite primary key.
+export const cmsEntryTag = pgTable(
+	'cms_entry_tag',
+	{
+		entryId: uuid('entry_id')
+			.notNull()
+			.references(() => cmsEntry.id, { onDelete: 'cascade' }),
+		tagId: uuid('tag_id')
+			.notNull()
+			.references(() => cmsTag.id, { onDelete: 'cascade' })
+	},
+	(t) => [primaryKey({ columns: [t.entryId, t.tagId] })]
+);
+
+// Course — the paid container. Groups one or more modules of lessons.
+export const cmsCourse = pgTable(
+	'cms_course',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		slug: text('slug').notNull().unique(),
+		title: text('title').notNull(),
+		description: text('description'),
+
+		coverImageId: uuid('cover_image_id').references(() => cmsMedia.id),
+		thumbnailImageId: uuid('thumbnail_image_id').references(() => cmsMedia.id),
+
+		// Trailer video — same picker shape as entries. Nullable.
+		trailerVideoProvider: text('trailer_video_provider'),
+		trailerMuxUploadId: text('trailer_mux_upload_id'),
+		trailerMuxAssetId: text('trailer_mux_asset_id'),
+		trailerMuxPlaybackId: text('trailer_mux_playback_id'),
+		trailerVideoStatus: text('trailer_video_status'),
+		trailerVideoDuration: integer('trailer_video_duration'),
+		trailerVideoAspectRatio: text('trailer_video_aspect_ratio'),
+		trailerYoutubeUrl: text('trailer_youtube_url'),
+		trailerYoutubeVideoId: text('trailer_youtube_video_id'),
+		trailerYoutubeTitle: text('trailer_youtube_title'),
+		trailerYoutubeThumbnailUrl: text('trailer_youtube_thumbnail_url'),
+		trailerYoutubeDuration: integer('trailer_youtube_duration'),
+
+		// Pricing. Premium discount is a whole-percent value (0-100).
+		price: decimal('price', { precision: 10, scale: 2 }).notNull().default('0.00'),
+		premiumDiscountPct: integer('premium_discount_pct').notNull().default(0),
+
+		status: text('status').notNull().default('draft'), // 'draft' | 'published' | 'archived'
+		publishedAt: timestamp('published_at', { withTimezone: true, mode: 'date' }),
+
+		authorId: text('author_id').references(() => user.id),
+
+		// Draft buffer for edits to a published course
+		draftTitle: text('draft_title'),
+		draftDescription: text('draft_description'),
+		draftCoverImageId: uuid('draft_cover_image_id').references(() => cmsMedia.id),
+		draftThumbnailImageId: uuid('draft_thumbnail_image_id').references(() => cmsMedia.id),
+		draftUpdatedAt: timestamp('draft_updated_at', { withTimezone: true, mode: 'date' }),
+		draftUpdatedBy: text('draft_updated_by').references(() => user.id),
+
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+	},
+	(t) => [
+		index('cms_course_status_idx').on(t.status),
+		index('cms_course_published_at_idx').on(t.publishedAt)
+	]
+);
+
+// Course module — reorderable chapter inside a course.
+export const cmsModule = pgTable(
+	'cms_module',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		courseId: uuid('course_id')
+			.notNull()
+			.references(() => cmsCourse.id, { onDelete: 'cascade' }),
+		title: text('title').notNull(),
+		position: integer('position').notNull().default(0),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+	},
+	(t) => [index('cms_module_course_position_idx').on(t.courseId, t.position)]
+);
+
+// Lesson — leaf inside a module. Body + video mirror `cmsEntry` shape.
+// `courseId` is denormalized from the parent module so we can enforce
+// slug uniqueness within a course at the DB layer (unique(course_id, slug)).
+// Server-side handlers must keep courseId in sync with the parent module.
+export const cmsLesson = pgTable(
+	'cms_lesson',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		moduleId: uuid('module_id')
+			.notNull()
+			.references(() => cmsModule.id, { onDelete: 'cascade' }),
+		courseId: uuid('course_id')
+			.notNull()
+			.references(() => cmsCourse.id, { onDelete: 'cascade' }),
+		slug: text('slug').notNull(),
+		title: text('title').notNull(),
+		position: integer('position').notNull().default(0),
+		isPreview: boolean('is_preview').notNull().default(false),
+
+		body: jsonb('body'),
+		readTime: integer('read_time'),
+
+		// Video slot — same shape as cmsEntry.
+		videoProvider: text('video_provider'),
+		muxUploadId: text('mux_upload_id'),
+		muxAssetId: text('mux_asset_id'),
+		muxPlaybackId: text('mux_playback_id'),
+		videoStatus: text('video_status'),
+		videoDuration: integer('video_duration'),
+		videoAspectRatio: text('video_aspect_ratio'),
+		youtubeUrl: text('youtube_url'),
+		youtubeVideoId: text('youtube_video_id'),
+		youtubeTitle: text('youtube_title'),
+		youtubeThumbnailUrl: text('youtube_thumbnail_url'),
+		youtubeDuration: integer('youtube_duration'),
+
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+	},
+	(t) => [
+		unique('cms_lesson_course_slug_unique').on(t.courseId, t.slug),
+		index('cms_lesson_module_position_idx').on(t.moduleId, t.position)
+	]
+);
+
+// Per-user, per-lesson progress. Compound unique (user_id, lesson_id).
+export const cmsLessonProgress = pgTable(
+	'cms_lesson_progress',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		lessonId: uuid('lesson_id')
+			.notNull()
+			.references(() => cmsLesson.id, { onDelete: 'cascade' }),
+		completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
+		lastPositionSeconds: integer('last_position_seconds').notNull().default(0),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+	},
+	(t) => [
+		unique('cms_lesson_progress_user_lesson_unique').on(t.userId, t.lessonId),
+		index('cms_lesson_progress_user_idx').on(t.userId)
+	]
+);
+
+// Revision history — shared across entries and lessons. One row per save.
+// Not queried on the hot path; used for author-visible "history" and for
+// recovery. Bodies stored raw (Lexical JSON).
+export const cmsRevision = pgTable(
+	'cms_revision',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		entityType: text('entity_type').notNull(), // 'entry' | 'lesson'
+		entityId: uuid('entity_id').notNull(),
+		body: jsonb('body').notNull(),
+		savedBy: text('saved_by').references(() => user.id),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+	},
+	(t) => [index('cms_revision_entity_idx').on(t.entityType, t.entityId, t.createdAt)]
+);
