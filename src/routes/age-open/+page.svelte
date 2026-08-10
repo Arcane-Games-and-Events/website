@@ -4826,7 +4826,7 @@
 							</p>
 							<div class="flex flex-wrap justify-center gap-4">
 								<a
-									href="mailto:info@age.events"
+									href="mailto:info@arcanegamesandevents.com"
 									class="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-600"
 								>
 									<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

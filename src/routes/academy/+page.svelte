@@ -370,7 +370,7 @@
 						</p>
 
 						<a
-							href="mailto:info@age.events?subject=Academy%20Instructor%20Interest"
+							href="mailto:info@arcanegamesandevents.com?subject=Academy%20Instructor%20Interest"
 							class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-500 to-violet-600 px-8 py-4 font-semibold text-white shadow-lg shadow-purple-500/30 transition-all duration-300 hover:scale-105 hover:shadow-purple-500/50"
 						>
 							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

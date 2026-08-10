@@ -893,7 +893,7 @@
 						</div>
 
 						<a
-							href="mailto:info@age.events?subject=Refund Request - Order #{data.order.id.substring(
+							href="mailto:info@arcanegamesandevents.com?subject=Refund Request - Order #{data.order.id.substring(
 								0,
 								8
 							)}&body=Hi, I would like to request a refund for my ticket purchase.%0A%0AOrder ID: {data
