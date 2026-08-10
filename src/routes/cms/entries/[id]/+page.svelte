@@ -14,6 +14,8 @@
 <script>
 	import { onDestroy } from 'svelte';
 	import Editor from '$lib/cms/editor/Editor.svelte';
+	import CoverImagePicker from '$lib/cms/editor/CoverImagePicker.svelte';
+	import VideoSlotPicker from '$lib/cms/editor/VideoSlotPicker.svelte';
 	import { coerceLexicalDoc } from '$lib/cms/editor/utils.js';
 
 	export let data;
@@ -48,6 +50,43 @@
 	function toLocalInput(d) {
 		const pad = (n) => String(n).padStart(2, '0');
 		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+	}
+
+	// Media pickers hold their own local state so the sidebar previews update
+	// immediately on upload without waiting for a full form save cycle.
+	let coverImage = data?.coverImage || null;
+	let thumbnailImage = data?.thumbnailImage || null;
+
+	async function patchEntry(fields) {
+		const res = await fetch(`/api/cms/entries/${entry.id}`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(fields)
+		});
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			alert(err?.message || 'Save failed');
+			return null;
+		}
+		const j = await res.json();
+		entry = j.entry;
+		status = entry.status;
+		return j.entry;
+	}
+
+	async function handleCoverChange(e) {
+		const media = e.detail;
+		coverImage = media;
+		await patchEntry({ coverImageId: media?.id || null });
+	}
+	async function handleThumbnailChange(e) {
+		const media = e.detail;
+		thumbnailImage = media;
+		await patchEntry({ thumbnailImageId: media?.id || null });
+	}
+	async function handleVideoPatch(e) {
+		const fields = e.detail || {};
+		await patchEntry(fields);
 	}
 
 	// A scheduled entry whose time has passed reads as published everywhere
@@ -366,6 +405,29 @@
 							{/if}
 						</p>
 					{/if}
+				</div>
+
+				<div class="rounded-md border border-line2 bg-paper p-4">
+					<h3 class="mb-3 text-xs font-semibold tracking-wider text-ink/60 uppercase font-mono-system">
+						Images
+					</h3>
+					<CoverImagePicker label="Cover" value={coverImage} on:change={handleCoverChange} />
+					<div class="my-4 h-px bg-line2"></div>
+					<CoverImagePicker
+						label="Thumbnail"
+						value={thumbnailImage}
+						on:change={handleThumbnailChange}
+					/>
+					<p class="mt-2 text-[11px] text-ink/50">
+						Thumbnail defaults to the cover if left empty.
+					</p>
+				</div>
+
+				<div class="rounded-md border border-line2 bg-paper p-4">
+					<h3 class="mb-3 text-xs font-semibold tracking-wider text-ink/60 uppercase font-mono-system">
+						Video
+					</h3>
+					<VideoSlotPicker target="entry" id={entry.id} {entry} on:patch={handleVideoPatch} />
 				</div>
 
 				<div class="rounded-md border border-line2 bg-paper p-4">

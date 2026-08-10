@@ -22,4 +22,18 @@ export async function getMuxThumbnailToken(playbackId) {
 	);
 }
 
+/**
+ * Cached signed Mux playback token. Used by the CMS reader pages to authorize
+ * video playback for signed-policy assets. 24h token TTL, 12h cache TTL for
+ * the same safety margin as the thumbnail token.
+ */
+export async function getMuxPlaybackToken(playbackId) {
+	if (!playbackId) return null;
+	return getCachedOrFetch(
+		`mux:playback:${playbackId}`,
+		() => mux.jwt.signPlaybackId(playbackId, { type: 'video', expiration: '24h' }),
+		CACHE_TTL.HOUR * 12
+	);
+}
+
 export default mux;

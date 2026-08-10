@@ -8,6 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@flesh-and-blood/cards':
+        specifier: ^4.0.60
+        version: 4.0.60
+      '@flesh-and-blood/search':
+        specifier: ^4.0.60
+        version: 4.0.60(@flesh-and-blood/types@4.0.54)
       '@lexical/history':
         specifier: ^0.44.0
         version: 0.44.0
@@ -640,6 +646,17 @@ packages:
   '@eslint/plugin-kit@0.4.1':
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@flesh-and-blood/cards@4.0.60':
+    resolution: {integrity: sha512-OI7cnXAODsjyFcbvAlmbRnXVO3F4ONV6T7UaXWkbXtVDseWs5JunOxlOK6Wkoz6ohTvU68dI/HKdk2DeXWZVpg==}
+
+  '@flesh-and-blood/search@4.0.60':
+    resolution: {integrity: sha512-UUtjDsZCKfXDaqoEo8DEnvKT2kKBV1fBPkbXmgMQqg/TECEgmGBNejiS4CB4/fbOmV3eJ3TdgxMLaoiFkAdRRA==}
+    peerDependencies:
+      '@flesh-and-blood/types': ^4.0.0
+
+  '@flesh-and-blood/types@4.0.54':
+    resolution: {integrity: sha512-ZuYouJF3exQsugdoJD/XKo2RJ/r4nRPKz6dEL/bXSJRfqe693ZFEWb+kgo+U2c3Gynv8hJkZc6FUKgYE7vEE0A==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -1909,6 +1926,10 @@ packages:
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
+  fuse.js@6.6.2:
+    resolution: {integrity: sha512-cJaJkxCCxC8qIIcPBF9yGxY0W/tVZS3uEISDxhYIdtk8OL93pe+6Zj7LjCqVV4dzbqcriOZ+kQ/NE4RXZHsIGA==}
+    engines: {node: '>=10'}
+
   gel@2.2.0:
     resolution: {integrity: sha512-q0ma7z2swmoamHQusey8ayo8+ilVdzDt4WTxSPzq/yRqvucWRfymRVMvNgmSC0XK7eNjjEZEcplxpgaNojKdmQ==}
     engines: {node: '>= 18.0.0'}
@@ -3028,6 +3049,17 @@ snapshots:
     dependencies:
       '@eslint/core': 0.17.0
       levn: 0.4.1
+
+  '@flesh-and-blood/cards@4.0.60':
+    dependencies:
+      '@flesh-and-blood/types': 4.0.54
+
+  '@flesh-and-blood/search@4.0.60(@flesh-and-blood/types@4.0.54)':
+    dependencies:
+      '@flesh-and-blood/types': 4.0.54
+      fuse.js: 6.6.2
+
+  '@flesh-and-blood/types@4.0.54': {}
 
   '@humanfs/core@0.19.1': {}
 
@@ -4198,6 +4230,8 @@ snapshots:
     optional: true
 
   function-bind@1.1.2: {}
+
+  fuse.js@6.6.2: {}
 
   gel@2.2.0:
     dependencies:

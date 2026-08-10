@@ -11,18 +11,34 @@ export async function load({ params, locals }) {
 	if (!entry) throw error(404, 'Entry not found');
 	if (!ownsOrAdmin(locals.user, entry.authorId)) throw error(403, 'Forbidden');
 
-	// Resolve the cover the editor should display: draft cover if buffered,
-	// otherwise the live cover.
+	// Resolve cover + thumbnail media the editor should display: draft version
+	// if buffered, otherwise the live version. Load both in parallel.
 	const editingCoverId = entry.draftCoverImageId || entry.coverImageId;
-	let coverImage = null;
-	if (editingCoverId) {
-		const [m] = await db.select().from(cmsMedia).where(eq(cmsMedia.id, editingCoverId)).limit(1);
-		coverImage = m || null;
-	}
+	const editingThumbnailId = entry.draftThumbnailImageId || entry.thumbnailImageId;
+
+	const [coverImage, thumbnailImage] = await Promise.all([
+		editingCoverId
+			? db
+					.select()
+					.from(cmsMedia)
+					.where(eq(cmsMedia.id, editingCoverId))
+					.limit(1)
+					.then((r) => r[0] || null)
+			: Promise.resolve(null),
+		editingThumbnailId
+			? db
+					.select()
+					.from(cmsMedia)
+					.where(eq(cmsMedia.id, editingThumbnailId))
+					.limit(1)
+					.then((r) => r[0] || null)
+			: Promise.resolve(null)
+	]);
 
 	return {
 		entry,
 		coverImage,
+		thumbnailImage,
 		isAdmin: isAdmin(locals.user)
 	};
 }

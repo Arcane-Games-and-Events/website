@@ -3,7 +3,7 @@
 
   Mounts on a contenteditable div, registers rich-text/list/link nodes plus
   the AGE-specific widget nodes, serializes to Lexical JSON on every change,
-  and exposes minimal formatting via a top toolbar.
+  and exposes formatting + widget insertion via a top toolbar.
 
   Usage:
     <Editor bind:value={entry.body} placeholder="Start writing…" on:change={…} on:ready={…} />
@@ -12,14 +12,19 @@
   mount as the initial state, then written back on every change. Don't
   reactively force `value` from outside after mount or you'll fight the
   editor — use it like a one-way bind from form state.
-
-  Widget-insert UI (Decklist / StatsTable / CardLink dialogs) is deferred to
-  step 4 alongside the card-search backend. The DecoratorNode delete buttons
-  already work for removing widgets that get inserted via other flows.
 -->
 <script>
 	import { onMount, onDestroy, createEventDispatcher } from 'svelte';
-	import { createEditor, $insertNodes as insertNodes, $getSelection as getSelection, $getRoot as getRoot, $getNodeByKey as getNodeByKey, $createParagraphNode as createParagraphNode, $createTextNode as createTextNode, FORMAT_TEXT_COMMAND } from 'lexical';
+	import {
+		createEditor,
+		$insertNodes as insertNodes,
+		$getSelection as getSelection,
+		$getRoot as getRoot,
+		$getNodeByKey as getNodeByKey,
+		$createParagraphNode as createParagraphNode,
+		$createTextNode as createTextNode,
+		FORMAT_TEXT_COMMAND
+	} from 'lexical';
 	import {
 		HeadingNode,
 		QuoteNode,
@@ -40,12 +45,26 @@
 
 	import { editorTheme } from './theme.js';
 	import { coerceLexicalDoc, emptyLexicalDoc } from './utils.js';
-	import { DecklistNode } from './nodes/DecklistNode.js';
-	import { StatsTableNode } from './nodes/StatsTableNode.js';
+	import {
+		DecklistNode,
+		$createDecklistNode as createDecklistNode
+	} from './nodes/DecklistNode.js';
+	import {
+		StatsTableNode,
+		$createStatsTableNode as createStatsTableNode
+	} from './nodes/StatsTableNode.js';
 	import {
 		ImageUploadNode,
 		$createImageUploadNode as createImageUploadNode
 	} from './nodes/ImageUploadNode.js';
+	import {
+		InlineVideoNode,
+		$createInlineVideoNode as createInlineVideoNode
+	} from './nodes/InlineVideoNode.js';
+	import InsertDecklistDialog from './InsertDecklistDialog.svelte';
+	import InsertStatsTableDialog from './InsertStatsTableDialog.svelte';
+	import InsertCardLinkDialog from './InsertCardLinkDialog.svelte';
+	import InsertInlineVideoDialog from './InsertInlineVideoDialog.svelte';
 
 	export let value = emptyLexicalDoc();
 	export let placeholder = 'Start writing…';
@@ -57,12 +76,16 @@
 	let unregister = null;
 	let isEmpty = true;
 
-	// Track which inline formats are active so the toolbar buttons can style
-	// themselves as pressed. Updated inside the update listener below.
 	let activeFormats = { bold: false, italic: false, underline: false, strikethrough: false };
 
 	let imageInputEl;
 	let imageUploading = false;
+
+	let decklistDialogOpen = false;
+	let statsDialogOpen = false;
+	let cardLinkDialogOpen = false;
+	let cardLinkSelectedText = '';
+	let inlineVideoDialogOpen = false;
 
 	onMount(() => {
 		editor = createEditor({
@@ -77,14 +100,14 @@
 				AutoLinkNode,
 				DecklistNode,
 				StatsTableNode,
-				ImageUploadNode
+				ImageUploadNode,
+				InlineVideoNode
 			],
 			onError: (err) => {
 				console.error('[lexical]', err);
 			}
 		});
 
-		// Attach to the DOM before registerRichText so it has a target.
 		editor.setRootElement(editorEl);
 
 		// Widget delete button custom event — dispatched by DecklistNode/StatsTableNode/ImageUploadNode.
@@ -119,9 +142,6 @@
 			})
 		);
 
-		// Hydrate initial state only when there's real content — hand-building
-		// an empty doc via setEditorState was hanging the editor, so we let
-		// registerRichText's default empty paragraph stand when value is blank.
 		try {
 			const doc = coerceLexicalDoc(value);
 			if (!isEditorStateEmpty(doc)) {
@@ -187,11 +207,7 @@
 			const sel = getSelection();
 			const linkNode = createLinkNode(url);
 			const selectedText = sel?.getTextContent?.() || '';
-			if (selectedText) {
-				linkNode.append(createTextNode(selectedText));
-			} else {
-				linkNode.append(createTextNode(url));
-			}
+			linkNode.append(createTextNode(selectedText || url));
 			if (sel) {
 				insertNodes([linkNode]);
 			} else {
@@ -202,6 +218,72 @@
 		});
 		editor.focus();
 	}
+
+	// --- Widget insertions -----------------------------------------------------
+
+	function insertDecklist(data) {
+		if (!editor) return;
+		editor.update(() => {
+			const node = createDecklistNode(data);
+			insertNodes([node]);
+		});
+	}
+
+	function insertStatsTable(data) {
+		if (!editor) return;
+		editor.update(() => {
+			const node = createStatsTableNode(data);
+			insertNodes([node]);
+		});
+	}
+
+	function insertInlineVideo(data) {
+		if (!editor) return;
+		editor.update(() => {
+			const node = createInlineVideoNode(data);
+			insertNodes([node]);
+		});
+	}
+
+	function openCardLinkDialog() {
+		if (!editor) {
+			cardLinkDialogOpen = true;
+			return;
+		}
+		// Capture the currently-selected text (if any) so the dialog can seed
+		// its search query — and pass it through to the link text.
+		editor.getEditorState().read(() => {
+			const sel = getSelection();
+			cardLinkSelectedText = sel?.getTextContent?.() || '';
+		});
+		cardLinkDialogOpen = true;
+	}
+
+	function insertCardLink({ text, url }) {
+		if (!editor) return;
+		editor.update(() => {
+			const linkNode = createLinkNode(url);
+			linkNode.append(createTextNode(text));
+
+			const selection = getSelection();
+			if (selection) {
+				// Insert the fully-built link node at the current caret. Lexical
+				// will splice it into a text run, so TOGGLE_LINK (which depends on
+				// a wrappable text selection that doesn't exist after the modal
+				// stole focus) isn't the right primitive here.
+				insertNodes([linkNode]);
+			} else {
+				// No live selection (modal took focus). Append a new paragraph
+				// containing the link so nothing is silently lost.
+				const para = createParagraphNode();
+				para.append(linkNode);
+				getRoot().append(para);
+			}
+		});
+		editor.focus();
+	}
+
+	// --- Image upload ----------------------------------------------------------
 
 	function openImagePicker() {
 		imageInputEl?.click();
@@ -319,6 +401,41 @@
 			on:change={handleImageFile}
 			class="hidden"
 		/>
+
+		<span class="mx-1 h-5 w-px bg-line2"></span>
+
+		<button
+			type="button"
+			class={tbBase}
+			title="Insert card link"
+			on:click={openCardLinkDialog}
+		>
+			Card
+		</button>
+		<button
+			type="button"
+			class={tbBase}
+			title="Insert decklist"
+			on:click={() => (decklistDialogOpen = true)}
+		>
+			Deck
+		</button>
+		<button
+			type="button"
+			class={tbBase}
+			title="Insert stats table"
+			on:click={() => (statsDialogOpen = true)}
+		>
+			Table
+		</button>
+		<button
+			type="button"
+			class={tbBase}
+			title="Insert inline video (YouTube)"
+			on:click={() => (inlineVideoDialogOpen = true)}
+		>
+			Video
+		</button>
 	</div>
 
 	<div class="relative">
@@ -338,9 +455,19 @@
 	</div>
 </div>
 
+<InsertDecklistDialog bind:open={decklistDialogOpen} on:insert={(e) => insertDecklist(e.detail)} />
+<InsertStatsTableDialog bind:open={statsDialogOpen} on:insert={(e) => insertStatsTable(e.detail)} />
+<InsertCardLinkDialog
+	bind:open={cardLinkDialogOpen}
+	selectedText={cardLinkSelectedText}
+	on:insert={(e) => insertCardLink(e.detail)}
+/>
+<InsertInlineVideoDialog
+	bind:open={inlineVideoDialogOpen}
+	on:insert={(e) => insertInlineVideo(e.detail)}
+/>
+
 <style>
-	/* Prose-style typography for the in-editor content. Kept in one place so
-	   the visual reader-vs-editor difference stays minimal. */
 	.cms-editor-content :global(.cms-p) {
 		margin: 0.75rem 0;
 		line-height: 1.7;

@@ -9,6 +9,7 @@
 import { registerWidget } from '../widgets.js';
 import DecklistRenderView from './DecklistRenderView.svelte';
 import StatsTableRenderView from './StatsTableRenderView.svelte';
+import InlineVideoRenderView from './InlineVideoRenderView.svelte';
 
 let registered = false;
 
@@ -25,6 +26,12 @@ export function registerBuiltinWidgets() {
 	registerWidget({
 		type: 'stats_table',
 		RenderView: StatsTableRenderView,
+		getProps: (node) => ({ node })
+	});
+
+	registerWidget({
+		type: 'inline_video',
+		RenderView: InlineVideoRenderView,
 		getProps: (node) => ({ node })
 	});
 }

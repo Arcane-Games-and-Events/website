@@ -42,6 +42,8 @@
 		"vite": "^7.0.4"
 	},
 	"dependencies": {
+		"@flesh-and-blood/cards": "^4.0.60",
+		"@flesh-and-blood/search": "^4.0.60",
 		"@lexical/history": "^0.44.0",
 		"@lexical/link": "^0.44.0",
 		"@lexical/list": "^0.44.0",
