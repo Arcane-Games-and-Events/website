@@ -1,0 +1,44 @@
+# Dependabot config — narrowly scoped to the FAB card database packages.
+#
+# Everything else in package.json stays pinned; we manage upgrades for
+# framework code (SvelteKit, Svelte, Vite, Lexical, Drizzle, etc.) by hand
+# so a stray Renovate PR can't destabilize the site.
+#
+# Why only these two packages get automation:
+# `@flesh-and-blood/cards` bundles the entire FAB card database and
+# `@flesh-and-blood/search` builds a Fuse index over it. When Legend
+# Story Studios releases a new set, the community publishes a bump to both
+# packages. Without this file we'd have to notice the release, run
+# `pnpm update` manually, and redeploy. With it, a PR shows up in GitHub
+# within a day of the community publishing — one review + merge and every
+# card widget on the site picks up the new set + new artwork.
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'America/Los_Angeles'
+
+    # Only these two packages open PRs. Every other dependency is ignored.
+    allow:
+      - dependency-name: '@flesh-and-blood/cards'
+      - dependency-name: '@flesh-and-blood/search'
+
+    # Bump both packages in the SAME PR so their versions stay in lockstep
+    # — the search package's API expects the shape the cards package
+    # ships, and a mismatch would break card lookups.
+    groups:
+      flesh-and-blood:
+        patterns:
+          - '@flesh-and-blood/*'
+
+    open-pull-requests-limit: 3
+    labels:
+      - 'dependencies'
+      - 'fab-cards'
+    commit-message:
+      prefix: 'chore(deps)'
+      include: 'scope'

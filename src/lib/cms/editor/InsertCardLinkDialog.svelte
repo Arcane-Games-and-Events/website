@@ -19,9 +19,17 @@
 	let errorMsg = '';
 	let searchTimer = null;
 
-	// Seed the query from the current text selection so a writer who selects
-	// a word and hits the Card Link button already has that as a search term.
-	$: if (open && selectedText && !query) query = selectedText;
+	// Seed the query from the current text selection ONCE per dialog open.
+	// The previous condition (`!query`) re-seeded on every reactive run
+	// whenever the user cleared the box, making the search term impossible
+	// to delete. Now we only seed on the false→true transition, so the
+	// writer can freely edit or clear what got pre-filled.
+	let hasSeeded = false;
+	$: if (open && !hasSeeded) {
+		if (selectedText) query = selectedText;
+		hasSeeded = true;
+	}
+	$: if (!open) hasSeeded = false;
 
 	async function runSearch(q) {
 		errorMsg = '';
