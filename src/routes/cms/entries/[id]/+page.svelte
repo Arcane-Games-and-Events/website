@@ -76,17 +76,38 @@
 
 	async function handleCoverChange(e) {
 		const media = e.detail;
+		// Capture the old media id BEFORE we replace it so we can clean it
+		// up on the server once the entry no longer references it. If the
+		// user is replacing with the same image (same id) we don't delete.
+		const prevId = coverImage?.id || null;
+		const nextId = media?.id || null;
 		coverImage = media;
-		await patchEntry({ coverImageId: media?.id || null });
+		const result = await patchEntry({ coverImageId: nextId });
+		if (result && prevId && prevId !== nextId) {
+			deleteMedia(prevId);
+		}
 	}
 	async function handleThumbnailChange(e) {
 		const media = e.detail;
+		const prevId = thumbnailImage?.id || null;
+		const nextId = media?.id || null;
 		thumbnailImage = media;
-		await patchEntry({ thumbnailImageId: media?.id || null });
+		const result = await patchEntry({ thumbnailImageId: nextId });
+		if (result && prevId && prevId !== nextId) {
+			deleteMedia(prevId);
+		}
 	}
 	async function handleVideoPatch(e) {
 		const fields = e.detail || {};
 		await patchEntry(fields);
+	}
+
+	// Fire-and-forget: DB row + Supabase Storage object are cleaned up if
+	// nothing else still references the media. Response is ignored — the
+	// endpoint returns `{ deleted: false, reason }` when the media is still
+	// used elsewhere, and that's fine (leaves the shared image intact).
+	function deleteMedia(id) {
+		fetch(`/api/cms/media/${id}`, { method: 'DELETE' }).catch(() => {});
 	}
 
 	// A scheduled entry whose time has passed reads as published everywhere
@@ -265,6 +286,14 @@
 				{:else if dirty}
 					<span class="text-warm">Unsaved changes</span>
 				{/if}
+				<a
+					href="/cms/entries/{entry.id}/preview"
+					target="_blank"
+					rel="noopener"
+					class="rounded-md border border-line2 bg-paper px-3 py-1 text-ink/80 transition-colors hover:bg-ink/5 hover:text-ink"
+				>
+					Preview ↗
+				</a>
 			</div>
 		</div>
 

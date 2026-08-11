@@ -36,7 +36,8 @@
 		ListNode,
 		ListItemNode,
 		INSERT_ORDERED_LIST_COMMAND,
-		INSERT_UNORDERED_LIST_COMMAND
+		INSERT_UNORDERED_LIST_COMMAND,
+		registerList
 	} from '@lexical/list';
 	import { LinkNode, AutoLinkNode, $createLinkNode as createLinkNode } from '@lexical/link';
 	import { registerHistory, createEmptyHistoryState } from '@lexical/history';
@@ -111,18 +112,38 @@
 		editor.setRootElement(editorEl);
 
 		// Widget delete button custom event — dispatched by DecklistNode/StatsTableNode/ImageUploadNode.
+		// For inline images specifically, we also fire-and-forget a media
+		// delete so the DB row + Supabase Storage object don't become
+		// orphans. The endpoint reference-checks against every other place
+		// a mediaId can appear (cover/thumb on entries + courses, live and
+		// draft) before deleting, so shared images stay intact.
 		editorEl.addEventListener('cms-widget-delete', (e) => {
 			const nodeKey = e.detail?.nodeKey;
 			if (!nodeKey) return;
+			let mediaIdToDelete = null;
 			editor.update(() => {
 				const node = getNodeByKey(nodeKey);
-				if (node) node.remove();
+				if (!node) return;
+				// ImageUploadNode stores { url, alt, width, height, mediaId }
+				// on __data. If mediaId is set, this widget's underlying
+				// Storage object + DB row should be cleaned up too.
+				const data = /** @type {any} */ (node).__data;
+				if (data && data.mediaId) mediaIdToDelete = data.mediaId;
+				node.remove();
 			});
+			if (mediaIdToDelete) {
+				fetch(`/api/cms/media/${mediaIdToDelete}`, { method: 'DELETE' }).catch(() => {});
+			}
 		});
 
 		unregister = mergeRegister(
 			registerRichText(editor),
 			registerHistory(editor, createEmptyHistoryState(), 1000),
+			// List commands (INSERT_ORDERED / INSERT_UNORDERED / REMOVE +
+			// Enter-in-list-item handling) aren't wired by registerRichText.
+			// Without this the toolbar's • List and 1. List buttons dispatch
+			// commands that no listener consumes, so nothing happens.
+			registerList(editor),
 			editor.registerUpdateListener(({ editorState }) => {
 				const json = editorState.toJSON();
 				value = json;

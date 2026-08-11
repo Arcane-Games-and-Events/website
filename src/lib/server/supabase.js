@@ -19,9 +19,23 @@ export const CMS_MEDIA_BUCKET = 'cms-media';
 // on every server-file save.
 const g = /** @type {any} */ (globalThis);
 
+/**
+ * Normalize env-loaded config values so accidental whitespace / stray quotes
+ * / trailing slashes in the .env file don't produce cryptic errors from the
+ * Supabase SDK. A trailing slash on SUPABASE_URL causes upload requests to
+ * hit a double-slash URL that Supabase rejects as "Invalid path specified
+ * in request URL" — same 404 as a genuinely missing route.
+ */
+function cleanEnv(v) {
+	if (!v) return v;
+	return String(v).trim().replace(/^['"]|['"]$/g, '');
+}
+
 export function getSupabase() {
 	if (g.__ageSupabaseClient) return g.__ageSupabaseClient;
-	if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+	const rawUrl = cleanEnv(env.SUPABASE_URL);
+	const rawKey = cleanEnv(env.SUPABASE_SERVICE_ROLE_KEY);
+	if (!rawUrl || !rawKey) {
 		if (!g.__ageSupabaseWarned) {
 			console.warn(
 				'[supabase] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing — ' +
@@ -31,7 +45,19 @@ export function getSupabase() {
 		}
 		return null;
 	}
-	g.__ageSupabaseClient = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+	const url = rawUrl.replace(/\/+$/, '');
+
+	// One-time boot log so a misconfigured URL / key is easy to spot — we
+	// only log the URL and the key's length (never the key itself) so this
+	// stays safe to leave enabled.
+	if (!g.__ageSupabaseLogged) {
+		console.log(
+			`[supabase] client init — url=${url} keyLen=${rawKey.length} keyPrefix=${rawKey.slice(0, 4)}…`
+		);
+		g.__ageSupabaseLogged = true;
+	}
+
+	g.__ageSupabaseClient = createClient(url, rawKey, {
 		auth: { persistSession: false, autoRefreshToken: false }
 	});
 	return g.__ageSupabaseClient;

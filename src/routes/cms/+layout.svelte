@@ -1,15 +1,20 @@
 <!--
   CMS shell — editorial paper-and-ink chrome for the authoring surface.
 
-  Distinct from /admin (warm-orange accents) so writers never confuse
-  "authoring editorial content" with "running the business." The CMS uses
-  accent-blue as its active-pill color.
+  Uses the same editorial <AgeHeader> the rest of the redesigned site
+  renders, so a writer moving between /library, /account, and /cms sees
+  one consistent chrome band. Below that, a CMS-specific sub-nav shows
+  the sections the current user can reach (Entries / Courses / Users) —
+  role-aware, so a pure writer sees only Entries and a pure creator
+  sees only Courses.
 
-  Nav is role-aware — writers see Entries only, creators see Courses only,
-  admins see both plus Users.
+  No footer: /cms is an authoring app, not a reader page, and the
+  editorial footer's subscribe + social block would feel out of place
+  above an editor toolbar.
 -->
 <script>
 	import { page, navigating } from '$app/stores';
+	import AgeHeader from '$lib/components/age/AgeHeader.svelte';
 
 	export let data;
 	$: canEditEntries = data?.canEditEntries;
@@ -50,17 +55,23 @@
 	<div class="fixed top-0 right-0 left-0 z-[9999] h-0.5 bg-accent/70"></div>
 {/if}
 
-<div class="min-h-screen bg-paper-bg text-ink font-newsreader">
-	<header class="sticky top-0 z-30 border-b border-line2 bg-paper-bg/95 backdrop-blur-sm">
-		<div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-			<div class="flex items-center gap-6">
-				<a href="/cms" class="flex items-center gap-2">
-					<span class="text-[10px] tracking-[0.2em] font-mono-system uppercase text-ink/60">
-						AGE
-					</span>
-					<span class="font-semibold text-ink">CMS</span>
-				</a>
+<!-- Wrapper matches AgeShell's outer element (font, overflow, antialias)
+     so <AgeHeader> inherits the same base typography here as on every
+     other editorial page. Was `font-newsreader` before, which put the
+     header text in a serif face that didn't match the rest of the site. -->
+<div class="bg-paper-bg text-ink font-libre min-h-screen overflow-x-clip antialiased">
+	<AgeHeader active="" />
 
+	<!-- CMS sub-nav — sticky under the site header so it stays visible while
+	     the writer scrolls through a long entry list or a long editor page. -->
+	<div class="sticky top-0 z-20 border-b border-line2 bg-paper-bg/95 backdrop-blur-sm">
+		<div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 sm:px-6 lg:px-8">
+			<div class="flex items-center gap-4">
+				<span
+					class="text-[10px] tracking-[0.2em] font-mono-system uppercase text-ink/60"
+				>
+					CMS
+				</span>
 				<nav class="flex items-center gap-1 text-sm">
 					{#if canEditEntries}
 						<a
@@ -94,18 +105,8 @@
 					{/if}
 				</nav>
 			</div>
-
-			<div class="flex items-center gap-3 text-xs">
-				<span class="hidden text-ink/60 sm:inline">{data?.user?.email}</span>
-				<a
-					href="/"
-					class="rounded-md border border-line2 px-3 py-1.5 text-ink/80 transition-colors hover:bg-ink/5 hover:text-ink"
-				>
-					Back to site
-				</a>
-			</div>
 		</div>
-	</header>
+	</div>
 
 	<slot />
 </div>

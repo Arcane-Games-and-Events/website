@@ -41,6 +41,43 @@
 	let muxProgress = 0;
 	let muxError = '';
 
+	let refreshing = false;
+
+	async function refreshFromMux() {
+		if (refreshing) return;
+		refreshing = true;
+		try {
+			const res = await fetch('/api/cms/mux/refresh', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ target, id })
+			});
+			if (!res.ok) {
+				const body = await res.json().catch(() => ({}));
+				muxError = body?.message || `Refresh failed (${res.status})`;
+				return;
+			}
+			const body = await res.json();
+			const updated = body[target];
+			if (!updated) return;
+			// Mirror server state into the parent so the sidebar re-renders
+			// with the fresh values (playbackId, duration, aspectRatio, status).
+			dispatch('patch', {
+				videoProvider: updated.videoProvider,
+				muxUploadId: updated.muxUploadId,
+				muxAssetId: updated.muxAssetId,
+				muxPlaybackId: updated.muxPlaybackId,
+				videoStatus: updated.videoStatus,
+				videoDuration: updated.videoDuration,
+				videoAspectRatio: updated.videoAspectRatio
+			});
+		} catch (err) {
+			muxError = err?.message || 'Network error during refresh';
+		} finally {
+			refreshing = false;
+		}
+	}
+
 	function formatDuration(sec) {
 		if (!sec || !Number.isFinite(sec)) return '';
 		const s = Math.floor(sec);
@@ -214,6 +251,19 @@
 			</div>
 			{#if entry.videoDuration}
 				<div class="text-ink/70 font-mono-system">{formatDuration(entry.videoDuration)}</div>
+			{/if}
+			{#if entry.videoStatus !== 'ready' && entry.videoStatus !== 'errored'}
+				<!-- Manual sync from Mux — for environments where the webhook can't
+				     reach this server (local dev, preview branches). In prod the
+				     webhook flips the status automatically. -->
+				<button
+					type="button"
+					on:click={refreshFromMux}
+					disabled={refreshing}
+					class="mt-2 text-[11px] font-mono-system text-accent hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+				>
+					{refreshing ? 'Checking Mux…' : 'Refresh status from Mux'}
+				</button>
 			{/if}
 		</div>
 	{:else if entry?.videoProvider === 'youtube' && entry?.youtubeVideoId}

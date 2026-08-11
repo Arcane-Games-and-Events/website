@@ -125,19 +125,25 @@ export function toFrontData(data) {
 	// flagged VODs alongside articles and pick the newest by date.
 	const article = articles[0];
 
-	// "Latest" — the newest Library article. VODs are excluded here
-	// (see `pickLatestContent` for why).
+	// "Latest" — the newest Library entry. CMS entries with a video attached
+	// render as type: 'video' so the Across AGE row picks up the video
+	// treatment (play icon, warm accent, "Latest · Video" eyebrow).
 	const pick = pickLatestContent(articles);
 	const latest = pick
-		? {
-				type: /** @type {const} */ ('article'),
-				title: pick.src.title,
-				meta: `${pick.src.author?.name || 'AGE Staff'}${
-					pick.src.readTime ? ` · ${pick.src.readTime} min read` : ''
-				}`,
-				image: articleImage(pick.src),
-				href: pick.src.slug ? `/library/${pick.src.slug}` : '/library'
-			}
+		? (() => {
+				const src = pick.src;
+				const isVideo = !!src?.hasVideo;
+				const dur = isVideo && src.videoDuration ? formatDuration(src.videoDuration) : '';
+				return {
+					type: /** @type {'article' | 'video'} */ (isVideo ? 'video' : 'article'),
+					title: src.title,
+					meta: isVideo
+						? [src.author?.name || 'AGE Staff', dur || null].filter(Boolean).join(' · ')
+						: `${src.author?.name || 'AGE Staff'}${src.readTime ? ` · ${src.readTime} min read` : ''}`,
+					image: articleImage(src),
+					href: src.slug ? `/library/${src.slug}` : '/library'
+				};
+			})()
 		: null;
 
 	// Bonus-match row — the latest VOD. No dedup against `latest`
@@ -180,14 +186,24 @@ export function toFrontData(data) {
 		href: e.id ? `/age-open/${e.id}` : '/age-open'
 	}));
 
+	// Lead pane — cover story. When the top entry has a video attached, we
+	// flip its type to 'video' so DispatchFront's video branch renders
+	// (play badge overlay, duration bug, warm accent eyebrow) and the
+	// meta row switches to "By … · duration" style.
+	const leadIsVideoEntry = !!article?.hasVideo;
+	const leadDuration =
+		leadIsVideoEntry && article?.videoDuration ? formatDuration(article.videoDuration) : '';
 	return {
 		lead: article
 			? {
-					type: /** @type {const} */ ('article'),
+					type: /** @type {'article' | 'video'} */ (leadIsVideoEntry ? 'video' : 'article'),
 					title: article.title,
-					eyebrow: article.tags?.[0]?.name || 'Cover Story',
+					eyebrow: leadIsVideoEntry
+						? 'Video'
+						: article.tags?.[0]?.name || 'Cover Story',
 					image: articleImage(article),
 					readTime: article.readTime ? `${article.readTime} min read` : '',
+					duration: leadDuration,
 					author: article.author?.name || 'AGE Staff',
 					stand: article.excerpt || '',
 					event:
@@ -225,21 +241,28 @@ export function toFrontData(data) {
 }
 
 /**
- * Build a library item from a Payload article.
+ * Build a library item from a CMS entry. Video-bearing entries render as
+ * type: 'video' so the downstream card components pick the video visual
+ * treatment (play icon overlay, duration badge) instead of the article
+ * treatment (read-time badge, article icon).
  * @param {any} a
- * @returns {import('./types.js') extends never ? any : any}
  */
 function articleLibraryItem(a) {
+	const isVideo = !!a?.hasVideo;
+	const dur = isVideo && a?.videoDuration ? formatDuration(a.videoDuration) : '';
 	return {
-		type: /** @type {const} */ ('article'),
+		type: /** @type {'article' | 'video'} */ (isVideo ? 'video' : 'article'),
 		premium: !!a.isPremium,
 		image: articleImage(a),
 		title: a.title,
 		// `summary` is the excerpt shown beneath the title in card
-		// surfaces like "More to read" — empty string when an article
-		// has no excerpt so the cards collapse cleanly.
+		// surfaces like "More to read" — empty string when an entry has
+		// no excerpt so the cards collapse cleanly.
 		summary: a.excerpt || '',
-		meta: `${a.author?.name || 'AGE Staff'} · ${a.readTime ? `${a.readTime} min` : '—'}`,
+		meta: isVideo
+			? `${a.author?.name || 'AGE Staff'} · ${dur || '—:--'}`
+			: `${a.author?.name || 'AGE Staff'} · ${a.readTime ? `${a.readTime} min` : '—'}`,
+		duration: dur,
 		href: a.slug ? `/library/${a.slug}` : '/library'
 	};
 }

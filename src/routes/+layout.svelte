@@ -26,7 +26,7 @@
 	// they render the editorial chrome by virtue of wrapping their own
 	// markup in <AgeShell>.
 	const editorialRoutes = ['/', '/premium', '/age-open', '/library', '/academy', '/partner'];
-	const editorialPrefixes = ['/account', '/library/', '/player/', '/staff'];
+	const editorialPrefixes = ['/account', '/library/', '/player/', '/staff', '/cms'];
 	// Substring tests for paths that don't fit a clean prefix — e.g. the
 	// AGE Open decklist viewer lives under `/age-open/[eventId]/decklist/
 	// [decklistId]`, where the prefix would catch sibling pages that

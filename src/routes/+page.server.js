@@ -1,5 +1,4 @@
-import { payload } from '$lib/server/payload/client.js';
-import { isPremiumNow } from '$lib/server/articles/access.js';
+import { listPublishedEntries } from '$lib/server/cms/list.js';
 import { db } from '$lib/server/db/index.js';
 import { event, standing, decklist, podcast, podcastEpisode, vod } from '$lib/server/db/schema.js';
 import { asc, gte, desc, and, or, eq, isNull } from 'drizzle-orm';
@@ -150,61 +149,14 @@ async function fetchFilteredStandings(season, circuit) {
 }
 
 async function fetchArticles() {
+	// Homepage's "Newest from AGE" section — CMS entries only. Payload is
+	// turned off, but the list helper already sorts by publishedAt DESC
+	// and applies the public-visibility filter, so the caller just takes
+	// the first 12.
 	try {
-		const posts = await getCachedOrFetch(
-			`${CACHE_KEYS.ARTICLES}:latest:12`,
-			() => payload.getPosts({ limit: 12 }),
-			CACHE_TTL.LONG
-		);
-		return posts
-			.map((post) => {
-				const coverImage = payload.getOptimizedImage(post.coverImage);
-
-				let author = null;
-				if (post.author && typeof post.author === 'object') {
-					let profilePictureUrl = null;
-					if (post.author.profilePicture && typeof post.author.profilePicture === 'object') {
-						profilePictureUrl = payload.getAbsoluteUrl(post.author.profilePicture.url);
-					}
-					author = {
-						name: post.author.name,
-						slug: post.author.slug,
-						profilePicture: profilePictureUrl
-					};
-				}
-
-				let tags = [];
-				if (post.tags && Array.isArray(post.tags)) {
-					tags = post.tags
-						.filter((tag) => tag && typeof tag === 'object')
-						.map((tag) => ({ name: tag.name, slug: tag.slug }));
-				}
-
-				const isPremium = isPremiumNow({
-					accessMode: post.accessMode,
-					publishedAt: post.publishedDate
-				});
-				const isFreeNow =
-					(post.accessMode === 'Premium' || post.accessMode === 'premium') && !isPremium;
-
-				return {
-					slug: post.slug,
-					title: post.title,
-					excerpt: post.excerpt,
-					publishedAt: post.publishedDate,
-					accessMode: post.accessMode,
-					coverImage,
-					author,
-					tags,
-					readTime: post.readTime || null,
-					isPremium,
-					isFreeNow
-				};
-			})
-			.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
-			.slice(0, 12);
+		return await listPublishedEntries({ limit: 12 });
 	} catch (error) {
-		console.error('Error fetching articles from Payload CMS:', error);
+		console.error('Error fetching CMS entries:', error);
 		return [];
 	}
 }

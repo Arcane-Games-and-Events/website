@@ -188,6 +188,24 @@
 					aria-hidden="true"
 				></span>
 
+				{#if featured.hasVideo}
+					<!-- Big play badge for the featured video — centered so the eye
+					     hits it before the title. -->
+					<span
+						class="pointer-events-none absolute top-1/2 left-1/2 z-[2] flex h-[76px] w-[76px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 pl-[5px] text-[24px] text-ink transition-transform group-hover:scale-110"
+						aria-hidden="true"
+					>
+						▶
+					</span>
+					{#if featured.videoDuration}
+						<span
+							class="absolute right-[24px] bottom-[24px] z-[3] bg-black/85 px-[10px] py-[4px] text-[12px] font-bold text-white font-mono-system"
+						>
+							{formatDuration(featured.videoDuration)}
+						</span>
+					{/if}
+				{/if}
+
 				<!-- kicker -->
 				<span
 					class="absolute top-[26px] left-[32px] z-[3] inline-flex items-center gap-[10px] text-[10.5px] font-extrabold tracking-[0.15em] text-white uppercase before:block before:h-[2px] before:w-[26px] before:bg-warm before:content-['']"
@@ -207,17 +225,28 @@
 				<!-- content -->
 				<div class="relative z-[3] px-[38px] pb-[34px]">
 					<div class="mb-[15px] flex flex-wrap gap-2">
-						<span
-							class="bg-accent inline-flex items-center gap-[6px] px-[9px] py-1 text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
-						>
-							<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
-								<rect x="2" y="1.5" width="10" height="11" rx="1" stroke="currentColor" stroke-width="1.4" fill="none" />
-								<line x1="4.3" y1="5" x2="9.7" y2="5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-								<line x1="4.3" y1="7.4" x2="9.7" y2="7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-								<line x1="4.3" y1="9.8" x2="7.5" y2="9.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-							</svg>
-							Article
-						</span>
+						{#if featured.hasVideo}
+							<span
+								class="bg-accent inline-flex items-center gap-[6px] px-[9px] py-1 text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
+							>
+								<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
+									<polygon points="4,3 4,11 11,7" fill="currentColor" />
+								</svg>
+								Video
+							</span>
+						{:else}
+							<span
+								class="bg-accent inline-flex items-center gap-[6px] px-[9px] py-1 text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
+							>
+								<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
+									<rect x="2" y="1.5" width="10" height="11" rx="1" stroke="currentColor" stroke-width="1.4" fill="none" />
+									<line x1="4.3" y1="5" x2="9.7" y2="5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+									<line x1="4.3" y1="7.4" x2="9.7" y2="7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+									<line x1="4.3" y1="9.8" x2="7.5" y2="9.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+								</svg>
+								Article
+							</span>
+						{/if}
 						{#if featured.isPremium}
 							<span
 								class="bg-prem border-prem inline-flex items-center border px-[9px] py-1 text-[9px] font-extrabold tracking-[0.08em] text-white uppercase"
@@ -282,17 +311,28 @@
 						></div>
 						<div class="min-w-0">
 							<div class="mb-2 flex flex-wrap items-center gap-[6px]">
-								<span
-									class="bg-accent inline-flex items-center gap-[6px] px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
-								>
-									<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
-										<rect x="2" y="1.5" width="10" height="11" rx="1" stroke="currentColor" stroke-width="1.4" fill="none" />
-										<line x1="4.3" y1="5" x2="9.7" y2="5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-										<line x1="4.3" y1="7.4" x2="9.7" y2="7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-										<line x1="4.3" y1="9.8" x2="7.5" y2="9.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-									</svg>
-									Article
-								</span>
+								{#if p.hasVideo}
+									<span
+										class="bg-accent inline-flex items-center gap-[6px] px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
+									>
+										<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
+											<polygon points="4,3 4,11 11,7" fill="currentColor" />
+										</svg>
+										Video
+									</span>
+								{:else}
+									<span
+										class="bg-accent inline-flex items-center gap-[6px] px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
+									>
+										<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
+											<rect x="2" y="1.5" width="10" height="11" rx="1" stroke="currentColor" stroke-width="1.4" fill="none" />
+											<line x1="4.3" y1="5" x2="9.7" y2="5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+											<line x1="4.3" y1="7.4" x2="9.7" y2="7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+											<line x1="4.3" y1="9.8" x2="7.5" y2="9.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+										</svg>
+										Article
+									</span>
+								{/if}
 								{#if p.isPremium}
 									<span
 										class="bg-prem border-prem inline-flex items-center border px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.08em] text-white uppercase"
@@ -474,6 +514,23 @@
 							style="background: linear-gradient(0deg, rgba(8,11,21,0.5), transparent 58%);"
 							aria-hidden="true"
 						></span>
+						{#if it.hasVideo}
+							<!-- Play badge — centered on the thumbnail so this reads as a
+							     video the moment the eye lands on the card. -->
+							<span
+								class="pointer-events-none absolute top-1/2 left-1/2 z-[2] flex h-[46px] w-[46px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 pl-[3px] text-[14px] text-ink transition-transform group-hover:scale-110"
+								aria-hidden="true"
+							>
+								▶
+							</span>
+							{#if it.videoDuration}
+								<span
+									class="absolute right-[10px] bottom-[10px] z-[2] bg-black/85 px-[7px] py-[2px] text-[10.5px] font-bold text-white font-mono-system"
+								>
+									{formatDuration(it.videoDuration)}
+								</span>
+							{/if}
+						{/if}
 						{#if isNew(it.publishedAt)}
 							<span
 								class="bg-warm absolute top-[11px] left-[11px] z-[2] px-2 py-1 text-[9px] font-extrabold tracking-[0.1em] text-white uppercase"
@@ -486,17 +543,28 @@
 					<!-- body -->
 					<div class="flex flex-1 flex-col px-[18px] py-[15px] pb-[17px]">
 						<div class="mb-[10px] flex flex-wrap items-center gap-[7px]">
-							<span
-								class="bg-accent inline-flex items-center gap-[6px] px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
-							>
-								<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
-									<rect x="2" y="1.5" width="10" height="11" rx="1" stroke="currentColor" stroke-width="1.4" fill="none" />
-									<line x1="4.3" y1="5" x2="9.7" y2="5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-									<line x1="4.3" y1="7.4" x2="9.7" y2="7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-									<line x1="4.3" y1="9.8" x2="7.5" y2="9.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-								</svg>
-								Article
-							</span>
+							{#if it.hasVideo}
+								<span
+									class="bg-accent inline-flex items-center gap-[6px] px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
+								>
+									<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
+										<polygon points="4,3 4,11 11,7" fill="currentColor" />
+									</svg>
+									Video
+								</span>
+							{:else}
+								<span
+									class="bg-accent inline-flex items-center gap-[6px] px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
+								>
+									<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
+										<rect x="2" y="1.5" width="10" height="11" rx="1" stroke="currentColor" stroke-width="1.4" fill="none" />
+										<line x1="4.3" y1="5" x2="9.7" y2="5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+										<line x1="4.3" y1="7.4" x2="9.7" y2="7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+										<line x1="4.3" y1="9.8" x2="7.5" y2="9.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+									</svg>
+									Article
+								</span>
+							{/if}
 							{#if it.isPremium}
 								<span
 									class="bg-prem border-prem inline-flex items-center border px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.08em] text-white uppercase"

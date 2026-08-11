@@ -1,96 +1,11 @@
 import { error } from '@sveltejs/kit';
-import { payload } from '$lib/server/payload/client.js';
-import { isPremiumNow } from '$lib/server/articles/access.js';
 
-export async function load({ params, setHeaders }) {
-	// Cache tag pages for 5 minutes, allow stale for 1 hour while revalidating
-	// Vary by Cookie ensures sidebar updates properly after login/logout
-	setHeaders({
-		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
-		vary: 'Cookie'
-	});
-
-	const { tagSlug } = params;
-
-	try {
-		// Fetch tag by slug
-		const tag = await payload.getTagBySlug(tagSlug);
-
-		if (!tag) {
-			throw error(404, 'Tag not found');
-		}
-
-		const tagData = {
-			name: tag.name,
-			slug: tag.slug,
-			description: tag.description || null
-		};
-
-		// Fetch all posts with this tag
-		const posts = await payload.getPostsByTag(tag.id);
-
-		// Transform posts
-		const articles = posts.map((post) => {
-			// Extract optimized cover image with srcset
-			const coverImage = payload.getOptimizedImage(post.coverImage);
-
-			// Extract author
-			let author = null;
-			if (post.author && typeof post.author === 'object') {
-				let authorImageUrl = null;
-				if (post.author.profilePicture && typeof post.author.profilePicture === 'object') {
-					authorImageUrl = payload.getAbsoluteUrl(post.author.profilePicture.url);
-				}
-				author = {
-					name: post.author.name,
-					slug: post.author.slug,
-					profilePicture: authorImageUrl
-				};
-			}
-
-			// Extract tags
-			let tags = [];
-			if (post.tags && Array.isArray(post.tags)) {
-				tags = post.tags
-					.map((t) => {
-						if (typeof t === 'object') {
-							return {
-								name: t.name,
-								slug: t.slug
-							};
-						}
-						return null;
-					})
-					.filter(Boolean);
-			}
-
-			return {
-				slug: post.slug,
-				title: post.title,
-				excerpt: post.excerpt,
-				publishedAt: post.publishedDate,
-				accessMode: post.accessMode,
-				coverImage,
-				author,
-				tags,
-				readTime: post.readTime || null,
-				isPremium: isPremiumNow({
-					accessMode: post.accessMode,
-					publishedAt: post.publishedDate
-				})
-			};
-		});
-
-		return {
-			tag: tagData,
-			articles
-		};
-	} catch (err) {
-		if (err.status) {
-			throw err;
-		}
-
-		console.error('Error fetching tag:', err);
-		throw error(500, 'Failed to load tag');
-	}
+/**
+ * Payload is turned off — tag pages are Payload-only surfaces today.
+ * The CMS entry schema supports tags via the `cms_entry_tag` join table
+ * but there's no authoring UI for them yet, so tag pages have nothing
+ * to list. Any hit here 404s until first-class CMS tag pages ship.
+ */
+export async function load() {
+	throw error(404, 'Tag not found');
 }

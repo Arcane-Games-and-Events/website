@@ -128,12 +128,14 @@
 			></span>
 
 			{#if leadIsVideo}
-				<!-- VIDEO BRANCH — used only when a library-flagged VOD becomes the lead -->
+				<!-- VIDEO BRANCH — used when the top library entry is a video (Mux
+				     or YouTube). Matches the article branch's "Cover Story · Article"
+				     shape so the eye reads the same slot in both cases. -->
 				<span
 					class="bg-warm absolute top-4 left-4 z-[2] inline-flex items-center gap-[7px] px-[11px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] text-white uppercase"
 				>
 					<span class="inline-block h-[7px] w-[7px] rounded-full bg-white"></span>
-					Now Streaming
+					Cover Story · Video
 				</span>
 				<span
 					class="absolute top-1/2 left-1/2 z-[2] flex h-[84px] w-[84px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 pl-[6px] text-[27px] text-[#17150f] transition-transform group-hover:scale-[1.06]"
@@ -189,7 +191,7 @@
 
 		<div class="text-fade flex flex-wrap items-center gap-2 text-xs font-semibold">
 			{#if leadIsVideo}
-				<span>{D.lead.event}</span><span>·</span><span>Full match</span>
+				<span>{D.lead.event}</span><span>·</span><span>Video</span>
 				{#if D.lead.duration}
 					<span>·</span><span>{D.lead.duration}</span>
 				{/if}

@@ -4,6 +4,8 @@
 	import Decklist from '$lib/components/Decklist.svelte';
 	import CardHover from '$lib/components/CardHover.svelte';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
+	import RenderLexical from '$lib/cms/render/RenderLexical.svelte';
+	import LibraryVideoBlock from '$lib/cms/render/LibraryVideoBlock.svelte';
 
 	export let data;
 
@@ -1042,7 +1044,32 @@
 	{/if}
 
 	<!-- ============ HERO FIGURE ============ -->
-	{#if data.article.coverImage?.src}
+	<!-- Hero: video takes precedence over cover image. A CMS entry with a
+	     video slot uses that as the top-of-page hero; only fall back to the
+	     cover image when there's no video attached. Payload articles always
+	     have `video: null`, so they always render the cover as before. -->
+	{#if data.article.video}
+		<figure class="mx-auto m-0 w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
+			<!-- Poster on the video is the entry's own thumbnail image, falling
+			     back to its cover image. Same fallback order the card grid uses,
+			     so a video looks visually consistent between the reader page
+			     and the preview cards linking to it. -->
+			<LibraryVideoBlock
+				video={data.article.video}
+				poster={data.article.thumbnailImage?.src || data.article.coverImage?.src || ''}
+			/>
+			<figcaption class="flex gap-3 py-3">
+				<span
+					class="font-mono-system text-warm pt-[2px] text-[10px] font-bold tracking-[0.14em] whitespace-nowrap uppercase"
+				>
+					Video
+				</span>
+				<span class="font-newsreader text-soft text-[13px] italic">
+					{data.article.title}
+				</span>
+			</figcaption>
+		</figure>
+	{:else if data.article.coverImage?.src}
 		<figure class="mx-auto m-0 w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
 			<div class="border-ink border-y-[3px] border-double">
 				<img
@@ -1226,7 +1253,13 @@
 					"
 				>
 					{#if data.article.content}
-						{#if renderBlocks.length > 0}
+						{#if data.article.source === 'cms'}
+							<!-- CMS entries render via the shared Lexical renderer so
+							     widget nodes (decklist / stats_table / inline_video)
+							     and inline card links round-trip through the same
+							     pipeline the editor uses. -->
+							<RenderLexical content={data.article.content} {cardImages} />
+						{:else if renderBlocks.length > 0}
 							{#each renderBlocks as block, i (i)}
 								{#if block.type === 'html'}
 									{@html block.content}
@@ -1245,7 +1278,7 @@
 						{:else}
 							{@html renderContent(data.article.content)}
 						{/if}
-					{:else}
+					{:else if !data.article.video}
 						<p class="text-soft">No content available.</p>
 					{/if}
 				</div>

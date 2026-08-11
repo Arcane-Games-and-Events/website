@@ -4,6 +4,10 @@ import { isPremiumNow, userHasPremiumAccess } from '$lib/server/articles/access.
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 import { resolveCardImage, mapWithConcurrency } from '$lib/server/cards/index.js';
 import { enrichPageViewWithArticle } from '$lib/server/analytics.js';
+import { db } from '$lib/server/db/index.js';
+import { cmsEntry, cmsMedia, user as userTable } from '$lib/server/db/schema.js';
+import { eq } from 'drizzle-orm';
+import { getMuxPlaybackToken, getMuxThumbnailToken } from '$lib/server/mux.js';
 
 /**
  * Truncate Lexical content to only show first few paragraphs for preview
@@ -207,154 +211,221 @@ function processContentUrls(node) {
 	return node;
 }
 
+/**
+ * Walk a Lexical body and pull every card-linked name — from `card:` link
+ * URLs (existing helper) AND from inline decklist widget nodes' parsedCards.
+ * The decklist widget doesn't expose its cards as links, so its cards need a
+ * dedicated walk. Returns the same Set shape as the legacy card extractor.
+ */
+function extractCmsEntryCardNames(body) {
+	const names = extractCardNamesFromContent(body);
+	function walk(node) {
+		if (!node) return;
+		if (node.type === 'decklist' && node.parsedCards) {
+			const { arenaCards = [], deckCards = [] } = node.parsedCards;
+			for (const c of arenaCards) {
+				if (c?.name) names.add(JSON.stringify({ name: c.name, pitch: null }));
+			}
+			for (const c of deckCards) {
+				if (!c?.name) continue;
+				const pitch =
+					c.color === 'red' ? 'r' : c.color === 'yellow' ? 'y' : c.color === 'blue' ? 'b' : null;
+				names.add(JSON.stringify({ name: c.name, pitch }));
+			}
+		}
+		if (Array.isArray(node.children)) node.children.forEach(walk);
+		if (node.root) walk(node.root);
+	}
+	walk(body);
+	return names;
+}
+
+/**
+ * Load a CMS entry by slug + related media/author rows. Returns null when the
+ * slug doesn't exist OR the entry isn't publicly readable yet (drafts,
+ * archived, and future-scheduled entries are all 404 to the reader).
+ */
+async function loadCmsEntryBySlug(slug) {
+	const [entry] = await db.select().from(cmsEntry).where(eq(cmsEntry.slug, slug)).limit(1);
+	if (!entry) return null;
+
+	// Public visibility: published, OR scheduled with a start time that has
+	// already arrived (the DB status may lag until the next update).
+	const now = Date.now();
+	const isPublic =
+		entry.status === 'published' ||
+		(entry.status === 'scheduled' &&
+			entry.scheduledFor &&
+			new Date(entry.scheduledFor).getTime() <= now);
+	if (!isPublic) return null;
+
+	const [cover, thumbnail, author] = await Promise.all([
+		entry.coverImageId
+			? db
+					.select()
+					.from(cmsMedia)
+					.where(eq(cmsMedia.id, entry.coverImageId))
+					.limit(1)
+					.then((r) => r[0] || null)
+			: Promise.resolve(null),
+		entry.thumbnailImageId
+			? db
+					.select()
+					.from(cmsMedia)
+					.where(eq(cmsMedia.id, entry.thumbnailImageId))
+					.limit(1)
+					.then((r) => r[0] || null)
+			: Promise.resolve(null),
+		entry.authorId
+			? db
+					.select({
+						id: userTable.id,
+						firstName: userTable.firstName,
+						lastName: userTable.lastName
+					})
+					.from(userTable)
+					.where(eq(userTable.id, entry.authorId))
+					.limit(1)
+					.then((r) => r[0] || null)
+			: Promise.resolve(null)
+	]);
+
+	return { entry, cover, thumbnail, author };
+}
+
+/**
+ * Build the unified `article` shape the reader page consumes. Same shape as
+ * the Payload path returns, plus a `video` field for the featured video slot
+ * and `source: 'cms'` so the page can pick the right renderer.
+ */
+async function buildCmsArticleShape({ entry, cover, thumbnail, author }) {
+	let video = null;
+	if (entry.videoProvider === 'mux' && entry.muxPlaybackId) {
+		const [playbackToken, thumbnailToken] = await Promise.all([
+			getMuxPlaybackToken(entry.muxPlaybackId),
+			getMuxThumbnailToken(entry.muxPlaybackId)
+		]);
+		video = {
+			provider: 'mux',
+			muxPlaybackId: entry.muxPlaybackId,
+			playbackToken,
+			thumbnailToken,
+			duration: entry.videoDuration,
+			aspectRatio: entry.videoAspectRatio
+		};
+	} else if (entry.videoProvider === 'youtube' && entry.youtubeVideoId) {
+		video = {
+			provider: 'youtube',
+			youtubeVideoId: entry.youtubeVideoId,
+			youtubeTitle: entry.youtubeTitle,
+			youtubeThumbnailUrl: entry.youtubeThumbnailUrl,
+			youtubeDuration: entry.youtubeDuration
+		};
+	}
+
+	return {
+		slug: entry.slug,
+		title: entry.title,
+		excerpt: entry.excerpt,
+		content: entry.body,
+		publishedAt: entry.publishedAt,
+		accessMode: entry.accessMode,
+		// coverImage uses `.src` (not `.url`) to match the shape the Payload
+		// path produces so the existing page.svelte hero-image markup works
+		// for both sources without a compatibility branch. srcset is left
+		// undefined — CMS uploads don't produce responsive variants yet, the
+		// browser will just render the single src.
+		coverImage: cover
+			? {
+					src: cover.url,
+					alt: cover.alt || '',
+					width: cover.width || null,
+					height: cover.height || null
+				}
+			: null,
+		thumbnailImage: thumbnail
+			? {
+					src: thumbnail.url,
+					alt: thumbnail.alt || ''
+				}
+			: null,
+		author: author
+			? {
+					name: `${author.firstName} ${author.lastName || ''}`.trim(),
+					slug: null,
+					bio: null,
+					profilePicture: null,
+					socialLinks: []
+				}
+			: null,
+		tags: [],
+		decklists: [],
+		readTime: entry.readTime || null,
+		video,
+		source: 'cms'
+	};
+}
+
 export async function load({ params, locals, setHeaders }) {
 	const { slug } = params;
 
 	try {
-		// Cache individual article CMS response (15 minute TTL)
-		const post = await getCachedOrFetch(
-			`${CACHE_KEYS.ARTICLES}:slug:${slug}`,
-			() => payload.getPostBySlug(slug),
-			CACHE_TTL.LONG
-		);
+		// --------------------------------------------------------------------
+		// Try CMS entry first — this is the read path for custom-authored
+		// entries. If the slug doesn't match a public CMS entry, fall through
+		// to the Payload path below (existing articles migrate over time).
+		// --------------------------------------------------------------------
+		const cmsRow = await loadCmsEntryBySlug(slug);
+		if (cmsRow) {
+			const article = await buildCmsArticleShape(cmsRow);
 
-		if (!post) {
-			throw error(404, 'Article not found');
-		}
-
-		// Extract optimized cover image with srcset
-		const coverImage = payload.getOptimizedImage(post.coverImage);
-
-		// Extract author information
-		let author = null;
-		if (post.author && typeof post.author === 'object') {
-			let profilePictureUrl = null;
-			if (post.author.profilePicture && typeof post.author.profilePicture === 'object') {
-				profilePictureUrl = payload.getAbsoluteUrl(post.author.profilePicture.url);
+			// Card image resolution — walk both the body's card links AND any
+			// inline decklist widget nodes so the reader's hover tooltips work.
+			let cardImages = {};
+			if (article.content) {
+				const names = extractCmsEntryCardNames(article.content);
+				if (names.size > 0) cardImages = await resolveCardImages(names);
 			}
 
-			author = {
-				name: post.author.name,
-				slug: post.author.slug,
-				bio: post.author.bio,
-				profilePicture: profilePictureUrl,
-				socialLinks: post.author.socialLinks || []
-			};
-		}
-
-		// Extract tags
-		let tags = [];
-		if (post.tags && Array.isArray(post.tags)) {
-			tags = post.tags
-				.map((tag) => {
-					if (typeof tag === 'object') {
-						return {
-							name: tag.name,
-							slug: tag.slug
-						};
-					}
-					return null;
-				})
-				.filter(Boolean);
-		}
-
-		// Parse decklists
-		const decklists = payload.parseDecklists(post.decklists);
-
-		// Process content to convert relative URLs to absolute
-		const processedContent = processContentUrls(post.content);
-
-		// Extract all card names from content and decklists for image resolution
-		const contentCardNames = extractCardNamesFromContent(processedContent);
-		const decklistCardNames = extractCardNamesFromDecklists(decklists);
-		const allCardNames = new Set([...contentCardNames, ...decklistCardNames]);
-
-		// Resolve card images in parallel
-		const cardImages = allCardNames.size > 0 ? await resolveCardImages(allCardNames) : {};
-
-		const article = {
-			slug: post.slug,
-			title: post.title,
-			excerpt: post.excerpt,
-			content: processedContent,
-			publishedAt: post.publishedDate,
-			accessMode: post.accessMode,
-			coverImage,
-			author,
-			tags,
-			decklists,
-			readTime: post.readTime || null
-		};
-
-		// Check premium access
-		const isPremium = isPremiumNow({
-			accessMode: article.accessMode,
-			publishedAt: article.publishedAt
-		});
-
-		// Determine if user has access to full content
-		let isPreview = false;
-		let hasPremiumAccess = false;
-		const user = locals.user;
-
-		if (isPremium) {
-			// Check if user has premium access (handles active subscriptions, cancelled but within period, etc.)
-			hasPremiumAccess = userHasPremiumAccess(user);
-
-			if (!hasPremiumAccess) {
-				// User doesn't have premium access - show preview only
-				isPreview = true;
-				// Truncate content on server side so full content never reaches client
-				article.content = truncateContentForPreview(processedContent);
-				// Don't send decklists in preview mode
-				article.decklists = [];
+			// Premium gating. Per the memory note for the custom CMS: premium
+			// entries stay premium forever — no 30-day-to-free cutover. So we
+			// just check accessMode instead of `isPremiumNow`.
+			const isPremium = article.accessMode === 'premium';
+			let isPreview = false;
+			let hasPremiumAccess = false;
+			if (isPremium) {
+				hasPremiumAccess = userHasPremiumAccess(locals.user);
+				if (!hasPremiumAccess) {
+					isPreview = true;
+					article.content = truncateContentForPreview(article.content);
+				}
 			}
+
+			if (!isPremium) {
+				setHeaders({
+					'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
+					vary: 'Cookie'
+				});
+			} else {
+				setHeaders({ 'cache-control': 'private, no-store', vary: 'Cookie' });
+			}
+
+			const pageViewId = locals.pageViewId || null;
+			if (pageViewId) {
+				enrichPageViewWithArticle(pageViewId, {
+					title: article.title,
+					author: article.author?.name || null,
+					tags: null,
+					accessMode: article.accessMode || null
+				});
+			}
+
+			return { article, isPremium, isPreview, cardImages, pageViewId };
 		}
 
-		// Cache free articles for 5 minutes at the edge
-		// Premium content cannot be cached publicly since the same URL returns
-		// different content depending on user's premium status
-		// Vary by Cookie ensures sidebar updates properly after login/logout
-		if (!isPremium) {
-			setHeaders({
-				'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
-				vary: 'Cookie'
-			});
-		} else {
-			// Premium articles must not be cached publicly - each request needs fresh auth check
-			// Otherwise a cached preview might be served to premium users, or vice versa
-			setHeaders({
-				'cache-control': 'private, no-store',
-				vary: 'Cookie'
-			});
-		}
-
-		// Enrich the page view with article metadata (fire-and-forget)
-		const pageViewId = locals.pageViewId || null;
-		if (pageViewId) {
-			const tagNames = tags.map((t) => t.name).join(',');
-			enrichPageViewWithArticle(pageViewId, {
-				title: article.title,
-				author: author?.name || null,
-				tags: tagNames || null,
-				accessMode: article.accessMode || null
-			});
-		}
-
-		return {
-			article,
-			isPremium,
-			isPreview,
-			cardImages,
-			pageViewId
-			// `user` intentionally not returned here — SvelteKit merges
-			// data from the root layout (`+layout.server.js`) into
-			// `$page.data`, so the full user object (with firstName +
-			// role) flows through. Returning a stripped-down `{ role }`
-			// override here used to clobber the layout's user, which
-			// made `<AgeHeader>` fall back to the "Account" label
-			// instead of the reader's name.
-		};
+		// Payload is turned off — CMS is the single source for library
+		// content. Anything without a matching public cms_entry is a 404.
+		throw error(404, 'Article not found');
 	} catch (err) {
 		// Re-throw SvelteKit errors
 		if (err.status) {

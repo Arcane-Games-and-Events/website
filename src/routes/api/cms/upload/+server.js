@@ -40,10 +40,14 @@ export async function POST({ request, locals }) {
 		throw error(500, 'Storage backend not configured');
 	}
 
-	// UUID-prefixed path prevents collisions; original filename preserved
-	// (sanitized) so the Supabase dashboard stays human-readable.
-	const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 100) || 'upload';
-	const storagePath = `${crypto.randomUUID()}-${safeName}`;
+	// UUID + preserved extension only. We keep the original filename OUT of
+	// the storage path because sanitized filenames can produce shapes
+	// Supabase Storage's path parser rejects (long runs of consecutive
+	// dashes from stripped special chars, empty segments, etc.). The
+	// original filename is stored on the DB row separately if we ever want
+	// it back for the dashboard.
+	const ext = file.name.match(/\.([a-zA-Z0-9]+)$/)?.[1]?.toLowerCase();
+	const storagePath = `${crypto.randomUUID()}${ext ? `.${ext}` : ''}`;
 
 	const bytes = new Uint8Array(await file.arrayBuffer());
 	const { error: uploadError } = await supabase.storage
@@ -54,8 +58,11 @@ export async function POST({ request, locals }) {
 			upsert: false
 		});
 	if (uploadError) {
-		console.error('[cms/upload] Supabase Storage upload failed:', uploadError);
-		throw error(500, 'Upload failed');
+		console.error(
+			`[cms/upload] Supabase Storage upload failed (bucket=${CMS_MEDIA_BUCKET}, path=${storagePath}):`,
+			uploadError
+		);
+		throw error(500, `Upload failed: ${uploadError.message || 'unknown error'}`);
 	}
 
 	const {

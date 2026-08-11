@@ -1,10 +1,8 @@
-import { payload } from '$lib/server/payload/client.js';
-import { isPremiumNow } from '$lib/server/articles/access.js';
-import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 import { db } from '$lib/server/db/index.js';
 import { vod, event } from '$lib/server/db/schema.js';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { getMuxThumbnailToken } from '$lib/server/mux.js';
+import { listPublishedEntries } from '$lib/server/cms/list.js';
 
 export async function load({ setHeaders }) {
 	// Cache articles list for 5 minutes, allow stale for 1 hour while revalidating
@@ -14,61 +12,15 @@ export async function load({ setHeaders }) {
 		vary: 'Cookie'
 	});
 
-	// ============ Articles (Payload CMS) ============
+	// ============ Articles (CMS entries) ============
+	// Payload is turned off — CMS is now the single source for library
+	// articles + videos. The list helper caches under a per-limit key so
+	// this stays cheap on repeat hits.
 	let articles = [];
 	try {
-		const posts = await getCachedOrFetch(
-			`${CACHE_KEYS.ARTICLES}:all`,
-			() => payload.getPosts(),
-			CACHE_TTL.LONG
-		);
-
-		articles = posts.map((post) => {
-			const coverImage = payload.getOptimizedImage(post.coverImage);
-
-			let author = null;
-			if (post.author && typeof post.author === 'object') {
-				let profilePictureUrl = null;
-				if (post.author.profilePicture && typeof post.author.profilePicture === 'object') {
-					profilePictureUrl = payload.getAbsoluteUrl(post.author.profilePicture.url);
-				}
-				author = {
-					name: post.author.name,
-					slug: post.author.slug,
-					profilePicture: profilePictureUrl
-				};
-			}
-
-			let tags = [];
-			if (post.tags && Array.isArray(post.tags)) {
-				tags = post.tags
-					.map((tag) => {
-						if (typeof tag === 'object') {
-							return { name: tag.name, slug: tag.slug };
-						}
-						return null;
-					})
-					.filter(Boolean);
-			}
-
-			return {
-				slug: post.slug,
-				title: post.title,
-				excerpt: post.excerpt,
-				publishedAt: post.publishedDate,
-				accessMode: post.accessMode,
-				coverImage,
-				author,
-				tags,
-				readTime: post.readTime || null,
-				isPremium: isPremiumNow({
-					accessMode: post.accessMode,
-					publishedAt: post.publishedDate
-				})
-			};
-		});
+		articles = await listPublishedEntries({ limit: 100 });
 	} catch (error) {
-		console.error('Error fetching articles:', error);
+		console.error('Error fetching CMS entries:', error);
 	}
 
 	// ============ VODs (bonus match films from /studios) ============

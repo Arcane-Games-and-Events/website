@@ -6,16 +6,16 @@ import { eq } from 'drizzle-orm';
 import mux from '$lib/server/mux.js';
 
 /**
- * Mux webhook — dispatches events to the right table based on `passthrough`.
+ * Mux webhook — dispatches events to whichever row's Mux upload_id or
+ * asset_id matches. Tries all three video-owning tables in order (VOD,
+ * cms_entry, cms_lesson) and updates the first match.
  *
- * Passthrough conventions:
- *   - CMS entry uploads:  passthrough = `entry:<uuid>`  → cms_entry
- *   - CMS lesson uploads: passthrough = `lesson:<uuid>` → cms_lesson
- *   - VOD uploads (legacy): bare vodId, no prefix        → vod
- *
- * Column names differ across tables (VOD has status/duration/aspectRatio,
- * CMS uses videoStatus/videoDuration/videoAspectRatio) so each branch writes
- * the correct set of columns.
+ * Column names differ per table (VOD has status/duration/aspectRatio, CMS
+ * uses videoStatus/videoDuration/videoAspectRatio), so each branch writes
+ * the correct set. Matching by ID rather than by passthrough is more
+ * robust — Mux's event data structure places passthrough at different
+ * paths depending on the event type, and we already store both upload_id
+ * and asset_id on our own rows anyway.
  */
 export async function POST({ request }) {
 	const body = await request.text();
@@ -34,99 +34,40 @@ export async function POST({ request }) {
 
 	try {
 		if (type === 'video.upload.asset_created') {
-			const uploadId = data.upload_id;
-			const assetId = data.asset_id || data.id;
-			const target = parsePassthrough(data.passthrough);
-
-			if (target?.type === 'entry') {
-				await db
-					.update(cmsEntry)
-					.set({
-						muxAssetId: assetId,
-						videoStatus: 'preparing',
-						updatedAt: new Date()
-					})
-					.where(eq(cmsEntry.id, target.id));
-			} else if (target?.type === 'lesson') {
-				await db
-					.update(cmsLesson)
-					.set({
-						muxAssetId: assetId,
-						videoStatus: 'preparing',
-						updatedAt: new Date()
-					})
-					.where(eq(cmsLesson.id, target.id));
-			} else if (uploadId) {
-				await db
-					.update(vod)
-					.set({
-						muxAssetId: assetId,
-						status: 'preparing',
-						updatedAt: new Date()
-					})
-					.where(eq(vod.muxUploadId, uploadId));
-			}
+			const uploadId = data.upload_id || data.id;
+			const assetId = data.asset_id;
+			if (!uploadId) return json({ received: true });
+			await updateByUploadId(uploadId, {
+				vod: { muxAssetId: assetId, status: 'preparing' },
+				cms: { muxAssetId: assetId, videoStatus: 'preparing' }
+			});
 		} else if (type === 'video.asset.ready') {
 			const assetId = data.id;
-			const playbackId = data.playback_ids?.[0]?.id;
-			const duration = data.duration;
-			const aspectRatio = data.aspect_ratio;
-			const target = parsePassthrough(data.passthrough);
-
-			if (target?.type === 'entry') {
-				await db
-					.update(cmsEntry)
-					.set({
-						muxPlaybackId: playbackId || null,
-						videoDuration: duration ? Math.round(duration) : null,
-						videoAspectRatio: aspectRatio || null,
-						videoStatus: 'ready',
-						updatedAt: new Date()
-					})
-					.where(eq(cmsEntry.id, target.id));
-			} else if (target?.type === 'lesson') {
-				await db
-					.update(cmsLesson)
-					.set({
-						muxPlaybackId: playbackId || null,
-						videoDuration: duration ? Math.round(duration) : null,
-						videoAspectRatio: aspectRatio || null,
-						videoStatus: 'ready',
-						updatedAt: new Date()
-					})
-					.where(eq(cmsLesson.id, target.id));
-			} else if (assetId) {
-				await db
-					.update(vod)
-					.set({
-						muxPlaybackId: playbackId || null,
-						duration: duration || null,
-						aspectRatio: aspectRatio || null,
-						status: 'ready',
-						updatedAt: new Date()
-					})
-					.where(eq(vod.muxAssetId, assetId));
-			}
+			const playbackId = data.playback_ids?.[0]?.id || null;
+			const duration = data.duration ?? null;
+			const aspectRatio = data.aspect_ratio || null;
+			if (!assetId) return json({ received: true });
+			await updateByAssetId(assetId, {
+				vod: {
+					muxPlaybackId: playbackId,
+					duration,
+					aspectRatio,
+					status: 'ready'
+				},
+				cms: {
+					muxPlaybackId: playbackId,
+					videoDuration: duration ? Math.round(duration) : null,
+					videoAspectRatio: aspectRatio,
+					videoStatus: 'ready'
+				}
+			});
 		} else if (type === 'video.asset.errored') {
 			const assetId = data.id;
-			const target = parsePassthrough(data.passthrough);
-
-			if (target?.type === 'entry') {
-				await db
-					.update(cmsEntry)
-					.set({ videoStatus: 'errored', updatedAt: new Date() })
-					.where(eq(cmsEntry.id, target.id));
-			} else if (target?.type === 'lesson') {
-				await db
-					.update(cmsLesson)
-					.set({ videoStatus: 'errored', updatedAt: new Date() })
-					.where(eq(cmsLesson.id, target.id));
-			} else if (assetId) {
-				await db
-					.update(vod)
-					.set({ status: 'errored', updatedAt: new Date() })
-					.where(eq(vod.muxAssetId, assetId));
-			}
+			if (!assetId) return json({ received: true });
+			await updateByAssetId(assetId, {
+				vod: { status: 'errored' },
+				cms: { videoStatus: 'errored' }
+			});
 		}
 	} catch (err) {
 		console.error(`Error handling Mux webhook ${type}:`, err);
@@ -137,16 +78,50 @@ export async function POST({ request }) {
 }
 
 /**
- * Parse a Mux passthrough string of the form `entry:<uuid>` or `lesson:<uuid>`
- * into `{ type, id }`. Returns null for legacy VOD passthroughs (bare id or
- * empty) so the caller can fall through to the VOD branch.
+ * Update the first row that matches `uploadId` in the vod / cms_entry /
+ * cms_lesson tables. Column sets differ per table, so the caller passes
+ * both the VOD-shape and CMS-shape update objects.
  */
-function parsePassthrough(passthrough) {
-	if (!passthrough || typeof passthrough !== 'string') return null;
-	const colonAt = passthrough.indexOf(':');
-	if (colonAt <= 0) return null;
-	const type = passthrough.slice(0, colonAt);
-	const id = passthrough.slice(colonAt + 1);
-	if ((type === 'entry' || type === 'lesson') && id) return { type, id };
-	return null;
+async function updateByUploadId(uploadId, { vod: vodSet, cms: cmsSet }) {
+	const stamp = { updatedAt: new Date() };
+	const vodRes = await db
+		.update(vod)
+		.set({ ...vodSet, ...stamp })
+		.where(eq(vod.muxUploadId, uploadId))
+		.returning({ id: vod.id });
+	if (vodRes.length) return;
+	const entryRes = await db
+		.update(cmsEntry)
+		.set({ ...cmsSet, ...stamp })
+		.where(eq(cmsEntry.muxUploadId, uploadId))
+		.returning({ id: cmsEntry.id });
+	if (entryRes.length) return;
+	await db
+		.update(cmsLesson)
+		.set({ ...cmsSet, ...stamp })
+		.where(eq(cmsLesson.muxUploadId, uploadId));
+}
+
+/**
+ * Update the first row that matches `assetId` in the vod / cms_entry /
+ * cms_lesson tables. Same shape as updateByUploadId but keyed on asset ID.
+ */
+async function updateByAssetId(assetId, { vod: vodSet, cms: cmsSet }) {
+	const stamp = { updatedAt: new Date() };
+	const vodRes = await db
+		.update(vod)
+		.set({ ...vodSet, ...stamp })
+		.where(eq(vod.muxAssetId, assetId))
+		.returning({ id: vod.id });
+	if (vodRes.length) return;
+	const entryRes = await db
+		.update(cmsEntry)
+		.set({ ...cmsSet, ...stamp })
+		.where(eq(cmsEntry.muxAssetId, assetId))
+		.returning({ id: cmsEntry.id });
+	if (entryRes.length) return;
+	await db
+		.update(cmsLesson)
+		.set({ ...cmsSet, ...stamp })
+		.where(eq(cmsLesson.muxAssetId, assetId));
 }

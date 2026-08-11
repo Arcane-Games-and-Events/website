@@ -70,11 +70,22 @@
 
 	const isAdmin = $derived(user?.role === 'admin');
 
+	// CMS visibility mirrors `canAccessCms` from src/lib/server/auth/roles.js —
+	// admin billing tier OR the writer / creator capability role. Users with
+	// only tournament-staff or no capability roles at all don't see the link.
+	const canAccessCms = $derived(
+		isAdmin ||
+			(Array.isArray(user?.additionalRoles) &&
+				(user.additionalRoles.includes('writer') ||
+					user.additionalRoles.includes('creator')))
+	);
+
 	const ITEMS = $derived([
 		{ label: 'Account', href: '/account' },
 		{ label: 'Refer a Friend', href: '/account/referrals' },
 		...(isPartner ? [{ label: 'Partner', href: '/partner' }] : []),
 		...(isStaff ? [{ label: 'Staff', href: '/staff', badge: assignedEventsCount }] : []),
+		...(canAccessCms ? [{ label: 'CMS', href: '/cms' }] : []),
 		...(isAdmin ? [{ label: 'Admin', href: '/admin' }] : [])
 	]);
 </script>
