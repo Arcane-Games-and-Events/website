@@ -9,8 +9,8 @@ import { getSupabase, CMS_MEDIA_BUCKET } from '$lib/server/supabase.js';
  * DELETE /api/cms/media/[id]
  *
  * Deletes a cms_media row + its Supabase Storage object, but only if no
- * other CMS record still references it as a cover / thumbnail (or their
- * draft-buffered variants).
+ * other CMS record still references it as a cover / thumbnail (live or
+ * draft-buffered).
  *
  * References checked:
  *   - cms_entry.cover_image_id | thumbnail_image_id | draft_cover_image_id
@@ -18,19 +18,17 @@ import { getSupabase, CMS_MEDIA_BUCKET } from '$lib/server/supabase.js';
  *   - cms_course.cover_image_id | thumbnail_image_id | draft_cover_image_id
  *     | draft_thumbnail_image_id
  *
- * NOT checked: inline references inside Lexical body JSONB. Scanning
- * JSONB for every image mediaId is expensive and JSONB has no FK
- * enforcement, so we accept a small race: when a writer removes an
- * inline image widget, the widget is gone from the local editor state
- * but the autosaved body may briefly still reference the mediaId. The
- * next autosave clears that reference in the DB. If the autosave never
- * happens (page crash / connection loss), the stored body will render
- * a broken image URL on next load — a graceful degradation, not a hard
- * failure.
+ * NOT checked: inline references inside Lexical body JSONB — scanning
+ * JSONB per mediaId is expensive and JSONB has no FK enforcement anyway.
+ * When a writer removes an inline image widget, this endpoint deletes
+ * the file even if the last autosave hasn't yet cleared the JSONB URL.
+ * The next autosave clears the URL; if that never happens the reader
+ * renders a broken image URL (graceful).
  *
- * Response:
- *   { deleted: true } — media row + Storage object gone
- *   { deleted: false, reason } — still referenced somewhere; nothing changed
+ * Response — always JSON, with the same shape for both success and
+ * refusal so the client can log a single line either way:
+ *   { deleted: true,  storage: { path, removed: [...], error?: string } }
+ *   { deleted: false, reason: string, blockedBy?: 'entry' | 'course' }
  */
 export async function DELETE({ params, locals }) {
 	const user = locals.user;
@@ -42,10 +40,21 @@ export async function DELETE({ params, locals }) {
 	const [media] = await db.select().from(cmsMedia).where(eq(cmsMedia.id, params.id)).limit(1);
 	if (!media) throw error(404, 'Media not found');
 
-	// Reference guard — refuse to delete if the media is still bound to any
-	// entry or course as a cover / thumbnail (live or draft-buffered).
+	// -------------------------------------------------------------------
+	// Reference guard — refuse to delete if any entry or course still
+	// binds this media as a cover / thumbnail (live or draft-buffered).
+	// The result identifies WHICH slot is holding the reference so the
+	// client / server logs make the "why" obvious.
+	// -------------------------------------------------------------------
 	const [entryRef] = await db
-		.select({ id: cmsEntry.id })
+		.select({
+			id: cmsEntry.id,
+			slug: cmsEntry.slug,
+			coverImageId: cmsEntry.coverImageId,
+			thumbnailImageId: cmsEntry.thumbnailImageId,
+			draftCoverImageId: cmsEntry.draftCoverImageId,
+			draftThumbnailImageId: cmsEntry.draftThumbnailImageId
+		})
 		.from(cmsEntry)
 		.where(
 			or(
@@ -57,11 +66,23 @@ export async function DELETE({ params, locals }) {
 		)
 		.limit(1);
 	if (entryRef) {
-		return json({ deleted: false, reason: 'still referenced by an entry' });
+		const heldBy = [
+			entryRef.coverImageId === params.id && 'coverImageId',
+			entryRef.thumbnailImageId === params.id && 'thumbnailImageId',
+			entryRef.draftCoverImageId === params.id && 'draftCoverImageId',
+			entryRef.draftThumbnailImageId === params.id && 'draftThumbnailImageId'
+		].filter(Boolean);
+		return json({
+			deleted: false,
+			reason: `still referenced by entry ${entryRef.slug} in ${heldBy.join(', ')}`,
+			blockedBy: 'entry',
+			entryId: entryRef.id,
+			heldBy
+		});
 	}
 
 	const [courseRef] = await db
-		.select({ id: cmsCourse.id })
+		.select({ id: cmsCourse.id, slug: cmsCourse.slug })
 		.from(cmsCourse)
 		.where(
 			or(
@@ -73,30 +94,49 @@ export async function DELETE({ params, locals }) {
 		)
 		.limit(1);
 	if (courseRef) {
-		return json({ deleted: false, reason: 'still referenced by a course' });
+		return json({
+			deleted: false,
+			reason: `still referenced by course ${courseRef.slug}`,
+			blockedBy: 'course',
+			courseId: courseRef.id
+		});
 	}
 
-	// Delete the Storage object first. If this fails, we still delete the
-	// DB row — an orphaned Storage object is easier to clean up later than
-	// an orphan DB row pointing at a missing file.
+	// Storage delete. `data` can be [] even on success (path didn't match
+	// any object) — surfaced back to the client via `storage.error` so the
+	// caller can decide whether to care.
 	const supabase = getSupabase();
-	if (supabase && media.storagePath) {
+	let storage = { path: media.storagePath, removed: [], error: null };
+
+	if (!supabase) {
+		storage.error = 'supabase client unavailable';
+	} else if (!media.storagePath) {
+		storage.error = 'no storage path stored on media row';
+	} else {
 		try {
-			const { error: rmError } = await supabase.storage
+			const { data, error: rmError } = await supabase.storage
 				.from(CMS_MEDIA_BUCKET)
 				.remove([media.storagePath]);
 			if (rmError) {
-				console.warn(
+				console.error(
 					`[cms/media/delete] Storage remove failed (path=${media.storagePath}):`,
-					rmError.message
+					rmError
 				);
+				storage.error = rmError.message || String(rmError);
+			} else {
+				const removedNames = Array.isArray(data) ? data.map((r) => r?.name).filter(Boolean) : [];
+				storage.removed = removedNames;
+				if (removedNames.length === 0) {
+					storage.error = 'no files matched the storage path';
+				}
 			}
 		} catch (err) {
-			console.warn(`[cms/media/delete] Storage remove threw:`, err?.message);
+			console.error(`[cms/media/delete] Storage remove threw:`, err);
+			storage.error = err?.message || String(err);
 		}
 	}
 
 	await db.delete(cmsMedia).where(eq(cmsMedia.id, params.id));
 
-	return json({ deleted: true });
+	return json({ deleted: true, storage });
 }

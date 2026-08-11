@@ -118,18 +118,70 @@
 		{/each}
 	</div>
 
-	<div class="overflow-hidden rounded-md border border-line2 bg-paper">
-		{#if entries.length === 0}
-			<div class="px-6 py-16 text-center">
-				<p class="text-ink/60">No entries yet.</p>
-				<button
-					on:click={createNew}
-					class="mt-3 text-sm font-medium text-accent hover:underline"
+	{#if entries.length === 0}
+		<div class="rounded-md border border-line2 bg-paper px-6 py-16 text-center">
+			<p class="text-ink/60">No entries yet.</p>
+			<button
+				on:click={createNew}
+				class="mt-3 text-sm font-medium text-accent hover:underline"
+			>
+				Create your first one
+			</button>
+		</div>
+	{:else}
+		<!-- Mobile: card layout — a table with 6 columns is unreadable on a
+		     phone; the card gives each entry a full-width row with the
+		     essentials stacked (title / status / meta). -->
+		<div class="grid grid-cols-1 gap-3 md:hidden">
+			{#each entries as a}
+				{@const eff = effectiveStatus(a)}
+				<a
+					href="/cms/entries/{a.id}"
+					class="block rounded-md border border-line2 bg-paper p-4 transition-colors hover:bg-paper-bg/40"
 				>
-					Create your first one
-				</button>
-			</div>
-		{:else}
+					<div class="mb-1 font-medium text-ink">{a.title}</div>
+					<div class="mb-2 text-xs text-ink/50 font-mono-system">/{a.slug}</div>
+					<div class="mb-3 flex flex-wrap gap-1">
+						<span class="rounded-full px-2 py-0.5 text-xs font-medium {statusBadge(eff)}">
+							{eff}
+						</span>
+						{#if a.draftUpdatedAt}
+							<span
+								class="rounded-full bg-warm/20 px-2 py-0.5 text-[10px] font-medium text-warm"
+							>
+								pending
+							</span>
+						{/if}
+						{#if a.source === 'payload'}
+							<span class="rounded-full bg-prem/15 px-2 py-0.5 text-[10px] font-medium text-prem">
+								payload
+							</span>
+						{/if}
+						{#if a.accessMode === 'premium'}
+							<span class="rounded-full bg-prem/15 px-2 py-0.5 text-[10px] font-medium text-prem">
+								premium
+							</span>
+						{/if}
+					</div>
+					<div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink/60 font-mono-system">
+						<span class="text-ink/80">
+							{a.authorFirstName
+								? `${a.authorFirstName} ${a.authorLastName || ''}`.trim()
+								: '—'}
+						</span>
+						<span aria-hidden="true">·</span>
+						<span>Updated {fmtDate(a.updatedAt)}</span>
+						{#if a.publishedAt}
+							<span aria-hidden="true">·</span>
+							<span>Published {fmtDate(a.publishedAt)}</span>
+						{/if}
+					</div>
+				</a>
+			{/each}
+		</div>
+
+		<!-- Desktop: table -->
+		<div class="hidden overflow-hidden rounded-md border border-line2 bg-paper md:block">
 			<table class="w-full text-sm">
 				<thead class="border-b border-line2 bg-paper-bg/60 text-left text-[11px] tracking-wider text-ink/60 uppercase font-mono-system">
 					<tr>
@@ -189,6 +241,6 @@
 					{/each}
 				</tbody>
 			</table>
-		{/if}
-	</div>
+		</div>
+	{/if}
 </div>

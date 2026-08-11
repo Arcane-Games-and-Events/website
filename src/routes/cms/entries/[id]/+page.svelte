@@ -57,6 +57,43 @@
 	let coverImage = data?.coverImage || null;
 	let thumbnailImage = data?.thumbnailImage || null;
 
+	// Author picker state (admin-only). The list of authors is fetched lazily
+	// on first focus so a non-admin editor never spends a request on it, and
+	// the initial page render doesn't wait for another DB query.
+	let author = data?.author || null;
+	let authorId = data?.entry?.authorId || null;
+	let authorOptions = null;
+	let loadingAuthors = false;
+
+	async function ensureAuthorsLoaded() {
+		if (authorOptions || loadingAuthors) return;
+		loadingAuthors = true;
+		try {
+			const res = await fetch('/api/cms/users/authors');
+			if (!res.ok) return;
+			const body = await res.json();
+			authorOptions = body.authors || [];
+		} finally {
+			loadingAuthors = false;
+		}
+	}
+
+	async function changeAuthor(newAuthorId) {
+		if (!newAuthorId || newAuthorId === authorId) return;
+		const updated = await patchEntry({ authorId: newAuthorId });
+		if (!updated) return;
+		authorId = updated.authorId;
+		const picked = (authorOptions || []).find((a) => a.id === authorId);
+		if (picked) {
+			author = {
+				id: picked.id,
+				firstName: picked.firstName,
+				lastName: picked.lastName,
+				email: picked.email
+			};
+		}
+	}
+
 	async function patchEntry(fields) {
 		const res = await fetch(`/api/cms/entries/${entry.id}`, {
 			method: 'PATCH',
@@ -103,9 +140,8 @@
 	}
 
 	// Fire-and-forget: DB row + Supabase Storage object are cleaned up if
-	// nothing else still references the media. Response is ignored — the
-	// endpoint returns `{ deleted: false, reason }` when the media is still
-	// used elsewhere, and that's fine (leaves the shared image intact).
+	// nothing else still references the media. Silent on the client side —
+	// the endpoint refuses gracefully when a shared image is still needed.
 	function deleteMedia(id) {
 		fetch(`/api/cms/media/${id}`, { method: 'DELETE' }).catch(() => {});
 	}
@@ -304,7 +340,7 @@
 					type="text"
 					bind:value={title}
 					placeholder="Entry title"
-					class="w-full rounded-md border border-line2 bg-paper px-4 py-3 font-newsreader text-2xl font-semibold text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none"
+					class="w-full rounded-md border border-line2 bg-paper px-4 py-3 font-newsreader text-xl font-semibold text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none sm:text-2xl"
 				/>
 
 				<Editor bind:value={body} placeholder="Start writing your entry…" on:change={handleEditorChange} />
@@ -435,6 +471,47 @@
 						</p>
 					{/if}
 				</div>
+
+				{#if isAdmin}
+					<!-- Author picker: admin-only. Lazy-loads the eligible-authors list
+					     on focus so the initial page render doesn't wait for it. -->
+					<div class="rounded-md border border-line2 bg-paper p-4">
+						<h3 class="mb-3 text-xs font-semibold tracking-wider text-ink/60 uppercase font-mono-system">
+							Author
+						</h3>
+						<p class="mb-2 text-xs text-ink/70">
+							Currently:
+							<span class="font-medium text-ink">
+								{author ? `${author.firstName} ${author.lastName || ''}`.trim() : '—'}
+							</span>
+						</p>
+						<select
+							value={authorId}
+							on:focus={ensureAuthorsLoaded}
+							on:change={(e) => changeAuthor(e.currentTarget.value)}
+							class="w-full rounded-md border border-line2 bg-paper px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+						>
+							{#if loadingAuthors && !authorOptions}
+								<option>Loading…</option>
+							{:else if !authorOptions}
+								{#if author}
+									<option value={author.id}>
+										{author.firstName}
+										{author.lastName || ''}
+									</option>
+								{/if}
+							{:else}
+								{#each authorOptions as opt}
+									<option value={opt.id}>
+										{opt.firstName}
+										{opt.lastName || ''}
+										{#if opt.email}— {opt.email}{/if}
+									</option>
+								{/each}
+							{/if}
+						</select>
+					</div>
+				{/if}
 
 				<div class="rounded-md border border-line2 bg-paper p-4">
 					<h3 class="mb-3 text-xs font-semibold tracking-wider text-ink/60 uppercase font-mono-system">

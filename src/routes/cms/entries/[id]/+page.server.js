@@ -1,6 +1,6 @@
 import { redirect, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { cmsEntry, cmsMedia } from '$lib/server/db/schema.js';
+import { cmsEntry, cmsMedia, user as userTable } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { canEditEntries, isAdmin, ownsOrAdmin } from '$lib/server/auth/roles.js';
 
@@ -11,12 +11,13 @@ export async function load({ params, locals }) {
 	if (!entry) throw error(404, 'Entry not found');
 	if (!ownsOrAdmin(locals.user, entry.authorId)) throw error(403, 'Forbidden');
 
-	// Resolve cover + thumbnail media the editor should display: draft version
-	// if buffered, otherwise the live version. Load both in parallel.
+	// Resolve cover + thumbnail media + author user so the sidebar can
+	// show all three without an extra client round-trip. Draft-buffered
+	// versions win when the entry has pending edits.
 	const editingCoverId = entry.draftCoverImageId || entry.coverImageId;
 	const editingThumbnailId = entry.draftThumbnailImageId || entry.thumbnailImageId;
 
-	const [coverImage, thumbnailImage] = await Promise.all([
+	const [coverImage, thumbnailImage, author] = await Promise.all([
 		editingCoverId
 			? db
 					.select()
@@ -32,6 +33,19 @@ export async function load({ params, locals }) {
 					.where(eq(cmsMedia.id, editingThumbnailId))
 					.limit(1)
 					.then((r) => r[0] || null)
+			: Promise.resolve(null),
+		entry.authorId
+			? db
+					.select({
+						id: userTable.id,
+						firstName: userTable.firstName,
+						lastName: userTable.lastName,
+						email: userTable.email
+					})
+					.from(userTable)
+					.where(eq(userTable.id, entry.authorId))
+					.limit(1)
+					.then((r) => r[0] || null)
 			: Promise.resolve(null)
 	]);
 
@@ -39,6 +53,7 @@ export async function load({ params, locals }) {
 		entry,
 		coverImage,
 		thumbnailImage,
+		author,
 		isAdmin: isAdmin(locals.user)
 	};
 }

@@ -15,6 +15,7 @@ import { db } from '$lib/server/db/index.js';
 import { cmsEntry, cmsRevision } from '$lib/server/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { calculateReadTime, lexicalToText } from '$lib/cms/render/lexical-utils.js';
+import { deleteMediaWithGuard } from '$lib/server/cms/media.js';
 
 // --- slug helpers -----------------------------------------------------------
 
@@ -107,12 +108,14 @@ function shouldBufferEdits(existing) {
 	return existing.status === 'published' || existing.status === 'scheduled';
 }
 
-// Content fields that route into draft_* on live entries.
+// Text fields that route into draft_* on live entries — buffering these
+// is where admin sign-off actually matters (a wrong title / excerpt / body
+// misleads readers). Image changes are handled separately below: they
+// always go live, so the writer's chosen artwork is what visitors see and
+// the client-side deleteMedia call cleans up the replaced file immediately.
 const CONTENT_FIELDS = [
 	{ patch: 'title', draft: 'draftTitle', live: 'title' },
-	{ patch: 'excerpt', draft: 'draftExcerpt', live: 'excerpt' },
-	{ patch: 'coverImageId', draft: 'draftCoverImageId', live: 'coverImageId' },
-	{ patch: 'thumbnailImageId', draft: 'draftThumbnailImageId', live: 'thumbnailImageId' }
+	{ patch: 'excerpt', draft: 'draftExcerpt', live: 'excerpt' }
 ];
 
 // Video-slot fields — always go live for now. If a writer swaps the video on
@@ -162,7 +165,7 @@ export async function updateEntry(id, patch, actor) {
 		updates.slug = await findFreeSlug(titleToSlug(patch.slug) || existing.slug, id);
 	}
 
-	// Title / excerpt / cover / thumbnail — routed by buffering flag.
+	// Title / excerpt — routed by buffering flag.
 	for (const { patch: p, draft, live } of CONTENT_FIELDS) {
 		if (!(p in patch)) continue;
 		const val = patch[p];
@@ -173,6 +176,12 @@ export async function updateEntry(id, patch, actor) {
 			updates[live] = val;
 		}
 	}
+
+	// Cover + thumbnail — always live, never buffered. Image swaps take
+	// effect immediately so the client-side deleteMedia call can clean up
+	// the replaced file right after this update completes.
+	if ('coverImageId' in patch) updates.coverImageId = patch.coverImageId;
+	if ('thumbnailImageId' in patch) updates.thumbnailImageId = patch.thumbnailImageId;
 
 	// Body + derived read time.
 	if (patch.body !== undefined) {
@@ -263,9 +272,29 @@ export async function approveEntryDraft(id, actor) {
 		updates.body = existing.draftBody;
 		updates.readTime = existing.draftReadTime ?? calculateReadTime(existing.draftBody);
 	}
+
+	// Legacy: any entry that was already buffered before we stopped
+	// buffering image changes will still have draftCoverImageId /
+	// draftThumbnailImageId set. Approve should still swap those onto live
+	// and clean up the replaced files so old drafts don't get stuck.
 	if (existing.draftCoverImageId != null) updates.coverImageId = existing.draftCoverImageId;
 	if (existing.draftThumbnailImageId != null) {
 		updates.thumbnailImageId = existing.draftThumbnailImageId;
+	}
+	const orphanedIds = [];
+	if (
+		existing.draftCoverImageId != null &&
+		existing.coverImageId &&
+		existing.coverImageId !== existing.draftCoverImageId
+	) {
+		orphanedIds.push(existing.coverImageId);
+	}
+	if (
+		existing.draftThumbnailImageId != null &&
+		existing.thumbnailImageId &&
+		existing.thumbnailImageId !== existing.draftThumbnailImageId
+	) {
+		orphanedIds.push(existing.thumbnailImageId);
 	}
 
 	await db.update(cmsEntry).set(updates).where(eq(cmsEntry.id, id));
@@ -280,14 +309,45 @@ export async function approveEntryDraft(id, actor) {
 		});
 	}
 
+	// Clean up the images the draft just replaced — Storage + DB row.
+	// The reference guard inside deleteMediaWithGuard is authoritative:
+	// if another entry / course still uses the same image, nothing changes.
+	for (const orphanedId of orphanedIds) {
+		try {
+			await deleteMediaWithGuard(orphanedId);
+		} catch (err) {
+			console.warn(`[approveEntryDraft] media cleanup failed for ${orphanedId}:`, err?.message);
+		}
+	}
+
 	const [updated] = await db.select().from(cmsEntry).where(eq(cmsEntry.id, id)).limit(1);
 	return updated;
 }
 
 /**
  * Discard buffered draft_* fields without applying them. Live columns unchanged.
+ * Draft-side images (that never made it live) get cleaned up here.
  */
 export async function discardEntryDraft(id) {
+	const [existing] = await db.select().from(cmsEntry).where(eq(cmsEntry.id, id)).limit(1);
+	if (!existing) return null;
+
+	// Draft images the writer uploaded that never made it to the live entry.
+	// Captured before we null out the draft columns; deleted after.
+	const orphanedIds = [];
+	if (
+		existing.draftCoverImageId != null &&
+		existing.draftCoverImageId !== existing.coverImageId
+	) {
+		orphanedIds.push(existing.draftCoverImageId);
+	}
+	if (
+		existing.draftThumbnailImageId != null &&
+		existing.draftThumbnailImageId !== existing.thumbnailImageId
+	) {
+		orphanedIds.push(existing.draftThumbnailImageId);
+	}
+
 	await db
 		.update(cmsEntry)
 		.set({
@@ -302,6 +362,17 @@ export async function discardEntryDraft(id) {
 			draftUpdatedBy: null
 		})
 		.where(eq(cmsEntry.id, id));
+
+	for (const orphanedId of orphanedIds) {
+		try {
+			await deleteMediaWithGuard(orphanedId);
+		} catch (err) {
+			console.warn(
+				`[discardEntryDraft] media cleanup failed for ${orphanedId}:`,
+				err?.message
+			);
+		}
+	}
 
 	const [updated] = await db.select().from(cmsEntry).where(eq(cmsEntry.id, id)).limit(1);
 	return updated;

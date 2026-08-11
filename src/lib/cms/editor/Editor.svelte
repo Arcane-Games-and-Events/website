@@ -66,6 +66,7 @@
 	import InsertStatsTableDialog from './InsertStatsTableDialog.svelte';
 	import InsertCardLinkDialog from './InsertCardLinkDialog.svelte';
 	import InsertInlineVideoDialog from './InsertInlineVideoDialog.svelte';
+	import EditorContextMenu from './EditorContextMenu.svelte';
 
 	export let value = emptyLexicalDoc();
 	export let placeholder = 'Start writing…';
@@ -87,6 +88,23 @@
 	let cardLinkDialogOpen = false;
 	let cardLinkSelectedText = '';
 	let inlineVideoDialogOpen = false;
+
+	// Right-click context menu state — the browser moves the caret to the
+	// click point before the contextmenu event fires, so any block/format/
+	// insert command we run after the menu closes lands at the cursor.
+	let contextMenuOpen = false;
+	let contextMenuX = 0;
+	let contextMenuY = 0;
+
+	function handleWindowContextMenu(e) {
+		// Only intercept right-clicks inside the editor's content area.
+		if (!editorEl || !editorEl.contains(e.target)) return;
+		e.preventDefault();
+		e.stopPropagation();
+		contextMenuX = e.clientX;
+		contextMenuY = e.clientY;
+		contextMenuOpen = true;
+	}
 
 	onMount(() => {
 		editor = createEditor({
@@ -111,30 +129,54 @@
 
 		editor.setRootElement(editorEl);
 
-		// Widget delete button custom event — dispatched by DecklistNode/StatsTableNode/ImageUploadNode.
-		// For inline images specifically, we also fire-and-forget a media
-		// delete so the DB row + Supabase Storage object don't become
-		// orphans. The endpoint reference-checks against every other place
-		// a mediaId can appear (cover/thumb on entries + courses, live and
-		// draft) before deleting, so shared images stay intact.
+		// Widget delete button custom event — dispatched by DecklistNode/
+		// StatsTableNode/ImageUploadNode/InlineVideoNode.
+		//
+		// For inline images specifically, we ALSO clean up the underlying
+		// media row + Supabase Storage object so orphans don't accumulate.
+		// The endpoint reference-checks against every other place a mediaId
+		// can appear (cover/thumb on entries + courses, live and draft)
+		// before deleting, so an image shared as a cover elsewhere is safe.
 		editorEl.addEventListener('cms-widget-delete', (e) => {
 			const nodeKey = e.detail?.nodeKey;
 			if (!nodeKey) return;
+
+			// Read the mediaId BEFORE mutating — editor.update() is
+			// asynchronous, so grabbing __data inside it and checking outside
+			// would fire the fetch before the assignment happened. Read via
+			// editorState.read() gives us a synchronous snapshot.
 			let mediaIdToDelete = null;
+			editor.getEditorState().read(() => {
+				const node = getNodeByKey(nodeKey);
+				const data = /** @type {any} */ (node)?.__data;
+				if (data?.mediaId) mediaIdToDelete = data.mediaId;
+			});
+
+			// Remove the node from the doc.
 			editor.update(() => {
 				const node = getNodeByKey(nodeKey);
-				if (!node) return;
-				// ImageUploadNode stores { url, alt, width, height, mediaId }
-				// on __data. If mediaId is set, this widget's underlying
-				// Storage object + DB row should be cleaned up too.
-				const data = /** @type {any} */ (node).__data;
-				if (data && data.mediaId) mediaIdToDelete = data.mediaId;
-				node.remove();
+				if (node) node.remove();
 			});
+
+			// Fire-and-forget media cleanup. Endpoint reference-checks
+			// against every other cover / thumbnail slot before deleting,
+			// so shared images stay intact.
 			if (mediaIdToDelete) {
 				fetch(`/api/cms/media/${mediaIdToDelete}`, { method: 'DELETE' }).catch(() => {});
 			}
 		});
+
+		// Ensure every decorator node has a writable sibling after it — a
+		// bare paragraph. Otherwise, if a Decklist / StatsTable / Image /
+		// InlineVideo is the last thing in the doc, the cursor can't land
+		// past it and the writer can't continue typing. Node transforms
+		// run inside the editor's update cycle, so touching the doc from
+		// here is safe (no cycle-triggering).
+		function ensureTrailingParagraph(node) {
+			if (node.getNextSibling() === null) {
+				node.insertAfter(createParagraphNode());
+			}
+		}
 
 		unregister = mergeRegister(
 			registerRichText(editor),
@@ -144,6 +186,13 @@
 			// Without this the toolbar's • List and 1. List buttons dispatch
 			// commands that no listener consumes, so nothing happens.
 			registerList(editor),
+			// One transform per decorator type — each fires only when its
+			// own node type changes, so we don't run every check on every
+			// text edit.
+			editor.registerNodeTransform(DecklistNode, ensureTrailingParagraph),
+			editor.registerNodeTransform(StatsTableNode, ensureTrailingParagraph),
+			editor.registerNodeTransform(ImageUploadNode, ensureTrailingParagraph),
+			editor.registerNodeTransform(InlineVideoNode, ensureTrailingParagraph),
 			editor.registerUpdateListener(({ editorState }) => {
 				const json = editorState.toJSON();
 				value = json;
@@ -465,16 +514,18 @@
 			contenteditable="true"
 			role="textbox"
 			aria-multiline="true"
-			class="cms-editor-content min-h-[24rem] w-full px-6 py-5 font-newsreader text-ink focus:outline-none"
+			class="cms-editor-content min-h-[24rem] w-full px-4 py-5 font-newsreader text-ink focus:outline-none sm:px-6"
 			spellcheck="true"
 		></div>
 		{#if isEmpty}
-			<div class="pointer-events-none absolute top-5 left-6 text-ink/40 select-none font-newsreader">
+			<div class="pointer-events-none absolute top-5 left-4 text-ink/40 select-none font-newsreader sm:left-6">
 				{placeholder}
 			</div>
 		{/if}
 	</div>
 </div>
+
+<svelte:window on:contextmenu={handleWindowContextMenu} />
 
 <InsertDecklistDialog bind:open={decklistDialogOpen} on:insert={(e) => insertDecklist(e.detail)} />
 <InsertStatsTableDialog bind:open={statsDialogOpen} on:insert={(e) => insertStatsTable(e.detail)} />
@@ -486,6 +537,20 @@
 <InsertInlineVideoDialog
 	bind:open={inlineVideoDialogOpen}
 	on:insert={(e) => insertInlineVideo(e.detail)}
+/>
+
+<EditorContextMenu
+	bind:open={contextMenuOpen}
+	x={contextMenuX}
+	y={contextMenuY}
+	on:setBlock={(e) => setBlock(e.detail)}
+	on:insertList={(e) => insertList(e.detail)}
+	on:formatText={(e) => formatText(e.detail)}
+	on:insertImage={openImagePicker}
+	on:insertCardLink={openCardLinkDialog}
+	on:insertDecklist={() => (decklistDialogOpen = true)}
+	on:insertStatsTable={() => (statsDialogOpen = true)}
+	on:insertVideo={() => (inlineVideoDialogOpen = true)}
 />
 
 <style>
