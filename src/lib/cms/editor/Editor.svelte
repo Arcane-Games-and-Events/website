@@ -23,6 +23,7 @@
 		$getNodeByKey as getNodeByKey,
 		$createParagraphNode as createParagraphNode,
 		$createTextNode as createTextNode,
+		$isDecoratorNode as isDecoratorNode,
 		FORMAT_TEXT_COMMAND
 	} from 'lexical';
 	import {
@@ -167,13 +168,17 @@
 		});
 
 		// Ensure every decorator node has a writable sibling after it — a
-		// bare paragraph. Otherwise, if a Decklist / StatsTable / Image /
-		// InlineVideo is the last thing in the doc, the cursor can't land
-		// past it and the writer can't continue typing. Node transforms
-		// run inside the editor's update cycle, so touching the doc from
-		// here is safe (no cycle-triggering).
+		// bare paragraph. Fires in two cases:
+		//   1. Decorator is the LAST child of root — otherwise the cursor
+		//      has nowhere to land past it and typing is impossible.
+		//   2. Decorator's next sibling is ANOTHER decorator — otherwise
+		//      the writer can't insert a cursor between adjacent widgets
+		//      (a decklist followed by a video, etc.) to type between them.
+		// Transforms run inside the editor's update cycle, so mutating the
+		// doc from here is safe (no cycle-triggering).
 		function ensureTrailingParagraph(node) {
-			if (node.getNextSibling() === null) {
+			const next = node.getNextSibling();
+			if (next === null || isDecoratorNode(next)) {
 				node.insertAfter(createParagraphNode());
 			}
 		}

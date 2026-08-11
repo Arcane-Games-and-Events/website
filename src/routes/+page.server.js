@@ -323,8 +323,11 @@ export async function load({ setHeaders, url, locals }) {
 		// If the article fetch failed and we returned an empty page, skip
 		// caching so we don't lock in the empty state.
 		if (articles.length > 0) {
+			// Short edge cache so a newly published entry appears on the
+			// homepage within a minute. Redis is busted immediately by the
+			// entry update path; this bound is for the CDN layer.
 			setHeaders({
-				'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
+				'cache-control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=60',
 				vary: 'Cookie'
 			});
 		} else {

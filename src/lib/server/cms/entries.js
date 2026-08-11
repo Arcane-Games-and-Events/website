@@ -16,6 +16,25 @@ import { cmsEntry, cmsRevision } from '$lib/server/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { calculateReadTime, lexicalToText } from '$lib/cms/render/lexical-utils.js';
 import { deleteMediaWithGuard } from '$lib/server/cms/media.js';
+import { invalidateByPrefix, CACHE_KEYS } from '$lib/server/redis/index.js';
+
+/**
+ * Drop the Redis-cached list caches ({ARTICLES}:cms:list:*) so the next
+ * homepage / library-index render rebuilds them from the DB. Called
+ * whenever an entry's public visibility (status, publish date, cover, etc.)
+ * changes. Awaited by the caller — Vercel can terminate a serverless
+ * function's background promises after the response is sent, and a
+ * fire-and-forget invalidation was intermittently getting killed before
+ * the SCAN + DEL round-trip finished.
+ */
+async function invalidateListCaches() {
+	try {
+		await invalidateByPrefix(`${CACHE_KEYS.ARTICLES}:cms:list:`);
+	} catch {
+		// Best-effort — a failed invalidation just means the cache
+		// expires normally after its TTL; doesn't break the update.
+	}
+}
 
 // --- slug helpers -----------------------------------------------------------
 
@@ -217,6 +236,13 @@ export async function updateEntry(id, patch, actor) {
 	}
 	if ('scheduledFor' in patch) updates.scheduledFor = patch.scheduledFor;
 
+	// Explicit publishedAt override (admin-gated up-stack). Lets an admin
+	// backdate an entry to sit in the library at a specific chronological
+	// slot, or bump a future date to preview ordering. `null` clears it.
+	if ('publishedAt' in patch) {
+		updates.publishedAt = patch.publishedAt ? new Date(patch.publishedAt) : null;
+	}
+
 	if (touchedDraft) {
 		updates.draftUpdatedAt = new Date();
 		updates.draftUpdatedBy = actor?.id || null;
@@ -235,6 +261,29 @@ export async function updateEntry(id, patch, actor) {
 		});
 	}
 
+	// Bust the list caches when the change could affect what shows on the
+	// homepage / library. Text edits on a published entry go into the draft
+	// buffer (not visible to visitors), so the list stays the same — no
+	// invalidation needed there. But any of the following DO shift what
+	// visitors see:
+	//   - status change involving `published` or `scheduled`
+	//   - explicit publishedAt override (changes ordering)
+	//   - scheduledFor change on a scheduled entry
+	//   - accessMode change (premium chip in card listings)
+	//   - live cover / thumbnail (not buffered anymore — updates immediate)
+	const visibilityShifted =
+		('status' in patch &&
+			patch.status !== existing.status &&
+			[patch.status, existing.status].some(
+				(s) => s === 'published' || s === 'scheduled'
+			)) ||
+		'publishedAt' in patch ||
+		('scheduledFor' in patch && existing.status === 'scheduled') ||
+		('accessMode' in patch && patch.accessMode !== existing.accessMode) ||
+		('coverImageId' in patch && patch.coverImageId !== existing.coverImageId) ||
+		('thumbnailImageId' in patch && patch.thumbnailImageId !== existing.thumbnailImageId);
+	if (visibilityShifted) await invalidateListCaches();
+
 	const [updated] = await db.select().from(cmsEntry).where(eq(cmsEntry.id, id)).limit(1);
 	return updated;
 }
@@ -245,7 +294,18 @@ export async function updateEntry(id, patch, actor) {
  * Push buffered draft_* fields onto the live columns. No-op if the draft
  * buffer is empty. Clears the buffer once copied.
  */
-export async function approveEntryDraft(id, actor) {
+/**
+ * Approve the draft buffer.
+ *
+ * @param {string} id - entry id
+ * @param {any}    actor - user performing the action (revision attribution)
+ * @param {object} [opts]
+ * @param {'draft' | null} [opts.asStatus] - optional status override.
+ *   When set to 'draft', the entry is unpublished as part of the approve
+ *   (accept the edits into the canonical content but hide from readers).
+ *   When null / undefined, the status stays whatever it was.
+ */
+export async function approveEntryDraft(id, actor, opts = {}) {
 	const [existing] = await db.select().from(cmsEntry).where(eq(cmsEntry.id, id)).limit(1);
 	if (!existing) throw new Error('Entry not found');
 	if (!existing.draftUpdatedAt) return existing; // nothing to approve
@@ -281,6 +341,16 @@ export async function approveEntryDraft(id, actor) {
 	if (existing.draftThumbnailImageId != null) {
 		updates.thumbnailImageId = existing.draftThumbnailImageId;
 	}
+
+	// Optional status override — "Approve as draft" applies the buffered
+	// content AND sets status='draft', so an admin can accept a writer's
+	// edits without making the entry (still) public. Clearing scheduledFor
+	// too so an entry doesn't sit half-scheduled after going back to draft.
+	if (opts.asStatus === 'draft' && existing.status !== 'draft') {
+		updates.status = 'draft';
+		updates.scheduledFor = null;
+	}
+
 	const orphanedIds = [];
 	if (
 		existing.draftCoverImageId != null &&
@@ -319,6 +389,11 @@ export async function approveEntryDraft(id, actor) {
 			console.warn(`[approveEntryDraft] media cleanup failed for ${orphanedId}:`, err?.message);
 		}
 	}
+
+	// Approving a draft flips what visitors see — buffered text became live.
+	// Always invalidate the list caches so a fresh homepage / library
+	// render picks up the new title / excerpt / cover.
+	await invalidateListCaches();
 
 	const [updated] = await db.select().from(cmsEntry).where(eq(cmsEntry.id, id)).limit(1);
 	return updated;

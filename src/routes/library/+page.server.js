@@ -5,10 +5,13 @@ import { getMuxThumbnailToken } from '$lib/server/mux.js';
 import { listPublishedEntries } from '$lib/server/cms/list.js';
 
 export async function load({ setHeaders }) {
-	// Cache articles list for 5 minutes, allow stale for 1 hour while revalidating
-	// Vary by Cookie ensures sidebar updates properly after login/logout
+	// Short edge cache — 60s fresh, 60s stale-while-revalidate. A newly
+	// published entry appears on the library within a minute of publish
+	// even after CDN caching (Redis on the origin is busted immediately
+	// via invalidateListCaches). Previously 300s+3600s, which was too long
+	// for a CMS user to notice new content.
 	setHeaders({
-		'cache-control': 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600',
+		'cache-control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=60',
 		vary: 'Cookie'
 	});
 

@@ -51,6 +51,9 @@ export async function PATCH({ params, request, locals }) {
 	if ('authorId' in patch && patch.authorId !== entry.authorId && !admin) {
 		throw error(403, 'Only an admin can change the author');
 	}
+	if ('publishedAt' in patch && !admin) {
+		throw error(403, 'Only an admin can change the publish date');
+	}
 
 	if (patch.status === 'scheduled') {
 		const when = patch.scheduledFor ? new Date(patch.scheduledFor) : null;

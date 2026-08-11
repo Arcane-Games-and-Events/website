@@ -17,6 +17,8 @@
 	import CoverImagePicker from '$lib/cms/editor/CoverImagePicker.svelte';
 	import VideoSlotPicker from '$lib/cms/editor/VideoSlotPicker.svelte';
 	import { coerceLexicalDoc } from '$lib/cms/editor/utils.js';
+	import { lexicalToText } from '$lib/cms/render/lexical-utils.js';
+	import { diffWords, diffArrays } from 'diff';
 
 	export let data;
 
@@ -45,6 +47,12 @@
 	let isAdmin = !!data?.isAdmin;
 	let scheduleInput = data?.entry?.scheduledFor
 		? toLocalInput(new Date(data.entry.scheduledFor))
+		: '';
+
+	// Explicit publish-date input — admin can set to any datetime (past,
+	// present, or future) to control library ordering. Blank = clear.
+	let publishDateInput = data?.entry?.publishedAt
+		? toLocalInput(new Date(data.entry.publishedAt))
 		: '';
 
 	function toLocalInput(d) {
@@ -108,6 +116,10 @@
 		const j = await res.json();
 		entry = j.entry;
 		status = entry.status;
+		// Re-sync the local publish-date input whenever the server returns
+		// a fresh entry, so a Publish action that auto-set publishedAt is
+		// reflected in the picker without a page refresh.
+		publishDateInput = entry.publishedAt ? toLocalInput(new Date(entry.publishedAt)) : '';
 		return j.entry;
 	}
 
@@ -157,6 +169,229 @@
 	$: scheduleHasPassed = displayStatus === 'published' && status === 'scheduled';
 
 	$: hasPendingChanges = !!entry?.draftUpdatedAt;
+
+	// Toggle between editing the draft and reviewing the diff against live.
+	// When there are no pending changes, the toggle is hidden and the
+	// editor is the only mode.
+	let reviewMode = false;
+
+	// Title + excerpt diff (single-string values, so just a diffWords call).
+	$: titleDiffParts =
+		hasPendingChanges && entry?.draftTitle != null && entry.draftTitle !== entry.title
+			? diffWords(entry.title || '', entry.draftTitle)
+			: [];
+	$: excerptDiffParts =
+		hasPendingChanges &&
+		entry?.draftExcerpt !== undefined &&
+		entry?.draftExcerpt !== null &&
+		entry.draftExcerpt !== entry.excerpt
+			? diffWords(entry.excerpt || '', entry.draftExcerpt)
+			: [];
+
+	// -----------------------------------------------------------------
+	// Rich body diff — walks the top-level Lexical children of live and
+	// draft in parallel and produces an array of "items" the template
+	// renders with correct block-level tags. Each item is either:
+	//
+	//   { kind: 'unchanged', node }        — render as normal block
+	//   { kind: 'unchanged-widget', node } — widget with no changes
+	//   { kind: 'added', node }            — new block in draft only
+	//   { kind: 'removed', node }          — block removed from live
+	//   { kind: 'widget-change', node }    — widget content changed
+	//   { kind: 'diff', tag, parts, node } — block with word-level diff
+	//
+	// Pairing is index-based, which is a simplification. If a writer
+	// inserts a paragraph in the middle of a doc, every subsequent
+	// paragraph will diff against a different-original — producing more
+	// visual noise than a proper tree diff would. But index pairing is
+	// simple, fast, and correct enough for the common case (append
+	// paragraphs at the end, edit inline).
+	// -----------------------------------------------------------------
+	const WIDGET_TYPES = new Set(['decklist', 'stats_table', 'inline_video', 'upload']);
+
+	function isWidget(node) {
+		return !!(node && WIDGET_TYPES.has(node.type));
+	}
+
+	function extractNodeText(node) {
+		if (!node) return '';
+		if (node.text != null) return node.text;
+		if (Array.isArray(node.children)) {
+			return node.children.map(extractNodeText).join(node.type === 'list' ? '\n' : '');
+		}
+		return '';
+	}
+
+	// Text used for word-level diff inside edited blocks. Same as
+	// extractNodeText, but includes link URLs so a card-link swap
+	// (identical visible text, different target) is a diffable change.
+	// Format is `label (→ url)` — the reviewer sees the display text
+	// and the destination side-by-side, and jsdiff can highlight the
+	// URL portion when it changes.
+	function extractNodeDiffText(node) {
+		if (!node) return '';
+		if (node.text != null) return node.text;
+		if (node.type === 'link' || node.type === 'autolink') {
+			const url = node.fields?.url || node.url || '';
+			const inner = Array.isArray(node.children)
+				? node.children.map(extractNodeDiffText).join('')
+				: '';
+			return url ? `${inner} (→ ${url})` : inner;
+		}
+		if (Array.isArray(node.children)) {
+			return node.children.map(extractNodeDiffText).join(node.type === 'list' ? '\n' : '');
+		}
+		return '';
+	}
+
+	// Structural signature — captures visible text, inline formatting bits,
+	// link URLs, and container structure. Used by nodesEqual so ANY change
+	// that would render differently on the public page counts as an edit.
+	function contentSignature(node) {
+		if (!node) return '';
+		if (node.text != null) return `T:${node.text}|F:${node.format || 0}`;
+		if (node.type === 'link' || node.type === 'autolink') {
+			const url = node.fields?.url || node.url || '';
+			const inner = Array.isArray(node.children)
+				? node.children.map(contentSignature).join('')
+				: '';
+			return `L(${url})[${inner}]`;
+		}
+		const children = Array.isArray(node.children)
+			? node.children.map(contentSignature).join('')
+			: '';
+		return `${node.type}[${children}]`;
+	}
+
+	function nodeTag(node) {
+		if (!node) return 'p';
+		if (node.type === 'heading') return node.tag || 'h2';
+		if (node.type === 'quote') return 'blockquote';
+		if (node.type === 'list') return node.listType === 'number' ? 'ol' : 'ul';
+		return 'p';
+	}
+
+	function widgetLabel(node) {
+		if (!node) return 'Widget';
+		if (node.type === 'decklist')
+			return `Decklist${node.deckName ? ` — ${node.deckName}` : ''}`;
+		if (node.type === 'stats_table')
+			return `Stats table${node.caption ? ` — ${node.caption}` : ''}`;
+		if (node.type === 'inline_video')
+			return `Inline video${node.youtubeTitle ? ` — ${node.youtubeTitle}` : ''}`;
+		if (node.type === 'upload') {
+			const v = node.value || node;
+			return `Image${v.alt ? ` — ${v.alt}` : ''}`;
+		}
+		return `Widget: ${node.type}`;
+	}
+
+	function widgetsEqual(a, b) {
+		if (!a || !b) return false;
+		if (a.type !== b.type) return false;
+		return JSON.stringify(a) === JSON.stringify(b);
+	}
+
+	// Whether two top-level nodes should be treated as the SAME block for
+	// LCS pairing. Uses a structural signature — so a card-link URL swap,
+	// a bold-to-italic tweak, or any other change that alters what
+	// visitors will see counts as an edit even when the extracted plain
+	// text matches.
+	function nodesEqual(a, b) {
+		if (!a || !b) return false;
+		if (a.type !== b.type) return false;
+		if (isWidget(a) || isWidget(b)) return widgetsEqual(a, b);
+		if (nodeTag(a) !== nodeTag(b)) return false;
+		return contentSignature(a) === contentSignature(b);
+	}
+
+	// Pair a live block with a draft block that survived LCS as a
+	// probable "edit" — either a widget of the same type or a
+	// text-content block. Returns the appropriate diff item.
+	function pairBlocksAsEdit(l, d) {
+		if (isWidget(l) || isWidget(d)) {
+			if (widgetsEqual(l, d)) return { kind: 'unchanged-widget', node: d };
+			if (l.type === d.type) return { kind: 'widget-change', node: d };
+			return null;
+		}
+		if (nodeTag(l) !== nodeTag(d)) return null;
+		return {
+			kind: 'diff',
+			tag: nodeTag(d),
+			parts: diffWords(extractNodeDiffText(l), extractNodeDiffText(d)),
+			node: d
+		};
+	}
+
+	// LCS-based pairing at the top-level Lexical block level. diffArrays
+	// finds the longest common subsequence using our nodesEqual comparator,
+	// which keeps unchanged blocks anchored no matter where insertions
+	// or deletions happen around them.
+	//
+	// Post-process: adjacent removed+added chunks are candidates for
+	// "block was edited in place". We pair up items by index (up to the
+	// shorter of the two chunks), running a word-level diff on each pair
+	// when the tags line up. Leftovers are treated as pure add/remove.
+	// This turns a lightly-edited paragraph from "one removed, one added"
+	// into a single block with inline word markers, while a full swap
+	// still shows as remove+add.
+	$: richDiffItems = (() => {
+		if (!hasPendingChanges || entry?.draftBody == null) return null;
+		const live = entry.body?.root?.children || [];
+		const draft = entry.draftBody?.root?.children || [];
+
+		const chunks = diffArrays(live, draft, { comparator: nodesEqual });
+		const items = [];
+
+		for (let i = 0; i < chunks.length; i++) {
+			const chunk = chunks[i];
+			const next = chunks[i + 1];
+
+			// Adjacent removed → added: try to pair as edits.
+			if (chunk.removed && next?.added) {
+				const paired = Math.min(chunk.value.length, next.value.length);
+				let consumed = 0;
+				for (let j = 0; j < paired; j++) {
+					const l = chunk.value[j];
+					const d = next.value[j];
+					const edit = pairBlocksAsEdit(l, d);
+					if (edit) {
+						items.push(edit);
+						consumed++;
+					} else {
+						// Types didn't align — fall back to sequential remove/add
+						items.push({ kind: 'removed', node: l });
+						items.push({ kind: 'added', node: d });
+						consumed++;
+					}
+				}
+				// Trailing removed items (chunk was longer than next.value)
+				for (let j = consumed; j < chunk.value.length; j++) {
+					items.push({ kind: 'removed', node: chunk.value[j] });
+				}
+				// Trailing added items (next.value was longer than chunk)
+				for (let j = consumed; j < next.value.length; j++) {
+					items.push({ kind: 'added', node: next.value[j] });
+				}
+				i++; // skip `next` since we consumed it
+				continue;
+			}
+
+			if (chunk.added) {
+				for (const node of chunk.value) items.push({ kind: 'added', node });
+				continue;
+			}
+			if (chunk.removed) {
+				for (const node of chunk.value) items.push({ kind: 'removed', node });
+				continue;
+			}
+			// Unchanged run — every block passes through as-is.
+			for (const node of chunk.value) {
+				items.push({ kind: isWidget(node) ? 'unchanged-widget' : 'unchanged', node });
+			}
+		}
+		return items;
+	})();
 	$: editsAreBuffered = status === 'published' || status === 'scheduled';
 
 	let saveState = 'idle'; // 'idle' | 'saving' | 'saved' | 'error'
@@ -236,6 +471,18 @@
 		await save({ status: 'draft' });
 	}
 
+	async function savePublishDate() {
+		// Empty input = clear the publish date.
+		if (!publishDateInput) {
+			const updated = await patchEntry({ publishedAt: null });
+			if (updated) publishDateInput = '';
+			return;
+		}
+		const when = new Date(publishDateInput);
+		if (isNaN(when.getTime())) return alert('Invalid publish date.');
+		await patchEntry({ publishedAt: when.toISOString() });
+	}
+
 	async function scheduleEntry() {
 		if (!scheduleInput) return alert('Pick a date and time to schedule.');
 		const when = new Date(scheduleInput);
@@ -244,8 +491,12 @@
 		await save({ status: 'scheduled', scheduledFor: when.toISOString() });
 	}
 
-	async function approveDraft() {
-		const res = await fetch(`/api/cms/entries/${entry.id}/approve-draft`, { method: 'POST' });
+	async function approveDraft(opts = {}) {
+		const res = await fetch(`/api/cms/entries/${entry.id}/approve-draft`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(opts)
+		});
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}));
 			return alert(err?.message || 'Failed to approve changes');
@@ -255,6 +506,7 @@
 		title = entry.title || 'Untitled';
 		excerpt = entry.excerpt || '';
 		body = coerceLexicalDoc(entry.body);
+		status = entry.status;
 		serverSnapshot = JSON.stringify({ title, slug, excerpt, accessMode, body });
 	}
 
@@ -336,21 +588,170 @@
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
 			<!-- Main column: title + editor -->
 			<div class="space-y-4">
-				<input
-					type="text"
-					bind:value={title}
-					placeholder="Entry title"
-					class="w-full rounded-md border border-line2 bg-paper px-4 py-3 font-newsreader text-xl font-semibold text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none sm:text-2xl"
-				/>
+				{#if reviewMode && titleDiffParts.length > 0}
+					<!-- In review mode, the title also renders as a diff so the
+					     admin can see title changes inline instead of as an input.
+					     Falls back to the editable input when the title didn't
+					     change (nothing to diff). -->
+					<div class="w-full rounded-md border border-line2 bg-paper px-4 py-3 font-newsreader text-xl font-semibold text-ink sm:text-2xl">
+						{#if titleDiffParts.length > 0}
+							{#each titleDiffParts as part}
+								{#if part.added}
+									<span class="rounded bg-emerald-100 text-emerald-900 px-1">{part.value}</span>
+								{:else if part.removed}
+									<span class="rounded bg-red-100 text-red-900 line-through px-1">{part.value}</span>
+								{:else}
+									<span>{part.value}</span>
+								{/if}
+							{/each}
+						{:else}
+							{title}
+						{/if}
+					</div>
+				{:else}
+					<input
+						type="text"
+						bind:value={title}
+						placeholder="Entry title"
+						class="w-full rounded-md border border-line2 bg-paper px-4 py-3 font-newsreader text-xl font-semibold text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none sm:text-2xl"
+					/>
+				{/if}
 
-				<Editor bind:value={body} placeholder="Start writing your entry…" on:change={handleEditorChange} />
+				{#if hasPendingChanges}
+					<!-- Review toggle — admin flips between editing the draft and
+					     seeing the inline diff against live. Non-admin writers can
+					     also review their own diff before an admin looks at it. -->
+					<div class="flex flex-wrap items-center gap-2 rounded-md border border-warm/40 bg-warm/5 p-2 text-[11px] font-mono-system">
+						<span class="rounded-full bg-warm/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-warm">
+							Draft
+						</span>
+						{#if entry.draftUpdatedAt}
+							<span class="text-ink/50">
+								edited {new Date(entry.draftUpdatedAt).toLocaleString()}
+							</span>
+						{/if}
+						<span class="ml-auto flex items-center gap-1 rounded-md border border-line2 bg-paper p-0.5">
+							<button
+								type="button"
+								on:click={() => (reviewMode = false)}
+								class="rounded px-2 py-0.5 transition-colors {!reviewMode
+									? 'bg-ink text-paper-bg'
+									: 'text-ink/60 hover:text-ink'}"
+							>
+								Edit
+							</button>
+							<button
+								type="button"
+								on:click={() => (reviewMode = true)}
+								class="rounded px-2 py-0.5 transition-colors {reviewMode
+									? 'bg-ink text-paper-bg'
+									: 'text-ink/60 hover:text-ink'}"
+							>
+								Diff vs live
+							</button>
+						</span>
+					</div>
+				{/if}
+
+				{#if reviewMode}
+					<!-- Rich diff view — renders each top-level Lexical block with
+					     its ORIGINAL formatting (heading tag, quote, list, widget
+					     summary) and highlights word-level changes inside blocks
+					     that changed. Additions in green, removals in red-strike.
+					     Toggle back to Edit to modify the actual body. -->
+					<div class="cms-diff-view rounded-md border border-line2 bg-paper">
+						<div class="border-b border-line2 bg-paper-bg/40 px-4 py-2 text-[11px] font-mono-system text-ink/60">
+							Diff — <span class="text-emerald-700">green added</span>
+							<span class="mx-1">·</span>
+							<span class="text-red-700 line-through">red removed</span>
+						</div>
+						<div class="px-6 py-5 font-newsreader text-ink">
+							{#if !richDiffItems || richDiffItems.length === 0}
+								<p class="text-ink/50 italic">No body changes — only metadata was edited.</p>
+							{:else}
+								{#each richDiffItems as item}
+									{#if item.kind === 'unchanged'}
+										<svelte:element this={nodeTag(item.node)} class="diff-block">
+											{extractNodeText(item.node)}
+										</svelte:element>
+									{:else if item.kind === 'unchanged-widget'}
+										<div class="diff-widget diff-widget-unchanged">
+											<span class="diff-widget-label">{widgetLabel(item.node)}</span>
+											<span class="diff-widget-status">unchanged</span>
+										</div>
+									{:else if item.kind === 'added'}
+										{#if isWidget(item.node)}
+											<div class="diff-widget diff-widget-added">
+												<span class="diff-widget-label">{widgetLabel(item.node)}</span>
+												<span class="diff-widget-status">added</span>
+											</div>
+										{:else}
+											<svelte:element this={nodeTag(item.node)} class="diff-block diff-added">
+												{extractNodeText(item.node)}
+											</svelte:element>
+										{/if}
+									{:else if item.kind === 'removed'}
+										{#if isWidget(item.node)}
+											<div class="diff-widget diff-widget-removed">
+												<span class="diff-widget-label">{widgetLabel(item.node)}</span>
+												<span class="diff-widget-status">removed</span>
+											</div>
+										{:else}
+											<svelte:element this={nodeTag(item.node)} class="diff-block diff-removed">
+												{extractNodeText(item.node)}
+											</svelte:element>
+										{/if}
+									{:else if item.kind === 'widget-change'}
+										<div class="diff-widget diff-widget-changed">
+											<span class="diff-widget-label">{widgetLabel(item.node)}</span>
+											<span class="diff-widget-status">edited</span>
+										</div>
+									{:else if item.kind === 'diff'}
+										<svelte:element this={item.tag} class="diff-block">
+											{#each item.parts as part}
+												{#if part.added}
+													<span class="diff-word-added">{part.value}</span>
+												{:else if part.removed}
+													<span class="diff-word-removed">{part.value}</span>
+												{:else}
+													<span>{part.value}</span>
+												{/if}
+											{/each}
+										</svelte:element>
+									{/if}
+								{/each}
+							{/if}
+						</div>
+
+						{#if excerptDiffParts.length > 0}
+							<div class="border-t border-line2 bg-paper-bg/40 px-4 py-3 text-[13px] font-newsreader italic text-ink/80">
+								<div class="mb-1 text-[10px] not-italic font-mono-system font-bold uppercase tracking-wider text-ink/60">
+									Excerpt
+								</div>
+								{#each excerptDiffParts as part}
+									{#if part.added}
+										<span class="diff-word-added">{part.value}</span>
+									{:else if part.removed}
+										<span class="diff-word-removed">{part.value}</span>
+									{:else}
+										<span>{part.value}</span>
+									{/if}
+								{/each}
+							</div>
+						{/if}
+					</div>
+				{:else}
+					<Editor bind:value={body} placeholder="Start writing your entry…" on:change={handleEditorChange} />
+				{/if}
 			</div>
 
 			<!-- Sidebar -->
 			<aside class="space-y-4">
 				{#if hasPendingChanges}
-					<!-- Pending-changes banner — edits to a live entry are buffered until
-					     an admin approves. -->
+					<!-- Pending-changes banner — edits to a live entry are buffered
+					     until an admin approves. The inline diff view lives in the
+					     main editor column; this sidebar strip just holds the
+					     Approve / Discard controls. -->
 					<div class="rounded-md border border-warm/40 bg-warm/10 p-4">
 						<div class="mb-1 flex items-center gap-2">
 							<span class="rounded-full bg-warm/25 px-2 py-0.5 text-[10px] font-bold tracking-wider text-warm uppercase font-mono-system">
@@ -359,7 +760,8 @@
 						</div>
 						<p class="mb-3 text-xs text-ink/80">
 							{#if isAdmin}
-								These edits are saved but won't appear publicly until you approve them.
+								Toggle <b>Diff vs live</b> above the editor to review what changed. These
+								edits won't appear publicly until you approve them.
 							{:else}
 								Your edits are saved as a pending change. An admin needs to approve before they go live.
 							{/if}
@@ -369,19 +771,37 @@
 								</span>
 							{/if}
 						</p>
+
 						{#if isAdmin}
-							<div class="flex gap-2">
+							<div class="space-y-2">
+								<!-- Primary: apply the buffer, leave status as-is
+								     (published entries stay published; scheduled
+								     entries stay scheduled). -->
 								<button
-									on:click={approveDraft}
-									class="flex-1 rounded-md bg-emerald-700 px-3 py-2 text-xs font-semibold text-paper-bg hover:bg-emerald-800"
+									on:click={() => approveDraft()}
+									class="w-full rounded-md bg-emerald-700 px-3 py-2 text-xs font-semibold text-paper-bg hover:bg-emerald-800"
 								>
-									Approve & publish
+									Approve — keep {displayStatus}
 								</button>
+
+								<!-- Secondary: apply the buffer AND unpublish. Use
+								     when you want to accept a writer's edits into
+								     the canonical content but pull the entry from
+								     the public site. -->
+								{#if status === 'published' || status === 'scheduled'}
+									<button
+										on:click={() => approveDraft({ asStatus: 'draft' })}
+										class="w-full rounded-md border border-line2 bg-paper px-3 py-2 text-xs font-medium text-ink/80 hover:bg-ink/5"
+									>
+										Approve, unpublish to draft
+									</button>
+								{/if}
+
 								<button
 									on:click={discardDraft}
-									class="rounded-md border border-line2 bg-paper px-3 py-2 text-xs font-medium text-ink/80 hover:bg-ink/5"
+									class="w-full rounded-md border border-red-300 bg-paper px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50"
 								>
-									Discard
+									Discard changes
 								</button>
 							</div>
 						{/if}
@@ -415,6 +835,27 @@
 					</div>
 
 					{#if isAdmin}
+						<!-- Explicit publish-date input. Overrides the auto-set
+						     `now()` that fires on the first publish. Set to any
+						     date — past values for backdated ordering, future
+						     values for previewing library placement. Empty =
+						     clear (entry falls off publish-date-sorted lists). -->
+						<label class="mb-3 block">
+							<span class="mb-1 block text-[10px] font-medium text-ink/60 uppercase tracking-wider font-mono-system">
+								Publish date (library order)
+							</span>
+							<input
+								type="datetime-local"
+								bind:value={publishDateInput}
+								on:change={savePublishDate}
+								class="w-full rounded-md border border-line2 bg-paper px-2 py-1 text-xs text-ink focus:border-accent focus:outline-none"
+							/>
+							<p class="mt-1 text-[10px] text-ink/50">
+								Sorts entries in the library newest-first by this date. Backdate to slot an
+								entry into the archive; leave alone to use the actual publish time.
+							</p>
+						</label>
+
 						<div class="space-y-2">
 							{#if displayStatus !== 'published'}
 								<button
@@ -596,3 +1037,118 @@
 		</div>
 	</div>
 {/if}
+
+
+<style>
+	/* Rich body-diff view — headings, quotes, and list containers use the
+	   editor's Newsreader serif at prose-like sizes so the diff reads like
+	   the actual article. Added/removed word-level marks stay compact so
+	   long swaps don't blow the block heights. */
+	.cms-diff-view :global(.diff-block) {
+		margin: 0.75rem 0;
+		line-height: 1.7;
+	}
+	.cms-diff-view :global(h2.diff-block) {
+		font-size: 1.75rem;
+		font-weight: 600;
+		line-height: 1.2;
+		margin: 1.5rem 0 0.5rem;
+		color: var(--color-warm, #b7642e);
+	}
+	.cms-diff-view :global(h3.diff-block) {
+		font-size: 1.25rem;
+		font-weight: 600;
+		margin: 1.25rem 0 0.5rem;
+	}
+	.cms-diff-view :global(h4.diff-block) {
+		font-size: 1.125rem;
+		font-weight: 600;
+		margin: 1rem 0 0.5rem;
+	}
+	.cms-diff-view :global(blockquote.diff-block) {
+		border-left: 3px solid var(--color-warm, #b7642e);
+		padding-left: 1rem;
+		font-style: italic;
+		margin: 1rem 0;
+	}
+	.cms-diff-view :global(ul.diff-block),
+	.cms-diff-view :global(ol.diff-block) {
+		white-space: pre-wrap;
+		padding-left: 1.5rem;
+	}
+
+	/* Block-level add/remove — whole paragraphs, headings, or list blocks
+	   that came or went in the draft. Light-tinted background + colored
+	   left rail so the change surface is obvious without hiding the text. */
+	.cms-diff-view :global(.diff-added) {
+		background: rgb(220 252 231);
+		border-left: 3px solid rgb(21 128 61);
+		padding: 0.25rem 0.5rem 0.25rem 0.75rem;
+		border-radius: 0.25rem;
+	}
+	.cms-diff-view :global(.diff-removed) {
+		background: rgb(254 226 226);
+		border-left: 3px solid rgb(185 28 28);
+		padding: 0.25rem 0.5rem 0.25rem 0.75rem;
+		border-radius: 0.25rem;
+		text-decoration: line-through;
+	}
+
+	/* Word-level add/remove — inline highlights inside a block whose
+	   surrounding prose kept its structure. */
+	.cms-diff-view :global(.diff-word-added) {
+		background: rgb(220 252 231);
+		color: rgb(20 83 45);
+		padding: 0 0.15rem;
+		border-radius: 0.15rem;
+	}
+	.cms-diff-view :global(.diff-word-removed) {
+		background: rgb(254 226 226);
+		color: rgb(127 29 29);
+		padding: 0 0.15rem;
+		border-radius: 0.15rem;
+		text-decoration: line-through;
+	}
+
+	/* Widget summary rows — decklist / stats-table / video / image — since
+	   the diff view is a plain-text-with-structure surface, widgets show
+	   as compact chips labeled with the widget type + a status. */
+	.cms-diff-view :global(.diff-widget) {
+		margin: 0.75rem 0;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 0.5rem 0.75rem;
+		border-radius: 0.375rem;
+		font-size: 0.8125rem;
+		font-family: ui-sans-serif, system-ui, sans-serif;
+	}
+	.cms-diff-view :global(.diff-widget-label) {
+		font-weight: 500;
+	}
+	.cms-diff-view :global(.diff-widget-status) {
+		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+		font-size: 0.6875rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		font-weight: 700;
+	}
+	.cms-diff-view :global(.diff-widget-unchanged) {
+		background: rgb(245 245 244);
+		color: rgb(87 83 78);
+	}
+	.cms-diff-view :global(.diff-widget-added) {
+		background: rgb(220 252 231);
+		color: rgb(20 83 45);
+	}
+	.cms-diff-view :global(.diff-widget-removed) {
+		background: rgb(254 226 226);
+		color: rgb(127 29 29);
+		text-decoration: line-through;
+	}
+	.cms-diff-view :global(.diff-widget-changed) {
+		background: rgb(255 251 235);
+		color: rgb(120 53 15);
+	}
+</style>
