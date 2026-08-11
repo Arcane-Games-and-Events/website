@@ -58,11 +58,13 @@ export async function load({ params, setHeaders }) {
 		// aggressive edge caching (1 day fresh, 1 week stale-revalidate);
 		// live events get MEDIUM freshness with a 5-min stale window so
 		// updates from admin CSV processing surface quickly at the edge.
+		// No `Vary: Cookie` — payload is fully public and shared across
+		// visitors; keying on session cookie destroys the CDN hit rate for
+		// no functional benefit here.
 		setHeaders({
 			'cache-control': isCompleted
 				? 'public, max-age=0, s-maxage=86400, stale-while-revalidate=604800'
-				: 'public, max-age=0, s-maxage=300, stale-while-revalidate=300',
-			vary: 'Cookie'
+				: 'public, max-age=0, s-maxage=300, stale-while-revalidate=300'
 		});
 
 		return await getCachedOrFetch(

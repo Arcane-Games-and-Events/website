@@ -75,12 +75,14 @@ function compareStandings(a, b) {
 // are imported from $lib/age-rating.js for single source of truth
 
 export async function load({ url, setHeaders }) {
-	// Cache for 1 minute, allow stale for 5 minutes while revalidating
-	// Shorter cache for tournament real-time updates
-	// Vary by Cookie ensures sidebar updates properly after login/logout
+	// Cache for 1 minute at the edge, stale-while-revalidate for 5 minutes.
+	// No `Vary: Cookie` — this response is fully public (no locals.user, no
+	// cookies read anywhere in this load function) and the sidebar/layout
+	// data comes from +layout.server.js, so keying cache on session cookie
+	// just fragments the edge cache into a per-user entry and destroys hit
+	// rate for anonymous visitors.
 	setHeaders({
-		'cache-control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=300',
-		vary: 'Cookie'
+		'cache-control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=300'
 	});
 
 	const currentYear = new Date().getFullYear().toString();
@@ -93,6 +95,13 @@ export async function load({ url, setHeaders }) {
 	const activeTab = url.searchParams.get('tab') || 'overview';
 	const needsArchive = activeTab === 'results';
 	const needsAgeRating = activeTab === 'standings';
+	// Which tabs need which datasets — used below to skip the heavy fetches
+	// when the current tab won't render them. Overview + Events show
+	// upcoming-event chrome (LSS chip + capacity counts); Decklists loads
+	// the public-decklist join only when open; Results loads the full
+	// match table only when the archive tab is active.
+	const needsUpcomingChrome = activeTab === 'overview' || activeTab === 'events';
+	const needsDecklists = activeTab === 'decklists';
 
 	try {
 		// Cache the fully-computed page output by tab + filter combo so each
@@ -103,81 +112,96 @@ export async function load({ url, setHeaders }) {
 			async () => {
 				// Fetch raw data with Redis caching (5 minute TTL)
 				// This caches the expensive database queries
+				// Each fetch is gated on whether the current tab actually needs
+				// the data. Skipped fetches resolve to []` immediately so
+				// downstream code stays unchanged. Overview visitors used to
+				// pay for the full match-table dump, public-decklist join,
+				// and LSS query even though those tabs never rendered on
+				// their page — this is where most of the cold-cache wait was
+				// coming from.
 				const [events, allEventMatches, allStandings, decklists, lssEvents, ticketCounts] =
 					await Promise.all([
-						// Get events sorted by date (cached)
+						// Events — used across every tab (upcoming/past events,
+						// filter dropdowns, archive lookup).
 						getCachedOrFetch(
 							`${CACHE_KEYS.EVENTS}:all`,
 							() => db.select().from(event).orderBy(asc(event.eventDate)),
 							CACHE_TTL.MEDIUM
 						),
-						// Get ALL event matches in one query (cached with shorter TTL for real-time updates)
-						getCachedOrFetch(
-							`${CACHE_KEYS.EVENTS}:matches:all`,
-							() => db.select().from(match).orderBy(asc(match.round)),
-							CACHE_TTL.SHORT
-						),
-						// Get all standings — MUST match the TTL used by the homepage
-						// and player profile so whichever caller fills this shared
-						// key first doesn't set a stricter or laxer freshness
-						// policy for everyone else. Admin standings-import
-						// actions invalidate this key so 5 min is fine.
+						// Match table — only the Results tab's archive uses it.
+						needsArchive
+							? getCachedOrFetch(
+									`${CACHE_KEYS.EVENTS}:matches:all`,
+									() => db.select().from(match).orderBy(asc(match.round)),
+									CACHE_TTL.SHORT
+								)
+							: Promise.resolve([]),
+						// Standings — used for filter dropdowns + career/season
+						// computation on multiple tabs. Kept across all tabs.
 						getCachedOrFetch(
 							`${CACHE_KEYS.STANDINGS}:all`,
 							() => db.select().from(standing).orderBy(desc(standing.totalPoints)),
 							CACHE_TTL.MEDIUM
 						),
-						// Get public decklists with event info (cached)
-						getCachedOrFetch(
-							`${CACHE_KEYS.EVENTS}:decklists:public`,
-							() =>
-								db
-									.select({
-										id: decklist.id,
-										eventId: decklist.eventId,
-										playerName: decklist.playerName,
-										gemId: decklist.gemId,
-										hero: decklist.hero,
-										format: decklist.format,
-										placement: decklist.placement,
-										cards: decklist.cards,
-										createdAt: decklist.createdAt,
-										eventTitle: event.title,
-										eventDate: event.eventDate,
-										circuit: event.circuit,
-										month: event.month
-									})
-									.from(decklist)
-									.innerJoin(event, eq(decklist.eventId, event.id))
-									.where(eq(decklist.isPublic, true))
-									.orderBy(desc(decklist.createdAt)),
-							CACHE_TTL.MEDIUM
-						),
-						// Get LSS tournament seasons (cached)
-						getCachedOrFetch(
-							`${CACHE_KEYS.EVENTS}:lss:active`,
-							() =>
-								db
-									.select()
-									.from(lssEvent)
-									.where(eq(lssEvent.isActive, true))
-									.orderBy(asc(lssEvent.startDate)),
-							CACHE_TTL.MEDIUM
-						),
-						// Get active ticket counts per event (short cache for accurate capacity)
-						getCachedOrFetch(
-							`${CACHE_KEYS.EVENTS}:ticket-counts`,
-							() =>
-								db
-									.select({
-										eventId: ticket.eventId,
-										count: sql`count(*)::int`
-									})
-									.from(ticket)
-									.where(eq(ticket.refunded, false))
-									.groupBy(ticket.eventId),
-							CACHE_TTL.SHORT
-						)
+						// Public decklists — only the Decklists tab renders them.
+						needsDecklists
+							? getCachedOrFetch(
+									`${CACHE_KEYS.EVENTS}:decklists:public`,
+									() =>
+										db
+											.select({
+												id: decklist.id,
+												eventId: decklist.eventId,
+												playerName: decklist.playerName,
+												gemId: decklist.gemId,
+												hero: decklist.hero,
+												format: decklist.format,
+												placement: decklist.placement,
+												cards: decklist.cards,
+												createdAt: decklist.createdAt,
+												eventTitle: event.title,
+												eventDate: event.eventDate,
+												circuit: event.circuit,
+												month: event.month
+											})
+											.from(decklist)
+											.innerJoin(event, eq(decklist.eventId, event.id))
+											.where(eq(decklist.isPublic, true))
+											.orderBy(desc(decklist.createdAt)),
+									CACHE_TTL.MEDIUM
+								)
+							: Promise.resolve([]),
+						// LSS tournament chips — only shown in the upcoming-event
+						// slots on Overview + Events tabs.
+						needsUpcomingChrome
+							? getCachedOrFetch(
+									`${CACHE_KEYS.EVENTS}:lss:active`,
+									() =>
+										db
+											.select()
+											.from(lssEvent)
+											.where(eq(lssEvent.isActive, true))
+											.orderBy(asc(lssEvent.startDate)),
+									CACHE_TTL.MEDIUM
+								)
+							: Promise.resolve([]),
+						// Ticket counts — only rendered as capacity chips on
+						// upcoming-event cards (Overview + Events).
+						needsUpcomingChrome
+							? getCachedOrFetch(
+									`${CACHE_KEYS.EVENTS}:ticket-counts`,
+									() =>
+										db
+											.select({
+												eventId: ticket.eventId,
+												count: sql`count(*)::int`
+											})
+											.from(ticket)
+											.where(eq(ticket.refunded, false))
+											.groupBy(ticket.eventId),
+									CACHE_TTL.SHORT
+								)
+							: Promise.resolve([])
 					]);
 
 				// Build ticket count lookup map
