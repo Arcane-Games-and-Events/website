@@ -5,7 +5,7 @@
  * Design intent: a magazine front page. Department nav in the header,
  * one lead story beside a numbered "The Latest" list, then one
  * department per tentpole — Articles, Video, Academy, AGE Open,
- * Podcast, Premium — each with the same restrained template.
+ * Premium — each with the same restrained template.
  */
 
 const FALLBACK_IMAGE = 'https://www.age.events/banner/articles-banner.webp';
@@ -15,7 +15,7 @@ const FALLBACK_IMAGE = 'https://www.age.events/banner/articles-banner.webp';
 /** @param {number | string | null | undefined} seconds */
 export function formatDuration(seconds) {
 	if (seconds == null || seconds === '') return '';
-	if (typeof seconds === 'string' && seconds.includes(':')) return seconds; // podcast "45:32"
+	if (typeof seconds === 'string' && seconds.includes(':')) return seconds; // preformatted "45:32"
 	const n = Number(seconds);
 	if (!n || Number.isNaN(n)) return '';
 	const h = Math.floor(n / 3600);
@@ -265,28 +265,12 @@ export function buildFront(data) {
 	};
 	const hasOpen = open.events.length + open.leaders.length + open.decklists.length > 0;
 
-	const pod = data?.podcastInfo;
-	const ep = data?.latestPodcastEpisode;
-	const podcast = pod
-		? {
-				show: pod.name || 'AGE Podcast',
-				host: pod.hostName || pod.host || '',
-				ep: ep?.episodeNumber ?? null,
-				title: ep?.title || pod.description || pod.name || '',
-				length: formatDuration(ep?.duration),
-				date: formatDate(ep?.publishedAt),
-				image: ep?.thumbnailUrl || pod.coverImageUrl || '',
-				href: '/studios'
-			}
-		: null;
-
 	// Department nav — only the departments that render this request.
 	const departments = [
 		articles && { id: 'articles', label: 'Articles' },
 		video && { id: 'video', label: 'Video' },
 		{ id: 'academy', label: 'Academy' },
 		hasOpen && { id: 'age-open', label: 'AGE Open' },
-		podcast && { id: 'podcast', label: 'Podcast' },
 		{ id: 'premium', label: 'Premium' }
 	].filter(Boolean);
 
@@ -298,7 +282,6 @@ export function buildFront(data) {
 		articles,
 		video,
 		academy,
-		open: hasOpen ? open : null,
-		podcast
+		open: hasOpen ? open : null
 	};
 }

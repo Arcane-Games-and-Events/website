@@ -1,7 +1,7 @@
 import { listPublishedEntries } from '$lib/server/cms/list.js';
 import { listPublishedCourses } from '$lib/server/cms/courses.js';
 import { db } from '$lib/server/db/index.js';
-import { event, standing, decklist, podcast, podcastEpisode, vod } from '$lib/server/db/schema.js';
+import { event, standing, decklist, vod } from '$lib/server/db/schema.js';
 import { asc, gte, desc, and, or, eq, isNull } from 'drizzle-orm';
 import { getMuxThumbnailToken } from '$lib/server/mux.js';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
@@ -225,45 +225,6 @@ function fetchFeaturedDecklists() {
 	);
 }
 
-async function fetchPodcastBundle() {
-	try {
-		return await getCachedOrFetch(
-			`${CACHE_KEYS.PODCASTS}:home:latest`,
-			async () => {
-				const activePodcasts = await db
-					.select()
-					.from(podcast)
-					.where(eq(podcast.isActive, true))
-					.orderBy(podcast.sortOrder, podcast.createdAt)
-					.limit(1);
-
-				if (activePodcasts.length === 0) {
-					return { podcastInfo: null, latestPodcastEpisode: null };
-				}
-
-				const podcastInfo = activePodcasts[0];
-				const episodes = await db
-					.select()
-					.from(podcastEpisode)
-					.where(
-						and(eq(podcastEpisode.podcastId, podcastInfo.id), eq(podcastEpisode.isPublished, true))
-					)
-					.orderBy(desc(podcastEpisode.publishedAt))
-					.limit(1);
-
-				return {
-					podcastInfo,
-					latestPodcastEpisode: episodes[0] || null
-				};
-			},
-			CACHE_TTL.MEDIUM
-		);
-	} catch (err) {
-		console.warn('Could not fetch podcast data:', err.message);
-		return { podcastInfo: null, latestPodcastEpisode: null };
-	}
-}
-
 async function fetchRecentVods() {
 	try {
 		const vodRows = await getCachedOrFetch(
@@ -303,25 +264,17 @@ export async function load({ setHeaders, url, locals }) {
 	try {
 		// All independent lookups run in parallel — cache hits resolve in one
 		// round-trip instead of stacking 8 sequential awaits.
-		const [
-			articles,
-			upcomingEvents,
-			standingsData,
-			featuredDecklists,
-			podcastBundle,
-			recentVods,
-			courses
-		] = await Promise.all([
-			fetchArticles(),
-			fetchUpcomingEvents(),
-			isDefaultFilters
-				? fetchHomeStandingsAggregates()
-				: fetchFilteredStandings(standingsSeason, standingsCircuit),
-			fetchFeaturedDecklists(),
-			fetchPodcastBundle(),
-			fetchRecentVods(),
-			fetchCourses()
-		]);
+		const [articles, upcomingEvents, standingsData, featuredDecklists, recentVods, courses] =
+			await Promise.all([
+				fetchArticles(),
+				fetchUpcomingEvents(),
+				isDefaultFilters
+					? fetchHomeStandingsAggregates()
+					: fetchFilteredStandings(standingsSeason, standingsCircuit),
+				fetchFeaturedDecklists(),
+				fetchRecentVods(),
+				fetchCourses()
+			]);
 
 		// Edge-cache for 5 minutes with an hour of stale-while-revalidate.
 		// `Vary: Cookie` keeps one entry per cookie fingerprint, so an
@@ -362,8 +315,6 @@ export async function load({ setHeaders, url, locals }) {
 				prizePool: 30000 // 2026 prize pool
 			},
 			featuredDecklists,
-			latestPodcastEpisode: podcastBundle.latestPodcastEpisode,
-			podcastInfo: podcastBundle.podcastInfo,
 			recentVods,
 			courses
 		};
@@ -388,8 +339,6 @@ export async function load({ setHeaders, url, locals }) {
 				prizePool: 30000
 			},
 			featuredDecklists: [],
-			latestPodcastEpisode: null,
-			podcastInfo: null,
 			recentVods: [],
 			courses: []
 		};

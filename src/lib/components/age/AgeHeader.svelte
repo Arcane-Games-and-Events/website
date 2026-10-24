@@ -35,7 +35,6 @@
 				{ label: 'Rules & Info', href: '/age-open?tab=rules' }
 			]
 		},
-		{ label: 'Podcast', href: '/studios' },
 		{ label: 'Premium', href: '/premium' }
 	];
 

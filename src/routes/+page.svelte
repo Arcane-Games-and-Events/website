@@ -4,7 +4,6 @@
 	import FrontStories from '$lib/components/age/home/FrontStories.svelte';
 	import FrontAcademy from '$lib/components/age/home/FrontAcademy.svelte';
 	import FrontOpen from '$lib/components/age/home/FrontOpen.svelte';
-	import FrontPodcast from '$lib/components/age/home/FrontPodcast.svelte';
 	import FrontPremium from '$lib/components/age/home/FrontPremium.svelte';
 	import FrontFleuron from '$lib/components/age/home/FrontFleuron.svelte';
 	import { buildFront } from '$lib/components/age/home/front-adapters.js';
@@ -13,7 +12,7 @@
 	/**
 	 * Front page — magazine running order:
 	 *   masthead (departments as header nav) → lead story & The Latest →
-	 *   Articles → Video → Academy → AGE Open → Podcast → Premium
+	 *   Articles → Video → Academy → AGE Open → Premium
 	 */
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -75,13 +74,6 @@
 		<FrontFleuron />
 		<div use:reveal>
 			<FrontOpen n={num('age-open')} data={F.open} />
-		</div>
-	{/if}
-
-	{#if F.podcast}
-		<FrontFleuron />
-		<div use:reveal>
-			<FrontPodcast n={num('podcast')} podcast={F.podcast} />
 		</div>
 	{/if}
 
