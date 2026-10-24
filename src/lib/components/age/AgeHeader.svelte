@@ -17,11 +17,12 @@
 	 * layout's data via `$page.data` so the header can show the
 	 * appropriate CTAs without needing the page to thread props through.
 	 */
-	/** @type {{ active?: string, mbarLeft?: import('svelte').Snippet, mbarRight?: import('svelte').Snippet }} */
-	let { active = '', mbarLeft, mbarRight } = $props();
+	/** @type {{ active?: string }} */
+	let { active = '' } = $props();
 
 	const NAV = [
 		{ label: 'Library', href: '/library' },
+		{ label: 'Academy', href: '/academy' },
 		{
 			label: 'AGE Open',
 			href: '/age-open',
@@ -34,16 +35,14 @@
 				{ label: 'Rules & Info', href: '/age-open?tab=rules' }
 			]
 		},
-		{ label: 'Academy', href: '/academy' }
+		{ label: 'Podcast', href: '/studios' },
+		{ label: 'Premium', href: '/premium' }
 	];
 
 	const user = $derived($page.data?.user ?? null);
-	const isPremiumMember = $derived(
-		user?.role === 'premium' || user?.role === 'admin'
-	);
-	// Next upcoming event powers the banner link. Loaded once in the
-	// root layout server (cached 5 min), exposed via `$page.data`.
-	const nextEvent = $derived($page.data?.nextEvent ?? null);
+	const isPremiumMember = $derived(user?.role === 'premium' || user?.role === 'admin');
+	// Members already have Premium — drop the pitch from their nav.
+	const items = $derived(isPremiumMember ? NAV.filter((n) => n.label !== 'Premium') : NAV);
 
 	// ============ dropdown state ============
 	// Single open menu at a time, keyed by nav label. `null` = closed.
@@ -78,6 +77,17 @@
 		};
 	});
 
+	// ============ sticky compaction ============
+	// The header sticks; once the page has scrolled a little the row
+	// slims down and the bar goes frosted so it reads as chrome, not page.
+	let scrolled = $state(false);
+	onMount(() => {
+		const onScroll = () => (scrolled = window.scrollY > 12);
+		onScroll();
+		window.addEventListener('scroll', onScroll, { passive: true });
+		return () => window.removeEventListener('scroll', onScroll);
+	});
+
 	// ============ mobile drawer ============
 	let mobileOpen = $state(false);
 	function toggleMobile() {
@@ -89,82 +99,45 @@
 	}
 </script>
 
-<!-- rust top stripe (full-bleed) -->
-<div class="h-[5px] bg-warm"></div>
+<header class="sticky top-0 z-50">
+	<!-- rust top stripe (full-bleed) -->
+	<div class="h-[5px] bg-warm"></div>
 
-<!--
-	Marquee bar (band full-bleed, content capped). On small screens the
-	left marketing tagline is hidden and the right actionable status
-	line centers so the banner doesn't crowd the header row.
--->
-<div class="bg-ink text-paper-bg text-[11px] font-semibold sm:text-xs">
+	<!-- nav row (band full-bleed, content capped) -->
 	<div
-		class="mx-auto flex w-full max-w-[1600px] items-center justify-center gap-3 px-4 py-2 md:px-10 md:justify-between lg:px-14"
+		class="bg-paper-bg/90 backdrop-blur-md transition-shadow duration-300 supports-[backdrop-filter]:bg-paper-bg/80 {scrolled
+			? 'shadow-[0_12px_30px_-24px_rgba(23,21,15,0.55)]'
+			: ''}"
 	>
-		<div class="hidden md:block">
-			{#if mbarLeft}{@render mbarLeft()}{:else}
-				<span class="bg-warm mr-2 inline-block h-[7px] w-[7px] rounded-full align-middle"></span>
-				Independent events, coverage, and articles — powered by members
-			{/if}
-		</div>
-		<div class="truncate text-center md:text-right">
-			{#if mbarRight}{@render mbarRight()}{:else}
-				{#if nextEvent}
-					<!--
-						Next-event chip — the whole "Next: AGE Open · {city}"
-						is a link to the event signup page. Falls off cleanly
-						if the layout server couldn't load the event.
-					-->
-					<a href="/age-open/{nextEvent.id}" class="hover:underline">
-						<span class="mr-2 inline-block h-[7px] w-[7px] rounded-full bg-[#16489e] align-middle"></span>
-						Next: AGE Open
-						<span class="font-bold text-[#7fa6f0]">{nextEvent.circuit || 'TBA'}</span>
-					</a>
-					{#if !isPremiumMember}
-						<span class="opacity-40" aria-hidden="true">·</span>
-						<a href="/premium" class="font-bold text-[#3fbe7e] hover:underline">Get Premium →</a>
-					{/if}
-				{:else if !isPremiumMember}
-					<a href="/premium" class="font-bold text-[#3fbe7e] hover:underline">Get Premium →</a>
-				{/if}
-			{/if}
-		</div>
-	</div>
-</div>
-
-<!-- nav row (band full-bleed, content capped) -->
-<div>
-	<div
-		class="mx-auto grid w-full max-w-[1600px] grid-cols-[auto_1fr_auto] items-center gap-3 px-4 md:px-10 lg:px-14 pt-4 pb-3 md:grid-cols-[1fr_auto_1fr] md:gap-0 md:pt-5 md:pb-4"
-	>
-		<!-- Mobile burger — replaces the horizontal desktop nav below md. -->
-		<button
-			type="button"
-			onclick={toggleMobile}
-			aria-label="Open menu"
-			aria-expanded={mobileOpen}
-			class="border-ink text-ink hover:bg-ink hover:text-paper-bg inline-flex h-9 w-9 items-center justify-center border-[1.5px] bg-transparent transition-colors md:hidden"
+		<div
+			class="mx-auto grid w-full max-w-[1600px] grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 transition-[padding] duration-300 sm:px-6 md:px-8 lg:px-10 xl:px-14 {scrolled
+				? 'py-2 md:py-2.5'
+				: 'py-3 md:py-4'}"
 		>
-			<svg viewBox="0 0 20 20" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-				{#if mobileOpen}
-					<path d="M4 4l12 12M16 4L4 16" stroke-linecap="round" />
-				{:else}
-					<path d="M3 6h14M3 10h14M3 14h14" stroke-linecap="round" />
-				{/if}
-			</svg>
-		</button>
+			<a href="/" aria-label="AGE home" class="inline-flex justify-self-start">
+				<img
+					class="h-7 invert sm:h-[30px] md:h-[34px]"
+					src="https://www.age.events/logo.svg"
+					alt="AGE"
+				/>
+			</a>
 
-		<nav class="hidden items-center gap-[22px] text-[13.5px] font-bold md:flex">
-			{#each NAV as item (item.label)}
-				{#if item.children}
-					<!--
+			<nav
+				class="hidden items-center gap-3.5 justify-self-center text-[10px] font-extrabold tracking-[0.16em] uppercase lg:flex xl:gap-5 xl:text-[10.5px] xl:tracking-[0.18em]"
+			>
+				{#each items as item, i (item.label)}
+					{#if i > 0}
+						<span class="hidden text-[7px] text-line2 xl:inline" aria-hidden="true">◆</span>
+					{/if}
+					{#if item.children}
+						<!--
 						Dropdown trigger: clicking the label toggles the
 						menu. The tiny ▾ to the right is a subtle indicator
 						(opacity 40%) that this item has child pages —
 						visible enough to suggest a menu, quiet enough to
 						not compete with the rest of the nav.
 					-->
-					<!--
+						<!--
 						Split trigger: the label is an `<a>` so clicking
 						takes the user to the parent page (e.g. /age-open
 						= the Overview tab). The chevron is a separate
@@ -172,48 +145,48 @@
 						touch users tap to reach the submenu without
 						navigating away.
 					-->
-					<div
-						class="relative inline-flex items-center gap-[5px]"
-						bind:this={menuRoots[item.label]}
-						onmouseenter={() => (openMenu = item.label)}
-						onmouseleave={() => (openMenu = null)}
-						role="none"
-					>
-						<a
-							href={item.href}
-							onclick={closeMenus}
-							class="hover:text-accent text-[13.5px] font-bold transition-colors {item.label ===
-							active
-								? 'text-warm'
-								: ''}"
+						<div
+							class="relative inline-flex items-center gap-[5px]"
+							bind:this={menuRoots[item.label]}
+							onmouseenter={() => (openMenu = item.label)}
+							onmouseleave={() => (openMenu = null)}
+							role="none"
 						>
-							{item.label}
-						</a>
-						<button
-							type="button"
-							onclick={() => toggleMenu(item.label)}
-							aria-haspopup="menu"
-							aria-expanded={openMenu === item.label}
-							aria-label="{item.label} menu"
-							class="hover:text-accent inline-flex h-[14px] w-[14px] cursor-pointer items-center justify-center border-none bg-transparent p-0 text-current transition-colors"
-						>
-							<svg
-								class="h-[7px] w-[8px] opacity-40 transition-transform {openMenu === item.label
-									? 'rotate-180'
+							<a
+								href={item.href}
+								onclick={closeMenus}
+								class="fp-ul pb-0.5 whitespace-nowrap transition-colors hover:text-warm {item.label ===
+								active
+									? '[background-size:100%_1.5px] text-warm'
 									: ''}"
-								viewBox="0 0 10 7"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="1.6"
-								stroke-linecap="square"
-								aria-hidden="true"
 							>
-								<path d="M1.2 1.5 L5 5.4 L8.8 1.5" />
-							</svg>
-						</button>
+								{item.label}
+							</a>
+							<button
+								type="button"
+								onclick={() => toggleMenu(item.label)}
+								aria-haspopup="menu"
+								aria-expanded={openMenu === item.label}
+								aria-label="{item.label} menu"
+								class="inline-flex h-[14px] w-[14px] cursor-pointer items-center justify-center border-none bg-transparent p-0 text-current transition-colors hover:text-warm"
+							>
+								<svg
+									class="h-[7px] w-[8px] opacity-40 transition-transform {openMenu === item.label
+										? 'rotate-180'
+										: ''}"
+									viewBox="0 0 10 7"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.6"
+									stroke-linecap="square"
+									aria-hidden="true"
+								>
+									<path d="M1.2 1.5 L5 5.4 L8.8 1.5" />
+								</svg>
+							</button>
 
-						{#if openMenu === item.label}
-							<!--
+							{#if openMenu === item.label}
+								<!--
 								The `before:` pseudo creates an invisible 6px
 								bridge above the panel that fills the visual
 								gap to the trigger. Without it the mouse would
@@ -222,122 +195,154 @@
 								the wrapper and closing the dropdown before it
 								could be used.
 							-->
-							<div
-								role="menu"
-								class="bg-paper-bg border-ink absolute top-[calc(100%+6px)] left-0 z-50 w-[240px] border-[1.5px] shadow-[0_18px_36px_-22px_rgba(20,16,8,0.5)] before:absolute before:right-0 before:-top-[6px] before:left-0 before:h-[6px] before:content-['']"
-							>
-								<ul role="none" class="m-0 list-none p-0">
-									{#each item.children as child (child.href)}
-										<li role="none" class="border-line border-b last:border-b-0">
-											<a
-												role="menuitem"
-												href={child.href}
-												onclick={closeMenus}
-												class="text-soft hover:bg-ink hover:text-paper-bg flex items-center justify-between px-4 py-[11px] text-[11px] font-extrabold tracking-[0.12em] uppercase transition-colors"
-											>
-												<span>{child.label}</span>
-												<span class="opacity-50" aria-hidden="true">→</span>
-											</a>
-										</li>
-									{/each}
-								</ul>
-							</div>
-						{/if}
-					</div>
+								<div
+									role="menu"
+									class="fp-rise absolute top-[calc(100%+10px)] left-1/2 z-50 w-[260px] -translate-x-1/2 border-[3px] border-double border-ink bg-paper-bg shadow-[0_24px_44px_-24px_rgba(20,16,8,0.55)] before:absolute before:-top-[12px] before:right-0 before:left-0 before:h-[12px] before:content-['']"
+									style="animation-duration: 0.3s;"
+								>
+									<div
+										class="flex items-baseline justify-between border-b border-line px-4 pt-3 pb-2"
+									>
+										<span
+											class="font-newsreader text-[17px] font-semibold tracking-[-0.01em] normal-case"
+											>{item.label}</span
+										>
+										<span class="h-[3px] w-6 bg-warm"></span>
+									</div>
+									<ul role="none" class="m-0 list-none p-0">
+										{#each item.children as child (child.href)}
+											<li role="none" class="border-b border-line last:border-b-0">
+												<a
+													role="menuitem"
+													href={child.href}
+													onclick={closeMenus}
+													class="group/mi flex items-center justify-between px-4 py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] text-soft uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+												>
+													<span>{child.label}</span>
+													<span
+														class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
+														aria-hidden="true">→</span
+													>
+												</a>
+											</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
+						</div>
+					{:else}
+						<a
+							href={item.href}
+							class="fp-ul pb-0.5 whitespace-nowrap transition-colors hover:text-warm {item.label ===
+							active
+								? '[background-size:100%_1.5px] text-warm'
+								: ''}"
+						>
+							{item.label}
+						</a>
+					{/if}
+				{/each}
+			</nav>
+
+			<div class="col-start-3 flex items-center gap-3 justify-self-end sm:gap-5">
+				{#if user}
+					<AgeUserMenu {user} isPremium={isPremiumMember} />
+
+					{#if !isPremiumMember}
+						<a
+							href="/premium"
+							class="hidden cursor-pointer items-center gap-2 border-[1.5px] border-prem bg-prem px-[13px] py-[7px] text-[11px] font-bold tracking-[0.05em] text-white uppercase transition-[filter] hover:brightness-110 sm:inline-flex"
+						>
+							Get Premium
+						</a>
+					{/if}
 				{:else}
 					<a
-						href={item.href}
-						class="hover:text-accent transition-colors {item.label === active ? 'text-warm' : ''}"
+						href="/login?redirect={$page.url.pathname}"
+						class="fp-ul hidden items-center text-[10.5px] font-extrabold tracking-[0.16em] text-ink uppercase transition-colors hover:text-warm sm:inline-flex"
 					>
-						{item.label}
+						Sign in
 					</a>
-				{/if}
-			{/each}
-		</nav>
-
-		<a href="/" aria-label="AGE home" class="inline-flex justify-self-center">
-			<img
-				class="h-[34px] invert"
-				src="https://www.age.events/logo.svg"
-				alt="AGE"
-			/>
-		</a>
-
-		<div class="flex items-center justify-self-end gap-[10px]">
-			{#if user}
-				<AgeUserMenu {user} isPremium={isPremiumMember} />
-
-				{#if !isPremiumMember}
 					<a
 						href="/premium"
-						class="border-prem bg-prem hidden cursor-pointer items-center gap-2 border-[1.5px] px-[13px] py-[7px] text-[11px] font-bold tracking-[0.05em] text-white uppercase transition-[filter] hover:brightness-110 sm:inline-flex"
+						class="inline-flex cursor-pointer items-center gap-2 border-[1.5px] border-prem bg-prem px-3 py-2 text-[10px] font-extrabold tracking-[0.12em] whitespace-nowrap text-white uppercase transition-[filter,letter-spacing] hover:tracking-[0.16em] hover:brightness-110 sm:px-[14px] sm:py-[8px] sm:text-[10.5px]"
 					>
+						<span class="hidden text-[8px] opacity-80 sm:inline" aria-hidden="true">◆</span>
 						Get Premium
 					</a>
 				{/if}
-			{:else}
-				<a
-					href="/login?redirect={$page.url.pathname}"
-					class="border-ink text-ink hover:bg-ink hover:text-paper-bg hidden cursor-pointer items-center gap-2 border-[1.5px] bg-transparent px-[13px] py-[7px] text-[11px] font-bold tracking-[0.05em] uppercase transition-colors sm:inline-flex"
+				<!-- burger — replaces the nav below its breakpoint -->
+				<button
+					type="button"
+					onclick={toggleMobile}
+					aria-label="Open menu"
+					aria-expanded={mobileOpen}
+					class="inline-flex h-10 w-10 items-center justify-center border-[1.5px] border-ink bg-transparent text-ink transition-colors hover:bg-ink hover:text-paper-bg lg:hidden"
 				>
-					Sign in
-				</a>
-				<a
-					href="/premium"
-					class="border-prem bg-prem inline-flex cursor-pointer items-center gap-2 border-[1.5px] px-[13px] py-[7px] text-[11px] font-bold tracking-[0.05em] text-white uppercase transition-[filter] hover:brightness-110"
-				>
-					Get Premium
-				</a>
-			{/if}
+					<svg
+						viewBox="0 0 20 20"
+						class="h-4 w-4"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						aria-hidden="true"
+					>
+						{#if mobileOpen}
+							<path d="M4 4l12 12M16 4L4 16" stroke-linecap="round" />
+						{:else}
+							<path d="M3 6h14M3 10h14M3 14h14" stroke-linecap="round" />
+						{/if}
+					</svg>
+				</button>
+			</div>
 		</div>
-	</div>
 
-	<!--
+		<!--
 		Mobile drawer — expands under the header row on small screens
 		when the burger is tapped. Same nav items and CTAs as the
 		desktop bar. Closes on any tap inside.
 	-->
-	{#if mobileOpen}
-		<div class="border-line2 bg-paper border-t md:hidden">
-			<nav class="flex flex-col text-[13.5px] font-bold">
-				{#each NAV as item (item.label)}
-					<a
-						href={item.href}
-						onclick={closeMobile}
-						class="border-line border-b px-6 py-3 transition-colors hover:bg-paper-bg {item.label ===
-						active
-							? 'text-warm'
-							: ''}"
-					>
-						{item.label}
-					</a>
-					{#if item.children}
-						{#each item.children as child (child.href)}
-							<a
-								href={child.href}
-								onclick={closeMobile}
-								class="border-line text-soft border-b px-10 py-[10px] text-[11px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:bg-paper-bg"
-							>
-								{child.label}
-							</a>
-						{/each}
+		{#if mobileOpen}
+			<div class="border-t border-line2 bg-paper lg:hidden">
+				<nav class="flex flex-col">
+					{#each items as item (item.label)}
+						<a
+							href={item.href}
+							onclick={closeMobile}
+							class="border-b border-line px-6 py-3 text-[11px] font-extrabold tracking-[0.18em] uppercase transition-colors hover:bg-paper-bg {item.label ===
+							active
+								? 'text-warm'
+								: ''}"
+						>
+							{item.label}
+						</a>
+						{#if item.children}
+							{#each item.children as child (child.href)}
+								<a
+									href={child.href}
+									onclick={closeMobile}
+									class="border-b border-line px-10 py-[10px] text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase transition-colors hover:bg-paper-bg"
+								>
+									{child.label}
+								</a>
+							{/each}
+						{/if}
+					{/each}
+					{#if !user}
+						<a
+							href="/login?redirect={$page.url.pathname}"
+							onclick={closeMobile}
+							class="border-b border-line px-6 py-3 text-[11px] font-extrabold tracking-[0.18em] uppercase"
+						>
+							Sign in →
+						</a>
 					{/if}
-				{/each}
-				{#if !user}
-					<a
-						href="/login?redirect={$page.url.pathname}"
-						onclick={closeMobile}
-						class="border-line border-b px-6 py-3 text-[11px] font-extrabold tracking-[0.06em] uppercase"
-					>
-						Sign in →
-					</a>
-				{/if}
-			</nav>
-		</div>
-	{/if}
-</div>
+				</nav>
+			</div>
+		{/if}
+	</div>
 
-<!-- bottom rule — 1px, full-bleed, faintly transparent ink so it
+	<!-- bottom rule — 1px, full-bleed, faintly transparent ink so it
 	 reads as a hairline divider rather than the heavy double rule the
 	 section breaks use. -->
-<div class="border-t border-ink/20"></div>
+</header>

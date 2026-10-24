@@ -1,4 +1,5 @@
 import { listPublishedEntries } from '$lib/server/cms/list.js';
+import { listPublishedCourses } from '$lib/server/cms/courses.js';
 import { db } from '$lib/server/db/index.js';
 import { event, standing, decklist, podcast, podcastEpisode, vod } from '$lib/server/db/schema.js';
 import { asc, gte, desc, and, or, eq, isNull } from 'drizzle-orm';
@@ -149,14 +150,26 @@ async function fetchFilteredStandings(season, circuit) {
 }
 
 async function fetchArticles() {
-	// Homepage's "Newest from AGE" section — CMS entries only. Payload is
-	// turned off, but the list helper already sorts by publishedAt DESC
-	// and applies the public-visibility filter, so the caller just takes
-	// the first 12.
+	// Homepage feeds — CMS entries only. The list helper sorts by
+	// publishedAt DESC and applies the public-visibility filter. 16 is
+	// enough to fill the latest release, the Articles mosaic (1 + 3 + 4)
+	// and the video rows in Watch.
 	try {
-		return await listPublishedEntries({ limit: 12 });
+		return await listPublishedEntries({ limit: 16 });
 	} catch (error) {
 		console.error('Error fetching CMS entries:', error);
+		return [];
+	}
+}
+
+async function fetchCourses() {
+	// Academy section — published CMS courses. Returns [] (and the page
+	// falls back to its placeholder catalog) until the first course is
+	// published.
+	try {
+		return await listPublishedCourses({ limit: 4 });
+	} catch (error) {
+		console.error('Error fetching CMS courses:', error);
 		return [];
 	}
 }
@@ -171,10 +184,7 @@ function fetchUpcomingEvents() {
 					.select()
 					.from(event)
 					.where(
-						and(
-							gte(event.eventDate, now),
-							or(eq(event.status, 'upcoming'), isNull(event.status))
-						)
+						and(gte(event.eventDate, now), or(eq(event.status, 'upcoming'), isNull(event.status)))
 					)
 					.orderBy(asc(event.eventDate))
 					.limit(3),
@@ -236,10 +246,7 @@ async function fetchPodcastBundle() {
 					.select()
 					.from(podcastEpisode)
 					.where(
-						and(
-							eq(podcastEpisode.podcastId, podcastInfo.id),
-							eq(podcastEpisode.isPublished, true)
-						)
+						and(eq(podcastEpisode.podcastId, podcastInfo.id), eq(podcastEpisode.isPublished, true))
 					)
 					.orderBy(desc(podcastEpisode.publishedAt))
 					.limit(1);
@@ -302,7 +309,8 @@ export async function load({ setHeaders, url, locals }) {
 			standingsData,
 			featuredDecklists,
 			podcastBundle,
-			recentVods
+			recentVods,
+			courses
 		] = await Promise.all([
 			fetchArticles(),
 			fetchUpcomingEvents(),
@@ -311,7 +319,8 @@ export async function load({ setHeaders, url, locals }) {
 				: fetchFilteredStandings(standingsSeason, standingsCircuit),
 			fetchFeaturedDecklists(),
 			fetchPodcastBundle(),
-			fetchRecentVods()
+			fetchRecentVods(),
+			fetchCourses()
 		]);
 
 		// Edge-cache for 5 minutes with an hour of stale-while-revalidate.
@@ -355,7 +364,8 @@ export async function load({ setHeaders, url, locals }) {
 			featuredDecklists,
 			latestPodcastEpisode: podcastBundle.latestPodcastEpisode,
 			podcastInfo: podcastBundle.podcastInfo,
-			recentVods
+			recentVods,
+			courses
 		};
 	} catch (error) {
 		console.error('Error fetching data for homepage:', error);
@@ -380,7 +390,8 @@ export async function load({ setHeaders, url, locals }) {
 			featuredDecklists: [],
 			latestPodcastEpisode: null,
 			podcastInfo: null,
-			recentVods: []
+			recentVods: [],
+			courses: []
 		};
 	}
 }

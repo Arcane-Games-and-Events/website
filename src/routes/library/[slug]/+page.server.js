@@ -397,7 +397,16 @@ export async function load({ params, locals, setHeaders }) {
 				hasPremiumAccess = userHasPremiumAccess(locals.user);
 				if (!hasPremiumAccess) {
 					isPreview = true;
-					article.content = truncateContentForPreview(article.content);
+					// One paragraph only — it is rendered blurred behind the gate, so
+					// nothing readable is served to a non-member.
+					article.content = truncateContentForPreview(article.content, 1);
+					// Premium video: never ship playback tokens or the YouTube id
+					// to a non-member. The page renders a paywalled frame from the
+					// poster instead of a player.
+					if (article.video) {
+						article.videoLocked = true;
+						article.video = null;
+					}
 				}
 			}
 

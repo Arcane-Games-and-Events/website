@@ -1,37 +1,93 @@
 <script>
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
-	import DispatchFront from '$lib/components/age/home/DispatchFront.svelte';
-	import DispatchHub from '$lib/components/age/home/DispatchHub.svelte';
-	import DispatchSubline from '$lib/components/age/home/DispatchSubline.svelte';
-	import DispatchAcademy from '$lib/components/age/home/DispatchAcademy.svelte';
-	import DispatchStudios from '$lib/components/age/home/DispatchStudios.svelte';
-	import DispatchPledge from '$lib/components/age/home/DispatchPledge.svelte';
-	import {
-		toFrontData,
-		toHubData,
-		toStudiosData
-	} from '$lib/components/age/home/dispatch-adapters.js';
+	import FrontLead from '$lib/components/age/home/FrontLead.svelte';
+	import FrontStories from '$lib/components/age/home/FrontStories.svelte';
+	import FrontAcademy from '$lib/components/age/home/FrontAcademy.svelte';
+	import FrontOpen from '$lib/components/age/home/FrontOpen.svelte';
+	import FrontPodcast from '$lib/components/age/home/FrontPodcast.svelte';
+	import FrontPremium from '$lib/components/age/home/FrontPremium.svelte';
+	import FrontFleuron from '$lib/components/age/home/FrontFleuron.svelte';
+	import { buildFront } from '$lib/components/age/home/front-adapters.js';
+	import { reveal } from '$lib/actions/reveal.js';
 
+	/**
+	 * Front page — magazine running order:
+	 *   masthead (departments as header nav) → lead story & The Latest →
+	 *   Articles → Video → Academy → AGE Open → Podcast → Premium
+	 */
 	/** @type {{ data: any }} */
 	let { data } = $props();
 
-	// Adapt the existing homepage server data into the Dispatch component
-	// prop shapes. Academy still renders with its built-in mock data
-	// because the courses system doesn't exist yet.
-	let frontData = $derived(toFrontData(data));
-	let hubData = $derived(toHubData(data));
-	let studiosData = $derived(toStudiosData(data));
+	const F = $derived(buildFront(data));
+
+	// Department numbers follow the rendered order (No. I, II, …).
+	const num = $derived((id) => F.departments.findIndex((d) => d.id === id) + 1);
 </script>
 
-<AgeShell>
-	<DispatchFront data={frontData} />
-	<DispatchHub data={hubData} />
-	<DispatchSubline />
-	<DispatchAcademy />
+<svelte:head>
+	<title>AGE — Arcane Games and Events</title>
+	<meta
+		name="description"
+		content="Independent coverage, match film, and courses for competitive Flesh and Blood — plus the AGE Open tournament series."
+	/>
+</svelte:head>
 
-	{#if studiosData}
-		<DispatchStudios data={studiosData} />
+<AgeShell>
+	<FrontLead leads={F.leads} latest={F.latest} />
+
+	{#if F.articles}
+		<FrontFleuron />
+		<div use:reveal>
+			<FrontStories
+				id="articles"
+				n={num('articles')}
+				title="Articles"
+				strap="Reporting, strategy, and the SAGE series."
+				href="/library"
+				label="All articles"
+				data={F.articles}
+			/>
+		</div>
 	{/if}
 
-	<DispatchPledge />
+	{#if F.video}
+		<FrontFleuron />
+		<div use:reveal>
+			<FrontStories
+				id="video"
+				n={num('video')}
+				title="Video"
+				strap="Match film, bonus matches, and video features from AGE Studios."
+				href="/library/vods"
+				label="All video"
+				dark
+				data={F.video}
+			/>
+		</div>
+	{/if}
+
+	<div class="h-12 md:h-16"></div>
+	<div use:reveal>
+		<FrontAcademy n={num('academy')} data={F.academy} />
+	</div>
+
+	{#if F.open}
+		<FrontFleuron />
+		<div use:reveal>
+			<FrontOpen n={num('age-open')} data={F.open} />
+		</div>
+	{/if}
+
+	{#if F.podcast}
+		<FrontFleuron />
+		<div use:reveal>
+			<FrontPodcast n={num('podcast')} podcast={F.podcast} />
+		</div>
+	{/if}
+
+	<FrontFleuron />
+	<div use:reveal>
+		<FrontPremium n={num('premium')} />
+	</div>
+	<div class="h-14 md:h-24"></div>
 </AgeShell>

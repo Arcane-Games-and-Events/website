@@ -1,14 +1,9 @@
 <script>
 	import '../app.css';
 	import { page, navigating } from '$app/stores';
-	import Sidebar from '$lib/components/Sidebar.svelte';
-	import Topbar from '$lib/components/Topbar.svelte';
-	import Footer from '$lib/components/Footer.svelte';
+	import AgeHeader from '$lib/components/age/AgeHeader.svelte';
+	import AgeFooter from '$lib/components/age/AgeFooter.svelte';
 	export let data;
-
-	// Toggle between sidebar and topbar layouts
-	// Set to true to preview topbar, false for sidebar
-	const useTopbar = true;
 
 	// Auth pages that should not show the sidebar
 	const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
@@ -18,7 +13,7 @@
 	$: isAdminPage = $page.url.pathname.startsWith('/admin');
 
 	// Routes that render the editorial redesign chrome (AgeShell) and
-	// therefore opt out of the global Topbar + Footer wrapper. Extend
+	// therefore opt out of the global header + footer wrapper. Extend
 	// this list as the redesign rolls out to more routes.
 	//
 	// Note: auth routes (login/signup) already bypass the global chrome
@@ -37,10 +32,7 @@
 	// [eventId]`) and event results page (`/age-open/[eventId]/results`)
 	// as editorial without catching `/checkout` siblings that haven't
 	// been redesigned yet.
-	const editorialPatterns = [
-		/^\/age-open\/[^/]+\/?$/,
-		/^\/age-open\/[^/]+\/results\/?$/
-	];
+	const editorialPatterns = [/^\/age-open\/[^/]+\/?$/, /^\/age-open\/[^/]+\/results\/?$/];
 	$: isEditorialPage =
 		editorialRoutes.includes($page.url.pathname) ||
 		editorialPrefixes.some((p) => $page.url.pathname.startsWith(p)) ||
@@ -92,7 +84,7 @@
 	 a bar that appears and disappears faster than the eye can process. -->
 {#if showLoadingBar}
 	<div class="fixed top-0 right-0 left-0 z-[9999] h-0.5">
-		<div class="animate-loading-bar bg-warm h-full"></div>
+		<div class="animate-loading-bar h-full bg-warm"></div>
 	</div>
 {/if}
 
@@ -102,34 +94,19 @@
 	<slot />
 {:else if isEditorialPage || isErrorPage}
 	<slot />
-{:else if useTopbar}
-	<!-- TOPBAR LAYOUT (Preview Mode) -->
-	<Topbar
-		user={data.user}
-		assignedEventsCount={data.assignedEventsCount}
-		isPartner={data.isPartner}
-		isPremiumMember={data.isPremiumMember}
-	>
-		<div class="flex min-h-screen flex-col bg-gray-950">
-			<main id="main-content" class="flex-1 pb-16">
-				<slot />
-			</main>
-			<Footer />
-		</div>
-	</Topbar>
 {:else}
-	<!-- SIDEBAR LAYOUT (Original) -->
-	<Sidebar
-		user={data.user}
-		assignedEventsCount={data.assignedEventsCount}
-		isPartner={data.isPartner}
-		isPremiumMember={data.isPremiumMember}
-	>
-		<div class="flex min-h-screen flex-col bg-gray-950">
+	<!--
+		Pages not yet moved to the editorial design still get the
+		editorial header + footer so the site has one navbar everywhere.
+		Their bodies keep the dark treatment until each is redesigned.
+	-->
+	<div class="min-h-screen overflow-x-clip bg-paper-bg font-libre text-ink antialiased">
+		<AgeHeader />
+		<div class="flex flex-col bg-gray-950 text-gray-100">
 			<main id="main-content" class="flex-1 pb-16">
 				<slot />
 			</main>
-			<Footer />
 		</div>
-	</Sidebar>
+		<AgeFooter />
+	</div>
 {/if}

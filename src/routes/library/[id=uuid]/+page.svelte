@@ -9,15 +9,11 @@
 	const tokens = $derived(data.tokens);
 	const vodThumbnailToken = $derived(data.vodThumbnailToken);
 	const relatedVods = $derived(data.relatedVods || []);
-	const publishedDate = $derived(
-		vodItem?.publishedAt ? new Date(vodItem.publishedAt) : null
-	);
+	const publishedDate = $derived(vodItem?.publishedAt ? new Date(vodItem.publishedAt) : null);
 	const matchup = $derived(
 		[vodItem?.player1Name, vodItem?.player2Name].filter(Boolean).join(' vs ')
 	);
-	const isPremiumUser = $derived(
-		data.user?.role === 'premium' || data.user?.role === 'admin'
-	);
+	const isPremiumUser = $derived(data.user?.role === 'premium' || data.user?.role === 'admin');
 
 	// Patch mux-player shadow DOM so the transport chrome sits directly
 	// over the video rather than fighting the paper header/footer bands.
@@ -86,10 +82,7 @@
 
 <svelte:head>
 	<title>{vodItem.title} · AGE Library</title>
-	<meta
-		name="description"
-		content={vodItem.description || `Watch ${vodItem.title} on AGE`}
-	/>
+	<meta name="description" content={vodItem.description || `Watch ${vodItem.title} on AGE`} />
 	{#if canWatch}
 		<link
 			rel="modulepreload"
@@ -99,89 +92,67 @@
 </svelte:head>
 
 <AgeShell active="Library">
-	<!-- ============ HEADER ============ -->
-	<header class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[46px] pb-[34px]">
-		<!-- kicker rail -->
-		<div class="mb-[22px] flex flex-wrap items-center gap-[14px] md:gap-[18px]">
-			<span
-				class="bg-warm inline-flex items-center gap-[7px] px-3 py-[6px] text-[11px] font-extrabold tracking-[0.14em] text-white uppercase"
-			>
-				<svg class="h-[10px] w-[10px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-					<path d="M8 5v14l11-7z" />
-				</svg>
-				Video
-			</span>
-			{#if vodItem.isPremium}
-				<span
-					class="font-mono-system text-prem text-[11px] font-bold tracking-[0.14em] uppercase"
-				>
-					Premium
-				</span>
-			{/if}
-			{#if vodItem.event || vodItem.circuit}
-				<span
-					class="font-mono-system text-fade text-[11px] font-bold tracking-[0.14em] uppercase"
-				>
-					{vodItem.event || vodItem.circuit}
-				</span>
-			{/if}
-			<span class="bg-line2 hidden h-[1px] flex-1 md:block"></span>
-			{#if publishedDate}
-				<span
-					class="font-mono-system text-fade text-[11px] font-bold tracking-[0.14em] uppercase"
-				>
-					{publishedDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
-				</span>
-			{/if}
-		</div>
+	<!-- back to the library -->
+	<div class="mx-auto w-full max-w-[1680px] px-5 pt-4 md:px-8 md:pt-5">
+		<a
+			href="/library"
+			class="inline-flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-[color,gap] hover:gap-3 hover:text-warm"
+		>
+			<span aria-hidden="true">←</span>
+			Library
+		</a>
+	</div>
 
-		<!-- headline -->
+	<!-- ============ HEADER ============ -->
+	<header
+		class="fp-rise mx-auto w-full max-w-[960px] px-5 pt-8 pb-5 text-center md:px-8 md:pt-12 md:pb-7"
+	>
+		<div
+			class="flex items-center justify-center gap-3 text-[10.5px] font-extrabold tracking-[0.24em] text-warm uppercase md:text-[11.5px]"
+		>
+			<span aria-hidden="true">◆</span>
+			{vodItem.event || vodItem.circuit
+				? `Bonus match · ${vodItem.event || vodItem.circuit}`
+				: 'Bonus match'}
+			<span aria-hidden="true">◆</span>
+		</div>
 		<h1
-			class="font-newsreader max-w-[1140px] text-[clamp(38px,6vw,72px)] leading-[0.95] font-semibold tracking-[-0.03em] [text-wrap:balance]"
+			class="mt-2 font-newsreader text-[38px] leading-[1.0] font-semibold tracking-[-0.02em] [text-wrap:balance] md:mt-3 md:text-[clamp(46px,5.6vw,84px)] md:leading-[0.96]"
 		>
 			{vodItem.title}
 		</h1>
-
-		<!-- sell row -->
-		<div class="mt-[24px] flex flex-col items-start justify-between gap-6 md:flex-row md:items-end">
-			{#if matchup}
-				<p
-					class="font-newsreader text-soft m-0 max-w-[680px] text-[19px] leading-[1.42] italic"
-				>
-					{matchup}
-				</p>
-			{:else if vodItem.description}
-				<p
-					class="font-newsreader text-soft m-0 max-w-[680px] text-[19px] leading-[1.42] italic"
-				>
-					{vodItem.description.split('\n')[0].slice(0, 180)}
-				</p>
-			{:else}
-				<span class="block max-w-[680px]"></span>
+		{#if matchup || vodItem.description}
+			<p
+				class="mx-auto mt-2.5 max-w-[640px] font-newsreader text-[17px] leading-[1.45] [text-wrap:balance] text-soft italic md:mt-3 md:text-[21px]"
+			>
+				{matchup || vodItem.description.split('\n')[0].slice(0, 180)}
+			</p>
+		{/if}
+		<div
+			class="mt-3.5 flex flex-wrap items-baseline justify-center gap-x-2 text-[11px] text-fade md:mt-4"
+		>
+			<span class="font-extrabold tracking-[0.12em] text-ink uppercase">By AGE Studios</span>
+			{#if publishedDate || vodItem.duration}
+				<span aria-hidden="true">·</span>
+				<span class="font-semibold">
+					{[
+						publishedDate ? formatDate(publishedDate) : '',
+						vodItem.duration ? formatDuration(vodItem.duration) : ''
+					]
+						.filter(Boolean)
+						.join(' · ')}
+				</span>
 			{/if}
-
-			<div class="flex flex-shrink-0 flex-col gap-[6px] md:items-end">
-				{#if vodItem.duration}
-					<span
-						class="font-mono-system text-warm text-[12px] font-extrabold tracking-[0.08em] uppercase"
-					>
-						Runtime · {formatDuration(vodItem.duration)}
-					</span>
-				{/if}
-				{#if publishedDate}
-					<span
-						class="font-mono-system text-fade text-[10.5px] font-bold tracking-[0.06em] uppercase"
-					>
-						{formatDate(publishedDate)}
-					</span>
-				{/if}
-			</div>
+			{#if vodItem.isPremium}
+				<span aria-hidden="true">·</span>
+				<span class="font-extrabold tracking-[0.12em] text-prem uppercase">Premium</span>
+			{/if}
 		</div>
 	</header>
 
 	<!-- ============ PLAYER ============ -->
-	<figure class="mx-auto m-0 w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
-		<div class="border-ink vod-player-wrapper border-y-[3px] border-double bg-black">
+	<figure class="m-0 mx-auto w-full max-w-[1200px] px-5 md:px-8">
+		<div class="vod-player-wrapper fp-plate bg-black">
 			{#if canWatch && vodItem.muxPlaybackId}
 				<mux-player
 					playback-id={vodItem.muxPlaybackId}
@@ -194,39 +165,44 @@
 					default-hidden-captions
 					forward-seek-offset="10"
 					backward-seek-offset="10"
-					style="aspect-ratio: {vodItem.aspectRatio ||
-						'16/9'}; width: 100%; display: block;"
+					style="aspect-ratio: {vodItem.aspectRatio || '16/9'}; width: 100%; display: block;"
 				></mux-player>
 			{:else}
 				<!-- Paywall / Premium CTA -->
-				<div class="relative aspect-video overflow-hidden">
+				<div class="relative overflow-hidden md:aspect-video">
 					{#if vodItem.muxPlaybackId}
 						<img
 							src="https://image.mux.com/{vodItem.muxPlaybackId}/thumbnail.webp?width=1600&height=900&fit_mode=smartcrop{vodThumbnailToken
 								? `&token=${vodThumbnailToken}`
 								: ''}"
 							alt=""
-							class="h-full w-full scale-105 object-cover blur-lg brightness-[0.4]"
+							class="absolute inset-0 h-full w-full scale-105 object-cover blur-lg brightness-[0.4]"
 						/>
 					{:else}
-						<div class="h-full w-full bg-[#080b15]"></div>
+						<div class="absolute inset-0 bg-[#080b15]"></div>
 					{/if}
 
-					<div class="absolute inset-0 flex items-center justify-center px-6">
-						<div class="max-w-[520px] text-center">
+					<div
+						class="relative flex items-center justify-center px-5 py-8 md:absolute md:inset-0 md:px-6 md:py-0"
+					>
+						<div
+							class="max-w-[560px] border-[3px] border-double border-paper-bg/80 px-6 py-8 text-center md:px-10 md:py-10"
+						>
 							<span
-								class="font-mono-system text-prem mb-4 inline-block bg-white px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								class="mb-3 flex items-center justify-center gap-3 text-[10.5px] font-extrabold tracking-[0.2em] text-prem uppercase"
 							>
-								AGE Premium
+								<span aria-hidden="true">◆</span>Premium · Members only<span aria-hidden="true"
+									>◆</span
+								>
 							</span>
 							<h3
-								class="font-newsreader m-0 mb-3 text-[clamp(28px,4vw,42px)] leading-[1] font-semibold tracking-[-0.02em] text-white"
+								class="m-0 mb-3 font-newsreader text-[clamp(28px,4vw,42px)] leading-[1] font-semibold tracking-[-0.02em] text-white"
 							>
-								Members-only match.
+								Watch this match with a membership.
 							</h3>
 							<p
-								class="mx-auto mb-6 max-w-[420px] text-[14px] leading-[1.55]"
-								style="color: rgba(255,255,255,0.78);"
+								class="mx-auto mb-6 max-w-[440px] font-newsreader text-[16px] leading-[1.5] italic"
+								style="color: rgba(255,255,255,0.82);"
 							>
 								This VOD is part of AGE Premium. Subscribe to unlock every AGE Open recording plus
 								the full library.
@@ -234,16 +210,16 @@
 							<div class="flex flex-wrap items-center justify-center gap-3">
 								<a
 									href="/premium"
-									class="bg-prem inline-flex items-center gap-2 border border-transparent px-[22px] py-[13px] text-[11px] font-bold tracking-[0.08em] text-white uppercase transition-[filter] hover:brightness-110"
+									class="inline-flex items-center border border-prem bg-prem px-6 py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
 								>
-									Get Premium →
+									Become a member
 								</a>
 								{#if !data.user}
 									<a
 										href="/login"
-										class="font-mono-system inline-flex items-center border border-white/40 px-[18px] py-[12px] text-[11px] font-bold tracking-[0.08em] text-white uppercase transition-colors hover:bg-white/10"
+										class="inline-flex items-center border border-white/60 px-6 py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-white uppercase transition-colors hover:bg-white/10"
 									>
-										Log in
+										Sign in
 									</a>
 								{/if}
 							</div>
@@ -256,46 +232,43 @@
 
 	<!-- ============ CONTENT ============ -->
 	<div
-		class="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-[48px] px-4 md:px-10 lg:px-14 pt-[46px] pb-[64px] lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-[64px]"
+		class="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-[48px] px-5 pt-[40px] pb-[64px] md:px-8 md:pt-[56px] lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-[64px]"
 	>
 		<!-- LEFT COLUMN -->
 		<section class="min-w-0">
 			{#if vodItem.player1Hero || vodItem.player2Hero || vodItem.player1Name || vodItem.player2Name}
-				<div class="border-ink border-[1.5px] p-6 md:p-7">
+				<div class="border-[3px] border-double border-ink p-6 md:p-7">
 					<span
-						class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase"
+						class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.18em] text-ink uppercase"
 					>
-						The Matchup
+						<span class="text-[8px] text-warm" aria-hidden="true">◆</span>
+						The matchup
 					</span>
 					<div class="mt-[14px] grid grid-cols-[1fr_auto_1fr] items-center gap-4">
 						<div class="min-w-0">
 							<div
-								class="font-newsreader truncate text-[clamp(20px,2.4vw,26px)] font-semibold leading-[1.1] tracking-[-0.01em]"
+								class="truncate font-newsreader text-[clamp(20px,2.4vw,26px)] leading-[1.1] font-semibold tracking-[-0.01em]"
 							>
 								{vodItem.player1Name || '—'}
 							</div>
 							{#if vodItem.player1Hero}
 								<div
-									class="font-mono-system text-warm mt-[6px] text-[10.5px] font-bold tracking-[0.08em] uppercase"
+									class="mt-[6px] text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase"
 								>
 									{vodItem.player1Hero}
 								</div>
 							{/if}
 						</div>
-						<span
-							class="font-mono-system text-fade text-[11px] font-extrabold tracking-[0.16em] uppercase"
-						>
-							vs
-						</span>
+						<span class="font-newsreader text-[18px] text-fade italic">vs</span>
 						<div class="min-w-0 text-right">
 							<div
-								class="font-newsreader truncate text-[clamp(20px,2.4vw,26px)] font-semibold leading-[1.1] tracking-[-0.01em]"
+								class="truncate font-newsreader text-[clamp(20px,2.4vw,26px)] leading-[1.1] font-semibold tracking-[-0.01em]"
 							>
 								{vodItem.player2Name || '—'}
 							</div>
 							{#if vodItem.player2Hero}
 								<div
-									class="font-mono-system text-warm mt-[6px] text-[10.5px] font-bold tracking-[0.08em] uppercase"
+									class="mt-[6px] text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase"
 								>
 									{vodItem.player2Hero}
 								</div>
@@ -306,14 +279,15 @@
 			{/if}
 
 			{#if vodItem.description}
-				<div class="border-line2 mt-[36px] border-t pt-[24px]">
+				<div class="mt-[36px] border-t border-line2 pt-[24px]">
 					<span
-						class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase"
+						class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.18em] text-ink uppercase"
 					>
-						About this VOD
+						<span class="text-[8px] text-warm" aria-hidden="true">◆</span>
+						About this match
 					</span>
 					<div
-						class="font-newsreader text-ink mt-[14px] text-[19px] leading-[1.55] whitespace-pre-line"
+						class="mt-[14px] font-newsreader text-[19px] leading-[1.55] whitespace-pre-line text-ink first-letter:float-left first-letter:mt-[8px] first-letter:mr-3 first-letter:font-newsreader first-letter:text-[64px] first-letter:leading-[0.7] first-letter:font-semibold first-letter:text-warm"
 					>
 						{vodItem.description}
 					</div>
@@ -324,72 +298,72 @@
 		<!-- RIGHT SIDEBAR -->
 		<aside class="min-w-0 space-y-[36px]">
 			{#if !isPremiumUser}
-				<div class="bg-prem text-white">
-					<div class="px-6 pt-6 pb-[22px]">
-						<span
-							class="font-mono-system text-prem mb-[14px] inline-block bg-white px-[9px] py-[5px] text-[9.5px] font-extrabold tracking-[0.14em] uppercase"
-						>
-							Membership
-						</span>
-						<h3
-							class="font-newsreader m-0 mb-2 text-[24px] leading-[1.1] font-semibold tracking-[-0.01em]"
-						>
-							Every VOD, unlocked.
-						</h3>
-						<p
-							class="m-0 mb-[18px] text-[13px] leading-[1.5]"
-							style="color: #d6eedf;"
-						>
-							Members get every AGE Open recording, bonus matches, premium articles, and course
-							updates.
-						</p>
-						<a
-							href="/premium"
-							class="bg-white text-prem inline-flex w-full items-center justify-center border border-white py-[12px] text-[11px] font-bold tracking-[0.08em] uppercase transition-[filter] hover:brightness-95"
-						>
-							Get Premium →
-						</a>
-					</div>
+				<div class="border-[3px] border-double border-ink bg-paper px-6 py-7 text-center">
+					<span
+						class="flex items-center justify-center gap-2 text-[10px] font-extrabold tracking-[0.2em] text-prem uppercase"
+					>
+						<span aria-hidden="true">◆</span>Powered by members<span aria-hidden="true">◆</span>
+					</span>
+					<h3
+						class="mt-3 font-newsreader text-[26px] leading-[1.08] font-semibold tracking-[-0.01em] [text-wrap:balance]"
+					>
+						Every match, unlocked.
+					</h3>
+					<p class="mt-2.5 font-newsreader text-[15px] leading-[1.5] text-soft italic">
+						Members get every AGE Open recording, bonus matches, premium articles, and course
+						updates.
+					</p>
+					<a
+						href="/premium"
+						class="mt-5 inline-flex w-full items-center justify-center border border-prem bg-prem py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+					>
+						Become a member
+					</a>
+					<div class="mt-3 text-[11px] text-fade italic">$10 a month · cancel anytime</div>
 				</div>
 			{/if}
 
 			{#if relatedVods.length > 0}
 				<div>
 					<div
-						class="border-ink mb-[18px] flex items-baseline justify-between border-b-[1.5px] pb-[10px]"
+						class="mb-[14px] flex items-baseline justify-between border-t-[3px] border-double border-ink pt-3"
 					>
 						<span
-							class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase"
+							class="flex items-center gap-2 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
 						>
-							Related Videos
+							<span class="text-[10px] text-warm" aria-hidden="true">◆</span>
+							More matches
 						</span>
 						<a
 							href="/library/vods"
-							class="font-mono-system text-warm hover:text-accent text-[10px] font-bold tracking-[0.08em] uppercase"
+							class="text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:text-warm"
+							>All →</a
 						>
-							All →
-						</a>
 					</div>
-					<div class="space-y-[22px]">
-						{#each relatedVods as related (related.id)}
+					<div class="divide-y divide-line">
+						{#each relatedVods as related, i (related.id)}
 							<a
 								href="/library/{related.id}"
-								class="group block"
+								class="group grid grid-cols-[24px_104px_1fr] items-center gap-3 py-4"
 							>
-								<div class="border-line2 bg-panel relative aspect-video overflow-hidden border">
+								<span
+									class="font-newsreader text-[26px] leading-none font-medium text-warm tabular-nums"
+									aria-hidden="true">{i + 1}</span
+								>
+								<div class="relative aspect-video overflow-hidden bg-panel">
 									{#if related.muxPlaybackId}
 										<img
 											src="https://image.mux.com/{related.muxPlaybackId}/thumbnail.webp?width=480&height=270&fit_mode=smartcrop{related.thumbnailToken
 												? `&token=${related.thumbnailToken}`
 												: ''}"
 											alt=""
-											class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+											class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
 											loading="lazy"
 										/>
 									{:else}
 										<div class="flex h-full items-center justify-center">
 											<svg
-												class="text-fade h-8 w-8"
+												class="h-8 w-8 text-fade"
 												fill="currentColor"
 												viewBox="0 0 24 24"
 												aria-hidden="true"
@@ -400,31 +374,32 @@
 									{/if}
 									{#if related.duration}
 										<div
-											class="font-mono-system bg-ink absolute right-2 bottom-2 px-2 py-[3px] text-[10px] font-bold tracking-[0.06em] text-white"
+											class="absolute right-0 bottom-0 bg-ink px-1.5 py-[2px] text-[9px] font-extrabold tracking-[0.06em] text-white"
 										>
 											{formatDuration(related.duration)}
 										</div>
 									{/if}
 									{#if related.isPremium}
 										<span
-											class="font-mono-system text-prem absolute top-2 left-2 bg-white px-2 py-[3px] text-[9px] font-extrabold tracking-[0.14em] uppercase"
+											class="absolute top-0 left-0 bg-prem px-1.5 py-[2px] text-[8px] font-extrabold tracking-[0.14em] text-white uppercase"
+											>Premium</span
 										>
-											Premium
-										</span>
 									{/if}
 								</div>
-								<h4
-									class="font-newsreader group-hover:text-warm mt-[10px] line-clamp-2 text-[17px] leading-[1.25] font-semibold tracking-[-0.01em] transition-colors"
-								>
-									{related.title}
-								</h4>
-								{#if related.player1Name && related.player2Name}
-									<div
-										class="font-mono-system text-fade mt-[6px] truncate text-[10px] font-bold tracking-[0.08em] uppercase"
+								<div class="min-w-0">
+									<h4
+										class="line-clamp-2 font-newsreader text-[16px] leading-[1.2] font-semibold tracking-[-0.01em] transition-colors group-hover:text-warm"
 									>
-										{related.player1Name} vs {related.player2Name}
-									</div>
-								{/if}
+										{related.title}
+									</h4>
+									{#if related.player1Name && related.player2Name}
+										<div
+											class="mt-[5px] truncate text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
+										>
+											{related.player1Name} vs {related.player2Name}
+										</div>
+									{/if}
+								</div>
 							</a>
 						{/each}
 					</div>
@@ -433,23 +408,20 @@
 
 			<a
 				href="/library/vods"
-				class="border-line2 hover:border-ink group flex items-center justify-between border p-4 transition-colors"
+				class="group flex items-center justify-between border border-line p-4 transition-colors hover:border-ink"
 			>
 				<div>
 					<div class="font-newsreader text-[16px] font-semibold tracking-[-0.01em]">
 						Browse VODs
 					</div>
-					<div
-						class="font-mono-system text-fade mt-[3px] text-[10px] font-bold tracking-[0.08em] uppercase"
-					>
+					<div class="mt-[3px] text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase">
 						Every match on tape
 					</div>
 				</div>
 				<span
-					class="font-mono-system text-fade group-hover:text-warm text-[14px] font-bold transition-colors"
+					class="text-[16px] text-fade transition-[color,transform] group-hover:translate-x-0.5 group-hover:text-warm"
+					>→</span
 				>
-					→
-				</span>
 			</a>
 		</aside>
 	</div>

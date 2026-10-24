@@ -2,8 +2,7 @@
 	/**
 	 * Editorial event row — the canonical look for a single upcoming
 	 * event listing. Used in:
-	 *   - DispatchFront `Across AGE` digest (homepage middle column)
-	 *   - DispatchHub sidebar `Upcoming Events` (homepage right column)
+	 *   - Homepage `Across AGE` digest (HomeDigest) and AGE Open strip (HomeCompete)
 	 *   - /age-open events tab (full list with price + Sign Up CTA)
 	 *
 	 * Visual register: solid circuit-colored date tile + content area,

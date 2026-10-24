@@ -25,6 +25,21 @@
 	// Card images map from server for hover tooltips
 	$: cardImages = data.cardImages || {};
 
+	// ---- masthead labels (same vocabulary as the homepage cover) ----
+	$: pubDate = data.article.publishedAt ? new Date(data.article.publishedAt) : null;
+	$: pubLabel = pubDate
+		? pubDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+		: '';
+	$: isVideoEntry = !!data.article.video || !!data.article.videoLocked;
+	$: rubric = data.article.tags?.[0]?.name || (isVideoEntry ? 'Video' : 'Article');
+	$: rubricHref = data.article.tags?.[0]?.slug
+		? `/library/tag/${data.article.tags[0].slug}`
+		: '/library';
+	$: rubricLabel = isVideoEntry && rubric !== 'Video' ? `${rubric} · Video` : rubric;
+	$: hasCover = !isVideoEntry && !!data.article.coverImage?.src;
+	$: videoPoster = data.article.thumbnailImage?.src || data.article.coverImage?.src || '';
+	$: lengthLabel = data.article.readTime ? `${data.article.readTime} min read` : '';
+
 	// Platform icons for author social links
 	const platformIcons = {
 		twitter: {
@@ -126,24 +141,6 @@
 			return `https://${url}`;
 		}
 		return url;
-	}
-
-	// Calculate when a premium article will become free (30 days from publish)
-	function getFreeDate(publishedAt) {
-		if (!publishedAt) return null;
-		const publishDate = new Date(publishedAt);
-		const freeDate = new Date(publishDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-		return freeDate;
-	}
-
-	// Format date for display
-	function formatFreeDate(date) {
-		if (!date) return '';
-		return date.toLocaleDateString('en-US', {
-			month: 'long',
-			day: 'numeric',
-			year: 'numeric'
-		});
 	}
 
 	// Process content blocks for inline decklists
@@ -955,180 +952,282 @@
 </svelte:head>
 
 <AgeShell>
-	{#if data.article.publishedAt}
-		{@const _pub = new Date(data.article.publishedAt)}
-		<!-- ============ HEADER ============ -->
-		<header class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[46px] pb-[34px]">
-			<!-- kicker rail -->
-			<div class="mb-[22px] flex items-center gap-[18px]">
-				{#if data.article.tags && data.article.tags.length > 0}
-					<a
-						href="/library/tag/{data.article.tags[0].slug}"
-						class="bg-warm inline-flex items-center px-3 py-[6px] text-[11px] font-extrabold tracking-[0.14em] text-white uppercase"
-					>
-						{data.article.tags[0].name}
-					</a>
-				{:else}
-					<span class="bg-warm inline-flex items-center px-3 py-[6px] text-[11px] font-extrabold tracking-[0.14em] text-white uppercase">
-						Article
-					</span>
-				{/if}
-				{#if data.isPremium}
-					<span
-						class="font-mono-system text-prem text-[11px] font-bold tracking-[0.14em] uppercase"
-					>
-						Premium
-					</span>
-				{/if}
-				<span class="bg-line2 h-[1px] flex-1"></span>
-				<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.14em] uppercase">
-					{_pub.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
-				</span>
-			</div>
-
-			<!-- headline -->
-			<h1
-				class="font-newsreader max-w-[1140px] text-[clamp(46px,7vw,90px)] leading-[0.9] font-semibold tracking-[-0.03em] [text-wrap:balance]"
+	{#if !hasCover}
+		<!-- back to the library -->
+		<div class="mx-auto w-full max-w-[1680px] px-5 pt-4 md:px-8 md:pt-5">
+			<a
+				href="/library"
+				class="inline-flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-[color,gap] hover:gap-3 hover:text-warm"
 			>
-				{data.article.title}
-			</h1>
-
-			<!-- sell row: dek + byline -->
-			<div class="mt-[26px] flex flex-col items-start justify-between gap-12 md:flex-row md:items-end">
-				{#if data.article.excerpt}
-					<p
-						class="font-newsreader text-soft m-0 max-w-[680px] text-[21px] leading-[1.42] italic"
-					>
-						{data.article.excerpt}
-					</p>
-				{:else}
-					<span class="block max-w-[680px]"></span>
-				{/if}
-
-				{#if data.article.author}
-					<a
-						href="/library/author/{data.article.author.slug}"
-						class="flex flex-shrink-0 items-center gap-[13px]"
-					>
-						{#if data.article.author.profilePicture}
-							<span
-								class="border-warm bg-panel block h-[52px] w-[52px] rounded-full border-2 bg-cover bg-center"
-								style="background-image: url('{data.article.author.profilePicture}');"
-							></span>
-						{:else}
-							<span
-								class="border-warm bg-panel text-soft flex h-[52px] w-[52px] items-center justify-center rounded-full border-2 text-lg font-bold"
-							>
-								{data.article.author.name.charAt(0).toUpperCase()}
-							</span>
-						{/if}
-						<span>
-							<span class="block text-[16px] font-extrabold tracking-[-0.01em]">
-								{data.article.author.name}
-							</span>
-							<span class="font-mono-system text-warm mt-[6px] block text-[12px] font-extrabold tracking-[0.08em] uppercase">
-								{_pub.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-							</span>
-							{#if data.article.readTime}
-								<span
-									class="font-mono-system text-fade mt-[3px] block text-[10.5px] font-bold tracking-[0.06em] uppercase"
-								>
-									{data.article.readTime} min read
-								</span>
-							{/if}
-						</span>
-					</a>
-				{/if}
-			</div>
-		</header>
+				<span aria-hidden="true">←</span>
+				Library
+			</a>
+		</div>
 	{/if}
 
-	<!-- ============ HERO FIGURE ============ -->
-	<!-- Hero: video takes precedence over cover image. A CMS entry with a
-	     video slot uses that as the top-of-page hero; only fall back to the
-	     cover image when there's no video attached. Payload articles always
-	     have `video: null`, so they always render the cover as before. -->
-	{#if data.article.video}
-		<figure class="mx-auto m-0 w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
-			<!-- Poster on the video is the entry's own thumbnail image, falling
-			     back to its cover image. Same fallback order the card grid uses,
-			     so a video looks visually consistent between the reader page
-			     and the preview cards linking to it. -->
-			<LibraryVideoBlock
-				video={data.article.video}
-				poster={data.article.thumbnailImage?.src || data.article.coverImage?.src || ''}
-			/>
-			<figcaption class="flex gap-3 py-3">
-				<span
-					class="font-mono-system text-warm pt-[2px] text-[10px] font-bold tracking-[0.14em] whitespace-nowrap uppercase"
-				>
-					Video
-				</span>
-				<span class="font-newsreader text-soft text-[13px] italic">
-					{data.article.title}
-				</span>
-			</figcaption>
-		</figure>
-	{:else if data.article.coverImage?.src}
-		<figure class="mx-auto m-0 w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
-			<div class="border-ink border-y-[3px] border-double">
+	<!-- ============ COVER ============
+	     Same composition as the homepage latest release: the 16:9 cover sits
+	     in a plate frame with the copy overlaid on its lower third at md+
+	     (white on an ink scrim) and set beneath it on phones. Video
+	     entries and entries without a cover use the paper variant with
+	     the copy centred above the media. -->
+	<section class="relative">
+		{#if hasCover}
+			<div class="relative mx-auto aspect-video w-full max-w-[1680px] overflow-hidden bg-ink">
 				<img
 					src={data.article.coverImage.src}
 					srcset={data.article.coverImage.srcset}
-					sizes="(min-width: 1600px) 1488px, 100vw"
+					sizes="(min-width: 1680px) 1680px, 100vw"
 					alt={data.article.title}
 					loading="eager"
-					class="aspect-video w-full object-cover"
+					fetchpriority="high"
+					class="fp-kenburns absolute inset-0 h-full w-full object-cover"
 				/>
-			</div>
-			<figcaption class="flex gap-3 py-3">
-				<span
-					class="font-mono-system text-warm pt-[2px] text-[10px] font-bold tracking-[0.14em] whitespace-nowrap uppercase"
+				<div
+					class="absolute inset-x-0 top-0 h-24"
+					style="background: linear-gradient(180deg, rgba(23,21,15,0.35), rgba(23,21,15,0));"
+					aria-hidden="true"
+				></div>
+				<div
+					class="absolute inset-x-0 bottom-0 hidden h-[78%] md:block"
+					style="background: linear-gradient(180deg, rgba(23,21,15,0) 0%, rgba(23,21,15,0.3) 22%, rgba(23,21,15,0.72) 45%, rgba(23,21,15,0.92) 68%, rgba(23,21,15,0.98) 100%);"
+					aria-hidden="true"
+				></div>
+				<div
+					class="fp-fade pointer-events-none absolute inset-3 border border-white/70 md:inset-7"
+					style="animation-delay: 400ms;"
+					aria-hidden="true"
+				></div>
+				<a
+					href="/library"
+					class="fp-fade absolute top-6 left-6 z-[2] inline-flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.18em] text-white uppercase transition-[gap] hover:gap-3 md:top-10 md:left-10"
+					style="animation-delay: 600ms; text-shadow: 0 1px 2px rgba(23,21,15,0.6);"
 				>
-					Cover
-				</span>
-				<span class="font-newsreader text-soft text-[13px] italic">
-					{data.article.title}
-				</span>
-			</figcaption>
+					<span aria-hidden="true">←</span>
+					Library
+				</a>
+			</div>
+		{/if}
+
+		<div
+			class="fp-rise mx-auto w-full max-w-[960px] px-5 pt-7 pb-4 text-center md:px-8 {hasCover
+				? 'md:pointer-events-none md:absolute md:inset-x-0 md:bottom-0 md:left-1/2 md:z-[1] md:-translate-x-1/2 md:pb-14 lg:pb-16'
+				: 'md:pt-12 md:pb-6'}"
+			style={hasCover
+				? 'text-shadow: 0 1px 2px rgba(23,21,15,0.6), 0 6px 24px rgba(23,21,15,0.45);'
+				: ''}
+		>
+			<a
+				href={rubricHref}
+				class="pointer-events-auto inline-flex items-center gap-3 text-[10.5px] font-extrabold tracking-[0.24em] uppercase md:text-[11.5px] {hasCover
+					? 'text-warm md:text-white/90'
+					: 'text-warm'}"
+			>
+				<span class="text-warm" aria-hidden="true">◆</span>
+				{rubricLabel}
+				<span class="text-warm" aria-hidden="true">◆</span>
+			</a>
+			<h1
+				class="mt-2 font-newsreader text-[38px] leading-[1.0] font-semibold tracking-[-0.02em] [text-wrap:balance] md:mt-3 md:text-[clamp(46px,5.6vw,84px)] md:leading-[0.96] {hasCover
+					? 'md:text-white'
+					: ''}"
+			>
+				{data.article.title}
+			</h1>
+			{#if data.article.excerpt}
+				<p
+					class="mx-auto mt-2.5 max-w-[640px] text-center font-newsreader text-[17px] leading-[1.45] [text-wrap:balance] italic md:mt-3 md:text-[21px] {hasCover
+						? 'text-soft md:text-white/85'
+						: 'text-soft'}"
+				>
+					{data.article.excerpt}
+				</p>
+			{/if}
+			<div
+				class="mt-3.5 flex flex-wrap items-baseline justify-center gap-x-2 text-[11px] md:mt-4 {hasCover
+					? 'text-fade md:text-white/60'
+					: 'text-fade'}"
+			>
+				{#if data.article.author}
+					<a
+						href="/library/author/{data.article.author.slug}"
+						class="pointer-events-auto font-extrabold tracking-[0.12em] uppercase hover:text-warm {hasCover
+							? 'text-ink md:text-white/90'
+							: 'text-ink'}"
+					>
+						By {data.article.author.name}
+					</a>
+					<span aria-hidden="true">·</span>
+				{/if}
+				{#if pubLabel || lengthLabel}
+					<span class="font-semibold">{[pubLabel, lengthLabel].filter(Boolean).join(' · ')}</span>
+				{/if}
+				{#if data.isPremium}
+					<span aria-hidden="true">·</span>
+					<span class="font-extrabold tracking-[0.12em] text-prem uppercase">Premium</span>
+				{/if}
+			</div>
+		</div>
+	</section>
+
+	{#if data.article.videoLocked}
+		<!-- Premium video, non-member: paywalled frame, no player -->
+		<figure class="m-0 mx-auto w-full max-w-[1200px] px-5 pt-4 md:px-8 md:pt-6">
+			<div class="fp-plate relative overflow-hidden bg-[#080b15] md:aspect-video" data-premium-cta>
+				{#if videoPoster}
+					<img
+						src={videoPoster}
+						alt=""
+						class="absolute inset-0 h-full w-full scale-105 object-cover blur-lg brightness-[0.4]"
+					/>
+				{/if}
+				<div
+					class="relative flex items-center justify-center px-5 py-8 md:absolute md:inset-0 md:px-6 md:py-0"
+				>
+					<div
+						class="max-w-[560px] border-[3px] border-double border-paper-bg/80 px-6 py-8 text-center md:px-10 md:py-10"
+					>
+						<span
+							class="mb-3 flex items-center justify-center gap-3 text-[10.5px] font-extrabold tracking-[0.2em] text-prem uppercase"
+						>
+							<span aria-hidden="true">◆</span>Premium · Members only<span aria-hidden="true"
+								>◆</span
+							>
+						</span>
+						<h3
+							class="m-0 mb-3 font-newsreader text-[clamp(28px,4vw,42px)] leading-[1] font-semibold tracking-[-0.02em] text-white"
+						>
+							Watch this video with a membership.
+						</h3>
+						<p
+							class="mx-auto mb-6 max-w-[440px] font-newsreader text-[16px] leading-[1.5] italic"
+							style="color: rgba(255,255,255,0.82);"
+						>
+							This video is for AGE Premium members. Membership unlocks every video, bonus match,
+							and article on AGE.
+						</p>
+						<div class="flex flex-wrap items-center justify-center gap-3">
+							<a
+								href="/premium"
+								onclick={() => {
+									premiumCtaClicked = true;
+								}}
+								class="inline-flex items-center border border-prem bg-prem px-6 py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+							>
+								Become a member
+							</a>
+							{#if !data.user}
+								<a
+									href="/login?redirect=/library/{data.article.slug}"
+									class="inline-flex items-center border border-white/60 px-6 py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-white uppercase transition-colors hover:bg-white/10"
+								>
+									Sign in
+								</a>
+							{/if}
+						</div>
+					</div>
+				</div>
+			</div>
+		</figure>
+	{:else if data.article.video}
+		<figure class="m-0 mx-auto w-full max-w-[1200px] px-5 pt-4 md:px-8 md:pt-6">
+			<div class="fp-plate">
+				<LibraryVideoBlock video={data.article.video} poster={videoPoster} />
+			</div>
 		</figure>
 	{/if}
 
 	<!-- ============ READING LAYOUT ============ -->
-	<!--
-		Note: removed `items-start` from the grid so the aside stretches
-		to the full height of the article body column. Without that
-		stretch, `position: sticky` on the inner rail has no room to
-		stick (the rail itself is sized to its content), which made the
-		TOC scroll away with the page on the previous pass.
-	-->
 	<div
-		class="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-[72px] px-4 pt-[60px] pb-[30px] md:px-14 lg:grid-cols-[232px_minmax(0,1fr)]"
+		class="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-[72px] px-5 pt-[40px] pb-[30px] md:px-14 md:pt-[56px] lg:grid-cols-[232px_minmax(0,1fr)]"
 	>
 		<!-- ============ RAIL ============ -->
 		<aside class="hidden lg:block">
 			<div class="sticky top-[24px] max-h-[calc(100vh-48px)] overflow-y-auto pr-1">
 				{#if data.article.author}
-					{#if data.article.author.profilePicture}
-						<span
-							class="border-line2 bg-panel mb-[14px] block h-[58px] w-[58px] rounded-full border bg-cover bg-center"
-							style="background-image: url('{data.article.author.profilePicture}');"
-						></span>
-					{/if}
-					<div class="font-newsreader text-[20px] font-semibold">
-						{data.article.author.name}
-					</div>
-					{#if data.article.author.role}
-						<div class="text-soft mt-[3px] text-[12px] font-semibold">
-							{data.article.author.role}
+					<div class="border border-line bg-paper p-5 md:p-6">
+						<div class="flex items-center gap-3">
+							<span class="h-px flex-1 bg-ink"></span>
+							<span
+								class="font-newsreader text-[12px] font-semibold tracking-[0.22em] whitespace-nowrap uppercase"
+								>The author</span
+							>
+							<span class="h-px flex-1 bg-ink"></span>
 						</div>
-					{/if}
+						<div class="mt-1.5 flex justify-center" aria-hidden="true">
+							<span class="h-[3px] w-8 bg-warm"></span>
+						</div>
+						<a
+							href="/library/author/{data.article.author.slug}"
+							class="group mt-5 flex flex-col items-center text-center"
+						>
+							{#if data.article.author.profilePicture}
+								<span
+									class="fp-plate block h-[72px] w-[72px] bg-panel bg-cover bg-center transition-transform duration-500 group-hover:scale-[1.03]"
+									style="background-image: url('{data.article.author.profilePicture}');"
+								></span>
+							{:else}
+								<span
+									class="fp-plate flex h-[72px] w-[72px] items-center justify-center bg-ink font-newsreader text-[34px] leading-none font-semibold text-paper-bg"
+								>
+									{data.article.author.name.charAt(0).toUpperCase()}
+								</span>
+							{/if}
+							<span
+								class="mt-4 block font-newsreader text-[22px] leading-[1.1] font-semibold tracking-[-0.01em] transition-colors group-hover:text-warm"
+							>
+								{data.article.author.name}
+							</span>
+							{#if data.article.author.role}
+								<span class="mt-1 block font-newsreader text-[14px] text-soft italic"
+									>{data.article.author.role}</span
+								>
+							{/if}
+						</a>
+						{#if data.article.author.bio}
+							<div
+								class="mt-4 border-t border-line pt-4 text-center font-newsreader text-[14px] leading-[1.55] text-soft"
+							>
+								{@html renderContent(data.article.author.bio)}
+							</div>
+						{/if}
+						<div class="mt-4 flex flex-col divide-y border-t border-line">
+							{#if data.article.author.socialLinks && data.article.author.socialLinks.length > 0}
+								{#each data.article.author.socialLinks.slice(0, 3) as link (link.url)}
+									<a
+										href={normalizeUrl(link.url)}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="group/l flex items-center justify-between divide-line py-2.5 text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase transition-colors hover:text-warm"
+									>
+										{getLinkLabel(link)}
+										<span
+											class="opacity-40 transition-[opacity,transform] group-hover/l:translate-x-0.5 group-hover/l:opacity-100"
+											aria-hidden="true">→</span
+										>
+									</a>
+								{/each}
+							{/if}
+							<a
+								href="/library/author/{data.article.author.slug}"
+								class="group/l flex items-center justify-between py-2.5 text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
+							>
+								All articles
+								<span class="transition-transform group-hover/l:translate-x-0.5" aria-hidden="true"
+									>→</span
+								>
+							</a>
+						</div>
+					</div>
 				{/if}
 
 				{#if !data.isPreview && tableOfContents.length > 0}
-					<nav class="border-line mt-5 border-t pt-[15px]">
-						<div class="text-fade mb-[10px] text-[10px] font-extrabold tracking-[0.16em] uppercase">
-							Table of Contents
+					<nav class="mt-5 border-t border-line pt-[15px]">
+						<div
+							class="mb-[10px] flex items-center gap-2 text-[10px] font-extrabold tracking-[0.18em] text-ink uppercase"
+						>
+							<span class="text-[8px] text-warm" aria-hidden="true">◆</span>
+							Contents
 						</div>
 						{#key expandedSections}
 							{#each tableOfContents as heading, index (heading.id)}
@@ -1142,7 +1241,7 @@
 										-->
 										<a
 											href="#{heading.id}"
-											class="font-newsreader flex items-baseline gap-[11px] pt-[12px] pb-[6px] text-[18px] leading-[1.2] font-semibold tracking-[-0.01em] transition-colors {_isActive
+											class="flex items-baseline gap-[11px] pt-[12px] pb-[6px] font-newsreader text-[18px] leading-[1.2] font-semibold tracking-[-0.01em] transition-colors {_isActive
 												? 'text-warm'
 												: 'text-ink hover:text-warm'}"
 										>
@@ -1174,7 +1273,7 @@
 												: 'text-soft hover:text-warm'}"
 										>
 											<span
-												class="font-mono-system invisible text-[10px] font-bold"
+												class="invisible font-mono-system text-[10px] font-bold"
 												aria-hidden="true"
 											>
 												00
@@ -1195,7 +1294,7 @@
 						onclick={copyLink}
 						title="Copy link"
 						aria-label="Copy link"
-						class="border-line2 text-soft hover:border-accent hover:text-accent flex h-8 w-8 cursor-pointer items-center justify-center border bg-transparent text-[10.5px] font-extrabold transition-colors"
+						class="flex h-8 w-8 cursor-pointer items-center justify-center border border-line2 bg-transparent text-[10.5px] font-extrabold text-soft transition-colors hover:border-accent hover:text-accent"
 					>
 						⧉
 					</button>
@@ -1204,7 +1303,7 @@
 						onclick={shareTwitter}
 						title="Share on X"
 						aria-label="Share on X"
-						class="border-line2 text-soft hover:border-accent hover:text-accent flex h-8 w-8 cursor-pointer items-center justify-center border bg-transparent text-[10.5px] font-extrabold transition-colors"
+						class="flex h-8 w-8 cursor-pointer items-center justify-center border border-line2 bg-transparent text-[10.5px] font-extrabold text-soft transition-colors hover:border-accent hover:text-accent"
 					>
 						X
 					</button>
@@ -1223,33 +1322,35 @@
 					on h2 + blockquote rule, accent links.
 				-->
 				<div
-					class="
-						prose max-w-[760px]
-						prose-headings:font-newsreader prose-headings:tracking-[-0.02em] prose-headings:scroll-mt-24
+					class="{data.isPreview
+						? 'pointer-events-none blur-[7px] select-none'
+						: ''} prose max-w-[760px]
+						prose-headings:scroll-mt-24 prose-headings:font-newsreader prose-headings:tracking-[-0.02em]
 						prose-h2:mt-[56px] prose-h2:mb-[18px]
 						prose-h2:text-[38px] prose-h2:font-semibold prose-h2:text-warm
 						prose-h3:mt-10 prose-h3:mb-3 prose-h3:text-[24px] prose-h3:font-semibold
-						prose-p:font-newsreader prose-p:text-ink
-						prose-p:text-[21px] prose-p:leading-[1.7]
 						prose-p:my-0 prose-p:mb-[24px]
+						prose-p:font-newsreader prose-p:text-[21px]
+						prose-p:leading-[1.7] prose-p:text-ink
+						prose-a:text-accent prose-a:underline
+						prose-a:decoration-[1px]
+						prose-a:underline-offset-[3px] prose-blockquote:my-9 prose-blockquote:border-l-[3px] prose-blockquote:border-warm
+						prose-blockquote:pl-7 prose-blockquote:not-italic
 						prose-strong:font-semibold prose-strong:text-ink
 						prose-em:italic
-						prose-a:text-accent prose-a:underline prose-a:underline-offset-[3px] prose-a:decoration-[1px]
-						prose-blockquote:border-l-[3px] prose-blockquote:border-warm
-						prose-blockquote:pl-7 prose-blockquote:my-9
-						prose-blockquote:not-italic
-						[&_blockquote_p]:font-newsreader [&_blockquote_p]:text-[26px]
-						[&_blockquote_p]:italic [&_blockquote_p]:font-medium
-						[&_blockquote_p]:leading-[1.32] [&_blockquote_p]:text-ink
-						[&_blockquote_p]:tracking-[-0.01em]
-						prose-li:font-newsreader prose-li:text-ink prose-li:text-[21px] prose-li:leading-[1.7]
-						prose-code:font-mono prose-code:bg-panel prose-code:text-warm prose-code:px-[5px] prose-code:py-[2px]
-						prose-code:rounded-none prose-code:text-[14px]
-						prose-code:before:content-none prose-code:after:content-none
-						prose-pre:bg-paper prose-pre:border prose-pre:border-line2 prose-pre:rounded-none
-						prose-img:border prose-img:border-line2 prose-img:rounded-none
-						prose-hr:border-line2
-						[&>:first-child]:mt-0
+						prose-code:rounded-none prose-code:bg-panel
+						prose-code:px-[5px] prose-code:py-[2px]
+						prose-code:font-mono prose-code:text-[14px]
+						prose-code:text-warm
+						prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-none prose-pre:border
+						prose-pre:border-line2 prose-pre:bg-paper prose-li:font-newsreader prose-li:text-[21px] prose-li:leading-[1.7]
+						prose-li:text-ink prose-img:rounded-none
+						prose-img:border prose-img:border-line2
+						prose-hr:border-line2 [&_blockquote_p]:font-newsreader [&_blockquote_p]:text-[26px] [&_blockquote_p]:leading-[1.32]
+						[&_blockquote_p]:font-medium [&_blockquote_p]:tracking-[-0.01em] [&_blockquote_p]:text-ink
+						[&_blockquote_p]:italic
+						[&_p:first-of-type]:first-letter:float-left
+						[&_p:first-of-type]:first-letter:mt-[10px] [&_p:first-of-type]:first-letter:mr-3 [&_p:first-of-type]:first-letter:font-newsreader [&_p:first-of-type]:first-letter:text-[76px] [&_p:first-of-type]:first-letter:leading-[0.7] [&_p:first-of-type]:first-letter:font-semibold [&_p:first-of-type]:first-letter:text-warm [&>:first-child]:mt-0
 					"
 				>
 					{#if data.article.content}
@@ -1283,84 +1384,59 @@
 					{/if}
 				</div>
 
-				<!-- preview fade overlay -->
+				<!-- preview veil: the single blurred paragraph is decorative; this
+				     sits over it so it can't be selected or inspected casually -->
 				{#if data.isPreview}
-					<div
-						class="pointer-events-none absolute right-0 bottom-0 left-0 h-48"
-						style="background: linear-gradient(to top, var(--ed-paper-bg), color-mix(in srgb, var(--ed-paper-bg) 95%, transparent), transparent);"
-					></div>
+					<div class="absolute inset-0" aria-hidden="true"></div>
 				{/if}
 			</div>
 
 			<!-- ============ PREMIUM GATE ============ -->
 			{#if data.isPreview}
-				<div class="relative z-10 -mt-12" data-premium-cta>
-					<div class="border-ink bg-paper border p-7 text-center">
+				<div class="relative z-10 -mt-16 md:-mt-20" data-premium-cta>
+					<div
+						class="border-[3px] border-double border-ink bg-paper px-6 py-9 text-center md:px-12 md:py-12"
+					>
 						<div
-							class="bg-prem mx-auto mb-4 flex h-14 w-14 items-center justify-center text-white"
+							class="flex items-center justify-center gap-3 text-[10.5px] font-extrabold tracking-[0.2em] text-prem uppercase"
 						>
-							<svg viewBox="0 0 24 24" class="h-7 w-7" fill="currentColor">
-								<path
-									fill-rule="evenodd"
-									d="M14.615 1.595a.75.75 0 0 1 .359.852L12.982 9.75h7.268a.75.75 0 0 1 .548 1.262l-10.5 11.25a.75.75 0 0 1-1.272-.71l1.992-7.302H3.75a.75.75 0 0 1-.548-1.262l10.5-11.25a.75.75 0 0 1 .913-.143Z"
-									clip-rule="evenodd"
-								/>
-							</svg>
-						</div>
-
-						<div class="text-prem mb-3 text-[10.5px] font-bold tracking-[0.2em] uppercase">
+							<span aria-hidden="true">◆</span>
 							Premium · Members only
+							<span aria-hidden="true">◆</span>
 						</div>
-						<h3 class="font-newsreader mb-3 text-[32px] leading-[1.05] font-semibold tracking-[-0.02em]">
-							Keep reading with <em class="text-prem italic font-medium">Premium</em>.
+						<h3
+							class="mx-auto mt-3 max-w-[640px] font-newsreader text-[30px] leading-[1.05] font-semibold tracking-[-0.01em] [text-wrap:balance] md:text-[40px]"
+						>
+							Keep reading with a membership.
 						</h3>
-						<p class="text-soft mx-auto mb-5 max-w-[440px] text-[15px] leading-[1.55]">
-							This article is exclusive to AGE Premium members. Join to unlock the rest — and
-							every Pro Insight and bonus VOD on AGE.
+						<p
+							class="mx-auto mt-4 max-w-[520px] font-newsreader text-[16px] leading-[1.5] text-soft italic md:text-[18px]"
+						>
+							This story is for AGE Premium members. Membership funds every article, broadcast,
+							course, and event we put on — and unlocks all of it.
 						</p>
-
-						{#if data.article.publishedAt}
-							{@const freeDate = getFreeDate(data.article.publishedAt)}
-							{#if freeDate}
-								<div class="text-fade mb-5 text-[12.5px] font-semibold">
-									Free to read on <b class="text-soft">{formatFreeDate(freeDate)}</b>
-								</div>
-							{/if}
-						{/if}
-
-						<div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
-							{#if data.user}
-								<a
-									href="/premium"
-									onclick={() => {
-										premiumCtaClicked = true;
-									}}
-									class="border-prem bg-prem inline-flex items-center gap-2 border-[1.5px] px-7 py-[14px] text-[12px] font-extrabold tracking-[0.07em] text-white uppercase transition-[filter] hover:brightness-110"
-								>
-									Subscribe to Premium →
-								</a>
-							{:else}
-								<a
-									href="/premium"
-									onclick={() => {
-										premiumCtaClicked = true;
-									}}
-									class="border-prem bg-prem inline-flex items-center gap-2 border-[1.5px] px-7 py-[14px] text-[12px] font-extrabold tracking-[0.07em] text-white uppercase transition-[filter] hover:brightness-110"
-								>
-									Join Premium →
-								</a>
+						<div
+							class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4 md:mt-8"
+						>
+							<a
+								href="/premium"
+								onclick={() => {
+									premiumCtaClicked = true;
+								}}
+								class="inline-flex items-center border border-prem bg-prem px-6 py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+							>
+								Become a member
+							</a>
+							{#if !data.user}
 								<a
 									href="/login?redirect=/library/{data.article.slug}"
-									class="border-line2 hover:border-ink inline-flex items-center gap-2 border-[1.5px] bg-transparent px-6 py-[14px] text-[12px] font-extrabold tracking-[0.06em] uppercase transition-colors"
+									class="inline-flex items-center border border-ink px-6 py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 								>
-									Sign In
+									Sign in
 								</a>
 							{/if}
 						</div>
-
-						<div class="text-fade mt-4 text-[11.5px] font-semibold">
-							Starting at $10 / month · Cancel anytime
-						</div>
+						<div class="mt-4 text-[11px] text-fade italic">$10 a month · cancel anytime</div>
 					</div>
 				</div>
 			{/if}
@@ -1368,99 +1444,102 @@
 			<!-- ============ TOPICS ============ -->
 			{#if !data.isPreview && data.article.tags && data.article.tags.length > 0}
 				<div class="mt-[44px] flex flex-wrap items-center gap-3">
-					<span class="font-mono-system text-fade text-[10px] font-bold tracking-[0.16em] uppercase">
+					<span
+						class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.18em] text-ink uppercase"
+					>
+						<span class="text-[8px] text-warm" aria-hidden="true">◆</span>
 						Filed under
 					</span>
 					{#each data.article.tags as tag (tag.slug)}
 						<a
 							href="/library/tag/{tag.slug}"
-							class="border-line2 text-soft hover:border-accent hover:text-accent border px-[14px] py-[7px] text-[12px] font-bold transition-colors"
+							class="border border-line2 px-[12px] py-[6px] text-[10.5px] font-extrabold tracking-[0.12em] text-soft uppercase transition-colors hover:border-warm hover:text-warm"
 						>
 							{tag.name}
 						</a>
 					{/each}
 				</div>
 			{/if}
+
+			<!-- author card for phones/tablets (the rail above is lg-only) -->
+			{#if data.article.author}
+				<div class="mt-10 border border-line bg-paper p-5 md:p-6 lg:hidden">
+					<div class="flex items-center gap-3">
+						<span class="h-px flex-1 bg-ink"></span>
+						<span
+							class="font-newsreader text-[12px] font-semibold tracking-[0.22em] whitespace-nowrap uppercase"
+							>The author</span
+						>
+						<span class="h-px flex-1 bg-ink"></span>
+					</div>
+					<div class="mt-1.5 flex justify-center" aria-hidden="true">
+						<span class="h-[3px] w-8 bg-warm"></span>
+					</div>
+					<a
+						href="/library/author/{data.article.author.slug}"
+						class="group mt-5 flex flex-col items-center text-center"
+					>
+						{#if data.article.author.profilePicture}
+							<span
+								class="fp-plate block h-[84px] w-[84px] bg-panel bg-cover bg-center transition-transform duration-500 group-hover:scale-[1.03]"
+								style="background-image: url('{data.article.author.profilePicture}');"
+							></span>
+						{:else}
+							<span
+								class="fp-plate flex h-[84px] w-[84px] items-center justify-center bg-ink font-newsreader text-[34px] leading-none font-semibold text-paper-bg"
+							>
+								{data.article.author.name.charAt(0).toUpperCase()}
+							</span>
+						{/if}
+						<span
+							class="mt-4 block font-newsreader text-[22px] leading-[1.1] font-semibold tracking-[-0.01em] transition-colors group-hover:text-warm"
+						>
+							{data.article.author.name}
+						</span>
+						{#if data.article.author.role}
+							<span class="mt-1 block font-newsreader text-[14px] text-soft italic"
+								>{data.article.author.role}</span
+							>
+						{/if}
+					</a>
+					{#if data.article.author.bio}
+						<div
+							class="mt-4 border-t border-line pt-4 text-center font-newsreader text-[14px] leading-[1.55] text-soft"
+						>
+							{@html renderContent(data.article.author.bio)}
+						</div>
+					{/if}
+					<div class="mt-4 flex flex-col divide-y border-t border-line">
+						{#if data.article.author.socialLinks && data.article.author.socialLinks.length > 0}
+							{#each data.article.author.socialLinks.slice(0, 3) as link (link.url)}
+								<a
+									href={normalizeUrl(link.url)}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="group/l flex items-center justify-between divide-line py-2.5 text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase transition-colors hover:text-warm"
+								>
+									{getLinkLabel(link)}
+									<span
+										class="opacity-40 transition-[opacity,transform] group-hover/l:translate-x-0.5 group-hover/l:opacity-100"
+										aria-hidden="true">→</span
+									>
+								</a>
+							{/each}
+						{/if}
+						<a
+							href="/library/author/{data.article.author.slug}"
+							class="group/l flex items-center justify-between py-2.5 text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
+						>
+							All articles
+							<span class="transition-transform group-hover/l:translate-x-0.5" aria-hidden="true"
+								>→</span
+							>
+						</a>
+					</div>
+				</div>
+			{/if}
 		</article>
 	</div>
-
-	<!-- ============ COLOPHON (about the author) ============ -->
-	{#if !data.isPreview && data.article.author}
-	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 mt-11">
-		<div
-			class="bg-ink border-warm grid w-full grid-cols-1 items-center gap-[26px] border-t-[5px] px-9 py-8 text-white md:grid-cols-[auto_1fr_auto]"
-		>
-			{#if data.article.author.profilePicture}
-				<a
-					href="/library/author/{data.article.author.slug}"
-					aria-label="More from {data.article.author.name}"
-				>
-					<span
-						class="border-gold bg-panel block h-[84px] w-[84px] rounded-full border-2 bg-cover bg-center"
-						style="background-image: url('{data.article.author.profilePicture}');"
-					></span>
-				</a>
-			{:else}
-				<a
-					href="/library/author/{data.article.author.slug}"
-					aria-label="More from {data.article.author.name}"
-				>
-					<span
-						class="border-gold bg-panel flex h-[84px] w-[84px] items-center justify-center rounded-full border-2 text-2xl font-bold text-white"
-					>
-						{data.article.author.name.charAt(0).toUpperCase()}
-					</span>
-				</a>
-			{/if}
-
-			<div>
-				<div
-					class="font-mono-system mb-2 text-[10px] font-bold tracking-[0.16em] uppercase"
-					style="color: #f4c66a;"
-				>
-					About the Author
-				</div>
-				<a
-					href="/library/author/{data.article.author.slug}"
-					class="font-newsreader text-[28px] font-semibold text-white"
-				>
-					{data.article.author.name}
-				</a>
-				{#if data.article.author.role}
-					<div class="font-newsreader mt-[5px] text-[14px] italic text-white/70">
-						{data.article.author.role}
-					</div>
-				{/if}
-				{#if data.article.author.bio}
-					<div class="font-newsreader mt-3 max-w-[520px] text-[15px] leading-[1.55] text-white/80">
-						{@html renderContent(data.article.author.bio)}
-					</div>
-				{/if}
-			</div>
-
-			<div class="flex flex-col gap-2 text-left md:text-right">
-				{#if data.article.author.socialLinks && data.article.author.socialLinks.length > 0}
-					{#each data.article.author.socialLinks.slice(0, 3) as link (link.url)}
-						<a
-							href={normalizeUrl(link.url)}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="text-[11px] font-bold tracking-[0.05em] text-white/80 uppercase hover:text-white"
-						>
-							{getLinkLabel(link)} →
-						</a>
-					{/each}
-				{/if}
-				<a
-					href="/library/author/{data.article.author.slug}"
-					class="text-[11px] font-bold tracking-[0.05em] text-white/80 uppercase hover:text-white"
-				>
-					All articles →
-				</a>
-			</div>
-		</div>
-	</div>
-	{/if}
 </AgeShell>
 
 <!-- ============ MOBILE TOC FAB ============ -->
@@ -1468,10 +1547,16 @@
 	<button
 		type="button"
 		onclick={() => (mobileTocOpen = true)}
-		class="bg-ink text-paper-bg fixed right-4 bottom-6 z-40 flex cursor-pointer items-center gap-2 border-none px-4 py-[10px] text-[11px] font-extrabold tracking-[0.07em] uppercase shadow-[0_18px_36px_-22px_rgba(20,16,8,0.6)] hover:brightness-110 lg:hidden"
+		class="fixed right-4 bottom-6 z-40 flex cursor-pointer items-center gap-2 border-none bg-ink px-4 py-[10px] text-[11px] font-extrabold tracking-[0.07em] text-paper-bg uppercase shadow-[0_18px_36px_-22px_rgba(20,16,8,0.6)] hover:brightness-110 lg:hidden"
 		aria-label="Table of contents"
 	>
-		<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+		<svg
+			class="h-3.5 w-3.5"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="1.7"
+			viewBox="0 0 24 24"
+		>
 			<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
 		</svg>
 		Contents
@@ -1493,19 +1578,21 @@
 
 		<div
 			transition:fly={{ y: 300, duration: 300 }}
-			class="bg-paper-bg border-ink absolute inset-x-0 bottom-0 max-h-[80vh] overflow-hidden border-t-[1.5px] shadow-[0_-18px_36px_-22px_rgba(20,16,8,0.5)]"
+			class="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-hidden border-t-[1.5px] border-ink bg-paper-bg shadow-[0_-18px_36px_-22px_rgba(20,16,8,0.5)]"
 		>
-			<div class="border-line2 bg-paper-bg sticky top-0 z-10 flex items-center justify-between border-b px-5 py-4">
+			<div
+				class="sticky top-0 z-10 flex items-center justify-between border-b border-line2 bg-paper-bg px-5 py-4"
+			>
 				<div>
 					<h3 class="font-newsreader text-[18px] font-semibold">Table of Contents</h3>
-					<p class="text-fade text-[11px] font-semibold tracking-[0.04em] uppercase">
+					<p class="text-[11px] font-semibold tracking-[0.04em] text-fade uppercase">
 						{tableOfContents.length} sections
 					</p>
 				</div>
 				<button
 					type="button"
 					onclick={() => (mobileTocOpen = false)}
-					class="border-line2 text-soft hover:border-ink flex h-8 w-8 cursor-pointer items-center justify-center border bg-transparent"
+					class="flex h-8 w-8 cursor-pointer items-center justify-center border border-line2 bg-transparent text-soft hover:border-ink"
 					aria-label="Close"
 				>
 					✕
@@ -1522,7 +1609,7 @@
 								<a
 									href="#{heading.id}"
 									onclick={() => (mobileTocOpen = false)}
-									class="font-newsreader flex items-baseline gap-3 pt-[14px] pb-[8px] text-[22px] leading-[1.2] font-semibold tracking-[-0.01em] transition-colors {_isActive
+									class="flex items-baseline gap-3 pt-[14px] pb-[8px] font-newsreader text-[22px] leading-[1.2] font-semibold tracking-[-0.01em] transition-colors {_isActive
 										? 'text-warm'
 										: 'text-ink hover:text-warm'}"
 								>
@@ -1544,10 +1631,7 @@
 										? 'text-warm'
 										: 'text-soft hover:text-warm'}"
 								>
-									<span
-										class="font-mono-system invisible text-[11px] font-bold"
-										aria-hidden="true"
-									>
+									<span class="invisible font-mono-system text-[11px] font-bold" aria-hidden="true">
 										00
 									</span>
 									<span>{heading.text}</span>

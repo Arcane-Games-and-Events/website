@@ -48,11 +48,7 @@
 	$: editorPicks = allArticles.slice(1, 5);
 
 	// Unique tags from all articles for the filter pills
-	$: allTags = [
-		...new Set(
-			allArticles.flatMap((a) => a.tags || []).map((t) => t.name)
-		)
-	].sort();
+	$: allTags = [...new Set(allArticles.flatMap((a) => a.tags || []).map((t) => t.name))].sort();
 
 	// ============ filter + pagination state ============
 	let tier = 'All'; // 'All' | 'Free' | 'Premium'
@@ -171,197 +167,265 @@
 			design, while the inner cap pins the spotlight content to the
 			same width as the article grid below (max-w + px-14).
 		-->
-		<div class="border-ink border-b-[3px] border-double">
-		<section class="mx-auto grid w-full max-w-[1600px] grid-cols-1 px-14 lg:grid-cols-[1.62fr_1fr]">
-			<!-- featured hero -->
-			<a
-				href="/library/{featured.slug}"
-				class="border-line2 group relative flex aspect-video items-end overflow-hidden bg-[#0F1320] lg:border-r"
+		<div class="border-b-[3px] border-double border-ink">
+			<section
+				class="mx-auto grid w-full max-w-[1600px] grid-cols-1 px-14 lg:grid-cols-[1.62fr_1fr]"
 			>
-				<div
-					class="absolute inset-0 z-0 bg-cover bg-center transition-transform duration-700"
-					style="background-image: url('{coverSrc(featured)}');"
-				></div>
-				<span
-					class="pointer-events-none absolute inset-0 z-[1]"
-					style="background: linear-gradient(7deg, rgba(8,11,21,0.96) 14%, rgba(8,11,21,0.55) 48%, rgba(8,11,21,0.1) 100%);"
-					aria-hidden="true"
-				></span>
-
-				{#if featured.hasVideo}
-					<!-- Big play badge for the featured video — centered so the eye
-					     hits it before the title. -->
+				<!-- featured hero -->
+				<a
+					href="/library/{featured.slug}"
+					class="group relative flex aspect-video items-end overflow-hidden border-line2 bg-[#0F1320] lg:border-r"
+				>
+					<div
+						class="absolute inset-0 z-0 bg-cover bg-center transition-transform duration-700"
+						style="background-image: url('{coverSrc(featured)}');"
+					></div>
 					<span
-						class="pointer-events-none absolute top-1/2 left-1/2 z-[2] flex h-[76px] w-[76px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 pl-[5px] text-[24px] text-ink transition-transform group-hover:scale-110"
+						class="pointer-events-none absolute inset-0 z-[1]"
+						style="background: linear-gradient(7deg, rgba(8,11,21,0.96) 14%, rgba(8,11,21,0.55) 48%, rgba(8,11,21,0.1) 100%);"
 						aria-hidden="true"
-					>
-						▶
-					</span>
-					{#if featured.videoDuration}
+					></span>
+
+					{#if featured.hasVideo}
+						<!-- Big play badge for the featured video — centered so the eye
+					     hits it before the title. -->
 						<span
-							class="absolute right-[24px] bottom-[24px] z-[3] bg-black/85 px-[10px] py-[4px] text-[12px] font-bold text-white font-mono-system"
+							class="pointer-events-none absolute top-1/2 left-1/2 z-[2] flex h-[76px] w-[76px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 pl-[5px] text-[24px] text-ink transition-transform group-hover:scale-110"
+							aria-hidden="true"
 						>
-							{formatDuration(featured.videoDuration)}
+							▶
+						</span>
+						{#if featured.videoDuration}
+							<span
+								class="absolute right-[24px] bottom-[24px] z-[3] bg-black/85 px-[10px] py-[4px] font-mono-system text-[12px] font-bold text-white"
+							>
+								{formatDuration(featured.videoDuration)}
+							</span>
+						{/if}
+					{/if}
+
+					<!-- kicker -->
+					<span
+						class="absolute top-[26px] left-[32px] z-[3] inline-flex items-center gap-[10px] text-[10.5px] font-extrabold tracking-[0.15em] text-white uppercase before:block before:h-[2px] before:w-[26px] before:bg-warm before:content-['']"
+					>
+						Featured · Latest release
+					</span>
+
+					<!-- date pill -->
+					{#if featured.publishedAt}
+						<span
+							class="absolute top-[23px] right-[24px] z-[3] border border-white/30 bg-white/15 px-[11px] py-[5px] text-[11.5px] font-bold text-white backdrop-blur-[4px]"
+						>
+							{formatDate(featured.publishedAt)}
 						</span>
 					{/if}
-				{/if}
 
-				<!-- kicker -->
-				<span
-					class="absolute top-[26px] left-[32px] z-[3] inline-flex items-center gap-[10px] text-[10.5px] font-extrabold tracking-[0.15em] text-white uppercase before:block before:h-[2px] before:w-[26px] before:bg-warm before:content-['']"
-				>
-					Featured · Cover story
-				</span>
-
-				<!-- date pill -->
-				{#if featured.publishedAt}
-					<span
-						class="absolute top-[23px] right-[24px] z-[3] border border-white/30 bg-white/15 px-[11px] py-[5px] text-[11.5px] font-bold text-white backdrop-blur-[4px]"
-					>
-						{formatDate(featured.publishedAt)}
-					</span>
-				{/if}
-
-				<!-- content -->
-				<div class="relative z-[3] px-[38px] pb-[34px]">
-					<div class="mb-[15px] flex flex-wrap gap-2">
-						{#if featured.hasVideo}
-							<span
-								class="bg-accent inline-flex items-center gap-[6px] px-[9px] py-1 text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
-							>
-								<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
-									<polygon points="4,3 4,11 11,7" fill="currentColor" />
-								</svg>
-								Video
-							</span>
-						{:else}
-							<span
-								class="bg-accent inline-flex items-center gap-[6px] px-[9px] py-1 text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
-							>
-								<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
-									<rect x="2" y="1.5" width="10" height="11" rx="1" stroke="currentColor" stroke-width="1.4" fill="none" />
-									<line x1="4.3" y1="5" x2="9.7" y2="5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-									<line x1="4.3" y1="7.4" x2="9.7" y2="7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-									<line x1="4.3" y1="9.8" x2="7.5" y2="9.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-								</svg>
-								Article
-							</span>
-						{/if}
-						{#if featured.isPremium}
-							<span
-								class="bg-prem border-prem inline-flex items-center border px-[9px] py-1 text-[9px] font-extrabold tracking-[0.08em] text-white uppercase"
-							>
-								Premium
-							</span>
-						{:else}
-							<span
-								class="inline-flex items-center border border-white/40 px-[9px] py-1 text-[9px] font-extrabold tracking-[0.08em] text-white uppercase"
-							>
-								Free
-							</span>
-						{/if}
-					</div>
-					<h2
-						class="font-newsreader mb-[13px] max-w-[640px] text-[46px] leading-[0.98] font-semibold tracking-[-0.025em] text-white [text-wrap:balance]"
-					>
-						{featured.title}
-					</h2>
-					{#if featured.excerpt}
-						<p class="mb-[15px] max-w-[560px] text-[14.5px] leading-[1.55] text-white/80">
-							{featured.excerpt}
-						</p>
-					{/if}
-					{#if featured.author?.name}
-						<div class="mb-[21px] text-[12px]">
-							<span class="font-extrabold text-white">{featured.author.name}</span>
-							{#if featured.readTime}
-								<span class="mx-[6px] font-bold text-white/40" aria-hidden="true">·</span>
-								<span class="font-bold text-white/65">{featured.readTime} min read</span>
+					<!-- content -->
+					<div class="relative z-[3] px-[38px] pb-[34px]">
+						<div class="mb-[15px] flex flex-wrap gap-2">
+							{#if featured.hasVideo}
+								<span
+									class="inline-flex items-center gap-[6px] bg-accent px-[9px] py-1 text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
+								>
+									<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
+										<polygon points="4,3 4,11 11,7" fill="currentColor" />
+									</svg>
+									Video
+								</span>
+							{:else}
+								<span
+									class="inline-flex items-center gap-[6px] bg-accent px-[9px] py-1 text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
+								>
+									<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
+										<rect
+											x="2"
+											y="1.5"
+											width="10"
+											height="11"
+											rx="1"
+											stroke="currentColor"
+											stroke-width="1.4"
+											fill="none"
+										/>
+										<line
+											x1="4.3"
+											y1="5"
+											x2="9.7"
+											y2="5"
+											stroke="currentColor"
+											stroke-width="1.3"
+											stroke-linecap="round"
+										/>
+										<line
+											x1="4.3"
+											y1="7.4"
+											x2="9.7"
+											y2="7.4"
+											stroke="currentColor"
+											stroke-width="1.3"
+											stroke-linecap="round"
+										/>
+										<line
+											x1="4.3"
+											y1="9.8"
+											x2="7.5"
+											y2="9.8"
+											stroke="currentColor"
+											stroke-width="1.3"
+											stroke-linecap="round"
+										/>
+									</svg>
+									Article
+								</span>
+							{/if}
+							{#if featured.isPremium}
+								<span
+									class="inline-flex items-center border border-prem bg-prem px-[9px] py-1 text-[9px] font-extrabold tracking-[0.08em] text-white uppercase"
+								>
+									Premium
+								</span>
+							{:else}
+								<span
+									class="inline-flex items-center border border-white/40 px-[9px] py-1 text-[9px] font-extrabold tracking-[0.08em] text-white uppercase"
+								>
+									Free
+								</span>
 							{/if}
 						</div>
-					{/if}
-					<span
-						class="border-warm bg-warm inline-flex items-center gap-2 border-[1.5px] px-[19px] py-[12px] text-[12px] font-bold tracking-[0.05em] text-white uppercase transition-[filter] group-hover:brightness-110"
-					>
-						Read the story →
-					</span>
-				</div>
-			</a>
+						<h2
+							class="mb-[13px] max-w-[640px] font-newsreader text-[46px] leading-[0.98] font-semibold tracking-[-0.025em] [text-wrap:balance] text-white"
+						>
+							{featured.title}
+						</h2>
+						{#if featured.excerpt}
+							<p class="mb-[15px] max-w-[560px] text-[14.5px] leading-[1.55] text-white/80">
+								{featured.excerpt}
+							</p>
+						{/if}
+						{#if featured.author?.name}
+							<div class="mb-[21px] text-[12px]">
+								<span class="font-extrabold text-white">{featured.author.name}</span>
+								{#if featured.readTime}
+									<span class="mx-[6px] font-bold text-white/40" aria-hidden="true">·</span>
+									<span class="font-bold text-white/65">{featured.readTime} min read</span>
+								{/if}
+							</div>
+						{/if}
+						<span
+							class="inline-flex items-center gap-2 border-[1.5px] border-warm bg-warm px-[19px] py-[12px] text-[12px] font-bold tracking-[0.05em] text-white uppercase transition-[filter] group-hover:brightness-110"
+						>
+							Read the story →
+						</span>
+					</div>
+				</a>
 
-			<!-- editor's picks rail -->
-			<aside class="bg-paper flex flex-col">
-				<div
-					class="border-ink flex items-baseline justify-between border-b-2 px-4 md:px-6 py-[16px]"
-				>
-					<span class="text-ink text-[11px] font-extrabold tracking-[0.14em] uppercase">
-						Editor's Picks
-					</span>
-					<span class="text-warm text-[10px] font-extrabold tracking-[0.08em] uppercase">
-						This week
-					</span>
-				</div>
-				{#each editorPicks as p (p.slug)}
-					<a
-						href="/library/{p.slug}"
-						class="border-line group grid items-center gap-[15px] border-b px-4 md:px-6 py-4 last:border-b-0 hover:bg-panel grid-cols-[132px_minmax(0,1fr)]"
+				<!-- editor's picks rail -->
+				<aside class="flex flex-col bg-paper">
+					<div
+						class="flex items-baseline justify-between border-b-2 border-ink px-4 py-[16px] md:px-6"
 					>
-						<div
-							class="border-line2 bg-panel relative aspect-video border bg-cover bg-center"
-							style="background-image: url('{coverSrc(p)}');"
-						></div>
-						<div class="min-w-0">
-							<div class="mb-2 flex flex-wrap items-center gap-[6px]">
-								{#if p.hasVideo}
-									<span
-										class="bg-accent inline-flex items-center gap-[6px] px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
-									>
-										<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
-											<polygon points="4,3 4,11 11,7" fill="currentColor" />
-										</svg>
-										Video
-									</span>
-								{:else}
-									<span
-										class="bg-accent inline-flex items-center gap-[6px] px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
-									>
-										<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
-											<rect x="2" y="1.5" width="10" height="11" rx="1" stroke="currentColor" stroke-width="1.4" fill="none" />
-											<line x1="4.3" y1="5" x2="9.7" y2="5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-											<line x1="4.3" y1="7.4" x2="9.7" y2="7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-											<line x1="4.3" y1="9.8" x2="7.5" y2="9.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-										</svg>
-										Article
-									</span>
-								{/if}
-								{#if p.isPremium}
-									<span
-										class="bg-prem border-prem inline-flex items-center border px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.08em] text-white uppercase"
-									>
-										Premium
-									</span>
-								{/if}
+						<span class="text-[11px] font-extrabold tracking-[0.14em] text-ink uppercase">
+							Editor's Picks
+						</span>
+						<span class="text-[10px] font-extrabold tracking-[0.08em] text-warm uppercase">
+							This week
+						</span>
+					</div>
+					{#each editorPicks as p (p.slug)}
+						<a
+							href="/library/{p.slug}"
+							class="group grid grid-cols-[132px_minmax(0,1fr)] items-center gap-[15px] border-b border-line px-4 py-4 last:border-b-0 hover:bg-panel md:px-6"
+						>
+							<div
+								class="relative aspect-video border border-line2 bg-panel bg-cover bg-center"
+								style="background-image: url('{coverSrc(p)}');"
+							></div>
+							<div class="min-w-0">
+								<div class="mb-2 flex flex-wrap items-center gap-[6px]">
+									{#if p.hasVideo}
+										<span
+											class="inline-flex items-center gap-[6px] bg-accent px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
+										>
+											<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
+												<polygon points="4,3 4,11 11,7" fill="currentColor" />
+											</svg>
+											Video
+										</span>
+									{:else}
+										<span
+											class="inline-flex items-center gap-[6px] bg-accent px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
+										>
+											<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
+												<rect
+													x="2"
+													y="1.5"
+													width="10"
+													height="11"
+													rx="1"
+													stroke="currentColor"
+													stroke-width="1.4"
+													fill="none"
+												/>
+												<line
+													x1="4.3"
+													y1="5"
+													x2="9.7"
+													y2="5"
+													stroke="currentColor"
+													stroke-width="1.3"
+													stroke-linecap="round"
+												/>
+												<line
+													x1="4.3"
+													y1="7.4"
+													x2="9.7"
+													y2="7.4"
+													stroke="currentColor"
+													stroke-width="1.3"
+													stroke-linecap="round"
+												/>
+												<line
+													x1="4.3"
+													y1="9.8"
+													x2="7.5"
+													y2="9.8"
+													stroke="currentColor"
+													stroke-width="1.3"
+													stroke-linecap="round"
+												/>
+											</svg>
+											Article
+										</span>
+									{/if}
+									{#if p.isPremium}
+										<span
+											class="inline-flex items-center border border-prem bg-prem px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.08em] text-white uppercase"
+										>
+											Premium
+										</span>
+									{/if}
+								</div>
+								<h4
+									class="mb-[6px] font-newsreader text-[15.5px] leading-[1.1] font-semibold group-hover:text-warm"
+								>
+									{p.title}
+								</h4>
+								<div class="text-[10px] tracking-[0.04em] uppercase">
+									{#if p.author?.name}
+										<span class="font-extrabold text-ink">{p.author.name}</span>
+									{/if}
+									{#if p.author?.name && p.publishedAt}
+										<span class="mx-[6px] font-bold text-fade" aria-hidden="true">·</span>
+									{/if}
+									{#if p.publishedAt}
+										<span class="font-bold text-fade">{formatDate(p.publishedAt)}</span>
+									{/if}
+								</div>
 							</div>
-							<h4
-								class="font-newsreader mb-[6px] text-[15.5px] font-semibold leading-[1.1] group-hover:text-warm"
-							>
-								{p.title}
-							</h4>
-							<div class="text-[10px] uppercase tracking-[0.04em]">
-								{#if p.author?.name}
-									<span class="text-ink font-extrabold">{p.author.name}</span>
-								{/if}
-								{#if p.author?.name && p.publishedAt}
-									<span class="text-fade mx-[6px] font-bold" aria-hidden="true">·</span>
-								{/if}
-								{#if p.publishedAt}
-									<span class="text-fade font-bold">{formatDate(p.publishedAt)}</span>
-								{/if}
-							</div>
-						</div>
-					</a>
-				{/each}
-			</aside>
-		</section>
+						</a>
+					{/each}
+				</aside>
+			</section>
 		</div>
 	{/if}
 
@@ -375,37 +439,31 @@
 		bind:this={libraryAnchorEl}
 		class="mx-auto w-full max-w-[1600px] scroll-mt-[24px] px-14 pt-[44px] pb-[2px]"
 	>
-		<div class="text-warm mb-[11px] text-[11px] font-extrabold tracking-[0.16em] uppercase">
+		<div class="mb-[11px] text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase">
 			Read &amp; Watch
 		</div>
-		<h2
-			class="font-newsreader m-0 text-[40px] font-semibold leading-none tracking-[-0.02em]"
-		>
+		<h2 class="m-0 font-newsreader text-[40px] leading-none font-semibold tracking-[-0.02em]">
 			Latest in the Library
 		</h2>
-		<p class="text-soft mt-3 max-w-[620px] text-[15px] leading-[1.55]">
+		<p class="mt-3 max-w-[620px] text-[15px] leading-[1.55] text-soft">
 			Reporting, strategy, deck techs, and originals — free and Premium, all in one feed.
 		</p>
 	</div>
 
 	<!-- ============ STICKY FILTER BAR ============ -->
-	<div
-		class="bg-paper border-ink sticky top-0 z-[5] border-b-2"
-	>
-		<div
-			class="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-3 px-14 py-[14px]"
-		>
+	<div class="sticky top-0 z-[5] border-b-2 border-ink bg-paper">
+		<div class="mx-auto flex w-full max-w-[1600px] flex-wrap items-center gap-3 px-14 py-[14px]">
 			<!-- segment (just Articles for now, since no video data yet) -->
 			<div class="flex gap-[5px]">
 				<span
-					class="border-ink bg-ink text-paper-bg inline-flex cursor-default items-center gap-2 border px-[15px] py-[9px] text-[12px] font-bold whitespace-nowrap"
+					class="inline-flex cursor-default items-center gap-2 border border-ink bg-ink px-[15px] py-[9px] text-[12px] font-bold whitespace-nowrap text-paper-bg"
 				>
-					<span class="bg-paper-bg block h-2 w-2" aria-hidden="true"></span>
+					<span class="block h-2 w-2 bg-paper-bg" aria-hidden="true"></span>
 					Articles
 				</span>
 			</div>
 
-			<span class="border-line2 hidden h-6 w-px bg-line2 lg:block" aria-hidden="true"></span>
+			<span class="hidden h-6 w-px border-line2 bg-line2 lg:block" aria-hidden="true"></span>
 
 			<!-- tier filter -->
 			<div class="flex flex-wrap gap-[5px]">
@@ -427,10 +485,10 @@
 
 			<!-- tag filter (compact, optional) -->
 			{#if allTags.length > 0}
-				<span class="border-line2 hidden h-6 w-px bg-line2 lg:block" aria-hidden="true"></span>
+				<span class="hidden h-6 w-px border-line2 bg-line2 lg:block" aria-hidden="true"></span>
 				<select
 					bind:value={selectedTag}
-					class="border-line2 text-soft hover:text-ink focus:border-ink h-[36px] cursor-pointer border bg-paper-bg px-3 text-[11px] font-bold tracking-[0.04em] uppercase outline-none"
+					class="h-[36px] cursor-pointer border border-line2 bg-paper-bg px-3 text-[11px] font-bold tracking-[0.04em] text-soft uppercase outline-none hover:text-ink focus:border-ink"
 				>
 					<option value="">All tags</option>
 					{#each allTags as t (t)}
@@ -449,14 +507,14 @@
 				webkit search-clear button + inner border.
 			-->
 			<div
-				class="border-line2 focus-within:border-ink relative flex items-center border bg-paper-bg"
+				class="relative flex items-center border border-line2 bg-paper-bg focus-within:border-ink"
 			>
-				<span class="text-fade pl-3 text-[14px]" aria-hidden="true">⌕</span>
+				<span class="pl-3 text-[14px] text-fade" aria-hidden="true">⌕</span>
 				<input
 					type="search"
 					bind:value={searchQuery}
 					placeholder="Search the Library"
-					class="text-ink placeholder:text-fade h-[36px] w-[220px] appearance-none border-0 bg-transparent px-2 text-[12px] font-bold shadow-none outline-none focus:border-0 focus:shadow-none focus:ring-0 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
+					class="h-[36px] w-[220px] appearance-none border-0 bg-transparent px-2 text-[12px] font-bold text-ink shadow-none outline-none placeholder:text-fade focus:border-0 focus:shadow-none focus:ring-0 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
 				/>
 			</div>
 		</div>
@@ -464,7 +522,7 @@
 
 	<!-- ============ RESULT LINE ============ -->
 	<div
-		class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[26px] text-[11.5px] font-bold tracking-[0.05em] text-fade uppercase"
+		class="mx-auto w-full max-w-[1600px] px-4 pt-[26px] text-[11.5px] font-bold tracking-[0.05em] text-fade uppercase md:px-10 lg:px-14"
 	>
 		Showing
 		<b class="text-ink">
@@ -480,9 +538,7 @@
 		class="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-6 px-14 pt-[22px] pb-[8px] md:grid-cols-2 lg:grid-cols-3"
 	>
 		{#if shown.length === 0}
-			<div
-				class="font-newsreader text-fade col-span-full py-[60px] text-center text-[17px] italic"
-			>
+			<div class="col-span-full py-[60px] text-center font-newsreader text-[17px] text-fade italic">
 				Nothing here yet — try another filter.
 			</div>
 		{:else}
@@ -501,10 +557,10 @@
 					in:fly={GRID_IN}
 					out:fade={GRID_OUT}
 					animate:flip={GRID_FLIP}
-					class="border-line2 border-t-accent group bg-paper relative flex flex-col border border-t-[3px] transition-[border-color,box-shadow] hover:border-ink hover:shadow-[0_24px_42px_-28px_rgba(20,16,8,0.55)]"
+					class="group relative flex flex-col border border-t-[3px] border-line2 border-t-accent bg-paper transition-[border-color,box-shadow] hover:border-ink hover:shadow-[0_24px_42px_-28px_rgba(20,16,8,0.55)]"
 				>
 					<!-- cover -->
-					<div class="bg-panel relative aspect-[16/10] overflow-hidden">
+					<div class="relative aspect-[16/10] overflow-hidden bg-panel">
 						<div
 							class="absolute inset-0 z-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-[1.07]"
 							style="background-image: url('{coverSrc(it)}');"
@@ -525,7 +581,7 @@
 							</span>
 							{#if it.videoDuration}
 								<span
-									class="absolute right-[10px] bottom-[10px] z-[2] bg-black/85 px-[7px] py-[2px] text-[10.5px] font-bold text-white font-mono-system"
+									class="absolute right-[10px] bottom-[10px] z-[2] bg-black/85 px-[7px] py-[2px] font-mono-system text-[10.5px] font-bold text-white"
 								>
 									{formatDuration(it.videoDuration)}
 								</span>
@@ -533,7 +589,7 @@
 						{/if}
 						{#if isNew(it.publishedAt)}
 							<span
-								class="bg-warm absolute top-[11px] left-[11px] z-[2] px-2 py-1 text-[9px] font-extrabold tracking-[0.1em] text-white uppercase"
+								class="absolute top-[11px] left-[11px] z-[2] bg-warm px-2 py-1 text-[9px] font-extrabold tracking-[0.1em] text-white uppercase"
 							>
 								New
 							</span>
@@ -545,7 +601,7 @@
 						<div class="mb-[10px] flex flex-wrap items-center gap-[7px]">
 							{#if it.hasVideo}
 								<span
-									class="bg-accent inline-flex items-center gap-[6px] px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
+									class="inline-flex items-center gap-[6px] bg-accent px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
 								>
 									<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
 										<polygon points="4,3 4,11 11,7" fill="currentColor" />
@@ -554,55 +610,88 @@
 								</span>
 							{:else}
 								<span
-									class="bg-accent inline-flex items-center gap-[6px] px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
+									class="inline-flex items-center gap-[6px] bg-accent px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.09em] text-white uppercase"
 								>
 									<svg width="9" height="9" viewBox="0 0 14 14" aria-hidden="true">
-										<rect x="2" y="1.5" width="10" height="11" rx="1" stroke="currentColor" stroke-width="1.4" fill="none" />
-										<line x1="4.3" y1="5" x2="9.7" y2="5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-										<line x1="4.3" y1="7.4" x2="9.7" y2="7.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-										<line x1="4.3" y1="9.8" x2="7.5" y2="9.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+										<rect
+											x="2"
+											y="1.5"
+											width="10"
+											height="11"
+											rx="1"
+											stroke="currentColor"
+											stroke-width="1.4"
+											fill="none"
+										/>
+										<line
+											x1="4.3"
+											y1="5"
+											x2="9.7"
+											y2="5"
+											stroke="currentColor"
+											stroke-width="1.3"
+											stroke-linecap="round"
+										/>
+										<line
+											x1="4.3"
+											y1="7.4"
+											x2="9.7"
+											y2="7.4"
+											stroke="currentColor"
+											stroke-width="1.3"
+											stroke-linecap="round"
+										/>
+										<line
+											x1="4.3"
+											y1="9.8"
+											x2="7.5"
+											y2="9.8"
+											stroke="currentColor"
+											stroke-width="1.3"
+											stroke-linecap="round"
+										/>
 									</svg>
 									Article
 								</span>
 							{/if}
 							{#if it.isPremium}
 								<span
-									class="bg-prem border-prem inline-flex items-center border px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.08em] text-white uppercase"
+									class="inline-flex items-center border border-prem bg-prem px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.08em] text-white uppercase"
 								>
 									Premium
 								</span>
 							{:else}
 								<span
-									class="border-line2 text-soft inline-flex items-center border px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.08em] uppercase"
+									class="inline-flex items-center border border-line2 px-[9px] py-[3px] text-[9px] font-extrabold tracking-[0.08em] text-soft uppercase"
 								>
 									Free
 								</span>
 							{/if}
 						</div>
 						<h3
-							class="font-newsreader mb-2 text-[20px] leading-[1.08] font-semibold tracking-[-0.01em] group-hover:text-warm"
+							class="mb-2 font-newsreader text-[20px] leading-[1.08] font-semibold tracking-[-0.01em] group-hover:text-warm"
 						>
 							{it.title}
 						</h3>
 						{#if it.excerpt}
-							<p class="text-soft mb-[14px] line-clamp-2 text-[13px] leading-[1.45]">
+							<p class="mb-[14px] line-clamp-2 text-[13px] leading-[1.45] text-soft">
 								{it.excerpt}
 							</p>
 						{/if}
 						<div class="mt-auto flex items-baseline justify-between gap-[10px]">
 							<span class="min-w-0 truncate text-[11px]">
 								{#if it.author?.name}
-									<span class="text-ink font-extrabold">{it.author.name}</span>
+									<span class="font-extrabold text-ink">{it.author.name}</span>
 								{/if}
 								{#if it.author?.name && it.publishedAt}
-									<span class="text-fade mx-[6px] font-bold" aria-hidden="true">·</span>
+									<span class="mx-[6px] font-bold text-fade" aria-hidden="true">·</span>
 								{/if}
 								{#if it.publishedAt}
-									<span class="text-fade font-bold">{formatDate(it.publishedAt)}</span>
+									<span class="font-bold text-fade">{formatDate(it.publishedAt)}</span>
 								{/if}
 							</span>
 							<span
-								class="text-accent flex-shrink-0 text-[10px] font-extrabold tracking-[0.06em] uppercase opacity-0 transition-[opacity,transform] -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0"
+								class="flex-shrink-0 -translate-x-1 text-[10px] font-extrabold tracking-[0.06em] text-accent uppercase opacity-0 transition-[opacity,transform] group-hover:translate-x-0 group-hover:opacity-100"
 							>
 								Read →
 							</span>
@@ -622,7 +711,7 @@
 				type="button"
 				onclick={() => gotoPage(curPage - 1)}
 				disabled={curPage === 1}
-				class="border-ink text-ink hover:bg-ink hover:text-paper-bg cursor-pointer border-[1.5px] bg-transparent px-[22px] py-[11px] text-[12px] font-extrabold tracking-[0.06em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-30"
+				class="cursor-pointer border-[1.5px] border-ink bg-transparent px-[22px] py-[11px] text-[12px] font-extrabold tracking-[0.06em] text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:cursor-not-allowed disabled:opacity-30"
 			>
 				← Prev
 			</button>
@@ -630,7 +719,7 @@
 				{#each pageNumbers as n, i (i)}
 					{#if n === '…'}
 						<span
-							class="text-fade flex h-[38px] min-w-[20px] items-center justify-center text-[13px] font-bold"
+							class="flex h-[38px] min-w-[20px] items-center justify-center text-[13px] font-bold text-fade"
 						>
 							…
 						</span>
@@ -641,7 +730,7 @@
 							class="flex h-[38px] min-w-[38px] cursor-pointer items-center justify-center border-[1.5px] px-[6px] text-[13px] font-extrabold transition-colors {n ===
 							curPage
 								? 'border-ink bg-ink text-paper-bg'
-								: 'text-ink border-transparent hover:border-line2'}"
+								: 'border-transparent text-ink hover:border-line2'}"
 						>
 							{n}
 						</button>
@@ -652,7 +741,7 @@
 				type="button"
 				onclick={() => gotoPage(curPage + 1)}
 				disabled={curPage === pageCount}
-				class="border-ink text-ink hover:bg-ink hover:text-paper-bg cursor-pointer border-[1.5px] bg-transparent px-[22px] py-[11px] text-[12px] font-extrabold tracking-[0.06em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-30"
+				class="cursor-pointer border-[1.5px] border-ink bg-transparent px-[22px] py-[11px] text-[12px] font-extrabold tracking-[0.06em] text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:cursor-not-allowed disabled:opacity-30"
 			>
 				Next →
 			</button>
@@ -668,19 +757,20 @@
 			the inner <div> applies the same `max-w` + `px-14` cap the
 			grid uses so cards above and below line up pixel-perfect.
 		-->
-		<section
-			class="border-ink border-y-[3px] border-double bg-[#0F1320] py-[44px] text-white"
-		>
-			<div
-				class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14"
-			>
-				<div class="mb-[26px] flex flex-wrap items-end justify-between gap-[26px] border-b border-white/15 pb-[18px]">
+		<section class="border-y-[3px] border-double border-ink bg-[#0F1320] py-[44px] text-white">
+			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
+				<div
+					class="mb-[26px] flex flex-wrap items-end justify-between gap-[26px] border-b border-white/15 pb-[18px]"
+				>
 					<div>
-						<div class="mb-3 text-[11px] font-extrabold tracking-[0.16em] uppercase" style="color: #E5703E;">
+						<div
+							class="mb-3 text-[11px] font-extrabold tracking-[0.16em] uppercase"
+							style="color: #E5703E;"
+						>
 							AGE Studios · Match Film
 						</div>
 						<h2
-							class="font-newsreader m-0 text-[40px] leading-none font-semibold tracking-[-0.02em] text-white"
+							class="m-0 font-newsreader text-[40px] leading-none font-semibold tracking-[-0.02em] text-white"
 						>
 							Bonus Match VODs
 						</h2>
@@ -691,7 +781,7 @@
 					</div>
 					<a
 						href="/library/vods"
-						class="hover:text-ink whitespace-nowrap border-[1.5px] border-white/40 px-[19px] py-[13px] text-[11px] font-extrabold tracking-[0.06em] uppercase text-white transition-colors hover:bg-white"
+						class="border-[1.5px] border-white/40 px-[19px] py-[13px] text-[11px] font-extrabold tracking-[0.06em] whitespace-nowrap text-white uppercase transition-colors hover:bg-white hover:text-ink"
 					>
 						{#if data.vodTotal && data.vodTotal > data.vods.length}
 							All {data.vodTotal} matches →
@@ -705,7 +795,7 @@
 					{#each data.vods as v (v.id)}
 						<a
 							href="/library/{v.id}"
-							class="group flex flex-col border border-[#232A3B] bg-[#161B2B] border-t-[3px] border-t-[#E5703E] transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[0_26px_44px_-28px_rgba(0,0,0,0.7)]"
+							class="group flex flex-col border border-t-[3px] border-[#232A3B] border-t-[#E5703E] bg-[#161B2B] transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[0_26px_44px_-28px_rgba(0,0,0,0.7)]"
 						>
 							<!-- thumbnail -->
 							<div class="relative aspect-video overflow-hidden bg-[#0A0D16]">
@@ -743,16 +833,22 @@
 							<!-- body -->
 							<div class="flex flex-1 flex-col px-[18px] py-[16px] pb-[18px]">
 								<h3
-									class="font-newsreader mb-2 text-[21px] leading-[1.05] font-semibold tracking-[-0.01em] text-white group-hover:text-[#E5703E]"
+									class="mb-2 font-newsreader text-[21px] leading-[1.05] font-semibold tracking-[-0.01em] text-white group-hover:text-[#E5703E]"
 								>
 									{v.title}
 								</h3>
 								{#if vodSubline(v)}
-									<div class="mb-3 text-[10px] font-extrabold tracking-[0.09em] uppercase" style="color: #E5703E;">
+									<div
+										class="mb-3 text-[10px] font-extrabold tracking-[0.09em] uppercase"
+										style="color: #E5703E;"
+									>
 										{vodSubline(v)}
 									</div>
 								{/if}
-								<div class="mt-auto flex items-center justify-between gap-[10px] text-[11px] font-bold" style="color: #8B93A6;">
+								<div
+									class="mt-auto flex items-center justify-between gap-[10px] text-[11px] font-bold"
+									style="color: #8B93A6;"
+								>
 									{#if v.player1Name && v.player2Name}
 										<span class="truncate">
 											{v.player1Name} vs {v.player2Name}
@@ -762,7 +858,7 @@
 									{/if}
 									{#if v.isPremium}
 										<span
-											class="bg-prem border-prem flex-shrink-0 border px-[7px] py-[3px] text-[9.5px] font-extrabold tracking-[0.04em] uppercase text-white"
+											class="flex-shrink-0 border border-prem bg-prem px-[7px] py-[3px] text-[9.5px] font-extrabold tracking-[0.04em] text-white uppercase"
 										>
 											Premium
 										</span>
@@ -778,33 +874,36 @@
 
 	<!-- ============ PREMIUM BAND ============ -->
 	{#if !isPremiumMember}
-	<section
-		class="bg-prem border-ink relative overflow-hidden border-t-[3px] border-double px-14 py-[58px] text-center text-white"
-	>
-		<span
-			class="font-newsreader pointer-events-none absolute -top-[72px] right-[50px] text-[330px] leading-none font-semibold text-white/10"
-			aria-hidden="true"
+		<section
+			class="relative overflow-hidden border-t-[3px] border-double border-ink bg-prem px-14 py-[58px] text-center text-white"
 		>
-			&amp;
-		</span>
-		<div class="relative z-[1] mx-auto max-w-[760px]">
-			<div class="mb-[14px] text-[11px] font-extrabold tracking-[0.18em] uppercase" style="color: #cfebd9;">
-				Member-supported
-			</div>
-			<h2 class="font-newsreader mb-3 text-[44px] leading-[1.04] font-semibold text-white">
-				One membership. The whole Library.
-			</h2>
-			<p class="mb-6 text-[15px] leading-[1.55]" style="color: #dcefe3;">
-				Premium unlocks every member-only article and keeps independent coverage free for the
-				whole community.
-			</p>
-			<a
-				href="/premium"
-				class="text-prem inline-flex items-center gap-2 border-[1.5px] border-white bg-white px-7 py-[14px] text-[12px] font-bold tracking-[0.05em] uppercase transition-colors hover:bg-white/90"
+			<span
+				class="pointer-events-none absolute -top-[72px] right-[50px] font-newsreader text-[330px] leading-none font-semibold text-white/10"
+				aria-hidden="true"
 			>
-				Get Premium →
-			</a>
-		</div>
-	</section>
+				&amp;
+			</span>
+			<div class="relative z-[1] mx-auto max-w-[760px]">
+				<div
+					class="mb-[14px] text-[11px] font-extrabold tracking-[0.18em] uppercase"
+					style="color: #cfebd9;"
+				>
+					Member-supported
+				</div>
+				<h2 class="mb-3 font-newsreader text-[44px] leading-[1.04] font-semibold text-white">
+					One membership. The whole Library.
+				</h2>
+				<p class="mb-6 text-[15px] leading-[1.55]" style="color: #dcefe3;">
+					Premium unlocks every member-only article and keeps independent coverage free for the
+					whole community.
+				</p>
+				<a
+					href="/premium"
+					class="inline-flex items-center gap-2 border-[1.5px] border-white bg-white px-7 py-[14px] text-[12px] font-bold tracking-[0.05em] text-prem uppercase transition-colors hover:bg-white/90"
+				>
+					Get Premium →
+				</a>
+			</div>
+		</section>
 	{/if}
 </AgeShell>

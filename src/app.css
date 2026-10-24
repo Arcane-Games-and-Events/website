@@ -63,6 +63,7 @@
 	--font-newsreader: 'Newsreader', Georgia, serif;
 	--font-libre: 'Libre Franklin', system-ui, sans-serif;
 	--font-archivo: 'Archivo', system-ui, sans-serif;
+	--font-manrope: 'Manrope', system-ui, sans-serif;
 	--font-mono-system: ui-monospace, 'SF Mono', Menlo, monospace;
 
 	--animate-marquee: marquee 32s linear infinite;
@@ -99,6 +100,13 @@ body {
 	height: 100%;
 }
 
+/* In-page anchors (homepage departments) glide instead of jumping. */
+@media (prefers-reduced-motion: no-preference) {
+	html {
+		scroll-behavior: smooth;
+	}
+}
+
 body {
 	@apply bg-gray-950 text-gray-100;
 	font-family: var(--font-sans);
@@ -114,6 +122,163 @@ body {
 button,
 [role='button'] {
 	@apply cursor-pointer;
+}
+
+/* Front-page entrance motion — sections rise in on first paint.
+ * Pure CSS so SSR markup is final; delays are set inline per block. */
+@keyframes fp-rise {
+	from {
+		opacity: 0;
+		transform: translateY(14px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+.fp-rise {
+	animation: fp-rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+	.fp-rise {
+		animation: none;
+	}
+}
+
+/* Front-page flourishes.
+ * .fp-ul — headline underline that draws in from the left on hover of
+ *          the enclosing .group link.
+ * .fp-plate — a thin ink "plate" frame offset from a photo, print-style.
+ * .fp-reveal — scroll-reveal state driven by the `reveal` action. */
+.fp-ul {
+	background-image: linear-gradient(currentColor, currentColor);
+	background-repeat: no-repeat;
+	background-position: 0 96%;
+	background-size: 0% 1.5px;
+	transition: background-size 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.group:hover .fp-ul,
+.group:focus-visible .fp-ul,
+a:hover .fp-ul,
+a:focus-visible .fp-ul,
+a.fp-ul:hover,
+a.fp-ul:focus-visible {
+	background-size: 100% 1.5px;
+}
+.fp-plate {
+	outline: 1px solid var(--ed-ink);
+	outline-offset: 6px;
+}
+.fp-plate-gold {
+	outline: 1px solid var(--ed-gold);
+	outline-offset: 6px;
+}
+.fp-plate-light {
+	outline: 1px solid rgba(251, 250, 246, 0.45);
+	outline-offset: 6px;
+}
+.fp-reveal {
+	opacity: 0;
+	transform: translateY(18px);
+	transition:
+		opacity 0.9s cubic-bezier(0.2, 0.7, 0.2, 1),
+		transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.fp-reveal.is-in {
+	opacity: 1;
+	transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+	.fp-reveal {
+		opacity: 1;
+		transform: none;
+		transition: none;
+	}
+	.fp-ul {
+		transition: none;
+	}
+}
+
+/* Cover-story entrance choreography.
+ * .fp-kenburns — photo settles from a slight zoom + desaturation.
+ * .fp-fade — late fade-in (plate frame, scroll cue).
+ * .fp-draw — a rule that draws outward from its centre.
+ * .fp-word — per-word rise used on the cover headline (delay inline).
+ * .fp-cue — slow pulsing scroll cue line. */
+@keyframes fp-kb {
+	from {
+		transform: scale(1.12);
+		filter: saturate(0.55) brightness(0.9);
+	}
+	to {
+		transform: scale(1);
+		filter: saturate(1) brightness(1);
+	}
+}
+.fp-kenburns {
+	animation: fp-kb 7s cubic-bezier(0.16, 0.6, 0.2, 1) both;
+}
+@keyframes fp-fade {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+.fp-fade {
+	animation: fp-fade 1.2s ease-out both;
+}
+@keyframes fp-draw {
+	from {
+		transform: scaleX(0);
+	}
+	to {
+		transform: scaleX(1);
+	}
+}
+.fp-draw {
+	transform-origin: center;
+	animation: fp-draw 1s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes fp-word {
+	from {
+		opacity: 0;
+		transform: translateY(0.35em);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+.fp-word {
+	display: inline-block;
+	animation: fp-word 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes fp-cue {
+	0%,
+	100% {
+		transform: scaleY(0.2);
+		transform-origin: top;
+		opacity: 0.4;
+	}
+	50% {
+		transform: scaleY(1);
+		transform-origin: top;
+		opacity: 1;
+	}
+}
+.fp-cue {
+	animation: fp-cue 2.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+	.fp-kenburns,
+	.fp-fade,
+	.fp-draw,
+	.fp-word,
+	.fp-cue {
+		animation: none;
+	}
 }
 
 /* Navigation loading bar animation */

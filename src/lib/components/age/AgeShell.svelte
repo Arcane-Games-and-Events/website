@@ -12,8 +12,8 @@
 	 *     ...page content...
 	 *   </AgeShell>
 	 */
-	/** @type {{ active?: string, children?: import('svelte').Snippet, mbarLeft?: import('svelte').Snippet, mbarRight?: import('svelte').Snippet }} */
-	let { active = '', children, mbarLeft, mbarRight } = $props();
+	/** @type {{ active?: string, children?: import('svelte').Snippet }} */
+	let { active = '', children } = $props();
 </script>
 
 <!--
@@ -25,8 +25,8 @@
 	just provides the page background and renders the children + footer
 	full-width.
 -->
-<div class="bg-paper-bg text-ink font-libre min-h-screen overflow-x-clip antialiased">
-	<AgeHeader {active} {mbarLeft} {mbarRight} />
+<div class="min-h-screen overflow-x-clip bg-paper-bg font-libre text-ink antialiased">
+	<AgeHeader {active} />
 	{#if children}{@render children()}{/if}
 	<AgeFooter />
 </div>
