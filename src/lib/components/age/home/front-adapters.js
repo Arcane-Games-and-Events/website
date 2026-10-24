@@ -8,6 +8,8 @@
  * Premium — each with the same restrained template.
  */
 
+import { CIRCUITS } from '$lib/data/circuits.js';
+
 const FALLBACK_IMAGE = 'https://www.age.events/banner/articles-banner.webp';
 
 /* ============ formatting ============ */
@@ -68,14 +70,6 @@ function circuitSlug(circuit) {
 function ts(d) {
 	const t = d ? new Date(d).getTime() : 0;
 	return Number.isNaN(t) ? 0 : t;
-}
-
-/** @param {string | null | undefined} hero */
-function heroSlug(hero) {
-	return (hero || '')
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-+|-+$/g, '');
 }
 
 /** @param {any} a */
@@ -233,31 +227,52 @@ export function buildFront(data) {
 	const courses = liveCourses.length ? liveCourses : COURSES_PLACEHOLDER;
 	const academy = { featured: courses[0], list: courses.slice(1, 4), live: liveCourses.length > 0 };
 
+	// AGE Open department — a recruitment poster: series stats, the next
+	// events with price and a sign-up link, the three circuits, and the
+	// season leaders.
+	const stats = data?.seriesStats ?? {};
+	const upcoming = events.slice(0, 3).map((e) => ({
+		...eventDay(e.eventDate),
+		title: e.title || e.location || 'TBD',
+		venue: e.location || '',
+		format: e.format === 'Classic Constructed' ? 'CC' : e.format || '',
+		circuit: circuitSlug(e.circuit),
+		circuitName: e.circuit || '',
+		price: e.price != null && Number(e.price) > 0 ? `$${Math.round(Number(e.price))}` : 'Free',
+		premiumDiscount: !!e.premiumDiscount,
+		cap: e.playerCap || null,
+		dateIso: e.eventDate || null,
+		href: e.id ? `/age-open/${e.id}` : '/age-open'
+	}));
+	const circuits = Object.values(CIRCUITS).map((c) => {
+		const next = upcoming.find((e) => e.circuitName === c.name) ?? null;
+		return {
+			name: c.name,
+			region: c.region,
+			abbreviation: c.abbreviation,
+			slug: circuitSlug(c.name),
+			image: c.image,
+			next,
+			href: '/age-open?tab=events'
+		};
+	});
 	const open = {
-		events: events.slice(0, 3).map((e) => ({
-			...eventDay(e.eventDate),
-			title: e.title || e.location || 'TBD',
-			venue: e.location || '',
-			format: e.format === 'Classic Constructed' ? 'CC' : e.format || '',
-			circuit: circuitSlug(e.circuit),
-			href: e.id ? `/age-open/${e.id}` : '/age-open'
-		})),
-		leaders: (data?.standings ?? []).slice(0, 5).map((s) => ({
+		series: {
+			events: stats.totalEvents || 24,
+			prizePool: stats.prizePool ? `$${Math.round(stats.prizePool / 1000)}K+` : '$30K+',
+			players: stats.totalPlayers || 0,
+			regions: circuits.length
+		},
+		events: upcoming,
+		circuits,
+		leaders: (data?.standings ?? []).slice(0, 3).map((s) => ({
 			rank: s.rank ?? 0,
 			name: s.playerName,
 			points: s.totalPoints || 0,
 			href: s.gemId ? `/player/${s.gemId}` : '/age-open?tab=standings'
-		})),
-		decklists: (data?.featuredDecklists ?? []).slice(0, 3).map((d) => ({
-			hero: d.hero || 'Unknown hero',
-			by: d.playerName || 'Unknown',
-			event: d.eventName || d.eventCircuit || '',
-			image: d.heroImageUrl || `https://www.age.events/hero_images/${heroSlug(d.hero)}.webp`,
-			href:
-				d.eventId && d.id ? `/age-open/${d.eventId}/decklist/${d.id}` : '/age-open?tab=decklists'
 		}))
 	};
-	const hasOpen = open.events.length + open.leaders.length + open.decklists.length > 0;
+	const hasOpen = true;
 
 	// Department nav — only the departments that render this request.
 	const departments = [
@@ -274,6 +289,6 @@ export function buildFront(data) {
 		latest,
 		library,
 		academy,
-		open: hasOpen ? open : null
+		open
 	};
 }

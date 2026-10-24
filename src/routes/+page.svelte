@@ -43,12 +43,10 @@
 		<FrontAcademy data={F.academy} />
 	</div>
 
-	{#if F.open}
-		<FrontFleuron />
-		<div use:reveal>
-			<FrontOpen data={F.open} />
-		</div>
-	{/if}
+	<FrontFleuron />
+	<div use:reveal>
+		<FrontOpen data={F.open} />
+	</div>
 
 	<FrontFleuron />
 	<div use:reveal>
