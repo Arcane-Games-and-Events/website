@@ -7,8 +7,8 @@
 	 * a drop-cap dek, then three hairline columns. `dark` renders the
 	 * department as an ink band (used for Video).
 	 */
-	/** @type {{ id: string, n?: number, title: string, strap?: string, href: string, label?: string, dark?: boolean, data: { feature: any, cards: any[] } | null }} */
-	let { id, n = 0, title, strap = '', href, label = 'See all', dark = false, data } = $props();
+	/** @type {{ id: string, title: string, strap?: string, href: string, label?: string, dark?: boolean, data: { feature: any, cards: any[] } | null }} */
+	let { id, title, strap = '', href, label = 'See all', dark = false, data } = $props();
 	const F = $derived(data?.feature ?? null);
 	const cards = $derived(data?.cards ?? []);
 	const isVideo = $derived((s) => s?.kind === 'video');
@@ -22,7 +22,7 @@
 {#if F}
 	<section class={dark ? 'w-full bg-ink py-12 text-paper-bg md:py-16' : ''}>
 		<div class="mx-auto w-full max-w-[1200px] px-5 md:px-8">
-			<FrontDept {id} {n} {title} {strap} {href} {label} {dark} />
+			<FrontDept {id} {title} {strap} {href} {label} {dark} />
 
 			<a
 				href={F.href}

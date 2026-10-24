@@ -6,8 +6,8 @@
 	 * serif dates in circuit colors, the standings with rust numerals
 	 * (gold for first), and featured decklists.
 	 */
-	/** @type {{ n?: number, data: { events: any[], leaders: any[], decklists: any[] } | null }} */
-	let { n = 0, data } = $props();
+	/** @type {{ data: { events: any[], leaders: any[], decklists: any[] } | null }} */
+	let { data } = $props();
 	const events = $derived(data?.events ?? []);
 	const leaders = $derived(data?.leaders ?? []);
 	const decklists = $derived(data?.decklists ?? []);
@@ -32,7 +32,6 @@
 	<section class="mx-auto w-full max-w-[1200px] px-5 md:px-8">
 		<FrontDept
 			id="age-open"
-			{n}
 			title="AGE Open"
 			strap="Our independent tournament series across Los Angeles, St. Louis, and New England."
 			href="/age-open"

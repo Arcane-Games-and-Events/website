@@ -5,8 +5,7 @@
 	 */
 	import { page } from '$app/stores';
 	import FrontDept from './FrontDept.svelte';
-	/** @type {{ n?: number }} */
-	let { n = 0 } = $props();
+
 	const isPremiumMember = $derived($page.data?.isPremiumMember ?? false);
 	const PERKS = [
 		'Every premium article',
@@ -18,7 +17,7 @@
 
 {#if !isPremiumMember}
 	<section class="mx-auto w-full max-w-[1200px] px-5 md:px-8">
-		<FrontDept id="premium" {n} title="Premium" />
+		<FrontDept id="premium" title="Premium" />
 		<div
 			class="relative mt-8 border-[3px] border-double border-ink bg-paper px-6 py-10 text-center md:mt-10 md:grid md:grid-cols-[1fr_auto] md:items-center md:gap-14 md:px-14 md:py-14 md:text-left"
 		>

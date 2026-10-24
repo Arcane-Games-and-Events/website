@@ -18,9 +18,6 @@
 	let { data } = $props();
 
 	const F = $derived(buildFront(data));
-
-	// Department numbers follow the rendered order (No. I, II, …).
-	const num = $derived((id) => F.departments.findIndex((d) => d.id === id) + 1);
 </script>
 
 <svelte:head>
@@ -39,7 +36,6 @@
 		<div use:reveal>
 			<FrontStories
 				id="articles"
-				n={num('articles')}
 				title="Articles"
 				strap="Reporting, strategy, and the SAGE series."
 				href="/library"
@@ -54,7 +50,6 @@
 		<div use:reveal>
 			<FrontStories
 				id="video"
-				n={num('video')}
 				title="Video"
 				strap="Match film, bonus matches, and video features from AGE Studios."
 				href="/library/vods"
@@ -67,19 +62,19 @@
 
 	<div class="h-12 md:h-16"></div>
 	<div use:reveal>
-		<FrontAcademy n={num('academy')} data={F.academy} />
+		<FrontAcademy data={F.academy} />
 	</div>
 
 	{#if F.open}
 		<FrontFleuron />
 		<div use:reveal>
-			<FrontOpen n={num('age-open')} data={F.open} />
+			<FrontOpen data={F.open} />
 		</div>
 	{/if}
 
 	<FrontFleuron />
 	<div use:reveal>
-		<FrontPremium n={num('premium')} />
+		<FrontPremium />
 	</div>
 	<div class="h-14 md:h-24"></div>
 </AgeShell>

@@ -5,8 +5,8 @@
 	 * Academy department — a toned paper band with gold accents: the
 	 * featured course with a gold plate, beside a short catalogue.
 	 */
-	/** @type {{ n?: number, data: { featured: any, list: any[], live: boolean } }} */
-	let { n = 0, data } = $props();
+	/** @type {{ data: { featured: any, list: any[], live: boolean } }} */
+	let { data } = $props();
 	const F = $derived(data?.featured ?? null);
 	const list = $derived(data?.list ?? []);
 	const meta = $derived((c) =>
@@ -19,7 +19,6 @@
 		<div class="mx-auto w-full max-w-[1200px] px-5 md:px-8">
 			<FrontDept
 				id="academy"
-				{n}
 				title="Academy"
 				strap="Courses from the players who define the format. Buy once, keep for life."
 				href="/academy"
