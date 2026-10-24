@@ -15,9 +15,15 @@
  * 30-day-to-free cutover, so `isFreeNow` is always false.
  */
 import { db } from '$lib/server/db/index.js';
-import { cmsEntry, cmsMedia, user as userTable } from '$lib/server/db/schema.js';
+import {
+	cmsEntry,
+	cmsEntryTag,
+	cmsMedia,
+	cmsTag,
+	user as userTable
+} from '$lib/server/db/schema.js';
 import { alias } from 'drizzle-orm/pg-core';
-import { and, desc, eq, or, lte } from 'drizzle-orm';
+import { and, desc, eq, inArray, or, lte } from 'drizzle-orm';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 
 /**
@@ -40,6 +46,7 @@ async function queryPublishedEntries({ limit }) {
 
 	const rows = await db
 		.select({
+			id: cmsEntry.id,
 			slug: cmsEntry.slug,
 			title: cmsEntry.title,
 			excerpt: cmsEntry.excerpt,
@@ -69,6 +76,9 @@ async function queryPublishedEntries({ limit }) {
 		)
 		.orderBy(desc(cmsEntry.publishedAt))
 		.limit(limit);
+
+	// Tags, one query for the whole page of rows.
+	const tagsByEntry = await loadTagsForEntries(rows.map((r) => r.id));
 
 	return rows.map((r) => {
 		// Thumbnail defaults to cover if no explicit thumbnail — matches
@@ -101,7 +111,7 @@ async function queryPublishedEntries({ limit }) {
 						profilePicture: null
 					}
 				: null,
-			tags: [],
+			tags: tagsByEntry.get(r.id) ?? [],
 			readTime: r.readTime,
 			isPremium: r.accessMode === 'premium',
 			isFreeNow: false,
@@ -110,4 +120,24 @@ async function queryPublishedEntries({ limit }) {
 			videoDuration
 		};
 	});
+}
+
+/**
+ * Tags for a set of entry ids → Map<entryId, [{ name, slug }]>. Exported
+ * so the single-entry reader can reuse it.
+ */
+export async function loadTagsForEntries(ids) {
+	const map = new Map();
+	if (!ids.length) return map;
+	const rows = await db
+		.select({ entryId: cmsEntryTag.entryId, name: cmsTag.name, slug: cmsTag.slug })
+		.from(cmsEntryTag)
+		.innerJoin(cmsTag, eq(cmsEntryTag.tagId, cmsTag.id))
+		.where(inArray(cmsEntryTag.entryId, ids))
+		.orderBy(cmsTag.name);
+	for (const r of rows) {
+		if (!map.has(r.entryId)) map.set(r.entryId, []);
+		map.get(r.entryId).push({ name: r.name, slug: r.slug });
+	}
+	return map;
 }

@@ -8,6 +8,7 @@ import { db } from '$lib/server/db/index.js';
 import { cmsEntry, cmsMedia, user as userTable } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { getMuxPlaybackToken, getMuxThumbnailToken } from '$lib/server/mux.js';
+import { loadTagsForEntries } from '$lib/server/cms/list.js';
 
 /**
  * Truncate Lexical content to only show first few paragraphs for preview
@@ -259,7 +260,7 @@ async function loadCmsEntryBySlug(slug) {
 			new Date(entry.scheduledFor).getTime() <= now);
 	if (!isPublic) return null;
 
-	const [cover, thumbnail, author] = await Promise.all([
+	const [cover, thumbnail, author, tagsByEntry] = await Promise.all([
 		entry.coverImageId
 			? db
 					.select()
@@ -287,10 +288,11 @@ async function loadCmsEntryBySlug(slug) {
 					.where(eq(userTable.id, entry.authorId))
 					.limit(1)
 					.then((r) => r[0] || null)
-			: Promise.resolve(null)
+			: Promise.resolve(null),
+		loadTagsForEntries([entry.id])
 	]);
 
-	return { entry, cover, thumbnail, author };
+	return { entry, cover, thumbnail, author, tags: tagsByEntry.get(entry.id) ?? [] };
 }
 
 /**
@@ -298,7 +300,7 @@ async function loadCmsEntryBySlug(slug) {
  * the Payload path returns, plus a `video` field for the featured video slot
  * and `source: 'cms'` so the page can pick the right renderer.
  */
-async function buildCmsArticleShape({ entry, cover, thumbnail, author }) {
+async function buildCmsArticleShape({ entry, cover, thumbnail, author, tags = [] }) {
 	let video = null;
 	if (entry.videoProvider === 'mux' && entry.muxPlaybackId) {
 		const [playbackToken, thumbnailToken] = await Promise.all([
@@ -358,7 +360,7 @@ async function buildCmsArticleShape({ entry, cover, thumbnail, author }) {
 					socialLinks: []
 				}
 			: null,
-		tags: [],
+		tags,
 		decklists: [],
 		readTime: entry.readTime || null,
 		video,
