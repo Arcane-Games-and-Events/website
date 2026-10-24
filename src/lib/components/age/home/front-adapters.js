@@ -67,6 +67,14 @@ function circuitSlug(circuit) {
 	return 'la';
 }
 
+/** Whole days from today (UTC) to a date; null when unknown. */
+function daysUntil(d) {
+	if (!d) return null;
+	const t = new Date(d).getTime();
+	if (Number.isNaN(t)) return null;
+	return Math.max(0, Math.round((t - Date.now()) / 86400000));
+}
+
 function ts(d) {
 	const t = d ? new Date(d).getTime() : 0;
 	return Number.isNaN(t) ? 0 : t;
@@ -242,6 +250,11 @@ export function buildFront(data) {
 		premiumDiscount: !!e.premiumDiscount,
 		cap: e.playerCap || null,
 		dateIso: e.eventDate || null,
+		daysUntil: daysUntil(e.eventDate),
+		weekday: e.eventDate
+			? new Date(e.eventDate).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })
+			: '',
+		image: CIRCUITS[e.circuit]?.image || '/banner/age-open-banner.webp',
 		href: e.id ? `/age-open/${e.id}` : '/age-open'
 	}));
 	const circuits = Object.values(CIRCUITS).map((c) => {

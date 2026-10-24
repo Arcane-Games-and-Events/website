@@ -93,86 +93,126 @@
 		</div>
 	</a>
 
-	<div class="mt-8 grid grid-cols-1 gap-10 md:mt-10 lg:grid-cols-[1.25fr_1fr] lg:gap-14">
-		<!-- next events -->
-		<div>
-			<div class="flex items-baseline justify-between border-t-[3px] border-double border-ink pt-3">
-				<h4
-					class="flex items-center gap-2 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
-				>
-					<span class="text-[10px] text-warm" aria-hidden="true">◆</span>
-					Next up
-				</h4>
-				<a
-					href="/age-open?tab=events"
-					class="text-[10px] font-extrabold tracking-[0.14em] uppercase hover:text-warm"
-					>All dates →</a
-				>
-			</div>
-			{#if events.length}
-				<ul class="divide-y divide-line">
-					{#each events as e (e.href)}
-						<li>
-							<a
-								href={e.href}
-								class="group grid grid-cols-[56px_1fr] items-center gap-4 py-5 md:grid-cols-[64px_1fr_auto] md:gap-6"
+	<!-- next up — one standout card per event -->
+	<div class="mt-10 md:mt-12">
+		<div class="flex items-baseline justify-between border-t-[3px] border-double border-ink pt-3">
+			<h4
+				class="flex items-center gap-2 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+			>
+				<span class="text-[10px] text-warm" aria-hidden="true">◆</span>
+				Next up
+			</h4>
+			<a
+				href="/age-open?tab=events"
+				class="text-[10px] font-extrabold tracking-[0.14em] uppercase hover:text-warm"
+				>All dates →</a
+			>
+		</div>
+		{#if events.length}
+			<div
+				class="mt-5 grid grid-cols-1 gap-5 md:grid-cols-[repeat(auto-fit,minmax(300px,1fr))] md:gap-6"
+			>
+				{#each events as e (e.href)}
+					{@const accent = CIRCUIT_VAR[e.circuit]}
+					<a
+						href={e.href}
+						class="group fp-plate relative flex min-h-[420px] flex-col overflow-hidden bg-ink text-white md:min-h-[460px]"
+					>
+						<img
+							src={e.image}
+							alt=""
+							class="absolute inset-0 h-full w-full object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.05]"
+							loading="lazy"
+						/>
+						<div
+							class="absolute inset-0"
+							style="background: linear-gradient(180deg, color-mix(in srgb, {accent} 55%, rgba(23,21,15,0.55)) 0%, rgba(23,21,15,0.35) 38%, rgba(23,21,15,0.9) 72%, rgba(23,21,15,0.98) 100%);"
+							aria-hidden="true"
+						></div>
+						<div class="relative flex items-start justify-between p-5 md:p-6">
+							<span
+								class="flex w-[72px] flex-col items-center bg-paper-bg py-2 text-center text-ink"
 							>
-								<span class="text-center leading-none">
-									<span
-										class="block font-newsreader text-[40px] font-medium tabular-nums md:text-[46px]"
-									>
-										{e.day}
-									</span>
-									<span
-										class="mt-1 block text-[9.5px] font-extrabold tracking-[0.16em] uppercase"
-										style="color: {CIRCUIT_VAR[e.circuit]};">{e.month}</span
-									>
-								</span>
-								<span class="min-w-0">
-									<span
-										class="block text-[9.5px] font-extrabold tracking-[0.16em] uppercase"
-										style="color: {CIRCUIT_VAR[e.circuit]};">{e.circuitName || 'AGE Open'}</span
-									>
-									<span
-										class="mt-1 block font-newsreader text-[22px] leading-[1.1] font-semibold md:text-[26px]"
-									>
-										<span class="fp-ul">{e.title}</span>
-									</span>
-									<span class="mt-1.5 block text-[11.5px] font-semibold text-fade">
-										{[e.venue, e.format, e.cap ? `${e.cap} seats` : ''].filter(Boolean).join(' · ')}
-									</span>
-									{#if e.premiumDiscount}
-										<span
-											class="mt-1 block text-[10px] font-extrabold tracking-[0.12em] text-prem uppercase"
-										>
-											Premium members save 10%
-										</span>
-									{/if}
-								</span>
 								<span
-									class="col-span-2 flex items-center gap-4 md:col-span-1 md:flex-col md:items-end md:gap-2"
+									class="text-[9px] font-extrabold tracking-[0.18em] uppercase"
+									style="color: {accent};">{e.month}</span
 								>
-									<span class="font-newsreader text-[26px] leading-none font-semibold"
+								<span class="font-newsreader text-[40px] leading-[0.9] font-semibold tabular-nums"
+									>{e.day}</span
+								>
+								<span class="mt-1 text-[8.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									>{e.weekday.slice(0, 3)}</span
+								>
+							</span>
+							<span class="flex flex-col items-end gap-2">
+								<span
+									class="inline-flex items-center gap-2 border border-white/40 bg-white/10 px-2.5 py-1.5 text-[9.5px] font-extrabold tracking-[0.16em] uppercase backdrop-blur-sm"
+								>
+									<span
+										class="h-[7px] w-[7px] animate-pulse-dot rounded-full bg-prem"
+										aria-hidden="true"
+									></span>
+									Registration open
+								</span>
+								{#if e.daysUntil != null}
+									<span class="font-newsreader text-[14px] text-white/85 italic">
+										{e.daysUntil === 0
+											? 'Today'
+											: e.daysUntil === 1
+												? 'Tomorrow'
+												: `In ${e.daysUntil} days`}
+									</span>
+								{/if}
+							</span>
+						</div>
+						<div class="relative mt-auto p-5 md:p-6">
+							<span
+								class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.2em] uppercase"
+								style="color: color-mix(in srgb, {accent} 45%, white);"
+							>
+								<span aria-hidden="true">◆</span>
+								{e.circuitName || 'AGE Open'}
+							</span>
+							<span
+								class="mt-2 block font-newsreader text-[30px] leading-[1.02] font-semibold tracking-[-0.015em] [text-wrap:balance] md:text-[36px]"
+							>
+								{e.title}
+							</span>
+							<span class="mt-2 block text-[12px] font-semibold text-white/70">
+								{[e.venue, e.format, e.cap ? `${e.cap} seats` : ''].filter(Boolean).join(' · ')}
+							</span>
+							<span class="mt-5 flex items-end justify-between gap-4 border-t border-white/20 pt-4">
+								<span>
+									<span class="block font-newsreader text-[34px] leading-none font-semibold"
 										>{e.price}</span
 									>
 									<span
-										class="inline-flex items-center bg-warm px-4 py-2.5 text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] group-hover:brightness-110"
+										class="mt-1 block text-[9.5px] font-extrabold tracking-[0.14em] uppercase {e.premiumDiscount
+											? 'text-[#7fd6a4]'
+											: 'text-white/55'}"
 									>
-										Sign up →
+										{e.premiumDiscount ? 'Members save 10%' : 'Per player'}
 									</span>
 								</span>
-							</a>
-						</li>
-					{/each}
-				</ul>
-			{:else}
-				<p class="py-6 font-newsreader text-[16px] text-soft italic">
-					The next season's dates are being finalised. Watch this space.
-				</p>
-			{/if}
-		</div>
+								<span
+									class="inline-flex items-center gap-2 bg-white px-5 py-3 text-[11px] font-extrabold tracking-[0.14em] text-ink uppercase transition-[gap,background-color] group-hover:gap-3 group-hover:bg-paper-bg"
+								>
+									Sign up <span aria-hidden="true">→</span>
+								</span>
+							</span>
+						</div>
+					</a>
+				{/each}
+			</div>
+		{:else}
+			<p class="py-6 font-newsreader text-[16px] text-soft italic">
+				The next season's dates are being finalised. Watch this space.
+			</p>
+		{/if}
+	</div>
 
-		<!-- circuits + leaders -->
+	<div class="mt-10 grid grid-cols-1 gap-10 md:mt-12 lg:grid-cols-2 lg:gap-14">
+		<!-- circuits -->
 		<div>
 			<div class="flex items-baseline justify-between border-t-[3px] border-double border-ink pt-3">
 				<h4
@@ -212,10 +252,12 @@
 					</li>
 				{/each}
 			</ul>
-
+		</div>
+		<!-- leaders -->
+		<div>
 			{#if leaders.length}
 				<div
-					class="mt-8 flex items-baseline justify-between border-t-[3px] border-double border-ink pt-3"
+					class="flex items-baseline justify-between border-t-[3px] border-double border-ink pt-3"
 				>
 					<h4
 						class="flex items-center gap-2 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
