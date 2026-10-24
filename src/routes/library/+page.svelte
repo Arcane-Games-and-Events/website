@@ -765,7 +765,7 @@
 					<div>
 						<div
 							class="mb-3 text-[11px] font-extrabold tracking-[0.16em] uppercase"
-							style="color: #E5703E;"
+							style="color: #60A5FA;"
 						>
 							AGE Studios · Match Film
 						</div>
@@ -795,7 +795,7 @@
 					{#each data.vods as v (v.id)}
 						<a
 							href="/library/{v.id}"
-							class="group flex flex-col border border-t-[3px] border-[#232A3B] border-t-[#E5703E] bg-[#161B2B] transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[0_26px_44px_-28px_rgba(0,0,0,0.7)]"
+							class="group flex flex-col border border-t-[3px] border-[#232A3B] border-t-[#60A5FA] bg-[#161B2B] transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[0_26px_44px_-28px_rgba(0,0,0,0.7)]"
 						>
 							<!-- thumbnail -->
 							<div class="relative aspect-video overflow-hidden bg-[#0A0D16]">
@@ -833,14 +833,14 @@
 							<!-- body -->
 							<div class="flex flex-1 flex-col px-[18px] py-[16px] pb-[18px]">
 								<h3
-									class="mb-2 font-newsreader text-[21px] leading-[1.05] font-semibold tracking-[-0.01em] text-white group-hover:text-[#E5703E]"
+									class="mb-2 font-newsreader text-[21px] leading-[1.05] font-semibold tracking-[-0.01em] text-white group-hover:text-[#60A5FA]"
 								>
 									{v.title}
 								</h3>
 								{#if vodSubline(v)}
 									<div
 										class="mb-3 text-[10px] font-extrabold tracking-[0.09em] uppercase"
-										style="color: #E5703E;"
+										style="color: #60A5FA;"
 									>
 										{vodSubline(v)}
 									</div>

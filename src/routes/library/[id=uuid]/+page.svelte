@@ -159,7 +159,7 @@
 					playback-token={tokens?.['playback-token'] || ''}
 					thumbnail-token={tokens?.['thumbnail-token'] || ''}
 					storyboard-token={tokens?.['storyboard-token'] || ''}
-					accent-color="#e5703e"
+					accent-color="#2563eb"
 					metadata-video-title={vodItem.title}
 					stream-type="on-demand"
 					default-hidden-captions
