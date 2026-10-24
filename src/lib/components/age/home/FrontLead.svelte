@@ -449,13 +449,57 @@
 											class="absolute right-0 bottom-0 flex h-6 w-6 items-center justify-center bg-warm pl-[2px] text-[9px] text-white"
 											aria-hidden="true">▶</span
 										>
+									{:else if s.kind === 'event'}
+										<!-- date tile set over the circuit photo -->
+										<span
+											class="absolute inset-0"
+											style="background: linear-gradient(90deg, color-mix(in srgb, var(--ed-cc-{s.circuit}) 55%, rgba(23,21,15,0.6)) 0%, rgba(23,21,15,0.1) 80%);"
+											aria-hidden="true"
+										></span>
+										<span
+											class="absolute top-0 left-0 flex w-[40px] flex-col items-center bg-paper-bg py-1 text-center text-ink md:w-[46px]"
+										>
+											<span
+												class="text-[7px] font-extrabold tracking-[0.14em] uppercase"
+												style="color: var(--ed-cc-{s.circuit});">{s.month}</span
+											>
+											<span
+												class="font-newsreader text-[20px] leading-[0.9] font-semibold tabular-nums md:text-[24px]"
+												>{s.day}</span
+											>
+										</span>
+									{:else if s.kind === 'course'}
+										<span
+											class="absolute top-0 left-0 bg-gold px-1.5 py-[2px] text-[7.5px] font-extrabold tracking-[0.14em] text-[#241b07] uppercase"
+											>Course</span
+										>
 									{/if}
 								</span>
 								<span class="min-w-0">
-									<span
-										class="block text-[9.5px] font-extrabold tracking-[0.16em] text-warm uppercase"
-									>
-										{s.rubric}
+									<span class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+										<span
+											class="block text-[9.5px] font-extrabold tracking-[0.16em] uppercase {s.kind ===
+											'course'
+												? 'text-gold'
+												: 'text-warm'}"
+										>
+											{s.rubric}
+										</span>
+										{#if s.kind === 'event' && s.daysUntil != null}
+											<span
+												class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+											>
+												<span
+													class="h-[6px] w-[6px] animate-pulse-dot rounded-full bg-prem"
+													aria-hidden="true"
+												></span>
+												{s.daysUntil === 0
+													? 'Today'
+													: s.daysUntil === 1
+														? 'Tomorrow'
+														: `In ${s.daysUntil} days`}
+											</span>
+										{/if}
 									</span>
 									<span
 										class="mt-1 block font-newsreader text-[17px] leading-[1.18] font-semibold md:text-[18px]"
@@ -463,12 +507,24 @@
 										<span class="fp-ul">{s.title}</span>
 									</span>
 									<span class="mt-1.5 block">
-										<FrontByline
-											author={s.author}
-											length={s.length}
-											premium={s.premium}
-											size="sm"
-										/>
+										{#if s.kind === 'event' || s.kind === 'course'}
+											<span class="flex flex-wrap items-baseline gap-x-2 text-[10.5px] text-fade">
+												<span class="font-semibold">{s.meta}</span>
+												<span aria-hidden="true">·</span>
+												<span
+													class="font-extrabold tracking-[0.12em] uppercase {s.kind === 'course'
+														? 'text-gold'
+														: 'text-warm'}">{s.cta} →</span
+												>
+											</span>
+										{:else}
+											<FrontByline
+												author={s.author}
+												length={s.length}
+												premium={s.premium}
+												size="sm"
+											/>
+										{/if}
 									</span>
 								</span>
 							</a>

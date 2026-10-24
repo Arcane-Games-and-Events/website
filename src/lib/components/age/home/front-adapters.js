@@ -225,12 +225,12 @@ export function buildFront(data) {
 	const lead = leads[0] ?? null;
 	const rest = entries.slice(leads.length);
 
-	// The Latest — newest five of everything after the lead.
-	const latest = [...rest, ...vods].sort((a, b) => ts(b.dateIso) - ts(a.dateIso)).slice(0, 5);
+	// Newest Library pieces after the hero (articles, videos, bonus matches).
+	const newest = [...rest, ...vods].sort((a, b) => ts(b.dateIso) - ts(a.dateIso));
 
 	// Library department — the newest seven pieces of any kind after the
 	// hero, articles and video together, for the mosaic grid.
-	const library = [...rest, ...vods].sort((a, b) => ts(b.dateIso) - ts(a.dateIso)).slice(0, 7);
+	const library = newest.slice(0, 7);
 
 	const courses = liveCourses.length ? liveCourses : COURSES_PLACEHOLDER;
 	const academy = { featured: courses[0], list: courses.slice(1, 4), live: liveCourses.length > 0 };
@@ -286,6 +286,44 @@ export function buildFront(data) {
 		}))
 	};
 	const hasOpen = true;
+
+	// The Latest — one mixed list: the newest Library piece leads, then the
+	// next two events, three more Library pieces, and one course.
+	const eventRows = upcoming.slice(0, 2).map((e) => ({
+		kind: /** @type {const} */ ('event'),
+		href: e.href,
+		title: e.title,
+		dek: '',
+		image: e.image,
+		alt: '',
+		rubric: `AGE Open · ${e.circuitName || 'Event'}`,
+		day: e.day,
+		month: e.month,
+		circuit: e.circuit,
+		daysUntil: e.daysUntil,
+		meta: [e.weekday, e.venue, e.format, e.price].filter(Boolean).join(' · '),
+		cta: 'Sign up',
+		premium: false
+	}));
+	const courseRows = courses.slice(0, 1).map((c) => ({
+		kind: /** @type {const} */ ('course'),
+		href: c.href,
+		title: c.title,
+		dek: c.dek,
+		image: c.image,
+		alt: '',
+		rubric: 'Academy · Course',
+		meta: [
+			`With ${c.instructor}`,
+			c.lessons ? `${c.lessons} lessons` : '',
+			c.price > 0 ? `$${c.price}` : 'Free'
+		]
+			.filter(Boolean)
+			.join(' · '),
+		cta: c.price > 0 ? 'Enroll' : 'Start free',
+		premium: false
+	}));
+	const latest = [newest[0], ...eventRows, ...newest.slice(1, 4), ...courseRows].filter(Boolean);
 
 	// Department nav — only the departments that render this request.
 	const departments = [
