@@ -51,7 +51,7 @@
 		<div class="relative grid gap-8 p-6 md:grid-cols-[1.1fr_1fr] md:items-end md:p-12">
 			<div>
 				<span
-					class="flex items-center gap-3 text-[10.5px] font-extrabold tracking-[0.24em] text-warm uppercase"
+					class="flex items-center gap-3 text-[10.5px] font-extrabold tracking-[0.24em] text-warm-light uppercase"
 				>
 					<span aria-hidden="true">◆</span>
 					2026 season · Registration open

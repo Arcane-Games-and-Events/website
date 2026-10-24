@@ -180,9 +180,9 @@
 			: 'text-warm'}"
 		style="animation-delay: 300ms;"
 	>
-		<span class="text-warm" aria-hidden="true">◆</span>
+		<span class={onDark ? 'text-warm-light' : 'text-warm'} aria-hidden="true">◆</span>
 		Latest release · {lead.rubric}
-		<span class="text-warm" aria-hidden="true">◆</span>
+		<span class={onDark ? 'text-warm-light' : 'text-warm'} aria-hidden="true">◆</span>
 	</div>
 	<h1
 		class="mt-2 font-newsreader text-[38px] leading-[1.0] font-semibold tracking-[-0.02em] [text-wrap:balance] md:mt-3 md:text-[clamp(46px,5.6vw,84px)] md:leading-[0.96] {onDark
@@ -221,9 +221,9 @@
 		/>
 		<a
 			href={lead.href}
-			class="pointer-events-auto inline-block border-b-2 border-warm pb-1 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-[letter-spacing] hover:tracking-[0.26em] md:text-[11px] {onDark
-				? 'text-white'
-				: 'text-warm'}"
+			class="pointer-events-auto inline-block border-b-2 pb-1 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-[letter-spacing] hover:tracking-[0.26em] md:text-[11px] {onDark
+				? 'border-warm-light text-white'
+				: 'border-warm text-warm'}"
 		>
 			{isVideo ? 'Watch the video' : 'Read the story'} →
 		</a>
@@ -304,7 +304,7 @@
 								<span
 									class="block rounded-full border transition-[transform,background-color,border-color] duration-300 {i ===
 									activeIdx
-										? 'h-3 w-3 border-warm bg-warm'
+										? 'h-3 w-3 border-warm-light bg-warm-light'
 										: 'h-2.5 w-2.5 border-white/80 bg-white/15 hover:bg-white/60'}"
 								></span>
 							</button>

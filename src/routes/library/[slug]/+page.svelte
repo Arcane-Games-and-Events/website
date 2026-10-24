@@ -1023,9 +1023,13 @@
 					? 'text-warm md:text-white/90'
 					: 'text-warm'}"
 			>
-				<span class="text-warm" aria-hidden="true">◆</span>
+				<span class={hasCover ? 'text-warm md:text-warm-light' : 'text-warm'} aria-hidden="true"
+					>◆</span
+				>
 				{rubricLabel}
-				<span class="text-warm" aria-hidden="true">◆</span>
+				<span class={hasCover ? 'text-warm md:text-warm-light' : 'text-warm'} aria-hidden="true"
+					>◆</span
+				>
 			</a>
 			<h1
 				class="mt-2 font-newsreader text-[38px] leading-[1.0] font-semibold tracking-[-0.02em] [text-wrap:balance] md:mt-3 md:text-[clamp(46px,5.6vw,84px)] md:leading-[0.96] {hasCover
@@ -1051,9 +1055,9 @@
 				{#if data.article.author}
 					<a
 						href="/library/author/{data.article.author.slug}"
-						class="pointer-events-auto font-extrabold tracking-[0.12em] uppercase hover:text-warm {hasCover
-							? 'text-ink md:text-white/90'
-							: 'text-ink'}"
+						class="pointer-events-auto font-extrabold tracking-[0.12em] uppercase {hasCover
+							? 'text-ink hover:text-warm md:text-white/90 md:hover:text-warm-light'
+							: 'text-ink hover:text-warm'}"
 					>
 						By {data.article.author.name}
 					</a>

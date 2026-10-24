@@ -47,7 +47,7 @@
 				{#if v === 'ink'}
 					<a href={it.href} class="group flex flex-col bg-ink p-6 text-paper-bg md:p-7 {span[v]}">
 						<span
-							class="flex items-center gap-2 text-[9.5px] font-extrabold tracking-[0.18em] text-warm uppercase"
+							class="flex items-center gap-2 text-[9.5px] font-extrabold tracking-[0.18em] text-warm-light uppercase"
 						>
 							{#if isVideo}<span
 									class="flex h-4 w-4 items-center justify-center bg-warm pl-[1px] text-[7px] text-white"
