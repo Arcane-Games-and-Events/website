@@ -2,6 +2,7 @@
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import FrontLead from '$lib/components/age/home/FrontLead.svelte';
 	import FrontStories from '$lib/components/age/home/FrontStories.svelte';
+	import FrontLibrary from '$lib/components/age/home/FrontLibrary.svelte';
 	import FrontAcademy from '$lib/components/age/home/FrontAcademy.svelte';
 	import FrontOpen from '$lib/components/age/home/FrontOpen.svelte';
 	import FrontPremium from '$lib/components/age/home/FrontPremium.svelte';
@@ -12,7 +13,7 @@
 	/**
 	 * Front page — magazine running order:
 	 *   masthead (departments as header nav) → lead story & The Latest →
-	 *   Articles → Video → Academy → AGE Open → Premium
+	 *   Articles → Library → Academy → AGE Open → Premium
 	 */
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -45,18 +46,10 @@
 		</div>
 	{/if}
 
-	{#if F.video}
+	{#if F.library?.length}
 		<FrontFleuron />
 		<div use:reveal>
-			<FrontStories
-				id="video"
-				title="Video"
-				strap="Match film, bonus matches, and video features from AGE Studios."
-				href="/library/vods"
-				label="All video"
-				dark
-				data={F.video}
-			/>
+			<FrontLibrary items={F.library} />
 		</div>
 	{/if}
 

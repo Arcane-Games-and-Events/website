@@ -230,11 +230,9 @@ export function buildFront(data) {
 	const prose = rest.filter((s) => s.kind === 'article');
 	const articles = prose.length ? { feature: prose[0], cards: prose.slice(1, 4) } : null;
 
-	// Video department — video entries + bonus matches, newest first.
-	const videos = [...rest.filter((s) => s.kind === 'video'), ...vods].sort(
-		(a, b) => ts(b.dateIso) - ts(a.dateIso)
-	);
-	const video = videos.length ? { feature: videos[0], cards: videos.slice(1, 4) } : null;
+	// Library department — the newest seven pieces of any kind after the
+	// hero, articles and video together, for the mosaic grid.
+	const library = [...rest, ...vods].sort((a, b) => ts(b.dateIso) - ts(a.dateIso)).slice(0, 7);
 
 	const courses = liveCourses.length ? liveCourses : COURSES_PLACEHOLDER;
 	const academy = { featured: courses[0], list: courses.slice(1, 4), live: liveCourses.length > 0 };
@@ -268,7 +266,7 @@ export function buildFront(data) {
 	// Department nav — only the departments that render this request.
 	const departments = [
 		articles && { id: 'articles', label: 'Articles' },
-		video && { id: 'video', label: 'Video' },
+		library.length && { id: 'library', label: 'Library' },
 		{ id: 'academy', label: 'Academy' },
 		hasOpen && { id: 'age-open', label: 'AGE Open' },
 		{ id: 'premium', label: 'Premium' }
@@ -280,7 +278,7 @@ export function buildFront(data) {
 		leads,
 		latest,
 		articles,
-		video,
+		library,
 		academy,
 		open: hasOpen ? open : null
 	};
