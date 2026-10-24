@@ -1,7 +1,6 @@
 <script>
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import FrontLead from '$lib/components/age/home/FrontLead.svelte';
-	import FrontStories from '$lib/components/age/home/FrontStories.svelte';
 	import FrontLibrary from '$lib/components/age/home/FrontLibrary.svelte';
 	import FrontAcademy from '$lib/components/age/home/FrontAcademy.svelte';
 	import FrontOpen from '$lib/components/age/home/FrontOpen.svelte';
@@ -13,7 +12,7 @@
 	/**
 	 * Front page — magazine running order:
 	 *   masthead (departments as header nav) → lead story & The Latest →
-	 *   Articles → Library → Academy → AGE Open → Premium
+	 *   Library → Academy → AGE Open → Premium
 	 */
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -31,20 +30,6 @@
 
 <AgeShell>
 	<FrontLead leads={F.leads} latest={F.latest} />
-
-	{#if F.articles}
-		<FrontFleuron />
-		<div use:reveal>
-			<FrontStories
-				id="articles"
-				title="Articles"
-				strap="Reporting, strategy, and the SAGE series."
-				href="/library"
-				label="All articles"
-				data={F.articles}
-			/>
-		</div>
-	{/if}
 
 	{#if F.library?.length}
 		<FrontFleuron />

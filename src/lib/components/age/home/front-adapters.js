@@ -226,10 +226,6 @@ export function buildFront(data) {
 	// The Latest — newest five of everything after the lead.
 	const latest = [...rest, ...vods].sort((a, b) => ts(b.dateIso) - ts(a.dateIso)).slice(0, 5);
 
-	// Articles department — prose only, lead excluded.
-	const prose = rest.filter((s) => s.kind === 'article');
-	const articles = prose.length ? { feature: prose[0], cards: prose.slice(1, 4) } : null;
-
 	// Library department — the newest seven pieces of any kind after the
 	// hero, articles and video together, for the mosaic grid.
 	const library = [...rest, ...vods].sort((a, b) => ts(b.dateIso) - ts(a.dateIso)).slice(0, 7);
@@ -265,7 +261,6 @@ export function buildFront(data) {
 
 	// Department nav — only the departments that render this request.
 	const departments = [
-		articles && { id: 'articles', label: 'Articles' },
 		library.length && { id: 'library', label: 'Library' },
 		{ id: 'academy', label: 'Academy' },
 		hasOpen && { id: 'age-open', label: 'AGE Open' },
@@ -277,7 +272,6 @@ export function buildFront(data) {
 		lead,
 		leads,
 		latest,
-		articles,
 		library,
 		academy,
 		open: hasOpen ? open : null
