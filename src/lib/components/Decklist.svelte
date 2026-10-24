@@ -185,7 +185,7 @@
 	- yellow      #E5703E   — YELLOW column
 	- blue        #2C5BA8   — BLUE column
 	- prem green  #1C7A4B   — Fabrary link
-	- hover blue  #2563EB   — card-link hover
+	- hover blue  #1E40AF   — card-link hover
 -->
 <!--
 	`not-prose` opts the entire decklist out of the article body's
@@ -287,7 +287,7 @@
 								data-card-name={card.name}
 								data-card-image={arenaCardImg?.imageUrl || null}
 								data-card-fallback={arenaCardImg?.fallbackUrl || null}
-								class="card-link truncate text-[14.5px] font-bold !text-[#17150F] !no-underline transition-colors hover:!text-[#2563EB]"
+								class="card-link truncate text-[14.5px] font-bold !text-[#17150F] !no-underline transition-colors hover:!text-[#1E40AF]"
 								title={card.name}
 							>
 								{card.name}
@@ -347,7 +347,7 @@
 									data-card-pitch={colorToPitch(color)}
 									data-card-image={deckCardImg?.imageUrl || null}
 									data-card-fallback={deckCardImg?.fallbackUrl || null}
-									class="card-link truncate text-[13.5px] font-bold !text-[#17150F] !no-underline transition-colors hover:!text-[#2563EB]"
+									class="card-link truncate text-[13.5px] font-bold !text-[#17150F] !no-underline transition-colors hover:!text-[#1E40AF]"
 									title={card.name}
 								>
 									{card.name}
@@ -389,7 +389,7 @@
 									data-card-name={card.name}
 									data-card-image={legacyCardImg?.imageUrl || null}
 									data-card-fallback={legacyCardImg?.fallbackUrl || null}
-									class="card-link truncate text-[13.5px] font-bold !text-[#17150F] !no-underline transition-colors hover:!text-[#2563EB]"
+									class="card-link truncate text-[13.5px] font-bold !text-[#17150F] !no-underline transition-colors hover:!text-[#1E40AF]"
 									title={card.name}
 								>
 									{card.name}

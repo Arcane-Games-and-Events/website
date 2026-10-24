@@ -22,10 +22,10 @@
 	--ed-fade: #928b79;
 	--ed-line: #e4decf;
 	--ed-line2: #c7bfa9;
-	/* Primary — Tailwind blue-600. `warm` keeps its historical name; it is
+	/* Primary — Tailwind blue-800. `warm` keeps its historical name; it is
 	 * the site's primary accent (rubrics, rules, buttons, hover states). */
-	--ed-accent: #2563eb;
-	--ed-warm: #2563eb;
+	--ed-accent: #1e40af;
+	--ed-warm: #1e40af;
 	--ed-gold: #c8922e;
 	--ed-prem: #1c7a4b;
 
