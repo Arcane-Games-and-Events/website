@@ -104,25 +104,26 @@
 			return;
 		}
 		const lg = window.innerWidth >= 1024;
+		if (!lg) {
+			// Below lg the layout is pure CSS (static 16:9 cover, copy flows
+			// beneath it with an overlap) so the first paint is already right.
+			heroH = null;
+			imgStyle = '';
+			blurStyle = '';
+			return;
+		}
 		const boxW = heroEl.clientWidth;
 		const ratio =
 			imgEl.naturalWidth && imgEl.naturalHeight ? imgEl.naturalWidth / imgEl.naturalHeight : 16 / 9;
 		let w = boxW;
 		let h = w / ratio;
-		let boxH;
-		if (lg) {
-			boxH = Math.max(480, viewportH);
-			if (h > boxH) {
-				h = boxH;
-				w = h * ratio;
-			}
-		} else {
-			const copyH = copyEl?.offsetHeight ?? 0;
-			const overlap = Math.min(72, Math.round(h * 0.3));
-			boxH = Math.round(h + copyH - overlap);
+		const boxH = Math.max(480, viewportH);
+		if (h > boxH) {
+			h = boxH;
+			w = h * ratio;
 		}
 		heroH = boxH;
-		const top = lg ? (boxH - h) / 2 : 0;
+		const top = (boxH - h) / 2;
 		const left = (boxW - w) / 2;
 		const solid = 'linear-gradient(#000, #000)';
 		const hasX = w < boxW - 1;
@@ -132,7 +133,7 @@
 		const geom = `width:${w}px;height:${h}px;left:${left}px;top:${top}px;`;
 		// layer 3 — sharp
 		const mx = fx ? ramp('to right', fx) : solid;
-		const my = !fy ? solid : lg ? ramp('to bottom', fy) : ramp('to top', fy, false);
+		const my = fy ? ramp('to bottom', fy) : solid;
 		imgStyle = geom + masks(mx, my);
 		// layer 2 — aligned blur, only needed where there is fill
 		if (!hasX && !hasY) {
@@ -141,7 +142,7 @@
 			const bx = hasX ? Math.min(BLUR_FEATHER, Math.round(w * 0.12)) : 0;
 			const by = hasY ? Math.min(BLUR_FEATHER, Math.round(h * 0.15)) : 0;
 			const bmx = bx ? ramp('to right', bx) : solid;
-			const bmy = !by ? solid : lg ? ramp('to bottom', by) : ramp('to top', by, false);
+			const bmy = by ? ramp('to bottom', by) : solid;
 			blurStyle = geom + masks(bmx, bmy);
 		}
 	}
@@ -236,7 +237,7 @@
 			     lg+ and copy-high below, with a blurred fill behind it -->
 			<div
 				bind:this={heroEl}
-				class="relative mx-auto aspect-[3/4] w-full overflow-hidden bg-ink md:aspect-square lg:aspect-auto lg:h-[calc(100svh-80px)] lg:min-h-[480px]"
+				class="relative mx-auto w-full overflow-hidden bg-ink lg:h-[calc(100svh-80px)] lg:min-h-[480px]"
 				style={heroH ? `height: ${heroH}px;` : ''}
 			>
 				{#key activeIdx}
@@ -248,7 +249,7 @@
 							aria-hidden="true"
 						/>
 						<img
-							class="absolute blur-[14px] brightness-[0.95]"
+							class="fp-hero-m-blur absolute inset-x-0 top-0 aspect-video w-full object-cover blur-[14px] brightness-[0.95]"
 							style={blurStyle}
 							src={lead.image}
 							alt=""
@@ -257,7 +258,7 @@
 						<img
 							bind:this={imgEl}
 							onload={fit}
-							class="fp-kenburns absolute inset-0 h-full w-full object-contain object-top will-change-transform lg:object-center"
+							class="fp-kenburns fp-hero-m-sharp absolute inset-x-0 top-0 aspect-video w-full object-cover will-change-transform lg:object-contain"
 							style={imgStyle}
 							src={lead.image}
 							alt={lead.alt}
@@ -310,10 +311,13 @@
 						{/each}
 					</div>
 				{/if}
-				<!-- copy over the lower part of the box -->
+				<!-- below lg the cover is in flow (reserves its 16:9 height) and
+				     the copy follows it with an overlap; at lg+ the copy is pinned
+				     to the bottom of the viewport-high box -->
+				<div class="aspect-video w-full lg:hidden" aria-hidden="true"></div>
 				<div
 					bind:this={copyEl}
-					class="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center px-6 pb-9 text-center md:px-12 md:pb-14 lg:pb-16"
+					class="pointer-events-none relative z-[1] -mt-16 flex justify-center px-6 pb-9 text-center md:-mt-20 md:px-12 md:pb-14 lg:absolute lg:inset-x-0 lg:bottom-0 lg:mt-0 lg:pb-16"
 				>
 					{#key activeIdx}
 						<div

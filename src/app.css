@@ -281,6 +281,59 @@ a.fp-ul:focus-visible {
 	}
 }
 
+/* Hero cover below lg — the sharp cover and its aligned blur fade into
+ * the blurred fill along their bottom edge. Percent-based so the first
+ * paint is right before any JavaScript runs; at lg+ JS sets exact
+ * pixel masks inline, which override these. */
+.fp-hero-m-sharp {
+	-webkit-mask-image: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0) 0%,
+		rgba(0, 0, 0, 0.04) 3.6%,
+		rgba(0, 0, 0, 0.14) 7.5%,
+		rgba(0, 0, 0, 0.32) 12%,
+		rgba(0, 0, 0, 0.55) 16.5%,
+		rgba(0, 0, 0, 0.76) 21%,
+		rgba(0, 0, 0, 0.92) 25.5%,
+		rgba(0, 0, 0, 1) 30%
+	);
+	mask-image: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0) 0%,
+		rgba(0, 0, 0, 0.04) 3.6%,
+		rgba(0, 0, 0, 0.14) 7.5%,
+		rgba(0, 0, 0, 0.32) 12%,
+		rgba(0, 0, 0, 0.55) 16.5%,
+		rgba(0, 0, 0, 0.76) 21%,
+		rgba(0, 0, 0, 0.92) 25.5%,
+		rgba(0, 0, 0, 1) 30%
+	);
+}
+.fp-hero-m-blur {
+	-webkit-mask-image: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0) 0%,
+		rgba(0, 0, 0, 0.04) 1.8%,
+		rgba(0, 0, 0, 0.14) 3.8%,
+		rgba(0, 0, 0, 0.32) 6%,
+		rgba(0, 0, 0, 0.55) 8.2%,
+		rgba(0, 0, 0, 0.76) 10.5%,
+		rgba(0, 0, 0, 0.92) 12.8%,
+		rgba(0, 0, 0, 1) 15%
+	);
+	mask-image: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0) 0%,
+		rgba(0, 0, 0, 0.04) 1.8%,
+		rgba(0, 0, 0, 0.14) 3.8%,
+		rgba(0, 0, 0, 0.32) 6%,
+		rgba(0, 0, 0, 0.55) 8.2%,
+		rgba(0, 0, 0, 0.76) 10.5%,
+		rgba(0, 0, 0, 0.92) 12.8%,
+		rgba(0, 0, 0, 1) 15%
+	);
+}
+
 /* Navigation loading bar animation */
 @keyframes loading-bar {
 	0% {
