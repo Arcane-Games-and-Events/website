@@ -1,11 +1,11 @@
 <script>
 	/**
-	 * Editorial user menu — the trigger chip + dropdown panel for the
-	 * signed-in state of `<AgeHeader>`.
-	 *
-	 * Style cues match the rest of the editorial chrome: ink-bordered
-	 * chip, paper-tone dropdown with hairline rules, uppercase tracked
-	 * labels, and the same hover invert (ink bg + paper-bg text).
+	 * Editorial user menu — the signed-in trigger and its dropdown for
+	 * `<AgeHeader>`, in the same vocabulary as the header's AGE Open
+	 * submenu: a plate-framed ink monogram, the first name in the nav's
+	 * small caps, and a double-ruled paper panel with a serif heading, a
+	 * short blue bar, hairline rows that invert to ink on hover and an
+	 * arrow that slides in.
 	 *
 	 * The dropdown closes on outside click and on Escape.
 	 */
@@ -20,6 +20,12 @@
 	const isPartner = $derived($page.data?.isPartner ?? false);
 
 	let open = $state(false);
+	// Below sm the panel is fixed to the viewport width (the trigger sits
+	// left of Get Premium and the burger, so a panel hung from it would
+	// run off the screen). Its top is measured from the trigger when it
+	// opens; the header's frosted backdrop makes the header the containing
+	// block for fixed descendants, so the offset is taken from its top.
+	let panelTop = $state(0);
 
 	/** @type {HTMLDivElement | undefined} */
 	let root;
@@ -29,6 +35,10 @@
 	}
 
 	function toggle() {
+		if (!open && root) {
+			const base = root.closest('header')?.getBoundingClientRect().top ?? 0;
+			panelTop = Math.round(root.getBoundingClientRect().bottom - base + 8);
+		}
 		open = !open;
 	}
 
@@ -50,39 +60,42 @@
 		};
 	});
 
-	function initials() {
+	const initials = $derived.by(() => {
 		const a = (user?.firstName || '').trim().charAt(0).toUpperCase();
 		const b = (user?.lastName || '').trim().charAt(0).toUpperCase();
 		return a + b || (user?.email?.charAt(0).toUpperCase() ?? '?');
-	}
+	});
 
-	// Trigger-chip label. Prefer first name; if it's missing, fall back
-	// to the email's local part so the chip never renders the generic
-	// "Account" word — the user's identity should be the primary label
-	// on every page.
-	function triggerLabel() {
+	// Trigger label: the first name, or the email's local part, so the
+	// trigger always carries the user's identity rather than "Account".
+	const label = $derived.by(() => {
 		const first = (user?.firstName || '').trim();
 		if (first) return first;
 		const email = user?.email || '';
 		if (email.includes('@')) return email.split('@')[0];
 		return email || 'Account';
-	}
+	});
+
+	const fullName = $derived(
+		[user?.firstName, user?.lastName]
+			.map((s) => (s || '').trim())
+			.filter(Boolean)
+			.join(' ') || label
+	);
 
 	const isAdmin = $derived(user?.role === 'admin');
 
 	// CMS visibility mirrors `canAccessCms` from src/lib/server/auth/roles.js —
-	// admin billing tier OR the writer / creator capability role. Users with
-	// only tournament-staff or no capability roles at all don't see the link.
+	// admin billing tier OR the writer / creator capability role.
 	const canAccessCms = $derived(
 		isAdmin ||
 			(Array.isArray(user?.additionalRoles) &&
-				(user.additionalRoles.includes('writer') ||
-					user.additionalRoles.includes('creator')))
+				(user.additionalRoles.includes('writer') || user.additionalRoles.includes('creator')))
 	);
 
 	const ITEMS = $derived([
 		{ label: 'Account', href: '/account' },
-		{ label: 'Refer a Friend', href: '/account/referrals' },
+		{ label: 'Refer a friend', href: '/account/referrals' },
 		...(isPartner ? [{ label: 'Partner', href: '/partner' }] : []),
 		...(isStaff ? [{ label: 'Staff', href: '/staff', badge: assignedEventsCount }] : []),
 		...(canAccessCms ? [{ label: 'CMS', href: '/cms' }] : []),
@@ -91,28 +104,31 @@
 </script>
 
 <div class="relative" bind:this={root}>
-	<!-- trigger chip -->
+	<!-- trigger: an outlined button — the burger's 40px height below lg,
+	     Get Premium's 34px at lg+ where the burger is gone — labelled
+	     "My account" so the entry point is obvious, with the monogram set
+	     into its left end; inverts to ink on hover and while open -->
 	<button
 		type="button"
 		onclick={toggle}
 		aria-haspopup="menu"
 		aria-expanded={open}
-		class="group border-ink hover:bg-ink hover:text-paper-bg inline-flex h-9 cursor-pointer items-center gap-[10px] border-[1.5px] bg-transparent pr-[10px] pl-[6px] text-[11px] font-bold tracking-[0.06em] uppercase transition-colors"
+		aria-label="My account — {fullName}"
+		class="inline-flex h-10 cursor-pointer items-center gap-2.5 border-[1.5px] border-ink pr-[11px] pl-[3px] text-[11px] font-bold tracking-[0.05em] uppercase transition-colors sm:pr-[13px] lg:h-[34px] {open
+			? 'bg-ink text-paper-bg'
+			: 'bg-transparent text-ink hover:bg-ink hover:text-paper-bg'}"
 	>
 		<span
-			class="bg-ink text-paper-bg group-hover:bg-paper-bg group-hover:text-ink relative inline-flex h-[26px] w-[26px] items-center justify-center text-[10px] font-extrabold leading-none transition-colors"
+			class="flex h-[31px] w-[31px] items-center justify-center font-newsreader text-[14px] leading-none font-semibold tracking-[0.02em] text-white normal-case lg:h-[25px] lg:w-[25px] lg:text-[12.5px] {isPremium
+				? 'bg-prem'
+				: 'bg-ink'}"
+			title={isPremium ? 'Premium member' : undefined}
 		>
-			{initials()}
-			{#if isPremium}
-				<span
-					class="bg-prem absolute -right-[2px] -bottom-[2px] block h-[8px] w-[8px] ring-[1.5px] ring-current"
-					aria-label="Premium member"
-				></span>
-			{/if}
+			{initials}
 		</span>
-		<span class="hidden sm:inline">{triggerLabel()}</span>
+		<span class="hidden sm:inline">My account</span>
 		<svg
-			class="hidden h-[8px] w-[10px] sm:block"
+			class="h-[8px] w-[10px] transition-transform duration-200 {open ? 'rotate-180' : ''}"
 			viewBox="0 0 10 8"
 			fill="none"
 			stroke="currentColor"
@@ -124,66 +140,82 @@
 		</svg>
 	</button>
 
-	<!-- dropdown panel -->
+	<!-- dropdown panel — the `before:` bridge fills the gap to the trigger
+	     so the pointer can cross it without the menu closing -->
 	{#if open}
 		<div
 			role="menu"
-			class="bg-paper-bg border-ink absolute top-[calc(100%+4px)] right-0 z-50 w-[280px] border-[1.5px] shadow-[0_18px_36px_-22px_rgba(20,16,8,0.5)]"
+			class="fp-rise fixed inset-x-4 top-[var(--panel-top)] z-50 border-[3px] border-double border-ink bg-paper-bg shadow-[0_24px_44px_-24px_rgba(20,16,8,0.55)] before:absolute before:inset-x-0 before:-top-[12px] before:h-[12px] before:content-[''] sm:absolute sm:inset-x-auto sm:top-[calc(100%+8px)] sm:right-0 sm:w-[288px]"
+			style="--panel-top: {panelTop}px; animation-duration: 0.3s;"
 		>
-			<!-- header: name + email -->
-			<div class="border-line2 border-b px-4 pt-[14px] pb-[12px]">
-				<div class="font-newsreader text-ink text-[16px] leading-[1.15] font-semibold">
-					{user?.firstName ?? ''}
-					{user?.lastName ?? ''}
+			<!-- heading: name, email, membership -->
+			<div class="border-b border-line px-4 pt-3 pb-3">
+				<div class="flex items-baseline justify-between gap-3">
+					<span
+						class="truncate font-newsreader text-[17px] leading-tight font-semibold tracking-[-0.01em] text-ink"
+						>{fullName}</span
+					>
+					<span class="h-[3px] w-6 shrink-0 bg-warm" aria-hidden="true"></span>
 				</div>
-				<div class="text-fade mt-[3px] truncate text-[11px] font-semibold">
+				<div class="mt-1 truncate text-[10.5px] font-semibold text-fade">
 					{user?.email ?? ''}
 				</div>
-				{#if isPremium}
-					<span
-						class="bg-prem mt-[10px] inline-flex items-center gap-[6px] px-[8px] py-[3px] text-[9px] font-extrabold tracking-[0.12em] text-white uppercase"
-					>
-						AGE Premium
-					</span>
-				{/if}
+				<div class="mt-2 text-[9.5px] font-extrabold tracking-[0.16em] uppercase">
+					{#if isPremium}
+						<span class="text-prem"><span aria-hidden="true">◆</span> Premium member</span>
+					{:else}
+						<a
+							href="/premium"
+							onclick={close}
+							class="text-warm transition-[letter-spacing] hover:tracking-[0.22em]">Get Premium →</a
+						>
+					{/if}
+				</div>
 			</div>
 
-			<!-- nav items -->
+			<!-- rows -->
 			<ul role="none" class="m-0 list-none p-0">
 				{#each ITEMS as item (item.href)}
-					<li role="none" class="border-line border-b last:border-b-0">
+					<li role="none" class="border-b border-line">
 						<a
 							role="menuitem"
 							href={item.href}
 							onclick={close}
-							class="text-soft hover:bg-ink hover:text-paper-bg flex items-center justify-between gap-3 px-4 py-[11px] text-[11px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+							class="group/mi flex items-center justify-between gap-3 px-4 py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] text-soft uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 						>
-							<span>{item.label}</span>
-							<span class="ml-auto flex items-center gap-[10px]">
+							<span class="flex items-center gap-2.5">
+								{item.label}
 								{#if item.badge}
 									<span
-										class="border-prem/40 bg-prem/10 text-prem inline-flex items-center border px-[6px] py-[1px] text-[9px] font-extrabold tabular-nums"
+										class="inline-flex min-w-[18px] items-center justify-center bg-prem px-[5px] py-[1px] font-newsreader text-[11px] font-semibold text-white normal-case tabular-nums"
+										aria-label="{item.badge} assigned events"
 									>
 										{item.badge}
 									</span>
 								{/if}
-								<span class="opacity-60" aria-hidden="true">→</span>
 							</span>
+							<span
+								class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
+								aria-hidden="true">→</span
+							>
 						</a>
 					</li>
 				{/each}
 			</ul>
 
-			<!-- logout — don't close the menu here, because closing would
-				 unmount this form before the browser fires the submit. The
-				 server redirects to /login on success anyway. -->
-			<form method="POST" action="/logout" class="border-line2 border-t">
+			<!-- sign out — the menu stays open here because closing would
+			     unmount the form before the browser submits it; the server
+			     redirects to /login on success -->
+			<form method="POST" action="/logout">
 				<button
 					type="submit"
-					class="text-warm hover:bg-warm hover:text-paper-bg flex w-full cursor-pointer items-center justify-between px-4 py-[11px] text-[11px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+					class="group/so flex w-full cursor-pointer items-center justify-between px-4 py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:bg-warm hover:text-white"
 				>
 					<span>Sign out</span>
-					<span class="opacity-60" aria-hidden="true">↪</span>
+					<span
+						class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/so:translate-x-0 group-hover/so:opacity-100"
+						aria-hidden="true">→</span
+					>
 				</button>
 			</form>
 		</div>

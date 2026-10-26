@@ -288,7 +288,7 @@ export function buildFront(data) {
 	const hasOpen = true;
 
 	// The Latest — one mixed list: the newest Library piece leads, then the
-	// next two events, three more Library pieces, and one course.
+	// next two events, one more Library piece, and one course.
 	const eventRows = upcoming.slice(0, 2).map((e) => ({
 		kind: /** @type {const} */ ('event'),
 		href: e.href,
@@ -297,11 +297,15 @@ export function buildFront(data) {
 		image: e.image,
 		alt: '',
 		rubric: `AGE Open · ${e.circuitName || 'Event'}`,
+		// Shorter rubric and meta for phone widths so every row stays one
+		// rubric line and one meta line (equal row heights in the ledger).
+		rubricShort: e.circuitName || 'Event',
 		day: e.day,
 		month: e.month,
 		circuit: e.circuit,
 		daysUntil: e.daysUntil,
 		meta: [e.weekday, e.venue, e.format, e.price].filter(Boolean).join(' · '),
+		metaShort: [e.venue, e.format, e.price].filter(Boolean).join(' · '),
 		cta: 'Sign up',
 		premium: false
 	}));
@@ -323,7 +327,8 @@ export function buildFront(data) {
 		cta: c.price > 0 ? 'Enroll' : 'Start free',
 		premium: false
 	}));
-	const latest = [newest[0], ...eventRows, ...newest.slice(1, 4), ...courseRows].filter(Boolean);
+	// Five rows at most: lead, two events, one more Library piece, one course.
+	const latest = [newest[0], ...eventRows, newest[1], ...courseRows].filter(Boolean).slice(0, 5);
 
 	// Department nav — only the departments that render this request.
 	const departments = [

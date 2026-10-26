@@ -104,7 +104,7 @@
 
 	<!-- nav row (band full-bleed, content capped) -->
 	<div
-		class="bg-paper-bg/90 backdrop-blur-md transition-shadow duration-300 supports-[backdrop-filter]:bg-paper-bg/80 {scrolled
+		class="relative bg-paper-bg/90 backdrop-blur-md transition-shadow duration-300 supports-[backdrop-filter]:bg-paper-bg/80 {scrolled
 			? 'shadow-[0_12px_30px_-24px_rgba(23,21,15,0.55)]'
 			: ''}"
 	>
@@ -113,7 +113,34 @@
 				? 'py-2 md:py-2.5'
 				: 'py-3 md:py-4'}"
 		>
-			<a href="/" aria-label="AGE home" class="inline-flex justify-self-start">
+			<!-- burger — first cell below lg (burger · logo · account), gone at lg+ -->
+			<button
+				type="button"
+				onclick={toggleMobile}
+				aria-label="Open menu"
+				aria-expanded={mobileOpen}
+				class="col-start-1 inline-flex h-10 w-10 items-center justify-center self-center justify-self-start border-[1.5px] border-ink bg-transparent text-ink transition-colors hover:bg-ink hover:text-paper-bg lg:hidden"
+			>
+				<svg
+					viewBox="0 0 20 20"
+					class="h-4 w-4"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					aria-hidden="true"
+				>
+					{#if mobileOpen}
+						<path d="M4 4l12 12M16 4L4 16" stroke-linecap="round" />
+					{:else}
+						<path d="M3 6h14M3 10h14M3 14h14" stroke-linecap="round" />
+					{/if}
+				</svg>
+			</button>
+			<a
+				href="/"
+				aria-label="AGE home"
+				class="col-start-2 inline-flex justify-self-center lg:col-start-1 lg:justify-self-start"
+			>
 				<img
 					class="h-7 invert sm:h-[30px] md:h-[34px]"
 					src="https://www.age.events/logo.svg"
@@ -122,7 +149,7 @@
 			</a>
 
 			<nav
-				class="hidden items-center gap-3.5 justify-self-center text-[10px] font-extrabold tracking-[0.16em] uppercase lg:flex xl:gap-5 xl:text-[10.5px] xl:tracking-[0.18em]"
+				class="hidden items-center gap-3.5 justify-self-center text-[10px] font-extrabold tracking-[0.16em] uppercase lg:col-start-2 lg:flex xl:gap-5 xl:text-[10.5px] xl:tracking-[0.18em]"
 			>
 				{#each items as item, i (item.label)}
 					{#if i > 0}
@@ -270,72 +297,79 @@
 						Get Premium
 					</a>
 				{/if}
-				<!-- burger — replaces the nav below its breakpoint -->
-				<button
-					type="button"
-					onclick={toggleMobile}
-					aria-label="Open menu"
-					aria-expanded={mobileOpen}
-					class="inline-flex h-10 w-10 items-center justify-center border-[1.5px] border-ink bg-transparent text-ink transition-colors hover:bg-ink hover:text-paper-bg lg:hidden"
-				>
-					<svg
-						viewBox="0 0 20 20"
-						class="h-4 w-4"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						aria-hidden="true"
-					>
-						{#if mobileOpen}
-							<path d="M4 4l12 12M16 4L4 16" stroke-linecap="round" />
-						{:else}
-							<path d="M3 6h14M3 10h14M3 14h14" stroke-linecap="round" />
-						{/if}
-					</svg>
-				</button>
 			</div>
 		</div>
 
 		<!--
-		Mobile drawer — expands under the header row on small screens
-		when the burger is tapped. Same nav items and CTAs as the
-		desktop bar. Closes on any tap inside.
+		Mobile drawer — the same panel as the account dropdown: a
+		double-ruled paper box laid over the page beneath the header,
+		serif heading with a short blue bar, hairline rows that invert to
+		ink with a sliding arrow. Closes on any tap inside.
 	-->
 		{#if mobileOpen}
-			<div class="border-t border-line2 bg-paper lg:hidden">
-				<nav class="flex flex-col">
-					{#each items as item (item.label)}
-						<a
-							href={item.href}
-							onclick={closeMobile}
-							class="border-b border-line px-6 py-3 text-[11px] font-extrabold tracking-[0.18em] uppercase transition-colors hover:bg-paper-bg {item.label ===
-							active
-								? 'text-warm'
-								: ''}"
-						>
-							{item.label}
-						</a>
-						{#if item.children}
-							{#each item.children as child (child.href)}
+			<div
+				class="fp-rise absolute inset-x-4 top-[calc(100%-4px)] z-50 border-[3px] border-double border-ink bg-paper-bg shadow-[0_24px_44px_-24px_rgba(20,16,8,0.55)] lg:hidden"
+				style="animation-duration: 0.3s;"
+			>
+				<div class="flex items-baseline justify-between gap-3 border-b border-line px-4 pt-3 pb-3">
+					<span class="font-newsreader text-[17px] leading-tight font-semibold tracking-[-0.01em]"
+						>Menu</span
+					>
+					<span class="h-[3px] w-6 shrink-0 bg-warm" aria-hidden="true"></span>
+				</div>
+				<nav>
+					<ul class="m-0 list-none p-0">
+						{#each items as item (item.label)}
+							<li class="border-b border-line last:border-b-0">
 								<a
-									href={child.href}
+									href={item.href}
 									onclick={closeMobile}
-									class="border-b border-line px-10 py-[10px] text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase transition-colors hover:bg-paper-bg"
+									class="group/mi flex items-center justify-between gap-3 px-4 py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg {item.label ===
+									active
+										? 'text-warm'
+										: 'text-soft'}"
 								>
-									{child.label}
+									<span>{item.label}</span>
+									<span
+										class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
+										aria-hidden="true">→</span
+									>
 								</a>
-							{/each}
+							</li>
+							{#if item.children}
+								{#each item.children as child (child.href)}
+									<li class="border-b border-line last:border-b-0">
+										<a
+											href={child.href}
+											onclick={closeMobile}
+											class="group/mi flex items-center justify-between gap-3 py-[10px] pr-4 pl-8 text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+										>
+											<span>{child.label}</span>
+											<span
+												class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
+												aria-hidden="true">→</span
+											>
+										</a>
+									</li>
+								{/each}
+							{/if}
+						{/each}
+						{#if !user}
+							<li>
+								<a
+									href="/login?redirect={$page.url.pathname}"
+									onclick={closeMobile}
+									class="group/mi flex items-center justify-between gap-3 px-4 py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] text-warm uppercase transition-colors hover:bg-warm hover:text-white"
+								>
+									<span>Sign in</span>
+									<span
+										class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
+										aria-hidden="true">→</span
+									>
+								</a>
+							</li>
 						{/if}
-					{/each}
-					{#if !user}
-						<a
-							href="/login?redirect={$page.url.pathname}"
-							onclick={closeMobile}
-							class="border-b border-line px-6 py-3 text-[11px] font-extrabold tracking-[0.18em] uppercase"
-						>
-							Sign in →
-						</a>
-					{/if}
+					</ul>
 				</nav>
 			</div>
 		{/if}

@@ -38,6 +38,45 @@
 
 	const isVideo = $derived(lead?.kind === 'video');
 	const words = $derived((lead?.title || '').split(/\s+/).filter(Boolean));
+	// Character count drives a CSS estimate of the headline size (see the
+	// style block) so the server-rendered paint is already close to two
+	// lines; fitTitle() then measures and sets the exact size.
+	const titleChars = $derived(Math.max(12, (lead?.title || '').length));
+	/** @type {HTMLElement | undefined} */
+	let h1El = $state();
+	const TITLE_MIN = 0.55; // of the max size
+	function fitTitle() {
+		const el = h1El;
+		if (!el || typeof window === 'undefined') return;
+		// Resolve the max size from the CSS variable, then shrink until the
+		// headline sits on at most two lines.
+		el.style.fontSize = 'var(--hero-title-max)';
+		const cs = getComputedStyle(el);
+		const max = parseFloat(cs.fontSize);
+		const lh = parseFloat(cs.lineHeight) / max;
+		if (!max || !lh) return;
+		const fits = (px) => {
+			el.style.fontSize = `${px}px`;
+			return el.getBoundingClientRect().height <= px * lh * 2 + 1;
+		};
+		if (fits(max)) return;
+		let lo = max * TITLE_MIN;
+		let hi = max;
+		if (!fits(lo)) return;
+		for (let i = 0; i < 7; i++) {
+			const mid = (lo + hi) / 2;
+			if (fits(mid)) lo = mid;
+			else hi = mid;
+		}
+		fits(Math.floor(lo));
+	}
+	$effect(() => {
+		if (!h1El) return;
+		fitTitle();
+		document.fonts?.ready.then(fitTitle);
+		window.addEventListener('resize', fitTitle);
+		return () => window.removeEventListener('resize', fitTitle);
+	});
 	// Headline words start rising once the photo has begun to settle.
 	const WORD_BASE = 350;
 	const WORD_STEP = 55;
@@ -185,9 +224,11 @@
 		<span class={onDark ? 'text-warm-light' : 'text-warm'} aria-hidden="true">◆</span>
 	</div>
 	<h1
-		class="mt-2 font-newsreader text-[38px] leading-[1.0] font-semibold tracking-[-0.02em] [text-wrap:balance] md:mt-3 md:text-[clamp(46px,5.6vw,84px)] md:leading-[0.96] {onDark
+		bind:this={h1El}
+		class="hero-title mt-2 font-newsreader leading-[1.0] font-semibold tracking-[-0.02em] [text-wrap:balance] md:mt-3 md:leading-[0.96] {onDark
 			? 'text-white'
 			: ''}"
+		style="--tc: {titleChars};"
 	>
 		<a href={lead.href} class="pointer-events-auto">
 			{#each words as w, i (i)}
@@ -200,7 +241,7 @@
 	</h1>
 	{#if lead.dek}
 		<p
-			class="fp-rise mx-auto mt-2.5 max-w-[640px] text-center font-newsreader text-[17px] leading-[1.45] [text-wrap:balance] italic md:mt-3 md:text-[21px] {onDark
+			class="fp-rise mx-auto mt-2.5 line-clamp-2 max-w-[640px] text-center font-newsreader text-[17px] leading-[1.45] [text-wrap:balance] italic md:mt-3 md:text-[21px] lg:line-clamp-none {onDark
 				? 'text-white/85'
 				: 'text-soft'}"
 			style="animation-delay: 750ms;"
@@ -218,6 +259,7 @@
 			length={lead.length}
 			premium={lead.premium}
 			{onDark}
+			stack
 		/>
 		<a
 			href={lead.href}
@@ -273,7 +315,7 @@
 					aria-hidden="true"
 				></div>
 				<div
-					class="absolute inset-x-0 bottom-0 h-[78%]"
+					class="absolute inset-x-0 bottom-0 h-[340px] md:h-[380px] lg:h-[78%]"
 					style="background: linear-gradient(180deg, rgba(23,21,15,0) 0%, rgba(23,21,15,0.3) 22%, rgba(23,21,15,0.72) 45%, rgba(23,21,15,0.92) 68%, rgba(23,21,15,0.98) 100%);"
 					aria-hidden="true"
 				></div>
@@ -286,7 +328,7 @@
 				<!-- slide dots — one per item, right edge, vertically centred -->
 				{#if leads.length > 1}
 					<div
-						class="fp-fade absolute top-1/2 right-6 z-[3] flex -translate-y-1/2 flex-col items-center gap-3 md:right-12"
+						class="fp-fade absolute top-[28.125vw] right-6 z-[3] flex -translate-y-1/2 flex-col items-center gap-3 md:right-12 lg:top-1/2"
 						style="animation-delay: 900ms;"
 						role="tablist"
 						aria-label="Latest releases"
@@ -311,13 +353,20 @@
 						{/each}
 					</div>
 				{/if}
-				<!-- below lg the cover is in flow (reserves its 16:9 height) and
-				     the copy follows it with an overlap; at lg+ the copy is pinned
-				     to the bottom of the viewport-high box -->
+				<!-- below lg the box is a fixed size: the cover's 16:9 height plus
+				     a constant band beneath it that holds the copy, centred, so
+				     the text sits under the picture rather than over it and the
+				     card never changes size with the length of the headline or
+				     dek. The band's bottom padding pushes the copy down so the
+				     gap above it (measured from where the feathered cover
+				     visually ends) matches the gap below it to the plate frame.
+				     At lg+ the copy is pinned to the bottom of the viewport-high
+				     box as before. -->
 				<div class="aspect-video w-full lg:hidden" aria-hidden="true"></div>
+				<div class="h-[300px] w-full md:h-[352px] lg:hidden" aria-hidden="true"></div>
 				<div
 					bind:this={copyEl}
-					class="pointer-events-none relative z-[1] -mt-16 flex justify-center px-6 pb-9 text-center md:-mt-20 md:px-12 md:pb-14 lg:absolute lg:inset-x-0 lg:bottom-0 lg:mt-0 lg:pb-16"
+					class="pointer-events-none absolute inset-x-0 bottom-0 z-[1] flex h-[300px] items-center justify-center px-6 pb-9 text-center md:h-[352px] md:px-12 md:pb-[72px] lg:h-auto lg:items-stretch lg:pb-16"
 				>
 					{#key activeIdx}
 						<div
@@ -391,12 +440,6 @@
 							>
 						{/if}
 					</div>
-					<span
-						class="absolute -top-4 -left-3 flex h-16 w-16 items-center justify-center bg-paper-bg font-newsreader text-[44px] leading-none font-medium text-warm tabular-nums md:-top-5 md:-left-4 md:h-20 md:w-20 md:text-[56px]"
-						aria-hidden="true"
-					>
-						1
-					</span>
 				</div>
 				<div class="pt-5 md:pt-6">
 					<div class="text-[10px] font-extrabold tracking-[0.18em] text-warm uppercase">
@@ -422,19 +465,23 @@
 
 			<!-- the rest — a toned ledger of thumbnail rows -->
 			{#if rest.length}
-				<ol class="mt-8 border border-line bg-paper px-5 lg:mt-0 lg:self-start lg:px-6">
-					{#each rest as s, i (s.href)}
-						<li class="border-b border-line last:border-b-0">
+				<ol class="mt-8 border border-line bg-paper lg:mt-0 lg:self-start">
+					{#each rest as s (s.href)}
+						<li
+							class="border-b border-line last:border-b-0 {s.kind === 'event'
+								? 'border-l-[3px]'
+								: ''}"
+							style={s.kind === 'event'
+								? `background: color-mix(in srgb, var(--ed-cc-${s.circuit}) 9%, transparent); border-left-color: var(--ed-cc-${s.circuit});`
+								: ''}
+						>
 							<a
 								href={s.href}
-								class="group grid grid-cols-[22px_92px_1fr] items-center gap-3 py-4 md:grid-cols-[32px_112px_1fr] md:gap-4 md:py-5"
+								class="group grid min-h-[112px] grid-cols-[84px_1fr] items-center gap-3 px-4 py-3 md:grid-cols-[96px_1fr] md:gap-3.5 md:py-3.5 lg:px-5 {s.kind ===
+								'event'
+									? 'pl-[13px] lg:pl-[17px]'
+									: ''}"
 							>
-								<span
-									class="font-newsreader text-[30px] leading-none font-medium text-warm tabular-nums"
-									aria-hidden="true"
-								>
-									{i + 2}
-								</span>
 								<span class="relative block aspect-video overflow-hidden bg-panel">
 									{#if s.image}
 										<img
@@ -481,16 +528,25 @@
 											class="block text-[9.5px] font-extrabold tracking-[0.16em] uppercase {s.kind ===
 											'course'
 												? 'text-gold'
-												: 'text-warm'}"
+												: s.kind === 'event'
+													? ''
+													: 'text-warm'}"
+											style={s.kind === 'event' ? `color: var(--ed-cc-${s.circuit});` : ''}
 										>
-											{s.rubric}
+											{#if s.rubricShort}
+												<span class="md:hidden">{s.rubricShort}</span>
+												<span class="hidden md:inline">{s.rubric}</span>
+											{:else}
+												{s.rubric}
+											{/if}
 										</span>
 										{#if s.kind === 'event' && s.daysUntil != null}
 											<span
 												class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
 											>
 												<span
-													class="h-[6px] w-[6px] animate-pulse-dot rounded-full bg-prem"
+													class="h-[6px] w-[6px] animate-pulse-dot rounded-full"
+													style="background: var(--ed-cc-{s.circuit});"
 													aria-hidden="true"
 												></span>
 												{s.daysUntil === 0
@@ -502,19 +558,30 @@
 										{/if}
 									</span>
 									<span
-										class="mt-1 block font-newsreader text-[17px] leading-[1.18] font-semibold md:text-[18px]"
+										class="mt-0.5 line-clamp-2 font-newsreader text-[15.5px] leading-[1.18] font-semibold md:text-[16.5px]"
 									>
 										<span class="fp-ul">{s.title}</span>
 									</span>
-									<span class="mt-1.5 block">
+									<span class="mt-1 block">
 										{#if s.kind === 'event' || s.kind === 'course'}
 											<span class="flex flex-wrap items-baseline gap-x-2 text-[10.5px] text-fade">
-												<span class="font-semibold">{s.meta}</span>
+												<span class="font-semibold">
+													{#if s.metaShort}
+														<span class="md:hidden">{s.metaShort}</span>
+														<span class="hidden md:inline">{s.meta}</span>
+													{:else}
+														{s.meta}
+													{/if}
+												</span>
 												<span aria-hidden="true">·</span>
 												<span
 													class="font-extrabold tracking-[0.12em] uppercase {s.kind === 'course'
 														? 'text-gold'
-														: 'text-warm'}">{s.cta} →</span
+														: s.kind === 'event'
+															? ''
+															: 'text-warm'}"
+													style={s.kind === 'event' ? `color: var(--ed-cc-${s.circuit});` : ''}
+													>{s.cta} →</span
 												>
 											</span>
 										{:else}
@@ -535,3 +602,24 @@
 		</div>
 	</section>
 {/if}
+
+<style>
+	/* Headline size: the max for the breakpoint, reduced by a character-
+	   count estimate so long titles land near two lines before JS runs;
+	   fitTitle() measures and overrides with the exact size. */
+	.hero-title {
+		--hero-title-max: 38px;
+		--hero-w: calc(100vw - 48px);
+		font-size: clamp(
+			calc(var(--hero-title-max) * 0.55),
+			calc(var(--hero-w) * 2 / (0.55 * var(--tc))),
+			var(--hero-title-max)
+		);
+	}
+	@media (min-width: 768px) {
+		.hero-title {
+			--hero-title-max: clamp(46px, 5.6vw, 84px);
+			--hero-w: min(920px, 100vw - 96px);
+		}
+	}
+</style>
