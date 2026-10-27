@@ -12,7 +12,6 @@
 
 	const NAV = [
 		{ id: 'analytics', label: 'Analytics', href: '/admin/analytics' },
-		{ id: 'content-analytics', label: 'Content', href: '/admin/content-analytics' },
 		{ id: 'orders', label: 'Orders', href: '/admin/orders' },
 		{ id: 'users', label: 'Users', href: '/admin/users' },
 		{ id: 'events', label: 'Events', href: '/admin/events' },

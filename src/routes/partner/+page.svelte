@@ -10,16 +10,35 @@
 
 	let origin = '';
 	let copied = false;
+	let canShare = false;
 	onMount(() => {
 		origin = window.location.origin;
+		canShare = typeof navigator !== 'undefined' && !!navigator.share;
 	});
 
 	$: partnerLink = origin ? `${origin}/premium/${p.code}` : `/premium/${p.code}`;
+	$: displayLink = partnerLink.replace(/^https?:\/\//, '');
 
-	function copyLink() {
-		navigator.clipboard.writeText(partnerLink);
-		copied = true;
-		setTimeout(() => (copied = false), 2000);
+	async function copyLink() {
+		try {
+			await navigator.clipboard.writeText(partnerLink);
+			copied = true;
+			setTimeout(() => (copied = false), 2000);
+		} catch {
+			/* clipboard blocked: the link stays visible to copy by hand */
+		}
+	}
+
+	async function shareLink() {
+		try {
+			await navigator.share({
+				title: 'AGE Premium',
+				text: 'Get $5 off AGE Premium with my link.',
+				url: partnerLink
+			});
+		} catch {
+			/* share sheet dismissed */
+		}
 	}
 
 	function fmt(amount) {
@@ -35,18 +54,41 @@
 		});
 	}
 
-	function statusChip(status, readyToPay) {
-		if (status === 'paid') return { label: 'Paid', tone: 'prem' };
-		if (readyToPay) return { label: 'Processing', tone: 'accent' };
-		return { label: 'Pending', tone: 'warm' };
+	/** Payout status tag. */
+	function statusTag(status, readyToPay) {
+		if (status === 'paid') return { text: 'Paid', tone: 'border-prem bg-prem text-white' };
+		if (readyToPay) return { text: 'Processing', tone: 'border-warm/50 bg-warm/[0.06] text-warm' };
+		return { text: 'Pending', tone: 'border-gold bg-gold/10 text-[#8a6116]' };
 	}
 
-	function chipClass(tone) {
-		if (tone === 'accent') return 'text-accent border-accent/40 bg-accent/10';
-		if (tone === 'prem') return 'text-prem border-prem/40 bg-prem/10';
-		if (tone === 'warm') return 'text-warm border-warm/40 bg-warm/10';
-		return 'text-soft border-line2 bg-paper-bg';
+	/** One-line summary under each referral on phones. */
+	function metaLine(r) {
+		const plan = r.subscriptionType
+			? r.subscriptionType[0].toUpperCase() + r.subscriptionType.slice(1)
+			: '';
+		const parts = [plan, `joined ${fmtDate(r.createdAt)}`];
+		parts.push(
+			r.payoutStatus === 'paid'
+				? `paid ${fmtDate(r.paidAt)}`
+				: `payout due ${fmtDate(r.payoutDueAt)}`
+		);
+		return parts.filter(Boolean).join(' · ');
 	}
+
+	const STEPS = [
+		{
+			t: 'Share your link',
+			d: 'Put it in your videos, streams, posts and show notes, or read out your code on air.'
+		},
+		{
+			t: 'They save $5',
+			d: 'Anyone who joins AGE Premium through your link or code gets $5 off their first charge.'
+		},
+		{
+			t: 'You earn $5',
+			d: 'Each signup earns you a $5 commission, paid by direct deposit about a month after they join.'
+		}
+	];
 </script>
 
 <svelte:head>
@@ -54,360 +96,244 @@
 </svelte:head>
 
 <AgeShell active="">
-	<div class="mx-auto w-full max-w-[1600px] px-4 pt-10 pb-[52px] md:px-10 lg:px-14">
-		<!-- ============ HEADER ============ -->
-		<div
-			class="bg-paper border-line2 border-t-prem mb-[26px] grid grid-cols-1 items-end gap-6 border border-t-[3px] px-[26px] py-[26px] md:grid-cols-[1fr_auto] md:px-[34px] md:py-[30px]"
-		>
-			<div>
-				<div class="mb-[10px] flex flex-wrap items-center gap-[10px]">
-					<span
-						class="text-fade font-mono-system inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.16em] uppercase"
+	<!-- ============ masthead: ink band + share box ============ -->
+	<section class="bg-ink text-paper-bg">
+		<div class="mx-auto w-full max-w-[1200px] px-5 pt-10 pb-10 md:px-8 md:pt-14 md:pb-14">
+			<div class="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_440px] lg:gap-14">
+				<div class="fp-rise min-w-0">
+					<div class="flex flex-wrap items-center gap-3">
+						<p class="text-[10px] font-extrabold tracking-[0.24em] text-gold uppercase">
+							<span aria-hidden="true">◆</span> AGE Partner{p.displayName
+								? ` · ${p.displayName}`
+								: ''}
+						</p>
+						{#if p.isActive}
+							<span
+								class="bg-prem px-2 py-[3px] text-[9px] font-extrabold tracking-[0.16em] text-white uppercase"
+								>Active</span
+							>
+						{:else}
+							<span
+								class="border border-hero-rb px-2 py-[3px] text-[9px] font-extrabold tracking-[0.16em] text-hero-rb uppercase"
+								>Paused</span
+							>
+						{/if}
+					</div>
+					<h1
+						class="mt-4 text-[44px] leading-[0.95] font-extrabold tracking-[-0.035em] [text-wrap:balance] md:text-[64px]"
+						style="font-family: 'Libre Franklin', system-ui, sans-serif;"
 					>
-						<span class="bg-prem inline-block h-[6px] w-[6px] rounded-full"></span>
-						AGE Partner
-					</span>
-					{#if p.isActive}
-						<span
-							class="border-prem/40 bg-prem/10 text-prem inline-flex items-center gap-[6px] border px-[10px] py-[4px] text-[10px] font-extrabold tracking-[0.1em] uppercase"
-						>
-							Active
-						</span>
-					{:else}
-						<span
-							class="border-warm/40 bg-warm/10 text-warm inline-flex items-center gap-[6px] border px-[10px] py-[4px] text-[10px] font-extrabold tracking-[0.1em] uppercase"
-						>
-							Paused
-						</span>
-					{/if}
+						Partner<br /><span class="text-gold">dashboard.</span>
+					</h1>
+					<p class="mt-5 max-w-[520px] font-newsreader text-[18px] leading-[1.55] text-paper-bg/75">
+						Track your referrals and earnings. Every member you bring in helps keep AGE independent,
+						and payouts are sent every 30 days by direct deposit.
+					</p>
 				</div>
-				<h1
-					class="font-newsreader mb-2 text-[38px] leading-[0.9] font-semibold tracking-[-0.02em] sm:text-[46px]"
-				>
-					Partner Dashboard
-				</h1>
-				<p class="text-soft max-w-[560px] text-[14.5px] leading-[1.5]">
-					Track your referrals and earnings. Payouts are sent every 30 days via direct deposit.
-				</p>
-			</div>
 
-			<div
-				class="border-line2 flex flex-col items-center justify-center self-stretch border px-[22px] py-[16px] text-center"
-			>
-				<div class="font-newsreader text-[38px] leading-[0.8] font-semibold tabular-nums">
-					{totals.count}
-				</div>
-				<div class="text-fade mt-2 text-[10px] font-extrabold tracking-[0.12em] uppercase">
-					Referrals
+				<div class="fp-rise flex justify-center lg:justify-end" style="animation-delay: 120ms;">
+					<div
+						class="w-full max-w-[440px] bg-paper-bg text-ink"
+						style="box-shadow: 0 2px 3px rgba(0,0,0,0.25), 0 18px 30px -12px rgba(0,0,0,0.55);"
+					>
+						<div class="h-[5px] bg-gold" aria-hidden="true"></div>
+						<div class="px-6 pt-5 pb-6 md:px-7">
+							<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-fade uppercase">
+								Your partner code
+							</p>
+							<p
+								class="ao-cond mt-1 text-[56px] leading-[0.9] font-black tracking-[0.02em] break-all {p.isActive
+									? 'text-ink'
+									: 'text-fade line-through'}"
+							>
+								{p.code}
+							</p>
+							<p class="mt-4 text-[9.5px] font-extrabold tracking-[0.2em] text-fade uppercase">
+								Your link
+							</p>
+							<p
+								class="mt-1.5 truncate border border-line2 bg-paper px-3.5 py-3 text-[14px] font-semibold"
+								title={partnerLink}
+							>
+								{displayLink}
+							</p>
+							<div class="mt-3 grid gap-2 {canShare ? 'grid-cols-2' : ''}">
+								<button
+									type="button"
+									onclick={copyLink}
+									disabled={!p.isActive}
+									class="min-h-[50px] bg-ink px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-prem disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-ink"
+								>
+									{copied ? 'Copied ✓' : 'Copy link'}
+								</button>
+								{#if canShare}
+									<button
+										type="button"
+										onclick={shareLink}
+										disabled={!p.isActive}
+										class="min-h-[50px] border-[1.5px] border-ink px-5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ink"
+									>
+										Share
+									</button>
+								{/if}
+							</div>
+							{#if p.isActive}
+								<p class="mt-3 font-newsreader text-[14px] text-soft italic">
+									Followers can also enter <span class="font-semibold text-ink not-italic"
+										>{p.code}</span
+									> at checkout for $5 off.
+								</p>
+							{:else}
+								<p class="mt-3 font-newsreader text-[14px] font-semibold text-hero-rb">
+									This code is paused and won't give a discount right now.
+								</p>
+							{/if}
+						</div>
+					</div>
 				</div>
 			</div>
+			<div class="mt-10 h-[5px] border-y border-paper-bg/30 md:mt-12" aria-hidden="true"></div>
 		</div>
+	</section>
 
-		<!-- ============ PAUSED WARNING ============ -->
+	<div class="mx-auto w-full max-w-[1200px] px-5 py-12 md:px-8 md:py-16">
 		{#if !p.isActive}
-			<div
-				class="border-warm/40 bg-warm/10 text-warm mb-[26px] flex items-start gap-[14px] border-[1.5px] px-[22px] py-[16px]"
-			>
-				<svg
-					viewBox="0 0 24 24"
-					class="mt-[2px] h-5 w-5 flex-shrink-0"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="1.8"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					aria-hidden="true"
-				>
-					<circle cx="12" cy="12" r="9" />
-					<path d="M12 8v5M12 16h.01" />
-				</svg>
-				<div class="text-[13px] leading-[1.5]">
-					<div class="mb-[3px] font-extrabold tracking-[0.02em] uppercase">
-						Your partner status is paused
-					</div>
-					<div class="text-warm/90 font-semibold">
-						Your promo code is currently inactive — new signups won't be credited to you. Your past
-						referrals and pending payouts are unaffected. Reach out if you have questions.
-					</div>
-				</div>
+			<div class="mb-12 border-l-[3px] border-hero-rb bg-hero-rb/[0.07] px-5 py-4">
+				<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase">
+					Your partner status is paused
+				</p>
+				<p class="mt-1 max-w-[720px] font-newsreader text-[16px] leading-[1.55] text-soft">
+					Your code is inactive for now, so new signups won't be credited to you. Past referrals and
+					pending payouts aren't affected. Reach out if you have questions.
+				</p>
 			</div>
 		{/if}
 
-		<!-- ============ PARTNER LINK CARD ============ -->
-		<div
-			class="bg-paper border-line2 mb-[26px] border p-[24px] md:p-[30px]"
-		>
-			<div class="mb-[14px] flex flex-wrap items-baseline justify-between gap-3">
-				<div class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase">
-					Your partner link
-				</div>
-				<div class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase">
-					Promo Code
-					<span class="text-ink ml-[6px] font-bold tracking-[0.04em]">{p.code}</span>
-				</div>
-			</div>
-			<div class="flex flex-col gap-[10px] sm:flex-row sm:items-stretch">
-				<code
-					class="border-line2 bg-paper-bg text-ink font-mono-system min-w-0 flex-1 truncate border px-[15px] py-[13px] text-[13px] font-bold tracking-[0.02em]"
-				>
-					{partnerLink}
-				</code>
-				<button
-					type="button"
-					onclick={copyLink}
-					class="border-prem bg-prem inline-flex items-center justify-center gap-2 border-[1.5px] px-[22px] py-[13px] text-[11px] font-extrabold tracking-[0.08em] text-white uppercase transition-[filter] hover:brightness-110"
-				>
-					{copied ? '✓ Copied' : 'Copy link'}
-				</button>
-			</div>
-			<p class="text-soft mt-[16px] text-[13.5px] leading-[1.55]">
-				Share this link in your content and social media. Anyone who signs up for AGE Premium
-				through it gets <span class="text-ink font-bold">$5 off</span> their first charge, and you
-				earn a <span class="text-prem font-bold">$5 commission</span>.
-			</p>
-		</div>
+		<!-- ============ tally ============ -->
+		<section>
+			<h2 class="flex items-center gap-3 text-[10.5px] font-extrabold tracking-[0.22em] uppercase">
+				<span class="text-[8px] text-gold" aria-hidden="true">◆</span> Your earnings
+			</h2>
+			<dl class="mt-5 grid grid-cols-3 border-y-[3px] border-double border-ink">
+				{#each [['Referrals', String(totals.count), 'text-ink'], ['Pending payout', fmt(totals.pending), 'text-[#8a6116]'], ['Paid out', fmt(totals.paid), 'text-prem']] as [label, value, tone], i (label)}
+					<div class="px-2 py-5 text-center {i ? 'border-l border-line2' : ''}">
+						<dd
+							class="ao-cond text-[34px] leading-none font-black tabular-nums sm:text-[48px] md:text-[64px] {tone}"
+						>
+							{value}
+						</dd>
+						<dt
+							class="mt-2 text-[9px] font-extrabold tracking-[0.16em] text-fade uppercase md:text-[10px]"
+						>
+							{label}
+						</dt>
+					</div>
+				{/each}
+			</dl>
+		</section>
 
-		<!-- ============ TOTALS ============ -->
-		<div class="mb-[26px] grid grid-cols-1 gap-[14px] sm:grid-cols-3">
-			<div class="bg-paper border-line2 border p-[22px]">
-				<div class="text-fade font-mono-system mb-2 text-[10px] font-extrabold tracking-[0.16em] uppercase">
-					Total Referrals
-				</div>
-				<div class="font-newsreader text-[36px] leading-[0.8] font-semibold tabular-nums">
-					{totals.count}
-				</div>
-			</div>
-			<div class="bg-paper border-line2 border-t-warm border border-t-[3px] p-[22px]">
-				<div class="text-warm font-mono-system mb-2 text-[10px] font-extrabold tracking-[0.16em] uppercase">
-					Pending Payout
-				</div>
-				<div class="text-warm font-newsreader text-[36px] leading-[0.8] font-semibold tabular-nums">
-					{fmt(totals.pending)}
-				</div>
-			</div>
-			<div class="bg-paper border-line2 border-t-prem border border-t-[3px] p-[22px]">
-				<div class="text-prem font-mono-system mb-2 text-[10px] font-extrabold tracking-[0.16em] uppercase">
-					Total Earned
-				</div>
-				<div class="text-prem font-newsreader text-[36px] leading-[0.8] font-semibold tabular-nums">
-					{fmt(totals.paid)}
-				</div>
-			</div>
-		</div>
+		<!-- ============ how it works ============ -->
+		<section class="mt-14">
+			<h2 class="flex items-center gap-3 text-[10.5px] font-extrabold tracking-[0.22em] uppercase">
+				<span class="text-[8px] text-gold" aria-hidden="true">◆</span> How it works
+			</h2>
+			<ol class="mt-5 grid gap-px border-t-[3px] border-ink bg-line2 md:grid-cols-3">
+				{#each STEPS as s, i (s.t)}
+					<li class="bg-paper-bg pt-5 pb-6 md:px-6 md:first:pl-0">
+						<span class="ao-cond text-[44px] leading-none font-black text-gold tabular-nums"
+							>0{i + 1}</span
+						>
+						<h3 class="mt-3 font-newsreader text-[21px] leading-[1.15] font-semibold">{s.t}</h3>
+						<p class="mt-2 font-newsreader text-[15.5px] leading-[1.55] text-soft">{s.d}</p>
+					</li>
+				{/each}
+			</ol>
+		</section>
 
-		<!-- ============ REFERRALS ============ -->
-		<section class="bg-paper border-line2 overflow-hidden border">
-			<header
-				class="border-line2 flex flex-wrap items-center justify-between gap-3 border-b px-[24px] py-[16px]"
-			>
-				<h3
-					class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+		<!-- ============ referrals ============ -->
+		<section class="mt-14">
+			<div class="flex items-baseline justify-between gap-4">
+				<h2
+					class="flex items-center gap-3 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
 				>
-					Your Referrals
-				</h3>
-				<span
-					class="text-fade font-mono-system text-[11px] font-bold tracking-[0.06em] tabular-nums uppercase"
+					<span class="text-[8px] text-gold" aria-hidden="true">◆</span> Your referrals
+				</h2>
+				<span class="text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+					>{referrals.length} total</span
 				>
-					{referrals.length} on record
-				</span>
-			</header>
+			</div>
 
 			{#if referrals.length === 0}
-				<div class="flex flex-col items-center px-6 py-[60px] text-center">
-					<span
-						class="border-line2 text-fade mb-4 flex h-[52px] w-[52px] items-center justify-center border"
-					>
-						<svg
-							viewBox="0 0 24 24"
-							class="h-6 w-6"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.5"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							aria-hidden="true"
-						>
-							<circle cx="9" cy="8" r="3" />
-							<path d="M3 20c0-3 3-5 6-5s6 2 6 5" />
-							<circle cx="17" cy="8" r="2.5" />
-							<path d="M15 20c0-2.5 2-4 4-4s4 1.5 4 4" />
-						</svg>
-					</span>
-					<h4
-						class="font-newsreader mb-2 text-[22px] leading-[1] font-semibold tracking-[-0.01em]"
-					>
-						No referrals yet
-					</h4>
-					<p class="text-soft text-[13.5px]">
-						Share your link to start earning — new signups appear here immediately.
+				<div class="mt-5 border-t-[3px] border-ink py-12 text-center">
+					<p class="font-newsreader text-[24px] font-semibold">No referrals yet.</p>
+					<p class="mx-auto mt-2 max-w-[400px] font-newsreader text-[16px] text-soft">
+						Share your link and every Premium signup that comes through it earns you $5.
 					</p>
+					<button
+						type="button"
+						onclick={copyLink}
+						class="mt-5 inline-flex min-h-[46px] items-center gap-2 border-[1.5px] border-ink px-6 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+					>
+						{copied ? 'Copied ✓' : 'Copy your link'}
+					</button>
 				</div>
 			{:else}
-				<!-- Desktop table -->
-				<div class="hidden overflow-x-auto md:block">
-					<table class="w-full">
-						<thead>
-							<tr
-								class="border-line2 border-b"
-								style="background: color-mix(in srgb, var(--ed-paper-bg) 60%, transparent);"
-							>
-								<th
-									class="text-fade font-mono-system px-[20px] py-[14px] text-left text-[10px] font-extrabold tracking-[0.14em] uppercase"
-								>
-									Referred
-								</th>
-								<th
-									class="text-fade font-mono-system px-[20px] py-[14px] text-left text-[10px] font-extrabold tracking-[0.14em] uppercase"
-								>
-									Plan
-								</th>
-								<th
-									class="text-fade font-mono-system px-[20px] py-[14px] text-right text-[10px] font-extrabold tracking-[0.14em] uppercase"
-								>
-									Commission
-								</th>
-								<th
-									class="text-fade font-mono-system px-[20px] py-[14px] text-left text-[10px] font-extrabold tracking-[0.14em] uppercase"
-								>
-									Signed up
-								</th>
-								<th
-									class="text-fade font-mono-system px-[20px] py-[14px] text-left text-[10px] font-extrabold tracking-[0.14em] uppercase"
-								>
-									Payout due
-								</th>
-								<th
-									class="text-fade font-mono-system px-[20px] py-[14px] text-center text-[10px] font-extrabold tracking-[0.14em] uppercase"
-								>
-									Status
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each referrals as r, i (r.id)}
-								{@const chip = statusChip(r.payoutStatus, r.readyToPay)}
-								<tr
-									class="border-line2 odd:bg-paper even:bg-paper-bg/40 hover:!bg-paper-bg transition-colors {i ===
-									referrals.length - 1
-										? ''
-										: 'border-b'}"
-								>
-									<td class="px-[20px] py-[16px]">
-										<span class="text-ink text-[14px] font-semibold">
-											{r.referredFirstName || '—'}
-										</span>
-									</td>
-									<td class="px-[20px] py-[16px]">
-										<span
-											class="border-line2 bg-paper-bg text-soft font-mono-system inline-block border px-[9px] py-[3px] text-[10px] font-extrabold tracking-[0.08em] uppercase"
-										>
-											{r.subscriptionType}
-										</span>
-									</td>
-									<td class="px-[20px] py-[16px] text-right">
-										<span class="text-ink font-mono-system text-[14px] font-bold tabular-nums">
-											{fmt(r.commissionAmount)}
-										</span>
-									</td>
-									<td class="text-soft font-mono-system px-[20px] py-[16px] text-[11.5px] font-bold tracking-[0.02em] tabular-nums uppercase">
-										{fmtDate(r.createdAt)}
-									</td>
-									<td class="px-[20px] py-[16px]">
-										{#if r.payoutStatus === 'paid'}
-											<span class="text-fade">—</span>
-										{:else}
-											<span
-												class="text-soft font-mono-system text-[11.5px] font-bold tracking-[0.02em] tabular-nums uppercase"
-											>
-												{fmtDate(r.payoutDueAt)}
-											</span>
-										{/if}
-									</td>
-									<td class="px-[20px] py-[16px] text-center">
-										<span
-											class="inline-flex items-center gap-[6px] border px-[10px] py-[4px] text-[10px] font-extrabold tracking-[0.1em] uppercase {chipClass(
-												chip.tone
-											)}"
-										>
-											{chip.label}
-											{#if r.payoutStatus === 'paid' && r.paidAt}
-												<span class="opacity-70">· {fmtDate(r.paidAt)}</span>
-											{/if}
-										</span>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
+				<div
+					class="mt-5 hidden grid-cols-[minmax(0,1.3fr)_100px_120px_100px_minmax(0,1fr)_120px] gap-4 border-b-[3px] border-ink pb-2 text-[9px] font-extrabold tracking-[0.2em] text-fade uppercase md:grid"
+				>
+					<span>Member</span><span>Plan</span><span>Joined</span><span class="text-right"
+						>Commission</span
+					><span>Payout</span><span class="text-right">Status</span>
 				</div>
-
-				<!-- Mobile cards -->
-				<div class="divide-line2 divide-y md:hidden">
+				<ol class="border-t-[3px] border-ink md:border-t-0">
 					{#each referrals as r (r.id)}
-						{@const chip = statusChip(r.payoutStatus, r.readyToPay)}
-						<div class="px-[20px] py-[18px]">
-							<div class="mb-[10px] flex items-start justify-between gap-3">
-								<div class="min-w-0">
-									<div class="text-ink text-[15px] font-semibold">
-										{r.referredFirstName || '—'}
-									</div>
-									<div class="text-fade font-mono-system mt-[3px] text-[10.5px] font-bold tracking-[0.06em] uppercase">
-										{r.subscriptionType} · {fmtDate(r.createdAt)}
-									</div>
-								</div>
-								<span
-									class="inline-flex flex-shrink-0 items-center gap-[6px] border px-[9px] py-[4px] text-[10px] font-extrabold tracking-[0.08em] uppercase {chipClass(
-										chip.tone
-									)}"
+						{@const tag = statusTag(r.payoutStatus, r.readyToPay)}
+						<li
+							class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-b border-line2 py-3.5 even:bg-paper/50 md:grid-cols-[minmax(0,1.3fr)_100px_120px_100px_minmax(0,1fr)_120px] md:gap-4"
+						>
+							<span class="flex min-w-0 items-baseline gap-3">
+								<span class="truncate font-newsreader text-[17px] font-semibold"
+									>{r.referredFirstName || 'A member'}</span
 								>
-									{chip.label}
-								</span>
-							</div>
-							<div class="border-line2 mt-[10px] flex items-center justify-between border-t pt-[10px]">
-								<span
-									class="text-fade font-mono-system text-[10.5px] font-bold tracking-[0.08em] uppercase"
+								<span class="ao-cond text-[20px] leading-none font-black tabular-nums md:hidden"
+									>{fmt(r.commissionAmount)}</span
 								>
-									Commission
-								</span>
-								<span class="text-ink font-mono-system text-[14px] font-bold tabular-nums">
-									{fmt(r.commissionAmount)}
-								</span>
-							</div>
-							{#if r.payoutStatus !== 'paid'}
-								<div class="flex items-center justify-between mt-[6px]">
-									<span
-										class="text-fade font-mono-system text-[10.5px] font-bold tracking-[0.08em] uppercase"
-									>
-										Payout due
-									</span>
-									<span
-										class="text-soft font-mono-system text-[11.5px] font-bold tracking-[0.02em] tabular-nums uppercase"
-									>
-										{fmtDate(r.payoutDueAt)}
-									</span>
-								</div>
-							{:else if r.paidAt}
-								<div class="flex items-center justify-between mt-[6px]">
-									<span
-										class="text-fade font-mono-system text-[10.5px] font-bold tracking-[0.08em] uppercase"
-									>
-										Paid on
-									</span>
-									<span
-										class="text-soft font-mono-system text-[11.5px] font-bold tracking-[0.02em] tabular-nums uppercase"
-									>
-										{fmtDate(r.paidAt)}
-									</span>
-								</div>
-							{/if}
-						</div>
+							</span>
+							<span class="hidden text-[13px] font-semibold text-soft capitalize md:block"
+								>{r.subscriptionType}</span
+							>
+							<span class="hidden text-[13px] text-soft tabular-nums md:block"
+								>{fmtDate(r.createdAt)}</span
+							>
+							<span
+								class="ao-cond hidden text-right text-[22px] leading-none font-black tabular-nums md:block"
+								>{fmt(r.commissionAmount)}</span
+							>
+							<span class="hidden text-[13px] text-soft md:block">
+								{#if r.payoutStatus === 'paid'}
+									<span class="font-semibold text-prem">Paid {fmtDate(r.paidAt)}</span>
+								{:else}
+									Due {fmtDate(r.payoutDueAt)}
+								{/if}
+							</span>
+							<span class="text-right">
+								<span
+									class="inline-flex border px-2 py-[3px] text-[9px] font-extrabold tracking-[0.12em] whitespace-nowrap uppercase {tag.tone}"
+									>{tag.text}</span
+								>
+							</span>
+							<span class="col-span-2 text-[11.5px] text-soft md:hidden">{metaLine(r)}</span>
+						</li>
 					{/each}
-				</div>
+				</ol>
 			{/if}
 		</section>
 
-		<p class="text-fade mt-[26px] text-center text-[12px] font-semibold tracking-[0.02em]">
-			Questions about the program? Reach out to us directly for support.
+		<p class="mt-12 text-center font-newsreader text-[15px] text-soft">
+			Questions about the partner program? Email
+			<a href="mailto:info@arcanegamesandevents.com" class="font-semibold text-warm underline"
+				>info@arcanegamesandevents.com</a
+			>.
 		</p>
 	</div>
 </AgeShell>

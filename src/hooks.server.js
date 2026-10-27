@@ -4,7 +4,6 @@ import { db } from '$lib/server/db';
 import { user as userTable } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
-import { logPageView } from '$lib/server/analytics.js';
 
 // Paths exempt from CSRF protection (external webhooks)
 const CSRF_EXEMPT_PATHS = ['/api/webhooks/'];
@@ -110,13 +109,8 @@ export const handle = async ({ event, resolve }) => {
 	event.locals.user = user;
 	event.locals.session = session;
 
-	// Track page views for GET requests — non-blocking (DB writes happen in background)
-	if (request.method === 'GET') {
-		const pageViewId = logPageView(event, user);
-		if (pageViewId) {
-			event.locals.pageViewId = pageViewId;
-		}
-	}
+	// Content analytics are collected in the browser (see /api/ca), so
+	// nothing is logged per request here.
 
 	// Resolve the request
 	const response = await resolve(event);

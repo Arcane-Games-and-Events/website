@@ -2,17 +2,15 @@
 	import { page } from '$app/stores';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import AuthSplit from '$lib/components/age/auth/AuthSplit.svelte';
+	import { LABEL, INPUT, BUTTON, LINK, ERROR } from '$lib/components/age/auth/authStyles.js';
 
-	export let form;
-	export let data;
+	let { form, data } = $props();
 
-	let showPassword = false;
-	$: redirectParam = $page.url.searchParams.get('redirect') || '';
-	$: loginHref = redirectParam ? `/login?redirect=${encodeURIComponent(redirectParam)}` : '/login';
-
-	function togglePassword() {
-		showPassword = !showPassword;
-	}
+	let showPassword = $state(false);
+	const redirectParam = $derived($page.url.searchParams.get('redirect') || '');
+	const loginHref = $derived(
+		redirectParam ? `/login?redirect=${encodeURIComponent(redirectParam)}` : '/login'
+	);
 </script>
 
 <svelte:head>
@@ -22,173 +20,145 @@
 
 <AgeShell>
 	<AuthSplit
-		image="https://www.age.events/banner/articles-banner.webp"
-		vlabel="Join · AGE"
+		image="/banner/articles-banner.webp"
 		kicker="Create your account"
 		bullets={[
-			'Read free articles and follow standings',
-			'Track Academy progress across every course',
-			'Register for AGE Open events near you',
-			'Upgrade to Premium any time for the full experience'
+			'Read free articles and follow the standings',
+			'Register for AGE Opens in your circuit',
+			'Track your Academy courses as you go',
+			'Upgrade to Premium whenever you like'
 		]}
+		footnote="Free to join. Member-supported by choice."
 	>
 		{#snippet headline()}
-			Free to join. <em class="text-[#f4c66a] italic font-medium">Member-supported</em> by choice.
+			Join the <em class="font-medium text-warm-light italic">Flesh and Blood</em> community that plays
+			to win.
 		{/snippet}
 
 		{#snippet formContent()}
-			<header class="mb-[30px]">
-				<div class="text-accent mb-3 text-[10.5px] font-bold tracking-[0.2em] uppercase">
-					Sign up
-				</div>
-				<h1
-					class="font-newsreader mb-[10px] text-[42px] leading-none font-semibold tracking-[-0.02em]"
-				>
-					Join the AGE community.
-				</h1>
-				<div class="text-soft text-sm leading-[1.5]">
-					Already have an account?
-					<a class="text-accent font-bold" href={loginHref}>Sign in</a>.
-				</div>
-			</header>
+			<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-warm uppercase">Sign up · free</p>
+			<h1
+				class="ao-cond mt-2 text-[48px] leading-[0.9] font-black uppercase [word-spacing:0.18em] md:text-[60px]"
+			>
+				Join AGE
+			</h1>
+			<p class="mt-3 font-newsreader text-[16px] text-soft">
+				Already have an account? <a class={LINK} href={loginHref}>Sign in</a>.
+			</p>
 
-			{#if form?.error}
-				<div
-					class="border-warm bg-warm/10 text-warm mb-5 border-[1.5px] px-4 py-3 text-[12px] font-semibold tracking-[0.04em] uppercase"
-				>
-					{form.error}
-				</div>
-			{/if}
+			<div class="mt-8">
+				{#if form?.error}
+					<p class={ERROR} role="alert">{form.error}</p>
+				{/if}
 
-			<form method="POST">
-				<!-- name (two-up) -->
-				<div class="mb-4 grid grid-cols-2 gap-[14px]">
+				<form method="POST" class="space-y-5">
+					<div class="grid grid-cols-2 gap-4">
+						<div>
+							<label for="firstName" class={LABEL}>First name</label>
+							<input
+								id="firstName"
+								name="firstName"
+								type="text"
+								autocomplete="given-name"
+								required
+								placeholder="Zachary"
+								class={INPUT}
+							/>
+						</div>
+						<div>
+							<label for="lastName" class={LABEL}>Last name</label>
+							<input
+								id="lastName"
+								name="lastName"
+								type="text"
+								autocomplete="family-name"
+								required
+								placeholder="Wallach"
+								class={INPUT}
+							/>
+						</div>
+					</div>
+
 					<div>
-						<label
-							for="firstName"
-							class="text-soft mb-[7px] block text-[11px] font-extrabold tracking-[0.08em] uppercase"
-						>
-							First name
-						</label>
+						<label for="email" class={LABEL}>Email</label>
 						<input
-							id="firstName"
-							name="firstName"
-							type="text"
-							autocomplete="given-name"
+							id="email"
+							name="email"
+							type="email"
+							autocomplete="email"
 							required
-							placeholder="Zachary"
-							class="border-line2 hover:border-ink focus:border-ink bg-paper text-ink placeholder:text-fade w-full border-[1.5px] px-[15px] py-[13px] text-sm transition-colors outline-none"
+							placeholder="you@example.com"
+							class={INPUT}
 						/>
 					</div>
+
 					<div>
-						<label
-							for="lastName"
-							class="text-soft mb-[7px] block text-[11px] font-extrabold tracking-[0.08em] uppercase"
-						>
-							Last name
+						<label for="gemId" class={LABEL}>
+							<span>GEM ID</span>
+							<span class="tracking-[0.12em] normal-case">Optional</span>
 						</label>
 						<input
-							id="lastName"
-							name="lastName"
+							id="gemId"
+							name="gemId"
 							type="text"
-							autocomplete="family-name"
+							inputmode="numeric"
+							autocomplete="off"
+							placeholder="e.g. 95989628"
+							class={INPUT}
+						/>
+						<p class="mt-2 text-[12px] text-fade">
+							Your Legend Story Studios player number. It links your account to your AGE Open
+							results and rating.
+						</p>
+					</div>
+
+					<div>
+						<div class={LABEL}>
+							<label for="password">Password</label>
+							<button
+								type="button"
+								onclick={() => (showPassword = !showPassword)}
+								aria-controls="password"
+								aria-pressed={showPassword}
+								class="text-[9.5px] font-extrabold tracking-[0.18em] text-warm uppercase hover:text-ink"
+								>{showPassword ? 'Hide' : 'Show'}</button
+							>
+						</div>
+						<input
+							id="password"
+							name="password"
+							type={showPassword ? 'text' : 'password'}
+							autocomplete="new-password"
+							minlength="6"
 							required
-							placeholder="Wallach"
-							class="border-line2 hover:border-ink focus:border-ink bg-paper text-ink placeholder:text-fade w-full border-[1.5px] px-[15px] py-[13px] text-sm transition-colors outline-none"
+							placeholder="At least 6 characters"
+							class={INPUT}
 						/>
 					</div>
-				</div>
 
-				<!-- email -->
-				<div class="mb-4">
-					<label
-						for="email"
-						class="text-soft mb-[7px] block text-[11px] font-extrabold tracking-[0.08em] uppercase"
-					>
-						Email
-					</label>
-					<input
-						id="email"
-						name="email"
-						type="email"
-						autocomplete="email"
-						required
-						placeholder="you@example.com"
-						class="border-line2 hover:border-ink focus:border-ink bg-paper text-ink placeholder:text-fade w-full border-[1.5px] px-[15px] py-[13px] text-sm transition-colors outline-none"
-					/>
-				</div>
-
-				<!-- gem id (optional) -->
-				<div class="mb-4">
-					<label
-						for="gemId"
-						class="text-soft mb-[7px] flex items-center justify-between text-[11px] font-extrabold tracking-[0.08em] uppercase"
-					>
-						<span>GEM ID</span>
-						<span class="text-fade text-[10px] tracking-[0.06em]">Optional</span>
-					</label>
-					<input
-						id="gemId"
-						name="gemId"
-						type="text"
-						autocomplete="off"
-						placeholder="Your Legend Story Studios GEM ID"
-						class="border-line2 hover:border-ink focus:border-ink bg-paper text-ink placeholder:text-fade w-full border-[1.5px] px-[15px] py-[13px] text-sm transition-colors outline-none"
-					/>
-				</div>
-
-				<!-- password -->
-				<div class="mb-[18px]">
-					<label
-						for="password"
-						class="text-soft mb-[7px] flex items-center justify-between text-[11px] font-extrabold tracking-[0.08em] uppercase"
-					>
-						<span>Password</span>
-						<button
-							type="button"
-							onclick={togglePassword}
-							class="text-accent text-[11px] font-bold tracking-[0.04em] uppercase"
-						>
-							{showPassword ? 'Hide' : 'Show'}
-						</button>
-					</label>
-					<input
-						id="password"
-						name="password"
-						type={showPassword ? 'text' : 'password'}
-						autocomplete="new-password"
-						minlength="6"
-						required
-						placeholder="At least 8 characters"
-						class="border-line2 hover:border-ink focus:border-ink bg-paper text-ink placeholder:text-fade w-full border-[1.5px] px-[15px] py-[13px] text-sm transition-colors outline-none"
-					/>
-				</div>
-
-				{#if data?.turnstileSiteKey}
-					<div class="mb-[18px]">
+					{#if data?.turnstileSiteKey}
 						<div
 							class="cf-turnstile"
 							data-sitekey={data.turnstileSiteKey}
 							data-size="flexible"
 							data-appearance="interaction-only"
 						></div>
-					</div>
-				{/if}
+					{/if}
 
-				<button
-					type="submit"
-					class="border-prem bg-prem hover:brightness-110 inline-flex w-full items-center justify-center gap-2 border-[1.5px] px-[26px] py-[16px] text-[13px] font-bold tracking-[0.05em] text-white uppercase transition-[filter]"
-				>
-					Create free account →
-				</button>
+					<button type="submit" class={BUTTON}
+						>Create free account <span aria-hidden="true">→</span></button
+					>
 
-				<div class="text-fade mt-[22px] text-[11.5px] leading-[1.5]">
-					By creating an account you agree to AGE's
-					<a class="text-soft underline" href="/terms">Terms of Service</a> and
-					<a class="text-soft underline" href="/privacy">Privacy Policy</a>. We'll send occasional
-					event and strategy updates — unsubscribe anytime.
-				</div>
-			</form>
+					<p class="text-[12px] leading-[1.6] text-fade">
+						By creating an account you agree to AGE’s
+						<a class="underline underline-offset-2 hover:text-ink" href="/terms">Terms of Service</a
+						>
+						and
+						<a class="underline underline-offset-2 hover:text-ink" href="/privacy">Privacy Policy</a
+						>. We’ll send the odd event and strategy update, and you can unsubscribe any time.
+					</p>
+				</form>
+			</div>
 		{/snippet}
 	</AuthSplit>
 </AgeShell>

@@ -9,7 +9,7 @@ import { isAdmin } from '$lib/server/auth/roles.js';
  *
  * Admin-only. Returns every user eligible to be the author of a CMS entry:
  * anyone whose billing role is 'admin' OR whose `additional_roles` array
- * contains 'writer'. The entry editor's author-reassignment picker consumes
+ * contains 'writer' or 'editor'. The entry editor's author-reassignment picker consumes
  * this to build its dropdown.
  *
  * Response shape: { authors: [{ id, firstName, lastName, email }, ...] }
@@ -32,8 +32,9 @@ export async function GET({ locals }) {
 		.where(
 			or(
 				eq(userTable.role, 'admin'),
-				// Postgres array-contains — writer capability grants entry authorship.
-				sql`'writer' = ANY(${userTable.additionalRoles})`
+				// Postgres array-contains — writers and editors can author entries.
+				sql`'writer' = ANY(${userTable.additionalRoles})`,
+				sql`'editor' = ANY(${userTable.additionalRoles})`
 			)
 		)
 		.orderBy(asc(userTable.firstName), asc(userTable.lastName));

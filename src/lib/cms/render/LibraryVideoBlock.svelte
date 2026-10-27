@@ -78,7 +78,7 @@
 		<div class="relative w-full overflow-hidden" style="padding-top: 56.25%;">
 			{#if youtubeLoaded}
 				<iframe
-					src={`https://www.youtube-nocookie.com/embed/${video.youtubeVideoId}?autoplay=1&rel=0`}
+					src={`https://www.youtube-nocookie.com/embed/${video.youtubeVideoId}?autoplay=1&rel=0&enablejsapi=1`}
 					title={video.youtubeTitle || 'Embedded video'}
 					loading="lazy"
 					allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

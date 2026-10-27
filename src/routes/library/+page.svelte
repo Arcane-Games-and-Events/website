@@ -1,4 +1,5 @@
 <script>
+	import LibraryWordmark from '$lib/components/age/library/LibraryWordmark.svelte';
 	/**
 	 * Library index — the magazine's archive in the homepage's register:
 	 * a department masthead, the latest release as a plate-framed spread,
@@ -341,20 +342,7 @@
 				class="flex flex-col items-center gap-6 md:flex-row md:items-end md:justify-between md:gap-10"
 			>
 				<h1 class="fp-rise flex items-end self-center leading-none md:self-start">
-					<span class="block">
-						<span
-							class="relative z-[1] -mb-[0.6em] block translate-y-[5px] text-right font-newsreader text-[22px] leading-none font-normal text-paper-bg/70 italic md:-mb-[0.84em] md:translate-x-[5px] md:translate-y-[10px] md:text-[30px]"
-							>the</span
-						>
-						<span
-							class="block font-jost text-[56px] leading-none font-extrabold tracking-[-0.02em] md:text-[96px]"
-							>Library</span
-						>
-					</span>
-					<span
-						class="block font-jost text-[56px] leading-none font-extrabold text-warm-light md:text-[96px]"
-						aria-hidden="true">.</span
-					>
+					<LibraryWordmark size="lg" tone="dark" />
 				</h1>
 				<div
 					class="fp-rise text-center md:max-w-[300px] md:pb-3 md:text-right"

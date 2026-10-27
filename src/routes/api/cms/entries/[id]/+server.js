@@ -2,7 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { cmsEntry } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
-import { canEditEntries, isAdmin, ownsOrAdmin } from '$lib/server/auth/roles.js';
+import { canEditEntries, isAdmin, canEditEntry } from '$lib/server/auth/roles.js';
 import { updateEntry } from '$lib/server/cms/entries.js';
 
 async function loadEntry(id) {
@@ -21,7 +21,7 @@ export async function GET({ params, locals }) {
 
 	const entry = await loadEntry(params.id);
 	if (!entry) throw error(404, 'Entry not found');
-	if (!ownsOrAdmin(user, entry.authorId)) throw error(403, 'Forbidden');
+	if (!canEditEntry(user, entry.authorId)) throw error(403, 'Forbidden');
 	return json({ entry });
 }
 
@@ -37,7 +37,7 @@ export async function PATCH({ params, request, locals }) {
 
 	const entry = await loadEntry(params.id);
 	if (!entry) throw error(404, 'Entry not found');
-	if (!ownsOrAdmin(user, entry.authorId)) throw error(403, 'Forbidden');
+	if (!canEditEntry(user, entry.authorId)) throw error(403, 'Forbidden');
 
 	const patch = await request.json().catch(() => ({}));
 	const admin = isAdmin(user);
@@ -81,7 +81,7 @@ export async function DELETE({ params, locals }) {
 
 	const entry = await loadEntry(params.id);
 	if (!entry) throw error(404, 'Entry not found');
-	if (!ownsOrAdmin(user, entry.authorId)) throw error(403, 'Forbidden');
+	if (!canEditEntry(user, entry.authorId)) throw error(403, 'Forbidden');
 	if (entry.status !== 'draft' && !isAdmin(user)) {
 		throw error(400, 'Only draft entries can be deleted. Archive instead.');
 	}

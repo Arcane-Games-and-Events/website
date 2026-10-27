@@ -7,8 +7,11 @@ const config = {
 			runtime: 'nodejs22.x'
 		}),
 		csrf: {
-			// Disable built-in CSRF for webhooks - we implement custom checks in hooks
-			checkOrigin: false
+			// Built-in origin check off ('*' trusts every origin) so external
+			// webhooks, which send no Origin header, aren't rejected. The real
+			// CSRF check lives in src/hooks.server.js and exempts only
+			// /api/webhooks/.
+			trustedOrigins: ['*']
 		}
 	}
 };

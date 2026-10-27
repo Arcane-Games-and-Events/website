@@ -1,224 +1,164 @@
 <script>
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
-	import { getCircuit } from '$lib/data/circuits.js';
+	import { CIRCUITS } from '$lib/data/circuits.js';
 
 	let { data } = $props();
 
 	const events = $derived(data.assignedEvents || []);
+	const active = $derived(
+		events.filter((e) => e.computedStatus !== 'completed' && e.computedStatus !== 'cancelled')
+	);
+	const past = $derived(
+		events
+			.filter((e) => e.computedStatus === 'completed' || e.computedStatus === 'cancelled')
+			.slice()
+			.reverse()
+	);
 
-	function formatDate(dateStr) {
-		if (!dateStr) return 'TBD';
-		return new Date(dateStr).toLocaleDateString('en-US', {
-			weekday: 'short',
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric',
-			timeZone: 'UTC'
-		});
+	const SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
+	const ccVar = (name) => (name ? `var(--ed-cc-${SLUG[name] ?? 'la'})` : 'var(--ed-ink)');
+	const abbr = (name) => CIRCUITS[name]?.abbreviation ?? name;
+
+	function dateParts(d) {
+		if (!d) return { mon: 'TBD', day: '—', dow: '' };
+		const x = new Date(d);
+		return {
+			mon: x.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }),
+			day: x.toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' }),
+			dow: `${x.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}, ${x.getUTCFullYear()}`
+		};
 	}
 
-	function statusChip(status) {
-		switch (status) {
-			case 'upcoming':
-				return { label: 'Upcoming', tone: 'accent' };
-			case 'in_progress':
-				return { label: 'In Progress', tone: 'prem' };
-			case 'completed':
-				return { label: 'Completed', tone: 'soft' };
-			case 'cancelled':
-				return { label: 'Cancelled', tone: 'warm' };
-			default:
-				return { label: status || 'Draft', tone: 'soft' };
-		}
-	}
-
-	function chipClass(tone) {
-		if (tone === 'accent') return 'text-accent border-accent/40 bg-accent/10';
-		if (tone === 'prem') return 'text-prem border-prem/40 bg-prem/10';
-		if (tone === 'warm') return 'text-warm border-warm/40 bg-warm/10';
-		return 'text-soft border-line2 bg-paper-bg';
-	}
+	const STATUS = {
+		upcoming: { label: 'Upcoming', tone: 'border-ink/70 text-ink' },
+		in_progress: { label: 'Live now', tone: 'bg-hero-rb text-white border-hero-rb' },
+		completed: { label: 'Completed', tone: 'border-line2 text-fade' },
+		cancelled: { label: 'Cancelled', tone: 'border-hero-rb/60 text-hero-rb' }
+	};
+	const status = (s) => STATUS[s] ?? { label: s || 'Draft', tone: 'border-line2 text-fade' };
 </script>
 
 <svelte:head>
 	<title>Staff — AGE</title>
 </svelte:head>
 
-<AgeShell active="">
-	<div class="mx-auto w-full max-w-[1600px] px-4 pt-10 pb-[52px] md:px-10 lg:px-14">
-		<!-- ============ HEADER ============ -->
-		<div
-			class="bg-paper border-line2 border-t-prem mb-[34px] grid grid-cols-1 items-center gap-7 border border-t-[3px] px-[34px] py-[30px] md:grid-cols-[1fr_auto]"
+{#snippet eventRow(ev)}
+	{@const d = dateParts(ev.eventDate)}
+	{@const st = status(ev.computedStatus)}
+	<li>
+		<a
+			href="/staff/{ev.eventId}"
+			class="group grid grid-cols-[64px_minmax(0,1fr)] items-center gap-4 border-b border-line2 py-4 transition-colors hover:bg-paper md:grid-cols-[76px_minmax(0,1fr)_auto] md:gap-6 md:px-2"
 		>
-			<div>
-				<div class="mb-2 flex flex-wrap items-center gap-[14px]">
+			<span
+				class="flex flex-col items-center border-t-[4px] bg-paper-bg py-2 text-center"
+				style="border-color: {ccVar(ev.eventCircuit)};"
+			>
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+					>{d.mon}</span
+				>
+				<span class="ao-cond text-[34px] leading-[0.9] font-black tabular-nums">{d.day}</span>
+			</span>
+			<span class="min-w-0">
+				<span class="flex flex-wrap items-center gap-2">
 					<span
-						class="text-fade font-mono-system inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.16em] uppercase"
+						class="border px-1.5 py-[2px] text-[8.5px] font-extrabold tracking-[0.16em] uppercase {st.tone}"
+						>{st.label}</span
 					>
-						<span class="bg-prem inline-block h-[6px] w-[6px] rounded-full"></span>
-						Staff Console
-					</span>
-				</div>
-				<h1
-					class="font-newsreader mb-2 text-[38px] leading-[0.9] font-semibold tracking-[-0.02em] sm:text-[46px]"
-				>
-					My Events
-				</h1>
-				<div class="text-soft text-[14px]">
-					Events you've been assigned to help run. Limited access — check-in players and mark GEM
-					entry.
-				</div>
-			</div>
-
-			<div
-				class="border-line2 flex flex-col items-center justify-center self-stretch border px-[26px] py-[18px] text-center"
-			>
-				<div class="font-newsreader text-[42px] leading-[0.8] font-semibold tabular-nums">
-					{events.length}
-				</div>
-				<div class="text-fade mt-2 text-[10px] font-extrabold tracking-[0.12em] uppercase">
-					{events.length === 1 ? 'Assignment' : 'Assignments'}
-				</div>
-			</div>
-		</div>
-
-		<!-- ============ EVENTS LIST ============ -->
-		{#if events.length > 0}
-			<div class="grid grid-cols-1 gap-[18px] lg:grid-cols-2">
-				{#each events as ev (ev.eventId)}
-					{@const circuit = getCircuit(ev.eventCircuit)}
-					{@const chip = statusChip(ev.computedStatus)}
-					<a
-						href="/staff/{ev.eventId}"
-						class="group bg-paper border-line2 hover:border-ink relative flex flex-col overflow-hidden border transition-colors"
-					>
-						<span class="{circuit.colors.bg} h-[3px] w-full"></span>
-
-						<div class="flex-1 px-[26px] pt-[22px] pb-[24px]">
-							<div class="mb-3 flex flex-wrap items-start justify-between gap-3">
-								<span
-									class="inline-flex items-center gap-[7px] border px-[11px] py-[5px] text-[10px] font-extrabold tracking-[0.08em] uppercase {chipClass(
-										chip.tone
-									)}"
-								>
-									{chip.label}
-								</span>
-								{#if ev.eventCircuit}
-									<span
-										class="border-line2 bg-paper-bg text-soft inline-flex items-center gap-[7px] border px-[11px] py-[5px] text-[10px] font-extrabold tracking-[0.08em] uppercase"
-									>
-										<span class="h-[6px] w-[6px] rounded-full {circuit.colors.bg}"></span>
-										{ev.eventCircuit}
-									</span>
-								{/if}
-							</div>
-
-							<h3
-								class="font-newsreader text-ink group-hover:text-warm mb-3 text-[26px] leading-[1] font-semibold tracking-[-0.01em] transition-colors"
-							>
-								{ev.eventTitle}
-							</h3>
-
-							<div class="text-soft flex flex-wrap gap-x-[22px] gap-y-[8px] text-[13px]">
-								<span class="flex items-center gap-[8px]">
-									<svg
-										viewBox="0 0 24 24"
-										class="h-[14px] w-[14px] opacity-70"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="1.7"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									>
-										<rect x="3" y="5" width="18" height="16" />
-										<path d="M3 9h18M8 3v4M16 3v4" />
-									</svg>
-									{formatDate(ev.eventDate)}
-								</span>
-								{#if ev.eventLocation}
-									<span class="flex items-center gap-[8px]">
-										<svg
-											viewBox="0 0 24 24"
-											class="h-[14px] w-[14px] opacity-70"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="1.7"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-										>
-											<path d="M12 21s-7-6.5-7-12a7 7 0 0114 0c0 5.5-7 12-7 12z" />
-											<circle cx="12" cy="9" r="2.5" />
-										</svg>
-										{ev.eventLocation}
-									</span>
-								{/if}
-								{#if ev.eventFormat}
-									<span class="flex items-center gap-[8px]">
-										<svg
-											viewBox="0 0 24 24"
-											class="h-[14px] w-[14px] opacity-70"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="1.7"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-										>
-											<rect x="4" y="4" width="16" height="16" rx="2" />
-											<path d="M9 9h6M9 13h6M9 17h4" />
-										</svg>
-										{ev.eventFormat}
-									</span>
-								{/if}
-							</div>
-						</div>
-
-						<div
-							class="border-line2 bg-paper-bg/50 text-fade group-hover:text-ink flex items-center justify-between border-t px-[26px] py-[14px] text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors"
+					{#if ev.eventCircuit}
+						<span
+							class="px-1.5 py-[2px] text-[8.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+							style="background: {ccVar(ev.eventCircuit)};">{abbr(ev.eventCircuit)}</span
 						>
-							<span>Open Console</span>
-							<svg
-								viewBox="0 0 24 24"
-								class="h-[14px] w-[14px]"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<path d="M5 12h14M13 5l7 7-7 7" />
-							</svg>
-						</div>
-					</a>
-				{/each}
-			</div>
-		{:else}
-			<div
-				class="bg-paper border-line2 flex flex-col items-center border px-6 py-[68px] text-center"
-			>
-				<span
-					class="border-line2 text-fade mb-5 flex h-[52px] w-[52px] items-center justify-center border"
-				>
-					<svg
-						viewBox="0 0 24 24"
-						class="h-6 w-6"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="1.5"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					>
-						<path d="M9 5h6l2 2h3v13H4V7h3z" />
-						<path d="M9 12h6M9 16h4" />
-					</svg>
+					{/if}
 				</span>
-				<h3 class="font-newsreader mb-2 text-[26px] leading-[1] font-semibold tracking-[-0.01em]">
-					No events assigned
-				</h3>
-				<p class="text-soft mx-auto max-w-[420px] text-[14px]">
-					You haven't been assigned to any events yet. Reach out to an administrator to be added to
-					an event's staff roster.
+				<span
+					class="mt-1.5 block font-newsreader text-[21px] leading-[1.15] font-semibold tracking-[-0.01em] md:text-[24px]"
+					><span class="fp-ul">{ev.eventTitle}</span></span
+				>
+				<span class="mt-1 block text-[13px] text-soft">
+					{[d.dow, ev.eventLocation, ev.eventFormat].filter(Boolean).join(' · ')}
+				</span>
+			</span>
+			<span
+				class="col-span-2 inline-flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.16em] text-warm uppercase transition-[gap] group-hover:gap-3 md:col-span-1"
+				>Open console <span aria-hidden="true">→</span></span
+			>
+		</a>
+	</li>
+{/snippet}
+
+<AgeShell active="">
+	<!-- ============ masthead ============ -->
+	<section class="bg-ink text-paper-bg">
+		<div class="mx-auto w-full max-w-[1200px] px-5 pt-10 pb-10 md:px-8 md:pt-14 md:pb-12">
+			<div class="flex flex-wrap items-end justify-between gap-6">
+				<div class="fp-rise">
+					<p class="text-[10px] font-extrabold tracking-[0.24em] text-gold uppercase">
+						<span aria-hidden="true">◆</span> Staff console
+					</p>
+					<h1
+						class="ao-cond mt-3 text-[64px] leading-[0.85] font-black uppercase [word-spacing:0.18em] md:text-[104px]"
+					>
+						My events
+					</h1>
+					<p class="mt-4 max-w-[520px] font-newsreader text-[17px] leading-[1.5] text-paper-bg/70">
+						The events you're helping run. Open one to check players in and mark them entered in
+						GEM.
+					</p>
+				</div>
+				<div class="fp-rise text-right" style="animation-delay: 100ms;">
+					<p class="ao-cond text-[72px] leading-[0.85] font-black tabular-nums md:text-[96px]">
+						{events.length}
+					</p>
+					<p class="mt-1 text-[9.5px] font-extrabold tracking-[0.2em] text-paper-bg/55 uppercase">
+						{events.length === 1 ? 'Assignment' : 'Assignments'}
+					</p>
+				</div>
+			</div>
+			<div class="mt-8 h-[5px] border-y border-paper-bg/30" aria-hidden="true"></div>
+		</div>
+	</section>
+
+	<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-14">
+		{#if events.length === 0}
+			<div class="border-t-[3px] border-ink py-14 text-center">
+				<p class="font-newsreader text-[26px] font-semibold">No events assigned yet.</p>
+				<p class="mx-auto mt-2 max-w-[420px] font-newsreader text-[16px] text-soft">
+					Ask an administrator to add you to an event's staff roster, and it will show up here.
 				</p>
 			</div>
+		{:else}
+			{#if active.length}
+				<section>
+					<h2
+						class="flex items-center gap-3 border-b-[3px] border-ink pb-2 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
+					>
+						<span class="text-[8px] text-hero-rb" aria-hidden="true">◆</span> Live and upcoming
+						<span class="ml-auto text-fade">{active.length}</span>
+					</h2>
+					<ol>
+						{#each active as ev (ev.eventId)}
+							{@render eventRow(ev)}
+						{/each}
+					</ol>
+				</section>
+			{/if}
+			{#if past.length}
+				<section class={active.length ? 'mt-14' : ''}>
+					<h2
+						class="flex items-center gap-3 border-b-[3px] border-ink pb-2 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
+					>
+						<span class="text-[8px] text-fade" aria-hidden="true">◆</span> Past events
+						<span class="ml-auto text-fade">{past.length}</span>
+					</h2>
+					<ol class="opacity-80">
+						{#each past as ev (ev.eventId)}
+							{@render eventRow(ev)}
+						{/each}
+					</ol>
+				</section>
+			{/if}
 		{/if}
 	</div>
 </AgeShell>

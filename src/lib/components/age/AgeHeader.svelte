@@ -109,7 +109,7 @@
 			: ''}"
 	>
 		<div
-			class="mx-auto grid w-full max-w-[1600px] grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 transition-[padding] duration-300 sm:px-6 md:px-8 lg:px-10 xl:px-14 {scrolled
+			class="mx-auto grid w-full max-w-[1600px] grid-cols-[auto_1fr_auto] items-center gap-3 px-4 transition-[padding] duration-300 sm:grid-cols-[1fr_auto_1fr] sm:px-6 md:px-8 lg:px-10 xl:px-14 {scrolled
 				? 'py-2 md:py-2.5'
 				: 'py-3 md:py-4'}"
 		>
@@ -139,7 +139,7 @@
 			<a
 				href="/"
 				aria-label="AGE home"
-				class="col-start-2 inline-flex justify-self-center lg:col-start-1 lg:justify-self-start"
+				class="col-start-2 inline-flex justify-self-start sm:justify-self-center lg:col-start-1 lg:justify-self-start"
 			>
 				<img
 					class="h-7 invert sm:h-[30px] md:h-[34px]"
@@ -270,7 +270,7 @@
 				{/each}
 			</nav>
 
-			<div class="col-start-3 flex items-center gap-3 justify-self-end sm:gap-5">
+			<div class="col-start-3 flex items-center gap-2.5 justify-self-end sm:gap-5">
 				{#if user}
 					<AgeUserMenu {user} isPremium={isPremiumMember} />
 
@@ -285,16 +285,16 @@
 				{:else}
 					<a
 						href="/login?redirect={$page.url.pathname}"
-						class="fp-ul hidden items-center text-[10.5px] font-extrabold tracking-[0.16em] text-ink uppercase transition-colors hover:text-warm sm:inline-flex"
+						class="inline-flex min-h-[40px] items-center px-1 text-[10px] font-extrabold tracking-[0.12em] whitespace-nowrap text-ink uppercase transition-colors hover:text-warm sm:min-h-0 sm:px-0 sm:text-[10.5px] sm:tracking-[0.16em]"
 					>
-						Sign in
+						<span class="fp-ul">Sign in</span>
 					</a>
 					<a
 						href="/premium"
 						class="inline-flex cursor-pointer items-center gap-2 border-[1.5px] border-prem bg-prem px-3 py-2 text-[10px] font-extrabold tracking-[0.12em] whitespace-nowrap text-white uppercase transition-[filter,letter-spacing] hover:tracking-[0.16em] hover:brightness-110 sm:px-[14px] sm:py-[8px] sm:text-[10.5px]"
 					>
-						<span class="hidden text-[8px] opacity-80 sm:inline" aria-hidden="true">◆</span>
-						Get Premium
+						<span class="text-[8px] opacity-80" aria-hidden="true">◆</span>
+						<span class="sm:hidden">Premium</span><span class="hidden sm:inline">Get Premium</span>
 					</a>
 				{/if}
 			</div>
@@ -317,6 +317,22 @@
 					>
 					<span class="h-[3px] w-6 shrink-0 bg-warm" aria-hidden="true"></span>
 				</div>
+				{#if !user}
+					<div class="grid grid-cols-2 gap-2 border-b border-line p-3">
+						<a
+							href="/login?redirect={$page.url.pathname}"
+							onclick={closeMobile}
+							class="flex min-h-[44px] items-center justify-center border-[1.5px] border-ink text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+							>Sign in</a
+						>
+						<a
+							href="/signup?redirect={$page.url.pathname}"
+							onclick={closeMobile}
+							class="flex min-h-[44px] items-center justify-center bg-ink text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm"
+							>Create account</a
+						>
+					</div>
+				{/if}
 				<nav>
 					<ul class="m-0 list-none p-0">
 						{#each items as item (item.label)}
@@ -354,23 +370,27 @@
 								{/each}
 							{/if}
 						{/each}
-						{#if !user}
-							<li>
-								<a
-									href="/login?redirect={$page.url.pathname}"
-									onclick={closeMobile}
-									class="group/mi flex items-center justify-between gap-3 px-4 py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] text-warm uppercase transition-colors hover:bg-warm hover:text-white"
-								>
-									<span>Sign in</span>
-									<span
-										class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
-										aria-hidden="true">→</span
-									>
-								</a>
-							</li>
-						{/if}
 					</ul>
 				</nav>
+				{#if !isPremiumMember}
+					<a
+						href="/premium"
+						onclick={closeMobile}
+						class="group/p block border-t-[3px] border-prem bg-prem/[0.07] px-4 pt-3 pb-4 transition-colors hover:bg-prem/[0.12]"
+					>
+						<span
+							class="flex items-center gap-2 text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase"
+							><span aria-hidden="true">◆</span> AGE Premium</span
+						>
+						<span class="mt-1.5 block font-newsreader text-[15.5px] leading-snug text-ink">
+							Every premium article, the full gameplay library and AGE Open discounts.
+						</span>
+						<span
+							class="mt-3 flex min-h-[44px] items-center justify-center gap-2 bg-prem text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] group-hover/p:brightness-110"
+							>Join for $10 a month <span aria-hidden="true">→</span></span
+						>
+					</a>
+				{/if}
 			</div>
 		{/if}
 	</div>

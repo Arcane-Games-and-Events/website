@@ -25,28 +25,24 @@ export async function load({ params, locals }) {
 		// Fetch additional details based on order type
 		let additionalData = null;
 
-		if (orderData.meta?.type === 'ticket' && orderData.meta.ticketId) {
-			// Fetch ticket details with event data
-			const [ticketData] = await db
-				.select()
-				.from(ticket)
-				.where(eq(ticket.id, orderData.meta.ticketId))
-				.limit(1);
+		if (orderData.meta?.type === 'ticket') {
+			// Ticket checkout stores the order id on the ticket rather than the
+			// ticket id on the order, so fall back to looking it up that way.
+			const [ticketData] = orderData.meta.ticketId
+				? await db.select().from(ticket).where(eq(ticket.id, orderData.meta.ticketId)).limit(1)
+				: await db.select().from(ticket).where(eq(ticket.orderId, orderData.id)).limit(1);
 
-			// Fetch event details to get the event date for refund window calculation
+			// Event details (for the refund window and the ticket stub).
+			const eventId = ticketData?.eventId || orderData.meta.eventId;
 			let eventData = null;
-			if (ticketData?.eventId) {
-				const [eventResult] = await db
-					.select()
-					.from(event)
-					.where(eq(event.id, ticketData.eventId))
-					.limit(1);
-				eventData = eventResult;
+			if (eventId) {
+				const [eventResult] = await db.select().from(event).where(eq(event.id, eventId)).limit(1);
+				eventData = eventResult || null;
 			}
 
 			additionalData = {
 				type: 'ticket',
-				ticket: ticketData,
+				ticket: ticketData || null,
 				event: eventData
 			};
 		} else if (orderData.meta?.type === 'course' && orderData.meta.entitlementId) {

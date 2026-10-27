@@ -1,7 +1,8 @@
 <script>
-	import FrontDept from './FrontDept.svelte';
+	import LibraryWordmark from '../library/LibraryWordmark.svelte';
 	import FrontByline from './FrontByline.svelte';
 	import PremiumTag from '../PremiumTag.svelte';
+	import LibraryPremiumTile from './LibraryPremiumTile.svelte';
 
 	/**
 	 * Library department — a mini library: the newest pieces (articles,
@@ -15,8 +16,8 @@
 	 *   5 row      — thumbnail-left row on toned paper
 	 *   6 wide     — full-width horizontal card, image beside copy
 	 */
-	/** @type {{ items: any[] }} */
-	let { items = [] } = $props();
+	/** @type {{ items: any[], premiumTile?: boolean }} */
+	let { items = [], premiumTile = false } = $props();
 
 	const VARIANT = ['feature', 'standard', 'standard', 'ink', 'standard', 'row', 'wide'];
 	const variant = (i) => VARIANT[i] ?? (i % 3 === 0 ? 'ink' : 'standard');
@@ -31,14 +32,29 @@
 
 {#if items.length}
 	<section class="mx-auto w-full max-w-[1200px] px-5 md:px-8">
-		<FrontDept
-			id="library"
-			title="Library"
-			strap="The newest reporting, strategy, and gameplay — free and Premium."
-			href="/library"
-			label="Browse the library"
-		/>
-
+		<!-- department head: the Library page's wordmark -->
+		<div id="library" class="scroll-mt-6">
+			<div
+				class="flex flex-col items-center gap-4 md:flex-row md:items-end md:justify-between md:gap-10"
+			>
+				<h2 class="flex items-end leading-none">
+					<a href="/library" class="flex items-end" aria-label="The Library"
+						><LibraryWordmark size="md" tone="light" /></a
+					>
+				</h2>
+				<div class="text-center md:max-w-[340px] md:pb-2 md:text-right">
+					<p class="font-newsreader text-[16px] leading-[1.4] text-soft italic md:text-[18px]">
+						Reporting, strategy and gameplay from the players who define the format.
+					</p>
+					<a
+						href="/library"
+						class="mt-2 inline-block text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:text-warm"
+						>Browse the library →</a
+					>
+				</div>
+			</div>
+			<div class="mt-5 h-[5px] border-t border-b border-ink md:mt-6" aria-hidden="true"></div>
+		</div>
 		<div
 			class="mt-8 grid grid-cols-1 gap-px border border-line bg-line sm:grid-cols-2 md:mt-10 lg:grid-cols-12"
 		>
@@ -79,41 +95,43 @@
 						</div>
 					</a>
 				{:else if v === 'row'}
-					<a
-						href={it.href}
-						class="group grid grid-cols-[132px_1fr] items-center gap-4 bg-paper p-4 md:p-5 {span[
-							v
-						]}"
-					>
-						<span class="relative block aspect-video overflow-hidden bg-panel">
-							<img
-								class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
-								src={it.image}
-								alt={it.alt}
-								loading="lazy"
-							/>
-							{#if isVideo}<span
-									class="absolute right-0 bottom-0 flex h-6 w-6 items-center justify-center bg-warm pl-[2px] text-[9px] text-white"
-									aria-hidden="true">▶</span
-								>{/if}
-						</span>
-						<span class="min-w-0">
-							<span class="block text-[9.5px] font-extrabold tracking-[0.16em] text-warm uppercase"
-								>{it.rubric}</span
-							>
-							<span class="mt-1.5 block font-newsreader text-[18px] leading-[1.15] font-semibold"
-								><span class="fp-ul">{it.title}</span></span
-							>
-							<span class="mt-2 block"
-								><FrontByline
-									author={it.author}
-									length={it.length}
-									premium={it.premium}
-									size="sm"
-								/></span
-							>
-						</span>
-					</a>
+					<div class="grid gap-px {span[v]}">
+						<a
+							href={it.href}
+							class="group grid grid-cols-[132px_1fr] items-center gap-4 bg-paper p-4 md:p-5"
+						>
+							<span class="relative block aspect-video overflow-hidden bg-panel">
+								<img
+									class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
+									src={it.image}
+									alt={it.alt}
+									loading="lazy"
+								/>
+								{#if isVideo}<span
+										class="absolute right-0 bottom-0 flex h-6 w-6 items-center justify-center bg-warm pl-[2px] text-[9px] text-white"
+										aria-hidden="true">▶</span
+									>{/if}
+							</span>
+							<span class="min-w-0">
+								<span
+									class="block text-[9.5px] font-extrabold tracking-[0.16em] text-warm uppercase"
+									>{it.rubric}</span
+								>
+								<span class="mt-1.5 block font-newsreader text-[18px] leading-[1.15] font-semibold"
+									><span class="fp-ul">{it.title}</span></span
+								>
+								<span class="mt-2 block"
+									><FrontByline
+										author={it.author}
+										length={it.length}
+										premium={it.premium}
+										size="sm"
+									/></span
+								>
+							</span>
+						</a>
+						{#if premiumTile}<LibraryPremiumTile class="sm:col-span-2 lg:col-span-1" />{/if}
+					</div>
 				{:else if v === 'wide'}
 					<a
 						href={it.href}
@@ -212,6 +230,9 @@
 					</a>
 				{/if}
 			{/each}
+			{#if premiumTile && !items.some((_, i) => variant(i) === 'row')}
+				<LibraryPremiumTile class="sm:col-span-2 lg:col-span-4" />
+			{/if}
 		</div>
 	</section>
 {/if}

@@ -1,6 +1,10 @@
 <script>
 	import PremiumTag from '$lib/components/age/PremiumTag.svelte';
+	import AuthorCard from '$lib/components/age/library/AuthorCard.svelte';
 	import { onMount, onDestroy } from 'svelte';
+	import { afterNavigate } from '$app/navigation';
+	import { createContentTracker } from '$lib/analytics/contentTracker.js';
+	import { fitTitle } from '$lib/actions/fitTitle.js';
 	import { fade, fly } from 'svelte/transition';
 	import Decklist from '$lib/components/Decklist.svelte';
 	import CardHover from '$lib/components/CardHover.svelte';
@@ -10,18 +14,24 @@
 
 	export let data;
 
-	// --- Engagement tracking state ---
-	let engagementId = null;
-	let engagementInterval = null;
-	let activeTime = 0;
-	let activeTimerRunning = false;
-	let activeTimerInterval = null;
-	let maxScrollDepth = 0;
-	let shareClickedType = null;
-	let premiumCtaViewed = false;
-	let premiumCtaClicked = false;
-	let decklistInteractionCount = 0;
-	let cardHoverCount = 0;
+	// --- Content analytics: one view per piece, restarted when the reader
+	// moves straight from one article to another (same component). ---
+	/** @type {{ stop: (next?: string) => void } | null} */
+	let tracker = null;
+	let trackedId = null;
+	afterNavigate(({ to }) => {
+		const id = data.article?.id;
+		if (!id || id === trackedId) return;
+		tracker?.stop(to?.url?.pathname);
+		trackedId = id;
+		tracker = createContentTracker({
+			entryId: id,
+			gated: !!data.isPreview,
+			readTimeMinutes: data.article.readTime,
+			getBody: () => document.querySelector('[data-article-body]')
+		});
+	});
+	onDestroy(() => tracker?.stop());
 
 	// Card images map from server for hover tooltips
 	$: cardImages = data.cardImages || {};
@@ -40,6 +50,10 @@
 	$: hasCover = !isVideoEntry && !!data.article.coverImage?.src;
 	$: videoPoster = data.article.thumbnailImage?.src || data.article.coverImage?.src || '';
 	$: lengthLabel = data.article.readTime ? `${data.article.readTime} min read` : '';
+	$: authorBioHtml = data.article.author?.bio ? renderContent(data.article.author.bio) : '';
+	$: authorLinks = (data.article.author?.socialLinks || [])
+		.slice(0, 3)
+		.map((link) => ({ label: getLinkLabel(link), href: normalizeUrl(link.url) }));
 
 	// Platform icons for author social links
 	const platformIcons = {
@@ -366,13 +380,11 @@
 
 	function copyLink() {
 		navigator.clipboard.writeText(window.location.href);
-		shareClickedType = 'copy_link';
 	}
 
 	function shareTwitter() {
 		const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(data.article.title)}`;
 		window.open(url, '_blank', 'width=550,height=420');
-		shareClickedType = 'twitter';
 	}
 
 	/**
@@ -816,133 +828,6 @@
 			.replace(/"/g, '&quot;')
 			.replace(/'/g, '&#039;');
 	}
-
-	// --- Engagement tracking ---
-	function getEngagementPayload() {
-		const readTime = data.article.readTime || 5;
-		const estimatedReadSeconds = readTime * 60;
-		return {
-			action: 'engagement_update',
-			engagementId,
-			pageViewId: data.pageViewId || null,
-			articleSlug: data.article.slug,
-			timeOnPageSeconds: Math.round(activeTime),
-			maxScrollDepth,
-			readCompleted: maxScrollDepth >= 90 && activeTime >= estimatedReadSeconds * 0.5,
-			contentEngaged: activeTime > 30 && maxScrollDepth > 50,
-			shareClicked: shareClickedType,
-			premiumCtaViewed,
-			premiumCtaClicked,
-			decklistInteractions: decklistInteractionCount,
-			cardHovers: cardHoverCount
-		};
-	}
-
-	async function sendEngagement() {
-		try {
-			const payload = getEngagementPayload();
-			const res = await fetch('/api/analytics/event', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload)
-			});
-			const result = await res.json();
-			if (result.engagementId && !engagementId) {
-				engagementId = result.engagementId;
-			}
-		} catch {
-			// Silent fail
-		}
-	}
-
-	function sendBeaconEngagement() {
-		try {
-			const payload = getEngagementPayload();
-			navigator.sendBeacon('/api/analytics/event', JSON.stringify(payload));
-		} catch {
-			// Silent fail
-		}
-	}
-
-	onMount(() => {
-		// --- Active time tracking (pauses when tab is hidden) ---
-		activeTimerRunning = true;
-		activeTimerInterval = setInterval(() => {
-			if (activeTimerRunning) activeTime += 1;
-		}, 1000);
-
-		function handleVisibility() {
-			activeTimerRunning = !document.hidden;
-		}
-		document.addEventListener('visibilitychange', handleVisibility);
-
-		// --- Scroll depth tracking ---
-		function handleScrollDepth() {
-			const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-			if (docHeight > 0) {
-				const scrolled = Math.round((window.scrollY / docHeight) * 100);
-				if (scrolled > maxScrollDepth) maxScrollDepth = scrolled;
-			}
-		}
-		window.addEventListener('scroll', handleScrollDepth, { passive: true });
-
-		// --- Premium CTA tracking (IntersectionObserver) ---
-		let ctaObserver = null;
-		const ctaEl = document.querySelector('[data-premium-cta]');
-		if (ctaEl) {
-			ctaObserver = new IntersectionObserver(
-				(entries) => {
-					if (entries[0].isIntersecting) {
-						premiumCtaViewed = true;
-					}
-				},
-				{ threshold: 0.5 }
-			);
-			ctaObserver.observe(ctaEl);
-		}
-
-		// --- Decklist & card hover tracking (event delegation) ---
-		function handleDecklistClick(e) {
-			if (e.target.closest('[data-decklist-toggle]')) {
-				decklistInteractionCount += 1;
-			}
-		}
-		function handleCardHover(e) {
-			if (e.target.closest('[data-card-hover]')) {
-				cardHoverCount += 1;
-			}
-		}
-		document.addEventListener('click', handleDecklistClick);
-		document.addEventListener('mouseenter', handleCardHover, true);
-
-		// --- Periodic engagement updates (every 30s) ---
-		engagementInterval = setInterval(sendEngagement, 30000);
-
-		// --- Send final state on page unload ---
-		function handleBeforeUnload() {
-			sendBeaconEngagement();
-		}
-		window.addEventListener('beforeunload', handleBeforeUnload);
-
-		// --- Cleanup ---
-		return () => {
-			document.removeEventListener('visibilitychange', handleVisibility);
-			window.removeEventListener('scroll', handleScrollDepth);
-			document.removeEventListener('click', handleDecklistClick);
-			document.removeEventListener('mouseenter', handleCardHover, true);
-			window.removeEventListener('beforeunload', handleBeforeUnload);
-			if (ctaObserver) ctaObserver.disconnect();
-			clearInterval(activeTimerInterval);
-			clearInterval(engagementInterval);
-		};
-	});
-
-	onDestroy(() => {
-		// Send final engagement when navigating away within SPA
-		if (typeof window !== 'undefined') {
-			sendBeaconEngagement();
-		}
-	});
 </script>
 
 <svelte:head>
@@ -1012,11 +897,8 @@
 
 		<div
 			class="fp-rise mx-auto w-full max-w-[960px] px-5 pt-7 pb-4 text-center md:px-8 {hasCover
-				? 'md:pointer-events-none md:absolute md:inset-x-0 md:bottom-0 md:left-1/2 md:z-[1] md:-translate-x-1/2 md:pb-14 lg:pb-16'
+				? 'md:pointer-events-none md:absolute md:inset-x-0 md:bottom-0 md:left-1/2 md:z-[1] md:-translate-x-1/2 md:pb-14 md:[text-shadow:0_1px_2px_rgba(23,21,15,0.6),0_6px_24px_rgba(23,21,15,0.45)] lg:pb-16'
 				: 'md:pt-12 md:pb-6'}"
-			style={hasCover
-				? 'text-shadow: 0 1px 2px rgba(23,21,15,0.6), 0 6px 24px rgba(23,21,15,0.45);'
-				: ''}
 		>
 			<a
 				href={rubricHref}
@@ -1033,7 +915,9 @@
 				>
 			</a>
 			<h1
-				class="mt-2 font-newsreader text-[38px] leading-[1.0] font-semibold tracking-[-0.02em] [text-wrap:balance] md:mt-3 md:text-[clamp(46px,5.6vw,84px)] md:leading-[0.96] {hasCover
+				use:fitTitle={{ key: data.article.title, phoneLines: 3 }}
+				style="--tc: {Math.max(12, (data.article.title || '').length)};"
+				class="article-title mt-2 font-newsreader leading-[1.0] font-semibold tracking-[-0.02em] [text-wrap:balance] md:mt-3 md:leading-[0.96] {hasCover
 					? 'md:text-white'
 					: ''}"
 			>
@@ -1054,14 +938,22 @@
 					: 'text-fade'}"
 			>
 				{#if data.article.author}
-					<a
-						href="/library/author/{data.article.author.slug}"
-						class="pointer-events-auto font-extrabold tracking-[0.12em] uppercase {hasCover
-							? 'text-ink hover:text-warm md:text-white/90 md:hover:text-warm-light'
-							: 'text-ink hover:text-warm'}"
-					>
-						By {data.article.author.name}
-					</a>
+					{#if data.article.author.slug}
+						<a
+							href="/library/author/{data.article.author.slug}"
+							class="pointer-events-auto font-extrabold tracking-[0.12em] uppercase {hasCover
+								? 'text-ink hover:text-warm md:text-white/90 md:hover:text-warm-light'
+								: 'text-ink hover:text-warm'}"
+						>
+							By {data.article.author.name}
+						</a>
+					{:else}
+						<span
+							class="font-extrabold tracking-[0.12em] uppercase {hasCover
+								? 'text-ink md:text-white/90'
+								: 'text-ink'}">By {data.article.author.name}</span
+						>
+					{/if}
 					<span aria-hidden="true">·</span>
 				{/if}
 				{#if pubLabel || lengthLabel}
@@ -1077,7 +969,10 @@
 	{#if data.article.videoLocked}
 		<!-- Premium video, non-member: paywalled frame, no player -->
 		<figure class="m-0 mx-auto w-full max-w-[1200px] px-5 pt-4 md:px-8 md:pt-6">
-			<div class="fp-plate relative overflow-hidden bg-[#080b15] md:aspect-video" data-premium-cta>
+			<div
+				class="fp-plate relative overflow-hidden bg-[#080b15] md:aspect-video"
+				data-premium-cta="video-gate"
+			>
 				{#if videoPoster}
 					<img
 						src={videoPoster}
@@ -1113,9 +1008,6 @@
 						<div class="flex flex-wrap items-center justify-center gap-3">
 							<a
 								href="/premium"
-								onclick={() => {
-									premiumCtaClicked = true;
-								}}
 								class="inline-flex items-center border border-prem bg-prem px-6 py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
 							>
 								Become a member
@@ -1149,80 +1041,12 @@
 		<aside class="hidden lg:block">
 			<div class="sticky top-[24px] max-h-[calc(100vh-48px)] overflow-y-auto pr-1">
 				{#if data.article.author}
-					<div class="border border-line bg-paper p-5 md:p-6">
-						<div class="flex items-center gap-3">
-							<span class="h-px flex-1 bg-ink"></span>
-							<span
-								class="font-newsreader text-[12px] font-semibold tracking-[0.22em] whitespace-nowrap uppercase"
-								>The author</span
-							>
-							<span class="h-px flex-1 bg-ink"></span>
-						</div>
-						<div class="mt-1.5 flex justify-center" aria-hidden="true">
-							<span class="h-[3px] w-8 bg-warm"></span>
-						</div>
-						<a
-							href="/library/author/{data.article.author.slug}"
-							class="group mt-5 flex flex-col items-center text-center"
-						>
-							{#if data.article.author.profilePicture}
-								<span
-									class="fp-plate block h-[72px] w-[72px] bg-panel bg-cover bg-center transition-transform duration-500 group-hover:scale-[1.03]"
-									style="background-image: url('{data.article.author.profilePicture}');"
-								></span>
-							{:else}
-								<span
-									class="fp-plate flex h-[72px] w-[72px] items-center justify-center bg-ink font-newsreader text-[34px] leading-none font-semibold text-paper-bg"
-								>
-									{data.article.author.name.charAt(0).toUpperCase()}
-								</span>
-							{/if}
-							<span
-								class="mt-4 block font-newsreader text-[22px] leading-[1.1] font-semibold tracking-[-0.01em] transition-colors group-hover:text-warm"
-							>
-								{data.article.author.name}
-							</span>
-							{#if data.article.author.role}
-								<span class="mt-1 block font-newsreader text-[14px] text-soft italic"
-									>{data.article.author.role}</span
-								>
-							{/if}
-						</a>
-						{#if data.article.author.bio}
-							<div
-								class="mt-4 border-t border-line pt-4 text-center font-newsreader text-[14px] leading-[1.55] text-soft"
-							>
-								{@html renderContent(data.article.author.bio)}
-							</div>
-						{/if}
-						<div class="mt-4 flex flex-col divide-y border-t border-line">
-							{#if data.article.author.socialLinks && data.article.author.socialLinks.length > 0}
-								{#each data.article.author.socialLinks.slice(0, 3) as link (link.url)}
-									<a
-										href={normalizeUrl(link.url)}
-										target="_blank"
-										rel="noopener noreferrer"
-										class="group/l flex items-center justify-between divide-line py-2.5 text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase transition-colors hover:text-warm"
-									>
-										{getLinkLabel(link)}
-										<span
-											class="opacity-40 transition-[opacity,transform] group-hover/l:translate-x-0.5 group-hover/l:opacity-100"
-											aria-hidden="true">→</span
-										>
-									</a>
-								{/each}
-							{/if}
-							<a
-								href="/library/author/{data.article.author.slug}"
-								class="group/l flex items-center justify-between py-2.5 text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
-							>
-								All articles
-								<span class="transition-transform group-hover/l:translate-x-0.5" aria-hidden="true"
-									>→</span
-								>
-							</a>
-						</div>
-					</div>
+					<AuthorCard
+						variant="rail"
+						author={data.article.author}
+						bioHtml={authorBioHtml}
+						links={authorLinks}
+					/>
 				{/if}
 
 				{#if !data.isPreview && tableOfContents.length > 0}
@@ -1296,6 +1120,7 @@
 					<button
 						type="button"
 						onclick={copyLink}
+						data-share="copy_link"
 						title="Copy link"
 						aria-label="Copy link"
 						class="flex h-8 w-8 cursor-pointer items-center justify-center border border-line2 bg-transparent text-[10.5px] font-extrabold text-soft transition-colors hover:border-accent hover:text-accent"
@@ -1305,6 +1130,7 @@
 					<button
 						type="button"
 						onclick={shareTwitter}
+						data-share="x"
 						title="Share on X"
 						aria-label="Share on X"
 						class="flex h-8 w-8 cursor-pointer items-center justify-center border border-line2 bg-transparent text-[10.5px] font-extrabold text-soft transition-colors hover:border-accent hover:text-accent"
@@ -1326,6 +1152,7 @@
 					on h2 + blockquote rule, accent links.
 				-->
 				<div
+					data-article-body
 					class="{data.isPreview
 						? 'pointer-events-none blur-[7px] select-none'
 						: ''} prose max-w-[760px]
@@ -1397,7 +1224,7 @@
 
 			<!-- ============ PREMIUM GATE ============ -->
 			{#if data.isPreview}
-				<div class="relative z-10 -mt-16 md:-mt-20" data-premium-cta>
+				<div class="relative z-10 -mt-16 md:-mt-20" data-premium-cta="article-gate">
 					<div
 						class="border-[3px] border-double border-ink bg-paper px-6 py-9 text-center md:px-12 md:py-12"
 					>
@@ -1424,9 +1251,6 @@
 						>
 							<a
 								href="/premium"
-								onclick={() => {
-									premiumCtaClicked = true;
-								}}
 								class="inline-flex items-center border border-prem bg-prem px-6 py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
 							>
 								Become a member
@@ -1467,79 +1291,8 @@
 
 			<!-- author card for phones/tablets (the rail above is lg-only) -->
 			{#if data.article.author}
-				<div class="mt-10 border border-line bg-paper p-5 md:p-6 lg:hidden">
-					<div class="flex items-center gap-3">
-						<span class="h-px flex-1 bg-ink"></span>
-						<span
-							class="font-newsreader text-[12px] font-semibold tracking-[0.22em] whitespace-nowrap uppercase"
-							>The author</span
-						>
-						<span class="h-px flex-1 bg-ink"></span>
-					</div>
-					<div class="mt-1.5 flex justify-center" aria-hidden="true">
-						<span class="h-[3px] w-8 bg-warm"></span>
-					</div>
-					<a
-						href="/library/author/{data.article.author.slug}"
-						class="group mt-5 flex flex-col items-center text-center"
-					>
-						{#if data.article.author.profilePicture}
-							<span
-								class="fp-plate block h-[84px] w-[84px] bg-panel bg-cover bg-center transition-transform duration-500 group-hover:scale-[1.03]"
-								style="background-image: url('{data.article.author.profilePicture}');"
-							></span>
-						{:else}
-							<span
-								class="fp-plate flex h-[84px] w-[84px] items-center justify-center bg-ink font-newsreader text-[34px] leading-none font-semibold text-paper-bg"
-							>
-								{data.article.author.name.charAt(0).toUpperCase()}
-							</span>
-						{/if}
-						<span
-							class="mt-4 block font-newsreader text-[22px] leading-[1.1] font-semibold tracking-[-0.01em] transition-colors group-hover:text-warm"
-						>
-							{data.article.author.name}
-						</span>
-						{#if data.article.author.role}
-							<span class="mt-1 block font-newsreader text-[14px] text-soft italic"
-								>{data.article.author.role}</span
-							>
-						{/if}
-					</a>
-					{#if data.article.author.bio}
-						<div
-							class="mt-4 border-t border-line pt-4 text-center font-newsreader text-[14px] leading-[1.55] text-soft"
-						>
-							{@html renderContent(data.article.author.bio)}
-						</div>
-					{/if}
-					<div class="mt-4 flex flex-col divide-y border-t border-line">
-						{#if data.article.author.socialLinks && data.article.author.socialLinks.length > 0}
-							{#each data.article.author.socialLinks.slice(0, 3) as link (link.url)}
-								<a
-									href={normalizeUrl(link.url)}
-									target="_blank"
-									rel="noopener noreferrer"
-									class="group/l flex items-center justify-between divide-line py-2.5 text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase transition-colors hover:text-warm"
-								>
-									{getLinkLabel(link)}
-									<span
-										class="opacity-40 transition-[opacity,transform] group-hover/l:translate-x-0.5 group-hover/l:opacity-100"
-										aria-hidden="true">→</span
-									>
-								</a>
-							{/each}
-						{/if}
-						<a
-							href="/library/author/{data.article.author.slug}"
-							class="group/l flex items-center justify-between py-2.5 text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
-						>
-							All articles
-							<span class="transition-transform group-hover/l:translate-x-0.5" aria-hidden="true"
-								>→</span
-							>
-						</a>
-					</div>
+				<div class="lg:hidden">
+					<AuthorCard author={data.article.author} bioHtml={authorBioHtml} links={authorLinks} />
 				</div>
 			{/if}
 		</article>
@@ -1651,3 +1404,26 @@
 
 <!-- card hover tooltip for inline card links -->
 <CardHover />
+
+<style>
+	/* Headline size, as on the homepage hero: the max for the breakpoint,
+	   reduced by a character-count estimate so long titles land near two
+	   lines before JS runs; the fitTitle action then sets the exact size. */
+	.article-title {
+		--title-max: 38px;
+		--title-w: calc(100vw - 40px);
+		--title-lines: 3;
+		font-size: clamp(
+			calc(var(--title-max) * 0.55),
+			calc(var(--title-w) * var(--title-lines) / (0.55 * var(--tc))),
+			var(--title-max)
+		);
+	}
+	@media (min-width: 768px) {
+		.article-title {
+			--title-max: clamp(46px, 5.6vw, 84px);
+			--title-w: min(896px, 100vw - 64px);
+			--title-lines: 2;
+		}
+	}
+</style>

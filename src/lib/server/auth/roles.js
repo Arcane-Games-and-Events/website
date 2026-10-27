@@ -7,7 +7,8 @@
  *      Determines paywall access on the reader side.
  *
  *   2. Capability roles — `user.additionalRoles`, zero or more of 'writer',
- *      'creator', 'tournament staff'. Independent of billing tier. A user
+ *      'editor', 'creator', 'tournament staff'. Writers see and edit only
+ *      their own entries; editors see and edit every entry. Independent of billing tier. A user
  *      can be a free-tier creator, or a premium writer + tournament staff,
  *      etc. Determines what CMS surfaces they can access.
  *
@@ -24,6 +25,7 @@
  */
 
 const CAPABILITY_WRITER = 'writer';
+const CAPABILITY_EDITOR = 'editor';
 const CAPABILITY_CREATOR = 'creator';
 const CAPABILITY_TOURNAMENT_STAFF = 'tournament staff';
 
@@ -69,12 +71,50 @@ export function hasCapability(user, capability) {
 
 /**
  * True if the user can author library entries (articles, videos, or both).
- * Admin or holds the 'writer' capability.
+ * Admin, or holds the 'writer' or 'editor' capability.
  * @param {any} user
  * @returns {boolean}
  */
 export function canEditEntries(user) {
-	return isAdmin(user) || hasCapability(user, CAPABILITY_WRITER);
+	return (
+		isAdmin(user) ||
+		hasCapability(user, CAPABILITY_WRITER) ||
+		hasCapability(user, CAPABILITY_EDITOR)
+	);
+}
+
+/**
+ * True if the user can see and edit EVERY library entry, not just their
+ * own. Admin or holds the 'editor' capability. Editors still can't
+ * publish, schedule or approve — that stays with `canPublish`.
+ * @param {any} user
+ * @returns {boolean}
+ */
+export function canEditAllEntries(user) {
+	return isAdmin(user) || hasCapability(user, CAPABILITY_EDITOR);
+}
+
+/**
+ * True if the user can open and edit this particular entry: editors and
+ * admins can edit any entry, writers only the ones they wrote.
+ * @param {any} user
+ * @param {string | null | undefined} authorId
+ * @returns {boolean}
+ */
+export function canEditEntry(user, authorId) {
+	if (!canEditEntries(user)) return false;
+	if (canEditAllEntries(user)) return true;
+	return !!user?.id && !!authorId && user.id === authorId;
+}
+
+/**
+ * True if the user can see site-wide reader analytics (every writer's
+ * numbers). Admins and editors; writers only ever see their own.
+ * @param {any} user
+ * @returns {boolean}
+ */
+export function canViewSiteAnalytics(user) {
+	return canEditAllEntries(user);
 }
 
 /**

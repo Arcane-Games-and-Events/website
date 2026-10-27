@@ -2,7 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { cmsEntry, user as userTable } from '$lib/server/db/schema.js';
 import { eq, desc, and } from 'drizzle-orm';
-import { canEditEntries, isAdmin } from '$lib/server/auth/roles.js';
+import { canEditEntries, canEditAllEntries } from '$lib/server/auth/roles.js';
 import { createEntry } from '$lib/server/cms/entries.js';
 
 /**
@@ -17,7 +17,7 @@ export async function GET({ url, locals }) {
 
 	const status = url.searchParams.get('status');
 	const filters = [];
-	if (!isAdmin(user)) filters.push(eq(cmsEntry.authorId, user.id));
+	if (!canEditAllEntries(user)) filters.push(eq(cmsEntry.authorId, user.id));
 	if (status) filters.push(eq(cmsEntry.status, status));
 	const where = filters.length ? and(...filters) : undefined;
 

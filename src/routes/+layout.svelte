@@ -1,6 +1,12 @@
 <script>
 	import '../app.css';
 	import { page, navigating } from '$app/stores';
+	import { afterNavigate } from '$app/navigation';
+	import { notePath } from '$lib/analytics/contentTracker.js';
+
+	// Content analytics: remember the current page so a view opened by the
+	// next navigation knows which page on the site the reader came from.
+	afterNavigate(({ to }) => notePath(to?.url?.pathname ?? null));
 	import AgeHeader from '$lib/components/age/AgeHeader.svelte';
 	import AgeFooter from '$lib/components/age/AgeFooter.svelte';
 
@@ -20,7 +26,7 @@
 	// they render the editorial chrome by virtue of wrapping their own
 	// markup in <AgeShell>.
 	const editorialRoutes = ['/', '/premium', '/age-open', '/library', '/academy', '/partner'];
-	const editorialPrefixes = ['/account', '/library/', '/academy/', '/player/', '/staff', '/cms'];
+	const editorialPrefixes = ['/account', '/library/', '/academy/', '/player/', '/staff', '/desk'];
 	// Substring tests for paths that don't fit a clean prefix — e.g. the
 	// AGE Open decklist viewer lives under `/age-open/[eventId]/decklist/
 	// [decklistId]`, where the prefix would catch sibling pages that

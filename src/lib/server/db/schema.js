@@ -10,7 +10,9 @@ import {
 	real,
 	unique,
 	primaryKey,
-	index
+	index,
+	bigserial,
+	smallint
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -501,6 +503,11 @@ export const eventPlayerHero = pgTable(
 	})
 );
 
+// LEGACY ANALYTICS (retired 2026-10-27) — page_view, article_engagement and
+// analytics_event are no longer written or read anywhere; content analytics
+// now live in ca_view / ca_event / ca_conversion (see contentAnalytics/).
+// The definitions stay so a schema push can never drop the tables (and their
+// history) by accident. Drop them deliberately with a migration when ready.
 // PAGE VIEW - site-wide page view tracking
 export const pageView = pgTable('page_view', {
 	id: uuid('id').defaultRandom().primaryKey(),
@@ -658,6 +665,97 @@ export const cmsMedia = pgTable('cms_media', {
 	height: integer('height'),
 	alt: text('alt'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// CMS author profile — how a writer appears on their pieces (byline name,
+// title, bio, photo, links). See supabase/migrations/020_cms_author_profile.sql.
+export const cmsAuthorProfile = pgTable('cms_author_profile', {
+	userId: text('user_id')
+		.primaryKey()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	displayName: text('display_name'),
+	title: text('title'),
+	bio: text('bio'),
+	avatarMediaId: uuid('avatar_media_id').references(() => cmsMedia.id, { onDelete: 'set null' }),
+	links: jsonb('links')
+		.notNull()
+		.default(sql`'[]'::jsonb`),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+// CONTENT ANALYTICS (v2) — see supabase/migrations/021_content_analytics.sql.
+// Collected in the browser on Library article/video pages; one row per view,
+// updated with cumulative numbers while the reader has the page open.
+export const caView = pgTable('ca_view', {
+	id: uuid('id').primaryKey(),
+	entryId: uuid('entry_id')
+		.notNull()
+		.references(() => cmsEntry.id, { onDelete: 'cascade' }),
+	visitorId: uuid('visitor_id').notNull(),
+	sessionId: uuid('session_id').notNull(),
+	userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+	audience: text('audience').notNull(),
+	gated: boolean('gated').notNull().default(false),
+	kind: text('kind').notNull(),
+	startedAt: timestamp('started_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	lastSeenAt: timestamp('last_seen_at', { withTimezone: true, mode: 'date' })
+		.notNull()
+		.defaultNow(),
+	qualified: boolean('qualified').notNull().default(false),
+	source: text('source').notNull().default('direct'),
+	referrerDomain: text('referrer_domain'),
+	fromPath: text('from_path'),
+	utmSource: text('utm_source'),
+	utmMedium: text('utm_medium'),
+	utmCampaign: text('utm_campaign'),
+	device: text('device'),
+	browser: text('browser'),
+	os: text('os'),
+	country: text('country'),
+	viewportW: integer('viewport_w'),
+	visibleSeconds: integer('visible_seconds').notNull().default(0),
+	engagedSeconds: integer('engaged_seconds').notNull().default(0),
+	maxDepth: smallint('max_depth').notNull().default(0),
+	depthSeconds: jsonb('depth_seconds')
+		.notNull()
+		.default(sql`'[]'::jsonb`),
+	sections: jsonb('sections')
+		.notNull()
+		.default(sql`'{}'::jsonb`),
+	completed: boolean('completed').notNull().default(false),
+	videoSeconds: integer('video_seconds').notNull().default(0),
+	videoDuration: integer('video_duration'),
+	videoMaxPct: smallint('video_max_pct').notNull().default(0),
+	videoBins: jsonb('video_bins')
+		.notNull()
+		.default(sql`'[]'::jsonb`),
+	videoPlays: integer('video_plays').notNull().default(0),
+	videoSeeks: integer('video_seeks').notNull().default(0),
+	videoCompleted: boolean('video_completed').notNull().default(false),
+	exitType: text('exit_type'),
+	exitTarget: text('exit_target')
+});
+
+export const caEvent = pgTable('ca_event', {
+	id: bigserial('id', { mode: 'number' }).primaryKey(),
+	viewId: uuid('view_id')
+		.notNull()
+		.references(() => caView.id, { onDelete: 'cascade' }),
+	entryId: uuid('entry_id')
+		.notNull()
+		.references(() => cmsEntry.id, { onDelete: 'cascade' }),
+	type: text('type').notNull(),
+	label: text('label'),
+	depth: smallint('depth'),
+	at: timestamp('at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+export const caConversion = pgTable('ca_conversion', {
+	id: bigserial('id', { mode: 'number' }).primaryKey(),
+	visitorId: uuid('visitor_id'),
+	userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+	kind: text('kind').notNull(),
+	at: timestamp('at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
 });
 
 // Tags shared across entries. Slug uniqueness is enforced at the DB layer.

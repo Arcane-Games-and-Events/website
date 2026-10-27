@@ -5,12 +5,12 @@ import {
 	user as userTable,
 	order,
 	savedCard,
-	articleEngagement,
 	partnerReferral,
 	memberReferral
 } from '$lib/server/db/schema.js';
 import { auth } from '$lib/server/lucia.js';
-import { eq, and, gte } from 'drizzle-orm';
+import { recordConversion } from '$lib/server/contentAnalytics/collect.js';
+import { eq, and } from 'drizzle-orm';
 import {
 	validatePartnerCode,
 	normalizePartnerCode,
@@ -41,7 +41,7 @@ function calculateNextBillingDate(startDate, subscriptionType) {
 /**
  * Create a premium subscription
  */
-export async function POST({ request, locals }) {
+export async function POST({ request, locals, cookies }) {
 	try {
 		// Ensure user is logged in
 		const currentUser = locals.user;
@@ -392,21 +392,9 @@ export async function POST({ request, locals }) {
 
 			console.log('Order recorded in database');
 
-			// Conversion attribution: mark recent article reads as leading to upgrade
-			try {
-				const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-				await db
-					.update(articleEngagement)
-					.set({ upgradedAfter: true })
-					.where(
-						and(
-							eq(articleEngagement.userId, currentUser.id),
-							gte(articleEngagement.createdAt, sevenDaysAgo)
-						)
-					);
-			} catch {
-				// Silent fail — conversion attribution should never block subscription
-			}
+			// Content analytics: record the upgrade so the pieces this reader read
+			// beforehand get credit. Never throws or blocks the subscription.
+			await recordConversion({ cookies }, currentUser.id, 'premium');
 
 			return json(
 				{

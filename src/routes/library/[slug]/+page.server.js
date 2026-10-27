@@ -3,12 +3,12 @@ import { payload } from '$lib/server/payload/client.js';
 import { isPremiumNow, userHasPremiumAccess } from '$lib/server/articles/access.js';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 import { resolveCardImage, mapWithConcurrency } from '$lib/server/cards/index.js';
-import { enrichPageViewWithArticle } from '$lib/server/analytics.js';
 import { db } from '$lib/server/db/index.js';
 import { cmsEntry, cmsMedia, user as userTable } from '$lib/server/db/schema.js';
-import { eq } from 'drizzle-orm';
+import { and, count, eq, lte, or } from 'drizzle-orm';
 import { getMuxPlaybackToken, getMuxThumbnailToken } from '$lib/server/mux.js';
 import { loadTagsForEntries } from '$lib/server/cms/list.js';
+import { getAuthorProfile, bioToHtml } from '$lib/server/cms/authorProfile.js';
 
 /**
  * Truncate Lexical content to only show first few paragraphs for preview
@@ -260,7 +260,7 @@ async function loadCmsEntryBySlug(slug) {
 			new Date(entry.scheduledFor).getTime() <= now);
 	if (!isPublic) return null;
 
-	const [cover, thumbnail, author, tagsByEntry] = await Promise.all([
+	const [cover, thumbnail, author, authorPieces, tagsByEntry] = await Promise.all([
 		entry.coverImageId
 			? db
 					.select()
@@ -289,10 +289,31 @@ async function loadCmsEntryBySlug(slug) {
 					.limit(1)
 					.then((r) => r[0] || null)
 			: Promise.resolve(null),
+		entry.authorId
+			? db
+					.select({ n: count() })
+					.from(cmsEntry)
+					.where(
+						and(
+							eq(cmsEntry.authorId, entry.authorId),
+							or(
+								eq(cmsEntry.status, 'published'),
+								and(eq(cmsEntry.status, 'scheduled'), lte(cmsEntry.scheduledFor, new Date()))
+							)
+						)
+					)
+					.then((r) => Number(r[0]?.n ?? 0))
+			: Promise.resolve(0),
 		loadTagsForEntries([entry.id])
 	]);
 
-	return { entry, cover, thumbnail, author, tags: tagsByEntry.get(entry.id) ?? [] };
+	return {
+		entry,
+		cover,
+		thumbnail,
+		author: author ? { ...author, pieces: authorPieces } : null,
+		tags: tagsByEntry.get(entry.id) ?? []
+	};
 }
 
 /**
@@ -301,6 +322,17 @@ async function loadCmsEntryBySlug(slug) {
  * and `source: 'cms'` so the page can pick the right renderer.
  */
 async function buildCmsArticleShape({ entry, cover, thumbnail, author, tags = [] }) {
+	// The writer's CMS profile (byline name, title, bio, photo, links). A
+	// missing table or failed lookup just falls back to the account name.
+	let profile = null;
+	if (author?.id) {
+		try {
+			profile = (await getAuthorProfile(author.id)).profile;
+		} catch (err) {
+			console.error('author profile lookup failed:', err);
+		}
+	}
+
 	let video = null;
 	if (entry.videoProvider === 'mux' && entry.muxPlaybackId) {
 		const [playbackToken, thumbnailToken] = await Promise.all([
@@ -326,6 +358,7 @@ async function buildCmsArticleShape({ entry, cover, thumbnail, author, tags = []
 	}
 
 	return {
+		id: entry.id,
 		slug: entry.slug,
 		title: entry.title,
 		excerpt: entry.excerpt,
@@ -353,11 +386,14 @@ async function buildCmsArticleShape({ entry, cover, thumbnail, author, tags = []
 			: null,
 		author: author
 			? {
-					name: `${author.firstName} ${author.lastName || ''}`.trim(),
+					name: profile?.displayName || `${author.firstName} ${author.lastName || ''}`.trim(),
 					slug: null,
-					bio: null,
-					profilePicture: null,
-					socialLinks: []
+					role: profile?.title || null,
+					// escaped server-side: the reader page renders bio strings as HTML
+					bio: profile?.bio ? bioToHtml(profile.bio) : null,
+					profilePicture: profile?.avatar?.url || null,
+					socialLinks: profile?.links || [],
+					pieces: author.pieces || 0
 				}
 			: null,
 		tags,
@@ -424,17 +460,7 @@ export async function load({ params, locals, setHeaders }) {
 				setHeaders({ 'cache-control': 'private, no-store', vary: 'Cookie' });
 			}
 
-			const pageViewId = locals.pageViewId || null;
-			if (pageViewId) {
-				enrichPageViewWithArticle(pageViewId, {
-					title: article.title,
-					author: article.author?.name || null,
-					tags: null,
-					accessMode: article.accessMode || null
-				});
-			}
-
-			return { article, isPremium, isPreview, cardImages, pageViewId };
+			return { article, isPremium, isPreview, cardImages };
 		}
 
 		// Payload is turned off — CMS is the single source for library

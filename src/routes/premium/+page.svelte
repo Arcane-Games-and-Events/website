@@ -1,6 +1,7 @@
 <script>
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import EditorialPaymentForm from '$lib/components/age/premium/EditorialPaymentForm.svelte';
+	import { reveal } from '$lib/actions/reveal.js';
 
 	export let data;
 
@@ -23,10 +24,7 @@
 		if (verifiedType === 'member') return 10;
 		return 0;
 	})();
-	$: planFirstCharge = Math.max(
-		parseFloat(planDetails.amount) - discountAmount,
-		0
-	).toFixed(2);
+	$: planFirstCharge = Math.max(parseFloat(planDetails.amount) - discountAmount, 0).toFixed(2);
 
 	$: if (hasPromoCode && verifiedCode && verifiedCode !== promoCodeTrimmed) {
 		verifiedCode = null;
@@ -99,452 +97,796 @@
 				buttonText: 'Subscribe for $10/month'
 			};
 
-	// ============ static editorial content ============
-	const opens = [
+	// ============ pitch content ============
+	const impact = data.impact;
+	const fmt = (n) => Number(n || 0).toLocaleString('en-US');
+	// Series figures, matching the homepage's AGE Open stats.
+	const PRIZE_POOL_2026 = 30000;
+	const AGE_OPEN_EVENTS = 24;
+
+	// Where a membership goes: the three things it pays for.
+	const pillars = [
 		{
-			t1: 'Premium articles, ',
-			t2: 'day one',
-			d: 'Every Pro Insight and feature the moment it publishes — written by the players who define the format.'
+			n: '01',
+			title: 'Writers & creators',
+			img: '/banner/articles-banner.webp',
+			body: 'Members pay the players who write our strategy, deck techs and set reviews, and the crew who film, cast and edit every broadcast.',
+			stat:
+				impact?.pieces > 0
+					? `${fmt(impact.pieces)} pieces published${impact.writers > 1 ? ` by ${fmt(impact.writers)} writers` : ''}`
+					: ''
 		},
 		{
-			t1: 'The full ',
-			t2: 'match library',
-			d: 'Every bonus VOD from every AGE Open, archived and ready to rewatch. Members only.'
+			n: '02',
+			title: 'Tournaments',
+			img: '/banner/age-open-banner.webp',
+			body: 'Venues, prizes, product and the long weekends it takes to run a fair event. Membership is how we keep putting tables in front of players.',
+			stat: `${AGE_OPEN_EVENTS} AGE Open events and counting`
 		},
 		{
-			t1: 'Academy course ',
-			t2: 'updates',
-			d: "Buy a course once and own it for life — Premium adds the author's regular updates as the meta moves, at no extra cost."
-		},
-		{
-			t1: 'Discounts at ',
-			t2: 'the AGE Opens',
-			d: 'Reduced entry on tournament registration across all three circuits, all season long.'
+			n: '03',
+			title: 'The AGE Open Series',
+			img: '/images/circuits/los-angeles.webp',
+			body: 'Three circuits, season-long standings and a championship at the end. Members keep the series on the calendar, year after year.',
+			stat: `$${fmt(PRIZE_POOL_2026)} prize pool in 2026${impact?.players > 0 ? ` · ${fmt(impact.players)} players` : ''}`
 		}
 	];
 
-	const included = [
-		'Premium articles, day one',
-		'The full match library',
-		"Author updates on your courses",
-		'AGE Open discounts'
+	// Member benefits, framed as the thank-you.
+	const thanks = [
+		{
+			t: 'Every premium article',
+			d: 'Strategy, deep dives and features the day they publish.'
+		},
+		{
+			t: 'The full gameplay library',
+			d: 'Every bonus gameplay video from every AGE Open, ready to rewatch.'
+		},
+		{
+			t: 'Course updates for life',
+			d: 'Own an Academy course and members get the author’s updates as the meta moves.'
+		},
+		{
+			t: 'AGE Open discounts',
+			d: 'Reduced entry on tournament registration across all three circuits.'
+		}
 	];
 
-	// Promo code collapses by default — the email-confirmed user just sees
-	// a small "+ Have a promo code?" link, matching the mockup.
+	const faqs = [
+		{
+			q: 'Where does my money go?',
+			a: 'Into the three things above: paying our writers and creators, running tournaments, and keeping the AGE Open Series going.'
+		},
+		{
+			q: 'Can I cancel?',
+			a: 'Any time, from your account. You keep access until the end of the period you have paid for.'
+		},
+		{
+			q: 'Do I need Premium to buy a course?',
+			a: 'No. Courses are bought once and are yours for life. Premium adds the author’s updates to the courses you own.'
+		},
+		{
+			q: 'Monthly or annual?',
+			a: 'Same membership either way. Annual is one payment of $110, which works out to a month free.'
+		}
+	];
+
+	// Promo code collapses by default; a referral link opens it.
 	let promoOpen = !!data.partnerReferral?.code;
+
+	/** @type {HTMLElement | undefined} */
+	let joinEl;
+	function toJoin(plan) {
+		if (plan !== undefined) annual = plan;
+		joinEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
 </script>
 
 <svelte:head>
 	<title>Premium Membership — AGE</title>
 	<meta
 		name="description"
-		content="Premium powers AGE — independent, member-supported coverage and education for the Flesh and Blood community."
+		content="AGE is member-supported. Your membership pays our writers, runs our tournaments and keeps the AGE Open Series going."
 	/>
 </svelte:head>
 
 <AgeShell>
-	{#if isPremium}
-		<!-- ============ PREMIUM WELCOME ============ -->
-		<div class="border-ink border-b-[3px] border-double">
-			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[80px]">
-				<div class="mx-auto max-w-[820px] text-center">
-					<div class="text-prem mb-7 inline-flex items-center gap-[11px] text-[10.5px] font-bold tracking-[0.2em] uppercase">
-						<span class="bg-prem inline-block h-[7px] w-[7px] rounded-full"></span>
-						Premium member
-					</div>
-					<h1
-						class="font-newsreader mb-5 text-[58px] leading-[1.02] font-medium tracking-[-0.025em]"
-					>
-						You're <em class="text-prem font-medium italic">in</em>.
-					</h1>
-					<p class="text-soft m-0 mx-auto max-w-[520px] text-[18px] leading-[1.6]">
-						Full access to every article, every bonus match, every course update. Pick up where
-						you left off.
-					</p>
-				</div>
-
-				<div class="mt-[60px] grid grid-cols-1 gap-[1px] bg-line2 border border-line2 sm:grid-cols-2">
-					{#each [{ href: '/library', label: 'Library', desc: 'Read every Premium article, browse the match library, and pick up where you left off.' }, { href: '/academy', label: 'Academy', desc: 'Continue your courses with author updates included for life as a Premium member.' }, { href: '/age-open', label: 'AGE Open', desc: 'Standings, results, and member-only event registration discounts.' }, { href: '/account', label: 'Account', desc: 'Manage your subscription, saved cards, and billing details.' }] as link (link.href)}
-						<a
-							href={link.href}
-							class="group bg-paper-bg flex flex-col px-8 py-[26px] transition-colors hover:bg-paper"
-						>
-							<div class="text-accent mb-[6px] text-[10px] font-extrabold tracking-[0.14em] uppercase">
-								{link.label}
-							</div>
-							<h3 class="font-newsreader text-[24px] leading-[1.1] font-semibold tracking-[-0.01em] mb-[8px]">
-								Open {link.label.toLowerCase()} →
-							</h3>
-							<p class="text-soft m-0 text-[13.5px] leading-[1.55]">{link.desc}</p>
-						</a>
-					{/each}
-				</div>
-
-				{#if isCancelled}
-					<div class="border-warm/40 bg-warm/10 mt-10 border-[1.5px] px-6 py-4 text-center">
-						<div class="text-warm text-[10.5px] font-bold tracking-[0.16em] uppercase mb-1">
-							Subscription cancelled
-						</div>
-						<p class="text-soft m-0 text-[13.5px]">
-							Your access continues until the end of your current billing period. Want to come
-							back? Re-subscribe below.
+	<div class="pm">
+		{#if isPremium}
+			<!-- ============ member: thank you ============ -->
+			<section class="pm-deep relative overflow-hidden text-[var(--pm-cream)]">
+				<div class="pm-lines absolute inset-0" aria-hidden="true"></div>
+				<div
+					class="relative mx-auto grid w-full max-w-[1200px] items-center gap-10 px-5 py-14 md:grid-cols-[minmax(0,1fr)_auto] md:px-8 md:py-20"
+				>
+					<div>
+						<p class="text-[10px] font-extrabold tracking-[0.26em] text-[var(--pm-mint)] uppercase">
+							<span aria-hidden="true">◆</span> AGE Premium · member
 						</p>
-					</div>
-				{/if}
-			</div>
-		</div>
-	{:else}
-		<!-- ============ HERO ============ -->
-		<!--
-			When the user is signed in, weight the grid toward the form
-			column and widen the join box so the entire checkout form sits
-			above the fold without scrolling. Signed-out viewers see the
-			narrower box because their version is just a single sign-in CTA.
-		-->
-		<div class="border-line2 border-b">
-			<div
-				class="mx-auto grid w-full max-w-[1600px] grid-cols-1 items-center gap-[56px] px-14 py-[74px] {data.user
-					? 'lg:grid-cols-[0.85fr_1.15fr]'
-					: 'lg:grid-cols-[1.05fr_0.95fr]'}"
-			>
-				<div>
-					<div class="text-prem mb-7 inline-flex items-center gap-[11px] text-[10.5px] font-bold tracking-[0.2em] uppercase">
-						<span class="bg-prem inline-block h-[7px] w-[7px] rounded-full"></span>
-						Membership · Since 2021
-					</div>
-					<h1
-						class="font-newsreader mb-6 text-[58px] leading-[1.02] font-medium tracking-[-0.025em]"
-					>
-						Made by players. <em class="text-prem font-medium italic">For players.</em>
-					</h1>
-					<p class="text-soft mb-7 max-w-[468px] text-[18px] leading-[1.62]">
-						Every article, every broadcast, every AGE Open is the work of players who love this
-						game — made for the community that plays it. Your membership is what keeps it going.
-					</p>
-					<div class="text-fade text-[13px] font-semibold">
-						<b class="text-soft font-semibold">Join in under a minute.</b> Cancel anytime · instant
-						access.
+						<h1 class="fp-rise pm-title mt-5 text-[52px] leading-[0.95] md:text-[84px]">
+							Thank you for <em>keeping AGE going</em>.
+						</h1>
+						<p
+							class="mt-6 max-w-[560px] font-newsreader text-[19px] leading-[1.55] text-[var(--pm-cream)]/75"
+						>
+							Your membership pays our writers, runs our tournaments and keeps the AGE Open Series
+							on the calendar. Here is everything it unlocks for you.
+						</p>
+						{#if isCancelled}
+							<p
+								class="mt-8 max-w-[560px] border-l-[3px] border-hero-rb bg-hero-rb/15 px-4 py-3 text-[14px] text-[var(--pm-cream)]/85"
+							>
+								<span
+									class="block text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase"
+									>Subscription cancelled</span
+								>
+								Your access runs to the end of this billing period. Want to stay? You can re-subscribe
+								from your
+								<a href="/account" class="underline underline-offset-2">account</a>.
+							</p>
+						{/if}
 					</div>
 				</div>
-
-				<!-- join box (centered in column so it reads as the primary CTA) -->
-				<div class="flex justify-center">
-					<div
-						class="border-ink bg-paper-bg w-full {data.user
-							? 'max-w-[640px]'
-							: 'max-w-[512px]'} border shadow-[0_38px_60px_-44px_rgba(20,16,8,0.42)]"
+			</section>
+			<section class="border-b border-[var(--pm-rule)] bg-[var(--pm-cream)]">
+				<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-14">
+					<ol
+						class="grid gap-px border-y border-[var(--pm-rule)] bg-[var(--pm-rule)] sm:grid-cols-2 lg:grid-cols-4"
 					>
-						<!-- plan toggle -->
-						<div
-							class="border-line bg-paper relative mt-6 mx-9 flex border p-[5px]"
-						>
-							<button
-								type="button"
-								onclick={() => (annual = false)}
-								class="text-soft hover:text-ink relative z-[1] flex h-[50px] flex-1 cursor-pointer items-center justify-center gap-[9px] border-none bg-none text-[14px] font-bold transition-colors {!annual
-									? 'text-ink bg-paper-bg shadow-[0_1px_0_rgba(20,16,8,0.06),0_3px_9px_-4px_rgba(20,16,8,0.32)]'
-									: ''}"
-							>
-								Monthly
-							</button>
-							<button
-								type="button"
-								onclick={() => (annual = true)}
-								class="text-soft hover:text-ink relative z-[1] flex h-[50px] flex-1 cursor-pointer items-center justify-center gap-[9px] border-none bg-none text-[14px] font-bold transition-colors {annual
-									? 'text-ink bg-paper-bg shadow-[0_1px_0_rgba(20,16,8,0.06),0_3px_9px_-4px_rgba(20,16,8,0.32)]'
-									: ''}"
-							>
-								Annual
-								<em
-									class="text-prem border-prem/30 bg-prem/15 inline-block border px-[6px] py-[3px] text-[9.5px] font-extrabold tracking-[0.06em] uppercase not-italic"
-								>
-									Save $10
-								</em>
-							</button>
-						</div>
-
-						<div class="px-9 pt-7 pb-8">
-							<!-- price -->
-							<div class="mb-1 flex items-baseline justify-center gap-[9px]">
-								<span
-									class="font-newsreader text-ink text-[58px] leading-[0.85] font-medium tracking-[-0.02em]"
-								>
-									${annual ? '110' : '10'}
-								</span>
-								<span class="text-fade text-[14px] font-bold whitespace-nowrap">
-									/ {annual ? 'year' : 'month'}
-								</span>
-							</div>
-							<div class="text-fade mb-5 min-h-[17px] text-center text-[12.5px]">
-								{annual
-									? "Billed $110 once a year — that's just $9.17/month."
-									: 'Billed monthly. Go annual for $110 — one month free.'}
-							</div>
-
-							{#if !data.user}
-								<!-- not signed in -->
+						{#each [{ href: '/library', label: 'Library', desc: 'Every premium article and the full gameplay library.' }, { href: '/academy', label: 'Academy', desc: 'Your courses, with author updates included.' }, { href: '/age-open', label: 'AGE Open', desc: 'Standings, results and member event discounts.' }, { href: '/account', label: 'Account', desc: 'Your membership, saved cards and billing.' }] as link, i (link.href)}
+							<li class="bg-[var(--pm-cream)]">
 								<a
-									href="/login?redirect=/premium"
-									class="border-prem bg-prem hover:brightness-110 mb-3 inline-flex w-full items-center justify-center gap-2 border-[1.5px] py-[16px] text-[13px] font-bold tracking-[0.05em] text-white uppercase transition-[filter]"
-								>
-									Sign in to continue →
-								</a>
-								<div class="text-fade text-center text-[12px]">
-									Don't have an account?
-									<a class="text-accent font-bold" href="/signup?redirect=/premium">
-										Create one
-									</a>
-								</div>
-							{:else}
-								<!-- email confirmed -->
-								<div
-									class="border-line bg-paper mb-[18px] flex items-center gap-[11px] border-[1.5px] px-[15px] py-[13px] text-[13.5px] font-semibold"
+									href={link.href}
+									class="group flex h-full flex-col px-6 py-6 transition-colors hover:bg-[var(--pm-cream-2)]"
 								>
 									<span
-										class="bg-prem inline-flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded-full text-[10px] text-white"
+										class="ao-cond text-[34px] leading-none font-black text-[var(--pm-green)] tabular-nums"
+										>{String(i + 1).padStart(2, '0')}</span
 									>
-										✓
-									</span>
-									<span class="text-ink min-w-0 flex-1 truncate">{data.user.email}</span>
-									<a
-										href="/account"
-										class="text-prem flex-shrink-0 cursor-pointer border-none bg-transparent p-0 text-[11px] font-extrabold tracking-[0.05em] uppercase"
+									<span class="mt-4 text-[11px] font-extrabold tracking-[0.18em] uppercase"
+										>{link.label}
+										<span
+											aria-hidden="true"
+											class="inline-block transition-transform group-hover:translate-x-1">→</span
+										></span
 									>
-										Edit
-									</a>
-								</div>
+									<span class="mt-2 font-newsreader text-[15px] leading-[1.5] text-soft"
+										>{link.desc}</span
+									>
+								</a>
+							</li>
+						{/each}
+					</ol>
+				</div>
+			</section>
+		{:else}
+			<!-- ============ masthead + join box ============ -->
+			<section class="pm-deep relative overflow-hidden text-[var(--pm-cream)]">
+				<div class="pm-lines absolute inset-0" aria-hidden="true"></div>
+				<div
+					class="relative mx-auto grid w-full max-w-[1200px] items-start gap-10 px-5 pt-12 pb-14 md:px-8 md:pt-16 md:pb-20 lg:gap-14 {data.user
+						? 'lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]'
+						: 'lg:grid-cols-[minmax(0,1fr)_440px]'}"
+				>
+					<div class="fp-rise min-w-0 lg:pt-6">
+						<p class="text-[10px] font-extrabold tracking-[0.24em] text-[var(--pm-mint)] uppercase">
+							<span aria-hidden="true">◆</span> AGE Premium · Member supported
+						</p>
+						<h1
+							class="pm-title mt-5 text-[44px] leading-[0.95] [text-wrap:balance] {data.user
+								? 'md:text-[52px]'
+								: 'md:text-[60px]'}"
+						>
+							Join the players <em>who keep AGE going.</em>
+						</h1>
+						<p
+							class="mt-6 max-w-[520px] font-newsreader text-[19px] leading-[1.55] text-[var(--pm-cream)]/80"
+						>
+							AGE is an independent circuit, run by players for players. When you join, you support
+							that community: your membership pays our writers, runs our tournaments and keeps the
+							AGE Open Series on the calendar.
+						</p>
+						<ul
+							class="mt-8 grid max-w-[520px] grid-cols-3 border-y border-[var(--pm-cream)]/20 text-center"
+						>
+							{#each ['Writers', 'Tournaments', 'AGE Open'] as p, i (p)}
+								<li
+									class="px-2 py-3.5 {i
+										? 'border-l border-[var(--pm-cream)]/20'
+										: ''} text-[10px] font-extrabold tracking-[0.18em] uppercase"
+								>
+									<span class="ao-cond block text-[22px] leading-none text-[var(--pm-gold)]"
+										>0{i + 1}</span
+									>
+									<span class="mt-1.5 block">{p}</span>
+								</li>
+							{/each}
+						</ul>
+					</div>
 
-								<!-- promo code: collapsed by default -->
-								<div class="mb-[18px]">
-									{#if !promoOpen}
+					<!-- join box -->
+					<div
+						bind:this={joinEl}
+						id="join"
+						class="fp-rise flex scroll-mt-24 justify-center lg:justify-end"
+						style="animation-delay: 140ms;"
+					>
+						<div
+							class="pm-card relative w-full bg-[var(--pm-cream)] text-ink {data.user
+								? 'max-w-[600px]'
+								: 'max-w-[440px]'}"
+						>
+							<!-- header strip -->
+							<div
+								class="relative border-b-[3px] border-[var(--pm-gold)] bg-[#17150f] px-6 py-4 md:px-7"
+							>
+								<p
+									class="relative text-[9px] font-extrabold tracking-[0.24em] text-[var(--pm-gold)] uppercase"
+								>
+									◆ AGE Premium
+								</p>
+								<p
+									class="pm-title relative mt-1 text-[26px] leading-[1.02]"
+									style="color: var(--pm-cream);"
+								>
+									Become a member
+								</p>
+							</div>
+
+							<div class="px-6 pt-5 pb-5 md:px-7">
+								<!-- plan options -->
+								<div
+									class="grid grid-cols-2 gap-2.5 pt-2"
+									role="radiogroup"
+									aria-label="Choose your membership"
+								>
+									{#each [{ v: true, l: 'Annual', price: '$110', per: '/ yr', sub: '$9.17 a month', tag: '1 month free' }, { v: false, l: 'Monthly', price: '$10', per: '/ mo', sub: 'Cancel any time' }] as opt (opt.l)}
+										{@const on = annual === opt.v}
 										<button
 											type="button"
-											onclick={() => (promoOpen = true)}
-											class="text-prem inline-flex cursor-pointer items-center gap-[7px] border-none bg-transparent p-0 text-[12.5px] font-bold"
+											role="radio"
+											aria-checked={on}
+											onclick={() => (annual = opt.v)}
+											class="relative flex flex-col border-2 px-3.5 pt-3 pb-2.5 text-left transition-colors {on
+												? 'border-[var(--pm-deep)] bg-white/55'
+												: 'border-[var(--pm-rule)] hover:border-[var(--pm-deep)]/50'}"
 										>
-											+ Have a promo code?
-										</button>
-									{:else}
-										<div class="flex">
-											<input
-												id="promoCode"
-												type="text"
-												bind:value={promoCode}
-												onblur={verifyPromoCode}
-												onkeydown={(e) =>
-													e.key === 'Enter' && (e.preventDefault(), verifyPromoCode())}
-												placeholder="Enter partner code"
-												class="border-line2 hover:border-ink focus:border-ink bg-paper-bg text-ink placeholder:text-fade h-[48px] min-w-0 flex-1 border-[1.5px] border-r-0 px-[15px] text-[13px] font-bold tracking-[0.05em] uppercase outline-none transition-colors"
-											/>
-											<button
-												type="button"
-												onclick={verifyPromoCode}
-												disabled={verifying || !hasPromoCode}
-												class="border-ink bg-ink text-paper-bg h-[48px] flex-shrink-0 cursor-pointer border-[1.5px] px-[22px] text-[11px] font-extrabold tracking-[0.07em] uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+											{#if opt.tag}
+												<span
+													class="absolute -top-2.5 right-2.5 bg-[var(--pm-gold)] px-1.5 py-[2px] text-[8px] font-extrabold tracking-[0.12em] text-[var(--pm-deep)] uppercase"
+													>{opt.tag}</span
+												>
+											{/if}
+											<span class="flex items-center gap-2">
+												<span
+													class="flex h-4 w-4 shrink-0 items-center justify-center border-2 {on
+														? 'border-[var(--pm-deep)] bg-[var(--pm-deep)]'
+														: 'border-[var(--pm-rule)] bg-white/60'}"
+													aria-hidden="true"
+												>
+													{#if on}<span class="h-1.5 w-1.5 bg-[var(--pm-gold)]"></span>{/if}
+												</span>
+												<span class="text-[10.5px] font-extrabold tracking-[0.14em] uppercase"
+													>{opt.l}</span
+												>
+											</span>
+											<span class="mt-2 flex items-baseline gap-1">
+												<span
+													class="ao-cond text-[34px] leading-none font-black text-[var(--pm-deep)] tabular-nums"
+													>{opt.price}</span
+												>
+												<span
+													class="text-[9px] font-extrabold tracking-[0.12em] text-fade uppercase"
+													>{opt.per}</span
+												>
+											</span>
+											<span
+												class="mt-1 font-newsreader text-[13px] {on && opt.v
+													? 'font-semibold text-[var(--pm-green)]'
+													: 'text-soft'}">{opt.sub}</span
 											>
-												{verifying ? '…' : 'Apply'}
-											</button>
+										</button>
+									{/each}
+								</div>
+
+								<!-- what's included -->
+								<ul class="mt-4 grid gap-x-3 gap-y-2 sm:grid-cols-2">
+									{#each thanks as item (item.t)}
+										<li class="flex items-start gap-2 text-[12.5px] leading-snug">
+											<span
+												class="mt-[1px] flex h-[15px] w-[15px] shrink-0 items-center justify-center bg-[var(--pm-green)] text-white"
+												aria-hidden="true"
+											>
+												<svg
+													viewBox="0 0 12 12"
+													class="h-2 w-2"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2.4"><path d="M2.5 6.2l2.3 2.3 4.7-5" /></svg
+												>
+											</span>
+											<span class="font-semibold">{item.t}</span>
+										</li>
+									{/each}
+								</ul>
+
+								<div class="mt-5">
+									{#if !data.user}
+										<a
+											href="/login?redirect=/premium"
+											class="inline-flex min-h-[54px] w-full items-center justify-center gap-2 bg-[var(--pm-green)] px-6 text-[12px] font-extrabold tracking-[0.16em] text-white uppercase shadow-[0_10px_20px_-12px_rgba(14,58,38,0.9)] transition-colors hover:bg-[var(--pm-deep)]"
+											>Join for {annual ? '$110 a year' : '$10 a month'}
+											<span aria-hidden="true">→</span></a
+										>
+										<p class="mt-3 text-center font-newsreader text-[14px] text-soft">
+											New to AGE?
+											<a
+												class="font-bold text-[var(--pm-green)] underline-offset-4 hover:underline"
+												href="/signup?redirect=/premium">Create a free account</a
+											> first.
+										</p>
+									{:else}
+										<!-- signed in as -->
+										<div
+											class="mb-5 flex items-center gap-3 border border-[var(--pm-rule)] bg-[var(--pm-cream-2)] px-4 py-3"
+										>
+											<span class="h-2 w-2 shrink-0 bg-[var(--pm-green)]" aria-hidden="true"></span>
+											<span class="min-w-0 flex-1">
+												<span
+													class="block text-[8.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+													>Signed in as</span
+												>
+												<span class="block truncate text-[14px] font-semibold"
+													>{data.user.email}</span
+												>
+											</span>
+											<a
+												href="/account"
+												class="shrink-0 text-[9.5px] font-extrabold tracking-[0.16em] text-[var(--pm-green)] uppercase hover:text-ink"
+												>Edit</a
+											>
 										</div>
-										{#if promoError}
-											<div class="text-warm mt-2 text-[11.5px] font-semibold">{promoError}</div>
+
+										<!-- promo code -->
+										<div class="mb-5">
+											{#if !promoOpen}
+												<button
+													type="button"
+													onclick={() => (promoOpen = true)}
+													class="text-[10px] font-extrabold tracking-[0.16em] text-[var(--pm-green)] uppercase hover:text-ink"
+													>+ Have a promo or referral code?</button
+												>
+											{:else}
+												<label
+													for="promoCode"
+													class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+													>Promo or referral code</label
+												>
+												<div class="mt-2 flex">
+													<input
+														id="promoCode"
+														type="text"
+														bind:value={promoCode}
+														onblur={verifyPromoCode}
+														onkeydown={(e) =>
+															e.key === 'Enter' && (e.preventDefault(), verifyPromoCode())}
+														placeholder="Enter code"
+														autocomplete="off"
+														class="min-h-[48px] min-w-0 flex-1 border border-r-0 border-[var(--pm-rule)] bg-white/60 px-3.5 text-[14px] font-bold tracking-[0.08em] text-ink uppercase outline-none placeholder:text-fade placeholder:normal-case hover:border-ink focus:border-ink focus:ring-0"
+													/>
+													<button
+														type="button"
+														onclick={verifyPromoCode}
+														disabled={verifying || !hasPromoCode}
+														class="min-h-[48px] shrink-0 border border-[var(--pm-deep)] bg-[var(--pm-deep)] px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-[var(--pm-cream)] uppercase transition-colors hover:bg-[var(--pm-green)] disabled:cursor-not-allowed disabled:opacity-50"
+														>{verifying ? '…' : 'Apply'}</button
+													>
+												</div>
+												{#if promoError}
+													<p class="mt-2 text-[12px] font-semibold text-hero-rb">{promoError}</p>
+												{/if}
+											{/if}
+										</div>
+
+										{#if verifiedPartnerName}
+											<div
+												class="mb-5 flex items-center justify-between gap-3 border-l-[3px] border-[var(--pm-green)] bg-[var(--pm-green)]/10 px-4 py-3"
+											>
+												<div>
+													<p
+														class="text-[9px] font-extrabold tracking-[0.18em] text-[var(--pm-green)] uppercase"
+													>
+														{verifiedType === 'member' ? 'Friend referral' : 'Partner code'} applied
+													</p>
+													<p class="mt-1 text-[13px] font-semibold">
+														{verifiedPartnerName} · ${discountAmount} off your first {annual
+															? 'year'
+															: 'month'}
+													</p>
+												</div>
+												<p
+													class="ao-cond text-[30px] leading-none font-black text-[var(--pm-green)] tabular-nums"
+												>
+													${planFirstCharge}
+												</p>
+											</div>
 										{/if}
+
+										<EditorialPaymentForm
+											amount={planDetails.amount}
+											description={planDetails.description}
+											submitUrl="/api/subscribe"
+											submitText={promoApplied
+												? `Become a member · $${planFirstCharge} today`
+												: `Become a member · $${annual ? 110 : 10} / ${annual ? 'yr' : 'mo'}`}
+											isSubscription={true}
+											subscriptionType={selectedPlan}
+											showTestData={data.isSandbox}
+											extraFields={hasPromoCode ? { promoCode: promoCodeTrimmed } : {}}
+										/>
 									{/if}
 								</div>
 
-								{#if verifiedPartnerName}
-									<div
-										class="border-prem/40 bg-prem/10 mb-[18px] flex items-center justify-between gap-3 border-[1.5px] px-4 py-3 text-[13px]"
+								<p
+									class="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 border-t border-[var(--pm-rule)] pt-3.5 text-[8.5px] font-extrabold tracking-[0.1em] whitespace-nowrap text-soft uppercase sm:gap-x-2"
+								>
+									<span>Cancel any time</span>
+									<span class="hidden text-[var(--pm-gold)] sm:inline" aria-hidden="true">◆</span>
+									<span>Instant access</span>
+									<span class="hidden text-[var(--pm-gold)] sm:inline" aria-hidden="true">◆</span>
+									<span class="inline-flex items-center gap-1"
+										><svg
+											viewBox="0 0 20 20"
+											class="h-3 w-3 text-[var(--pm-green)]"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											aria-hidden="true"><path d="M6 9V6a4 4 0 0 1 8 0v3M5 9h10v8H5z" /></svg
+										>Secure checkout</span
 									>
-										<div>
-											<div class="text-prem text-[10px] font-extrabold tracking-[0.1em] uppercase">
-												{verifiedType === 'member' ? 'Friend referral' : 'Partner code'} applied
-											</div>
-											<div class="text-ink mt-[2px] font-semibold">
-												{verifiedPartnerName} · ${discountAmount} off first {annual
-													? 'year'
-													: 'month'}
-											</div>
-										</div>
-										<div
-											class="text-prem font-newsreader text-[20px] font-semibold tracking-[-0.01em]"
-										>
-											${planFirstCharge}
-										</div>
-									</div>
-								{/if}
-
-								<EditorialPaymentForm
-									amount={planDetails.amount}
-									description={planDetails.description}
-									submitUrl="/api/subscribe"
-									submitText={promoApplied
-										? `Get Premium · $${planFirstCharge} today`
-										: `Get Premium · $${annual ? 110 : 10} / ${annual ? 'yr' : 'mo'}`}
-									isSubscription={true}
-									subscriptionType={selectedPlan}
-									showTestData={data.isSandbox}
-									extraFields={hasPromoCode ? { promoCode: promoCodeTrimmed } : {}}
-								/>
-							{/if}
-
-							<div class="text-fade mt-4 text-center text-[11.5px] leading-[1.5]">
-								Cancel anytime · instant access
+								</p>
 							</div>
-						</div>
-
-						<!-- included perks -->
-						<div class="border-line border-t px-9 pt-[22px] pb-[26px]">
-							<div class="text-fade mb-[14px] text-[10px] font-extrabold tracking-[0.14em] uppercase">
-								Everything included
-							</div>
-							<ul class="m-0 grid list-none grid-cols-2 gap-x-[22px] gap-y-[11px] p-0">
-								{#each included as item (item)}
-									<li class="text-ink flex items-start gap-[10px] text-[13px] font-semibold leading-[1.35]">
-										<span class="bg-prem mt-[6px] block h-[5px] w-[5px] flex-shrink-0 rounded-full"></span>
-										<span>{item}</span>
-									</li>
-								{/each}
-							</ul>
 						</div>
 					</div>
 				</div>
-			</div>
-		</div>
+			</section>
 
-		<!-- ============ STATEMENT ============ -->
-		<div class="border-line2 border-b">
-			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[104px] text-center">
-				<div class="mx-auto max-w-[860px]">
-					<div class="text-prem mb-[30px] text-[10.5px] font-bold tracking-[0.2em] uppercase">
-						Why it matters
-					</div>
-					<blockquote
-						class="font-newsreader text-ink m-0 text-[42px] leading-[1.3] font-normal tracking-[-0.012em]"
-					>
-						AGE belongs to the players who love this game — and it keeps going because of <em
-							class="text-prem italic font-medium">the members who believe in it</em
-						>.
-					</blockquote>
-					<p
-						class="text-soft mx-auto mt-[34px] max-w-[560px] text-[15.5px] leading-[1.65]"
-					>
-						The people writing, filming, casting, and teaching are the same people sitting across
-						the table from you at an AGE Open. We serve the players first — because we are the
-						players.
-					</p>
-				</div>
-			</div>
-		</div>
-
-		<!-- ============ OPENS ============ -->
-		<div class="border-line2 grid grid-cols-1 border-b lg:grid-cols-[0.92fr_1.08fr]">
-			<div
-				class="border-line2 relative min-h-[660px] bg-cover bg-center lg:border-r"
-				style="background-image: url('https://www.age.events/banner/age-open-banner.webp');"
-			>
-				<div
-					class="font-mono-system text-paper-bg absolute bottom-0 left-0 bg-black/40 px-3 py-[7px] text-[10px] tracking-[0.1em] uppercase backdrop-blur-sm"
+			<!-- ============ underwriting credit ============ -->
+			<section class="border-b border-[var(--pm-rule)] bg-[var(--pm-cream)]">
+				<p
+					class="mx-auto flex w-full max-w-[1200px] flex-wrap items-center justify-center gap-x-4 gap-y-1 px-5 py-5 text-center md:px-8"
 				>
-					AGE Open · Los Angeles
-				</div>
-			</div>
-			<div class="flex flex-col justify-center px-[60px] py-[96px]">
-				<div class="text-prem mb-4 text-[10.5px] font-bold tracking-[0.2em] uppercase">
-					What membership opens
-				</div>
-				<h2
-					class="font-newsreader mb-[14px] text-[40px] leading-[1.04] font-medium tracking-[-0.02em]"
-				>
-					One membership. The <em class="text-prem italic font-medium">whole</em> of AGE.
-				</h2>
-				<p class="text-soft mb-[30px] max-w-[430px] text-[15px] leading-[1.6]">
-					Four things your membership unlocks across AGE — made by players who love this game, and
-					kept going by members like you.
+					<span
+						class="text-[9.5px] font-extrabold tracking-[0.24em] text-[var(--pm-green)] uppercase"
+						>◆ A note from AGE</span
+					>
+					<span class="font-newsreader text-[17px] text-ink italic md:text-[19px]"
+						>Support for AGE comes from members like you.</span
+					>
 				</p>
-				{#each opens as row, i (i)}
-					<div
-						class="border-line grid grid-cols-[30px_1fr] items-baseline gap-[18px] border-t py-[22px] {i ===
-						opens.length - 1
-							? 'border-b'
-							: ''}"
-					>
-						<div class="font-newsreader text-prem text-[15px] font-medium tabular-nums">
-							{String(i + 1).padStart(2, '0')}
-						</div>
-						<div>
-							<h3 class="text-ink mb-[7px] text-[16.5px] font-bold tracking-[-0.01em]">
-								{row.t1}<span class="text-prem">{row.t2}</span>
-							</h3>
-							<p class="text-soft m-0 max-w-[480px] text-[14px] leading-[1.55]">{row.d}</p>
-						</div>
-					</div>
-				{/each}
-			</div>
-		</div>
+			</section>
 
-		<!-- ============ VOICE / TESTIMONIAL ============ -->
-		<div class="border-line2 bg-paper border-b">
-			<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[90px] text-center">
-				<div class="font-newsreader text-prem mb-2 text-[64px] leading-[0.4] h-[30px]">
-					&ldquo;
+			<!-- ============ where your membership goes ============ -->
+			<section class="bg-[var(--pm-cream)]">
+				<div class="mx-auto w-full max-w-[1200px] px-5 py-14 md:px-8 md:py-20">
+					<div class="max-w-[760px]">
+						<p
+							class="text-[10px] font-extrabold tracking-[0.22em] text-[var(--pm-green)] uppercase"
+						>
+							Where your membership goes
+						</p>
+						<h2 class="pm-title mt-3 text-[38px] leading-[1.02] [text-wrap:balance] md:text-[56px]">
+							Every dollar goes back into <em>the game</em>.
+						</h2>
+						<p class="mt-4 font-newsreader text-[18px] leading-[1.55] text-soft">
+							AGE answers to its members. Here is what your membership pays for.
+						</p>
+					</div>
+					<ol class="mt-10 grid gap-8 md:mt-12 md:grid-cols-3 md:gap-6">
+						{#each pillars as p, i (p.n)}
+							<li class="flex flex-col" use:reveal={{ delay: i * 90 }}>
+								<div
+									class="pm-duo relative aspect-video overflow-hidden bg-[var(--pm-deep)] md:aspect-[4/3]"
+								>
+									<img
+										src={p.img}
+										alt=""
+										loading="lazy"
+										class="absolute inset-0 h-full w-full object-cover grayscale"
+									/>
+									<span
+										class="ao-cond absolute bottom-3 left-4 z-[1] text-[64px] leading-none font-black text-[var(--pm-cream)]"
+										>{p.n}</span
+									>
+								</div>
+								<h3 class="pm-title mt-5 text-[26px] leading-[1.1]">
+									{p.title}
+								</h3>
+								<p class="mt-2 font-newsreader text-[16px] leading-[1.6] text-soft">{p.body}</p>
+								{#if p.stat}
+									<p
+										class="mt-5 border-t-[3px] border-[var(--pm-deep)] pt-3 text-[10.5px] font-extrabold tracking-[0.14em] text-[var(--pm-deep)] uppercase"
+									>
+										{p.stat}
+									</p>
+								{/if}
+							</li>
+						{/each}
+					</ol>
 				</div>
-				<blockquote
-					class="font-newsreader text-ink m-0 mx-auto mb-[26px] max-w-[760px] text-[30px] leading-[1.36] font-normal tracking-[-0.01em]"
+			</section>
+
+			<!-- ============ pledge statement ============ -->
+			<section class="pm-deep relative overflow-hidden text-[var(--pm-cream)]">
+				<div class="pm-lines absolute inset-0" aria-hidden="true"></div>
+				<div
+					class="relative mx-auto grid w-full max-w-[1200px] items-center gap-10 px-5 py-16 md:px-8 md:py-24"
 				>
-					Ten dollars a month to keep coverage of this game open to everyone is the easiest yes in
-					my whole collection.
-				</blockquote>
-				<div class="text-soft text-[13px] font-extrabold tracking-[0.04em] uppercase">
-					Sam K.
-					<span class="text-fade ml-[10px] font-semibold">Member since 2021</span>
+					<div>
+						<blockquote
+							class="pm-title text-[32px] leading-[1.2] [text-wrap:balance] md:text-[48px]"
+						>
+							If AGE matters to you, <em>help us keep it going</em>.
+						</blockquote>
+						<p
+							class="mt-6 max-w-[600px] font-newsreader text-[18px] leading-[1.6] text-[var(--pm-cream)]/75"
+						>
+							The people writing, filming, casting and teaching are the same people across the table
+							from you at an AGE Open. Members are the reason the work exists.
+						</p>
+						<button
+							type="button"
+							onclick={() => toJoin()}
+							class="mt-8 inline-flex min-h-[52px] items-center gap-2 bg-[var(--pm-gold)] px-7 text-[11px] font-extrabold tracking-[0.18em] text-[var(--pm-deep)] uppercase transition-[filter] hover:brightness-110"
+							>Become a member <span aria-hidden="true">→</span></button
+						>
+					</div>
 				</div>
-			</div>
-		</div>
+			</section>
 
-		<!-- ============ CLOSING CTA ============ -->
-		<div class="relative overflow-hidden">
-			<div
-				class="absolute inset-0 bg-cover bg-center"
-				style="background-image: url('https://www.age.events/banner/articles-banner.webp'); background-position: center 30%;"
-				aria-hidden="true"
-			></div>
-			<div
-				class="absolute inset-0"
-				style="background: linear-gradient(180deg, rgba(15,12,6,0.62), rgba(15,12,6,0.78));"
-				aria-hidden="true"
-			></div>
-			<div
-				class="relative mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[132px] text-center"
-			>
-				<div class="mx-auto max-w-[680px] text-[#f4f0e6]">
-					<div class="mb-[22px] text-[10.5px] font-bold tracking-[0.2em] text-[#9fe3bc] uppercase">
-						Made possible by members like you
+			<!-- ============ with our thanks ============ -->
+			<section class="border-b border-[var(--pm-rule)] bg-[var(--pm-cream)]">
+				<div class="mx-auto w-full max-w-[1200px] px-5 py-14 md:px-8 md:py-20">
+					<div class="flex flex-wrap items-end justify-between gap-4">
+						<div>
+							<p
+								class="text-[10px] font-extrabold tracking-[0.22em] text-[var(--pm-green)] uppercase"
+							>
+								With our thanks
+							</p>
+							<h2 class="pm-title mt-3 text-[38px] leading-[1.02] md:text-[52px]">
+								What members get.
+							</h2>
+						</div>
+						<p class="max-w-[360px] font-newsreader text-[16px] text-soft italic">
+							Your membership keeps AGE going. Here is what comes with it.
+						</p>
 					</div>
-					<h2
-						class="font-newsreader mb-[18px] text-[52px] leading-[1.04] font-medium tracking-[-0.02em] text-[#fbfaf6]"
+					<ol
+						class="mt-10 grid gap-px border-t-[3px] border-[var(--pm-deep)] bg-[var(--pm-rule)] sm:grid-cols-2 lg:grid-cols-4"
 					>
-						Join something <em class="font-medium italic text-[#9fe3bc]">we're building together</em>.
-					</h2>
-					<p class="mx-auto mb-8 max-w-[520px] text-[16px] leading-[1.6] text-[#e4decf]">
-						Made by players, for players — writing, video, events, and education across Flesh and
-						Blood, kept going by members like you.
+						{#each thanks as row, i (row.t)}
+							<li
+								class="bg-[var(--pm-cream)] px-1 pt-6 pb-8 sm:px-6"
+								use:reveal={{ delay: i * 70 }}
+							>
+								<span
+									class="ao-cond text-[48px] leading-none font-black text-[var(--pm-green)] tabular-nums"
+									>{String(i + 1).padStart(2, '0')}</span
+								>
+								<h3 class="pm-title mt-4 text-[21px] leading-[1.15]">
+									{row.t}
+								</h3>
+								<p class="mt-2 font-newsreader text-[15px] leading-[1.55] text-soft">{row.d}</p>
+							</li>
+						{/each}
+					</ol>
+				</div>
+			</section>
+
+			<!-- ============ two ways to join ============ -->
+			<section class="border-b border-[var(--pm-rule)] bg-[var(--pm-cream-2)]">
+				<div class="mx-auto w-full max-w-[1200px] px-5 py-14 md:px-8 md:py-20">
+					<p class="text-[10px] font-extrabold tracking-[0.22em] text-[var(--pm-green)] uppercase">
+						Two ways to join
 					</p>
-					<a
-						href="#top"
-						onclick={(e) => {
-							e.preventDefault();
-							window.scrollTo({ top: 0, behavior: 'smooth' });
-						}}
-						class="border-prem bg-prem hover:brightness-110 mx-auto inline-flex items-center gap-2 border-[1.5px] px-8 py-4 text-[13px] font-bold tracking-[0.05em] text-white uppercase transition-[filter]"
-					>
-						Get Premium · ${annual ? 110 : 10}/{annual ? 'yr' : 'mo'} →
-					</a>
-					<div class="mt-[18px] text-[12px] font-semibold text-[#b6ae9a]">
-						Cancel anytime · instant access
+					<h2 class="pm-title mt-3 text-[38px] leading-[1.02] md:text-[52px]">
+						Same membership, your pace.
+					</h2>
+					<div class="mt-8 grid gap-5 md:grid-cols-2">
+						{#each [{ v: false, l: 'Monthly member', price: '$10', per: 'month', note: 'Billed every month. Cancel whenever you like.' }, { v: true, l: 'Annual member', price: '$110', per: 'year', note: 'Billed once a year: twelve months for the price of eleven.', tag: 'Best value' }] as plan (plan.l)}
+							<div
+								class="relative flex flex-col border bg-[var(--pm-cream)] p-6 md:p-8 {plan.v
+									? 'border-t-[5px] border-[var(--pm-deep)] border-t-[var(--pm-gold)]'
+									: 'border-t-[5px] border-[var(--pm-rule)] border-t-[var(--pm-green)]'}"
+							>
+								{#if plan.tag}
+									<span
+										class="absolute top-0 right-0 bg-[var(--pm-deep)] px-2.5 py-1 text-[9px] font-extrabold tracking-[0.16em] text-[var(--pm-cream)] uppercase"
+										>{plan.tag}</span
+									>
+								{/if}
+								<p class="text-[10.5px] font-extrabold tracking-[0.18em] uppercase">{plan.l}</p>
+								<p class="mt-4 flex items-baseline gap-2">
+									<span
+										class="ao-cond text-[64px] leading-[0.8] font-black text-[var(--pm-deep)] tabular-nums"
+										>{plan.price}</span
+									>
+									<span class="text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+										>/ {plan.per}</span
+									>
+								</p>
+								<p class="mt-4 font-newsreader text-[16px] leading-[1.5] text-soft">{plan.note}</p>
+								<ul class="mt-5 border-t border-[var(--pm-rule)]">
+									{#each thanks as item (item.t)}
+										<li
+											class="flex items-center gap-3 border-b border-[var(--pm-rule)] py-2.5 text-[13px] font-semibold"
+										>
+											<span class="h-[6px] w-[6px] shrink-0 bg-[var(--pm-green)]" aria-hidden="true"
+											></span>{item.t}
+										</li>
+									{/each}
+								</ul>
+								<button
+									type="button"
+									onclick={() => toJoin(plan.v)}
+									class="mt-6 inline-flex min-h-[50px] items-center justify-center gap-2 px-6 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-colors {plan.v
+										? 'bg-[var(--pm-deep)] text-[var(--pm-cream)] hover:bg-[var(--pm-green)]'
+										: 'border border-[var(--pm-deep)] text-[var(--pm-deep)] hover:bg-[var(--pm-deep)] hover:text-[var(--pm-cream)]'}"
+									>Join {plan.v ? 'yearly' : 'monthly'} <span aria-hidden="true">→</span></button
+								>
+							</div>
+						{/each}
 					</div>
 				</div>
-			</div>
-		</div>
-	{/if}
+			</section>
+
+			<!-- ============ voice ============ -->
+			<section class="border-b border-[var(--pm-rule)] bg-[var(--pm-cream)]">
+				<figure class="mx-auto w-full max-w-[880px] px-5 py-16 text-center md:px-8 md:py-20">
+					<span
+						class="ao-cond block text-[72px] leading-[0.6] font-black text-[var(--pm-gold)]"
+						aria-hidden="true">“</span
+					>
+					<blockquote
+						class="mt-4 font-newsreader text-[26px] leading-[1.35] tracking-[-0.01em] md:text-[32px]"
+					>
+						Ten dollars a month to keep the coverage, the tournaments and the series going is the
+						easiest yes in my whole collection.
+					</blockquote>
+					<figcaption class="mt-6 text-[10px] font-extrabold tracking-[0.2em] uppercase">
+						Sam K. <span class="ml-2 text-fade">AGE member</span>
+					</figcaption>
+				</figure>
+			</section>
+
+			<!-- ============ questions ============ -->
+			<section class="border-b border-[var(--pm-rule)] bg-[var(--pm-cream)]">
+				<div
+					class="mx-auto grid w-full max-w-[1200px] gap-8 px-5 py-14 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:gap-16 md:px-8 md:py-20"
+				>
+					<div>
+						<p
+							class="text-[10px] font-extrabold tracking-[0.22em] text-[var(--pm-green)] uppercase"
+						>
+							Questions
+						</p>
+						<h2 class="pm-title mt-3 text-[36px] leading-[1.04] md:text-[44px]">
+							Before you join.
+						</h2>
+					</div>
+					<div class="border-t-[3px] border-[var(--pm-deep)]">
+						{#each faqs as f (f.q)}
+							<details class="group border-b border-[var(--pm-rule)]">
+								<summary
+									class="flex min-h-[60px] cursor-pointer list-none items-center justify-between gap-4 py-4 font-newsreader text-[19px] font-semibold [&::-webkit-details-marker]:hidden"
+								>
+									{f.q}
+									<span
+										class="ao-cond shrink-0 text-[26px] leading-none text-[var(--pm-green)] transition-transform group-open:rotate-45"
+										aria-hidden="true">+</span
+									>
+								</summary>
+								<p class="max-w-[640px] pb-5 font-newsreader text-[16.5px] leading-[1.6] text-soft">
+									{f.a}
+								</p>
+							</details>
+						{/each}
+					</div>
+				</div>
+			</section>
+
+			<!-- ============ closing ============ -->
+			<section class="pm-deep relative overflow-hidden text-[var(--pm-cream)]">
+				<div class="pm-lines absolute inset-0" aria-hidden="true"></div>
+				<div
+					class="relative mx-auto flex w-full max-w-[1200px] flex-col items-center px-5 py-16 text-center md:px-8 md:py-24"
+				>
+					<h2
+						class="pm-title mx-auto max-w-[760px] text-[40px] leading-[1.02] [text-wrap:balance] md:text-[60px]"
+					>
+						Support for AGE comes from <em>you</em>.
+					</h2>
+					<button
+						type="button"
+						onclick={() => toJoin()}
+						class="mt-9 inline-flex min-h-[54px] items-center gap-2 bg-[var(--pm-gold)] px-8 text-[11px] font-extrabold tracking-[0.18em] text-[var(--pm-deep)] uppercase transition-[filter] hover:brightness-110"
+						>Become a member · ${annual ? 110 : 10} / {annual ? 'yr' : 'mo'}
+						<span aria-hidden="true">→</span></button
+					>
+					<p
+						class="mt-4 text-[9.5px] font-extrabold tracking-[0.18em] text-[var(--pm-cream)]/55 uppercase"
+					>
+						Cancel any time · instant access
+					</p>
+				</div>
+			</section>
+		{/if}
+	</div>
 </AgeShell>
+
+<style>
+	/* AGE Premium's own register: deep "member drive" green, cream stock,
+	   gold accents, and the square member-supported seal. */
+	.pm {
+		--pm-deep: #0e3a26;
+		--pm-green: #1c7a4b;
+		--pm-mint: #7fd6a6;
+		--pm-cream: #f5eedd;
+		--pm-cream-2: #ece2c9;
+		--pm-gold: #d9a441;
+		--pm-rule: #d8ccae;
+		background: var(--pm-cream);
+	}
+	.pm-deep {
+		background: radial-gradient(120% 90% at 85% 0%, #17553a 0%, var(--pm-deep) 55%, #0a2c1d 100%);
+	}
+	/* fine horizontal lines, like ruled ledger paper */
+	.pm-lines {
+		background-image: repeating-linear-gradient(
+			0deg,
+			rgba(245, 238, 221, 0.045) 0 1px,
+			transparent 1px 7px
+		);
+		pointer-events: none;
+	}
+	/* Titles: Libre Franklin, heavy and tight, in the page's own colours.
+	   Emphasis is colour, not italics. */
+	.pm-title {
+		font-family: 'Libre Franklin', system-ui, sans-serif;
+		font-weight: 800;
+		letter-spacing: -0.035em;
+		color: var(--pm-deep);
+	}
+	.pm-title em {
+		font-style: normal;
+		color: var(--pm-green);
+	}
+	.pm-deep .pm-title {
+		color: var(--pm-cream);
+	}
+	.pm-deep .pm-title em {
+		color: var(--pm-gold);
+	}
+	.pm-deep .pm-card .pm-title {
+		color: var(--pm-deep);
+	}
+	/* green duotone on the pillar photos */
+	.pm-duo::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(180deg, rgba(14, 58, 38, 0.15), rgba(14, 58, 38, 0.75));
+		mix-blend-mode: multiply;
+	}
+	.pm-duo img {
+		opacity: 0.85;
+	}
+	/* Join card shadow. */
+	.pm-card {
+		box-shadow:
+			0 2px 3px rgba(0, 0, 0, 0.25),
+			0 18px 30px -12px rgba(0, 0, 0, 0.55),
+			0 40px 60px -30px rgba(0, 0, 0, 0.7);
+	}
+</style>

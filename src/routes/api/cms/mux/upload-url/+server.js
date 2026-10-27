@@ -2,7 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { cmsEntry, cmsLesson } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
-import { canEditEntries, canEditCourses, ownsOrAdmin, isAdmin } from '$lib/server/auth/roles.js';
+import { canEditEntries, canEditCourses, canEditEntry, isAdmin } from '$lib/server/auth/roles.js';
 import mux from '$lib/server/mux.js';
 
 /**
@@ -36,7 +36,7 @@ export async function POST({ request, locals, url }) {
 		if (!canEditEntries(user)) throw error(403, 'Not permitted');
 		[row] = await db.select().from(cmsEntry).where(eq(cmsEntry.id, id)).limit(1);
 		if (!row) throw error(404, 'Entry not found');
-		if (!ownsOrAdmin(user, row.authorId)) throw error(403, 'Forbidden');
+		if (!canEditEntry(user, row.authorId)) throw error(403, 'Forbidden');
 	} else {
 		if (!canEditCourses(user)) throw error(403, 'Not permitted');
 		[row] = await db.select().from(cmsLesson).where(eq(cmsLesson.id, id)).limit(1);

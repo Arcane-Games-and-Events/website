@@ -2,7 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { cmsEntry, cmsLesson } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
-import { canEditEntries, canEditCourses, ownsOrAdmin, isAdmin } from '$lib/server/auth/roles.js';
+import { canEditEntries, canEditCourses, canEditEntry, isAdmin } from '$lib/server/auth/roles.js';
 import mux from '$lib/server/mux.js';
 
 /**
@@ -35,7 +35,7 @@ export async function POST({ request, locals }) {
 
 	const [row] = await db.select().from(table).where(eq(table.id, id)).limit(1);
 	if (!row) throw error(404, `${target} not found`);
-	if (target === 'entry' && !ownsOrAdmin(user, row.authorId)) throw error(403, 'Forbidden');
+	if (target === 'entry' && !canEditEntry(user, row.authorId)) throw error(403, 'Forbidden');
 	if (target === 'lesson' && !canEditCourses(user) && !isAdmin(user)) throw error(403, 'Forbidden');
 
 	if (row.videoProvider !== 'mux') {

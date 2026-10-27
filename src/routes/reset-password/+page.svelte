@@ -1,177 +1,109 @@
 <script>
-	import '../../app.css';
-	export let data;
-	export let form;
+	import AgeShell from '$lib/components/age/AgeShell.svelte';
+	import AuthSplit from '$lib/components/age/auth/AuthSplit.svelte';
+	import { LABEL, INPUT, BUTTON, LINK, ERROR } from '$lib/components/age/auth/authStyles.js';
+
+	let { data, form } = $props();
+	let showPassword = $state(false);
 </script>
 
 <svelte:head>
-	<title>Reset Password - AGE</title>
+	<title>Set a new password — AGE</title>
 </svelte:head>
 
-<!-- Full page background - placeholder for custom bg image -->
-<div class="relative min-h-screen w-full bg-gray-950">
-	<!-- Background placeholder - replace with actual image -->
-	<div class="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-950 to-black">
-		<!-- Decorative elements -->
-		<div class="absolute inset-0 opacity-30">
-			<div class="absolute top-0 left-0 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl"></div>
-			<div class="absolute right-0 bottom-0 h-96 w-96 rounded-full bg-purple-500/10 blur-3xl"></div>
-		</div>
-	</div>
+<AgeShell>
+	<AuthSplit
+		kicker="New password"
+		bullets={[
+			'At least 8 characters',
+			'Use something you don’t use on other sites',
+			'You’ll sign in with it straight after'
+		]}
+	>
+		{#snippet headline()}
+			A fresh password, <em class="font-medium text-warm-light italic">and you’re back</em>.
+		{/snippet}
 
-	<!-- Main content -->
-	<div class="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
-		<!-- Split Card Container -->
-		<div class="flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl shadow-2xl lg:flex-row">
-			<!-- Left Side - Promotional Panel -->
-			<div
-				class="relative flex min-h-[200px] w-full flex-col justify-between bg-gray-900 p-8 lg:min-h-[500px] lg:w-5/12 lg:p-10"
-			>
-				<!-- Logo -->
-				<div>
-					<a href="/">
-						<img src="/logo.svg" alt="AGE" class="h-8 w-auto" />
-					</a>
-					<h1 class="mt-8 text-4xl leading-tight font-bold text-white lg:text-5xl">
-						New<br />Password
-					</h1>
-					<p class="mt-4 text-gray-400">Create a strong password for your account.</p>
-				</div>
+		{#snippet formContent()}
+			{#if data.error}
+				<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase">
+					Link expired
+				</p>
+				<h1
+					class="ao-cond mt-2 text-[48px] leading-[0.9] font-black uppercase [word-spacing:0.18em] md:text-[60px]"
+				>
+					This link no longer works
+				</h1>
+				<p class="mt-4 max-w-[420px] font-newsreader text-[17px] leading-[1.6] text-soft">
+					{data.error}. Reset links last 30 minutes and work once. Request a new one and use it
+					straight away.
+				</p>
+				<a href="/forgot-password" class="{BUTTON} mt-8 sm:w-auto"
+					>Request a new link <span aria-hidden="true">→</span></a
+				>
+			{:else}
+				<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-warm uppercase">
+					Reset password
+				</p>
+				<h1
+					class="ao-cond mt-2 text-[48px] leading-[0.9] font-black uppercase [word-spacing:0.18em] md:text-[60px]"
+				>
+					Set a new password
+				</h1>
+				<p class="mt-3 font-newsreader text-[16px] text-soft">
+					Choose a new password for your AGE account.
+				</p>
 
-				<!-- Decorative Image Placeholder -->
-				<div class="pointer-events-none absolute inset-0 overflow-hidden">
-					<!-- Placeholder for decorative wave/particle image -->
-					<div
-						class="absolute right-0 bottom-0 left-0 h-2/3 bg-gradient-to-t from-blue-500/5 to-transparent"
-					></div>
-					<svg
-						class="absolute right-0 bottom-0 left-0 h-48 w-full text-blue-500/20"
-						viewBox="0 0 400 200"
-						preserveAspectRatio="none"
-					>
-						<path
-							d="M0,100 C100,150 200,50 300,100 C350,125 380,90 400,100 L400,200 L0,200 Z"
-							fill="currentColor"
-						/>
-					</svg>
-				</div>
-			</div>
-
-			<!-- Right Side - Reset Password Form -->
-			<div
-				class="w-full border-l border-white/5 bg-gray-900/50 p-8 backdrop-blur-sm lg:w-7/12 lg:p-12"
-			>
-				<div class="mx-auto max-w-sm">
-					{#if data.error}
-						<!-- Error State (invalid/expired token) -->
-						<div class="py-8 text-center">
-							<div
-								class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20"
-							>
-								<svg
-									class="h-8 w-8 text-red-400"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M6 18L18 6M6 6l12 12"
-									/>
-								</svg>
-							</div>
-							<h2 class="mb-2 text-2xl font-bold text-white">Link Expired</h2>
-							<p class="mb-8 text-sm text-gray-400">
-								{data.error}
-							</p>
-							<a
-								href="/forgot-password"
-								class="inline-flex justify-center rounded-lg bg-gray-800 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-700"
-							>
-								Request New Link
-							</a>
-						</div>
-					{:else}
-						<!-- Header -->
-						<div class="mb-8 text-center">
-							<h2 class="text-2xl font-bold text-white">Create New Password</h2>
-							<p class="mt-2 text-sm text-gray-400">Enter your new password below.</p>
-						</div>
-
-						<!-- Error Message -->
-						{#if form?.error}
-							<div class="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 p-4">
-								<p class="text-sm text-red-400">{form.error}</p>
-							</div>
-						{/if}
-
-						<form method="POST" class="space-y-6">
-							<input type="hidden" name="token" value={data.token} />
-
-							<!-- Stacked Password Fields -->
-							<div>
-								<div>
-									<label for="password" class="mb-1.5 block text-sm font-medium text-gray-300"
-										>New Password</label
-									>
-									<input
-										id="password"
-										type="password"
-										name="password"
-										required
-										minlength="8"
-										placeholder="Enter new password"
-										autocomplete="new-password"
-										class="block w-full rounded-t-lg bg-white/5 px-4 py-3 text-base text-white outline outline-1 -outline-offset-1 outline-gray-700 placeholder:text-gray-500 focus:relative focus:outline-2 focus:-outline-offset-2 focus:outline-blue-500 sm:text-sm"
-									/>
-								</div>
-								<div class="-mt-px">
-									<label for="confirmPassword" class="sr-only">Confirm Password</label>
-									<input
-										id="confirmPassword"
-										type="password"
-										name="confirmPassword"
-										required
-										minlength="8"
-										placeholder="Confirm new password"
-										autocomplete="new-password"
-										class="block w-full rounded-b-lg bg-white/5 px-4 py-3 text-base text-white outline outline-1 -outline-offset-1 outline-gray-700 placeholder:text-gray-500 focus:relative focus:outline-2 focus:-outline-offset-2 focus:outline-blue-500 sm:text-sm"
-									/>
-								</div>
-								<p class="mt-2 text-xs text-gray-500">Password must be at least 8 characters</p>
-							</div>
-
-							<!-- Submit Button -->
-							<button
-								type="submit"
-								class="flex w-full justify-center rounded-lg bg-gray-800 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-							>
-								Reset Password
-							</button>
-						</form>
-
-						<!-- Back to Login Link -->
-						<p class="mt-8 text-center text-sm text-gray-400">
-							<a
-								href="/login"
-								class="font-semibold text-white transition-colors hover:text-blue-400"
-							>
-								Back to login
-							</a>
-						</p>
+				<div class="mt-8">
+					{#if form?.error}
+						<p class={ERROR} role="alert">{form.error}</p>
 					{/if}
+					<form method="POST" class="space-y-5">
+						<input type="hidden" name="token" value={data.token} />
+						<div>
+							<div class={LABEL}>
+								<label for="password">New password</label>
+								<button
+									type="button"
+									onclick={() => (showPassword = !showPassword)}
+									aria-pressed={showPassword}
+									class="text-[9.5px] font-extrabold tracking-[0.18em] text-warm uppercase hover:text-ink"
+									>{showPassword ? 'Hide' : 'Show'}</button
+								>
+							</div>
+							<input
+								id="password"
+								name="password"
+								type={showPassword ? 'text' : 'password'}
+								required
+								minlength="8"
+								autocomplete="new-password"
+								placeholder="At least 8 characters"
+								class={INPUT}
+							/>
+						</div>
+						<div>
+							<label for="confirmPassword" class={LABEL}>Confirm new password</label>
+							<input
+								id="confirmPassword"
+								name="confirmPassword"
+								type={showPassword ? 'text' : 'password'}
+								required
+								minlength="8"
+								autocomplete="new-password"
+								placeholder="Type it again"
+								class={INPUT}
+							/>
+						</div>
+						<button type="submit" class={BUTTON}
+							>Save new password <span aria-hidden="true">→</span></button
+						>
+					</form>
+					<p class="mt-8 border-t border-line pt-5 font-newsreader text-[14px] text-soft italic">
+						Changed your mind? <a class="{LINK} not-italic" href="/login">Back to sign in</a>.
+					</p>
 				</div>
-			</div>
-		</div>
-
-		<!-- Footer -->
-		<div
-			class="absolute right-0 bottom-4 left-0 flex items-center justify-between px-8 text-xs text-gray-500"
-		>
-			<p>Copyright &copy;{new Date().getFullYear()} AGE</p>
-			<a href="/privacy" class="transition-colors hover:text-gray-400">Privacy policy</a>
-		</div>
-	</div>
-</div>
+			{/if}
+		{/snippet}
+	</AuthSplit>
+</AgeShell>

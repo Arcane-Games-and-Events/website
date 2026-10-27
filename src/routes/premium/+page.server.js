@@ -1,6 +1,8 @@
 import { db } from '$lib/server/db';
-import { savedCard } from '$lib/server/db/schema.js';
-import { eq } from 'drizzle-orm';
+import { savedCard, standing, cmsEntry } from '$lib/server/db/schema.js';
+import { and, count, countDistinct, eq, isNotNull, lte, or } from 'drizzle-orm';
+import { getCachedOrFetch, CACHE_TTL } from '$lib/server/redis/index.js';
+import { playerKey } from '$lib/server/players/key.js';
 import { env } from '$env/dynamic/private';
 import {
 	getPartnerByCode,
@@ -12,7 +14,43 @@ import {
 	getMemberReferrerPublicName
 } from '$lib/server/member-referral.js';
 
+/**
+ * "Your membership at work" numbers for the pitch: what AGE has published
+ * and run. Read-only counts, cached for 15 minutes. Returns null on any
+ * failure so the page simply hides the figures.
+ */
+async function loadImpact() {
+	try {
+		return await getCachedOrFetch(
+			'premium:impact:v2',
+			async () => {
+				const published = or(
+					eq(cmsEntry.status, 'published'),
+					and(eq(cmsEntry.status, 'scheduled'), lte(cmsEntry.scheduledFor, new Date()))
+				);
+				const [players, pieces] = await Promise.all([
+					db.select({ gemId: standing.gemId, id: standing.id }).from(standing),
+					db
+						.select({ n: count(), writers: countDistinct(cmsEntry.authorId) })
+						.from(cmsEntry)
+						.where(and(published, isNotNull(cmsEntry.authorId)))
+				]);
+				return {
+					players: new Set(players.map((r) => playerKey(r))).size,
+					pieces: Number(pieces[0]?.n ?? 0),
+					writers: Number(pieces[0]?.writers ?? 0)
+				};
+			},
+			CACHE_TTL.LONG
+		);
+	} catch (err) {
+		console.error('premium impact stats failed:', err);
+		return null;
+	}
+}
+
 export async function load({ locals, url }) {
+	const impactPromise = loadImpact();
 	// Fetch saved cards if user is logged in
 	let userSavedCards = [];
 	if (locals.user) {
@@ -48,6 +86,7 @@ export async function load({ locals, url }) {
 		user: locals.user,
 		savedCards: userSavedCards,
 		isSandbox: env.AUTHNET_ENVIRONMENT === 'sandbox',
-		partnerReferral
+		partnerReferral,
+		impact: await impactPromise
 	};
 }

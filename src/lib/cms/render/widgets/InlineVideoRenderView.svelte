@@ -19,7 +19,7 @@
 	<figure class="my-8">
 		<div class="relative w-full overflow-hidden rounded-md border border-line2 bg-black" style="padding-top: 56.25%;">
 			<iframe
-				src={`https://www.youtube-nocookie.com/embed/${youtubeVideoId}`}
+				src={`https://www.youtube-nocookie.com/embed/${youtubeVideoId}?enablejsapi=1`}
 				title={youtubeTitle || 'Embedded YouTube video'}
 				loading="lazy"
 				allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

@@ -556,99 +556,95 @@
 			</ol>
 		</div>
 
-		<!-- phone cards -->
-		<ol class="mt-5 grid gap-3 md:hidden">
-			{#each shown as p, i (p.gemId || p.playerName + i)}
-				{@const r = p.rankShown}
-				{#if showCut && r === 17}
-					<li class="flex items-center gap-3 py-1" aria-label="Championship cut">
-						<span class="h-px flex-1 bg-warm"></span>
-						<span class="text-[8.5px] font-extrabold tracking-[0.2em] text-warm uppercase"
-							>Championship cut</span
+		<!-- phone table -->
+		<div class="mt-5 md:hidden">
+			<div
+				class="grid grid-cols-[28px_minmax(0,1fr)_auto] items-end gap-3 border-b-[3px] border-ink pb-2 text-[9px] font-extrabold tracking-[0.2em] text-fade uppercase"
+			>
+				<span class="text-center">#</span>
+				<span>Player</span>
+				<span class="text-right">Pts</span>
+			</div>
+			<ol>
+				{#each shown as p, i (p.gemId || p.playerName + i)}
+					{@const r = p.rankShown}
+					{#if showCut && r === 17}
+						<li class="flex items-center gap-3 py-2.5" aria-label="Championship cut">
+							<span class="h-px flex-1 bg-warm"></span>
+							<span class="text-[8.5px] font-extrabold tracking-[0.2em] text-warm uppercase"
+								>Championship cut · top 16</span
+							>
+							<span class="h-px flex-1 bg-warm"></span>
+						</li>
+					{/if}
+					<li class="border-b border-line even:bg-paper/50">
+						<a
+							href={p.gemId ? `/player/${p.gemId}` : '#'}
+							class="grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-3 py-3 active:bg-paper"
 						>
-						<span class="h-px flex-1 bg-warm"></span>
-					</li>
-				{/if}
-				<li class="border border-line bg-paper-bg">
-					<a
-						href={p.gemId ? `/player/${p.gemId}` : '#'}
-						class="grid grid-cols-[40px_auto_minmax(0,1fr)_auto] items-center gap-3 p-4"
-					>
-						<span class="ao-cond text-[32px] leading-[0.85] font-black tabular-nums {rankTone(r)}"
-							>{r}</span
-						>
-						{#if p.ageRating != null}
-							<RatingBadge
-								size="md"
-								rating={p.ageRating}
-								label={tierLabel(p)}
-								hex={tierHex(p)}
-								provisional={p.isProvisional}
-							/>
-						{:else}
 							<span
-								class="flex aspect-square w-[42px] shrink-0 items-center justify-center border border-dashed border-line2 text-[10px] font-bold text-fade"
-								>—</span
+								class="ao-cond text-center text-[24px] leading-none font-black tabular-nums {rankTone(
+									r
+								)}">{r}</span
 							>
-						{/if}
-						<span class="min-w-0">
-							<span class="block truncate font-newsreader text-[17px] leading-tight font-semibold"
-								>{p.playerName}</span
-							>
-							<span class="mt-1 flex flex-wrap items-center gap-2">
+							<span class="flex min-w-0 items-center gap-3">
 								{#if p.ageRating != null}
+									<RatingBadge
+										rating={p.ageRating}
+										label={tierLabel(p)}
+										hex={tierHex(p)}
+										provisional={p.isProvisional}
+									/>
+								{:else}
 									<span
-										class="text-[8.5px] font-extrabold tracking-[0.16em] uppercase"
-										style="color: {tierHex(p)};">{tierLabel(p)}</span
+										class="flex aspect-square w-[36px] shrink-0 items-center justify-center border border-dashed border-line2 text-[10px] font-bold text-fade"
+										title="No AGE Rating yet">—</span
 									>
 								{/if}
-								{#each circuitLabel(p) as c (c)}
+								<span class="min-w-0">
 									<span
-										class="px-1.5 py-[2px] text-[8px] font-extrabold tracking-[0.16em] text-white uppercase"
-										style="background: {ccVar(c)};">{abbr(c)}</span
+										class="block truncate font-newsreader text-[16px] leading-tight font-semibold"
+										>{p.playerName}</span
 									>
-								{/each}
+									<span class="mt-[3px] flex items-center gap-2">
+										{#if p.ageRating != null}
+											<span
+												class="truncate text-[8.5px] font-extrabold tracking-[0.16em] uppercase"
+												style="color: {tierHex(p)};">{tierLabel(p)}</span
+											>
+										{/if}
+										{#each circuitLabel(p) as c (c)}
+											<span
+												class="shrink-0 px-1.5 py-[2px] text-[7.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+												style="background: {ccVar(c)};">{abbr(c)}</span
+											>
+										{/each}
+									</span>
+									<span
+										class="mt-1.5 flex flex-wrap items-baseline gap-x-2 text-[11.5px] leading-snug text-soft tabular-nums"
+									>
+										<span class="font-bold text-ink">{record(p)}</span>
+										<span class="text-line2" aria-hidden="true">·</span>
+										<span class="font-bold {winTone(p)}">{pct(p)}</span>
+										<span class="text-line2" aria-hidden="true">·</span>
+										<span>{p.eventsPlayed || 0} ev</span>
+										<span class="text-line2" aria-hidden="true">·</span>
+										<span>{p.top8Finishes || 0} T8</span>
+									</span>
+								</span>
 							</span>
-						</span>
-						<span class="text-right">
-							<span class="ao-cond block text-[30px] leading-none font-black tabular-nums"
+							<span
+								class="ao-cond min-w-[40px] text-right text-[26px] leading-none font-black tabular-nums"
 								>{p.totalPoints || 0}</span
 							>
-							<span class="text-[8.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>pts</span
-							>
-						</span>
-						<span
-							class="col-span-4 grid grid-cols-4 gap-2 border-t border-line pt-3 text-center text-[12px] font-bold tabular-nums"
-						>
-							<span
-								><span class="block">{record(p)}</span><span
-									class="text-[8px] font-extrabold tracking-[0.16em] text-fade uppercase"
-									>Record</span
-								></span
-							>
-							<span
-								><span class="block {winTone(p)}">{pct(p)}</span><span
-									class="text-[8px] font-extrabold tracking-[0.16em] text-fade uppercase">Win</span
-								></span
-							>
-							<span
-								><span class="block">{p.eventsPlayed || 0}</span><span
-									class="text-[8px] font-extrabold tracking-[0.16em] text-fade uppercase"
-									>Events</span
-								></span
-							>
-							<span
-								><span class="block">{p.top8Finishes || 0}</span><span
-									class="text-[8px] font-extrabold tracking-[0.16em] text-fade uppercase"
-									>Top 8</span
-								></span
-							>
-						</span>
-					</a>
-				</li>
-			{/each}
-		</ol>
+						</a>
+					</li>
+				{/each}
+			</ol>
+			<p class="mt-3 text-[10.5px] leading-snug text-fade">
+				Record · win rate · events played (ev) · Top 8 finishes (T8)
+			</p>
+		</div>
 
 		<!-- pagination -->
 		<nav

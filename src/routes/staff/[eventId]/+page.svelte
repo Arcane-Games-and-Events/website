@@ -1,25 +1,16 @@
 <script>
-	import { browser } from '$app/environment';
-	import { onMount } from 'svelte';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
-	import { getCircuit } from '$lib/data/circuits.js';
+	import { CIRCUITS } from '$lib/data/circuits.js';
 
 	let { data, form } = $props();
 
-	const storageKey = $derived(`staff-event-tab-${data.event.id}`);
-	let activeTab = $state('overview');
-	onMount(() => {
-		const saved = sessionStorage.getItem(storageKey);
-		if (saved) activeTab = saved;
-	});
-
-	function setActiveTab(tab) {
-		activeTab = tab;
-		if (browser) sessionStorage.setItem(storageKey, tab);
-	}
-
-	let gemEntryStatus = $derived(
-		Object.fromEntries(data.tickets.map((t) => [t.ticketId, t.enteredIntoGem]))
+	// Loaded values plus any toggles confirmed by the server this visit.
+	// The overrides live in $state so a toggle re-renders straight away.
+	let gemOverrides = $state({});
+	const gemEntryStatus = $derived(
+		Object.fromEntries(
+			data.tickets.map((t) => [t.ticketId, gemOverrides[t.ticketId] ?? t.enteredIntoGem])
+		)
 	);
 	let gemEntryLoading = $state({});
 	let copiedGemId = $state(null);
@@ -45,7 +36,7 @@
 			formData.append('ticketId', ticketId);
 			formData.append('enteredIntoGem', newValue.toString());
 			const response = await fetch('?/toggleGemEntry', { method: 'POST', body: formData });
-			if (response.ok) gemEntryStatus[ticketId] = newValue;
+			if (response.ok) gemOverrides[ticketId] = newValue;
 		} catch (err) {
 			console.error('Error toggling GEM entry:', err);
 		} finally {
@@ -76,631 +67,337 @@
 		});
 	}
 
-	function statusChip(status) {
-		switch (status) {
-			case 'upcoming':
-				return { label: 'Upcoming', tone: 'accent' };
-			case 'in_progress':
-				return { label: 'In Progress', tone: 'prem' };
-			case 'completed':
-				return { label: 'Completed', tone: 'soft' };
-			case 'cancelled':
-				return { label: 'Cancelled', tone: 'warm' };
-			default:
-				return { label: status || 'Draft', tone: 'soft' };
+	const SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
+	const cc = $derived(
+		data.event.circuit ? `var(--ed-cc-${SLUG[data.event.circuit] ?? 'la'})` : 'var(--ed-gold)'
+	);
+	const abbr = $derived(CIRCUITS[data.event.circuit]?.abbreviation ?? data.event.circuit);
+
+	const STATUS = {
+		upcoming: { label: 'Upcoming', tone: 'border-paper-bg/50 text-paper-bg' },
+		in_progress: { label: 'Live now', tone: 'bg-hero-rb border-hero-rb text-white' },
+		completed: { label: 'Completed', tone: 'border-paper-bg/30 text-paper-bg/60' },
+		cancelled: { label: 'Cancelled', tone: 'border-hero-rb text-hero-rb' }
+	};
+	const st = $derived(
+		STATUS[data.event.computedStatus] ?? {
+			label: data.event.computedStatus || 'Draft',
+			tone: 'border-paper-bg/30 text-paper-bg/60'
 		}
-	}
+	);
 
-	function chipClass(tone) {
-		if (tone === 'accent') return 'text-accent border-accent/40 bg-accent/10';
-		if (tone === 'prem') return 'text-prem border-prem/40 bg-prem/10';
-		if (tone === 'warm') return 'text-warm border-warm/40 bg-warm/10';
-		return 'text-soft border-line2 bg-paper-bg';
-	}
-
-	const circuit = $derived(getCircuit(data.event.circuit));
-	const chip = $derived(statusChip(data.event.computedStatus));
 	const activeTickets = $derived(data.tickets.filter((t) => !t.refunded));
-	const checkedInCount = $derived(Object.values(gemEntryStatus).filter(Boolean).length);
+	const checkedInCount = $derived(activeTickets.filter((t) => gemEntryStatus[t.ticketId]).length);
+	const toGo = $derived(Math.max(0, activeTickets.length - checkedInCount));
+	const pct = $derived(
+		activeTickets.length ? Math.round((checkedInCount / activeTickets.length) * 100) : 0
+	);
 
-	const tabs = $derived([
-		{ id: 'overview', label: 'Overview' },
-		{ id: 'registrations', label: 'Registrations', count: data.stats.totalTickets }
-	]);
+	// ============ search + filter (check-in desk) ============
+	let query = $state('');
+	let show = $state('all'); // 'all' | 'todo' | 'done'
+	const q = $derived(query.trim().toLowerCase());
+	const filtered = $derived(
+		activeTickets
+			.filter((t) => {
+				if (show === 'todo' && gemEntryStatus[t.ticketId]) return false;
+				if (show === 'done' && !gemEntryStatus[t.ticketId]) return false;
+				if (!q) return true;
+				return [`${t.firstName || ''} ${t.lastName || ''}`, t.gemId, t.ticketCode, t.userEmail]
+					.filter(Boolean)
+					.some((v) => String(v).toLowerCase().includes(q));
+			})
+			.sort((a, b) =>
+				`${a.lastName || ''} ${a.firstName || ''}`.localeCompare(
+					`${b.lastName || ''} ${b.firstName || ''}`
+				)
+			)
+	);
 </script>
 
 <svelte:head>
 	<title>{data.event.title} — Staff — AGE</title>
 </svelte:head>
 
-<AgeShell active="">
-	<div class="mx-auto w-full max-w-[1600px] px-4 pt-10 pb-[52px] md:px-10 lg:px-14">
-		<!-- ============ BACK LINK ============ -->
-		<a
-			href="/staff"
-			class="text-soft hover:text-ink mb-6 inline-flex items-center gap-2 text-[11px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+{#snippet copyIcon(done)}
+	{#if done}
+		<svg
+			viewBox="0 0 24 24"
+			class="h-3 w-3 text-prem"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2.6"><path d="M5 13l4 4L19 7" /></svg
 		>
-			<svg
-				viewBox="0 0 24 24"
-				class="h-[12px] w-[12px]"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2.5"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<path d="M15 18l-6-6 6-6" />
-			</svg>
-			Back to My Events
-		</a>
+	{:else}
+		<svg
+			viewBox="0 0 24 24"
+			class="h-3 w-3 text-fade"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="1.8"><rect x="9" y="9" width="12" height="12" /><path d="M5 15V3h12" /></svg
+		>
+	{/if}
+{/snippet}
 
-		<!-- ============ HEADER ============ -->
-		<div
-			class="bg-paper border-line2 border-t-prem mb-[34px] border border-t-[3px] px-[26px] py-[26px] md:px-[34px] md:py-[30px]"
-		>
-			<div class="mb-3 flex flex-wrap items-center gap-[10px]">
+<AgeShell active="">
+	<!-- ============ masthead ============ -->
+	<section class="bg-ink text-paper-bg">
+		<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-10 md:px-8 md:pt-10 md:pb-12">
+			<a
+				href="/staff"
+				class="inline-flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.18em] text-paper-bg/60 uppercase transition-[color,gap] hover:gap-3 hover:text-paper-bg"
+			>
+				<span aria-hidden="true">←</span> My events
+			</a>
+			<div class="fp-rise mt-7 flex flex-wrap items-center gap-2">
+				<p class="mr-1 text-[10px] font-extrabold tracking-[0.24em] text-gold uppercase">
+					<span aria-hidden="true">◆</span> Staff console
+				</p>
 				<span
-					class="text-fade font-mono-system inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.16em] uppercase"
+					class="border px-2 py-[3px] text-[9px] font-extrabold tracking-[0.16em] uppercase {st.tone}"
+					>{st.label}</span
 				>
-					<span class="bg-prem inline-block h-[6px] w-[6px] rounded-full"></span>
-					Staff Console
-				</span>
-				<span
-					class="inline-flex items-center gap-[7px] border px-[11px] py-[5px] text-[10px] font-extrabold tracking-[0.08em] uppercase {chipClass(
-						chip.tone
-					)}"
-				>
-					{chip.label}
-				</span>
 				{#if data.event.circuit}
 					<span
-						class="border-line2 bg-paper-bg text-soft inline-flex items-center gap-[7px] border px-[11px] py-[5px] text-[10px] font-extrabold tracking-[0.08em] uppercase"
+						class="px-2 py-[3px] text-[9px] font-extrabold tracking-[0.16em] text-white uppercase"
+						style="background: {cc};">{abbr}</span
 					>
-						<span class="h-[6px] w-[6px] rounded-full {circuit.colors.bg}"></span>
-						{data.event.circuit}
-					</span>
 				{/if}
 			</div>
-
 			<h1
-				class="font-newsreader text-[34px] leading-[0.95] font-semibold tracking-[-0.02em] sm:text-[46px]"
+				class="fp-rise mt-3 font-newsreader text-[36px] leading-[1.02] font-semibold tracking-[-0.02em] [text-wrap:balance] md:text-[54px]"
 			>
 				{data.event.title}
 			</h1>
+			<p class="mt-3 font-newsreader text-[16.5px] text-paper-bg/70 italic md:text-[18px]">
+				{[formatDate(data.event.eventDate), data.event.location, data.event.format]
+					.filter(Boolean)
+					.join(' · ')}
+			</p>
 
-			<div class="text-soft mt-3 flex flex-wrap gap-x-[26px] gap-y-[8px] text-[13.5px]">
-				<span class="flex items-center gap-[9px]">
-					<svg
-						viewBox="0 0 24 24"
-						class="h-[15px] w-[15px] opacity-70"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="1.7"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					>
-						<rect x="3" y="5" width="18" height="16" />
-						<path d="M3 9h18M8 3v4M16 3v4" />
-					</svg>
-					{formatDate(data.event.eventDate)}
-				</span>
-				{#if data.event.location}
-					<span class="flex items-center gap-[9px]">
-						<svg
-							viewBox="0 0 24 24"
-							class="h-[15px] w-[15px] opacity-70"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.7"
-							stroke-linecap="round"
-							stroke-linejoin="round"
+			<!-- check-in board -->
+			<div class="mt-8 border-y border-paper-bg/25">
+				<dl class="grid grid-cols-4">
+					{#each [['Registered', activeTickets.length, 'text-paper-bg'], ['In GEM', checkedInCount, 'text-prem-light'], ['To enter', toGo, 'text-gold'], ['Refunded', data.stats.totalRefunded, 'text-paper-bg/50']] as [label, n, tone], i (label)}
+						<div class="py-4 text-center {i ? 'border-l border-paper-bg/20' : ''}">
+							<dd
+								class="ao-cond text-[40px] leading-none font-black tabular-nums md:text-[60px] {tone}"
+							>
+								{n}
+							</dd>
+							<dt
+								class="mt-1.5 text-[8.5px] font-extrabold tracking-[0.18em] text-paper-bg/55 uppercase md:text-[9.5px]"
+							>
+								{label}
+							</dt>
+						</div>
+					{/each}
+				</dl>
+				{#if activeTickets.length}
+					<div class="flex items-center gap-3 border-t border-paper-bg/20 py-3">
+						<div class="h-[6px] flex-1 bg-paper-bg/15">
+							<div
+								class="h-full bg-prem-light transition-[width] duration-500"
+								style="width: {pct}%;"
+							></div>
+						</div>
+						<span
+							class="text-[10px] font-extrabold tracking-[0.16em] text-paper-bg/70 uppercase tabular-nums"
+							>{pct}% entered</span
 						>
-							<path d="M12 21s-7-6.5-7-12a7 7 0 0114 0c0 5.5-7 12-7 12z" />
-							<circle cx="12" cy="9" r="2.5" />
-						</svg>
-						{data.event.location}
-					</span>
-				{/if}
-				{#if data.event.format}
-					<span class="flex items-center gap-[9px]">
-						<svg
-							viewBox="0 0 24 24"
-							class="h-[15px] w-[15px] opacity-70"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="1.7"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
-							<rect x="4" y="4" width="16" height="16" rx="2" />
-							<path d="M9 9h6M9 13h6M9 17h4" />
-						</svg>
-						{data.event.format}
-					</span>
+					</div>
 				{/if}
 			</div>
 		</div>
+	</section>
 
-		<!-- ============ FORM MESSAGES ============ -->
+	<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-12">
 		{#if form?.error}
 			<div
-				class="border-warm/40 bg-warm/10 text-warm mb-6 border-[1.5px] px-[18px] py-[14px] text-[13.5px] font-semibold"
+				class="mb-6 border-l-[3px] border-hero-rb bg-hero-rb/[0.07] px-4 py-3 text-[14px] font-semibold text-hero-rb"
 			>
 				{form.error}
 			</div>
 		{/if}
-		{#if form?.success}
-			<div
-				class="border-prem/40 bg-prem/10 text-prem mb-6 border-[1.5px] px-[18px] py-[14px] text-[13.5px] font-semibold"
-			>
-				{form.message}
-			</div>
-		{/if}
 
-		<!-- ============ TABS ============ -->
-		<div class="border-line2 mb-[26px] flex gap-[4px] overflow-x-auto border-b">
-			{#each tabs as tab (tab.id)}
-				<button
-					type="button"
-					onclick={() => setActiveTab(tab.id)}
-					class="-mb-px inline-flex shrink-0 items-center gap-[10px] border-b-[2px] px-[16px] py-[14px] text-[11px] font-extrabold tracking-[0.12em] whitespace-nowrap uppercase transition-colors {activeTab ===
-					tab.id
-						? 'border-prem text-ink'
-						: 'text-soft hover:text-ink border-transparent'}"
-				>
-					{tab.label}
-					{#if tab.count !== undefined}
-						<span
-							class="border-line2 bg-paper-bg text-soft font-mono-system inline-flex items-center border px-[7px] py-[2px] text-[10px] font-extrabold tabular-nums"
-						>
-							{tab.count}
-						</span>
-					{/if}
-				</button>
-			{/each}
-		</div>
-
-		<!-- ============ OVERVIEW TAB ============ -->
-		{#if activeTab === 'overview'}
-			<div class="grid grid-cols-1 gap-[22px] lg:grid-cols-2">
-				<!-- Event Details -->
-				<section class="bg-paper border-line2 overflow-hidden border">
-					<header class="border-line2 border-b px-[24px] py-[16px]">
-						<h3
-							class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
-						>
-							Event Details
-						</h3>
-					</header>
-					<dl class="divide-line2 divide-y">
-						<div class="grid grid-cols-[130px_1fr] gap-4 px-[24px] py-[14px]">
-							<dt
-								class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
-							>
-								Date
-							</dt>
-							<dd class="text-ink text-[14px] font-medium">{formatDate(data.event.eventDate)}</dd>
-						</div>
-						<div class="grid grid-cols-[130px_1fr] gap-4 px-[24px] py-[14px]">
-							<dt
-								class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
-							>
-								Location
-							</dt>
-							<dd class="text-ink text-[14px] font-medium">{data.event.location || 'TBD'}</dd>
-						</div>
-						{#if data.event.address}
-							<div class="grid grid-cols-[130px_1fr] gap-4 px-[24px] py-[14px]">
-								<dt
-									class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
-								>
-									Address
-								</dt>
-								<dd class="text-ink text-[14px]">{data.event.address}</dd>
-							</div>
-						{/if}
-						<div class="grid grid-cols-[130px_1fr] gap-4 px-[24px] py-[14px]">
-							<dt
-								class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
-							>
-								Format
-							</dt>
-							<dd class="text-ink text-[14px] font-medium">{data.event.format || 'TBD'}</dd>
-						</div>
-						{#if data.event.circuit}
-							<div class="grid grid-cols-[130px_1fr] gap-4 px-[24px] py-[14px]">
-								<dt
-									class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
-								>
-									Circuit
-								</dt>
-								<dd class="text-ink flex items-center gap-2 text-[14px] font-medium">
-									<span class="h-[8px] w-[8px] rounded-full {circuit.colors.bg}"></span>
-									{data.event.circuit}
-								</dd>
-							</div>
-						{/if}
-						<div class="grid grid-cols-[130px_1fr] gap-4 px-[24px] py-[14px]">
-							<dt
-								class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
-							>
-								GEM ID Req.
-							</dt>
-							<dd class="text-ink text-[14px] font-medium">
-								{data.event.gemIdRequired ? 'Required' : 'Not required'}
-							</dd>
-						</div>
-					</dl>
-				</section>
-
-				<!-- Registration Stats -->
-				<section class="bg-paper border-line2 overflow-hidden border">
-					<header class="border-line2 border-b px-[24px] py-[16px]">
-						<h3
-							class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
-						>
-							Registration Stats
-						</h3>
-					</header>
-					<div class="divide-line2 grid grid-cols-3 divide-x">
-						<div class="px-[16px] py-[26px] text-center">
-							<div class="font-newsreader text-[36px] leading-[0.8] font-semibold tabular-nums">
-								{data.stats.totalTickets}
-							</div>
-							<div class="text-fade mt-3 text-[10px] font-extrabold tracking-[0.12em] uppercase">
-								Registered
-							</div>
-						</div>
-						<div class="px-[16px] py-[26px] text-center">
-							<div
-								class="text-prem font-newsreader text-[36px] leading-[0.8] font-semibold tabular-nums"
-							>
-								{checkedInCount}
-							</div>
-							<div class="text-fade mt-3 text-[10px] font-extrabold tracking-[0.12em] uppercase">
-								In GEM
-							</div>
-						</div>
-						<div class="px-[16px] py-[26px] text-center">
-							<div
-								class="text-warm font-newsreader text-[36px] leading-[0.8] font-semibold tabular-nums"
-							>
-								{data.stats.totalRefunded}
-							</div>
-							<div class="text-fade mt-3 text-[10px] font-extrabold tracking-[0.12em] uppercase">
-								Refunded
-							</div>
-						</div>
-					</div>
-
-					{#if data.stats.totalTickets > 0}
-						<div class="border-line2 border-t px-[24px] py-[18px]">
-							<div class="mb-[10px] flex items-center justify-between">
-								<span
-									class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
-								>
-									Check-in progress
-								</span>
-								<span class="text-ink font-mono-system text-[11px] font-bold tabular-nums">
-									{checkedInCount} / {data.stats.totalTickets}
-								</span>
-							</div>
-							<div class="border-line2 bg-paper-bg h-[6px] w-full overflow-hidden border">
-								<div
-									class="bg-prem h-full transition-[width]"
-									style="width: {data.stats.totalTickets > 0
-										? Math.round((checkedInCount / data.stats.totalTickets) * 100)
-										: 0}%;"
-								></div>
-							</div>
-						</div>
-					{/if}
-				</section>
-
-				<!-- Description -->
-				{#if data.event.description}
-					<section class="bg-paper border-line2 overflow-hidden border lg:col-span-2">
-						<header class="border-line2 border-b px-[24px] py-[16px]">
-							<h3
-								class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
-							>
-								Description
-							</h3>
-						</header>
-						<div
-							class="text-ink px-[24px] py-[20px] text-[14.5px] leading-[1.7] whitespace-pre-wrap"
-						>
-							{data.event.description}
-						</div>
-					</section>
-				{/if}
-			</div>
-		{/if}
-
-		<!-- ============ REGISTRATIONS TAB ============ -->
-		{#if activeTab === 'registrations'}
-			<section class="bg-paper border-line2 overflow-hidden border">
-				<header
-					class="border-line2 flex flex-wrap items-center justify-between gap-3 border-b px-[24px] py-[16px]"
-				>
-					<h3
-						class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+		<div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-12">
+			<!-- ============ registrations ============ -->
+			<section class="min-w-0">
+				<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
+					<h2
+						class="flex items-center gap-3 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
 					>
-						Registered Players
-					</h3>
-					<div class="flex items-center gap-[16px]">
-						<span
-							class="text-fade font-mono-system text-[11px] font-bold tracking-[0.06em] tabular-nums uppercase"
-						>
-							{activeTickets.length} active
-						</span>
-						{#if data.stats.totalRefunded > 0}
-							<span
-								class="text-warm font-mono-system text-[11px] font-bold tracking-[0.06em] tabular-nums uppercase"
-							>
-								{data.stats.totalRefunded} refunded
-							</span>
-						{/if}
-					</div>
-				</header>
+						<span class="text-[8px]" style="color: {cc};" aria-hidden="true">◆</span> Check-in
+					</h2>
+					<span class="text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+						>{filtered.length} of {activeTickets.length}</span
+					>
+				</div>
 
-				{#if activeTickets.length > 0}
-					<!-- Desktop table -->
-					<div class="hidden overflow-x-auto md:block">
-						<table class="w-full">
-							<thead>
-								<tr
-									class="border-line2 border-b"
-									style="background: color-mix(in srgb, var(--ed-paper-bg) 60%, transparent);"
-								>
-									<th
-										class="text-fade font-mono-system px-[20px] py-[14px] text-left text-[10px] font-extrabold tracking-[0.14em] uppercase"
-									>
-										Player
-									</th>
-									<th
-										class="text-fade font-mono-system px-[20px] py-[14px] text-left text-[10px] font-extrabold tracking-[0.14em] uppercase"
-									>
-										GEM ID
-									</th>
-									<th
-										class="text-fade font-mono-system px-[20px] py-[14px] text-left text-[10px] font-extrabold tracking-[0.14em] uppercase"
-									>
-										Ticket
-									</th>
-									<th
-										class="text-fade font-mono-system px-[20px] py-[14px] text-left text-[10px] font-extrabold tracking-[0.14em] uppercase"
-									>
-										Registered
-									</th>
-									<th
-										class="text-fade font-mono-system px-[20px] py-[14px] text-center text-[10px] font-extrabold tracking-[0.14em] uppercase"
-									>
-										In GEM?
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								{#each activeTickets as t, i (t.ticketId)}
-									<tr
-										class="border-line2 odd:bg-paper even:bg-paper-bg/40 hover:!bg-paper-bg transition-colors {i ===
-										activeTickets.length - 1
-											? ''
-											: 'border-b'}"
-									>
-										<td class="px-[20px] py-[16px]">
-											<div class="text-ink text-[14.5px] font-semibold">
-												{t.firstName || ''}
-												{t.lastName || ''}
-											</div>
-											{#if t.userEmail}
-												<div class="text-fade mt-[2px] text-[11.5px]">{t.userEmail}</div>
-											{/if}
-										</td>
-										<td class="px-[20px] py-[16px]">
-											{#if t.gemId}
-												<button
-													type="button"
-													onclick={() => copyGemId(t.gemId)}
-													class="group text-ink hover:text-warm font-mono-system inline-flex items-center gap-[8px] text-[13px] font-bold tabular-nums transition-colors"
-													title="Click to copy"
-												>
-													<span>{t.gemId}</span>
-													{#if copiedGemId === t.gemId}
-														<svg
-															viewBox="0 0 24 24"
-															class="text-prem h-[13px] w-[13px]"
-															fill="none"
-															stroke="currentColor"
-															stroke-width="2.5"
-															stroke-linecap="round"
-															stroke-linejoin="round"
-														>
-															<path d="M5 13l4 4L19 7" />
-														</svg>
-													{:else}
-														<svg
-															viewBox="0 0 24 24"
-															class="text-fade h-[13px] w-[13px] opacity-0 transition-opacity group-hover:opacity-100"
-															fill="none"
-															stroke="currentColor"
-															stroke-width="1.8"
-															stroke-linecap="round"
-															stroke-linejoin="round"
-														>
-															<rect x="9" y="9" width="12" height="12" rx="1" />
-															<path d="M5 15V5a2 2 0 012-2h10" />
-														</svg>
-													{/if}
-												</button>
-											{:else}
-												<span class="text-fade">—</span>
-											{/if}
-										</td>
-										<td class="px-[20px] py-[16px]">
-											<code
-												class="border-line2 bg-paper-bg text-soft font-mono-system inline-block border px-[8px] py-[3px] text-[11px] font-bold tabular-nums"
-											>
-												{t.ticketCode}
-											</code>
-										</td>
-										<td class="text-soft px-[20px] py-[16px] text-[12.5px]">
-											{formatDateTime(t.createdAt)}
-										</td>
-										<td class="px-[20px] py-[16px] text-center">
-											<button
-												type="button"
-												onclick={() => toggleGemEntry(t.ticketId, gemEntryStatus[t.ticketId])}
-												disabled={gemEntryLoading[t.ticketId]}
-												class="inline-flex min-w-[92px] cursor-pointer items-center justify-center gap-[7px] border-[1.5px] px-[14px] py-[7px] text-[10.5px] font-extrabold tracking-[0.08em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-50 {gemEntryStatus[
-													t.ticketId
-												]
-													? 'text-prem border-prem/40 bg-prem/10 hover:bg-prem/15'
-													: 'text-soft border-line2 bg-paper hover:border-ink'}"
-											>
-												{#if gemEntryLoading[t.ticketId]}
-													<svg
-														class="h-[13px] w-[13px] animate-spin"
-														viewBox="0 0 24 24"
-														fill="none"
-													>
-														<circle
-															class="opacity-25"
-															cx="12"
-															cy="12"
-															r="10"
-															stroke="currentColor"
-															stroke-width="3"
-														></circle>
-														<path
-															class="opacity-75"
-															fill="currentColor"
-															d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-														></path>
-													</svg>
-												{:else if gemEntryStatus[t.ticketId]}
-													<svg
-														viewBox="0 0 24 24"
-														class="h-[13px] w-[13px]"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="2.5"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													>
-														<path d="M5 13l4 4L19 7" />
-													</svg>
-													Entered
-												{:else}
-													Mark
-												{/if}
-											</button>
-										</td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
-
-					<!-- Mobile cards -->
-					<div class="divide-line2 divide-y md:hidden">
-						{#each activeTickets as t (t.ticketId)}
-							<div class="px-[20px] py-[18px]">
-								<div class="mb-[10px] flex items-start justify-between gap-3">
-									<div class="min-w-0">
-										<div class="text-ink text-[15px] font-semibold">
-											{t.firstName || ''}
-											{t.lastName || ''}
-										</div>
-										{#if t.gemId}
-											<button
-												type="button"
-												onclick={() => copyGemId(t.gemId)}
-												class="text-soft hover:text-ink font-mono-system mt-[3px] inline-flex items-center gap-[6px] text-[12px] font-bold tabular-nums transition-colors"
-											>
-												<span>GEM {t.gemId}</span>
-												{#if copiedGemId === t.gemId}
-													<svg
-														viewBox="0 0 24 24"
-														class="text-prem h-[12px] w-[12px]"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="2.5"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													>
-														<path d="M5 13l4 4L19 7" />
-													</svg>
-												{:else}
-													<svg
-														viewBox="0 0 24 24"
-														class="text-fade h-[12px] w-[12px]"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="1.8"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													>
-														<rect x="9" y="9" width="12" height="12" rx="1" />
-														<path d="M5 15V5a2 2 0 012-2h10" />
-													</svg>
-												{/if}
-											</button>
-										{/if}
-									</div>
-									<button
-										type="button"
-										onclick={() => toggleGemEntry(t.ticketId, gemEntryStatus[t.ticketId])}
-										disabled={gemEntryLoading[t.ticketId]}
-										class="inline-flex shrink-0 items-center justify-center gap-[6px] border-[1.5px] px-[12px] py-[6px] text-[10.5px] font-extrabold tracking-[0.06em] uppercase transition-colors disabled:opacity-50 {gemEntryStatus[
-											t.ticketId
-										]
-											? 'text-prem border-prem/40 bg-prem/10'
-											: 'text-soft border-line2 bg-paper'}"
-									>
-										{gemEntryStatus[t.ticketId] ? 'In GEM' : 'Mark'}
-									</button>
-								</div>
-								<div class="text-fade flex flex-wrap items-center gap-[14px] text-[11.5px]">
-									<code
-										class="border-line2 bg-paper-bg text-soft font-mono-system border px-[7px] py-[2px] text-[10.5px] font-bold"
-									>
-										{t.ticketCode}
-									</code>
-									<span class="font-mono-system tracking-[0.02em] uppercase"
-										>{formatDateTime(t.createdAt)}</span
-									>
-								</div>
-							</div>
-						{/each}
-					</div>
-				{:else}
-					<div class="flex flex-col items-center px-6 py-[60px] text-center">
-						<span
-							class="border-line2 text-fade mb-4 flex h-[48px] w-[48px] items-center justify-center border"
+				{#if activeTickets.length}
+					<!-- search + filter -->
+					<div class="mt-4 flex flex-col gap-3 sm:flex-row">
+						<label
+							class="flex min-h-[48px] flex-1 items-center gap-3 border border-line2 bg-paper px-3.5 focus-within:border-ink"
 						>
 							<svg
 								viewBox="0 0 24 24"
-								class="h-6 w-6"
+								class="h-4 w-4 shrink-0 text-fade"
 								fill="none"
 								stroke="currentColor"
-								stroke-width="1.5"
-								stroke-linecap="round"
-								stroke-linejoin="round"
+								stroke-width="2"
+								aria-hidden="true"
+								><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg
 							>
-								<circle cx="9" cy="8" r="3" />
-								<path d="M3 20c0-3 3-5 6-5s6 2 6 5" />
-							</svg>
-						</span>
-						<h4
-							class="font-newsreader mb-2 text-[22px] leading-[1] font-semibold tracking-[-0.01em]"
+							<span class="sr-only">Search players</span>
+							<input
+								type="search"
+								bind:value={query}
+								placeholder="Name, GEM ID or ticket code"
+								class="min-w-0 flex-1 border-0 bg-transparent p-0 font-newsreader text-[17px] placeholder:text-fade focus:ring-0 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+							/>
+							{#if query}
+								<button
+									type="button"
+									onclick={() => (query = '')}
+									class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase hover:text-ink"
+									>Clear</button
+								>
+							{/if}
+						</label>
+						<div
+							class="grid grid-cols-3 gap-px border border-line2 bg-line2"
+							role="group"
+							aria-label="Show"
 						>
-							No registrations yet
-						</h4>
-						<p class="text-soft text-[13.5px]">Registrations will appear here as players sign up.</p>
+							{#each [['all', 'All'], ['todo', 'To enter'], ['done', 'In GEM']] as [v, l] (v)}
+								<button
+									type="button"
+									onclick={() => (show = v)}
+									aria-pressed={show === v}
+									class="min-h-[46px] px-3 text-[10px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase transition-colors {show ===
+									v
+										? 'bg-ink text-paper-bg'
+										: 'bg-paper-bg text-soft hover:text-ink'}">{l}</button
+								>
+							{/each}
+						</div>
+					</div>
+
+					<ol class="mt-4">
+						{#each filtered as t (t.ticketId)}
+							{@const done = gemEntryStatus[t.ticketId]}
+							<li
+								class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-b border-line2 py-3.5 md:grid-cols-[minmax(0,1.5fr)_130px_130px_132px] {done
+									? 'bg-prem/[0.04]'
+									: ''}"
+							>
+								<span class="min-w-0">
+									<span class="block truncate font-newsreader text-[18px] font-semibold"
+										>{`${t.firstName || ''} ${t.lastName || ''}`.trim() || 'Unnamed player'}</span
+									>
+									{#if t.userEmail}
+										<span class="block truncate text-[12px] text-fade">{t.userEmail}</span>
+									{/if}
+								</span>
+								<span
+									class="order-last col-span-2 flex flex-wrap items-center gap-x-4 gap-y-1 md:order-none md:col-span-1 md:block"
+								>
+									{#if t.gemId}
+										<button
+											type="button"
+											onclick={() => copyGemId(t.gemId)}
+											class="inline-flex items-center gap-1.5 text-[13px] font-semibold tabular-nums transition-colors hover:text-warm"
+											title="Copy GEM ID"
+										>
+											<span
+												class="text-[9px] font-extrabold tracking-[0.16em] text-fade uppercase md:hidden"
+												>GEM</span
+											>
+											{t.gemId}
+											{@render copyIcon(copiedGemId === t.gemId)}
+										</button>
+									{:else}
+										<span class="text-[12px] text-fade">No GEM ID</span>
+									{/if}
+									<span class="text-[11.5px] text-soft tabular-nums md:hidden"
+										>{t.ticketCode} · {formatDateTime(t.createdAt)}</span
+									>
+								</span>
+								<span class="hidden md:block">
+									<span class="block text-[12.5px] font-semibold tracking-[0.04em] tabular-nums"
+										>{t.ticketCode}</span
+									>
+									<span class="block text-[11px] text-fade">{formatDateTime(t.createdAt)}</span>
+								</span>
+								<button
+									type="button"
+									onclick={() => toggleGemEntry(t.ticketId, done)}
+									disabled={gemEntryLoading[t.ticketId]}
+									aria-pressed={!!done}
+									class="inline-flex min-h-[42px] min-w-[112px] items-center justify-center gap-1.5 border-[1.5px] px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors disabled:opacity-60 md:w-full {done
+										? 'border-prem bg-prem text-white hover:bg-prem/85'
+										: 'border-ink text-ink hover:bg-ink hover:text-paper-bg'}"
+								>
+									{#if gemEntryLoading[t.ticketId]}
+										Saving…
+									{:else if done}
+										<svg
+											viewBox="0 0 24 24"
+											class="h-3 w-3"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2.8"><path d="M5 13l4 4L19 7" /></svg
+										> In GEM
+									{:else}
+										Mark entered
+									{/if}
+								</button>
+							</li>
+						{:else}
+							<li class="py-10 text-center font-newsreader text-[17px] text-soft">
+								No players match{q ? ` “${query.trim()}”` : ''}.
+							</li>
+						{/each}
+					</ol>
+				{:else}
+					<div class="py-12 text-center">
+						<p class="font-newsreader text-[24px] font-semibold">No registrations yet.</p>
+						<p class="mt-2 font-newsreader text-[16px] text-soft">
+							Players will appear here as they sign up.
+						</p>
 					</div>
 				{/if}
 			</section>
-		{/if}
+
+			<!-- ============ event details ============ -->
+			<aside class="lg:sticky lg:top-24 lg:self-start">
+				<div class="border-t-[5px] bg-paper px-5 pt-4 pb-5" style="border-color: {cc};">
+					<p class="font-newsreader text-[20px] font-semibold">Event details</p>
+					<dl class="mt-2">
+						{#each [['Date', formatDate(data.event.eventDate)], ['Venue', data.event.location || 'TBD'], ['Address', data.event.address], ['Format', data.event.format || 'TBD'], ['Circuit', data.event.circuit], ['GEM ID', data.event.gemIdRequired ? 'Required' : 'Not required']] as [k, v] (k)}
+							{#if v}
+								<div class="border-b border-dashed border-line2 py-2.5 last:border-b-0">
+									<dt class="text-[9px] font-extrabold tracking-[0.18em] text-fade uppercase">
+										{k}
+									</dt>
+									<dd class="mt-0.5 font-newsreader text-[15.5px] leading-snug">{v}</dd>
+								</div>
+							{/if}
+						{/each}
+					</dl>
+				</div>
+				{#if data.event.description}
+					<div class="mt-5 border-t border-line2 pt-4">
+						<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-fade uppercase">
+							About the event
+						</p>
+						<p class="mt-2 font-newsreader text-[15px] leading-[1.6] whitespace-pre-wrap text-soft">
+							{data.event.description}
+						</p>
+					</div>
+				{/if}
+			</aside>
+		</div>
 	</div>
 </AgeShell>

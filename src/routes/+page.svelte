@@ -6,6 +6,7 @@
 	import FrontOpen from '$lib/components/age/home/FrontOpen.svelte';
 	import FrontPremium from '$lib/components/age/home/FrontPremium.svelte';
 	import FrontFleuron from '$lib/components/age/home/FrontFleuron.svelte';
+	import PremiumNudge from '$lib/components/age/home/PremiumNudge.svelte';
 	import { buildFront } from '$lib/components/age/home/front-adapters.js';
 	import { reveal } from '$lib/actions/reveal.js';
 
@@ -18,6 +19,9 @@
 	let { data } = $props();
 
 	const F = $derived(buildFront(data));
+	// Premium reminders (the Library mosaic tile + the card before AGE Open) are
+	// for everyone who isn't a member: guests and signed-in free users.
+	const nudge = $derived(!data?.isPremiumMember);
 </script>
 
 <svelte:head>
@@ -34,7 +38,7 @@
 	{#if F.library?.length}
 		<FrontFleuron />
 		<div use:reveal>
-			<FrontLibrary items={F.library} />
+			<FrontLibrary items={F.library} premiumTile={nudge} />
 		</div>
 	{/if}
 
@@ -43,7 +47,13 @@
 		<FrontAcademy data={F.academy} />
 	</div>
 
-	<FrontFleuron />
+	{#if nudge}
+		<div class="py-12 md:py-16" use:reveal>
+			<PremiumNudge variant="play" />
+		</div>
+	{:else}
+		<FrontFleuron />
+	{/if}
 	<div use:reveal>
 		<FrontOpen data={F.open} />
 	</div>

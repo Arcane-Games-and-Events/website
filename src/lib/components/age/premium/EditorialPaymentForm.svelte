@@ -93,7 +93,7 @@
 
 {#if success}
 	<div class="border-prem/40 bg-prem/10 p-6 text-center">
-		<div class="bg-prem mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full text-white">
+		<div class="bg-prem mx-auto mb-3 flex h-12 w-12 items-center justify-center text-white">
 			✓
 		</div>
 		<h3 class="font-newsreader text-ink mb-1 text-[24px] leading-[1.1] font-semibold">
