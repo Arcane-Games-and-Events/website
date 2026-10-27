@@ -1,603 +1,684 @@
 <script>
+	/**
+	 * Academy index — the course catalogue in the Academy's own register
+	 * (board-green masthead, gold accents, paper cards). Search and the
+	 * filters run in the browser over the full published list; the state
+	 * mirrors into the URL so a filtered view can be shared.
+	 */
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
-	import { page } from '$app/stores';
+	import CourseCard from '$lib/components/age/academy/CourseCard.svelte';
+	import { replaceState } from '$app/navigation';
+	import { onMount } from 'svelte';
+	import CourseCover from '$lib/components/age/academy/CourseCover.svelte';
+	import FilterSelect from '$lib/components/age/FilterSelect.svelte';
+	import { toCard, lengthBand, formatMinutes, formatPrice } from '$lib/academy/format.js';
 
-	const isPremiumMember = $derived($page.data?.isPremiumMember ?? false);
+	let { data } = $props();
 
-	// ============ placeholder data ============
-	// Academy launches with the rest of the editorial site; until the
-	// courses CMS is wired, the markup runs on these realistic-looking
-	// placeholder objects so the page reads complete. Swap the arrays
-	// for loaded data once the backend is ready — the templates below
-	// already take the shapes we'll ship.
+	const member = $derived(data.isPremiumMember ?? false);
+	const courses = $derived((data.courses ?? []).map(toCard));
+	const progress = $derived(data.progress ?? {});
+	const previews = $derived(data.previews ?? []);
 
-	const STATS = [
-		{ n: '38', l: 'Courses' },
-		{ n: '410+', l: 'Lessons' },
-		{ n: '12k', l: 'Learners' }
+	// ============ featured: the newest course ============
+	const featured = $derived(
+		[...courses].sort(
+			(a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime()
+		)[0] ?? null
+	);
+	const featuredMeta = $derived(
+		featured
+			? [featured.lessons ? `${featured.lessons} lessons` : '', formatMinutes(featured.minutes)]
+					.filter(Boolean)
+					.join(' · ')
+			: ''
+	);
+	const featuredTicks = $derived(Array.from({ length: Math.min(featured?.lessons || 0, 24) }));
+	const featuredFree = $derived(
+		featured ? previews.filter((l) => l.courseSlug === featured.slug).slice(0, 3) : []
+	);
+	const featuredAdded = $derived(
+		featured?.publishedAt
+			? new Date(featured.publishedAt).toLocaleDateString('en-US', {
+					month: 'short',
+					day: 'numeric',
+					year: 'numeric'
+				})
+			: ''
+	);
+
+	// ============ continue learning ============
+	const inProgress = $derived(
+		courses
+			.filter((c) => progress[c.slug])
+			.map((c) => ({
+				card: c,
+				p: { completed: progress[c.slug].completed, total: c.lessons },
+				lastAt: progress[c.slug].lastAt,
+				lastLesson: progress[c.slug].lastLessonTitle
+			}))
+			.sort((a, b) => new Date(b.lastAt || 0).getTime() - new Date(a.lastAt || 0).getTime())
+			.slice(0, 3)
+	);
+
+	// ============ filters ============
+	const PRICE = [
+		{ v: 'all', l: 'All' },
+		{ v: 'free', l: 'Free' },
+		{ v: 'paid', l: 'Paid' }
+	];
+	const LENGTH = [
+		{ v: 'all', l: 'Any length' },
+		{ v: 'short', l: 'Under 1 hour' },
+		{ v: 'medium', l: '1 – 3 hours' },
+		{ v: 'long', l: 'Over 3 hours' }
+	];
+	const SORT = [
+		{ v: 'newest', l: 'Newest' },
+		{ v: 'az', l: 'A – Z' },
+		{ v: 'price-asc', l: 'Price: low to high' },
+		{ v: 'price-desc', l: 'Price: high to low' },
+		{ v: 'longest', l: 'Longest first' },
+		{ v: 'shortest', l: 'Shortest first' }
 	];
 
-	// Current learner's in-progress course (drives the "Continue Learning" card)
-	const CURRENT = {
-		title: 'Reading the Board: Decision-Making in CC',
-		level: 'Intermediate',
-		lessons: 14,
-		progress: 42,
-		coverImage: 'https://www.age.events/banner/academy-banner.webp',
-		syllabus: [
-			{ title: 'What tempo actually means', done: true, time: '6 min' },
-			{ title: 'Counting cards & blocking math', done: true, time: '9 min' },
-			{ title: 'When to go wide vs. tall', now: true, time: '8 min' },
-			{ title: 'Arsenal as a tempo tool', time: '7 min' }
-		]
-	};
+	let q = $state('');
+	let price = $state('all');
+	let who = $state('');
+	let len = $state('all');
+	let sort = $state('newest');
 
-	const TRACKS = [
-		{
-			title: 'Fundamentals',
-			body: 'Pitch math, blocking calculus, and tempo — the foundation every competitive player needs.',
-			courses: 6,
-			color: '#2F7D46'
-		},
-		{
-			title: 'Competitive Calling',
-			body: 'Sideboarding, hero matchups, and tournament prep for AGE Open contenders.',
-			courses: 9,
-			color: '#16489E'
-		},
-		{
-			title: 'Format Mastery',
-			body: 'Deep dives by format — Classic Constructed, Blitz, Living Legend, and Sealed.',
-			courses: 12,
-			color: '#C0461F'
+	const instructors = $derived.by(() => {
+		/** @type {Map<string, number>} */
+		const m = new Map();
+		for (const c of courses) m.set(c.instructor, (m.get(c.instructor) || 0) + 1);
+		return [...m.entries()]
+			.map(([name, count]) => ({ name, count }))
+			.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+	});
+	const instructorOptions = $derived([
+		{ v: '', l: 'Anyone' },
+		...instructors.map((i) => ({ v: i.name, l: i.name }))
+	]);
+
+	const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+	const filtered = $derived.by(() => {
+		const terms = norm(q).split(/\s+/).filter(Boolean);
+		return courses.filter((c) => {
+			if (price === 'free' && c.price > 0) return false;
+			if (price === 'paid' && !(c.price > 0)) return false;
+			if (who && c.instructor !== who) return false;
+			if (len !== 'all' && lengthBand(c.minutes) !== len) return false;
+			if (terms.length) {
+				const hay = norm(`${c.title} ${c.dek} ${c.instructor}`);
+				if (!terms.every((t) => hay.includes(t))) return false;
+			}
+			return true;
+		});
+	});
+	const sorted = $derived.by(() => {
+		const list = [...filtered];
+		const t = (c) => new Date(c.publishedAt || 0).getTime();
+		switch (sort) {
+			case 'az':
+				return list.sort((a, b) => a.title.localeCompare(b.title));
+			case 'price-asc':
+				return list.sort((a, b) => a.price - b.price || t(b) - t(a));
+			case 'price-desc':
+				return list.sort((a, b) => b.price - a.price || t(b) - t(a));
+			case 'longest':
+				return list.sort((a, b) => b.minutes - a.minutes);
+			case 'shortest':
+				return list.sort((a, b) => a.minutes - b.minutes);
+			default:
+				return list.sort((a, b) => t(b) - t(a));
 		}
-	];
+	});
+	const activeCount = $derived(
+		(q ? 1 : 0) + (price !== 'all' ? 1 : 0) + (who ? 1 : 0) + (len !== 'all' ? 1 : 0)
+	);
+	const resultLine = $derived.by(() => {
+		const noun = courses.length === 1 ? 'course' : 'courses';
+		if (sorted.length === courses.length) return `${courses.length} ${noun}.`;
+		return `${sorted.length} of ${courses.length} ${noun}${q ? ` matching “${q}”` : ''}.`;
+	});
+	function clearAll() {
+		q = '';
+		price = 'all';
+		who = '';
+		len = 'all';
+		sort = 'newest';
+	}
 
-	const COURSES = [
-		{
-			title: 'Punishing the Mirror',
-			level: 'Advanced',
-			lessons: 9,
-			minutes: 84,
-			rating: 4.9,
-			students: 1840,
-			progress: 0,
-			free: false,
-			price: 24,
-			image: 'https://www.age.events/banner/articles-banner.webp'
-		},
-		{
-			title: 'Reading the Board: Decision-Making in CC',
-			level: 'Intermediate',
-			lessons: 14,
-			minutes: 126,
-			rating: 4.8,
-			students: 3210,
-			progress: 42,
-			free: false,
-			price: 32,
-			image: 'https://www.age.events/banner/academy-banner.webp'
-		},
-		{
-			title: 'Sideboarding for Sealed',
-			level: 'Beginner',
-			lessons: 7,
-			minutes: 48,
-			rating: 4.7,
-			students: 2470,
-			progress: 0,
-			free: true,
-			price: 0,
-			image: 'https://www.age.events/banner/studios-banner.webp'
-		},
-		{
-			title: 'Tempo & Tempo Loss',
-			level: 'Intermediate',
-			lessons: 11,
-			minutes: 92,
-			rating: 4.9,
-			students: 1990,
-			progress: 100,
-			free: false,
-			price: 28,
-			image: 'https://www.age.events/banner/age-open-banner.webp'
-		},
-		{
-			title: 'Mulligan Theory',
-			level: 'Beginner',
-			lessons: 5,
-			minutes: 34,
-			rating: 4.6,
-			students: 4120,
-			progress: 0,
-			free: true,
-			price: 0,
-			image: 'https://www.age.events/hero_images/prism-awakener-of-sol.webp'
-		},
-		{
-			title: 'Calling the Bluff — Reads & Tells',
-			level: 'Advanced',
-			lessons: 8,
-			minutes: 71,
-			rating: 4.9,
-			students: 920,
-			progress: 18,
-			free: false,
-			price: 36,
-			image: 'https://www.age.events/hero_images/arakni-marionette.webp'
+	// ============ URL sync ============
+	// Read the filters from the URL once on mount, then mirror every
+	// change back with replaceState so the view can be shared and the
+	// back button is not polluted.
+	let ready = $state(false);
+	onMount(() => {
+		const sp = new URLSearchParams(window.location.search);
+		q = sp.get('q') || '';
+		if (PRICE.some((o) => o.v === sp.get('price'))) price = /** @type {string} */ (sp.get('price'));
+		who = sp.get('who') || '';
+		if (LENGTH.some((o) => o.v === sp.get('len'))) len = /** @type {string} */ (sp.get('len'));
+		if (SORT.some((o) => o.v === sp.get('sort'))) sort = /** @type {string} */ (sp.get('sort'));
+		ready = true;
+	});
+	$effect(() => {
+		if (!ready) return;
+		const sp = new URLSearchParams();
+		if (q) sp.set('q', q);
+		if (price !== 'all') sp.set('price', price);
+		if (who) sp.set('who', who);
+		if (len !== 'all') sp.set('len', len);
+		if (sort !== 'newest') sp.set('sort', sort);
+		// Compare as sorted pairs so a hand-typed order of parameters is not
+		// "different"; and never let a too-early replaceState break hydration.
+		const canon = (x) =>
+			[...new URLSearchParams(x).entries()]
+				.sort()
+				.map(([k, v]) => `${k}=${v}`)
+				.join('&');
+		if (canon(window.location.search) !== canon(sp)) {
+			const next = sp.toString() ? `?${sp}` : '';
+			try {
+				replaceState(`${window.location.pathname}${next}${window.location.hash}`, {});
+			} catch {
+				/* router not ready yet; the next change will sync */
+			}
 		}
-	];
+	});
 
-	const VODS = [
-		{
-			title: 'The LA Open final, in full',
-			meta: '58 min · AGE Studios · LA Open',
-			image: 'https://www.age.events/banner/age-open-banner.webp',
-			duration: '58:00'
-		},
-		{
-			title: 'How Wesley netdecked Memphis',
-			meta: '34 min · Deck Tech · Wesley Dong',
-			image: 'https://www.age.events/banner/articles-banner.webp',
-			duration: '34:18'
-		},
-		{
-			title: 'Behind the booth — Top 8 of NE',
-			meta: '21 min · AGE Studios · NE Open',
-			image: 'https://www.age.events/banner/studios-banner.webp',
-			duration: '21:42'
-		}
-	];
-
-	const ARTICLES = [
-		{
-			title: 'They Reminisce Over You',
-			author: 'Wesley Dong',
-			read: '31 min read',
-			premium: true
-		},
-		{
-			title: "Sideboarding for the Calling — what's changing in 2026",
-			author: 'Marco Marcelli',
-			read: '12 min read',
-			premium: false
-		},
-		{
-			title: 'The case for slow Briar in Classic Constructed',
-			author: 'Justin Liwag',
-			read: '18 min read',
-			premium: true
-		},
-		{
-			title: 'Counting cards: tempo math that actually matters',
-			author: 'AGE Studios',
-			read: '9 min read',
-			premium: false
-		}
-	];
-
-	// progress-ring math for the Continue Learning card — computed
-	// once since CURRENT is static placeholder data
-	const RING_R = 24;
-	const RING_C = 2 * Math.PI * RING_R;
-	const RING_OFFSET = RING_C * (1 - CURRENT.progress / 100);
+	/** @type {HTMLElement | undefined} */
+	let catalogueEl = $state();
+	function jumpToCatalogue() {
+		catalogueEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
 </script>
 
 <svelte:head>
 	<title>Academy — AGE</title>
 	<meta
 		name="description"
-		content="A structured course platform built with the players who define the format. Buy a course once and it's yours for life — Premium members get every author update."
+		content="Full written courses from the players who define the format. Buy once, keep for life. Premium members get every course update free."
 	/>
 </svelte:head>
 
 <AgeShell active="Academy">
-	<!-- ============ HERO + CONTINUE LEARNING ============ -->
-	<section class="border-ink border-b-[3px] border-double">
+	<!-- ============ masthead ============ -->
+	<section class="relative bg-academy text-paper-bg">
 		<div
-			class="mx-auto grid w-full max-w-[1600px] grid-cols-1 items-center gap-10 px-14 pt-[50px] pb-[52px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-12"
-		>
-			<!-- left: copy + stats -->
-			<div>
-				<div class="mb-4 inline-flex items-center gap-[10px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase before:block before:h-[2px] before:w-[22px] before:content-['']" style="color: #C8922E;">
-					<span class="block h-[2px] w-[22px]" style="background-color: #C8922E;"></span>
-					AGE Academy
-				</div>
-				<h1 class="font-newsreader text-[clamp(46px,5.5vw,62px)] leading-[0.96] font-semibold tracking-[-0.02em]">
-					Master the game, one
-					<em class="text-[#C8922E] italic font-medium">lesson</em>
-					at a time.
-				</h1>
-				<p class="text-soft mt-5 max-w-[500px] text-[18px] leading-[1.6]">
-					A structured course platform built with the players who define the format. Buy a course
-					once and it's yours for life — Premium members get the author's regular updates as the
-					game evolves.
-				</p>
-				<div class="mt-7 flex flex-wrap gap-3">
-					<a
-						href="#catalog"
-						class="inline-flex items-center gap-2 border-[1.5px] px-5 py-[13px] text-[12px] font-bold tracking-[0.05em] text-white uppercase transition-[filter] hover:brightness-110"
-						style="background-color: #C8922E; border-color: #C8922E;"
-					>
-						Start learning — free
-					</a>
-					<a
-						href="#catalog"
-						class="border-ink text-ink hover:bg-ink hover:text-paper-bg inline-flex items-center gap-2 border-[1.5px] bg-transparent px-5 py-[13px] text-[12px] font-bold tracking-[0.05em] uppercase transition-colors"
-					>
-						Browse catalog
-					</a>
-				</div>
-				<div class="border-line2 mt-[34px] flex flex-wrap gap-x-8 gap-y-4 border-t pt-[18px]">
-					{#each STATS as st, i (st.l)}
-						<div class="border-line2 {i === STATS.length - 1 ? '' : 'border-r'} pr-8">
-							<div class="font-newsreader text-[38px] leading-[0.85] font-semibold tabular-nums">
-								{st.n}
-							</div>
-							<div class="text-fade mt-2 text-[11px] font-extrabold tracking-[0.1em] uppercase">
-								{st.l}
-							</div>
-						</div>
-					{/each}
-				</div>
-			</div>
-
-			<!-- right: Continue Learning card -->
-			<aside
-				class="bg-paper p-[26px]"
-				style="border: 1px solid var(--ed-line2); border-top: 3px solid #C8922E;"
-			>
-				<div class="text-fade mb-4 text-[10.5px] font-extrabold tracking-[0.16em] uppercase">
-					Continue learning
-				</div>
-
-				<!-- course header -->
-				<div class="mb-5 flex items-center gap-4">
-					<div
-						class="border-line2 bg-panel h-[76px] w-[104px] flex-shrink-0 border bg-cover bg-center"
-						style="background-image: url('{CURRENT.coverImage}');"
-					></div>
-					<div class="min-w-0 flex-1">
-						<div class="text-[10px] font-extrabold tracking-[0.08em] uppercase" style="color: #C8922E;">
-							{CURRENT.level}
-						</div>
-						<h3 class="font-newsreader text-[23px] leading-[1.05] font-semibold tracking-[-0.01em] mt-[5px]">
-							{CURRENT.title}
-						</h3>
-						<div class="text-fade mt-[5px] text-[12px] font-bold">
-							Lesson 3 of {CURRENT.lessons}
-						</div>
-					</div>
-					<!-- progress ring -->
-					<svg width="56" height="56" viewBox="0 0 56 56" class="flex-shrink-0">
-						<circle
-							cx="28"
-							cy="28"
-							r="24"
-							fill="none"
-							stroke="rgba(146,139,121,0.3)"
-							stroke-width="6"
-						/>
-						<circle
-							cx="28"
-							cy="28"
-							r="24"
-							fill="none"
-							stroke="#C8922E"
-							stroke-width="6"
-							stroke-linecap="round"
-							stroke-dasharray={RING_C}
-							stroke-dashoffset={RING_OFFSET}
-							transform="rotate(-90 28 28)"
-						/>
-						<text
-							x="50%"
-							y="53%"
-							dominant-baseline="middle"
-							text-anchor="middle"
-							class="text-ink font-libre"
-							style="font-size: 13px; font-weight: 800; fill: currentColor;"
-						>
-							{CURRENT.progress}%
-						</text>
-					</svg>
-				</div>
-
-				<!-- syllabus -->
-				<div>
-					{#each CURRENT.syllabus as item, i (i)}
-						<div
-							class="border-line flex items-center gap-3 border-t py-[11px] text-[14px] {item.done
-								? ''
-								: item.now
-									? 'font-extrabold'
-									: 'font-semibold'} {i === 0 ? '!border-t border-[#C7BFA9]' : ''}"
-							style={item.now ? 'color: #C8922E;' : ''}
-						>
-							<span
-								class="flex h-[21px] w-[21px] flex-shrink-0 items-center justify-center rounded-full border-[1.5px] text-[10px] font-extrabold"
-								style={item.done
-									? 'background-color: var(--ed-prem); border-color: var(--ed-prem); color: white;'
-									: item.now
-										? 'border-color: #C8922E; color: #C8922E;'
-										: 'border-color: var(--ed-line2); color: var(--ed-fade);'}
-							>
-								{item.done ? '✓' : item.now ? '▶' : i + 1}
-							</span>
-							<span>{item.title}</span>
-							<span class="text-fade ml-auto text-[12px] font-bold">{item.time}</span>
-						</div>
-					{/each}
-				</div>
-
-				<a
-					href="#catalog"
-					class="mt-5 inline-flex w-full items-center justify-center gap-2 border-[1.5px] px-5 py-[12px] text-[12px] font-bold tracking-[0.05em] text-white uppercase transition-[filter] hover:brightness-110"
-					style="background-color: #C8922E; border-color: #C8922E;"
+			class="pointer-events-none absolute inset-x-0 top-0 h-40"
+			style="background: linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0));"
+			aria-hidden="true"
+		></div>
+		<div class="relative mx-auto w-full max-w-[1200px] px-5 pt-12 pb-12 md:px-8 md:pt-16 md:pb-20">
+			<div class="flex items-center gap-4 md:gap-6">
+				<span class="h-px flex-1 bg-gold/50"></span>
+				<div
+					class="flex items-center gap-3 text-[10.5px] font-extrabold tracking-[0.3em] text-gold uppercase md:text-[11.5px]"
 				>
-					Resume lesson →
-				</a>
-			</aside>
-		</div>
-	</section>
-
-	<!-- ============ TRACKS ============ -->
-	<section class="border-ink border-b-[3px] border-double">
-		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[46px] pb-[22px]">
-			<div class="flex flex-wrap items-end justify-between gap-5">
-				<div>
-					<div class="mb-[9px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase" style="color: #C8922E;">
-						Guided paths
-					</div>
-					<h2 class="font-newsreader text-[38px] font-semibold leading-none tracking-[-0.02em]">
-						Learning tracks
-					</h2>
-					<p class="text-soft mt-2 max-w-[520px] text-[14px] leading-[1.5]">
-						Sequenced courses that take you from one milestone to the next.
-					</p>
+					<span aria-hidden="true">◆</span>
+					AGE Academy
+					<span aria-hidden="true">◆</span>
 				</div>
-				<a href="#catalog" class="text-[11px] font-extrabold tracking-[0.07em] whitespace-nowrap uppercase" style="color: #C8922E;">
-					All tracks →
-				</a>
+				<span class="h-px flex-1 bg-gold/50"></span>
 			</div>
-		</div>
-
-		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[46px]">
-			<div class="border-line2 grid grid-cols-1 gap-[1px] border bg-[#C7BFA9] md:grid-cols-3">
-				{#each TRACKS as track, i (track.title)}
-					<a
-						href="#catalog"
-						class="bg-paper-bg hover:bg-paper group flex min-h-[180px] flex-col px-7 py-7 transition-colors"
-						style="border-top: 4px solid {track.color};"
-					>
-						<div
-							class="font-archivo text-[30px] leading-[0.8] font-black tracking-[-0.02em] tabular-nums"
-							style="color: {track.color};"
-						>
-							{String(i + 1).padStart(2, '0')}
-						</div>
-						<h3 class="font-newsreader mt-4 mb-[9px] text-[24px] font-semibold leading-[1.1]">
-							{track.title}
-						</h3>
-						<p class="text-soft m-0 mb-auto max-w-[280px] text-[13.5px] leading-[1.5]">
-							{track.body}
-						</p>
-						<div
-							class="mt-5 text-[11px] font-extrabold tracking-[0.06em] uppercase"
-							style="color: {track.color};"
-						>
-							{track.courses} courses →
-						</div>
-					</a>
-				{/each}
+			<div class="mx-auto mt-6 max-w-[820px] text-center">
+				<h1
+					class="fp-rise font-newsreader text-[40px] leading-[0.98] font-semibold tracking-[-0.02em] [text-wrap:balance] md:text-[64px]"
+				>
+					Learn the game from the players who define it.
+				</h1>
+				<p
+					class="fp-rise mx-auto mt-4 max-w-[640px] font-newsreader text-[16px] leading-[1.45] text-paper-bg/70 italic md:mt-5 md:text-[19px]"
+					style="animation-delay: 120ms;"
+				>
+					Full courses on decision-making, sideboarding and tempo, written by the pros and broken
+					into short lessons. Buy once, keep for life.
+				</p>
 			</div>
-		</div>
-	</section>
 
-	<!-- ============ CATALOG ============ -->
-	<section id="catalog" class="border-ink border-b-[3px] border-double">
-		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[46px] pb-[22px]">
-			<div class="flex flex-wrap items-end justify-between gap-5">
-				<div>
-					<div class="mb-[9px] text-[10.5px] font-extrabold tracking-[0.2em] uppercase" style="color: #C8922E;">
-						Course catalog
-					</div>
-					<h2 class="font-newsreader text-[38px] font-semibold leading-none tracking-[-0.02em]">
-						Start anywhere
-					</h2>
-					<p class="text-soft mt-2 max-w-[520px] text-[14px] leading-[1.5]">
-						Free and paid courses across every skill level — buy once, own for life, and your
-						progress is saved as you go.
-					</p>
-				</div>
-				<a href="#catalog" class="text-[11px] font-extrabold tracking-[0.07em] whitespace-nowrap uppercase" style="color: #C8922E;">
-					Filter &amp; browse →
-				</a>
-			</div>
-		</div>
-
-		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[46px]">
-			<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-				{#each COURSES as c (c.title)}
-					<a
-						href="#catalog"
-						class="border-line2 bg-paper-bg group hover:border-ink flex flex-col border transition-colors"
-					>
-						<div
-							class="border-line2 relative h-[150px] border-b bg-cover bg-center"
-							style="background-image: url('{c.image}');"
-						>
-							<span class="bg-paper-bg text-ink absolute top-[11px] left-[11px] px-[9px] py-[4px] text-[9.5px] font-extrabold tracking-[0.07em] uppercase">
-								{c.level}
-							</span>
-							{#if c.free}
+			<!-- featured: the newest course as a spread on the band -->
+			{#if featured}
+				<article
+					class="mt-10 grid gap-8 border-t border-gold/40 pt-8 md:mt-14 md:pt-10 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:gap-14"
+					aria-label="Newest course: {featured.title}"
+				>
+					<!-- cover in a gold plate -->
+					<a href={featured.href} class="group relative block lg:order-2">
+						<span
+							class="pointer-events-none absolute inset-0 translate-x-3 translate-y-3 border border-gold/70 transition-transform duration-1000 ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:translate-x-2.5 group-hover:translate-y-2.5"
+							aria-hidden="true"
+						></span>
+						<CourseCover image={featured.image} slug={featured.slug} class="relative z-[1]">
+							<span
+								class="absolute top-0 left-0 bg-gold px-3 py-1.5 text-[9.5px] font-extrabold tracking-[0.18em] text-[#241b07] uppercase"
+								>Newest course</span
+							>
+							{#if featuredAdded}
 								<span
-									class="bg-prem absolute top-[11px] right-[11px] px-[9px] py-[4px] text-[9.5px] font-extrabold tracking-[0.05em] text-white uppercase"
+									class="absolute right-0 bottom-0 bg-paper-bg px-3 py-1.5 text-[9px] font-extrabold tracking-[0.16em] text-ink uppercase"
+									>Added {featuredAdded}</span
 								>
-									Free
+							{/if}
+						</CourseCover>
+					</a>
+
+					<!-- copy -->
+					<div class="lg:order-1">
+						<p
+							class="flex items-center gap-2.5 text-[10px] font-extrabold tracking-[0.22em] text-gold uppercase md:text-[10.5px]"
+						>
+							<span aria-hidden="true">◆</span> With {featured.instructor}
+						</p>
+						<h2
+							class="mt-3 font-newsreader text-[32px] leading-[1.02] font-semibold tracking-[-0.015em] [text-wrap:balance] md:text-[44px]"
+						>
+							<a href={featured.href} class="fp-ul">{featured.title}</a>
+						</h2>
+						{#if featured.dek}
+							<p
+								class="mt-4 line-clamp-4 font-newsreader text-[16px] leading-[1.5] text-paper-bg/75 italic md:text-[17.5px]"
+							>
+								{featured.dek}
+							</p>
+						{/if}
+
+						<div class="mt-6 flex items-center gap-3 text-[10.5px] font-semibold text-paper-bg/70">
+							{#if featuredTicks.length}
+								<span class="flex items-end gap-[3px]" aria-hidden="true">
+									{#each featuredTicks as _, i (i)}
+										<span class="block h-[8px] w-[3px] bg-gold"></span>
+									{/each}
 								</span>
 							{/if}
+							{#if featuredMeta}<span>{featuredMeta}</span>{/if}
 						</div>
-						<div class="flex flex-1 flex-col px-5 py-[20px]">
-							<h4 class="font-newsreader group-hover:text-[#C8922E] text-[21px] leading-[1.06] font-semibold transition-colors mb-2">
-								{c.title}
-							</h4>
-							<div class="text-fade mb-[14px] flex gap-2 text-[12px] font-bold">
-								<span>{c.lessons} lessons · {c.minutes} min</span>
-								<span style="color: #C8922E;">★ {c.rating}</span>
-							</div>
-							<div class="bg-line mt-auto h-[5px] overflow-hidden">
-								<span
-									class="block h-full"
-									style="width: {c.progress}%; background-color: #C8922E;"
-								></span>
-							</div>
-							<div class="text-soft mt-[10px] flex items-center justify-between text-[11px] font-extrabold tracking-[0.04em] uppercase">
-								<span>
-									{c.progress === 100
-										? 'Completed'
-										: c.progress > 0
-											? `${c.progress}% complete`
-											: `${c.students.toLocaleString()} enrolled`}
-								</span>
-								<span style="color: #C8922E;">
-									{c.free ? 'Free' : `$${c.price}`}
-								</span>
-							</div>
-						</div>
-					</a>
-				{/each}
-			</div>
-		</div>
-	</section>
 
-	<!--
-		WATCH + READ — the two-column split now sits inside the same
-		`max-w-[1600px]` cap as the hero and the rest of the
-		sections, so the columns line up with the page's content gutter
-		on wide screens instead of stretching to the viewport edges.
-	-->
-	<section class="border-ink border-b-[3px] border-double">
-		<div
-			class="mx-auto grid w-full max-w-[1600px] grid-cols-1 px-14 lg:grid-cols-2"
-		>
-			<!-- watch -->
-			<div class="border-line2 py-[40px] lg:border-r lg:pr-12">
-			<div class="mb-6 flex items-baseline justify-between">
-				<h3 class="font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
-					Watch to learn
-				</h3>
-				<a href="/studios" class="text-[11px] font-extrabold tracking-[0.06em] uppercase" style="color: #C8922E;">
-					AGE Studios →
-				</a>
-			</div>
-			{#each VODS as v, i (v.title)}
-				<a
-					href="/studios"
-					class="border-line group flex items-center gap-[15px] border-t py-[14px] first:border-t-0 first:pt-0"
-				>
-					<div
-						class="border-line2 bg-panel relative h-[72px] w-[124px] flex-shrink-0 border bg-cover bg-center"
-						style="background-image: url('{v.image}');"
-					>
-						<span
-							class="absolute top-1/2 left-1/2 flex h-[30px] w-[30px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-paper-bg/90 text-[11px] text-ink"
-							aria-hidden="true"
+						{#if featuredFree.length}
+							<div class="mt-6 border-t border-paper-bg/15 pt-4">
+								<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-gold uppercase">
+									Free to read
+								</p>
+								<ol class="mt-2">
+									{#each featuredFree as l, i (l.id)}
+										<li class="flex items-baseline gap-3 py-1.5 text-paper-bg">
+											<span class="w-6 shrink-0 font-newsreader text-[15px] text-gold tabular-nums"
+												>{String(i + 1).padStart(2, '0')}</span
+											>
+											<span class="font-newsreader text-[16.5px] leading-tight font-semibold">
+												{l.title}
+											</span>
+											<span
+												class="ml-auto shrink-0 text-[10px] font-semibold text-paper-bg/55 tabular-nums"
+												>{l.minutes} min</span
+											>
+										</li>
+									{/each}
+								</ol>
+							</div>
+						{/if}
+
+						<div
+							class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-4 border-t border-paper-bg/15 pt-6"
 						>
-							▶
-						</span>
-						<span class="absolute right-[5px] bottom-[5px] bg-black/80 px-[5px] py-[1px] text-[9.5px] font-bold text-white">
-							{v.duration}
-						</span>
-					</div>
-					<div>
-						<h4 class="font-newsreader text-[17px] leading-[1.12] font-semibold group-hover:text-[#C8922E] transition-colors">
-							{v.title}
-						</h4>
-						<div class="text-fade mt-[5px] text-[11px] font-bold">
-							{v.meta}
+							<span class="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-2">
+								<span
+									class="font-newsreader text-[32px] leading-none font-semibold text-gold tabular-nums"
+									>{formatPrice(featured.price)}</span
+								>
+								{#if featured.price > 0}
+									<span
+										class="text-[10px] font-extrabold tracking-[0.14em] whitespace-nowrap text-paper-bg/60 uppercase"
+										>One-time purchase</span
+									>
+								{/if}
+							</span>
+							<span class="flex items-center gap-5">
+								<a
+									href={featured.href}
+									class="inline-flex items-center bg-gold px-5 py-3 text-[10.5px] font-extrabold tracking-[0.16em] whitespace-nowrap text-[#241b07] uppercase transition-[filter] hover:brightness-110"
+								>
+									{featured.price > 0 ? 'Enroll' : 'Start free'} →
+								</a>
+								<a
+									href="{featured.href}#syllabus"
+									class="border-b border-paper-bg/40 pb-0.5 text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap text-paper-bg/80 uppercase transition-colors hover:border-gold hover:text-gold"
+								>
+									See the syllabus
+								</a>
+							</span>
 						</div>
 					</div>
-				</a>
-			{/each}
-		</div>
-
-		<!-- read -->
-		<div class="py-[40px] lg:pl-12">
-			<div class="mb-6 flex items-baseline justify-between">
-				<h3 class="font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
-					Read to improve
-				</h3>
-				<a href="/library" class="text-[11px] font-extrabold tracking-[0.06em] uppercase" style="color: #C8922E;">
-					All articles →
-				</a>
-			</div>
-			{#each ARTICLES as a, i (a.title)}
-				<a
-					href="/library"
-					class="border-line group grid grid-cols-[1fr_auto] items-start gap-[14px] border-t py-[14px] first:border-t-0 first:pt-0"
-				>
-					<div>
-						<h4 class="font-newsreader text-[18px] leading-[1.1] font-semibold group-hover:text-warm transition-colors">
-							{a.title}
-						</h4>
-						<div class="text-fade mt-[6px] text-[11px] font-bold tracking-[0.04em] uppercase">
-							{a.author} · {a.read}
-						</div>
-					</div>
-					<span
-						class="text-[9.5px] font-extrabold tracking-[0.07em] uppercase px-[8px] py-[3px]"
-						style={a.premium
-							? 'background-color: var(--ed-prem); color: white;'
-							: 'border: 1px solid var(--ed-line2); color: var(--ed-soft);'}
-					>
-						{a.premium ? 'Premium' : 'Free'}
-					</span>
-				</a>
-			{/each}
-		</div>
+				</article>
+			{/if}
 		</div>
 	</section>
 
-	<!-- ============ PLEDGE BAND ============ -->
-	{#if !isPremiumMember}
-	<section class="px-14 py-[44px]">
-		<div class="mx-auto w-full max-w-[1600px]">
-			<div
-				class="bg-ink text-paper-bg relative flex flex-wrap items-center justify-between gap-11 overflow-hidden px-14 py-[52px]"
-			>
-				<!-- gold ring ornament -->
-				<div
-					class="pointer-events-none absolute -top-[90px] -right-[90px] h-[300px] w-[300px] rounded-full"
-					style="border: 42px solid rgba(200, 146, 46, 0.16);"
-					aria-hidden="true"
-				></div>
-
-				<div class="relative z-[1] max-w-[680px]">
-					<div class="mb-3 text-[10.5px] font-extrabold tracking-[0.18em] uppercase" style="color: #F4C66A;">
-						Premium · Always up to date
-					</div>
-					<h2 class="font-newsreader text-[40px] leading-[1.05] font-semibold tracking-[-0.01em] text-white">
-						Your courses, kept
-						<em class="font-medium italic" style="color: #F4C66A;">current</em>
-						— for as long as you play.
+	<!-- ============ continue learning ============ -->
+	{#if inProgress.length}
+		<section class="border-b border-line bg-paper">
+			<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-12">
+				<div class="flex items-baseline justify-between gap-4">
+					<h2
+						class="flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+					>
+						<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
+						Continue learning
 					</h2>
-					<p class="mt-[14px] max-w-[560px] text-[14.5px] leading-[1.55]" style="color: #C7BFA9;">
-						Every course is yours to keep the day you buy it. Premium members get the authors'
-						regular updates on top — new lines, fresh matchups, and meta calls added as the
-						format moves, at no extra cost.
+					<span class="font-newsreader text-[15px] text-soft italic"
+						>Pick up where you left off.</span
+					>
+				</div>
+				<ul class="mt-5 grid gap-5 md:grid-cols-3">
+					{#each inProgress as item (item.card.slug)}
+						<li>
+							<CourseCard course={item.card} progress={item.p} compact />
+						</li>
+					{/each}
+				</ul>
+			</div>
+		</section>
+	{/if}
+
+	<!-- ============ catalogue ============ -->
+	<section id="courses" bind:this={catalogueEl} class="scroll-mt-20">
+		<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-14">
+			<div class="flex items-center gap-4 md:gap-6">
+				<span class="h-px flex-1 bg-ink"></span>
+				<h2
+					class="font-newsreader text-[17px] font-semibold tracking-[0.22em] whitespace-nowrap uppercase md:text-[20px]"
+				>
+					All courses
+				</h2>
+				<span class="h-px flex-1 bg-ink"></span>
+			</div>
+			<div class="mt-2 flex justify-center" aria-hidden="true">
+				<span class="h-[3px] w-10 bg-gold"></span>
+			</div>
+
+			<!-- filter bar -->
+			<div
+				class="mt-7 flex flex-col gap-5 border-y border-line py-5 md:mt-9 md:flex-row md:flex-wrap md:items-center md:gap-x-8 md:gap-y-3 md:py-4"
+			>
+				<label
+					class="relative flex items-center gap-2.5 border border-line2 bg-paper-bg px-3.5 py-2.5 md:w-[280px] md:border-0 md:bg-transparent md:p-0"
+				>
+					<svg
+						class="h-3.5 w-3.5 shrink-0 text-gold"
+						viewBox="0 0 20 20"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.8"
+						aria-hidden="true"
+					>
+						<circle cx="8.5" cy="8.5" r="5.5" />
+						<path d="M13 13l4.5 4.5" stroke-linecap="square" />
+					</svg>
+					<span class="sr-only">Search courses</span>
+					<input
+						type="search"
+						name="q"
+						bind:value={q}
+						placeholder="Search courses, instructors"
+						autocomplete="off"
+						class="w-full border-0 bg-transparent p-0 font-newsreader text-[16px] leading-tight text-ink placeholder:text-fade focus:outline-none md:border-b md:border-line2 md:py-1 md:focus:border-gold"
+					/>
+				</label>
+				<div
+					class="grid grid-cols-3 border border-line2 text-[10px] font-extrabold tracking-[0.16em] uppercase md:flex md:items-center md:gap-5 md:border-0 md:text-[10.5px]"
+					role="group"
+					aria-label="Price"
+				>
+					{#each PRICE as o (o.v)}
+						<button
+							type="button"
+							onclick={() => (price = o.v)}
+							aria-pressed={price === o.v}
+							class="fp-ul border-l border-line2 py-2.5 text-center transition-colors first-of-type:border-l-0 md:border-0 md:py-0 md:pb-0.5 md:hover:text-gold {price ===
+							o.v
+								? 'bg-ink text-paper-bg md:bg-transparent md:[background-size:100%_1.5px] md:text-ink'
+								: 'text-fade'}">{o.l}</button
+						>
+					{/each}
+				</div>
+				<div
+					class="grid grid-cols-2 gap-x-5 gap-y-4 md:flex md:flex-wrap md:items-center md:gap-x-6 md:gap-y-3"
+				>
+					<FilterSelect
+						label="Instructor"
+						bind:value={who}
+						options={instructorOptions}
+						accent="focus-within:border-gold"
+					/>
+					<FilterSelect
+						label="Length"
+						bind:value={len}
+						options={LENGTH}
+						accent="focus-within:border-gold"
+					/>
+				</div>
+				<div class="grid grid-cols-2 items-end gap-x-5 md:ml-auto md:flex md:items-center md:gap-6">
+					<FilterSelect
+						label="Sort"
+						bind:value={sort}
+						options={SORT}
+						accent="focus-within:border-gold"
+					/>
+					{#if activeCount}
+						<button
+							type="button"
+							onclick={clearAll}
+							class="justify-self-end pb-2 text-[10px] font-extrabold tracking-[0.16em] text-gold uppercase transition-[letter-spacing] hover:tracking-[0.22em] md:pb-0"
+							>Clear ×</button
+						>
+					{/if}
+				</div>
+			</div>
+
+			<p class="mt-4 font-newsreader text-[15px] text-soft italic" aria-live="polite">
+				{resultLine}
+			</p>
+
+			{#if sorted.length}
+				<ul class="mt-6 grid gap-6 md:grid-cols-2 md:gap-5 lg:grid-cols-3 lg:gap-6">
+					{#each sorted as c (c.slug)}
+						<li>
+							<CourseCard
+								course={c}
+								showDek
+								progress={progress[c.slug]
+									? { completed: progress[c.slug].completed, total: c.lessons }
+									: null}
+							/>
+						</li>
+					{/each}
+				</ul>
+			{:else}
+				<div class="mt-8 border-[3px] border-double border-ink px-6 py-12 text-center">
+					<p class="font-newsreader text-[24px] font-semibold">Nothing matches that yet.</p>
+					<p class="mt-2 font-newsreader text-[16px] text-soft italic">
+						Try a shorter search, or clear the filters to see every course.
+					</p>
+					<button
+						type="button"
+						onclick={clearAll}
+						class="mt-5 inline-flex items-center bg-ink px-5 py-3 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-gold hover:text-[#241b07]"
+						>Show all courses</button
+					>
+				</div>
+			{/if}
+		</div>
+	</section>
+
+	<!-- ============ free previews + instructors ============ -->
+	{#if previews.length || instructors.length}
+		<section class="border-y border-line bg-paper">
+			<div
+				class="mx-auto grid w-full max-w-[1200px] gap-12 px-5 py-10 md:px-8 md:py-14 lg:grid-cols-[1.4fr_1fr] lg:gap-16"
+			>
+				{#if previews.length}
+					<div>
+						<h2
+							class="flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+						>
+							<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
+							Read free
+						</h2>
+						<p class="mt-2 font-newsreader text-[15px] text-soft italic md:text-[16px]">
+							Every course opens a lesson or two to everyone. Start here.
+						</p>
+						<ol class="mt-4 border-t border-line">
+							{#each previews as l (l.id)}
+								<li class="border-b border-line">
+									<a
+										href="/academy/{l.courseSlug}#syllabus"
+										class="group grid grid-cols-[28px_1fr_auto] items-center gap-3 py-3.5"
+									>
+										<span
+											class="flex h-7 w-7 items-center justify-center bg-ink text-[9px] text-paper-bg transition-colors group-hover:bg-gold group-hover:text-[#241b07]"
+											aria-hidden="true">{l.hasVideo ? '▶' : '¶'}</span
+										>
+										<span class="min-w-0">
+											<span class="block font-newsreader text-[17px] leading-[1.2] font-semibold">
+												<span class="fp-ul">{l.title}</span>
+											</span>
+											<span class="mt-1 block truncate text-[10.5px] text-fade">
+												<span class="font-extrabold tracking-[0.1em] text-ink uppercase"
+													>{l.courseTitle}</span
+												>{#if l.instructor}<span class="font-semibold"> · {l.instructor}</span>{/if}
+											</span>
+										</span>
+										<span
+											class="font-newsreader text-[15px] whitespace-nowrap text-gold tabular-nums"
+											>{l.minutes} min</span
+										>
+									</a>
+								</li>
+							{/each}
+						</ol>
+					</div>
+				{/if}
+				{#if instructors.length}
+					<div>
+						<h2
+							class="flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+						>
+							<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
+							Instructors
+						</h2>
+						<p class="mt-2 font-newsreader text-[15px] text-soft italic md:text-[16px]">
+							Every course is taught by a player who has done it at the top tables.
+						</p>
+						<ul class="mt-4 border-t border-line">
+							{#each instructors as i (i.name)}
+								<li class="border-b border-line">
+									<button
+										type="button"
+										onclick={() => {
+											who = who === i.name ? '' : i.name;
+											jumpToCatalogue();
+										}}
+										aria-pressed={who === i.name}
+										class="group flex w-full items-center justify-between gap-4 py-3.5 text-left"
+									>
+										<span class="flex items-center gap-3">
+											<span
+												class="flex h-8 w-8 items-center justify-center bg-ink font-newsreader text-[13px] font-semibold text-paper-bg transition-colors group-hover:bg-gold group-hover:text-[#241b07]"
+												aria-hidden="true"
+											>
+												{i.name
+													.split(/\s+/)
+													.map((w) => w.charAt(0))
+													.slice(0, 2)
+													.join('')
+													.toUpperCase()}
+											</span>
+											<span class="font-newsreader text-[17px] font-semibold">
+												<span class="fp-ul">{i.name}</span>
+											</span>
+										</span>
+										<span class="text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+											>{i.count} {i.count === 1 ? 'course' : 'courses'} →</span
+										>
+									</button>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				{/if}
+			</div>
+		</section>
+	{/if}
+
+	<!-- ============ how it works + premium ============ -->
+	<section class="mx-auto w-full max-w-[1200px] px-5 py-12 md:px-8 md:py-16">
+		<div class="grid gap-10 lg:grid-cols-[1fr_1fr] lg:gap-16">
+			<div>
+				<h2
+					class="flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+				>
+					<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
+					How the Academy works
+				</h2>
+				<ol class="mt-4 border-t border-line">
+					{#each [['Buy once, keep for life', 'Pay once and the course is yours. No subscription needed to read it.'], ['Lessons, not lectures', 'Short written lessons with drills and self-checks, so each sitting has a point.'], ['Updates free with Premium', 'When an instructor revises a course or adds lessons, Premium members get the new material at no charge.'], ['Free previews', 'Every course opens at least one lesson to everyone before you pay.']] as [t, b], i (t)}
+						<li class="grid grid-cols-[36px_1fr] gap-3 border-b border-line py-4">
+							<span
+								class="font-newsreader text-[22px] leading-none font-semibold text-gold tabular-nums"
+								>{String(i + 1).padStart(2, '0')}</span
+							>
+							<span>
+								<span class="block font-newsreader text-[18px] leading-tight font-semibold"
+									>{t}</span
+								>
+								<span class="mt-1 block font-newsreader text-[15px] leading-[1.45] text-soft italic"
+									>{b}</span
+								>
+							</span>
+						</li>
+					{/each}
+				</ol>
+			</div>
+			{#if !member}
+				<div class="border-[3px] border-double border-ink bg-paper px-6 py-8 md:px-10 md:py-10">
+					<div class="text-[10.5px] font-extrabold tracking-[0.2em] text-prem uppercase">
+						<span aria-hidden="true">◆</span> Premium
+					</div>
+					<p
+						class="mt-3 font-newsreader text-[28px] leading-[1.05] font-semibold tracking-[-0.01em] [text-wrap:balance] md:text-[34px]"
+					>
+						Your courses stay current with Premium.
+					</p>
+					<p class="mt-3 font-newsreader text-[16px] leading-[1.5] text-soft italic">
+						Courses are a one-time purchase. When an instructor revises one you own or adds new
+						lessons, AGE Premium members receive every update free, on top of every article, all
+						gameplay and the Library.
+					</p>
+					<a
+						href="/premium"
+						class="mt-6 inline-flex items-center gap-2 border-[1.5px] border-prem bg-prem px-5 py-3 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110"
+					>
+						<span class="text-[8px] opacity-80" aria-hidden="true">◆</span>
+						Get Premium
+					</a>
+				</div>
+			{:else}
+				<div class="border-[3px] border-double border-ink bg-paper px-6 py-8 md:px-10 md:py-10">
+					<div class="text-[10.5px] font-extrabold tracking-[0.2em] text-prem uppercase">
+						<span aria-hidden="true">◆</span> Premium member
+					</div>
+					<p
+						class="mt-3 font-newsreader text-[28px] leading-[1.05] font-semibold tracking-[-0.01em] [text-wrap:balance] md:text-[34px]"
+					>
+						Your courses stay current.
+					</p>
+					<p class="mt-3 font-newsreader text-[16px] leading-[1.5] text-soft italic">
+						As a member, every update an instructor publishes to a course you own is included.
 					</p>
 				</div>
-
-				<a
-					href="/premium"
-					class="relative z-[1] inline-flex flex-shrink-0 items-center gap-2 border-[1.5px] px-7 py-[14px] text-[13px] font-bold tracking-[0.05em] uppercase transition-[filter] hover:brightness-110"
-					style="background-color: #C8922E; border-color: #C8922E; color: white;"
-				>
-					Become a member →
-				</a>
-			</div>
+			{/if}
 		</div>
 	</section>
-	{/if}
 </AgeShell>

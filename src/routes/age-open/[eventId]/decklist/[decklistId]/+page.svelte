@@ -1,6 +1,11 @@
 <script>
 	// Card images are now resolved server-side - no 12MB JSON import needed!
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
+	import { fade, fly } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
+	import FormatTag from '$lib/components/age/FormatTag.svelte';
+	import { heroImageUrl } from '$lib/heroImage.js';
+	import { CIRCUITS } from '$lib/data/circuits.js';
 	let { data } = $props();
 
 	const decklist = $derived(data.decklist);
@@ -55,8 +60,10 @@
 			quantity: 1,
 			section: 'equipment',
 			isHero: true,
-			imageUrl: heroImage?.imageUrl,
-			fallbackUrl: heroImage?.fallbackUrl
+			// Newer heroes can be missing from the card database; the site's
+			// own hero portrait stands in so the preview is never blank.
+			imageUrl: heroImage?.imageUrl || heroImageUrl(decklist.hero),
+			fallbackUrl: heroImage?.fallbackUrl || heroImageUrl(decklist.hero)
 		};
 	});
 
@@ -124,7 +131,8 @@
 		previewImageLoaded = false;
 		previewImageError = false;
 		previewTriedFallback = false;
-		previewCurrentUrl = selectedCardImage?.imageUrl || null;
+		previewCurrentUrl = selectedCardImage?.imageUrl || selectedCardImage?.fallbackUrl || null;
+		previewImageError = !previewCurrentUrl;
 	}
 
 	function handlePreviewLoad() {
@@ -172,93 +180,31 @@
 		return month.charAt(0).toUpperCase() + month.slice(1).toLowerCase();
 	}
 
-	function getCircuitColor(circuit) {
-		const colors = {
-			'Los Angeles': 'text-blue-400',
-			'St. Louis': 'text-red-400',
-			'New England': 'text-emerald-400'
-		};
-		return colors[circuit] || 'text-gray-300';
-	}
+	const heroBackdrop = $derived(heroImageUrl(decklist.hero));
 
-	// Map a hero name (e.g. "Victor Goldmane, High and Mighty") to the
-	// matching local hero portrait under /static/hero_images/. These are
-	// full-resolution illustrations (~1000px wide) — much sharper for
-	// use as the cinematic header backdrop than the small card scans
-	// returned by `resolveCardImage` (which top out around 488px).
-	function getHeroBackdrop(heroName) {
-		if (!heroName) return null;
-		const slug = heroName
-			.toLowerCase()
-			.replace(/ð/g, 'd')
-			.replace(/þ/g, 'th')
-			.replace(/æ/g, 'ae')
-			.replace(/ø/g, 'o')
-			.replace(/å/g, 'a')
-			.normalize('NFD')
-			.replace(/[̀-ͯ]/g, '')
-			.replace(/[!@#$%^&*()+=[\]{}|\\:;<>?/~`]/g, '')
-			.replace(/[,'"]/g, '')
-			.replace(/\s+/g, '-')
-			.replace(/-+/g, '-')
-			.trim();
-		return `/hero_images/${slug}.webp`;
-	}
-
-	const heroBackdrop = $derived(getHeroBackdrop(decklist.hero));
-
-	// Category config - enhanced styling matching site aesthetic
-	// Stripe-style shadow
-	const cardShadow =
-		'shadow-[0_0_0_1px_rgba(0,0,0,0.08),0_4px_6px_rgba(0,0,0,0.04),0_12px_24px_rgba(0,0,0,0.12)]';
-
-	const categoryConfig = {
-		equipment: {
-			label: 'Equipment',
-			accent: 'bg-gray-500',
-			text: 'text-gray-400',
-			bg: 'bg-gray-900/80',
-			hover: 'hover:bg-gray-800/60',
-			badge: 'text-gray-300',
-			headerBg: 'bg-gray-800/60'
-		},
-		colorless: {
-			label: 'Colorless',
-			accent: 'bg-slate-400',
-			text: 'text-slate-300',
-			bg: 'bg-gray-900/80',
-			hover: 'hover:bg-gray-800/60',
-			badge: 'text-slate-300',
-			headerBg: 'bg-slate-800/40'
-		},
-		red: {
-			label: 'Red',
-			accent: 'bg-red-500',
-			text: 'text-red-400',
-			bg: 'bg-gray-900/80',
-			hover: 'hover:bg-gray-800/60',
-			badge: 'text-red-400',
-			headerBg: 'bg-red-950/50'
-		},
-		yellow: {
-			label: 'Yellow',
-			accent: 'bg-yellow-500',
-			text: 'text-yellow-400',
-			bg: 'bg-gray-900/80',
-			hover: 'hover:bg-gray-800/60',
-			badge: 'text-yellow-400',
-			headerBg: 'bg-yellow-950/50'
-		},
-		blue: {
-			label: 'Blue',
-			accent: 'bg-blue-500',
-			text: 'text-blue-400',
-			bg: 'bg-gray-900/80',
-			hover: 'hover:bg-gray-800/60',
-			badge: 'text-blue-400',
-			headerBg: 'bg-blue-950/50'
-		}
+	// Pitch colours in the site's palette; the hero and equipment take the series blue
+	const PITCH = {
+		equipment: { label: 'Hero & equipment', hex: 'var(--ed-warm)' },
+		red: { label: 'Red', hex: '#A8392C' },
+		yellow: { label: 'Yellow', hex: '#C8922E' },
+		blue: { label: 'Blue', hex: '#2C5BA8' },
+		colorless: { label: 'Colorless', hex: '#56503F' }
 	};
+	const SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
+	const ccVar = (name) => `var(--ed-cc-${SLUG[name] ?? 'la'})`;
+	const abbr = (name) => CIRCUITS[name]?.abbreviation ?? name;
+	const finishStyle = (n) =>
+		n === 1
+			? 'background: var(--ed-gold); color: #fff;'
+			: n && n <= 8
+				? 'background: var(--ed-warm-light); color: var(--ed-ink);'
+				: 'border: 1px solid rgba(248,246,239,0.35); color: rgba(248,246,239,0.8);';
+	const pitchOf = (card) => getCardCategory(card);
+	const count = (cards) => cards.reduce((n, c) => n + (c.quantity || 1), 0);
+	function pick(card) {
+		selectCard(card);
+		if (window.innerWidth < 1024) openCardModal(card);
+	}
 
 	// Copy link state
 	let linkCopied = $state(false);
@@ -284,10 +230,40 @@
 		modalImageLoaded = false;
 		modalImageError = false;
 		modalTriedFallback = false;
-		modalCurrentUrl = modalCardImage?.imageUrl || null;
+		modalCurrentUrl = modalCardImage?.imageUrl || modalCardImage?.fallbackUrl || null;
+		modalImageError = !modalCurrentUrl;
 		showModal = true;
 		// Prevent body scroll when modal is open
 		document.body.style.overflow = 'hidden';
+	}
+
+	// Every card in reading order, so the phone preview can step through the list
+	const orderedCards = $derived([
+		...(heroCard() ? [heroCard()] : []),
+		...groupedCards().equipment,
+		...columnLayout()
+			.columns.flat()
+			.flatMap((g) => g.cards)
+	]);
+	// Stored cards are reactive copies, so match on identity fields, not reference
+	const cardId = (c) => (c ? `${c.isHero ? 'hero' : (c.section ?? '')}|${c.name}` : '');
+	const modalIndex = $derived(
+		modalCard ? orderedCards.findIndex((c) => cardId(c) === cardId(modalCard)) : -1
+	);
+	function stepModal(delta) {
+		const n = orderedCards.length;
+		if (!n || modalIndex < 0) return;
+		const next = orderedCards[(modalIndex + delta + n) % n];
+		selectCard(next);
+		openCardModal(next);
+	}
+	let touchX = 0;
+	function onTouchStart(e) {
+		touchX = e.touches[0].clientX;
+	}
+	function onTouchEnd(e) {
+		const dx = e.changedTouches[0].clientX - touchX;
+		if (Math.abs(dx) > 50) stepModal(dx < 0 ? 1 : -1);
 	}
 
 	function closeModal() {
@@ -312,56 +288,24 @@
 		}
 	}
 
-	function handleBackdropClick(e) {
-		if (e.target === e.currentTarget) {
-			closeModal();
-		}
-	}
-
 	// Handle escape key to close modal
 	function handleKeydown(e) {
+		if (showModal && e.key === 'ArrowRight') stepModal(1);
+		if (showModal && e.key === 'ArrowLeft') stepModal(-1);
 		if (e.key === 'Escape' && showModal) {
 			closeModal();
 		}
 	}
-
-	// Hero image state for mobile header
-	let heroImageLoaded = $state(false);
-	let heroImageError = $state(false);
-	let heroCurrentUrl = $state(null);
-	let heroTriedFallback = $state(false);
-
-	function handleHeroLoad() {
-		heroImageLoaded = true;
-	}
-	function handleHeroError() {
-		if (!heroTriedFallback && heroImage?.fallbackUrl && heroImage.fallbackUrl !== heroCurrentUrl) {
-			heroTriedFallback = true;
-			heroCurrentUrl = heroImage.fallbackUrl;
-			heroImageLoaded = false;
-		} else {
-			heroImageError = true;
-		}
-	}
-
-	// Initialize hero URL when heroImage changes
-	$effect(() => {
-		if (heroImage?.imageUrl) {
-			heroCurrentUrl = heroImage.imageUrl;
-			heroImageLoaded = false;
-			heroImageError = false;
-			heroTriedFallback = false;
-		}
-	});
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
 <svelte:head>
-	<title>{decklist.playerName}'s {decklist.hero || 'Deck'} — AGE Open</title>
+	<title>{decklist.hero || 'Deck'} · {decklist.playerName} — AGE Open decklist</title>
 	<meta
 		name="description"
-		content="Decklist for {decklist.playerName} playing {decklist.hero || 'Deck'}"
+		content="{decklist.playerName}'s {decklist.hero || 'deck'} from the {decklist.circuit ||
+			'AGE'} Open{decklist.placement
+			? `, ${getOrdinal(decklist.placement)} place`
+			: ''}. Every card, with previews."
 	/>
 	{#if heroBackdrop}
 		<link rel="preload" as="image" href={heroBackdrop} />
@@ -369,633 +313,435 @@
 	{#if heroImage?.imageUrl}
 		<link rel="preload" as="image" href={heroImage.imageUrl} />
 	{/if}
-	{#each cardsList.slice(0, 6) as card}
-		{#if card.imageUrl}
-			<link rel="preload" as="image" href={card.imageUrl} />
-		{/if}
-	{/each}
 </svelte:head>
 
+<svelte:window onkeydown={handleKeydown} />
+
 <!--
-	Editorial decklist viewer — matches the rest of the AGE Open redesign:
-	ink/paper palette, hairline column rules, mono uppercase eyebrows,
-	serif Newsreader headings. All colour values are explicit handoff
-	hex values so the page reads identically regardless of theme (this
-	is a content view, not chrome).
+	AGE Open decklist, in the series' "tournament day" register: an ink
+	masthead with the hero as the headline and a composition strip, then
+	a sticky card preview beside the list, section by section.
 -->
 
-{#snippet placementColor(n)}{n === 1
-		? '#C8922E'
-		: n <= 3
-			? '#C0461F'
-			: n <= 8
-				? '#16489E'
-				: '#56503F'}{/snippet}
-
 <AgeShell active="AGE Open">
-	<!-- ============ BREADCRUMB ROW ============ -->
-	<div class="border-b border-[#C7BFA9]">
-		<div
-			class="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-3 px-14 py-[14px]"
-		>
-			<a
-				href="/age-open?tab=decklists"
-				class="group inline-flex items-center gap-2 text-[11px] font-extrabold tracking-[0.08em] text-soft uppercase transition-colors hover:text-ink"
-			>
-				<svg
-					class="h-3.5 w-3.5 transition-transform group-hover:-translate-x-1"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="1.7"
-					viewBox="0 0 24 24"
-				>
-					<path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-				</svg>
-				Back to Decklists
-			</a>
-			<button
-				type="button"
-				onclick={copyLink}
-				class="inline-flex cursor-pointer items-center gap-2 border border-line2 bg-transparent px-[13px] py-[7px] text-[10.5px] font-extrabold tracking-[0.08em] text-soft uppercase transition-colors hover:border-ink hover:text-ink"
-				title="Copy link"
-			>
-				{#if linkCopied}
-					<svg
-						class="h-3.5 w-3.5 text-prem"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						viewBox="0 0 24 24"
-					>
-						<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-					</svg>
-					<span class="text-prem">Link copied</span>
-				{:else}
-					<svg
-						class="h-3.5 w-3.5"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="1.7"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-						/>
-					</svg>
-					Share
-				{/if}
-			</button>
-		</div>
-	</div>
-
-	<!-- ============ CINEMATIC HEADER ============ -->
-	<!--
-		Dark editorial band with the hero card image as a backdrop and a
-		strong angled gradient over it — same treatment as the Library
-		featured spotlight. The composition strip below the headline
-		sits on the inverted scorecard look so its hex-tinted color
-		chips read as a high-contrast counter to the dark title block.
-	-->
-	<section class="relative overflow-hidden border-b-[3px] border-double border-ink bg-[#0F0E0A]">
-		<!--
-			Cinematic backdrop. The hero illustration sits at native
-			resolution on the right side of the band — height-constrained,
-			width auto so it stays crisp.
-
-			The trick that kills the abrupt vertical seam: a CSS mask on
-			the image itself. The mask fades from `transparent` at the
-			image's left edge to `black` (opaque) further into the
-			image, so the image's own pixels dissolve into the dark
-			band rather than just dropping off a hard left boundary.
-			`-webkit-mask-image` is the Safari prefix.
-		-->
+	<!-- ============ masthead ============ -->
+	<section class="relative overflow-hidden bg-ink text-paper-bg">
 		{#if heroBackdrop}
 			<img
 				src={heroBackdrop}
 				alt=""
 				aria-hidden="true"
-				class="absolute top-0 right-0 bottom-0 z-0 h-full w-auto max-w-[65%] object-cover object-[center_25%]"
-				style="-webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 20%, rgba(0,0,0,0.6) 45%, #000 70%); mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.15) 20%, rgba(0,0,0,0.6) 45%, #000 70%);"
-				onerror={(e) => {
-					e.currentTarget.style.display = 'none';
-				}}
+				class="absolute inset-y-0 right-0 h-full w-full object-cover object-[75%_20%] md:w-[58%]"
+				style="-webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 35%, #000 70%); mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 35%, #000 70%);"
+				onerror={(e) => (e.currentTarget.style.display = 'none')}
 			/>
 		{/if}
-		<!--
-			Thin left-side scrim — keeps the title block on a fully
-			opaque dark for legibility, then quickly steps out of the
-			way so the masked image fade is what the eye sees in the
-			middle / right.
-		-->
-		<span
-			class="pointer-events-none absolute inset-0 z-[1]"
-			style="background: linear-gradient(to right, #0F0E0A 22%, rgba(15,14,10,0.6) 38%, rgba(15,14,10,0) 60%);"
-			aria-hidden="true"
-		></span>
-		<!-- top rust hairline accent matching the editorial header strip -->
-		<span class="absolute inset-x-0 top-0 z-[2] h-[2px] bg-warm" aria-hidden="true"></span>
-
 		<div
-			class="relative z-[2] mx-auto w-full max-w-[1600px] px-4 pt-[50px] pb-[36px] md:px-10 lg:px-14"
-		>
-			<div class="max-w-[60%] text-white">
-				<div
-					class="mb-4 inline-flex items-center gap-[10px] text-[10.5px] font-extrabold tracking-[0.2em] text-white uppercase before:block before:h-[2px] before:w-[26px] before:bg-warm before:content-['']"
+			class="absolute inset-0"
+			style="background: linear-gradient(100deg, rgba(23,21,15,0.98) 0%, rgba(23,21,15,0.92) 42%, rgba(23,21,15,0.35) 100%), linear-gradient(0deg, rgba(23,21,15,0.9) 0%, rgba(23,21,15,0) 40%);"
+			aria-hidden="true"
+		></div>
+
+		<div class="relative mx-auto w-full max-w-[1200px] px-5 pt-8 md:px-8 md:pt-10">
+			<div class="flex flex-wrap items-center justify-between gap-4">
+				<a
+					href="/age-open?tab=decklists"
+					class="text-[9.5px] font-extrabold tracking-[0.2em] text-paper-bg/60 uppercase transition-colors hover:text-paper-bg"
+					>← Decklists</a
 				>
-					{decklist.circuit ? `${decklist.circuit} · Decklist` : 'AGE Open · Decklist'}
-				</div>
-				<div class="flex flex-wrap items-baseline gap-x-6 gap-y-2">
-					{#if decklist.gemId}
-						<a
-							href="/player/{decklist.gemId}"
-							class="font-newsreader text-[clamp(48px,7vw,72px)] leading-[0.95] font-semibold tracking-[-0.025em] text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.4)] transition-colors hover:text-[#f4c66a]"
-						>
-							{decklist.playerName}
-						</a>
-					{:else}
-						<span
-							class="font-newsreader text-[clamp(48px,7vw,72px)] leading-[0.95] font-semibold tracking-[-0.025em] text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.4)]"
-						>
-							{decklist.playerName}
-						</span>
-					{/if}
-					{#if decklist.placement}
-						{@const _placeColor =
-							decklist.placement === 1
-								? '#F4C66A'
-								: decklist.placement <= 3
-									? '#E5703E'
-									: decklist.placement <= 8
-										? '#7FA6F0'
-										: 'rgba(255,255,255,0.65)'}
-						<span
-							class="font-newsreader text-[clamp(34px,4.5vw,48px)] leading-none font-semibold tracking-[-0.015em] tabular-nums"
-							style="color: {_placeColor};"
-						>
-							{getOrdinal(decklist.placement)}
-						</span>
-					{/if}
-				</div>
-				{#if decklist.hero}
-					<div
-						class="mt-3 font-newsreader text-[24px] leading-[1.15] font-medium text-[#60A5FA] italic"
-					>
-						{decklist.hero}
-					</div>
-				{/if}
-				<div
-					class="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-bold tracking-[0.08em] text-white/65 uppercase"
+				<button
+					type="button"
+					onclick={copyLink}
+					class="text-[9.5px] font-extrabold tracking-[0.2em] uppercase transition-colors {linkCopied
+						? 'text-prem'
+						: 'text-paper-bg/60 hover:text-paper-bg'}"
+					>{linkCopied ? 'Link copied ✓' : 'Copy link'}</button
 				>
+			</div>
+			<a href="/age-open" class="mt-6 block w-fit" aria-label="AGE Open Series overview">
+				<img
+					src="/age_open_logo.svg"
+					alt="AGE Open Series"
+					width="629"
+					height="294"
+					class="h-auto w-[130px] md:w-[150px]"
+				/>
+			</a>
+
+			<div class="fp-rise mt-8 max-w-[760px] md:mt-10">
+				<p
+					class="flex flex-wrap items-center gap-x-3 gap-y-2 text-[9.5px] font-extrabold tracking-[0.26em] text-paper-bg/60 uppercase"
+				>
+					Decklist
 					{#if decklist.circuit}
-						{@const _ccColor =
-							(decklist.circuit === 'Los Angeles' && '#7FA6F0') ||
-							(decklist.circuit === 'New England' && '#B79BD6') ||
-							(decklist.circuit === 'St. Louis' && '#5FC487') ||
-							'#FFFFFF'}
-						<span class="inline-flex items-center gap-[7px]" style="color: {_ccColor};">
-							<span class="block h-[8px] w-[8px]" style="background-color: {_ccColor};"></span>
-							{decklist.circuit}
+						<span
+							class="px-1.5 py-[3px] text-[8px] tracking-[0.16em] text-white"
+							style="background: {ccVar(decklist.circuit)};">{abbr(decklist.circuit)}</span
+						>
+					{/if}
+					<a href="/age-open/{decklist.eventId}" class="transition-colors hover:text-paper-bg"
+						>{decklist.eventTitle || `${decklist.circuit || 'AGE'} Open`}</a
+					>
+					{#if decklist.eventDate}· {formatDate(decklist.eventDate)}{/if}
+				</p>
+				<h1
+					class="ao-cond mt-3 text-[52px] leading-[0.86] font-black break-words uppercase md:text-[88px]"
+				>
+					{decklist.hero || 'Decklist'}
+				</h1>
+				<p class="mt-4 font-newsreader text-[22px] leading-tight text-paper-bg/85 md:text-[26px]">
+					{#if decklist.gemId}
+						<a href="/player/{decklist.gemId}" class="fp-ul">{decklist.playerName}</a>
+					{:else}
+						{decklist.playerName}
+					{/if}
+				</p>
+				<div class="mt-5 flex flex-wrap items-center gap-3">
+					{#if decklist.placement}
+						<span
+							class="px-2.5 py-1.5 text-[10px] font-extrabold tracking-[0.18em] uppercase"
+							style={finishStyle(decklist.placement)}
+						>
+							{decklist.placement === 1 ? 'Champion' : `${getOrdinal(decklist.placement)} place`}
 						</span>
 					{/if}
-					{#if decklist.eventDate}
-						<span class="text-white/30">·</span>
-						<span>{formatDate(decklist.eventDate)}</span>
-					{/if}
+					<FormatTag format={decklist.format} />
 					{#if decklist.month}
-						<span class="text-white/30">·</span>
-						<span>{formatMonth(decklist.month)}</span>
-					{/if}
-					{#if decklist.format}
-						<span class="text-white/30">·</span>
-						<span>{decklist.format}</span>
+						<span class="text-[10px] font-extrabold tracking-[0.18em] text-paper-bg/60 uppercase"
+							>{formatMonth(decklist.month)} Open</span
+						>
 					{/if}
 				</div>
 			</div>
+
+			<!-- composition strip -->
+			<dl class="mt-9 grid grid-cols-3 border-t border-paper-bg/15 md:mt-10 md:grid-cols-6">
+				{#each [{ v: totalCards, l: 'Cards', hex: 'var(--ed-warm-light)' }, { v: (decklist.hero ? 1 : 0) + groupedCards().equipment.length, l: 'Hero & gear', hex: null }, { v: count(groupedCards().red), l: 'Red', hex: PITCH.red.hex }, { v: count(groupedCards().yellow), l: 'Yellow', hex: PITCH.yellow.hex }, { v: count(groupedCards().blue), l: 'Blue', hex: PITCH.blue.hex }, { v: count(groupedCards().colorless), l: 'Colorless', hex: null }] as t, i (i)}
+					<div
+						class="border-r border-paper-bg/15 px-3 pt-4 pb-5 text-center md:px-4 md:pt-5 md:pb-6 md:last:border-r-0 [&:nth-child(3n)]:border-r-0 md:[&:nth-child(3n)]:border-r"
+					>
+						<dd
+							class="ao-cond text-[34px] leading-none font-black tabular-nums md:text-[40px]"
+							style={t.hex ? `color: ${t.hex};` : ''}
+						>
+							{t.v}
+						</dd>
+						<dt
+							class="mt-2 text-[8.5px] font-extrabold tracking-[0.2em] text-paper-bg/55 uppercase"
+						>
+							{t.l}
+						</dt>
+					</div>
+				{/each}
+			</dl>
 		</div>
 	</section>
 
-	<!-- ============ BODY ============ -->
+	<!-- ============ body ============ -->
 	{#if cardsList.length === 0}
-		<section class="px-14 py-[60px]">
-			<div class="mx-auto w-full max-w-[1600px]">
-				<div class="border-line2 bg-paper py-14 text-center">
-					<div class="mb-2 font-newsreader text-[24px] font-semibold text-ink">No cards found</div>
-					<p class="m-0 mx-auto max-w-[420px] text-[14px] leading-[1.55] text-soft">
-						This decklist doesn't have any cards yet. Check back later or contact the tournament
-						organizer.
-					</p>
-				</div>
+		<section class="mx-auto w-full max-w-[1200px] px-5 py-16 md:px-8">
+			<div class="border border-line bg-paper px-6 py-14 text-center">
+				<p class="ao-cond text-[32px] leading-none font-black uppercase">No cards yet</p>
+				<p class="mx-auto mt-3 max-w-[420px] font-newsreader text-[15px] text-soft italic">
+					This list hasn’t been filled in. Check back later or ask the tournament organiser.
+				</p>
 			</div>
 		</section>
 	{:else}
 		<div
-			class="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-10 px-14 py-[44px] lg:grid-cols-[300px_1fr]"
+			class="mx-auto grid w-full max-w-[1200px] gap-10 px-5 py-10 md:px-8 md:py-12 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-14"
 		>
-			<!-- ============ LEFT: CARD PREVIEW ============ -->
+			<!-- preview -->
 			<aside class="hidden lg:block">
-				<div class="sticky top-[24px]">
-					<!-- card preview — floating with a soft shadow for depth -->
-					<div>
-						<div class="relative aspect-[488/680] drop-shadow-[0_24px_42px_rgba(20,16,8,0.22)]">
-							{#if selectedCard && selectedCardImage}
-								{#if !previewImageLoaded && !previewImageError}
-									<div class="absolute inset-0 flex items-center justify-center">
-										<div
-											class="h-8 w-8 animate-spin rounded-full border-2 border-line2 border-t-warm"
-										></div>
-									</div>
-								{/if}
-								{#if previewImageError}
-									<div class="absolute inset-0 flex items-center justify-center text-center">
-										<div>
-											<svg
-												class="mx-auto mb-3 h-10 w-10 text-fade"
-												fill="none"
-												stroke="currentColor"
-												stroke-width="1.5"
-												viewBox="0 0 24 24"
-											>
-												<path
-													stroke-linecap="round"
-													stroke-linejoin="round"
-													d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-												/>
-											</svg>
-											<p class="text-[12px] font-bold tracking-[0.05em] text-fade uppercase">
-												Image unavailable
-											</p>
-										</div>
-									</div>
-								{/if}
-								{#if previewCurrentUrl}
-									{#key previewCurrentUrl}
-										<img
-											src={previewCurrentUrl}
-											alt={selectedCard.name || selectedCard}
-											class="h-full w-full object-contain transition-opacity duration-300 {previewImageLoaded
-												? 'opacity-100'
-												: 'opacity-0'}"
-											onload={handlePreviewLoad}
-											onerror={handlePreviewError}
-										/>
-									{/key}
-								{/if}
-							{:else}
-								<div class="absolute inset-0 flex items-center justify-center text-center">
-									<div>
-										<svg
-											class="mx-auto mb-3 h-10 w-10 text-line2"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="1.5"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-											/>
-										</svg>
-										<p class="text-[12px] font-bold tracking-[0.05em] text-fade uppercase">
-											Select a card to preview
-										</p>
-									</div>
+				<div class="sticky top-[84px]">
+					<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-warm uppercase">
+						Card preview
+					</p>
+					<div class="relative mt-3 aspect-[488/680]">
+						{#if selectedCard && selectedCardImage}
+							{#if !previewImageLoaded && !previewImageError}
+								<div class="absolute inset-0 flex items-center justify-center">
+									<span class="h-6 w-6 animate-spin border-2 border-line2 border-t-warm"></span>
 								</div>
 							{/if}
-						</div>
-					</div>
-
-					<!--
-						Composition scorecard — moved here from the header so
-						the dark cinematic band can stay focused on the title
-						block + hero art, and the composition stats sit
-						closer to the cards they describe.
-					-->
-					<div class="mt-5 border border-t-[3px] border-line2 border-warm bg-paper-bg">
-						<div class="border-b border-line2 px-5 pt-3 pb-[10px]">
-							<div class="text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase">
-								Composition
-							</div>
-							<div
-								class="mt-1 font-newsreader text-[22px] leading-none font-semibold tracking-[-0.01em] text-ink tabular-nums"
+							{#if previewImageError}
+								<p
+									class="absolute inset-0 flex items-center justify-center px-6 text-center text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+								>
+									Image unavailable
+								</p>
+							{/if}
+							{#if previewCurrentUrl}
+								{#key previewCurrentUrl}
+									<img
+										src={previewCurrentUrl}
+										alt={selectedCard.name || ''}
+										class="h-full w-full {previewCurrentUrl.startsWith('/hero_images/')
+											? 'object-cover object-[75%_20%]'
+											: 'object-contain'} transition-opacity duration-300 {previewImageLoaded
+											? 'opacity-100'
+											: 'opacity-0'}"
+										onload={handlePreviewLoad}
+										onerror={handlePreviewError}
+									/>
+								{/key}
+							{/if}
+						{:else}
+							<p
+								class="absolute inset-0 flex items-center justify-center px-6 text-center text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
 							>
-								{totalCards}
-								<span class="text-[14px] font-bold tracking-[0.04em] text-fade uppercase">
-									cards
-								</span>
-							</div>
-						</div>
-						<div
-							class="grid divide-x divide-[#C7BFA9] {groupedCards().colorless.length > 0
-								? 'grid-cols-4'
-								: 'grid-cols-3'}"
-						>
-							<div class="flex flex-col items-center px-3 py-3">
-								<span
-									class="font-newsreader text-[24px] leading-none font-semibold tabular-nums"
-									style="color: #A8392C;"
-								>
-									{groupedCards().red.length}
-								</span>
-								<span
-									class="mt-[6px] inline-flex items-center gap-[5px] text-[9.5px] font-extrabold tracking-[0.14em] uppercase"
-									style="color: #A8392C;"
-								>
-									<span class="block h-[6px] w-[6px]" style="background-color: #A8392C;"></span>
-									Red
-								</span>
-							</div>
-							<div class="flex flex-col items-center px-3 py-3">
-								<span
-									class="font-newsreader text-[24px] leading-none font-semibold tabular-nums"
-									style="color: #60A5FA;"
-								>
-									{groupedCards().yellow.length}
-								</span>
-								<span
-									class="mt-[6px] inline-flex items-center gap-[5px] text-[9.5px] font-extrabold tracking-[0.14em] uppercase"
-									style="color: #60A5FA;"
-								>
-									<span class="block h-[6px] w-[6px]" style="background-color: #60A5FA;"></span>
-									Yellow
-								</span>
-							</div>
-							<div class="flex flex-col items-center px-3 py-3">
-								<span
-									class="font-newsreader text-[24px] leading-none font-semibold tabular-nums"
-									style="color: #2C5BA8;"
-								>
-									{groupedCards().blue.length}
-								</span>
-								<span
-									class="mt-[6px] inline-flex items-center gap-[5px] text-[9.5px] font-extrabold tracking-[0.14em] uppercase"
-									style="color: #2C5BA8;"
-								>
-									<span class="block h-[6px] w-[6px]" style="background-color: #2C5BA8;"></span>
-									Blue
-								</span>
-							</div>
-							{#if groupedCards().colorless.length > 0}
-								<div class="flex flex-col items-center px-3 py-3">
-									<span
-										class="font-newsreader text-[24px] leading-none font-semibold text-soft tabular-nums"
-									>
-										{groupedCards().colorless.length}
-									</span>
-									<span
-										class="mt-[6px] inline-flex items-center gap-[5px] text-[9.5px] font-extrabold tracking-[0.14em] text-soft uppercase"
-									>
-										<span class="block h-[6px] w-[6px] bg-soft"></span>
-										Colorless
-									</span>
-								</div>
-							{/if}
-						</div>
+								Select a card to preview
+							</p>
+						{/if}
 					</div>
+					{#if selectedCard}
+						<div class="mt-4 border-t border-line pt-3">
+							<p class="font-newsreader text-[17px] leading-tight font-semibold">
+								{selectedCard.name}
+							</p>
+							<p
+								class="mt-1 flex items-center gap-2 text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+							>
+								{#if selectedCard.isHero}
+									Hero
+								{:else}
+									<span
+										class="h-2 w-2"
+										style="background: {PITCH[pitchOf(selectedCard)].hex};"
+										aria-hidden="true"
+									></span>
+									{PITCH[pitchOf(selectedCard)].label} · {selectedCard.quantity || 1}× in deck
+								{/if}
+							</p>
+						</div>
+					{/if}
 				</div>
 			</aside>
 
-			<!-- ============ RIGHT: CARD LIST ============ -->
+			<!-- list -->
 			<div class="min-w-0">
-				<!--
-					Hero & Equipment — bordered card with the warm/rust
-					top rule to anchor the "loadout" section. The same
-					color treatment as the pitched cards below, but rust
-					(the Hero accent) instead of red/yellow/blue.
-				-->
-				<div class="mb-5 border border-t-[3px] border-line2 border-t-warm bg-paper-bg">
-					<div
-						class="flex items-baseline justify-between border-b border-[#C7BFA9] bg-paper px-6 py-[12px] text-[12px] font-extrabold tracking-[0.18em] text-ink uppercase"
-					>
-						<span class="text-warm">Hero · Equipment</span>
-						<span class="font-mono-system text-[12px] font-bold tracking-[0.05em] text-fade">
-							{(decklist.hero ? 1 : 0) + groupedCards().equipment.length} pieces
-						</span>
-					</div>
-					<div class="flex flex-wrap gap-x-9 px-6 py-3 sm:columns-2 sm:gap-x-9">
-						{#if heroCard()}
-							{@const _isSelected = selectedCard === heroCard()}
-							<button
-								type="button"
-								onclick={() => {
-									selectCard(heroCard());
-									if (window.innerWidth < 1024) openCardModal(heroCard());
-								}}
-								class="flex w-full cursor-pointer items-baseline gap-3 border-b border-line py-[3px] text-left last:border-b-0 {_isSelected
-									? 'text-warm'
-									: 'text-ink hover:text-warm'} transition-colors"
+				{#snippet row(card, hex, isHero = false)}
+					{@const sel = selectedCard === card}
+					<li class="border-b border-line">
+						<button
+							type="button"
+							onclick={() => pick(card)}
+							aria-pressed={sel}
+							class="group flex w-full items-center gap-3 border-l-[3px] py-2 pr-2 pl-3 text-left transition-colors {sel
+								? 'bg-paper'
+								: 'hover:bg-paper'}"
+							style="border-left-color: {sel ? hex : 'transparent'};"
+						>
+							<span
+								class="ao-cond w-[30px] shrink-0 text-[20px] leading-none font-black tabular-nums"
+								style="color: {sel ? hex : 'var(--ed-fade)'};"
 							>
-								<span
-									class="w-[26px] flex-shrink-0 font-mono-system text-[11px] font-extrabold tracking-[0.06em] text-warm uppercase"
-								>
-									Hero
-								</span>
-								<span class="truncate text-[14.5px] font-extrabold">{decklist.hero}</span>
-							</button>
+								{isHero ? 'H' : `${card.quantity || 1}×`}
+							</span>
+							<span
+								class="min-w-0 flex-1 truncate font-newsreader text-[16px] leading-tight font-semibold"
+								>{card.name}</span
+							>
+							<span
+								class="shrink-0 text-[9px] font-extrabold tracking-[0.16em] text-fade uppercase opacity-0 transition-opacity group-hover:opacity-100 {sel
+									? 'opacity-100'
+									: ''}">View</span
+							>
+						</button>
+					</li>
+				{/snippet}
+
+				<!-- hero & equipment -->
+				<section>
+					<div class="flex items-end justify-between gap-3 border-b-[3px] border-ink pb-2">
+						<h2
+							class="flex items-center gap-2.5 text-[10px] font-extrabold tracking-[0.2em] uppercase"
+						>
+							<span class="h-2.5 w-2.5 bg-warm" aria-hidden="true"></span>{PITCH.equipment.label}
+						</h2>
+						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+							>{(decklist.hero ? 1 : 0) + groupedCards().equipment.length} pieces</span
+						>
+					</div>
+					<ol class="grid sm:grid-cols-2 sm:gap-x-8">
+						{#if heroCard()}
+							{@render row(heroCard(), PITCH.equipment.hex, true)}
 						{/if}
 						{#each groupedCards().equipment as card (card.name)}
-							{@const _isSelected = selectedCard === card}
-							<button
-								type="button"
-								onclick={() => {
-									selectCard(card);
-									if (window.innerWidth < 1024) openCardModal(card);
-								}}
-								class="flex w-full cursor-pointer items-baseline gap-3 border-b border-line py-[3px] text-left last:border-b-0 {_isSelected
-									? 'text-warm'
-									: 'text-ink hover:text-warm'} transition-colors"
-							>
-								<span
-									class="w-[26px] flex-shrink-0 font-mono-system text-[12px] font-bold text-fade tabular-nums"
-								>
-									{card.quantity || 1}×
-								</span>
-								<span class="truncate text-[14px] font-bold">{card.name}</span>
-							</button>
+							{@render row(card, PITCH.equipment.hex)}
 						{/each}
-					</div>
-				</div>
+					</ol>
+				</section>
 
-				<!--
-					Pitched cards — each color section gets its own bordered
-					card with a 3px colored top rule (Red / Yellow / Blue)
-					so the color identity reads at a glance before you
-					even read the label. Rows now get a tinted hover
-					background in the matching color and an inline
-					"selected" left-border accent on the active card.
-				-->
+				<!-- pitched cards -->
 				{#if columnLayout().columns.length > 0}
-					{@const _COLOR_HEX = {
-						red: '#A8392C',
-						yellow: '#E5703E',
-						blue: '#2C5BA8',
-						colorless: '#56503F'
-					}}
-					{@const _activeCols = columnLayout().columns}
-					<div class="grid grid-cols-1 gap-5 md:grid-cols-{_activeCols.length}">
-						{#each _activeCols as column, ci (ci)}
-							<div class="space-y-5">
-								{#each column as colorGroup, gi (colorGroup.key)}
-									{@const _hex = _COLOR_HEX[colorGroup.key]}
-									{@const _label = colorGroup.key.charAt(0).toUpperCase() + colorGroup.key.slice(1)}
-									{@const _count = colorGroup.cards.reduce((s, c) => s + (c.quantity || 1), 0)}
-									<div
-										class="border border-t-[3px] border-line2 bg-paper-bg shadow-[0_1px_0_rgba(20,16,8,0.03)]"
-										style="border-top-color: {_hex};"
-									>
+					{@const cols = columnLayout().columns}
+					<div class="mt-10 grid gap-x-8 gap-y-10 {cols.length > 1 ? 'md:grid-cols-2' : ''}">
+						{#each cols as column, ci (ci)}
+							<div class="space-y-10">
+								{#each column as g (g.key)}
+									<section>
 										<div
-											class="flex items-baseline justify-between border-b border-[#C7BFA9] bg-paper px-6 py-[12px]"
+											class="flex items-end justify-between gap-3 border-b-[3px] border-ink pb-2"
 										>
-											<span
-												class="text-[12px] font-extrabold tracking-[0.18em] uppercase"
-												style="color: {_hex};"
+											<h2
+												class="flex items-center gap-2.5 text-[10px] font-extrabold tracking-[0.2em] uppercase"
 											>
-												{_label}
-											</span>
-											<span class="font-mono-system text-[12px] font-bold text-fade">
-												{_count} cards
-											</span>
+												<span
+													class="h-2.5 w-2.5"
+													style="background: {PITCH[g.key].hex};"
+													aria-hidden="true"
+												></span>{PITCH[g.key].label}
+											</h2>
+											<span
+												class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+												>{count(g.cards)} cards</span
+											>
 										</div>
-										<div class="px-3 py-[6px]">
-											{#each colorGroup.cards as card (card.name)}
-												{@const _isSelected = selectedCard === card}
-												<button
-													type="button"
-													onclick={() => {
-														selectCard(card);
-														if (window.innerWidth < 1024) openCardModal(card);
-													}}
-													class="flex w-full cursor-pointer items-baseline gap-3 border-l-[3px] px-3 py-[4px] text-left transition-colors"
-													style={_isSelected
-														? `border-left-color: ${_hex}; background-color: color-mix(in srgb, ${_hex} 9%, transparent); color: ${_hex};`
-														: `border-left-color: transparent;`}
-													onmouseenter={(e) => {
-														if (!_isSelected) {
-															e.currentTarget.style.backgroundColor = `color-mix(in srgb, ${_hex} 5%, transparent)`;
-															e.currentTarget.style.color = _hex;
-														}
-													}}
-													onmouseleave={(e) => {
-														if (!_isSelected) {
-															e.currentTarget.style.backgroundColor = '';
-															e.currentTarget.style.color = '';
-														}
-													}}
-												>
-													<span
-														class="w-[24px] flex-shrink-0 font-mono-system text-[12px] font-bold tabular-nums"
-														style="color: {_isSelected ? _hex : 'var(--ed-fade)'};"
-													>
-														{card.quantity || 1}×
-													</span>
-													<span class="truncate text-[13.5px] font-bold">{card.name}</span>
-												</button>
+										<ol>
+											{#each g.cards as card (card.name)}
+												{@render row(card, PITCH[g.key].hex)}
 											{/each}
-										</div>
-									</div>
+										</ol>
+									</section>
 								{/each}
 							</div>
 						{/each}
 					</div>
 				{/if}
+
+				<p class="mt-10 font-newsreader text-[14px] text-fade italic">
+					Tap any card to see it. Quantities are as submitted at registration.
+				</p>
 			</div>
 		</div>
 	{/if}
 </AgeShell>
 
-<!-- ============ MOBILE CARD MODAL ============ -->
-{#if showModal}
+<!-- ============ phone card preview ============ -->
+{#if showModal && modalCard}
+	{@const hex = modalCard.isHero ? 'var(--ed-warm-light)' : PITCH[pitchOf(modalCard)].hex}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-		onclick={handleBackdropClick}
-		onkeydown={handleKeydown}
+		class="fixed inset-0 z-50 flex flex-col"
 		role="dialog"
 		aria-modal="true"
-		aria-label="Card preview"
+		aria-label="Card preview: {modalCard.name}"
 		tabindex="-1"
+		ontouchstart={onTouchStart}
+		ontouchend={onTouchEnd}
+		transition:fade={{ duration: 180 }}
 	>
-		<div class="relative w-full max-w-sm">
+		<!-- backdrop: tap outside the card to close; Escape is handled on the window -->
+		<button
+			type="button"
+			onclick={closeModal}
+			aria-label="Close card preview"
+			class="absolute inset-0 cursor-default bg-ink/90 backdrop-blur-md"
+			tabindex="-1"
+		></button>
+
+		<!-- top bar -->
+		<div class="relative flex items-center justify-between px-5 pt-5 text-paper-bg">
+			<p
+				class="text-[9.5px] font-extrabold tracking-[0.2em] text-paper-bg/60 uppercase tabular-nums"
+			>
+				Card {modalIndex + 1} <span class="text-paper-bg/35">/ {orderedCards.length}</span>
+			</p>
 			<button
 				type="button"
 				onclick={closeModal}
-				class="absolute -top-12 right-0 z-10 border border-white/30 bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
-				aria-label="Close modal"
+				class="flex h-10 w-10 items-center justify-center border border-paper-bg/30 text-[18px] leading-none transition-colors hover:bg-paper-bg hover:text-ink"
+				aria-label="Close">×</button
 			>
-				<svg
-					class="h-5 w-5"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="1.7"
-					viewBox="0 0 24 24"
-				>
-					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-				</svg>
-			</button>
+		</div>
 
-			<div class="border border-ink bg-paper-bg">
-				<div class="relative aspect-[488/680] bg-[#FBFAF6]">
-					{#if modalCard && modalCardImage}
-						{#if !modalImageLoaded && !modalImageError}
-							<div class="absolute inset-0 flex items-center justify-center">
-								<div
-									class="h-10 w-10 animate-spin rounded-full border-2 border-line2 border-t-warm"
-								></div>
-							</div>
-						{/if}
-						{#if modalImageError}
-							<div class="absolute inset-0 flex items-center justify-center text-center">
-								<div>
-									<svg
-										class="mx-auto mb-3 h-12 w-12 text-fade"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="1.5"
-										viewBox="0 0 24 24"
-									>
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-										/>
-									</svg>
-									<p class="text-[12px] font-bold tracking-[0.05em] text-fade uppercase">
-										Image unavailable
-									</p>
-								</div>
-							</div>
-						{/if}
-						{#if modalCurrentUrl}
-							{#key modalCurrentUrl}
-								<img
-									src={modalCurrentUrl}
-									alt={modalCard.name || modalCard}
-									class="h-full w-full object-contain transition-opacity duration-300 {modalImageLoaded
-										? 'opacity-100'
-										: 'opacity-0'}"
-									onload={handleModalLoad}
-									onerror={handleModalError}
-								/>
-							{/key}
-						{/if}
+		<!-- card -->
+		<div
+			class="pointer-events-none relative flex min-h-0 flex-1 items-center justify-center px-8 py-4"
+		>
+			{#key modalCard}
+				<div
+					class="pointer-events-auto relative aspect-[488/680] h-full max-h-[62vh] max-w-full"
+					in:fly={{ y: 14, duration: 260, easing: cubicOut }}
+				>
+					{#if !modalImageLoaded && !modalImageError}
+						<div class="absolute inset-0 flex items-center justify-center">
+							<span class="h-6 w-6 animate-spin border-2 border-paper-bg/20 border-t-warm-light"
+							></span>
+						</div>
+					{/if}
+					{#if modalImageError}
+						<p
+							class="absolute inset-0 flex items-center justify-center border border-paper-bg/20 px-6 text-center text-[10px] font-extrabold tracking-[0.16em] text-paper-bg/60 uppercase"
+						>
+							Image unavailable
+						</p>
+					{/if}
+					{#if modalCurrentUrl}
+						{#key modalCurrentUrl}
+							<img
+								src={modalCurrentUrl}
+								alt={modalCard.name || ''}
+								class="h-full w-full {modalCurrentUrl.startsWith('/hero_images/')
+									? 'object-cover object-[75%_20%]'
+									: 'object-contain'} drop-shadow-[0_24px_40px_rgba(0,0,0,0.6)] transition-opacity duration-300 {modalImageLoaded
+									? 'opacity-100'
+									: 'opacity-0'}"
+								onload={handleModalLoad}
+								onerror={handleModalError}
+							/>
+						{/key}
 					{/if}
 				</div>
-				{#if modalCard}
-					<div class="border-t border-line2 px-4 py-3">
-						<div class="font-newsreader text-[16px] font-semibold tracking-[-0.01em] text-ink">
-							{modalCard.name || modalCard}
-						</div>
-						{#if modalCard.quantity > 1}
-							<div
-								class="mt-[2px] font-mono-system text-[10.5px] font-bold tracking-[0.05em] text-fade"
-							>
-								{modalCard.quantity}× in deck
-							</div>
-						{/if}
-					</div>
+			{/key}
+		</div>
+
+		<!-- caption + controls -->
+		<div class="relative px-5 pb-[max(20px,env(safe-area-inset-bottom))] text-paper-bg">
+			<div
+				class="flex items-end justify-between gap-4 border-t-[3px] pt-3"
+				style="border-color: {hex};"
+			>
+				<div class="min-w-0">
+					<p
+						class="flex items-center gap-2 text-[9px] font-extrabold tracking-[0.2em] uppercase"
+						style="color: {hex};"
+					>
+						<span class="h-2 w-2 bg-current" aria-hidden="true"></span>
+						{modalCard.isHero ? 'Hero' : PITCH[pitchOf(modalCard)].label}
+					</p>
+					<p class="mt-1.5 truncate font-newsreader text-[22px] leading-tight font-semibold">
+						{modalCard.name}
+					</p>
+				</div>
+				{#if !modalCard.isHero}
+					<p class="shrink-0 text-right">
+						<span class="ao-cond block text-[36px] leading-none font-black tabular-nums"
+							>{modalCard.quantity || 1}×</span
+						>
+						<span class="text-[8px] font-extrabold tracking-[0.2em] text-paper-bg/55 uppercase"
+							>in deck</span
+						>
+					</p>
 				{/if}
 			</div>
+			<div class="mt-4 grid grid-cols-2 gap-px bg-paper-bg/20">
+				<button
+					type="button"
+					onclick={() => stepModal(-1)}
+					class="flex min-h-[48px] items-center justify-center gap-2 bg-ink text-[10px] font-extrabold tracking-[0.18em] uppercase transition-colors hover:bg-paper-bg hover:text-ink"
+					><span aria-hidden="true">←</span> Previous</button
+				>
+				<button
+					type="button"
+					onclick={() => stepModal(1)}
+					class="flex min-h-[48px] items-center justify-center gap-2 bg-ink text-[10px] font-extrabold tracking-[0.18em] uppercase transition-colors hover:bg-paper-bg hover:text-ink"
+					>Next <span aria-hidden="true">→</span></button
+				>
+			</div>
+			<p class="mt-3 text-center font-newsreader text-[12px] text-paper-bg/45 italic">
+				Swipe to flip through the list
+			</p>
 		</div>
 	</div>
 {/if}

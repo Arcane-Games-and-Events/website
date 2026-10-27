@@ -1,4 +1,5 @@
 <script>
+	import PremiumTag from '$lib/components/age/PremiumTag.svelte';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
@@ -114,32 +115,32 @@
 	<div class="mx-auto w-full max-w-[1600px] px-4 pt-10 pb-[52px] md:px-10 lg:px-14">
 		<!-- ============ BREADCRUMB ============ -->
 		<nav
-			class="text-fade mb-6 flex items-center gap-2 text-[11px] font-extrabold tracking-[0.12em] uppercase"
+			class="mb-6 flex items-center gap-2 text-[11px] font-extrabold tracking-[0.12em] text-fade uppercase"
 		>
-			<a href="/library" class="hover:text-ink transition-colors">Library</a>
+			<a href="/library" class="transition-colors hover:text-ink">Library</a>
 			<span class="opacity-60" aria-hidden="true">/</span>
 			<span class="text-ink">Tournament VODs</span>
 		</nav>
 
 		<!-- ============ HEADER ============ -->
 		<div
-			class="bg-paper border-line2 border-t-prem mb-[26px] grid grid-cols-1 items-end gap-6 border border-t-[3px] px-[26px] py-[26px] md:grid-cols-[1fr_auto] md:px-[34px] md:py-[30px]"
+			class="mb-[26px] grid grid-cols-1 items-end gap-6 border border-t-[3px] border-line2 border-t-prem bg-paper px-[26px] py-[26px] md:grid-cols-[1fr_auto] md:px-[34px] md:py-[30px]"
 		>
 			<div>
 				<div class="mb-[10px] flex flex-wrap items-center gap-[10px]">
 					<span
-						class="text-fade font-mono-system inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.16em] uppercase"
+						class="inline-flex items-center gap-2 font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
 					>
-						<span class="bg-warm inline-block h-[6px] w-[6px] rounded-full"></span>
-						AGE Studios · Match Film
+						<span class="inline-block h-[6px] w-[6px] rounded-full bg-warm"></span>
+						AGE Studios · Gameplay
 					</span>
 				</div>
 				<h1
-					class="font-newsreader mb-2 text-[38px] leading-[0.9] font-semibold tracking-[-0.02em] sm:text-[48px]"
+					class="mb-2 font-newsreader text-[38px] leading-[0.9] font-semibold tracking-[-0.02em] sm:text-[48px]"
 				>
 					Tournament VODs
 				</h1>
-				<p class="text-soft max-w-[560px] text-[14.5px] leading-[1.5]">
+				<p class="max-w-[560px] text-[14.5px] leading-[1.5] text-soft">
 					Every tournament match we've filmed, from AGE Open events and partner circuits — filter by
 					hero, event, or search a player by name.
 				</p>
@@ -147,19 +148,19 @@
 
 			<div class="flex items-end gap-[14px]">
 				<div
-					class="border-line2 flex flex-col items-center justify-center self-stretch border px-[22px] py-[16px] text-center"
+					class="flex flex-col items-center justify-center self-stretch border border-line2 px-[22px] py-[16px] text-center"
 				>
 					<div class="font-newsreader text-[38px] leading-[0.8] font-semibold tabular-nums">
 						{totalVods}
 					</div>
-					<div class="text-fade mt-2 text-[10px] font-extrabold tracking-[0.12em] uppercase">
+					<div class="mt-2 text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase">
 						Matches
 					</div>
 				</div>
 				<button
 					type="button"
 					onclick={() => (showFilters = !showFilters)}
-					class="border-ink text-ink hover:bg-ink hover:text-paper-bg relative inline-flex items-center gap-[8px] self-stretch border-[1.5px] bg-transparent px-[16px] text-[11px] font-extrabold tracking-[0.08em] uppercase transition-colors lg:hidden"
+					class="relative inline-flex items-center gap-[8px] self-stretch border-[1.5px] border-ink bg-transparent px-[16px] text-[11px] font-extrabold tracking-[0.08em] text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg lg:hidden"
 					aria-expanded={showFilters}
 				>
 					<svg
@@ -176,7 +177,7 @@
 					Filters
 					{#if activeFilterCount > 0}
 						<span
-							class="bg-prem flex h-[16px] w-[16px] items-center justify-center text-[9px] font-extrabold tabular-nums text-white"
+							class="flex h-[16px] w-[16px] items-center justify-center bg-prem text-[9px] font-extrabold text-white tabular-nums"
 						>
 							{activeFilterCount}
 						</span>
@@ -189,7 +190,7 @@
 		{#if activeFilterCount > 0}
 			<div class="mb-[26px] flex flex-wrap items-center gap-[10px]">
 				<span
-					class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
 				>
 					Showing
 				</span>
@@ -197,10 +198,10 @@
 					<button
 						type="button"
 						onclick={() => removeFilter('q')}
-						class="border-line2 bg-paper text-ink hover:border-ink inline-flex items-center gap-[8px] border px-[11px] py-[5px] text-[11px] font-bold tracking-[0.02em] transition-colors"
+						class="inline-flex items-center gap-[8px] border border-line2 bg-paper px-[11px] py-[5px] text-[11px] font-bold tracking-[0.02em] text-ink transition-colors hover:border-ink"
 					>
 						<span
-							class="text-fade font-mono-system text-[9px] font-extrabold tracking-[0.14em] uppercase"
+							class="font-mono-system text-[9px] font-extrabold tracking-[0.14em] text-fade uppercase"
 							>Search</span
 						>
 						<span>"{filters.q}"</span>
@@ -211,10 +212,10 @@
 					<button
 						type="button"
 						onclick={() => removeFilter('hero')}
-						class="border-line2 bg-paper text-ink hover:border-ink inline-flex items-center gap-[8px] border px-[11px] py-[5px] text-[11px] font-bold tracking-[0.02em] transition-colors"
+						class="inline-flex items-center gap-[8px] border border-line2 bg-paper px-[11px] py-[5px] text-[11px] font-bold tracking-[0.02em] text-ink transition-colors hover:border-ink"
 					>
 						<span
-							class="text-fade font-mono-system text-[9px] font-extrabold tracking-[0.14em] uppercase"
+							class="font-mono-system text-[9px] font-extrabold tracking-[0.14em] text-fade uppercase"
 							>Hero</span
 						>
 						<span>{filters.hero}</span>
@@ -225,10 +226,10 @@
 					<button
 						type="button"
 						onclick={() => removeFilter('event')}
-						class="border-line2 bg-paper text-ink hover:border-ink inline-flex items-center gap-[8px] border px-[11px] py-[5px] text-[11px] font-bold tracking-[0.02em] transition-colors"
+						class="inline-flex items-center gap-[8px] border border-line2 bg-paper px-[11px] py-[5px] text-[11px] font-bold tracking-[0.02em] text-ink transition-colors hover:border-ink"
 					>
 						<span
-							class="text-fade font-mono-system text-[9px] font-extrabold tracking-[0.14em] uppercase"
+							class="font-mono-system text-[9px] font-extrabold tracking-[0.14em] text-fade uppercase"
 							>Event</span
 						>
 						<span class="max-w-[220px] truncate">{getEventTitle(filters.event)}</span>
@@ -238,7 +239,7 @@
 				<button
 					type="button"
 					onclick={clearAllFilters}
-					class="text-warm hover:text-ink text-[11px] font-extrabold tracking-[0.06em] uppercase transition-colors"
+					class="text-[11px] font-extrabold tracking-[0.06em] text-warm uppercase transition-colors hover:text-ink"
 				>
 					Clear all →
 				</button>
@@ -247,12 +248,12 @@
 
 		<!-- ============ MOBILE FILTER PANEL ============ -->
 		{#if showFilters}
-			<div class="bg-paper border-line2 mb-[26px] border p-5 lg:hidden">
+			<div class="mb-[26px] border border-line2 bg-paper p-5 lg:hidden">
 				<div class="space-y-[18px]">
 					<div>
 						<label
 							for="mobile-search"
-							class="text-fade font-mono-system mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
 						>
 							Search
 						</label>
@@ -262,14 +263,14 @@
 							placeholder="Title or player name…"
 							value={filters.q}
 							oninput={handleSearch}
-							class="border-line2 bg-paper-bg text-ink hover:border-ink focus:border-ink placeholder:text-fade w-full border-[1.5px] px-3 py-[10px] text-[13.5px] outline-none transition-colors"
+							class="w-full border-[1.5px] border-line2 bg-paper-bg px-3 py-[10px] text-[13.5px] text-ink transition-colors outline-none placeholder:text-fade hover:border-ink focus:border-ink"
 						/>
 					</div>
 
 					<div>
 						<label
 							for="mobile-sort"
-							class="text-fade font-mono-system mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
 						>
 							Sort by
 						</label>
@@ -277,7 +278,7 @@
 							id="mobile-sort"
 							value={filters.sort}
 							onchange={(e) => updateFilters({ sort: e.target.value })}
-							class="border-line2 bg-paper-bg text-ink hover:border-ink focus:border-ink w-full border-[1.5px] px-3 py-[10px] text-[13.5px] outline-none transition-colors"
+							class="w-full border-[1.5px] border-line2 bg-paper-bg px-3 py-[10px] text-[13.5px] text-ink transition-colors outline-none hover:border-ink focus:border-ink"
 						>
 							{#each SORT_OPTIONS as option (option.value)}
 								<option value={option.value}>{option.label}</option>
@@ -289,7 +290,7 @@
 						<div>
 							<label
 								for="mobile-hero"
-								class="text-fade font-mono-system mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
 							>
 								Hero
 							</label>
@@ -297,7 +298,7 @@
 								id="mobile-hero"
 								value={filters.hero}
 								onchange={(e) => updateFilters({ hero: e.target.value || null })}
-								class="border-line2 bg-paper-bg text-ink hover:border-ink focus:border-ink w-full border-[1.5px] px-3 py-[10px] text-[13.5px] outline-none transition-colors"
+								class="w-full border-[1.5px] border-line2 bg-paper-bg px-3 py-[10px] text-[13.5px] text-ink transition-colors outline-none hover:border-ink focus:border-ink"
 							>
 								<option value="">All heroes</option>
 								{#each heroes as h (h)}
@@ -311,7 +312,7 @@
 						<div>
 							<label
 								for="mobile-event"
-								class="text-fade font-mono-system mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
 							>
 								Event
 							</label>
@@ -319,7 +320,7 @@
 								id="mobile-event"
 								value={filters.event}
 								onchange={(e) => updateFilters({ event: e.target.value || null })}
-								class="border-line2 bg-paper-bg text-ink hover:border-ink focus:border-ink w-full border-[1.5px] px-3 py-[10px] text-[13.5px] outline-none transition-colors"
+								class="w-full border-[1.5px] border-line2 bg-paper-bg px-3 py-[10px] text-[13.5px] text-ink transition-colors outline-none hover:border-ink focus:border-ink"
 							>
 								<option value="">All events</option>
 								{#each events as ev (ev.id)}
@@ -333,7 +334,7 @@
 						<button
 							type="button"
 							onclick={clearAllFilters}
-							class="border-warm text-warm hover:bg-warm hover:text-paper-bg w-full cursor-pointer border-[1.5px] bg-transparent py-[10px] text-[11px] font-extrabold tracking-[0.06em] uppercase transition-colors"
+							class="w-full cursor-pointer border-[1.5px] border-warm bg-transparent py-[10px] text-[11px] font-extrabold tracking-[0.06em] text-warm uppercase transition-colors hover:bg-warm hover:text-paper-bg"
 						>
 							Clear all filters
 						</button>
@@ -351,10 +352,10 @@
 						{#each vods as v (v.id)}
 							<a
 								href="/library/{v.id}"
-								class="group bg-paper border-line2 hover:border-ink flex flex-col overflow-hidden border transition-colors"
+								class="group flex flex-col overflow-hidden border border-line2 bg-paper transition-colors hover:border-ink"
 							>
 								<!-- thumbnail -->
-								<div class="bg-ink relative aspect-video overflow-hidden">
+								<div class="relative aspect-video overflow-hidden bg-ink">
 									{#if v.muxPlaybackId}
 										<div
 											class="absolute inset-0 z-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-[1.05]"
@@ -366,9 +367,7 @@
 											aria-hidden="true"
 										></span>
 									{:else}
-										<div
-											class="text-fade absolute inset-0 z-0 flex items-center justify-center"
-										>
+										<div class="absolute inset-0 z-0 flex items-center justify-center text-fade">
 											<svg
 												viewBox="0 0 24 24"
 												class="h-8 w-8"
@@ -385,7 +384,7 @@
 									{/if}
 
 									<span
-										class="text-ink absolute top-[10px] left-[10px] z-[2] inline-flex items-center gap-[6px] bg-white/95 px-[8px] py-[3px] text-[9.5px] font-extrabold tracking-[0.08em] uppercase"
+										class="absolute top-[10px] left-[10px] z-[2] inline-flex items-center gap-[6px] bg-white/95 px-[8px] py-[3px] text-[9.5px] font-extrabold tracking-[0.08em] text-ink uppercase"
 									>
 										<svg viewBox="0 0 24 24" class="h-[10px] w-[10px]" fill="currentColor">
 											<path d="M8 5v14l11-7z" />
@@ -393,16 +392,10 @@
 										VOD
 									</span>
 
-									{#if v.isPremium}
-										<span
-											class="bg-prem absolute top-[10px] right-[10px] z-[2] inline-flex items-center gap-[5px] px-[8px] py-[3px] text-[9.5px] font-extrabold tracking-[0.08em] text-white uppercase"
-										>
-											★ Premium
-										</span>
-									{/if}
+									{#if v.isPremium}<PremiumTag variant="corner" />{/if}
 
 									<span
-										class="text-ink absolute top-1/2 left-1/2 z-[2] flex h-[48px] w-[48px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 pl-[3px] transition-transform group-hover:scale-110"
+										class="absolute top-1/2 left-1/2 z-[2] flex h-[48px] w-[48px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 pl-[3px] text-ink transition-transform group-hover:scale-110"
 										aria-hidden="true"
 									>
 										<svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor">
@@ -412,7 +405,7 @@
 
 									{#if v.duration}
 										<span
-											class="font-mono-system absolute right-[10px] bottom-[10px] z-[2] bg-black/85 px-[8px] py-[3px] text-[10.5px] font-bold tabular-nums text-white"
+											class="absolute right-[10px] bottom-[10px] z-[2] bg-black/85 px-[8px] py-[3px] font-mono-system text-[10.5px] font-bold text-white tabular-nums"
 										>
 											{formatDuration(v.duration)}
 										</span>
@@ -422,7 +415,7 @@
 								<!-- body -->
 								<div class="flex flex-1 flex-col px-[18px] py-[16px]">
 									<h3
-										class="font-newsreader text-ink group-hover:text-warm mb-[10px] line-clamp-2 text-[19px] leading-[1.15] font-semibold tracking-[-0.01em] transition-colors"
+										class="mb-[10px] line-clamp-2 font-newsreader text-[19px] leading-[1.15] font-semibold tracking-[-0.01em] text-ink transition-colors group-hover:text-warm"
 									>
 										{v.title}
 									</h3>
@@ -437,14 +430,14 @@
 
 									{#if v.player1Hero || v.player2Hero}
 										<div
-											class="text-fade font-mono-system mb-[12px] text-[10px] font-extrabold tracking-[0.1em] uppercase"
+											class="mb-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.1em] text-fade uppercase"
 										>
 											{[v.player1Hero, v.player2Hero].filter(Boolean).join(' · ')}
 										</div>
 									{/if}
 
 									<div
-										class="border-line2 text-fade mt-auto flex items-center justify-between border-t pt-[10px] text-[10.5px] font-extrabold tracking-[0.08em] uppercase"
+										class="mt-auto flex items-center justify-between border-t border-line2 pt-[10px] text-[10.5px] font-extrabold tracking-[0.08em] text-fade uppercase"
 									>
 										{#if v.publishedAt}
 											<span class="font-mono-system">{formatDate(v.publishedAt)}</span>
@@ -452,7 +445,7 @@
 											<span></span>
 										{/if}
 										<span
-											class="text-accent group-hover:text-warm inline-flex items-center gap-[4px] transition-colors"
+											class="inline-flex items-center gap-[4px] text-accent transition-colors group-hover:text-warm"
 										>
 											Watch →
 										</span>
@@ -469,22 +462,22 @@
 								type="button"
 								onclick={() => updateFilters({ page: pagination.page - 1 })}
 								disabled={pagination.page === 1}
-								class="border-ink text-ink hover:bg-ink hover:text-paper-bg cursor-pointer border-[1.5px] bg-transparent px-[18px] py-[9px] text-[11px] font-extrabold tracking-[0.06em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-30"
+								class="cursor-pointer border-[1.5px] border-ink bg-transparent px-[18px] py-[9px] text-[11px] font-extrabold tracking-[0.06em] text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:cursor-not-allowed disabled:opacity-30"
 							>
 								← Prev
 							</button>
 
 							{#each getPageNumbers(pagination.page, pagination.totalPages) as p, i (i)}
 								{#if p === '...'}
-									<span class="text-fade font-mono-system px-[6px] text-[13px] font-bold">…</span>
+									<span class="px-[6px] font-mono-system text-[13px] font-bold text-fade">…</span>
 								{:else}
 									<button
 										type="button"
 										onclick={() => updateFilters({ page: p })}
-										class="font-mono-system inline-flex h-[38px] w-[38px] cursor-pointer items-center justify-center border text-[12px] font-extrabold tabular-nums transition-colors {p ===
+										class="inline-flex h-[38px] w-[38px] cursor-pointer items-center justify-center border font-mono-system text-[12px] font-extrabold tabular-nums transition-colors {p ===
 										pagination.page
 											? 'border-ink bg-ink text-paper-bg'
-											: 'border-line2 text-soft hover:border-ink hover:text-ink bg-paper'}"
+											: 'border-line2 bg-paper text-soft hover:border-ink hover:text-ink'}"
 									>
 										{p}
 									</button>
@@ -495,7 +488,7 @@
 								type="button"
 								onclick={() => updateFilters({ page: pagination.page + 1 })}
 								disabled={pagination.page === pagination.totalPages}
-								class="border-ink text-ink hover:bg-ink hover:text-paper-bg cursor-pointer border-[1.5px] bg-transparent px-[18px] py-[9px] text-[11px] font-extrabold tracking-[0.06em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-30"
+								class="cursor-pointer border-[1.5px] border-ink bg-transparent px-[18px] py-[9px] text-[11px] font-extrabold tracking-[0.06em] text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:cursor-not-allowed disabled:opacity-30"
 							>
 								Next →
 							</button>
@@ -504,10 +497,10 @@
 				{:else if activeFilterCount > 0}
 					<!-- No results with filters -->
 					<div
-						class="bg-paper border-line2 flex flex-col items-center border px-6 py-[60px] text-center"
+						class="flex flex-col items-center border border-line2 bg-paper px-6 py-[60px] text-center"
 					>
 						<span
-							class="border-line2 text-fade mb-4 flex h-[52px] w-[52px] items-center justify-center border"
+							class="mb-4 flex h-[52px] w-[52px] items-center justify-center border border-line2 text-fade"
 						>
 							<svg
 								viewBox="0 0 24 24"
@@ -523,18 +516,18 @@
 							</svg>
 						</span>
 						<h3
-							class="font-newsreader mb-2 text-[26px] leading-[1] font-semibold tracking-[-0.01em]"
+							class="mb-2 font-newsreader text-[26px] leading-[1] font-semibold tracking-[-0.01em]"
 						>
 							No matches
 						</h3>
-						<p class="text-soft mx-auto mb-6 max-w-[420px] text-[14px]">
+						<p class="mx-auto mb-6 max-w-[420px] text-[14px] text-soft">
 							Nothing lines up with the filters you've set. Try widening the search or clearing a
 							dimension.
 						</p>
 						<button
 							type="button"
 							onclick={clearAllFilters}
-							class="border-ink text-ink hover:bg-ink hover:text-paper-bg cursor-pointer border-[1.5px] bg-transparent px-[20px] py-[10px] text-[11px] font-extrabold tracking-[0.06em] uppercase transition-colors"
+							class="cursor-pointer border-[1.5px] border-ink bg-transparent px-[20px] py-[10px] text-[11px] font-extrabold tracking-[0.06em] text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 						>
 							Clear all filters
 						</button>
@@ -542,10 +535,10 @@
 				{:else}
 					<!-- No VODs at all -->
 					<div
-						class="bg-paper border-line2 flex flex-col items-center border px-6 py-[64px] text-center"
+						class="flex flex-col items-center border border-line2 bg-paper px-6 py-[64px] text-center"
 					>
 						<span
-							class="border-line2 text-fade mb-4 flex h-[52px] w-[52px] items-center justify-center border"
+							class="mb-4 flex h-[52px] w-[52px] items-center justify-center border border-line2 text-fade"
 						>
 							<svg
 								viewBox="0 0 24 24"
@@ -561,11 +554,11 @@
 							</svg>
 						</span>
 						<h3
-							class="font-newsreader mb-2 text-[28px] leading-[1] font-semibold tracking-[-0.01em]"
+							class="mb-2 font-newsreader text-[28px] leading-[1] font-semibold tracking-[-0.01em]"
 						>
 							Tournament VODs coming soon
 						</h3>
-						<p class="text-soft mx-auto max-w-[440px] text-[14px]">
+						<p class="mx-auto max-w-[440px] text-[14px] text-soft">
 							We film every AGE Open and partner-circuit main stage. New matches land here as we
 							finish coverage.
 						</p>
@@ -576,10 +569,10 @@
 			<!-- ------------ SIDEBAR ------------ -->
 			<aside class="hidden flex-col gap-[18px] lg:flex">
 				<!-- Search -->
-				<div class="bg-paper border-line2 border">
-					<header class="border-line2 border-b px-[18px] py-[13px]">
+				<div class="border border-line2 bg-paper">
+					<header class="border-b border-line2 px-[18px] py-[13px]">
 						<h3
-							class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+							class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
 						>
 							Search
 						</h3>
@@ -590,16 +583,16 @@
 							placeholder="Title or player name…"
 							value={filters.q}
 							oninput={handleSearch}
-							class="border-line2 bg-paper-bg text-ink hover:border-ink focus:border-ink placeholder:text-fade w-full border-[1.5px] px-3 py-[10px] text-[13.5px] outline-none transition-colors"
+							class="w-full border-[1.5px] border-line2 bg-paper-bg px-3 py-[10px] text-[13.5px] text-ink transition-colors outline-none placeholder:text-fade hover:border-ink focus:border-ink"
 						/>
 					</div>
 				</div>
 
 				<!-- Sort -->
-				<div class="bg-paper border-line2 border">
-					<header class="border-line2 border-b px-[18px] py-[13px]">
+				<div class="border border-line2 bg-paper">
+					<header class="border-b border-line2 px-[18px] py-[13px]">
 						<h3
-							class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+							class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
 						>
 							Sort by
 						</h3>
@@ -611,8 +604,8 @@
 								onclick={() => updateFilters({ sort: option.value })}
 								class="cursor-pointer px-[10px] py-[9px] text-left text-[12.5px] font-bold tracking-[0.02em] transition-colors {filters.sort ===
 								option.value
-									? 'text-ink border-l-prem bg-paper-bg border-l-[3px]'
-									: 'text-soft hover:text-ink border-l-[3px] border-transparent'}"
+									? 'border-l-[3px] border-l-prem bg-paper-bg text-ink'
+									: 'border-l-[3px] border-transparent text-soft hover:text-ink'}"
 							>
 								{option.label}
 							</button>
@@ -622,10 +615,10 @@
 
 				<!-- Hero -->
 				{#if heroes.length > 0}
-					<div class="bg-paper border-line2 border">
-						<header class="border-line2 border-b px-[18px] py-[13px]">
+					<div class="border border-line2 bg-paper">
+						<header class="border-b border-line2 px-[18px] py-[13px]">
 							<h3
-								class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+								class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
 							>
 								Hero
 							</h3>
@@ -634,7 +627,7 @@
 							<select
 								value={filters.hero}
 								onchange={(e) => updateFilters({ hero: e.target.value || null })}
-								class="border-line2 bg-paper-bg text-ink hover:border-ink focus:border-ink w-full border-[1.5px] px-3 py-[10px] text-[13.5px] outline-none transition-colors"
+								class="w-full border-[1.5px] border-line2 bg-paper-bg px-3 py-[10px] text-[13.5px] text-ink transition-colors outline-none hover:border-ink focus:border-ink"
 							>
 								<option value="">All heroes</option>
 								{#each heroes as h (h)}
@@ -647,10 +640,10 @@
 
 				<!-- Event -->
 				{#if events.length > 0}
-					<div class="bg-paper border-line2 border">
-						<header class="border-line2 border-b px-[18px] py-[13px]">
+					<div class="border border-line2 bg-paper">
+						<header class="border-b border-line2 px-[18px] py-[13px]">
 							<h3
-								class="text-fade font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+								class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
 							>
 								Event
 							</h3>
@@ -659,7 +652,7 @@
 							<select
 								value={filters.event}
 								onchange={(e) => updateFilters({ event: e.target.value || null })}
-								class="border-line2 bg-paper-bg text-ink hover:border-ink focus:border-ink w-full border-[1.5px] px-3 py-[10px] text-[13.5px] outline-none transition-colors"
+								class="w-full border-[1.5px] border-line2 bg-paper-bg px-3 py-[10px] text-[13.5px] text-ink transition-colors outline-none hover:border-ink focus:border-ink"
 							>
 								<option value="">All events</option>
 								{#each events as ev (ev.id)}
@@ -675,7 +668,7 @@
 					<button
 						type="button"
 						onclick={clearAllFilters}
-						class="border-warm text-warm hover:bg-warm hover:text-paper-bg cursor-pointer border-[1.5px] bg-transparent px-[18px] py-[12px] text-[11px] font-extrabold tracking-[0.06em] uppercase transition-colors"
+						class="cursor-pointer border-[1.5px] border-warm bg-transparent px-[18px] py-[12px] text-[11px] font-extrabold tracking-[0.06em] text-warm uppercase transition-colors hover:bg-warm hover:text-paper-bg"
 					>
 						Clear all filters
 					</button>
@@ -683,13 +676,13 @@
 
 				<!-- Premium CTA — hidden for members who already have Premium -->
 				{#if !isPremiumMember}
-					<div class="bg-prem border-t-ink relative border-t-[3px] px-[22px] py-[22px] text-white">
+					<div class="relative border-t-[3px] border-t-ink bg-prem px-[22px] py-[22px] text-white">
 						<span
-							class="text-prem mb-3 inline-block bg-white px-[10px] py-[4px] text-[9.5px] font-extrabold tracking-[0.14em] uppercase"
+							class="mb-3 inline-block bg-white px-[10px] py-[4px] text-[9.5px] font-extrabold tracking-[0.14em] text-prem uppercase"
 						>
 							AGE Premium
 						</span>
-						<h4 class="font-newsreader mb-2 text-[22px] leading-[1.1] font-semibold">
+						<h4 class="mb-2 font-newsreader text-[22px] leading-[1.1] font-semibold">
 							Every VOD, unlocked.
 						</h4>
 						<p class="mb-[14px] text-[12.5px] leading-[1.5]" style="color: #d6eedf;">

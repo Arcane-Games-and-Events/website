@@ -2,6 +2,7 @@
 	import PaymentForm from '$lib/components/PaymentForm.svelte';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import { getCircuit, DEFAULT_CIRCUIT } from '$lib/data/circuits.js';
+	import FormatTag from '$lib/components/age/FormatTag.svelte';
 
 	export let data;
 
@@ -134,6 +135,38 @@
 	$: edCircuit = editorialCircuitColor(data.event.circuit);
 	$: circuitAbbr = (getCircuit(data.event.circuit) || DEFAULT_CIRCUIT).abbreviation;
 
+	// Hero date stub + countdown
+	$: stub = data.event.eventDate
+		? {
+				month: new Date(data.event.eventDate)
+					.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
+					.toUpperCase(),
+				day: new Date(data.event.eventDate).toLocaleDateString('en-US', {
+					day: 'numeric',
+					timeZone: 'UTC'
+				}),
+				weekday: new Date(data.event.eventDate).toLocaleDateString('en-US', {
+					weekday: 'long',
+					timeZone: 'UTC'
+				}),
+				year: new Date(data.event.eventDate).getUTCFullYear()
+			}
+		: null;
+	$: daysLeft = (() => {
+		if (!data.event.eventDate) return null;
+		const end = new Date(data.event.eventDate);
+		end.setUTCHours(23, 59, 59, 999);
+		return Math.max(0, Math.floor((end.getTime() - Date.now()) / 86400000));
+	})();
+	$: countdownLabel =
+		daysLeft == null
+			? ''
+			: daysLeft === 0
+				? 'Today'
+				: daysLeft === 1
+					? 'Tomorrow'
+					: `In ${daysLeft} days`;
+
 	// Capacity percentage for the progress bar.
 	$: capacityPct = hasPlayerCap
 		? Math.min((data.registeredCount / data.event.playerCap) * 100, 100)
@@ -149,415 +182,319 @@
 </svelte:head>
 
 <AgeShell active="AGE Open">
-	<!--
-		Hero band — paper background with a circuit-colored top hairline,
-		a back link, eyebrow with circuit name, serif headline, chip
-		strip, and a three-column date/time/location strip separated by
-		ink hairlines. Optional event description renders with the
-		drop-cap pattern used on the homepage latest release.
-	-->
-	<section class="relative overflow-hidden border-b-[3px] border-double border-ink bg-paper">
-		<!--
-			Circuit image backdrop — contained to the right half of the
-			hero so the low-resolution source isn't stretched across the
-			full width. A CSS mask fades its left edge into transparent
-			so the photograph blends cleanly into the paper field instead
-			of stopping at a hard seam. A bottom vertical fade closes
-			the image into the next section without a visible boundary.
-			`aria-hidden` on the figure since it's purely decorative.
-		-->
-		<div class="pointer-events-none absolute inset-0" aria-hidden="true">
-			<img
-				src={circuitConfig.image}
-				alt=""
-				class="absolute top-0 right-0 h-full w-[60%] object-cover opacity-45"
-				style="-webkit-mask-image: linear-gradient(to right, transparent 0%, black 40%, black 100%); mask-image: linear-gradient(to right, transparent 0%, black 40%, black 100%);"
-			/>
-			<!-- Paper tint sitting only over the image area — lifts the
-				 text contrast on the right half of the hero where the date
-				 strip + description can overlap the photograph. -->
-			<div
-				class="absolute top-0 right-0 h-full w-[60%]"
-				style="background: linear-gradient(to right, transparent 0%, color-mix(in srgb, var(--ed-paper) 38%, transparent) 40%, color-mix(in srgb, var(--ed-paper) 50%, transparent) 100%);"
-			></div>
-			<!-- Bottom-edge fade into paper to close the section seam -->
-			<div
-				class="absolute inset-x-0 bottom-0 h-[38%]"
-				style="background: linear-gradient(to bottom, transparent 0%, var(--ed-paper) 100%);"
-			></div>
-		</div>
-
-		<!-- circuit accent top rule (4px) sits above the backdrop -->
-		<div class="absolute inset-x-0 top-0 z-[1] h-[4px]" style="background: {edCircuit};"></div>
-
+	<!-- ============ hero: the AGE Open poster band ============ -->
+	<section class="relative overflow-hidden bg-ink text-paper-bg">
+		<img
+			src={circuitConfig.image}
+			alt=""
+			aria-hidden="true"
+			class="fp-kenburns absolute inset-0 h-full w-full object-cover opacity-30 grayscale"
+		/>
 		<div
-			class="relative z-[1] mx-auto w-full max-w-[1600px] px-4 pt-[44px] pb-[42px] md:px-10 lg:px-14"
-		>
-			<!-- Back link -->
-			<a
-				href="/age-open"
-				class="inline-flex items-center gap-2 font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:text-ink"
-			>
-				← All AGE Open events
-			</a>
+			class="absolute inset-0 mix-blend-multiply"
+			style="background: {edCircuit}; opacity: 0.35;"
+			aria-hidden="true"
+		></div>
+		<div
+			class="absolute inset-0"
+			style="background: linear-gradient(100deg, rgba(23,21,15,0.97) 0%, rgba(23,21,15,0.88) 50%, rgba(23,21,15,0.6) 100%);"
+			aria-hidden="true"
+		></div>
+		<div
+			class="absolute inset-x-0 top-0 h-[5px]"
+			style="background: {edCircuit};"
+			aria-hidden="true"
+		></div>
 
-			<!-- Title -->
-			<h1
-				class="mt-[20px] font-newsreader text-[clamp(40px,5.5vw,68px)] leading-[0.96] font-semibold tracking-[-0.02em]"
-			>
-				{data.event.title}
-			</h1>
-
-			<!--
-				Chip strip — Format and Circuit sit side-by-side as the
-				primary identifiers. The Circuit chip carries the
-				circuit's tint as its background so the page color-codes
-				against the rest of the editorial chrome (homepage
-				events row, Hub sidebar, etc.) at a glance.
-			-->
-			<div class="mt-6 flex flex-wrap items-center gap-2">
-				{#if data.event.circuit}
-					<!--
-						Circuit chip — promoted to the dominant chip in the
-						strip so a user lands on the page and immediately
-						knows which AGE Open they're looking at. Larger
-						font + heavier padding, a leading white dot for
-						glanceability, and an outer ring in the circuit
-						tint that bleeds into the page accent.
-					-->
-					<span
-						class="relative inline-flex items-center gap-[10px] px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] text-white uppercase shadow-[0_0_0_3px_color-mix(in_srgb,var(--ed-paper)_100%,transparent),0_0_0_4px_currentColor]"
-						style="background: {edCircuit}; color: {edCircuit};"
-					>
-						<span class="inline-block h-[9px] w-[9px] rounded-full bg-white" aria-hidden="true"
-						></span>
-						<span class="text-white">{data.event.circuit}</span>
-					</span>
-				{/if}
-				{#if data.event.format}
-					<span
-						class="inline-flex items-center border border-line2 bg-transparent px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] text-ink uppercase"
-					>
-						{data.event.format}
-					</span>
-				{/if}
-				{#if data.event.premiumDiscount}
-					<span
-						class="inline-flex items-center bg-prem px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] text-white uppercase"
-					>
-						Premium · {data.discountLabel} off
-					</span>
-				{/if}
-				{#if hasPlayerCap}
-					{#if isFull}
-						<span
-							class="inline-flex items-center bg-ink px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] text-paper-bg uppercase"
-						>
-							Full
-						</span>
-					{:else if spotsRemaining <= 5}
-						<span
-							class="inline-flex items-center bg-warm px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] text-white uppercase"
-						>
-							{spotsRemaining} spot{spotsRemaining !== 1 ? 's' : ''} left
-						</span>
-					{:else}
-						<span
-							class="inline-flex items-center border border-line2 px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] text-soft uppercase"
-						>
-							{data.registeredCount} / {data.event.playerCap} registered
-						</span>
-					{/if}
-				{/if}
-				{#if isPastEvent}
-					<span
-						class="inline-flex items-center border border-line2 px-[16px] py-[9px] text-[13px] font-extrabold tracking-[0.12em] text-fade uppercase"
-					>
-						Past event
-					</span>
-				{/if}
+		<div class="relative mx-auto w-full max-w-[1200px] px-5 pt-8 pb-12 md:px-8 md:pt-10 md:pb-16">
+			<div class="flex flex-wrap items-center justify-between gap-4">
+				<a
+					href="/age-open?tab=events"
+					class="inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.2em] text-paper-bg/65 uppercase transition-colors hover:text-paper-bg"
+					>← All events</a
+				>
+				<a href="/age-open" class="block w-fit" aria-label="AGE Open Series overview">
+					<img
+						src="/age_open_logo.svg"
+						alt="AGE Open Series"
+						width="629"
+						height="294"
+						class="h-auto w-[120px] md:w-[150px]"
+					/>
+				</a>
 			</div>
 
-			<!-- Description with drop cap -->
-			{#if data.event.description}
-				<p
-					class="mt-7 max-w-[760px] text-[17px] leading-[1.55] text-soft first-letter:float-left first-letter:mt-[6px] first-letter:mr-3 first-letter:font-newsreader first-letter:text-[60px] first-letter:leading-[0.7] first-letter:font-semibold"
-					style="--first-letter-color: {edCircuit};"
-				>
-					{data.event.description}
-				</p>
+			<div class="mt-9 grid gap-8 md:mt-12 md:grid-cols-[auto_1fr] md:items-end md:gap-10">
+				<!-- date stub -->
+				{#if stub}
+					<div
+						class="fp-rise relative flex w-[132px] flex-col items-center bg-paper-bg py-4 text-center text-ink md:w-[156px] md:py-5"
+						style="filter: drop-shadow(0 20px 26px rgba(0,0,0,0.5));"
+					>
+						<span class="absolute inset-x-0 top-0 h-[5px]" style="background: {edCircuit};"></span>
+						<span class="text-[11px] font-extrabold tracking-[0.2em]" style="color: {edCircuit};"
+							>{stub.month} {stub.year}</span
+						>
+						<span class="ao-cond text-[84px] leading-[0.82] font-black tabular-nums md:text-[100px]"
+							>{stub.day}</span
+						>
+						<span class="mt-1 text-[10px] font-extrabold tracking-[0.18em] text-fade uppercase"
+							>{stub.weekday}</span
+						>
+						<span
+							class="ao-perf mt-3 h-px w-full text-line2"
+							style="background-image: linear-gradient(to right, currentColor 50%, transparent 50%); background-size: 8px 1px; background-repeat: repeat-x;"
+							aria-hidden="true"
+						></span>
+						<span
+							class="mt-3 text-[9.5px] font-extrabold tracking-[0.16em] uppercase {isPastEvent
+								? 'text-fade'
+								: 'text-warm'}">{isPastEvent ? 'Past event' : countdownLabel}</span
+						>
+					</div>
+				{/if}
+
+				<div class="fp-rise min-w-0" style="animation-delay: 120ms;">
+					<div class="flex flex-wrap items-center gap-2">
+						{#if data.event.circuit}
+							<span
+								class="inline-flex items-center gap-2 px-2.5 py-1 text-[10px] font-extrabold tracking-[0.18em] text-white uppercase"
+								style="background: {edCircuit};"
+								><span class="ao-cond text-[14px] leading-none font-black">{circuitAbbr}</span>{data
+									.event.circuit}</span
+							>
+						{/if}
+						{#if data.event.format}<FormatTag format={data.event.format} />{/if}
+						{#if data.event.premiumDiscount}
+							<span
+								class="bg-prem px-2 py-1 text-[9.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+								>◆ Members save {data.discountLabel || '10%'}</span
+							>
+						{/if}
+						{#if hasPlayerCap && isFull}
+							<span
+								class="bg-paper-bg px-2 py-1 text-[9.5px] font-extrabold tracking-[0.16em] text-ink uppercase"
+								>Full</span
+							>
+						{:else if hasPlayerCap && spotsRemaining <= 5}
+							<span
+								class="bg-warm px-2 py-1 text-[9.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+								>{spotsRemaining} spot{spotsRemaining !== 1 ? 's' : ''} left</span
+							>
+						{/if}
+					</div>
+					<h1
+						class="ao-cond mt-4 text-[54px] leading-[0.86] font-black [text-wrap:balance] uppercase md:text-[96px]"
+					>
+						{data.event.title}
+					</h1>
+					{#if data.event.description}
+						<p
+							class="mt-5 max-w-[640px] font-newsreader text-[17px] leading-[1.5] text-paper-bg/75 italic md:text-[19px]"
+						>
+							{data.event.description}
+						</p>
+					{/if}
+				</div>
+			</div>
+
+			<!-- scoreboard -->
+			<dl
+				class="fp-rise mt-10 grid grid-cols-2 border-y border-paper-bg/20 md:mt-12 md:grid-cols-4"
+				style="animation-delay: 240ms;"
+			>
+				<div class="py-4 pr-4">
+					<dt class="text-[9px] font-extrabold tracking-[0.2em] text-paper-bg/55 uppercase">
+						Date
+					</dt>
+					<dd class="mt-1.5 font-newsreader text-[18px] leading-tight font-semibold md:text-[20px]">
+						{formatDate(data.event.eventDate)}
+					</dd>
+				</div>
+				<div class="border-l border-paper-bg/15 py-4 pl-4">
+					<dt class="text-[9px] font-extrabold tracking-[0.2em] text-paper-bg/55 uppercase">
+						Players meeting
+					</dt>
+					<dd class="ao-cond mt-1 text-[34px] leading-none font-black">
+						{formatTime(data.event.eventDate) || 'TBA'}
+					</dd>
+				</div>
+				<div class="border-t border-paper-bg/15 py-4 pr-4 md:border-t-0 md:border-l md:pl-4">
+					<dt class="text-[9px] font-extrabold tracking-[0.2em] text-paper-bg/55 uppercase">
+						Venue
+					</dt>
+					<dd class="mt-1.5 font-newsreader text-[18px] leading-tight font-semibold md:text-[20px]">
+						{data.event.location || 'TBA'}
+					</dd>
+					{#if data.event.address}
+						<dd class="mt-1 text-[11.5px] font-semibold text-paper-bg/55">{data.event.address}</dd>
+					{/if}
+				</div>
+				<div class="border-t border-l border-paper-bg/15 py-4 pl-4 md:border-t-0">
+					<dt class="text-[9px] font-extrabold tracking-[0.2em] text-paper-bg/55 uppercase">
+						Entry
+					</dt>
+					<dd class="ao-cond mt-1 text-[34px] leading-none font-black tabular-nums">
+						${Math.round(Number(data.event.price))}
+					</dd>
+					{#if data.hasPremiumDiscount}
+						<dd class="mt-1 text-[10px] font-extrabold tracking-[0.12em] text-prem uppercase">
+							${data.finalPrice} for you, as a member
+						</dd>
+					{:else if data.event.premiumDiscount}
+						<dd
+							class="mt-1 text-[10px] font-extrabold tracking-[0.12em] text-paper-bg/55 uppercase"
+						>
+							Members save {data.discountLabel || '10%'}
+						</dd>
+					{/if}
+				</div>
+			</dl>
+			{#if hasPlayerCap}
+				<div class="mt-5 flex items-center gap-4">
+					<span class="block h-[4px] flex-1 bg-paper-bg/15">
+						<span
+							class="block h-full"
+							style="width: {capacityPct}%; background: {isFull ? 'var(--ed-bg)' : edCircuit};"
+						></span>
+					</span>
+					<span
+						class="shrink-0 text-[10px] font-extrabold tracking-[0.16em] text-paper-bg/70 uppercase tabular-nums"
+						>{data.registeredCount}/{data.event.playerCap} seats taken</span
+					>
+				</div>
 			{/if}
 		</div>
 	</section>
 
 	<!-- Main 2-column grid -->
 	<section class="bg-paper-bg">
-		<div class="mx-auto grid w-full max-w-[1600px] gap-10 px-14 py-[44px] lg:grid-cols-[1fr_360px]">
+		<div
+			class="mx-auto grid w-full max-w-[1200px] gap-10 px-5 py-10 md:px-8 md:py-14 lg:grid-cols-[minmax(0,1fr)_360px]"
+		>
 			<!-- ============ LEFT COLUMN ============ -->
 			<div class="min-w-0 space-y-7">
-				<!-- Event Details — bordered card with stat grid -->
-				<div class="border border-line2 bg-paper">
-					<div class="flex items-baseline justify-between border-b border-line2 px-6 py-[14px]">
-						<h2 class="font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
-							Event Details
-						</h2>
-						<span
-							class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-						>
-							{circuitAbbr}
-						</span>
-					</div>
-					<!--
-						Stat grid uses a flat 2-column layout with explicit
-						top/right hairline borders so every cell reads as a
-						single "page" in a printed almanac. Full-width
-						rows (Venue, Capacity, single-row Entry Fee when
-						Format is missing) use `sm:col-span-2`. Cells get
-						`-mt-px -ml-px` so collapsed borders don't double
-						along shared edges.
-					-->
-					<dl class="grid grid-cols-1 sm:grid-cols-2">
-						{#if data.event.eventDate}
-							<div class="-mt-px -ml-px border border-line2 px-6 py-5">
-								<dt
-									class="mb-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>
-									Date
-								</dt>
-								<dd
-									class="font-newsreader text-[20px] leading-[1.15] font-semibold tracking-[-0.01em]"
-								>
-									{formatDate(data.event.eventDate)}
-								</dd>
-							</div>
-							<div class="-mt-px -ml-px border border-line2 px-6 py-5">
-								<dt
-									class="mb-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>
-									Players Meeting
-								</dt>
-								<dd
-									class="font-newsreader text-[20px] leading-[1.15] font-semibold tracking-[-0.01em]"
-								>
-									{formatTime(data.event.eventDate)}
-								</dd>
-							</div>
-						{/if}
-						{#if data.event.location}
-							<div class="-mt-px -ml-px border border-line2 px-6 py-5 sm:col-span-2">
-								<dt
-									class="mb-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>
-									Venue
-								</dt>
-								<dd
-									class="font-newsreader text-[20px] leading-[1.15] font-semibold tracking-[-0.01em]"
-								>
-									{data.event.location}
-								</dd>
-								{#if data.event.address}
-									<div class="mt-1 text-[13px] font-medium text-soft">{data.event.address}</div>
-								{/if}
-							</div>
-						{/if}
-						{#if data.event.format}
-							<div class="-mt-px -ml-px border border-line2 px-6 py-5">
-								<dt
-									class="mb-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>
-									Format
-								</dt>
-								<dd class="font-newsreader text-[20px] font-semibold tracking-[-0.01em]">
-									{data.event.format}
-								</dd>
-							</div>
-						{/if}
-						<div
-							class="-mt-px -ml-px border border-line2 px-6 py-5 {data.event.format
-								? ''
-								: 'sm:col-span-2'}"
-						>
-							<dt
-								class="mb-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-							>
-								Entry Fee
-							</dt>
-							<dd class="font-archivo text-[22px] font-black tracking-[-0.02em] tabular-nums">
-								${formatPrice(data.event.price)}
-								{#if data.hasPremiumDiscount}
-									<span class="ml-2 text-[14px] font-bold text-prem">
-										→ ${data.finalPrice} for Premium
-									</span>
-								{/if}
-							</dd>
-						</div>
-						{#if hasPlayerCap}
-							<div class="-mt-px -ml-px border border-line2 px-6 py-5 sm:col-span-2">
-								<dt
-									class="mb-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>
-									Capacity
-								</dt>
-								<div class="flex items-baseline justify-between gap-3">
-									<dd class="font-archivo text-[22px] font-black tracking-[-0.02em] tabular-nums">
-										{data.registeredCount} / {data.event.playerCap}
-										<span class="ml-1 text-[13px] font-bold text-fade">players</span>
-									</dd>
-									{#if isFull}
-										<span
-											class="bg-ink px-[8px] py-[3px] text-[9px] font-extrabold tracking-[0.1em] text-paper-bg uppercase"
-										>
-											Full
-										</span>
-									{:else if spotsRemaining <= 5}
-										<span
-											class="bg-warm px-[8px] py-[3px] text-[9px] font-extrabold tracking-[0.1em] text-white uppercase"
-										>
-											{spotsRemaining} left
-										</span>
-									{/if}
-								</div>
-								<!-- Capacity bar -->
-								<div class="mt-3 h-[5px] overflow-hidden bg-line">
-									<div
-										class="h-full transition-all"
-										style="width: {capacityPct}%; background: {isFull
-											? 'var(--ed-ink)'
-											: spotsRemaining <= 5
-												? 'var(--ed-warm)'
-												: edCircuit};"
-									></div>
-								</div>
-							</div>
-						{/if}
-					</dl>
-				</div>
-
 				<!-- Registration section — branches on isPastEvent / data.user / data.userTicket -->
 				{#if !isPastEvent}
 					{#if !data.user}
-						<!-- Login Required -->
-						<div class="border border-l-[3px] border-line2 border-warm bg-paper px-7 py-7">
-							<div
-								class="mb-[10px] font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
-							>
-								Sign in required
-							</div>
-							<h2 class="font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
-								You need an AGE account to register.
-							</h2>
-							<p class="mt-3 max-w-[460px] text-[14.5px] leading-[1.55] text-soft">
-								Sign in to claim your seat, save your ticket to your account, and pick up Premium
-								member discounts when applicable.
+						<!-- Sign in required -->
+						<div class="border-[3px] border-double border-ink bg-paper px-6 py-8 md:px-9 md:py-10">
+							<p class="text-[10px] font-extrabold tracking-[0.22em] text-warm uppercase">
+								<span aria-hidden="true">◆</span> Sign in to register
 							</p>
-							<div class="mt-6 flex flex-wrap items-center gap-3">
+							<h2
+								class="ao-cond mt-3 text-[40px] leading-[0.88] font-black [text-wrap:balance] uppercase md:text-[52px]"
+							>
+								Claim your seat.
+							</h2>
+							<p
+								class="mt-4 max-w-[480px] font-newsreader text-[17px] leading-[1.5] text-soft italic"
+							>
+								An AGE account keeps your ticket in one place, tracks your AGE Points through the
+								season, and applies your member discount automatically.
+							</p>
+							<div class="mt-7 flex flex-wrap items-center gap-3">
 								<a
 									href="/login?redirect=/age-open/{data.event.id}"
-									class="inline-flex items-center gap-2 border-[1.5px] border-ink bg-ink px-6 py-[12px] text-[12px] font-bold tracking-[0.06em] text-paper-bg uppercase transition-[filter] hover:brightness-110"
+									class="inline-flex items-center gap-2 bg-warm px-6 py-3.5 text-[10.5px] font-extrabold tracking-[0.18em] text-white uppercase transition-colors hover:bg-ink"
 								>
 									Sign in to register →
 								</a>
 								<a
 									href="/signup?redirect=/age-open/{data.event.id}"
-									class="inline-flex items-center gap-2 border-[1.5px] border-ink bg-transparent px-6 py-[12px] text-[12px] font-bold tracking-[0.06em] text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+									class="inline-flex items-center gap-2 border border-ink px-6 py-3.5 text-[10.5px] font-extrabold tracking-[0.18em] text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 								>
-									Create account
+									Create an account
 								</a>
 							</div>
 						</div>
 					{:else if data.userTicket}
-						<!-- Already Registered -->
-						<div class="border border-l-[3px] border-line2 border-prem bg-paper px-7 py-7">
-							<div
-								class="mb-[10px] font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-prem uppercase"
+						<!-- You're in: the tickets, as admission stubs -->
+						<div
+							class="relative overflow-hidden bg-ink px-6 pt-8 pb-8 text-paper-bg md:px-9 md:pt-10"
+						>
+							<span
+								class="absolute inset-x-0 top-0 h-[5px]"
+								style="background: {edCircuit};"
+								aria-hidden="true"
+							></span>
+							<p class="text-[10px] font-extrabold tracking-[0.22em] text-warm-light uppercase">
+								<span aria-hidden="true">◆</span> You’re registered
+							</p>
+							<h2
+								class="ao-cond mt-3 text-[40px] leading-[0.88] font-black uppercase md:text-[56px]"
 							>
-								You're in
-							</div>
-							<h2 class="font-newsreader text-[28px] font-semibold tracking-[-0.01em]">
-								See you at <span class="text-ink">{data.event.location}</span
-								>{#if data.event.eventDate}
-									at <span class="text-ink">{formatTime(data.event.eventDate)}</span>{/if}.
+								You’re in.
 							</h2>
+							<p class="mt-3 font-newsreader text-[17px] leading-[1.5] text-paper-bg/75 italic">
+								See you at {data.event.location}{#if data.event.eventDate}, {formatDate(
+										data.event.eventDate
+									)} at {formatTime(data.event.eventDate)}{/if}.
+							</p>
 
-							<!-- Ticket details — one block per ticket -->
-							<div class="mt-6 space-y-4">
+							<ul class="mt-7 grid gap-4">
 								{#each data.userTicket as ticket, index}
-									<div class="border border-line2 bg-paper-bg px-5 py-[18px]">
-										{#if data.userTicket.length > 1}
-											<div
-												class="mb-3 font-mono-system text-[9.5px] font-extrabold tracking-[0.16em] text-prem uppercase"
-											>
-												Ticket {index + 1} of {data.userTicket.length}
-											</div>
-										{/if}
-										<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-											<div>
-												<div
-													class="mb-[5px] font-mono-system text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
-												>
-													Ticket Code
-												</div>
-												<div class="font-mono-system text-[15px] font-extrabold text-prem">
-													{ticket.code}
-												</div>
-											</div>
-											<div>
-												<div
-													class="mb-[5px] font-mono-system text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
-												>
-													Player
-												</div>
-												<div class="font-newsreader text-[16px] font-semibold">
-													{ticket.firstName}
-													{ticket.lastName}
-												</div>
-											</div>
-											{#if ticket.gemId}
-												<div>
-													<div
-														class="mb-[5px] font-mono-system text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									<li class="grid grid-cols-[1fr_auto] bg-paper-bg text-ink">
+										<div class="min-w-0 px-5 py-4 md:px-6">
+											<p class="text-[9px] font-extrabold tracking-[0.2em] text-fade uppercase">
+												{data.userTicket.length > 1
+													? `Ticket ${index + 1} of ${data.userTicket.length}`
+													: 'Your ticket'}
+											</p>
+											<p class="mt-1 font-newsreader text-[22px] leading-tight font-semibold">
+												{ticket.firstName}
+												{ticket.lastName}
+											</p>
+											<p class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+												{#if ticket.gemId}
+													<span class="text-[11px] font-semibold text-fade"
+														>GEM <span class="text-ink tabular-nums">{ticket.gemId}</span></span
 													>
-														GEM ID
-													</div>
-													<div class="font-mono-system text-[14px] font-bold">
-														{ticket.gemId}
-													</div>
-												</div>
-											{/if}
+												{/if}
+												{#if ticket.enteredIntoGem}
+													<span
+														class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.16em] text-prem uppercase"
+														><span class="h-[6px] w-[6px] bg-prem" aria-hidden="true"></span>Checked
+														in on GEM</span
+													>
+												{:else}
+													<span
+														class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.16em] text-warm uppercase"
+														><span class="h-[6px] w-[6px] bg-warm" aria-hidden="true"></span>GEM
+														check-in pending</span
+													>
+												{/if}
+											</p>
 										</div>
-										<!-- GEM status -->
-										<div class="mt-4 border-t border-line2 pt-3">
-											{#if ticket.enteredIntoGem}
-												<div
-													class="inline-flex items-center gap-2 text-[12px] font-semibold text-prem"
-												>
-													<span class="inline-block h-[8px] w-[8px] bg-prem"></span>
-													Checked in on GEM
-												</div>
-											{:else}
-												<div
-													class="inline-flex items-center gap-2 text-[12px] font-semibold text-warm"
-												>
-													<span class="inline-block h-[8px] w-[8px] bg-warm"></span>
-													Pending GEM check-in
-												</div>
-											{/if}
+										<div
+											class="relative flex flex-col items-center justify-center bg-paper px-5 py-4 text-center md:px-7"
+										>
+											<span
+												class="ao-perf absolute inset-y-2 left-0 w-px text-line2"
+												aria-hidden="true"
+											></span>
+											<span class="text-[8.5px] font-extrabold tracking-[0.2em] text-fade uppercase"
+												>Code</span
+											>
+											<span
+												class="ao-cond mt-1 text-[28px] leading-none font-black tracking-[0.04em] md:text-[34px]"
+												>{ticket.code}</span
+											>
 										</div>
-									</div>
+									</li>
 								{/each}
-							</div>
+							</ul>
 
 							{#if data.userTicket.some((t) => !t.enteredIntoGem)}
-								<p class="mt-4 text-[12px] leading-[1.5] text-fade">
-									Keep an eye on your GEM account before the event. If you don't see it after
-									check-in, please see a judge when you arrive.
+								<p class="mt-5 font-newsreader text-[15px] leading-[1.5] text-paper-bg/60 italic">
+									Keep an eye on your GEM account before the event. If you don’t see it after
+									check-in, find a judge when you arrive.
 								</p>
 							{/if}
-
 							{#if data.userTicket[0]?.orderId}
 								<a
 									href="/account/orders/{data.userTicket[0].orderId}"
-									class="mt-5 inline-flex items-center gap-2 text-[12px] font-extrabold tracking-[0.05em] text-accent uppercase"
+									class="mt-5 inline-block border-b-2 border-warm-light pb-1 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-[letter-spacing] hover:tracking-[0.26em]"
 								>
 									View order details →
 								</a>
@@ -565,42 +502,46 @@
 						</div>
 					{:else}
 						<!-- Ticket Entry Form -->
-						<div class="border border-line2 bg-paper">
-							<div class="flex items-baseline justify-between border-b border-line2 px-6 py-[14px]">
-								<h2 class="font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
-									Player Registration
+						<div class="border border-line bg-paper-bg">
+							<div
+								class="flex items-end justify-between gap-4 border-b-[3px] border-ink px-5 pt-5 pb-3 md:px-7"
+							>
+								<h2 class="ao-cond text-[36px] leading-[0.9] font-black uppercase md:text-[44px]">
+									Register
 								</h2>
-								<span
-									class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>
+								<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 									{tickets.length} ticket{tickets.length > 1 ? 's' : ''}
 								</span>
 							</div>
 
-							<div class="space-y-5 px-6 py-6">
+							<div class="space-y-5 px-5 py-6 md:px-7">
 								{#each tickets as ticket, index (ticket.id)}
 									<!-- Premium notice above second ticket -->
 									{#if data.hasPremiumDiscount && index === 1}
-										<div
-											class="border border-l-[3px] border-line2 border-warm bg-paper-bg px-4 py-3"
-										>
+										<div class="border-l-[3px] border-prem bg-prem/5 px-4 py-3">
 											<div
-												class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase"
+												class="text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase"
 											>
 												Premium discount
 											</div>
-											<p class="mt-1 text-[13px] leading-[1.5] text-soft">
+											<p class="mt-1 font-newsreader text-[15px] leading-[1.45] text-soft italic">
 												Premium discount applies to your first ticket only. Other players can
 												register from their own accounts to receive their own discounts.
 											</p>
 										</div>
 									{/if}
 
-									<div class="border border-line2 bg-paper-bg px-5 py-5">
+									<div
+										class="border border-t-[3px] border-line2 border-t-warm bg-paper-bg px-5 py-5 md:px-6"
+									>
 										<div class="mb-4 flex items-center justify-between">
 											<h3
-												class="font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] uppercase"
+												class="flex items-baseline gap-3 text-[10px] font-extrabold tracking-[0.18em] uppercase"
 											>
+												<span
+													class="ao-cond text-[34px] leading-none font-black text-warm tabular-nums"
+													aria-hidden="true">{String(index + 1).padStart(2, '0')}</span
+												>
 												{#if tickets.length > 1}
 													Player {index + 1}
 												{:else}
@@ -618,7 +559,7 @@
 												<button
 													type="button"
 													on:click={() => removeTicket(ticket.id)}
-													class="font-mono-system text-[10px] font-extrabold tracking-[0.1em] text-fade uppercase transition-colors hover:text-warm"
+													class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase transition-colors hover:text-hero-rb"
 													aria-label="Remove player {index + 1}"
 												>
 													Remove
@@ -630,9 +571,9 @@
 											<div>
 												<label
 													for="firstName-{ticket.id}"
-													class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+													class="mb-2 block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 												>
-													First Name <span class="text-warm">*</span>
+													First Name <span class="text-warm" aria-hidden="true">◆</span>
 												</label>
 												<input
 													type="text"
@@ -640,15 +581,15 @@
 													bind:value={ticket.firstName}
 													required
 													placeholder="Enter first name"
-													class="w-full border border-line2 bg-paper px-3 py-[10px] text-[14px] text-ink placeholder:text-fade focus:border-ink focus:outline-none"
+													class="w-full border border-line2 bg-paper-bg px-4 py-3 text-[15px] text-ink transition-colors outline-none placeholder:text-fade hover:border-ink/60 focus:border-ink"
 												/>
 											</div>
 											<div>
 												<label
 													for="lastName-{ticket.id}"
-													class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+													class="mb-2 block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 												>
-													Last Name <span class="text-warm">*</span>
+													Last Name <span class="text-warm" aria-hidden="true">◆</span>
 												</label>
 												<input
 													type="text"
@@ -656,16 +597,16 @@
 													bind:value={ticket.lastName}
 													required
 													placeholder="Enter last name"
-													class="w-full border border-line2 bg-paper px-3 py-[10px] text-[14px] text-ink placeholder:text-fade focus:border-ink focus:outline-none"
+													class="w-full border border-line2 bg-paper-bg px-4 py-3 text-[15px] text-ink transition-colors outline-none placeholder:text-fade hover:border-ink/60 focus:border-ink"
 												/>
 											</div>
 											{#if data.event.gemIdRequired}
 												<div class="sm:col-span-2">
 													<label
 														for="gemId-{ticket.id}"
-														class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+														class="mb-2 block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 													>
-														GEM ID <span class="text-warm">*</span>
+														GEM ID <span class="text-warm" aria-hidden="true">◆</span>
 													</label>
 													<input
 														type="text"
@@ -673,10 +614,10 @@
 														bind:value={ticket.gemId}
 														required
 														placeholder="Enter GEM ID"
-														class="w-full border border-line2 bg-paper px-3 py-[10px] text-[14px] text-ink placeholder:text-fade focus:border-ink focus:outline-none"
+														class="w-full border border-line2 bg-paper-bg px-4 py-3 text-[15px] text-ink transition-colors outline-none placeholder:text-fade hover:border-ink/60 focus:border-ink"
 													/>
-													<p class="mt-1 text-[11px] text-fade">
-														Required for tournament registration and pairing
+													<p class="mt-2 font-newsreader text-[14px] text-fade italic">
+														Required for pairings in GEM.
 													</p>
 												</div>
 											{/if}
@@ -688,7 +629,7 @@
 								<button
 									type="button"
 									on:click={addTicket}
-									class="flex w-full items-center justify-center gap-2 border border-dashed border-line2 px-4 py-[14px] text-[11px] font-extrabold tracking-[0.1em] text-fade uppercase transition-colors hover:border-ink hover:text-ink"
+									class="flex w-full items-center justify-center gap-2 border border-dashed border-line2 px-4 py-4 text-[10.5px] font-extrabold tracking-[0.18em] text-fade uppercase transition-colors hover:border-warm hover:text-warm"
 								>
 									+ Add another player
 								</button>
@@ -697,10 +638,10 @@
 
 						<!-- Mobile order summary (above payment form, only on mobile) -->
 						{#if showPaymentForm && !data.userTicket}
-							<div class="border border-line2 bg-paper lg:hidden">
-								<div class="border-b border-line2 px-6 py-[14px]">
-									<h2 class="font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
-										Order Summary
+							<div class="border border-line bg-paper-bg lg:hidden">
+								<div class="border-b-[3px] border-ink px-6 pt-5 pb-2">
+									<h2 class="ao-cond text-[30px] leading-[0.9] font-black uppercase">
+										Order summary
 									</h2>
 								</div>
 								<div class="px-6 py-5">
@@ -717,9 +658,7 @@
 														: `Player ${index + 1}`}
 												</div>
 												{#if ticket.gemId}
-													<div
-														class="font-mono-system text-[10px] font-bold tracking-[0.05em] text-fade"
-													>
+													<div class="text-[10.5px] font-semibold text-fade">
 														GEM {ticket.gemId}
 													</div>
 												{/if}
@@ -729,11 +668,15 @@
 													<div class="text-[11px] text-fade tabular-nums line-through">
 														${formatPrice(data.event.price)}
 													</div>
-													<div class="font-archivo text-[14px] font-black text-ink tabular-nums">
+													<div
+														class="ao-cond text-[22px] leading-none font-black text-ink tabular-nums"
+													>
 														${data.finalPrice}
 													</div>
 												{:else}
-													<div class="font-archivo text-[14px] font-black text-ink tabular-nums">
+													<div
+														class="ao-cond text-[22px] leading-none font-black text-ink tabular-nums"
+													>
 														${formatPrice(data.event.price)}
 													</div>
 												{/if}
@@ -743,7 +686,7 @@
 
 									{#if data.hasPremiumDiscount}
 										<div
-											class="mt-3 flex items-center justify-between border border-prem px-3 py-2 text-[12px] font-bold text-prem"
+											class="mt-3 flex items-center justify-between bg-prem/10 px-3 py-2 text-[10px] font-extrabold tracking-[0.14em] text-prem uppercase"
 										>
 											<span>Premium discount · 1st ticket</span>
 											<span>−${data.discountAmount}</span>
@@ -752,14 +695,10 @@
 
 									<div class="mt-4 border-t border-ink pt-4">
 										<div class="flex items-center justify-between">
-											<span
-												class="font-mono-system text-[11px] font-extrabold tracking-[0.14em] uppercase"
-											>
+											<span class="text-[10px] font-extrabold tracking-[0.2em] uppercase">
 												Total
 											</span>
-											<span
-												class="font-archivo text-[26px] font-black tracking-[-0.02em] tabular-nums"
-											>
+											<span class="ao-cond text-[44px] leading-none font-black tabular-nums">
 												${totalAmount}
 											</span>
 										</div>
@@ -782,16 +721,16 @@
 
 						<!-- Payment Form (when tickets valid) -->
 						{#if showPaymentForm}
-							<div class="border border-line2 bg-paper">
-								<div class="border-b border-line2 px-6 py-[14px]">
-									<h2 class="font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
+							<div class="border border-line bg-paper-bg">
+								<div class="border-b-[3px] border-ink px-5 pt-5 pb-3 md:px-7">
+									<h2 class="ao-cond text-[36px] leading-[0.9] font-black uppercase md:text-[44px]">
 										Payment
 									</h2>
-									<p class="mt-1 text-[12px] font-medium text-fade">
-										Complete your registration. Secured by Authorize.Net.
+									<p class="mt-2 font-newsreader text-[15px] text-soft italic">
+										One step from your seat. Secured by Authorize.Net.
 									</p>
 								</div>
-								<div class="px-6 py-6">
+								<div class="px-5 py-6 md:px-7">
 									<PaymentForm
 										amount={totalAmount}
 										description={`${tickets.length}x Ticket for ${data.event.title}`}
@@ -807,22 +746,31 @@
 						{/if}
 					{/if}
 				{:else}
-					<!-- Past Event -->
-					<div class="border border-line2 bg-paper px-7 py-9 text-center">
-						<div
-							class="mb-3 font-mono-system text-[10px] font-extrabold tracking-[0.18em] text-fade uppercase"
-						>
-							Past event
+					<!-- Past event -->
+					<div
+						class="border-[3px] border-double border-ink bg-paper px-6 py-10 text-center md:px-9"
+					>
+						<p class="text-[10px] font-extrabold tracking-[0.22em] text-fade uppercase">
+							Registration closed
+						</p>
+						<h2 class="ao-cond mt-3 text-[40px] leading-[0.88] font-black uppercase md:text-[52px]">
+							This one’s in the books.
+						</h2>
+						<p class="mx-auto mt-3 max-w-[420px] font-newsreader text-[17px] text-soft italic">
+							Catch the final standings, then find your next open.
+						</p>
+						<div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+							<a
+								href="/age-open/{data.event.id}/results"
+								class="inline-flex items-center bg-ink px-6 py-3.5 text-[10.5px] font-extrabold tracking-[0.18em] text-paper-bg uppercase transition-colors hover:bg-warm"
+								>Final standings →</a
+							>
+							<a
+								href="/age-open?tab=events"
+								class="inline-flex items-center border border-ink px-6 py-3.5 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+								>Upcoming events</a
+							>
 						</div>
-						<h3 class="font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
-							Registration for this event is closed.
-						</h3>
-						<a
-							href="/age-open"
-							class="mt-5 inline-flex items-center gap-2 text-[11px] font-extrabold tracking-[0.07em] text-accent uppercase"
-						>
-							View upcoming events →
-						</a>
 					</div>
 				{/if}
 			</div>
@@ -831,11 +779,9 @@
 			<aside class="space-y-6 lg:sticky lg:top-6 lg:self-start">
 				<!-- Order Summary (only show if not already registered) -->
 				{#if !data.userTicket && !isPastEvent}
-					<div class="border border-line2 bg-paper">
-						<div class="border-b border-line2 px-6 py-[14px]">
-							<h2 class="font-newsreader text-[20px] font-semibold tracking-[-0.01em]">
-								Order Summary
-							</h2>
+					<div class="border border-line bg-paper-bg">
+						<div class="border-b-[3px] border-ink px-6 pt-5 pb-2">
+							<h2 class="ao-cond text-[32px] leading-[0.9] font-black uppercase">Order summary</h2>
 						</div>
 						<div class="px-6 py-5">
 							{#each tickets as ticket, index}
@@ -851,9 +797,7 @@
 												: `Player ${index + 1}`}
 										</div>
 										{#if ticket.gemId}
-											<div
-												class="font-mono-system text-[10px] font-bold tracking-[0.05em] text-fade"
-											>
+											<div class="text-[10.5px] font-semibold text-fade">
 												GEM {ticket.gemId}
 											</div>
 										{/if}
@@ -863,11 +807,15 @@
 											<div class="text-[11px] text-fade tabular-nums line-through">
 												${formatPrice(data.event.price)}
 											</div>
-											<div class="font-archivo text-[14px] font-black text-ink tabular-nums">
+											<div
+												class="ao-cond text-[22px] leading-none font-black text-ink tabular-nums"
+											>
 												${data.finalPrice}
 											</div>
 										{:else}
-											<div class="font-archivo text-[14px] font-black text-ink tabular-nums">
+											<div
+												class="ao-cond text-[22px] leading-none font-black text-ink tabular-nums"
+											>
 												${formatPrice(data.event.price)}
 											</div>
 										{/if}
@@ -877,7 +825,7 @@
 
 							{#if data.hasPremiumDiscount}
 								<div
-									class="mt-3 flex items-center justify-between border border-prem px-3 py-2 text-[12px] font-bold text-prem"
+									class="mt-3 flex items-center justify-between bg-prem/10 px-3 py-2 text-[10px] font-extrabold tracking-[0.14em] text-prem uppercase"
 								>
 									<span>Premium · 1st ticket</span>
 									<span>−${data.discountAmount}</span>
@@ -886,12 +834,8 @@
 
 							<div class="mt-4 border-t border-ink pt-4">
 								<div class="flex items-center justify-between">
-									<span
-										class="font-mono-system text-[11px] font-extrabold tracking-[0.14em] uppercase"
-									>
-										Total
-									</span>
-									<span class="font-archivo text-[28px] font-black tracking-[-0.02em] tabular-nums">
+									<span class="text-[10px] font-extrabold tracking-[0.2em] uppercase"> Total </span>
+									<span class="ao-cond text-[44px] leading-none font-black tabular-nums">
 										${totalAmount}
 									</span>
 								</div>
@@ -908,14 +852,16 @@
 
 							<!-- Validation hint -->
 							{#if data.user && !allTicketsValid}
-								<div class="mt-4 border border-warm px-3 py-2 text-[12px] font-semibold text-warm">
+								<div
+									class="mt-4 border-l-[3px] border-warm bg-warm/5 px-3 py-2 font-newsreader text-[14px] text-ink italic"
+								>
 									Complete player info to proceed.
 								</div>
 							{/if}
 
 							<!-- Security note -->
 							<div
-								class="mt-4 text-center font-mono-system text-[9.5px] font-bold tracking-[0.12em] text-fade uppercase"
+								class="mt-4 text-center text-[9px] font-extrabold tracking-[0.18em] text-fade uppercase"
 							>
 								Secure checkout · Authorize.Net
 							</div>
@@ -924,9 +870,9 @@
 				{/if}
 
 				<!-- Prizes & Points -->
-				<div class="border border-line2 bg-paper">
-					<div class="border-b border-line2 px-6 py-[14px]">
-						<h3 class="font-newsreader text-[20px] font-semibold tracking-[-0.01em]">
+				<div class="border border-line bg-paper-bg">
+					<div class="border-b-[3px] border-ink px-6 pt-5 pb-2">
+						<h3 class="ao-cond text-[32px] leading-[0.9] font-black uppercase">
 							Prizes &amp; Points
 						</h3>
 					</div>
@@ -936,7 +882,7 @@
 								<dt class="font-semibold text-soft">{row.p}</dt>
 								<dd class="text-right">
 									{#if row.prize}
-										<span class="font-archivo font-extrabold text-prem tabular-nums"
+										<span class="ao-cond text-[20px] leading-none font-black text-ink tabular-nums"
 											>{row.prize}</span
 										>
 										<span class="ml-2 text-[12px] font-semibold text-fade">{row.pts}</span>
@@ -950,18 +896,16 @@
 				</div>
 
 				<!-- Need Help -->
-				<div class="border border-line2 bg-paper px-6 py-6">
-					<h3
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>
+				<div class="border-t-[3px] border-ink bg-paper px-6 py-6">
+					<h3 class="text-[9.5px] font-extrabold tracking-[0.2em] text-fade uppercase">
 						Need help?
 					</h3>
-					<p class="mt-2 text-[14px] leading-[1.5] font-semibold text-ink">
+					<p class="mt-2 font-newsreader text-[17px] leading-[1.4] font-semibold text-ink">
 						Questions about registration or the event?
 					</p>
 					<a
 						href="/age-open?tab=rules"
-						class="mt-3 inline-flex items-center gap-2 text-[11px] font-extrabold tracking-[0.07em] text-accent uppercase"
+						class="mt-3 inline-flex items-center gap-2 border-b-2 border-warm pb-1 text-[10px] font-extrabold tracking-[0.18em] text-warm uppercase"
 					>
 						View rules &amp; info →
 					</a>
@@ -970,10 +914,3 @@
 		</div>
 	</section>
 </AgeShell>
-
-<style>
-	/* Tint the drop-cap initial with the circuit color via inline CSS var. */
-	:global(.bg-paper p[style*='--first-letter-color']::first-letter) {
-		color: var(--first-letter-color);
-	}
-</style>

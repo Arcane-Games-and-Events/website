@@ -1,4 +1,5 @@
 <script>
+	import PremiumTag from '$lib/components/age/PremiumTag.svelte';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import FadeImage from '$lib/components/FadeImage.svelte';
 	export let data;
@@ -131,9 +132,9 @@
 	<div class="mx-auto w-full max-w-[1600px] px-4 pt-10 pb-[52px] md:px-10 lg:px-14">
 		<!-- ============ BREADCRUMB ============ -->
 		<nav
-			class="text-fade mb-6 flex items-center gap-2 text-[11px] font-extrabold tracking-[0.12em] uppercase"
+			class="mb-6 flex items-center gap-2 text-[11px] font-extrabold tracking-[0.12em] text-fade uppercase"
 		>
-			<a href="/library" class="hover:text-ink transition-colors">Library</a>
+			<a href="/library" class="transition-colors hover:text-ink">Library</a>
 			<span class="opacity-60" aria-hidden="true">/</span>
 			<span class="text-fade">Authors</span>
 			<span class="opacity-60" aria-hidden="true">/</span>
@@ -142,11 +143,11 @@
 
 		<!-- ============ HEADER ============ -->
 		<div
-			class="bg-paper border-line2 border-t-prem mb-[26px] grid grid-cols-1 items-start gap-7 border border-t-[3px] px-[26px] py-[26px] md:grid-cols-[auto_1fr_auto] md:px-[34px] md:py-[30px]"
+			class="mb-[26px] grid grid-cols-1 items-start gap-7 border border-t-[3px] border-line2 border-t-prem bg-paper px-[26px] py-[26px] md:grid-cols-[auto_1fr_auto] md:px-[34px] md:py-[30px]"
 		>
 			<!-- avatar -->
 			<div
-				class="bg-prem relative flex h-[104px] w-[104px] items-center justify-center overflow-hidden text-[38px] font-black tracking-[-0.03em] text-white"
+				class="relative flex h-[104px] w-[104px] items-center justify-center overflow-hidden bg-prem text-[38px] font-black tracking-[-0.03em] text-white"
 			>
 				{#if data.author.profilePicture}
 					<FadeImage
@@ -164,20 +165,20 @@
 			<div class="min-w-0">
 				<div class="mb-[10px] flex flex-wrap items-center gap-[10px]">
 					<span
-						class="text-fade font-mono-system inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.16em] uppercase"
+						class="inline-flex items-center gap-2 font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
 					>
-						<span class="bg-prem inline-block h-[6px] w-[6px] rounded-full"></span>
+						<span class="inline-block h-[6px] w-[6px] rounded-full bg-prem"></span>
 						Author
 					</span>
 				</div>
 				<h1
-					class="font-newsreader mb-[10px] text-[40px] leading-[0.9] font-semibold tracking-[-0.02em] sm:text-[52px]"
+					class="mb-[10px] font-newsreader text-[40px] leading-[0.9] font-semibold tracking-[-0.02em] sm:text-[52px]"
 				>
 					{data.author.name}
 				</h1>
 				{#if data.author.bio}
 					<div
-						class="text-soft prose prose-sm max-w-[640px] text-[14.5px] leading-[1.6] [&_a]:text-warm [&_a:hover]:text-ink"
+						class="prose prose-sm max-w-[640px] text-[14.5px] leading-[1.6] text-soft [&_a]:text-warm [&_a:hover]:text-ink"
 					>
 						{@html data.author.bio}
 					</div>
@@ -187,7 +188,7 @@
 				{#if data.author.socialLinks && data.author.socialLinks.length > 0}
 					<div class="mt-[16px] flex flex-wrap items-center gap-[8px]">
 						<span
-							class="text-fade font-mono-system mr-[4px] text-[10px] font-extrabold tracking-[0.14em] uppercase"
+							class="mr-[4px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
 						>
 							Connect
 						</span>
@@ -198,7 +199,7 @@
 								href={normalizeUrl(link.url)}
 								target="_blank"
 								rel="noopener noreferrer"
-								class="border-line2 text-soft hover:border-ink hover:text-ink flex h-[34px] w-[34px] items-center justify-center border bg-transparent transition-colors"
+								class="flex h-[34px] w-[34px] items-center justify-center border border-line2 bg-transparent text-soft transition-colors hover:border-ink hover:text-ink"
 								title={getLinkLabel(link)}
 								aria-label={getLinkLabel(link)}
 							>
@@ -221,18 +222,18 @@
 			<!-- stats block -->
 			<div class="grid grid-cols-3 gap-[10px] md:grid-cols-1 md:gap-[8px]">
 				<div
-					class="border-line2 flex flex-col items-center justify-center border px-[18px] py-[14px] text-center"
+					class="flex flex-col items-center justify-center border border-line2 px-[18px] py-[14px] text-center"
 				>
 					<div class="font-newsreader text-[32px] leading-[0.8] font-semibold tabular-nums">
 						{articleCount}
 					</div>
-					<div class="text-fade mt-2 text-[9.5px] font-extrabold tracking-[0.14em] uppercase">
+					<div class="mt-2 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase">
 						Articles
 					</div>
 				</div>
 				{#if premiumCount > 0}
 					<div
-						class="border-prem/40 bg-prem/5 text-prem flex flex-col items-center justify-center border px-[18px] py-[14px] text-center"
+						class="flex flex-col items-center justify-center border border-prem/40 bg-prem/5 px-[18px] py-[14px] text-center text-prem"
 					>
 						<div class="font-newsreader text-[32px] leading-[0.8] font-semibold tabular-nums">
 							{premiumCount}
@@ -244,12 +245,14 @@
 				{/if}
 				{#if freeCount > 0}
 					<div
-						class="border-line2 flex flex-col items-center justify-center border px-[18px] py-[14px] text-center"
+						class="flex flex-col items-center justify-center border border-line2 px-[18px] py-[14px] text-center"
 					>
-						<div class="text-soft font-newsreader text-[32px] leading-[0.8] font-semibold tabular-nums">
+						<div
+							class="font-newsreader text-[32px] leading-[0.8] font-semibold text-soft tabular-nums"
+						>
 							{freeCount}
 						</div>
-						<div class="text-fade mt-2 text-[9.5px] font-extrabold tracking-[0.14em] uppercase">
+						<div class="mt-2 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase">
 							Free
 						</div>
 					</div>
@@ -262,12 +265,12 @@
 			class="mb-[26px] flex flex-wrap items-center justify-between gap-3 border-b border-line2 pb-[18px]"
 		>
 			<div>
-				<h2
-					class="font-newsreader text-[26px] leading-[1] font-semibold tracking-[-0.01em]"
-				>
+				<h2 class="font-newsreader text-[26px] leading-[1] font-semibold tracking-[-0.01em]">
 					Articles
 				</h2>
-				<p class="text-fade font-mono-system mt-[6px] text-[10.5px] font-bold tracking-[0.1em] uppercase">
+				<p
+					class="mt-[6px] font-mono-system text-[10.5px] font-bold tracking-[0.1em] text-fade uppercase"
+				>
 					{filteredArticles.length}
 					{filteredArticles.length === 1 ? 'Article' : 'Articles'}
 					{#if hasActiveFilters}
@@ -297,10 +300,10 @@
 
 				<!-- tag dropdown -->
 				{#if allTags.length > 0}
-					<div class="border-line2 focus-within:border-ink relative border bg-paper-bg">
+					<div class="relative border border-line2 bg-paper-bg focus-within:border-ink">
 						<select
 							bind:value={selectedTag}
-							class="text-ink appearance-none bg-transparent px-[12px] py-[8px] pr-[26px] text-[11px] font-bold tracking-[0.04em] uppercase focus:outline-none"
+							class="appearance-none bg-transparent px-[12px] py-[8px] pr-[26px] text-[11px] font-bold tracking-[0.04em] text-ink uppercase focus:outline-none"
 						>
 							<option value="">All topics</option>
 							{#each allTags as tag}
@@ -308,7 +311,7 @@
 							{/each}
 						</select>
 						<span
-							class="text-fade pointer-events-none absolute top-1/2 right-[8px] -translate-y-1/2 text-[10px]"
+							class="pointer-events-none absolute top-1/2 right-[8px] -translate-y-1/2 text-[10px] text-fade"
 							aria-hidden="true"
 						>
 							▾
@@ -321,7 +324,7 @@
 					<button
 						type="button"
 						onclick={clearFilters}
-						class="text-warm hover:text-ink text-[10.5px] font-extrabold tracking-[0.08em] uppercase transition-colors"
+						class="text-[10.5px] font-extrabold tracking-[0.08em] text-warm uppercase transition-colors hover:text-ink"
 					>
 						Clear →
 					</button>
@@ -335,11 +338,11 @@
 				{#each filteredArticles as article (article.slug)}
 					<a
 						href="/library/{article.slug}"
-						class="group bg-paper border-line2 hover:border-ink flex flex-col gap-4 border p-[18px] transition-colors md:flex-row md:items-stretch md:gap-[22px] md:p-[22px]"
+						class="group flex flex-col gap-4 border border-line2 bg-paper p-[18px] transition-colors hover:border-ink md:flex-row md:items-stretch md:gap-[22px] md:p-[22px]"
 					>
 						<!-- thumbnail -->
 						<div
-							class="bg-ink relative aspect-video w-full flex-shrink-0 overflow-hidden md:w-[240px]"
+							class="relative aspect-video w-full flex-shrink-0 overflow-hidden bg-ink md:w-[240px]"
 						>
 							{#if article.coverImage?.src}
 								<FadeImage
@@ -350,7 +353,7 @@
 									class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
 								/>
 							{:else}
-								<div class="text-fade absolute inset-0 flex items-center justify-center">
+								<div class="absolute inset-0 flex items-center justify-center text-fade">
 									<svg
 										viewBox="0 0 24 24"
 										class="h-8 w-8"
@@ -365,20 +368,19 @@
 								</div>
 							{/if}
 							<span
-								class="text-ink absolute top-[10px] left-[10px] inline-flex items-center gap-[6px] bg-white/95 px-[8px] py-[3px] text-[9.5px] font-extrabold tracking-[0.08em] uppercase"
+								class="absolute top-[10px] left-[10px] inline-flex items-center gap-[6px] bg-white/95 px-[8px] py-[3px] text-[9.5px] font-extrabold tracking-[0.08em] text-ink uppercase"
 							>
-								<svg viewBox="0 0 24 24" class="h-[9px] w-[9px]" fill="currentColor" aria-hidden="true">
+								<svg
+									viewBox="0 0 24 24"
+									class="h-[9px] w-[9px]"
+									fill="currentColor"
+									aria-hidden="true"
+								>
 									<rect x="4" y="4" width="16" height="16" rx="1" />
 								</svg>
 								Article
 							</span>
-							{#if article.isPremium}
-								<span
-									class="bg-prem absolute top-[10px] right-[10px] inline-flex items-center gap-[5px] px-[8px] py-[3px] text-[9.5px] font-extrabold tracking-[0.08em] text-white uppercase"
-								>
-									★ Premium
-								</span>
-							{/if}
+							{#if article.isPremium}<PremiumTag variant="corner" />{/if}
 						</div>
 
 						<!-- body -->
@@ -387,7 +389,7 @@
 								{#if article.tags && article.tags.length > 0}
 									{#each article.tags.slice(0, 2) as tag (tag.slug)}
 										<span
-											class="border-line2 bg-paper-bg text-soft inline-flex items-center border px-[9px] py-[3px] text-[9.5px] font-extrabold tracking-[0.08em] uppercase"
+											class="inline-flex items-center border border-line2 bg-paper-bg px-[9px] py-[3px] text-[9.5px] font-extrabold tracking-[0.08em] text-soft uppercase"
 										>
 											{tag.name}
 										</span>
@@ -395,7 +397,7 @@
 								{/if}
 								{#if !article.isPremium}
 									<span
-										class="border-line2 text-fade inline-flex items-center border px-[9px] py-[3px] text-[9.5px] font-extrabold tracking-[0.08em] uppercase"
+										class="inline-flex items-center border border-line2 px-[9px] py-[3px] text-[9.5px] font-extrabold tracking-[0.08em] text-fade uppercase"
 									>
 										Free
 									</span>
@@ -403,24 +405,24 @@
 							</div>
 
 							<h3
-								class="font-newsreader text-ink group-hover:text-warm mb-[10px] line-clamp-2 text-[22px] leading-[1.1] font-semibold tracking-[-0.01em] transition-colors md:text-[25px]"
+								class="mb-[10px] line-clamp-2 font-newsreader text-[22px] leading-[1.1] font-semibold tracking-[-0.01em] text-ink transition-colors group-hover:text-warm md:text-[25px]"
 							>
 								{article.title}
 							</h3>
 
 							{#if article.excerpt}
-								<p class="text-soft mb-[14px] line-clamp-2 text-[13.5px] leading-[1.55]">
+								<p class="mb-[14px] line-clamp-2 text-[13.5px] leading-[1.55] text-soft">
 									{article.excerpt}
 								</p>
 							{/if}
 
 							<div
-								class="border-line2 text-fade mt-auto flex items-center justify-between border-t pt-[10px] text-[10.5px] font-extrabold tracking-[0.08em] uppercase"
+								class="mt-auto flex items-center justify-between border-t border-line2 pt-[10px] text-[10.5px] font-extrabold tracking-[0.08em] text-fade uppercase"
 							>
 								<span class="font-mono-system">{formatDate(article.publishedAt)}</span>
-								<span class="text-soft font-mono-system">{getReadTime(article)}</span>
+								<span class="font-mono-system text-soft">{getReadTime(article)}</span>
 								<span
-									class="text-accent group-hover:text-warm inline-flex items-center gap-[4px] transition-colors"
+									class="inline-flex items-center gap-[4px] text-accent transition-colors group-hover:text-warm"
 								>
 									Read →
 								</span>
@@ -431,10 +433,10 @@
 			</div>
 		{:else if data.articles.length === 0}
 			<div
-				class="bg-paper border-line2 flex flex-col items-center border px-6 py-[64px] text-center"
+				class="flex flex-col items-center border border-line2 bg-paper px-6 py-[64px] text-center"
 			>
 				<span
-					class="border-line2 text-fade mb-5 flex h-[52px] w-[52px] items-center justify-center border"
+					class="mb-5 flex h-[52px] w-[52px] items-center justify-center border border-line2 text-fade"
 				>
 					<svg
 						viewBox="0 0 24 24"
@@ -448,19 +450,19 @@
 						<path d="M8 4v16M4 12h4" />
 					</svg>
 				</span>
-				<h3 class="font-newsreader mb-2 text-[26px] leading-[1] font-semibold tracking-[-0.01em]">
+				<h3 class="mb-2 font-newsreader text-[26px] leading-[1] font-semibold tracking-[-0.01em]">
 					No articles yet
 				</h3>
-				<p class="text-soft mx-auto max-w-[420px] text-[14px]">
+				<p class="mx-auto max-w-[420px] text-[14px] text-soft">
 					{data.author.name} hasn't published any articles yet. Check back soon.
 				</p>
 			</div>
 		{:else}
 			<div
-				class="bg-paper border-line2 flex flex-col items-center border px-6 py-[60px] text-center"
+				class="flex flex-col items-center border border-line2 bg-paper px-6 py-[60px] text-center"
 			>
 				<span
-					class="border-line2 text-fade mb-4 flex h-[52px] w-[52px] items-center justify-center border"
+					class="mb-4 flex h-[52px] w-[52px] items-center justify-center border border-line2 text-fade"
 				>
 					<svg
 						viewBox="0 0 24 24"
@@ -476,17 +478,17 @@
 						<path d="M16.5 16.5L21 21" />
 					</svg>
 				</span>
-				<h3 class="font-newsreader mb-2 text-[24px] leading-[1] font-semibold tracking-[-0.01em]">
+				<h3 class="mb-2 font-newsreader text-[24px] leading-[1] font-semibold tracking-[-0.01em]">
 					No matches
 				</h3>
-				<p class="text-soft mx-auto mb-6 max-w-[420px] text-[14px]">
+				<p class="mx-auto mb-6 max-w-[420px] text-[14px] text-soft">
 					Nothing lines up with the filters you've set. Try widening the search or clearing a
 					dimension.
 				</p>
 				<button
 					type="button"
 					onclick={clearFilters}
-					class="border-ink text-ink hover:bg-ink hover:text-paper-bg cursor-pointer border-[1.5px] bg-transparent px-[20px] py-[10px] text-[11px] font-extrabold tracking-[0.06em] uppercase transition-colors"
+					class="cursor-pointer border-[1.5px] border-ink bg-transparent px-[20px] py-[10px] text-[11px] font-extrabold tracking-[0.06em] text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 				>
 					Clear all filters
 				</button>

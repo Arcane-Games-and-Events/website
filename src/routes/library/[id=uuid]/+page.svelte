@@ -1,4 +1,5 @@
 <script>
+	import PremiumTag from '$lib/components/age/PremiumTag.svelte';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import { onMount } from 'svelte';
 
@@ -144,8 +145,7 @@
 				</span>
 			{/if}
 			{#if vodItem.isPremium}
-				<span aria-hidden="true">·</span>
-				<span class="font-extrabold tracking-[0.12em] text-prem uppercase">Premium</span>
+				<span class="self-center"><PremiumTag /></span>
 			{/if}
 		</div>
 	</header>
@@ -379,12 +379,7 @@
 											{formatDuration(related.duration)}
 										</div>
 									{/if}
-									{#if related.isPremium}
-										<span
-											class="absolute top-0 left-0 bg-prem px-1.5 py-[2px] text-[8px] font-extrabold tracking-[0.14em] text-white uppercase"
-											>Premium</span
-										>
-									{/if}
+									{#if related.isPremium}<PremiumTag variant="corner" size="sm" />{/if}
 								</div>
 								<div class="min-w-0">
 									<h4

@@ -9,7 +9,7 @@
 	const isPremiumMember = $derived($page.data?.isPremiumMember ?? false);
 	const PERKS = [
 		'Every premium article',
-		'Bonus match film',
+		'Bonus gameplay',
 		'Course updates for life',
 		'AGE Open discounts'
 	];

@@ -1,4 +1,5 @@
 <script>
+	import PremiumTag from '$lib/components/age/PremiumTag.svelte';
 	import { onMount, onDestroy } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
 	import Decklist from '$lib/components/Decklist.svelte';
@@ -1067,8 +1068,7 @@
 					<span class="font-semibold">{[pubLabel, lengthLabel].filter(Boolean).join(' · ')}</span>
 				{/if}
 				{#if data.isPremium}
-					<span aria-hidden="true">·</span>
-					<span class="font-extrabold tracking-[0.12em] text-prem uppercase">Premium</span>
+					<span class="self-center"><PremiumTag /></span>
 				{/if}
 			</div>
 		</div>

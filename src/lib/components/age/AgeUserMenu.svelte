@@ -106,15 +106,17 @@
 <div class="relative" bind:this={root}>
 	<!-- trigger: an outlined button — the burger's 40px height below lg,
 	     Get Premium's 34px at lg+ where the burger is gone — labelled
-	     "My account" so the entry point is obvious, with the monogram set
-	     into its left end; inverts to ink on hover and while open -->
+	     with the monogram set into its left end and a person icon (the
+	     "My account" label lives in the tooltip and accessible name);
+	     inverts to ink on hover and while open -->
 	<button
 		type="button"
 		onclick={toggle}
 		aria-haspopup="menu"
 		aria-expanded={open}
 		aria-label="My account — {fullName}"
-		class="inline-flex h-10 cursor-pointer items-center gap-2.5 border-[1.5px] border-ink pr-[11px] pl-[3px] text-[11px] font-bold tracking-[0.05em] uppercase transition-colors sm:pr-[13px] lg:h-[34px] {open
+		title="My account"
+		class="inline-flex h-10 cursor-pointer items-center gap-2 border-[1.5px] border-ink pr-[9px] pl-[3px] transition-colors lg:h-[34px] {open
 			? 'bg-ink text-paper-bg'
 			: 'bg-transparent text-ink hover:bg-ink hover:text-paper-bg'}"
 	>
@@ -126,17 +128,14 @@
 		>
 			{initials}
 		</span>
-		<span class="hidden sm:inline">My account</span>
 		<svg
-			class="h-[8px] w-[10px] transition-transform duration-200 {open ? 'rotate-180' : ''}"
-			viewBox="0 0 10 8"
-			fill="none"
-			stroke="currentColor"
-			stroke-width="1.6"
-			stroke-linecap="square"
+			class="h-[15px] w-[15px] shrink-0"
+			viewBox="0 0 20 20"
+			fill="currentColor"
 			aria-hidden="true"
 		>
-			<path d="M1.5 2 L5 6 L8.5 2" />
+			<circle cx="10" cy="6" r="4" />
+			<path d="M2.5 19c0-4.4 3.4-7.5 7.5-7.5s7.5 3.1 7.5 7.5z" />
 		</svg>
 	</button>
 

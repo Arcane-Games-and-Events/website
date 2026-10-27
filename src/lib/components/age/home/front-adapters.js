@@ -162,6 +162,7 @@ const COURSES_PLACEHOLDER = [
 		image: 'https://www.age.events/banner/academy-banner.webp',
 		instructor: 'Morgan Ellis',
 		lessons: 14,
+		minutes: 218,
 		runtime: formatMinutes(218),
 		price: 79
 	},
@@ -172,6 +173,7 @@ const COURSES_PLACEHOLDER = [
 		image: 'https://www.age.events/banner/articles-banner.webp',
 		instructor: 'Jordan Reeves',
 		lessons: 9,
+		minutes: 142,
 		runtime: formatMinutes(142),
 		price: 59
 	},
@@ -182,6 +184,7 @@ const COURSES_PLACEHOLDER = [
 		image: 'https://www.age.events/banner/studios-banner.webp',
 		instructor: 'Sam Whitfield',
 		lessons: 7,
+		minutes: 95,
 		runtime: formatMinutes(95),
 		price: 0
 	},
@@ -192,6 +195,7 @@ const COURSES_PLACEHOLDER = [
 		image: 'https://www.age.events/banner/age-open-banner.webp',
 		instructor: 'Casey Marchetti',
 		lessons: 11,
+		minutes: 174,
 		runtime: formatMinutes(174),
 		price: 49
 	}
@@ -201,13 +205,17 @@ const COURSES_PLACEHOLDER = [
 function courseItem(c) {
 	return {
 		href: c?.slug ? `/academy/${c.slug}` : '/academy',
+		slug: c?.slug || '',
 		title: c?.title || 'Untitled course',
 		dek: c?.description || '',
 		image: c?.coverImage?.src || 'https://www.age.events/banner/academy-banner.webp',
 		instructor: c?.author?.name || 'AGE Academy',
 		lessons: c?.lessons || 0,
+		minutes: c?.minutes || 0,
 		runtime: formatMinutes(c?.minutes || 0),
-		price: Number(c?.price) || 0
+		price: Number(c?.price) || 0,
+		discountPct: c?.premiumDiscountPct || 0,
+		previews: c?.previewLessons || 0
 	};
 }
 
@@ -239,7 +247,7 @@ export function buildFront(data) {
 	// events with price and a sign-up link, the three circuits, and the
 	// season leaders.
 	const stats = data?.seriesStats ?? {};
-	const upcoming = events.slice(0, 3).map((e) => ({
+	const allUpcoming = events.map((e) => ({
 		...eventDay(e.eventDate),
 		title: e.title || e.location || 'TBD',
 		venue: e.location || '',
@@ -257,8 +265,9 @@ export function buildFront(data) {
 		image: CIRCUITS[e.circuit]?.image || '/banner/age-open-banner.webp',
 		href: e.id ? `/age-open/${e.id}` : '/age-open'
 	}));
+	const upcoming = allUpcoming.slice(0, 3);
 	const circuits = Object.values(CIRCUITS).map((c) => {
-		const next = upcoming.find((e) => e.circuitName === c.name) ?? null;
+		const next = allUpcoming.find((e) => e.circuitName === c.name) ?? null;
 		return {
 			name: c.name,
 			region: c.region,
@@ -277,6 +286,8 @@ export function buildFront(data) {
 			regions: circuits.length
 		},
 		events: upcoming,
+		allEvents: allUpcoming,
+		topByCircuit: data?.standingsByCircuit ?? {},
 		circuits,
 		leaders: (data?.standings ?? []).slice(0, 3).map((s) => ({
 			rank: s.rank ?? 0,
@@ -304,8 +315,12 @@ export function buildFront(data) {
 		month: e.month,
 		circuit: e.circuit,
 		daysUntil: e.daysUntil,
-		meta: [e.weekday, e.venue, e.format, e.price].filter(Boolean).join(' · '),
-		metaShort: [e.venue, e.format, e.price].filter(Boolean).join(' · '),
+		format: e.format || '',
+		venue: e.venue || '',
+		weekday: e.weekday || '',
+		price: e.price || '',
+		meta: [e.weekday, e.venue, e.price].filter(Boolean).join(' · '),
+		metaShort: [e.venue, e.price].filter(Boolean).join(' · '),
 		cta: 'Sign up',
 		premium: false
 	}));

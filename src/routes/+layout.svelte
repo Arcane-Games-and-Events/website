@@ -3,7 +3,6 @@
 	import { page, navigating } from '$app/stores';
 	import AgeHeader from '$lib/components/age/AgeHeader.svelte';
 	import AgeFooter from '$lib/components/age/AgeFooter.svelte';
-	export let data;
 
 	// Auth pages that should not show the sidebar
 	const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
@@ -21,7 +20,7 @@
 	// they render the editorial chrome by virtue of wrapping their own
 	// markup in <AgeShell>.
 	const editorialRoutes = ['/', '/premium', '/age-open', '/library', '/academy', '/partner'];
-	const editorialPrefixes = ['/account', '/library/', '/player/', '/staff', '/cms'];
+	const editorialPrefixes = ['/account', '/library/', '/academy/', '/player/', '/staff', '/cms'];
 	// Substring tests for paths that don't fit a clean prefix — e.g. the
 	// AGE Open decklist viewer lives under `/age-open/[eventId]/decklist/
 	// [decklistId]`, where the prefix would catch sibling pages that

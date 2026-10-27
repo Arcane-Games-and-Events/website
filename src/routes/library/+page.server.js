@@ -26,7 +26,7 @@ export async function load({ setHeaders }) {
 		console.error('Error fetching CMS entries:', error);
 	}
 
-	// ============ VODs (bonus match films from /studios) ============
+	// ============ VODs (bonus gameplay from /studios) ============
 	let vods = [];
 	let vodTotal = 0;
 	try {

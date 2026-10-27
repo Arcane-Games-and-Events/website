@@ -1,4 +1,5 @@
 <script>
+	import FormatTag from './FormatTag.svelte';
 	/**
 	 * Editorial event row — the canonical look for a single upcoming
 	 * event listing. Used in:
@@ -90,7 +91,7 @@
 
 <a
 	{href}
-	class="group bg-paper-bg relative grid items-center gap-[14px] border-l-[3px] pr-[20px] pl-[13px] transition-[transform] duration-[160ms] ease-out hover:translate-x-[3px]"
+	class="group relative grid items-center gap-[14px] border-l-[3px] bg-paper-bg pr-[20px] pl-[13px] transition-[transform] duration-[160ms] ease-out hover:translate-x-[3px]"
 	style="border-left-color: {accent}; grid-template-columns: {tileWidth}px 1fr{price !== null
 		? ' auto'
 		: ''}{size === 'lg' ? ' auto' : ''}; padding-top: {rowPaddingY}; padding-bottom: {rowPaddingY};"
@@ -101,13 +102,10 @@
 		class="flex flex-col items-center justify-center text-white"
 		style="background: {accent}; height: {tileHeight}px;"
 	>
-		<div
-			class="font-newsreader font-semibold leading-[0.8]"
-			style="font-size: {dayFontSize};"
-		>
+		<div class="font-newsreader leading-[0.8] font-semibold" style="font-size: {dayFontSize};">
 			{day}
 		</div>
-		<div class="font-mono-system mt-[3px] text-[9px] font-extrabold tracking-[0.12em]">
+		<div class="mt-[3px] font-mono-system text-[9px] font-extrabold tracking-[0.12em]">
 			{month}
 		</div>
 	</div>
@@ -116,38 +114,24 @@
 	<div class="min-w-0">
 		{#if showEyebrow}
 			<span
-				class="font-mono-system mb-[5px] inline-flex items-center gap-[7px] text-[9.5px] font-extrabold tracking-[0.11em] uppercase"
+				class="mb-[5px] inline-flex items-center gap-[7px] font-mono-system text-[9.5px] font-extrabold tracking-[0.11em] uppercase"
 				style="color: {accent};"
 			>
-				<span
-					class="inline-block h-[5px] w-[5px] rounded-full"
-					style="background: {accent};"
+				<span class="inline-block h-[5px] w-[5px] rounded-full" style="background: {accent};"
 				></span>
 				Event · {circuitName}
 			</span>
 		{/if}
 		<h4
-			class="font-newsreader flex flex-wrap items-center gap-[10px] font-semibold leading-[1.08] tracking-[-0.01em]"
+			class="flex flex-wrap items-center gap-[10px] font-newsreader leading-[1.08] font-semibold tracking-[-0.01em]"
 			style="font-size: {titleFontSize};"
 		>
 			{title}
-			{#if format}
-				<!--
-					Inline format chip — sits next to the title in every
-					variant. Always uses the abbreviated form ("CC" for
-					Classic Constructed) since the chip is small and the
-					full name would wrap.
-				-->
-				<span
-					class="font-mono-system border-line2 text-soft border px-[6px] py-px text-[9.5px] font-extrabold tracking-[0.07em] uppercase"
-				>
-					{format === 'Classic Constructed' ? 'CC' : format}
-				</span>
-			{/if}
+			{#if format}<FormatTag {format} short />{/if}
 		</h4>
 		{#if venue || seats}
 			<div
-				class="text-fade mt-[5px] flex flex-wrap items-center gap-[6px] font-semibold"
+				class="mt-[5px] flex flex-wrap items-center gap-[6px] font-semibold text-fade"
 				style="font-size: {metaFontSize};"
 			>
 				{#if venue}<span>{venue}</span>{/if}
@@ -155,11 +139,11 @@
 				{#if seats}
 					<span
 						class={seatsStatus === 'open'
-							? 'text-accent font-mono-system font-extrabold tracking-[0.05em] uppercase'
+							? 'font-mono-system font-extrabold tracking-[0.05em] text-accent uppercase'
 							: seatsStatus === 'low'
-								? 'text-warm font-mono-system font-extrabold tracking-[0.05em] uppercase'
+								? 'font-mono-system font-extrabold tracking-[0.05em] text-warm uppercase'
 								: seatsStatus === 'closed'
-									? 'text-fade font-mono-system font-extrabold tracking-[0.05em] uppercase'
+									? 'font-mono-system font-extrabold tracking-[0.05em] text-fade uppercase'
 									: ''}
 					>
 						{seats}
@@ -171,7 +155,7 @@
 
 	<!-- Right column: price (when provided) -->
 	{#if price !== null}
-		<div class="font-newsreader text-[24px] font-semibold leading-none tabular-nums">
+		<div class="font-newsreader text-[24px] leading-none font-semibold tabular-nums">
 			{price}
 		</div>
 	{/if}
@@ -179,7 +163,7 @@
 	<!-- Right column: Sign Up CTA (lg only) -->
 	{#if size === 'lg'}
 		<span
-			class="border-accent bg-accent font-mono-system inline-flex items-center gap-2 border-[1.5px] px-[13px] py-[7px] text-[11px] font-bold tracking-[0.05em] text-white uppercase transition-[filter] hover:brightness-110"
+			class="inline-flex items-center gap-2 border-[1.5px] border-accent bg-accent px-[13px] py-[7px] font-mono-system text-[11px] font-bold tracking-[0.05em] text-white uppercase transition-[filter] hover:brightness-110"
 		>
 			{ctaLabel}
 		</span>

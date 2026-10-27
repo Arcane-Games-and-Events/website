@@ -1,6 +1,7 @@
 <script>
 	import FrontDept from './FrontDept.svelte';
 	import FrontByline from './FrontByline.svelte';
+	import PremiumTag from '../PremiumTag.svelte';
 
 	/**
 	 * Library department — a mini library: the newest pieces (articles,
@@ -33,7 +34,7 @@
 		<FrontDept
 			id="library"
 			title="Library"
-			strap="The newest reporting, strategy, and match film — free and Premium."
+			strap="The newest reporting, strategy, and gameplay — free and Premium."
 			href="/library"
 			label="Browse the library"
 		/>
@@ -131,10 +132,7 @@
 									class="absolute right-0 bottom-0 flex h-8 w-8 items-center justify-center bg-warm pl-[2px] text-[11px] text-white"
 									aria-hidden="true">▶</span
 								>{/if}
-							{#if it.premium}<span
-									class="absolute top-0 left-0 bg-prem px-2 py-[3px] text-[8.5px] font-extrabold tracking-[0.14em] text-white uppercase"
-									>Premium</span
-								>{/if}
+							{#if it.premium}<PremiumTag variant="corner" />{/if}
 						</span>
 						<span class="flex flex-col justify-center p-5 md:p-8 lg:border-l lg:border-line">
 							<span class="block text-[9.5px] font-extrabold tracking-[0.16em] text-warm uppercase"
@@ -177,12 +175,7 @@
 									aria-hidden="true">▶</span
 								>
 							{/if}
-							{#if it.premium}
-								<span
-									class="absolute top-0 left-0 bg-prem px-2 py-[3px] text-[8.5px] font-extrabold tracking-[0.14em] text-white uppercase"
-									>Premium</span
-								>
-							{/if}
+							{#if it.premium}<PremiumTag variant="corner" size={feature ? 'lg' : 'md'} />{/if}
 						</span>
 						<span class="flex flex-1 flex-col {feature ? 'p-6 md:p-8' : 'p-5'}">
 							<span class="block text-[9.5px] font-extrabold tracking-[0.16em] text-warm uppercase"
@@ -211,7 +204,7 @@
 									author={it.author}
 									date={feature ? it.date : ''}
 									length={it.length}
-									premium={feature ? false : it.premium}
+									premium={false}
 									size="sm"
 								/>
 							</span>

@@ -89,6 +89,14 @@ async function findCard(cardName, options = {}) {
 		if (suffixResult) return suffixResult;
 	}
 
+	// Punctuation-insensitive: decklists store "Zyggy, Starlight" while some
+	// card data spells the same hero "Zyggy Starlight" (and vice versa).
+	const bare = withoutSuffix.replace(/,/g, '').replace(/\s+/g, ' ').trim();
+	if (bare !== withoutSuffix) {
+		const bareResult = await lookupCardFromDb(bare);
+		if (bareResult) return bareResult;
+	}
+
 	return null;
 }
 
@@ -164,4 +172,3 @@ export async function mapWithConcurrency(items, limit, fn) {
 	}
 	return results;
 }
-

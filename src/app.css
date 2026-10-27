@@ -31,6 +31,8 @@
 	--ed-warm-light: #60a5fa;
 	--ed-gold: #c8922e;
 	--ed-prem: #1c7a4b;
+	/* Academy sub-brand: the board-green band behind the course cards */
+	--ed-academy: #13261c;
 
 	/* circuit accents */
 	--ed-cc-la: #1b4f9c;
@@ -57,6 +59,7 @@
 	--color-warm-light: var(--ed-warm-light);
 	--color-gold: var(--ed-gold);
 	--color-prem: var(--ed-prem);
+	--color-academy: var(--ed-academy);
 
 	--color-cc-la: var(--ed-cc-la);
 	--color-cc-stl: var(--ed-cc-stl);
@@ -70,6 +73,7 @@
 	--font-libre: 'Libre Franklin', system-ui, sans-serif;
 	--font-archivo: 'Archivo', system-ui, sans-serif;
 	--font-manrope: 'Manrope', system-ui, sans-serif;
+	--font-jost: 'Jost', 'Archivo', system-ui, sans-serif;
 	--font-mono-system: ui-monospace, 'SF Mono', Menlo, monospace;
 
 	--animate-marquee: marquee 32s linear infinite;
@@ -340,6 +344,64 @@ a.fp-ul:focus-visible {
 	);
 }
 
+/* Library latest-release hero — at md+ the uncropped 16:9 cover sits
+ * centred in a shorter box over a blurred fill. Three layers make the
+ * seam soft: the heavy fill, a lightly blurred copy aligned to the sharp
+ * cover whose own edges melt into the fill, and the sharp cover fading
+ * over an S-curve into that blur. Masks are relative to the picture. */
+@media (min-width: 768px) {
+	.lib-hero-mid {
+		-webkit-mask-image: linear-gradient(
+			to right,
+			transparent 0,
+			#000 7%,
+			#000 93%,
+			transparent 100%
+		);
+		mask-image: linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%);
+	}
+	.lib-hero-sharp {
+		-webkit-mask-image: linear-gradient(
+			to right,
+			rgba(0, 0, 0, 0) 0%,
+			rgba(0, 0, 0, 0.04) 3%,
+			rgba(0, 0, 0, 0.14) 6%,
+			rgba(0, 0, 0, 0.32) 9.5%,
+			rgba(0, 0, 0, 0.55) 13%,
+			rgba(0, 0, 0, 0.76) 16.5%,
+			rgba(0, 0, 0, 0.92) 19.5%,
+			rgba(0, 0, 0, 1) 22%,
+			rgba(0, 0, 0, 1) 78%,
+			rgba(0, 0, 0, 0.92) 80.5%,
+			rgba(0, 0, 0, 0.76) 83.5%,
+			rgba(0, 0, 0, 0.55) 87%,
+			rgba(0, 0, 0, 0.32) 90.5%,
+			rgba(0, 0, 0, 0.14) 94%,
+			rgba(0, 0, 0, 0.04) 97%,
+			rgba(0, 0, 0, 0) 100%
+		);
+		mask-image: linear-gradient(
+			to right,
+			rgba(0, 0, 0, 0) 0%,
+			rgba(0, 0, 0, 0.04) 3%,
+			rgba(0, 0, 0, 0.14) 6%,
+			rgba(0, 0, 0, 0.32) 9.5%,
+			rgba(0, 0, 0, 0.55) 13%,
+			rgba(0, 0, 0, 0.76) 16.5%,
+			rgba(0, 0, 0, 0.92) 19.5%,
+			rgba(0, 0, 0, 1) 22%,
+			rgba(0, 0, 0, 1) 78%,
+			rgba(0, 0, 0, 0.92) 80.5%,
+			rgba(0, 0, 0, 0.76) 83.5%,
+			rgba(0, 0, 0, 0.55) 87%,
+			rgba(0, 0, 0, 0.32) 90.5%,
+			rgba(0, 0, 0, 0.14) 94%,
+			rgba(0, 0, 0, 0.04) 97%,
+			rgba(0, 0, 0, 0) 100%
+		);
+	}
+}
+
 /* Navigation loading bar animation */
 @keyframes loading-bar {
 	0% {
@@ -358,4 +420,16 @@ a.fp-ul:focus-visible {
 
 .animate-loading-bar {
 	animation: loading-bar 2s ease-in-out infinite;
+}
+
+/* AGE Open — condensed poster wordmark and the ticket perforation */
+.ao-cond {
+	font-family: 'Archivo', system-ui, sans-serif;
+	font-stretch: 62%;
+	font-variation-settings: 'wdth' 62;
+}
+.ao-perf {
+	background-image: linear-gradient(to bottom, currentColor 50%, transparent 50%);
+	background-size: 1px 8px;
+	background-repeat: repeat-y;
 }

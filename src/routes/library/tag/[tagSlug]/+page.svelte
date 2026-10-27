@@ -1,4 +1,5 @@
 <script>
+	import PremiumTag from '$lib/components/age/PremiumTag.svelte';
 	import FadeImage from '$lib/components/FadeImage.svelte';
 	export let data;
 
@@ -314,19 +315,7 @@
 												</div>
 											{/if}
 										</div>
-										{#if article.isPremium}
-											<div class="absolute top-2 left-2">
-												<span
-													class="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 shadow-lg"
-												>
-													<svg class="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-														<path
-															d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-														/>
-													</svg>
-												</span>
-											</div>
-										{/if}
+										{#if article.isPremium}<PremiumTag variant="corner" size="sm" />{/if}
 									</div>
 								</a>
 

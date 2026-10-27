@@ -5,9 +5,10 @@
  * IntersectionObserver or when the OS asks for reduced motion.
  *
  * @param {HTMLElement} node
- * @param {{ delay?: number }} [opts]
+ * @param {{ delay?: number, disabled?: boolean }} [opts]
  */
 export function reveal(node, opts = {}) {
+	if (opts.disabled) return;
 	if (typeof IntersectionObserver === 'undefined') return;
 	if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
 

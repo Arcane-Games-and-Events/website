@@ -1,4 +1,5 @@
 <script>
+	import PremiumTag from '../PremiumTag.svelte';
 	/**
 	 * Small-caps byline: BY AUTHOR · date · length · Premium. Separators
 	 * are their own flex items so spacing is even regardless of which
@@ -38,11 +39,10 @@
 		<span class={stack ? 'hidden md:inline' : ''} aria-hidden="true">·</span>
 	{/if}
 	{#if tail || premium}
-		<span class="flex items-baseline gap-x-2 whitespace-nowrap">
+		<span class="flex items-baseline gap-x-2.5 whitespace-nowrap">
 			{#if tail}<span class="font-semibold">{tail}</span>{/if}
 			{#if premium}
-				{#if tail}<span aria-hidden="true">·</span>{/if}
-				<span class="font-extrabold tracking-[0.12em] text-prem uppercase">Premium</span>
+				<span class="self-center"><PremiumTag size={size === 'sm' ? 'sm' : 'md'} /></span>
 			{/if}
 		</span>
 	{/if}

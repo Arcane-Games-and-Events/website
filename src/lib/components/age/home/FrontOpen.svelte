@@ -1,307 +1,395 @@
 <script>
-	import FrontDept from './FrontDept.svelte';
-
 	/**
-	 * AGE Open department — a recruitment poster for the circuit: a photo
-	 * band with the pitch and series stats, then the next events with a
-	 * sign-up link, the three circuits, and the season leaders.
+	 * AGE Open department — in the series' own "tournament day" register
+	 * (as on /age-open): the Open Series logo on an ink poster band with a
+	 * scoreboard of season figures and the next event as an admission
+	 * ticket, then the next events as ticket strips, the three circuits as
+	 * colour-washed cards, and the season leaders.
 	 */
-	/** @type {{ data: { series: any, events: any[], circuits: any[], leaders: any[] } }} */
+	import FormatTag from '../FormatTag.svelte';
+	import CircuitModal from '../open/CircuitModal.svelte';
+
+	/** @type {{ data: { series: any, events: any[], allEvents?: any[], topByCircuit?: Record<string, any[]>, circuits: any[], leaders: any[] } }} */
 	let { data } = $props();
 	const series = $derived(data?.series ?? {});
 	const events = $derived(data?.events ?? []);
 	const circuits = $derived(data?.circuits ?? []);
 	const leaders = $derived(data?.leaders ?? []);
-	const CIRCUIT_VAR = { la: 'var(--ed-cc-la)', stl: 'var(--ed-cc-stl)', ne: 'var(--ed-cc-ne)' };
+	const next = $derived(events[0] ?? null);
+	const later = $derived(events.slice(1, 3));
+	const cc = (slug) => `var(--ed-cc-${slug || 'la'})`;
+	const countdown = (n) =>
+		n == null ? '' : n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : `In ${n} days`;
+	// Circuit pop-out (shared with /age-open)
+	/** @type {string | null} */
+	let openCircuit = $state(null);
+	/** @type {HTMLElement | undefined} */
+	let lastTrigger;
+	const active = $derived.by(() => {
+		const c = circuits.find((x) => x.name === openCircuit);
+		if (!c) return null;
+		const all = (data?.allEvents ?? []).filter((e) => e.circuitName === c.name);
+		return {
+			...c,
+			count: all.length,
+			dates: all.slice(0, 4).map((e) => ({
+				href: e.href,
+				month: (e.month || '').toUpperCase(),
+				day: e.day,
+				weekday: e.weekday,
+				venue: e.venue,
+				format: e.format,
+				price: e.price,
+				when: countdown(e.daysUntil)
+			})),
+			top: data?.topByCircuit?.[c.name] ?? []
+		};
+	});
+	function openModal(name, e) {
+		lastTrigger = e?.currentTarget;
+		openCircuit = name;
+	}
+	function closeModal() {
+		openCircuit = null;
+		lastTrigger?.focus();
+	}
+
 	const stats = $derived(
 		[
 			{ n: series.events, l: 'Events a season' },
-			{ n: series.prizePool, l: 'In prize pools' },
+			{ n: '$1,000', l: 'Prize pool, every event' },
 			{ n: series.regions, l: 'Regions' },
 			series.players ? { n: series.players.toLocaleString('en-US'), l: 'Players ranked' } : null
 		].filter(Boolean)
 	);
 </script>
 
-<section class="mx-auto w-full max-w-[1200px] px-5 md:px-8">
-	<FrontDept
-		id="age-open"
-		title="AGE Open"
-		strap="Three regions. Thousand-dollar prize pools. A seat at the Player's Championship."
-		href="/age-open"
-		label="The series"
-	/>
-
-	<!-- poster -->
-	<a
-		href="/age-open?tab=events"
-		class="group fp-plate relative mt-8 block overflow-hidden bg-ink text-white md:mt-10"
-	>
+<section id="age-open" class="scroll-mt-6">
+	<!-- ============ poster band ============ -->
+	<div class="relative overflow-hidden bg-ink text-paper-bg">
 		<img
 			src="/banner/age-open-banner.webp"
-			alt="Rows of players at an AGE Open"
-			class="absolute inset-0 h-full w-full object-cover opacity-70 transition-transform duration-[1400ms] ease-out group-hover:scale-[1.03]"
+			alt=""
+			aria-hidden="true"
 			loading="lazy"
+			class="absolute inset-0 h-full w-full object-cover opacity-30 grayscale"
 		/>
 		<div
 			class="absolute inset-0"
-			style="background: linear-gradient(90deg, rgba(23,21,15,0.94) 0%, rgba(23,21,15,0.82) 45%, rgba(23,21,15,0.35) 100%);"
+			style="background: linear-gradient(100deg, rgba(23,21,15,0.97) 0%, rgba(23,21,15,0.9) 48%, rgba(23,21,15,0.6) 100%);"
 			aria-hidden="true"
 		></div>
-		<div class="relative grid gap-8 p-6 md:grid-cols-[1.1fr_1fr] md:items-end md:p-12">
-			<div>
-				<span
-					class="flex items-center gap-3 text-[10.5px] font-extrabold tracking-[0.24em] text-warm-light uppercase"
-				>
-					<span aria-hidden="true">◆</span>
-					2026 season · Registration open
-				</span>
-				<h3
-					class="mt-4 font-newsreader text-[40px] leading-[0.98] font-semibold tracking-[-0.02em] [text-wrap:balance] md:text-[clamp(44px,4.6vw,66px)]"
-				>
-					Play the circuit.
-				</h3>
+		<div
+			class="relative mx-auto grid w-full max-w-[1200px] grid-cols-[minmax(0,1fr)] gap-10 px-5 py-12 md:px-8 md:py-16 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end lg:gap-14"
+		>
+			<div class="min-w-0">
 				<p
-					class="mt-4 max-w-[520px] font-newsreader text-[17px] leading-[1.5] text-white/80 italic md:text-[19px]"
+					class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-extrabold tracking-[0.3em] uppercase"
 				>
-					Independent, player-run Flesh and Blood tournaments with real prize pools, AGE Points
-					every round, and a Player's Championship for the top sixteen in each region.
+					<span class="bg-warm px-2 py-1 text-white">Season ’26</span>
+					<span class="text-paper-bg/70">Los Angeles · St. Louis · New England</span>
 				</p>
-				<div class="mt-7 flex flex-wrap gap-3">
-					<span
-						class="inline-flex items-center bg-white px-6 py-3.5 text-[11px] font-extrabold tracking-[0.14em] text-ink uppercase transition-[letter-spacing] group-hover:tracking-[0.2em]"
+				<a href="/age-open" class="mt-6 block w-fit" aria-label="AGE Open Series">
+					<img
+						src="/age_open_logo.svg"
+						alt="AGE Open Series"
+						width="629"
+						height="294"
+						loading="lazy"
+						class="h-auto w-[260px] md:w-[380px]"
+					/>
+				</a>
+				<p
+					class="mt-5 max-w-[500px] font-newsreader text-[17px] leading-[1.5] text-paper-bg/75 italic md:text-[19px]"
+				>
+					The premier independent Flesh and Blood circuit. Step up against the best players in your
+					region, climb the leaderboard, and claim your seat at the AGE Player’s Championship. The
+					next AGE champion could be you.
+				</p>
+				<dl class="mt-8 grid grid-cols-2 border-y border-paper-bg/20 sm:grid-cols-4">
+					{#each stats as s, i (s.l)}
+						<div
+							class="py-4 pr-3 {i % 2 ? 'border-l border-paper-bg/15 pl-4' : ''} {i > 1
+								? 'border-t border-paper-bg/15 sm:border-t-0'
+								: ''} {i === 2 ? 'sm:border-l sm:border-paper-bg/15 sm:pl-4' : ''}"
+						>
+							<dt class="sr-only">{s.l}</dt>
+							<dd class="ao-cond text-[40px] leading-none font-black tabular-nums md:text-[46px]">
+								{s.n}
+							</dd>
+							<dd
+								class="mt-2 text-[9px] font-extrabold tracking-[0.2em] text-paper-bg/55 uppercase"
+							>
+								{s.l}
+							</dd>
+						</div>
+					{/each}
+				</dl>
+				<div class="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
+					<a
+						href="/age-open?tab=events"
+						class="inline-flex items-center bg-warm px-5 py-3 text-[10.5px] font-extrabold tracking-[0.18em] text-white uppercase transition-colors hover:bg-white hover:text-ink"
+						>Find an event</a
 					>
-						Find an event
-					</span>
-					<span
-						class="inline-flex items-center border border-white/60 px-6 py-3.5 text-[11px] font-extrabold tracking-[0.14em] uppercase"
+					<a
+						href="/age-open"
+						class="border-b-2 border-warm-light pb-1 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-[letter-spacing] hover:tracking-[0.26em]"
+						>The series →</a
 					>
-						How it works
-					</span>
 				</div>
 			</div>
-			<dl class="grid grid-cols-2 gap-px bg-white/15 md:ml-auto md:w-full md:max-w-[380px]">
-				{#each stats as s (s.l)}
-					<div class="bg-ink/70 p-4 backdrop-blur-sm md:p-5">
-						<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-gold uppercase">{s.l}</dt>
-						<dd class="mt-1 font-newsreader text-[34px] leading-none font-semibold md:text-[40px]">
-							{s.n}
-						</dd>
-					</div>
-				{/each}
-			</dl>
-		</div>
-	</a>
 
-	<div class="mt-10 grid grid-cols-1 gap-10 md:mt-12 lg:grid-cols-[1.3fr_1fr] lg:gap-14">
-		<!-- next up — a list, each row a small poster -->
-		<div>
-			<div class="flex items-baseline justify-between border-t-[3px] border-double border-ink pt-3">
-				<h4
-					class="flex items-center gap-2 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
-				>
-					<span class="text-[10px] text-warm" aria-hidden="true">◆</span>
-					Next up
-				</h4>
+			<!-- next event: an admission ticket -->
+			{#if next}
 				<a
-					href="/age-open?tab=events"
-					class="text-[10px] font-extrabold tracking-[0.14em] uppercase hover:text-warm"
-					>All dates →</a
+					href={next.href}
+					class="group relative block rotate-[1.5deg] transition-transform duration-700 ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:rotate-0"
+					style="filter: drop-shadow(0 24px 30px rgba(0,0,0,0.55));"
 				>
-			</div>
-			{#if events.length}
-				<ul class="mt-1 divide-y divide-line">
-					{#each events as e (e.href)}
-						{@const accent = CIRCUIT_VAR[e.circuit]}
-						<li>
-							<a
-								href={e.href}
-								class="group -mx-3 grid grid-cols-[132px_1fr] items-center gap-4 px-3 py-4 transition-[background-color,box-shadow] duration-200 hover:bg-paper hover:shadow-[0_18px_40px_-28px_rgba(23,21,15,0.4)] md:grid-cols-[168px_1fr_auto] md:gap-5 md:py-5"
-							>
-								<!-- circuit photo with the calendar tile set over its corner -->
-								<span class="fp-plate relative block aspect-video overflow-hidden bg-ink">
-									<img
-										src={e.image}
-										alt=""
-										class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
-										loading="lazy"
-									/>
-									<span
-										class="absolute inset-0"
-										style="background: linear-gradient(90deg, color-mix(in srgb, {accent} 60%, rgba(23,21,15,0.6)) 0%, rgba(23,21,15,0.15) 70%);"
-										aria-hidden="true"
-									></span>
-									<span
-										class="absolute top-0 left-0 flex w-[46px] flex-col items-center bg-paper-bg py-1 text-center text-ink md:w-[52px]"
-									>
-										<span
-											class="text-[7.5px] font-extrabold tracking-[0.16em] uppercase"
-											style="color: {accent};">{e.month}</span
-										>
-										<span
-											class="font-newsreader text-[24px] leading-[0.9] font-semibold tabular-nums md:text-[28px]"
-											>{e.day}</span
-										>
-									</span>
-								</span>
-								<span class="min-w-0">
-									<span class="flex flex-wrap items-center gap-x-3 gap-y-1">
-										<span
-											class="text-[9.5px] font-extrabold tracking-[0.16em] uppercase"
-											style="color: {accent};">{e.circuitName || 'AGE Open'}</span
-										>
-										{#if e.daysUntil != null}
-											<span
-												class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
-											>
-												<span
-													class="h-[6px] w-[6px] animate-pulse-dot rounded-full bg-prem"
-													aria-hidden="true"
-												></span>
-												{e.daysUntil === 0
-													? 'Today'
-													: e.daysUntil === 1
-														? 'Tomorrow'
-														: `In ${e.daysUntil} days`}
-											</span>
-										{/if}
-									</span>
-									<span
-										class="mt-1 block font-newsreader text-[21px] leading-[1.1] font-semibold md:text-[24px]"
-									>
-										<span class="fp-ul">{e.title}</span>
-									</span>
-									<span class="mt-1.5 block text-[11.5px] font-semibold text-fade">
-										{[e.weekday, e.venue, e.format, e.cap ? `${e.cap} seats` : '']
-											.filter(Boolean)
-											.join(' · ')}
-									</span>
-									{#if e.premiumDiscount}
-										<span
-											class="mt-1 block text-[9.5px] font-extrabold tracking-[0.14em] text-prem uppercase"
-											>Members save 10%</span
-										>
-									{/if}
-								</span>
+					<span class="grid grid-cols-[1fr_84px] bg-paper-bg text-ink">
+						<span class="block min-w-0">
+							<span class="relative block aspect-[16/7] overflow-hidden bg-ink">
+								<img
+									src={next.image}
+									alt=""
+									loading="lazy"
+									class="absolute inset-0 h-full w-full object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.04]"
+								/>
 								<span
-									class="col-span-2 flex items-center justify-between gap-4 md:col-span-1 md:flex-col md:items-end md:gap-2"
+									class="absolute inset-0"
+									style="background: linear-gradient(90deg, color-mix(in srgb, {cc(
+										next.circuit
+									)} 72%, rgba(23,21,15,0.55)) 0%, rgba(23,21,15,0) 80%);"
+									aria-hidden="true"
+								></span>
+								<span
+									class="absolute bottom-3 left-4 text-[9.5px] font-extrabold tracking-[0.22em] text-white uppercase"
+									>◆ Next up · {next.circuitName}</span
 								>
-									<span
-										class="font-newsreader text-[26px] leading-none font-semibold md:text-[28px]"
-										>{e.price}</span
-									>
-									<span
-										class="inline-flex items-center gap-2 bg-warm px-4 py-2.5 text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[gap,filter] group-hover:gap-3 group-hover:brightness-110"
-									>
-										Sign up <span aria-hidden="true">→</span>
+							</span>
+							<span class="block px-5 pt-4 pb-5">
+								<span class="ao-cond block text-[30px] leading-[0.95] font-black uppercase"
+									>{next.title}</span
+								>
+								<span class="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5"
+									>{#if next.format}<FormatTag format={next.format} />{/if}<span
+										class="text-[11px] font-semibold text-fade">{next.weekday} · {next.venue}</span
+									></span
+								>
+								<span
+									class="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4"
+								>
+									<span class="flex items-baseline gap-2">
+										<span class="ao-cond text-[28px] leading-none font-black">{next.price}</span>
+										{#if next.premiumDiscount}<span
+												class="text-[9px] font-extrabold tracking-[0.14em] text-prem uppercase"
+												>Members save 10%</span
+											>{/if}
 									</span>
+									<span
+										class="inline-flex items-center bg-warm px-4 py-2.5 text-[10px] font-extrabold tracking-[0.16em] text-white uppercase transition-colors group-hover:bg-ink"
+										>Sign up →</span
+									>
 								</span>
-							</a>
-						</li>
-					{/each}
-				</ul>
-			{:else}
-				<p class="py-6 font-newsreader text-[16px] text-soft italic">
-					The next season's dates are being finalised. Watch this space.
-				</p>
+							</span>
+						</span>
+						<span
+							class="relative flex flex-col items-center justify-between bg-paper py-5 text-center"
+						>
+							<span class="ao-perf absolute inset-y-2 left-0 w-px text-line2" aria-hidden="true"
+							></span>
+							<span
+								class="text-[8px] font-extrabold tracking-[0.24em] text-fade uppercase [writing-mode:vertical-rl]"
+								>Admit one</span
+							>
+							<span>
+								<span
+									class="block text-[10px] font-extrabold tracking-[0.18em] uppercase"
+									style="color: {cc(next.circuit)};">{next.month}</span
+								>
+								<span class="ao-cond block text-[44px] leading-[0.85] font-black tabular-nums"
+									>{next.day}</span
+								>
+							</span>
+							<span class="text-[8.5px] font-extrabold tracking-[0.12em] text-warm uppercase"
+								>{countdown(next.daysUntil)}</span
+							>
+						</span>
+					</span>
+				</a>
 			{/if}
 		</div>
+	</div>
 
-		<!-- circuits + leaders -->
-		<div>
-			<div class="flex items-baseline justify-between border-t-[3px] border-double border-ink pt-3">
-				<h4
-					class="flex items-center gap-2 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
-				>
-					<span class="text-[10px] text-warm" aria-hidden="true">◆</span>
-					The circuits
-				</h4>
-			</div>
-			<ul class="divide-y divide-line">
-				{#each circuits as c (c.name)}
+	<div class="mx-auto w-full max-w-[1200px] px-5 md:px-8">
+		<!-- ============ the next events as tickets ============ -->
+		{#if later.length}
+			<ul class="mt-8 grid gap-4 md:mt-10 md:grid-cols-2 md:gap-5">
+				{#each later as e (e.href)}
 					<li>
-						<a href={c.href} class="group grid grid-cols-[96px_1fr] items-center gap-4 py-4">
-							<span class="fp-plate relative block aspect-video overflow-hidden bg-panel">
-								<img
-									src={c.image}
-									alt=""
-									class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
-									loading="lazy"
-								/>
-							</span>
-							<span class="min-w-0">
+						<a
+							href={e.href}
+							class="group grid h-full grid-cols-[76px_1fr] border border-line bg-paper-bg transition-colors duration-500 hover:border-ink"
+						>
+							<span
+								class="relative flex flex-col items-center justify-center py-4"
+								style="background: color-mix(in srgb, {cc(e.circuit)} 10%, var(--ed-paper));"
+							>
 								<span
-									class="block text-[9.5px] font-extrabold tracking-[0.16em] uppercase"
-									style="color: {CIRCUIT_VAR[c.slug]};">{c.region}</span
+									class="text-[10px] font-extrabold tracking-[0.18em] uppercase"
+									style="color: {cc(e.circuit)};">{e.month}</span
 								>
-								<span class="mt-1 block font-newsreader text-[20px] leading-[1.1] font-semibold">
-									<span class="fp-ul">{c.name}</span>
+								<span class="ao-cond text-[46px] leading-[0.85] font-black tabular-nums"
+									>{e.day}</span
+								>
+								<span class="ao-perf absolute inset-y-2 right-0 w-px text-line2" aria-hidden="true"
+								></span>
+							</span>
+							<span class="flex min-w-0 flex-col justify-center px-4 py-4 md:px-5">
+								<span class="flex flex-wrap items-center gap-x-3 gap-y-1">
+									<span
+										class="text-[9.5px] font-extrabold tracking-[0.2em] uppercase"
+										style="color: {cc(e.circuit)};">{e.circuitName}</span
+									>
+									{#if e.daysUntil != null}
+										<span
+											class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+										>
+											<span
+												class="h-[6px] w-[6px] animate-pulse-dot rounded-full"
+												style="background: {cc(e.circuit)};"
+												aria-hidden="true"
+											></span>
+											{countdown(e.daysUntil)}
+										</span>
+									{/if}
 								</span>
-								<span class="mt-1 block text-[11px] font-semibold text-fade">
-									{c.next
-										? `Next: ${c.next.month} ${c.next.day} · ${c.next.venue}`
-										: 'Season dates coming soon'}
+								<span class="ao-cond mt-1 block text-[26px] leading-[0.95] font-black uppercase"
+									>{e.title}</span
+								>
+								<span class="mt-1.5 flex items-center justify-between gap-3">
+									<span class="flex min-w-0 items-center gap-2"
+										>{#if e.format}<FormatTag format={e.format} size="sm" short />{/if}<span
+											class="truncate text-[11px] font-semibold text-fade"
+											>{e.weekday} · {e.venue}</span
+										></span
+									>
+									<span
+										class="shrink-0 text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase"
+										>{e.price} · Sign up →</span
+									>
 								</span>
 							</span>
 						</a>
 					</li>
 				{/each}
 			</ul>
-			{#if leaders.length}
-				<div
-					class="mt-8 flex items-baseline justify-between border-t-[3px] border-double border-ink pt-3"
-				>
-					<h4
-						class="flex items-center gap-2 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
-					>
-						<span class="text-[10px] text-warm" aria-hidden="true">◆</span>
-						Season leaders
-					</h4>
+		{/if}
+
+		<!-- ============ circuits + leaders ============ -->
+		<div class="mt-10 grid gap-8 md:mt-12 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:gap-10">
+			<ul class="grid grid-cols-3 gap-3 md:gap-4">
+				{#each circuits as c (c.name)}
+					<li>
+						<button
+							type="button"
+							onclick={(e) => openModal(c.name, e)}
+							aria-haspopup="dialog"
+							class="group relative block aspect-[3/4] w-full overflow-hidden bg-ink text-left text-paper-bg"
+						>
+							<img
+								src={c.image}
+								alt=""
+								loading="lazy"
+								class="absolute inset-0 h-full w-full object-cover grayscale transition-[filter,scale] duration-[1400ms] ease-out group-hover:scale-[1.04] group-hover:grayscale-0"
+							/>
+							<span
+								class="absolute inset-0 mix-blend-multiply"
+								style="background: {cc(c.slug)}; opacity: 0.55;"
+								aria-hidden="true"
+							></span>
+							<span
+								class="absolute inset-0"
+								style="background: linear-gradient(180deg, rgba(23,21,15,0) 30%, rgba(23,21,15,0.92) 100%);"
+								aria-hidden="true"
+							></span>
+							<span
+								class="ao-cond absolute top-2 left-3 text-[56px] leading-none font-black text-white/20 md:text-[76px]"
+								aria-hidden="true">{c.abbreviation}</span
+							>
+							<span class="absolute inset-x-0 bottom-0 p-3 md:p-4">
+								<span
+									class="hidden text-[8.5px] font-extrabold tracking-[0.2em] text-paper-bg/75 uppercase md:block"
+									>{c.region}</span
+								>
+								<span
+									class="ao-cond block text-[24px] leading-[0.85] font-black uppercase md:text-[32px]"
+									>{c.name}</span
+								>
+								{#if c.next}
+									<span
+										class="mt-2 block text-[9.5px] font-semibold text-paper-bg/80 md:text-[10.5px]"
+										>Next: {c.next.month} {c.next.day}</span
+									>
+								{/if}
+							</span>
+						</button>
+					</li>
+				{/each}
+			</ul>
+
+			<div>
+				<div class="flex items-end justify-between gap-4 border-b-[3px] border-ink pb-2">
+					<p class="ao-cond text-[34px] leading-[0.85] font-black uppercase">Leaders</p>
 					<a
 						href="/age-open?tab=standings"
-						class="text-[10px] font-extrabold tracking-[0.14em] uppercase hover:text-warm"
+						class="pb-0.5 text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap uppercase transition-colors hover:text-warm"
 						>Standings →</a
 					>
 				</div>
-				<ol class="divide-y divide-line">
-					{#each leaders as l (l.rank)}
-						<li>
-							<a
-								href={l.href}
-								class="group grid grid-cols-[36px_1fr_auto] items-baseline gap-3 py-3"
-							>
+				<ol>
+					{#each leaders as l, i (l.href + l.name)}
+						<li class="border-b border-line">
+							<a href={l.href} class="group grid grid-cols-[40px_1fr_auto] items-center gap-3 py-3">
 								<span
-									class="font-newsreader text-[26px] leading-none font-medium tabular-nums {l.rank ===
-									1
+									class="ao-cond text-[36px] leading-none font-black tabular-nums {i === 0
 										? 'text-gold'
-										: 'text-warm'}">{l.rank}</span
+										: 'text-fade/60'}">{i + 1}</span
 								>
-								<span class="truncate font-newsreader text-[17px] font-semibold"
+								<span class="truncate font-newsreader text-[18px] font-semibold"
 									><span class="fp-ul">{l.name}</span></span
 								>
-								<span class="text-[11px] font-extrabold tracking-[0.08em] text-fade tabular-nums"
-									>{l.points} PTS</span
-								>
+								<span class="text-right">
+									<span class="ao-cond block text-[28px] leading-none font-black tabular-nums"
+										>{l.points}</span
+									>
+									<span class="text-[8px] font-extrabold tracking-[0.2em] text-fade uppercase"
+										>pts</span
+									>
+								</span>
 							</a>
 						</li>
 					{/each}
-					<li class="py-3">
+					<li>
 						<a
 							href="/age-open?tab=events"
-							class="group grid grid-cols-[36px_1fr] items-baseline gap-3"
+							class="flex items-center justify-between py-3 text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase transition-colors hover:text-ink"
 						>
-							<span
-								class="font-newsreader text-[26px] leading-none font-medium text-line2"
-								aria-hidden="true">?</span
-							>
-							<span
-								class="font-newsreader text-[17px] font-semibold text-soft italic group-hover:text-warm"
-								>Your name here →</span
-							>
+							<span>Your name here</span><span aria-hidden="true">→</span>
 						</a>
 					</li>
 				</ol>
-			{/if}
+			</div>
 		</div>
 	</div>
 </section>
+
+{#if active}
+	<CircuitModal
+		circuit={active}
+		dates={active.dates}
+		top={active.top}
+		count={active.count}
+		onclose={closeModal}
+	/>
+{/if}

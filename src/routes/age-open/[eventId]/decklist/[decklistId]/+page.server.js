@@ -3,6 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { event, decklist } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { resolveCardImage } from '$lib/server/cards/index.js';
+import { resolveFromPackage } from '$lib/server/cards/fromPackage.js';
 
 export async function load({ params }) {
 	try {
@@ -42,10 +43,10 @@ export async function load({ params }) {
 		const cards = Array.isArray(decklistData.cards) ? decklistData.cards : [];
 		const cardsWithImages = await Promise.all(
 			cards.map(async (card) => {
-				const resolved = await resolveCardImage({
-					name: card.name,
-					color: card.section // section is the color (red/yellow/blue)
-				});
+				// The card package first; the uploaded lookup table only as a fallback
+				const resolved =
+					resolveFromPackage({ name: card.name, color: card.section }) ||
+					(await resolveCardImage({ name: card.name, color: card.section }));
 				return {
 					...card,
 					imageUrl: resolved.imageUrl,
@@ -57,7 +58,8 @@ export async function load({ params }) {
 
 		// Resolve hero image
 		const heroResolved = decklistData.hero
-			? await resolveCardImage({ name: decklistData.hero })
+			? resolveFromPackage({ name: decklistData.hero }) ||
+				(await resolveCardImage({ name: decklistData.hero }))
 			: null;
 
 		return {

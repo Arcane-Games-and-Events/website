@@ -6,6 +6,7 @@ import { asc, gte, desc, and, or, eq, isNull } from 'drizzle-orm';
 import { getMuxThumbnailToken } from '$lib/server/mux.js';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
+import { topByCircuit } from '$lib/server/players/circuitLeaders.js';
 
 /**
  * Calculate derived stats from monthly data
@@ -111,8 +112,12 @@ function aggregateStandings(standingRows, { season = 'all', circuit = 'all' } = 
 		uniquePlayers.add(getPlayerKey(s));
 	}
 
+	// Each circuit's top ten, for the homepage circuit pop-outs.
+	const circuitLeaders = topByCircuit(standingRows, 10);
+
 	return {
 		top8,
+		topByCircuit: circuitLeaders,
 		playerCount: uniquePlayers.size,
 		availableSeasons: ['all', ...[...seasonSet].sort().reverse()],
 		availableCircuits: ['all', ...[...circuitSet].sort()]
@@ -135,7 +140,7 @@ function fetchAllStandings() {
  */
 function fetchHomeStandingsAggregates() {
 	return getCachedOrFetch(
-		`${CACHE_KEYS.STANDINGS}:home:aggregates`,
+		`${CACHE_KEYS.STANDINGS}:home:aggregates:v3`,
 		async () => {
 			const rows = await fetchAllStandings();
 			return aggregateStandings(rows);
@@ -178,7 +183,7 @@ function fetchUpcomingEvents() {
 	const now = new Date();
 	return withTimeout(
 		getCachedOrFetch(
-			`${CACHE_KEYS.EVENTS}:upcoming:3`,
+			`${CACHE_KEYS.EVENTS}:upcoming:12`,
 			() =>
 				db
 					.select()
@@ -187,7 +192,7 @@ function fetchUpcomingEvents() {
 						and(gte(event.eventDate, now), or(eq(event.status, 'upcoming'), isNull(event.status)))
 					)
 					.orderBy(asc(event.eventDate))
-					.limit(3),
+					.limit(12),
 			CACHE_TTL.SHORT
 		),
 		10000,
@@ -303,6 +308,7 @@ export async function load({ setHeaders, url, locals }) {
 			articles,
 			events: upcomingEvents,
 			standings: standingsData.top8,
+			standingsByCircuit: standingsData.topByCircuit ?? {},
 			standingsFilters: {
 				season: standingsSeason,
 				circuit: standingsCircuit,

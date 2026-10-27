@@ -24,7 +24,7 @@
 	<title>AGE — Arcane Games and Events</title>
 	<meta
 		name="description"
-		content="Independent coverage, match film, and courses for competitive Flesh and Blood — plus the AGE Open tournament series."
+		content="Independent coverage, gameplay, and courses for competitive Flesh and Blood — plus the AGE Open tournament series."
 	/>
 </svelte:head>
 

@@ -11,6 +11,7 @@ import {
 } from '$lib/age-rating.js';
 // Aliased to avoid colliding with the local `playerKey` loop variable below.
 import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
+import { topByCircuit } from '$lib/server/players/circuitLeaders.js';
 
 /**
  * Calculate derived stats from monthly data
@@ -108,7 +109,7 @@ export async function load({ url, setHeaders }) {
 		// tab returns ready-to-render data on cache hit. Different tabs cache
 		// separately because they carry different payloads.
 		return await getCachedOrFetch(
-			`age-open:page:${activeTab}|${selectedSeason}|${selectedCircuit || 'none'}`,
+			`age-open:page:v2:${activeTab}|${selectedSeason}|${selectedCircuit || 'none'}`,
 			async () => {
 				// Fetch raw data with Redis caching (5 minute TTL)
 				// This caches the expensive database queries
@@ -610,6 +611,7 @@ export async function load({ url, setHeaders }) {
 					archiveEvents,
 					eventResults: sortedResults,
 					standings,
+					standingsByCircuit: activeTab === 'overview' ? topByCircuit(allStandings, 10) : {},
 					decklists,
 					lssEvents,
 					currentYear,
@@ -629,6 +631,7 @@ export async function load({ url, setHeaders }) {
 			archiveEvents: [],
 			eventResults: [],
 			standings: [],
+			standingsByCircuit: {},
 			decklists: [],
 			lssEvents: [],
 			currentYear,
