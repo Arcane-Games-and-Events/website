@@ -26,6 +26,9 @@
 	const restDrafts = $derived(data.drafts.slice(1));
 	const draftCount = $derived(data.counts.draft || 0);
 	const scheduledCount = $derived(data.counts.scheduled || 0);
+	const pendingCount = $derived(data.counts.pending || data.pending.length);
+	// admins approve edits, so theirs lead the page
+	const reviewFirst = $derived(data.admin && pendingCount > 0);
 
 	const summary = $derived.by(() => {
 		const parts = [];
@@ -35,11 +38,11 @@
 			parts.push(
 				`${data.scheduled.length} ${data.scheduled.length === 1 ? 'piece' : 'pieces'} scheduled`
 			);
-		if (data.pending.length)
+		if (pendingCount)
 			parts.push(
 				data.admin
-					? `${data.pending.length} ${data.pending.length === 1 ? 'edit' : 'edits'} waiting for your review`
-					: `${data.pending.length} ${data.pending.length === 1 ? 'edit' : 'edits'} awaiting approval`
+					? `${pendingCount} ${pendingCount === 1 ? 'edit' : 'edits'} waiting for your review`
+					: `${pendingCount} ${pendingCount === 1 ? 'edit' : 'edits'} awaiting approval`
 			);
 		if (!parts.length) return 'Your desk is clear. A good day to start something new.';
 		const last = parts.pop();
@@ -192,6 +195,69 @@
 />
 <DeskTabs />
 
+<!-- ============ needs your review (admins) ============ -->
+{#if reviewFirst}
+	<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 md:px-8 md:pt-8">
+		<section
+			class="border border-t-[3px] border-line2 border-t-hero-rb bg-white"
+			aria-labelledby="review-title"
+		>
+			<div class="flex min-h-[42px] items-center gap-3 border-b border-line2 px-4">
+				<h2
+					id="review-title"
+					class="flex shrink-0 items-center gap-2 text-[10px] font-extrabold tracking-[0.2em] text-hero-rb uppercase"
+				>
+					<span class="text-[8px]" aria-hidden="true">◆</span> Needs your review
+					<span
+						class="bg-hero-rb px-1.5 py-[1px] text-[10px] tracking-normal text-white tabular-nums"
+						>{pendingCount}</span
+					>
+				</h2>
+				<p class="hidden min-w-0 truncate text-[12.5px] text-fade md:block">
+					Nothing changes on the site until you approve.
+				</p>
+				{#if pendingCount > 3}
+					<a
+						href="/desk/entries?status=pending"
+						class="ml-auto shrink-0 text-[9.5px] font-extrabold tracking-[0.16em] text-hero-rb uppercase transition-colors hover:text-ink"
+						>See all →</a
+					>
+				{/if}
+			</div>
+			<ol class="divide-y divide-line">
+				{#each data.pending.slice(0, 3) as a (a.id)}
+					<li>
+						<a
+							href="/desk/entries/{a.id}?review"
+							class="group flex items-center gap-3 px-4 py-2 transition-colors hover:bg-hero-rb/[0.04]"
+						>
+							<span class="min-w-0 flex-1 md:flex md:items-baseline md:gap-3">
+								<span
+									class="block truncate font-newsreader text-[16px] leading-snug font-semibold md:min-w-0 md:flex-1"
+									>{a.title}</span
+								>
+								<span class="block shrink-0 truncate text-[11.5px] text-fade">
+									{[
+										data.seeAll && author(a),
+										`Edited ${ago(a.draftUpdatedAt)}`,
+										a.status === 'scheduled' ? 'Scheduled' : 'Live'
+									]
+										.filter(Boolean)
+										.join(' · ')}
+								</span>
+							</span>
+							<span
+								class="inline-flex min-h-[32px] shrink-0 items-center gap-1.5 bg-hero-rb px-3 text-[9.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] group-hover:brightness-110"
+								>Review <span aria-hidden="true">→</span></span
+							>
+						</a>
+					</li>
+				{/each}
+			</ol>
+		</section>
+	</div>
+{/if}
+
 <!-- ============ figures ============ -->
 <div class="mx-auto w-full max-w-[1200px] px-5 pt-8 md:px-8 md:pt-10">
 	<dl class="grid grid-cols-2 border-y border-line2 md:grid-cols-4">
@@ -302,13 +368,13 @@
 				{/if}
 			</section>
 
-			<!-- needs review / waiting -->
-			{#if data.pending.length}
+			<!-- waiting for approval (admins see theirs at the top of the page) -->
+			{#if !data.admin && data.pending.length}
 				<section>
 					{@render head(
-						data.admin ? 'Needs your review' : 'Awaiting approval',
+						'Awaiting approval',
 						'text-hero-rb',
-						data.pending.length,
+						pendingCount,
 						'/desk/entries?status=pending'
 					)}
 					<ol>
@@ -329,9 +395,8 @@
 										</span>
 									</span>
 									<span
-										class="text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap uppercase {data.admin
-											? 'text-hero-rb'
-											: 'text-fade'}">{data.admin ? 'Review →' : 'Pending'}</span
+										class="text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap text-fade uppercase"
+										>Pending</span
 									>
 								</a>
 							</li>

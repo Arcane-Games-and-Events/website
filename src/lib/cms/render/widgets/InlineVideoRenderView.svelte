@@ -17,7 +17,10 @@
 
 {#if provider === 'youtube' && youtubeVideoId}
 	<figure class="my-8">
-		<div class="relative w-full overflow-hidden rounded-md border border-line2 bg-black" style="padding-top: 56.25%;">
+		<div
+			class="relative w-full overflow-hidden border border-line2 bg-black"
+			style="padding-top: 56.25%;"
+		>
 			<iframe
 				src={`https://www.youtube-nocookie.com/embed/${youtubeVideoId}?enablejsapi=1`}
 				title={youtubeTitle || 'Embedded YouTube video'}
@@ -29,7 +32,7 @@
 			></iframe>
 		</div>
 		{#if youtubeTitle}
-			<figcaption class="mt-2 text-xs text-ink/60">
+			<figcaption class="mt-2 font-libre text-[12px] text-fade">
 				{youtubeTitle}
 			</figcaption>
 		{/if}

@@ -33,75 +33,22 @@ export class InlineVideoNode extends DecoratorNode {
 		this.__data = data || {};
 	}
 
+	// The card itself (summary, preview, edit and remove) is a Svelte
+	// component that Editor.svelte mounts into this element for every
+	// decorator it hears about. Lexical leaves a decorator's DOM alone.
 	createDOM() {
 		const el = document.createElement('div');
-		el.className =
-			'cms-inline-video-preview cms-widget-block group relative my-4 rounded-md border border-line2 bg-paper p-4';
-		this._renderInto(el);
-		this._attachDeleteButton(el);
+		el.className = 'cms-widget-block my-6';
 		return el;
 	}
 
-	updateDOM(_, dom) {
-		dom.innerHTML = '';
-		this._renderInto(dom);
-		this._attachDeleteButton(dom);
+	updateDOM() {
 		return false;
 	}
 
-	_attachDeleteButton(el) {
-		const btn = document.createElement('button');
-		btn.type = 'button';
-		btn.textContent = '×';
-		btn.title = 'Remove video';
-		btn.className =
-			'cms-widget-delete-btn absolute top-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-md border border-line2 bg-paper text-ink/60 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-600';
-		btn.addEventListener('mousedown', (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-			el.dispatchEvent(
-				new CustomEvent('cms-widget-delete', {
-					bubbles: true,
-					detail: { nodeKey: this.getKey() }
-				})
-			);
-		});
-		el.appendChild(btn);
-	}
-
-	_renderInto(el) {
-		const { provider, youtubeThumbnailUrl, youtubeTitle, youtubeDuration } = this.__data || {};
-
-		const chip = document.createElement('div');
-		chip.className = 'flex items-center justify-between gap-2 pr-10 text-sm';
-		chip.innerHTML = `
-			<div class="flex items-center gap-2">
-				<span class="rounded bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700 uppercase tracking-wide">
-					${escapeHtml(provider === 'youtube' ? 'YouTube' : provider || 'Video')}
-				</span>
-				<span class="font-semibold text-ink">${escapeHtml(youtubeTitle || 'Untitled video')}</span>
-			</div>
-			${youtubeDuration ? `<span class="text-xs text-ink/60 font-mono-system">${formatDuration(youtubeDuration)}</span>` : ''}
-		`;
-		el.appendChild(chip);
-
-		if (youtubeThumbnailUrl) {
-			const wrap = document.createElement('div');
-			wrap.className = 'mt-3 overflow-hidden rounded-md border border-line2';
-			const img = document.createElement('img');
-			img.src = youtubeThumbnailUrl;
-			img.alt = youtubeTitle || '';
-			img.loading = 'lazy';
-			img.decoding = 'async';
-			img.className = 'block h-auto w-full max-h-56 object-cover';
-			wrap.appendChild(img);
-			el.appendChild(wrap);
-		}
-
-		const hint = document.createElement('div');
-		hint.className = 'mt-2 text-[11px] text-ink/40';
-		hint.textContent = 'Renders as an embedded video on the public page.';
-		el.appendChild(hint);
+	/** Replace the widget's data in place (used by Edit). Call inside editor.update(). */
+	setData(data) {
+		this.getWritable().__data = data;
 	}
 
 	isInline() {
@@ -112,7 +59,7 @@ export class InlineVideoNode extends DecoratorNode {
 	}
 
 	decorate() {
-		return null;
+		return { type: this.getType(), data: this.__data, json: this.exportJSON() };
 	}
 
 	exportJSON() {
@@ -131,23 +78,4 @@ export class InlineVideoNode extends DecoratorNode {
 
 export function $createInlineVideoNode(data) {
 	return new InlineVideoNode(data);
-}
-
-function escapeHtml(s) {
-	return String(s ?? '')
-		.replace(/&/g, '&amp;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;')
-		.replace(/"/g, '&quot;')
-		.replace(/'/g, '&#039;');
-}
-
-function formatDuration(sec) {
-	if (!sec || !Number.isFinite(sec)) return '';
-	const s = Math.floor(sec);
-	const h = Math.floor(s / 3600);
-	const m = Math.floor((s % 3600) / 60);
-	const r = s % 60;
-	if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
-	return `${m}:${String(r).padStart(2, '0')}`;
 }

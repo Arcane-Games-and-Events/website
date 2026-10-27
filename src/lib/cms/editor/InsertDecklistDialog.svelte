@@ -1,167 +1,130 @@
 <!--
-  InsertDecklistDialog — modal that takes a Fabrary export paste and inserts
-  a DecklistNode into the editor. Closes on success or cancel.
+  Insert or edit a decklist from a Fabrary text export. When editing, the
+  card list is rebuilt as export text so it can be changed line by line.
 -->
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import DialogShell from './DialogShell.svelte';
+	import * as ui from './dialogStyles.js';
 	import { parseFabraryExport, toComponentFormat } from '$lib/utils/decklist-parser.js';
 
-	export let open = false;
+	/** @type {{ open?: boolean, initial?: any, onsubmit: (data: any) => void, onclose?: () => void }} */
+	let { open = $bindable(false), initial = null, onsubmit, onclose } = $props();
 
-	const dispatch = createEventDispatcher();
+	let rawText = $state('');
+	let deckName = $state('');
+	let creator = $state('');
+	let format = $state('');
+	let fabraryUrl = $state('');
+	let errorMsg = $state('');
 
-	let rawText = '';
-	let deckName = '';
-	let creator = '';
-	let format = '';
-	let fabraryUrl = '';
-	let errorMsg = '';
+	/** A stored deck back to the export format the parser reads. */
+	function toExportText(d) {
+		const { arenaCards = [], deckCards = [] } = d?.parsedCards || {};
+		const line = (c) => `${c.quantity || 1}x ${c.name}${c.color ? ` (${c.color})` : ''}`;
+		return [
+			d?.hero ? `Hero: ${d.hero}` : '',
+			'',
+			'Arena cards',
+			...arenaCards.map(line),
+			'',
+			'Deck cards',
+			...deckCards.map(line)
+		]
+			.join('\n')
+			.trim();
+	}
+
+	let wasOpen = false;
+	$effect.pre(() => {
+		if (open && !wasOpen) {
+			deckName = initial?.deckName || '';
+			creator = initial?.creator || '';
+			format = initial?.format || '';
+			fabraryUrl = initial?.fabraryUrl || '';
+			rawText = initial ? toExportText(initial) : '';
+			errorMsg = '';
+		}
+		wasOpen = open;
+	});
 
 	function close() {
 		open = false;
-		dispatch('close');
-		rawText = '';
-		deckName = '';
-		creator = '';
-		format = '';
-		fabraryUrl = '';
-		errorMsg = '';
+		onclose?.();
 	}
 
-	function insert() {
+	function submit() {
 		errorMsg = '';
 		if (!rawText.trim()) {
-			errorMsg = 'Paste your Fabrary export text below.';
+			errorMsg = 'Paste your Fabrary export text.';
 			return;
 		}
 		try {
-			const parsed = parseFabraryExport(rawText);
-			const componentData = toComponentFormat(parsed);
-			dispatch('insert', {
-				deckName: deckName || componentData.deckName || 'Untitled deck',
-				creator: creator || null,
-				format: format || componentData.format || null,
-				fabraryUrl: fabraryUrl || null,
-				hero: componentData.hero || null,
-				parsedCards: componentData.parsedCards || componentData
+			const parsed = toComponentFormat(parseFabraryExport(rawText));
+			onsubmit({
+				...(initial || {}),
+				deckName: deckName.trim() || parsed.deckName || 'Untitled deck',
+				creator: creator.trim() || null,
+				format: format.trim() || parsed.format || null,
+				fabraryUrl: fabraryUrl.trim() || parsed.fabraryUrl || null,
+				hero: parsed.hero || null,
+				parsedCards: parsed.parsedCards
 			});
 			close();
 		} catch (e) {
-			errorMsg = e?.message || 'Could not parse decklist';
+			errorMsg = e?.message || 'Could not read that decklist.';
 		}
 	}
 </script>
 
-{#if open}
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-4"
-		on:click={close}
-		on:keydown={(e) => e.key === 'Escape' && close()}
-		role="presentation"
-	>
-		<div
-			class="w-full max-w-2xl rounded-md border border-line2 bg-paper p-6 shadow-2xl"
-			on:click|stopPropagation
-			on:keydown|stopPropagation
-			role="dialog"
-			aria-modal="true"
-			tabindex="-1"
-			aria-labelledby="cms-decklist-title"
-		>
-			<h2
-				id="cms-decklist-title"
-				class="mb-4 text-[11px] font-semibold tracking-wider text-ink/60 uppercase font-mono-system"
-			>
-				Insert decklist
-			</h2>
-
-			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-				<label class="block">
-					<span
-						class="mb-1 block text-[11px] font-medium text-ink/60 uppercase tracking-wider font-mono-system"
-					>
-						Deck name
-					</span>
-					<input
-						type="text"
-						bind:value={deckName}
-						placeholder="e.g. Standard Briar"
-						class="w-full rounded-md border border-line2 bg-paper-bg px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none"
-					/>
-				</label>
-				<label class="block">
-					<span
-						class="mb-1 block text-[11px] font-medium text-ink/60 uppercase tracking-wider font-mono-system"
-					>
-						Creator <span class="normal-case text-ink/40">(optional)</span>
-					</span>
-					<input
-						type="text"
-						bind:value={creator}
-						placeholder="e.g. Justin Test"
-						class="w-full rounded-md border border-line2 bg-paper-bg px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none"
-					/>
-				</label>
-				<label class="block">
-					<span
-						class="mb-1 block text-[11px] font-medium text-ink/60 uppercase tracking-wider font-mono-system"
-					>
-						Format <span class="normal-case text-ink/40">(optional)</span>
-					</span>
-					<input
-						type="text"
-						bind:value={format}
-						placeholder="Classic Constructed, Blitz, …"
-						class="w-full rounded-md border border-line2 bg-paper-bg px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none"
-					/>
-				</label>
-				<label class="block">
-					<span
-						class="mb-1 block text-[11px] font-medium text-ink/60 uppercase tracking-wider font-mono-system"
-					>
-						Fabrary URL <span class="normal-case text-ink/40">(optional)</span>
-					</span>
-					<input
-						type="url"
-						bind:value={fabraryUrl}
-						placeholder="https://fabrary.net/decks/…"
-						class="w-full rounded-md border border-line2 bg-paper-bg px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none"
-					/>
-				</label>
-			</div>
-
-			<label class="mt-3 block">
-				<span
-					class="mb-1 block text-[11px] font-medium text-ink/60 uppercase tracking-wider font-mono-system"
-				>
-					Fabrary export text
-				</span>
-				<textarea
-					bind:value={rawText}
-					rows="10"
-					placeholder="Paste your full Fabrary export here…"
-					class="w-full rounded-md border border-line2 bg-paper-bg px-3 py-2 font-mono-system text-xs text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none"
-				></textarea>
-			</label>
-
-			{#if errorMsg}
-				<p class="mt-2 text-xs text-red-700">{errorMsg}</p>
-			{/if}
-
-			<div class="mt-5 flex justify-end gap-2">
-				<button
-					on:click={close}
-					class="rounded-md border border-line2 bg-paper px-4 py-2 text-sm font-medium text-ink hover:bg-ink/5"
-				>
-					Cancel
-				</button>
-				<button
-					on:click={insert}
-					class="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-paper-bg hover:bg-ink/90"
-				>
-					Insert
-				</button>
-			</div>
-		</div>
+<DialogShell {open} kicker={initial ? 'Edit' : 'Insert'} title="Decklist" wide onclose={close}>
+	<div class="grid gap-4 sm:grid-cols-2">
+		<label class="block">
+			<span class={ui.label}>Deck name</span>
+			<input type="text" bind:value={deckName} placeholder="Standard Briar" class={ui.input} />
+		</label>
+		<label class="block">
+			<span class={ui.label}>Creator<span class={ui.optional}>Optional</span></span>
+			<input type="text" bind:value={creator} placeholder="Who built it" class={ui.input} />
+		</label>
+		<label class="block">
+			<span class={ui.label}>Format<span class={ui.optional}>Optional</span></span>
+			<input
+				type="text"
+				bind:value={format}
+				placeholder="Classic Constructed, Blitz…"
+				class={ui.input}
+			/>
+		</label>
+		<label class="block">
+			<span class={ui.label}>Fabrary link<span class={ui.optional}>Optional</span></span>
+			<input
+				type="url"
+				bind:value={fabraryUrl}
+				placeholder="https://fabrary.net/decks/…"
+				class={ui.input}
+			/>
+		</label>
 	</div>
-{/if}
+	<label class="mt-4 block">
+		<span class={ui.label}>Cards</span>
+		<textarea
+			bind:value={rawText}
+			rows="11"
+			placeholder="Paste the full Fabrary text export…"
+			class={ui.textarea}
+		></textarea>
+		<span class={ui.hint}
+			>{initial
+				? 'Edit the lines to change the list, or paste a new export.'
+				: 'Paste the text export from Fabrary.'}</span
+		>
+	</label>
+	{#if errorMsg}<p class={ui.error}>{errorMsg}</p>{/if}
+
+	{#snippet footer()}
+		<button type="button" onclick={close} class={ui.secondary}>Cancel</button>
+		<button type="button" onclick={submit} class={ui.primary}
+			>{initial ? 'Save changes' : 'Insert decklist'}</button
+		>
+	{/snippet}
+</DialogShell>

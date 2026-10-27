@@ -7,9 +7,9 @@
 	 * header (`--desk-header`, measured by the Desk layout) once scrolled to.
 	 * Pages without an ink header put it at the top and pass `label`.
 	 *
-	 * @type {{ label?: boolean }}
+	 * @type {{ label?: boolean, sticky?: boolean }}
 	 */
-	let { label = false } = $props();
+	let { label = false, sticky = true } = $props();
 	import { page } from '$app/stores';
 
 	const d = $derived($page.data || {});
@@ -53,7 +53,9 @@
 
 <div
 	data-desk-tabs
-	class="sticky top-[var(--desk-header,0px)] z-40 border-y border-paper-bg/15 bg-ink font-libre text-paper-bg"
+	class="{sticky
+		? 'sticky top-[var(--desk-header,0px)] z-40'
+		: 'relative'} border-y border-paper-bg/15 bg-ink font-libre text-paper-bg"
 >
 	<!-- phone: an evenly split tab bar, every tab visible, no scrolling -->
 	<nav

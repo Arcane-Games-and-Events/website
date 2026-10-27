@@ -24,6 +24,8 @@
 		$createParagraphNode as createParagraphNode,
 		$createTextNode as createTextNode,
 		$isDecoratorNode as isDecoratorNode,
+		$isTextNode as isTextNode,
+		$getNearestNodeFromDOMNode as getNearestNodeFromDOMNode,
 		FORMAT_TEXT_COMMAND
 	} from 'lexical';
 	import {
@@ -40,17 +42,19 @@
 		INSERT_UNORDERED_LIST_COMMAND,
 		registerList
 	} from '@lexical/list';
-	import { LinkNode, AutoLinkNode, $createLinkNode as createLinkNode } from '@lexical/link';
+	import {
+		LinkNode,
+		AutoLinkNode,
+		$createLinkNode as createLinkNode,
+		$isLinkNode as isLinkNode
+	} from '@lexical/link';
 	import { registerHistory, createEmptyHistoryState } from '@lexical/history';
 	import { mergeRegister } from '@lexical/utils';
 	import { $setBlocksType as setBlocksType } from '@lexical/selection';
 
 	import { editorTheme } from './theme.js';
 	import { coerceLexicalDoc, emptyLexicalDoc } from './utils.js';
-	import {
-		DecklistNode,
-		$createDecklistNode as createDecklistNode
-	} from './nodes/DecklistNode.js';
+	import { DecklistNode, $createDecklistNode as createDecklistNode } from './nodes/DecklistNode.js';
 	import {
 		StatsTableNode,
 		$createStatsTableNode as createStatsTableNode
@@ -67,10 +71,16 @@
 	import InsertStatsTableDialog from './InsertStatsTableDialog.svelte';
 	import InsertCardLinkDialog from './InsertCardLinkDialog.svelte';
 	import InsertInlineVideoDialog from './InsertInlineVideoDialog.svelte';
+	import EditImageDialog from './EditImageDialog.svelte';
 	import EditorContextMenu from './EditorContextMenu.svelte';
+	import CardLinkPopover from './CardLinkPopover.svelte';
+	import { mountWidget } from './widgets/mount.svelte.js';
+	import { parseCardLinkUrl } from '$lib/cms/render/lexical-utils.js';
 
 	export let value = emptyLexicalDoc();
 	export let placeholder = 'Start writing…';
+	/** Optional snippet rendered at the end of the toolbar (save state, settings). */
+	export let toolbarEnd = null;
 
 	const dispatch = createEventDispatcher();
 
@@ -89,6 +99,23 @@
 	let cardLinkDialogOpen = false;
 	let cardLinkSelectedText = '';
 	let inlineVideoDialogOpen = false;
+	let imageDialogOpen = false;
+
+	// Editing an existing widget: its node key, and the data that fills the
+	// dialog. A dialog with `initial` saves into the node instead of inserting.
+	let editingKey = null;
+	let statsInitial = null;
+	let decklistInitial = null;
+	let videoInitial = null;
+	let imageInitial = null;
+
+	// Card link popover (opens under a clicked card link) and the link being changed.
+	let contentWrapEl;
+	let cardPopover = null; // { key, name, pitch, customUrl, top, left }
+	let cardInitial = null;
+
+	// Widget cards mounted into decorator nodes, by node key.
+	const widgets = new Map();
 
 	// Right-click context menu state — the browser moves the caret to the
 	// click point before the contextmenu event fires, so any block/format/
@@ -130,42 +157,8 @@
 
 		editor.setRootElement(editorEl);
 
-		// Widget delete button custom event — dispatched by DecklistNode/
-		// StatsTableNode/ImageUploadNode/InlineVideoNode.
-		//
-		// For inline images specifically, we ALSO clean up the underlying
-		// media row + Supabase Storage object so orphans don't accumulate.
-		// The endpoint reference-checks against every other place a mediaId
-		// can appear (cover/thumb on entries + courses, live and draft)
-		// before deleting, so an image shared as a cover elsewhere is safe.
-		editorEl.addEventListener('cms-widget-delete', (e) => {
-			const nodeKey = e.detail?.nodeKey;
-			if (!nodeKey) return;
-
-			// Read the mediaId BEFORE mutating — editor.update() is
-			// asynchronous, so grabbing __data inside it and checking outside
-			// would fire the fetch before the assignment happened. Read via
-			// editorState.read() gives us a synchronous snapshot.
-			let mediaIdToDelete = null;
-			editor.getEditorState().read(() => {
-				const node = getNodeByKey(nodeKey);
-				const data = /** @type {any} */ (node)?.__data;
-				if (data?.mediaId) mediaIdToDelete = data.mediaId;
-			});
-
-			// Remove the node from the doc.
-			editor.update(() => {
-				const node = getNodeByKey(nodeKey);
-				if (node) node.remove();
-			});
-
-			// Fire-and-forget media cleanup. Endpoint reference-checks
-			// against every other cover / thumbnail slot before deleting,
-			// so shared images stay intact.
-			if (mediaIdToDelete) {
-				fetch(`/api/cms/media/${mediaIdToDelete}`, { method: 'DELETE' }).catch(() => {});
-			}
-		});
+		editorEl.addEventListener('click', handleContentClick);
+		editorEl.addEventListener('keydown', () => (cardPopover = null));
 
 		// Ensure every decorator node has a writable sibling after it — a
 		// bare paragraph. Fires in two cases:
@@ -198,6 +191,8 @@
 			editor.registerNodeTransform(StatsTableNode, ensureTrailingParagraph),
 			editor.registerNodeTransform(ImageUploadNode, ensureTrailingParagraph),
 			editor.registerNodeTransform(InlineVideoNode, ensureTrailingParagraph),
+			editor.registerDecoratorListener(syncWidgets),
+			editor.registerMutationListener(LinkNode, markCardLinks),
 			editor.registerUpdateListener(({ editorState }) => {
 				const json = editorState.toJSON();
 				value = json;
@@ -214,6 +209,7 @@
 					}
 				});
 				dispatch('change', json);
+				syncWidgets();
 			})
 		);
 
@@ -231,6 +227,8 @@
 	});
 
 	onDestroy(() => {
+		for (const w of widgets.values()) w.handle.destroy();
+		widgets.clear();
 		if (unregister) unregister();
 		if (editor) editor.setRootElement(null);
 	});
@@ -358,6 +356,149 @@
 		editor.focus();
 	}
 
+	// --- Widget cards ----------------------------------------------------------
+
+	// Keep one card mounted in each decorator node's element: mount new ones,
+	// update changed ones in place, drop the ones whose node went away.
+	function syncWidgets() {
+		if (!editor) return;
+		const decorators = editor.getDecorators();
+		for (const [key, w] of widgets) {
+			if (!decorators[key] || editor.getElementByKey(key) !== w.el) {
+				w.handle.destroy();
+				widgets.delete(key);
+			}
+		}
+		for (const [key, dec] of Object.entries(decorators)) {
+			const el = editor.getElementByKey(key);
+			if (!el) continue;
+			const w = widgets.get(key);
+			if (!w) {
+				const handle = mountWidget(el, dec, {
+					onedit: () => editWidget(key),
+					onremove: () => removeWidget(key)
+				});
+				widgets.set(key, { el, dec, handle });
+			} else if (w.dec !== dec) {
+				w.dec = dec;
+				w.handle.update(dec);
+			}
+		}
+	}
+
+	// For inline images we also clean up the media row + storage object. The
+	// endpoint keeps anything still used as a cover or thumbnail.
+	function removeWidget(nodeKey) {
+		if (!editor) return;
+		let mediaIdToDelete = null;
+		editor.getEditorState().read(() => {
+			const data = /** @type {any} */ (getNodeByKey(nodeKey))?.__data;
+			if (data?.mediaId) mediaIdToDelete = data.mediaId;
+		});
+		editor.update(() => getNodeByKey(nodeKey)?.remove());
+		if (mediaIdToDelete) {
+			fetch(`/api/cms/media/${mediaIdToDelete}`, { method: 'DELETE' }).catch(() => {});
+		}
+	}
+
+	function editWidget(nodeKey) {
+		if (!editor) return;
+		let type = null;
+		let data = null;
+		editor.getEditorState().read(() => {
+			const node = /** @type {any} */ (getNodeByKey(nodeKey));
+			type = node?.getType();
+			data = node?.__data;
+		});
+		if (!type) return;
+		editingKey = nodeKey;
+		if (type === 'stats_table') [statsInitial, statsDialogOpen] = [data, true];
+		else if (type === 'decklist') [decklistInitial, decklistDialogOpen] = [data, true];
+		else if (type === 'inline_video') [videoInitial, inlineVideoDialogOpen] = [data, true];
+		else if (type === 'upload') [imageInitial, imageDialogOpen] = [data, true];
+	}
+
+	function saveWidget(data) {
+		const key = editingKey;
+		if (!editor || !key) return;
+		editor.update(() => /** @type {any} */ (getNodeByKey(key))?.setData(data));
+	}
+
+	function endEdit() {
+		editingKey = statsInitial = decklistInitial = videoInitial = imageInitial = null;
+	}
+
+	// --- Card links --------------------------------------------------------------
+
+	const PITCH_LETTER = { 1: 'r', 2: 'y', 3: 'b' };
+
+	// Lexical renders card: hrefs as about:blank, so mark card links with a
+	// data attribute for styling and clicks. Lexical doesn't watch attributes.
+	function markCardLinks(mutations) {
+		editor.getEditorState().read(() => {
+			for (const [key, kind] of mutations) {
+				if (kind === 'destroyed') continue;
+				const node = getNodeByKey(key);
+				const el = editor.getElementByKey(key);
+				if (!el || !isLinkNode(node)) continue;
+				el.toggleAttribute('data-card-link', !!parseCardLinkUrl(node.getURL()));
+			}
+		});
+	}
+
+	function handleContentClick(e) {
+		const a = e.target?.closest?.('a');
+		if (!a || !editorEl.contains(a)) return;
+		e.preventDefault(); // links never navigate from inside the editor
+		let info = null;
+		editor.read(() => {
+			const node = getNearestNodeFromDOMNode(a);
+			const card = isLinkNode(node) ? parseCardLinkUrl(node.getURL()) : null;
+			if (card) {
+				info = {
+					key: node.getKey(),
+					name: card.cardId,
+					pitch: PITCH_LETTER[card.pitch] || null,
+					customUrl: card.customUrl
+				};
+			}
+		});
+		if (!info || !contentWrapEl) {
+			cardPopover = null;
+			return;
+		}
+		const r = a.getBoundingClientRect();
+		const box = contentWrapEl.getBoundingClientRect();
+		cardPopover = {
+			...info,
+			top: Math.round(r.bottom - box.top + 6),
+			left: Math.round(Math.max(0, Math.min(r.left - box.left, box.width - 240)))
+		};
+	}
+
+	function changeCardLink({ name, url }) {
+		const { key, name: oldName, customUrl } = cardInitial || {};
+		if (!editor || !key) return;
+		editor.update(() => {
+			const link = getNodeByKey(key);
+			if (!isLinkNode(link)) return;
+			link.setURL(customUrl ? `${url}|${customUrl}` : url);
+			// link text that was just the old card's name follows the new card
+			const only = link.getChildrenSize() === 1 ? link.getFirstChild() : null;
+			if (isTextNode(only) && only.getTextContent() === oldName) only.setTextContent(name);
+		});
+	}
+
+	function removeCardLink(key) {
+		cardPopover = null;
+		editor?.update(() => {
+			const link = getNodeByKey(key);
+			if (!isLinkNode(link)) return;
+			for (const child of link.getChildren()) link.insertBefore(child);
+			link.remove();
+		});
+	}
+
 	// --- Image upload ----------------------------------------------------------
 
 	function openImagePicker() {
@@ -401,147 +542,337 @@
 		}
 	}
 
-	// Compact toolbar button classes.
-	const tbBase =
-		'inline-flex h-8 min-w-[2rem] items-center justify-center rounded-md px-2 text-xs font-mono-system text-ink/80 transition-colors hover:bg-ink/5 disabled:opacity-50';
-	const tbActive = 'bg-ink/10 text-ink';
+	// Toolbar: square buttons in the site's sans. Every button keeps focus
+	// in the editor (mousedown preventDefault) so the selection survives.
+	const tbShape =
+		'inline-flex h-9 min-w-9 shrink-0 items-center justify-center px-2 font-libre text-[12px] font-semibold transition-colors disabled:opacity-50';
+	const tbIdle = 'text-ink/75 hover:bg-ink/[0.06] hover:text-ink';
+	const tbActive = 'bg-ink text-paper-bg';
+	const tbBase = `${tbShape} ${tbIdle}`;
+	const keepFocus = (e) => e.preventDefault();
+
+	// Phone toolbar folds block styles and inserts into two menus.
+	let menu = null; // 'style' | 'insert' | null
+	function toggleMenu(name) {
+		menu = menu === name ? null : name;
+	}
+	function pick(fn) {
+		menu = null;
+		fn();
+	}
+	const STYLE_ITEMS = [
+		['Paragraph', () => setBlock('paragraph')],
+		['Heading 2', () => setBlock('h2')],
+		['Heading 3', () => setBlock('h3')],
+		['Heading 4', () => setBlock('h4')],
+		['Quote', () => setBlock('quote')],
+		['Bulleted list', () => insertList('ul')],
+		['Numbered list', () => insertList('ol')],
+		['Strikethrough', () => formatText('strikethrough')]
+	];
+	const INSERT_ITEMS = [
+		['Link', () => insertLink()],
+		['Image', () => openImagePicker()],
+		['Card link', () => openCardLinkDialog()],
+		['Decklist', () => (decklistDialogOpen = true)],
+		['Stats table', () => (statsDialogOpen = true)],
+		['YouTube video', () => (inlineVideoDialogOpen = true)]
+	];
+	function closeMenuOnOutside(e) {
+		if (menu && !e.target.closest?.('[data-tb-menu]')) menu = null;
+		if (cardPopover && !e.target.closest?.('[data-card-popover], [data-card-link]')) {
+			cardPopover = null;
+		}
+	}
 </script>
 
-<div class="cms-editor rounded-md border border-line2 bg-paper">
-	<div class="flex flex-wrap items-center gap-1 border-b border-line2 bg-paper-bg/40 px-2 py-1.5">
-		<button
-			type="button"
-			class="{tbBase} {activeFormats.bold ? tbActive : ''}"
-			title="Bold (⌘B)"
-			on:click={() => formatText('bold')}
-		>
-			<strong>B</strong>
-		</button>
-		<button
-			type="button"
-			class="{tbBase} {activeFormats.italic ? tbActive : ''}"
-			title="Italic (⌘I)"
-			on:click={() => formatText('italic')}
-		>
-			<em>I</em>
-		</button>
-		<button
-			type="button"
-			class="{tbBase} {activeFormats.underline ? tbActive : ''}"
-			title="Underline (⌘U)"
-			on:click={() => formatText('underline')}
-		>
-			<u>U</u>
-		</button>
-		<button
-			type="button"
-			class="{tbBase} {activeFormats.strikethrough ? tbActive : ''}"
-			title="Strikethrough"
-			on:click={() => formatText('strikethrough')}
-		>
-			<s>S</s>
-		</button>
+<svelte:document on:pointerdown={closeMenuOnOutside} />
 
-		<span class="mx-1 h-5 w-px bg-line2"></span>
+<div class="cms-editor border border-line2 bg-white transition-colors focus-within:border-ink">
+	<!-- toolbar: sticks under the page's own sticky chrome (--editor-top).
+	     The buttons sit in a container sized to what's left after toolbarEnd,
+	     and fold into menus by that width. -->
+	<div
+		class="sticky top-[var(--editor-top,0px)] z-20 flex items-center gap-1 border-b border-line2 bg-paper-bg/95 px-1.5 py-1 backdrop-blur-sm"
+		role="toolbar"
+		aria-label="Formatting"
+	>
+		<div class="@container min-w-0 flex-1">
+			<div class="flex items-center gap-0.5">
+				<button
+					type="button"
+					class="{tbShape} {activeFormats.bold ? tbActive : tbIdle}"
+					title="Bold (⌘B)"
+					aria-pressed={!!activeFormats.bold}
+					on:mousedown={keepFocus}
+					on:click={() => formatText('bold')}><strong>B</strong></button
+				>
+				<button
+					type="button"
+					class="{tbShape} {activeFormats.italic ? tbActive : tbIdle}"
+					title="Italic (⌘I)"
+					aria-pressed={!!activeFormats.italic}
+					on:mousedown={keepFocus}
+					on:click={() => formatText('italic')}
+					><em class="font-newsreader text-[14px]">I</em></button
+				>
+				<button
+					type="button"
+					class="{tbShape} {activeFormats.underline ? tbActive : tbIdle}"
+					title="Underline (⌘U)"
+					aria-pressed={!!activeFormats.underline}
+					on:mousedown={keepFocus}
+					on:click={() => formatText('underline')}><u>U</u></button
+				>
+				<span class="hidden @min-[480px]:flex">
+					<button
+						type="button"
+						class="{tbShape} {activeFormats.strikethrough ? tbActive : tbIdle}"
+						title="Strikethrough"
+						aria-pressed={!!activeFormats.strikethrough}
+						on:mousedown={keepFocus}
+						on:click={() => formatText('strikethrough')}><s>S</s></button
+					>
+				</span>
 
-		<button type="button" class={tbBase} title="Paragraph" on:click={() => setBlock('paragraph')}>
-			P
-		</button>
-		<button type="button" class={tbBase} title="Heading 2" on:click={() => setBlock('h2')}>H2</button>
-		<button type="button" class={tbBase} title="Heading 3" on:click={() => setBlock('h3')}>H3</button>
-		<button type="button" class={tbBase} title="Heading 4" on:click={() => setBlock('h4')}>H4</button>
-		<button type="button" class={tbBase} title="Quote" on:click={() => setBlock('quote')}>“ ”</button>
+				<span class="mx-1 h-5 w-px shrink-0 bg-line2" aria-hidden="true"></span>
 
-		<span class="mx-1 h-5 w-px bg-line2"></span>
+				<!-- block styles: inline when there's room, a menu otherwise -->
+				<span class="hidden items-center gap-0.5 @min-[480px]:flex">
+					<button
+						type="button"
+						class={tbBase}
+						title="Paragraph"
+						on:mousedown={keepFocus}
+						on:click={() => setBlock('paragraph')}>¶</button
+					>
+					<button
+						type="button"
+						class={tbBase}
+						title="Heading 2"
+						on:mousedown={keepFocus}
+						on:click={() => setBlock('h2')}>H2</button
+					>
+					<button
+						type="button"
+						class={tbBase}
+						title="Heading 3"
+						on:mousedown={keepFocus}
+						on:click={() => setBlock('h3')}>H3</button
+					>
+					<button
+						type="button"
+						class={tbBase}
+						title="Heading 4"
+						on:mousedown={keepFocus}
+						on:click={() => setBlock('h4')}>H4</button
+					>
+					<button
+						type="button"
+						class={tbBase}
+						title="Quote"
+						on:mousedown={keepFocus}
+						on:click={() => setBlock('quote')}
+						><span class="font-newsreader text-[16px]">“</span></button
+					>
+					<button
+						type="button"
+						class={tbBase}
+						title="Bulleted list"
+						on:mousedown={keepFocus}
+						on:click={() => insertList('ul')}>• List</button
+					>
+					<button
+						type="button"
+						class={tbBase}
+						title="Numbered list"
+						on:mousedown={keepFocus}
+						on:click={() => insertList('ol')}>1. List</button
+					>
+					<span class="mx-1 h-5 w-px bg-line2" aria-hidden="true"></span>
+				</span>
+				<span class="relative @min-[480px]:hidden" data-tb-menu>
+					<button
+						type="button"
+						class="{tbShape} gap-1 {menu === 'style' ? tbActive : tbIdle}"
+						aria-haspopup="menu"
+						aria-expanded={menu === 'style'}
+						on:mousedown={keepFocus}
+						on:click={() => toggleMenu('style')}
+						>Style <span class="text-[9px]" aria-hidden="true">▾</span></button
+					>
+					{#if menu === 'style'}
+						<div
+							class="absolute top-full left-0 z-30 mt-1 w-48 border border-ink bg-paper-bg shadow-[0_18px_36px_-20px_rgba(20,16,8,0.6)]"
+							role="menu"
+						>
+							{#each STYLE_ITEMS as [lbl, fn] (lbl)}
+								<button
+									type="button"
+									role="menuitem"
+									class="block w-full border-b border-line px-3.5 py-2.5 text-left font-libre text-[13.5px] last:border-b-0 hover:bg-paper"
+									on:mousedown={keepFocus}
+									on:click={() => pick(fn)}>{lbl}</button
+								>
+							{/each}
+						</div>
+					{/if}
+				</span>
 
-		<button type="button" class={tbBase} title="Bullet list" on:click={() => insertList('ul')}>• List</button>
-		<button type="button" class={tbBase} title="Numbered list" on:click={() => insertList('ol')}>1. List</button>
+				<!-- link and inserts: inline when there's room, a menu otherwise -->
+				<span class="hidden items-center gap-0.5 @min-[680px]:flex">
+					<button
+						type="button"
+						class={tbBase}
+						title="Link"
+						on:mousedown={keepFocus}
+						on:click={insertLink}>Link</button
+					>
+					<span class="mx-1 h-5 w-px bg-line2" aria-hidden="true"></span>
+					<button
+						type="button"
+						class={tbBase}
+						title="Insert image"
+						disabled={imageUploading}
+						on:mousedown={keepFocus}
+						on:click={openImagePicker}>{imageUploading ? 'Uploading…' : 'Image'}</button
+					>
+					<button
+						type="button"
+						class={tbBase}
+						title="Insert card link"
+						on:mousedown={keepFocus}
+						on:click={openCardLinkDialog}>Card</button
+					>
+					<button
+						type="button"
+						class={tbBase}
+						title="Insert decklist"
+						on:mousedown={keepFocus}
+						on:click={() => (decklistDialogOpen = true)}>Deck</button
+					>
+					<button
+						type="button"
+						class={tbBase}
+						title="Insert stats table"
+						on:mousedown={keepFocus}
+						on:click={() => (statsDialogOpen = true)}>Table</button
+					>
+					<button
+						type="button"
+						class={tbBase}
+						title="Insert YouTube video"
+						on:mousedown={keepFocus}
+						on:click={() => (inlineVideoDialogOpen = true)}>Video</button
+					>
+				</span>
+				<span class="relative @min-[680px]:hidden" data-tb-menu>
+					<button
+						type="button"
+						class="{tbShape} gap-1 {menu === 'insert' ? tbActive : tbIdle}"
+						aria-haspopup="menu"
+						aria-expanded={menu === 'insert'}
+						on:mousedown={keepFocus}
+						on:click={() => toggleMenu('insert')}
+						>{imageUploading ? 'Uploading…' : 'Insert'}
+						<span class="text-[9px]" aria-hidden="true">▾</span></button
+					>
+					{#if menu === 'insert'}
+						<div
+							class="absolute top-full right-0 z-30 mt-1 w-48 border border-ink bg-paper-bg shadow-[0_18px_36px_-20px_rgba(20,16,8,0.6)]"
+							role="menu"
+						>
+							{#each INSERT_ITEMS as [lbl, fn] (lbl)}
+								<button
+									type="button"
+									role="menuitem"
+									class="block w-full border-b border-line px-3.5 py-2.5 text-left font-libre text-[13.5px] last:border-b-0 hover:bg-paper"
+									on:mousedown={keepFocus}
+									on:click={() => pick(fn)}>{lbl}</button
+								>
+							{/each}
+						</div>
+					{/if}
+				</span>
+				<input
+					bind:this={imageInputEl}
+					type="file"
+					accept="image/*"
+					on:change={handleImageFile}
+					class="hidden"
+				/>
+			</div>
+		</div>
 
-		<span class="mx-1 h-5 w-px bg-line2"></span>
-
-		<button type="button" class={tbBase} title="Link" on:click={insertLink}>Link</button>
-		<button
-			type="button"
-			class={tbBase}
-			title="Insert image"
-			disabled={imageUploading}
-			on:click={openImagePicker}
-		>
-			{imageUploading ? 'Uploading…' : 'Image'}
-		</button>
-		<input
-			bind:this={imageInputEl}
-			type="file"
-			accept="image/*"
-			on:change={handleImageFile}
-			class="hidden"
-		/>
-
-		<span class="mx-1 h-5 w-px bg-line2"></span>
-
-		<button
-			type="button"
-			class={tbBase}
-			title="Insert card link"
-			on:click={openCardLinkDialog}
-		>
-			Card
-		</button>
-		<button
-			type="button"
-			class={tbBase}
-			title="Insert decklist"
-			on:click={() => (decklistDialogOpen = true)}
-		>
-			Deck
-		</button>
-		<button
-			type="button"
-			class={tbBase}
-			title="Insert stats table"
-			on:click={() => (statsDialogOpen = true)}
-		>
-			Table
-		</button>
-		<button
-			type="button"
-			class={tbBase}
-			title="Insert inline video (YouTube)"
-			on:click={() => (inlineVideoDialogOpen = true)}
-		>
-			Video
-		</button>
+		{#if toolbarEnd}
+			<span class="flex shrink-0 items-center gap-1">{@render toolbarEnd()}</span>
+		{/if}
 	</div>
 
-	<div class="relative">
+	<div class="relative" bind:this={contentWrapEl}>
 		<div
 			bind:this={editorEl}
 			contenteditable="true"
 			role="textbox"
 			aria-multiline="true"
-			class="cms-editor-content min-h-[24rem] w-full px-4 py-5 font-newsreader text-ink focus:outline-none sm:px-6"
+			aria-label="Entry body"
+			class="cms-editor-content min-h-[26rem] w-full px-4 py-5 font-newsreader text-[18px] text-ink focus:outline-none md:px-7 md:py-7 md:text-[19px]"
 			spellcheck="true"
 		></div>
 		{#if isEmpty}
-			<div class="pointer-events-none absolute top-5 left-4 text-ink/40 select-none font-newsreader sm:left-6">
+			<div
+				class="pointer-events-none absolute top-5 left-4 font-newsreader text-[18px] text-fade italic select-none md:top-7 md:left-7 md:text-[19px]"
+			>
 				{placeholder}
 			</div>
+		{/if}
+		{#if cardPopover}
+			<CardLinkPopover
+				link={cardPopover}
+				onchange={() => {
+					cardInitial = cardPopover;
+					cardPopover = null;
+					cardLinkDialogOpen = true;
+				}}
+				onremove={() => removeCardLink(cardPopover.key)}
+				onclose={() => (cardPopover = null)}
+			/>
 		{/if}
 	</div>
 </div>
 
 <svelte:window on:contextmenu={handleWindowContextMenu} />
 
-<InsertDecklistDialog bind:open={decklistDialogOpen} on:insert={(e) => insertDecklist(e.detail)} />
-<InsertStatsTableDialog bind:open={statsDialogOpen} on:insert={(e) => insertStatsTable(e.detail)} />
-<InsertCardLinkDialog
-	bind:open={cardLinkDialogOpen}
-	selectedText={cardLinkSelectedText}
-	on:insert={(e) => insertCardLink(e.detail)}
+<InsertDecklistDialog
+	bind:open={decklistDialogOpen}
+	initial={decklistInitial}
+	onsubmit={(d) => (decklistInitial ? saveWidget(d) : insertDecklist(d))}
+	onclose={endEdit}
+/>
+<InsertStatsTableDialog
+	bind:open={statsDialogOpen}
+	initial={statsInitial}
+	onsubmit={(d) => (statsInitial ? saveWidget(d) : insertStatsTable(d))}
+	onclose={endEdit}
 />
 <InsertInlineVideoDialog
 	bind:open={inlineVideoDialogOpen}
-	on:insert={(e) => insertInlineVideo(e.detail)}
+	initial={videoInitial}
+	onsubmit={(d) => (videoInitial ? saveWidget(d) : insertInlineVideo(d))}
+	onclose={endEdit}
+/>
+<EditImageDialog
+	bind:open={imageDialogOpen}
+	initial={imageInitial}
+	onsubmit={saveWidget}
+	onclose={endEdit}
+/>
+<InsertCardLinkDialog
+	bind:open={cardLinkDialogOpen}
+	selectedText={cardInitial ? '' : cardLinkSelectedText}
+	initial={cardInitial}
+	onsubmit={(d) => (cardInitial ? changeCardLink(d) : insertCardLink(d))}
+	onclose={() => (cardInitial = null)}
 />
 
 <EditorContextMenu
@@ -559,71 +890,70 @@
 />
 
 <style>
+	/* Theme classes only (see theme.js), never bare tags: widget previews
+	   inside the editor carry the article's own typography. */
 	.cms-editor-content :global(.cms-p) {
 		margin: 0.75rem 0;
 		line-height: 1.7;
 	}
-	.cms-editor-content :global(p) {
-		margin: 0.75rem 0;
-		line-height: 1.7;
-	}
-	.cms-editor-content :global(.cms-h1),
-	.cms-editor-content :global(h1) {
+	.cms-editor-content :global(.cms-h1) {
 		font-size: 1.875rem;
 		line-height: 1.2;
 		font-weight: 600;
 		margin: 1.5rem 0 0.75rem;
 	}
-	.cms-editor-content :global(.cms-h2),
-	.cms-editor-content :global(h2) {
-		font-size: 1.5rem;
-		line-height: 1.25;
+	.cms-editor-content :global(.cms-h2) {
+		font-size: 1.6rem;
+		line-height: 1.2;
 		font-weight: 600;
-		margin: 1.5rem 0 0.75rem;
+		letter-spacing: -0.01em;
+		margin: 2rem 0 0.75rem;
 	}
-	.cms-editor-content :global(.cms-h3),
-	.cms-editor-content :global(h3) {
+	.cms-editor-content :global(.cms-h3) {
 		font-size: 1.25rem;
 		line-height: 1.3;
 		font-weight: 600;
 		margin: 1.25rem 0 0.5rem;
 	}
-	.cms-editor-content :global(.cms-h4),
-	.cms-editor-content :global(h4) {
+	.cms-editor-content :global(.cms-h4) {
 		font-size: 1.125rem;
 		line-height: 1.3;
 		font-weight: 600;
 		margin: 1.25rem 0 0.5rem;
 	}
-	.cms-editor-content :global(.cms-ul),
-	.cms-editor-content :global(ul) {
+	.cms-editor-content :global(.cms-ul) {
 		list-style: disc;
 		padding-left: 1.5rem;
 		margin: 0.75rem 0;
 	}
-	.cms-editor-content :global(.cms-ol),
-	.cms-editor-content :global(ol) {
+	.cms-editor-content :global(.cms-ol) {
 		list-style: decimal;
 		padding-left: 1.5rem;
 		margin: 0.75rem 0;
 	}
-	.cms-editor-content :global(li) {
+	.cms-editor-content :global(.cms-li) {
 		margin: 0.25rem 0;
 	}
-	.cms-editor-content :global(.cms-quote),
-	.cms-editor-content :global(blockquote) {
-		border-left: 3px solid var(--color-line2, #ddd);
+	.cms-editor-content :global(.cms-quote) {
+		border-left: 3px solid var(--color-warm, #1e40af);
 		padding-left: 1rem;
 		color: var(--color-ink, #333);
-		opacity: 0.85;
 		margin: 1rem 0;
 		font-style: italic;
 	}
-	.cms-editor-content :global(a),
 	.cms-editor-content :global(.cms-link) {
-		color: var(--color-accent, #1a56db);
+		color: var(--color-warm, #1e40af);
 		text-decoration: underline;
 		text-underline-offset: 2px;
+	}
+	/* card links: a tinted, dotted link that opens the card preview */
+	.cms-editor-content :global(.cms-link[data-card-link]) {
+		background: color-mix(in srgb, var(--color-warm, #1e40af) 8%, transparent);
+		text-decoration-style: dotted;
+		text-decoration-thickness: 1.5px;
+		text-underline-offset: 3px;
+		padding: 0 0.12em;
+		cursor: pointer;
 	}
 	.cms-editor-content :global(.cms-b) {
 		font-weight: 700;
@@ -637,12 +967,10 @@
 	.cms-editor-content :global(.cms-s) {
 		text-decoration: line-through;
 	}
-	.cms-editor-content :global(.cms-code),
-	.cms-editor-content :global(code) {
+	.cms-editor-content :global(.cms-code) {
 		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 		font-size: 0.9em;
 		background: rgba(0, 0, 0, 0.05);
 		padding: 0.1em 0.3em;
-		border-radius: 3px;
 	}
 </style>

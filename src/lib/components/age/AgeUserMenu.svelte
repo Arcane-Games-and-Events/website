@@ -7,6 +7,10 @@
 	 * short blue bar, hairline rows that invert to ink on hover and an
 	 * arrow that slides in.
 	 *
+	 * Work tools (Admin, Desk, Staff) sit apart from the personal rows in a
+	 * paper band at the top, each marked with a coloured icon tile, so the
+	 * people who have them find them first. Same row size as the rest.
+	 *
 	 * The dropdown closes on outside click and on Escape.
 	 */
 	import { page } from '$app/stores';
@@ -96,10 +100,28 @@
 	const ITEMS = $derived([
 		{ label: 'Account', href: '/account' },
 		{ label: 'Refer a friend', href: '/account/referrals' },
-		...(isPartner ? [{ label: 'Partner', href: '/partner' }] : []),
-		...(isStaff ? [{ label: 'Staff', href: '/staff', badge: assignedEventsCount }] : []),
-		...(canAccessCms ? [{ label: 'Desk', href: '/desk' }] : []),
-		...(isAdmin ? [{ label: 'Admin', href: '/admin' }] : [])
+		...(isPartner ? [{ label: 'Partner', href: '/partner' }] : [])
+	]);
+
+	// work tools, most powerful first
+	const TOOLS = $derived([
+		...(isAdmin
+			? [{ key: 'admin', label: 'Admin', href: '/admin', tone: 'bg-warm text-white' }]
+			: []),
+		...(canAccessCms
+			? [{ key: 'desk', label: 'Desk', href: '/desk', tone: 'bg-gold text-ink' }]
+			: []),
+		...(isStaff
+			? [
+					{
+						key: 'staff',
+						label: 'Staff',
+						href: '/staff',
+						tone: 'bg-prem text-white',
+						badge: assignedEventsCount
+					}
+				]
+			: [])
 	]);
 </script>
 
@@ -172,6 +194,49 @@
 				</div>
 			</div>
 
+			<!-- work tools: a paper band; rows match the personal rows below -->
+			{#if TOOLS.length}
+				<div class="border-b border-line2 bg-paper">
+					<p
+						class="px-4 pt-2.5 pb-1.5 text-[9px] font-extrabold tracking-[0.22em] text-fade uppercase"
+					>
+						<span class="text-warm" aria-hidden="true">◆</span> Your tools
+					</p>
+					<ul role="none" class="m-0 list-none p-0">
+						{#each TOOLS as tool (tool.href)}
+							<li role="none" class="border-t border-line2">
+								<a
+									role="menuitem"
+									href={tool.href}
+									onclick={close}
+									class="group/mi flex items-center justify-between gap-3 px-4 py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+								>
+									<span class="flex items-center gap-2.5">
+										<!-- negative margin: the tile never makes the row taller -->
+										<span
+											class="-my-[3px] flex h-5 w-5 shrink-0 items-center justify-center {tool.tone}"
+											aria-hidden="true">{@render toolIcon(tool.key)}</span
+										>
+										{tool.label}
+										{#if tool.badge}
+											<span
+												class="inline-flex min-w-[18px] items-center justify-center bg-prem px-[5px] py-[1px] font-newsreader text-[11px] leading-none font-semibold text-white normal-case tabular-nums"
+												aria-label="{tool.badge} assigned {tool.badge === 1 ? 'event' : 'events'}"
+												>{tool.badge}</span
+											>
+										{/if}
+									</span>
+									<span
+										class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
+										aria-hidden="true">→</span
+									>
+								</a>
+							</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
+
 			<!-- rows -->
 			<ul role="none" class="m-0 list-none p-0">
 				{#each ITEMS as item (item.href)}
@@ -182,17 +247,7 @@
 							onclick={close}
 							class="group/mi flex items-center justify-between gap-3 px-4 py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] text-soft uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 						>
-							<span class="flex items-center gap-2.5">
-								{item.label}
-								{#if item.badge}
-									<span
-										class="inline-flex min-w-[18px] items-center justify-center bg-prem px-[5px] py-[1px] font-newsreader text-[11px] font-semibold text-white normal-case tabular-nums"
-										aria-label="{item.badge} assigned events"
-									>
-										{item.badge}
-									</span>
-								{/if}
-							</span>
+							<span>{item.label}</span>
 							<span
 								class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
 								aria-hidden="true">→</span
@@ -220,3 +275,32 @@
 		</div>
 	{/if}
 </div>
+
+{#snippet toolIcon(key)}
+	<svg
+		viewBox="0 0 20 20"
+		class="h-3 w-3"
+		fill="none"
+		stroke="currentColor"
+		stroke-width="2"
+		stroke-linejoin="round"
+		stroke-linecap="round"
+	>
+		{#if key === 'staff'}
+			<!-- lanyard badge -->
+			<path d="M8 3.5V2h4v1.5" /><rect x="4" y="3.5" width="12" height="14.5" /><circle
+				cx="10"
+				cy="9"
+				r="2.2"
+			/><path d="M6.8 15c.6-1.6 1.7-2.5 3.2-2.5s2.6.9 3.2 2.5" />
+		{:else if key === 'desk'}
+			<!-- pen -->
+			<path d="M13.6 2.9l3.5 3.5L7.5 16H4v-3.5z" /><path d="M11.4 5.1l3.5 3.5" />
+		{:else}
+			<!-- shield -->
+			<path d="M10 2l6.5 2.6v4.9c0 4-2.7 6.9-6.5 8.5-3.8-1.6-6.5-4.5-6.5-8.5V4.6z" /><path
+				d="M7.2 10.1l2 2 3.7-3.9"
+			/>
+		{/if}
+	</svg>
+{/snippet}

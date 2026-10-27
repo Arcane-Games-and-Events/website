@@ -10,12 +10,14 @@
 </script>
 
 {#if columns.length > 0 && rows.length > 0}
-	<figure class="my-8 overflow-x-auto rounded-md border border-line2 bg-paper">
+	<figure class="my-8 overflow-x-auto border border-line2 bg-paper">
 		<table class="w-full text-sm">
-			<thead class="border-b border-line2 bg-paper-bg text-left text-[11px] tracking-wider text-ink/60 uppercase font-mono-system">
+			<thead
+				class="border-b border-line2 bg-paper-bg text-left font-libre text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+			>
 				<tr>
 					{#each columns as col}
-						<th class="px-4 py-3 font-medium">{col}</th>
+						<th class="px-4 py-3">{col}</th>
 					{/each}
 				</tr>
 			</thead>
@@ -30,7 +32,7 @@
 			</tbody>
 		</table>
 		{#if caption}
-			<figcaption class="border-t border-line2 px-4 py-2 text-xs text-ink/60">
+			<figcaption class="border-t border-line2 px-4 py-2 font-libre text-[12px] text-fade">
 				{caption}
 			</figcaption>
 		{/if}

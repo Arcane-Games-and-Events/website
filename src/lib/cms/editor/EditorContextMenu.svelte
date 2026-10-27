@@ -94,7 +94,7 @@
 		role="menu"
 		aria-label="Editor context menu"
 		style="left: {x}px; top: {y}px;"
-		class="fixed z-[9999] w-[220px] rounded-md border border-line2 bg-paper shadow-[0_18px_36px_-20px_rgba(20,16,8,0.5)]"
+		class="fixed z-[9999] w-[220px] border border-line2 bg-paper shadow-[0_18px_36px_-20px_rgba(20,16,8,0.5)]"
 	>
 		<div class={groupClass}>
 			<div class={kickerClass}>Format</div>

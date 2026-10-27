@@ -1,35 +1,45 @@
 <!--
-  InsertInlineVideoDialog — paste a YouTube URL, fetch metadata via
-  /api/cms/youtube/preview, and insert an InlineVideoNode. Distinct from the
-  entry's featured video slot: this widget lives inline in the article body
-  and can appear multiple times per entry.
-
-  Scoped to YouTube for now. Mux inline is a natural follow-up but needs a
-  DB-tracked media row so the webhook can fill in playback ID after
-  transcoding — deferred until we decide whether to add cms_video_media.
+  Insert or edit an inline YouTube video. Editing keeps the current video
+  unless the link changes; the caption can be changed on its own.
 -->
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import DialogShell from './DialogShell.svelte';
+	import * as ui from './dialogStyles.js';
 
-	export let open = false;
+	/** @type {{ open?: boolean, initial?: any, onsubmit: (data: any) => void, onclose?: () => void }} */
+	let { open = $bindable(false), initial = null, onsubmit, onclose } = $props();
 
-	const dispatch = createEventDispatcher();
+	let url = $state('');
+	let caption = $state('');
+	let loading = $state(false);
+	let errorMsg = $state('');
 
-	let youtubeInput = '';
-	let loading = false;
-	let errorMsg = '';
+	let wasOpen = false;
+	$effect.pre(() => {
+		if (open && !wasOpen) {
+			url = initial?.youtubeUrl || '';
+			caption = initial?.youtubeTitle || '';
+			errorMsg = '';
+		}
+		wasOpen = open;
+	});
 
 	function close() {
 		open = false;
-		dispatch('close');
-		youtubeInput = '';
-		errorMsg = '';
+		onclose?.();
 	}
 
-	async function attach() {
+	async function submit() {
 		errorMsg = '';
-		if (!youtubeInput.trim()) {
-			errorMsg = 'Paste a YouTube URL.';
+		const link = url.trim();
+		if (!link) {
+			errorMsg = 'Paste a YouTube link.';
+			return;
+		}
+		// same video: only the caption can have changed
+		if (initial && link === initial.youtubeUrl) {
+			onsubmit({ ...initial, youtubeTitle: caption.trim() || initial.youtubeTitle });
+			close();
 			return;
 		}
 		loading = true;
@@ -37,91 +47,61 @@
 			const res = await fetch('/api/cms/youtube/preview', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ url: youtubeInput.trim() })
+				body: JSON.stringify({ url: link })
 			});
 			if (!res.ok) {
 				const body = await res.json().catch(() => ({}));
-				errorMsg = body?.message || `Failed (${res.status})`;
+				errorMsg = body?.message || `Couldn’t load that video (${res.status}).`;
 				return;
 			}
 			const preview = await res.json();
-			dispatch('insert', {
+			// a caption left as the old video's title follows the new video
+			const keptCaption = caption.trim() && caption.trim() !== initial?.youtubeTitle;
+			onsubmit({
 				provider: 'youtube',
 				youtubeUrl: preview.youtubeUrl,
 				youtubeVideoId: preview.youtubeVideoId,
-				youtubeTitle: preview.youtubeTitle,
+				youtubeTitle: keptCaption ? caption.trim() : preview.youtubeTitle,
 				youtubeThumbnailUrl: preview.youtubeThumbnailUrl,
 				youtubeDuration: preview.youtubeDuration
 			});
 			close();
 		} catch (e) {
-			errorMsg = e?.message || 'Network error';
+			errorMsg = e?.message || 'Network error.';
 		} finally {
 			loading = false;
 		}
 	}
 </script>
 
-{#if open}
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-4"
-		on:click={close}
-		on:keydown={(e) => e.key === 'Escape' && close()}
-		role="presentation"
-	>
-		<div
-			class="w-full max-w-lg rounded-md border border-line2 bg-paper p-6 shadow-2xl"
-			on:click|stopPropagation
-			on:keydown|stopPropagation
-			role="dialog"
-			aria-modal="true"
-			tabindex="-1"
-			aria-labelledby="cms-inline-video-title"
-		>
-			<h2
-				id="cms-inline-video-title"
-				class="mb-4 text-[11px] font-semibold tracking-wider text-ink/60 uppercase font-mono-system"
-			>
-				Insert inline video
-			</h2>
-
-			<label class="block">
-				<span
-					class="mb-1 block text-[11px] font-medium text-ink/60 uppercase tracking-wider font-mono-system"
-				>
-					YouTube URL
-				</span>
-				<input
-					type="url"
-					bind:value={youtubeInput}
-					placeholder="https://www.youtube.com/watch?v=…"
-					class="w-full rounded-md border border-line2 bg-paper-bg px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none"
-				/>
-			</label>
-
-			<p class="mt-3 text-[11px] text-ink/50">
-				Renders as an embedded YouTube player at this position in the article.
-			</p>
-
-			{#if errorMsg}
-				<p class="mt-2 text-xs text-red-700">{errorMsg}</p>
-			{/if}
-
-			<div class="mt-5 flex justify-end gap-2">
-				<button
-					on:click={close}
-					class="rounded-md border border-line2 bg-paper px-4 py-2 text-sm font-medium text-ink hover:bg-ink/5"
-				>
-					Cancel
-				</button>
-				<button
-					on:click={attach}
-					disabled={loading || !youtubeInput.trim()}
-					class="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-paper-bg hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-60"
-				>
-					{loading ? 'Fetching…' : 'Insert'}
-				</button>
-			</div>
-		</div>
+<DialogShell {open} kicker={initial ? 'Edit' : 'Insert'} title="YouTube video" onclose={close}>
+	<div class="grid gap-4">
+		<label class="block">
+			<span class={ui.label}>YouTube link</span>
+			<input
+				type="url"
+				bind:value={url}
+				placeholder="https://www.youtube.com/watch?v=…"
+				class={ui.input}
+			/>
+		</label>
+		<label class="block">
+			<span class={ui.label}>Caption<span class={ui.optional}>Optional</span></span>
+			<input
+				type="text"
+				bind:value={caption}
+				placeholder="Uses the video’s YouTube title"
+				class={ui.input}
+			/>
+			<span class={ui.hint}>Shown under the player.</span>
+		</label>
 	</div>
-{/if}
+	{#if errorMsg}<p class={ui.error}>{errorMsg}</p>{/if}
+
+	{#snippet footer()}
+		<button type="button" onclick={close} class={ui.secondary}>Cancel</button>
+		<button type="button" onclick={submit} disabled={loading || !url.trim()} class={ui.primary}
+			>{loading ? 'Loading…' : initial ? 'Save changes' : 'Insert video'}</button
+		>
+	{/snippet}
+</DialogShell>

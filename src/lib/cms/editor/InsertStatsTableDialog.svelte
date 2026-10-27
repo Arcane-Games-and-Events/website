@@ -1,30 +1,44 @@
 <!--
-  InsertStatsTableDialog — modal for composing a stats table to insert as a
-  StatsTableNode. Columns are comma-separated on one line; each row is a new
-  line of comma-separated cells.
+  Insert or edit a stats table. With `initial` (an existing table's data)
+  the fields start filled in and the button saves instead of inserting.
 -->
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import DialogShell from './DialogShell.svelte';
+	import * as ui from './dialogStyles.js';
 
-	export let open = false;
+	/**
+	 * @type {{
+	 *   open?: boolean,
+	 *   initial?: { caption?: string | null, columns?: string[], rows?: string[][] } | null,
+	 *   onsubmit: (data: { caption: string | null, columns: string[], rows: string[][] }) => void,
+	 *   onclose?: () => void
+	 * }}
+	 */
+	let { open = $bindable(false), initial = null, onsubmit, onclose } = $props();
 
-	const dispatch = createEventDispatcher();
+	let caption = $state('');
+	let columnsText = $state('');
+	let rowsText = $state('');
+	let errorMsg = $state('');
 
-	let caption = '';
-	let columnsText = 'Hero, Win %, Top 8s';
-	let rowsText = 'Briar, 54%, 12\nIyslander, 49%, 8';
-	let errorMsg = '';
+	// fill the form each time the dialog opens
+	let wasOpen = false;
+	$effect.pre(() => {
+		if (open && !wasOpen) {
+			caption = initial?.caption || '';
+			columnsText = (initial?.columns || []).join(', ');
+			rowsText = (initial?.rows || []).map((r) => r.join(', ')).join('\n');
+			errorMsg = '';
+		}
+		wasOpen = open;
+	});
 
 	function close() {
 		open = false;
-		dispatch('close');
-		caption = '';
-		columnsText = 'Hero, Win %, Top 8s';
-		rowsText = 'Briar, 54%, 12\nIyslander, 49%, 8';
-		errorMsg = '';
+		onclose?.();
 	}
 
-	function insert() {
+	function submit() {
 		errorMsg = '';
 		const columns = columnsText
 			.split(',')
@@ -38,93 +52,49 @@
 			.split(/\n/)
 			.map((line) => line.split(',').map((s) => s.trim()))
 			.filter((r) => r.some((cell) => cell !== ''));
-
-		dispatch('insert', { caption: caption || null, columns, rows });
+		onsubmit({ caption: caption.trim() || null, columns, rows });
 		close();
 	}
 </script>
 
-{#if open}
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-4"
-		on:click={close}
-		on:keydown={(e) => e.key === 'Escape' && close()}
-		role="presentation"
-	>
-		<div
-			class="w-full max-w-2xl rounded-md border border-line2 bg-paper p-6 shadow-2xl"
-			on:click|stopPropagation
-			on:keydown|stopPropagation
-			role="dialog"
-			aria-modal="true"
-			tabindex="-1"
-			aria-labelledby="cms-stats-title"
-		>
-			<h2
-				id="cms-stats-title"
-				class="mb-4 text-[11px] font-semibold tracking-wider text-ink/60 uppercase font-mono-system"
-			>
-				Insert stats table
-			</h2>
-
-			<label class="mb-3 block">
-				<span
-					class="mb-1 block text-[11px] font-medium text-ink/60 uppercase tracking-wider font-mono-system"
-				>
-					Caption <span class="normal-case text-ink/40">(optional)</span>
-				</span>
-				<input
-					type="text"
-					bind:value={caption}
-					placeholder="e.g. Top 8 hero share — Spring season"
-					class="w-full rounded-md border border-line2 bg-paper-bg px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none"
-				/>
-			</label>
-
-			<label class="mb-3 block">
-				<span
-					class="mb-1 block text-[11px] font-medium text-ink/60 uppercase tracking-wider font-mono-system"
-				>
-					Columns <span class="normal-case text-ink/40">(comma-separated)</span>
-				</span>
-				<input
-					type="text"
-					bind:value={columnsText}
-					class="w-full rounded-md border border-line2 bg-paper-bg px-3 py-2 font-mono-system text-sm text-ink focus:border-accent focus:outline-none"
-				/>
-			</label>
-
-			<label class="block">
-				<span
-					class="mb-1 block text-[11px] font-medium text-ink/60 uppercase tracking-wider font-mono-system"
-				>
-					Rows <span class="normal-case text-ink/40">(one per line, cells comma-separated)</span>
-				</span>
-				<textarea
-					bind:value={rowsText}
-					rows="8"
-					class="w-full rounded-md border border-line2 bg-paper-bg px-3 py-2 font-mono-system text-xs text-ink focus:border-accent focus:outline-none"
-				></textarea>
-			</label>
-
-			{#if errorMsg}
-				<p class="mt-2 text-xs text-red-700">{errorMsg}</p>
-			{/if}
-
-			<div class="mt-5 flex justify-end gap-2">
-				<button
-					on:click={close}
-					class="rounded-md border border-line2 bg-paper px-4 py-2 text-sm font-medium text-ink hover:bg-ink/5"
-				>
-					Cancel
-				</button>
-				<button
-					on:click={insert}
-					class="rounded-md bg-ink px-4 py-2 text-sm font-semibold text-paper-bg hover:bg-ink/90"
-				>
-					Insert
-				</button>
-			</div>
-		</div>
+<DialogShell {open} kicker={initial ? 'Edit' : 'Insert'} title="Stats table" wide onclose={close}>
+	<div class="grid gap-4">
+		<label class="block">
+			<span class={ui.label}>Caption<span class={ui.optional}>Optional</span></span>
+			<input
+				type="text"
+				bind:value={caption}
+				placeholder="Top 8 hero share, spring season"
+				class={ui.input}
+			/>
+		</label>
+		<label class="block">
+			<span class={ui.label}>Columns</span>
+			<input
+				type="text"
+				bind:value={columnsText}
+				placeholder="Hero, Win %, Top 8s"
+				class={ui.input}
+			/>
+			<span class={ui.hint}>Separate the headers with commas.</span>
+		</label>
+		<label class="block">
+			<span class={ui.label}>Rows</span>
+			<textarea
+				bind:value={rowsText}
+				rows="8"
+				placeholder="Briar, 54%, 12&#10;Iyslander, 49%, 8"
+				class={ui.textarea}
+			></textarea>
+			<span class={ui.hint}>One row per line, cells separated by commas.</span>
+		</label>
 	</div>
-{/if}
+	{#if errorMsg}<p class={ui.error}>{errorMsg}</p>{/if}
+
+	{#snippet footer()}
+		<button type="button" onclick={close} class={ui.secondary}>Cancel</button>
+		<button type="button" onclick={submit} class={ui.primary}
+			>{initial ? 'Save changes' : 'Insert table'}</button
+		>
+	{/snippet}
+</DialogShell>

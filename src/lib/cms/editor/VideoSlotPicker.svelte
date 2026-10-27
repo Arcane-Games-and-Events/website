@@ -78,6 +78,15 @@
 		}
 	}
 
+	const chip =
+		'shrink-0 border border-current px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.14em] uppercase';
+	const STATUS_WORD = {
+		ready: 'Ready',
+		preparing: 'Processing…',
+		waiting: 'Waiting for upload',
+		errored: 'Upload failed'
+	};
+
 	function formatDuration(sec) {
 		if (!sec || !Number.isFinite(sec)) return '';
 		const s = Math.floor(sec);
@@ -226,91 +235,70 @@
 	}
 </script>
 
-<div>
-	<!-- Current state summary — visible above the tabs so the writer always
-	     knows what's currently attached before touching anything. -->
+<div class="font-libre">
+	<!-- what's attached right now -->
 	{#if entry?.videoProvider === 'mux'}
-		<div class="mb-3 rounded-md border border-line2 bg-paper-bg/60 p-3 text-xs">
-			<div class="mb-1 flex items-center justify-between">
-				<span class="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent font-mono-system">
-					Mux
-				</span>
-				<span class="text-ink/60 font-mono-system">
-					{#if entry.videoStatus === 'ready'}
-						Ready
-					{:else if entry.videoStatus === 'preparing'}
-						Preparing…
-					{:else if entry.videoStatus === 'waiting'}
-						Waiting for upload
-					{:else if entry.videoStatus === 'errored'}
-						Errored
-					{:else}
-						{entry.videoStatus || '—'}
-					{/if}
-				</span>
-			</div>
-			{#if entry.videoDuration}
-				<div class="text-ink/70 font-mono-system">{formatDuration(entry.videoDuration)}</div>
-			{/if}
+		<div class="flex items-center gap-2.5 border border-line2 bg-paper px-3 py-2.5">
+			<span class="{chip} text-warm">File</span>
+			<span class="min-w-0 flex-1 truncate text-[13px]"
+				>{STATUS_WORD[entry.videoStatus] ||
+					entry.videoStatus ||
+					'Pending'}{#if entry.videoDuration}<span class="text-fade"
+						>&nbsp;·&nbsp;{formatDuration(entry.videoDuration)}</span
+					>{/if}</span
+			>
 			{#if entry.videoStatus !== 'ready' && entry.videoStatus !== 'errored'}
-				<!-- Manual sync from Mux — for environments where the webhook can't
-				     reach this server (local dev, preview branches). In prod the
-				     webhook flips the status automatically. -->
+				<!-- Manual sync from Mux, for environments the webhook can't reach
+				     (local dev, preview branches). In prod the webhook does this. -->
 				<button
 					type="button"
 					on:click={refreshFromMux}
 					disabled={refreshing}
-					class="mt-2 text-[11px] font-mono-system text-accent hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+					class="shrink-0 text-[9.5px] font-extrabold tracking-[0.12em] text-warm uppercase hover:text-ink disabled:opacity-60"
+					>{refreshing ? 'Checking…' : 'Check status'}</button
 				>
-					{refreshing ? 'Checking Mux…' : 'Refresh status from Mux'}
-				</button>
 			{/if}
 		</div>
 	{:else if entry?.videoProvider === 'youtube' && entry?.youtubeVideoId}
-		<div class="mb-3 overflow-hidden rounded-md border border-line2 bg-paper-bg/60">
+		<div class="flex gap-3 border border-line2 bg-paper p-2">
 			{#if entry.youtubeThumbnailUrl}
 				<img
 					src={entry.youtubeThumbnailUrl}
-					alt={entry.youtubeTitle || 'YouTube thumbnail'}
-					class="block h-auto w-full max-h-32 object-cover"
+					alt=""
+					class="aspect-video w-24 shrink-0 object-cover"
 					loading="lazy"
 				/>
 			{/if}
-			<div class="p-3 text-xs">
-				<div class="mb-1 flex items-center justify-between">
-					<span class="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-red-700 font-mono-system">
-						YouTube
-					</span>
-					{#if entry.youtubeDuration}
-						<span class="text-ink/60 font-mono-system">{formatDuration(entry.youtubeDuration)}</span>
-					{/if}
-				</div>
+			<div class="min-w-0 py-0.5">
+				<p class="flex items-center gap-2">
+					<span class="{chip} text-hero-rb">YouTube</span>
+					{#if entry.youtubeDuration}<span class="text-[12px] text-fade"
+							>{formatDuration(entry.youtubeDuration)}</span
+						>{/if}
+				</p>
 				{#if entry.youtubeTitle}
-					<div class="line-clamp-2 text-ink">{entry.youtubeTitle}</div>
+					<p class="mt-1 line-clamp-2 text-[12.5px] leading-snug">{entry.youtubeTitle}</p>
 				{/if}
 			</div>
 		</div>
+	{:else}
+		<p class="text-[13px] text-fade">No video attached.</p>
 	{/if}
 
-	<div class="mb-3 flex gap-1 rounded-md border border-line2 bg-paper-bg p-1">
-		<button
-			type="button"
-			class="flex-1 rounded px-3 py-1 text-xs font-medium transition-colors {activeTab === 'mux'
-				? 'bg-paper text-ink shadow-sm'
-				: 'text-ink/60 hover:text-ink'} font-mono-system"
-			on:click={() => (activeTab = 'mux')}
-		>
-			Upload to Mux
-		</button>
-		<button
-			type="button"
-			class="flex-1 rounded px-3 py-1 text-xs font-medium transition-colors {activeTab === 'youtube'
-				? 'bg-paper text-ink shadow-sm'
-				: 'text-ink/60 hover:text-ink'} font-mono-system"
-			on:click={() => (activeTab = 'youtube')}
-		>
-			Link YouTube
-		</button>
+	<!-- source -->
+	<div class="mt-3 grid grid-cols-2 gap-px border border-line2 bg-line2" role="tablist">
+		{#each [['mux', 'Upload a file'], ['youtube', 'YouTube link']] as [v, l] (v)}
+			<button
+				type="button"
+				role="tab"
+				aria-selected={activeTab === v}
+				on:click={() => (activeTab = v)}
+				class="min-h-[36px] px-2 text-[9.5px] font-extrabold tracking-[0.12em] uppercase transition-colors {activeTab ===
+				v
+					? 'bg-ink text-paper-bg'
+					: 'bg-white text-soft hover:text-ink'}">{l}</button
+			>
+		{/each}
 	</div>
 
 	{#if activeTab === 'mux'}
@@ -325,41 +313,44 @@
 			type="button"
 			on:click={pickMuxFile}
 			disabled={muxUploading}
-			class="w-full rounded-md border border-line2 bg-paper px-3 py-2 text-xs font-medium text-ink hover:bg-ink/5 disabled:cursor-not-allowed disabled:opacity-60"
+			class="mt-2 min-h-[40px] w-full border-[1.5px] border-ink px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:cursor-wait disabled:opacity-60"
 		>
-			{muxUploading ? `Uploading… ${muxProgress}%` : entry?.videoProvider === 'mux' ? 'Replace video' : 'Choose video file'}
+			{muxUploading
+				? `Uploading… ${muxProgress}%`
+				: entry?.videoProvider === 'mux'
+					? 'Replace video'
+					: 'Choose video file'}
 		</button>
 		{#if muxUploading}
-			<div class="mt-2 h-1 overflow-hidden rounded-full bg-line2">
-				<div class="h-full bg-accent transition-[width]" style="width: {muxProgress}%"></div>
+			<div class="mt-2 h-1 bg-line2">
+				<div class="h-full bg-warm transition-[width]" style="width: {muxProgress}%"></div>
 			</div>
 		{/if}
 		{#if muxError}
-			<p class="mt-2 text-xs text-red-700">{muxError}</p>
+			<p class="mt-1.5 text-[11.5px] text-hero-rb">{muxError}</p>
 		{/if}
-		<p class="mt-2 text-[11px] text-ink/50">
-			After upload, Mux processes the video in the background. Refresh in ~30 seconds to see
-			the ready state.
+		<p class="mt-1.5 text-[11.5px] leading-snug text-fade">
+			Mux processes the video after it uploads. It’s usually ready in about 30 seconds.
 		</p>
 	{:else}
-		<label class="block">
+		<div class="mt-2 flex h-[40px] border border-line2 bg-paper focus-within:border-ink">
 			<input
 				type="url"
 				bind:value={youtubeInput}
-				placeholder="https://www.youtube.com/watch?v=…"
-				class="w-full rounded-md border border-line2 bg-paper-bg px-3 py-2 text-xs text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none"
+				placeholder="Paste a YouTube URL"
+				aria-label="YouTube URL"
+				class="h-full min-w-0 flex-1 border-0 bg-transparent px-2.5 text-[13px] placeholder:text-fade focus:ring-0 focus:outline-none"
 			/>
-		</label>
-		<button
-			type="button"
-			on:click={attachYouTube}
-			disabled={ytLoading || !youtubeInput.trim()}
-			class="mt-2 w-full rounded-md bg-ink px-3 py-2 text-xs font-semibold text-paper-bg hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-60"
-		>
-			{ytLoading ? 'Fetching…' : 'Attach YouTube video'}
-		</button>
+			<button
+				type="button"
+				on:click={attachYouTube}
+				disabled={ytLoading || !youtubeInput.trim()}
+				class="shrink-0 bg-ink px-3.5 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-ink"
+				>{ytLoading ? 'Fetching…' : 'Attach'}</button
+			>
+		</div>
 		{#if ytError}
-			<p class="mt-2 text-xs text-red-700">{ytError}</p>
+			<p class="mt-1.5 text-[11.5px] text-hero-rb">{ytError}</p>
 		{/if}
 	{/if}
 
@@ -367,9 +358,8 @@
 		<button
 			type="button"
 			on:click={clearVideo}
-			class="mt-3 w-full text-[11px] text-ink/50 hover:text-red-700 font-mono-system"
+			class="mt-3 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:text-hero-rb"
+			>Remove video</button
 		>
-			Remove video
-		</button>
 	{/if}
 </div>

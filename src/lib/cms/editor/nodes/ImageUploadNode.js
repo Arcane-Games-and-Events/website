@@ -29,57 +29,22 @@ export class ImageUploadNode extends DecoratorNode {
 		this.__data = data || {};
 	}
 
+	// The card itself (summary, preview, edit and remove) is a Svelte
+	// component that Editor.svelte mounts into this element for every
+	// decorator it hears about. Lexical leaves a decorator's DOM alone.
 	createDOM() {
-		const wrap = document.createElement('figure');
-		wrap.className = 'cms-image-block cms-widget-block group relative my-4';
-		this._renderInto(wrap);
-		this._attachDeleteButton(wrap);
-		return wrap;
+		const el = document.createElement('div');
+		el.className = 'cms-widget-block my-6';
+		return el;
 	}
 
-	updateDOM(_, dom) {
-		dom.innerHTML = '';
-		this._renderInto(dom);
-		this._attachDeleteButton(dom);
+	updateDOM() {
 		return false;
 	}
 
-	_attachDeleteButton(el) {
-		const btn = document.createElement('button');
-		btn.type = 'button';
-		btn.textContent = '×';
-		btn.title = 'Remove image';
-		btn.className =
-			'cms-widget-delete-btn absolute top-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-md border border-line2 bg-paper text-ink/60 transition-colors hover:border-red-400 hover:bg-red-50 hover:text-red-600';
-		btn.addEventListener('mousedown', (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-			el.dispatchEvent(
-				new CustomEvent('cms-widget-delete', {
-					bubbles: true,
-					detail: { nodeKey: this.getKey() }
-				})
-			);
-		});
-		el.appendChild(btn);
-	}
-
-	_renderInto(el) {
-		const { url, alt = '' } = this.__data || {};
-		if (!url) {
-			el.textContent = '[image: missing URL]';
-			el.style.padding = '12px';
-			el.style.color = 'var(--color-ink, #333)';
-			el.style.border = '1px dashed var(--color-line2, #ccc)';
-			return;
-		}
-		const img = document.createElement('img');
-		img.src = url;
-		img.alt = alt || '';
-		img.loading = 'lazy';
-		img.decoding = 'async';
-		img.className = 'rounded-md max-w-full h-auto';
-		el.appendChild(img);
+	/** Replace the widget's data in place (used by Edit). Call inside editor.update(). */
+	setData(data) {
+		this.getWritable().__data = data;
 	}
 
 	isInline() {
@@ -90,7 +55,7 @@ export class ImageUploadNode extends DecoratorNode {
 	}
 
 	decorate() {
-		return null;
+		return { type: this.getType(), data: this.__data, json: this.exportJSON() };
 	}
 
 	exportJSON() {

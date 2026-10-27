@@ -13,12 +13,12 @@
 -->
 <script>
 	import DeskTabs from '$lib/components/age/desk/DeskTabs.svelte';
-	import { onDestroy } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
+	import { fly } from 'svelte/transition';
 	import Editor from '$lib/cms/editor/Editor.svelte';
 	import CoverImagePicker from '$lib/cms/editor/CoverImagePicker.svelte';
 	import VideoSlotPicker from '$lib/cms/editor/VideoSlotPicker.svelte';
 	import { coerceLexicalDoc } from '$lib/cms/editor/utils.js';
-	import { lexicalToText } from '$lib/cms/render/lexical-utils.js';
 	import { diffWords, diffArrays } from 'diff';
 
 	export let data;
@@ -167,7 +167,6 @@
 		new Date(entry.scheduledFor).getTime() <= Date.now()
 			? 'published'
 			: status;
-	$: scheduleHasPassed = displayStatus === 'published' && status === 'scheduled';
 
 	$: hasPendingChanges = !!entry?.draftUpdatedAt;
 
@@ -175,6 +174,9 @@
 	// When there are no pending changes, the toggle is hidden and the
 	// editor is the only mode.
 	let reviewMode = false;
+	// Publishing, approving or discarding clears the pending edits, and the
+	// toggle goes with them, so leave review mode too or it can't be exited.
+	$: if (!hasPendingChanges) reviewMode = false;
 
 	// Title + excerpt diff (single-string values, so just a diffWords call).
 	$: titleDiffParts =
@@ -274,8 +276,7 @@
 
 	function widgetLabel(node) {
 		if (!node) return 'Widget';
-		if (node.type === 'decklist')
-			return `Decklist${node.deckName ? ` — ${node.deckName}` : ''}`;
+		if (node.type === 'decklist') return `Decklist${node.deckName ? ` — ${node.deckName}` : ''}`;
 		if (node.type === 'stats_table')
 			return `Stats table${node.caption ? ` — ${node.caption}` : ''}`;
 		if (node.type === 'inline_video')
@@ -540,6 +541,96 @@
 		if (saveTimer) clearTimeout(saveTimer);
 	});
 
+	// ---------- layout: side column on wide screens, a sheet on phones ----------
+	let isWide = true;
+	let mounted = false;
+	let sheetOpen = false;
+	onMount(() => {
+		const mq = window.matchMedia('(min-width: 1024px)');
+		const sync = () => {
+			isWide = mq.matches;
+			if (isWide) sheetOpen = false;
+		};
+		sync();
+		mounted = true;
+		// the Desk's "Review" buttons link here with ?review
+		if (hasPendingChanges && new URL(location.href).searchParams.has('review')) reviewMode = true;
+		mq.addEventListener('change', sync);
+		return () => mq.removeEventListener('change', sync);
+	});
+	$: if (typeof document !== 'undefined') document.body.style.overflow = sheetOpen ? 'hidden' : '';
+	onDestroy(() => {
+		if (typeof document !== 'undefined') document.body.style.overflow = '';
+	});
+
+	/** Grow a textarea with its content (title + summary never scroll). */
+	function autogrow(node) {
+		const fit = () => {
+			node.style.height = 'auto';
+			node.style.height = `${node.scrollHeight}px`;
+		};
+		fit();
+		node.addEventListener('input', fit);
+		window.addEventListener('resize', fit);
+		document.fonts?.ready.then(fit);
+		return {
+			update: fit,
+			destroy() {
+				node.removeEventListener('input', fit);
+				window.removeEventListener('resize', fit);
+			}
+		};
+	}
+
+	// writing fields: a white sheet with a hairline that darkens on focus
+	const fieldLabel =
+		'mb-1.5 block text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase';
+	const fieldBox = 'block border border-line2 bg-white transition-colors focus-within:border-ink';
+
+	// settings panels: white sheets with an ink top rule, rows split by hairlines
+	const panel = 'border border-line2 border-t-[3px] border-t-ink bg-white';
+	const rowLabel = 'block text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase';
+	const control =
+		'h-[40px] w-full border border-line2 bg-paper px-2.5 text-[14px] focus:border-ink focus:ring-0';
+	const textAction =
+		'text-[9.5px] font-extrabold tracking-[0.14em] uppercase transition-colors disabled:opacity-45';
+
+	$: statusLine =
+		displayStatus === 'published'
+			? 'Live on the site.'
+			: displayStatus === 'scheduled' && entry?.scheduledFor
+				? `Goes live ${fmtWhen(entry.scheduledFor)}.`
+				: displayStatus === 'archived'
+					? 'Archived. Not on the site.'
+					: 'Not on the site yet.';
+	const VIDEO_STATUS = {
+		ready: 'Ready',
+		preparing: 'Processing',
+		waiting: 'Uploading',
+		errored: 'Error'
+	};
+	$: videoMeta =
+		entry?.videoProvider === 'mux'
+			? `File · ${VIDEO_STATUS[entry.videoStatus] || 'Pending'}`
+			: entry?.videoProvider === 'youtube'
+				? 'YouTube'
+				: 'None';
+
+	const STATUS_TONE = {
+		draft: 'border-ink/60 text-ink',
+		scheduled: 'border-gold bg-gold/10 text-[#8a6116]',
+		published: 'border-prem bg-prem text-white',
+		archived: 'border-line2 text-fade'
+	};
+	const fmtWhen = (d) =>
+		new Date(d).toLocaleString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric',
+			hour: 'numeric',
+			minute: '2-digit'
+		});
+
 	let editorChangeCount = 0;
 	function handleEditorChange(e) {
 		body = e.detail;
@@ -554,493 +645,586 @@
 	<title>{title || 'Untitled'} · Desk</title>
 </svelte:head>
 
-<DeskTabs label />
+{#snippet saveBadge(compact)}
+	{#if saveState === 'saving'}
+		<span class="flex items-center gap-1.5 text-fade" role="status"
+			><span class="h-2 w-2 animate-pulse bg-gold" aria-hidden="true"></span>{compact
+				? ''
+				: 'Saving…'}</span
+		>
+	{:else if saveState === 'error'}
+		<span
+			class="flex items-center gap-1.5 font-semibold text-hero-rb"
+			role="alert"
+			title={lastError}
+			><span class="h-2 w-2 bg-hero-rb" aria-hidden="true"></span>{compact
+				? ''
+				: `Couldn’t save`}</span
+		>
+	{:else if dirty}
+		<span class="flex items-center gap-1.5 text-fade" role="status"
+			><span class="h-2 w-2 border border-fade" aria-hidden="true"></span>{compact
+				? ''
+				: 'Unsaved'}</span
+		>
+	{:else if saveState === 'saved'}
+		<span class="flex items-center gap-1.5 text-prem" role="status"
+			><span class="h-2 w-2 bg-prem" aria-hidden="true"></span>{compact ? '' : 'Saved'}</span
+		>
+	{/if}
+{/snippet}
 
-{#if !entry}
-	<div class="mx-auto max-w-2xl px-4 py-16 text-center">
-		<h1 class="mb-2 text-xl font-semibold text-ink">Couldn't load this entry</h1>
-		<a href="/desk/entries" class="mt-4 inline-block text-sm font-medium text-accent hover:underline">
-			← Back to entries
-		</a>
+{#snippet toolbarEnd()}
+	<span class="px-1 text-[11px] lg:hidden">{@render saveBadge(true)}</span>
+	<button
+		type="button"
+		on:click={() => (sheetOpen = true)}
+		class="inline-flex h-9 min-w-9 items-center justify-center gap-1.5 bg-ink font-libre text-[10px] font-extrabold tracking-[0.12em] text-paper-bg uppercase sm:px-3 lg:hidden"
+		aria-haspopup="dialog"
+		aria-label="Settings"
+		title="Settings"
+	>
+		<svg
+			viewBox="0 0 20 20"
+			class="h-3.5 w-3.5"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="1.8"
+			aria-hidden="true"
+			><path d="M3 5.5h8M15 5.5h2M3 14.5h2M9 14.5h8" /><circle cx="13" cy="5.5" r="2" /><circle
+				cx="7"
+				cy="14.5"
+				r="2"
+			/></svg
+		>
+		<span class="hidden sm:inline">Settings</span>
+	</button>
+{/snippet}
+
+{#snippet head(label, tone = 'text-warm', meta = '', metaClass = '')}
+	<div class="flex min-h-[44px] items-center justify-between gap-3 border-b border-line px-4">
+		<h3 class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
+			<span class="text-[8px] {tone}" aria-hidden="true">◆</span>{label}
+		</h3>
+		{#if meta}
+			<span class="min-w-0 truncate {metaClass || 'text-[12px] text-fade'}">{meta}</span>
+		{/if}
 	</div>
-{:else}
-	<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-		<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-			<a href="/desk/entries" class="text-sm text-ink/60 hover:text-ink">← Back to entries</a>
-			<div class="flex items-center gap-3 text-xs font-mono-system">
-				{#if saveState === 'saving'}
-					<span class="text-ink/60">Saving…</span>
-				{:else if saveState === 'saved' && !dirty}
-					<span class="text-emerald-700">Saved</span>
-				{:else if saveState === 'error'}
-					<span class="text-red-700">Save failed: {lastError}</span>
-				{:else if dirty}
-					<span class="text-warm">Unsaved changes</span>
-				{/if}
-				<a
-					href="/desk/entries/{entry.id}/preview"
-					target="_blank"
-					rel="noopener"
-					class="rounded-md border border-line2 bg-paper px-3 py-1 text-ink/80 transition-colors hover:bg-ink/5 hover:text-ink"
-				>
-					Preview ↗
-				</a>
-			</div>
-		</div>
+{/snippet}
 
-		<div class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-			<!-- Main column: title + editor -->
-			<div class="space-y-4">
-				{#if reviewMode && titleDiffParts.length > 0}
-					<!-- In review mode, the title also renders as a diff so the
-					     admin can see title changes inline instead of as an input.
-					     Falls back to the editable input when the title didn't
-					     change (nothing to diff). -->
-					<div class="w-full rounded-md border border-line2 bg-paper px-4 py-3 font-newsreader text-xl font-semibold text-ink sm:text-2xl">
-						{#if titleDiffParts.length > 0}
-							{#each titleDiffParts as part}
-								{#if part.added}
-									<span class="rounded bg-emerald-100 text-emerald-900 px-1">{part.value}</span>
-								{:else if part.removed}
-									<span class="rounded bg-red-100 text-red-900 line-through px-1">{part.value}</span>
-								{:else}
-									<span>{part.value}</span>
-								{/if}
-							{/each}
-						{:else}
-							{title}
-						{/if}
-					</div>
-				{:else}
-					<input
-						type="text"
-						bind:value={title}
-						placeholder="Entry title"
-						class="w-full rounded-md border border-line2 bg-paper px-4 py-3 font-newsreader text-xl font-semibold text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none sm:text-2xl"
-					/>
-				{/if}
-
-				{#if hasPendingChanges}
-					<!-- Review toggle — admin flips between editing the draft and
-					     seeing the inline diff against live. Non-admin writers can
-					     also review their own diff before an admin looks at it. -->
-					<div class="flex flex-wrap items-center gap-2 rounded-md border border-warm/40 bg-warm/5 p-2 text-[11px] font-mono-system">
-						<span class="rounded-full bg-warm/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-warm">
-							Draft
-						</span>
-						{#if entry.draftUpdatedAt}
-							<span class="text-ink/50">
-								edited {new Date(entry.draftUpdatedAt).toLocaleString()}
-							</span>
-						{/if}
-						<span class="ml-auto flex items-center gap-1 rounded-md border border-line2 bg-paper p-0.5">
-							<button
-								type="button"
-								on:click={() => (reviewMode = false)}
-								class="rounded px-2 py-0.5 transition-colors {!reviewMode
-									? 'bg-ink text-paper-bg'
-									: 'text-ink/60 hover:text-ink'}"
-							>
-								Edit
-							</button>
-							<button
-								type="button"
-								on:click={() => (reviewMode = true)}
-								class="rounded px-2 py-0.5 transition-colors {reviewMode
-									? 'bg-ink text-paper-bg'
-									: 'text-ink/60 hover:text-ink'}"
-							>
-								Diff vs live
-							</button>
-						</span>
-					</div>
-				{/if}
-
-				{#if reviewMode}
-					<!-- Rich diff view — renders each top-level Lexical block with
-					     its ORIGINAL formatting (heading tag, quote, list, widget
-					     summary) and highlights word-level changes inside blocks
-					     that changed. Additions in green, removals in red-strike.
-					     Toggle back to Edit to modify the actual body. -->
-					<div class="cms-diff-view rounded-md border border-line2 bg-paper">
-						<div class="border-b border-line2 bg-paper-bg/40 px-4 py-2 text-[11px] font-mono-system text-ink/60">
-							Diff — <span class="text-emerald-700">green added</span>
-							<span class="mx-1">·</span>
-							<span class="text-red-700 line-through">red removed</span>
-						</div>
-						<div class="px-6 py-5 font-newsreader text-ink">
-							{#if !richDiffItems || richDiffItems.length === 0}
-								<p class="text-ink/50 italic">No body changes — only metadata was edited.</p>
-							{:else}
-								{#each richDiffItems as item}
-									{#if item.kind === 'unchanged'}
-										<svelte:element this={nodeTag(item.node)} class="diff-block">
-											{extractNodeText(item.node)}
-										</svelte:element>
-									{:else if item.kind === 'unchanged-widget'}
-										<div class="diff-widget diff-widget-unchanged">
-											<span class="diff-widget-label">{widgetLabel(item.node)}</span>
-											<span class="diff-widget-status">unchanged</span>
-										</div>
-									{:else if item.kind === 'added'}
-										{#if isWidget(item.node)}
-											<div class="diff-widget diff-widget-added">
-												<span class="diff-widget-label">{widgetLabel(item.node)}</span>
-												<span class="diff-widget-status">added</span>
-											</div>
-										{:else}
-											<svelte:element this={nodeTag(item.node)} class="diff-block diff-added">
-												{extractNodeText(item.node)}
-											</svelte:element>
-										{/if}
-									{:else if item.kind === 'removed'}
-										{#if isWidget(item.node)}
-											<div class="diff-widget diff-widget-removed">
-												<span class="diff-widget-label">{widgetLabel(item.node)}</span>
-												<span class="diff-widget-status">removed</span>
-											</div>
-										{:else}
-											<svelte:element this={nodeTag(item.node)} class="diff-block diff-removed">
-												{extractNodeText(item.node)}
-											</svelte:element>
-										{/if}
-									{:else if item.kind === 'widget-change'}
-										<div class="diff-widget diff-widget-changed">
-											<span class="diff-widget-label">{widgetLabel(item.node)}</span>
-											<span class="diff-widget-status">edited</span>
-										</div>
-									{:else if item.kind === 'diff'}
-										<svelte:element this={item.tag} class="diff-block">
-											{#each item.parts as part}
-												{#if part.added}
-													<span class="diff-word-added">{part.value}</span>
-												{:else if part.removed}
-													<span class="diff-word-removed">{part.value}</span>
-												{:else}
-													<span>{part.value}</span>
-												{/if}
-											{/each}
-										</svelte:element>
-									{/if}
-								{/each}
-							{/if}
-						</div>
-
-						{#if excerptDiffParts.length > 0}
-							<div class="border-t border-line2 bg-paper-bg/40 px-4 py-3 text-[13px] font-newsreader italic text-ink/80">
-								<div class="mb-1 text-[10px] not-italic font-mono-system font-bold uppercase tracking-wider text-ink/60">
-									Excerpt
-								</div>
-								{#each excerptDiffParts as part}
-									{#if part.added}
-										<span class="diff-word-added">{part.value}</span>
-									{:else if part.removed}
-										<span class="diff-word-removed">{part.value}</span>
-									{:else}
-										<span>{part.value}</span>
-									{/if}
-								{/each}
-							</div>
-						{/if}
-					</div>
-				{:else}
-					<Editor bind:value={body} placeholder="Start writing your entry…" on:change={handleEditorChange} />
-				{/if}
-			</div>
-
-			<!-- Sidebar -->
-			<aside class="space-y-4">
-				{#if hasPendingChanges}
-					<!-- Pending-changes banner — edits to a live entry are buffered
-					     until an admin approves. The inline diff view lives in the
-					     main editor column; this sidebar strip just holds the
-					     Approve / Discard controls. -->
-					<div class="rounded-md border border-warm/40 bg-warm/10 p-4">
-						<div class="mb-1 flex items-center gap-2">
-							<span class="rounded-full bg-warm/25 px-2 py-0.5 text-[10px] font-bold tracking-wider text-warm uppercase font-mono-system">
-								Pending changes
-							</span>
-						</div>
-						<p class="mb-3 text-xs text-ink/80">
-							{#if isAdmin}
-								Toggle <b>Diff vs live</b> above the editor to review what changed. These
-								edits won't appear publicly until you approve them.
-							{:else}
-								Your edits are saved as a pending change. An admin needs to approve before they go live.
-							{/if}
-							{#if entry.draftUpdatedAt}
-								<span class="mt-1 block text-[11px] text-ink/60">
-									Last edited {new Date(entry.draftUpdatedAt).toLocaleString()}
-								</span>
-							{/if}
-						</p>
-
+{#snippet panels()}
+	<div class="space-y-5 font-libre">
+		{#if hasPendingChanges}
+			<section class="border border-t-[3px] border-line2 border-t-hero-rb bg-white">
+				{@render head(
+					'Pending edits',
+					'text-hero-rb',
+					entry.draftUpdatedAt ? fmtWhen(entry.draftUpdatedAt) : ''
+				)}
+				<div class="px-4 py-4">
+					<p class="text-[13.5px] leading-snug text-soft">
 						{#if isAdmin}
-							<div class="space-y-2">
-								<!-- Primary: apply the buffer, leave status as-is
-								     (published entries stay published; scheduled
-								     entries stay scheduled). -->
-								<button
-									on:click={() => approveDraft()}
-									class="w-full rounded-md bg-emerald-700 px-3 py-2 text-xs font-semibold text-paper-bg hover:bg-emerald-800"
-								>
-									Approve — keep {displayStatus}
-								</button>
-
-								<!-- Secondary: apply the buffer AND unpublish. Use
-								     when you want to accept a writer's edits into
-								     the canonical content but pull the entry from
-								     the public site. -->
-								{#if status === 'published' || status === 'scheduled'}
-									<button
-										on:click={() => approveDraft({ asStatus: 'draft' })}
-										class="w-full rounded-md border border-line2 bg-paper px-3 py-2 text-xs font-medium text-ink/80 hover:bg-ink/5"
-									>
-										Approve, unpublish to draft
-									</button>
-								{/if}
-
-								<button
-									on:click={discardDraft}
-									class="w-full rounded-md border border-red-300 bg-paper px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50"
-								>
-									Discard changes
-								</button>
-							</div>
+							These edits aren’t public yet. Use <b class="text-ink">Review changes</b> above the editor
+							to compare them with the live version.
+						{:else}
+							Your edits are saved. An admin approves them before they go live.
 						{/if}
-					</div>
-				{/if}
-
-				<div class="rounded-md border border-line2 bg-paper p-4">
-					<h3 class="mb-3 text-xs font-semibold tracking-wider text-ink/60 uppercase font-mono-system">
-						Publish
-					</h3>
-
-					<div class="mb-3 text-xs text-ink/70">
-						<div>
-							Status:
-							<span class="font-medium text-ink capitalize">{displayStatus}</span>
-						</div>
-						{#if entry.publishedAt}
-							<div class="mt-0.5 text-ink/50">
-								Published {new Date(entry.publishedAt).toLocaleString()}
-							</div>
-						{:else if scheduleHasPassed}
-							<div class="mt-0.5 text-ink/50">
-								Live since {new Date(entry.scheduledFor).toLocaleString()}
-							</div>
-						{/if}
-						{#if displayStatus === 'scheduled' && entry.scheduledFor}
-							<div class="mt-0.5 text-accent">
-								Goes live {new Date(entry.scheduledFor).toLocaleString()}
-							</div>
-						{/if}
-					</div>
-
+					</p>
 					{#if isAdmin}
-						<!-- Explicit publish-date input. Overrides the auto-set
-						     `now()` that fires on the first publish. Set to any
-						     date — past values for backdated ordering, future
-						     values for previewing library placement. Empty =
-						     clear (entry falls off publish-date-sorted lists). -->
-						<label class="mb-3 block">
-							<span class="mb-1 block text-[10px] font-medium text-ink/60 uppercase tracking-wider font-mono-system">
-								Publish date (library order)
-							</span>
-							<input
-								type="datetime-local"
-								bind:value={publishDateInput}
-								on:change={savePublishDate}
-								class="w-full rounded-md border border-line2 bg-paper px-2 py-1 text-xs text-ink focus:border-accent focus:outline-none"
-							/>
-							<p class="mt-1 text-[10px] text-ink/50">
-								Sorts entries in the library newest-first by this date. Backdate to slot an
-								entry into the archive; leave alone to use the actual publish time.
-							</p>
-						</label>
-
-						<div class="space-y-2">
-							{#if displayStatus !== 'published'}
+						<div class="mt-3.5 grid gap-2">
+							<button
+								type="button"
+								on:click={() => approveDraft()}
+								class="min-h-[42px] bg-prem px-3 text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110"
+								>Approve · keep {displayStatus}</button
+							>
+							{#if status === 'published' || status === 'scheduled'}
 								<button
-									on:click={publish}
-									class="w-full rounded-md bg-ink px-3 py-2 text-sm font-semibold text-paper-bg hover:bg-ink/90"
+									type="button"
+									on:click={() => approveDraft({ asStatus: 'draft' })}
+									class="min-h-[42px] border-[1.5px] border-ink px-3 text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+									>Approve and unpublish</button
 								>
-									Publish now
-								</button>
-							{:else}
-								<button
-									on:click={unpublish}
-									class="w-full rounded-md border border-line2 bg-paper px-3 py-2 text-sm font-medium text-ink hover:bg-ink/5"
-								>
-									Unpublish (back to draft)
-								</button>
 							{/if}
-
-							{#if displayStatus !== 'published'}
-								<div class="rounded-md border border-accent/30 bg-accent/5 p-2">
-									<label class="block text-[11px] font-medium text-accent">
-										Schedule for later
-										<input
-											type="datetime-local"
-											bind:value={scheduleInput}
-											class="mt-1 w-full rounded-md border border-line2 bg-paper px-2 py-1 text-xs text-ink focus:border-accent focus:outline-none"
-										/>
-									</label>
-									<button
-										on:click={scheduleEntry}
-										disabled={!scheduleInput}
-										class="mt-2 w-full rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50"
-									>
-										{displayStatus === 'scheduled' ? 'Reschedule' : 'Schedule'}
-									</button>
-								</div>
-							{/if}
-
-							{#if displayStatus !== 'archived'}
-								<button
-									on:click={archive}
-									class="w-full rounded-md border border-line2 bg-paper px-3 py-2 text-sm font-medium text-ink/80 hover:bg-ink/5"
-								>
-									Archive
-								</button>
-							{/if}
+							<button
+								type="button"
+								on:click={discardDraft}
+								class="mt-1 {textAction} justify-self-start text-hero-rb hover:text-ink"
+								>Discard these edits</button
+							>
 						</div>
+					{/if}
+				</div>
+			</section>
+		{/if}
+
+		<!-- ============ publishing ============ -->
+		<section class={panel}>
+			{@render head(
+				'Publishing',
+				'text-prem',
+				displayStatus,
+				`border px-1.5 py-[2px] text-[9px] font-extrabold tracking-[0.14em] uppercase ${STATUS_TONE[displayStatus] || STATUS_TONE.draft}`
+			)}
+			<div class="divide-y divide-line">
+				<div class="px-4 py-4">
+					<p class="text-[15px] font-semibold">{statusLine}</p>
+					{#if isAdmin}
+						{#if displayStatus !== 'published'}
+							<button
+								type="button"
+								on:click={publish}
+								class="mt-3 min-h-[44px] w-full bg-ink px-3 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-prem"
+								>Publish now</button
+							>
+						{:else}
+							<button
+								type="button"
+								on:click={unpublish}
+								class="mt-3 min-h-[44px] w-full border-[1.5px] border-ink px-3 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+								>Unpublish to draft</button
+							>
+						{/if}
 					{:else}
-						<p class="rounded-md border border-line2 bg-paper-bg/50 p-3 text-xs text-ink/70">
+						<p class="mt-1 text-[13px] leading-snug text-soft">
 							{#if editsAreBuffered}
-								Your edits are saved as a pending change. An admin needs to approve before they go live.
+								Your edits are saved as a pending change. An admin approves them before they go
+								live.
 							{:else}
-								Your changes are saved automatically as a draft. An admin will publish your entry when it's ready.
+								Your work saves automatically. An admin publishes it when it’s ready.
 							{/if}
 						</p>
 					{/if}
 				</div>
 
+				{#if isAdmin && displayStatus !== 'published'}
+					<div class="px-4 py-4">
+						<label class="block">
+							<span class={rowLabel}>Schedule for later</span>
+							<input type="datetime-local" bind:value={scheduleInput} class="mt-1.5 {control}" />
+						</label>
+						<button
+							type="button"
+							on:click={scheduleEntry}
+							disabled={!scheduleInput}
+							class="mt-2 min-h-[40px] w-full border-[1.5px] border-gold bg-gold/15 px-3 text-[10px] font-extrabold tracking-[0.14em] text-[#6d4c10] uppercase transition-colors hover:bg-gold hover:text-ink disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-gold/15"
+							>{displayStatus === 'scheduled' ? 'Reschedule' : 'Schedule'}</button
+						>
+					</div>
+				{/if}
+
 				{#if isAdmin}
-					<!-- Author picker: admin-only. Lazy-loads the eligible-authors list
-					     on focus so the initial page render doesn't wait for it. -->
-					<div class="rounded-md border border-line2 bg-paper p-4">
-						<h3 class="mb-3 text-xs font-semibold tracking-wider text-ink/60 uppercase font-mono-system">
-							Author
-						</h3>
-						<p class="mb-2 text-xs text-ink/70">
-							Currently:
-							<span class="font-medium text-ink">
-								{author ? `${author.firstName} ${author.lastName || ''}`.trim() : '—'}
-							</span>
-						</p>
+					<label class="block px-4 py-4">
+						<span class={rowLabel}>Library date</span>
+						<input
+							type="datetime-local"
+							bind:value={publishDateInput}
+							on:change={savePublishDate}
+							class="mt-1.5 {control}"
+						/>
+						<span class="mt-1.5 block text-[11.5px] leading-snug text-fade"
+							>Sets the order in the Library, newest first. Backdate to file a piece in the archive.</span
+						>
+					</label>
+				{/if}
+
+				{#if (isAdmin && displayStatus !== 'archived') || status === 'draft'}
+					<div class="flex items-center justify-between gap-4 bg-paper-bg/60 px-4 py-2.5">
+						{#if isAdmin && displayStatus !== 'archived'}
+							<button type="button" on:click={archive} class="{textAction} text-fade hover:text-ink"
+								>Archive</button
+							>
+						{/if}
+						{#if status === 'draft'}
+							<button
+								type="button"
+								on:click={deleteEntry}
+								class="ml-auto {textAction} text-hero-rb hover:text-ink">Delete draft</button
+							>
+						{/if}
+					</div>
+				{/if}
+			</div>
+		</section>
+
+		<!-- ============ details ============ -->
+		<section class={panel}>
+			{@render head('Details')}
+			<div class="divide-y divide-line">
+				{#if isAdmin}
+					<label class="block px-4 py-4">
+						<span class={rowLabel}>Author</span>
 						<select
 							value={authorId}
 							on:focus={ensureAuthorsLoaded}
+							on:pointerdown={ensureAuthorsLoaded}
 							on:change={(e) => changeAuthor(e.currentTarget.value)}
-							class="w-full rounded-md border border-line2 bg-paper px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+							class="mt-1.5 {control}"
 						>
 							{#if loadingAuthors && !authorOptions}
 								<option>Loading…</option>
 							{:else if !authorOptions}
 								{#if author}
-									<option value={author.id}>
-										{author.firstName}
-										{author.lastName || ''}
-									</option>
+									<option value={author.id}>{author.firstName} {author.lastName || ''}</option>
+								{:else}
+									<option value="">No author</option>
 								{/if}
 							{:else}
-								{#each authorOptions as opt}
-									<option value={opt.id}>
-										{opt.firstName}
-										{opt.lastName || ''}
-										{#if opt.email}— {opt.email}{/if}
-									</option>
+								{#each authorOptions as opt (opt.id)}
+									<option value={opt.id}>{opt.firstName} {opt.lastName || ''}</option>
 								{/each}
 							{/if}
 						</select>
-					</div>
+					</label>
 				{/if}
 
-				<div class="rounded-md border border-line2 bg-paper p-4">
-					<h3 class="mb-3 text-xs font-semibold tracking-wider text-ink/60 uppercase font-mono-system">
-						Images
-					</h3>
+				<div class="px-4 py-4">
+					<span class={rowLabel} id="access-label">Who can read it</span>
+					<div
+						class="mt-1.5 grid grid-cols-2 gap-px border border-line2 bg-line2"
+						role="radiogroup"
+						aria-labelledby="access-label"
+					>
+						{#each [['free', 'Free', 'Anyone'], ['premium', 'Premium', 'Members only']] as [v, l, note] (v)}
+							<button
+								type="button"
+								role="radio"
+								aria-checked={accessMode === v}
+								on:click={() => (accessMode = v)}
+								class="flex flex-col items-start px-3 py-2 text-left transition-colors {accessMode ===
+								v
+									? v === 'premium'
+										? 'bg-prem text-white'
+										: 'bg-ink text-paper-bg'
+									: 'bg-white text-soft hover:text-ink'}"
+							>
+								<span class="text-[10.5px] font-extrabold tracking-[0.14em] uppercase">{l}</span>
+								<span class="mt-0.5 text-[11.5px] opacity-75">{note}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+
+				<label class="block px-4 py-4">
+					<span class={rowLabel}>Web address</span>
+					<span
+						class="mt-1.5 flex h-[40px] items-center border border-line2 bg-paper focus-within:border-ink"
+					>
+						<span class="shrink-0 pl-2.5 text-[13px] text-fade">/library/</span>
+						<input
+							type="text"
+							bind:value={slug}
+							autocapitalize="off"
+							autocorrect="off"
+							spellcheck="false"
+							class="h-full min-w-0 flex-1 border-0 bg-transparent px-0.5 text-[14px] focus:ring-0 focus:outline-none"
+						/>
+					</span>
+				</label>
+			</div>
+		</section>
+
+		<!-- ============ images ============ -->
+		<section class={panel}>
+			{@render head('Images')}
+			<div class="px-4 py-4">
+				<div class="grid grid-cols-2 gap-3">
 					<CoverImagePicker label="Cover" value={coverImage} on:change={handleCoverChange} />
-					<div class="my-4 h-px bg-line2"></div>
 					<CoverImagePicker
 						label="Thumbnail"
 						value={thumbnailImage}
 						on:change={handleThumbnailChange}
 					/>
-					<p class="mt-2 text-[11px] text-ink/50">
-						Thumbnail defaults to the cover if left empty.
-					</p>
 				</div>
+				<p class="mt-2.5 text-[11.5px] leading-snug text-fade">
+					The thumbnail falls back to the cover when empty.
+				</p>
+			</div>
+		</section>
 
-				<div class="rounded-md border border-line2 bg-paper p-4">
-					<h3 class="mb-3 text-xs font-semibold tracking-wider text-ink/60 uppercase font-mono-system">
-						Video
-					</h3>
-					<VideoSlotPicker target="entry" id={entry.id} {entry} on:patch={handleVideoPatch} />
-				</div>
+		<!-- ============ video ============ -->
+		<section class={panel}>
+			{@render head('Video', 'text-warm', videoMeta)}
+			<div class="px-4 py-4">
+				<VideoSlotPicker target="entry" id={entry.id} {entry} on:patch={handleVideoPatch} />
+			</div>
+		</section>
+	</div>
+{/snippet}
 
-				<div class="rounded-md border border-line2 bg-paper p-4">
-					<h3 class="mb-3 text-xs font-semibold tracking-wider text-ink/60 uppercase font-mono-system">
-						Settings
-					</h3>
+<DeskTabs label sticky={false} />
 
-					<label class="mb-3 block">
-						<span class="mb-1 block text-[11px] font-medium text-ink/60 uppercase tracking-wider font-mono-system">
-							Slug
-						</span>
-						<input
-							type="text"
-							bind:value={slug}
-							class="w-full rounded-md border border-line2 bg-paper px-3 py-2 font-mono-system text-xs text-ink focus:border-accent focus:outline-none"
-						/>
-						<p class="mt-1 text-[11px] text-ink/50 font-mono-system">URL: /library/{slug}</p>
-					</label>
-
-					<label class="mb-3 block">
-						<span class="mb-1 block text-[11px] font-medium text-ink/60 uppercase tracking-wider font-mono-system">
-							Access
-						</span>
-						<select
-							bind:value={accessMode}
-							class="w-full rounded-md border border-line2 bg-paper px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
-						>
-							<option value="free">Free (anyone can read)</option>
-							<option value="premium">Premium (subscribers only)</option>
-						</select>
-					</label>
-
-					<label class="block">
-						<span class="mb-1 block text-[11px] font-medium text-ink/60 uppercase tracking-wider font-mono-system">
-							Excerpt
-						</span>
-						<textarea
-							bind:value={excerpt}
-							rows="3"
-							placeholder="Short summary shown on listings (auto-generated if blank)"
-							class="w-full rounded-md border border-line2 bg-paper px-3 py-2 text-xs text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none"
-						></textarea>
-					</label>
-				</div>
-
-				{#if status === 'draft'}
-					<div class="rounded-md border border-red-300 bg-red-50 p-4">
-						<h3 class="mb-2 text-xs font-semibold tracking-wider text-red-700 uppercase font-mono-system">
-							Danger zone
-						</h3>
-						<button
-							on:click={deleteEntry}
-							class="w-full rounded-md bg-red-100 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-200"
-						>
-							Delete draft
-						</button>
-					</div>
+{#if !entry}
+	<div class="mx-auto max-w-2xl px-5 py-16 text-center">
+		<p class="font-newsreader text-[24px] font-semibold">Couldn’t load this entry.</p>
+		<a
+			href="/desk/entries"
+			class="mt-4 inline-block text-[10.5px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
+			>← Back to entries</a
+		>
+	</div>
+{:else}
+	<div
+		class="font-libre [--editor-top:var(--desk-header)] lg:[--editor-top:calc(var(--desk-header)+52px)]"
+	>
+		<!-- ============ editor bar ============ -->
+		<div
+			class="z-30 border-b border-line2 bg-paper-bg/95 backdrop-blur-sm lg:sticky lg:top-[var(--desk-header)]"
+		>
+			<div class="mx-auto flex h-[52px] max-w-[1200px] items-center gap-3 px-5 md:px-8">
+				<a
+					href="/desk/entries"
+					class="inline-flex shrink-0 items-center gap-1.5 text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase transition-[color,gap] hover:gap-2.5 hover:text-ink"
+					><span aria-hidden="true">←</span> Entries</a
+				>
+				<span class="h-4 w-px bg-line2" aria-hidden="true"></span>
+				<span
+					class="shrink-0 border px-1.5 py-[2px] text-[9px] font-extrabold tracking-[0.14em] uppercase {STATUS_TONE[
+						displayStatus
+					] || STATUS_TONE.draft}">{displayStatus}</span
+				>
+				{#if hasPendingChanges}
+					<span
+						class="hidden shrink-0 bg-hero-rb px-1.5 py-[2px] text-[9px] font-extrabold tracking-[0.14em] text-white uppercase sm:inline"
+						>Pending edits</span
+					>
 				{/if}
-			</aside>
+				{#if entry.accessMode === 'premium'}
+					<span
+						class="hidden shrink-0 border border-prem px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.14em] text-prem uppercase sm:inline"
+						>◆ Premium</span
+					>
+				{/if}
+				<span class="ml-auto hidden text-[12px] lg:inline">{@render saveBadge(false)}</span>
+				<a
+					href="/desk/entries/{entry.id}/preview"
+					target="_blank"
+					rel="noopener"
+					class="ml-auto inline-flex min-h-[36px] shrink-0 items-center gap-1.5 border border-line2 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:border-ink lg:ml-0"
+					>Preview <span aria-hidden="true">↗</span></a
+				>
+				{#if isAdmin && displayStatus !== 'published'}
+					<button
+						type="button"
+						on:click={publish}
+						class="hidden min-h-[36px] shrink-0 items-center bg-ink px-4 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-prem lg:inline-flex"
+						>Publish</button
+					>
+				{/if}
+			</div>
+		</div>
+
+		<div
+			class="mx-auto grid max-w-[1200px] gap-12 px-5 pt-6 pb-16 md:px-8 md:pt-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-14"
+		>
+			<!-- ============ writing column ============ -->
+			<div class="min-w-0">
+				<div class="mx-auto max-w-[760px]">
+					{#if reviewMode && titleDiffParts.length > 0}
+						<span class={fieldLabel}>Title</span>
+						<p
+							class="{fieldBox} px-4 py-3 font-newsreader text-[30px] leading-[1.08] font-semibold tracking-[-0.02em] md:px-7 md:py-5 md:text-[40px]"
+						>
+							{#each titleDiffParts as part, i (i)}
+								{#if part.added}
+									<span class="diff-word-added">{part.value}</span>
+								{:else if part.removed}
+									<span class="diff-word-removed">{part.value}</span>
+								{:else}
+									<span>{part.value}</span>
+								{/if}
+							{/each}
+						</p>
+					{:else}
+						<label class="block">
+							<span class={fieldLabel}>Title</span>
+							<span class="{fieldBox} px-4 py-3 md:px-7 md:py-5">
+								<textarea
+									bind:value={title}
+									use:autogrow={title}
+									rows="1"
+									placeholder="Title"
+									aria-label="Title"
+									on:keydown={(e) => e.key === 'Enter' && e.preventDefault()}
+									class="block w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-newsreader text-[30px] leading-[1.08] font-semibold tracking-[-0.02em] text-ink placeholder:text-fade/60 focus:ring-0 focus:outline-none md:text-[40px]"
+								></textarea>
+							</span>
+						</label>
+					{/if}
+					<label class="mt-5 block">
+						<span class="{fieldLabel} flex items-baseline justify-between gap-3"
+							>Summary<span class="font-semibold tracking-normal normal-case"
+								>Shown on cards and in listings</span
+							></span
+						>
+						<span class="{fieldBox} px-4 py-2.5 md:px-7 md:py-3.5">
+							<textarea
+								bind:value={excerpt}
+								use:autogrow={excerpt}
+								rows="1"
+								placeholder="Add a one-line summary…"
+								aria-label="Summary"
+								class="block w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-newsreader text-[17px] leading-[1.5] text-soft italic placeholder:text-fade/70 focus:ring-0 focus:outline-none md:text-[19px]"
+							></textarea>
+						</span>
+					</label>
+
+					{#if hasPendingChanges}
+						<div
+							class="mt-5 flex flex-wrap items-center gap-3 border-l-[3px] border-hero-rb bg-hero-rb/[0.06] px-3.5 py-2.5"
+						>
+							<span class="text-[12.5px] text-soft"
+								><b class="text-ink">Edits waiting for approval.</b>
+								{#if entry.draftUpdatedAt}Last edited {fmtWhen(entry.draftUpdatedAt)}.{/if}</span
+							>
+							<span class="ml-auto inline-grid grid-cols-2 gap-px border border-line2 bg-line2">
+								{#each [[false, 'Edit'], [true, 'Review changes']] as [v, l] (l)}
+									<button
+										type="button"
+										on:click={() => (reviewMode = v)}
+										aria-pressed={reviewMode === v}
+										class="min-h-[32px] px-3 text-[9.5px] font-extrabold tracking-[0.12em] uppercase transition-colors {reviewMode ===
+										v
+											? 'bg-ink text-paper-bg'
+											: 'bg-paper-bg text-soft hover:text-ink'}">{l}</button
+									>
+								{/each}
+							</span>
+						</div>
+					{/if}
+
+					<div class="mt-6">
+						<span class={fieldLabel}>Body</span>
+						{#if reviewMode}
+							<div class="cms-diff-view border-t-[3px] border-ink">
+								<p class="border-b border-line2 py-2 text-[11.5px] text-fade">
+									Compared with the live version ·
+									<span class="diff-word-added">added</span> ·
+									<span class="diff-word-removed">removed</span>
+								</p>
+								<div class="py-4 font-newsreader text-[18px] text-ink">
+									{#if !richDiffItems || richDiffItems.length === 0}
+										<p class="text-fade italic">No body changes; only details were edited.</p>
+									{:else}
+										{#each richDiffItems as item, i (i)}
+											{#if item.kind === 'unchanged'}
+												<svelte:element this={nodeTag(item.node)} class="diff-block">
+													{extractNodeText(item.node)}
+												</svelte:element>
+											{:else if item.kind === 'unchanged-widget'}
+												<div class="diff-widget diff-widget-unchanged">
+													<span class="diff-widget-label">{widgetLabel(item.node)}</span>
+													<span class="diff-widget-status">unchanged</span>
+												</div>
+											{:else if item.kind === 'added'}
+												{#if isWidget(item.node)}
+													<div class="diff-widget diff-widget-added">
+														<span class="diff-widget-label">{widgetLabel(item.node)}</span>
+														<span class="diff-widget-status">added</span>
+													</div>
+												{:else}
+													<svelte:element this={nodeTag(item.node)} class="diff-block diff-added">
+														{extractNodeText(item.node)}
+													</svelte:element>
+												{/if}
+											{:else if item.kind === 'removed'}
+												{#if isWidget(item.node)}
+													<div class="diff-widget diff-widget-removed">
+														<span class="diff-widget-label">{widgetLabel(item.node)}</span>
+														<span class="diff-widget-status">removed</span>
+													</div>
+												{:else}
+													<svelte:element this={nodeTag(item.node)} class="diff-block diff-removed">
+														{extractNodeText(item.node)}
+													</svelte:element>
+												{/if}
+											{:else if item.kind === 'widget-change'}
+												<div class="diff-widget diff-widget-changed">
+													<span class="diff-widget-label">{widgetLabel(item.node)}</span>
+													<span class="diff-widget-status">edited</span>
+												</div>
+											{:else if item.kind === 'diff'}
+												<svelte:element this={item.tag} class="diff-block">
+													{#each item.parts as part, j (j)}
+														{#if part.added}
+															<span class="diff-word-added">{part.value}</span>
+														{:else if part.removed}
+															<span class="diff-word-removed">{part.value}</span>
+														{:else}
+															<span>{part.value}</span>
+														{/if}
+													{/each}
+												</svelte:element>
+											{/if}
+										{/each}
+									{/if}
+								</div>
+								{#if excerptDiffParts.length > 0}
+									<div
+										class="border-t border-line2 py-3 font-newsreader text-[15px] text-soft italic"
+									>
+										<span
+											class="mb-1 block font-libre text-[9.5px] font-extrabold tracking-[0.16em] uppercase not-italic"
+											>Summary</span
+										>
+										{#each excerptDiffParts as part, j (j)}
+											{#if part.added}
+												<span class="diff-word-added">{part.value}</span>
+											{:else if part.removed}
+												<span class="diff-word-removed">{part.value}</span>
+											{:else}
+												<span>{part.value}</span>
+											{/if}
+										{/each}
+									</div>
+								{/if}
+							</div>
+						{:else}
+							<Editor
+								bind:value={body}
+								placeholder="Start writing…"
+								on:change={handleEditorChange}
+								toolbarEnd={isWide ? null : toolbarEnd}
+							/>
+						{/if}
+					</div>
+				</div>
+			</div>
+
+			<!-- ============ settings: side column on wide screens ============ -->
+			{#if !mounted || isWide}
+				<aside class="hidden lg:block">{@render panels()}</aside>
+			{/if}
 		</div>
 	</div>
-{/if}
 
+	<!-- ============ settings sheet on phones and tablets ============ -->
+	{#if sheetOpen && !isWide}
+		<div
+			class="fixed inset-0 z-[60] flex flex-col bg-paper-bg"
+			role="dialog"
+			aria-modal="true"
+			aria-label="Entry settings"
+			transition:fly={{ y: 24, duration: 200 }}
+		>
+			<div
+				class="flex h-[56px] shrink-0 items-center justify-between gap-3 border-b-[3px] border-ink px-5"
+			>
+				<span class="flex items-center gap-3">
+					<span class="font-newsreader text-[19px] font-semibold">Settings</span>
+					<span class="text-[11px]">{@render saveBadge(false)}</span>
+				</span>
+				<button
+					type="button"
+					on:click={() => (sheetOpen = false)}
+					class="min-h-[40px] bg-ink px-4 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase"
+					>Done</button
+				>
+			</div>
+			<div class="flex-1 overflow-y-auto px-5 pt-6 pb-10">{@render panels()}</div>
+		</div>
+	{/if}
+{/if}
 
 <style>
 	/* Rich body-diff view — headings, quotes, and list containers use the
@@ -1056,7 +1240,7 @@
 		font-weight: 600;
 		line-height: 1.2;
 		margin: 1.5rem 0 0.5rem;
-		color: var(--color-warm, #b7642e);
+		color: var(--color-warm, #1e40af);
 	}
 	.cms-diff-view :global(h3.diff-block) {
 		font-size: 1.25rem;
@@ -1069,7 +1253,7 @@
 		margin: 1rem 0 0.5rem;
 	}
 	.cms-diff-view :global(blockquote.diff-block) {
-		border-left: 3px solid var(--color-warm, #b7642e);
+		border-left: 3px solid var(--color-warm, #1e40af);
 		padding-left: 1rem;
 		font-style: italic;
 		margin: 1rem 0;
@@ -1087,29 +1271,25 @@
 		background: rgb(220 252 231);
 		border-left: 3px solid rgb(21 128 61);
 		padding: 0.25rem 0.5rem 0.25rem 0.75rem;
-		border-radius: 0.25rem;
 	}
 	.cms-diff-view :global(.diff-removed) {
 		background: rgb(254 226 226);
 		border-left: 3px solid rgb(185 28 28);
 		padding: 0.25rem 0.5rem 0.25rem 0.75rem;
-		border-radius: 0.25rem;
 		text-decoration: line-through;
 	}
 
 	/* Word-level add/remove — inline highlights inside a block whose
 	   surrounding prose kept its structure. */
-	.cms-diff-view :global(.diff-word-added) {
+	:global(.diff-word-added) {
 		background: rgb(220 252 231);
 		color: rgb(20 83 45);
 		padding: 0 0.15rem;
-		border-radius: 0.15rem;
 	}
-	.cms-diff-view :global(.diff-word-removed) {
+	:global(.diff-word-removed) {
 		background: rgb(254 226 226);
 		color: rgb(127 29 29);
 		padding: 0 0.15rem;
-		border-radius: 0.15rem;
 		text-decoration: line-through;
 	}
 
@@ -1123,16 +1303,14 @@
 		justify-content: space-between;
 		gap: 1rem;
 		padding: 0.5rem 0.75rem;
-		border-radius: 0.375rem;
 		font-size: 0.8125rem;
-		font-family: ui-sans-serif, system-ui, sans-serif;
+		font-family: 'Libre Franklin', system-ui, sans-serif;
 	}
 	.cms-diff-view :global(.diff-widget-label) {
 		font-weight: 500;
 	}
 	.cms-diff-view :global(.diff-widget-status) {
-		font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-		font-size: 0.6875rem;
+		font-size: 0.625rem;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
 		font-weight: 700;

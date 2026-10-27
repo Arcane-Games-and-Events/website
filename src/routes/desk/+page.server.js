@@ -84,7 +84,8 @@ export const load = async ({ locals, parent }) => {
 	const counts = {
 		draft: rows.filter((r) => r.status === 'draft').length,
 		scheduled: rows.filter((r) => r.status === 'scheduled' && t(r.scheduledFor) > now).length,
-		published: liveRows.length
+		published: liveRows.length,
+		pending: rows.filter((r) => r.draftUpdatedAt).length
 	};
 	const publishedThisMonth = liveRows.filter(
 		(r) => t(r.publishedAt || r.scheduledFor) >= monthStart

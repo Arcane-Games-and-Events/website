@@ -1171,18 +1171,21 @@
 
 <!-- ============ CANCEL CONFIRMATION MODAL ============ -->
 {#if showCancelModal}
+	<!-- backdrop closes on click; the panel is the dialog and closes on Escape -->
 	<div
 		class="fixed inset-0 z-[200] flex items-center justify-center bg-ink/60 px-5 backdrop-blur-[2px]"
-		role="dialog"
-		aria-modal="true"
-		aria-labelledby="cancel-title"
+		role="presentation"
 		onclick={closeCancelModal}
 	>
 		<div
 			class="fp-rise w-full max-w-[480px] border-[3px] border-double border-ink bg-paper-bg px-7 py-8 font-libre text-ink"
 			style="animation-duration: 0.3s;"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="cancel-title"
+			tabindex="-1"
 			onclick={(e) => e.stopPropagation()}
-			role="presentation"
+			onkeydown={(e) => e.key === 'Escape' && closeCancelModal()}
 		>
 			<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase">
 				<span aria-hidden="true">◆</span> Cancel membership

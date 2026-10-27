@@ -109,7 +109,7 @@ function renderNode(node, ctx) {
 		const media = node.value || node;
 		const url = media.url || '';
 		const alt = media.alt || media.filename || '';
-		return `<figure class="my-8"><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" decoding="async" class="rounded-lg" /></figure>`;
+		return `<figure class="my-8"><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" decoding="async" /></figure>`;
 	}
 
 	if (node.type === 'link' || node.type === 'autolink') {

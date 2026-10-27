@@ -1,35 +1,44 @@
 <!--
-  InsertCardLinkDialog — search FAB cards and produce a `card:NAME[pitch]?`
-  link URL. One row per card, one button per available pitch (R/Y/B) plus
-  Default (unpitched), so the writer picks the exact variant inline.
-
-  Backend: /api/cms/cards/search (backed by @flesh-and-blood/search).
+  Insert a card link, or change the card an existing link points to. Readers
+  see the card's image when they hover (or tap) the link.
 -->
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import DialogShell from './DialogShell.svelte';
+	import * as ui from './dialogStyles.js';
 
-	export let open = false;
-	export let selectedText = '';
+	/**
+	 * @type {{
+	 *   open?: boolean,
+	 *   selectedText?: string,
+	 *   initial?: { name: string, pitch?: string | null } | null,
+	 *   onsubmit: (data: { name: string, pitch: string, url: string, text: string }) => void,
+	 *   onclose?: () => void
+	 * }}
+	 */
+	let { open = $bindable(false), selectedText = '', initial = null, onsubmit, onclose } = $props();
 
-	const dispatch = createEventDispatcher();
+	let query = $state('');
+	let results = $state([]);
+	let searching = $state(false);
+	let errorMsg = $state('');
 
-	let query = '';
-	let results = [];
-	let searching = false;
-	let errorMsg = '';
-	let searchTimer = null;
+	let wasOpen = false;
+	$effect.pre(() => {
+		if (open && !wasOpen) {
+			query = initial?.name || selectedText || '';
+			results = [];
+			errorMsg = '';
+		}
+		wasOpen = open;
+	});
 
-	// Seed the query from the current text selection ONCE per dialog open.
-	// The previous condition (`!query`) re-seeded on every reactive run
-	// whenever the user cleared the box, making the search term impossible
-	// to delete. Now we only seed on the false→true transition, so the
-	// writer can freely edit or clear what got pre-filled.
-	let hasSeeded = false;
-	$: if (open && !hasSeeded) {
-		if (selectedText) query = selectedText;
-		hasSeeded = true;
-	}
-	$: if (!open) hasSeeded = false;
+	// search 250ms after typing stops
+	$effect(() => {
+		if (!open) return;
+		const q = query;
+		const t = setTimeout(() => runSearch(q), 250);
+		return () => clearTimeout(t);
+	});
 
 	async function runSearch(q) {
 		errorMsg = '';
@@ -41,149 +50,115 @@
 		searching = true;
 		try {
 			const res = await fetch(`/api/cms/cards/search?q=${encodeURIComponent(trimmed)}`);
+			if (q !== query) return; // a newer search is on its way
 			if (!res.ok) {
-				errorMsg = 'Search failed';
+				errorMsg = 'Search failed.';
 				results = [];
 				return;
 			}
-			const body = await res.json();
-			// Drop stale responses if the query changed while we were fetching.
-			if (q !== query) return;
-			results = body.results || [];
+			results = (await res.json()).results || [];
 		} catch (e) {
-			errorMsg = e?.message || 'Network error';
+			errorMsg = e?.message || 'Network error.';
 			results = [];
 		} finally {
 			if (q === query) searching = false;
 		}
 	}
 
-	function scheduleSearch() {
-		if (searchTimer) clearTimeout(searchTimer);
-		const q = query;
-		searchTimer = setTimeout(() => runSearch(q), 250);
-	}
-
-	$: if (open) {
-		// eslint-disable-next-line no-unused-expressions
-		query;
-		scheduleSearch();
-	}
-
-	function buildCardUrl(name, pitch) {
-		const namePart = encodeURIComponent(name);
-		const pitchPart = pitch ? `[${pitch}]` : '';
-		return `card:${namePart}${pitchPart}`;
-	}
+	const cardUrl = (name, pitch) => `card:${encodeURIComponent(name)}${pitch ? `[${pitch}]` : ''}`;
 
 	function pick(name, pitch = '') {
-		dispatch('insert', {
-			name,
-			url: buildCardUrl(name, pitch),
-			text: selectedText || name
-		});
+		onsubmit({ name, pitch, url: cardUrl(name, pitch), text: selectedText || name });
 		close();
 	}
 
 	function close() {
 		open = false;
-		dispatch('close');
-		query = '';
-		results = [];
-		errorMsg = '';
+		onclose?.();
 	}
 
-	const PITCH_LABEL = { r: 'R', y: 'Y', b: 'B' };
-	// Editorial palette — red-600 / amber-600 / sky-600 on paper.
-	const PITCH_CLASS = {
-		r: 'border-red-500/50 bg-red-50 text-red-700 hover:bg-red-100',
-		y: 'border-amber-500/50 bg-amber-50 text-amber-700 hover:bg-amber-100',
-		b: 'border-sky-500/50 bg-sky-50 text-sky-700 hover:bg-sky-100'
+	// [label, idle, current]
+	const PITCH = {
+		r: [
+			'Red',
+			'border-[#A8392C] text-[#A8392C] hover:bg-[#A8392C]',
+			'border-[#A8392C] bg-[#A8392C] text-white'
+		],
+		y: [
+			'Yellow',
+			'border-[#E5703E] text-[#b4501f] hover:bg-[#E5703E]',
+			'border-[#E5703E] bg-[#E5703E] text-white'
+		],
+		b: [
+			'Blue',
+			'border-[#2C5BA8] text-[#2C5BA8] hover:bg-[#2C5BA8]',
+			'border-[#2C5BA8] bg-[#2C5BA8] text-white'
+		]
 	};
+	const isCurrent = (name, pitch) =>
+		initial &&
+		initial.name?.toLowerCase() === name.toLowerCase() &&
+		(initial.pitch || '') === pitch;
 </script>
 
-{#if open}
-	<div
-		class="fixed inset-0 z-50 flex items-start justify-center bg-ink/70 p-4 pt-20"
-		on:click={close}
-		on:keydown={(e) => e.key === 'Escape' && close()}
-		role="presentation"
-	>
-		<div
-			class="w-full max-w-xl rounded-md border border-line2 bg-paper p-5 shadow-2xl"
-			on:click|stopPropagation
-			on:keydown|stopPropagation
-			role="dialog"
-			aria-modal="true"
-			tabindex="-1"
-			aria-labelledby="cms-cardlink-title"
-		>
-			<h2
-				id="cms-cardlink-title"
-				class="mb-3 text-[11px] font-semibold tracking-wider text-ink/60 uppercase font-mono-system"
-			>
-				Insert card link
-			</h2>
+<DialogShell {open} kicker={initial ? 'Change' : 'Insert'} title="Card link" onclose={close}>
+	<label class="block">
+		<span class={ui.label}>Card</span>
+		<!-- svelte-ignore a11y_autofocus -->
+		<input
+			type="search"
+			bind:value={query}
+			placeholder="Search Flesh and Blood cards…"
+			autocomplete="off"
+			autofocus
+			class={ui.input}
+		/>
+	</label>
+	{#if errorMsg}<p class={ui.error}>{errorMsg}</p>{/if}
 
-			<input
-				type="text"
-				bind:value={query}
-				placeholder="Search FAB cards…"
-				class="w-full rounded-md border border-line2 bg-paper-bg px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-accent focus:outline-none"
-			/>
-
-			{#if errorMsg}
-				<p class="mt-2 text-xs text-red-700">{errorMsg}</p>
-			{/if}
-
-			<div class="mt-3 max-h-80 overflow-y-auto rounded-md border border-line2">
-				{#if searching && results.length === 0}
-					<div class="px-3 py-4 text-center text-xs text-ink/50 font-mono-system">Searching…</div>
-				{:else if !query.trim()}
-					<div class="px-3 py-4 text-center text-xs text-ink/50">
-						Type at least 2 characters to search.
-					</div>
-				{:else if results.length === 0}
-					<div class="px-3 py-4 text-center text-xs text-ink/50">No matches.</div>
-				{:else}
-					<ul class="divide-y divide-line2">
-						{#each results as r}
-							<li class="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-								<span class="font-newsreader text-ink">{r.name}</span>
-								<div class="flex items-center gap-1">
-									<button
-										type="button"
-										on:click={() => pick(r.name)}
-										class="rounded-md border border-line2 bg-paper-bg px-2 py-0.5 text-[11px] font-medium text-ink/70 hover:bg-ink/5"
-										title="Insert without a pitch"
-									>
-										Default
-									</button>
-									{#each r.pitches || [] as p}
-										<button
-											type="button"
-											on:click={() => pick(r.name, p)}
-											class="rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-colors {PITCH_CLASS[p]}"
-											title="Insert {p === 'r' ? 'red' : p === 'y' ? 'yellow' : 'blue'} pitch variant"
-										>
-											{PITCH_LABEL[p]}
-										</button>
-									{/each}
-								</div>
-							</li>
-						{/each}
-					</ul>
-				{/if}
-			</div>
-
-			<div class="mt-4 flex justify-end">
-				<button
-					on:click={close}
-					class="rounded-md border border-line2 bg-paper px-4 py-2 text-sm font-medium text-ink hover:bg-ink/5"
-				>
-					Cancel
-				</button>
-			</div>
-		</div>
+	<div class="mt-3 max-h-[50vh] overflow-y-auto border border-line2 bg-white">
+		{#if searching && results.length === 0}
+			<p class="px-3 py-5 text-center text-[12.5px] text-fade">Searching…</p>
+		{:else if query.trim().length < 2}
+			<p class="px-3 py-5 text-center text-[12.5px] text-fade">Type at least two letters.</p>
+		{:else if results.length === 0}
+			<p class="px-3 py-5 text-center text-[12.5px] text-fade">No cards match.</p>
+		{:else}
+			<ul class="divide-y divide-line">
+				{#each results as r (r.name)}
+					<li class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2.5">
+						<span class="min-w-0 font-newsreader text-[16px]">{r.name}</span>
+						<span class="flex items-center gap-1">
+							<button
+								type="button"
+								onclick={() => pick(r.name)}
+								title="Link without a pitch"
+								class="h-8 border px-2.5 text-[9.5px] font-extrabold tracking-[0.12em] uppercase transition-colors {isCurrent(
+									r.name,
+									''
+								)
+									? 'border-ink bg-ink text-paper-bg'
+									: 'border-line2 text-soft hover:border-ink hover:text-ink'}">Any</button
+							>
+							{#each r.pitches || [] as p (p)}
+								<button
+									type="button"
+									onclick={() => pick(r.name, p)}
+									title="{PITCH[p][0]} version"
+									aria-label="{r.name}, {PITCH[p][0].toLowerCase()}"
+									class="h-8 min-w-8 border-[1.5px] px-2 text-[10px] font-extrabold uppercase transition-colors hover:text-white {PITCH[
+										p
+									][isCurrent(r.name, p) ? 2 : 1]}">{p}</button
+								>
+							{/each}
+						</span>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 	</div>
-{/if}
+
+	{#snippet footer()}
+		<button type="button" onclick={close} class={ui.secondary}>Cancel</button>
+	{/snippet}
+</DialogShell>
