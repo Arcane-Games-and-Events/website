@@ -117,6 +117,30 @@
 	// Widget cards mounted into decorator nodes, by node key.
 	const widgets = new Map();
 
+	// Phones: with the keyboard open, iOS (and Android Chrome) keep the page's
+	// layout viewport full height and pan the visible area instead, so a plain
+	// sticky toolbar ends up above what you can see. Track the visible area's
+	// top and stick there whenever it's lower than the usual spot.
+	let viewportTop = 0;
+	let stopViewport = null;
+	function followVisualViewport() {
+		const vv = window.visualViewport;
+		if (!vv) return;
+		let frame = 0;
+		const sync = () => {
+			cancelAnimationFrame(frame);
+			frame = requestAnimationFrame(() => (viewportTop = Math.max(0, Math.round(vv.offsetTop))));
+		};
+		vv.addEventListener('scroll', sync);
+		vv.addEventListener('resize', sync);
+		sync();
+		stopViewport = () => {
+			cancelAnimationFrame(frame);
+			vv.removeEventListener('scroll', sync);
+			vv.removeEventListener('resize', sync);
+		};
+	}
+
 	// Right-click context menu state — the browser moves the caret to the
 	// click point before the contextmenu event fires, so any block/format/
 	// insert command we run after the menu closes lands at the cursor.
@@ -223,10 +247,12 @@
 			console.warn('[lexical] failed to hydrate initial state, starting empty', err);
 		}
 
+		followVisualViewport();
 		dispatch('ready');
 	});
 
 	onDestroy(() => {
+		stopViewport?.();
 		for (const w of widgets.values()) w.handle.destroy();
 		widgets.clear();
 		if (unregister) unregister();
@@ -589,11 +615,13 @@
 <svelte:document on:pointerdown={closeMenuOnOutside} />
 
 <div class="cms-editor border border-line2 bg-white transition-colors focus-within:border-ink">
-	<!-- toolbar: sticks under the page's own sticky chrome (--editor-top).
-	     The buttons sit in a container sized to what's left after toolbarEnd,
+	<!-- toolbar: sticks under the page's own sticky chrome (--editor-top),
+	     or at the top of the visible area when a phone keyboard has panned
+	     it lower (viewportTop). The buttons sit in a container sized to what's left after toolbarEnd,
 	     and fold into menus by that width. -->
 	<div
-		class="sticky top-[var(--editor-top,0px)] z-20 flex items-center gap-1 border-b border-line2 bg-paper-bg/95 px-1.5 py-1 backdrop-blur-sm"
+		class="sticky z-20 flex items-center gap-1 border-b border-line2 bg-paper-bg/95 px-1.5 py-1 backdrop-blur-sm"
+		style="top: max(var(--editor-top, 0px), {viewportTop}px)"
 		role="toolbar"
 		aria-label="Formatting"
 	>

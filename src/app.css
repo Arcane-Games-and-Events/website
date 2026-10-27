@@ -405,23 +405,11 @@ a.fp-ul:focus-visible {
 }
 
 /* Navigation loading bar animation */
-@keyframes loading-bar {
-	0% {
-		width: 0%;
-		margin-left: 0%;
-	}
-	50% {
-		width: 70%;
-		margin-left: 15%;
-	}
-	100% {
-		width: 100%;
-		margin-left: 0%;
-	}
-}
-
-.animate-loading-bar {
-	animation: loading-bar 2s ease-in-out infinite;
+/* page-to-page crossfade (onNavigate in src/routes/+layout.svelte) */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation-duration: 180ms;
+	animation-timing-function: ease-out;
 }
 
 /* AGE Open — condensed poster wordmark and the ticket perforation */

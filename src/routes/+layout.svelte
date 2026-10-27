@@ -1,7 +1,8 @@
 <script>
 	import '../app.css';
-	import { page, navigating } from '$app/stores';
-	import { afterNavigate } from '$app/navigation';
+	import { page } from '$app/stores';
+	import { afterNavigate, onNavigate } from '$app/navigation';
+	import NavProgress from '$lib/components/NavProgress.svelte';
 	import { notePath } from '$lib/analytics/contentTracker.js';
 
 	// Content analytics: remember the current page so a view opened by the
@@ -50,30 +51,20 @@
 	// route, including the routes that haven't been redesigned yet.
 	$: isErrorPage = !!$page.error;
 
-	// Debounce the loading bar so fast navigations don't flash a bar
-	// that appears and disappears in ~200 ms. Only show when a
-	// navigation has been in flight for at least 150 ms — that's long
-	// enough that a bar is genuinely useful feedback, short enough
-	// that slow loads still surface it before the user starts wondering
-	// if the click registered.
-	let showLoadingBar = false;
-	let loadingBarTimer = null;
-	$: {
-		if ($navigating) {
-			if (!loadingBarTimer && !showLoadingBar) {
-				loadingBarTimer = setTimeout(() => {
-					showLoadingBar = true;
-					loadingBarTimer = null;
-				}, 150);
-			}
-		} else {
-			if (loadingBarTimer) {
-				clearTimeout(loadingBarTimer);
-				loadingBarTimer = null;
-			}
-			showLoadingBar = false;
-		}
-	}
+	// Page to page: a quick crossfade once the next page is ready (the bar
+	// above covers the wait). Skipped when only the query changes on the same
+	// page (filters, paging) and for readers who prefer reduced motion.
+	onNavigate((navigation) => {
+		if (!document.startViewTransition) return;
+		if (navigation.from?.url.pathname === navigation.to?.url.pathname) return;
+		if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
 </script>
 
 <!-- Skip to content link for accessibility -->
@@ -84,14 +75,7 @@
 	Skip to main content
 </a>
 
-<!-- Navigation Loading Indicator — gated on the debounced flag above,
-	 not on `$navigating` directly, so quick page transitions don't flash
-	 a bar that appears and disappears faster than the eye can process. -->
-{#if showLoadingBar}
-	<div class="fixed top-0 right-0 left-0 z-[9999] h-0.5">
-		<div class="animate-loading-bar h-full bg-warm"></div>
-	</div>
-{/if}
+<NavProgress />
 
 {#if isAuthPage}
 	<slot />

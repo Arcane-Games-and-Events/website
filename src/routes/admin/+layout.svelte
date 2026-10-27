@@ -1,6 +1,6 @@
 <script>
 	import AdminShell from '$lib/components/admin/AdminShell.svelte';
-	import { page, navigating } from '$app/stores';
+	import { page } from '$app/stores';
 
 	let { children, data } = $props();
 
@@ -20,36 +20,7 @@
 		if (pathname.startsWith('/admin/partners')) return 'partners';
 		return 'analytics';
 	});
-
-	// Debounce the loading bar so fast navigations don't flash a bar
-	// that appears and disappears faster than the eye can process.
-	// See src/routes/+layout.svelte for the same pattern on the public
-	// site.
-	let showLoadingBar = $state(false);
-	let loadingBarTimer = null;
-	$effect(() => {
-		if ($navigating) {
-			if (!loadingBarTimer && !showLoadingBar) {
-				loadingBarTimer = setTimeout(() => {
-					showLoadingBar = true;
-					loadingBarTimer = null;
-				}, 150);
-			}
-		} else {
-			if (loadingBarTimer) {
-				clearTimeout(loadingBarTimer);
-				loadingBarTimer = null;
-			}
-			showLoadingBar = false;
-		}
-	});
 </script>
-
-{#if showLoadingBar}
-	<div class="fixed top-0 right-0 left-0 z-[9999] h-0.5">
-		<div class="animate-loading-bar bg-warm h-full"></div>
-	</div>
-{/if}
 
 <AdminShell
 	{currentPage}

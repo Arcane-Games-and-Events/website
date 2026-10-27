@@ -14,31 +14,10 @@
 -->
 <script>
 	import { onMount } from 'svelte';
-	import { navigating } from '$app/stores';
 	import AgeHeader from '$lib/components/age/AgeHeader.svelte';
 
 	// Role flags from +layout.server.js reach the tabs via $page.data.
 	export const data = undefined;
-
-	// Loading bar debounced 150ms to avoid flashing on fast navigations.
-	let showLoadingBar = false;
-	/** @type {ReturnType<typeof setTimeout> | null} */
-	let loadingBarTimer = null;
-	function syncLoadingBar(isNavigating) {
-		if (isNavigating) {
-			if (!loadingBarTimer && !showLoadingBar) {
-				loadingBarTimer = setTimeout(() => {
-					showLoadingBar = true;
-					loadingBarTimer = null;
-				}, 150);
-			}
-			return;
-		}
-		if (loadingBarTimer) clearTimeout(loadingBarTimer);
-		loadingBarTimer = null;
-		showLoadingBar = false;
-	}
-	$: syncLoadingBar(!!$navigating);
 
 	// The site header is sticky and slims down on scroll, so measure it and
 	// publish its height. <DeskTabs> (placed by each page under its header)
@@ -59,10 +38,6 @@
 <svelte:head>
 	<title>Desk · Arcane Games</title>
 </svelte:head>
-
-{#if showLoadingBar}
-	<div class="fixed top-0 right-0 left-0 z-[9999] h-[3px] bg-gold"></div>
-{/if}
 
 <!-- Wrapper matches AgeShell's outer element (font, overflow, antialias)
      so <AgeHeader> inherits the same base typography here as on every
