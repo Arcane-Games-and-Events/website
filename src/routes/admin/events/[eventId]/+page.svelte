@@ -1,7 +1,6 @@
 <script>
 	import { invalidateAll } from '$app/navigation';
 	import { enhance, deserialize } from '$app/forms';
-	import heroes from '$lib/data/heroes.json';
 	import {
 		parseGemDecklist,
 		toStorageFormat,
@@ -9,6 +8,7 @@
 		getPlacementSuffix
 	} from '$lib/utils/gem-decklist-parser.js';
 	import { getCircuitNames } from '$lib/data/circuits.js';
+	import { MONTH_NAMES } from '$lib/data/months.js';
 
 	let { data, form } = $props();
 
@@ -57,8 +57,8 @@
 	let showHeroDropdown = $state(false);
 	let filteredHeroes = $derived(
 		heroSearch.trim()
-			? heroes.filter((h) => h.name.toLowerCase().includes(heroSearch.toLowerCase()))
-			: heroes
+			? data.heroNames.filter((h) => h.toLowerCase().includes(heroSearch.toLowerCase()))
+			: data.heroNames
 	);
 
 	// Decklist preview (parsed from cardsText)
@@ -169,20 +169,7 @@
 	}
 
 	const circuits = getCircuitNames();
-	const months = [
-		'January',
-		'February',
-		'March',
-		'April',
-		'May',
-		'June',
-		'July',
-		'August',
-		'September',
-		'October',
-		'November',
-		'December'
-	];
+	const months = MONTH_NAMES;
 	const formats = [
 		'Classic Constructed',
 		'Draft',
@@ -1445,13 +1432,13 @@
 													No matching heroes
 												</div>
 											{:else}
-												{#each filteredHeroes.slice(0, 20) as hero (hero.name)}
+												{#each filteredHeroes.slice(0, 20) as hero (hero)}
 													<button
 														type="button"
-														onclick={() => selectHero(hero.name)}
+														onclick={() => selectHero(hero)}
 														class="hover:bg-panel font-newsreader w-full px-[14px] py-[7px] text-left text-[14px] transition-colors"
 													>
-														{hero.name}
+														{hero}
 													</button>
 												{/each}
 												{#if filteredHeroes.length > 20}

@@ -50,37 +50,6 @@ export async function sendPasswordResetEmail(email, resetUrl) {
 }
 
 /**
- * Add email to Resend Audience for newsletter
- * @param {string} email - Email to add to audience
- * @returns {Promise<{success: boolean, contactId?: string, error?: string}>}
- */
-export async function addToNewsletterAudience(email) {
-	if (!resend) {
-		if (dev) console.warn('RESEND_API_KEY not configured - skipping Resend audience sync');
-		return { success: true, contactId: null };
-	}
-
-	const audienceId = env.RESEND_AUDIENCE_ID;
-	if (!audienceId) {
-		if (dev) console.warn('RESEND_AUDIENCE_ID not configured - skipping Resend audience sync');
-		return { success: true, contactId: null };
-	}
-
-	try {
-		const contact = await resend.contacts.create({
-			email,
-			audienceId,
-			unsubscribed: false
-		});
-		return { success: true, contactId: contact.data?.id };
-	} catch (error) {
-		console.error('Failed to add to Resend audience:', error);
-		// Don't fail the subscription if Resend sync fails
-		return { success: false, error: error.message };
-	}
-}
-
-/**
  * Send a payment failed notification email
  * @param {string} email - Recipient email
  * @param {Object} options - Additional options

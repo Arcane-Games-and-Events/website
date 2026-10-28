@@ -1,69 +1,15 @@
 import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { deskEntry, deskMedia, user as userTable } from '$lib/server/db/schema.js';
+import { deskEntry } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { canEditEntries, canEditEntry, isAdmin } from '$lib/server/auth/roles.js';
-import { getMuxPlaybackToken, getMuxThumbnailToken } from '$lib/server/mux.js';
-import { extractCardNamesFromLexical } from '$lib/desk/render/lexical-utils.js';
-import { resolveCardImage, mapWithConcurrency } from '$lib/server/cards/index.js';
-
-/**
- * Walk a Lexical body and pull every card-linked name — from `card:` link
- * URLs AND from inline decklist widget nodes' parsedCards. Returns the same
- * `Set<JSON string>` shape the reader-side resolver expects.
- */
-function extractPreviewCardNames(body) {
-	const names = extractCardNamesFromLexical(body);
-	function walk(node) {
-		if (!node) return;
-		if (node.type === 'decklist' && node.parsedCards) {
-			const { arenaCards = [], deckCards = [] } = node.parsedCards;
-			for (const c of arenaCards) {
-				if (c?.name) names.add(JSON.stringify({ name: c.name, pitch: null }));
-			}
-			for (const c of deckCards) {
-				if (!c?.name) continue;
-				const pitch =
-					c.color === 'red' ? 'r' : c.color === 'yellow' ? 'y' : c.color === 'blue' ? 'b' : null;
-				names.add(JSON.stringify({ name: c.name, pitch }));
-			}
-		}
-		if (Array.isArray(node.children)) node.children.forEach(walk);
-		if (node.root) walk(node.root);
-	}
-	walk(body);
-	return names;
-}
-
-/**
- * Resolve card names to image URLs. Same shape the reader consumes:
- * `{ [name.toLowerCase()]: { imageUrl, fallbackUrl }, [name.toLowerCase() + ':' + pitchLetter]: { ... } }`.
- * Concurrency is capped at 8 in-flight lookups so a deck-tech article with
- * 70+ unique cards doesn't saturate the DB pool on a cold cache.
- */
-async function resolveCardImages(namesSet) {
-	const cardImages = {};
-	const cards = Array.from(namesSet).map((jsonStr) => JSON.parse(jsonStr));
-
-	await mapWithConcurrency(cards, 8, async ({ name, pitch }) => {
-		const pitchNum = pitch === 'r' ? 1 : pitch === 'y' ? 2 : pitch === 'b' ? 3 : null;
-		const resolved = await resolveCardImage({ name, pitch: pitchNum });
-		if (!resolved.found) return;
-		const key = pitch ? `${name.toLowerCase()}:${pitch}` : name.toLowerCase();
-		cardImages[key] = {
-			imageUrl: resolved.imageUrl,
-			fallbackUrl: resolved.fallbackUrl
-		};
-		if (pitch && !cardImages[name.toLowerCase()]) {
-			cardImages[name.toLowerCase()] = {
-				imageUrl: resolved.imageUrl,
-				fallbackUrl: resolved.fallbackUrl
-			};
-		}
-	});
-
-	return cardImages;
-}
+import {
+	extractEntryCardNames,
+	resolveCardImages,
+	loadMedia,
+	loadAuthor,
+	buildEntryVideo
+} from '$lib/server/desk/entryData.js';
 
 /**
  * Preview page loader for an entry. Distinct from the public reader:
@@ -101,62 +47,14 @@ export async function load({ params, locals }) {
 	const coverImageId = entry.draftCoverImageId || entry.coverImageId;
 	const thumbnailImageId = entry.draftThumbnailImageId || entry.thumbnailImageId;
 
-	// Load related rows in parallel — same joins the reader page does.
 	const [cover, thumbnail, author] = await Promise.all([
-		coverImageId
-			? db
-					.select()
-					.from(deskMedia)
-					.where(eq(deskMedia.id, coverImageId))
-					.limit(1)
-					.then((r) => r[0] || null)
-			: Promise.resolve(null),
-		thumbnailImageId
-			? db
-					.select()
-					.from(deskMedia)
-					.where(eq(deskMedia.id, thumbnailImageId))
-					.limit(1)
-					.then((r) => r[0] || null)
-			: Promise.resolve(null),
-		entry.authorId
-			? db
-					.select({
-						id: userTable.id,
-						firstName: userTable.firstName,
-						lastName: userTable.lastName
-					})
-					.from(userTable)
-					.where(eq(userTable.id, entry.authorId))
-					.limit(1)
-					.then((r) => r[0] || null)
-			: Promise.resolve(null)
+		loadMedia(coverImageId),
+		loadMedia(thumbnailImageId),
+		loadAuthor(entry.authorId)
 	]);
 
 	// Video slot — always live on the entry (video changes don't buffer).
-	let video = null;
-	if (entry.videoProvider === 'mux' && entry.muxPlaybackId) {
-		const [playbackToken, thumbnailToken] = await Promise.all([
-			getMuxPlaybackToken(entry.muxPlaybackId),
-			getMuxThumbnailToken(entry.muxPlaybackId)
-		]);
-		video = {
-			provider: 'mux',
-			muxPlaybackId: entry.muxPlaybackId,
-			playbackToken,
-			thumbnailToken,
-			duration: entry.videoDuration,
-			aspectRatio: entry.videoAspectRatio
-		};
-	} else if (entry.videoProvider === 'youtube' && entry.youtubeVideoId) {
-		video = {
-			provider: 'youtube',
-			youtubeVideoId: entry.youtubeVideoId,
-			youtubeTitle: entry.youtubeTitle,
-			youtubeThumbnailUrl: entry.youtubeThumbnailUrl,
-			youtubeDuration: entry.youtubeDuration
-		};
-	}
+	const video = await buildEntryVideo(entry);
 
 	// Effective published-ness for the banner labels — a scheduled entry
 	// past its start time counts as public everywhere else on the site.
@@ -174,7 +72,7 @@ export async function load({ params, locals }) {
 	// same way it does on the published reader.
 	let cardImages = {};
 	if (body) {
-		const names = extractPreviewCardNames(body);
+		const names = extractEntryCardNames(body);
 		if (names.size > 0) cardImages = await resolveCardImages(names);
 	}
 

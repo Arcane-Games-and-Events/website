@@ -12,65 +12,7 @@ import {
 // Aliased to avoid colliding with the local `playerKey` loop variable below.
 import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
 import { topByCircuit } from '$lib/server/players/circuitLeaders.js';
-
-/**
- * Calculate derived stats from monthly data
- * - eventsPlayed: count of months with points > 0
- * - top8Finishes: count of months with points >= 15 (5th-8th or better)
- * - seasonPoints: sum of all monthly points (more reliable than totalPoints field)
- */
-function calculateDerivedStats(standing) {
-	const monthlyPoints = [
-		standing.januaryPoints || 0,
-		standing.februaryPoints || 0,
-		standing.marchPoints || 0,
-		standing.aprilPoints || 0,
-		standing.mayPoints || 0,
-		standing.junePoints || 0,
-		standing.julyPoints || 0,
-		standing.augustPoints || 0,
-		standing.septemberPoints || 0,
-		standing.octoberPoints || 0,
-		standing.novemberPoints || 0,
-		standing.decemberPoints || 0
-	];
-
-	const eventsPlayed = monthlyPoints.filter((p) => p > 0).length;
-	const top8Finishes = monthlyPoints.filter((p) => p >= 15).length;
-	const seasonPoints = monthlyPoints.reduce((sum, p) => sum + p, 0);
-
-	return { eventsPlayed, top8Finishes, seasonPoints };
-}
-
-/**
- * Compare two standings using tiebreaker rules:
- * 1. Total Points (primary)
- * 2. Number of Top 8's made
- * 3. Total match wins
- * 4. Number of events attended
- * Returns negative if a should rank higher, positive if b should rank higher
- */
-function compareStandings(a, b) {
-	// Primary: Total Points (higher is better)
-	const pointsDiff = (b.totalPoints || 0) - (a.totalPoints || 0);
-	if (pointsDiff !== 0) return pointsDiff;
-
-	// Calculate derived stats for tiebreakers
-	const aDerived = calculateDerivedStats(a);
-	const bDerived = calculateDerivedStats(b);
-
-	// Tiebreaker 1: Top 8 finishes (higher is better)
-	const top8Diff = bDerived.top8Finishes - aDerived.top8Finishes;
-	if (top8Diff !== 0) return top8Diff;
-
-	// Tiebreaker 2: Total match wins (higher is better)
-	const winsDiff = (b.matchesWon || 0) - (a.matchesWon || 0);
-	if (winsDiff !== 0) return winsDiff;
-
-	// Tiebreaker 3: Events attended (higher is better)
-	const eventsDiff = bDerived.eventsPlayed - aDerived.eventsPlayed;
-	return eventsDiff;
-}
+import { calculateDerivedStats, compareStandings } from '$lib/players/standings.js';
 
 // Note: calculatePercentile, calculateRankPercentile, calculateAgeRating, and getRatingTier
 // are imported from $lib/age-rating.js for single source of truth

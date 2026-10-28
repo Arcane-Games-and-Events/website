@@ -7,56 +7,7 @@ import { getMuxThumbnailToken } from '$lib/server/mux.js';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
 import { topByCircuit } from '$lib/server/players/circuitLeaders.js';
-
-/**
- * Calculate derived stats from monthly data
- * - eventsPlayed: count of months with points > 0
- * - top8Finishes: count of months with points >= 15 (5th-8th or better)
- */
-function calculateDerivedStats(standing) {
-	const monthlyPoints = [
-		standing.januaryPoints || 0,
-		standing.februaryPoints || 0,
-		standing.marchPoints || 0,
-		standing.aprilPoints || 0,
-		standing.mayPoints || 0,
-		standing.junePoints || 0,
-		standing.julyPoints || 0,
-		standing.augustPoints || 0,
-		standing.septemberPoints || 0,
-		standing.octoberPoints || 0,
-		standing.novemberPoints || 0,
-		standing.decemberPoints || 0
-	];
-
-	const eventsPlayed = monthlyPoints.filter((p) => p > 0).length;
-	const top8Finishes = monthlyPoints.filter((p) => p >= 15).length;
-
-	return { eventsPlayed, top8Finishes };
-}
-
-/**
- * Compare two standings using tiebreaker rules:
- * 1. Total Points (primary)
- * 2. Number of Top 8's made
- * 3. Total match wins
- * 4. Number of events attended
- */
-function compareStandings(a, b) {
-	const pointsDiff = (b.totalPoints || 0) - (a.totalPoints || 0);
-	if (pointsDiff !== 0) return pointsDiff;
-
-	const aDerived = calculateDerivedStats(a);
-	const bDerived = calculateDerivedStats(b);
-
-	const top8Diff = bDerived.top8Finishes - aDerived.top8Finishes;
-	if (top8Diff !== 0) return top8Diff;
-
-	const winsDiff = (b.matchesWon || 0) - (a.matchesWon || 0);
-	if (winsDiff !== 0) return winsDiff;
-
-	return bDerived.eventsPlayed - aDerived.eventsPlayed;
-}
+import { calculateDerivedStats, compareStandings } from '$lib/players/standings.js';
 
 const withTimeout = (promise, ms, fallback) =>
 	Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(fallback), ms))]);

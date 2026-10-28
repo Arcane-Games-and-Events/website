@@ -5,29 +5,7 @@ import { eq, asc, and } from 'drizzle-orm';
 import { calculateFinalStandings } from '$lib/server/tournament-processor.js';
 import { playerKeyFromIdName } from '$lib/server/players/key.js';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
-
-/**
- * Convert hero name to static image URL
- * e.g., "Kayo, Armed and Dangerous" -> "/hero_images/kayo-armed-and-dangerous.webp"
- */
-function getHeroImageUrl(heroName) {
-	if (!heroName) return null;
-	const slug = heroName
-		.toLowerCase()
-		.replace(/ð/g, 'd')
-		.replace(/þ/g, 'th')
-		.replace(/æ/g, 'ae')
-		.replace(/ø/g, 'o')
-		.replace(/å/g, 'a')
-		.normalize('NFD')
-		.replace(/[\u0300-\u036f]/g, '')
-		.replace(/[!@#$%^&*()+=[\]{}|\\:;<>?/~`]/g, '')
-		.replace(/[,'"]/g, '')
-		.replace(/\s+/g, '-')
-		.replace(/-+/g, '-')
-		.trim();
-	return `/hero_images/${slug}.webp`;
-}
+import { heroImageUrl } from '$lib/heroImage.js';
 
 export async function load({ params, setHeaders }) {
 	try {
@@ -285,7 +263,7 @@ async function buildEventResults(eventId) {
 
 					return {
 						hero,
-						imageUrl: getHeroImageUrl(hero),
+						imageUrl: heroImageUrl(hero),
 						count,
 						percentage: ((count / heroData.length) * 100).toFixed(1),
 						wins: stats.wins,
@@ -444,7 +422,7 @@ async function buildEventResults(eventId) {
 		// Add hero image URLs to decklists
 		const decklistsWithImages = eventDecklists.map((d) => ({
 			...d,
-			heroImageUrl: getHeroImageUrl(d.hero)
+			heroImageUrl: heroImageUrl(d.hero)
 		}));
 
 		return {

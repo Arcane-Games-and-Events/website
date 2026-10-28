@@ -1,11 +1,8 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import heroData from '$lib/data/heroes.json';
 
 	let { data, form } = $props();
-
-	const heroNames = heroData.map((h) => h.name);
 
 	let showAddVodForm = $state(false);
 	let editingVodId = $state(null);
@@ -328,7 +325,7 @@
 				</div>
 
 				<datalist id="heroes-list">
-					{#each heroNames as hero (hero)}
+					{#each data.heroNames as hero (hero)}
 						<option value={hero}></option>
 					{/each}
 				</datalist>

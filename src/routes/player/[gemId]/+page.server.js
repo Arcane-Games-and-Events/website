@@ -11,6 +11,8 @@ import {
 	CACHE_KEYS,
 	CACHE_TTL
 } from '$lib/server/redis/index.js';
+import { calculateDerivedStats, compareStandings } from '$lib/players/standings.js';
+import { heroImageUrl } from '$lib/heroImage.js';
 
 // Any admin edit that touches standings/matches invalidates the whole
 // `player:*` prefix — cheaper than trying to figure out which gemIds
@@ -19,89 +21,6 @@ const PLAYER_PREFIX = `${CACHE_KEYS.PLAYER}:`;
 async function bustPlayerCaches() {
 	await invalidateByPrefix(PLAYER_PREFIX);
 	await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
-}
-
-/**
- * Convert hero name to static image URL
- * e.g., "Kayo, Armed and Dangerous" -> "/hero_images/kayo-armed-and-dangerous.webp"
- * e.g., "Arakni, 5L!p3d 7hRu 7h3 cR4X" -> "/hero_images/arakni-5lp3d-7hru-7h3-cr4x.webp"
- * e.g., "Jarl Vetreiði" -> "/hero_images/jarl-vetreidi.webp"
- */
-function getHeroImageUrl(heroName) {
-	if (!heroName) return null;
-	const slug = heroName
-		.toLowerCase()
-		// Normalize special characters (ð → d, etc.)
-		.replace(/ð/g, 'd')
-		.replace(/þ/g, 'th')
-		.replace(/æ/g, 'ae')
-		.replace(/ø/g, 'o')
-		.replace(/å/g, 'a')
-		.normalize('NFD')
-		.replace(/[\u0300-\u036f]/g, '') // Remove diacritics
-		.replace(/[!@#$%^&*()+=[\]{}|\\:;<>?/~`]/g, '') // Remove special chars
-		.replace(/[,'"]/g, '') // Remove commas, quotes
-		.replace(/\s+/g, '-') // Replace spaces with dashes
-		.replace(/-+/g, '-') // Collapse multiple dashes
-		.trim();
-	return `/hero_images/${slug}.webp`;
-}
-
-/**
- * Calculate derived stats from monthly data
- * - eventsPlayed: count of months with points > 0
- * - top8Finishes: count of months with points >= 15 (5th-8th or better)
- */
-function calculateDerivedStats(standing) {
-	const monthlyPoints = [
-		standing.januaryPoints || 0,
-		standing.februaryPoints || 0,
-		standing.marchPoints || 0,
-		standing.aprilPoints || 0,
-		standing.mayPoints || 0,
-		standing.junePoints || 0,
-		standing.julyPoints || 0,
-		standing.augustPoints || 0,
-		standing.septemberPoints || 0,
-		standing.octoberPoints || 0,
-		standing.novemberPoints || 0,
-		standing.decemberPoints || 0
-	];
-
-	const eventsPlayed = monthlyPoints.filter((p) => p > 0).length;
-	const top8Finishes = monthlyPoints.filter((p) => p >= 15).length;
-
-	return { eventsPlayed, top8Finishes };
-}
-
-/**
- * Compare two standings using tiebreaker rules:
- * 1. Total Points (primary)
- * 2. Number of Top 8's made
- * 3. Total match wins
- * 4. Number of events attended
- * Returns negative if a should rank higher, positive if b should rank higher
- */
-function compareStandings(a, b) {
-	// Primary: Total Points (higher is better)
-	const pointsDiff = (b.totalPoints || 0) - (a.totalPoints || 0);
-	if (pointsDiff !== 0) return pointsDiff;
-
-	// Calculate derived stats for tiebreakers
-	const aDerived = calculateDerivedStats(a);
-	const bDerived = calculateDerivedStats(b);
-
-	// Tiebreaker 1: Top 8 finishes (higher is better)
-	const top8Diff = bDerived.top8Finishes - aDerived.top8Finishes;
-	if (top8Diff !== 0) return top8Diff;
-
-	// Tiebreaker 2: Total match wins (higher is better)
-	const winsDiff = (b.matchesWon || 0) - (a.matchesWon || 0);
-	if (winsDiff !== 0) return winsDiff;
-
-	// Tiebreaker 3: Events attended (higher is better)
-	const eventsDiff = bDerived.eventsPlayed - aDerived.eventsPlayed;
-	return eventsDiff;
 }
 
 // Note: calculatePercentile and calculateRankPercentile are imported from $lib/age-rating.js
@@ -523,7 +442,7 @@ async function buildPlayerProfile(gemId) {
 		.sort((a, b) => b.count - a.count)
 		.map((usage) => ({
 			...usage,
-			imageUrl: getHeroImageUrl(usage.hero)
+			imageUrl: heroImageUrl(usage.hero)
 		}));
 
 	// Create hero lookup map by season|circuit|month for this player
@@ -532,7 +451,7 @@ async function buildPlayerProfile(gemId) {
 		const key = `${entry.season}|${entry.circuit}|${entry.month}`;
 		heroByEvent[key] = {
 			hero: entry.hero,
-			imageUrl: getHeroImageUrl(entry.hero)
+			imageUrl: heroImageUrl(entry.hero)
 		};
 	}
 
@@ -567,7 +486,7 @@ async function buildPlayerProfile(gemId) {
 			if (opponentEventKeys.has(key)) {
 				opponentHeroMap[key] = {
 					hero: entry.hero,
-					imageUrl: getHeroImageUrl(entry.hero)
+					imageUrl: heroImageUrl(entry.hero)
 				};
 			}
 		}

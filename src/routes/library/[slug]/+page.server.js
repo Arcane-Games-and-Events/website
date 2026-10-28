@@ -1,12 +1,17 @@
 import { error } from '@sveltejs/kit';
 import { userHasPremiumAccess } from '$lib/server/articles/access.js';
-import { resolveCardImage, mapWithConcurrency } from '$lib/server/cards/index.js';
 import { db } from '$lib/server/db/index.js';
-import { deskEntry, deskMedia, user as userTable } from '$lib/server/db/schema.js';
+import { deskEntry } from '$lib/server/db/schema.js';
 import { and, count, eq, lte, or } from 'drizzle-orm';
-import { getMuxPlaybackToken, getMuxThumbnailToken } from '$lib/server/mux.js';
 import { loadTagsForEntries } from '$lib/server/desk/list.js';
 import { getAuthorProfile, bioToHtml } from '$lib/server/desk/authorProfile.js';
+import {
+	extractEntryCardNames,
+	resolveCardImages,
+	loadMedia,
+	loadAuthor,
+	buildEntryVideo
+} from '$lib/server/desk/entryData.js';
 
 /**
  * Truncate Lexical content to only show first few paragraphs for preview
@@ -51,120 +56,6 @@ function truncateContentForPreview(content, maxParagraphs = 3) {
 }
 
 /**
- * Extract card names from Lexical content (looks for card: links)
- */
-function extractCardNamesFromContent(node, cardNames = new Set()) {
-	if (!node) return cardNames;
-
-	// Check for link nodes with card: URLs
-	if (node.type === 'link' || node.type === 'autolink') {
-		const url = node.fields?.url || node.url || '';
-		const cardMatch = url.match(/^#?card:(.+)$/);
-		if (cardMatch) {
-			let cardId = cardMatch[1];
-			// Handle separators for custom URLs
-			const separatorIndex = cardId.search(/[|]|%7C|::|--/);
-			if (separatorIndex !== -1) {
-				cardId = cardId.substring(0, separatorIndex);
-			}
-			// Remove pitch indicator [r], [y], [b]
-			const pitchMatch = cardId.match(/\[(r|y|b)\]$/i);
-			let pitch = null;
-			if (pitchMatch) {
-				pitch = pitchMatch[1].toLowerCase();
-				cardId = cardId.replace(/\[(r|y|b)\]$/i, '').trim();
-			}
-			// Decode URL-encoded card names (e.g., Felling%20of%20the%20Crown -> Felling of the Crown)
-			try {
-				cardId = decodeURIComponent(cardId);
-			} catch (e) {
-				// Keep original if decoding fails
-			}
-			// Store with pitch info
-			cardNames.add(JSON.stringify({ name: cardId, pitch }));
-		}
-	}
-
-	// Recursively process children
-	if (node.children && Array.isArray(node.children)) {
-		node.children.forEach((child) => extractCardNamesFromContent(child, cardNames));
-	}
-
-	// Handle root node
-	if (node.root) {
-		extractCardNamesFromContent(node.root, cardNames);
-	}
-
-	return cardNames;
-}
-
-/**
- * Resolve card images for a set of card names.
- * Returns a map of "cardName:pitch" -> { imageUrl, fallbackUrl }.
- *
- * Concurrency is capped at 8 in-flight lookups via `mapWithConcurrency`
- * so a deck-tech article with 70+ unique cards doesn't fire 70+
- * simultaneous DB lookups on a cold cache — that used to saturate the
- * Postgres connection pool and make the `load` function hang.
- */
-async function resolveCardImages(cardNamesSet) {
-	const cardImages = {};
-	const cards = Array.from(cardNamesSet).map((json) => JSON.parse(json));
-
-	await mapWithConcurrency(cards, 8, async ({ name, pitch }) => {
-		const pitchNum = pitch === 'r' ? 1 : pitch === 'y' ? 2 : pitch === 'b' ? 3 : null;
-		const resolved = await resolveCardImage({ name, pitch: pitchNum });
-
-		if (resolved.found) {
-			// Store with pitch key for specific lookups
-			const key = pitch ? `${name.toLowerCase()}:${pitch}` : name.toLowerCase();
-			cardImages[key] = {
-				imageUrl: resolved.imageUrl,
-				fallbackUrl: resolved.fallbackUrl
-			};
-			// Also store without pitch for fallback
-			if (pitch && !cardImages[name.toLowerCase()]) {
-				cardImages[name.toLowerCase()] = {
-					imageUrl: resolved.imageUrl,
-					fallbackUrl: resolved.fallbackUrl
-				};
-			}
-		}
-	});
-
-	return cardImages;
-}
-
-/**
- * Walk a Lexical body and pull every card-linked name — from `card:` link
- * URLs (existing helper) AND from inline decklist widget nodes' parsedCards.
- * The decklist widget doesn't expose its cards as links, so its cards need a
- * dedicated walk. Returns the same Set shape as the legacy card extractor.
- */
-function extractDeskEntryCardNames(body) {
-	const names = extractCardNamesFromContent(body);
-	function walk(node) {
-		if (!node) return;
-		if (node.type === 'decklist' && node.parsedCards) {
-			const { arenaCards = [], deckCards = [] } = node.parsedCards;
-			for (const c of arenaCards) {
-				if (c?.name) names.add(JSON.stringify({ name: c.name, pitch: null }));
-			}
-			for (const c of deckCards) {
-				if (!c?.name) continue;
-				const pitch =
-					c.color === 'red' ? 'r' : c.color === 'yellow' ? 'y' : c.color === 'blue' ? 'b' : null;
-				names.add(JSON.stringify({ name: c.name, pitch }));
-			}
-		}
-		if (Array.isArray(node.children)) node.children.forEach(walk);
-		if (node.root) walk(node.root);
-	}
-	walk(body);
-	return names;
-}
-
-/**
  * Load a Desk entry by slug + related media/author rows. Returns null when the
  * slug doesn't exist OR the entry isn't publicly readable yet (drafts,
  * archived, and future-scheduled entries are all 404 to the reader).
@@ -184,34 +75,9 @@ async function loadDeskEntryBySlug(slug) {
 	if (!isPublic) return null;
 
 	const [cover, thumbnail, author, authorPieces, tagsByEntry] = await Promise.all([
-		entry.coverImageId
-			? db
-					.select()
-					.from(deskMedia)
-					.where(eq(deskMedia.id, entry.coverImageId))
-					.limit(1)
-					.then((r) => r[0] || null)
-			: Promise.resolve(null),
-		entry.thumbnailImageId
-			? db
-					.select()
-					.from(deskMedia)
-					.where(eq(deskMedia.id, entry.thumbnailImageId))
-					.limit(1)
-					.then((r) => r[0] || null)
-			: Promise.resolve(null),
-		entry.authorId
-			? db
-					.select({
-						id: userTable.id,
-						firstName: userTable.firstName,
-						lastName: userTable.lastName
-					})
-					.from(userTable)
-					.where(eq(userTable.id, entry.authorId))
-					.limit(1)
-					.then((r) => r[0] || null)
-			: Promise.resolve(null),
+		loadMedia(entry.coverImageId),
+		loadMedia(entry.thumbnailImageId),
+		loadAuthor(entry.authorId),
 		entry.authorId
 			? db
 					.select({ n: count() })
@@ -255,29 +121,7 @@ async function buildDeskArticleShape({ entry, cover, thumbnail, author, tags = [
 		}
 	}
 
-	let video = null;
-	if (entry.videoProvider === 'mux' && entry.muxPlaybackId) {
-		const [playbackToken, thumbnailToken] = await Promise.all([
-			getMuxPlaybackToken(entry.muxPlaybackId),
-			getMuxThumbnailToken(entry.muxPlaybackId)
-		]);
-		video = {
-			provider: 'mux',
-			muxPlaybackId: entry.muxPlaybackId,
-			playbackToken,
-			thumbnailToken,
-			duration: entry.videoDuration,
-			aspectRatio: entry.videoAspectRatio
-		};
-	} else if (entry.videoProvider === 'youtube' && entry.youtubeVideoId) {
-		video = {
-			provider: 'youtube',
-			youtubeVideoId: entry.youtubeVideoId,
-			youtubeTitle: entry.youtubeTitle,
-			youtubeThumbnailUrl: entry.youtubeThumbnailUrl,
-			youtubeDuration: entry.youtubeDuration
-		};
-	}
+	const video = await buildEntryVideo(entry);
 
 	return {
 		id: entry.id,
@@ -335,7 +179,7 @@ export async function load({ params, locals, setHeaders }) {
 			// inline decklist widget nodes so the reader's hover tooltips work.
 			let cardImages = {};
 			if (article.content) {
-				const names = extractDeskEntryCardNames(article.content);
+				const names = extractEntryCardNames(article.content);
 				if (names.size > 0) cardImages = await resolveCardImages(names);
 			}
 

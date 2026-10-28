@@ -5,22 +5,11 @@
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import RatingBadge from '$lib/components/age/RatingBadge.svelte';
 	import { CIRCUITS } from '$lib/data/circuits.js';
+	import { calculateDerivedStats } from '$lib/players/standings.js';
+	import { heroImageUrl } from '$lib/heroImage.js';
+	import { MONTH_NAMES } from '$lib/data/months.js';
 
 	// ============ helpers for editorial template ============
-	function heroSlug(name) {
-		if (!name) return null;
-		return name
-			.toLowerCase()
-			.replace(/[,'"]/g, '')
-			.replace(/\s+/g, '-')
-			.replace(/[^a-z0-9-]/g, '')
-			.replace(/-+/g, '-')
-			.trim();
-	}
-	function heroBackdropUrl(name) {
-		const slug = heroSlug(name);
-		return slug ? `/hero_images/${slug}.webp` : null;
-	}
 	const CC_SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
 	const ccVar = (name) => `var(--ed-cc-${CC_SLUG[name] ?? 'la'})`;
 	const abbr = (name) => CIRCUITS[name]?.abbreviation ?? name;
@@ -66,33 +55,6 @@
 	];
 
 	let { data } = $props();
-
-	/**
-	 * Calculate derived stats from monthly data
-	 * - eventsPlayed: count of months with points > 0
-	 * - top8Finishes: count of months with points >= 15 (5th-8th or better)
-	 */
-	function calculateDerivedStats(standing) {
-		const monthlyPoints = [
-			standing.januaryPoints || 0,
-			standing.februaryPoints || 0,
-			standing.marchPoints || 0,
-			standing.aprilPoints || 0,
-			standing.mayPoints || 0,
-			standing.junePoints || 0,
-			standing.julyPoints || 0,
-			standing.augustPoints || 0,
-			standing.septemberPoints || 0,
-			standing.octoberPoints || 0,
-			standing.novemberPoints || 0,
-			standing.decemberPoints || 0
-		];
-
-		const eventsPlayed = monthlyPoints.filter((p) => p > 0).length;
-		const top8Finishes = monthlyPoints.filter((p) => p >= 15).length;
-
-		return { eventsPlayed, top8Finishes };
-	}
 
 	let expandedSeasonId = $state(null);
 	let expandedMonthKey = $state(null); // Tracks which month is expanded: "standingId|month"
@@ -170,24 +132,10 @@
 			}
 		}
 		// Sort by year desc, then month desc (most recent first), then round asc
-		const monthOrder = [
-			'January',
-			'February',
-			'March',
-			'April',
-			'May',
-			'June',
-			'July',
-			'August',
-			'September',
-			'October',
-			'November',
-			'December'
-		];
 		return allMatches.sort((a, b) => {
 			if (a.event.year !== b.event.year) return b.event.year.localeCompare(a.event.year);
-			const monthA = monthOrder.indexOf(a.event.month);
-			const monthB = monthOrder.indexOf(b.event.month);
+			const monthA = MONTH_NAMES.indexOf(a.event.month);
+			const monthB = MONTH_NAMES.indexOf(b.event.month);
 			if (monthA !== monthB) return monthB - monthA; // Descending (most recent month first)
 			return a.match.round - b.match.round;
 		});
@@ -423,7 +371,7 @@
 			.join('')
 	);
 	const sig = $derived(data.heroUsage?.[0] ?? null);
-	const sigBackdrop = $derived(sig ? heroBackdropUrl(sig.hero) : null);
+	const sigBackdrop = $derived(sig ? heroImageUrl(sig.hero) : null);
 	const bestList = $derived(data.decklists?.[0] ?? null);
 	const opponentsFaced = $derived(data.matchHistory?.headToHead?.length || 0);
 	const longestRun = $derived(data.matchHistory?.longestWinStreak || 0);
@@ -1371,7 +1319,7 @@
 							</div>
 						{/if}
 						{#if bestList}
-							{@const bb = heroBackdropUrl(bestList.decklist.hero)}
+							{@const bb = heroImageUrl(bestList.decklist.hero)}
 							<a
 								href="/age-open/{bestList.event?.id}/decklist/{bestList.decklist.id}"
 								class="group relative flex min-h-[170px] flex-1 items-end overflow-hidden border border-ink bg-ink bg-cover bg-top"
@@ -1728,7 +1676,7 @@
 						</div>
 						<ol>
 							{#each data.decklists.slice(0, 20) as { decklist, event } (decklist.id)}
-								{@const hb = heroBackdropUrl(decklist.hero)}
+								{@const hb = heroImageUrl(decklist.hero)}
 								<li class="border-b border-line even:bg-paper-bg/60">
 									<a
 										href="/age-open/{event?.id}/decklist/{decklist.id}"

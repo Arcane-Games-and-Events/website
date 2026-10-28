@@ -17,13 +17,11 @@ import {
 	parseSwissStandings,
 	parsePairings
 } from '$lib/server/tournament-processor.js';
-import {
-	invalidateCache,
-	invalidateByPrefix,
-	CACHE_KEYS
-} from '$lib/server/redis/index.js';
+import { invalidateCache, invalidateByPrefix, CACHE_KEYS } from '$lib/server/redis/index.js';
 import { parseDatetimeLocal } from '$lib/server/dates.js';
 import { playerKeyFromIdName } from '$lib/server/players/key.js';
+import { listHeroNames } from '$lib/server/cards/heroes.js';
+import { MONTH_NAMES } from '$lib/data/months.js';
 
 export async function load({ params, locals }) {
 	// Require authentication (admin or tournament staff)
@@ -236,6 +234,7 @@ export async function load({ params, locals }) {
 			existingMatches,
 			existingDecklists,
 			existingHeroes,
+			heroNames: listHeroNames(),
 			assignedStaff,
 			stats: {
 				totalRevenue: isAdmin ? totalRevenue.toFixed(2) : null,
@@ -558,21 +557,7 @@ export const actions = {
 				try {
 					const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
 					const currentYear = eventDate.getUTCFullYear().toString();
-					const monthNames = [
-						'January',
-						'February',
-						'March',
-						'April',
-						'May',
-						'June',
-						'July',
-						'August',
-						'September',
-						'October',
-						'November',
-						'December'
-					];
-					const eventMonthName = monthNames[eventDate.getUTCMonth()];
+					const eventMonthName = MONTH_NAMES[eventDate.getUTCMonth()];
 					const monthKey = eventMonthName.toLowerCase();
 
 					// Check if this is a re-upload by looking for existing matches
@@ -794,21 +779,7 @@ export const actions = {
 			// Insert new matches with eventId
 			if (processedResults.matches?.length > 0) {
 				const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
-				const monthNames = [
-					'January',
-					'February',
-					'March',
-					'April',
-					'May',
-					'June',
-					'July',
-					'August',
-					'September',
-					'October',
-					'November',
-					'December'
-				];
-				const eventMonthName = monthNames[eventDate.getUTCMonth()];
+				const eventMonthName = MONTH_NAMES[eventDate.getUTCMonth()];
 				const eventYear = eventDate.getUTCFullYear().toString();
 
 				const matchesToInsert = processedResults.matches.map((m) => ({

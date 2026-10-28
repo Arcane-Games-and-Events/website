@@ -1,5 +1,6 @@
 <script>
 	import { getCircuitNames } from '$lib/data/circuits.js';
+	import { MONTH_NAMES } from '$lib/data/months.js';
 
 	let { form } = $props();
 
@@ -9,20 +10,7 @@
 	let playerCapValue = $state('');
 
 	const circuits = getCircuitNames();
-	const months = [
-		'January',
-		'February',
-		'March',
-		'April',
-		'May',
-		'June',
-		'July',
-		'August',
-		'September',
-		'October',
-		'November',
-		'December'
-	];
+	const months = MONTH_NAMES;
 	const formats = [
 		'Classic Constructed',
 		'Draft',

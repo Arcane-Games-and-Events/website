@@ -1,32 +1,9 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
+	import { calculateDerivedStats, compareStandings } from '$lib/players/standings.js';
 
 	let { data, form } = $props();
-
-	function calculateDerivedStats(standing) {
-		const monthlyPoints = [
-			standing.januaryPoints || 0, standing.februaryPoints || 0, standing.marchPoints || 0,
-			standing.aprilPoints || 0, standing.mayPoints || 0, standing.junePoints || 0,
-			standing.julyPoints || 0, standing.augustPoints || 0, standing.septemberPoints || 0,
-			standing.octoberPoints || 0, standing.novemberPoints || 0, standing.decemberPoints || 0
-		];
-		const eventsPlayed = monthlyPoints.filter((p) => p > 0).length;
-		const top8Finishes = monthlyPoints.filter((p) => p >= 15).length;
-		return { eventsPlayed, top8Finishes };
-	}
-
-	function compareStandings(a, b) {
-		const pointsDiff = (b.totalPoints || 0) - (a.totalPoints || 0);
-		if (pointsDiff !== 0) return pointsDiff;
-		const aDerived = calculateDerivedStats(a);
-		const bDerived = calculateDerivedStats(b);
-		const top8Diff = bDerived.top8Finishes - aDerived.top8Finishes;
-		if (top8Diff !== 0) return top8Diff;
-		const winsDiff = (b.matchesWon || 0) - (a.matchesWon || 0);
-		if (winsDiff !== 0) return winsDiff;
-		return bDerived.eventsPlayed - aDerived.eventsPlayed;
-	}
 
 	let standingsSearchQuery = $state('');
 	let standingsSeasonFilter = $state('all');

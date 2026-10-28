@@ -974,12 +974,11 @@
 		text-decoration: underline;
 		text-underline-offset: 2px;
 	}
-	/* card links: a tinted, dotted link that opens the card preview */
+	/* card links: tinted and not underlined (as on the published page), and
+	   open the card preview */
 	.desk-editor-content :global(.desk-link[data-card-link]) {
 		background: color-mix(in srgb, var(--color-warm, #1e40af) 8%, transparent);
-		text-decoration-style: dotted;
-		text-decoration-thickness: 1.5px;
-		text-underline-offset: 3px;
+		text-decoration: none;
 		padding: 0 0.12em;
 		cursor: pointer;
 	}

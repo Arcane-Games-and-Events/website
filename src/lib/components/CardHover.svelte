@@ -1,356 +1,178 @@
 <script>
 	/**
-	 * CardHover - Hover tooltip and mobile modal for card links
+	 * Card previews for `.card-link` elements: card links in article bodies
+	 * and the cards in decklist widgets.
 	 *
-	 * Automatically attaches to elements with class "card-link" and pre-resolved image URLs.
-	 * - Desktop: Shows hover tooltip
-	 * - Mobile: Shows modal on tap with optional external link button
+	 * - Mouse: a small preview beside the link while hovering.
+	 * - Touch: the full-screen CardLightbox (the same viewer as the decklist
+	 *   page), stepping through every card on the page.
 	 *
-	 * Required data attributes (server must resolve these):
-	 * - data-card-name: Card name for display
-	 * - data-card-image: Pre-resolved image URL
-	 * - data-card-fallback: Optional fallback image URL
-	 * - data-card-url: Optional custom URL for external link button
+	 * Links carry server-resolved data attributes: data-card-name,
+	 * data-card-image, data-card-fallback, data-card-pitch ('1'|'2'|'3') and
+	 * data-card-url (a writer's custom link).
+	 *
+	 * Listeners are delegated from `container` (default: the document), so
+	 * links rendered after mount are covered too.
 	 */
+	import { onMount } from 'svelte';
+	import CardLightbox from '$lib/components/age/CardLightbox.svelte';
+	import { pitchStyle } from '$lib/data/pitch.js';
 
-	import { onMount, onDestroy } from 'svelte';
+	/** @type {{ container?: HTMLElement | null }} */
+	let { container = null } = $props();
 
-	// Container element to search for card links (defaults to document)
-	export let container = null;
+	const SELECTOR = '.card-link[data-card-name][data-card-image]';
+	const TIP_WIDTH = 240;
+	const TIP_HEIGHT = 335; // 240px at the card's 488:680 ratio
 
-	// Tooltip state (desktop hover)
-	let tooltipVisible = false;
-	let tooltipX = 0;
-	let tooltipY = 0;
-
-	// Modal state (mobile tap)
-	let modalVisible = false;
-	let modalCard = null;
-	let modalUrl = null;
-	let modalHasCustomUrl = false;
-	let modalImageLoaded = false;
-	let modalImageError = false;
-
-	// Shared state
-	let currentCard = null;
-	let imageUrl = null;
-	let fallbackUrl = null;
-	let imageLoaded = false;
-	let imageError = false;
-	let listeners = [];
-
-	// Detect if device supports touch
-	let isTouchDevice = false;
-
-	function handleMouseEnter(event) {
-		// Skip hover on touch devices
-		if (isTouchDevice) return;
-
-		const link = event.currentTarget;
-		const cardName = link.dataset.cardName;
-		const cardImage = link.dataset.cardImage;
-		const cardFallback = link.dataset.cardFallback;
-
-		if (!cardName || !cardImage) return;
-
-		currentCard = { name: cardName, imageUrl: cardImage, fallbackUrl: cardFallback };
-		imageUrl = cardImage;
-		fallbackUrl = cardFallback || null;
-		imageLoaded = false;
-		imageError = false;
-
-		// Position tooltip
-		const rect = link.getBoundingClientRect();
-		const viewportWidth = window.innerWidth;
-		const viewportHeight = window.innerHeight;
-		const tooltipWidth = 250;
-		const tooltipHeight = 350;
-
-		// Default: position to the right of the link
-		let x = rect.right + 10;
-		let y = rect.top;
-
-		// If tooltip would go off right edge, position to the left
-		if (x + tooltipWidth > viewportWidth - 20) {
-			x = rect.left - tooltipWidth - 10;
-		}
-
-		// If still off screen (narrow viewport), center it
-		if (x < 20) {
-			x = Math.max(20, (viewportWidth - tooltipWidth) / 2);
-		}
-
-		// If tooltip would go off bottom, adjust y
-		if (y + tooltipHeight > viewportHeight - 20) {
-			y = viewportHeight - tooltipHeight - 20;
-		}
-
-		// Ensure y is not negative
-		if (y < 20) {
-			y = 20;
-		}
-
-		tooltipX = x;
-		tooltipY = y;
-		tooltipVisible = true;
+	/** Card shape for a link element. */
+	function readLink(link) {
+		const d = link.dataset;
+		return {
+			name: d.cardName,
+			imageUrl: d.cardImage,
+			fallbackUrl: d.cardFallback || null,
+			pitch: pitchStyle(d.cardPitch),
+			href: link.href,
+			custom: !!d.cardUrl
+		};
 	}
 
-	function handleMouseLeave() {
-		tooltipVisible = false;
-		currentCard = null;
-		imageUrl = null;
-		fallbackUrl = null;
+	// ---- hover preview (mouse) ----
+	let tip = $state(null);
+	let tipX = $state(0);
+	let tipY = $state(0);
+	let tipSrc = $state(null);
+	let tipLoaded = $state(false);
+	let tipFailed = $state(false);
+
+	function showTip(link) {
+		const card = readLink(link);
+		tip = card;
+		tipSrc = card.imageUrl;
+		tipLoaded = false;
+		tipFailed = false;
+
+		// Beside the link, flipped or centred when it would leave the viewport
+		const r = link.getBoundingClientRect();
+		let x = r.right + 12;
+		if (x + TIP_WIDTH > innerWidth - 16) x = r.left - TIP_WIDTH - 12;
+		if (x < 16) x = Math.max(16, (innerWidth - TIP_WIDTH) / 2);
+		tipX = x;
+		tipY = Math.max(16, Math.min(r.top, innerHeight - TIP_HEIGHT - 16));
 	}
 
-	function handleClick(event) {
-		// Only intercept on touch devices
-		if (!isTouchDevice) return;
-
-		const link = event.currentTarget;
-		const cardName = link.dataset.cardName;
-		const cardImage = link.dataset.cardImage;
-		const cardFallback = link.dataset.cardFallback;
-		const customUrl = link.dataset.cardUrl;
-
-		if (!cardName || !cardImage) return;
-
-		// Prevent default link behavior
-		event.preventDefault();
-		event.stopPropagation();
-
-		modalCard = { name: cardName, imageUrl: cardImage, fallbackUrl: cardFallback };
-		// Track if we have a custom URL
-		modalHasCustomUrl = !!customUrl;
-		// Use custom URL if provided, otherwise generate default fabtcg search URL
-		modalUrl =
-			customUrl ||
-			`https://cards.fabtcg.com/results/?q=${encodeURIComponent(cardName).replace(/%20/g, '+')}`;
-		modalImageLoaded = false;
-		modalImageError = false;
-		modalVisible = true;
-	}
-
-	function closeModal() {
-		modalVisible = false;
-		modalCard = null;
-		modalUrl = null;
-		modalHasCustomUrl = false;
-	}
-
-	function handleBackdropClick(event) {
-		if (event.target === event.currentTarget) {
-			closeModal();
-		}
-	}
-
-	function handleKeydown(event) {
-		if (event.key === 'Escape' && modalVisible) {
-			closeModal();
-		}
-	}
-
-	function handleImageLoad() {
-		imageLoaded = true;
-	}
-
-	function handleImageError() {
-		// Try fallback URL if available
-		if (fallbackUrl && imageUrl !== fallbackUrl) {
-			imageUrl = fallbackUrl;
-			imageLoaded = false;
-			imageError = false;
+	function onTipError() {
+		if (tip?.fallbackUrl && tipSrc !== tip.fallbackUrl) {
+			tipSrc = tip.fallbackUrl;
+			tipLoaded = false;
 		} else {
-			imageError = true;
+			tipFailed = true;
 		}
 	}
 
-	function handleModalImageLoad() {
-		modalImageLoaded = true;
-	}
+	// ---- full-screen viewer (touch) ----
+	let cards = $state([]);
+	let index = $state(0);
+	const current = $derived(cards[index] ?? null);
 
-	function handleModalImageError() {
-		// Try fallback URL if available
-		if (modalCard?.fallbackUrl && modalCard.imageUrl !== modalCard.fallbackUrl) {
-			modalCard = { ...modalCard, imageUrl: modalCard.fallbackUrl };
-			modalImageLoaded = false;
-			modalImageError = false;
-		} else {
-			modalImageError = true;
+	function openViewer(link) {
+		const all = [];
+		const seen = new Set();
+		for (const el of (container || document).querySelectorAll(SELECTOR)) {
+			const c = readLink(el);
+			const key = `${c.name}|${el.dataset.cardPitch ?? ''}`;
+			if (seen.has(key)) continue;
+			seen.add(key);
+			all.push({ ...c, key });
 		}
+		const tapped = `${link.dataset.cardName}|${link.dataset.cardPitch ?? ''}`;
+		cards = all;
+		index = Math.max(
+			0,
+			all.findIndex((c) => c.key === tapped)
+		);
 	}
 
-	function attachListeners() {
-		const target = container || document;
-		const links = target.querySelectorAll('.card-link[data-card-name]');
-
-		links.forEach((link) => {
-			link.addEventListener('mouseenter', handleMouseEnter);
-			link.addEventListener('mouseleave', handleMouseLeave);
-			link.addEventListener('click', handleClick);
-			listeners.push({ element: link });
-		});
-	}
-
-	function detachListeners() {
-		listeners.forEach(({ element }) => {
-			element.removeEventListener('mouseenter', handleMouseEnter);
-			element.removeEventListener('mouseleave', handleMouseLeave);
-			element.removeEventListener('click', handleClick);
-		});
-		listeners = [];
+	function step(delta) {
+		const n = cards.length;
+		if (n) index = (index + delta + n) % n;
 	}
 
 	onMount(() => {
-		// Detect touch device
-		isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+		const root = container || document;
+		let lastPointer = 'mouse';
 
-		// Small delay to ensure DOM is ready after content renders
-		setTimeout(attachListeners, 100);
+		const linkFrom = (e) => /** @type {Element} */ (e.target)?.closest?.(SELECTOR);
+		const onPointerDown = (e) => (lastPointer = e.pointerType);
+		const onOver = (e) => {
+			if (e.pointerType !== 'mouse') return;
+			const link = linkFrom(e);
+			if (link && tip?.href !== link.href) showTip(link);
+		};
+		const onOut = (e) => {
+			const link = linkFrom(e);
+			if (link && !link.contains(/** @type {Node} */ (e.relatedTarget))) tip = null;
+		};
+		const onClick = (e) => {
+			if (lastPointer === 'mouse') return; // mouse clicks follow the link
+			const link = linkFrom(e);
+			if (!link) return;
+			e.preventDefault();
+			tip = null;
+			openViewer(link);
+		};
+
+		root.addEventListener('pointerdown', onPointerDown, true);
+		root.addEventListener('pointerover', onOver);
+		root.addEventListener('pointerout', onOut);
+		root.addEventListener('click', onClick);
+		return () => {
+			root.removeEventListener('pointerdown', onPointerDown, true);
+			root.removeEventListener('pointerover', onOver);
+			root.removeEventListener('pointerout', onOut);
+			root.removeEventListener('click', onClick);
+		};
 	});
-
-	onDestroy(() => {
-		detachListeners();
-	});
-
-	// Re-attach listeners when container changes
-	$: if (container) {
-		detachListeners();
-		setTimeout(attachListeners, 100);
-	}
 </script>
 
-<!-- Desktop: Hover Tooltip -->
-{#if tooltipVisible && imageUrl}
-	<div class="pointer-events-none fixed z-50" style="left: {tooltipX}px; top: {tooltipY}px;">
-		<div class="w-[250px] overflow-hidden rounded-xl border border-white/10 bg-gray-900 shadow-2xl">
-			<div class="relative aspect-[488/680] bg-gray-800">
-				{#if !imageLoaded && !imageError}
-					<div class="absolute inset-0 flex items-center justify-center">
-						<div
-							class="h-8 w-8 animate-spin rounded-full border-2 border-amber-500/50 border-t-amber-500"
-						></div>
-					</div>
-				{/if}
-				{#if imageError}
-					<div class="absolute inset-0 flex items-center justify-center text-gray-500">
-						<svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="1.5"
-								d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-							/>
-						</svg>
-					</div>
-				{/if}
-				<img
-					src={imageUrl}
-					alt={currentCard?.name || 'Card'}
-					class="h-full w-full object-contain transition-opacity duration-200 {imageLoaded
-						? 'opacity-100'
-						: 'opacity-0'}"
-					on:load={handleImageLoad}
-					on:error={handleImageError}
-				/>
-			</div>
-		</div>
-	</div>
+{#if tip && tipSrc && !tipFailed}
+	<img
+		src={tipSrc}
+		alt=""
+		aria-hidden="true"
+		class="pointer-events-none fixed z-50 aspect-[488/680] object-contain transition-opacity duration-200 {tipLoaded
+			? 'opacity-100'
+			: 'opacity-0'}"
+		style="left: {tipX}px; top: {tipY}px; width: {TIP_WIDTH}px;"
+		onload={() => (tipLoaded = true)}
+		onerror={onTipError}
+	/>
 {/if}
 
-<!-- Mobile: Modal -->
-{#if modalVisible && modalCard}
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
-		on:click={handleBackdropClick}
-		on:keydown={handleKeydown}
-		role="dialog"
-		aria-modal="true"
-		aria-label="Card preview"
-		tabindex="-1"
+{#if current}
+	<CardLightbox
+		card={{
+			name: current.name,
+			imageUrl: current.imageUrl,
+			fallbackUrl: current.fallbackUrl,
+			label: current.pitch?.label ?? 'Card',
+			hex: current.pitch?.hex ?? 'var(--ed-warm-light)'
+		}}
+		{index}
+		total={cards.length}
+		hint="Swipe through the cards in this piece"
+		onstep={step}
+		onclose={() => (cards = [])}
 	>
-		<div class="relative w-full max-w-sm">
-			<!-- Close Button -->
-			<button
-				on:click={closeModal}
-				class="absolute -top-12 right-0 z-10 rounded-full bg-gray-800/80 p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
-				aria-label="Close modal"
+		{#snippet aside()}
+			<a
+				href={current.href}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="flex min-h-[40px] shrink-0 items-center border border-paper-bg/30 px-3 text-[9.5px] font-extrabold tracking-[0.18em] whitespace-nowrap uppercase transition-colors hover:bg-paper-bg hover:text-ink"
+				>{current.custom ? 'Open link' : 'View card'} <span aria-hidden="true">&nbsp;↗</span></a
 			>
-				<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M6 18L18 6M6 6l12 12"
-					/>
-				</svg>
-			</button>
-
-			<!-- Card Image Container -->
-			<div class="overflow-hidden rounded-2xl">
-				<div class="relative aspect-[488/680]">
-					{#if !modalImageLoaded && !modalImageError}
-						<div class="absolute inset-0 flex items-center justify-center">
-							<div
-								class="h-10 w-10 animate-spin rounded-full border-2 border-amber-500/50 border-t-amber-500"
-							></div>
-						</div>
-					{/if}
-					{#if modalImageError}
-						<div class="absolute inset-0 flex items-center justify-center">
-							<div class="px-4 text-center">
-								<svg
-									class="mx-auto mb-3 h-12 w-12 text-gray-600"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="1.5"
-										d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-									/>
-								</svg>
-								<p class="text-sm text-gray-400">Image unavailable</p>
-							</div>
-						</div>
-					{/if}
-					{#if modalCard.imageUrl}
-						<img
-							src={modalCard.imageUrl}
-							alt={modalCard.name || 'Card'}
-							class="h-full w-full object-contain transition-opacity duration-300 {modalImageLoaded
-								? 'opacity-100'
-								: 'opacity-0'}"
-							on:load={handleModalImageLoad}
-							on:error={handleModalImageError}
-						/>
-					{/if}
-				</div>
-
-				<!-- Link Button -->
-				{#if modalUrl}
-					<div class="pt-4">
-						<a
-							href={modalUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-amber-500/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-amber-500/40"
-							on:click={closeModal}
-						>
-							<span>{modalHasCustomUrl ? 'Go to Link' : 'View Card'}</span>
-							<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-								/>
-							</svg>
-						</a>
-					</div>
-				{/if}
-			</div>
-		</div>
-	</div>
+		{/snippet}
+	</CardLightbox>
 {/if}

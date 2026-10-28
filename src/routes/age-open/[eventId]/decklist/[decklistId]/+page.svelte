@@ -1,11 +1,11 @@
 <script>
 	// Card images are now resolved server-side - no 12MB JSON import needed!
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
-	import { fade, fly } from 'svelte/transition';
-	import { cubicOut } from 'svelte/easing';
 	import FormatTag from '$lib/components/age/FormatTag.svelte';
 	import { heroImageUrl } from '$lib/heroImage.js';
 	import { CIRCUITS } from '$lib/data/circuits.js';
+	import { PITCH_STYLE } from '$lib/data/pitch.js';
+	import CardLightbox from '$lib/components/age/CardLightbox.svelte';
 	let { data } = $props();
 
 	const decklist = $derived(data.decklist);
@@ -185,10 +185,7 @@
 	// Pitch colours in the site's palette; the hero and equipment take the series blue
 	const PITCH = {
 		equipment: { label: 'Hero & equipment', hex: 'var(--ed-warm)' },
-		red: { label: 'Red', hex: '#A8392C' },
-		yellow: { label: 'Yellow', hex: '#C8922E' },
-		blue: { label: 'Blue', hex: '#2C5BA8' },
-		colorless: { label: 'Colorless', hex: '#56503F' }
+		...PITCH_STYLE
 	};
 	const SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
 	const ccVar = (name) => `var(--ed-cc-${SLUG[name] ?? 'la'})`;
@@ -217,24 +214,10 @@
 	// Modal state for mobile card preview
 	let showModal = $state(false);
 	let modalCard = $state(null);
-	let modalCardImage = $state(null);
-	let modalImageLoaded = $state(false);
-	let modalImageError = $state(false);
-	let modalCurrentUrl = $state(null);
-	let modalTriedFallback = $state(false);
 
 	function openCardModal(card) {
 		modalCard = card;
-		// Use the server-provided imageUrl and fallbackUrl directly from the card
-		modalCardImage = card ? { imageUrl: card.imageUrl, fallbackUrl: card.fallbackUrl } : null;
-		modalImageLoaded = false;
-		modalImageError = false;
-		modalTriedFallback = false;
-		modalCurrentUrl = modalCardImage?.imageUrl || modalCardImage?.fallbackUrl || null;
-		modalImageError = !modalCurrentUrl;
 		showModal = true;
-		// Prevent body scroll when modal is open
-		document.body.style.overflow = 'hidden';
 	}
 
 	// Every card in reading order, so the phone preview can step through the list
@@ -257,44 +240,9 @@
 		selectCard(next);
 		openCardModal(next);
 	}
-	let touchX = 0;
-	function onTouchStart(e) {
-		touchX = e.touches[0].clientX;
-	}
-	function onTouchEnd(e) {
-		const dx = e.changedTouches[0].clientX - touchX;
-		if (Math.abs(dx) > 50) stepModal(dx < 0 ? 1 : -1);
-	}
 
 	function closeModal() {
 		showModal = false;
-		document.body.style.overflow = '';
-	}
-
-	function handleModalLoad() {
-		modalImageLoaded = true;
-	}
-	function handleModalError() {
-		if (
-			!modalTriedFallback &&
-			modalCardImage?.fallbackUrl &&
-			modalCardImage.fallbackUrl !== modalCurrentUrl
-		) {
-			modalTriedFallback = true;
-			modalCurrentUrl = modalCardImage.fallbackUrl;
-			modalImageLoaded = false;
-		} else {
-			modalImageError = true;
-		}
-	}
-
-	// Handle escape key to close modal
-	function handleKeydown(e) {
-		if (showModal && e.key === 'ArrowRight') stepModal(1);
-		if (showModal && e.key === 'ArrowLeft') stepModal(-1);
-		if (e.key === 'Escape' && showModal) {
-			closeModal();
-		}
 	}
 </script>
 
@@ -314,8 +262,6 @@
 		<link rel="preload" as="image" href={heroImage.imageUrl} />
 	{/if}
 </svelte:head>
-
-<svelte:window onkeydown={handleKeydown} />
 
 <!--
 	AGE Open decklist, in the series' "tournament day" register: an ink
@@ -620,128 +566,30 @@
 
 <!-- ============ phone card preview ============ -->
 {#if showModal && modalCard}
-	{@const hex = modalCard.isHero ? 'var(--ed-warm-light)' : PITCH[pitchOf(modalCard)].hex}
-	<div
-		class="fixed inset-0 z-50 flex flex-col"
-		role="dialog"
-		aria-modal="true"
-		aria-label="Card preview: {modalCard.name}"
-		tabindex="-1"
-		ontouchstart={onTouchStart}
-		ontouchend={onTouchEnd}
-		transition:fade={{ duration: 180 }}
+	<CardLightbox
+		card={{
+			name: modalCard.name,
+			imageUrl: modalCard.imageUrl,
+			fallbackUrl: modalCard.fallbackUrl,
+			label: modalCard.isHero ? 'Hero' : PITCH[pitchOf(modalCard)].label,
+			hex: modalCard.isHero ? 'var(--ed-warm-light)' : PITCH[pitchOf(modalCard)].hex
+		}}
+		index={modalIndex}
+		total={orderedCards.length}
+		onstep={stepModal}
+		onclose={closeModal}
 	>
-		<!-- backdrop: tap outside the card to close; Escape is handled on the window -->
-		<button
-			type="button"
-			onclick={closeModal}
-			aria-label="Close card preview"
-			class="absolute inset-0 cursor-default bg-ink/90 backdrop-blur-md"
-			tabindex="-1"
-		></button>
-
-		<!-- top bar -->
-		<div class="relative flex items-center justify-between px-5 pt-5 text-paper-bg">
-			<p
-				class="text-[9.5px] font-extrabold tracking-[0.2em] text-paper-bg/60 uppercase tabular-nums"
-			>
-				Card {modalIndex + 1} <span class="text-paper-bg/35">/ {orderedCards.length}</span>
-			</p>
-			<button
-				type="button"
-				onclick={closeModal}
-				class="flex h-10 w-10 items-center justify-center border border-paper-bg/30 text-[18px] leading-none transition-colors hover:bg-paper-bg hover:text-ink"
-				aria-label="Close">×</button
-			>
-		</div>
-
-		<!-- card -->
-		<div
-			class="pointer-events-none relative flex min-h-0 flex-1 items-center justify-center px-8 py-4"
-		>
-			{#key modalCard}
-				<div
-					class="pointer-events-auto relative aspect-[488/680] h-full max-h-[62vh] max-w-full"
-					in:fly={{ y: 14, duration: 260, easing: cubicOut }}
-				>
-					{#if !modalImageLoaded && !modalImageError}
-						<div class="absolute inset-0 flex items-center justify-center">
-							<span class="h-6 w-6 animate-spin border-2 border-paper-bg/20 border-t-warm-light"
-							></span>
-						</div>
-					{/if}
-					{#if modalImageError}
-						<p
-							class="absolute inset-0 flex items-center justify-center border border-paper-bg/20 px-6 text-center text-[10px] font-extrabold tracking-[0.16em] text-paper-bg/60 uppercase"
-						>
-							Image unavailable
-						</p>
-					{/if}
-					{#if modalCurrentUrl}
-						{#key modalCurrentUrl}
-							<img
-								src={modalCurrentUrl}
-								alt={modalCard.name || ''}
-								class="h-full w-full {modalCurrentUrl.startsWith('/hero_images/')
-									? 'object-cover object-[75%_20%]'
-									: 'object-contain'} drop-shadow-[0_24px_40px_rgba(0,0,0,0.6)] transition-opacity duration-300 {modalImageLoaded
-									? 'opacity-100'
-									: 'opacity-0'}"
-								onload={handleModalLoad}
-								onerror={handleModalError}
-							/>
-						{/key}
-					{/if}
-				</div>
-			{/key}
-		</div>
-
-		<!-- caption + controls -->
-		<div class="relative px-5 pb-[max(20px,env(safe-area-inset-bottom))] text-paper-bg">
-			<div
-				class="flex items-end justify-between gap-4 border-t-[3px] pt-3"
-				style="border-color: {hex};"
-			>
-				<div class="min-w-0">
-					<p
-						class="flex items-center gap-2 text-[9px] font-extrabold tracking-[0.2em] uppercase"
-						style="color: {hex};"
+		{#snippet aside()}
+			{#if !modalCard.isHero}
+				<p class="shrink-0 text-right">
+					<span class="ao-cond block text-[36px] leading-none font-black tabular-nums"
+						>{modalCard.quantity || 1}×</span
 					>
-						<span class="h-2 w-2 bg-current" aria-hidden="true"></span>
-						{modalCard.isHero ? 'Hero' : PITCH[pitchOf(modalCard)].label}
-					</p>
-					<p class="mt-1.5 truncate font-newsreader text-[22px] leading-tight font-semibold">
-						{modalCard.name}
-					</p>
-				</div>
-				{#if !modalCard.isHero}
-					<p class="shrink-0 text-right">
-						<span class="ao-cond block text-[36px] leading-none font-black tabular-nums"
-							>{modalCard.quantity || 1}×</span
-						>
-						<span class="text-[8px] font-extrabold tracking-[0.2em] text-paper-bg/55 uppercase"
-							>in deck</span
-						>
-					</p>
-				{/if}
-			</div>
-			<div class="mt-4 grid grid-cols-2 gap-px bg-paper-bg/20">
-				<button
-					type="button"
-					onclick={() => stepModal(-1)}
-					class="flex min-h-[48px] items-center justify-center gap-2 bg-ink text-[10px] font-extrabold tracking-[0.18em] uppercase transition-colors hover:bg-paper-bg hover:text-ink"
-					><span aria-hidden="true">←</span> Previous</button
-				>
-				<button
-					type="button"
-					onclick={() => stepModal(1)}
-					class="flex min-h-[48px] items-center justify-center gap-2 bg-ink text-[10px] font-extrabold tracking-[0.18em] uppercase transition-colors hover:bg-paper-bg hover:text-ink"
-					>Next <span aria-hidden="true">→</span></button
-				>
-			</div>
-			<p class="mt-3 text-center font-newsreader text-[12px] text-paper-bg/45 italic">
-				Swipe to flip through the list
-			</p>
-		</div>
-	</div>
+					<span class="text-[8px] font-extrabold tracking-[0.2em] text-paper-bg/55 uppercase"
+						>in deck</span
+					>
+				</p>
+			{/if}
+		{/snippet}
+	</CardLightbox>
 {/if}

@@ -8,6 +8,7 @@ import {
 	invalidateByPrefix,
 	CACHE_KEYS
 } from '$lib/server/redis/index.js';
+import { MONTH_NAMES } from '$lib/data/months.js';
 
 const MONTHS = [
 	'january',
@@ -22,21 +23,6 @@ const MONTHS = [
 	'october',
 	'november',
 	'december'
-];
-
-const MONTH_NAMES = [
-	'January',
-	'February',
-	'March',
-	'April',
-	'May',
-	'June',
-	'July',
-	'August',
-	'September',
-	'October',
-	'November',
-	'December'
 ];
 
 /**

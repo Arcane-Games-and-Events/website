@@ -1,7 +1,8 @@
 /**
  * Article body typography — the classes on the reading column of
  * /library/[slug]. Shared with the Desk editor's widget previews so a
- * preview renders exactly as the published page does.
+ * preview renders exactly as the published page does. Card links drop the
+ * underline so they read differently from ordinary links.
  */
 export const ARTICLE_PROSE = `
 	prose max-w-[760px] prose-headings:scroll-mt-24 prose-headings:font-newsreader
@@ -10,7 +11,7 @@ export const ARTICLE_PROSE = `
 	prose-h3:mb-3 prose-h3:text-[24px] prose-h3:font-semibold prose-p:my-0 prose-p:mb-[24px]
 	prose-p:font-newsreader prose-p:text-[21px] prose-p:leading-[1.7] prose-p:text-ink
 	prose-a:text-accent prose-a:underline prose-a:decoration-[1px]
-	prose-a:underline-offset-[3px] prose-blockquote:my-9 prose-blockquote:border-l-[3px]
+	prose-a:underline-offset-[3px] [&_a.card-link]:no-underline prose-blockquote:my-9 prose-blockquote:border-l-[3px]
 	prose-blockquote:border-warm prose-blockquote:pl-7 prose-blockquote:not-italic
 	prose-strong:font-semibold prose-strong:text-ink prose-em:italic prose-code:rounded-none
 	prose-code:bg-panel prose-code:px-[5px] prose-code:py-[2px] prose-code:font-mono

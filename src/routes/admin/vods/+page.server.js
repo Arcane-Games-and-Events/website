@@ -3,6 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { vod, event } from '$lib/server/db/schema.js';
 import { eq, desc, sql } from 'drizzle-orm';
 import { invalidateCache, invalidateByPrefix, CACHE_KEYS } from '$lib/server/redis/index.js';
+import { listHeroNames } from '$lib/server/cards/heroes.js';
 
 // Homepage caches the latest 12 VODs under this key. Any admin write
 // that changes the "which VODs are published?" set must bust it.
@@ -71,7 +72,8 @@ export async function load({ locals }) {
 	return {
 		user: locals.user,
 		vods,
-		events
+		events,
+		heroNames: listHeroNames()
 	};
 }
 

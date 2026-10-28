@@ -46,7 +46,7 @@
 		editorialPatterns.some((re) => re.test($page.url.pathname));
 
 	// Error pages (404 / 500 / 403 / etc.) render their own AgeShell
-	// chrome — skip the legacy Sidebar/Topbar wrapper so we don't end
+	// chrome — skip the global header + footer wrapper so we don't end
 	// up with two stacked navbars on error responses thrown from any
 	// route, including the routes that haven't been redesigned yet.
 	$: isErrorPage = !!$page.error;
