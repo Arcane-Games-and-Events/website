@@ -340,9 +340,7 @@ export async function POST({ request, locals, cookies }) {
 						amount: firstChargeAmount.toFixed(2),
 						currency: 'USD',
 						meta: {
-							type: hasPartnerDiscount
-								? 'subscription_partner_first'
-								: 'subscription_member_first',
+							type: hasPartnerDiscount ? 'subscription_partner_first' : 'subscription_member_first',
 							subscriptionId: result.subscriptionId,
 							subscriptionType,
 							promoCode: normalizedCode,

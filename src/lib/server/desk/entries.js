@@ -274,9 +274,7 @@ export async function updateEntry(id, patch, actor) {
 	const visibilityShifted =
 		('status' in patch &&
 			patch.status !== existing.status &&
-			[patch.status, existing.status].some(
-				(s) => s === 'published' || s === 'scheduled'
-			)) ||
+			[patch.status, existing.status].some((s) => s === 'published' || s === 'scheduled')) ||
 		'publishedAt' in patch ||
 		('scheduledFor' in patch && existing.status === 'scheduled') ||
 		('accessMode' in patch && patch.accessMode !== existing.accessMode) ||
@@ -410,10 +408,7 @@ export async function discardEntryDraft(id) {
 	// Draft images the writer uploaded that never made it to the live entry.
 	// Captured before we null out the draft columns; deleted after.
 	const orphanedIds = [];
-	if (
-		existing.draftCoverImageId != null &&
-		existing.draftCoverImageId !== existing.coverImageId
-	) {
+	if (existing.draftCoverImageId != null && existing.draftCoverImageId !== existing.coverImageId) {
 		orphanedIds.push(existing.draftCoverImageId);
 	}
 	if (
@@ -442,10 +437,7 @@ export async function discardEntryDraft(id) {
 		try {
 			await deleteMediaWithGuard(orphanedId);
 		} catch (err) {
-			console.warn(
-				`[discardEntryDraft] media cleanup failed for ${orphanedId}:`,
-				err?.message
-			);
+			console.warn(`[discardEntryDraft] media cleanup failed for ${orphanedId}:`, err?.message);
 		}
 	}
 

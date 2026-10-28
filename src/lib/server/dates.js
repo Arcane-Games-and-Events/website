@@ -26,4 +26,3 @@ export function parseDatetimeLocal(datetimeLocalValue) {
 	// Append 'Z' to interpret as UTC, preserving the wall clock time
 	return new Date(datetimeLocalValue + ':00Z');
 }
-

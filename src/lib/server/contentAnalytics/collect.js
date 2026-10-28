@@ -144,7 +144,11 @@ export async function startView(p, event) {
 	if (isBot(ua)) return;
 
 	const [entry] = await db
-		.select({ id: deskEntry.id, readTime: deskEntry.readTime, videoProvider: deskEntry.videoProvider })
+		.select({
+			id: deskEntry.id,
+			readTime: deskEntry.readTime,
+			videoProvider: deskEntry.videoProvider
+		})
 		.from(deskEntry)
 		.where(eq(deskEntry.id, p.entryId))
 		.limit(1);

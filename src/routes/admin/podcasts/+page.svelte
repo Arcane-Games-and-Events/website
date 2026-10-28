@@ -104,64 +104,88 @@
 <svelte:head><title>Podcasts · AGE Ops</title></svelte:head>
 
 <!-- ============ HEADER ============ -->
-<header class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[42px] pb-[28px]">
+<header class="mx-auto w-full max-w-[1600px] px-4 pt-[42px] pb-[28px] md:px-10 lg:px-14">
 	<div class="mb-[18px] flex flex-wrap items-center gap-[16px]">
-		<span class="font-mono-system text-warm text-[11px] font-extrabold tracking-[0.16em] uppercase">
+		<span class="font-mono-system text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase">
 			Podcasts
 		</span>
-		<span class="bg-line2 hidden h-[1px] flex-1 md:block"></span>
+		<span class="hidden h-[1px] flex-1 bg-line2 md:block"></span>
 		<button
 			type="button"
 			onclick={() => {
 				showAddPodcastForm = true;
 				editingPodcastId = null;
 			}}
-			class="bg-ink font-mono-system inline-flex items-center px-[14px] py-[9px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125"
+			class="inline-flex items-center bg-ink px-[14px] py-[9px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
 		>
 			+ New Podcast
 		</button>
 	</div>
-	<h1 class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]">
+	<h1
+		class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]"
+	>
 		Podcasts & episodes.
 	</h1>
-	<p class="font-newsreader text-soft mt-3 max-w-[680px] text-[19px] leading-[1.42] italic">
+	<p class="mt-3 max-w-[680px] font-newsreader text-[19px] leading-[1.42] text-soft italic">
 		Manage AGE Studios podcasts, sync YouTube playlists, and edit episode metadata.
 	</p>
 </header>
 
 {#if successMessage}
-	<section class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[12px] overflow-x-clip">
-		<div class="border-ink bg-prem flex items-center justify-between border-[1.5px] p-4 text-white">
+	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[12px] md:px-10 lg:px-14">
+		<div class="flex items-center justify-between border-[1.5px] border-ink bg-prem p-4 text-white">
 			<div>
-				<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: #d6eedf;">Success</span>
-				<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{successMessage}</p>
+				<span
+					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+					style="color: #d6eedf;">Success</span
+				>
+				<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{successMessage}</p>
 			</div>
-			<button type="button" onclick={() => (successMessage = '')} class="text-white hover:brightness-95" aria-label="Dismiss">×</button>
+			<button
+				type="button"
+				onclick={() => (successMessage = '')}
+				class="text-white hover:brightness-95"
+				aria-label="Dismiss">×</button
+			>
 		</div>
 	</section>
 {/if}
 {#if errorMessage}
-	<section class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[12px] overflow-x-clip">
-		<div class="border-ink bg-warm flex items-center justify-between border-[1.5px] p-4 text-white">
+	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[12px] md:px-10 lg:px-14">
+		<div class="flex items-center justify-between border-[1.5px] border-ink bg-warm p-4 text-white">
 			<div>
-				<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: rgba(255,255,255,0.75);">Error</span>
-				<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{errorMessage}</p>
+				<span
+					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+					style="color: rgba(255,255,255,0.75);">Error</span
+				>
+				<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{errorMessage}</p>
 			</div>
-			<button type="button" onclick={() => (errorMessage = '')} class="text-white hover:brightness-95" aria-label="Dismiss">×</button>
+			<button
+				type="button"
+				onclick={() => (errorMessage = '')}
+				class="text-white hover:brightness-95"
+				aria-label="Dismiss">×</button
+			>
 		</div>
 	</section>
 {/if}
 
 <!-- ============ PODCAST FORM ============ -->
 {#if showAddPodcastForm || editingPodcastId}
-	{@const editingPodcast = editingPodcastId ? (data.podcasts || []).find((p) => p.id === editingPodcastId) : null}
-	<section class="border-ink border-y-[3px] border-double overflow-x-clip">
-		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[36px]">
+	{@const editingPodcast = editingPodcastId
+		? (data.podcasts || []).find((p) => p.id === editingPodcastId)
+		: null}
+	<section class="overflow-x-clip border-y-[3px] border-double border-ink">
+		<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
 			<div class="mb-[22px]">
-				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+				<span
+					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+				>
 					{editingPodcast ? 'Edit Podcast' : 'New Podcast'}
 				</span>
-				<h2 class="font-newsreader mt-[6px] text-[clamp(24px,3vw,32px)] leading-[1] font-semibold tracking-[-0.01em]">
+				<h2
+					class="mt-[6px] font-newsreader text-[clamp(24px,3vw,32px)] leading-[1] font-semibold tracking-[-0.01em]"
+				>
 					{editingPodcast ? editingPodcast.name : 'Details.'}
 				</h2>
 			</div>
@@ -178,12 +202,15 @@
 						}
 					};
 				}}
-				class="border-ink space-y-[22px] border-[1.5px] p-6"
+				class="space-y-[22px] border-[1.5px] border-ink p-6"
 			>
 				{#if editingPodcast}<input type="hidden" name="podcastId" value={editingPodcast.id} />{/if}
 
 				<div>
-					<label for="podcast-name" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+					<label
+						for="podcast-name"
+						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+					>
 						Podcast Name <span class="text-warm">*</span>
 					</label>
 					<input
@@ -193,11 +220,14 @@
 						value={editingPodcast?.name || ''}
 						required
 						placeholder="e.g., Cardboard and Beyond"
-						class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none"
+						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
 					/>
 				</div>
 				<div>
-					<label for="podcast-description" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+					<label
+						for="podcast-description"
+						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+					>
 						Description
 					</label>
 					<textarea
@@ -205,11 +235,15 @@
 						name="description"
 						rows="3"
 						placeholder="Description of the podcast…"
-						class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[15px] leading-[1.5] focus:outline-none"
-					>{editingPodcast?.description || ''}</textarea>
+						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] leading-[1.5] text-ink placeholder:text-fade focus:outline-none"
+						>{editingPodcast?.description || ''}</textarea
+					>
 				</div>
 				<div>
-					<label for="podcast-youtube-playlist" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+					<label
+						for="podcast-youtube-playlist"
+						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+					>
 						YouTube Playlist URL
 					</label>
 					<input
@@ -218,7 +252,7 @@
 						name="youtubePlaylistUrl"
 						value={editingPodcast?.youtubePlaylistUrl || ''}
 						placeholder="https://www.youtube.com/playlist?list=…"
-						class="border-ink bg-paper-bg text-ink font-mono-system placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[13px] focus:outline-none"
+						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink placeholder:text-fade focus:outline-none"
 					/>
 				</div>
 				{#if editingPodcast}
@@ -229,21 +263,32 @@
 							name="isActive"
 							value="true"
 							checked={editingPodcast.isActive !== false}
-							class="border-ink h-[16px] w-[16px] accent-[color:var(--ed-warm)]"
+							class="h-[16px] w-[16px] border-ink accent-[color:var(--ed-warm)]"
 						/>
 						<span class="font-newsreader text-[15px] font-semibold">
-							Active <span class="text-fade text-[13px] font-normal italic">— show on Studios page</span>
+							Active <span class="text-[13px] font-normal text-fade italic"
+								>— show on Studios page</span
+							>
 						</span>
 					</label>
 				{/if}
 				{#if podcastFormError}
-					<p class="font-mono-system text-warm text-[11px] font-bold tracking-[0.06em] uppercase">{podcastFormError}</p>
+					<p class="font-mono-system text-[11px] font-bold tracking-[0.06em] text-warm uppercase">
+						{podcastFormError}
+					</p>
 				{/if}
 				<div class="flex gap-3">
-					<button type="submit" class="bg-ink font-mono-system inline-flex items-center px-[22px] py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125">
+					<button
+						type="submit"
+						class="inline-flex items-center bg-ink px-[22px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
+					>
 						{editingPodcast ? 'Update Podcast' : 'Create Podcast'} →
 					</button>
-					<button type="button" onclick={() => resetPodcastForms()} class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[18px] py-[10px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors">
+					<button
+						type="button"
+						onclick={() => resetPodcastForms()}
+						class="inline-flex items-center border border-line2 px-[18px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+					>
 						Cancel
 					</button>
 				</div>
@@ -253,25 +298,31 @@
 {/if}
 
 <!-- ============ LIST ============ -->
-<section class="border-ink border-t-[3px] border-double overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[36px]">
+<section class="overflow-x-clip border-t-[3px] border-double border-ink">
+	<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
 		<div class="grid gap-[24px] lg:grid-cols-2">
 			{#each data.podcasts || [] as podcastItem (podcastItem.id)}
-				{@const podcastEpisodes = (data.podcastEpisodes || []).filter((ep) => ep.podcastId === podcastItem.id)}
-				<div class="border-ink border-[1.5px] overflow-hidden">
-					<div class="border-ink border-b-[1.5px] px-5 py-4">
+				{@const podcastEpisodes = (data.podcastEpisodes || []).filter(
+					(ep) => ep.podcastId === podcastItem.id
+				)}
+				<div class="overflow-hidden border-[1.5px] border-ink">
+					<div class="border-b-[1.5px] border-ink px-5 py-4">
 						<div class="flex items-start justify-between gap-3">
 							<div class="min-w-0">
-								<h3 class="font-newsreader truncate text-[19px] font-semibold tracking-[-0.01em]">
+								<h3 class="truncate font-newsreader text-[19px] font-semibold tracking-[-0.01em]">
 									{podcastItem.name}
 								</h3>
-								<div class="font-mono-system text-fade mt-[4px] text-[10px] font-bold tracking-[0.08em] uppercase">
+								<div
+									class="mt-[4px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
+								>
 									{podcastEpisodes.length} episodes
 								</div>
 							</div>
 							<div class="flex shrink-0 items-center gap-2">
 								{#if !podcastItem.isActive}
-									<span class="font-mono-system border-line2 text-fade inline-flex items-center border px-[8px] py-[3px] text-[10px] font-bold tracking-[0.08em] uppercase">
+									<span
+										class="inline-flex items-center border border-line2 px-[8px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
+									>
 										Inactive
 									</span>
 								{/if}
@@ -281,7 +332,7 @@
 										editingPodcastId = podcastItem.id;
 										showAddPodcastForm = false;
 									}}
-									class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+									class="inline-flex items-center border border-line2 px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
 									title="Edit podcast"
 								>
 									Edit
@@ -300,7 +351,11 @@
 									class="inline"
 								>
 									<input type="hidden" name="podcastId" value={podcastItem.id} />
-									<button type="submit" class="bg-warm font-mono-system inline-flex items-center px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase text-white hover:brightness-110 transition-[filter]" title="Delete podcast">
+									<button
+										type="submit"
+										class="inline-flex items-center bg-warm px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+										title="Delete podcast"
+									>
 										Delete
 									</button>
 								</form>
@@ -310,7 +365,7 @@
 
 					<div class="p-5">
 						{#if podcastItem.description}
-							<p class="font-newsreader text-soft mb-[16px] text-[15px] italic leading-[1.5]">
+							<p class="mb-[16px] font-newsreader text-[15px] leading-[1.5] text-soft italic">
 								{podcastItem.description}
 							</p>
 						{/if}
@@ -325,7 +380,7 @@
 									youtubeUrlInput = '';
 									youtubeFetchedData = null;
 								}}
-								class="border-line2 hover:border-ink font-mono-system inline-flex flex-1 items-center justify-center border-dashed border px-[14px] py-[10px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+								class="inline-flex flex-1 items-center justify-center border border-dashed border-line2 px-[14px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
 							>
 								+ Add Episode
 							</button>
@@ -334,7 +389,7 @@
 									type="button"
 									onclick={() => syncPlaylist(podcastItem.id)}
 									disabled={syncingPodcastId === podcastItem.id}
-									class="border-line2 hover:border-warm font-mono-system inline-flex flex-1 items-center justify-center border-dashed border px-[14px] py-[10px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors disabled:opacity-50"
+									class="inline-flex flex-1 items-center justify-center border border-dashed border-line2 px-[14px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-warm disabled:opacity-50"
 								>
 									{syncingPodcastId === podcastItem.id ? 'Syncing…' : 'Sync Playlist ↻'}
 								</button>
@@ -344,20 +399,33 @@
 						{#if podcastEpisodes.length > 0}
 							<div class="max-h-[400px] space-y-[10px] overflow-y-auto pr-1">
 								{#each podcastEpisodes as ep (ep.id)}
-									<div class="border-line2 bg-panel flex items-center gap-3 border p-3">
+									<div class="flex items-center gap-3 border border-line2 bg-panel p-3">
 										{#if ep.thumbnailUrl}
-											<img src={ep.thumbnailUrl} alt="" class="border-line2 h-12 w-20 shrink-0 border object-cover" />
+											<img
+												src={ep.thumbnailUrl}
+												alt=""
+												class="h-12 w-20 shrink-0 border border-line2 object-cover"
+											/>
 										{:else}
-											<div class="border-line2 flex h-12 w-20 shrink-0 items-center justify-center border bg-white text-fade text-[18px]">
+											<div
+												class="flex h-12 w-20 shrink-0 items-center justify-center border border-line2 bg-white text-[18px] text-fade"
+											>
 												▶
 											</div>
 										{/if}
 										<div class="min-w-0 flex-1">
-											<h4 class="font-newsreader truncate text-[14px] font-semibold">{ep.title}</h4>
-											<div class="font-mono-system text-fade mt-[3px] flex items-center gap-2 text-[10px] font-bold tracking-[0.06em] uppercase">
-												{#if ep.season && ep.episode}<span>S{ep.season}E{ep.episode}</span><span>·</span>{/if}
-												{#if ep.guest}<span class="truncate">Guest: {ep.guest}</span><span>·</span>{/if}
-												{#if ep.publishedAt}<span>{new Date(ep.publishedAt).toLocaleDateString()}</span>{/if}
+											<h4 class="truncate font-newsreader text-[14px] font-semibold">{ep.title}</h4>
+											<div
+												class="mt-[3px] flex items-center gap-2 font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
+											>
+												{#if ep.season && ep.episode}<span>S{ep.season}E{ep.episode}</span><span
+														>·</span
+													>{/if}
+												{#if ep.guest}<span class="truncate">Guest: {ep.guest}</span><span>·</span
+													>{/if}
+												{#if ep.publishedAt}<span
+														>{new Date(ep.publishedAt).toLocaleDateString()}</span
+													>{/if}
 											</div>
 										</div>
 										<div class="flex shrink-0 items-center gap-1">
@@ -366,7 +434,7 @@
 													href={ep.youtubeUrl}
 													target="_blank"
 													rel="noopener noreferrer"
-													class="border-line2 hover:border-warm font-mono-system inline-flex items-center border px-[9px] py-[5px] text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+													class="inline-flex items-center border border-line2 px-[9px] py-[5px] font-mono-system text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-warm"
 													title="View on YouTube"
 												>
 													YT
@@ -379,7 +447,7 @@
 													editingEpisodeId = ep.id;
 													showAddEpisodeForm = true;
 												}}
-												class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[9px] py-[5px] text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+												class="inline-flex items-center border border-line2 px-[9px] py-[5px] font-mono-system text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
 												title="Edit episode"
 											>
 												Edit
@@ -396,7 +464,11 @@
 												class="inline"
 											>
 												<input type="hidden" name="episodeId" value={ep.id} />
-												<button type="submit" class="bg-warm font-mono-system inline-flex items-center px-[9px] py-[5px] text-[9px] font-extrabold tracking-[0.12em] uppercase text-white hover:brightness-110 transition-[filter]" title="Delete episode">
+												<button
+													type="submit"
+													class="inline-flex items-center bg-warm px-[9px] py-[5px] font-mono-system text-[9px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+													title="Delete episode"
+												>
 													Delete
 												</button>
 											</form>
@@ -405,15 +477,24 @@
 								{/each}
 							</div>
 						{:else}
-							<p class="font-newsreader text-soft text-center text-[15px] italic">No episodes yet.</p>
+							<p class="text-center font-newsreader text-[15px] text-soft italic">
+								No episodes yet.
+							</p>
 						{/if}
 					</div>
 				</div>
 			{:else}
 				<div class="col-span-full border-ink border-[1.5px] p-12 text-center overflow-hidden">
-					<span class="font-mono-system text-warm text-[10px] font-extrabold tracking-[0.14em] uppercase">Empty Shelf</span>
-					<h3 class="font-newsreader mt-[6px] text-[26px] font-semibold tracking-[-0.01em]">No podcasts yet.</h3>
-					<p class="font-newsreader text-soft mt-2 text-[17px] italic">Create your first podcast to get started.</p>
+					<span
+						class="font-mono-system text-warm text-[10px] font-extrabold tracking-[0.14em] uppercase"
+						>Empty Shelf</span
+					>
+					<h3 class="font-newsreader mt-[6px] text-[26px] font-semibold tracking-[-0.01em]">
+						No podcasts yet.
+					</h3>
+					<p class="font-newsreader text-soft mt-2 text-[17px] italic">
+						Create your first podcast to get started.
+					</p>
 				</div>
 			{/each}
 		</div>
@@ -422,16 +503,22 @@
 
 <!-- ============ EPISODE MODAL ============ -->
 {#if showAddEpisodeForm && selectedPodcastId}
-	{@const editingEpisode = editingEpisodeId ? (data.podcastEpisodes || []).find((ep) => ep.id === editingEpisodeId) : null}
+	{@const editingEpisode = editingEpisodeId
+		? (data.podcastEpisodes || []).find((ep) => ep.id === editingEpisodeId)
+		: null}
 	{@const selectedPodcast = (data.podcasts || []).find((p) => p.id === selectedPodcastId)}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-		<div class="border-ink bg-paper-bg relative max-h-[90vh] w-full max-w-2xl overflow-y-auto border-[3px] border-double shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-			<div class="border-line2 flex items-start justify-between gap-3 border-b p-6">
+		<div
+			class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto border-[3px] border-double border-ink bg-paper-bg shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
+		>
+			<div class="flex items-start justify-between gap-3 border-b border-line2 p-6">
 				<div>
-					<span class="font-mono-system text-warm text-[10px] font-extrabold tracking-[0.16em] uppercase">
+					<span
+						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
+					>
 						{editingEpisode ? 'Edit Episode' : 'New Episode'}
 					</span>
-					<h3 class="font-newsreader mt-[6px] text-[24px] font-semibold tracking-[-0.01em]">
+					<h3 class="mt-[6px] font-newsreader text-[24px] font-semibold tracking-[-0.01em]">
 						{selectedPodcast?.name}
 					</h3>
 				</div>
@@ -439,7 +526,7 @@
 					type="button"
 					onclick={() => resetPodcastForms()}
 					aria-label="Close"
-					class="border-line2 hover:border-ink font-mono-system inline-flex h-[32px] w-[32px] items-center justify-center border text-[14px] font-bold transition-colors"
+					class="inline-flex h-[32px] w-[32px] items-center justify-center border border-line2 font-mono-system text-[14px] font-bold transition-colors hover:border-ink"
 				>
 					×
 				</button>
@@ -465,7 +552,10 @@
 
 				{#if !editingEpisode}
 					<div>
-						<label for="episode-youtube-url" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+						<label
+							for="episode-youtube-url"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>
 							YouTube URL <span class="text-warm">*</span>
 						</label>
 						<div class="flex gap-2">
@@ -476,20 +566,25 @@
 								bind:value={youtubeUrlInput}
 								required
 								placeholder="https://www.youtube.com/watch?v=…"
-								class="border-ink bg-paper-bg text-ink font-mono-system placeholder:text-fade flex-1 border-[1.5px] px-[14px] py-[10px] text-[13px] focus:outline-none"
+								class="flex-1 border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink placeholder:text-fade focus:outline-none"
 							/>
 							<button
 								type="button"
 								onclick={() => fetchYouTubeMetadata(youtubeUrlInput)}
 								disabled={!youtubeUrlInput || fetchingYouTubeData}
-								class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[14px] py-[10px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors disabled:opacity-50"
+								class="inline-flex items-center border border-line2 px-[14px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:opacity-50"
 							>
 								{fetchingYouTubeData ? 'Fetching…' : 'Fetch Data'}
 							</button>
 						</div>
 						{#if youtubeFetchedData}
-							<div class="border-ink bg-prem mt-[10px] flex items-center gap-2 border p-[10px] text-[12px] text-white">
-								<span class="font-mono-system text-[9.5px] font-extrabold tracking-[0.14em] uppercase" style="color: #d6eedf;">Fetched</span>
+							<div
+								class="mt-[10px] flex items-center gap-2 border border-ink bg-prem p-[10px] text-[12px] text-white"
+							>
+								<span
+									class="font-mono-system text-[9.5px] font-extrabold tracking-[0.14em] uppercase"
+									style="color: #d6eedf;">Fetched</span
+								>
 								<span class="font-newsreader">{youtubeFetchedData.title}</span>
 							</div>
 						{/if}
@@ -501,7 +596,10 @@
 				{/if}
 
 				<div>
-					<label for="episode-title" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+					<label
+						for="episode-title"
+						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+					>
 						Title <span class="text-warm">*</span>
 					</label>
 					<input
@@ -511,13 +609,17 @@
 						value={youtubeFetchedData?.title || editingEpisode?.title || ''}
 						required
 						placeholder="Episode title"
-						class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none"
+						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
 					/>
 				</div>
 
 				<div class="grid grid-cols-2 gap-[14px]">
 					<div>
-						<label for="episode-season" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Season</label>
+						<label
+							for="episode-season"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							>Season</label
+						>
 						<input
 							type="number"
 							id="episode-season"
@@ -525,11 +627,15 @@
 							min="1"
 							value={editingEpisode?.season || ''}
 							placeholder="1"
-							class="border-ink bg-paper-bg text-ink font-mono-system placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[13px] focus:outline-none"
+							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink placeholder:text-fade focus:outline-none"
 						/>
 					</div>
 					<div>
-						<label for="episode-number" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Episode</label>
+						<label
+							for="episode-number"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							>Episode</label
+						>
 						<input
 							type="number"
 							id="episode-number"
@@ -537,54 +643,73 @@
 							min="1"
 							value={editingEpisode?.episode || ''}
 							placeholder="1"
-							class="border-ink bg-paper-bg text-ink font-mono-system placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[13px] focus:outline-none"
+							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink placeholder:text-fade focus:outline-none"
 						/>
 					</div>
 				</div>
 
 				<div>
-					<label for="episode-guest" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Guest(s)</label>
+					<label
+						for="episode-guest"
+						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>Guest(s)</label
+					>
 					<input
 						type="text"
 						id="episode-guest"
 						name="guest"
 						value={editingEpisode?.guest || ''}
 						placeholder="Guest name(s)"
-						class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none"
+						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
 					/>
 				</div>
 
 				<div>
-					<label for="episode-published" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Published Date</label>
+					<label
+						for="episode-published"
+						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>Published Date</label
+					>
 					<input
 						type="date"
 						id="episode-published"
 						name="publishedAt"
-						value={editingEpisode?.publishedAt ? new Date(editingEpisode.publishedAt).toISOString().split('T')[0] : ''}
-						class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[14px] py-[10px] text-[13px] focus:outline-none"
+						value={editingEpisode?.publishedAt
+							? new Date(editingEpisode.publishedAt).toISOString().split('T')[0]
+							: ''}
+						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink focus:outline-none"
 					/>
 				</div>
 
 				<div>
-					<label for="episode-description" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Description</label>
+					<label
+						for="episode-description"
+						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>Description</label
+					>
 					<textarea
 						id="episode-description"
 						name="description"
 						rows="3"
 						placeholder="Episode description…"
-						class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[15px] leading-[1.5] focus:outline-none"
-					>{editingEpisode?.description || ''}</textarea>
+						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] leading-[1.5] text-ink placeholder:text-fade focus:outline-none"
+						>{editingEpisode?.description || ''}</textarea
+					>
 				</div>
 
 				<div>
-					<label for="episode-duration" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Duration</label>
+					<label
+						for="episode-duration"
+						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>Duration</label
+					>
 					<input
 						type="text"
 						id="episode-duration"
 						name="duration"
 						value={editingEpisode?.duration || ''}
 						placeholder="e.g., 45:32"
-						class="border-ink bg-paper-bg text-ink font-mono-system placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[13px] focus:outline-none"
+						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink placeholder:text-fade focus:outline-none"
 					/>
 				</div>
 
@@ -596,23 +721,34 @@
 							name="isPublished"
 							value="true"
 							checked={editingEpisode.isPublished !== false}
-							class="border-ink h-[16px] w-[16px] accent-[color:var(--ed-warm)]"
+							class="h-[16px] w-[16px] border-ink accent-[color:var(--ed-warm)]"
 						/>
 						<span class="font-newsreader text-[15px] font-semibold">
-							Published <span class="text-fade text-[13px] font-normal italic">— show on Studios page</span>
+							Published <span class="text-[13px] font-normal text-fade italic"
+								>— show on Studios page</span
+							>
 						</span>
 					</label>
 				{/if}
 
 				{#if episodeFormError}
-					<p class="font-mono-system text-warm text-[11px] font-bold tracking-[0.06em] uppercase">{episodeFormError}</p>
+					<p class="font-mono-system text-[11px] font-bold tracking-[0.06em] text-warm uppercase">
+						{episodeFormError}
+					</p>
 				{/if}
 
 				<div class="flex gap-3 pt-2">
-					<button type="submit" class="bg-ink font-mono-system inline-flex items-center px-[22px] py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125">
+					<button
+						type="submit"
+						class="inline-flex items-center bg-ink px-[22px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
+					>
 						{editingEpisode ? 'Update Episode' : 'Create Episode'} →
 					</button>
-					<button type="button" onclick={() => resetPodcastForms()} class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[18px] py-[10px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors">
+					<button
+						type="button"
+						onclick={() => resetPodcastForms()}
+						class="inline-flex items-center border border-line2 px-[18px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+					>
 						Cancel
 					</button>
 				</div>

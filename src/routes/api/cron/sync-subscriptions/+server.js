@@ -57,7 +57,10 @@ export async function GET({ request, locals }) {
 
 				// Authorize.net statuses: active, expired, suspended, cancelled, terminated
 				if (authnetStatus === 'active') {
-					if (user.subscriptionStatus !== 'active' && user.subscriptionStatus !== 'payment_failed') {
+					if (
+						user.subscriptionStatus !== 'active' &&
+						user.subscriptionStatus !== 'payment_failed'
+					) {
 						// Subscription is active in Authorize.net but not locally
 						newStatus = 'active';
 						shouldUpdate = true;
@@ -129,7 +132,11 @@ export async function GET({ request, locals }) {
 						// If Authorize.net says "active" but the latest transaction was declined,
 						// override to payment_failed. This catches the case where Authorize.net
 						// keeps the subscription active during its retry period.
-						if (authnetStatus === 'active' && isDeclined && user.subscriptionStatus !== 'payment_failed') {
+						if (
+							authnetStatus === 'active' &&
+							isDeclined &&
+							user.subscriptionStatus !== 'payment_failed'
+						) {
 							newStatus = 'payment_failed';
 							shouldUpdate = true;
 						}
@@ -226,7 +233,10 @@ export async function GET({ request, locals }) {
 								updatePaymentUrl: `${baseUrl}/account/billing`
 							});
 						} catch (emailErr) {
-							console.error(`Failed to send payment failed email to ${user.email}:`, emailErr.message);
+							console.error(
+								`Failed to send payment failed email to ${user.email}:`,
+								emailErr.message
+							);
 						}
 					}
 

@@ -11,14 +11,24 @@
 
 	let showCreateStandingModal = $state(false);
 	let newStanding = $state({
-		season: '2026', circuit: 'Los Angeles', playerName: '', gemId: '',
-		totalPoints: 0, matchesPlayed: 0, matchesWon: 0
+		season: '2026',
+		circuit: 'Los Angeles',
+		playerName: '',
+		gemId: '',
+		totalPoints: 0,
+		matchesPlayed: 0,
+		matchesWon: 0
 	});
 
 	function resetNewStanding() {
 		newStanding = {
-			season: '2026', circuit: 'Los Angeles', playerName: '', gemId: '',
-			totalPoints: 0, matchesPlayed: 0, matchesWon: 0
+			season: '2026',
+			circuit: 'Los Angeles',
+			playerName: '',
+			gemId: '',
+			totalPoints: 0,
+			matchesPlayed: 0,
+			matchesWon: 0
 		};
 	}
 
@@ -40,7 +50,9 @@
 	}
 
 	const canDelete = $derived(
-		deleteStandingData && deleteConfirmationInput.toLowerCase().trim() === deleteStandingData.playerName?.toLowerCase().trim()
+		deleteStandingData &&
+			deleteConfirmationInput.toLowerCase().trim() ===
+				deleteStandingData.playerName?.toLowerCase().trim()
 	);
 
 	let sortColumn = $state('points');
@@ -58,19 +70,39 @@
 	let adminStandingsPage = $state(1);
 	const adminStandingsPerPage = 25;
 
-	const uniqueSeasons = $derived([...new Set((data.standings || []).map((s) => s.season))].sort().reverse());
-	const uniqueCircuits = $derived([...new Set((data.standings || []).map((s) => s.circuit))].sort());
+	const uniqueSeasons = $derived(
+		[...new Set((data.standings || []).map((s) => s.season))].sort().reverse()
+	);
+	const uniqueCircuits = $derived(
+		[...new Set((data.standings || []).map((s) => s.circuit))].sort()
+	);
 
 	const filteredStandings = $derived.by(() => {
 		function sortLocal(a, b) {
 			let aVal, bVal;
 			switch (sortColumn) {
-				case 'points': aVal = a.totalPoints || 0; bVal = b.totalPoints || 0; break;
-				case 'winPct': aVal = a.winPercentage || 0; bVal = b.winPercentage || 0; break;
-				case 'record': aVal = a.matchesWon || 0; bVal = b.matchesWon || 0; break;
-				case 'events': aVal = calculateDerivedStats(a).eventsPlayed; bVal = calculateDerivedStats(b).eventsPlayed; break;
-				case 'top8': aVal = calculateDerivedStats(a).top8Finishes; bVal = calculateDerivedStats(b).top8Finishes; break;
-				default: return compareStandings(a, b);
+				case 'points':
+					aVal = a.totalPoints || 0;
+					bVal = b.totalPoints || 0;
+					break;
+				case 'winPct':
+					aVal = a.winPercentage || 0;
+					bVal = b.winPercentage || 0;
+					break;
+				case 'record':
+					aVal = a.matchesWon || 0;
+					bVal = b.matchesWon || 0;
+					break;
+				case 'events':
+					aVal = calculateDerivedStats(a).eventsPlayed;
+					bVal = calculateDerivedStats(b).eventsPlayed;
+					break;
+				case 'top8':
+					aVal = calculateDerivedStats(a).top8Finishes;
+					bVal = calculateDerivedStats(b).top8Finishes;
+					break;
+				default:
+					return compareStandings(a, b);
 			}
 			const diff = sortDirection === 'desc' ? bVal - aVal : aVal - bVal;
 			if (diff === 0) return compareStandings(a, b);
@@ -91,11 +123,20 @@
 			.sort(sortLocal);
 	});
 
-	const totalAdminStandingsPages = $derived(Math.ceil(filteredStandings.length / adminStandingsPerPage));
-	const paginatedAdminStandings = $derived(filteredStandings.slice((adminStandingsPage - 1) * adminStandingsPerPage, adminStandingsPage * adminStandingsPerPage));
+	const totalAdminStandingsPages = $derived(
+		Math.ceil(filteredStandings.length / adminStandingsPerPage)
+	);
+	const paginatedAdminStandings = $derived(
+		filteredStandings.slice(
+			(adminStandingsPage - 1) * adminStandingsPerPage,
+			adminStandingsPage * adminStandingsPerPage
+		)
+	);
 
 	$effect(() => {
-		standingsSearchQuery; standingsSeasonFilter; standingsCircuitFilter;
+		standingsSearchQuery;
+		standingsSeasonFilter;
+		standingsCircuitFilter;
 		adminStandingsPage = 1;
 	});
 
@@ -125,59 +166,67 @@
 <svelte:head><title>Standings · AGE Ops</title></svelte:head>
 
 <!-- ============ HEADER ============ -->
-<header class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[42px] pb-[28px]">
+<header class="mx-auto w-full max-w-[1600px] px-4 pt-[42px] pb-[28px] md:px-10 lg:px-14">
 	<div class="mb-[18px] flex flex-wrap items-center gap-[16px]">
-		<span class="font-mono-system text-warm text-[11px] font-extrabold tracking-[0.16em] uppercase">
+		<span class="font-mono-system text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase">
 			Standings
 		</span>
-		<span class="bg-line2 hidden h-[1px] flex-1 md:block"></span>
+		<span class="hidden h-[1px] flex-1 bg-line2 md:block"></span>
 		<button
 			onclick={() => (showCreateStandingModal = true)}
-			class="bg-ink font-mono-system inline-flex items-center px-[14px] py-[9px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125"
+			class="inline-flex items-center bg-ink px-[14px] py-[9px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
 		>
 			+ Add Standing
 		</button>
 	</div>
-	<h1 class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]">
+	<h1
+		class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]"
+	>
 		The season table.
 	</h1>
-	<p class="font-newsreader text-soft mt-3 max-w-[720px] text-[19px] leading-[1.42] italic">
+	<p class="mt-3 max-w-[720px] font-newsreader text-[19px] leading-[1.42] text-soft italic">
 		{data.standings?.length || 0} standings records · edit on the player profile page.
 	</p>
 </header>
 
 {#if successMessage}
-	<section class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[12px] overflow-x-clip">
-		<div class="border-ink bg-prem border-[1.5px] p-4 text-white">
-			<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: #d6eedf;">Success</span>
-			<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{successMessage}</p>
+	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[12px] md:px-10 lg:px-14">
+		<div class="border-[1.5px] border-ink bg-prem p-4 text-white">
+			<span
+				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+				style="color: #d6eedf;">Success</span
+			>
+			<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{successMessage}</p>
 		</div>
 	</section>
 {/if}
 {#if errorMessage}
-	<section class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[12px] overflow-x-clip">
-		<div class="border-ink bg-warm border-[1.5px] p-4 text-white">
-			<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: rgba(255,255,255,0.75);">Error</span>
-			<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{errorMessage}</p>
+	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[12px] md:px-10 lg:px-14">
+		<div class="border-[1.5px] border-ink bg-warm p-4 text-white">
+			<span
+				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+				style="color: rgba(255,255,255,0.75);">Error</span
+			>
+			<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{errorMessage}</p>
 		</div>
 	</section>
 {/if}
 
 <!-- ============ FILTERS ============ -->
-<section class="border-ink border-y-[3px] border-double overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[24px]">
+<section class="overflow-x-clip border-y-[3px] border-double border-ink">
+	<div class="mx-auto w-full max-w-[1600px] px-4 py-[24px] md:px-10 lg:px-14">
 		<div class="grid gap-[14px] sm:grid-cols-2 md:grid-cols-4">
 			<div class="sm:col-span-2 md:col-span-1">
 				<input
 					type="text"
 					bind:value={standingsSearchQuery}
 					placeholder="Search name or GEM ID"
-					class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none"
+					class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
 				/>
 			</div>
 			<select
 				bind:value={standingsSeasonFilter}
-				class="border-ink bg-paper-bg text-ink font-mono-system border-[1.5px] px-[12px] py-[10px] text-[11px] font-bold tracking-[0.08em] uppercase focus:outline-none"
+				class="border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[11px] font-bold tracking-[0.08em] text-ink uppercase focus:outline-none"
 			>
 				<option value="all">All Seasons</option>
 				{#each uniqueSeasons as season (season)}
@@ -186,27 +235,32 @@
 			</select>
 			<select
 				bind:value={standingsCircuitFilter}
-				class="border-ink bg-paper-bg text-ink font-mono-system border-[1.5px] px-[12px] py-[10px] text-[11px] font-bold tracking-[0.08em] uppercase focus:outline-none"
+				class="border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[11px] font-bold tracking-[0.08em] text-ink uppercase focus:outline-none"
 			>
 				<option value="all">All Circuits</option>
 				{#each uniqueCircuits as circuit (circuit)}
 					<option value={circuit}>{circuit}</option>
 				{/each}
 			</select>
-			<div class="font-mono-system text-fade flex items-center text-[10.5px] font-bold tracking-[0.08em] uppercase">
+			<div
+				class="flex items-center font-mono-system text-[10.5px] font-bold tracking-[0.08em] text-fade uppercase"
+			>
 				Showing {filteredStandings.length} / {data.standings?.length || 0}
 			</div>
 		</div>
 
 		<!-- Recalculate -->
-		<div class="border-warm mt-[16px] border-[1.5px] p-4">
+		<div class="mt-[16px] border-[1.5px] border-warm p-4">
 			<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<span class="font-mono-system text-warm text-[10px] font-extrabold tracking-[0.16em] uppercase">
+					<span
+						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
+					>
 						Recalculate from Match Data
 					</span>
-					<p class="text-soft mt-[6px] text-[13px] leading-[1.5]">
-						Rebuilds every player's standing in the selected season + circuit from source matches. Filter to a specific season and circuit first.
+					<p class="mt-[6px] text-[13px] leading-[1.5] text-soft">
+						Rebuilds every player's standing in the selected season + circuit from source matches.
+						Filter to a specific season and circuit first.
 					</p>
 				</div>
 				<form
@@ -219,7 +273,11 @@
 						};
 					}}
 					onsubmit={(e) => {
-						if (!confirm(`Recalculate every player's standing for ${standingsCircuitFilter} ${standingsSeasonFilter}? This overwrites existing standings rows for that combo.`)) {
+						if (
+							!confirm(
+								`Recalculate every player's standing for ${standingsCircuitFilter} ${standingsSeasonFilter}? This overwrites existing standings rows for that combo.`
+							)
+						) {
 							e.preventDefault();
 						}
 					}}
@@ -229,7 +287,7 @@
 					<button
 						type="submit"
 						disabled={standingsSeasonFilter === 'all' || standingsCircuitFilter === 'all'}
-						class="bg-warm font-mono-system inline-flex items-center px-[16px] py-[9px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase text-white transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 whitespace-nowrap"
+						class="inline-flex items-center bg-warm px-[16px] py-[9px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] whitespace-nowrap text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						Recalculate →
 					</button>
@@ -241,57 +299,98 @@
 
 <!-- ============ STANDINGS ============ -->
 <section class="overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[36px]">
+	<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
 		<!-- Mobile -->
 		<div class="space-y-[14px] lg:hidden">
 			{#each paginatedAdminStandings as standing (standing.id)}
-				<div class="border-ink border-[1.5px] p-4 overflow-hidden">
+				<div class="overflow-hidden border-[1.5px] border-ink p-4">
 					<div class="flex items-start justify-between gap-3">
 						<div class="min-w-0 flex-1">
-							<div class="font-newsreader truncate text-[16px] font-semibold">{standing.playerName}</div>
+							<div class="truncate font-newsreader text-[16px] font-semibold">
+								{standing.playerName}
+							</div>
 							{#if standing.gemId}
-								<div class="font-mono-system text-warm mt-[2px] text-[10.5px] font-bold tracking-[0.04em]">{standing.gemId}</div>
+								<div
+									class="mt-[2px] font-mono-system text-[10.5px] font-bold tracking-[0.04em] text-warm"
+								>
+									{standing.gemId}
+								</div>
 							{:else}
-								<div class="text-fade text-[11px]">No GEM ID</div>
+								<div class="text-[11px] text-fade">No GEM ID</div>
 							{/if}
 						</div>
-						<div class="font-archivo text-prem shrink-0 text-[22px] font-extrabold tracking-[-0.02em]">{standing.totalPoints || 0}</div>
+						<div
+							class="shrink-0 font-archivo text-[22px] font-extrabold tracking-[-0.02em] text-prem"
+						>
+							{standing.totalPoints || 0}
+						</div>
 					</div>
-					<div class="border-line2 mt-[12px] grid grid-cols-3 gap-2 border-t pt-[10px] text-center">
+					<div class="mt-[12px] grid grid-cols-3 gap-2 border-t border-line2 pt-[10px] text-center">
 						<div>
-							<span class="font-mono-system text-fade block text-[10px] font-bold tracking-[0.08em] uppercase">Win %</span>
-							<span class="font-archivo text-ink text-[14px] font-extrabold tracking-[-0.01em]">{standing.winPercentage ? `${standing.winPercentage}%` : '—'}</span>
+							<span
+								class="block font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
+								>Win %</span
+							>
+							<span class="font-archivo text-[14px] font-extrabold tracking-[-0.01em] text-ink"
+								>{standing.winPercentage ? `${standing.winPercentage}%` : '—'}</span
+							>
 						</div>
 						<div>
-							<span class="font-mono-system text-fade block text-[10px] font-bold tracking-[0.08em] uppercase">Record</span>
-							<span class="font-archivo text-ink text-[14px] font-extrabold tracking-[-0.01em]">
-								<span class="text-prem">{standing.matchesWon || 0}</span><span class="text-fade">·</span><span class="text-warm">{(standing.matchesPlayed || 0) - (standing.matchesWon || 0)}</span>
+							<span
+								class="block font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
+								>Record</span
+							>
+							<span class="font-archivo text-[14px] font-extrabold tracking-[-0.01em] text-ink">
+								<span class="text-prem">{standing.matchesWon || 0}</span><span class="text-fade"
+									>·</span
+								><span class="text-warm"
+									>{(standing.matchesPlayed || 0) - (standing.matchesWon || 0)}</span
+								>
 							</span>
 						</div>
 						<div>
-							<span class="font-mono-system text-fade block text-[10px] font-bold tracking-[0.08em] uppercase">Top 8</span>
-							<span class="font-archivo text-ink text-[14px] font-extrabold tracking-[-0.01em]">{calculateDerivedStats(standing).top8Finishes}</span>
+							<span
+								class="block font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
+								>Top 8</span
+							>
+							<span class="font-archivo text-[14px] font-extrabold tracking-[-0.01em] text-ink"
+								>{calculateDerivedStats(standing).top8Finishes}</span
+							>
 						</div>
 					</div>
 					<div class="mt-[10px] flex flex-wrap items-center gap-2">
-						<span class="font-mono-system border-line2 text-fade inline-flex items-center border px-[7px] py-[3px] text-[10px] font-bold tracking-[0.06em] uppercase">
+						<span
+							class="inline-flex items-center border border-line2 px-[7px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
+						>
 							{standing.season}
 						</span>
-						<span class="font-mono-system inline-flex items-center px-[7px] py-[3px] text-[10px] font-bold tracking-[0.08em] uppercase {circuitChip(standing.circuit)}">
+						<span
+							class="inline-flex items-center px-[7px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase {circuitChip(
+								standing.circuit
+							)}"
+						>
 							{standing.circuit}
 						</span>
 					</div>
-					<div class="border-line2 mt-3 flex gap-2 border-t pt-3">
+					<div class="mt-3 flex gap-2 border-t border-line2 pt-3">
 						{#if standing.gemId}
-							<a href="/player/{standing.gemId}" class="border-line2 hover:border-ink font-mono-system inline-flex flex-1 items-center justify-center border px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors">
+							<a
+								href="/player/{standing.gemId}"
+								class="inline-flex flex-1 items-center justify-center border border-line2 px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+							>
 								Edit
 							</a>
 						{:else}
-							<span class="font-mono-system border-line2 text-fade inline-flex flex-1 items-center justify-center border px-[10px] py-[6px] text-[10px] font-bold tracking-[0.08em] uppercase">
+							<span
+								class="inline-flex flex-1 items-center justify-center border border-line2 px-[10px] py-[6px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
+							>
 								No GEM ID
 							</span>
 						{/if}
-						<button onclick={() => openDeleteModal(standing)} class="bg-warm font-mono-system inline-flex flex-1 items-center justify-center px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase text-white hover:brightness-110 transition-[filter]">
+						<button
+							onclick={() => openDeleteModal(standing)}
+							class="inline-flex flex-1 items-center justify-center bg-warm px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+						>
 							Delete
 						</button>
 					</div>
@@ -304,86 +403,170 @@
 		</div>
 
 		<!-- Desktop -->
-		<div class="border-ink hidden border-[1.5px] lg:block">
+		<div class="hidden border-[1.5px] border-ink lg:block">
 			<div class="overflow-x-auto">
 				<table class="w-full min-w-[900px]">
-					<thead class="border-ink border-b-[1.5px]">
+					<thead class="border-b-[1.5px] border-ink">
 						<tr class="text-left">
-							<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Season</th>
-							<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Circuit</th>
-							<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Player</th>
+							<th
+								class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								>Season</th
+							>
+							<th
+								class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								>Circuit</th
+							>
+							<th
+								class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								>Player</th
+							>
 							<th class="px-4 py-[12px] text-center">
-								<button onclick={() => toggleSort('points')} class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase inline-flex items-center gap-1 transition-colors {sortColumn === 'points' ? 'text-ink' : 'text-fade hover:text-ink'}">
-									Points {#if sortColumn === 'points'}<span>{sortDirection === 'desc' ? '↓' : '↑'}</span>{/if}
+								<button
+									onclick={() => toggleSort('points')}
+									class="inline-flex items-center gap-1 font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {sortColumn ===
+									'points'
+										? 'text-ink'
+										: 'text-fade hover:text-ink'}"
+								>
+									Points {#if sortColumn === 'points'}<span
+											>{sortDirection === 'desc' ? '↓' : '↑'}</span
+										>{/if}
 								</button>
 							</th>
 							<th class="px-4 py-[12px] text-center">
-								<button onclick={() => toggleSort('winPct')} class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase inline-flex items-center gap-1 transition-colors {sortColumn === 'winPct' ? 'text-ink' : 'text-fade hover:text-ink'}">
-									Win % {#if sortColumn === 'winPct'}<span>{sortDirection === 'desc' ? '↓' : '↑'}</span>{/if}
+								<button
+									onclick={() => toggleSort('winPct')}
+									class="inline-flex items-center gap-1 font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {sortColumn ===
+									'winPct'
+										? 'text-ink'
+										: 'text-fade hover:text-ink'}"
+								>
+									Win % {#if sortColumn === 'winPct'}<span
+											>{sortDirection === 'desc' ? '↓' : '↑'}</span
+										>{/if}
 								</button>
 							</th>
 							<th class="px-4 py-[12px] text-center">
-								<button onclick={() => toggleSort('record')} class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase inline-flex items-center gap-1 transition-colors {sortColumn === 'record' ? 'text-ink' : 'text-fade hover:text-ink'}">
-									Record {#if sortColumn === 'record'}<span>{sortDirection === 'desc' ? '↓' : '↑'}</span>{/if}
+								<button
+									onclick={() => toggleSort('record')}
+									class="inline-flex items-center gap-1 font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {sortColumn ===
+									'record'
+										? 'text-ink'
+										: 'text-fade hover:text-ink'}"
+								>
+									Record {#if sortColumn === 'record'}<span
+											>{sortDirection === 'desc' ? '↓' : '↑'}</span
+										>{/if}
 								</button>
 							</th>
 							<th class="px-4 py-[12px] text-center">
-								<button onclick={() => toggleSort('events')} class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase inline-flex items-center gap-1 transition-colors {sortColumn === 'events' ? 'text-ink' : 'text-fade hover:text-ink'}">
-									Events {#if sortColumn === 'events'}<span>{sortDirection === 'desc' ? '↓' : '↑'}</span>{/if}
+								<button
+									onclick={() => toggleSort('events')}
+									class="inline-flex items-center gap-1 font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {sortColumn ===
+									'events'
+										? 'text-ink'
+										: 'text-fade hover:text-ink'}"
+								>
+									Events {#if sortColumn === 'events'}<span
+											>{sortDirection === 'desc' ? '↓' : '↑'}</span
+										>{/if}
 								</button>
 							</th>
 							<th class="px-4 py-[12px] text-center">
-								<button onclick={() => toggleSort('top8')} class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase inline-flex items-center gap-1 transition-colors {sortColumn === 'top8' ? 'text-ink' : 'text-fade hover:text-ink'}">
-									Top 8 {#if sortColumn === 'top8'}<span>{sortDirection === 'desc' ? '↓' : '↑'}</span>{/if}
+								<button
+									onclick={() => toggleSort('top8')}
+									class="inline-flex items-center gap-1 font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {sortColumn ===
+									'top8'
+										? 'text-ink'
+										: 'text-fade hover:text-ink'}"
+								>
+									Top 8 {#if sortColumn === 'top8'}<span
+											>{sortDirection === 'desc' ? '↓' : '↑'}</span
+										>{/if}
 								</button>
 							</th>
-							<th class="font-mono-system text-fade px-4 py-[12px] text-center text-[10px] font-extrabold tracking-[0.14em] uppercase">Actions</th>
+							<th
+								class="px-4 py-[12px] text-center font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								>Actions</th
+							>
 						</tr>
 					</thead>
 					<tbody>
 						{#each paginatedAdminStandings as standing (standing.id)}
-							<tr class="border-line2 hover:bg-panel border-b transition-colors">
-								<td class="font-mono-system text-fade px-4 py-[14px] text-[11px] font-bold tracking-[0.06em]">{standing.season}</td>
+							<tr class="border-b border-line2 transition-colors hover:bg-panel">
+								<td
+									class="px-4 py-[14px] font-mono-system text-[11px] font-bold tracking-[0.06em] text-fade"
+									>{standing.season}</td
+								>
 								<td class="px-4 py-[14px]">
-									<span class="font-mono-system inline-flex items-center px-[9px] py-[4px] text-[10px] font-bold tracking-[0.08em] uppercase whitespace-nowrap {circuitChip(standing.circuit)}">
+									<span
+										class="inline-flex items-center px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.08em] whitespace-nowrap uppercase {circuitChip(
+											standing.circuit
+										)}"
+									>
 										{standing.circuit}
 									</span>
 								</td>
 								<td class="px-4 py-[14px]">
 									<div class="font-newsreader text-[15px] font-semibold">{standing.playerName}</div>
 									{#if standing.gemId}
-										<div class="font-mono-system text-warm mt-[2px] text-[10.5px] font-bold tracking-[0.04em]">{standing.gemId}</div>
+										<div
+											class="mt-[2px] font-mono-system text-[10.5px] font-bold tracking-[0.04em] text-warm"
+										>
+											{standing.gemId}
+										</div>
 									{:else}
-										<div class="text-fade text-[11px]">No GEM ID</div>
+										<div class="text-[11px] text-fade">No GEM ID</div>
 									{/if}
 								</td>
-								<td class="font-archivo text-prem px-4 py-[14px] text-center text-[18px] font-extrabold tracking-[-0.02em]">
+								<td
+									class="px-4 py-[14px] text-center font-archivo text-[18px] font-extrabold tracking-[-0.02em] text-prem"
+								>
 									{standing.totalPoints || 0}
 								</td>
-								<td class="font-archivo text-ink px-4 py-[14px] text-center text-[14px] font-extrabold tracking-[-0.01em]">
+								<td
+									class="px-4 py-[14px] text-center font-archivo text-[14px] font-extrabold tracking-[-0.01em] text-ink"
+								>
 									{standing.winPercentage ? `${standing.winPercentage}%` : '—'}
 								</td>
 								<td class="px-4 py-[14px] text-center">
 									<span class="font-archivo text-[14px] font-extrabold tracking-[-0.01em]">
-										<span class="text-prem">{standing.matchesWon || 0}</span><span class="text-fade">·</span><span class="text-warm">{(standing.matchesPlayed || 0) - (standing.matchesWon || 0)}</span>
+										<span class="text-prem">{standing.matchesWon || 0}</span><span class="text-fade"
+											>·</span
+										><span class="text-warm"
+											>{(standing.matchesPlayed || 0) - (standing.matchesWon || 0)}</span
+										>
 									</span>
 								</td>
-								<td class="font-archivo text-ink px-4 py-[14px] text-center text-[14px] font-extrabold tracking-[-0.01em]">
+								<td
+									class="px-4 py-[14px] text-center font-archivo text-[14px] font-extrabold tracking-[-0.01em] text-ink"
+								>
 									{calculateDerivedStats(standing).eventsPlayed}
 								</td>
-								<td class="font-archivo text-ink px-4 py-[14px] text-center text-[14px] font-extrabold tracking-[-0.01em]">
+								<td
+									class="px-4 py-[14px] text-center font-archivo text-[14px] font-extrabold tracking-[-0.01em] text-ink"
+								>
 									{calculateDerivedStats(standing).top8Finishes}
 								</td>
 								<td class="px-4 py-[14px] text-center">
 									<div class="inline-flex items-center justify-center gap-2">
 										{#if standing.gemId}
-											<a href="/player/{standing.gemId}" class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors" title="Edit on player profile page">
+											<a
+												href="/player/{standing.gemId}"
+												class="inline-flex items-center border border-line2 px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+												title="Edit on player profile page"
+											>
 												Edit
 											</a>
 										{:else}
-											<span class="text-fade text-[10.5px]">No GEM ID</span>
+											<span class="text-[10.5px] text-fade">No GEM ID</span>
 										{/if}
-										<button type="button" onclick={() => openDeleteModal(standing)} class="bg-warm font-mono-system inline-flex items-center px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase text-white hover:brightness-110 transition-[filter]" title="Delete standing">
+										<button
+											type="button"
+											onclick={() => openDeleteModal(standing)}
+											class="inline-flex items-center bg-warm px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+											title="Delete standing"
+										>
 											Del
 										</button>
 									</div>
@@ -392,7 +575,9 @@
 						{:else}
 							<tr>
 								<td colspan="9" class="px-6 py-12 text-center">
-									<p class="font-newsreader text-soft text-[19px] italic">No standings found. Import data from CSV to get started.</p>
+									<p class="font-newsreader text-soft text-[19px] italic">
+										No standings found. Import data from CSV to get started.
+									</p>
 								</td>
 							</tr>
 						{/each}
@@ -401,31 +586,68 @@
 			</div>
 
 			{#if totalAdminStandingsPages > 1}
-				<div class="border-ink flex flex-col items-center justify-between gap-4 border-t-[1.5px] px-5 py-[14px] sm:flex-row">
-					<span class="font-mono-system text-fade text-[10.5px] font-bold tracking-[0.08em] uppercase">
-						{(adminStandingsPage - 1) * adminStandingsPerPage + 1}–{Math.min(adminStandingsPage * adminStandingsPerPage, filteredStandings.length)} of {filteredStandings.length}
+				<div
+					class="flex flex-col items-center justify-between gap-4 border-t-[1.5px] border-ink px-5 py-[14px] sm:flex-row"
+				>
+					<span
+						class="font-mono-system text-[10.5px] font-bold tracking-[0.08em] text-fade uppercase"
+					>
+						{(adminStandingsPage - 1) * adminStandingsPerPage + 1}–{Math.min(
+							adminStandingsPage * adminStandingsPerPage,
+							filteredStandings.length
+						)} of {filteredStandings.length}
 					</span>
 					<div class="flex items-center gap-2">
-						<button onclick={() => (adminStandingsPage = 1)} disabled={adminStandingsPage === 1} class="border-line2 hover:border-ink font-mono-system border px-[12px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-40">
+						<button
+							onclick={() => (adminStandingsPage = 1)}
+							disabled={adminStandingsPage === 1}
+							class="border border-line2 px-[12px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
+						>
 							First
 						</button>
-						<button onclick={() => (adminStandingsPage = Math.max(1, adminStandingsPage - 1))} disabled={adminStandingsPage === 1} class="border-line2 hover:border-ink font-mono-system border px-[12px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-40" aria-label="Previous page">
+						<button
+							onclick={() => (adminStandingsPage = Math.max(1, adminStandingsPage - 1))}
+							disabled={adminStandingsPage === 1}
+							class="border border-line2 px-[12px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
+							aria-label="Previous page"
+						>
 							←
 						</button>
 						<div class="flex items-center gap-1">
 							{#each Array(Math.min(5, totalAdminStandingsPages)) as _, i}
-								{@const pageNum = adminStandingsPage <= 3 ? i + 1 : adminStandingsPage >= totalAdminStandingsPages - 2 ? totalAdminStandingsPages - 4 + i : adminStandingsPage - 2 + i}
+								{@const pageNum =
+									adminStandingsPage <= 3
+										? i + 1
+										: adminStandingsPage >= totalAdminStandingsPages - 2
+											? totalAdminStandingsPages - 4 + i
+											: adminStandingsPage - 2 + i}
 								{#if pageNum > 0 && pageNum <= totalAdminStandingsPages}
-									<button onclick={() => (adminStandingsPage = pageNum)} class="font-mono-system h-[28px] w-[28px] text-[10.5px] font-extrabold tracking-[0.06em] transition-colors {adminStandingsPage === pageNum ? 'bg-ink text-white' : 'border-line2 hover:border-ink border'}">
+									<button
+										onclick={() => (adminStandingsPage = pageNum)}
+										class="h-[28px] w-[28px] font-mono-system text-[10.5px] font-extrabold tracking-[0.06em] transition-colors {adminStandingsPage ===
+										pageNum
+											? 'bg-ink text-white'
+											: 'border border-line2 hover:border-ink'}"
+									>
 										{pageNum}
 									</button>
 								{/if}
 							{/each}
 						</div>
-						<button onclick={() => (adminStandingsPage = Math.min(totalAdminStandingsPages, adminStandingsPage + 1))} disabled={adminStandingsPage === totalAdminStandingsPages} class="border-line2 hover:border-ink font-mono-system border px-[12px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-40" aria-label="Next page">
+						<button
+							onclick={() =>
+								(adminStandingsPage = Math.min(totalAdminStandingsPages, adminStandingsPage + 1))}
+							disabled={adminStandingsPage === totalAdminStandingsPages}
+							class="border border-line2 px-[12px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
+							aria-label="Next page"
+						>
 							→
 						</button>
-						<button onclick={() => (adminStandingsPage = totalAdminStandingsPages)} disabled={adminStandingsPage === totalAdminStandingsPages} class="border-line2 hover:border-ink font-mono-system border px-[12px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-40">
+						<button
+							onclick={() => (adminStandingsPage = totalAdminStandingsPages)}
+							disabled={adminStandingsPage === totalAdminStandingsPages}
+							class="border border-line2 px-[12px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
+						>
 							Last
 						</button>
 					</div>
@@ -433,10 +655,14 @@
 			{/if}
 		</div>
 
-		<div class="border-line2 mt-6 border p-4">
-			<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Player Profiles</span>
-			<p class="text-soft mt-[6px] text-[13px] leading-[1.5]">
-				Click Edit on a row to open the player's profile page where you can view and edit all their standings data, including monthly breakdowns.
+		<div class="mt-6 border border-line2 p-4">
+			<span
+				class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+				>Player Profiles</span
+			>
+			<p class="mt-[6px] text-[13px] leading-[1.5] text-soft">
+				Click Edit on a row to open the player's profile page where you can view and edit all their
+				standings data, including monthly breakdowns.
 			</p>
 		</div>
 	</div>
@@ -447,16 +673,33 @@
 	<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
 		<button
 			class="absolute inset-0 bg-black/70 backdrop-blur-sm"
-			onclick={() => { showCreateStandingModal = false; resetNewStanding(); }}
+			onclick={() => {
+				showCreateStandingModal = false;
+				resetNewStanding();
+			}}
 			aria-label="Close modal"
 		></button>
-		<div class="border-ink bg-paper-bg relative w-full max-w-lg border-[3px] border-double shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-			<div class="border-line2 flex items-start justify-between gap-3 border-b p-6">
+		<div
+			class="relative w-full max-w-lg border-[3px] border-double border-ink bg-paper-bg shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
+		>
+			<div class="flex items-start justify-between gap-3 border-b border-line2 p-6">
 				<div>
-					<span class="font-mono-system text-warm text-[10px] font-extrabold tracking-[0.16em] uppercase">New Standing</span>
-					<h2 class="font-newsreader mt-[6px] text-[24px] font-semibold tracking-[-0.01em]">Add a player.</h2>
+					<span
+						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
+						>New Standing</span
+					>
+					<h2 class="mt-[6px] font-newsreader text-[24px] font-semibold tracking-[-0.01em]">
+						Add a player.
+					</h2>
 				</div>
-				<button onclick={() => { showCreateStandingModal = false; resetNewStanding(); }} class="border-line2 hover:border-ink font-mono-system inline-flex h-[32px] w-[32px] items-center justify-center border text-[14px] font-bold transition-colors" aria-label="Close modal">
+				<button
+					onclick={() => {
+						showCreateStandingModal = false;
+						resetNewStanding();
+					}}
+					class="inline-flex h-[32px] w-[32px] items-center justify-center border border-line2 font-mono-system text-[14px] font-bold transition-colors hover:border-ink"
+					aria-label="Close modal"
+				>
 					×
 				</button>
 			</div>
@@ -477,8 +720,18 @@
 			>
 				<div class="grid grid-cols-2 gap-[14px]">
 					<div>
-						<label for="season" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Season <span class="text-warm">*</span></label>
-						<select id="season" name="season" bind:value={newStanding.season} required class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[14px] py-[10px] text-[13px] font-bold tracking-[0.06em] uppercase focus:outline-none">
+						<label
+							for="season"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							>Season <span class="text-warm">*</span></label
+						>
+						<select
+							id="season"
+							name="season"
+							bind:value={newStanding.season}
+							required
+							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
+						>
 							<option value="2026">2026</option>
 							<option value="2025">2025</option>
 							<option value="2024">2024</option>
@@ -486,8 +739,18 @@
 						</select>
 					</div>
 					<div>
-						<label for="circuit" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Circuit <span class="text-warm">*</span></label>
-						<select id="circuit" name="circuit" bind:value={newStanding.circuit} required class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[14px] py-[10px] text-[13px] font-bold tracking-[0.06em] uppercase focus:outline-none">
+						<label
+							for="circuit"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							>Circuit <span class="text-warm">*</span></label
+						>
+						<select
+							id="circuit"
+							name="circuit"
+							bind:value={newStanding.circuit}
+							required
+							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
+						>
 							<option value="Los Angeles">Los Angeles</option>
 							<option value="New England">New England</option>
 							<option value="St. Louis">St. Louis</option>
@@ -496,45 +759,116 @@
 				</div>
 
 				<div>
-					<label for="playerName" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Player Name <span class="text-warm">*</span></label>
-					<input type="text" id="playerName" name="playerName" bind:value={newStanding.playerName} required placeholder="Enter player name" class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none" />
+					<label
+						for="playerName"
+						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>Player Name <span class="text-warm">*</span></label
+					>
+					<input
+						type="text"
+						id="playerName"
+						name="playerName"
+						bind:value={newStanding.playerName}
+						required
+						placeholder="Enter player name"
+						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
+					/>
 				</div>
 
 				<div>
-					<label for="gemId" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">GEM ID</label>
-					<input type="text" id="gemId" name="gemId" bind:value={newStanding.gemId} placeholder="Optional — for linking to player profile" class="border-ink bg-paper-bg text-ink font-mono-system placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[13px] focus:outline-none" />
+					<label
+						for="gemId"
+						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>GEM ID</label
+					>
+					<input
+						type="text"
+						id="gemId"
+						name="gemId"
+						bind:value={newStanding.gemId}
+						placeholder="Optional — for linking to player profile"
+						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink placeholder:text-fade focus:outline-none"
+					/>
 				</div>
 
 				<div>
-					<label for="totalPoints" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Total Points</label>
-					<input type="number" id="totalPoints" name="totalPoints" bind:value={newStanding.totalPoints} min="0" class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[14px] py-[10px] text-[13px] focus:outline-none" />
+					<label
+						for="totalPoints"
+						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>Total Points</label
+					>
+					<input
+						type="number"
+						id="totalPoints"
+						name="totalPoints"
+						bind:value={newStanding.totalPoints}
+						min="0"
+						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink focus:outline-none"
+					/>
 				</div>
 
 				<div class="grid grid-cols-2 gap-[14px]">
 					<div>
-						<label for="matchesWon" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Matches Won</label>
-						<input type="number" id="matchesWon" name="matchesWon" bind:value={newStanding.matchesWon} min="0" class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[14px] py-[10px] text-[13px] focus:outline-none" />
+						<label
+							for="matchesWon"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							>Matches Won</label
+						>
+						<input
+							type="number"
+							id="matchesWon"
+							name="matchesWon"
+							bind:value={newStanding.matchesWon}
+							min="0"
+							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink focus:outline-none"
+						/>
 					</div>
 					<div>
-						<label for="matchesPlayed" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Matches Played</label>
-						<input type="number" id="matchesPlayed" name="matchesPlayed" bind:value={newStanding.matchesPlayed} min="0" class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[14px] py-[10px] text-[13px] focus:outline-none" />
+						<label
+							for="matchesPlayed"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							>Matches Played</label
+						>
+						<input
+							type="number"
+							id="matchesPlayed"
+							name="matchesPlayed"
+							bind:value={newStanding.matchesPlayed}
+							min="0"
+							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink focus:outline-none"
+						/>
 					</div>
 				</div>
 
 				{#if newStanding.matchesPlayed > 0}
-					<div class="border-line2 bg-panel border p-3">
-						<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">Win Percentage</span>
-						<div class="font-archivo text-prem mt-[2px] text-[20px] font-extrabold tracking-[-0.02em]">
+					<div class="border border-line2 bg-panel p-3">
+						<span
+							class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							>Win Percentage</span
+						>
+						<div
+							class="mt-[2px] font-archivo text-[20px] font-extrabold tracking-[-0.02em] text-prem"
+						>
 							{((newStanding.matchesWon / newStanding.matchesPlayed) * 100).toFixed(1)}%
 						</div>
 					</div>
 				{/if}
 
 				<div class="flex justify-end gap-3 pt-2">
-					<button type="button" onclick={() => { showCreateStandingModal = false; resetNewStanding(); }} class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[18px] py-[11px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors">
+					<button
+						type="button"
+						onclick={() => {
+							showCreateStandingModal = false;
+							resetNewStanding();
+						}}
+						class="inline-flex items-center border border-line2 px-[18px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+					>
 						Cancel
 					</button>
-					<button type="submit" class="bg-prem font-mono-system inline-flex items-center px-[22px] py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white hover:brightness-110 transition-[filter]">
+					<button
+						type="submit"
+						class="inline-flex items-center bg-prem px-[22px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110"
+					>
 						Create Standing →
 					</button>
 				</div>
@@ -546,23 +880,37 @@
 <!-- ============ DELETE MODAL ============ -->
 {#if showDeleteModal && deleteStandingData}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-		<div class="border-ink bg-paper-bg w-full max-w-md border-[3px] border-double shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-6">
-			<span class="font-mono-system text-warm text-[10px] font-extrabold tracking-[0.16em] uppercase">Danger Zone</span>
-			<h3 class="font-newsreader mt-[6px] text-[24px] font-semibold tracking-[-0.01em]">Delete standing record?</h3>
-			<p class="text-soft mt-3 text-[13.5px] leading-[1.5]">This cannot be undone.</p>
+		<div
+			class="w-full max-w-md border-[3px] border-double border-ink bg-paper-bg p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
+		>
+			<span
+				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
+				>Danger Zone</span
+			>
+			<h3 class="mt-[6px] font-newsreader text-[24px] font-semibold tracking-[-0.01em]">
+				Delete standing record?
+			</h3>
+			<p class="mt-3 text-[13.5px] leading-[1.5] text-soft">This cannot be undone.</p>
 
-			<div class="border-line2 bg-panel mt-[16px] border p-4 text-center">
+			<div class="mt-[16px] border border-line2 bg-panel p-4 text-center">
 				<p class="font-newsreader text-[18px] font-semibold">{deleteStandingData.playerName}</p>
 				{#if deleteStandingData.gemId}
-					<p class="font-mono-system text-warm mt-[2px] text-[11px] font-bold tracking-[0.04em]">{deleteStandingData.gemId}</p>
+					<p class="mt-[2px] font-mono-system text-[11px] font-bold tracking-[0.04em] text-warm">
+						{deleteStandingData.gemId}
+					</p>
 				{/if}
-				<p class="font-mono-system text-fade mt-[6px] text-[10px] font-bold tracking-[0.08em] uppercase">
+				<p
+					class="mt-[6px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
+				>
 					{deleteStandingData.season} · {deleteStandingData.circuit}
 				</p>
 			</div>
 
 			<div class="mt-[18px]">
-				<label for="delete-confirmation" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+				<label
+					for="delete-confirmation"
+					class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+				>
 					Type <span class="text-warm">"{deleteStandingData.playerName}"</span> to confirm
 				</label>
 				<input
@@ -570,13 +918,17 @@
 					id="delete-confirmation"
 					bind:value={deleteConfirmationInput}
 					placeholder="Enter player name"
-					class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[14px] focus:outline-none"
+					class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[14px] text-ink placeholder:text-fade focus:outline-none"
 					autocomplete="off"
 				/>
 			</div>
 
 			<div class="mt-[22px] flex justify-end gap-3">
-				<button type="button" onclick={closeDeleteModal} class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[16px] py-[10px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors">
+				<button
+					type="button"
+					onclick={closeDeleteModal}
+					class="inline-flex items-center border border-line2 px-[16px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+				>
 					Cancel
 				</button>
 				<form
@@ -594,7 +946,11 @@
 					}}
 				>
 					<input type="hidden" name="standingId" value={deleteStandingData.id} />
-					<button type="submit" disabled={!canDelete || isDeleting} class="bg-warm font-mono-system inline-flex items-center px-[18px] py-[10px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white hover:brightness-110 transition-[filter] disabled:cursor-not-allowed disabled:opacity-50">
+					<button
+						type="submit"
+						disabled={!canDelete || isDeleting}
+						class="inline-flex items-center bg-warm px-[18px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+					>
 						{isDeleting ? 'Deleting…' : 'Delete Standing'}
 					</button>
 				</form>

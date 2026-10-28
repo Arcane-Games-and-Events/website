@@ -33,7 +33,9 @@
 	// sticky rail highlights whichever heading is currently on screen.
 	let activeSection = '';
 	function updateActiveSection() {
-		const headings = document.querySelectorAll('article h1[id], article h2[id], article h3[id], article h4[id]');
+		const headings = document.querySelectorAll(
+			'article h1[id], article h2[id], article h3[id], article h4[id]'
+		);
 		let best = '';
 		let bestTop = -Infinity;
 		for (const h of headings) {
@@ -50,8 +52,7 @@
 		window.addEventListener('scroll', updateActiveSection, { passive: true });
 	});
 	onDestroy(() => {
-		if (typeof window !== 'undefined')
-			window.removeEventListener('scroll', updateActiveSection);
+		if (typeof window !== 'undefined') window.removeEventListener('scroll', updateActiveSection);
 	});
 
 	function fmtBanner(d) {
@@ -77,9 +78,9 @@
 	<div
 		class="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-14"
 	>
-		<div class="flex items-center gap-2 text-[11px] font-mono-system">
+		<div class="flex items-center gap-2 font-mono-system text-[11px]">
 			<span
-				class="inline-flex items-center gap-1.5 rounded-full bg-warm/25 px-2 py-0.5 font-bold uppercase tracking-wider text-warm"
+				class="inline-flex items-center gap-1.5 rounded-full bg-warm/25 px-2 py-0.5 font-bold tracking-wider text-warm uppercase"
 			>
 				<span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-warm"></span>
 				Preview mode
@@ -98,7 +99,7 @@
 				{/if}
 			</span>
 		</div>
-		<div class="flex items-center gap-2 text-[11px] font-mono-system">
+		<div class="flex items-center gap-2 font-mono-system text-[11px]">
 			<a
 				href="/desk/entries/{entry.id}"
 				class="rounded-md border border-line2 bg-paper px-3 py-1.5 text-ink/80 transition-colors hover:bg-ink/5 hover:text-ink"
@@ -124,47 +125,41 @@
      shows a type badge (Article / Video) plus the Premium chip when the
      entry is behind the paywall. -->
 {#if entry}
-	<header class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[46px] pb-[34px]">
+	<header class="mx-auto w-full max-w-[1600px] px-4 pt-[46px] pb-[34px] md:px-10 lg:px-14">
 		<div class="mb-[22px] flex items-center gap-[18px]">
 			<span
-				class="bg-warm inline-flex items-center px-3 py-[6px] text-[11px] font-extrabold tracking-[0.14em] text-white uppercase"
+				class="inline-flex items-center bg-warm px-3 py-[6px] text-[11px] font-extrabold tracking-[0.14em] text-white uppercase"
 			>
 				{entry.video ? 'Video' : 'Article'}
 			</span>
 			{#if entry.accessMode === 'premium'}
-				<span
-					class="font-mono-system text-prem text-[11px] font-bold tracking-[0.14em] uppercase"
-				>
+				<span class="font-mono-system text-[11px] font-bold tracking-[0.14em] text-prem uppercase">
 					Premium
 				</span>
 			{/if}
-			<span class="bg-line2 h-[1px] flex-1"></span>
+			<span class="h-[1px] flex-1 bg-line2"></span>
 			{#if pubDate}
-				<span
-					class="font-mono-system text-fade text-[11px] font-bold tracking-[0.14em] uppercase"
-				>
+				<span class="font-mono-system text-[11px] font-bold tracking-[0.14em] text-fade uppercase">
 					{pubDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
 				</span>
 			{:else}
-				<span
-					class="font-mono-system text-fade text-[11px] font-bold tracking-[0.14em] uppercase"
-				>
+				<span class="font-mono-system text-[11px] font-bold tracking-[0.14em] text-fade uppercase">
 					Not yet published
 				</span>
 			{/if}
 		</div>
 
 		<h1
-			class="font-newsreader max-w-[1140px] text-[clamp(46px,7vw,90px)] leading-[0.9] font-semibold tracking-[-0.03em] [text-wrap:balance]"
+			class="max-w-[1140px] font-newsreader text-[clamp(46px,7vw,90px)] leading-[0.9] font-semibold tracking-[-0.03em] [text-wrap:balance]"
 		>
 			{entry.title}
 		</h1>
 
-		<div class="mt-[26px] flex flex-col items-start justify-between gap-12 md:flex-row md:items-end">
+		<div
+			class="mt-[26px] flex flex-col items-start justify-between gap-12 md:flex-row md:items-end"
+		>
 			{#if entry.excerpt}
-				<p
-					class="font-newsreader text-soft m-0 max-w-[680px] text-[21px] leading-[1.42] italic"
-				>
+				<p class="m-0 max-w-[680px] font-newsreader text-[21px] leading-[1.42] text-soft italic">
 					{entry.excerpt}
 				</p>
 			{:else}
@@ -174,7 +169,7 @@
 			{#if entry.author}
 				<span class="flex flex-shrink-0 items-center gap-[13px]">
 					<span
-						class="border-warm bg-panel text-soft flex h-[52px] w-[52px] items-center justify-center rounded-full border-2 text-lg font-bold"
+						class="flex h-[52px] w-[52px] items-center justify-center rounded-full border-2 border-warm bg-panel text-lg font-bold text-soft"
 					>
 						{entry.author.name.charAt(0).toUpperCase()}
 					</span>
@@ -184,7 +179,7 @@
 						</span>
 						{#if pubDate}
 							<span
-								class="font-mono-system text-warm mt-[6px] block text-[12px] font-extrabold tracking-[0.08em] uppercase"
+								class="mt-[6px] block font-mono-system text-[12px] font-extrabold tracking-[0.08em] text-warm uppercase"
 							>
 								{pubDate.toLocaleDateString('en-US', {
 									month: 'long',
@@ -195,7 +190,7 @@
 						{/if}
 						{#if entry.readTime}
 							<span
-								class="font-mono-system text-fade mt-[3px] block text-[10.5px] font-bold tracking-[0.06em] uppercase"
+								class="mt-[3px] block font-mono-system text-[10.5px] font-bold tracking-[0.06em] text-fade uppercase"
 							>
 								{entry.readTime} min read
 							</span>
@@ -210,22 +205,22 @@
 <!-- ============ HERO FIGURE ============ -->
 <!-- Video takes precedence over cover, same as the public reader. -->
 {#if entry?.video}
-	<figure class="mx-auto m-0 w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
+	<figure class="m-0 mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
 		<LibraryVideoBlock video={entry.video} poster={videoPoster} />
 		<figcaption class="flex gap-3 py-3">
 			<span
-				class="font-mono-system text-warm pt-[2px] text-[10px] font-bold tracking-[0.14em] whitespace-nowrap uppercase"
+				class="pt-[2px] font-mono-system text-[10px] font-bold tracking-[0.14em] whitespace-nowrap text-warm uppercase"
 			>
 				Video
 			</span>
-			<span class="font-newsreader text-soft text-[13px] italic">
+			<span class="font-newsreader text-[13px] text-soft italic">
 				{entry.title}
 			</span>
 		</figcaption>
 	</figure>
 {:else if entry?.coverImage?.src}
-	<figure class="mx-auto m-0 w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
-		<div class="border-ink border-y-[3px] border-double">
+	<figure class="m-0 mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
+		<div class="border-y-[3px] border-double border-ink">
 			<img
 				src={entry.coverImage.src}
 				alt={entry.title}
@@ -235,11 +230,11 @@
 		</div>
 		<figcaption class="flex gap-3 py-3">
 			<span
-				class="font-mono-system text-warm pt-[2px] text-[10px] font-bold tracking-[0.14em] whitespace-nowrap uppercase"
+				class="pt-[2px] font-mono-system text-[10px] font-bold tracking-[0.14em] whitespace-nowrap text-warm uppercase"
 			>
 				Cover
 			</span>
-			<span class="font-newsreader text-soft text-[13px] italic">
+			<span class="font-newsreader text-[13px] text-soft italic">
 				{entry.title}
 			</span>
 		</figcaption>
@@ -254,7 +249,9 @@
 	class="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-[72px] px-4 pt-[60px] pb-[30px] md:px-14 lg:grid-cols-[232px_minmax(0,1fr)]"
 >
 	<aside class="hidden lg:block">
-		<div class="sticky top-[calc(var(--desk-top)+58px)] max-h-[calc(100vh-var(--desk-top)-88px)] overflow-y-auto pr-1">
+		<div
+			class="sticky top-[calc(var(--desk-top)+58px)] max-h-[calc(100vh-var(--desk-top)-88px)] overflow-y-auto pr-1"
+		>
 			{#if entry?.author}
 				<div class="font-newsreader text-[20px] font-semibold">
 					{entry.author.name}
@@ -262,8 +259,8 @@
 			{/if}
 
 			{#if tableOfContents.length > 0}
-				<nav class="border-line2 mt-5 border-t pt-[15px]">
-					<div class="text-fade mb-[10px] text-[10px] font-extrabold tracking-[0.16em] uppercase">
+				<nav class="mt-5 border-t border-line2 pt-[15px]">
+					<div class="mb-[10px] text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase">
 						Table of Contents
 					</div>
 					{#each tableOfContents as heading (heading.id)}
@@ -290,30 +287,30 @@
 	<article class="min-w-0">
 		<div
 			class="prose max-w-[760px]
-				prose-headings:font-newsreader prose-headings:tracking-[-0.02em] prose-headings:scroll-mt-24
+				prose-headings:scroll-mt-24 prose-headings:font-newsreader prose-headings:tracking-[-0.02em]
 				prose-h2:mt-[56px] prose-h2:mb-[18px]
 				prose-h2:text-[38px] prose-h2:font-semibold prose-h2:text-warm
 				prose-h3:mt-10 prose-h3:mb-3 prose-h3:text-[24px] prose-h3:font-semibold
-				prose-p:font-newsreader prose-p:text-ink
-				prose-p:text-[21px] prose-p:leading-[1.7]
 				prose-p:my-0 prose-p:mb-[24px]
+				prose-p:font-newsreader prose-p:text-[21px]
+				prose-p:leading-[1.7] prose-p:text-ink
+				prose-a:text-accent prose-a:underline
+				prose-a:decoration-[1px]
+				prose-a:underline-offset-[3px] prose-blockquote:my-9 prose-blockquote:border-l-[3px] prose-blockquote:border-warm
+				prose-blockquote:pl-7 prose-blockquote:not-italic
 				prose-strong:font-semibold prose-strong:text-ink
 				prose-em:italic
-				prose-a:text-accent prose-a:underline prose-a:underline-offset-[3px] prose-a:decoration-[1px]
-				prose-blockquote:border-l-[3px] prose-blockquote:border-warm
-				prose-blockquote:pl-7 prose-blockquote:my-9
-				prose-blockquote:not-italic
-				[&_blockquote_p]:font-newsreader [&_blockquote_p]:text-[26px]
-				[&_blockquote_p]:italic [&_blockquote_p]:font-medium
-				[&_blockquote_p]:leading-[1.32] [&_blockquote_p]:text-ink
-				[&_blockquote_p]:tracking-[-0.01em]
-				prose-li:font-newsreader prose-li:text-ink prose-li:text-[21px] prose-li:leading-[1.7]
-				prose-code:font-mono prose-code:bg-panel prose-code:text-warm prose-code:px-[5px] prose-code:py-[2px]
-				prose-code:rounded-none prose-code:text-[14px]
-				prose-code:before:content-none prose-code:after:content-none
-				prose-pre:bg-paper prose-pre:border prose-pre:border-line2 prose-pre:rounded-none
-				prose-img:border prose-img:border-line2 prose-img:rounded-none
-				prose-hr:border-line2
+				prose-code:rounded-none prose-code:bg-panel
+				prose-code:px-[5px] prose-code:py-[2px]
+				prose-code:font-mono prose-code:text-[14px]
+				prose-code:text-warm
+				prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-none prose-pre:border
+				prose-pre:border-line2 prose-pre:bg-paper prose-li:font-newsreader prose-li:text-[21px] prose-li:leading-[1.7]
+				prose-li:text-ink prose-img:rounded-none
+				prose-img:border prose-img:border-line2
+				prose-hr:border-line2 [&_blockquote_p]:font-newsreader [&_blockquote_p]:text-[26px] [&_blockquote_p]:leading-[1.32]
+				[&_blockquote_p]:font-medium [&_blockquote_p]:tracking-[-0.01em] [&_blockquote_p]:text-ink
+				[&_blockquote_p]:italic
 				[&>:first-child]:mt-0"
 		>
 			{#if entry?.content}

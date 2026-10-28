@@ -160,8 +160,7 @@ async function buildPlayerProfile(gemId) {
 			const circuitSeasonKey = `${standing.season}|${standing.circuit}`;
 			const circuitSeasonStandings = standingsByCircuitSeason.get(circuitSeasonKey) || [];
 			// Match using the canonical playerKey so both sides use the same identity rule.
-			const rank =
-				circuitSeasonStandings.findIndex((s) => getPlayerKey(s) === playerKey) + 1;
+			const rank = circuitSeasonStandings.findIndex((s) => getPlayerKey(s) === playerKey) + 1;
 
 			if (rank > 0) {
 				if (playerData.bestRank === null || rank < playerData.bestRank) {

@@ -27,9 +27,7 @@
 		class="mx-auto flex h-[128px] max-w-[1200px] flex-col justify-center px-5 md:h-[150px] md:px-8"
 	>
 		<div class="flex min-h-[28px] items-center justify-between gap-4">
-			<p
-				class="min-w-0 truncate text-[10px] font-extrabold tracking-[0.22em] text-gold uppercase"
-			>
+			<p class="min-w-0 truncate text-[10px] font-extrabold tracking-[0.22em] text-gold uppercase">
 				{#if lead}{@render lead()}{:else}<span aria-hidden="true">◆</span> {kicker}{/if}
 			</p>
 			{#if actions}<div class="flex shrink-0 items-center gap-2 md:hidden">

@@ -72,16 +72,14 @@
 		let nx = x;
 		let ny = y;
 		if (nx + rect.width + pad > window.innerWidth) nx = window.innerWidth - rect.width - pad;
-		if (ny + rect.height + pad > window.innerHeight)
-			ny = window.innerHeight - rect.height - pad;
+		if (ny + rect.height + pad > window.innerHeight) ny = window.innerHeight - rect.height - pad;
 		if (nx < pad) nx = pad;
 		if (ny < pad) ny = pad;
 		if (nx !== x) x = nx;
 		if (ny !== y) y = ny;
 	}
 
-	const groupClass =
-		'border-b border-line2 last:border-b-0 py-1';
+	const groupClass = 'border-b border-line2 last:border-b-0 py-1';
 	const itemClass =
 		'flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] text-ink transition-colors hover:bg-ink/5 disabled:opacity-40';
 	const kickerClass =
@@ -99,16 +97,16 @@
 		<div class={groupClass}>
 			<div class={kickerClass}>Format</div>
 			<button type="button" class={itemClass} on:click={() => pick('setBlock', 'paragraph')}>
-				<span class="w-5 text-ink/50 font-mono-system">P</span> Paragraph
+				<span class="w-5 font-mono-system text-ink/50">P</span> Paragraph
 			</button>
 			<button type="button" class={itemClass} on:click={() => pick('setBlock', 'h2')}>
-				<span class="w-5 text-ink/50 font-mono-system">H2</span> Heading 2
+				<span class="w-5 font-mono-system text-ink/50">H2</span> Heading 2
 			</button>
 			<button type="button" class={itemClass} on:click={() => pick('setBlock', 'h3')}>
-				<span class="w-5 text-ink/50 font-mono-system">H3</span> Heading 3
+				<span class="w-5 font-mono-system text-ink/50">H3</span> Heading 3
 			</button>
 			<button type="button" class={itemClass} on:click={() => pick('setBlock', 'h4')}>
-				<span class="w-5 text-ink/50 font-mono-system">H4</span> Heading 4
+				<span class="w-5 font-mono-system text-ink/50">H4</span> Heading 4
 			</button>
 			<button type="button" class={itemClass} on:click={() => pick('setBlock', 'quote')}>
 				<span class="w-5 text-ink/50">“ ”</span> Quote
@@ -121,14 +119,14 @@
 				<span class="w-5 text-ink/50">•</span> Bullet list
 			</button>
 			<button type="button" class={itemClass} on:click={() => pick('insertList', 'ol')}>
-				<span class="w-5 text-ink/50 font-mono-system">1.</span> Numbered list
+				<span class="w-5 font-mono-system text-ink/50">1.</span> Numbered list
 			</button>
 		</div>
 
 		<div class={groupClass}>
 			<div class={kickerClass}>Text</div>
 			<button type="button" class={itemClass} on:click={() => pick('formatText', 'bold')}>
-				<span class="w-5 text-ink/50 font-bold">B</span> Bold
+				<span class="w-5 font-bold text-ink/50">B</span> Bold
 			</button>
 			<button type="button" class={itemClass} on:click={() => pick('formatText', 'italic')}>
 				<span class="w-5 text-ink/50 italic">I</span> Italic
@@ -147,13 +145,13 @@
 				<span class="w-5 text-ink/50">🖼</span> Image
 			</button>
 			<button type="button" class={itemClass} on:click={() => pick('insertCardLink')}>
-				<span class="w-5 text-ink/50 font-mono-system">♠</span> Card link
+				<span class="w-5 font-mono-system text-ink/50">♠</span> Card link
 			</button>
 			<button type="button" class={itemClass} on:click={() => pick('insertDecklist')}>
-				<span class="w-5 text-ink/50 font-mono-system">≡</span> Decklist
+				<span class="w-5 font-mono-system text-ink/50">≡</span> Decklist
 			</button>
 			<button type="button" class={itemClass} on:click={() => pick('insertStatsTable')}>
-				<span class="w-5 text-ink/50 font-mono-system">▦</span> Stats table
+				<span class="w-5 font-mono-system text-ink/50">▦</span> Stats table
 			</button>
 			<button type="button" class={itemClass} on:click={() => pick('insertVideo')}>
 				<span class="w-5 text-ink/50">▶</span> Inline video

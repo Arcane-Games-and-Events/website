@@ -22,7 +22,11 @@ export function dur(sec) {
 
 export const hours = (sec) => {
 	const h = (sec || 0) / 3600;
-	return h >= 10 ? `${Math.round(h)}h` : h >= 1 ? `${h.toFixed(1)}h` : `${Math.round((sec || 0) / 60)}m`;
+	return h >= 10
+		? `${Math.round(h)}h`
+		: h >= 1
+			? `${h.toFixed(1)}h`
+			: `${Math.round((sec || 0) / 60)}m`;
 };
 
 export const pctLabel = (v) => (v == null ? '—' : `${Math.round(v)}%`);
@@ -51,11 +55,26 @@ export const label = (map, key) => map[key] || key;
 
 /** One vocabulary, shown under every dashboard. */
 export const GLOSSARY = [
-	['View', 'Someone had the piece open and on screen for at least 3 seconds. Staff and bots never count.'],
+	[
+		'View',
+		'Someone had the piece open and on screen for at least 3 seconds. Staff and bots never count.'
+	],
 	['Reader', 'A unique browser. The same person on a phone and a laptop counts twice.'],
-	['Engaged time', 'Seconds the piece was on screen and the reader was active (scrolling, tapping, moving) in the last 30 seconds, or a video was playing.'],
-	['Reached', 'How far through the article body a reader got, by what has appeared on their screen.'],
-	['Finished', 'Reached 90% of the body with enough engaged time to have read it, or watched 90% of the video.'],
+	[
+		'Engaged time',
+		'Seconds the piece was on screen and the reader was active (scrolling, tapping, moving) in the last 30 seconds, or a video was playing.'
+	],
+	[
+		'Reached',
+		'How far through the article body a reader got, by what has appeared on their screen.'
+	],
+	[
+		'Finished',
+		'Reached 90% of the body with enough engaged time to have read it, or watched 90% of the video.'
+	],
 	['Bounced', 'Left with less than 10 seconds of engaged time.'],
-	['Conversions', 'Sign-ups and Premium upgrades by readers who viewed the piece in the 7 days before. Each conversion credits every piece they read; "last" is the one read most recently.']
+	[
+		'Conversions',
+		'Sign-ups and Premium upgrades by readers who viewed the piece in the 7 days before. Each conversion credits every piece they read; "last" is the one read most recently.'
+	]
 ];

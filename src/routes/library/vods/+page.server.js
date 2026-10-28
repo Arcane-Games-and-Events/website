@@ -51,40 +51,38 @@ export async function load({ locals, url, setHeaders }) {
 				else if (sort === 'longest') orderBy = desc(vod.duration);
 				else orderBy = desc(vod.publishedAt);
 
-				const [
-					[{ count: totalCount }],
-					[{ count: totalUnfiltered }],
-					vods,
-					heroRows,
-					eventRows
-				] = await Promise.all([
-					db.select({ count: sql`count(*)::int` }).from(vod).where(and(...conditions)),
-					db
-						.select({ count: sql`count(*)::int` })
-						.from(vod)
-						.where(and(eq(vod.isPublished, true), eq(vod.status, 'ready'))),
-					db
-						.select()
-						.from(vod)
-						.where(and(...conditions))
-						.orderBy(orderBy)
-						.limit(perPage)
-						.offset((page - 1) * perPage),
-					db
-						.select({ player1Hero: vod.player1Hero, player2Hero: vod.player2Hero })
-						.from(vod)
-						.where(and(eq(vod.isPublished, true), eq(vod.status, 'ready'))),
-					db
-						.selectDistinct({ eventId: vod.eventId })
-						.from(vod)
-						.where(
-							and(
-								eq(vod.isPublished, true),
-								eq(vod.status, 'ready'),
-								sql`${vod.eventId} IS NOT NULL`
+				const [[{ count: totalCount }], [{ count: totalUnfiltered }], vods, heroRows, eventRows] =
+					await Promise.all([
+						db
+							.select({ count: sql`count(*)::int` })
+							.from(vod)
+							.where(and(...conditions)),
+						db
+							.select({ count: sql`count(*)::int` })
+							.from(vod)
+							.where(and(eq(vod.isPublished, true), eq(vod.status, 'ready'))),
+						db
+							.select()
+							.from(vod)
+							.where(and(...conditions))
+							.orderBy(orderBy)
+							.limit(perPage)
+							.offset((page - 1) * perPage),
+						db
+							.select({ player1Hero: vod.player1Hero, player2Hero: vod.player2Hero })
+							.from(vod)
+							.where(and(eq(vod.isPublished, true), eq(vod.status, 'ready'))),
+						db
+							.selectDistinct({ eventId: vod.eventId })
+							.from(vod)
+							.where(
+								and(
+									eq(vod.isPublished, true),
+									eq(vod.status, 'ready'),
+									sql`${vod.eventId} IS NOT NULL`
+								)
 							)
-						)
-				]);
+					]);
 
 				const heroSet = new Set();
 				for (const row of heroRows) {

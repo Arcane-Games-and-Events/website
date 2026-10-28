@@ -55,10 +55,7 @@ async function safeNextEvent() {
 					.select()
 					.from(event)
 					.where(
-						and(
-							gte(event.eventDate, now),
-							or(eq(event.status, 'upcoming'), isNull(event.status))
-						)
+						and(gte(event.eventDate, now), or(eq(event.status, 'upcoming'), isNull(event.status)))
 					)
 					.orderBy(asc(event.eventDate))
 					.limit(3);
@@ -95,8 +92,7 @@ export const load = async ({ locals }) => {
 		safeNextEvent()
 	]);
 
-	const isPremiumMember =
-		locals.user?.role === 'premium' || locals.user?.role === 'admin';
+	const isPremiumMember = locals.user?.role === 'premium' || locals.user?.role === 'admin';
 
 	return {
 		user: locals.user,

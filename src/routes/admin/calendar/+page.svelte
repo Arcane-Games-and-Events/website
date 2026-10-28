@@ -67,53 +67,65 @@
 <svelte:head><title>Calendar · AGE Ops</title></svelte:head>
 
 <!-- ============ HEADER ============ -->
-<header class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[42px] pb-[28px]">
+<header class="mx-auto w-full max-w-[1600px] px-4 pt-[42px] pb-[28px] md:px-10 lg:px-14">
 	<div class="mb-[18px] flex flex-wrap items-center gap-[16px]">
-		<span class="font-mono-system text-warm text-[11px] font-extrabold tracking-[0.16em] uppercase">
+		<span class="font-mono-system text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase">
 			Calendar
 		</span>
-		<span class="bg-line2 hidden h-[1px] flex-1 md:block"></span>
+		<span class="hidden h-[1px] flex-1 bg-line2 md:block"></span>
 		<button
 			onclick={() => (showAddSeasonForm = !showAddSeasonForm)}
-			class="bg-ink font-mono-system inline-flex items-center px-[14px] py-[9px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125"
+			class="inline-flex items-center bg-ink px-[14px] py-[9px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
 		>
 			+ Add Event
 		</button>
 	</div>
-	<h1 class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]">
+	<h1
+		class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]"
+	>
 		LSS calendar.
 	</h1>
-	<p class="font-newsreader text-soft mt-3 max-w-[680px] text-[19px] leading-[1.42] italic">
+	<p class="mt-3 max-w-[680px] font-newsreader text-[19px] leading-[1.42] text-soft italic">
 		Skirmishes, RtN, ProQuests, Callings — everything on the competitive road.
 	</p>
 </header>
 
 {#if successMessage}
-	<section class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[12px] overflow-x-clip">
-		<div class="border-ink bg-prem border-[1.5px] p-4 text-white">
-			<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: #d6eedf;">Success</span>
-			<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{successMessage}</p>
+	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[12px] md:px-10 lg:px-14">
+		<div class="border-[1.5px] border-ink bg-prem p-4 text-white">
+			<span
+				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+				style="color: #d6eedf;">Success</span
+			>
+			<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{successMessage}</p>
 		</div>
 	</section>
 {/if}
 {#if errorMessage}
-	<section class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[12px] overflow-x-clip">
-		<div class="border-ink bg-warm border-[1.5px] p-4 text-white">
-			<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: rgba(255,255,255,0.75);">Error</span>
-			<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{errorMessage}</p>
+	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[12px] md:px-10 lg:px-14">
+		<div class="border-[1.5px] border-ink bg-warm p-4 text-white">
+			<span
+				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+				style="color: rgba(255,255,255,0.75);">Error</span
+			>
+			<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{errorMessage}</p>
 		</div>
 	</section>
 {/if}
 
 <!-- ============ ADD FORM ============ -->
 {#if showAddSeasonForm}
-	<section class="border-ink border-y-[3px] border-double overflow-x-clip">
-		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[36px]">
+	<section class="overflow-x-clip border-y-[3px] border-double border-ink">
+		<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
 			<div class="mb-[22px]">
-				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+				<span
+					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+				>
 					New Season
 				</span>
-				<h2 class="font-newsreader mt-[6px] text-[clamp(24px,3vw,32px)] leading-[1] font-semibold tracking-[-0.01em]">
+				<h2
+					class="mt-[6px] font-newsreader text-[clamp(24px,3vw,32px)] leading-[1] font-semibold tracking-[-0.01em]"
+				>
 					What's on the schedule?
 				</h2>
 			</div>
@@ -130,11 +142,14 @@
 						await update();
 					};
 				}}
-				class="border-ink border-[1.5px] p-6 overflow-hidden"
+				class="overflow-hidden border-[1.5px] border-ink p-6"
 			>
 				<div class="grid gap-[18px] md:grid-cols-2 lg:grid-cols-4">
 					<div>
-						<label for="seasonName" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+						<label
+							for="seasonName"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>
 							Event Name <span class="text-warm">*</span>
 						</label>
 						<input
@@ -143,17 +158,20 @@
 							type="text"
 							required
 							placeholder="e.g., Skirmish Season 5"
-							class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none"
+							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
 						/>
 					</div>
 					<div>
-						<label for="eventType" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+						<label
+							for="eventType"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>
 							Type
 						</label>
 						<select
 							id="eventType"
 							name="eventType"
-							class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[12px] py-[10px] text-[12px] font-bold tracking-[0.06em] uppercase focus:outline-none"
+							class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[12px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
 						>
 							<option value="">Select type</option>
 							{#each TYPES as t (t)}
@@ -162,7 +180,10 @@
 						</select>
 					</div>
 					<div>
-						<label for="startDate" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+						<label
+							for="startDate"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>
 							Start <span class="text-warm">*</span>
 						</label>
 						<input
@@ -170,11 +191,14 @@
 							name="startDate"
 							type="date"
 							required
-							class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[12px] py-[10px] text-[13px] focus:outline-none"
+							class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[13px] text-ink focus:outline-none"
 						/>
 					</div>
 					<div>
-						<label for="endDate" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+						<label
+							for="endDate"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>
 							End <span class="text-warm">*</span>
 						</label>
 						<input
@@ -182,17 +206,27 @@
 							name="endDate"
 							type="date"
 							required
-							class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[12px] py-[10px] text-[13px] focus:outline-none"
+							class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[13px] text-ink focus:outline-none"
 						/>
 					</div>
 				</div>
 
 				<div class="mt-[22px]">
-					<span class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Format(s)</span>
+					<span
+						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>Format(s)</span
+					>
 					<div class="flex flex-wrap gap-[10px]">
 						{#each FORMATS as fmt (fmt)}
-							<label class="font-mono-system border-line2 hover:border-ink flex cursor-pointer items-center gap-2 border px-[10px] py-[6px] text-[11px] font-bold tracking-[0.06em] uppercase transition-colors">
-								<input type="checkbox" name="format" value={fmt} class="border-ink h-[13px] w-[13px] accent-[color:var(--ed-warm)]" />
+							<label
+								class="flex cursor-pointer items-center gap-2 border border-line2 px-[10px] py-[6px] font-mono-system text-[11px] font-bold tracking-[0.06em] uppercase transition-colors hover:border-ink"
+							>
+								<input
+									type="checkbox"
+									name="format"
+									value={fmt}
+									class="h-[13px] w-[13px] border-ink accent-[color:var(--ed-warm)]"
+								/>
 								{fmt}
 							</label>
 						{/each}
@@ -201,23 +235,31 @@
 
 				<div class="mt-[22px] grid gap-[18px] md:grid-cols-2">
 					<div>
-						<label for="description" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Description</label>
+						<label
+							for="description"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							>Description</label
+						>
 						<textarea
 							id="description"
 							name="description"
 							rows="2"
 							placeholder="Optional description…"
-							class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none"
+							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
 						></textarea>
 					</div>
 					<div>
-						<label for="link" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Official Link</label>
+						<label
+							for="link"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							>Official Link</label
+						>
 						<input
 							id="link"
 							name="link"
 							type="url"
 							placeholder="https://fabtcg.com/…"
-							class="border-ink bg-paper-bg text-ink font-mono-system placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[13px] focus:outline-none"
+							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink placeholder:text-fade focus:outline-none"
 						/>
 					</div>
 				</div>
@@ -226,13 +268,13 @@
 					<button
 						type="button"
 						onclick={() => (showAddSeasonForm = false)}
-						class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[18px] py-[11px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+						class="inline-flex items-center border border-line2 px-[18px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
 					>
 						Cancel
 					</button>
 					<button
 						type="submit"
-						class="bg-ink font-mono-system inline-flex items-center px-[22px] py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125"
+						class="inline-flex items-center bg-ink px-[22px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
 					>
 						Create Event →
 					</button>
@@ -243,22 +285,32 @@
 {/if}
 
 <!-- ============ TABS ============ -->
-<section class="border-ink border-t-[3px] border-double overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[24px]">
-		<div class="border-ink flex gap-1 border-b-[1.5px]">
+<section class="overflow-x-clip border-t-[3px] border-double border-ink">
+	<div class="mx-auto w-full max-w-[1600px] px-4 py-[24px] md:px-10 lg:px-14">
+		<div class="flex gap-1 border-b-[1.5px] border-ink">
 			<button
 				onclick={() => (calendarSubTab = 'upcoming')}
-				class="font-mono-system relative px-[16px] py-[12px] text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors {calendarSubTab === 'upcoming' ? 'text-ink' : 'text-fade hover:text-ink'}"
+				class="relative px-[16px] py-[12px] font-mono-system text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors {calendarSubTab ===
+				'upcoming'
+					? 'text-ink'
+					: 'text-fade hover:text-ink'}"
 			>
 				Upcoming / Active · {upcomingLssEvents.length}
-				{#if calendarSubTab === 'upcoming'}<span class="bg-warm absolute inset-x-[10px] bottom-[-1.5px] h-[2px]"></span>{/if}
+				{#if calendarSubTab === 'upcoming'}<span
+						class="absolute inset-x-[10px] bottom-[-1.5px] h-[2px] bg-warm"
+					></span>{/if}
 			</button>
 			<button
 				onclick={() => (calendarSubTab = 'completed')}
-				class="font-mono-system relative px-[16px] py-[12px] text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors {calendarSubTab === 'completed' ? 'text-ink' : 'text-fade hover:text-ink'}"
+				class="relative px-[16px] py-[12px] font-mono-system text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors {calendarSubTab ===
+				'completed'
+					? 'text-ink'
+					: 'text-fade hover:text-ink'}"
 			>
 				Completed · {completedLssEvents.length}
-				{#if calendarSubTab === 'completed'}<span class="bg-warm absolute inset-x-[10px] bottom-[-1.5px] h-[2px]"></span>{/if}
+				{#if calendarSubTab === 'completed'}<span
+						class="absolute inset-x-[10px] bottom-[-1.5px] h-[2px] bg-warm"
+					></span>{/if}
 			</button>
 		</div>
 	</div>
@@ -266,14 +318,16 @@
 
 <!-- ============ LIST ============ -->
 <section class="overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[24px] pb-[64px]">
+	<div class="mx-auto w-full max-w-[1600px] px-4 py-[24px] pb-[64px] md:px-10 lg:px-14">
 		{#if displayedLssEvents.length === 0}
-			<div class="border-ink border-[1.5px] p-12 text-center overflow-hidden">
-				<p class="font-newsreader text-soft text-[19px] italic">
+			<div class="overflow-hidden border-[1.5px] border-ink p-12 text-center">
+				<p class="font-newsreader text-[19px] text-soft italic">
 					No {calendarSubTab === 'upcoming' ? 'upcoming' : 'completed'} events.
 				</p>
 				{#if calendarSubTab === 'upcoming'}
-					<p class="text-fade mt-2 text-[13px]">Click "Add Event" to create a new tournament season.</p>
+					<p class="mt-2 text-[13px] text-fade">
+						Click "Add Event" to create a new tournament season.
+					</p>
 				{/if}
 			</div>
 		{:else}
@@ -283,33 +337,59 @@
 					{@const startDate = new Date(season.startDate)}
 					{@const endDate = new Date(season.endDate)}
 					{@const status = statusChip(startDate, endDate)}
-					<div class="border-ink border-[1.5px] p-4 overflow-hidden">
+					<div class="overflow-hidden border-[1.5px] border-ink p-4">
 						<div class="flex items-start justify-between gap-2">
 							<div class="min-w-0 flex-1">
 								<div class="flex items-center gap-2">
-									<span class="font-newsreader truncate text-[16px] font-semibold">{season.name}</span>
+									<span class="truncate font-newsreader text-[16px] font-semibold"
+										>{season.name}</span
+									>
 									{#if season.link}
-										<a href={season.link} target="_blank" rel="noopener noreferrer" class="text-warm shrink-0" aria-label="View official page">↗</a>
+										<a
+											href={season.link}
+											target="_blank"
+											rel="noopener noreferrer"
+											class="shrink-0 text-warm"
+											aria-label="View official page">↗</a
+										>
 									{/if}
 								</div>
 								{#if season.eventType}
-									<span class="font-mono-system border-line2 text-fade mt-[6px] inline-flex items-center border px-[7px] py-[3px] text-[10px] font-bold tracking-[0.08em] uppercase">
+									<span
+										class="mt-[6px] inline-flex items-center border border-line2 px-[7px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
+									>
 										{season.eventType}
 									</span>
 								{/if}
 							</div>
-							<span class="font-mono-system inline-flex items-center px-[9px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase {status.cls}">
+							<span
+								class="inline-flex items-center px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] uppercase {status.cls}"
+							>
 								{status.label}
 							</span>
 						</div>
-						<div class="font-mono-system text-fade mt-[10px] text-[11px] font-bold tracking-[0.06em] uppercase">
-							{startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} — {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
+						<div
+							class="mt-[10px] font-mono-system text-[11px] font-bold tracking-[0.06em] text-fade uppercase"
+						>
+							{startDate.toLocaleDateString('en-US', {
+								month: 'short',
+								day: 'numeric',
+								timeZone: 'UTC'
+							})} — {endDate.toLocaleDateString('en-US', {
+								month: 'short',
+								day: 'numeric',
+								year: 'numeric',
+								timeZone: 'UTC'
+							})}
 						</div>
 						{#if season.format}
-							<p class="text-fade mt-[6px] truncate text-[12px]">{season.format}</p>
+							<p class="mt-[6px] truncate text-[12px] text-fade">{season.format}</p>
 						{/if}
-						<div class="border-line2 mt-3 flex gap-2 border-t pt-3">
-							<button onclick={() => (editingSeasonId = season.id)} class="border-line2 hover:border-ink font-mono-system flex-1 border px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors">
+						<div class="mt-3 flex gap-2 border-t border-line2 pt-3">
+							<button
+								onclick={() => (editingSeasonId = season.id)}
+								class="flex-1 border border-line2 px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+							>
 								Edit
 							</button>
 							<form method="POST" action="?/deleteLssSeason" use:enhance class="flex-1">
@@ -319,7 +399,7 @@
 									onclick={(e) => {
 										if (!confirm('Delete this event?')) e.preventDefault();
 									}}
-									class="bg-warm font-mono-system w-full px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase text-white hover:brightness-110 transition-[filter]"
+									class="w-full bg-warm px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
 								>
 									Delete
 								</button>
@@ -330,17 +410,35 @@
 			</div>
 
 			<!-- Desktop -->
-			<div class="border-ink hidden border-[1.5px] sm:block">
+			<div class="hidden border-[1.5px] border-ink sm:block">
 				<div class="overflow-x-auto">
 					<table class="w-full min-w-[900px]">
-						<thead class="border-ink border-b-[1.5px]">
+						<thead class="border-b-[1.5px] border-ink">
 							<tr class="text-left">
-								<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Name</th>
-								<th class="font-mono-system text-fade hidden px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase sm:table-cell">Type</th>
-								<th class="font-mono-system text-fade hidden px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase lg:table-cell">Format</th>
-								<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Dates</th>
-								<th class="font-mono-system text-fade hidden px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase md:table-cell">Status</th>
-								<th class="font-mono-system text-fade px-4 py-[12px] text-right text-[10px] font-extrabold tracking-[0.14em] uppercase">Actions</th>
+								<th
+									class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									>Name</th
+								>
+								<th
+									class="hidden px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase sm:table-cell"
+									>Type</th
+								>
+								<th
+									class="hidden px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase lg:table-cell"
+									>Format</th
+								>
+								<th
+									class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									>Dates</th
+								>
+								<th
+									class="hidden px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase md:table-cell"
+									>Status</th
+								>
+								<th
+									class="px-4 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									>Actions</th
+								>
 							</tr>
 						</thead>
 						<tbody>
@@ -365,27 +463,35 @@
 														await update();
 													};
 												}}
-												class="bg-panel border-line2 border-y p-5"
+												class="border-y border-line2 bg-panel p-5"
 											>
 												<input type="hidden" name="seasonId" value={season.id} />
 												<div class="grid gap-[14px] md:grid-cols-4">
 													<div>
-														<label for="edit-name-{season.id}" class="font-mono-system text-fade mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Name</label>
+														<label
+															for="edit-name-{season.id}"
+															class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+															>Name</label
+														>
 														<input
 															id="edit-name-{season.id}"
 															name="name"
 															type="text"
 															required
 															value={season.name}
-															class="border-ink bg-paper-bg text-ink font-newsreader w-full border-[1.5px] px-[10px] py-[7px] text-[14px] focus:outline-none"
+															class="w-full border-[1.5px] border-ink bg-paper-bg px-[10px] py-[7px] font-newsreader text-[14px] text-ink focus:outline-none"
 														/>
 													</div>
 													<div>
-														<label for="edit-type-{season.id}" class="font-mono-system text-fade mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Type</label>
+														<label
+															for="edit-type-{season.id}"
+															class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+															>Type</label
+														>
 														<select
 															id="edit-type-{season.id}"
 															name="eventType"
-															class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[10px] py-[7px] text-[11px] font-bold tracking-[0.06em] uppercase focus:outline-none"
+															class="w-full border-[1.5px] border-ink bg-paper-bg px-[10px] py-[7px] font-mono-system text-[11px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
 														>
 															<option value="">Select</option>
 															{#each TYPES as t (t)}
@@ -394,34 +500,53 @@
 														</select>
 													</div>
 													<div>
-														<label for="edit-start-{season.id}" class="font-mono-system text-fade mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Start</label>
+														<label
+															for="edit-start-{season.id}"
+															class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+															>Start</label
+														>
 														<input
 															id="edit-start-{season.id}"
 															name="startDate"
 															type="date"
 															required
 															value={startDate.toISOString().split('T')[0]}
-															class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[10px] py-[7px] text-[12px] focus:outline-none"
+															class="w-full border-[1.5px] border-ink bg-paper-bg px-[10px] py-[7px] font-mono-system text-[12px] text-ink focus:outline-none"
 														/>
 													</div>
 													<div>
-														<label for="edit-end-{season.id}" class="font-mono-system text-fade mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">End</label>
+														<label
+															for="edit-end-{season.id}"
+															class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+															>End</label
+														>
 														<input
 															id="edit-end-{season.id}"
 															name="endDate"
 															type="date"
 															required
 															value={endDate.toISOString().split('T')[0]}
-															class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[10px] py-[7px] text-[12px] focus:outline-none"
+															class="w-full border-[1.5px] border-ink bg-paper-bg px-[10px] py-[7px] font-mono-system text-[12px] text-ink focus:outline-none"
 														/>
 													</div>
 												</div>
 												<div class="mt-[14px]">
-													<span class="font-mono-system text-fade mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Format(s)</span>
+													<span
+														class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+														>Format(s)</span
+													>
 													<div class="flex flex-wrap gap-[8px]">
 														{#each FORMATS as fmt (fmt)}
-															<label class="font-mono-system border-line2 hover:border-ink flex cursor-pointer items-center gap-2 border px-[8px] py-[4px] text-[10px] font-bold tracking-[0.06em] uppercase transition-colors">
-																<input type="checkbox" name="format" value={fmt} checked={(season.format || '').includes(fmt)} class="border-ink h-[12px] w-[12px] accent-[color:var(--ed-warm)]" />
+															<label
+																class="flex cursor-pointer items-center gap-2 border border-line2 px-[8px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.06em] uppercase transition-colors hover:border-ink"
+															>
+																<input
+																	type="checkbox"
+																	name="format"
+																	value={fmt}
+																	checked={(season.format || '').includes(fmt)}
+																	class="h-[12px] w-[12px] border-ink accent-[color:var(--ed-warm)]"
+																/>
 																{fmt}
 															</label>
 														{/each}
@@ -429,44 +554,61 @@
 												</div>
 												<div class="mt-[14px] grid gap-[14px] md:grid-cols-2">
 													<div>
-														<label for="edit-desc-{season.id}" class="font-mono-system text-fade mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Description</label>
+														<label
+															for="edit-desc-{season.id}"
+															class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+															>Description</label
+														>
 														<input
 															id="edit-desc-{season.id}"
 															name="description"
 															type="text"
 															value={season.description || ''}
 															placeholder="Optional…"
-															class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[10px] py-[7px] text-[14px] focus:outline-none"
+															class="w-full border-[1.5px] border-ink bg-paper-bg px-[10px] py-[7px] font-newsreader text-[14px] text-ink placeholder:text-fade focus:outline-none"
 														/>
 													</div>
 													<div>
-														<label for="edit-link-{season.id}" class="font-mono-system text-fade mb-[6px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">Official Link</label>
+														<label
+															for="edit-link-{season.id}"
+															class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+															>Official Link</label
+														>
 														<input
 															id="edit-link-{season.id}"
 															name="link"
 															type="url"
 															value={season.link || ''}
 															placeholder="https://…"
-															class="border-ink bg-paper-bg text-ink font-mono-system placeholder:text-fade w-full border-[1.5px] px-[10px] py-[7px] text-[12px] focus:outline-none"
+															class="w-full border-[1.5px] border-ink bg-paper-bg px-[10px] py-[7px] font-mono-system text-[12px] text-ink placeholder:text-fade focus:outline-none"
 														/>
 													</div>
 												</div>
 												<div class="mt-[16px] flex items-center justify-between">
-													<label class="font-mono-system flex items-center gap-2 text-[11px] font-bold tracking-[0.06em] uppercase">
+													<label
+														class="flex items-center gap-2 font-mono-system text-[11px] font-bold tracking-[0.06em] uppercase"
+													>
 														<input
 															type="checkbox"
 															name="isActive"
 															value="true"
 															checked={season.isActive}
-															class="border-ink h-[13px] w-[13px] accent-[color:var(--ed-warm)]"
+															class="h-[13px] w-[13px] border-ink accent-[color:var(--ed-warm)]"
 														/>
 														Show on calendar
 													</label>
 													<div class="flex gap-2">
-														<button type="button" onclick={() => (editingSeasonId = null)} class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[14px] py-[7px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors">
+														<button
+															type="button"
+															onclick={() => (editingSeasonId = null)}
+															class="inline-flex items-center border border-line2 px-[14px] py-[7px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+														>
 															Cancel
 														</button>
-														<button type="submit" class="bg-ink font-mono-system inline-flex items-center px-[14px] py-[7px] text-[10px] font-extrabold tracking-[0.14em] uppercase text-white hover:brightness-125 transition-[filter]">
+														<button
+															type="submit"
+															class="inline-flex items-center bg-ink px-[14px] py-[7px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
+														>
 															Save →
 														</button>
 													</div>
@@ -475,21 +617,35 @@
 										</td>
 									</tr>
 								{:else}
-									<tr class="border-line2 hover:bg-panel border-b transition-colors">
+									<tr class="border-b border-line2 transition-colors hover:bg-panel">
 										<td class="px-4 py-[14px]">
 											<div class="flex items-center gap-2">
-												<span class="font-newsreader max-w-[220px] truncate text-[15px] font-semibold">{season.name}</span>
+												<span
+													class="max-w-[220px] truncate font-newsreader text-[15px] font-semibold"
+													>{season.name}</span
+												>
 												{#if season.link}
-													<a href={season.link} target="_blank" rel="noopener noreferrer" class="text-warm hover:text-ink flex-shrink-0" aria-label="View official page">↗</a>
+													<a
+														href={season.link}
+														target="_blank"
+														rel="noopener noreferrer"
+														class="flex-shrink-0 text-warm hover:text-ink"
+														aria-label="View official page">↗</a
+													>
 												{/if}
 												{#if !season.isActive}
-													<span class="font-mono-system bg-warm inline-flex items-center px-[7px] py-[3px] text-[9px] font-bold tracking-[0.08em] uppercase text-white">Hidden</span>
+													<span
+														class="inline-flex items-center bg-warm px-[7px] py-[3px] font-mono-system text-[9px] font-bold tracking-[0.08em] text-white uppercase"
+														>Hidden</span
+													>
 												{/if}
 											</div>
 										</td>
 										<td class="hidden px-4 py-[14px] sm:table-cell">
 											{#if season.eventType}
-												<span class="font-mono-system border-line2 text-fade inline-flex items-center border px-[8px] py-[3px] text-[10px] font-bold tracking-[0.08em] uppercase">
+												<span
+													class="inline-flex items-center border border-line2 px-[8px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
+												>
 													{season.eventType}
 												</span>
 											{:else}
@@ -498,18 +654,36 @@
 										</td>
 										<td class="hidden px-4 py-[14px] lg:table-cell">
 											{#if season.format}
-												<span class="font-mono-system text-fade text-[11px] font-bold tracking-[0.04em]" title={season.format}>
-													{season.format.length > 25 ? season.format.substring(0, 25) + '…' : season.format}
+												<span
+													class="font-mono-system text-[11px] font-bold tracking-[0.04em] text-fade"
+													title={season.format}
+												>
+													{season.format.length > 25
+														? season.format.substring(0, 25) + '…'
+														: season.format}
 												</span>
 											{:else}
 												<span class="text-fade">—</span>
 											{/if}
 										</td>
-										<td class="font-mono-system text-fade px-4 py-[14px] text-[10.5px] font-bold tracking-[0.06em] whitespace-nowrap uppercase">
-											{startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} — {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
+										<td
+											class="px-4 py-[14px] font-mono-system text-[10.5px] font-bold tracking-[0.06em] whitespace-nowrap text-fade uppercase"
+										>
+											{startDate.toLocaleDateString('en-US', {
+												month: 'short',
+												day: 'numeric',
+												timeZone: 'UTC'
+											})} — {endDate.toLocaleDateString('en-US', {
+												month: 'short',
+												day: 'numeric',
+												year: 'numeric',
+												timeZone: 'UTC'
+											})}
 										</td>
 										<td class="hidden px-4 py-[14px] md:table-cell">
-											<span class="font-mono-system inline-flex items-center px-[9px] py-[4px] text-[10px] font-bold tracking-[0.1em] uppercase {status.cls}">
+											<span
+												class="inline-flex items-center px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] uppercase {status.cls}"
+											>
 												{status.label}
 											</span>
 										</td>
@@ -517,7 +691,7 @@
 											<div class="inline-flex items-center gap-2">
 												<button
 													onclick={() => (editingSeasonId = season.id)}
-													class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+													class="inline-flex items-center border border-line2 px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
 													title="Edit"
 												>
 													Edit
@@ -539,7 +713,7 @@
 														onclick={(e) => {
 															if (!confirm('Delete this event?')) e.preventDefault();
 														}}
-														class="bg-warm font-mono-system inline-flex items-center px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase text-white hover:brightness-110 transition-[filter]"
+														class="inline-flex items-center bg-warm px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
 														title="Delete"
 													>
 														Delete

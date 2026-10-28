@@ -3,11 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { match, standing, event, eventPlayerHero } from '$lib/server/db/schema.js';
 import { eq, and, count, sql } from 'drizzle-orm';
 import { parsePairings } from '$lib/server/tournament-processor.js';
-import {
-	invalidateCache,
-	invalidateByPrefix,
-	CACHE_KEYS
-} from '$lib/server/redis/index.js';
+import { invalidateCache, invalidateByPrefix, CACHE_KEYS } from '$lib/server/redis/index.js';
 import { MONTH_NAMES } from '$lib/data/months.js';
 
 const MONTHS = [

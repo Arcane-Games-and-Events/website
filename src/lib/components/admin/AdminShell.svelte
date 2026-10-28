@@ -10,7 +10,7 @@
 	let { currentPage = '', badges = {}, userEmail = null, children } = $props();
 </script>
 
-<div class="bg-paper-bg text-ink font-libre min-h-screen overflow-x-clip antialiased">
+<div class="min-h-screen overflow-x-clip bg-paper-bg font-libre text-ink antialiased">
 	<AdminTopbar {currentPage} {badges} {userEmail} />
 	{#if children}{@render children()}{/if}
 </div>

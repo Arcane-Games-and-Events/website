@@ -23,10 +23,11 @@ export function normalizeMemberCode(code) {
  * Codes must be unique across BOTH partner.code and member_referral_code.code.
  */
 export async function generateUniqueMemberCode(firstName) {
-	const base = (firstName || 'AGE')
-		.replace(/[^a-zA-Z0-9]/g, '')
-		.toUpperCase()
-		.slice(0, 10) || 'AGE';
+	const base =
+		(firstName || 'AGE')
+			.replace(/[^a-zA-Z0-9]/g, '')
+			.toUpperCase()
+			.slice(0, 10) || 'AGE';
 	const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
 	for (let attempt = 0; attempt < 5; attempt++) {

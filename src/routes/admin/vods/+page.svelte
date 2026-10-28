@@ -125,12 +125,12 @@
 <svelte:head><title>VODs · AGE Ops</title></svelte:head>
 
 <!-- ============ HEADER ============ -->
-<header class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[42px] pb-[28px]">
+<header class="mx-auto w-full max-w-[1600px] px-4 pt-[42px] pb-[28px] md:px-10 lg:px-14">
 	<div class="mb-[18px] flex flex-wrap items-center gap-[16px]">
-		<span class="font-mono-system text-warm text-[11px] font-extrabold tracking-[0.16em] uppercase">
+		<span class="font-mono-system text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase">
 			VODs
 		</span>
-		<span class="bg-line2 hidden h-[1px] flex-1 md:block"></span>
+		<span class="hidden h-[1px] flex-1 bg-line2 md:block"></span>
 		<button
 			type="button"
 			onclick={() => {
@@ -138,32 +138,40 @@
 				editingVodId = null;
 				vodFormError = '';
 			}}
-			class="bg-ink font-mono-system inline-flex items-center px-[14px] py-[9px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125"
+			class="inline-flex items-center bg-ink px-[14px] py-[9px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
 		>
 			+ New VOD
 		</button>
 	</div>
-	<h1 class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]">
+	<h1
+		class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]"
+	>
 		Tournament VODs.
 	</h1>
-	<p class="font-newsreader text-soft mt-3 max-w-[680px] text-[19px] leading-[1.42] italic">
+	<p class="mt-3 max-w-[680px] font-newsreader text-[19px] leading-[1.42] text-soft italic">
 		Upload, publish, and paywall tournament recordings hosted on Mux.
 	</p>
 </header>
 
 {#if successMessage}
-	<section class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[12px] overflow-x-clip">
-		<div class="border-ink bg-prem border-[1.5px] p-4 text-white">
-			<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: #d6eedf;">Success</span>
-			<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{successMessage}</p>
+	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[12px] md:px-10 lg:px-14">
+		<div class="border-[1.5px] border-ink bg-prem p-4 text-white">
+			<span
+				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+				style="color: #d6eedf;">Success</span
+			>
+			<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{successMessage}</p>
 		</div>
 	</section>
 {/if}
 {#if errorMessage}
-	<section class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[12px] overflow-x-clip">
-		<div class="border-ink bg-warm border-[1.5px] p-4 text-white">
-			<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: rgba(255,255,255,0.75);">Error</span>
-			<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{errorMessage}</p>
+	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[12px] md:px-10 lg:px-14">
+		<div class="border-[1.5px] border-ink bg-warm p-4 text-white">
+			<span
+				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+				style="color: rgba(255,255,255,0.75);">Error</span
+			>
+			<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{errorMessage}</p>
 		</div>
 	</section>
 {/if}
@@ -171,13 +179,17 @@
 <!-- ============ FORM ============ -->
 {#if showAddVodForm || editingVodId}
 	{@const editingVod = editingVodId ? (data.vods || []).find((v) => v.id === editingVodId) : null}
-	<section class="border-ink border-t-[3px] border-double overflow-x-clip">
-		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[36px]">
+	<section class="overflow-x-clip border-t-[3px] border-double border-ink">
+		<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
 			<div class="mb-[22px]">
-				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+				<span
+					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+				>
 					{editingVod ? 'Edit VOD' : 'New VOD'}
 				</span>
-				<h2 class="font-newsreader mt-[6px] text-[clamp(24px,3vw,32px)] leading-[1] font-semibold tracking-[-0.01em]">
+				<h2
+					class="mt-[6px] font-newsreader text-[clamp(24px,3vw,32px)] leading-[1] font-semibold tracking-[-0.01em]"
+				>
 					{editingVod ? editingVod.title : 'Details.'}
 				</h2>
 			</div>
@@ -198,14 +210,17 @@
 						}
 					};
 				}}
-				class="border-ink space-y-[22px] border-[1.5px] p-6"
+				class="space-y-[22px] border-[1.5px] border-ink p-6"
 			>
 				{#if editingVod}
 					<input type="hidden" name="vodId" value={editingVod.id} />
 				{/if}
 
 				<div>
-					<label for="vod-title" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+					<label
+						for="vod-title"
+						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+					>
 						Title <span class="text-warm">*</span>
 					</label>
 					<input
@@ -215,12 +230,15 @@
 						value={editingVod?.title || ''}
 						required
 						placeholder="e.g., AGE Open January 2026 · Top 8"
-						class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none"
+						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
 					/>
 				</div>
 
 				<div>
-					<label for="vod-description" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+					<label
+						for="vod-description"
+						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+					>
 						Description
 					</label>
 					<textarea
@@ -228,17 +246,23 @@
 						name="description"
 						rows="3"
 						placeholder="Description of the VOD…"
-						class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[15px] leading-[1.5] focus:outline-none"
-					>{editingVod?.description || ''}</textarea>
+						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] leading-[1.5] text-ink placeholder:text-fade focus:outline-none"
+						>{editingVod?.description || ''}</textarea
+					>
 				</div>
 
-				<div class="border-ink border-[1.5px] p-5 overflow-hidden">
-					<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.14em] uppercase">
+				<div class="overflow-hidden border-[1.5px] border-ink p-5">
+					<span
+						class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+					>
 						Player Matchup
 					</span>
 					<div class="mt-[14px] grid grid-cols-1 gap-[18px] md:grid-cols-2">
 						<div class="space-y-[10px]">
-							<span class="font-mono-system text-fade text-[10px] font-bold tracking-[0.1em] uppercase">Player 1</span>
+							<span
+								class="font-mono-system text-[10px] font-bold tracking-[0.1em] text-fade uppercase"
+								>Player 1</span
+							>
 							<div class="relative">
 								<input
 									type="text"
@@ -249,14 +273,16 @@
 									onfocus={(e) => searchPlayers(e.target.value, 1)}
 									onblur={() => setTimeout(() => (player1Suggestions = []), 200)}
 									placeholder="Player name…"
-									class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[12px] py-[8px] text-[14px] focus:outline-none"
+									class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[8px] font-newsreader text-[14px] text-ink placeholder:text-fade focus:outline-none"
 								/>
 								{#if player1Suggestions.length > 0}
-									<div class="border-ink bg-paper-bg absolute z-10 mt-1 max-h-40 w-full overflow-y-auto border-[1.5px] shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
+									<div
+										class="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto border-[1.5px] border-ink bg-paper-bg shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
+									>
 										{#each player1Suggestions as name (name)}
 											<button
 												type="button"
-												class="hover:bg-panel font-newsreader w-full px-[12px] py-[7px] text-left text-[14px]"
+												class="w-full px-[12px] py-[7px] text-left font-newsreader text-[14px] hover:bg-panel"
 												onmousedown={(e) => {
 													e.preventDefault();
 													const input = e.target.closest('.relative').querySelector('input');
@@ -276,11 +302,14 @@
 								list="heroes-list"
 								value={editingVod?.player1Hero || ''}
 								placeholder="Hero…"
-								class="border-ink bg-paper-bg text-ink font-mono-system placeholder:text-fade w-full border-[1.5px] px-[12px] py-[8px] text-[13px] tracking-[0.04em] focus:outline-none"
+								class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[8px] font-mono-system text-[13px] tracking-[0.04em] text-ink placeholder:text-fade focus:outline-none"
 							/>
 						</div>
 						<div class="space-y-[10px]">
-							<span class="font-mono-system text-fade text-[10px] font-bold tracking-[0.1em] uppercase">Player 2</span>
+							<span
+								class="font-mono-system text-[10px] font-bold tracking-[0.1em] text-fade uppercase"
+								>Player 2</span
+							>
 							<div class="relative">
 								<input
 									type="text"
@@ -291,14 +320,16 @@
 									onfocus={(e) => searchPlayers(e.target.value, 2)}
 									onblur={() => setTimeout(() => (player2Suggestions = []), 200)}
 									placeholder="Player name…"
-									class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[12px] py-[8px] text-[14px] focus:outline-none"
+									class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[8px] font-newsreader text-[14px] text-ink placeholder:text-fade focus:outline-none"
 								/>
 								{#if player2Suggestions.length > 0}
-									<div class="border-ink bg-paper-bg absolute z-10 mt-1 max-h-40 w-full overflow-y-auto border-[1.5px] shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
+									<div
+										class="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto border-[1.5px] border-ink bg-paper-bg shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
+									>
 										{#each player2Suggestions as name (name)}
 											<button
 												type="button"
-												class="hover:bg-panel font-newsreader w-full px-[12px] py-[7px] text-left text-[14px]"
+												class="w-full px-[12px] py-[7px] text-left font-newsreader text-[14px] hover:bg-panel"
 												onmousedown={(e) => {
 													e.preventDefault();
 													const input = e.target.closest('.relative').querySelector('input');
@@ -318,7 +349,7 @@
 								list="heroes-list"
 								value={editingVod?.player2Hero || ''}
 								placeholder="Hero…"
-								class="border-ink bg-paper-bg text-ink font-mono-system placeholder:text-fade w-full border-[1.5px] px-[12px] py-[8px] text-[13px] tracking-[0.04em] focus:outline-none"
+								class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[8px] font-mono-system text-[13px] tracking-[0.04em] text-ink placeholder:text-fade focus:outline-none"
 							/>
 						</div>
 					</div>
@@ -331,13 +362,16 @@
 				</datalist>
 
 				<div>
-					<label for="vod-event" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+					<label
+						for="vod-event"
+						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+					>
 						Linked Event
 					</label>
 					<select
 						id="vod-event"
 						name="eventId"
-						class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[12px] py-[10px] text-[13px] font-bold tracking-[0.06em] uppercase focus:outline-none"
+						class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[13px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
 					>
 						<option value="" selected={!editingVod?.eventId}>No linked event</option>
 						{#each data.events || [] as evt (evt.id)}
@@ -351,7 +385,10 @@
 
 				{#if !editingVod}
 					<div>
-						<label for="vod-file" class="font-mono-system text-fade mb-[8px] block text-[10px] font-extrabold tracking-[0.14em] uppercase">
+						<label
+							for="vod-file"
+							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>
 							Video File
 						</label>
 						<input
@@ -361,9 +398,11 @@
 							onchange={(e) => {
 								pendingVodFile = e.target.files?.[0] || null;
 							}}
-							class="border-ink bg-paper-bg text-ink font-mono-system w-full border-[1.5px] px-[14px] py-[10px] text-[13px] file:mr-4 file:border-0 file:bg-ink file:px-[14px] file:py-[8px] file:text-[10px] file:font-extrabold file:tracking-[0.14em] file:text-white file:uppercase focus:outline-none"
+							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink file:mr-4 file:border-0 file:bg-ink file:px-[14px] file:py-[8px] file:text-[10px] file:font-extrabold file:tracking-[0.14em] file:text-white file:uppercase focus:outline-none"
 						/>
-						<p class="text-fade mt-[6px] text-[12px]">Optional — you can also upload after creating the VOD.</p>
+						<p class="mt-[6px] text-[12px] text-fade">
+							Optional — you can also upload after creating the VOD.
+						</p>
 					</div>
 				{/if}
 
@@ -374,15 +413,17 @@
 						name="isPremium"
 						value="true"
 						checked={editingVod ? editingVod.isPremium !== false : true}
-						class="border-ink h-[16px] w-[16px] accent-[color:var(--ed-prem)]"
+						class="h-[16px] w-[16px] border-ink accent-[color:var(--ed-prem)]"
 					/>
 					<span class="font-newsreader text-[15px] font-semibold">
-						Premium content <span class="text-fade text-[13px] font-normal italic">— requires subscription</span>
+						Premium content <span class="text-[13px] font-normal text-fade italic"
+							>— requires subscription</span
+						>
 					</span>
 				</label>
 
 				{#if vodFormError}
-					<p class="font-mono-system text-warm text-[11px] font-bold tracking-[0.06em] uppercase">
+					<p class="font-mono-system text-[11px] font-bold tracking-[0.06em] text-warm uppercase">
 						{vodFormError}
 					</p>
 				{/if}
@@ -390,14 +431,14 @@
 				<div class="flex gap-3">
 					<button
 						type="submit"
-						class="bg-ink font-mono-system inline-flex items-center px-[22px] py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125"
+						class="inline-flex items-center bg-ink px-[22px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
 					>
 						{editingVod ? 'Update VOD' : 'Create VOD'} →
 					</button>
 					<button
 						type="button"
 						onclick={() => resetVodForms()}
-						class="border-line2 hover:border-ink font-mono-system inline-flex items-center border px-[18px] py-[10px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+						class="inline-flex items-center border border-line2 px-[18px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
 					>
 						Cancel
 					</button>
@@ -408,25 +449,33 @@
 {/if}
 
 <!-- ============ LIST ============ -->
-<section class="border-ink border-t-[3px] border-double overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[36px]">
+<section class="overflow-x-clip border-t-[3px] border-double border-ink">
+	<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
 		{#if (data.vods || []).length > 0}
 			<div class="space-y-[16px]">
 				{#each data.vods || [] as vodItem (vodItem.id)}
-					<div class="border-ink border-[1.5px] overflow-hidden">
+					<div class="overflow-hidden border-[1.5px] border-ink">
 						<div class="flex items-start gap-4 p-4">
-							<div class="border-line2 bg-panel relative h-[80px] w-[142px] shrink-0 overflow-hidden border">
+							<div
+								class="relative h-[80px] w-[142px] shrink-0 overflow-hidden border border-line2 bg-panel"
+							>
 								{#if vodItem.muxPlaybackId}
 									<img
-										src="https://image.mux.com/{vodItem.muxPlaybackId}/thumbnail.webp?width=288&height=160&fit_mode=smartcrop{vodItem.thumbnailToken ? `&token=${vodItem.thumbnailToken}` : ''}"
+										src="https://image.mux.com/{vodItem.muxPlaybackId}/thumbnail.webp?width=288&height=160&fit_mode=smartcrop{vodItem.thumbnailToken
+											? `&token=${vodItem.thumbnailToken}`
+											: ''}"
 										alt=""
 										class="h-full w-full object-cover"
 									/>
 								{:else}
-									<div class="text-fade flex h-full items-center justify-center text-[24px]">▶</div>
+									<div class="flex h-full items-center justify-center text-[24px] text-fade">
+										▶
+									</div>
 								{/if}
 								{#if vodItem.duration}
-									<div class="font-mono-system bg-ink absolute right-[4px] bottom-[4px] px-[6px] py-[2px] text-[9px] font-bold tracking-[0.06em] text-white">
+									<div
+										class="absolute right-[4px] bottom-[4px] bg-ink px-[6px] py-[2px] font-mono-system text-[9px] font-bold tracking-[0.06em] text-white"
+									>
 										{formatVodDuration(vodItem.duration)}
 									</div>
 								{/if}
@@ -435,29 +484,49 @@
 							<div class="min-w-0 flex-1">
 								<div class="flex items-start justify-between gap-2">
 									<div class="min-w-0 flex-1">
-										<h4 class="font-newsreader truncate text-[17px] font-semibold tracking-[-0.01em]">
+										<h4
+											class="truncate font-newsreader text-[17px] font-semibold tracking-[-0.01em]"
+										>
 											{vodItem.title}
 										</h4>
 										<div class="mt-[8px] flex flex-wrap items-center gap-[8px]">
-											<span class="font-mono-system inline-flex items-center px-[8px] py-[3px] text-[10px] font-bold tracking-[0.08em] uppercase {statusChip(vodItem.status)}">
-												{vodItem.status === 'ready' ? 'Ready' : vodItem.status === 'preparing' ? 'Processing' : vodItem.status === 'errored' ? 'Error' : 'Waiting'}
+											<span
+												class="inline-flex items-center px-[8px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase {statusChip(
+													vodItem.status
+												)}"
+											>
+												{vodItem.status === 'ready'
+													? 'Ready'
+													: vodItem.status === 'preparing'
+														? 'Processing'
+														: vodItem.status === 'errored'
+															? 'Error'
+															: 'Waiting'}
 											</span>
 											{#if vodItem.isPublished}
-												<span class="font-mono-system bg-prem inline-flex items-center px-[8px] py-[3px] text-[10px] font-bold tracking-[0.08em] uppercase text-white">
+												<span
+													class="inline-flex items-center bg-prem px-[8px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-white uppercase"
+												>
 													Published
 												</span>
 											{:else}
-												<span class="font-mono-system border-line2 text-fade inline-flex items-center border px-[8px] py-[3px] text-[10px] font-bold tracking-[0.08em] uppercase">
+												<span
+													class="inline-flex items-center border border-line2 px-[8px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
+												>
 													Draft
 												</span>
 											{/if}
 											{#if vodItem.isPremium}
-												<span class="font-mono-system text-prem inline-flex items-center px-[8px] py-[3px] text-[10px] font-bold tracking-[0.08em] uppercase">
+												<span
+													class="inline-flex items-center px-[8px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-prem uppercase"
+												>
 													Premium
 												</span>
 											{/if}
 											{#if vodItem.player1Name && vodItem.player2Name}
-												<span class="font-mono-system text-fade text-[10px] font-bold tracking-[0.06em] uppercase">
+												<span
+													class="font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
+												>
 													{vodItem.player1Name} vs {vodItem.player2Name}
 												</span>
 											{/if}
@@ -467,7 +536,10 @@
 									<!-- Actions -->
 									<div class="flex shrink-0 items-center gap-[6px]">
 										{#if !vodItem.muxAssetId && vodItem.status === 'waiting'}
-											<label class="border-line2 hover:border-ink font-mono-system cursor-pointer border px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors" title="Upload video">
+											<label
+												class="cursor-pointer border border-line2 px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+												title="Upload video"
+											>
 												Upload
 												<input
 													type="file"
@@ -481,13 +553,18 @@
 											<form
 												method="POST"
 												action="?/syncVod"
-												use:enhance={() => async ({ result }) => {
-													if (result.type === 'success') await invalidateAll();
-												}}
+												use:enhance={() =>
+													async ({ result }) => {
+														if (result.type === 'success') await invalidateAll();
+													}}
 												class="inline"
 											>
 												<input type="hidden" name="vodId" value={vodItem.id} />
-												<button type="submit" class="border-line2 hover:border-ink font-mono-system border px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors" title="Sync status from Mux">
+												<button
+													type="submit"
+													class="border border-line2 px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+													title="Sync status from Mux"
+												>
 													Sync
 												</button>
 											</form>
@@ -496,15 +573,18 @@
 											<form
 												method="POST"
 												action={vodItem.isPublished ? '?/unpublishVod' : '?/publishVod'}
-												use:enhance={() => async ({ result }) => {
-													if (result.type === 'success') await invalidateAll();
-												}}
+												use:enhance={() =>
+													async ({ result }) => {
+														if (result.type === 'success') await invalidateAll();
+													}}
 												class="inline"
 											>
 												<input type="hidden" name="vodId" value={vodItem.id} />
 												<button
 													type="submit"
-													class="font-mono-system inline-flex items-center px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-[filter] {vodItem.isPublished ? 'border-line2 text-ink border hover:border-ink' : 'bg-prem text-white hover:brightness-110'}"
+													class="inline-flex items-center px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-[filter] {vodItem.isPublished
+														? 'border border-line2 text-ink hover:border-ink'
+														: 'bg-prem text-white hover:brightness-110'}"
 													title={vodItem.isPublished ? 'Unpublish' : 'Publish'}
 												>
 													{vodItem.isPublished ? 'Unpublish' : 'Publish'}
@@ -518,7 +598,7 @@
 												showAddVodForm = false;
 												vodFormError = '';
 											}}
-											class="border-line2 hover:border-ink font-mono-system border px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+											class="border border-line2 px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
 											title="Edit VOD"
 										>
 											Edit
@@ -527,7 +607,9 @@
 											method="POST"
 											action="?/deleteVod"
 											use:enhance={() => {
-												if (!confirm('Delete this VOD? This will also delete the video from Mux.')) {
+												if (
+													!confirm('Delete this VOD? This will also delete the video from Mux.')
+												) {
 													return ({ cancel }) => cancel();
 												}
 												return async ({ result }) => {
@@ -537,7 +619,11 @@
 											class="inline"
 										>
 											<input type="hidden" name="vodId" value={vodItem.id} />
-											<button type="submit" class="bg-warm font-mono-system inline-flex items-center px-[10px] py-[6px] text-[10px] font-extrabold tracking-[0.12em] uppercase text-white transition-[filter] hover:brightness-110" title="Delete VOD">
+											<button
+												type="submit"
+												class="inline-flex items-center bg-warm px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+												title="Delete VOD"
+											>
 												Delete
 											</button>
 										</form>
@@ -547,11 +633,20 @@
 								{#if vodUploading && uploadingVodId === vodItem.id}
 									<div class="mt-3">
 										<div class="mb-[6px] flex items-center justify-between">
-											<span class="font-mono-system text-warm text-[10px] font-extrabold tracking-[0.12em] uppercase">Uploading…</span>
-											<span class="font-mono-system text-fade text-[10px] font-bold tracking-[0.08em] uppercase">{vodUploadProgress}%</span>
+											<span
+												class="font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-warm uppercase"
+												>Uploading…</span
+											>
+											<span
+												class="font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
+												>{vodUploadProgress}%</span
+											>
 										</div>
-										<div class="bg-line2 h-[6px] overflow-hidden">
-											<div class="bg-warm h-full transition-all duration-300" style="width: {vodUploadProgress}%"></div>
+										<div class="h-[6px] overflow-hidden bg-line2">
+											<div
+												class="h-full bg-warm transition-all duration-300"
+												style="width: {vodUploadProgress}%"
+											></div>
 										</div>
 									</div>
 								{/if}
@@ -561,12 +656,16 @@
 				{/each}
 			</div>
 		{:else}
-			<div class="border-ink border-[1.5px] p-12 text-center overflow-hidden">
-				<span class="font-mono-system text-warm text-[10px] font-extrabold tracking-[0.14em] uppercase">
+			<div class="overflow-hidden border-[1.5px] border-ink p-12 text-center">
+				<span
+					class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase"
+				>
 					Empty Shelf
 				</span>
-				<h3 class="font-newsreader mt-[6px] text-[26px] font-semibold tracking-[-0.01em]">No VODs yet.</h3>
-				<p class="font-newsreader text-soft mt-2 text-[17px] italic">
+				<h3 class="mt-[6px] font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
+					No VODs yet.
+				</h3>
+				<p class="mt-2 font-newsreader text-[17px] text-soft italic">
 					Create your first VOD to get started.
 				</p>
 			</div>

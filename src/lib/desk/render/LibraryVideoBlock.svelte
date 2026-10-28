@@ -62,7 +62,7 @@
 </script>
 
 {#if video?.provider === 'mux' && video.muxPlaybackId}
-	<div class="border-ink border-y-[3px] border-double bg-black">
+	<div class="border-y-[3px] border-double border-ink bg-black">
 		<mux-player
 			playback-id={video.muxPlaybackId}
 			playback-token={video.playbackToken || ''}
@@ -74,7 +74,7 @@
 		></mux-player>
 	</div>
 {:else if video?.provider === 'youtube' && video.youtubeVideoId}
-	<div class="border-ink border-y-[3px] border-double bg-black">
+	<div class="border-y-[3px] border-double border-ink bg-black">
 		<div class="relative w-full overflow-hidden" style="padding-top: 56.25%;">
 			{#if youtubeLoaded}
 				<iframe
@@ -95,9 +95,7 @@
 					type="button"
 					on:click={() => (youtubeLoaded = true)}
 					class="group absolute inset-0 flex h-full w-full items-center justify-center overflow-hidden bg-black p-0"
-					aria-label={video.youtubeTitle
-						? `Play ${video.youtubeTitle}`
-						: 'Play video'}
+					aria-label={video.youtubeTitle ? `Play ${video.youtubeTitle}` : 'Play video'}
 				>
 					{#if poster || ytFallbackPoster}
 						<img

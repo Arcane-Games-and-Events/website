@@ -146,9 +146,7 @@ function renderLink(node, ctx) {
 		const linkUrl =
 			card.customUrl || `https://cards.fabtcg.com/results/?q=${encodeURIComponent(card.cardId)}`;
 		const pitchAttr = card.pitch ? ` data-card-pitch="${card.pitch}"` : '';
-		const customUrlAttr = card.customUrl
-			? ` data-card-url="${escapeHtml(card.customUrl)}"`
-			: '';
+		const customUrlAttr = card.customUrl ? ` data-card-url="${escapeHtml(card.customUrl)}"` : '';
 		const img = lookupCardImage(ctx.cardImages, card.cardId, card.pitch);
 		const imageAttr = img?.imageUrl ? ` data-card-image="${escapeHtml(img.imageUrl)}"` : '';
 		const fallbackAttr = img?.fallbackUrl

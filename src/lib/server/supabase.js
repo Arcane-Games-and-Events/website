@@ -28,7 +28,9 @@ const g = /** @type {any} */ (globalThis);
  */
 function cleanEnv(v) {
 	if (!v) return v;
-	return String(v).trim().replace(/^['"]|['"]$/g, '');
+	return String(v)
+		.trim()
+		.replace(/^['"]|['"]$/g, '');
 }
 
 export function getSupabase() {

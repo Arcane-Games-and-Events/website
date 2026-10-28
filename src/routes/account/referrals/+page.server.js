@@ -10,9 +10,7 @@ export async function load({ locals }) {
 	}
 
 	// Eligibility: only premium members (or admins for testing) can have a referral code
-	const isPremium =
-		locals.user.role === 'premium' ||
-		locals.user.role === 'admin';
+	const isPremium = locals.user.role === 'premium' || locals.user.role === 'admin';
 
 	if (!isPremium) {
 		// Render the page anyway so we can show an upsell to non-premium users

@@ -184,10 +184,7 @@ async function processMemberReferralReward(referredUser) {
 		.select()
 		.from(memberReferral)
 		.where(
-			and(
-				eq(memberReferral.referredUserId, referredUser.id),
-				eq(memberReferral.status, 'pending')
-			)
+			and(eq(memberReferral.referredUserId, referredUser.id), eq(memberReferral.status, 'pending'))
 		)
 		.limit(1);
 
@@ -250,10 +247,7 @@ async function processMemberReferralReward(referredUser) {
 			`Member referral reward applied: referrer ${referrer.id} next bill pushed to ${newStartStr}`
 		);
 	} catch (err) {
-		console.error(
-			`Failed to update Authorize.net subscription for referrer ${referrer.id}:`,
-			err
-		);
+		console.error(`Failed to update Authorize.net subscription for referrer ${referrer.id}:`, err);
 		// Status stays at 'reward_earned' — can be retried manually
 	}
 }

@@ -28,31 +28,31 @@
 </script>
 
 <!-- Prem hairline — signals "admin surface" -->
-<div class="bg-prem h-[6px]"></div>
+<div class="h-[6px] bg-prem"></div>
 
 <!-- Header band -->
-<div class="bg-paper-bg border-ink border-b border-double">
+<div class="border-b border-double border-ink bg-paper-bg">
 	<div
-		class="mx-auto flex w-full max-w-[1600px] items-center gap-6 px-4 md:px-10 lg:px-14 py-[14px]"
+		class="mx-auto flex w-full max-w-[1600px] items-center gap-6 px-4 py-[14px] md:px-10 lg:px-14"
 	>
 		<a href="/admin/analytics" class="flex items-center gap-[10px]">
 			<span
-				class="bg-ink font-mono-system inline-flex items-center px-[9px] py-[5px] text-[10px] font-extrabold tracking-[0.16em] text-white uppercase"
+				class="inline-flex items-center bg-ink px-[9px] py-[5px] font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-white uppercase"
 			>
 				AGE
 			</span>
 			<span
-				class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase"
+				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
 			>
 				Admin
 			</span>
 		</a>
 
-		<span class="bg-line2 hidden h-[16px] w-[1px] md:block"></span>
+		<span class="hidden h-[16px] w-[1px] bg-line2 md:block"></span>
 
 		<div class="hidden md:block">
 			<span
-				class="font-mono-system text-warm text-[10px] font-extrabold tracking-[0.16em] uppercase"
+				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
 			>
 				{activeLabel}
 			</span>
@@ -61,22 +61,27 @@
 		<div class="ml-auto flex items-center gap-3">
 			<a
 				href="/"
-				class="font-mono-system text-fade hover:text-ink hidden text-[10px] font-bold tracking-[0.12em] uppercase transition-colors md:inline-flex"
+				class="hidden font-mono-system text-[10px] font-bold tracking-[0.12em] text-fade uppercase transition-colors hover:text-ink md:inline-flex"
 			>
 				← Back to site
 			</a>
 			{#if userEmail}
 				<span
-					class="font-mono-system text-fade hidden truncate text-[10px] font-bold tracking-[0.06em] uppercase md:inline-block max-w-[220px]"
+					class="hidden max-w-[220px] truncate font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase md:inline-block"
 					title={userEmail}
 				>
 					{userEmail}
 				</span>
 			{/if}
-			<form method="POST" action="/logout" class="hidden md:inline" data-sveltekit-preload-data="off">
+			<form
+				method="POST"
+				action="/logout"
+				class="hidden md:inline"
+				data-sveltekit-preload-data="off"
+			>
 				<button
 					type="submit"
-					class="border-line2 hover:border-ink font-mono-system border px-[12px] py-[6px] text-[10px] font-bold tracking-[0.1em] uppercase transition-colors"
+					class="border border-line2 px-[12px] py-[6px] font-mono-system text-[10px] font-bold tracking-[0.1em] uppercase transition-colors hover:border-ink"
 				>
 					Sign out
 				</button>
@@ -85,10 +90,10 @@
 				type="button"
 				onclick={() => (mobileOpen = !mobileOpen)}
 				aria-label="Toggle menu"
-				class="border-line2 hover:border-ink flex h-[36px] w-[36px] items-center justify-center border transition-colors md:hidden"
+				class="flex h-[36px] w-[36px] items-center justify-center border border-line2 transition-colors hover:border-ink md:hidden"
 			>
 				<svg
-					class="text-ink h-4 w-4"
+					class="h-4 w-4 text-ink"
 					viewBox="0 0 24 24"
 					fill="none"
 					stroke="currentColor"
@@ -103,7 +108,7 @@
 </div>
 
 <!-- Nav rail (desktop) -->
-<div class="bg-paper-bg border-ink hidden border-b-[3px] border-double md:block">
+<div class="hidden border-b-[3px] border-double border-ink bg-paper-bg md:block">
 	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
 		<nav class="flex items-center gap-1 overflow-x-auto whitespace-nowrap">
 			{#each NAV as item (item.id)}
@@ -111,20 +116,20 @@
 				{@const badge = badges[item.id]}
 				<a
 					href={item.href}
-					class="font-mono-system relative inline-flex items-center gap-[8px] px-[14px] py-[13px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors {active
+					class="relative inline-flex items-center gap-[8px] px-[14px] py-[13px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors {active
 						? 'text-ink'
 						: 'text-fade hover:text-ink'}"
 				>
 					{item.label}
 					{#if badge && badge > 0}
 						<span
-							class="bg-warm inline-flex min-w-[16px] items-center justify-center px-1 py-[1px] text-[9px] font-extrabold tracking-normal text-white"
+							class="inline-flex min-w-[16px] items-center justify-center bg-warm px-1 py-[1px] text-[9px] font-extrabold tracking-normal text-white"
 						>
 							{badge}
 						</span>
 					{/if}
 					{#if active}
-						<span class="bg-warm absolute inset-x-[10px] bottom-0 h-[2px]"></span>
+						<span class="absolute inset-x-[10px] bottom-0 h-[2px] bg-warm"></span>
 					{/if}
 				</a>
 			{/each}
@@ -134,9 +139,7 @@
 
 <!-- Mobile drawer -->
 {#if mobileOpen}
-	<div
-		class="bg-paper-bg border-ink border-b-[3px] border-double md:hidden"
-	>
+	<div class="border-b-[3px] border-double border-ink bg-paper-bg md:hidden">
 		<div class="mx-auto w-full max-w-[1600px] px-4 py-2">
 			<nav class="grid grid-cols-2 gap-1">
 				{#each NAV as item (item.id)}
@@ -145,14 +148,14 @@
 					<a
 						href={item.href}
 						onclick={() => (mobileOpen = false)}
-						class="font-mono-system border-line2 flex items-center justify-between border px-[12px] py-[10px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors {active
+						class="flex items-center justify-between border border-line2 px-[12px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors {active
 							? 'border-ink text-ink'
 							: 'text-fade hover:text-ink'}"
 					>
 						<span>{item.label}</span>
 						{#if badge && badge > 0}
 							<span
-								class="bg-warm inline-flex min-w-[16px] items-center justify-center px-1 py-[1px] text-[9px] font-extrabold tracking-normal text-white"
+								class="inline-flex min-w-[16px] items-center justify-center bg-warm px-1 py-[1px] text-[9px] font-extrabold tracking-normal text-white"
 							>
 								{badge}
 							</span>
@@ -160,17 +163,17 @@
 					</a>
 				{/each}
 			</nav>
-			<div class="mt-2 flex items-center justify-between border-line2 border-t pt-2">
+			<div class="mt-2 flex items-center justify-between border-t border-line2 pt-2">
 				<a
 					href="/"
-					class="font-mono-system text-fade text-[10px] font-bold tracking-[0.12em] uppercase"
+					class="font-mono-system text-[10px] font-bold tracking-[0.12em] text-fade uppercase"
 				>
 					← Back to site
 				</a>
 				<form method="POST" action="/logout" data-sveltekit-preload-data="off">
 					<button
 						type="submit"
-						class="font-mono-system text-fade text-[10px] font-bold tracking-[0.12em] uppercase"
+						class="font-mono-system text-[10px] font-bold tracking-[0.12em] text-fade uppercase"
 					>
 						Sign out
 					</button>

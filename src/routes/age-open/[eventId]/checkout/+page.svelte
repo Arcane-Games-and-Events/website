@@ -440,9 +440,7 @@
 												>Premium Discount ({data.discountLabel})</span
 											>
 										</div>
-										<span class="font-semibold text-emerald-400"
-											>-${data.discountAmount}</span
-										>
+										<span class="font-semibold text-emerald-400">-${data.discountAmount}</span>
 									</div>
 								{/if}
 

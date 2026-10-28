@@ -93,13 +93,11 @@
 
 {#if success}
 	<div class="border-prem/40 bg-prem/10 p-6 text-center">
-		<div class="bg-prem mx-auto mb-3 flex h-12 w-12 items-center justify-center text-white">
-			✓
-		</div>
-		<h3 class="font-newsreader text-ink mb-1 text-[24px] leading-[1.1] font-semibold">
+		<div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center bg-prem text-white">✓</div>
+		<h3 class="mb-1 font-newsreader text-[24px] leading-[1.1] font-semibold text-ink">
 			You're in.
 		</h3>
-		<p class="text-soft m-0 text-[13.5px]">
+		<p class="m-0 text-[13.5px] text-soft">
 			Thank you. We'll send your receipt to your email shortly.
 		</p>
 	</div>
@@ -107,17 +105,15 @@
 	<form onsubmit={handleSubmit} class="space-y-5">
 		{#if error}
 			<div
-				class="border-warm bg-warm/10 text-warm border-[1.5px] px-4 py-3 text-[12px] font-semibold tracking-[0.04em] uppercase"
+				class="border-[1.5px] border-warm bg-warm/10 px-4 py-3 text-[12px] font-semibold tracking-[0.04em] text-warm uppercase"
 			>
 				{error}
 			</div>
 		{/if}
 
 		{#if showTestData}
-			<div
-				class="border-line2 bg-paper text-soft border-[1.5px] px-4 py-3 text-[11.5px]"
-			>
-				<div class="text-fade mb-1 text-[10px] font-extrabold tracking-[0.14em] uppercase">
+			<div class="border-[1.5px] border-line2 bg-paper px-4 py-3 text-[11.5px] text-soft">
+				<div class="mb-1 text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase">
 					Test mode
 				</div>
 				<div class="grid grid-cols-2 gap-x-4 gap-y-[2px] tabular-nums">
@@ -131,13 +127,13 @@
 
 		<!-- card information -->
 		<div>
-			<div class="text-fade mb-[14px] text-[10px] font-extrabold tracking-[0.14em] uppercase">
+			<div class="mb-[14px] text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase">
 				Card information
 			</div>
 
 			<label
 				for="cardNumber"
-				class="text-soft mb-[7px] block text-[11px] font-bold tracking-[0.01em]"
+				class="mb-[7px] block text-[11px] font-bold tracking-[0.01em] text-soft"
 			>
 				Card number <span class="text-prem">*</span>
 			</label>
@@ -150,14 +146,14 @@
 				bind:value={formData.cardNumber}
 				oninput={formatCardNumber}
 				placeholder="1234 5678 9012 3456"
-				class="border-line2 hover:border-ink focus:border-ink bg-paper-bg text-ink placeholder:text-fade mb-[15px] h-[50px] w-full border-[1.5px] px-[15px] text-[14.5px] font-medium outline-none transition-colors"
+				class="mb-[15px] h-[50px] w-full border-[1.5px] border-line2 bg-paper-bg px-[15px] text-[14.5px] font-medium text-ink transition-colors outline-none placeholder:text-fade hover:border-ink focus:border-ink"
 			/>
 
 			<div class="grid grid-cols-3 gap-[11px]">
 				<div>
 					<label
 						for="expMonth"
-						class="text-soft mb-[7px] block text-[11px] font-bold tracking-[0.01em]"
+						class="mb-[7px] block text-[11px] font-bold tracking-[0.01em] text-soft"
 					>
 						Month <span class="text-prem">*</span>
 					</label>
@@ -169,13 +165,13 @@
 						required
 						bind:value={formData.expirationMonth}
 						placeholder="MM"
-						class="border-line2 hover:border-ink focus:border-ink bg-paper-bg text-ink placeholder:text-fade h-[50px] w-full border-[1.5px] px-[15px] text-[14.5px] font-medium outline-none transition-colors"
+						class="h-[50px] w-full border-[1.5px] border-line2 bg-paper-bg px-[15px] text-[14.5px] font-medium text-ink transition-colors outline-none placeholder:text-fade hover:border-ink focus:border-ink"
 					/>
 				</div>
 				<div>
 					<label
 						for="expYear"
-						class="text-soft mb-[7px] block text-[11px] font-bold tracking-[0.01em]"
+						class="mb-[7px] block text-[11px] font-bold tracking-[0.01em] text-soft"
 					>
 						Year <span class="text-prem">*</span>
 					</label>
@@ -188,7 +184,7 @@
 						bind:value={formData.expirationYear}
 						placeholder="YYYY"
 						list="exp-years"
-						class="border-line2 hover:border-ink focus:border-ink bg-paper-bg text-ink placeholder:text-fade h-[50px] w-full border-[1.5px] px-[15px] text-[14.5px] font-medium outline-none transition-colors"
+						class="h-[50px] w-full border-[1.5px] border-line2 bg-paper-bg px-[15px] text-[14.5px] font-medium text-ink transition-colors outline-none placeholder:text-fade hover:border-ink focus:border-ink"
 					/>
 					<datalist id="exp-years">
 						{#each years as year (year)}
@@ -199,7 +195,7 @@
 				<div>
 					<label
 						for="cardCode"
-						class="text-soft mb-[7px] block text-[11px] font-bold tracking-[0.01em]"
+						class="mb-[7px] block text-[11px] font-bold tracking-[0.01em] text-soft"
 					>
 						CVV <span class="text-prem">*</span>
 					</label>
@@ -212,7 +208,7 @@
 						required
 						bind:value={formData.cardCode}
 						placeholder="123"
-						class="border-line2 hover:border-ink focus:border-ink bg-paper-bg text-ink placeholder:text-fade h-[50px] w-full border-[1.5px] px-[15px] text-[14.5px] font-medium outline-none transition-colors"
+						class="h-[50px] w-full border-[1.5px] border-line2 bg-paper-bg px-[15px] text-[14.5px] font-medium text-ink transition-colors outline-none placeholder:text-fade hover:border-ink focus:border-ink"
 					/>
 				</div>
 			</div>
@@ -220,7 +216,7 @@
 
 		<!-- billing -->
 		<div>
-			<div class="text-fade mb-[14px] text-[10px] font-extrabold tracking-[0.14em] uppercase">
+			<div class="mb-[14px] text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase">
 				Billing
 			</div>
 
@@ -228,7 +224,7 @@
 				<div>
 					<label
 						for="firstName"
-						class="text-soft mb-[7px] block text-[11px] font-bold tracking-[0.01em]"
+						class="mb-[7px] block text-[11px] font-bold tracking-[0.01em] text-soft"
 					>
 						First name <span class="text-prem">*</span>
 					</label>
@@ -238,13 +234,13 @@
 						required
 						bind:value={formData.firstName}
 						placeholder="First"
-						class="border-line2 hover:border-ink focus:border-ink bg-paper-bg text-ink placeholder:text-fade h-[50px] w-full border-[1.5px] px-[15px] text-[14.5px] font-medium outline-none transition-colors"
+						class="h-[50px] w-full border-[1.5px] border-line2 bg-paper-bg px-[15px] text-[14.5px] font-medium text-ink transition-colors outline-none placeholder:text-fade hover:border-ink focus:border-ink"
 					/>
 				</div>
 				<div>
 					<label
 						for="lastName"
-						class="text-soft mb-[7px] block text-[11px] font-bold tracking-[0.01em]"
+						class="mb-[7px] block text-[11px] font-bold tracking-[0.01em] text-soft"
 					>
 						Last name <span class="text-prem">*</span>
 					</label>
@@ -254,14 +250,11 @@
 						required
 						bind:value={formData.lastName}
 						placeholder="Last"
-						class="border-line2 hover:border-ink focus:border-ink bg-paper-bg text-ink placeholder:text-fade h-[50px] w-full border-[1.5px] px-[15px] text-[14.5px] font-medium outline-none transition-colors"
+						class="h-[50px] w-full border-[1.5px] border-line2 bg-paper-bg px-[15px] text-[14.5px] font-medium text-ink transition-colors outline-none placeholder:text-fade hover:border-ink focus:border-ink"
 					/>
 				</div>
 				<div>
-					<label
-						for="zip"
-						class="text-soft mb-[7px] block text-[11px] font-bold tracking-[0.01em]"
-					>
+					<label for="zip" class="mb-[7px] block text-[11px] font-bold tracking-[0.01em] text-soft">
 						ZIP <span class="text-prem">*</span>
 					</label>
 					<input
@@ -273,7 +266,7 @@
 						maxlength="10"
 						bind:value={formData.zip}
 						placeholder="ZIP"
-						class="border-line2 hover:border-ink focus:border-ink bg-paper-bg text-ink placeholder:text-fade h-[50px] w-full border-[1.5px] px-[15px] text-[14.5px] font-medium outline-none transition-colors"
+						class="h-[50px] w-full border-[1.5px] border-line2 bg-paper-bg px-[15px] text-[14.5px] font-medium text-ink transition-colors outline-none placeholder:text-fade hover:border-ink focus:border-ink"
 					/>
 				</div>
 			</div>
@@ -282,7 +275,7 @@
 		<button
 			type="submit"
 			disabled={loading}
-			class="border-prem bg-prem hover:brightness-110 inline-flex h-[54px] w-full items-center justify-center gap-2 border-[1.5px] text-[13px] font-bold tracking-[0.07em] text-white uppercase transition-[filter] disabled:cursor-not-allowed disabled:opacity-60"
+			class="inline-flex h-[54px] w-full items-center justify-center gap-2 border-[1.5px] border-prem bg-prem text-[13px] font-bold tracking-[0.07em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
 		>
 			{loading ? 'Processing…' : `${submitText} →`}
 		</button>

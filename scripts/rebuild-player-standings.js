@@ -78,8 +78,7 @@ async function rebuildForGemId(gemId) {
 		const season = m.year;
 		const circuit = m.circuit;
 		const monthName = m.month;
-		const playerName =
-			m.player1GemId === gemId ? m.player1Name : m.player2Name;
+		const playerName = m.player1GemId === gemId ? m.player1Name : m.player2Name;
 
 		if (!season || !circuit || !monthName) continue;
 
@@ -146,9 +145,7 @@ async function rebuildForGemId(gemId) {
 			const allMonthMatches = await db
 				.select()
 				.from(match)
-				.where(
-					and(eq(match.year, season), eq(match.circuit, circuit), eq(match.month, monthName))
-				);
+				.where(and(eq(match.year, season), eq(match.circuit, circuit), eq(match.month, monthName)));
 
 			// Tally wins per player (key by gemId if present, else name)
 			const stats = new Map();

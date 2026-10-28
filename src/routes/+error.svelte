@@ -9,20 +9,17 @@
 		404: {
 			eyebrow: 'Issue not found',
 			headline: 'This page is off the press.',
-			lede:
-				"The page you're looking for has either moved, never existed, or was pulled before printing. Try the destinations below to get back on track."
+			lede: "The page you're looking for has either moved, never existed, or was pulled before printing. Try the destinations below to get back on track."
 		},
 		403: {
 			eyebrow: 'Access restricted',
 			headline: "You don't have access to this page.",
-			lede:
-				'This page is behind a member or staff gate. If you think you should have access, sign in with the right account — or get in touch.'
+			lede: 'This page is behind a member or staff gate. If you think you should have access, sign in with the right account — or get in touch.'
 		},
 		500: {
 			eyebrow: 'Press jam',
-			headline: "Something on our side just broke.",
-			lede:
-				"We're aware of the issue and looking into it. Try again in a moment, or head back to a known-good page from the links below."
+			headline: 'Something on our side just broke.',
+			lede: "We're aware of the issue and looking into it. Try again in a moment, or head back to a known-good page from the links below."
 		},
 		default: {
 			eyebrow: 'Unexpected error',
@@ -73,43 +70,45 @@
 		rest of the site's display type; status colors stay subtle so
 		the page reads as a quiet correction notice, not a panic page.
 	-->
-	<section class="bg-paper relative overflow-hidden px-14 py-[80px]">
+	<section class="relative overflow-hidden bg-paper px-14 py-[80px]">
 		<!-- thin top rule, cap-aligned -->
 		<div class="mx-auto w-full max-w-[820px]">
 			<div class="flex items-center justify-center gap-4">
-				<span class="bg-line2 h-px flex-1"></span>
+				<span class="h-px flex-1 bg-line2"></span>
 				<span
-					class="text-accent font-mono-system text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
+					class="font-mono-system text-[10.5px] font-extrabold tracking-[0.22em] text-accent uppercase"
 				>
 					Status {status} · {copy.eyebrow}
 				</span>
-				<span class="bg-line2 h-px flex-1"></span>
+				<span class="h-px flex-1 bg-line2"></span>
 			</div>
 		</div>
 
 		<!-- Main centered block -->
-		<div class="relative mx-auto mt-[42px] flex w-full max-w-[820px] flex-col items-center text-center">
+		<div
+			class="relative mx-auto mt-[42px] flex w-full max-w-[820px] flex-col items-center text-center"
+		>
 			<!-- Lead numeral. Subtle accent overlay rule beneath it gives
 				 the masthead a printed-page feel. -->
 			<div class="relative">
 				<div
-					class="font-newsreader text-ink text-[clamp(140px,18vw,232px)] leading-[0.86] font-semibold tracking-[-0.03em] tabular-nums"
+					class="font-newsreader text-[clamp(140px,18vw,232px)] leading-[0.86] font-semibold tracking-[-0.03em] text-ink tabular-nums"
 				>
 					{status}
 				</div>
 				<div
-					class="bg-accent absolute right-0 -bottom-2 left-0 mx-auto h-[3px] w-[64%]"
+					class="absolute right-0 -bottom-2 left-0 mx-auto h-[3px] w-[64%] bg-accent"
 					aria-hidden="true"
 				></div>
 			</div>
 
 			<h1
-				class="font-newsreader mt-[34px] text-[clamp(30px,4vw,46px)] leading-[1.04] font-semibold tracking-[-0.015em]"
+				class="mt-[34px] font-newsreader text-[clamp(30px,4vw,46px)] leading-[1.04] font-semibold tracking-[-0.015em]"
 			>
 				{copy.headline}
 			</h1>
 
-			<p class="text-soft mt-5 max-w-[540px] text-[16.5px] leading-[1.55]">
+			<p class="mt-5 max-w-[540px] text-[16.5px] leading-[1.55] text-soft">
 				{copy.lede || detail || 'An unexpected error occurred.'}
 			</p>
 
@@ -118,14 +117,14 @@
 			<div class="mt-9 flex flex-wrap items-center justify-center gap-3">
 				<a
 					href="/"
-					class="bg-ink text-paper-bg border-ink inline-flex items-center gap-2 border-[1.5px] px-6 py-[14px] text-[12px] font-bold tracking-[0.06em] uppercase transition-[filter] hover:brightness-110"
+					class="inline-flex items-center gap-2 border-[1.5px] border-ink bg-ink px-6 py-[14px] text-[12px] font-bold tracking-[0.06em] text-paper-bg uppercase transition-[filter] hover:brightness-110"
 				>
 					← Return to the front page
 				</a>
 				<button
 					type="button"
 					onclick={goBack}
-					class="border-ink text-ink hover:bg-ink hover:text-paper-bg inline-flex items-center gap-2 border-[1.5px] bg-transparent px-6 py-[14px] text-[12px] font-bold tracking-[0.06em] uppercase transition-colors"
+					class="inline-flex items-center gap-2 border-[1.5px] border-ink bg-transparent px-6 py-[14px] text-[12px] font-bold tracking-[0.06em] text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 				>
 					Go back
 				</button>
@@ -135,7 +134,7 @@
 				 default copy is intentionally vague; the framework message
 				 is the only useful pointer for an unknown status. -->
 			{#if status !== 404 && status !== 403 && status !== 500 && detail && detail !== copy.lede}
-				<p class="text-fade mt-6 max-w-[540px] font-mono-system text-[11px] tracking-[0.04em]">
+				<p class="mt-6 max-w-[540px] font-mono-system text-[11px] tracking-[0.04em] text-fade">
 					{detail}
 				</p>
 			{/if}
@@ -144,10 +143,10 @@
 		<!-- Quick-link palette — paper-bg card with serif "Try elsewhere"
 			 label and a row of accent-on-hover destinations. -->
 		<div
-			class="border-line2 bg-paper-bg mx-auto mt-[60px] flex w-full max-w-[820px] flex-col items-center border px-7 py-7"
+			class="mx-auto mt-[60px] flex w-full max-w-[820px] flex-col items-center border border-line2 bg-paper-bg px-7 py-7"
 		>
 			<span
-				class="text-fade font-mono-system mb-4 text-[10px] font-extrabold tracking-[0.18em] uppercase"
+				class="mb-4 font-mono-system text-[10px] font-extrabold tracking-[0.18em] text-fade uppercase"
 			>
 				Or try one of these
 			</span>
@@ -159,10 +158,7 @@
 					{#if i > 0}
 						<span class="text-line2" aria-hidden="true">·</span>
 					{/if}
-					<a
-						href={link.href}
-						class="text-ink hover:text-accent transition-colors"
-					>
+					<a href={link.href} class="text-ink transition-colors hover:text-accent">
 						{link.label}
 					</a>
 				{/each}

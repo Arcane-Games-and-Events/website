@@ -46,7 +46,9 @@
 	}
 
 	function formatCurrency(amount) {
-		return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
+		return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+			amount || 0
+		);
 	}
 
 	function formatDate(date, options = { month: 'short', day: 'numeric', year: 'numeric' }) {
@@ -70,69 +72,97 @@
 <svelte:head><title>Events · AGE Ops</title></svelte:head>
 
 <!-- ============ HEADER ============ -->
-<header class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pt-[42px] pb-[28px]">
+<header class="mx-auto w-full max-w-[1600px] px-4 pt-[42px] pb-[28px] md:px-10 lg:px-14">
 	<div class="mb-[18px] flex flex-wrap items-center gap-[16px]">
-		<span class="font-mono-system text-warm text-[11px] font-extrabold tracking-[0.16em] uppercase">
+		<span class="font-mono-system text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase">
 			Events
 		</span>
-		<span class="bg-line2 hidden h-[1px] flex-1 md:block"></span>
+		<span class="hidden h-[1px] flex-1 bg-line2 md:block"></span>
 		<a
 			href="/admin/events/new"
-			class="bg-ink font-mono-system inline-flex items-center px-[14px] py-[9px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white transition-[filter] hover:brightness-125"
+			class="inline-flex items-center bg-ink px-[14px] py-[9px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
 		>
 			+ New Event
 		</a>
 	</div>
-	<h1 class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]">
+	<h1
+		class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]"
+	>
 		Every AGE Open, one desk.
 	</h1>
-	<p class="font-newsreader text-soft mt-3 max-w-[680px] text-[19px] leading-[1.42] italic">
+	<p class="mt-3 max-w-[680px] font-newsreader text-[19px] leading-[1.42] text-soft italic">
 		Schedule, status, tickets, and revenue across every circuit.
 	</p>
 </header>
 
 {#if form?.success}
-	<section class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[12px] overflow-x-clip">
-		<div class="border-ink bg-prem border-[1.5px] p-4 text-white">
-			<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: #d6eedf;">Success</span>
-			<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{form.message}</p>
+	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[12px] md:px-10 lg:px-14">
+		<div class="border-[1.5px] border-ink bg-prem p-4 text-white">
+			<span
+				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+				style="color: #d6eedf;">Success</span
+			>
+			<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{form.message}</p>
 		</div>
 	</section>
 {/if}
 {#if form?.error}
-	<section class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 pb-[12px] overflow-x-clip">
-		<div class="border-ink bg-warm border-[1.5px] p-4 text-white">
-			<span class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase" style="color: rgba(255,255,255,0.75);">Error</span>
-			<p class="font-newsreader mt-[2px] text-[16px] font-semibold">{form.error}</p>
+	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[12px] md:px-10 lg:px-14">
+		<div class="border-[1.5px] border-ink bg-warm p-4 text-white">
+			<span
+				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
+				style="color: rgba(255,255,255,0.75);">Error</span
+			>
+			<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{form.error}</p>
 		</div>
 	</section>
 {/if}
 
 <!-- ============ STATS ============ -->
-<section class="border-ink border-y-[3px] border-double overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[28px]">
+<section class="overflow-x-clip border-y-[3px] border-double border-ink">
+	<div class="mx-auto w-full max-w-[1600px] px-4 py-[28px] md:px-10 lg:px-14">
 		<div class="grid grid-cols-2 gap-[24px] md:grid-cols-4">
 			<div>
-				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">Total Events</span>
-				<div class="font-archivo text-ink mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+				<span
+					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+					>Total Events</span
+				>
+				<div
+					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-ink"
+				>
 					{data.eventAnalytics?.totalEvents || 0}
 				</div>
 			</div>
 			<div>
-				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">Upcoming</span>
-				<div class="font-archivo text-accent mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+				<span
+					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+					>Upcoming</span
+				>
+				<div
+					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-accent"
+				>
 					{data.eventAnalytics?.upcomingEvents || 0}
 				</div>
 			</div>
 			<div>
-				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">Tickets Sold</span>
-				<div class="font-archivo text-ink mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+				<span
+					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+					>Tickets Sold</span
+				>
+				<div
+					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-ink"
+				>
 					{data.eventAnalytics?.totalTicketsSold || 0}
 				</div>
 			</div>
 			<div>
-				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">Revenue</span>
-				<div class="font-archivo text-prem mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]">
+				<span
+					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+					>Revenue</span
+				>
+				<div
+					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-prem"
+				>
 					{formatCurrency(data.eventAnalytics?.totalTicketRevenue || 0)}
 				</div>
 			</div>
@@ -142,17 +172,22 @@
 
 <!-- ============ CIRCUIT ROW ============ -->
 {#if (data.eventAnalytics?.byCircuit || []).length > 0}
-	<section class="border-ink border-b-[3px] border-double overflow-x-clip">
-		<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[18px]">
+	<section class="overflow-x-clip border-b-[3px] border-double border-ink">
+		<div class="mx-auto w-full max-w-[1600px] px-4 py-[18px] md:px-10 lg:px-14">
 			<div class="flex flex-wrap items-center gap-[16px]">
-				<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+				<span
+					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+				>
 					By Circuit
 				</span>
 				{#each data.eventAnalytics?.byCircuit || [] as circuit (circuit.name || 'other')}
 					<div class="flex items-center gap-[8px]">
-						<span class="inline-block h-[10px] w-[10px] {getCircuit(circuit.name).colors.dot}"></span>
+						<span class="inline-block h-[10px] w-[10px] {getCircuit(circuit.name).colors.dot}"
+						></span>
 						<span class="font-newsreader text-[15px] font-semibold">{circuit.name || 'Other'}</span>
-						<span class="font-mono-system border-line2 text-fade inline-flex items-center border px-[7px] py-[3px] text-[10px] font-bold tracking-[0.08em] uppercase">
+						<span
+							class="inline-flex items-center border border-line2 px-[7px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
+						>
 							{circuit.count}
 						</span>
 					</div>
@@ -163,21 +198,21 @@
 {/if}
 
 <!-- ============ FILTERS ============ -->
-<section class="border-ink border-b-[3px] border-double overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[24px]">
+<section class="overflow-x-clip border-b-[3px] border-double border-ink">
+	<div class="mx-auto w-full max-w-[1600px] px-4 py-[24px] md:px-10 lg:px-14">
 		<div class="flex flex-col gap-[14px] sm:flex-row sm:items-center sm:justify-between">
 			<div class="relative flex-1 sm:max-w-md">
 				<input
 					type="text"
 					bind:value={eventsSearchQuery}
 					placeholder="Search title, circuit, or location"
-					class="border-ink bg-paper-bg text-ink font-newsreader placeholder:text-fade w-full border-[1.5px] px-[14px] py-[10px] text-[15px] focus:outline-none"
+					class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
 				/>
 				{#if eventsSearchQuery}
 					<button
 						type="button"
 						onclick={() => (eventsSearchQuery = '')}
-						class="text-fade hover:text-ink absolute top-1/2 right-2 -translate-y-1/2 text-[16px]"
+						class="absolute top-1/2 right-2 -translate-y-1/2 text-[16px] text-fade hover:text-ink"
 						aria-label="Clear search"
 					>
 						×
@@ -187,7 +222,7 @@
 			<div class="flex flex-wrap items-center gap-[10px]">
 				<select
 					bind:value={eventsStatusFilter}
-					class="border-ink bg-paper-bg text-ink font-mono-system border-[1.5px] px-[12px] py-[9px] text-[11px] font-bold tracking-[0.08em] uppercase focus:outline-none"
+					class="border-[1.5px] border-ink bg-paper-bg px-[12px] py-[9px] font-mono-system text-[11px] font-bold tracking-[0.08em] text-ink uppercase focus:outline-none"
 				>
 					<option value="active">Active</option>
 					<option value="all">All Status</option>
@@ -198,7 +233,7 @@
 				</select>
 				<select
 					bind:value={eventsCircuitFilter}
-					class="border-ink bg-paper-bg text-ink font-mono-system border-[1.5px] px-[12px] py-[9px] text-[11px] font-bold tracking-[0.08em] uppercase focus:outline-none"
+					class="border-[1.5px] border-ink bg-paper-bg px-[12px] py-[9px] font-mono-system text-[11px] font-bold tracking-[0.08em] text-ink uppercase focus:outline-none"
 				>
 					<option value="all">All Circuits</option>
 					{#each data.eventAnalytics?.byCircuit || [] as circuit (circuit.name)}
@@ -212,9 +247,11 @@
 
 <!-- ============ LIST ============ -->
 <section class="overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14 py-[36px]">
+	<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
 		<div class="mb-[16px] flex items-center justify-between">
-			<span class="font-mono-system text-fade text-[10px] font-extrabold tracking-[0.16em] uppercase">
+			<span
+				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+			>
 				{filteredEvents.length} events shown
 			</span>
 			{#if filteredEvents.length !== (data.events || []).length}
@@ -224,7 +261,7 @@
 						eventsStatusFilter = 'all';
 						eventsCircuitFilter = 'all';
 					}}
-					class="font-mono-system text-warm hover:text-ink text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors"
+					class="font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] text-warm uppercase transition-colors hover:text-ink"
 				>
 					Clear filters
 				</button>
@@ -232,32 +269,40 @@
 		</div>
 
 		<!-- Mobile -->
-		<div class="border-ink border-[1.5px] sm:hidden overflow-hidden">
+		<div class="overflow-hidden border-[1.5px] border-ink sm:hidden">
 			{#each paginatedEvents as event (event.id)}
 				{@const ticketStats = getEventTicketStats(event.id)}
 				<a
 					href="/admin/events/{event.id}"
-					class="border-line2 hover:bg-panel flex items-center gap-3 border-b p-4 transition-colors last:border-b-0"
+					class="flex items-center gap-3 border-b border-line2 p-4 transition-colors last:border-b-0 hover:bg-panel"
 				>
 					<span class="w-[3px] self-stretch {getCircuit(event.circuit).colors.dot}"></span>
 					<div class="min-w-0 flex-1">
 						<div class="flex items-start justify-between gap-2">
 							<div class="min-w-0">
-								<div class="font-newsreader truncate text-[16px] font-semibold">{event.title}</div>
+								<div class="truncate font-newsreader text-[16px] font-semibold">{event.title}</div>
 								<div class="mt-[6px] flex flex-wrap items-center gap-2">
 									{#if event.circuit}
-										<span class="font-mono-system border-line2 text-fade inline-flex items-center border px-[7px] py-[3px] text-[10px] font-bold tracking-[0.08em] uppercase">
+										<span
+											class="inline-flex items-center border border-line2 px-[7px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
+										>
 											{event.circuit}
 										</span>
 									{/if}
-									<span class="font-mono-system inline-flex items-center px-[7px] py-[3px] text-[10px] font-bold tracking-[0.08em] uppercase {statusChip(event.status)}">
+									<span
+										class="inline-flex items-center px-[7px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase {statusChip(
+											event.status
+										)}"
+									>
 										{event.status || 'upcoming'}
 									</span>
 								</div>
 							</div>
-							<span class="font-mono-system text-fade shrink-0 text-[12px] font-bold">→</span>
+							<span class="shrink-0 font-mono-system text-[12px] font-bold text-fade">→</span>
 						</div>
-						<div class="font-mono-system text-fade mt-[8px] flex items-center gap-3 text-[10px] font-bold tracking-[0.06em] uppercase">
+						<div
+							class="mt-[8px] flex items-center gap-3 font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
+						>
 							<span>
 								{#if event.eventDate}
 									{formatDate(event.eventDate)}
@@ -281,40 +326,62 @@
 		</div>
 
 		<!-- Desktop -->
-		<div class="border-ink hidden border-[1.5px] sm:block">
+		<div class="hidden border-[1.5px] border-ink sm:block">
 			<div class="overflow-x-auto">
 				<table class="w-full min-w-[900px]">
-					<thead class="border-ink border-b-[1.5px]">
+					<thead class="border-b-[1.5px] border-ink">
 						<tr class="text-left">
-							<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Event</th>
-							<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Circuit</th>
-							<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Date</th>
-							<th class="font-mono-system text-fade px-4 py-[12px] text-[10px] font-extrabold tracking-[0.14em] uppercase">Status</th>
-							<th class="font-mono-system text-fade px-4 py-[12px] text-right text-[10px] font-extrabold tracking-[0.14em] uppercase">Tickets</th>
-							<th class="font-mono-system text-fade px-4 py-[12px] text-right text-[10px] font-extrabold tracking-[0.14em] uppercase">Revenue</th>
+							<th
+								class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								>Event</th
+							>
+							<th
+								class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								>Circuit</th
+							>
+							<th
+								class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								>Date</th
+							>
+							<th
+								class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								>Status</th
+							>
+							<th
+								class="px-4 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								>Tickets</th
+							>
+							<th
+								class="px-4 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								>Revenue</th
+							>
 						</tr>
 					</thead>
 					<tbody>
 						{#each paginatedEvents as event (event.id)}
 							{@const ticketStats = getEventTicketStats(event.id)}
 							<tr
-								class="border-line2 hover:bg-panel group border-b transition-colors cursor-pointer"
+								class="group cursor-pointer border-b border-line2 transition-colors hover:bg-panel"
 								onclick={() => (window.location.href = `/admin/events/${event.id}`)}
 							>
 								<td class="px-4 py-[14px]">
 									<div class="flex items-center gap-3">
 										<span class="h-[28px] w-[3px] {getCircuit(event.circuit).colors.dot}"></span>
 										<div class="min-w-0">
-											<div class="font-newsreader truncate text-[16px] font-semibold group-hover:text-warm transition-colors">
+											<div
+												class="truncate font-newsreader text-[16px] font-semibold transition-colors group-hover:text-warm"
+											>
 												{event.title}
 											</div>
-											<div class="text-fade text-[12px]">{event.format || '—'}</div>
+											<div class="text-[12px] text-fade">{event.format || '—'}</div>
 										</div>
 									</div>
 								</td>
 								<td class="px-4 py-[14px]">
 									{#if event.circuit}
-										<span class="font-mono-system border-line2 text-fade inline-flex items-center border px-[9px] py-[4px] text-[10px] font-bold tracking-[0.08em] uppercase">
+										<span
+											class="inline-flex items-center border border-line2 px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
+										>
 											{event.circuit}
 										</span>
 									{:else}
@@ -323,25 +390,43 @@
 								</td>
 								<td class="px-4 py-[14px]">
 									{#if event.eventDate}
-										<div class="font-newsreader text-[15px] font-semibold">{formatDate(event.eventDate)}</div>
-										<div class="font-mono-system text-fade mt-[2px] text-[10px] font-bold tracking-[0.06em] uppercase">
-											{new Date(event.eventDate).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })}
+										<div class="font-newsreader text-[15px] font-semibold">
+											{formatDate(event.eventDate)}
+										</div>
+										<div
+											class="mt-[2px] font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
+										>
+											{new Date(event.eventDate).toLocaleTimeString('en-US', {
+												hour: 'numeric',
+												minute: '2-digit',
+												timeZone: 'UTC'
+											})}
 										</div>
 									{:else}
-										<span class="font-mono-system bg-warm inline-flex items-center px-[9px] py-[4px] text-[10px] font-bold tracking-[0.08em] uppercase text-white">
+										<span
+											class="inline-flex items-center bg-warm px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-white uppercase"
+										>
 											No Date
 										</span>
 									{/if}
 								</td>
 								<td class="px-4 py-[14px]">
-									<span class="font-mono-system inline-flex items-center px-[9px] py-[4px] text-[10px] font-bold tracking-[0.08em] uppercase {statusChip(event.status)}">
+									<span
+										class="inline-flex items-center px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase {statusChip(
+											event.status
+										)}"
+									>
 										{event.status || 'upcoming'}
 									</span>
 								</td>
-								<td class="font-archivo text-ink px-4 py-[14px] text-right text-[15px] font-extrabold tracking-[-0.01em]">
+								<td
+									class="px-4 py-[14px] text-right font-archivo text-[15px] font-extrabold tracking-[-0.01em] text-ink"
+								>
 									{ticketStats.sold}
 								</td>
-								<td class="font-archivo text-prem px-4 py-[14px] text-right text-[15px] font-extrabold tracking-[-0.01em]">
+								<td
+									class="px-4 py-[14px] text-right font-archivo text-[15px] font-extrabold tracking-[-0.01em] text-prem"
+								>
 									{formatCurrency(ticketStats.revenue)}
 								</td>
 							</tr>
@@ -349,7 +434,9 @@
 							<tr>
 								<td colspan="6" class="px-4 py-12 text-center">
 									<p class="font-newsreader text-soft text-[19px] italic">
-										{eventsSearchQuery || eventsStatusFilter !== 'all' || eventsCircuitFilter !== 'all'
+										{eventsSearchQuery ||
+										eventsStatusFilter !== 'all' ||
+										eventsCircuitFilter !== 'all'
 											? 'No events match your filters.'
 											: 'No events yet.'}
 									</p>
@@ -369,22 +456,24 @@
 			</div>
 
 			{#if totalEventsPages > 1}
-				<div class="border-ink flex items-center justify-between border-t-[1.5px] px-5 py-[14px]">
-					<span class="font-mono-system text-fade text-[10.5px] font-bold tracking-[0.08em] uppercase">
+				<div class="flex items-center justify-between border-t-[1.5px] border-ink px-5 py-[14px]">
+					<span
+						class="font-mono-system text-[10.5px] font-bold tracking-[0.08em] text-fade uppercase"
+					>
 						Page {eventsPage} of {totalEventsPages}
 					</span>
 					<div class="flex gap-2">
 						<button
 							onclick={() => (eventsPage = Math.max(1, eventsPage - 1))}
 							disabled={eventsPage === 1}
-							class="border-line2 hover:border-ink font-mono-system border px-[14px] py-[8px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+							class="border border-line2 px-[14px] py-[8px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
 						>
 							← Previous
 						</button>
 						<button
 							onclick={() => (eventsPage = Math.min(totalEventsPages, eventsPage + 1))}
 							disabled={eventsPage === totalEventsPages}
-							class="border-line2 hover:border-ink font-mono-system border px-[14px] py-[8px] text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+							class="border border-line2 px-[14px] py-[8px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
 						>
 							Next →
 						</button>
