@@ -19,7 +19,7 @@
 	async function createNew() {
 		if (creating) return;
 		creating = true;
-		const res = await fetch('/api/cms/entries', {
+		const res = await fetch('/api/desk/entries', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ title: 'Untitled' })

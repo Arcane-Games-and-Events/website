@@ -53,11 +53,19 @@
 
 	// Page to page: a quick crossfade once the next page is ready (the bar
 	// above covers the wait). Skipped when only the query changes on the same
-	// page (filters, paging) and for readers who prefer reduced motion.
+	// page (filters, paging). It's opacity only, so it stays on for readers
+	// who prefer reduced motion (iOS's own setting offers cross-fades).
 	onNavigate((navigation) => {
-		if (!document.startViewTransition) return;
 		if (navigation.from?.url.pathname === navigation.to?.url.pathname) return;
-		if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		// The page scrolls smoothly for in-page anchors; a new page should
+		// start at its top instantly, not glide up from the old position.
+		document.documentElement.style.scrollBehavior = 'auto';
+		navigation.complete
+			.finally(() =>
+				requestAnimationFrame(() => (document.documentElement.style.scrollBehavior = ''))
+			)
+			.catch(() => {});
+		if (!document.startViewTransition) return;
 		return new Promise((resolve) => {
 			document.startViewTransition(async () => {
 				resolve();

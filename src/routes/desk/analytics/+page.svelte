@@ -1,8 +1,8 @@
 <script>
 	import DeskTabs from '$lib/components/age/desk/DeskTabs.svelte';
 	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
-	import DailyReadsChart from '$lib/components/age/cms/DailyReadsChart.svelte';
-	import BarList from '$lib/components/age/cms/BarList.svelte';
+	import DailyReadsChart from '$lib/components/age/desk/DailyReadsChart.svelte';
+	import BarList from '$lib/components/age/desk/BarList.svelte';
 	import {
 		fmt,
 		compact,
@@ -14,7 +14,7 @@
 		DEVICES,
 		label,
 		GLOSSARY
-	} from '$lib/cms/analyticsFormat.js';
+	} from '$lib/desk/analyticsFormat.js';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();

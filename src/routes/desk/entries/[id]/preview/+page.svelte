@@ -11,10 +11,10 @@
 <script>
 	import DeskTabs from '$lib/components/age/desk/DeskTabs.svelte';
 	import { onMount, onDestroy } from 'svelte';
-	import RenderLexical from '$lib/cms/render/RenderLexical.svelte';
-	import LibraryVideoBlock from '$lib/cms/render/LibraryVideoBlock.svelte';
+	import RenderLexical from '$lib/desk/render/RenderLexical.svelte';
+	import LibraryVideoBlock from '$lib/desk/render/LibraryVideoBlock.svelte';
 	import CardHover from '$lib/components/CardHover.svelte';
-	import { extractHeadings } from '$lib/cms/render/lexical-utils.js';
+	import { extractHeadings } from '$lib/desk/render/lexical-utils.js';
 
 	export let data;
 	$: entry = data.entry;

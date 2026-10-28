@@ -21,7 +21,7 @@ export const auth = new Lucia(adapter, {
 		gemId: data.gemId,
 		role: data.role,
 		// Capability roles — stackable, independent of billing tier. Reader for
-		// the CMS + admin guards (`hasCapability`, `canEditEntries`, etc.).
+		// the Desk + admin guards (`hasCapability`, `canEditEntries`, etc.).
 		// See src/lib/server/auth/roles.js.
 		additionalRoles: data.additionalRoles,
 		subscriptionId: data.subscriptionId,

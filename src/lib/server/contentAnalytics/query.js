@@ -1,9 +1,9 @@
 import { db } from '$lib/server/db/index.js';
-import { cmsEntry, user as userTable } from '$lib/server/db/schema.js';
+import { deskEntry, user as userTable } from '$lib/server/db/schema.js';
 import { eq, inArray, isNotNull, and } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { getCachedOrFetch } from '$lib/server/redis/index.js';
-import { loadTagsForEntries } from '$lib/server/cms/list.js';
+import { loadTagsForEntries } from '$lib/server/desk/list.js';
 import { isMissingTable } from './collect.js';
 
 /**
@@ -204,25 +204,25 @@ async function attributedConversions(since, entryIds = null) {
 
 async function entryMeta(entryIds = null, authorId = null) {
 	const conds = [];
-	if (entryIds) conds.push(inArray(cmsEntry.id, entryIds));
-	if (authorId) conds.push(eq(cmsEntry.authorId, authorId));
+	if (entryIds) conds.push(inArray(deskEntry.id, entryIds));
+	if (authorId) conds.push(eq(deskEntry.authorId, authorId));
 	const rows = await db
 		.select({
-			id: cmsEntry.id,
-			title: cmsEntry.title,
-			slug: cmsEntry.slug,
-			status: cmsEntry.status,
-			accessMode: cmsEntry.accessMode,
-			readTime: cmsEntry.readTime,
-			videoProvider: cmsEntry.videoProvider,
-			publishedAt: cmsEntry.publishedAt,
-			authorId: cmsEntry.authorId,
+			id: deskEntry.id,
+			title: deskEntry.title,
+			slug: deskEntry.slug,
+			status: deskEntry.status,
+			accessMode: deskEntry.accessMode,
+			readTime: deskEntry.readTime,
+			videoProvider: deskEntry.videoProvider,
+			publishedAt: deskEntry.publishedAt,
+			authorId: deskEntry.authorId,
 			authorFirst: userTable.firstName,
 			authorLast: userTable.lastName
 		})
-		.from(cmsEntry)
-		.leftJoin(userTable, eq(cmsEntry.authorId, userTable.id))
-		.where(conds.length ? and(...conds) : isNotNull(cmsEntry.id));
+		.from(deskEntry)
+		.leftJoin(userTable, eq(deskEntry.authorId, userTable.id))
+		.where(conds.length ? and(...conds) : isNotNull(deskEntry.id));
 	return rows.map((r) => ({
 		...r,
 		author: r.authorFirst ? `${r.authorFirst} ${r.authorLast || ''}`.trim() : null,

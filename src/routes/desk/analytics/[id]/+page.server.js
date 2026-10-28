@@ -1,6 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { cmsEntry } from '$lib/server/db/schema.js';
+import { deskEntry } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { canEditEntries, canEditEntry } from '$lib/server/auth/roles.js';
 import { entryDetail, parseRange } from '$lib/server/contentAnalytics/query.js';
@@ -12,9 +12,9 @@ import { entryDetail, parseRange } from '$lib/server/contentAnalytics/query.js';
 export async function load({ locals, params, url }) {
 	if (!canEditEntries(locals.user)) throw redirect(302, '/desk');
 	const [entry] = await db
-		.select({ id: cmsEntry.id, authorId: cmsEntry.authorId })
-		.from(cmsEntry)
-		.where(eq(cmsEntry.id, params.id))
+		.select({ id: deskEntry.id, authorId: deskEntry.authorId })
+		.from(deskEntry)
+		.where(eq(deskEntry.id, params.id))
 		.limit(1);
 	if (!entry) throw error(404, 'Entry not found');
 	if (!canEditEntry(locals.user, entry.authorId)) throw error(403, 'Forbidden');

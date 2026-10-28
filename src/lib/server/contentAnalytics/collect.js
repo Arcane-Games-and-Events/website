@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db/index.js';
-import { caView, caEvent, caConversion, cmsEntry } from '$lib/server/db/schema.js';
+import { caView, caEvent, caConversion, deskEntry } from '$lib/server/db/schema.js';
 import { and, eq, gt, sql } from 'drizzle-orm';
 import { canEditEntries, canEditCourses, isAdmin } from '$lib/server/auth/roles.js';
 import { userHasPremiumAccess } from '$lib/server/articles/access.js';
@@ -123,7 +123,7 @@ function referrerDomainOf(referrer) {
 	}
 }
 
-/** Who is reading. Staff (anyone with CMS access) are excluded from stats. */
+/** Who is reading. Staff (anyone with Desk access) are excluded from stats. */
 export function audienceOf(user) {
 	if (!user) return 'anonymous';
 	if (isAdmin(user) || canEditEntries(user) || canEditCourses(user)) return 'staff';
@@ -144,9 +144,9 @@ export async function startView(p, event) {
 	if (isBot(ua)) return;
 
 	const [entry] = await db
-		.select({ id: cmsEntry.id, readTime: cmsEntry.readTime, videoProvider: cmsEntry.videoProvider })
-		.from(cmsEntry)
-		.where(eq(cmsEntry.id, p.entryId))
+		.select({ id: deskEntry.id, readTime: deskEntry.readTime, videoProvider: deskEntry.videoProvider })
+		.from(deskEntry)
+		.where(eq(deskEntry.id, p.entryId))
 		.limit(1);
 	if (!entry) return;
 

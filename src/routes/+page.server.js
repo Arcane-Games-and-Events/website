@@ -1,5 +1,5 @@
-import { listPublishedEntries } from '$lib/server/cms/list.js';
-import { listPublishedCourses } from '$lib/server/cms/courses.js';
+import { listPublishedEntries } from '$lib/server/desk/list.js';
+import { listPublishedCourses } from '$lib/server/desk/courses.js';
 import { db } from '$lib/server/db/index.js';
 import { event, standing, decklist, vod } from '$lib/server/db/schema.js';
 import { asc, gte, desc, and, or, eq, isNull } from 'drizzle-orm';
@@ -155,26 +155,26 @@ async function fetchFilteredStandings(season, circuit) {
 }
 
 async function fetchArticles() {
-	// Homepage feeds — CMS entries only. The list helper sorts by
+	// Homepage feeds — Desk entries only. The list helper sorts by
 	// publishedAt DESC and applies the public-visibility filter. 16 is
 	// enough to fill the latest release, the Articles mosaic (1 + 3 + 4)
 	// and the video rows in Watch.
 	try {
 		return await listPublishedEntries({ limit: 16 });
 	} catch (error) {
-		console.error('Error fetching CMS entries:', error);
+		console.error('Error fetching Desk entries:', error);
 		return [];
 	}
 }
 
 async function fetchCourses() {
-	// Academy section — published CMS courses. Returns [] (and the page
+	// Academy section — published Desk courses. Returns [] (and the page
 	// falls back to its placeholder catalog) until the first course is
 	// published.
 	try {
 		return await listPublishedCourses({ limit: 4 });
 	} catch (error) {
-		console.error('Error fetching CMS courses:', error);
+		console.error('Error fetching Desk courses:', error);
 		return [];
 	}
 }

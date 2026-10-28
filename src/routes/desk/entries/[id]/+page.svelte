@@ -1,8 +1,8 @@
 <!--
-  CMS entry editor — writer + admin authoring surface for a single entry.
+  Desk entry editor — writer + admin authoring surface for a single entry.
 
   Autosave (1500ms debounce) writes title / slug / excerpt / accessMode /
-  body to PATCH /api/cms/entries/[id]. The `sentX` snapshot inside `save()`
+  body to PATCH /api/desk/entries/[id]. The `sentX` snapshot inside `save()`
   prevents an in-flight autosave from clobbering keystrokes made after the
   request started — a real bug fix (dropped slug characters + caret jumps).
 
@@ -15,10 +15,10 @@
 	import DeskTabs from '$lib/components/age/desk/DeskTabs.svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
-	import Editor from '$lib/cms/editor/Editor.svelte';
-	import CoverImagePicker from '$lib/cms/editor/CoverImagePicker.svelte';
-	import VideoSlotPicker from '$lib/cms/editor/VideoSlotPicker.svelte';
-	import { coerceLexicalDoc } from '$lib/cms/editor/utils.js';
+	import Editor from '$lib/desk/editor/Editor.svelte';
+	import CoverImagePicker from '$lib/desk/editor/CoverImagePicker.svelte';
+	import VideoSlotPicker from '$lib/desk/editor/VideoSlotPicker.svelte';
+	import { coerceLexicalDoc } from '$lib/desk/editor/utils.js';
 	import { diffWords, diffArrays } from 'diff';
 
 	export let data;
@@ -78,7 +78,7 @@
 		if (authorOptions || loadingAuthors) return;
 		loadingAuthors = true;
 		try {
-			const res = await fetch('/api/cms/users/authors');
+			const res = await fetch('/api/desk/users/authors');
 			if (!res.ok) return;
 			const body = await res.json();
 			authorOptions = body.authors || [];
@@ -104,7 +104,7 @@
 	}
 
 	async function patchEntry(fields) {
-		const res = await fetch(`/api/cms/entries/${entry.id}`, {
+		const res = await fetch(`/api/desk/entries/${entry.id}`, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(fields)
@@ -156,7 +156,7 @@
 	// nothing else still references the media. Silent on the client side —
 	// the endpoint refuses gracefully when a shared image is still needed.
 	function deleteMedia(id) {
-		fetch(`/api/cms/media/${id}`, { method: 'DELETE' }).catch(() => {});
+		fetch(`/api/desk/media/${id}`, { method: 'DELETE' }).catch(() => {});
 	}
 
 	// A scheduled entry whose time has passed reads as published everywhere
@@ -429,7 +429,7 @@
 		const sentExcerpt = excerpt;
 		const sentAccessMode = accessMode;
 		try {
-			const res = await fetch(`/api/cms/entries/${entry.id}`, {
+			const res = await fetch(`/api/desk/entries/${entry.id}`, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -494,7 +494,7 @@
 	}
 
 	async function approveDraft(opts = {}) {
-		const res = await fetch(`/api/cms/entries/${entry.id}/approve-draft`, {
+		const res = await fetch(`/api/desk/entries/${entry.id}/approve-draft`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(opts)
@@ -514,7 +514,7 @@
 
 	async function discardDraft() {
 		if (!confirm('Discard pending changes? This cannot be undone.')) return;
-		const res = await fetch(`/api/cms/entries/${entry.id}/discard-draft`, { method: 'POST' });
+		const res = await fetch(`/api/desk/entries/${entry.id}/discard-draft`, { method: 'POST' });
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}));
 			return alert(err?.message || 'Failed to discard changes');
@@ -529,7 +529,7 @@
 
 	async function deleteEntry() {
 		if (!confirm(`Delete "${entry.title}"? This cannot be undone.`)) return;
-		const res = await fetch(`/api/cms/entries/${entry.id}`, { method: 'DELETE' });
+		const res = await fetch(`/api/desk/entries/${entry.id}`, { method: 'DELETE' });
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}));
 			return alert(err?.message || 'Failed to delete');
@@ -1096,7 +1096,7 @@
 					<div class="mt-6">
 						<span class={fieldLabel}>Body</span>
 						{#if reviewMode}
-							<div class="cms-diff-view border-t-[3px] border-ink">
+							<div class="desk-diff-view border-t-[3px] border-ink">
 								<p class="border-b border-line2 py-2 text-[11.5px] text-fade">
 									Compared with the live version ·
 									<span class="diff-word-added">added</span> ·
@@ -1231,35 +1231,35 @@
 	   editor's Newsreader serif at prose-like sizes so the diff reads like
 	   the actual article. Added/removed word-level marks stay compact so
 	   long swaps don't blow the block heights. */
-	.cms-diff-view :global(.diff-block) {
+	.desk-diff-view :global(.diff-block) {
 		margin: 0.75rem 0;
 		line-height: 1.7;
 	}
-	.cms-diff-view :global(h2.diff-block) {
+	.desk-diff-view :global(h2.diff-block) {
 		font-size: 1.75rem;
 		font-weight: 600;
 		line-height: 1.2;
 		margin: 1.5rem 0 0.5rem;
 		color: var(--color-warm, #1e40af);
 	}
-	.cms-diff-view :global(h3.diff-block) {
+	.desk-diff-view :global(h3.diff-block) {
 		font-size: 1.25rem;
 		font-weight: 600;
 		margin: 1.25rem 0 0.5rem;
 	}
-	.cms-diff-view :global(h4.diff-block) {
+	.desk-diff-view :global(h4.diff-block) {
 		font-size: 1.125rem;
 		font-weight: 600;
 		margin: 1rem 0 0.5rem;
 	}
-	.cms-diff-view :global(blockquote.diff-block) {
+	.desk-diff-view :global(blockquote.diff-block) {
 		border-left: 3px solid var(--color-warm, #1e40af);
 		padding-left: 1rem;
 		font-style: italic;
 		margin: 1rem 0;
 	}
-	.cms-diff-view :global(ul.diff-block),
-	.cms-diff-view :global(ol.diff-block) {
+	.desk-diff-view :global(ul.diff-block),
+	.desk-diff-view :global(ol.diff-block) {
 		white-space: pre-wrap;
 		padding-left: 1.5rem;
 	}
@@ -1267,12 +1267,12 @@
 	/* Block-level add/remove — whole paragraphs, headings, or list blocks
 	   that came or went in the draft. Light-tinted background + colored
 	   left rail so the change surface is obvious without hiding the text. */
-	.cms-diff-view :global(.diff-added) {
+	.desk-diff-view :global(.diff-added) {
 		background: rgb(220 252 231);
 		border-left: 3px solid rgb(21 128 61);
 		padding: 0.25rem 0.5rem 0.25rem 0.75rem;
 	}
-	.cms-diff-view :global(.diff-removed) {
+	.desk-diff-view :global(.diff-removed) {
 		background: rgb(254 226 226);
 		border-left: 3px solid rgb(185 28 28);
 		padding: 0.25rem 0.5rem 0.25rem 0.75rem;
@@ -1296,7 +1296,7 @@
 	/* Widget summary rows — decklist / stats-table / video / image — since
 	   the diff view is a plain-text-with-structure surface, widgets show
 	   as compact chips labeled with the widget type + a status. */
-	.cms-diff-view :global(.diff-widget) {
+	.desk-diff-view :global(.diff-widget) {
 		margin: 0.75rem 0;
 		display: flex;
 		align-items: center;
@@ -1306,29 +1306,29 @@
 		font-size: 0.8125rem;
 		font-family: 'Libre Franklin', system-ui, sans-serif;
 	}
-	.cms-diff-view :global(.diff-widget-label) {
+	.desk-diff-view :global(.diff-widget-label) {
 		font-weight: 500;
 	}
-	.cms-diff-view :global(.diff-widget-status) {
+	.desk-diff-view :global(.diff-widget-status) {
 		font-size: 0.625rem;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
 		font-weight: 700;
 	}
-	.cms-diff-view :global(.diff-widget-unchanged) {
+	.desk-diff-view :global(.diff-widget-unchanged) {
 		background: rgb(245 245 244);
 		color: rgb(87 83 78);
 	}
-	.cms-diff-view :global(.diff-widget-added) {
+	.desk-diff-view :global(.diff-widget-added) {
 		background: rgb(220 252 231);
 		color: rgb(20 83 45);
 	}
-	.cms-diff-view :global(.diff-widget-removed) {
+	.desk-diff-view :global(.diff-widget-removed) {
 		background: rgb(254 226 226);
 		color: rgb(127 29 29);
 		text-decoration: line-through;
 	}
-	.cms-diff-view :global(.diff-widget-changed) {
+	.desk-diff-view :global(.diff-widget-changed) {
 		background: rgb(255 251 235);
 		color: rgb(120 53 15);
 	}

@@ -1,11 +1,11 @@
 <script>
 	import DeskTabs from '$lib/components/age/desk/DeskTabs.svelte';
 	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
-	import DailyReadsChart from '$lib/components/age/cms/DailyReadsChart.svelte';
-	import BarList from '$lib/components/age/cms/BarList.svelte';
-	import ReachCurve from '$lib/components/age/cms/ReachCurve.svelte';
-	import HeatStrip from '$lib/components/age/cms/HeatStrip.svelte';
-	import StackedBar from '$lib/components/age/cms/StackedBar.svelte';
+	import DailyReadsChart from '$lib/components/age/desk/DailyReadsChart.svelte';
+	import BarList from '$lib/components/age/desk/BarList.svelte';
+	import ReachCurve from '$lib/components/age/desk/ReachCurve.svelte';
+	import HeatStrip from '$lib/components/age/desk/HeatStrip.svelte';
+	import StackedBar from '$lib/components/age/desk/StackedBar.svelte';
 	import {
 		fmt,
 		compact,
@@ -16,7 +16,7 @@
 		DEVICES,
 		label,
 		GLOSSARY
-	} from '$lib/cms/analyticsFormat.js';
+	} from '$lib/desk/analyticsFormat.js';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();

@@ -9,7 +9,7 @@ import { isAdmin } from '$lib/server/auth/roles.js';
  *
  * Loads every user with the columns the page needs to render + edit
  * (name, email, billing role, capability roles). No writes here — the
- * page fires PATCH /api/cms/users/[id] for updates so the row updates
+ * page fires PATCH /api/desk/users/[id] for updates so the row updates
  * without a full page reload.
  */
 export async function load({ locals }) {

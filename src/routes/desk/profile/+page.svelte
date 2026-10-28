@@ -5,14 +5,14 @@
 	import { enhance } from '$app/forms';
 	import { beforeNavigate } from '$app/navigation';
 	import AuthorCard from '$lib/components/age/library/AuthorCard.svelte';
-	import DailyReadsChart from '$lib/components/age/cms/DailyReadsChart.svelte';
+	import DailyReadsChart from '$lib/components/age/desk/DailyReadsChart.svelte';
 	import {
 		LINK_PLATFORMS,
 		linkLabel,
 		normalizeUrl,
 		bioToHtml,
 		detectPlatform
-	} from '$lib/cms/authorLinks.js';
+	} from '$lib/desk/authorLinks.js';
 
 	/** @type {{ data: any, form: any }} */
 	let { data, form } = $props();
@@ -66,7 +66,7 @@
 		try {
 			const fd = new FormData();
 			fd.append('file', file);
-			const res = await fetch('/api/cms/upload', { method: 'POST', body: fd });
+			const res = await fetch('/api/desk/upload', { method: 'POST', body: fd });
 			if (!res.ok) {
 				const body = await res.json().catch(() => ({}));
 				error = body?.message || `Upload failed (${res.status}).`;

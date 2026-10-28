@@ -4,11 +4,11 @@ import {
 	parseProfileInput,
 	saveAuthorProfile,
 	isMissingProfileTable
-} from '$lib/server/cms/authorProfile.js';
+} from '$lib/server/desk/authorProfile.js';
 import { authorStats, parseRange } from '$lib/server/contentAnalytics/query.js';
 
 /**
- * /desk/profile — every CMS user edits how they appear on their pieces, and
+ * /desk/profile — every Desk user edits how they appear on their pieces, and
  * sees reader numbers for their OWN published work only (scoped by author
  * id, whatever their role).
  */

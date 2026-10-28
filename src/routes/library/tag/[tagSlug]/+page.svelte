@@ -36,7 +36,7 @@
 		selectedAuthor = null;
 	}
 
-	// Get reading time from CMS or estimate as fallback
+	// Get reading time from Desk or estimate as fallback
 	function getReadTime(article) {
 		if (article.readTime) {
 			return `${article.readTime} min read`;

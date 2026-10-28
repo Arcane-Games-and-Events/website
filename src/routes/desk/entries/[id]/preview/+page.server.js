@@ -1,10 +1,10 @@
 import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { cmsEntry, cmsMedia, user as userTable } from '$lib/server/db/schema.js';
+import { deskEntry, deskMedia, user as userTable } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { canEditEntries, canEditEntry, isAdmin } from '$lib/server/auth/roles.js';
 import { getMuxPlaybackToken, getMuxThumbnailToken } from '$lib/server/mux.js';
-import { extractCardNamesFromLexical } from '$lib/cms/render/lexical-utils.js';
+import { extractCardNamesFromLexical } from '$lib/desk/render/lexical-utils.js';
 import { resolveCardImage, mapWithConcurrency } from '$lib/server/cards/index.js';
 
 /**
@@ -74,13 +74,13 @@ async function resolveCardImages(namesSet) {
  *   - Prefers the DRAFT-buffered version of each field when a live entry
  *     has pending edits, so the preview mirrors what the writer just
  *     typed instead of the older approved copy.
- *   - Gated by CMS auth: writers see only entries they authored;
- *     admins see all. Non-CMS users are 403'd by the /cms layout guard.
+ *   - Gated by Desk auth: writers see only entries they authored;
+ *     admins see all. Non-Desk users are 403'd by the /desk layout guard.
  */
 export async function load({ params, locals }) {
 	if (!canEditEntries(locals.user)) throw error(403, 'Not permitted');
 
-	const [entry] = await db.select().from(cmsEntry).where(eq(cmsEntry.id, params.id)).limit(1);
+	const [entry] = await db.select().from(deskEntry).where(eq(deskEntry.id, params.id)).limit(1);
 	if (!entry) throw error(404, 'Entry not found');
 	if (!canEditEntry(locals.user, entry.authorId)) throw error(403, 'Forbidden');
 
@@ -106,16 +106,16 @@ export async function load({ params, locals }) {
 		coverImageId
 			? db
 					.select()
-					.from(cmsMedia)
-					.where(eq(cmsMedia.id, coverImageId))
+					.from(deskMedia)
+					.where(eq(deskMedia.id, coverImageId))
 					.limit(1)
 					.then((r) => r[0] || null)
 			: Promise.resolve(null),
 		thumbnailImageId
 			? db
 					.select()
-					.from(cmsMedia)
-					.where(eq(cmsMedia.id, thumbnailImageId))
+					.from(deskMedia)
+					.where(eq(deskMedia.id, thumbnailImageId))
 					.limit(1)
 					.then((r) => r[0] || null)
 			: Promise.resolve(null),

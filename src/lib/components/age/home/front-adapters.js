@@ -150,7 +150,7 @@ function vodStory(v) {
 }
 
 /* ============ Academy placeholder ============
- * No course has been published through the CMS yet, so the Academy
+ * No course has been published through the Desk yet, so the Academy
  * department runs on this placeholder catalog (generic names) until
  * `data.courses` is non-empty, at which point the live list takes over.
  */

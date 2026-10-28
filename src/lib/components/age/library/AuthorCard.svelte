@@ -3,7 +3,7 @@
 	 * Contributor note for the article page: a ruled block (no box) with
 	 * the portrait plate beside the name, then the bio and links when the
 	 * author has them. Reads well with only a name, which is the common case
-	 * for CMS authors today.
+	 * for Desk authors today.
 	 *
 	 * `variant`: 'rail' (the narrow desktop sidebar) or 'end' (full width,
 	 * after the article on phones and tablets).

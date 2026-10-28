@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { getPublishedCourseBySlug, listPublishedCourses } from '$lib/server/cms/courses.js';
+import { getPublishedCourseBySlug, listPublishedCourses } from '$lib/server/desk/courses.js';
 import { userHasPremiumAccess } from '$lib/server/articles/access.js';
 
 export async function load({ params, locals, setHeaders }) {

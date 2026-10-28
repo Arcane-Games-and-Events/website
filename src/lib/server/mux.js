@@ -23,7 +23,7 @@ export async function getMuxThumbnailToken(playbackId) {
 }
 
 /**
- * Cached signed Mux playback token. Used by the CMS reader pages to authorize
+ * Cached signed Mux playback token. Used by the Desk reader pages to authorize
  * video playback for signed-policy assets. 24h token TTL, 12h cache TTL for
  * the same safety margin as the thumbnail token.
  */

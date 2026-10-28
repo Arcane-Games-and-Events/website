@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { env } from '$env/dynamic/private';
 
-// Bucket where CMS-uploaded images live. Must exist in Supabase Storage
+// Bucket where Desk-uploaded images live. Must exist in Supabase Storage
 // and be marked Public so the served URLs work without signing. Create
 // it in the Supabase dashboard (Storage → New bucket → name it exactly
 // this, toggle "Public bucket" on) before the upload endpoint will work.
-export const CMS_MEDIA_BUCKET = 'cms-media';
+export const DESK_MEDIA_BUCKET = 'cms-media';
 
 // Lazy service-role client. We mirror the Redis lazy pattern: never
 // instantiate at module load, because SvelteKit + adapter-vercel import
@@ -39,7 +39,7 @@ export function getSupabase() {
 		if (!g.__ageSupabaseWarned) {
 			console.warn(
 				'[supabase] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing — ' +
-					'CMS media uploads will 500. See .env.example.'
+					'Desk media uploads will 500. See .env.example.'
 			);
 			g.__ageSupabaseWarned = true;
 		}

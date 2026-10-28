@@ -1,7 +1,7 @@
 /**
  * Role + capability guards.
  *
- * Two axes of user role, per the CMS plan:
+ * Two axes of user role, per the Desk plan:
  *
  *   1. Billing tier — `user.role`, exactly one of 'free' | 'premium' | 'admin'.
  *      Determines paywall access on the reader side.
@@ -10,7 +10,7 @@
  *      'editor', 'creator', 'tournament staff'. Writers see and edit only
  *      their own entries; editors see and edit every entry. Independent of billing tier. A user
  *      can be a free-tier creator, or a premium writer + tournament staff,
- *      etc. Determines what CMS surfaces they can access.
+ *      etc. Determines what Desk surfaces they can access.
  *
  * `admin` (billing tier) implicitly grants every capability regardless of
  * `additionalRoles`. Nothing else stacks.
@@ -33,7 +33,7 @@ const CAPABILITY_TOURNAMENT_STAFF = 'tournament staff';
 
 /**
  * True if the user's billing tier is 'admin'. Admins bypass every
- * capability guard below — they can do anything the CMS or ops surfaces
+ * capability guard below — they can do anything the Desk or ops surfaces
  * allow.
  * @param {any} user
  * @returns {boolean}
@@ -128,12 +128,12 @@ export function canEditCourses(user) {
 }
 
 /**
- * True if the user can reach the /cms surface at all — needs at least one
+ * True if the user can reach the /desk surface at all — needs at least one
  * of writer or creator (or admin).
  * @param {any} user
  * @returns {boolean}
  */
-export function canAccessCms(user) {
+export function canAccessDesk(user) {
 	return canEditEntries(user) || canEditCourses(user);
 }
 

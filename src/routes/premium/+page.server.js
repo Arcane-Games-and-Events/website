@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { savedCard, standing, cmsEntry } from '$lib/server/db/schema.js';
+import { savedCard, standing, deskEntry } from '$lib/server/db/schema.js';
 import { and, count, countDistinct, eq, isNotNull, lte, or } from 'drizzle-orm';
 import { getCachedOrFetch, CACHE_TTL } from '$lib/server/redis/index.js';
 import { playerKey } from '$lib/server/players/key.js';
@@ -25,15 +25,15 @@ async function loadImpact() {
 			'premium:impact:v2',
 			async () => {
 				const published = or(
-					eq(cmsEntry.status, 'published'),
-					and(eq(cmsEntry.status, 'scheduled'), lte(cmsEntry.scheduledFor, new Date()))
+					eq(deskEntry.status, 'published'),
+					and(eq(deskEntry.status, 'scheduled'), lte(deskEntry.scheduledFor, new Date()))
 				);
 				const [players, pieces] = await Promise.all([
 					db.select({ gemId: standing.gemId, id: standing.id }).from(standing),
 					db
-						.select({ n: count(), writers: countDistinct(cmsEntry.authorId) })
-						.from(cmsEntry)
-						.where(and(published, isNotNull(cmsEntry.authorId)))
+						.select({ n: count(), writers: countDistinct(deskEntry.authorId) })
+						.from(deskEntry)
+						.where(and(published, isNotNull(deskEntry.authorId)))
 				]);
 				return {
 					players: new Set(players.map((r) => playerKey(r))).size,

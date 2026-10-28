@@ -153,7 +153,7 @@
 			>
 				{#each items as item, i (item.label)}
 					{#if i > 0}
-						<span class="hidden text-[7px] text-line2 xl:inline" aria-hidden="true">◆</span>
+						<span class="text-[7px] text-line2" aria-hidden="true">◆</span>
 					{/if}
 					{#if item.children}
 						<!--

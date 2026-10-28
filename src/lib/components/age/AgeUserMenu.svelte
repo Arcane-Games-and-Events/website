@@ -89,9 +89,9 @@
 
 	const isAdmin = $derived(user?.role === 'admin');
 
-	// CMS visibility mirrors `canAccessCms` from src/lib/server/auth/roles.js —
+	// Desk visibility mirrors `canAccessDesk` from src/lib/server/auth/roles.js —
 	// admin billing tier OR the writer / editor / creator (teacher) role.
-	const canAccessCms = $derived(
+	const canAccessDesk = $derived(
 		isAdmin ||
 			(Array.isArray(user?.additionalRoles) &&
 				['writer', 'editor', 'creator'].some((r) => user.additionalRoles.includes(r)))
@@ -108,7 +108,7 @@
 		...(isAdmin
 			? [{ key: 'admin', label: 'Admin', href: '/admin', tone: 'bg-warm text-white' }]
 			: []),
-		...(canAccessCms
+		...(canAccessDesk
 			? [{ key: 'desk', label: 'Desk', href: '/desk', tone: 'bg-gold text-ink' }]
 			: []),
 		...(isStaff

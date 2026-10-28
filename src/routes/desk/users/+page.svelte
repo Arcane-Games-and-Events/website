@@ -5,7 +5,7 @@
   roles: writer, editor and teacher (stored as 'creator'). Tournament staff
   is managed in Admin → Users and isn't shown here; any staff role a person
   already has is kept untouched when their Desk roles change. Every change fires a
-  PATCH to /api/cms/users/[id]; the row updates in place, shows "Saving…" /
+  PATCH to /api/desk/users/[id]; the row updates in place, shows "Saving…" /
   "Saved", and shows the error inline if the server refuses.
 -->
 <script>
@@ -86,7 +86,7 @@
 	async function patch(u, body) {
 		status[u.id] = 'saving';
 		try {
-			const res = await fetch(`/api/cms/users/${u.id}`, {
+			const res = await fetch(`/api/desk/users/${u.id}`, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(body)

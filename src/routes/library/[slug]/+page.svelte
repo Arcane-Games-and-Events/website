@@ -6,12 +6,11 @@
 	import { createContentTracker } from '$lib/analytics/contentTracker.js';
 	import { fitTitle } from '$lib/actions/fitTitle.js';
 	import { fade, fly } from 'svelte/transition';
-	import Decklist from '$lib/components/Decklist.svelte';
 	import CardHover from '$lib/components/CardHover.svelte';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
-	import RenderLexical from '$lib/cms/render/RenderLexical.svelte';
-	import { ARTICLE_PROSE } from '$lib/cms/render/articleProse.js';
-	import LibraryVideoBlock from '$lib/cms/render/LibraryVideoBlock.svelte';
+	import RenderLexical from '$lib/desk/render/RenderLexical.svelte';
+	import { ARTICLE_PROSE } from '$lib/desk/render/articleProse.js';
+	import LibraryVideoBlock from '$lib/desk/render/LibraryVideoBlock.svelte';
 
 	export let data;
 
@@ -159,27 +158,8 @@
 		return url;
 	}
 
-	// Process content blocks for inline decklists
-	let renderBlocks = [];
 	let tableOfContents = [];
 
-	/**
-	 * Per-render heading-id counter. Articles can have two headings
-	 * with identical text ("Round 1" / "Round 1"), and slugify() would
-	 * collapse them to the same id — that crashes the keyed {#each}
-	 * over `tableOfContents` (duplicate keys) and produces invalid
-	 * duplicate-id attributes in the rendered HTML. We dedupe by
-	 * appending an index ("round-1" / "round-1-1" / ...). This map is
-	 * reset at the start of every renderBlocks pass so reactive
-	 * re-renders don't accumulate counts across articles.
-	 */
-	let headingIdCounts = new Map();
-	function nextHeadingId(base) {
-		const safeBase = base || 'section';
-		const n = headingIdCounts.get(safeBase) ?? 0;
-		headingIdCounts.set(safeBase, n + 1);
-		return n === 0 ? safeBase : `${safeBase}-${n}`;
-	}
 	// Map of heading.id → top-level (h2) number. Only h2 entries get a number;
 	// sub-headings (h3+) get a small bullet instead so the hierarchy reads at
 	// a glance in the TOC sidebar.
@@ -208,7 +188,6 @@
 
 	$: {
 		if (data.article.content) {
-			renderBlocks = processInlineDecklists(data.article.content, data.article.decklists);
 			tableOfContents = extractHeadings(data.article.content);
 			// Initialize sections: only h2 sections are expanded by default (showing h3)
 			// h3+ sections start collapsed (hiding h4+)
@@ -250,55 +229,17 @@
 		expandedSections = { ...expandedSections, [id]: !expandedSections[id] };
 	}
 
-	/**
-	 * Look up card image from the server-provided cardImages map
-	 */
-	function getCardImage(cardName, pitch) {
-		const normalizedName = cardName.toLowerCase();
-		const pitchKey = pitch ? `${normalizedName}:${pitch}` : null;
-
-		// Try pitch-specific key first
-		if (pitchKey && cardImages[pitchKey]) {
-			return cardImages[pitchKey];
-		}
-
-		// Fall back to base name
-		if (cardImages[normalizedName]) {
-			return cardImages[normalizedName];
-		}
-
-		return null;
-	}
-
 	// Extract headings for table of contents
 	function extractHeadings(content) {
 		const headings = [];
 		if (!content) return headings;
 
-		// Handle Lexical format
 		if (content.root && content.root.type === 'root') {
 			extractLexicalHeadings(content.root, headings);
 		}
-		// Handle array format
-		else if (Array.isArray(content)) {
-			content.forEach((block) => {
-				if (block.type === 'heading' && block.children) {
-					const text = extractText(block.children);
-					const id = slugify(text);
-					headings.push({
-						text,
-						id,
-						level: block.level || 2
-					});
-				}
-			});
-		}
 
-		// Dedupe ids using the same counter algorithm renderLexicalNode
-		// uses. Both walks are depth-first in the same order, so the
-		// resulting ids match between the TOC and the rendered article
-		// body — anchor links keep working even when two headings
-		// share the same text.
+		// Dedupe ids so two headings with the same text ("Round 1") still
+		// get distinct anchors.
 		const counts = new Map();
 		for (const h of headings) {
 			const base = h.id || 'section';
@@ -316,10 +257,8 @@
 		if (node.type === 'heading') {
 			const text = extractLexicalText(node.children);
 			const id = slugify(text);
-			// Lexical headings can express level in several shapes depending
-			// on Payload/Lexical version: `tag: 'h2'` (string), `tag: 2`
-			// (number), `level: 2`, or even `format: 2`. Try each in turn
-			// so the TOC reliably picks up h3+ entries.
+			// Level usually comes as `tag: 'h2'`; older shapes (`tag: 2`,
+			// `level`, `format`) are still accepted so the TOC keeps h3+.
 			let level = null;
 			const tag = node.tag;
 			if (typeof tag === 'string') {
@@ -338,11 +277,6 @@
 		if (node.children) {
 			node.children.forEach((child) => extractLexicalHeadings(child, headings));
 		}
-	}
-
-	function extractText(children) {
-		if (!children) return '';
-		return children.map((child) => child.text || '').join('');
 	}
 
 	function extractLexicalText(children) {
@@ -386,448 +320,6 @@
 	function shareTwitter() {
 		const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(data.article.title)}`;
 		window.open(url, '_blank', 'width=550,height=420');
-	}
-
-	/**
-	 * Process content blocks and replace [DECKLIST:n] markers with actual decklists
-	 */
-	function processInlineDecklists(content, decklists) {
-		if (!content) {
-			return [{ type: 'html', content: '' }];
-		}
-
-		// Reset the heading-id dedupe counter for this render pass so
-		// the rendered HTML's `id` attributes line up with the TOC's
-		// deduped ids (extractHeadings runs its own walk in the same
-		// order and produces matching ids).
-		headingIdCounts = new Map();
-
-		// Render the full content to HTML first
-		const fullHtml = renderContent(content);
-
-		// Check for decklist markers
-		const decklistPattern = /\[DECKLIST:(\d+)\]/g;
-		const matches = [...fullHtml.matchAll(decklistPattern)];
-
-		// If no markers, return as single HTML block
-		if (matches.length === 0) {
-			return [{ type: 'html', content: fullHtml }];
-		}
-
-		// Split content at decklist markers
-		const blocks = [];
-		let lastIndex = 0;
-
-		matches.forEach((match) => {
-			// Add HTML before the marker
-			const beforeMarker = fullHtml.substring(lastIndex, match.index);
-			if (beforeMarker.trim()) {
-				blocks.push({ type: 'html', content: beforeMarker });
-			}
-
-			// Add decklist component
-			const decklistIndex = parseInt(match[1]);
-			if (decklists && decklists[decklistIndex]) {
-				blocks.push({
-					type: 'decklist',
-					data: decklists[decklistIndex]
-				});
-			}
-
-			lastIndex = match.index + match[0].length;
-		});
-
-		// Add remaining HTML after last marker
-		const afterLast = fullHtml.substring(lastIndex);
-		if (afterLast.trim()) {
-			blocks.push({ type: 'html', content: afterLast });
-		}
-
-		return blocks;
-	}
-
-	// Render rich text content as HTML
-	function renderContent(content) {
-		if (!content) return '';
-
-		// If content is a string, return it directly
-		if (typeof content === 'string') {
-			return content;
-		}
-
-		// Check if this is Lexical format (Payload v3)
-		if (content.root && content.root.type === 'root') {
-			return renderLexicalNode(content.root);
-		}
-
-		// If content is an array of blocks
-		if (Array.isArray(content)) {
-			return content.map((block) => renderBlock(block)).join('');
-		}
-
-		// If content is an object, try to extract text
-		if (typeof content === 'object') {
-			return JSON.stringify(content, null, 2);
-		}
-
-		return '';
-	}
-
-	// Render Lexical JSON to HTML (Payload v3 format)
-	function renderLexicalNode(node) {
-		if (!node) return '';
-
-		// Handle line breaks (Shift+Enter in editor)
-		if (node.type === 'linebreak') {
-			return '<br />';
-		}
-
-		// Handle text nodes
-		if (node.type === 'text') {
-			let text = escapeHtml(node.text || '');
-
-			// Apply formatting based on format bitmask
-			if (node.format) {
-				const format = typeof node.format === 'number' ? node.format : 0;
-				if (format & 1 || node.bold) text = `<strong>${text}</strong>`;
-				if (format & 2 || node.italic) text = `<em>${text}</em>`;
-				if (format & 4 || node.strikethrough) text = `<s>${text}</s>`;
-				if (format & 8 || node.underline) text = `<u>${text}</u>`;
-				if (format & 16 || node.code) text = `<code>${text}</code>`;
-			}
-
-			return text;
-		}
-
-		// Handle paragraph
-		if (node.type === 'paragraph') {
-			const children = renderLexicalChildren(node.children);
-			return `<p>${children}</p>`;
-		}
-
-		// Handle headings with ID for table of contents
-		if (node.type === 'heading') {
-			const tag = node.tag || 'h2';
-			const children = renderLexicalChildren(node.children);
-			const text = extractLexicalText(node.children);
-			const id = nextHeadingId(slugify(text));
-			return `<${tag} id="${id}">${children}</${tag}>`;
-		}
-
-		// Handle lists
-		if (node.type === 'list') {
-			const tag = node.listType === 'number' ? 'ol' : 'ul';
-			// Process list items, handling nested lists specially
-			const itemsHtml = (node.children || [])
-				.map((item) => {
-					if (item.type !== 'listitem') return renderLexicalNode(item);
-
-					const children = item.children || [];
-					// Check if this listitem contains ONLY a nested list (no text content)
-					// This happens in Lexical when you have nested lists - the nested list
-					// is wrapped in its own listitem, causing an empty bullet
-					const hasOnlyNestedList = children.length === 1 && children[0].type === 'list';
-
-					if (hasOnlyNestedList) {
-						// Don't wrap in <li>, just render the nested list directly
-						// This prevents the empty bullet for the wrapper listitem
-						return renderLexicalNode(children[0]);
-					}
-
-					// Normal listitem with content
-					const content = renderLexicalChildren(children);
-					return `<li>${content}</li>`;
-				})
-				.join('');
-			return `<${tag}>${itemsHtml}</${tag}>`;
-		}
-
-		if (node.type === 'listitem') {
-			// This handles listitems that appear outside the list context (shouldn't happen normally)
-			const children = renderLexicalChildren(node.children);
-			return `<li>${children}</li>`;
-		}
-
-		// Handle quotes
-		if (node.type === 'quote') {
-			const children = renderLexicalChildren(node.children);
-			return `<blockquote>${children}</blockquote>`;
-		}
-
-		// Handle code blocks
-		if (node.type === 'code') {
-			const code = node.children?.map((c) => c.text || '').join('') || '';
-			return `<pre><code>${escapeHtml(code)}</code></pre>`;
-		}
-
-		// Handle inline images (upload blocks)
-		if (node.type === 'upload') {
-			const media = node.value || node;
-			const imageUrl = media.url || '';
-			const altText = media.alt || media.filename || '';
-
-			return `<figure class="my-8"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(altText)}" loading="lazy" decoding="async" class="rounded-lg" /></figure>`;
-		}
-
-		// Handle links
-		if (node.type === 'link' || node.type === 'autolink') {
-			const children = renderLexicalChildren(node.children);
-
-			// Payload CMS Lexical stores URLs in node.fields.url for custom links
-			let rawUrl = node.fields?.url || node.url || '#';
-
-			// Try to decode the URL in case it was URL-encoded by the CMS
-			try {
-				rawUrl = decodeURIComponent(rawUrl);
-			} catch (e) {
-				// Keep original if decoding fails
-			}
-
-			// Check if this is a card link
-			// Supports: card:CardName[pitch]|customUrl or #card:CardName[pitch]|customUrl
-			let cardMatch = rawUrl.match(/^card:(.+)$/);
-			if (!cardMatch) {
-				cardMatch = rawUrl.match(/^#card:(.+)$/);
-			}
-
-			if (cardMatch) {
-				let fullString = cardMatch[1];
-
-				// Look for separator: | (pipe), %7C (encoded), :: or --
-				let separatorIndex = -1;
-				let separatorLength = 1;
-
-				separatorIndex = fullString.indexOf('|');
-				if (separatorIndex === -1) {
-					separatorIndex = fullString.indexOf('%7C');
-					if (separatorIndex !== -1) separatorLength = 3;
-				}
-				if (separatorIndex === -1) {
-					separatorIndex = fullString.indexOf('::');
-					if (separatorIndex !== -1) separatorLength = 2;
-				}
-				if (separatorIndex === -1) {
-					separatorIndex = fullString.indexOf('--');
-					if (separatorIndex !== -1) separatorLength = 2;
-				}
-
-				let cardId, customUrl;
-				if (separatorIndex !== -1) {
-					cardId = fullString.substring(0, separatorIndex);
-					customUrl = fullString.substring(separatorIndex + separatorLength);
-					try {
-						customUrl = decodeURIComponent(customUrl);
-					} catch (e) {
-						// Keep as-is
-					}
-				} else {
-					cardId = fullString;
-					customUrl = null;
-				}
-
-				// Extract pitch indicator [r], [y], [b] from card name
-				let pitch = null;
-				const pitchMatch = cardId.match(/\[(r|y|b)\]$/i);
-				if (pitchMatch) {
-					const pitchLetter = pitchMatch[1].toLowerCase();
-					pitch = pitchLetter === 'r' ? '1' : pitchLetter === 'y' ? '2' : '3';
-					cardId = cardId.replace(/\[(r|y|b)\]$/i, '').trim();
-				}
-
-				// Decode URL-encoded card names (e.g., Felling%20of%20the%20Crown -> Felling of the Crown)
-				try {
-					cardId = decodeURIComponent(cardId);
-				} catch (e) {
-					// Keep original if decoding fails
-				}
-
-				const linkUrl =
-					customUrl || `https://cards.fabtcg.com/results/?q=${encodeURIComponent(cardId)}`;
-				const pitchAttr = pitch ? ` data-card-pitch="${pitch}"` : '';
-				const customUrlAttr = customUrl ? ` data-card-url="${escapeHtml(customUrl)}"` : '';
-
-				// Look up card image from server-resolved images
-				const pitchLetter = pitch === '1' ? 'r' : pitch === '2' ? 'y' : pitch === '3' ? 'b' : null;
-				const cardImg = getCardImage(cardId, pitchLetter);
-				const imageAttr = cardImg?.imageUrl
-					? ` data-card-image="${escapeHtml(cardImg.imageUrl)}"`
-					: '';
-				const fallbackAttr = cardImg?.fallbackUrl
-					? ` data-card-fallback="${escapeHtml(cardImg.fallbackUrl)}"`
-					: '';
-
-				return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}"${pitchAttr}${customUrlAttr}${imageAttr}${fallbackAttr} class="card-link !text-blue-400 hover:!text-blue-300">${children}</a>`;
-			} else {
-				const url = escapeHtml(rawUrl);
-				return `<a href="${url}" target="_blank" rel="noopener noreferrer">${children}</a>`;
-			}
-		}
-
-		// Handle root and other container nodes
-		if (node.children) {
-			return renderLexicalChildren(node.children);
-		}
-
-		return '';
-	}
-
-	function renderLexicalChildren(children) {
-		if (!children || !Array.isArray(children)) return '';
-		return children.map((child) => renderLexicalNode(child)).join('');
-	}
-
-	function renderBlock(block) {
-		if (!block || !block.type) return '';
-
-		switch (block.type) {
-			case 'paragraph':
-				return `<p>${renderChildren(block.children)}</p>`;
-			case 'heading':
-				const level = block.level || 2;
-				const text = extractText(block.children);
-				const id = slugify(text);
-				return `<h${level} id="${id}">${renderChildren(block.children)}</h${level}>`;
-			case 'list':
-				const tag = block.format === 'ordered' ? 'ol' : 'ul';
-				return `<${tag}>${renderChildren(block.children)}</${tag}>`;
-			case 'list-item':
-				return `<li>${renderChildren(block.children)}</li>`;
-			case 'quote':
-				return `<blockquote>${renderChildren(block.children)}</blockquote>`;
-			case 'code':
-				return `<pre><code>${escapeHtml(block.children?.[0]?.text || '')}</code></pre>`;
-			case 'image':
-				const imageUrl = block.image?.url || '';
-				const altText = block.image?.alternativeText || block.image?.name || '';
-				const caption = block.image?.caption || '';
-				let imageHtml = `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(altText)}" loading="lazy" decoding="async" />`;
-				if (caption) {
-					imageHtml = `<figure>${imageHtml}<figcaption>${escapeHtml(caption)}</figcaption></figure>`;
-				}
-				return imageHtml;
-			default:
-				return renderChildren(block.children);
-		}
-	}
-
-	function renderChildren(children) {
-		if (!children || !Array.isArray(children)) return '';
-
-		return children
-			.map((child) => {
-				// Handle links
-				if (child.type === 'link') {
-					// Get URL and decode if needed
-					let rawUrl = child.fields?.url || child.url || '#';
-					try {
-						rawUrl = decodeURIComponent(rawUrl);
-					} catch (e) {
-						// Keep original
-					}
-
-					// Check for card link patterns
-					let cardMatch = rawUrl.match(/^card:(.+)$/);
-					if (!cardMatch) {
-						cardMatch = rawUrl.match(/^#card:(.+)$/);
-					}
-
-					if (cardMatch) {
-						let fullString = cardMatch[1];
-
-						// Look for separator - try multiple options
-						let separatorIndex = -1;
-						let separatorLength = 1;
-
-						separatorIndex = fullString.indexOf('|');
-						if (separatorIndex === -1) {
-							separatorIndex = fullString.indexOf('%7C');
-							if (separatorIndex !== -1) separatorLength = 3;
-						}
-						if (separatorIndex === -1) {
-							separatorIndex = fullString.indexOf('::');
-							if (separatorIndex !== -1) separatorLength = 2;
-						}
-						if (separatorIndex === -1) {
-							separatorIndex = fullString.indexOf('--');
-							if (separatorIndex !== -1) separatorLength = 2;
-						}
-
-						let cardId, customUrl;
-						if (separatorIndex !== -1) {
-							cardId = fullString.substring(0, separatorIndex);
-							customUrl = fullString.substring(separatorIndex + separatorLength);
-							try {
-								customUrl = decodeURIComponent(customUrl);
-							} catch (e) {}
-						} else {
-							cardId = fullString;
-							customUrl = null;
-						}
-
-						// Extract pitch indicator [r], [y], [b] from card name
-						let pitch = null;
-						const pitchMatch = cardId.match(/\[(r|y|b)\]$/i);
-						if (pitchMatch) {
-							const pitchLetter = pitchMatch[1].toLowerCase();
-							pitch = pitchLetter === 'r' ? '1' : pitchLetter === 'y' ? '2' : '3';
-							cardId = cardId.replace(/\[(r|y|b)\]$/i, '').trim();
-						}
-
-						// Decode URL-encoded card names (e.g., Felling%20of%20the%20Crown -> Felling of the Crown)
-						try {
-							cardId = decodeURIComponent(cardId);
-						} catch (e) {
-							// Keep original if decoding fails
-						}
-
-						const linkUrl =
-							customUrl || `https://cards.fabtcg.com/results/?q=${encodeURIComponent(cardId)}`;
-						const pitchAttr = pitch ? ` data-card-pitch="${pitch}"` : '';
-						const customUrlAttr = customUrl ? ` data-card-url="${escapeHtml(customUrl)}"` : '';
-
-						// Look up card image from server-resolved images
-						const pitchLetter2 =
-							pitch === '1' ? 'r' : pitch === '2' ? 'y' : pitch === '3' ? 'b' : null;
-						const cardImg2 = getCardImage(cardId, pitchLetter2);
-						const imageAttr2 = cardImg2?.imageUrl
-							? ` data-card-image="${escapeHtml(cardImg2.imageUrl)}"`
-							: '';
-						const fallbackAttr2 = cardImg2?.fallbackUrl
-							? ` data-card-fallback="${escapeHtml(cardImg2.fallbackUrl)}"`
-							: '';
-
-						return `<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" data-card-name="${escapeHtml(cardId)}"${pitchAttr}${customUrlAttr}${imageAttr2}${fallbackAttr2} class="card-link !text-blue-400 hover:!text-blue-300">${renderChildren(child.children)}</a>`;
-					} else {
-						return `<a href="${escapeHtml(rawUrl)}" target="_blank" rel="noopener noreferrer">${renderChildren(child.children)}</a>`;
-					}
-				}
-
-				// Handle text nodes
-				if (child.type === 'text' || typeof child.text === 'string') {
-					let text = escapeHtml(child.text);
-
-					if (child.bold) text = `<strong>${text}</strong>`;
-					if (child.italic) text = `<em>${text}</em>`;
-					if (child.underline) text = `<u>${text}</u>`;
-					if (child.strikethrough) text = `<s>${text}</s>`;
-					if (child.code) text = `<code>${text}</code>`;
-
-					return text;
-				}
-
-				return renderBlock(child);
-			})
-			.join('');
-	}
-
-	function escapeHtml(text) {
-		if (!text) return '';
-		return text
-			.replace(/&/g, '&amp;')
-			.replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;')
-			.replace(/"/g, '&quot;')
-			.replace(/'/g, '&#039;');
 	}
 </script>
 
@@ -1159,31 +651,7 @@
 						: ''} {ARTICLE_PROSE}"
 				>
 					{#if data.article.content}
-						{#if data.article.source === 'cms'}
-							<!-- CMS entries render via the shared Lexical renderer so
-							     widget nodes (decklist / stats_table / inline_video)
-							     and inline card links round-trip through the same
-							     pipeline the editor uses. -->
-							<RenderLexical content={data.article.content} {cardImages} />
-						{:else if renderBlocks.length > 0}
-							{#each renderBlocks as block, i (i)}
-								{#if block.type === 'html'}
-									{@html block.content}
-								{:else if block.type === 'decklist'}
-									<Decklist
-										deckName={block.data.deckName}
-										creator={block.data.creator}
-										hero={block.data.hero}
-										format={block.data.format}
-										fabraryUrl={block.data.fabraryUrl}
-										parsedCards={block.data.parsedCards}
-										{cardImages}
-									/>
-								{/if}
-							{/each}
-						{:else}
-							{@html renderContent(data.article.content)}
-						{/if}
+						<RenderLexical content={data.article.content} {cardImages} />
 					{:else if !data.article.video}
 						<p class="text-soft">No content available.</p>
 					{/if}

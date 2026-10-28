@@ -1,14 +1,12 @@
 import { error } from '@sveltejs/kit';
-import { payload } from '$lib/server/payload/client.js';
-import { isPremiumNow, userHasPremiumAccess } from '$lib/server/articles/access.js';
-import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+import { userHasPremiumAccess } from '$lib/server/articles/access.js';
 import { resolveCardImage, mapWithConcurrency } from '$lib/server/cards/index.js';
 import { db } from '$lib/server/db/index.js';
-import { cmsEntry, cmsMedia, user as userTable } from '$lib/server/db/schema.js';
+import { deskEntry, deskMedia, user as userTable } from '$lib/server/db/schema.js';
 import { and, count, eq, lte, or } from 'drizzle-orm';
 import { getMuxPlaybackToken, getMuxThumbnailToken } from '$lib/server/mux.js';
-import { loadTagsForEntries } from '$lib/server/cms/list.js';
-import { getAuthorProfile, bioToHtml } from '$lib/server/cms/authorProfile.js';
+import { loadTagsForEntries } from '$lib/server/desk/list.js';
+import { getAuthorProfile, bioToHtml } from '$lib/server/desk/authorProfile.js';
 
 /**
  * Truncate Lexical content to only show first few paragraphs for preview
@@ -101,45 +99,6 @@ function extractCardNamesFromContent(node, cardNames = new Set()) {
 }
 
 /**
- * Extract card names from decklists
- */
-function extractCardNamesFromDecklists(decklists) {
-	const cardNames = new Set();
-	if (!decklists || !Array.isArray(decklists)) return cardNames;
-
-	for (const decklist of decklists) {
-		// Hero
-		if (decklist.hero) {
-			cardNames.add(JSON.stringify({ name: decklist.hero, pitch: null }));
-		}
-
-		// Arena cards
-		if (decklist.parsedCards?.arenaCards) {
-			for (const card of decklist.parsedCards.arenaCards) {
-				cardNames.add(JSON.stringify({ name: card.name, pitch: null }));
-			}
-		}
-
-		// Deck cards
-		if (decklist.parsedCards?.deckCards) {
-			for (const card of decklist.parsedCards.deckCards) {
-				const pitch =
-					card.color === 'red'
-						? 'r'
-						: card.color === 'yellow'
-							? 'y'
-							: card.color === 'blue'
-								? 'b'
-								: null;
-				cardNames.add(JSON.stringify({ name: card.name, pitch }));
-			}
-		}
-	}
-
-	return cardNames;
-}
-
-/**
  * Resolve card images for a set of card names.
  * Returns a map of "cardName:pitch" -> { imageUrl, fallbackUrl }.
  *
@@ -177,48 +136,12 @@ async function resolveCardImages(cardNamesSet) {
 }
 
 /**
- * Recursively process Lexical content to convert relative URLs to absolute
- */
-function processContentUrls(node) {
-	if (!node) return node;
-
-	// Handle upload nodes (inline images)
-	if (node.type === 'upload' && node.value) {
-		return {
-			...node,
-			value: {
-				...node.value,
-				url: payload.getAbsoluteUrl(node.value.url)
-			}
-		};
-	}
-
-	// Recursively process children
-	if (node.children && Array.isArray(node.children)) {
-		return {
-			...node,
-			children: node.children.map((child) => processContentUrls(child))
-		};
-	}
-
-	// Handle root node
-	if (node.root) {
-		return {
-			...node,
-			root: processContentUrls(node.root)
-		};
-	}
-
-	return node;
-}
-
-/**
  * Walk a Lexical body and pull every card-linked name — from `card:` link
  * URLs (existing helper) AND from inline decklist widget nodes' parsedCards.
  * The decklist widget doesn't expose its cards as links, so its cards need a
  * dedicated walk. Returns the same Set shape as the legacy card extractor.
  */
-function extractCmsEntryCardNames(body) {
+function extractDeskEntryCardNames(body) {
 	const names = extractCardNamesFromContent(body);
 	function walk(node) {
 		if (!node) return;
@@ -242,12 +165,12 @@ function extractCmsEntryCardNames(body) {
 }
 
 /**
- * Load a CMS entry by slug + related media/author rows. Returns null when the
+ * Load a Desk entry by slug + related media/author rows. Returns null when the
  * slug doesn't exist OR the entry isn't publicly readable yet (drafts,
  * archived, and future-scheduled entries are all 404 to the reader).
  */
-async function loadCmsEntryBySlug(slug) {
-	const [entry] = await db.select().from(cmsEntry).where(eq(cmsEntry.slug, slug)).limit(1);
+async function loadDeskEntryBySlug(slug) {
+	const [entry] = await db.select().from(deskEntry).where(eq(deskEntry.slug, slug)).limit(1);
 	if (!entry) return null;
 
 	// Public visibility: published, OR scheduled with a start time that has
@@ -264,16 +187,16 @@ async function loadCmsEntryBySlug(slug) {
 		entry.coverImageId
 			? db
 					.select()
-					.from(cmsMedia)
-					.where(eq(cmsMedia.id, entry.coverImageId))
+					.from(deskMedia)
+					.where(eq(deskMedia.id, entry.coverImageId))
 					.limit(1)
 					.then((r) => r[0] || null)
 			: Promise.resolve(null),
 		entry.thumbnailImageId
 			? db
 					.select()
-					.from(cmsMedia)
-					.where(eq(cmsMedia.id, entry.thumbnailImageId))
+					.from(deskMedia)
+					.where(eq(deskMedia.id, entry.thumbnailImageId))
 					.limit(1)
 					.then((r) => r[0] || null)
 			: Promise.resolve(null),
@@ -292,13 +215,13 @@ async function loadCmsEntryBySlug(slug) {
 		entry.authorId
 			? db
 					.select({ n: count() })
-					.from(cmsEntry)
+					.from(deskEntry)
 					.where(
 						and(
-							eq(cmsEntry.authorId, entry.authorId),
+							eq(deskEntry.authorId, entry.authorId),
 							or(
-								eq(cmsEntry.status, 'published'),
-								and(eq(cmsEntry.status, 'scheduled'), lte(cmsEntry.scheduledFor, new Date()))
+								eq(deskEntry.status, 'published'),
+								and(eq(deskEntry.status, 'scheduled'), lte(deskEntry.scheduledFor, new Date()))
 							)
 						)
 					)
@@ -317,12 +240,11 @@ async function loadCmsEntryBySlug(slug) {
 }
 
 /**
- * Build the unified `article` shape the reader page consumes. Same shape as
- * the Payload path returns, plus a `video` field for the featured video slot
- * and `source: 'cms'` so the page can pick the right renderer.
+ * Build the `article` shape the reader page consumes, including a `video`
+ * field for the featured video slot.
  */
-async function buildCmsArticleShape({ entry, cover, thumbnail, author, tags = [] }) {
-	// The writer's CMS profile (byline name, title, bio, photo, links). A
+async function buildDeskArticleShape({ entry, cover, thumbnail, author, tags = [] }) {
+	// The writer's Desk profile (byline name, title, bio, photo, links). A
 	// missing table or failed lookup just falls back to the account name.
 	let profile = null;
 	if (author?.id) {
@@ -365,11 +287,9 @@ async function buildCmsArticleShape({ entry, cover, thumbnail, author, tags = []
 		content: entry.body,
 		publishedAt: entry.publishedAt,
 		accessMode: entry.accessMode,
-		// coverImage uses `.src` (not `.url`) to match the shape the Payload
-		// path produces so the existing page.svelte hero-image markup works
-		// for both sources without a compatibility branch. srcset is left
-		// undefined — CMS uploads don't produce responsive variants yet, the
-		// browser will just render the single src.
+		// coverImage uses `.src` (not `.url`) because that's what the page's
+		// hero markup reads. Uploads have no responsive variants yet, so
+		// srcset stays undefined and the browser renders the single src.
 		coverImage: cover
 			? {
 					src: cover.url,
@@ -397,10 +317,8 @@ async function buildCmsArticleShape({ entry, cover, thumbnail, author, tags = []
 				}
 			: null,
 		tags,
-		decklists: [],
 		readTime: entry.readTime || null,
-		video,
-		source: 'cms'
+		video
 	};
 }
 
@@ -408,24 +326,20 @@ export async function load({ params, locals, setHeaders }) {
 	const { slug } = params;
 
 	try {
-		// --------------------------------------------------------------------
-		// Try CMS entry first — this is the read path for custom-authored
-		// entries. If the slug doesn't match a public CMS entry, fall through
-		// to the Payload path below (existing articles migrate over time).
-		// --------------------------------------------------------------------
-		const cmsRow = await loadCmsEntryBySlug(slug);
-		if (cmsRow) {
-			const article = await buildCmsArticleShape(cmsRow);
+		// Desk entries are the only source of Library articles.
+		const deskRow = await loadDeskEntryBySlug(slug);
+		if (deskRow) {
+			const article = await buildDeskArticleShape(deskRow);
 
 			// Card image resolution — walk both the body's card links AND any
 			// inline decklist widget nodes so the reader's hover tooltips work.
 			let cardImages = {};
 			if (article.content) {
-				const names = extractCmsEntryCardNames(article.content);
+				const names = extractDeskEntryCardNames(article.content);
 				if (names.size > 0) cardImages = await resolveCardImages(names);
 			}
 
-			// Premium gating. Per the memory note for the custom CMS: premium
+			// Premium gating. Per the memory note for the Desk: premium
 			// entries stay premium forever — no 30-day-to-free cutover. So we
 			// just check accessMode instead of `isPremiumNow`.
 			const isPremium = article.accessMode === 'premium';
@@ -463,8 +377,6 @@ export async function load({ params, locals, setHeaders }) {
 			return { article, isPremium, isPreview, cardImages };
 		}
 
-		// Payload is turned off — CMS is the single source for library
-		// content. Anything without a matching public cms_entry is a 404.
 		throw error(404, 'Article not found');
 	} catch (err) {
 		// Re-throw SvelteKit errors

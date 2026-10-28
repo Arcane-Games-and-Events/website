@@ -1,7 +1,7 @@
 /**
  * Content tracker — measures how a reader reads or watches one Library piece.
  *
- * Definitions (the CMS dashboards use the same words):
+ * Definitions (the Desk dashboards use the same words):
  *   - Visible time: the tab is in the foreground.
  *   - Engaged time: visible AND the reader did something (scroll, move,
  *     tap, key) in the last 30 seconds — or a video is playing.

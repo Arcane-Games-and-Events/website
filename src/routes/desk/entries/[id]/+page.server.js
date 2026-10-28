@@ -1,13 +1,13 @@
 import { redirect, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { cmsEntry, cmsMedia, user as userTable } from '$lib/server/db/schema.js';
+import { deskEntry, deskMedia, user as userTable } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { canEditEntries, isAdmin, canEditEntry } from '$lib/server/auth/roles.js';
 
 export async function load({ params, locals }) {
 	if (!canEditEntries(locals.user)) throw redirect(302, '/desk');
 
-	const [entry] = await db.select().from(cmsEntry).where(eq(cmsEntry.id, params.id)).limit(1);
+	const [entry] = await db.select().from(deskEntry).where(eq(deskEntry.id, params.id)).limit(1);
 	if (!entry) throw error(404, 'Entry not found');
 	if (!canEditEntry(locals.user, entry.authorId)) throw error(403, 'Forbidden');
 
@@ -21,16 +21,16 @@ export async function load({ params, locals }) {
 		editingCoverId
 			? db
 					.select()
-					.from(cmsMedia)
-					.where(eq(cmsMedia.id, editingCoverId))
+					.from(deskMedia)
+					.where(eq(deskMedia.id, editingCoverId))
 					.limit(1)
 					.then((r) => r[0] || null)
 			: Promise.resolve(null),
 		editingThumbnailId
 			? db
 					.select()
-					.from(cmsMedia)
-					.where(eq(cmsMedia.id, editingThumbnailId))
+					.from(deskMedia)
+					.where(eq(deskMedia.id, editingThumbnailId))
 					.limit(1)
 					.then((r) => r[0] || null)
 			: Promise.resolve(null),

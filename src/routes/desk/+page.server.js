@@ -1,13 +1,13 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { cmsEntry, cmsMedia, user as userTable } from '$lib/server/db/schema.js';
+import { deskEntry, deskMedia, user as userTable } from '$lib/server/db/schema.js';
 import { alias } from 'drizzle-orm/pg-core';
 import { desc, eq } from 'drizzle-orm';
 import { canEditEntries, canEditAllEntries, canPublish } from '$lib/server/auth/roles.js';
 import { deskReads } from '$lib/server/contentAnalytics/query.js';
 
 /**
- * /cms — the writers' and editors' desk.
+ * /desk — the writers' and editors' desk.
  *
  * Course-only creators have no entries to show here, so they still go
  * straight to their section. Everyone else gets a dashboard of their own
@@ -30,34 +30,34 @@ export const load = async ({ locals, parent }) => {
 	// Editors and admins see every writer's work; only admins approve edits.
 	const seeAll = canEditAllEntries(locals.user);
 	const admin = canPublish(locals.user);
-	const thumb = alias(cmsMedia, 'thumb');
-	const cover = alias(cmsMedia, 'cover');
+	const thumb = alias(deskMedia, 'thumb');
+	const cover = alias(deskMedia, 'cover');
 
 	const rows = await db
 		.select({
-			id: cmsEntry.id,
-			slug: cmsEntry.slug,
-			title: cmsEntry.title,
-			status: cmsEntry.status,
-			accessMode: cmsEntry.accessMode,
-			updatedAt: cmsEntry.updatedAt,
-			publishedAt: cmsEntry.publishedAt,
-			scheduledFor: cmsEntry.scheduledFor,
-			draftUpdatedAt: cmsEntry.draftUpdatedAt,
-			readTime: cmsEntry.readTime,
-			videoProvider: cmsEntry.videoProvider,
-			excerpt: cmsEntry.excerpt,
+			id: deskEntry.id,
+			slug: deskEntry.slug,
+			title: deskEntry.title,
+			status: deskEntry.status,
+			accessMode: deskEntry.accessMode,
+			updatedAt: deskEntry.updatedAt,
+			publishedAt: deskEntry.publishedAt,
+			scheduledFor: deskEntry.scheduledFor,
+			draftUpdatedAt: deskEntry.draftUpdatedAt,
+			readTime: deskEntry.readTime,
+			videoProvider: deskEntry.videoProvider,
+			excerpt: deskEntry.excerpt,
 			thumbUrl: thumb.url,
 			coverUrl: cover.url,
 			authorFirstName: userTable.firstName,
 			authorLastName: userTable.lastName
 		})
-		.from(cmsEntry)
-		.leftJoin(userTable, eq(cmsEntry.authorId, userTable.id))
-		.leftJoin(thumb, eq(cmsEntry.thumbnailImageId, thumb.id))
-		.leftJoin(cover, eq(cmsEntry.coverImageId, cover.id))
-		.where(seeAll ? undefined : eq(cmsEntry.authorId, locals.user.id))
-		.orderBy(desc(cmsEntry.updatedAt))
+		.from(deskEntry)
+		.leftJoin(userTable, eq(deskEntry.authorId, userTable.id))
+		.leftJoin(thumb, eq(deskEntry.thumbnailImageId, thumb.id))
+		.leftJoin(cover, eq(deskEntry.coverImageId, cover.id))
+		.where(seeAll ? undefined : eq(deskEntry.authorId, locals.user.id))
+		.orderBy(desc(deskEntry.updatedAt))
 		.limit(500);
 
 	const now = Date.now();

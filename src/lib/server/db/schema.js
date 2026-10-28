@@ -641,21 +641,21 @@ export const partnerReferral = pgTable('partner_referral', {
 });
 
 // ============================================================================
-// CUSTOM CMS — Phase 1 foundation
+// CUSTOM Desk — Phase 1 foundation
 // ============================================================================
-// Powers the /cms authoring surface (writers + creators + admins) and the
+// Powers the /desk authoring surface (writers + creators + admins) and the
 // public /library reader surface. Entries can be article-only, video-only,
 // or article+video; the video slot supports Mux upload OR pasted YouTube
 // URL (chosen per entry). Courses group multi-lesson programs; each lesson
 // reuses the same body + video model as entries.
 //
-// See docs/cms-plan.md (or /Users/justinliwag/.claude/plans/shimmering-
-// herding-map.md) for the full data model and phased rollout.
+// The tables keep their original cms_ names in the database (renaming them
+// needs a coordinated migration); only the code calls them desk*.
 // ============================================================================
 
 // Uploaded media — images. Videos go through Mux directly, not this table.
 // One row per uploaded file; the file itself lives in Supabase Storage.
-export const cmsMedia = pgTable('cms_media', {
+export const deskMedia = pgTable('cms_media', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	uploadedBy: text('uploaded_by').references(() => user.id),
 	storagePath: text('storage_path').notNull(), // path inside the Supabase Storage bucket
@@ -667,16 +667,16 @@ export const cmsMedia = pgTable('cms_media', {
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
-// CMS author profile — how a writer appears on their pieces (byline name,
+// Desk author profile — how a writer appears on their pieces (byline name,
 // title, bio, photo, links). See supabase/migrations/020_cms_author_profile.sql.
-export const cmsAuthorProfile = pgTable('cms_author_profile', {
+export const deskAuthorProfile = pgTable('cms_author_profile', {
 	userId: text('user_id')
 		.primaryKey()
 		.references(() => user.id, { onDelete: 'cascade' }),
 	displayName: text('display_name'),
 	title: text('title'),
 	bio: text('bio'),
-	avatarMediaId: uuid('avatar_media_id').references(() => cmsMedia.id, { onDelete: 'set null' }),
+	avatarMediaId: uuid('avatar_media_id').references(() => deskMedia.id, { onDelete: 'set null' }),
 	links: jsonb('links')
 		.notNull()
 		.default(sql`'[]'::jsonb`),
@@ -690,7 +690,7 @@ export const caView = pgTable('ca_view', {
 	id: uuid('id').primaryKey(),
 	entryId: uuid('entry_id')
 		.notNull()
-		.references(() => cmsEntry.id, { onDelete: 'cascade' }),
+		.references(() => deskEntry.id, { onDelete: 'cascade' }),
 	visitorId: uuid('visitor_id').notNull(),
 	sessionId: uuid('session_id').notNull(),
 	userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
@@ -743,7 +743,7 @@ export const caEvent = pgTable('ca_event', {
 		.references(() => caView.id, { onDelete: 'cascade' }),
 	entryId: uuid('entry_id')
 		.notNull()
-		.references(() => cmsEntry.id, { onDelete: 'cascade' }),
+		.references(() => deskEntry.id, { onDelete: 'cascade' }),
 	type: text('type').notNull(),
 	label: text('label'),
 	depth: smallint('depth'),
@@ -759,7 +759,7 @@ export const caConversion = pgTable('ca_conversion', {
 });
 
 // Tags shared across entries. Slug uniqueness is enforced at the DB layer.
-export const cmsTag = pgTable('cms_tag', {
+export const deskTag = pgTable('cms_tag', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	slug: text('slug').notNull().unique(),
 	name: text('name').notNull(),
@@ -774,7 +774,7 @@ export const cmsTag = pgTable('cms_tag', {
 // they don't affect the live version until an admin approves. On draft
 // entries (status='draft'), the primary columns hold the current draft
 // state and the `draft_*` columns stay null.
-export const cmsEntry = pgTable(
+export const deskEntry = pgTable(
 	'cms_entry',
 	{
 		id: uuid('id').defaultRandom().primaryKey(),
@@ -783,8 +783,8 @@ export const cmsEntry = pgTable(
 		excerpt: text('excerpt'),
 
 		// Images. Thumbnail defaults to cover at render time when null.
-		coverImageId: uuid('cover_image_id').references(() => cmsMedia.id),
-		thumbnailImageId: uuid('thumbnail_image_id').references(() => cmsMedia.id),
+		coverImageId: uuid('cover_image_id').references(() => deskMedia.id),
+		thumbnailImageId: uuid('thumbnail_image_id').references(() => deskMedia.id),
 
 		// Article body — Lexical JSON tree. Null for video-only entries.
 		body: jsonb('body'),
@@ -820,13 +820,13 @@ export const cmsEntry = pgTable(
 		draftTitle: text('draft_title'),
 		draftExcerpt: text('draft_excerpt'),
 		draftBody: jsonb('draft_body'),
-		draftCoverImageId: uuid('draft_cover_image_id').references(() => cmsMedia.id),
-		draftThumbnailImageId: uuid('draft_thumbnail_image_id').references(() => cmsMedia.id),
+		draftCoverImageId: uuid('draft_cover_image_id').references(() => deskMedia.id),
+		draftThumbnailImageId: uuid('draft_thumbnail_image_id').references(() => deskMedia.id),
 		draftReadTime: integer('draft_read_time'),
 		draftUpdatedAt: timestamp('draft_updated_at', { withTimezone: true, mode: 'date' }),
 		draftUpdatedBy: text('draft_updated_by').references(() => user.id),
 
-		// Provenance — 'custom' for CMS-native, 'payload' for migrated content
+		// Provenance — 'custom' for Desk-native, 'payload' for migrated content
 		source: text('source').notNull().default('custom'),
 
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
@@ -841,21 +841,21 @@ export const cmsEntry = pgTable(
 );
 
 // Many-to-many join between entries and tags. Composite primary key.
-export const cmsEntryTag = pgTable(
+export const deskEntryTag = pgTable(
 	'cms_entry_tag',
 	{
 		entryId: uuid('entry_id')
 			.notNull()
-			.references(() => cmsEntry.id, { onDelete: 'cascade' }),
+			.references(() => deskEntry.id, { onDelete: 'cascade' }),
 		tagId: uuid('tag_id')
 			.notNull()
-			.references(() => cmsTag.id, { onDelete: 'cascade' })
+			.references(() => deskTag.id, { onDelete: 'cascade' })
 	},
 	(t) => [primaryKey({ columns: [t.entryId, t.tagId] })]
 );
 
 // Course — the paid container. Groups one or more modules of lessons.
-export const cmsCourse = pgTable(
+export const deskCourse = pgTable(
 	'cms_course',
 	{
 		id: uuid('id').defaultRandom().primaryKey(),
@@ -863,8 +863,8 @@ export const cmsCourse = pgTable(
 		title: text('title').notNull(),
 		description: text('description'),
 
-		coverImageId: uuid('cover_image_id').references(() => cmsMedia.id),
-		thumbnailImageId: uuid('thumbnail_image_id').references(() => cmsMedia.id),
+		coverImageId: uuid('cover_image_id').references(() => deskMedia.id),
+		thumbnailImageId: uuid('thumbnail_image_id').references(() => deskMedia.id),
 
 		// Trailer video — same picker shape as entries. Nullable.
 		trailerVideoProvider: text('trailer_video_provider'),
@@ -892,8 +892,8 @@ export const cmsCourse = pgTable(
 		// Draft buffer for edits to a published course
 		draftTitle: text('draft_title'),
 		draftDescription: text('draft_description'),
-		draftCoverImageId: uuid('draft_cover_image_id').references(() => cmsMedia.id),
-		draftThumbnailImageId: uuid('draft_thumbnail_image_id').references(() => cmsMedia.id),
+		draftCoverImageId: uuid('draft_cover_image_id').references(() => deskMedia.id),
+		draftThumbnailImageId: uuid('draft_thumbnail_image_id').references(() => deskMedia.id),
 		draftUpdatedAt: timestamp('draft_updated_at', { withTimezone: true, mode: 'date' }),
 		draftUpdatedBy: text('draft_updated_by').references(() => user.id),
 
@@ -907,13 +907,13 @@ export const cmsCourse = pgTable(
 );
 
 // Course module — reorderable chapter inside a course.
-export const cmsModule = pgTable(
+export const deskModule = pgTable(
 	'cms_module',
 	{
 		id: uuid('id').defaultRandom().primaryKey(),
 		courseId: uuid('course_id')
 			.notNull()
-			.references(() => cmsCourse.id, { onDelete: 'cascade' }),
+			.references(() => deskCourse.id, { onDelete: 'cascade' }),
 		title: text('title').notNull(),
 		position: integer('position').notNull().default(0),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
@@ -922,20 +922,20 @@ export const cmsModule = pgTable(
 	(t) => [index('cms_module_course_position_idx').on(t.courseId, t.position)]
 );
 
-// Lesson — leaf inside a module. Body + video mirror `cmsEntry` shape.
+// Lesson — leaf inside a module. Body + video mirror `deskEntry` shape.
 // `courseId` is denormalized from the parent module so we can enforce
 // slug uniqueness within a course at the DB layer (unique(course_id, slug)).
 // Server-side handlers must keep courseId in sync with the parent module.
-export const cmsLesson = pgTable(
+export const deskLesson = pgTable(
 	'cms_lesson',
 	{
 		id: uuid('id').defaultRandom().primaryKey(),
 		moduleId: uuid('module_id')
 			.notNull()
-			.references(() => cmsModule.id, { onDelete: 'cascade' }),
+			.references(() => deskModule.id, { onDelete: 'cascade' }),
 		courseId: uuid('course_id')
 			.notNull()
-			.references(() => cmsCourse.id, { onDelete: 'cascade' }),
+			.references(() => deskCourse.id, { onDelete: 'cascade' }),
 		slug: text('slug').notNull(),
 		title: text('title').notNull(),
 		position: integer('position').notNull().default(0),
@@ -944,7 +944,7 @@ export const cmsLesson = pgTable(
 		body: jsonb('body'),
 		readTime: integer('read_time'),
 
-		// Video slot — same shape as cmsEntry.
+		// Video slot — same shape as deskEntry.
 		videoProvider: text('video_provider'),
 		muxUploadId: text('mux_upload_id'),
 		muxAssetId: text('mux_asset_id'),
@@ -968,7 +968,7 @@ export const cmsLesson = pgTable(
 );
 
 // Per-user, per-lesson progress. Compound unique (user_id, lesson_id).
-export const cmsLessonProgress = pgTable(
+export const deskLessonProgress = pgTable(
 	'cms_lesson_progress',
 	{
 		id: uuid('id').defaultRandom().primaryKey(),
@@ -977,7 +977,7 @@ export const cmsLessonProgress = pgTable(
 			.references(() => user.id, { onDelete: 'cascade' }),
 		lessonId: uuid('lesson_id')
 			.notNull()
-			.references(() => cmsLesson.id, { onDelete: 'cascade' }),
+			.references(() => deskLesson.id, { onDelete: 'cascade' }),
 		completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
 		lastPositionSeconds: integer('last_position_seconds').notNull().default(0),
 		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
@@ -991,7 +991,7 @@ export const cmsLessonProgress = pgTable(
 // Revision history — shared across entries and lessons. One row per save.
 // Not queried on the hot path; used for author-visible "history" and for
 // recovery. Bodies stored raw (Lexical JSON).
-export const cmsRevision = pgTable(
+export const deskRevision = pgTable(
 	'cms_revision',
 	{
 		id: uuid('id').defaultRandom().primaryKey(),

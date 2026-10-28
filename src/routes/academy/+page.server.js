@@ -2,7 +2,7 @@ import {
 	listPublishedCourses,
 	listPreviewLessons,
 	loadCourseProgress
-} from '$lib/server/cms/courses.js';
+} from '$lib/server/desk/courses.js';
 import { userHasPremiumAccess } from '$lib/server/articles/access.js';
 
 export async function load({ locals, setHeaders }) {

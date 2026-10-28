@@ -1,6 +1,6 @@
 # Arcane Games & Events Website
 
-A full-stack web application for Arcane Games & Events (AGE), a Flesh and Blood TCG tournament organizer. Built with SvelteKit and Payload CMS.
+A full-stack web application for Arcane Games & Events (AGE), a Flesh and Blood TCG tournament organizer. Built with SvelteKit. Articles, videos and courses are written and published in the Desk, the site's own editor at `/desk`.
 
 ## Tech Stack
 
@@ -13,12 +13,12 @@ A full-stack web application for Arcane Games & Events (AGE), a Flesh and Blood 
 - **Authentication:** Lucia Auth
 - **Payments:** Authorize.net
 
-### CMS (Payload)
+### Desk (built-in editor)
 
-- **Framework:** Payload CMS 3 with Next.js 15
-- **Database:** PostgreSQL (shared with frontend)
-- **Storage:** S3-compatible storage for media
-- **Rich Text:** Lexical editor with custom card linking
+- **Editor:** Lexical, with card links, decklists, stats tables, images and inline video
+- **Database:** the same PostgreSQL database (tables keep their original `cms_` names)
+- **Media:** Supabase Storage (bucket `cms-media`); video through Mux or YouTube
+- **Analytics:** reader analytics collected in the browser and shown on the Desk
 
 ## Project Structure
 
@@ -27,22 +27,20 @@ website/
 ├── src/                    # SvelteKit frontend
 │   ├── lib/
 │   │   ├── components/     # Reusable Svelte components
+│   │   ├── desk/           # Desk editor, widgets and article renderer
 │   │   ├── server/         # Server-side modules
 │   │   │   ├── cards/      # Card image lookup service
 │   │   │   ├── db/         # Database schema and migrations
-│   │   │   ├── payload/    # Payload CMS client
+│   │   │   ├── desk/       # Desk entries, courses, media and lists
 │   │   │   └── redis/      # Redis caching utilities
 │   │   └── utils/          # Shared utilities
 │   └── routes/             # SvelteKit routes
 │       ├── admin/          # Admin dashboard
-│       ├── articles/       # Article pages
+│       ├── desk/           # The Desk: writing, publishing, analytics
+│       ├── library/        # Articles and videos
 │       ├── events/         # Event pages
 │       ├── player/         # Player profiles
 │       └── api/            # API endpoints
-├── cms/                    # Payload CMS
-│   └── src/
-│       ├── collections/    # CMS content types
-│       └── blocks/         # Rich text blocks
 ├── drizzle/                # Database migrations
 ├── static/                 # Static assets
 └── scripts/                # Utility scripts
@@ -72,9 +70,9 @@ cp .env.example .env
 # Database (required)
 DATABASE_URL=postgresql://user:password@host:port/database
 
-# Payload CMS (required)
-PAYLOAD_URL=http://localhost:3000
-PAYLOAD_SECRET=your_payload_secret_key
+# Desk media uploads (Supabase Storage)
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 # Redis caching (optional - falls back to direct DB queries)
 UPSTASH_REDIS_REST_URL=your_upstash_url
@@ -93,19 +91,13 @@ EMAIL_FROM=Arcane Games <noreply@example.com>
 
 ### Installation
 
-1. Install frontend dependencies:
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-2. Install CMS dependencies:
-
-```bash
-cd cms && npm install
-```
-
-3. Push the database schema:
+2. Push the database schema:
 
 ```bash
 npm run db:push
@@ -113,14 +105,8 @@ npm run db:push
 
 ### Development
 
-Run both the SvelteKit frontend and Payload CMS:
-
 ```bash
-# Terminal 1 - SvelteKit (port 5173)
-npm run dev
-
-# Terminal 2 - Payload CMS (port 3000)
-cd cms && npm run dev
+npm run dev   # http://localhost:5173 — the Desk is at /desk
 ```
 
 ## Database
@@ -145,7 +131,7 @@ npm run db:studio
 
 ### Articles & Premium Content
 
-- Rich text articles with Lexical editor
+- Articles and videos written, scheduled and published in the Desk
 - Premium content with access controls
 - Inline FAB card linking with hover previews
 
@@ -181,8 +167,6 @@ npm run preview
 ## Deployment
 
 The application is configured for Vercel deployment. See `vercel.json` for configuration.
-
-For the CMS, a Dockerfile is provided in the `cms/` directory for container deployments.
 
 ## Code Quality
 

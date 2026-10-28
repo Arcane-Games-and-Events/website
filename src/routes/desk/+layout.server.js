@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import {
-	canAccessCms,
+	canAccessDesk,
 	canEditEntries,
 	canEditCourses,
 	canViewSiteAnalytics,
@@ -8,11 +8,11 @@ import {
 } from '$lib/server/auth/roles.js';
 
 /**
- * /cms layout guard.
+ * /desk layout guard.
  *
- * Requires a signed-in user with at least one CMS capability (writer, creator,
+ * Requires a signed-in user with at least one Desk capability (writer, creator,
  * or admin). Everyone else is bounced — not logged in → `/login`, logged in but
- * without CMS access → `/` (home).
+ * without Desk access → `/` (home).
  *
  * Child pages consume `canEditEntries` / `canEditCourses` / `isAdmin` to
  * gate section access and admin-only controls.
@@ -21,7 +21,7 @@ export const load = async ({ locals, url }) => {
 	if (!locals.user) {
 		throw redirect(302, `/login?redirect=${encodeURIComponent(url.pathname)}`);
 	}
-	if (!canAccessCms(locals.user)) {
+	if (!canAccessDesk(locals.user)) {
 		throw redirect(302, '/');
 	}
 	return {

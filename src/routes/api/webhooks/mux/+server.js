@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { db } from '$lib/server/db/index.js';
-import { vod, cmsEntry, cmsLesson } from '$lib/server/db/schema.js';
+import { vod, deskEntry, deskLesson } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import mux from '$lib/server/mux.js';
 
@@ -10,7 +10,7 @@ import mux from '$lib/server/mux.js';
  * asset_id matches. Tries all three video-owning tables in order (VOD,
  * cms_entry, cms_lesson) and updates the first match.
  *
- * Column names differ per table (VOD has status/duration/aspectRatio, CMS
+ * Column names differ per table (VOD has status/duration/aspectRatio, Desk
  * uses videoStatus/videoDuration/videoAspectRatio), so each branch writes
  * the correct set. Matching by ID rather than by passthrough is more
  * robust — Mux's event data structure places passthrough at different
@@ -39,7 +39,7 @@ export async function POST({ request }) {
 			if (!uploadId) return json({ received: true });
 			await updateByUploadId(uploadId, {
 				vod: { muxAssetId: assetId, status: 'preparing' },
-				cms: { muxAssetId: assetId, videoStatus: 'preparing' }
+				desk: { muxAssetId: assetId, videoStatus: 'preparing' }
 			});
 		} else if (type === 'video.asset.ready') {
 			const assetId = data.id;
@@ -54,7 +54,7 @@ export async function POST({ request }) {
 					aspectRatio,
 					status: 'ready'
 				},
-				cms: {
+				desk: {
 					muxPlaybackId: playbackId,
 					videoDuration: duration ? Math.round(duration) : null,
 					videoAspectRatio: aspectRatio,
@@ -66,7 +66,7 @@ export async function POST({ request }) {
 			if (!assetId) return json({ received: true });
 			await updateByAssetId(assetId, {
 				vod: { status: 'errored' },
-				cms: { videoStatus: 'errored' }
+				desk: { videoStatus: 'errored' }
 			});
 		}
 	} catch (err) {
@@ -80,9 +80,9 @@ export async function POST({ request }) {
 /**
  * Update the first row that matches `uploadId` in the vod / cms_entry /
  * cms_lesson tables. Column sets differ per table, so the caller passes
- * both the VOD-shape and CMS-shape update objects.
+ * both the VOD-shape and Desk-shape update objects.
  */
-async function updateByUploadId(uploadId, { vod: vodSet, cms: cmsSet }) {
+async function updateByUploadId(uploadId, { vod: vodSet, desk: deskSet }) {
 	const stamp = { updatedAt: new Date() };
 	const vodRes = await db
 		.update(vod)
@@ -91,22 +91,22 @@ async function updateByUploadId(uploadId, { vod: vodSet, cms: cmsSet }) {
 		.returning({ id: vod.id });
 	if (vodRes.length) return;
 	const entryRes = await db
-		.update(cmsEntry)
-		.set({ ...cmsSet, ...stamp })
-		.where(eq(cmsEntry.muxUploadId, uploadId))
-		.returning({ id: cmsEntry.id });
+		.update(deskEntry)
+		.set({ ...deskSet, ...stamp })
+		.where(eq(deskEntry.muxUploadId, uploadId))
+		.returning({ id: deskEntry.id });
 	if (entryRes.length) return;
 	await db
-		.update(cmsLesson)
-		.set({ ...cmsSet, ...stamp })
-		.where(eq(cmsLesson.muxUploadId, uploadId));
+		.update(deskLesson)
+		.set({ ...deskSet, ...stamp })
+		.where(eq(deskLesson.muxUploadId, uploadId));
 }
 
 /**
  * Update the first row that matches `assetId` in the vod / cms_entry /
  * cms_lesson tables. Same shape as updateByUploadId but keyed on asset ID.
  */
-async function updateByAssetId(assetId, { vod: vodSet, cms: cmsSet }) {
+async function updateByAssetId(assetId, { vod: vodSet, desk: deskSet }) {
 	const stamp = { updatedAt: new Date() };
 	const vodRes = await db
 		.update(vod)
@@ -115,13 +115,13 @@ async function updateByAssetId(assetId, { vod: vodSet, cms: cmsSet }) {
 		.returning({ id: vod.id });
 	if (vodRes.length) return;
 	const entryRes = await db
-		.update(cmsEntry)
-		.set({ ...cmsSet, ...stamp })
-		.where(eq(cmsEntry.muxAssetId, assetId))
-		.returning({ id: cmsEntry.id });
+		.update(deskEntry)
+		.set({ ...deskSet, ...stamp })
+		.where(eq(deskEntry.muxAssetId, assetId))
+		.returning({ id: deskEntry.id });
 	if (entryRes.length) return;
 	await db
-		.update(cmsLesson)
-		.set({ ...cmsSet, ...stamp })
-		.where(eq(cmsLesson.muxAssetId, assetId));
+		.update(deskLesson)
+		.set({ ...deskSet, ...stamp })
+		.where(eq(deskLesson.muxAssetId, assetId));
 }
