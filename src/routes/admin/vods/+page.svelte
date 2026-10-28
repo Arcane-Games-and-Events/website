@@ -1,6 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
+	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
 
 	let { data, form } = $props();
 
@@ -154,26 +155,10 @@
 </header>
 
 {#if successMessage}
-	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[12px] md:px-10 lg:px-14">
-		<div class="border-[1.5px] border-ink bg-prem p-4 text-white">
-			<span
-				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
-				style="color: #d6eedf;">Success</span
-			>
-			<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{successMessage}</p>
-		</div>
-	</section>
+	<AdminNotice tone="success" message={successMessage} />
 {/if}
 {#if errorMessage}
-	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[12px] md:px-10 lg:px-14">
-		<div class="border-[1.5px] border-ink bg-warm p-4 text-white">
-			<span
-				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
-				style="color: rgba(255,255,255,0.75);">Error</span
-			>
-			<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{errorMessage}</p>
-		</div>
-	</section>
+	<AdminNotice tone="error" message={errorMessage} />
 {/if}
 
 <!-- ============ FORM ============ -->

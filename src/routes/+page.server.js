@@ -212,7 +212,7 @@ async function fetchRecentVods() {
 	}
 }
 
-export async function load({ setHeaders, url, locals }) {
+export async function load({ setHeaders, url }) {
 	const standingsSeason = url.searchParams.get('standings_season') || 'all';
 	const standingsCircuit = url.searchParams.get('standings_circuit') || 'all';
 	const isDefaultFilters = standingsSeason === 'all' && standingsCircuit === 'all';

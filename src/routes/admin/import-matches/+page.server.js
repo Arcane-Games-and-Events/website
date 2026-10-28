@@ -94,7 +94,7 @@ export async function load({ locals }) {
 
 			// Build derived events
 			const derivedEvents = [];
-			for (const [key, dataEntry] of circuitSeasonData) {
+			for (const [, dataEntry] of circuitSeasonData) {
 				for (const [month, playerCount] of dataEntry.monthPlayerCounts) {
 					const matchKey = `${dataEntry.season}|${dataEntry.circuit}|${month}`;
 					derivedEvents.push({
@@ -209,7 +209,7 @@ export async function load({ locals }) {
 	);
 
 	const derivedEvents = [];
-	for (const [key, data] of circuitSeasonData) {
+	for (const [, data] of circuitSeasonData) {
 		for (const [month, playerCount] of data.monthPlayerCounts) {
 			const matchKey = `${data.season}|${data.circuit}|${month}`;
 			derivedEvents.push({

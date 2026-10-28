@@ -1,7 +1,7 @@
 import { db } from '$lib/server/db/index.js';
 import { event, match, decklist, standing, lssEvent, ticket } from '$lib/server/db/schema.js';
 import { calculateFinalStandings } from '$lib/server/tournament-processor.js';
-import { asc, desc, eq, and, sql, gt, gte } from 'drizzle-orm';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
 import {
 	calculateAgeRatingTotal,
@@ -390,7 +390,7 @@ export async function load({ url, setHeaders }) {
 					}
 
 					// Sort each circuit/season group once (instead of sorting repeatedly in loop)
-					for (const [key, group] of standingsByCircuitSeason) {
+					for (const [, group] of standingsByCircuitSeason) {
 						group.sort(compareStandings);
 					}
 

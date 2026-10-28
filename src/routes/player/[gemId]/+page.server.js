@@ -81,7 +81,7 @@ async function buildPlayerProfile(gemId) {
 	}
 
 	// Sort each circuit/season group and cache the sorted order
-	for (const [key, group] of standingsByCircuitSeason) {
+	for (const [, group] of standingsByCircuitSeason) {
 		group.sort(compareStandings);
 	}
 

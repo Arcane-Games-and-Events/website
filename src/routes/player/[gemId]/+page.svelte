@@ -4,14 +4,12 @@
 	import { calculateAgeRating } from '$lib/age-rating.js';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import RatingBadge from '$lib/components/age/RatingBadge.svelte';
-	import { CIRCUITS } from '$lib/data/circuits.js';
+	import { CIRCUITS, circuitVar } from '$lib/data/circuits.js';
 	import { calculateDerivedStats } from '$lib/players/standings.js';
 	import { heroImageUrl } from '$lib/heroImage.js';
 	import { MONTH_NAMES } from '$lib/data/months.js';
 
 	// ============ helpers for editorial template ============
-	const CC_SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
-	const ccVar = (name) => `var(--ed-cc-${CC_SLUG[name] ?? 'la'})`;
 	const abbr = (name) => CIRCUITS[name]?.abbreviation ?? name;
 	function tierHex(label) {
 		return (
@@ -504,7 +502,7 @@
 					{#each circuitsPlayed as c (c)}
 						<span
 							class="px-1.5 py-[3px] text-[8px] font-extrabold tracking-[0.16em] text-white uppercase"
-							style="background: {ccVar(c)};">{c}</span
+							style="background: {circuitVar(c)};">{c}</span
 						>
 					{/each}
 				</div>
@@ -693,7 +691,7 @@
 									<span class="font-extrabold">{s.season}</span>
 									<span
 										class="text-[8px] font-extrabold tracking-[0.1em] uppercase"
-										style="color: {ccVar(s.circuit)};">{abbr(s.circuit)}</span
+										style="color: {circuitVar(s.circuit)};">{abbr(s.circuit)}</span
 									>
 									<span class="text-center text-soft">{calculateDerivedStats(s).eventsPlayed}</span>
 									<span class="text-center"
@@ -785,7 +783,7 @@
 												>
 												<span
 													class="px-1.5 py-[2px] text-[8px] font-extrabold tracking-[0.16em] text-white uppercase"
-													style="background: {ccVar(s.circuit)};">{s.circuit}</span
+													style="background: {circuitVar(s.circuit)};">{s.circuit}</span
 												>
 											</span>
 											<span class="flex items-center gap-2">
@@ -830,7 +828,7 @@
 										<span class="flex items-center gap-2 text-[13px] font-bold">
 											<span
 												class="px-1.5 py-[2px] text-[8px] font-extrabold tracking-[0.16em] text-white uppercase"
-												style="background: {ccVar(s.circuit)};">{abbr(s.circuit)}</span
+												style="background: {circuitVar(s.circuit)};">{abbr(s.circuit)}</span
 											>
 											{s.circuit}
 										</span>
@@ -1695,7 +1693,8 @@
 											{#if event?.circuit}
 												<span
 													class="px-1.5 py-[2px] text-[8px] font-extrabold tracking-[0.16em] text-white uppercase"
-													style="background: {ccVar(event.circuit)};">{abbr(event.circuit)}</span
+													style="background: {circuitVar(event.circuit)};"
+													>{abbr(event.circuit)}</span
 												>{event.circuit}
 											{:else}
 												<span class="text-fade">—</span>

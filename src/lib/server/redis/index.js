@@ -18,7 +18,6 @@ export const CACHE_KEYS = {
 	ARTICLES: 'articles',
 	PLAYER: 'player',
 	DECKLISTS: 'decklists',
-	PODCASTS: 'podcasts',
 	VODS: 'vods',
 	COURSES: 'courses',
 	LSS: 'lss',

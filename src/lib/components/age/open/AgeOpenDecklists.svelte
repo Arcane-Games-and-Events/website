@@ -13,18 +13,16 @@
 	 * joined to their event by the loader).
 	 */
 	import { reveal } from '$lib/actions/reveal.js';
-	import { CIRCUITS } from '$lib/data/circuits.js';
+	import { CIRCUITS, circuitVar } from '$lib/data/circuits.js';
 	import { heroImageUrl } from '$lib/heroImage.js';
 	import FormatTag from '../FormatTag.svelte';
 	import AgeOpenSubHead from './AgeOpenSubHead.svelte';
+	import CircuitFilter from './CircuitFilter.svelte';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
 
-	const SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
-	const ccVar = (name) => `var(--ed-cc-${SLUG[name] ?? 'la'})`;
 	const abbr = (name) => CIRCUITS[name]?.abbreviation ?? name;
-	const CIRCUIT_NAMES = ['Los Angeles', 'St. Louis', 'New England'];
 	const LABEL = 'text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase';
 	const ordinal = (n) => (n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : n ? `${n}th` : '—');
 	const fmt = (d, opts) => new Date(d).toLocaleDateString('en-US', { timeZone: 'UTC', ...opts });
@@ -206,33 +204,7 @@
 			</div>
 
 			<!-- circuit -->
-			<div class="min-w-0 lg:shrink-0">
-				<p class={LABEL} id="decklists-circuit-label">Circuit</p>
-				<div
-					class="mt-2 grid grid-cols-2 gap-px border border-line2 bg-line2 md:flex [&>*:last-child:nth-child(odd)]:col-span-2 md:[&>*:last-child:nth-child(odd)]:col-span-1"
-					role="group"
-					aria-labelledby="decklists-circuit-label"
-				>
-					{#each [['all', 'All'], ...CIRCUIT_NAMES.map((c) => [c, c])] as [v, l] (v)}
-						<button
-							type="button"
-							onclick={() => (circuit = v)}
-							aria-pressed={circuit === v}
-							class="flex min-h-[44px] items-center gap-2.5 px-3.5 text-left text-[10px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase transition-colors md:px-3 {circuit ===
-							v
-								? 'bg-ink text-paper-bg'
-								: 'bg-paper-bg text-soft hover:bg-paper hover:text-ink'}"
-						>
-							<span
-								class="h-2.5 w-2.5 shrink-0"
-								style="background: {v === 'all' ? 'var(--ed-warm)' : ccVar(v)};"
-								aria-hidden="true"
-							></span>
-							{l}
-						</button>
-					{/each}
-				</div>
-			</div>
+			<CircuitFilter bind:value={circuit} id="decklists" labelClass={LABEL} />
 
 			<!-- hero + finish -->
 			<div class="grid min-w-0 grid-cols-2 gap-4 lg:flex lg:shrink-0 lg:gap-6">
@@ -375,7 +347,7 @@
 								>
 									{#if d.circuit}<span
 											class="px-1.5 py-[2px] text-[8px] text-white"
-											style="background: {ccVar(d.circuit)};">{abbr(d.circuit)}</span
+											style="background: {circuitVar(d.circuit)};">{abbr(d.circuit)}</span
 										>{/if}
 									{d.month || ''}{d.eventDate ? ` ${fmt(d.eventDate, { year: 'numeric' })}` : ''}
 								</span>
@@ -427,7 +399,7 @@
 							{#if g.circuit}
 								<span
 									class="shrink-0 px-1.5 py-[3px] text-[8px] font-extrabold tracking-[0.16em] text-white uppercase"
-									style="background: {ccVar(g.circuit)};">{abbr(g.circuit)}</span
+									style="background: {circuitVar(g.circuit)};">{abbr(g.circuit)}</span
 								>
 							{/if}
 							<h2 class="ao-cond truncate text-[26px] leading-none font-black uppercase">
@@ -487,7 +459,7 @@
 								>
 									{#if d.circuit}<span
 											class="shrink-0 px-1.5 py-[2px] text-[8px] font-extrabold tracking-[0.16em] text-white uppercase"
-											style="background: {ccVar(d.circuit)};">{abbr(d.circuit)}</span
+											style="background: {circuitVar(d.circuit)};">{abbr(d.circuit)}</span
 										>{/if}
 									<span class="truncate"
 										>{d.month || ''}{d.eventDate

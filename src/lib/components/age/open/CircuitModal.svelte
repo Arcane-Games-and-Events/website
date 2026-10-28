@@ -11,12 +11,10 @@
 	import FormatTag from '../FormatTag.svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
+	import { circuitVar } from '$lib/data/circuits.js';
 
 	/** @type {{ circuit: any, dates?: any[], top?: any[], count?: number, onclose: () => void }} */
 	let { circuit, dates = [], top = [], count, onclose } = $props();
-
-	const SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
-	const ccVar = (name) => `var(--ed-cc-${SLUG[name] ?? 'la'})`;
 
 	const STORY = {
 		'Los Angeles': {
@@ -99,7 +97,7 @@
 			/>
 			<span
 				class="absolute inset-0 mix-blend-multiply"
-				style="background: {ccVar(circuit.name)}; opacity: 0.5;"
+				style="background: {circuitVar(circuit.name)}; opacity: 0.5;"
 				aria-hidden="true"
 			></span>
 			<span
@@ -109,7 +107,7 @@
 			></span>
 			<span
 				class="absolute inset-x-0 top-0 h-[5px]"
-				style="background: {ccVar(circuit.name)};"
+				style="background: {circuitVar(circuit.name)};"
 				aria-hidden="true"
 			></span>
 			<span
@@ -249,7 +247,8 @@
 				<p
 					class="flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
 				>
-					<span class="text-[10px]" style="color: {ccVar(circuit.name)};" aria-hidden="true">◆</span
+					<span class="text-[10px]" style="color: {circuitVar(circuit.name)};" aria-hidden="true"
+						>◆</span
 					>
 					Upcoming
 				</p>
@@ -263,13 +262,13 @@
 								>
 									<span
 										class="flex flex-col items-center py-1"
-										style="background: color-mix(in srgb, {ccVar(
+										style="background: color-mix(in srgb, {circuitVar(
 											circuit.name
 										)} 10%, var(--ed-paper));"
 									>
 										<span
 											class="text-[8.5px] font-extrabold tracking-[0.16em]"
-											style="color: {ccVar(circuit.name)};">{e.month}</span
+											style="color: {circuitVar(circuit.name)};">{e.month}</span
 										>
 										<span class="ao-cond text-[30px] leading-[0.9] font-black tabular-nums"
 											>{e.day}</span

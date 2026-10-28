@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db/index.js';
-import { memberReferralCode, memberReferral, partner, user } from '$lib/server/db/schema.js';
+import { memberReferralCode, partner, user } from '$lib/server/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import crypto from 'crypto';
 

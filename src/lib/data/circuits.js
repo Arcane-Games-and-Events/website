@@ -190,24 +190,16 @@ export function getCircuit(circuitName) {
 	return CIRCUITS[circuitName] || DEFAULT_CIRCUIT;
 }
 
-/**
- * Get circuit colors by name
- * @param {string} circuitName - The circuit name
- * @returns {object} Colors object for the circuit
- */
-export function getCircuitColors(circuitName) {
-	const circuit = getCircuit(circuitName);
-	return circuit.colors;
-}
+const CIRCUIT_SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
 
 /**
- * Get circuit image path by name
- * @param {string} circuitName - The circuit name
- * @returns {string} Image path
+ * A circuit's accent colour as a CSS variable (`--ed-cc-la` and so on).
+ * Unknown names fall back to Los Angeles.
+ * @param {string} circuitName
+ * @returns {string}
  */
-export function getCircuitImage(circuitName) {
-	const circuit = getCircuit(circuitName);
-	return circuit.image;
+export function circuitVar(circuitName) {
+	return `var(--ed-cc-${CIRCUIT_SLUG[circuitName] ?? 'la'})`;
 }
 
 /**
@@ -216,24 +208,4 @@ export function getCircuitImage(circuitName) {
  */
 export function getCircuitNames() {
 	return Object.keys(CIRCUITS);
-}
-
-/**
- * Get all circuits as an array
- * @returns {object[]} Array of circuit configuration objects
- */
-export function getAllCircuits() {
-	return Object.values(CIRCUITS);
-}
-
-/**
- * Build a colors lookup object for all circuits
- * @returns {object} Object with circuit names as keys and their colors as values
- */
-export function buildCircuitColorsMap() {
-	const map = {};
-	for (const name of Object.keys(CIRCUITS)) {
-		map[name] = CIRCUITS[name].colors;
-	}
-	return map;
 }

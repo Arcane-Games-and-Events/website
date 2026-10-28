@@ -14,12 +14,6 @@ export function formatPrice(price) {
 	return Number.isInteger(price) ? `$${price}` : `$${price.toFixed(2)}`;
 }
 
-/** Member price after the course's premium discount. @param {number} price @param {number} pct */
-export function memberPrice(price, pct) {
-	if (!(price > 0) || !(pct > 0)) return price;
-	return Math.round(price * (1 - pct / 100) * 100) / 100;
-}
-
 /** Length band used by the catalogue filter. @param {number} mins */
 export function lengthBand(mins) {
 	if (mins < 60) return 'short';

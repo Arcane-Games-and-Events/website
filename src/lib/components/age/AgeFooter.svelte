@@ -24,7 +24,6 @@
 			h: 'Company',
 			items: [
 				{ label: 'About AGE', href: '/about' },
-				{ label: 'AGE Studios', href: '/studios' },
 				{ label: 'Advertise', href: '/advertise' },
 				{ label: 'Contact', href: '/contact' },
 				{ label: 'Newsletter', href: '/newsletter' }

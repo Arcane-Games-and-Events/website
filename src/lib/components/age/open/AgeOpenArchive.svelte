@@ -13,17 +13,15 @@
 	 */
 	import { invalidateAll } from '$app/navigation';
 	import { reveal } from '$lib/actions/reveal.js';
-	import { CIRCUITS } from '$lib/data/circuits.js';
+	import { CIRCUITS, circuitVar } from '$lib/data/circuits.js';
 	import FormatTag from '../FormatTag.svelte';
 	import AgeOpenSubHead from './AgeOpenSubHead.svelte';
+	import CircuitFilter from './CircuitFilter.svelte';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
 
-	const SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
-	const ccVar = (name) => `var(--ed-cc-${SLUG[name] ?? 'la'})`;
 	const abbr = (name) => CIRCUITS[name]?.abbreviation ?? name;
-	const CIRCUIT_NAMES = ['Los Angeles', 'St. Louis', 'New England'];
 	const LABEL = 'text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase';
 	const fmt = (d, opts) => new Date(d).toLocaleDateString('en-US', { timeZone: 'UTC', ...opts });
 	const yearOf = (e) => (e.eventDate ? String(new Date(e.eventDate).getUTCFullYear()) : '—');
@@ -166,33 +164,7 @@
 				</div>
 			</div>
 
-			<div class="min-w-0 lg:shrink-0">
-				<p class={LABEL} id="archive-circuit-label">Circuit</p>
-				<div
-					class="mt-2 grid grid-cols-2 gap-px border border-line2 bg-line2 md:flex [&>*:last-child:nth-child(odd)]:col-span-2 md:[&>*:last-child:nth-child(odd)]:col-span-1"
-					role="group"
-					aria-labelledby="archive-circuit-label"
-				>
-					{#each [['all', 'All'], ...CIRCUIT_NAMES.map((c) => [c, c])] as [v, l] (v)}
-						<button
-							type="button"
-							onclick={() => (circuit = v)}
-							aria-pressed={circuit === v}
-							class="flex min-h-[44px] items-center gap-2.5 px-3.5 text-left text-[10px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase transition-colors md:px-3 {circuit ===
-							v
-								? 'bg-ink text-paper-bg'
-								: 'bg-paper-bg text-soft hover:bg-paper hover:text-ink'}"
-						>
-							<span
-								class="h-2.5 w-2.5 shrink-0"
-								style="background: {v === 'all' ? 'var(--ed-warm)' : ccVar(v)};"
-								aria-hidden="true"
-							></span>
-							{l}
-						</button>
-					{/each}
-				</div>
-			</div>
+			<CircuitFilter bind:value={circuit} id="archive" labelClass={LABEL} />
 		</div>
 
 		<div
@@ -313,7 +285,7 @@
 							<!-- head -->
 							<div
 								class="border-t-[4px] px-5 pt-4 pb-3"
-								style="border-top-color: {e.circuit ? ccVar(e.circuit) : 'var(--ed-ink)'};"
+								style="border-top-color: {e.circuit ? circuitVar(e.circuit) : 'var(--ed-ink)'};"
 							>
 								<div class="flex items-start justify-between gap-3">
 									<div class="min-w-0">
@@ -323,7 +295,7 @@
 											{#if e.circuit}
 												<span
 													class="px-1.5 py-[2px] text-[8px] text-white"
-													style="background: {ccVar(e.circuit)};">{abbr(e.circuit)}</span
+													style="background: {circuitVar(e.circuit)};">{abbr(e.circuit)}</span
 												>
 											{/if}
 											{e.eventDate ? fmt(e.eventDate, { month: 'long', day: 'numeric' }) : ''}

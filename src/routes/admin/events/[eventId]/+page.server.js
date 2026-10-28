@@ -13,9 +13,7 @@ import {
 import { eq, and, ilike } from 'drizzle-orm';
 import {
 	processTournamentResults,
-	calculateFinalStandings,
-	parseSwissStandings,
-	parsePairings
+	calculateFinalStandings
 } from '$lib/server/tournament-processor.js';
 import { invalidateCache, invalidateByPrefix, CACHE_KEYS } from '$lib/server/redis/index.js';
 import { parseDatetimeLocal } from '$lib/server/dates.js';
@@ -253,7 +251,7 @@ export async function load({ params, locals }) {
 
 export const actions = {
 	// Refund a ticket
-	refund: async ({ params, request, locals }) => {
+	refund: async ({ request, locals }) => {
 		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
 			return fail(403, { error: 'Unauthorized' });
 		}
@@ -388,7 +386,7 @@ export const actions = {
 	},
 
 	// Toggle "Entered into Gem?" status
-	toggleGemEntry: async ({ params, request, locals }) => {
+	toggleGemEntry: async ({ request, locals }) => {
 		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
 			return fail(403, { error: 'Unauthorized' });
 		}

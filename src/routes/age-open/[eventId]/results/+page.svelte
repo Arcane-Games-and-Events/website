@@ -11,15 +11,13 @@
 	 *   matches     round selector and search over every pairing
 	 *   decklists   the event's public lists
 	 */
-	import { CIRCUITS } from '$lib/data/circuits.js';
+	import { CIRCUITS, circuitVar } from '$lib/data/circuits.js';
 	import { heroImageUrl } from '$lib/heroImage.js';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import FormatTag from '$lib/components/age/FormatTag.svelte';
 
 	let { data } = $props();
 
-	const SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
-	const ccVar = (name) => `var(--ed-cc-${SLUG[name] ?? 'la'})`;
 	const abbr = (name) => CIRCUITS[name]?.abbreviation ?? name;
 	const LABEL = 'text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase';
 	const TH = 'text-[9px] font-extrabold tracking-[0.2em] text-fade uppercase';
@@ -191,7 +189,7 @@
 					{#if event.circuit}
 						<span
 							class="px-1.5 py-[3px] text-[8px] tracking-[0.16em] text-white"
-							style="background: {ccVar(event.circuit)};">{abbr(event.circuit)}</span
+							style="background: {circuitVar(event.circuit)};">{abbr(event.circuit)}</span
 						>
 					{/if}
 					{fmtDate(event.eventDate, {

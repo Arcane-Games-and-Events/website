@@ -17,15 +17,13 @@
 	import { page } from '$app/stores';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { reveal } from '$lib/actions/reveal.js';
-	import { CIRCUITS } from '$lib/data/circuits.js';
+	import { CIRCUITS, circuitVar } from '$lib/data/circuits.js';
 	import AgeOpenSubHead from './AgeOpenSubHead.svelte';
 	import RatingBadge from '$lib/components/age/RatingBadge.svelte';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
 
-	const SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
-	const ccVar = (name) => `var(--ed-cc-${SLUG[name] ?? 'la'})`;
 	const abbr = (name) => CIRCUITS[name]?.abbreviation ?? name;
 	const TIER_HEX = {
 		yellow: '#C8922E',
@@ -333,7 +331,7 @@
 						>
 							<span
 								class="h-2.5 w-2.5 shrink-0"
-								style="background: {v === 'all' ? 'var(--ed-warm)' : ccVar(v)};"
+								style="background: {v === 'all' ? 'var(--ed-warm)' : circuitVar(v)};"
 								aria-hidden="true"
 							></span>
 							{l}
@@ -516,7 +514,7 @@
 										{#each circuitLabel(p) as c (c)}
 											<span
 												class="shrink-0 px-1.5 py-[2px] text-[7.5px] font-extrabold tracking-[0.16em] text-white uppercase"
-												style="background: {ccVar(c)};">{abbr(c)}</span
+												style="background: {circuitVar(c)};">{abbr(c)}</span
 											>
 										{/each}
 									</span>
@@ -616,7 +614,7 @@
 										{#each circuitLabel(p) as c (c)}
 											<span
 												class="shrink-0 px-1.5 py-[2px] text-[7.5px] font-extrabold tracking-[0.16em] text-white uppercase"
-												style="background: {ccVar(c)};">{abbr(c)}</span
+												style="background: {circuitVar(c)};">{abbr(c)}</span
 											>
 										{/each}
 									</span>

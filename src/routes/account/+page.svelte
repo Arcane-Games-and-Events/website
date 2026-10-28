@@ -192,9 +192,6 @@
 	}
 
 	const subscriptionType = data.user?.subscriptionType;
-	const subscriptionStartDate = data.user?.subscriptionStartDate
-		? new Date(data.user.subscriptionStartDate)
-		: null;
 	const subscriptionEndDate = data.user?.subscriptionEndDate
 		? new Date(data.user.subscriptionEndDate)
 		: null;
@@ -216,7 +213,6 @@
 	const isPremium = hasPremiumAccess(data.user);
 	const isCancelled = data.user?.subscriptionStatus === 'cancelled';
 	const isPaymentFailed = data.user?.subscriptionStatus === 'payment_failed';
-	const isExpired = data.user?.subscriptionStatus === 'expired';
 
 	function formatDate(d) {
 		if (!d) return 'N/A';

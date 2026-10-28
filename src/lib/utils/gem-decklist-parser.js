@@ -193,20 +193,6 @@ export function fromStorageFormat(cards) {
 }
 
 /**
- * Generate standardized decklist title
- * @param {Object} options
- * @param {string} options.circuit - Circuit name (e.g., "Los Angeles")
- * @param {string} options.month - Month name (e.g., "January")
- * @param {string} options.playerName - Player's name
- * @param {number|string} options.placement - Placement (1-8)
- * @returns {string} Formatted title
- */
-export function generateDecklistTitle({ circuit, month, playerName, placement }) {
-	const placementSuffix = getPlacementSuffix(placement);
-	return `${circuit} | ${month} | ${playerName} | ${placementSuffix}`;
-}
-
-/**
  * Get ordinal suffix for placement (1st, 2nd, 3rd, etc.)
  * @param {number|string} placement
  * @returns {string}
@@ -219,30 +205,4 @@ export function getPlacementSuffix(placement) {
 	if (num === 2) return '2nd';
 	if (num === 3) return '3rd';
 	return `${num}th`;
-}
-
-/**
- * Validate that the decklist has required sections
- * @param {Object} parsed - Parsed decklist
- * @returns {Object} Validation result with isValid and errors
- */
-export function validateDecklist(parsed) {
-	const errors = [];
-
-	if (parsed.totals.equipment === 0) {
-		errors.push('No equipment/weapons found');
-	}
-
-	if (parsed.totals.total === 0) {
-		errors.push('Decklist is empty');
-	}
-
-	// Standard CC deck should have around 60 cards + equipment
-	// But we'll be lenient for now
-
-	return {
-		isValid: errors.length === 0,
-		errors,
-		warnings: []
-	};
 }

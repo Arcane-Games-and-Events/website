@@ -16,14 +16,13 @@
 	import FormatTag from '../FormatTag.svelte';
 	import { page } from '$app/stores';
 	import { reveal } from '$lib/actions/reveal.js';
-	import { CIRCUITS } from '$lib/data/circuits.js';
+	import { CIRCUITS, circuitVar } from '$lib/data/circuits.js';
 	import AgeOpenSubHead from './AgeOpenSubHead.svelte';
+	import EventRowLead from './EventRowLead.svelte';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
 
-	const SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
-	const ccVar = (name) => `var(--ed-cc-${SLUG[name] ?? 'la'})`;
 	const CIRCUIT_NAMES = ['Los Angeles', 'St. Louis', 'New England'];
 
 	const fmt = (d, opts) => new Date(d).toLocaleDateString('en-US', { timeZone: 'UTC', ...opts });
@@ -224,7 +223,7 @@
 				>
 					<span
 						class="absolute inset-y-0 left-0 w-[4px]"
-						style="background: {v === 'all' ? 'var(--ed-warm)' : ccVar(v)};"
+						style="background: {v === 'all' ? 'var(--ed-warm)' : circuitVar(v)};"
 						aria-hidden="true"
 					></span>
 					<span class="leading-tight">{l}</span>
@@ -275,54 +274,19 @@
 									href={e.href}
 									class="group grid grid-cols-[76px_1fr] border border-line bg-paper-bg transition-colors duration-500 hover:border-ink md:grid-cols-[100px_200px_1fr_auto]"
 								>
-									<span
-										class="relative row-span-2 flex flex-col items-center justify-center py-4 md:row-span-1"
-										style="background: color-mix(in srgb, {ccVar(e.circuit)} 10%, var(--ed-paper));"
-									>
-										<span
-											class="text-[10px] font-extrabold tracking-[0.18em]"
-											style="color: {ccVar(e.circuit)};">{e.month}</span
-										>
-										<span
-											class="ao-cond text-[46px] leading-[0.85] font-black tabular-nums md:text-[54px]"
-											>{e.day}</span
-										>
-										<span
-											class="mt-1 text-[8.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
-											>{e.weekday.slice(0, 3)}</span
-										>
-										<span
-											class="ao-perf absolute inset-y-2 right-0 w-px text-line2"
-											aria-hidden="true"
-										></span>
-									</span>
-									<span class="relative hidden overflow-hidden bg-ink md:block">
-										<img
-											src={e.image}
-											alt=""
-											loading="lazy"
-											class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.05]"
-										/>
-										<span
-											class="absolute inset-0"
-											style="background: linear-gradient(90deg, color-mix(in srgb, {ccVar(
-												e.circuit
-											)} 55%, transparent) 0%, transparent 85%);"
-											aria-hidden="true"
-										></span>
-									</span>
+									<EventRowLead event={e} weekday={e.weekday.slice(0, 3)} />
 									<span class="min-w-0 px-4 pt-4 pb-2 md:px-6 md:py-5">
 										<span class="flex flex-wrap items-center gap-x-3 gap-y-1">
 											<span
 												class="text-[9.5px] font-extrabold tracking-[0.2em] uppercase"
-												style="color: {ccVar(e.circuit)};">{e.circuit}</span
+												style="color: {circuitVar(e.circuit)};">{e.circuit}</span
 											>
 											<span
 												class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
 											>
 												<span
 													class="h-[6px] w-[6px] animate-pulse-dot rounded-full"
-													style="background: {ccVar(e.circuit)};"
+													style="background: {circuitVar(e.circuit)};"
 													aria-hidden="true"
 												></span>
 												{countdown(e.days)}
@@ -347,7 +311,7 @@
 														style="width: {Math.min(
 															100,
 															(e.registered / e.cap) * 100
-														)}%; background: {ccVar(e.circuit)};"
+														)}%; background: {circuitVar(e.circuit)};"
 													></span>
 												</span>
 												<span
@@ -459,9 +423,11 @@
 								href="/age-open/{e.id}"
 								title="{e.title || 'AGE Open'} · {e.circuit || ''}"
 								class="mt-1 block truncate border-l-[3px] px-1 py-[2px] text-[9.5px] font-bold transition-[filter] hover:brightness-95 md:px-1.5 md:text-[10px]"
-								style="border-left-color: {ccVar(e.circuit)}; background: color-mix(in srgb, {ccVar(
+								style="border-left-color: {circuitVar(
 									e.circuit
-								)} 12%, var(--ed-bg)); color: {ccVar(e.circuit)};"
+								)}; background: color-mix(in srgb, {circuitVar(
+									e.circuit
+								)} 12%, var(--ed-bg)); color: {circuitVar(e.circuit)};"
 							>
 								<span class="hidden md:inline"
 									>{CIRCUITS[e.circuit]?.abbreviation ?? ''} ·
@@ -488,7 +454,8 @@
 		>
 			{#each CIRCUIT_NAMES as c (c)}
 				<span class="inline-flex items-center gap-1.5"
-					><span class="h-2 w-2" style="background: {ccVar(c)};" aria-hidden="true"></span>{c}</span
+					><span class="h-2 w-2" style="background: {circuitVar(c)};" aria-hidden="true"
+					></span>{c}</span
 				>
 			{/each}
 			<span class="inline-flex items-center gap-1.5"
@@ -519,7 +486,7 @@
 					<div class="flex flex-wrap items-center gap-x-5 gap-y-2">
 						<span
 							class="ao-cond flex h-12 w-14 items-center justify-center text-[28px] leading-none font-black text-white"
-							style="background: {ccVar(t.name)};">{t.code}</span
+							style="background: {circuitVar(t.name)};">{t.code}</span
 						>
 						<span class="ao-cond text-[34px] leading-none font-black uppercase">{t.name}</span>
 						<span
@@ -548,7 +515,7 @@
 									>
 										<span
 											class="absolute inset-x-0 top-0 h-[4px]"
-											style="background: {s.done ? 'var(--ed-line2)' : ccVar(t.name)};"
+											style="background: {s.done ? 'var(--ed-line2)' : circuitVar(t.name)};"
 											aria-hidden="true"
 										></span>
 										<span class="ao-cond text-[30px] leading-none font-black tabular-nums"

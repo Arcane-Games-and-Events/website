@@ -3,7 +3,7 @@
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import FormatTag from '$lib/components/age/FormatTag.svelte';
 	import { heroImageUrl } from '$lib/heroImage.js';
-	import { CIRCUITS } from '$lib/data/circuits.js';
+	import { CIRCUITS, circuitVar } from '$lib/data/circuits.js';
 	import { PITCH_STYLE } from '$lib/data/pitch.js';
 	import CardLightbox from '$lib/components/age/CardLightbox.svelte';
 	let { data } = $props();
@@ -187,8 +187,6 @@
 		equipment: { label: 'Hero & equipment', hex: 'var(--ed-warm)' },
 		...PITCH_STYLE
 	};
-	const SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
-	const ccVar = (name) => `var(--ed-cc-${SLUG[name] ?? 'la'})`;
 	const abbr = (name) => CIRCUITS[name]?.abbreviation ?? name;
 	const finishStyle = (n) =>
 		n === 1
@@ -322,7 +320,7 @@
 					{#if decklist.circuit}
 						<span
 							class="px-1.5 py-[3px] text-[8px] tracking-[0.16em] text-white"
-							style="background: {ccVar(decklist.circuit)};">{abbr(decklist.circuit)}</span
+							style="background: {circuitVar(decklist.circuit)};">{abbr(decklist.circuit)}</span
 						>
 					{/if}
 					<a href="/age-open/{decklist.eventId}" class="transition-colors hover:text-paper-bg"

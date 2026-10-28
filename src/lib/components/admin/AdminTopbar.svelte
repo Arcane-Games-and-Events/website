@@ -16,7 +16,6 @@
 		{ id: 'users', label: 'Users', href: '/admin/users' },
 		{ id: 'events', label: 'Events', href: '/admin/events' },
 		{ id: 'calendar', label: 'Calendar', href: '/admin/calendar' },
-		{ id: 'podcasts', label: 'Podcasts', href: '/admin/podcasts' },
 		{ id: 'vods', label: 'VODs', href: '/admin/vods' },
 		{ id: 'cards', label: 'Cards', href: '/admin/cards' },
 		{ id: 'partners', label: 'Partners', href: '/admin/partners' }

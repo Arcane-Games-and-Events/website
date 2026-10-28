@@ -400,6 +400,9 @@ export const lssEvent = pgTable('lss_events', {
 });
 
 // PODCASTS (podcast series like "Cardboard and Beyond")
+// Retired from the site (no public page or admin screen). The tables and
+// their data are kept, and the definitions stay so a schema push can't drop
+// them; users.delete still clears their created_by references.
 export const podcast = pgTable('podcasts', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	name: text('name').notNull(), // e.g., "Cardboard and Beyond"

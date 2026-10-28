@@ -26,7 +26,7 @@ export async function load({ setHeaders }) {
 		console.error('Error fetching Desk entries:', error);
 	}
 
-	// ============ VODs (bonus gameplay from /studios) ============
+	// ============ VODs (bonus gameplay videos) ============
 	let vods = [];
 	let vodTotal = 0;
 	try {

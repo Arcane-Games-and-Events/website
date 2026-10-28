@@ -1,6 +1,6 @@
-import { redirect, error } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { memberReferralCode, memberReferral, user } from '$lib/server/db/schema.js';
+import { memberReferral, user } from '$lib/server/db/schema.js';
 import { eq, desc, sql } from 'drizzle-orm';
 import { getOrCreateMemberReferralCode } from '$lib/server/member-referral.js';
 

@@ -626,7 +626,7 @@ export const actions = {
 			let created = 0;
 
 			// Update each player's standing with calculated monthly stats
-			for (const [playerKey, playerData] of playerMonthlyStats) {
+			for (const [, playerData] of playerMonthlyStats) {
 				const existingStanding = playerData.gemId
 					? standingByGemId.get(playerData.gemId)
 					: standingByGemlessName.get(playerData.name);

@@ -18,13 +18,12 @@
 	import FormatTag from '../FormatTag.svelte';
 	import { reveal } from '$lib/actions/reveal.js';
 	import CircuitModal from './CircuitModal.svelte';
-	import { CIRCUITS } from '$lib/data/circuits.js';
+	import { CIRCUITS, circuitVar } from '$lib/data/circuits.js';
+	import EventRowLead from './EventRowLead.svelte';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
 
-	const SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
-	const ccVar = (name) => `var(--ed-cc-${SLUG[name] ?? 'la'})`;
 	const tab = (id) => `/age-open?tab=${id}`;
 
 	const fmt = (d, opts) => new Date(d).toLocaleDateString('en-US', { timeZone: 'UTC', ...opts });
@@ -272,7 +271,7 @@
 							/>
 							<span
 								class="absolute inset-0"
-								style="background: linear-gradient(90deg, color-mix(in srgb, {ccVar(
+								style="background: linear-gradient(90deg, color-mix(in srgb, {circuitVar(
 									next.circuit
 								)} 72%, rgba(23,21,15,0.55)) 0%, rgba(23,21,15,0) 80%);"
 								aria-hidden="true"
@@ -319,7 +318,7 @@
 						<span>
 							<span
 								class="block text-[10px] font-extrabold tracking-[0.18em]"
-								style="color: {ccVar(next.circuit)};">{next.month}</span
+								style="color: {circuitVar(next.circuit)};">{next.month}</span
 							>
 							<span class="ao-cond block text-[46px] leading-[0.85] font-black tabular-nums"
 								>{next.day}</span
@@ -435,49 +434,19 @@
 						href={e.href}
 						class="group grid grid-cols-[76px_1fr] border border-line bg-paper-bg transition-colors duration-500 hover:border-ink md:grid-cols-[100px_200px_1fr_auto]"
 					>
-						<!-- date stub -->
-						<span
-							class="relative row-span-2 flex flex-col items-center justify-center py-4 md:row-span-1"
-							style="background: color-mix(in srgb, {ccVar(e.circuit)} 10%, var(--ed-paper));"
-						>
-							<span
-								class="text-[10px] font-extrabold tracking-[0.18em]"
-								style="color: {ccVar(e.circuit)};">{e.month}</span
-							>
-							<span
-								class="ao-cond text-[46px] leading-[0.85] font-black tabular-nums md:text-[54px]"
-								>{e.day}</span
-							>
-							<span class="ao-perf absolute inset-y-2 right-0 w-px text-line2" aria-hidden="true"
-							></span>
-						</span>
-						<span class="relative hidden overflow-hidden bg-ink md:block">
-							<img
-								src={e.image}
-								alt=""
-								loading="lazy"
-								class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.05]"
-							/>
-							<span
-								class="absolute inset-0"
-								style="background: linear-gradient(90deg, color-mix(in srgb, {ccVar(
-									e.circuit
-								)} 55%, transparent) 0%, transparent 85%);"
-								aria-hidden="true"
-							></span>
-						</span>
+						<EventRowLead event={e} />
 						<span class="min-w-0 px-4 pt-4 pb-2 md:px-6 md:py-5">
 							<span class="flex flex-wrap items-center gap-x-3 gap-y-1">
 								<span
 									class="text-[9.5px] font-extrabold tracking-[0.2em] uppercase"
-									style="color: {ccVar(e.circuit)};">{e.circuit}</span
+									style="color: {circuitVar(e.circuit)};">{e.circuit}</span
 								>
 								<span
 									class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
 								>
 									<span
 										class="h-[6px] w-[6px] animate-pulse-dot rounded-full"
-										style="background: {ccVar(e.circuit)};"
+										style="background: {circuitVar(e.circuit)};"
 										aria-hidden="true"
 									></span>
 									{countdown(e.days)}
@@ -538,7 +507,7 @@
 					/>
 					<span
 						class="absolute inset-0 mix-blend-multiply"
-						style="background: {ccVar(c.name)}; opacity: 0.55;"
+						style="background: {circuitVar(c.name)}; opacity: 0.55;"
 						aria-hidden="true"
 					></span>
 					<span
@@ -683,12 +652,13 @@
 						href="/age-open/{r.id}/results"
 						class="group flex h-full flex-col border border-line bg-paper-bg transition-colors duration-500 hover:border-ink"
 					>
-						<span class="h-[4px]" style="background: {ccVar(r.circuit)};" aria-hidden="true"></span>
+						<span class="h-[4px]" style="background: {circuitVar(r.circuit)};" aria-hidden="true"
+						></span>
 						<span class="flex flex-1 flex-col p-5">
 							<span class="flex items-center justify-between gap-3">
 								<span
 									class="text-[9.5px] font-extrabold tracking-[0.2em] uppercase"
-									style="color: {ccVar(r.circuit)};">{r.circuit || 'AGE Open'}</span
+									style="color: {circuitVar(r.circuit)};">{r.circuit || 'AGE Open'}</span
 								>
 								{#if r.live}
 									<span

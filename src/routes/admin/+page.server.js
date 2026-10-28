@@ -3,7 +3,6 @@ import { redirect } from '@sveltejs/kit';
 const validTabs = [
 	'events',
 	'calendar',
-	'podcasts',
 	'vods',
 	'orders',
 	'users',

@@ -11,7 +11,6 @@
 		if (pathname.startsWith('/admin/events')) return 'events';
 		if (pathname.startsWith('/admin/players')) return 'players';
 		if (pathname.startsWith('/admin/calendar')) return 'calendar';
-		if (pathname.startsWith('/admin/podcasts')) return 'podcasts';
 		if (pathname.startsWith('/admin/vods')) return 'vods';
 		if (pathname.startsWith('/admin/users')) return 'users';
 		if (pathname.startsWith('/admin/import-matches')) return 'import-matches';

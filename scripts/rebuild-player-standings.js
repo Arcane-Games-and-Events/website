@@ -103,7 +103,7 @@ async function rebuildForGemId(gemId) {
 	let inserted = 0;
 	let skipped = 0;
 
-	for (const [groupKey, { season, circuit, playerName, monthsToMatches }] of grouped) {
+	for (const [, { season, circuit, playerName, monthsToMatches }] of grouped) {
 		console.log(`\nProcessing ${season} ${circuit} (${monthsToMatches.size} months)`);
 
 		// Refuse to overwrite an existing standing row — caller must delete it
@@ -137,7 +137,7 @@ async function rebuildForGemId(gemId) {
 			monthlyUpdate[`${monthKey}Matches`] = 0;
 		}
 
-		for (const [monthName, monthMatches] of monthsToMatches) {
+		for (const [monthName] of monthsToMatches) {
 			const monthKey = monthName.toLowerCase();
 			if (!MONTH_KEYS.includes(monthKey)) continue;
 
