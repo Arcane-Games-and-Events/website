@@ -24,19 +24,20 @@ import {
 } from '$lib/server/db/schema.js';
 import { alias } from 'drizzle-orm/pg-core';
 import { and, desc, eq, inArray, or, lte } from 'drizzle-orm';
-import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
+import { mediaImage } from '$lib/server/desk/image.js';
 
 /**
- * Query the DB for published entries + related media/author rows. Cached in
- * Redis under a per-limit key so the homepage's 12-item slice and the
- * library's full list don't stomp on each other.
+ * Query the DB for published entries + related media/author rows. Cached
+ * per limit so the homepage's slice and the library's full list don't stomp
+ * on each other; any entry or media write makes both stale. Five minutes at
+ * most, so a scheduled entry goes live without a write.
  */
 export async function listPublishedEntries({ limit = 100 } = {}) {
-	return getCachedOrFetch(
-		`${CACHE_KEYS.ARTICLES}:desk:list:${limit}`,
-		() => queryPublishedEntries({ limit }),
-		CACHE_TTL.LONG
-	);
+	return cached(`articles:desk:list:${limit}`, () => queryPublishedEntries({ limit }), {
+		tags: ['entries', 'media'],
+		ttl: CACHE_TTL.FIVE_MINUTES
+	});
 }
 
 async function queryPublishedEntries({ limit }) {
@@ -57,10 +58,8 @@ async function queryPublishedEntries({ limit }) {
 			videoDurationMux: deskEntry.videoDuration,
 			videoDurationYoutube: deskEntry.youtubeDuration,
 			youtubeThumbnailUrl: deskEntry.youtubeThumbnailUrl,
-			coverUrl: cover.url,
-			coverAlt: cover.alt,
-			thumbUrl: thumb.url,
-			thumbAlt: thumb.alt,
+			cover: { url: cover.url, storagePath: cover.storagePath, width: cover.width, alt: cover.alt },
+			thumb: { url: thumb.url, storagePath: thumb.storagePath, width: thumb.width, alt: thumb.alt },
 			authorFirstName: userTable.firstName,
 			authorLastName: userTable.lastName
 		})
@@ -86,13 +85,10 @@ async function queryPublishedEntries({ limit }) {
 		// cover nor a thumbnail is set on a video entry, fall further back
 		// to the YouTube thumbnail so video entries always have some
 		// visual in the card grid.
-		const image = r.thumbUrl
-			? { src: r.thumbUrl, alt: r.thumbAlt || r.title || '' }
-			: r.coverUrl
-				? { src: r.coverUrl, alt: r.coverAlt || r.title || '' }
-				: r.youtubeThumbnailUrl
-					? { src: r.youtubeThumbnailUrl, alt: r.title || '' }
-					: null;
+		const image =
+			mediaImage(r.thumb, r.title || '') ??
+			mediaImage(r.cover, r.title || '') ??
+			(r.youtubeThumbnailUrl ? { src: r.youtubeThumbnailUrl, alt: r.title || '' } : null);
 		const authorName = r.authorFirstName
 			? `${r.authorFirstName} ${r.authorLastName || ''}`.trim()
 			: null;

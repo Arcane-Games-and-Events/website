@@ -4,6 +4,7 @@ import { deskEntry, deskLesson } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { canEditEntries, canEditCourses, canEditEntry, isAdmin } from '$lib/server/auth/roles.js';
 import mux from '$lib/server/mux.js';
+import { bump } from '$lib/server/cache/index.js';
 
 /**
  * POST /api/desk/mux/refresh
@@ -90,6 +91,7 @@ export async function POST({ request, locals }) {
 			updatedAt: new Date()
 		})
 		.where(eq(table.id, id));
+	await bump(target === 'entry' ? 'entries' : 'courses');
 
 	const [updated] = await db.select().from(table).where(eq(table.id, id)).limit(1);
 	return json({ [target]: updated });

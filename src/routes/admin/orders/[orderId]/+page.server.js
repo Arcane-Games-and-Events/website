@@ -1,5 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
+import { bump } from '$lib/server/cache/index.js';
 import { order, user, ticket, entitlement, event } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 
@@ -116,13 +117,15 @@ export const actions = {
 				}
 
 				// Downgrade user to free tier
-				await db
+				const downgraded = await db
 					.update(user)
 					.set({
 						subscriptionStatus: 'cancelled',
 						role: 'free'
 					})
-					.where(eq(user.email, orderData.userEmail));
+					.where(eq(user.email, orderData.userEmail))
+					.returning({ id: user.id });
+				await bump('users', 'orders', ...downgraded.map((u) => `user:${u.id}`));
 
 				// Try to void/refund the payment
 				try {

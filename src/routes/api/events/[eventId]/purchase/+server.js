@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { authnet } from '$lib/server/authnet/client.js';
 import { db } from '$lib/server/db/index.js';
+import { bump } from '$lib/server/cache/index.js';
 import { ticket, order, event as eventTable, savedCard, user } from '$lib/server/db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
@@ -229,6 +230,7 @@ export async function POST({ params, request, locals }) {
 				.update(order)
 				.set({ meta: { ...newOrder.meta, ticketId: newTicket.id } })
 				.where(eq(order.id, newOrder.id));
+			await bump('tickets', 'orders');
 
 			return json({
 				success: true,

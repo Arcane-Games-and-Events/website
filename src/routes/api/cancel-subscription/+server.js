@@ -2,7 +2,8 @@ import { json } from '@sveltejs/kit';
 import { authnet } from '$lib/server/authnet/client.js';
 import { db } from '$lib/server/db/index.js';
 import { user as userTable } from '$lib/server/db/schema.js';
-import { auth } from '$lib/server/lucia.js';
+import { auth, forgetSession } from '$lib/server/lucia.js';
+import { bump } from '$lib/server/cache/index.js';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -66,7 +67,9 @@ export async function POST({ locals }) {
 				// Invalidate current session and create new one with updated subscription status
 				if (locals.session) {
 					await auth.invalidateSession(locals.session.id);
+					await forgetSession(locals.session.id);
 				}
+				await bump(`user:${currentUser.id}`, 'users');
 
 				// Create new session with updated user data
 				const newSession = await auth.createSession(currentUser.id, {});

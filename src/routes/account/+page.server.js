@@ -160,6 +160,7 @@ export const actions = {
 					gemId: gemId && typeof gemId === 'string' && gemId.trim() !== '' ? gemId.trim() : null
 				})
 				.where(eq(user.id, locals.user.id));
+			await bump(`user:${locals.user.id}`);
 
 			return {
 				success: true,

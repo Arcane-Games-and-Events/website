@@ -1,5 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
+import { bump } from '$lib/server/cache/index.js';
 import { order, user, ticket, entitlement, event } from '$lib/server/db/schema.js';
 import { eq, desc, inArray } from 'drizzle-orm';
 
@@ -217,11 +218,12 @@ export const actions = {
 		}
 
 		try {
-			if (isEmail) {
-				await db.update(user).set({ role }).where(eq(user.email, customerId));
-			} else {
-				await db.update(user).set({ role }).where(eq(user.id, customerId));
-			}
+			const changed = await db
+				.update(user)
+				.set({ role })
+				.where(isEmail ? eq(user.email, customerId) : eq(user.id, customerId))
+				.returning({ id: user.id });
+			await bump('users', ...changed.map((u) => `user:${u.id}`));
 
 			return { success: true, message: `Role updated to ${role}` };
 		} catch (err) {
@@ -273,6 +275,7 @@ export const actions = {
 					role: 'free'
 				})
 				.where(eq(user.id, userData.id));
+			await bump(`user:${userData.id}`, 'users');
 
 			return { success: true, message: 'Subscription cancelled and user downgraded to free tier' };
 		} catch (err) {

@@ -126,6 +126,8 @@
 						<img
 							class="fp-kenburns absolute inset-0 h-full w-full object-cover"
 							src={c.coverImage.src}
+							srcset={c.coverImage.srcset}
+							sizes="(min-width: 1024px) 800px, 100vw"
 							alt={c.coverImage.alt || ''}
 							fetchpriority="high"
 						/>

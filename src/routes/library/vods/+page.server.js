@@ -1,7 +1,7 @@
 import { db } from '$lib/server/db/index.js';
 import { vod, event } from '$lib/server/db/schema.js';
 import { eq, and, or, ilike, asc, desc, sql } from 'drizzle-orm';
-import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import { getMuxThumbnailToken } from '$lib/server/mux.js';
 
 export async function load({ locals, url, setHeaders }) {
@@ -22,13 +22,13 @@ export async function load({ locals, url, setHeaders }) {
 		vary: 'Cookie'
 	});
 
-	// One filter combo = one cache entry. SHORT TTL (60s) keeps memory
-	// bounded even under q-search cardinality; admin VOD writes bust
-	// the whole `vods:list:*` prefix so publishes surface in one hop.
-	const cacheKey = `${CACHE_KEYS.VODS}:list:${sort}|${eventId || 'all'}|${hero || 'all'}|${q || 'all'}|${page}`;
+	// One filter combo = one cache entry. A one-minute TTL keeps memory
+	// bounded under free-text search; any VOD or event write makes every
+	// combo stale.
+	const cacheKey = `vods:list:${sort}|${eventId || 'all'}|${hero || 'all'}|${q || 'all'}|${page}`;
 
 	try {
-		const payload = await getCachedOrFetch(
+		const payload = await cached(
 			cacheKey,
 			async () => {
 				// Base conditions: published & ready
@@ -131,7 +131,7 @@ export async function load({ locals, url, setHeaders }) {
 					totalVods: totalUnfiltered
 				};
 			},
-			CACHE_TTL.SHORT
+			{ tags: ['vods', 'events'], ttl: CACHE_TTL.MINUTE }
 		);
 
 		return {

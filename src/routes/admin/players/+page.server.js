@@ -4,10 +4,10 @@ import { standing, match, event } from '$lib/server/db/schema.js';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { playerKeyFromIdName } from '$lib/server/players/key.js';
 import { calculateFinalStandings } from '$lib/server/tournament-processor.js';
+import { listStandings } from '$lib/server/admin/dashboard.js';
+import { MONTH_NAMES } from '$lib/data/months.js';
 
-// Helper to add timeout to promises
-const withTimeout = (promise, ms, fallback) =>
-	Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(fallback), ms))]);
+const MONTHS = MONTH_NAMES.map((m) => m.toLowerCase());
 
 export async function load({ locals }) {
 	// Require admin authentication
@@ -16,105 +16,29 @@ export async function load({ locals }) {
 	}
 
 	try {
-		// Single RPC call replaces 20+ individual queries with 15s timeout
-		const result = await withTimeout(
-			db.execute(sql`SELECT get_admin_dashboard_stats() as data`),
-			15000,
-			null
-		);
+		const rows = await listStandings();
 
-		if (!result) {
-			console.warn('Admin dashboard RPC timed out - returning empty data');
-			return { user: locals.user, standings: [] };
-		}
-
-		const data = result.rows?.[0]?.data || result[0]?.data;
-
-		if (!data) {
-			throw new Error('No data returned from get_admin_dashboard_stats()');
-		}
-
-		// Process standings with monthly breakdown
-		const rawStandings = data.standings || [];
-		const standings = rawStandings.map((standing) => {
-			let winPercentage = standing.win_percentage || standing.winPercentage;
-			const matchesPlayed = standing.matches_played || standing.matchesPlayed || 0;
-			const matchesWon = standing.matches_won || standing.matchesWon || 0;
-
+		// Add the monthly breakdown the table expands into.
+		const standings = rows.map((row) => {
+			const matchesPlayed = row.matchesPlayed || 0;
+			const matchesWon = row.matchesWon || 0;
+			let winPercentage = row.winPercentage;
 			if (winPercentage === null && matchesPlayed > 0) {
 				winPercentage = parseFloat(((matchesWon / matchesPlayed) * 100).toFixed(2));
 			}
 
-			// Build monthly breakdown from flattened columns
-			const monthlyBreakdown = {
-				january: {
-					points: standing.january_points || standing.januaryPoints || 0,
-					matchesWon: standing.january_matches_won || standing.januaryMatchesWon || 0,
-					events: standing.january_events || standing.januaryEvents || 0
-				},
-				february: {
-					points: standing.february_points || standing.februaryPoints || 0,
-					matchesWon: standing.february_matches_won || standing.februaryMatchesWon || 0,
-					events: standing.february_events || standing.februaryEvents || 0
-				},
-				march: {
-					points: standing.march_points || standing.marchPoints || 0,
-					matchesWon: standing.march_matches_won || standing.marchMatchesWon || 0,
-					events: standing.march_events || standing.marchEvents || 0
-				},
-				april: {
-					points: standing.april_points || standing.aprilPoints || 0,
-					matchesWon: standing.april_matches_won || standing.aprilMatchesWon || 0,
-					events: standing.april_events || standing.aprilEvents || 0
-				},
-				may: {
-					points: standing.may_points || standing.mayPoints || 0,
-					matchesWon: standing.may_matches_won || standing.mayMatchesWon || 0,
-					events: standing.may_events || standing.mayEvents || 0
-				},
-				june: {
-					points: standing.june_points || standing.junePoints || 0,
-					matchesWon: standing.june_matches_won || standing.juneMatchesWon || 0,
-					events: standing.june_events || standing.juneEvents || 0
-				},
-				july: {
-					points: standing.july_points || standing.julyPoints || 0,
-					matchesWon: standing.july_matches_won || standing.julyMatchesWon || 0,
-					events: standing.july_events || standing.julyEvents || 0
-				},
-				august: {
-					points: standing.august_points || standing.augustPoints || 0,
-					matchesWon: standing.august_matches_won || standing.augustMatchesWon || 0,
-					events: standing.august_events || standing.augustEvents || 0
-				},
-				september: {
-					points: standing.september_points || standing.septemberPoints || 0,
-					matchesWon: standing.september_matches_won || standing.septemberMatchesWon || 0,
-					events: standing.september_events || standing.septemberEvents || 0
-				},
-				october: {
-					points: standing.october_points || standing.octoberPoints || 0,
-					matchesWon: standing.october_matches_won || standing.octoberMatchesWon || 0,
-					events: standing.october_events || standing.octoberEvents || 0
-				},
-				november: {
-					points: standing.november_points || standing.novemberPoints || 0,
-					matchesWon: standing.november_matches_won || standing.novemberMatchesWon || 0,
-					events: standing.november_events || standing.novemberEvents || 0
-				},
-				december: {
-					points: standing.december_points || standing.decemberPoints || 0,
-					matchesWon: standing.december_matches_won || standing.decemberMatchesWon || 0,
-					events: standing.december_events || standing.decemberEvents || 0
-				}
-			};
+			const monthlyBreakdown = {};
+			for (const m of MONTHS) {
+				monthlyBreakdown[m] = {
+					points: row[`${m}Points`] || 0,
+					matchesWon: row[`${m}MatchesWon`] || 0,
+					events: row[`${m}Events`] || 0
+				};
+			}
 
 			return {
-				...standing,
-				// Normalize field names
-				playerName: standing.player_name || standing.playerName,
-				gemId: standing.gem_id || standing.gemId,
-				totalPoints: standing.total_points || standing.totalPoints || 0,
+				...row,
+				totalPoints: row.totalPoints || 0,
 				matchesWon,
 				matchesPlayed,
 				winPercentage,
@@ -122,23 +46,10 @@ export async function load({ locals }) {
 			};
 		});
 
-		return {
-			user: locals.user,
-			standings
-		};
+		return { user: locals.user, standings };
 	} catch (error) {
 		console.error('Admin players page load error:', error);
-
-		if (error.message?.includes('get_admin_dashboard_stats')) {
-			console.error(
-				'RPC function not found. Run the migration: supabase/migrations/001_rpc_functions.sql'
-			);
-		}
-
-		return {
-			user: locals.user,
-			standings: []
-		};
+		return { user: locals.user, standings: [] };
 	}
 }
 

@@ -121,7 +121,7 @@
 					</div>
 					<h1
 						class="mt-4 text-[44px] leading-[0.95] font-extrabold tracking-[-0.035em] [text-wrap:balance] md:text-[64px]"
-						style="font-family: 'Libre Franklin', system-ui, sans-serif;"
+						style="font-family: var(--font-libre);"
 					>
 						Partner<br /><span class="text-gold">dashboard.</span>
 					</h1>

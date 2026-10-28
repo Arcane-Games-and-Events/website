@@ -4,6 +4,7 @@ import { deskEntry } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { canEditEntries, isAdmin, canEditEntry } from '$lib/server/auth/roles.js';
 import { updateEntry } from '$lib/server/desk/entries.js';
+import { bump } from '$lib/server/cache/index.js';
 
 async function loadEntry(id) {
 	const [row] = await db.select().from(deskEntry).where(eq(deskEntry.id, id)).limit(1);
@@ -87,5 +88,6 @@ export async function DELETE({ params, locals }) {
 	}
 
 	await db.delete(deskEntry).where(eq(deskEntry.id, params.id));
+	if (entry.status !== 'draft') await bump('entries');
 	return json({ ok: true });
 }

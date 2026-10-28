@@ -1,5 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
+import { bump } from '$lib/server/cache/index.js';
 import { fabCardLookup, fabCardUploadHistory } from '$lib/server/db/schema.js';
 import { count, desc } from 'drizzle-orm';
 
@@ -231,6 +232,7 @@ export const actions = {
 				lookupEntries: lookupsCreated,
 				setsIncluded: setsArray
 			});
+			await bump('cards');
 
 			return {
 				success: true,

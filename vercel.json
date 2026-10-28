@@ -12,11 +12,38 @@
 	],
 	"headers": [
 		{
-			"source": "/static/(.*)",
+			"source": "/hero_images/(.*)",
 			"headers": [
 				{
 					"key": "Cache-Control",
-					"value": "public, max-age=31536000, immutable"
+					"value": "public, max-age=604800, stale-while-revalidate=86400"
+				}
+			]
+		},
+		{
+			"source": "/banner/(.*)",
+			"headers": [
+				{
+					"key": "Cache-Control",
+					"value": "public, max-age=604800, stale-while-revalidate=86400"
+				}
+			]
+		},
+		{
+			"source": "/images/(.*)",
+			"headers": [
+				{
+					"key": "Cache-Control",
+					"value": "public, max-age=604800, stale-while-revalidate=86400"
+				}
+			]
+		},
+		{
+			"source": "/(logo|age_open_logo|favicon).svg",
+			"headers": [
+				{
+					"key": "Cache-Control",
+					"value": "public, max-age=604800, stale-while-revalidate=86400"
 				}
 			]
 		},

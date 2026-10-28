@@ -1,9 +1,4 @@
-import { db } from '$lib/server/db/index.js';
-import { sql } from 'drizzle-orm';
-
-// Helper to add timeout to promises
-const withTimeout = (promise, ms, fallback) =>
-	Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(fallback), ms))]);
+import { listRecentEvents, ticketStatsByEvent } from '$lib/server/admin/dashboard.js';
 
 function getEmptyEventsData() {
 	return {
@@ -32,61 +27,11 @@ function getEmptyEventsData() {
 /** @type {import('./$types').PageServerLoad} */
 export async function load() {
 	try {
-		// Single RPC call with 15s timeout
-		const result = await withTimeout(
-			db.execute(sql`SELECT get_admin_dashboard_stats() as data`),
-			15000,
-			null
-		);
+		const [events, ticketStats] = await Promise.all([listRecentEvents(50), ticketStatsByEvent()]);
+		const ticketsByEvent = new Map(Object.entries(ticketStats));
 
-		if (!result) {
-			console.warn('Admin events RPC timed out - returning empty data');
-			return getEmptyEventsData();
-		}
-
-		const data = result.rows?.[0]?.data || result[0]?.data;
-
-		if (!data) {
-			throw new Error('No data returned from get_admin_dashboard_stats()');
-		}
-
-		// Parse the RPC result
 		const currentDate = new Date();
 		const thirtyDaysFromNow = new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-		// Extract events and transform snake_case to camelCase
-		const rawEvents = data.events || [];
-		const events = rawEvents.map((e) => ({
-			id: e.id,
-			title: e.title,
-			location: e.location,
-			address: e.address,
-			price: e.price,
-			format: e.format,
-			circuit: e.circuit,
-			month: e.month,
-			eventDate: e.event_date,
-			description: e.description,
-			gemIdRequired: e.gem_id_required,
-			premiumDiscount: e.premium_discount,
-			status: e.status,
-			closedAt: e.closed_at,
-			closedBy: e.closed_by,
-			createdBy: e.created_by,
-			createdAt: e.created_at
-		}));
-
-		const ticketStatsList = data.ticketStats || [];
-
-		// Convert ticket stats to Map for fast lookup
-		const ticketsByEvent = new Map();
-		for (const t of ticketStatsList) {
-			ticketsByEvent.set(t.eventId, {
-				sold: Number(t.sold) || 0,
-				refunded: Number(t.refunded) || 0,
-				revenue: parseFloat(t.revenue) || 0
-			});
-		}
 
 		// Compute event analytics from events
 		let upcomingEvents = 0;
@@ -98,7 +43,6 @@ export async function load() {
 		const eventsByFormat = {};
 		const eventsByStatus = { upcoming: 0, in_progress: 0, completed: 0, cancelled: 0 };
 		const upcomingEventsList = [];
-
 		for (const e of events) {
 			const status = e.status || 'upcoming';
 			eventsByStatus[status] = (eventsByStatus[status] || 0) + 1;

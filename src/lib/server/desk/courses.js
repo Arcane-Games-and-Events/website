@@ -10,10 +10,9 @@
  *                           lessons) for /academy/[slug]
  * - `loadCourseProgress`    per-user completion per course (uncached)
  *
- * List + course reads are cached in Redis under `courses:desk:…`. There
- * is no course mutation path yet; when one lands it must bust
- * `${CACHE_KEYS.COURSES}:desk:` the same way `invalidateListCaches` in
- * entries.js busts articles.
+ * List + course reads are cached with the `courses` and `media` tags. There
+ * is no course editor yet; whatever writes courses, modules or lessons must
+ * call `bump('courses')` (the Mux lesson-video paths already do).
  */
 import { db } from '$lib/server/db/index.js';
 import {
@@ -26,33 +25,28 @@ import {
 } from '$lib/server/db/schema.js';
 import { alias } from 'drizzle-orm/pg-core';
 import { and, asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
-import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+import { cached } from '$lib/server/cache/index.js';
+import { mediaImage } from '$lib/server/desk/image.js';
+
+const COURSE_TAGS = { tags: ['courses', 'media'] };
 
 const LESSON_SECONDS = sql`coalesce(${deskLesson.videoDuration}, ${deskLesson.youtubeDuration}, coalesce(${deskLesson.readTime}, 0) * 60)`;
 
 export async function listPublishedCourses({ limit = 6 } = {}) {
-	return getCachedOrFetch(
-		`${CACHE_KEYS.COURSES}:desk:list:${limit}`,
-		() => queryPublishedCourses({ limit }),
-		CACHE_TTL.LONG
-	);
+	return cached(`courses:desk:list:${limit}`, () => queryPublishedCourses({ limit }), COURSE_TAGS);
 }
 
 export async function listPreviewLessons({ limit = 6 } = {}) {
-	return getCachedOrFetch(
-		`${CACHE_KEYS.COURSES}:desk:previews:${limit}`,
+	return cached(
+		`courses:desk:previews:${limit}`,
 		() => queryPreviewLessons({ limit }),
-		CACHE_TTL.LONG
+		COURSE_TAGS
 	);
 }
 
 export async function getPublishedCourseBySlug(slug) {
 	if (!slug) return null;
-	return getCachedOrFetch(
-		`${CACHE_KEYS.COURSES}:desk:course:${slug}`,
-		() => queryCourseBySlug(slug),
-		CACHE_TTL.LONG
-	);
+	return cached(`courses:desk:course:${slug}`, () => queryCourseBySlug(slug), COURSE_TAGS);
 }
 
 /* ============ queries ============ */
@@ -66,10 +60,8 @@ function courseSelect(cover, thumb) {
 		price: deskCourse.price,
 		premiumDiscountPct: deskCourse.premiumDiscountPct,
 		publishedAt: deskCourse.publishedAt,
-		coverUrl: cover.url,
-		coverAlt: cover.alt,
-		thumbUrl: thumb.url,
-		thumbAlt: thumb.alt,
+		cover: { url: cover.url, storagePath: cover.storagePath, width: cover.width, alt: cover.alt },
+		thumb: { url: thumb.url, storagePath: thumb.storagePath, width: thumb.width, alt: thumb.alt },
 		authorId: userTable.id,
 		authorFirstName: userTable.firstName,
 		authorLastName: userTable.lastName
@@ -77,11 +69,7 @@ function courseSelect(cover, thumb) {
 }
 
 function shapeCourse(r, agg) {
-	const image = r.coverUrl
-		? { src: r.coverUrl, alt: r.coverAlt || r.title || '' }
-		: r.thumbUrl
-			? { src: r.thumbUrl, alt: r.thumbAlt || r.title || '' }
-			: null;
+	const image = mediaImage(r.cover, r.title || '') ?? mediaImage(r.thumb, r.title || '');
 	const authorName = r.authorFirstName
 		? `${r.authorFirstName} ${r.authorLastName || ''}`.trim()
 		: null;

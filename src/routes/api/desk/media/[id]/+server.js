@@ -4,6 +4,7 @@ import { deskMedia, deskEntry, deskCourse } from '$lib/server/db/schema.js';
 import { eq, or } from 'drizzle-orm';
 import { canEditEntries, canEditCourses } from '$lib/server/auth/roles.js';
 import { getSupabase, DESK_MEDIA_BUCKET } from '$lib/server/supabase.js';
+import { bump } from '$lib/server/cache/index.js';
 
 /**
  * DELETE /api/desk/media/[id]
@@ -137,6 +138,7 @@ export async function DELETE({ params, locals }) {
 	}
 
 	await db.delete(deskMedia).where(eq(deskMedia.id, params.id));
+	await bump('media');
 
 	return json({ deleted: true, storage });
 }

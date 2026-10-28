@@ -7,7 +7,7 @@ import {
 	calculatePayoutDueDate,
 	isReadyToPayOut
 } from '$lib/server/partner-code.js';
-import { invalidateCache } from '$lib/server/redis/index.js';
+import { bump } from '$lib/server/cache/index.js';
 
 export async function load({ locals, params }) {
 	if (!locals.user || locals.user.role !== 'admin') {
@@ -122,7 +122,7 @@ export const actions = {
 		await db.delete(partner).where(eq(partner.id, params.partnerId));
 
 		if (row?.userId) {
-			await invalidateCache(`layout:user:${row.userId}:is_partner`);
+			await bump(`user:${row.userId}`);
 		}
 
 		throw redirect(303, '/admin/partners');

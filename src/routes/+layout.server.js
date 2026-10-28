@@ -1,14 +1,14 @@
 import { db } from '$lib/server/db/index.js';
 import { eventStaff, partner, event } from '$lib/server/db/schema.js';
 import { eq, and, gte, or, isNull, asc } from 'drizzle-orm';
-import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 
-// Per-user Redis lookups on the layout hot path. Each is guarded so an
+// Per-user cached lookups on the layout hot path. Each is guarded so an
 // individual failure just falls back to the safe default without failing
-// the layout.
+// the layout. Staff assignment and partner changes bump `user:{id}`.
 async function safeStaffCount(userId) {
 	try {
-		return await getCachedOrFetch(
+		return await cached(
 			`layout:user:${userId}:staff_count`,
 			async () => {
 				const assignments = await db
@@ -17,7 +17,7 @@ async function safeStaffCount(userId) {
 					.where(eq(eventStaff.userId, userId));
 				return assignments.length;
 			},
-			CACHE_TTL.HOUR
+			{ tags: [`user:${userId}`] }
 		);
 	} catch {
 		return 0;
@@ -26,7 +26,7 @@ async function safeStaffCount(userId) {
 
 async function safeIsPartner(userId) {
 	try {
-		return await getCachedOrFetch(
+		return await cached(
 			`layout:user:${userId}:is_partner`,
 			async () => {
 				const [partnerRow] = await db
@@ -36,7 +36,7 @@ async function safeIsPartner(userId) {
 					.limit(1);
 				return !!partnerRow;
 			},
-			CACHE_TTL.HOUR
+			{ tags: [`user:${userId}`] }
 		);
 	} catch {
 		return false;
@@ -45,8 +45,10 @@ async function safeIsPartner(userId) {
 
 async function safeNextEvent() {
 	try {
-		const rows = await getCachedOrFetch(
-			`${CACHE_KEYS.EVENTS}:upcoming:3`,
+		// Read on every navigation, so it is also held in memory for 15s. Five
+		// minutes at most, so a started event drops off without a write.
+		const rows = await cached(
+			'events:upcoming:3',
 			async () => {
 				const now = new Date();
 				// Match the homepage's fuller `.select()` shape so both
@@ -60,7 +62,7 @@ async function safeNextEvent() {
 					.orderBy(asc(event.eventDate))
 					.limit(3);
 			},
-			CACHE_TTL.SHORT
+			{ tags: ['events'], ttl: CACHE_TTL.FIVE_MINUTES, mem: 15 }
 		);
 		if (rows && rows.length > 0) {
 			const row = rows[0];

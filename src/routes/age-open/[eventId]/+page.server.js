@@ -4,33 +4,29 @@ import { event, savedCard, ticket } from '$lib/server/db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import { calculatePremiumDiscount } from '$lib/server/premium-discount.js';
-import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 
 /**
- * Cached fetch for the public event row. Event rows change rarely (title,
- * price, cap tweaks — not per-page-view), so MEDIUM TTL is safe. Admins
- * editing an event already invalidate `events:all`; extending that to also
- * invalidate `events:detail:*` is a follow-up if desired.
+ * Cached fetch for the public event row. Any event write makes it stale.
  */
 async function fetchEvent(eventId) {
-	return getCachedOrFetch(
-		`${CACHE_KEYS.EVENTS}:detail:${eventId}`,
+	return cached(
+		`events:detail:${eventId}`,
 		async () => {
 			const [row] = await db.select().from(event).where(eq(event.id, eventId)).limit(1);
 			return row || null;
 		},
-		CACHE_TTL.MEDIUM
+		{ tags: ['events'] }
 	);
 }
 
 /**
- * Cached ticket count for capacity checks. Short TTL because capacity is
- * time-sensitive during registration bursts. Both this route and the
- * checkout route share the same key so the second hit is free.
+ * Cached ticket count for capacity display. Purchases and refunds bump
+ * `tickets`; the one-minute TTL is a backstop during registration bursts.
  */
 async function fetchRegisteredCount(eventId) {
-	return getCachedOrFetch(
-		`${CACHE_KEYS.EVENTS}:ticket-count:${eventId}`,
+	return cached(
+		`events:ticket-count:${eventId}`,
 		async () => {
 			const [{ count }] = await db
 				.select({ count: sql`count(*)::int` })
@@ -38,7 +34,7 @@ async function fetchRegisteredCount(eventId) {
 				.where(and(eq(ticket.eventId, eventId), eq(ticket.refunded, false)));
 			return count;
 		},
-		CACHE_TTL.SHORT
+		{ tags: ['tickets'], ttl: CACHE_TTL.MINUTE }
 	);
 }
 

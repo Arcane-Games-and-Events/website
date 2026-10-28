@@ -4,7 +4,7 @@ import { event, match, eventPlayerHero, decklist } from '$lib/server/db/schema.j
 import { eq, asc, and } from 'drizzle-orm';
 import { calculateFinalStandings } from '$lib/server/tournament-processor.js';
 import { playerKeyFromIdName } from '$lib/server/players/key.js';
-import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import { heroImageUrl } from '$lib/heroImage.js';
 
 export async function load({ params, setHeaders }) {
@@ -27,10 +27,10 @@ export async function load({ params, setHeaders }) {
 		}
 
 		// Completed events: cache for a day (their data is frozen). Live
-		// events: 5 min so scoring updates surface quickly. Both layers
-		// use the same TTL — Redis (server-side) and Vercel edge.
+		// events: 5 min so scoring updates surface quickly. Any write to
+		// events, matches or decklists makes the cached copy stale at once.
 		const isCompleted = eventPeek.status === 'completed';
-		const ttl = isCompleted ? CACHE_TTL.DAY : CACHE_TTL.MEDIUM;
+		const ttl = isCompleted ? CACHE_TTL.DAY : CACHE_TTL.FIVE_MINUTES;
 
 		// Edge cache directive matches the Redis TTL. Completed events get
 		// aggressive edge caching (1 day fresh, 1 week stale-revalidate);
@@ -45,10 +45,13 @@ export async function load({ params, setHeaders }) {
 				: 'public, max-age=0, s-maxage=300, stale-while-revalidate=300'
 		});
 
-		return await getCachedOrFetch(
-			`${CACHE_KEYS.EVENTS}:results:${params.eventId}`,
+		return await cached(
+			`events:results:${params.eventId}`,
 			() => buildEventResults(params.eventId),
-			ttl
+			{
+				tags: ['events', 'matches', 'decklists'],
+				ttl
+			}
 		);
 	} catch (err) {
 		if (err.status === 404) throw err;
@@ -135,8 +138,8 @@ async function buildEventResults(eventId) {
 		let metagameBreakdown = [];
 		if (eventData.circuit && eventData.month && eventData.eventDate) {
 			const season = new Date(eventData.eventDate).getUTCFullYear().toString();
-			heroData = await getCachedOrFetch(
-				`${CACHE_KEYS.EVENTS}:heroes:${season}|${eventData.circuit}|${eventData.month}`,
+			heroData = await cached(
+				`events:heroes:${season}|${eventData.circuit}|${eventData.month}`,
 				() =>
 					db
 						.select()
@@ -148,7 +151,7 @@ async function buildEventResults(eventId) {
 								eq(eventPlayerHero.month, eventData.month)
 							)
 						),
-				CACHE_TTL.MEDIUM
+				{ tags: ['events'] }
 			);
 		}
 

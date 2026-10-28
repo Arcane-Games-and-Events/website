@@ -1,17 +1,18 @@
-import { auth } from '$lib/server/lucia';
+import { auth, forgetSession } from '$lib/server/lucia';
 import { redirect } from '@sveltejs/kit';
 
 export const actions = {
 	default: async ({ locals, cookies }) => {
 		try {
-			if (locals?.session?.id) {
-				await auth.invalidateSession(locals.session.id);
-			} else {
-				const sid = cookies.get(auth.sessionCookieName);
-				if (sid) {
+			const sid = locals?.session?.id ?? cookies.get(auth.sessionCookieName);
+			if (sid) {
+				if (locals?.session?.id) {
+					await auth.invalidateSession(sid);
+				} else {
 					const { session } = await auth.validateSession(sid);
 					if (session) await auth.invalidateSession(session.id);
 				}
+				await forgetSession(sid);
 			}
 		} finally {
 			const blank = auth.createBlankSessionCookie();

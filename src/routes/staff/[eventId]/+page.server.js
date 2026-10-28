@@ -1,5 +1,6 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
+import { bump } from '$lib/server/cache/index.js';
 import { event, ticket, user, eventStaff } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 
@@ -108,6 +109,7 @@ export const actions = {
 
 		try {
 			await db.update(ticket).set({ enteredIntoGem }).where(eq(ticket.id, ticketId));
+			await bump('tickets');
 
 			return {
 				success: true,

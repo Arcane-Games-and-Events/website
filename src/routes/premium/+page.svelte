@@ -853,7 +853,7 @@
 	/* Titles: Libre Franklin, heavy and tight, in the page's own colours.
 	   Emphasis is colour, not italics. */
 	.pm-title {
-		font-family: 'Libre Franklin', system-ui, sans-serif;
+		font-family: var(--font-libre);
 		font-weight: 800;
 		letter-spacing: -0.035em;
 		color: var(--pm-deep);

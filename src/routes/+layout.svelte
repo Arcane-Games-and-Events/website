@@ -1,4 +1,12 @@
 <script>
+	// Self-hosted variable fonts (only the axes the site uses). Each face is
+	// downloaded only on pages that render text in it.
+	import '@fontsource-variable/inter/opsz.css';
+	import '@fontsource-variable/newsreader/opsz.css';
+	import '@fontsource-variable/newsreader/opsz-italic.css';
+	import '@fontsource-variable/libre-franklin/wght.css';
+	import '@fontsource-variable/archivo/wdth.css';
+	import '@fontsource-variable/jost/wght.css';
 	import '../app.css';
 	import { page } from '$app/stores';
 	import { afterNavigate, onNavigate } from '$app/navigation';

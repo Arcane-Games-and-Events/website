@@ -4,7 +4,7 @@ import { db } from '$lib/server/db/index.js';
 import { event, standing, decklist, vod } from '$lib/server/db/schema.js';
 import { asc, gte, desc, and, or, eq, isNull } from 'drizzle-orm';
 import { getMuxThumbnailToken } from '$lib/server/mux.js';
-import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
 import { topByCircuit } from '$lib/server/players/circuitLeaders.js';
 import { calculateDerivedStats, compareStandings } from '$lib/players/standings.js';
@@ -76,10 +76,10 @@ function aggregateStandings(standingRows, { season = 'all', circuit = 'all' } = 
 }
 
 function fetchAllStandings() {
-	return getCachedOrFetch(
-		`${CACHE_KEYS.STANDINGS}:all`,
+	return cached(
+		'standings:all',
 		() => db.select().from(standing).orderBy(desc(standing.totalPoints)),
-		CACHE_TTL.MEDIUM
+		{ tags: ['standings'] }
 	);
 }
 
@@ -90,13 +90,13 @@ function fetchAllStandings() {
  * but cache hits return a small object.
  */
 function fetchHomeStandingsAggregates() {
-	return getCachedOrFetch(
-		`${CACHE_KEYS.STANDINGS}:home:aggregates:v3`,
+	return cached(
+		'standings:home:aggregates:v3',
 		async () => {
 			const rows = await fetchAllStandings();
 			return aggregateStandings(rows);
 		},
-		CACHE_TTL.SHORT
+		{ tags: ['standings'], mem: 15 }
 	);
 }
 
@@ -133,8 +133,8 @@ async function fetchCourses() {
 function fetchUpcomingEvents() {
 	const now = new Date();
 	return withTimeout(
-		getCachedOrFetch(
-			`${CACHE_KEYS.EVENTS}:upcoming:12`,
+		cached(
+			'events:upcoming:12',
 			() =>
 				db
 					.select()
@@ -144,7 +144,7 @@ function fetchUpcomingEvents() {
 					)
 					.orderBy(asc(event.eventDate))
 					.limit(12),
-			CACHE_TTL.SHORT
+			{ tags: ['events'], ttl: CACHE_TTL.FIVE_MINUTES }
 		),
 		10000,
 		[]
@@ -153,8 +153,8 @@ function fetchUpcomingEvents() {
 
 function fetchFeaturedDecklists() {
 	return withTimeout(
-		getCachedOrFetch(
-			`${CACHE_KEYS.DECKLISTS}:featured:3`,
+		cached(
+			'decklists:featured:3',
 			() =>
 				db
 					.select({
@@ -174,7 +174,7 @@ function fetchFeaturedDecklists() {
 					.where(and(eq(decklist.placement, 1), eq(decklist.isPublic, true)))
 					.orderBy(desc(decklist.createdAt))
 					.limit(3),
-			CACHE_TTL.MEDIUM
+			{ tags: ['decklists', 'events'] }
 		),
 		10000,
 		[]
@@ -183,8 +183,8 @@ function fetchFeaturedDecklists() {
 
 async function fetchRecentVods() {
 	try {
-		const vodRows = await getCachedOrFetch(
-			`${CACHE_KEYS.VODS}:home:latest:12`,
+		const vodRows = await cached(
+			'vods:home:latest:12',
 			() =>
 				db
 					.select()
@@ -192,7 +192,7 @@ async function fetchRecentVods() {
 					.where(and(eq(vod.isPublished, true), eq(vod.status, 'ready')))
 					.orderBy(desc(vod.publishedAt))
 					.limit(12),
-			CACHE_TTL.MEDIUM
+			{ tags: ['vods'] }
 		);
 
 		return Promise.all(

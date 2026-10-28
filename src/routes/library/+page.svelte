@@ -30,6 +30,7 @@
 		if (typeof c === 'string') return c;
 		return c.src || c.url || FALLBACK;
 	};
+	const coverSet = (a) => (typeof a?.coverImage === 'object' ? a.coverImage?.srcset : undefined);
 	const isNew = (d) => !!d && (Date.now() - new Date(d).getTime()) / 86400000 <= 7;
 	const stories = $derived(
 		[...(data.articles ?? [])]
@@ -42,6 +43,7 @@
 				title: a.title || 'Untitled',
 				dek: a.excerpt || '',
 				image: cover(a),
+				srcset: coverSet(a),
 				alt: a.coverImage?.alt || a.title || '',
 				kind: a.hasVideo ? 'video' : 'article',
 				rubric: a.tags?.[0]?.name || (a.hasVideo ? 'Video' : 'Article'),
@@ -385,6 +387,8 @@
 						<img
 							class="absolute inset-0 hidden h-full w-full scale-105 object-cover blur-2xl brightness-[0.8] md:block"
 							src={featured.image}
+							srcset={featured.srcset}
+							sizes="(min-width: 1024px) 60vw, 100vw"
 							alt=""
 							aria-hidden="true"
 						/>
@@ -396,6 +400,8 @@
 							<img
 								class="absolute inset-0 h-full w-full object-cover blur-[14px] brightness-[0.95]"
 								src={featured.image}
+								srcset={featured.srcset}
+								sizes="(min-width: 1024px) 60vw, 100vw"
 								alt=""
 							/>
 						</span>
@@ -406,6 +412,8 @@
 							<img
 								class="fp-kenburns absolute inset-0 h-full w-full object-cover"
 								src={featured.image}
+								srcset={featured.srcset}
+								sizes="(min-width: 1024px) 60vw, 100vw"
 								alt={featured.alt}
 								fetchpriority="high"
 							/>
@@ -693,6 +701,8 @@
 										<img
 											class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
 											src={s.image}
+											srcset={s.srcset}
+											sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
 											alt={s.alt}
 											loading="lazy"
 										/>
@@ -732,6 +742,8 @@
 										<img
 											class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
 											src={s.image}
+											srcset={s.srcset}
+											sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
 											alt={s.alt}
 											loading="lazy"
 										/>
@@ -775,6 +787,8 @@
 										<img
 											class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
 											src={s.image}
+											srcset={s.srcset}
+											sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
 											alt={s.alt}
 											loading="lazy"
 										/>
@@ -919,6 +933,8 @@
 									<img
 										class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
 										src={f.image}
+										srcset={f.srcset}
+										sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
 										alt={f.title}
 										loading="lazy"
 									/>

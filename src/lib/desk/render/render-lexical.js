@@ -3,7 +3,8 @@ import {
 	slugify,
 	extractLexicalText,
 	parseCardLinkUrl,
-	lookupCardImage
+	lookupCardImage,
+	transformSrcset
 } from './lexical-utils.js';
 import { getWidget } from './widgets.js';
 
@@ -109,7 +110,12 @@ function renderNode(node, ctx) {
 		const media = node.value || node;
 		const url = media.url || '';
 		const alt = media.alt || media.filename || '';
-		return `<figure class="my-8"><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" decoding="async" /></figure>`;
+		// Supabase resizes on request, so phones get a phone-sized copy.
+		const srcset = transformSrcset(url);
+		const responsive = srcset
+			? ` srcset="${escapeHtml(srcset)}" sizes="(min-width: 768px) 720px, 100vw"`
+			: '';
+		return `<figure class="my-8"><img src="${escapeHtml(url)}"${responsive} alt="${escapeHtml(alt)}" loading="lazy" decoding="async" /></figure>`;
 	}
 
 	if (node.type === 'link' || node.type === 'autolink') {

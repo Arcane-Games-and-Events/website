@@ -83,9 +83,9 @@ function ts(d) {
 /** @param {any} a */
 function entryImage(a) {
 	const c = a?.coverImage;
-	if (!c) return { src: FALLBACK_IMAGE, alt: '' };
-	if (typeof c === 'string') return { src: c, alt: a?.title || '' };
-	return { src: c.src || c.url || FALLBACK_IMAGE, alt: c.alt || a?.title || '' };
+	if (!c) return { src: FALLBACK_IMAGE, srcset: undefined, alt: '' };
+	if (typeof c === 'string') return { src: c, srcset: undefined, alt: a?.title || '' };
+	return { src: c.src || c.url || FALLBACK_IMAGE, srcset: c.srcset, alt: c.alt || a?.title || '' };
 }
 
 /** @param {any} v */
@@ -98,8 +98,8 @@ function vodImage(v) {
 }
 
 /* ============ story normalizers ============
- * Story: { kind, href, title, dek, image, alt, rubric, length, author,
- *          date, dateIso, premium }
+ * Story: { kind, href, title, dek, image, srcset?, alt, rubric, length,
+ *          author, date, dateIso, premium }
  * `rubric` is the small-caps department label above the headline;
  * `length` is "7 min read" / "34:18".
  */
@@ -114,6 +114,7 @@ function entryStory(a) {
 		title: a?.title || 'Untitled',
 		dek: a?.excerpt || '',
 		image: img.src,
+		srcset: img.srcset,
 		alt: img.alt,
 		rubric: a?.tags?.[0]?.name || (isVideo ? 'Video' : 'Article'),
 		length: isVideo

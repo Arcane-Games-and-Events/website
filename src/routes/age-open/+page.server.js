@@ -2,7 +2,7 @@ import { db } from '$lib/server/db/index.js';
 import { event, match, decklist, standing, lssEvent, ticket } from '$lib/server/db/schema.js';
 import { calculateFinalStandings } from '$lib/server/tournament-processor.js';
 import { asc, desc, eq, sql } from 'drizzle-orm';
-import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import {
 	calculateAgeRatingTotal,
 	getRatingTier,
@@ -49,13 +49,14 @@ export async function load({ url, setHeaders }) {
 	try {
 		// Cache the fully-computed page output by tab + filter combo so each
 		// tab returns ready-to-render data on cache hit. Different tabs cache
-		// separately because they carry different payloads.
-		return await getCachedOrFetch(
+		// separately because they carry different payloads. Any write to
+		// the underlying tables makes every combo stale; five minutes at most
+		// so upcoming/past splits follow the clock.
+		return await cached(
 			`age-open:page:v2:${activeTab}|${selectedSeason}|${selectedCircuit || 'none'}`,
 			async () => {
-				// Fetch raw data with Redis caching (5 minute TTL)
-				// This caches the expensive database queries
-				// Each fetch is gated on whether the current tab actually needs
+				// Each raw table read is cached on its own as well, so tabs
+				// share them. Each fetch is gated on whether the current tab actually needs
 				// the data. Skipped fetches resolve to []` immediately so
 				// downstream code stays unchanged. Overview visitors used to
 				// pay for the full match-table dump, public-decklist join,
@@ -66,30 +67,28 @@ export async function load({ url, setHeaders }) {
 					await Promise.all([
 						// Events — used across every tab (upcoming/past events,
 						// filter dropdowns, archive lookup).
-						getCachedOrFetch(
-							`${CACHE_KEYS.EVENTS}:all`,
-							() => db.select().from(event).orderBy(asc(event.eventDate)),
-							CACHE_TTL.MEDIUM
-						),
+						cached('events:all', () => db.select().from(event).orderBy(asc(event.eventDate)), {
+							tags: ['events']
+						}),
 						// Match table — only the Results tab's archive uses it.
 						needsArchive
-							? getCachedOrFetch(
-									`${CACHE_KEYS.EVENTS}:matches:all`,
+							? cached(
+									'events:matches:all',
 									() => db.select().from(match).orderBy(asc(match.round)),
-									CACHE_TTL.SHORT
+									{ tags: ['matches'] }
 								)
 							: Promise.resolve([]),
 						// Standings — used for filter dropdowns + career/season
 						// computation on multiple tabs. Kept across all tabs.
-						getCachedOrFetch(
-							`${CACHE_KEYS.STANDINGS}:all`,
+						cached(
+							'standings:all',
 							() => db.select().from(standing).orderBy(desc(standing.totalPoints)),
-							CACHE_TTL.MEDIUM
+							{ tags: ['standings'] }
 						),
 						// Public decklists — only the Decklists tab renders them.
 						needsDecklists
-							? getCachedOrFetch(
-									`${CACHE_KEYS.EVENTS}:decklists:public`,
+							? cached(
+									'events:decklists:public',
 									() =>
 										db
 											.select({
@@ -111,28 +110,28 @@ export async function load({ url, setHeaders }) {
 											.innerJoin(event, eq(decklist.eventId, event.id))
 											.where(eq(decklist.isPublic, true))
 											.orderBy(desc(decklist.createdAt)),
-									CACHE_TTL.MEDIUM
+									{ tags: ['decklists', 'events'] }
 								)
 							: Promise.resolve([]),
 						// LSS tournament chips — only shown in the upcoming-event
 						// slots on Overview + Events tabs.
 						needsUpcomingChrome
-							? getCachedOrFetch(
-									`${CACHE_KEYS.EVENTS}:lss:active`,
+							? cached(
+									'events:lss:active',
 									() =>
 										db
 											.select()
 											.from(lssEvent)
 											.where(eq(lssEvent.isActive, true))
 											.orderBy(asc(lssEvent.startDate)),
-									CACHE_TTL.MEDIUM
+									{ tags: ['lss'] }
 								)
 							: Promise.resolve([]),
 						// Ticket counts — only rendered as capacity chips on
 						// upcoming-event cards (Overview + Events).
 						needsUpcomingChrome
-							? getCachedOrFetch(
-									`${CACHE_KEYS.EVENTS}:ticket-counts`,
+							? cached(
+									'events:ticket-counts',
 									() =>
 										db
 											.select({
@@ -142,7 +141,7 @@ export async function load({ url, setHeaders }) {
 											.from(ticket)
 											.where(eq(ticket.refunded, false))
 											.groupBy(ticket.eventId),
-									CACHE_TTL.SHORT
+									{ tags: ['tickets'] }
 								)
 							: Promise.resolve([])
 					]);
@@ -563,7 +562,10 @@ export async function load({ url, setHeaders }) {
 					circuitsByYear
 				};
 			},
-			CACHE_TTL.SHORT
+			{
+				tags: ['events', 'matches', 'standings', 'decklists', 'lss', 'tickets'],
+				ttl: CACHE_TTL.FIVE_MINUTES
+			}
 		);
 	} catch (error) {
 		console.error('Error loading AGE Open data:', error);

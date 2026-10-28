@@ -4,6 +4,7 @@ import { deskEntry, deskLesson } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { canEditEntries, canEditCourses, canEditEntry, isAdmin } from '$lib/server/auth/roles.js';
 import mux from '$lib/server/mux.js';
+import { bump } from '$lib/server/cache/index.js';
 
 /**
  * POST /api/desk/mux/upload-url
@@ -75,6 +76,7 @@ export async function POST({ request, locals, url }) {
 			updatedAt: new Date()
 		})
 		.where(eq(table.id, id));
+	await bump(target === 'entry' ? 'entries' : 'courses');
 
 	return json({ uploadUrl: upload.url, uploadId: upload.id });
 }

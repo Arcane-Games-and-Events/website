@@ -4,6 +4,7 @@ import { db } from '$lib/server/db/index.js';
 import { vod, deskEntry, deskLesson } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import mux from '$lib/server/mux.js';
+import { bump } from '$lib/server/cache/index.js';
 
 /**
  * Mux webhook — dispatches events to whichever row's Mux upload_id or
@@ -89,17 +90,18 @@ async function updateByUploadId(uploadId, { vod: vodSet, desk: deskSet }) {
 		.set({ ...vodSet, ...stamp })
 		.where(eq(vod.muxUploadId, uploadId))
 		.returning({ id: vod.id });
-	if (vodRes.length) return;
+	if (vodRes.length) return bump('vods');
 	const entryRes = await db
 		.update(deskEntry)
 		.set({ ...deskSet, ...stamp })
 		.where(eq(deskEntry.muxUploadId, uploadId))
 		.returning({ id: deskEntry.id });
-	if (entryRes.length) return;
+	if (entryRes.length) return bump('entries');
 	await db
 		.update(deskLesson)
 		.set({ ...deskSet, ...stamp })
 		.where(eq(deskLesson.muxUploadId, uploadId));
+	await bump('courses');
 }
 
 /**
@@ -113,15 +115,16 @@ async function updateByAssetId(assetId, { vod: vodSet, desk: deskSet }) {
 		.set({ ...vodSet, ...stamp })
 		.where(eq(vod.muxAssetId, assetId))
 		.returning({ id: vod.id });
-	if (vodRes.length) return;
+	if (vodRes.length) return bump('vods');
 	const entryRes = await db
 		.update(deskEntry)
 		.set({ ...deskSet, ...stamp })
 		.where(eq(deskEntry.muxAssetId, assetId))
 		.returning({ id: deskEntry.id });
-	if (entryRes.length) return;
+	if (entryRes.length) return bump('entries');
 	await db
 		.update(deskLesson)
 		.set({ ...deskSet, ...stamp })
 		.where(eq(deskLesson.muxAssetId, assetId));
+	await bump('courses');
 }

@@ -8,7 +8,8 @@ import {
 	partnerReferral,
 	memberReferral
 } from '$lib/server/db/schema.js';
-import { auth } from '$lib/server/lucia.js';
+import { auth, forgetSession } from '$lib/server/lucia.js';
+import { bump } from '$lib/server/cache/index.js';
 import { recordConversion } from '$lib/server/contentAnalytics/collect.js';
 import { eq, and } from 'drizzle-orm';
 import {
@@ -315,8 +316,10 @@ export async function POST({ request, locals, cookies }) {
 			// Invalidate current session and create new one with updated role
 			if (locals.session) {
 				await auth.invalidateSession(locals.session.id);
+				await forgetSession(locals.session.id);
 				console.log('Old session invalidated');
 			}
+			await bump(`user:${currentUser.id}`, 'users');
 
 			// Create new session with updated user data
 			const newSession = await auth.createSession(currentUser.id, {});

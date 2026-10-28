@@ -1304,7 +1304,7 @@
 		gap: 1rem;
 		padding: 0.5rem 0.75rem;
 		font-size: 0.8125rem;
-		font-family: 'Libre Franklin', system-ui, sans-serif;
+		font-family: var(--font-libre);
 	}
 	.desk-diff-view :global(.diff-widget-label) {
 		font-weight: 500;

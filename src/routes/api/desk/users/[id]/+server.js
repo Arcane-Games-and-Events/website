@@ -1,5 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
+import { bump } from '$lib/server/cache/index.js';
 import { user as userTable } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { isAdmin } from '$lib/server/auth/roles.js';
@@ -53,6 +54,7 @@ export async function PATCH({ params, request, locals }) {
 	if (!row) throw error(404, 'User not found');
 
 	await db.update(userTable).set(updates).where(eq(userTable.id, params.id));
+	await bump(`user:${params.id}`, 'users');
 
 	const [updated] = await db
 		.select({

@@ -4,16 +4,16 @@ import { vod } from '$lib/server/db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
 import mux, { getMuxThumbnailToken } from '$lib/server/mux.js';
 import { userHasPremiumAccess } from '$lib/server/articles/access.js';
-import { getCachedOrFetch, CACHE_KEYS, CACHE_TTL } from '$lib/server/redis/index.js';
+import { cached } from '$lib/server/cache/index.js';
 
 export async function load({ params, locals }) {
 	// Cache the shared read side: the VOD row itself + the ranked
 	// related-VOD list. The paywall/playback token signing sits OUTSIDE
 	// this cache because it depends on the viewer's premium status; the
 	// thumbnail token signing routes through `getMuxThumbnailToken` which
-	// has its own 12h Redis cache.
-	const cached = await getCachedOrFetch(
-		`${CACHE_KEYS.VODS}:viewer:${params.id}`,
+	// has its own 12h cache.
+	const viewer = await cached(
+		`vods:viewer:${params.id}`,
 		async () => {
 			const [vodItem] = await db.select().from(vod).where(eq(vod.id, params.id)).limit(1);
 
@@ -53,10 +53,10 @@ export async function load({ params, locals }) {
 
 			return { vodItem, relatedVods };
 		},
-		CACHE_TTL.MEDIUM
+		{ tags: ['vods'] }
 	);
 
-	const vodItem = cached?.vodItem;
+	const vodItem = viewer?.vodItem;
 	if (!vodItem) {
 		throw error(404, 'VOD not found');
 	}
@@ -82,7 +82,7 @@ export async function load({ params, locals }) {
 	// Thumbnail tokens (for related-VOD cards and the paywall blur) all
 	// route through the cached helper — same signature reused for ~12h.
 	const relatedVods = await Promise.all(
-		(cached.relatedVods || []).map(async (v) => {
+		(viewer.relatedVods || []).map(async (v) => {
 			if (!v.muxPlaybackId) return v;
 			const token = await getMuxThumbnailToken(v.muxPlaybackId);
 			return token ? { ...v, thumbnailToken: token } : v;

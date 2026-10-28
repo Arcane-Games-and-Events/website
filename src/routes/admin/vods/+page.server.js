@@ -2,25 +2,12 @@ import { fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { vod, event } from '$lib/server/db/schema.js';
 import { eq, desc } from 'drizzle-orm';
-import { invalidateCache, invalidateByPrefix, CACHE_KEYS } from '$lib/server/redis/index.js';
+import { bump } from '$lib/server/cache/index.js';
 import { listHeroNames } from '$lib/server/cards/heroes.js';
 
-// Homepage caches the latest 12 VODs under this key. Any admin write
-// that changes the "which VODs are published?" set must bust it.
-const HOMEPAGE_VODS_KEY = `${CACHE_KEYS.VODS}:home:latest:12`;
-// The `/library/vods` list page keeps one cache entry per filter combo
-// under this prefix — bust the whole prefix so every variant refreshes.
-const VODS_LIST_PREFIX = `${CACHE_KEYS.VODS}:list:`;
-
-/** Bust every VOD-adjacent cache in one shot. Called after any admin
- *  VOD write. Also busts the single-VOD viewer cache when `vodId` is
- *  known so the individual viewer page refreshes immediately.
- */
-async function bustVodCaches(vodId) {
-	await invalidateCache(HOMEPAGE_VODS_KEY);
-	await invalidateByPrefix(VODS_LIST_PREFIX);
-	if (vodId) await invalidateCache(`${CACHE_KEYS.VODS}:viewer:${vodId}`);
-}
+// Every cached VOD surface (homepage row, /library/vods combos, viewer
+// pages) carries the `vods` tag, so any admin VOD write is one bump.
+const bustVodCaches = () => bump('vods');
 
 export async function load({ locals }) {
 	if (!locals.user || locals.user.role !== 'admin') {
@@ -114,6 +101,7 @@ export const actions = {
 				})
 				.returning();
 
+			await bustVodCaches();
 			return { success: true, vod: newVod };
 		} catch (err) {
 			console.error('Error creating VOD:', err);
@@ -159,6 +147,7 @@ export const actions = {
 				.where(eq(vod.id, vodId))
 				.returning();
 
+			await bustVodCaches();
 			return { success: true, vod: updated };
 		} catch (err) {
 			console.error('Error updating VOD:', err);
@@ -197,7 +186,7 @@ export const actions = {
 			}
 
 			await db.delete(vod).where(eq(vod.id, vodId));
-			await bustVodCaches(vodId);
+			await bustVodCaches();
 			return { success: true };
 		} catch (err) {
 			console.error('Error deleting VOD:', err);
@@ -228,7 +217,7 @@ export const actions = {
 				})
 				.where(eq(vod.id, vodId));
 
-			await bustVodCaches(vodId);
+			await bustVodCaches();
 			return { success: true };
 		} catch (err) {
 			console.error('Error publishing VOD:', err);
@@ -258,7 +247,7 @@ export const actions = {
 				})
 				.where(eq(vod.id, vodId));
 
-			await bustVodCaches(vodId);
+			await bustVodCaches();
 			return { success: true };
 		} catch (err) {
 			console.error('Error unpublishing VOD:', err);
@@ -322,7 +311,7 @@ export const actions = {
 
 			await db.update(vod).set(updateData).where(eq(vod.id, vodId));
 
-			await bustVodCaches(vodId);
+			await bustVodCaches();
 			return { success: true, syncedStatus: updateData.status };
 		} catch (err) {
 			console.error('Error syncing VOD from Mux:', err);

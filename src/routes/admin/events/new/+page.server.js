@@ -1,5 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
+import { bump } from '$lib/server/cache/index.js';
 import { event } from '$lib/server/db/schema';
 import { nanoid } from 'nanoid';
 import { parseDatetimeLocal } from '$lib/server/dates.js';
@@ -111,6 +112,8 @@ export const actions = {
 				}
 			});
 		}
+
+		await bump('events');
 
 		// Redirect to admin dashboard on success
 		throw redirect(303, '/admin');

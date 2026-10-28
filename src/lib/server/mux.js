@@ -1,6 +1,6 @@
 import Mux from '@mux/mux-node';
 import { env } from '$env/dynamic/private';
-import { getCachedOrFetch, CACHE_TTL } from './redis/index.js';
+import { cached, CACHE_TTL } from './cache/index.js';
 
 const mux = new Mux({
 	tokenId: env.MUX_TOKEN_ID,
@@ -15,10 +15,10 @@ const mux = new Mux({
  */
 export async function getMuxThumbnailToken(playbackId) {
 	if (!playbackId) return null;
-	return getCachedOrFetch(
+	return cached(
 		`mux:thumbnail:${playbackId}`,
 		() => mux.jwt.signPlaybackId(playbackId, { type: 'thumbnail', expiration: '24h' }),
-		CACHE_TTL.HOUR * 12
+		{ ttl: CACHE_TTL.HOUR * 12 }
 	);
 }
 
@@ -29,10 +29,10 @@ export async function getMuxThumbnailToken(playbackId) {
  */
 export async function getMuxPlaybackToken(playbackId) {
 	if (!playbackId) return null;
-	return getCachedOrFetch(
+	return cached(
 		`mux:playback:${playbackId}`,
 		() => mux.jwt.signPlaybackId(playbackId, { type: 'video', expiration: '24h' }),
-		CACHE_TTL.HOUR * 12
+		{ ttl: CACHE_TTL.HOUR * 12 }
 	);
 }
 

@@ -4,7 +4,9 @@ import adapter from '@sveltejs/adapter-vercel';
 const config = {
 	kit: {
 		adapter: adapter({
-			runtime: 'nodejs22.x'
+			runtime: 'nodejs22.x',
+			// Oregon, next to the Supabase database (aws us-west-2)
+			regions: ['pdx1']
 		}),
 		csrf: {
 			// Built-in origin check off ('*' trusts every origin) so external

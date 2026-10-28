@@ -1,5 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
+import { bump } from '$lib/server/cache/index.js';
 import { ticket } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 
@@ -12,6 +13,7 @@ export async function POST({ request, locals }) {
 		const { ticketId, enteredIntoGem } = await request.json();
 
 		await db.update(ticket).set({ enteredIntoGem }).where(eq(ticket.id, ticketId));
+		await bump('tickets');
 
 		return json({ success: true, enteredIntoGem });
 	} catch (err) {

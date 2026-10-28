@@ -1,11 +1,23 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
+import { bump } from '$lib/server/cache/index.js';
+import {
+	adminCounts,
+	listOrders,
+	listUsers,
+	orderAnalytics,
+	ticketStatsByEvent
+} from '$lib/server/admin/dashboard.js';
 import { order, user, ticket, entitlement } from '$lib/server/db/schema.js';
 import { eq, sql, or, ilike } from 'drizzle-orm';
 
-// Helper to add timeout to promises
-const withTimeout = (promise, ms, fallback) =>
-	Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(fallback), ms))]);
+const EMPTY = {
+	allOrders: [],
+	allUsers: [],
+	revenueStats: { today: 0, week: 0, month: 0, allTime: 0, byType: [] },
+	refundStats: { refundedTickets: 0, totalTicketOrders: 0 },
+	stats: { totalEvents: 0, totalOrders: 0, premiumUsers: 0, totalPlayers: 0, totalUsers: 0 }
+};
 
 export async function load({ locals }) {
 	// Require admin authentication
@@ -14,47 +26,26 @@ export async function load({ locals }) {
 	}
 
 	try {
-		// Single RPC call replaces 20+ individual queries with 15s timeout
-		const result = await withTimeout(
-			db.execute(sql`SELECT get_admin_dashboard_stats() as data`),
-			15000,
-			null
-		);
+		const [allOrders, allUsers, revenueStats, counts, ticketStats] = await Promise.all([
+			listOrders(),
+			listUsers(),
+			orderAnalytics(),
+			adminCounts(),
+			ticketStatsByEvent()
+		]);
 
-		if (!result) {
-			console.warn('Admin orders RPC timed out - returning empty data');
-			return {
-				user: locals.user,
-				allOrders: [],
-				allUsers: [],
-				revenueStats: { today: 0, week: 0, month: 0, allTime: 0, byType: [] },
-				refundStats: { refundedTickets: 0, totalTicketOrders: 0 },
-				stats: { totalEvents: 0, totalOrders: 0, premiumUsers: 0, totalPlayers: 0, totalUsers: 0 }
-			};
-		}
-
-		const data = result.rows?.[0]?.data || result[0]?.data;
-
-		if (!data) {
-			throw new Error('No data returned from get_admin_dashboard_stats()');
-		}
-
-		// Process orders and enrich with refund status
-		const allOrders = data.orders || [];
+		// Ticket orders show the ticket's refund state.
 		const ticketOrderIds = allOrders
 			.filter((o) => o.meta?.type === 'ticket' && o.meta?.ticketId)
 			.map((o) => o.meta.ticketId);
 
-		let ticketRefundMap = new Map();
+		const ticketRefundMap = new Map();
 		if (ticketOrderIds.length > 0) {
 			const ticketStatuses = await db
 				.select({ id: ticket.id, refunded: ticket.refunded })
 				.from(ticket)
 				.where(sql`${ticket.id} IN ${ticketOrderIds}`);
-
-			ticketStatuses.forEach((t) => {
-				ticketRefundMap.set(t.id, t.refunded);
-			});
+			ticketStatuses.forEach((t) => ticketRefundMap.set(t.id, t.refunded));
 		}
 
 		const enrichedOrders = allOrders.map((o) => {
@@ -64,77 +55,31 @@ export async function load({ locals }) {
 			} else if (o.meta?.type === 'subscription') {
 				status = 'active';
 			}
-			// Transform snake_case from RPC to camelCase for frontend
-			return {
-				id: o.id,
-				provider: o.provider,
-				providerRef: o.provider_ref || o.providerRef,
-				userEmail: o.user_email || o.userEmail,
-				amount: o.amount,
-				currency: o.currency,
-				meta: o.meta,
-				createdAt: o.created_at || o.createdAt,
-				status
-			};
+			return { ...o, status };
 		});
 
-		// Revenue stats
-		const revenueStats = {
-			today: parseFloat(data.analytics?.todayRevenue) || 0,
-			week: parseFloat(data.analytics?.weekRevenue) || 0,
-			month: parseFloat(data.analytics?.monthRevenue) || 0,
-			allTime: parseFloat(data.analytics?.totalRevenue) || 0,
-			byType: (data.analytics?.revenueByType || []).map((r) => ({
-				type: r.type,
-				total: parseFloat(r.total) || 0,
-				count: Number(r.count) || 0
-			}))
-		};
-
-		// Refund stats
-		const ticketStatsList = data.ticketStats || [];
 		const refundStats = {
-			refundedTickets: ticketStatsList.reduce((sum, t) => sum + (Number(t.refunded) || 0), 0),
+			refundedTickets: Object.values(ticketStats).reduce((sum, t) => sum + t.refunded, 0),
 			totalTicketOrders: revenueStats.byType.find((r) => r.type === 'ticket')?.count || 0
 		};
 
 		return {
 			user: locals.user,
 			allOrders: enrichedOrders,
-			allUsers: data.users || [],
+			allUsers,
 			revenueStats,
 			refundStats,
 			stats: {
-				totalEvents: parseInt(data.stats?.totalEvents) || 0,
-				totalOrders: parseInt(data.stats?.totalOrders) || 0,
-				premiumUsers: parseInt(data.stats?.premiumUsers) || 0,
-				totalPlayers: parseInt(data.stats?.totalPlayers) || 0,
-				totalUsers: parseInt(data.stats?.totalUsers) || 0
+				totalEvents: counts.totalEvents,
+				totalOrders: counts.totalOrders,
+				premiumUsers: counts.premiumUsers,
+				totalPlayers: counts.totalPlayers,
+				totalUsers: counts.totalUsers
 			}
 		};
 	} catch (error) {
 		console.error('Admin orders page load error:', error);
-
-		if (error.message?.includes('get_admin_dashboard_stats')) {
-			console.error(
-				'RPC function not found. Run the migration: supabase/migrations/001_rpc_functions.sql'
-			);
-		}
-
-		return {
-			user: locals.user,
-			allOrders: [],
-			allUsers: [],
-			revenueStats: { today: 0, week: 0, month: 0, allTime: 0, byType: [] },
-			refundStats: { refundedTickets: 0, totalTicketOrders: 0 },
-			stats: {
-				totalEvents: 0,
-				totalOrders: 0,
-				premiumUsers: 0,
-				totalPlayers: 0,
-				totalUsers: 0
-			}
-		};
+		return { user: locals.user, ...EMPTY };
 	}
 }
 
@@ -178,13 +123,15 @@ export const actions = {
 				}
 
 				// Downgrade user to free tier
-				await db
+				const downgraded = await db
 					.update(user)
 					.set({
 						subscriptionStatus: 'cancelled',
 						role: 'free'
 					})
-					.where(eq(user.email, orderData.userEmail));
+					.where(eq(user.email, orderData.userEmail))
+					.returning({ id: user.id });
+				await bump('users', 'orders', ...downgraded.map((u) => `user:${u.id}`));
 
 				// Try to void/refund the payment
 				try {

@@ -304,6 +304,8 @@
 							class="fp-kenburns fp-hero-m-sharp absolute inset-x-0 top-0 aspect-video w-full object-cover will-change-transform lg:object-contain"
 							style={imgStyle}
 							src={lead.image}
+							srcset={lead.srcset}
+							sizes="100vw"
 							alt={lead.alt}
 							fetchpriority={activeIdx === 0 ? 'high' : 'auto'}
 						/>
@@ -430,6 +432,8 @@
 							<img
 								class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
 								src={first.image}
+								srcset={first.srcset}
+								sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
 								alt={first.alt}
 								loading="lazy"
 							/>

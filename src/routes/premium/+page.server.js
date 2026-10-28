@@ -1,7 +1,7 @@
 import { db } from '$lib/server/db';
 import { savedCard, standing, deskEntry } from '$lib/server/db/schema.js';
 import { and, count, countDistinct, eq, isNotNull, lte, or } from 'drizzle-orm';
-import { getCachedOrFetch, CACHE_TTL } from '$lib/server/redis/index.js';
+import { cached } from '$lib/server/cache/index.js';
 import { playerKey } from '$lib/server/players/key.js';
 import { env } from '$env/dynamic/private';
 import {
@@ -21,7 +21,7 @@ import {
  */
 async function loadImpact() {
 	try {
-		return await getCachedOrFetch(
+		return await cached(
 			'premium:impact:v2',
 			async () => {
 				const published = or(
@@ -41,7 +41,7 @@ async function loadImpact() {
 					writers: Number(pieces[0]?.writers ?? 0)
 				};
 			},
-			CACHE_TTL.LONG
+			{ tags: ['entries', 'standings'] }
 		);
 	} catch (err) {
 		console.error('premium impact stats failed:', err);

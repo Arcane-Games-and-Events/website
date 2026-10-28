@@ -2,7 +2,7 @@ import { db } from '$lib/server/db/index.js';
 import { deskEntry, user as userTable } from '$lib/server/db/schema.js';
 import { eq, inArray, isNotNull, and } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
-import { getCachedOrFetch } from '$lib/server/redis/index.js';
+import { cached } from '$lib/server/cache/index.js';
 import { loadTagsForEntries } from '$lib/server/desk/list.js';
 import { isMissingTable } from './collect.js';
 
@@ -54,7 +54,7 @@ const sinceDate = (days) => new Date(Date.now() - days * 864e5).toISOString();
 
 async function guarded(key, fn) {
 	try {
-		return { available: true, ...(await getCachedOrFetch(key, fn, TTL)) };
+		return { available: true, ...(await cached(key, fn, { ttl: TTL })) };
 	} catch (err) {
 		if (isMissingTable(err)) return { available: false };
 		throw err;
@@ -505,10 +505,10 @@ export function entryDetail(entryId, days) {
 
 		const totals = (await perEntryTotals(since, [entryId])).get(entryId) || null;
 		// the yardstick needs every piece's totals; cached separately
-		const y = await getCachedOrFetch(
+		const y = await cached(
 			`ca:yardstick:v1:${days}`,
 			async () => yardstick(await perEntryTotals(since)),
-			TTL
+			{ ttl: TTL }
 		);
 
 		const views = rowsOf(

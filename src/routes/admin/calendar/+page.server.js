@@ -1,77 +1,24 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { lssEvent } from '$lib/server/db/schema.js';
-import { eq, sql } from 'drizzle-orm';
-import { invalidateCache, CACHE_KEYS } from '$lib/server/redis/index.js';
+import { eq } from 'drizzle-orm';
+import { bump } from '$lib/server/cache/index.js';
+import { listLssEvents } from '$lib/server/admin/dashboard.js';
 
-// The AGE Open page caches active LSS events under this key. Any admin
-// LSS write below must bust it so the calendar reflects the change on
-// the next navigation instead of after the 5-min TTL.
-const LSS_ACTIVE_KEY = `${CACHE_KEYS.EVENTS}:lss:active`;
-
-// Helper to add timeout to promises
-const withTimeout = (promise, ms, fallback) =>
-	Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(fallback), ms))]);
+// The AGE Open page caches active LSS events under the `lss` tag. Every
+// LSS write below bumps it so the calendar updates on the next request.
 
 export async function load({ locals }) {
 	if (!locals.user || locals.user.role !== 'admin') {
 		throw redirect(302, '/login?redirect=/admin/calendar');
 	}
 
-	try {
-		// Single RPC call with 15s timeout
-		const result = await withTimeout(
-			db.execute(sql`SELECT get_admin_dashboard_stats() as data`),
-			15000,
-			null
-		);
+	const lssEvents = await listLssEvents().catch((err) => {
+		console.error('Admin calendar load error:', err);
+		return [];
+	});
 
-		if (!result) {
-			console.warn('Admin calendar RPC timed out - returning empty data');
-			return { user: locals.user, lssEvents: [] };
-		}
-
-		const data = result.rows?.[0]?.data || result[0]?.data;
-
-		if (!data) {
-			throw new Error('No data returned from get_admin_dashboard_stats()');
-		}
-
-		// Transform LSS events from snake_case to camelCase
-		const rawLssEvents = data.lssEvents || [];
-		const lssEvents = rawLssEvents.map((e) => ({
-			id: e.id,
-			name: e.name,
-			description: e.description,
-			startDate: e.start_date || e.startDate,
-			endDate: e.end_date || e.endDate,
-			eventType: e.event_type || e.eventType,
-			format: e.format,
-			link: e.link,
-			isActive: e.is_active ?? e.isActive ?? true,
-			createdBy: e.created_by || e.createdBy,
-			createdAt: e.created_at || e.createdAt,
-			updatedAt: e.updated_at || e.updatedAt
-		}));
-
-		return {
-			user: locals.user,
-			lssEvents
-		};
-	} catch (error) {
-		console.error('Admin calendar load error:', error);
-
-		if (error.message?.includes('get_admin_dashboard_stats')) {
-			console.error(
-				'RPC function not found. Run the migration: supabase/migrations/001_rpc_functions.sql'
-			);
-		}
-
-		return {
-			user: locals.user,
-			lssEvents: []
-		};
-	}
+	return { user: locals.user, lssEvents };
 }
 
 export const actions = {
@@ -115,7 +62,7 @@ export const actions = {
 				createdBy: locals.user.id
 			});
 
-			await invalidateCache(LSS_ACTIVE_KEY);
+			await bump('lss');
 			return { success: true, message: 'LSS event created successfully' };
 		} catch (err) {
 			console.error('Error creating LSS event:', err);
@@ -168,7 +115,7 @@ export const actions = {
 				})
 				.where(eq(lssEvent.id, seasonId));
 
-			await invalidateCache(LSS_ACTIVE_KEY);
+			await bump('lss');
 			return { success: true, message: 'LSS event updated successfully' };
 		} catch (err) {
 			console.error('Error updating LSS event:', err);
@@ -192,7 +139,7 @@ export const actions = {
 		try {
 			await db.delete(lssEvent).where(eq(lssEvent.id, seasonId));
 
-			await invalidateCache(LSS_ACTIVE_KEY);
+			await bump('lss');
 			return { success: true, message: 'LSS season deleted successfully' };
 		} catch (err) {
 			console.error('Error deleting LSS season:', err);

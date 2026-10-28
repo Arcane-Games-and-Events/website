@@ -15,7 +15,7 @@ import {
 	processTournamentResults,
 	calculateFinalStandings
 } from '$lib/server/tournament-processor.js';
-import { invalidateCache, invalidateByPrefix, CACHE_KEYS } from '$lib/server/redis/index.js';
+import { bump } from '$lib/server/cache/index.js';
 import { parseDatetimeLocal } from '$lib/server/dates.js';
 import { playerKeyFromIdName } from '$lib/server/players/key.js';
 import { listHeroNames } from '$lib/server/cards/heroes.js';
@@ -298,6 +298,7 @@ export const actions = {
 				})
 				.where(eq(ticket.id, ticketId));
 
+			await bump('tickets');
 			return { success: true, message: `Ticket ${refundType} successfully` };
 		} catch (err) {
 			console.error('Error refunding ticket:', err);
@@ -352,9 +353,7 @@ export const actions = {
 
 			await db.update(event).set(updateData).where(eq(event.id, params.eventId));
 
-			// Invalidate events cache so changes appear immediately
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
+			await bump('events');
 
 			return { success: true, message: 'Event updated successfully' };
 		} catch (err) {
@@ -374,6 +373,7 @@ export const actions = {
 
 		try {
 			await db.update(event).set({ gemIdRequired }).where(eq(event.id, params.eventId));
+			await bump('events');
 
 			return {
 				success: true,
@@ -461,11 +461,7 @@ export const actions = {
 				await db.insert(decklist).values(decklistData);
 			}
 
-			// Invalidate the public decklists cache so the age-open page
-			// updates, plus the homepage's featured-decklists cache since
-			// placement / isPublic may have changed.
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:decklists:public`);
-			await invalidateCache(`${CACHE_KEYS.DECKLISTS}:featured:3`);
+			await bump('decklists');
 
 			return { success: true, message: 'Decklist saved successfully' };
 		} catch (err) {
@@ -486,11 +482,7 @@ export const actions = {
 		try {
 			await db.delete(decklist).where(eq(decklist.id, decklistId));
 
-			// Invalidate both the public decklists cache and the homepage's
-			// featured-decklists cache (deleting a placement=1 public decklist
-			// changes what the homepage should render).
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:decklists:public`);
-			await invalidateCache(`${CACHE_KEYS.DECKLISTS}:featured:3`);
+			await bump('decklists');
 
 			return { success: true, message: 'Decklist deleted' };
 		} catch (err) {
@@ -804,17 +796,9 @@ export const actions = {
 				.set({ tournamentResults: resultsJson })
 				.where(eq(event.id, params.eventId));
 
-			// Invalidate caches so changes appear immediately.
-			// `matches:{eventId}` is not a key we actually set anywhere,
-			// so we drop it here — leaving it in would suggest a per-event
-			// matches cache exists when it doesn't.
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:matches:all`);
-			await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
-			// CSV processing can shift every player's standings — wipe
-			// the profile cache and this event's results cache.
-			await invalidateByPrefix(`${CACHE_KEYS.PLAYER}:`);
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:results:${params.eventId}`);
+			// CSV processing rewrites this event's matches and can shift
+			// every player's standings.
+			await bump('events', 'matches', 'standings');
 
 			const standingsMessage = standingsUpdated
 				? ' Standings updated.'
@@ -841,6 +825,7 @@ export const actions = {
 
 		try {
 			await db.update(event).set({ status: 'in_progress' }).where(eq(event.id, params.eventId));
+			await bump('events');
 
 			return {
 				success: true,
@@ -885,11 +870,7 @@ export const actions = {
 				.where(eq(eventStaff.eventId, params.eventId));
 			await db.delete(eventStaff).where(eq(eventStaff.eventId, params.eventId));
 
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
-			await Promise.all(
-				affectedStaff.map((s) => invalidateCache(`layout:user:${s.userId}:staff_count`))
-			);
+			await bump('events', ...affectedStaff.map((s) => `user:${s.userId}`));
 
 			return {
 				success: true,
@@ -917,7 +898,7 @@ export const actions = {
 				})
 				.where(eq(event.id, params.eventId));
 
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
+			await bump('events');
 
 			return { success: true, message: 'Event reopened. You can now update results.' };
 		} catch (err) {
@@ -965,11 +946,7 @@ export const actions = {
 				await db.delete(eventStaff).where(eq(eventStaff.eventId, params.eventId));
 			}
 
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
-			await Promise.all(
-				affectedStaff.map((s) => invalidateCache(`layout:user:${s.userId}:staff_count`))
-			);
+			await bump('events', ...affectedStaff.map((s) => `user:${s.userId}`));
 
 			const statusMessage =
 				newStatus === 'completed' || newStatus === 'cancelled'
@@ -1018,7 +995,7 @@ export const actions = {
 				assignedBy: locals.user.id
 			});
 
-			await invalidateCache(`layout:user:${staffId}:staff_count`);
+			await bump(`user:${staffId}`);
 
 			return { success: true, message: 'Staff assigned successfully' };
 		} catch (err) {
@@ -1045,7 +1022,7 @@ export const actions = {
 				.delete(eventStaff)
 				.where(and(eq(eventStaff.userId, staffId), eq(eventStaff.eventId, params.eventId)));
 
-			await invalidateCache(`layout:user:${staffId}:staff_count`);
+			await bump(`user:${staffId}`);
 
 			return { success: true, message: 'Staff unassigned successfully' };
 		} catch (err) {
@@ -1222,6 +1199,7 @@ export const actions = {
 
 			// Insert new hero data
 			await db.insert(eventPlayerHero).values(heroData);
+			await bump('events');
 
 			return {
 				success: true,
@@ -1263,6 +1241,7 @@ export const actions = {
 					)
 				);
 
+			await bump('events');
 			return { success: true, message: 'Hero data deleted' };
 		} catch (err) {
 			console.error('Error deleting heroes:', err);
@@ -1314,17 +1293,9 @@ export const actions = {
 			// 6. Finally delete the event
 			await db.delete(event).where(eq(event.id, params.eventId));
 
-			// Deleting a whole event blows through decklists, matches, and
-			// standings, so bust every downstream cache in one shot.
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:all`);
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:upcoming:3`);
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:matches:all`);
-			await invalidateCache(`${CACHE_KEYS.EVENTS}:decklists:public`);
-			await invalidateCache(`${CACHE_KEYS.DECKLISTS}:featured:3`);
-			await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
-			// Cascade: profile pages and per-event result caches now stale.
-			await invalidateByPrefix(`${CACHE_KEYS.PLAYER}:`);
-			await invalidateByPrefix(`${CACHE_KEYS.EVENTS}:results:`);
+			// Deleting a whole event removes its decklists, matches, tickets
+			// and standings points.
+			await bump('events', 'matches', 'decklists', 'standings', 'tickets');
 
 			// Redirect to events list
 			throw redirect(302, '/admin/events');

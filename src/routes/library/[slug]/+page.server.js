@@ -12,6 +12,7 @@ import {
 	loadAuthor,
 	buildEntryVideo
 } from '$lib/server/desk/entryData.js';
+import { mediaImage } from '$lib/server/desk/image.js';
 
 /**
  * Truncate Lexical content to only show first few paragraphs for preview
@@ -131,23 +132,9 @@ async function buildDeskArticleShape({ entry, cover, thumbnail, author, tags = [
 		content: entry.body,
 		publishedAt: entry.publishedAt,
 		accessMode: entry.accessMode,
-		// coverImage uses `.src` (not `.url`) because that's what the page's
-		// hero markup reads. Uploads have no responsive variants yet, so
-		// srcset stays undefined and the browser renders the single src.
-		coverImage: cover
-			? {
-					src: cover.url,
-					alt: cover.alt || '',
-					width: cover.width || null,
-					height: cover.height || null
-				}
-			: null,
-		thumbnailImage: thumbnail
-			? {
-					src: thumbnail.url,
-					alt: thumbnail.alt || ''
-				}
-			: null,
+		// `{ src, srcset, width, height, alt }` — the hero markup reads these.
+		coverImage: mediaImage(cover),
+		thumbnailImage: mediaImage(thumbnail),
 		author: author
 			? {
 					name: profile?.displayName || `${author.firstName} ${author.lastName || ''}`.trim(),

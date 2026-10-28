@@ -16,6 +16,7 @@ import { db } from '$lib/server/db/index.js';
 import { deskMedia, deskEntry, deskCourse } from '$lib/server/db/schema.js';
 import { eq, or } from 'drizzle-orm';
 import { getSupabase, DESK_MEDIA_BUCKET } from '$lib/server/supabase.js';
+import { bump } from '$lib/server/cache/index.js';
 
 /**
  * @param {string | null | undefined} mediaId
@@ -90,5 +91,6 @@ export async function deleteMediaWithGuard(mediaId) {
 	}
 
 	await db.delete(deskMedia).where(eq(deskMedia.id, mediaId));
+	await bump('media');
 	return { deleted: true, storage };
 }

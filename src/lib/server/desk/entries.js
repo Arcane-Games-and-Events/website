@@ -16,25 +16,9 @@ import { deskEntry, deskRevision } from '$lib/server/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { calculateReadTime, lexicalToText } from '$lib/desk/render/lexical-utils.js';
 import { deleteMediaWithGuard } from '$lib/server/desk/media.js';
-import { invalidateByPrefix, CACHE_KEYS } from '$lib/server/redis/index.js';
+import { bump } from '$lib/server/cache/index.js';
 
-/**
- * Drop the Redis-cached list caches ({ARTICLES}:desk:list:*) so the next
- * homepage / library-index render rebuilds them from the DB. Called
- * whenever an entry's public visibility (status, publish date, cover, etc.)
- * changes. Awaited by the caller — Vercel can terminate a serverless
- * function's background promises after the response is sent, and a
- * fire-and-forget invalidation was intermittently getting killed before
- * the SCAN + DEL round-trip finished.
- */
-async function invalidateListCaches() {
-	try {
-		await invalidateByPrefix(`${CACHE_KEYS.ARTICLES}:desk:list:`);
-	} catch {
-		// Best-effort — a failed invalidation just means the cache
-		// expires normally after its TTL; doesn't break the update.
-	}
-}
+const isPublic = (status) => status === 'published' || status === 'scheduled';
 
 // --- slug helpers -----------------------------------------------------------
 
@@ -118,6 +102,7 @@ export async function createEntry(input) {
 			savedBy: input.authorId
 		});
 	}
+	if (isPublic(row.status)) await bump('entries');
 	return row;
 }
 
@@ -261,26 +246,16 @@ export async function updateEntry(id, patch, actor) {
 		});
 	}
 
-	// Bust the list caches when the change could affect what shows on the
-	// homepage / library. Text edits on a published entry go into the draft
-	// buffer (not visible to visitors), so the list stays the same — no
-	// invalidation needed there. But any of the following DO shift what
-	// visitors see:
-	//   - status change involving `published` or `scheduled`
-	//   - explicit publishedAt override (changes ordering)
-	//   - scheduledFor change on a scheduled entry
-	//   - accessMode change (premium chip in card listings)
-	//   - live cover / thumbnail (not buffered anymore — updates immediate)
-	const visibilityShifted =
-		('status' in patch &&
-			patch.status !== existing.status &&
-			[patch.status, existing.status].some((s) => s === 'published' || s === 'scheduled')) ||
-		'publishedAt' in patch ||
-		('scheduledFor' in patch && existing.status === 'scheduled') ||
-		('accessMode' in patch && patch.accessMode !== existing.accessMode) ||
-		('coverImageId' in patch && patch.coverImageId !== existing.coverImageId) ||
-		('thumbnailImageId' in patch && patch.thumbnailImageId !== existing.thumbnailImageId);
-	if (visibilityShifted) await invalidateListCaches();
+	// Visitors only see public entries, and text edits on those go into the
+	// draft buffer. So the cached lists change only when a live column
+	// (status, slug, cover, video, access, author, dates) changes on an entry
+	// that is public before or after the edit. Draft autosaves don't bump.
+	const liveChange = Object.keys(updates).some(
+		(key) => key !== 'updatedAt' && !key.startsWith('draft')
+	);
+	if (liveChange && (isPublic(existing.status) || isPublic(updates.status))) {
+		await bump('entries');
+	}
 
 	const [updated] = await db.select().from(deskEntry).where(eq(deskEntry.id, id)).limit(1);
 	return updated;
@@ -389,9 +364,7 @@ export async function approveEntryDraft(id, actor, opts = {}) {
 	}
 
 	// Approving a draft flips what visitors see — buffered text became live.
-	// Always invalidate the list caches so a fresh homepage / library
-	// render picks up the new title / excerpt / cover.
-	await invalidateListCaches();
+	await bump('entries');
 
 	const [updated] = await db.select().from(deskEntry).where(eq(deskEntry.id, id)).limit(1);
 	return updated;

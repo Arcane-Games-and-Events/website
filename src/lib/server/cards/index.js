@@ -1,7 +1,7 @@
 import { db } from '$lib/server/db/index.js';
 import { fabCardLookup } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
-import { getCachedOrFetch, CACHE_TTL } from '$lib/server/redis/index.js';
+import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 
 const pitchToSection = { 1: 'red', 2: 'yellow', 3: 'blue' };
 
@@ -24,12 +24,12 @@ function normalizePitch(input) {
 
 /**
  * Look up a card from the database by lookup key
- * Uses Redis caching with 1 hour TTL
+ * Cached for a day; a card-data upload in /admin/cards bumps `cards`.
  */
 async function lookupCardFromDb(lookupKey) {
 	const cacheKey = `card:${lookupKey}`;
 
-	return getCachedOrFetch(
+	return cached(
 		cacheKey,
 		async () => {
 			const [result] = await db
@@ -55,7 +55,7 @@ async function lookupCardFromDb(lookupKey) {
 
 			return null;
 		},
-		CACHE_TTL.HOUR
+		{ tags: ['cards'], ttl: CACHE_TTL.DAY }
 	);
 }
 

@@ -1,5 +1,7 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
+import { bump } from '$lib/server/cache/index.js';
+import { adminCounts, listUsers } from '$lib/server/admin/dashboard.js';
 import {
 	user,
 	session,
@@ -14,11 +16,7 @@ import {
 	podcastEpisode,
 	vod
 } from '$lib/server/db/schema.js';
-import { eq, or, ilike, sql } from 'drizzle-orm';
-
-// Helper to add timeout to promises
-const withTimeout = (promise, ms, fallback) =>
-	Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(fallback), ms))]);
+import { eq, or, ilike } from 'drizzle-orm';
 
 export async function load({ locals }) {
 	// Require admin authentication
@@ -27,45 +25,11 @@ export async function load({ locals }) {
 	}
 
 	try {
-		// Single RPC call replaces 20+ individual queries with 15s timeout
-		const result = await withTimeout(
-			db.execute(sql`SELECT get_admin_dashboard_stats() as data`),
-			15000,
-			null
-		);
-
-		if (!result) {
-			console.warn('Admin users RPC timed out - returning empty data');
-			return { user: locals.user, allUsers: [], stats: { totalUsers: 0 } };
-		}
-
-		const data = result.rows?.[0]?.data || result[0]?.data;
-
-		if (!data) {
-			throw new Error('No data returned from get_admin_dashboard_stats()');
-		}
-
-		return {
-			user: locals.user,
-			allUsers: data.users || [],
-			stats: {
-				totalUsers: parseInt(data.stats?.totalUsers) || 0
-			}
-		};
+		const [counts, allUsers] = await Promise.all([adminCounts(), listUsers()]);
+		return { user: locals.user, allUsers, stats: { totalUsers: counts.totalUsers } };
 	} catch (error) {
 		console.error('Admin users page load error:', error);
-
-		if (error.message?.includes('get_admin_dashboard_stats')) {
-			console.error(
-				'RPC function not found. Run the migration: supabase/migrations/001_rpc_functions.sql'
-			);
-		}
-
-		return {
-			user: locals.user,
-			allUsers: [],
-			stats: { totalUsers: 0 }
-		};
+		return { user: locals.user, allUsers: [], stats: { totalUsers: 0 } };
 	}
 }
 
@@ -93,6 +57,7 @@ export const actions = {
 
 		try {
 			await db.update(user).set({ role: newRole }).where(eq(user.id, userId));
+			await bump(`user:${userId}`, 'users');
 
 			return { success: true, message: `User role updated to ${newRole}` };
 		} catch (err) {

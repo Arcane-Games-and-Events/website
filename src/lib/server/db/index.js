@@ -25,6 +25,14 @@ function getClient() {
 			max_lifetime: 60 * 2, // 2 minute max lifetime
 			fetch_types: false, // Disable type fetching for faster connection
 			prepare: false, // Required for PgBouncer transaction mode
+			// Never pipeline. By default postgres-js writes the next waiting
+			// query to a connection before the active one has finished (even
+			// `max_pipeline: 1` allows one extra). The transaction-mode pooler
+			// returns the server connection after each query, so the
+			// pipelined bytes go astray: parallel loads hang and one query
+			// can receive another query's rows. 0 means one query at a time
+			// per connection, which is what transaction pooling supports.
+			max_pipeline: 0,
 			connection: {
 				statement_timeout: 10000 // 10 second statement timeout (was 15)
 			}

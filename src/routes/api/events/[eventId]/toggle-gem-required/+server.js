@@ -1,5 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
+import { bump } from '$lib/server/cache/index.js';
 import { event } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 
@@ -12,6 +13,7 @@ export async function POST({ params, request, locals }) {
 		const { gemIdRequired } = await request.json();
 
 		await db.update(event).set({ gemIdRequired }).where(eq(event.id, params.eventId));
+		await bump('events');
 
 		return json({ success: true, gemIdRequired });
 	} catch (err) {

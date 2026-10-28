@@ -1,6 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { db } from '$lib/server/db/index.js';
-import { sql } from 'drizzle-orm';
+import { loadAnalytics } from '$lib/server/admin/analytics.js';
 
 export async function load({ locals }) {
 	if (!locals.user || locals.user.role !== 'admin') {
@@ -8,15 +7,13 @@ export async function load({ locals }) {
 	}
 
 	try {
-		const result = await db.execute(sql`SELECT get_analytics_data() as data`);
-		const row = (result.rows || result || [])[0];
-		const data = typeof row?.data === 'string' ? JSON.parse(row.data) : row?.data;
+		const data = await loadAnalytics();
 
 		if (!data) {
 			return { user: locals.user, error: 'No analytics data returned.' };
 		}
 
-		// Compute user and ticket growth (RPC only computes revenue growth)
+		// User and ticket growth (revenue growth comes with the data)
 		const newThisMonth = data.users?.newThisMonth || 0;
 		const newLastMonth = data.users?.newLastMonth || 0;
 		const userGrowth =

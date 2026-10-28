@@ -1,9 +1,10 @@
 // src/hooks.server.js
-import { auth } from '$lib/server/lucia';
+import { auth, sessionCacheKey } from '$lib/server/lucia';
 import { db } from '$lib/server/db';
 import { user as userTable } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
+import { cached, bump, CACHE_TTL } from '$lib/server/cache/index.js';
 
 // Paths exempt from CSRF protection (external webhooks)
 const CSRF_EXEMPT_PATHS = ['/api/webhooks/'];
@@ -26,6 +27,42 @@ const NEVER_CACHE_PREFIXES = [
 	'/forgot-password'
 ];
 
+// Lucia looks the session and its user up in the database on every
+// request. Keep the answer for a minute so a member's page views don't
+// each pay for that query. Anything that changes a user's role or
+// subscription bumps `user:{id}`; logging out forgets the session key
+// (see `forgetSession` in lucia.js). Only valid sessions are cached. The
+// session id itself is never stored: the key is a hash of it and the id is
+// put back from the cookie on read. Date fields are revived since the
+// cache stores JSON.
+const USER_DATES = ['subscriptionStartDate', 'subscriptionEndDate', 'nextBillingDate', 'createdAt'];
+const revive = (obj, fields) => {
+	for (const f of fields) if (obj[f]) obj[f] = new Date(obj[f]);
+	return obj;
+};
+async function validateSessionCached(sid) {
+	// `fresh` means Lucia just extended the session and the cookie should
+	// be renewed. That happens on the request that ran the lookup, so it
+	// is kept out of the cached copy.
+	let fresh = false;
+	const hit = await cached(
+		sessionCacheKey(sid),
+		async () => {
+			const { session, user } = await auth.validateSession(sid);
+			if (!session) return null;
+			fresh = session.fresh;
+			const { id: _id, fresh: _fresh, ...rest } = session;
+			return { session: rest, user };
+		},
+		{ ttl: CACHE_TTL.MINUTE, tags: (v) => [`user:${v.user.id}`] }
+	);
+	if (!hit) return { session: null, user: null };
+	return {
+		session: { ...revive({ ...hit.session }, ['expiresAt']), id: sid, fresh },
+		user: revive({ ...hit.user }, USER_DATES)
+	};
+}
+
 export const handle = async ({ event, resolve }) => {
 	// Custom CSRF protection (exempts webhook paths)
 	const { request, url } = event;
@@ -47,8 +84,7 @@ export const handle = async ({ event, resolve }) => {
 	let session = null;
 
 	if (sid) {
-		// validate the session id with Lucia v3
-		const validated = await auth.validateSession(sid);
+		const validated = await validateSessionCached(sid);
 		session = validated.session;
 		user = validated.user;
 
@@ -101,6 +137,7 @@ export const handle = async ({ event, resolve }) => {
 					subscriptionStatus: 'expired',
 					subscriptionId: null
 				};
+				await bump(`user:${user.id}`);
 			}
 		}
 	}

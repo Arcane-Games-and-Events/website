@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
+import { bump } from '$lib/server/cache/index.js';
 import { webhookEvent, user as userTable, ticket, memberReferral } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import crypto from 'crypto';
@@ -122,6 +123,7 @@ async function handleSubscriptionEvent(payload) {
 				subscriptionEndDate: null
 			})
 			.where(eq(userTable.id, user.id));
+		await bump(`user:${user.id}`, 'users');
 
 		// Member referral reward: when a member-referred user pays for their second
 		// period, the referrer earns one free month. The deferred ARB's first
@@ -146,6 +148,7 @@ async function handleSubscriptionEvent(payload) {
 				subscriptionEndDate: gracePeriodEnd
 			})
 			.where(eq(userTable.id, user.id));
+		await bump(`user:${user.id}`, 'users');
 
 		// Send email notification to user about failed payment
 		const baseUrl = env.PUBLIC_BASE_URL || 'https://www.age.events';

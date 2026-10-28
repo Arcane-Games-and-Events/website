@@ -197,3 +197,17 @@ export function lookupCardImage(cardImages, cardId, pitch) {
 	}
 	return cardImages[name] || null;
 }
+
+/**
+ * Supabase Pro resizes any public object on request through
+ * `/render/image/public/…?width=`. Used for images inside article bodies,
+ * which are stored as plain URLs in the Lexical JSON.
+ *
+ * @param {string} url
+ * @returns {string | undefined} srcset, or undefined for non-Supabase URLs
+ */
+export function transformSrcset(url) {
+	if (!url || !url.includes('/storage/v1/object/public/')) return undefined;
+	const base = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
+	return [480, 960, 1440].map((w) => `${base}?width=${w}&quality=80 ${w}w`).join(', ');
+}

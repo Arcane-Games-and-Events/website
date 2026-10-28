@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { authnet } from '$lib/server/authnet/client.js';
 import { db } from '$lib/server/db/index.js';
+import { bump } from '$lib/server/cache/index.js';
 import { user as userTable } from '$lib/server/db/schema.js';
 import { eq, isNotNull, and, ne } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
@@ -248,6 +249,7 @@ export async function GET({ request, locals }) {
 					// Only update if there's something to change
 					if (Object.keys(updateData).length > 0) {
 						await db.update(userTable).set(updateData).where(eq(userTable.id, user.id));
+						await bump(`user:${user.id}`, 'users');
 
 						results.updated++;
 						results.details.push({

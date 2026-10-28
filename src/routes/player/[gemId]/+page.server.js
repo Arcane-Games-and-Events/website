@@ -4,24 +4,15 @@ import { eq, desc, or, asc, inArray, and, isNull } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import { calculatePercentile, calculateRankPercentile } from '$lib/age-rating.js';
 import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
-import {
-	getCachedOrFetch,
-	invalidateCache,
-	invalidateByPrefix,
-	CACHE_KEYS,
-	CACHE_TTL
-} from '$lib/server/redis/index.js';
+import { cached, bump } from '$lib/server/cache/index.js';
 import { calculateDerivedStats, compareStandings } from '$lib/players/standings.js';
 import { heroImageUrl } from '$lib/heroImage.js';
 
-// Any admin edit that touches standings/matches invalidates the whole
-// `player:*` prefix — cheaper than trying to figure out which gemIds
-// were affected, and profile edits happen rarely.
-const PLAYER_PREFIX = `${CACHE_KEYS.PLAYER}:`;
-async function bustPlayerCaches() {
-	await invalidateByPrefix(PLAYER_PREFIX);
-	await invalidateCache(`${CACHE_KEYS.STANDINGS}:all`);
-}
+// Profiles are built from standings, matches, decklists and events; a
+// write to any of them makes every profile stale. The admin actions below
+// only edit standings.
+const PROFILE_TAGS = ['standings', 'matches', 'decklists', 'events'];
+const bustPlayerCaches = () => bump('standings');
 
 // Note: calculatePercentile and calculateRankPercentile are imported from $lib/age-rating.js
 
@@ -35,18 +26,13 @@ export async function load({ params, locals }) {
 
 	// Cache the entire (public) load payload under `player:{gemId}`. On
 	// hit this returns instantly; on miss we run the full pipeline.
-	// Admin actions that touch standings/matches (imports, event
-	// finalization, per-standing edits) invalidate the whole `player:*`
-	// prefix so every profile refreshes at once.
-	const cached = await getCachedOrFetch(
-		`${CACHE_KEYS.PLAYER}:${gemId}`,
-		() => buildPlayerProfile(gemId),
-		CACHE_TTL.MEDIUM
-	);
+	const profile = await cached(`player:${gemId}`, () => buildPlayerProfile(gemId), {
+		tags: PROFILE_TAGS
+	});
 
-	if (!cached) throw error(404, 'Player not found');
+	if (!profile) throw error(404, 'Player not found');
 
-	return { ...cached, isAdmin };
+	return { ...profile, isAdmin };
 }
 
 async function buildPlayerProfile(gemId) {
@@ -64,10 +50,10 @@ async function buildPlayerProfile(gemId) {
 	// === FETCH ALL STANDINGS ONCE (for rank calculation and percentiles) ===
 	// Reuse the shared cache populated by the age-open page so we don't
 	// re-pull the entire standings table per profile view.
-	const allStandings = await getCachedOrFetch(
-		`${CACHE_KEYS.STANDINGS}:all`,
+	const allStandings = await cached(
+		'standings:all',
 		() => db.select().from(standing).orderBy(desc(standing.totalPoints)),
-		CACHE_TTL.MEDIUM
+		{ tags: ['standings'] }
 	);
 
 	// Group standings by circuit/season for efficient rank lookup
