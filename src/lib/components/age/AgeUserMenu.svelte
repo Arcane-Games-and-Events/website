@@ -46,7 +46,9 @@
 		open = !open;
 	}
 
-	function onWindowClick(/** @type {MouseEvent} */ e) {
+	// A pointerdown, not a click: iPad Safari sends no click for a tap on
+	// plain page content, so the menu could never be dismissed there.
+	function onWindowClick(/** @type {PointerEvent} */ e) {
 		if (!open) return;
 		if (root && !root.contains(/** @type {Node} */ (e.target))) close();
 	}
@@ -56,10 +58,10 @@
 	}
 
 	onMount(() => {
-		window.addEventListener('click', onWindowClick);
+		window.addEventListener('pointerdown', onWindowClick);
 		window.addEventListener('keydown', onKey);
 		return () => {
-			window.removeEventListener('click', onWindowClick);
+			window.removeEventListener('pointerdown', onWindowClick);
 			window.removeEventListener('keydown', onKey);
 		};
 	});

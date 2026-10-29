@@ -19,6 +19,9 @@
 	// ============ rotation ============
 	// Every 15 seconds the next release takes over. Picking one jumps to
 	// it; pointing at or tabbing into the hero pauses the clock.
+	// Only a real mouse pauses on hover: on touch screens iOS Safari turns a
+	// tap whose hover changes the page into a hover only, and the click on a
+	// release would never arrive.
 	const ROTATE_MS = 15000;
 	let activeIdx = $state(0);
 	let paused = $state(false);
@@ -131,8 +134,8 @@
 		bind:this={heroEl}
 		class="hero relative isolate flex flex-col overflow-hidden bg-ink text-white"
 		style={heroH ? `--hero-h: ${heroH}px;` : ''}
-		onmouseenter={pause}
-		onmouseleave={resume}
+		onpointerenter={(e) => e.pointerType === 'mouse' && pause()}
+		onpointerleave={(e) => e.pointerType === 'mouse' && resume()}
 		onfocusin={pause}
 		onfocusout={resume}
 		aria-roledescription="carousel"

@@ -57,7 +57,9 @@
 		openMenu = null;
 	}
 
-	function onWindowClick(/** @type {MouseEvent} */ e) {
+	// Closes on a press anywhere outside the open menu. A pointerdown, not a
+	// click: iPad Safari sends no click for a tap on plain page content.
+	function onWindowClick(/** @type {PointerEvent} */ e) {
 		if (!openMenu) return;
 		const root = menuRoots[openMenu];
 		if (root && !root.contains(/** @type {Node} */ (e.target))) closeMenus();
@@ -68,10 +70,10 @@
 	}
 
 	onMount(() => {
-		window.addEventListener('click', onWindowClick);
+		window.addEventListener('pointerdown', onWindowClick);
 		window.addEventListener('keydown', onKey);
 		return () => {
-			window.removeEventListener('click', onWindowClick);
+			window.removeEventListener('pointerdown', onWindowClick);
 			window.removeEventListener('keydown', onKey);
 		};
 	});
@@ -170,12 +172,15 @@
 						<button> that toggles the dropdown — this is what
 						touch users tap to reach the submenu without
 						navigating away.
+						Hover opens it for a mouse only: on a touch screen a
+						tap also fires the hover, which opened the menu just
+						before the tap's click toggled it shut again.
 					-->
 						<div
 							class="relative inline-flex items-center gap-[5px]"
 							bind:this={menuRoots[item.label]}
-							onmouseenter={() => (openMenu = item.label)}
-							onmouseleave={() => (openMenu = null)}
+							onpointerenter={(e) => e.pointerType === 'mouse' && (openMenu = item.label)}
+							onpointerleave={(e) => e.pointerType === 'mouse' && (openMenu = null)}
 							role="none"
 						>
 							<a
