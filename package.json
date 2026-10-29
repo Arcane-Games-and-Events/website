@@ -5,6 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
+		"dev:https": "DEV_HTTPS_KEY=key.pem DEV_HTTPS_CERT=cert.pem vite dev",
 		"build": "vite build",
 		"build:ci": "vite build",
 		"preview": "vite preview",

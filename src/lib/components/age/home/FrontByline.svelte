@@ -8,7 +8,7 @@
 	 * next — instead of wrapping wherever the author's name happens to
 	 * run out of room; from md up it is the usual single line.
 	 */
-	/** @type {{ author?: string, date?: string, length?: string, premium?: boolean, size?: 'sm' | 'md', onDark?: boolean, stack?: boolean }} */
+	/** @type {{ author?: string, date?: string, length?: string, premium?: boolean, size?: 'sm' | 'md', onDark?: boolean, stack?: boolean, class?: string }} */
 	let {
 		author = '',
 		date = '',
@@ -16,7 +16,8 @@
 		premium = false,
 		size = 'md',
 		onDark = false,
-		stack = false
+		stack = false,
+		class: extra = ''
 	} = $props();
 	const tail = $derived([date, length].filter(Boolean).join(' · '));
 </script>
@@ -26,7 +27,7 @@
 		? 'flex flex-col items-center gap-y-1 md:flex-row md:flex-wrap md:items-baseline md:justify-center md:gap-x-2 md:gap-y-0'
 		: 'flex flex-wrap items-baseline gap-x-2'} {size === 'sm'
 		? 'text-[10px]'
-		: 'text-[11px]'} {onDark ? 'text-white/60' : 'text-fade'}"
+		: 'text-[11px]'} {onDark ? 'text-white/60' : 'text-fade'} {extra}"
 >
 	{#if author}
 		<span
