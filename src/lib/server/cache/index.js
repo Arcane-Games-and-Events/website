@@ -39,7 +39,7 @@ const g = /** @type {any} */ (globalThis);
 function getRedis() {
 	if (g.__ageRedisClient) return g.__ageRedisClient;
 	if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
-		if (!g.__ageRedisWarned) {
+		if (!g.__ageRedisWarned && env.APP_ENV !== 'test') {
 			console.warn(
 				'[cache] UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN missing — ' +
 					'caching is off and every read hits the database. See .env.example.'

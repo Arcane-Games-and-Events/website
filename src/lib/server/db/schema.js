@@ -533,7 +533,8 @@ export const eventPlayerHero = pgTable(
 	},
 	(table) => ({
 		// Each player can only have one hero entry per season/circuit/month
-		uniqueEventPlayer: unique().on(table.season, table.circuit, table.month, table.gemId)
+		// One row per player per event (migration 025).
+		uniqueEventPlayer: unique('event_player_heroes_event_id_gem_id_unique').on(table.eventId, table.gemId)
 	})
 );
 

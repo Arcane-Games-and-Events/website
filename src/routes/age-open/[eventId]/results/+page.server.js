@@ -3,7 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { event, match, decklist } from '$lib/server/db/schema.js';
 import { listEventHeroes } from '$lib/server/events/heroes.js';
 import { eq, asc, and } from 'drizzle-orm';
-import { calculateFinalStandings } from '$lib/server/tournament-processor.js';
+import { calculateFinalStandings, recordOf } from '$lib/server/tournament-processor.js';
 import { playerKeyFromIdName } from '$lib/server/players/key.js';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import { heroImageUrl } from '$lib/heroImage.js';
@@ -123,9 +123,7 @@ async function buildEventResults(eventId) {
 					playerName: r.name,
 					gemId: r.playerId,
 					placement: r.placement,
-					wins: r.matchesWon,
-					losses: r.matchesPlayed - r.matchesWon,
-					draws: 0,
+					...recordOf(r),
 					agePoints: r.points,
 					prizeAmount: r.prize
 				}));

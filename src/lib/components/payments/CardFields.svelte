@@ -32,8 +32,9 @@
 	let year = $state('');
 	let code = $state('');
 	let zip = $state('');
-	let first = $state(firstName);
-	let last = $state(lastName);
+	// Prefilled from the account, editable, and refilled if the props change.
+	let first = $derived(firstName);
+	let last = $derived(lastName);
 	let fieldError = $state('');
 
 	const brand = $derived(guessBrand(number));

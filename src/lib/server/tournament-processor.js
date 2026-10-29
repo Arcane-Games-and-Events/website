@@ -26,6 +26,21 @@ export function isBye(id, name) {
 	return !id && /^(|none|bye|-)$/i.test((name || '').trim());
 }
 
+/** A drawn match: neither a win nor a loss for either player. */
+export function isDraw(match) {
+	return /draw/i.test(match?.result || '');
+}
+
+/**
+ * Wins, losses and draws for a processed result. A draw is neither a win
+ * nor a loss.
+ */
+export function recordOf(result) {
+	const wins = result.matchesWon || 0;
+	const draws = result.matchesDrawn || 0;
+	return { wins, losses: Math.max(0, (result.matchesPlayed || 0) - wins - draws), draws };
+}
+
 // AGE Open Points Structure
 export const AGE_POINTS = {
 	1: { points: 30, prize: 400 }, // Winner
@@ -296,6 +311,7 @@ export function calculateTiebreakers(standings, pairings, swissRounds) {
 			return winner && identityOf(winner.id, winner.name) === playerIdentity;
 		};
 		const totalWins = allMatches.filter(winnerIsPlayer).length;
+		const totalDraws = allMatches.filter(isDraw).length;
 		const swissWins = swissMatches.filter(winnerIsPlayer).length;
 
 		const opponents = swissMatches.map((m) => {
@@ -309,6 +325,7 @@ export function calculateTiebreakers(standings, pairings, swissRounds) {
 			...player,
 			matchesPlayed: allMatches.length, // Total matches (Swiss + playoffs)
 			matchesWon: totalWins, // Total wins (Swiss + playoffs)
+			matchesDrawn: totalDraws,
 			swissMatchesPlayed: swissMatches.length, // Swiss only for tiebreakers
 			swissMatchesWon: swissWins, // Swiss only for tiebreakers
 			matchWinPct: swissMatches.length > 0 ? swissWins / swissMatches.length : 0, // Swiss-based for tiebreakers
@@ -421,6 +438,7 @@ export function calculateFinalStandings(swissStandings, pairings) {
 			name: player.name,
 			playerId: player.playerId,
 			matchesWon: player.matchesWon,
+			matchesDrawn: player.matchesDrawn || 0,
 			matchesPlayed: player.matchesPlayed,
 			matchWinPct: player.matchWinPct,
 			oppMatchWinPct: player.oppMatchWinPct,
@@ -469,15 +487,23 @@ export function calculateFinalStandings(swissStandings, pairings) {
 		}
 	}
 
-	// Add dropped players who participated but don't have a Swiss rank
+	// Add dropped players who participated but don't have a Swiss rank. They
+	// have no tiebreaker entry (those are built from ranked players), so
+	// their record is counted from the pairings they actually played.
 	for (const [, player] of allParticipants) {
-		const stats = tiebreakers[player.playerId] || tiebreakers[player.name] || {};
+		const stats = findPlayerData(
+			{ id: player.playerId, name: player.name },
+			swissStandings,
+			tiebreakers,
+			pairings
+		);
 
 		results.push({
 			placement,
 			name: player.name,
 			playerId: player.playerId,
 			matchesWon: stats.matchesWon || 0,
+			matchesDrawn: stats.matchesDrawn || 0,
 			matchesPlayed: stats.matchesPlayed || 0,
 			matchWinPct: stats.matchWinPct || 0,
 			oppMatchWinPct: stats.oppMatchWinPct || 0,
@@ -511,6 +537,7 @@ function findPlayerData(player, swissStandings, tiebreakers, allPairings = []) {
 	// Count ALL matches (Swiss + playoffs) for accurate record
 	let totalMatchesPlayed = fromTiebreakers?.matchesPlayed || 0;
 	let totalMatchesWon = fromTiebreakers?.matchesWon || fromSwiss?.wins || 0;
+	let totalMatchesDrawn = fromTiebreakers?.matchesDrawn || 0;
 
 	if (allPairings.length > 0) {
 		// Find all matches this player participated in — identity match only,
@@ -534,12 +561,14 @@ function findPlayerData(player, swissStandings, tiebreakers, allPairings = []) {
 
 		totalMatchesPlayed = allPlayerMatches.length;
 		totalMatchesWon = allWins;
+		totalMatchesDrawn = allPlayerMatches.filter(isDraw).length;
 	}
 
 	return {
 		name: player.name,
 		playerId: player.id || fromSwiss?.playerId,
 		matchesWon: totalMatchesWon,
+		matchesDrawn: totalMatchesDrawn,
 		matchesPlayed: totalMatchesPlayed,
 		matchWinPct: totalMatchesPlayed > 0 ? totalMatchesWon / totalMatchesPlayed : 0,
 		oppMatchWinPct: fromTiebreakers?.oppMatchWinPct || 0

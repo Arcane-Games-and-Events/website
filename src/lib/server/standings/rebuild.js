@@ -75,7 +75,7 @@ async function collectContributions(season, circuit, tx) {
 				period.monthKey,
 				r.agePoints || 0,
 				r.wins || 0,
-				(r.wins || 0) + (r.losses || 0)
+				(r.wins || 0) + (r.losses || 0) + (r.draws || 0)
 			);
 		}
 	}

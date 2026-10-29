@@ -23,8 +23,9 @@
 					year: 'numeric'
 				})
 			: '—';
-	const cardNameLong =
-		`${data.user?.firstName || ''} ${data.user?.lastName || ''}`.trim().length > 20;
+	const cardNameLong = $derived(
+		`${data.user?.firstName || ''} ${data.user?.lastName || ''}`.trim().length > 20
+	);
 	const initials = () => {
 		const a = (data.user?.firstName || '').trim().charAt(0).toUpperCase();
 		const b = (data.user?.lastName || '').trim().charAt(0).toUpperCase();

@@ -1,0 +1,16 @@
+# Throwaway Postgres for the test suite: `pnpm test:db:up`.
+# Data lives in memory and disappears when the container stops.
+services:
+  postgres:
+    image: postgres:17
+    ports:
+      - '54329:5432'
+    environment:
+      POSTGRES_PASSWORD: postgres
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 2s
+      timeout: 3s
+      retries: 20

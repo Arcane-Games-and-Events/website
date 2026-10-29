@@ -4,7 +4,8 @@ import { event, ticket, user, eventStaff, decklist, match, order } from '$lib/se
 import { eq, and, ilike } from 'drizzle-orm';
 import {
 	processTournamentResults,
-	calculateFinalStandings
+	calculateFinalStandings,
+	recordOf
 } from '$lib/server/tournament-processor.js';
 import { bump } from '$lib/server/cache/index.js';
 import { parseDatetimeLocal } from '$lib/server/dates.js';
@@ -119,9 +120,7 @@ export async function load({ params, locals }) {
 					playerName: r.name,
 					gemId: r.playerId,
 					placement: r.placement,
-					wins: r.matchesWon,
-					losses: r.matchesPlayed - r.matchesWon,
-					draws: 0,
+					...recordOf(r),
 					agePoints: r.points,
 					prizeAmount: r.prize
 				}));
@@ -464,9 +463,7 @@ export const actions = {
 				playerName: result.name,
 				gemId: result.playerId || null,
 				placement: result.placement,
-				wins: result.matchesWon || 0,
-				losses: result.matchesPlayed - result.matchesWon || 0,
-				draws: 0,
+				...recordOf(result),
 				agePoints: result.points,
 				prizeAmount: result.prize > 0 ? result.prize.toFixed(2) : null
 			}));

@@ -86,7 +86,8 @@ export async function load({ locals }) {
 					rank: mine.rank ?? mine.placement ?? null,
 					of: t.tournamentResults.length,
 					wins: mine.wins ?? null,
-					losses: mine.losses ?? null
+					losses: mine.losses ?? null,
+					draws: mine.draws ?? 0
 				};
 			}
 		}

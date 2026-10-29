@@ -29,3 +29,8 @@ scripts/.seed-authnet-map.json
 
 # Local https certificates for testing card entry (see vite.config.js)
 *.pem
+
+# Test output
+/test-results
+/playwright-report
+/blob-report

@@ -351,7 +351,7 @@
 												</p>
 											{/if}
 											<p class="mt-1 text-[10px] font-bold text-fade tabular-nums">
-												{p.wins}–{p.losses}
+												{p.wins}–{p.losses}{p.draws ? `–${p.draws}` : ''}
 											</p>
 										{:else}
 											<p class="mt-1.5 font-newsreader text-[15px] text-fade">—</p>
@@ -383,7 +383,7 @@
 												>
 											{/if}
 											<span class="shrink-0 text-[11px] text-fade tabular-nums"
-												>{p.wins}–{p.losses}</span
+												>{p.wins}–{p.losses}{p.draws ? `–${p.draws}` : ''}</span
 											>
 										</li>
 									{/each}
@@ -398,7 +398,7 @@
 									<p class="truncate text-[10px] font-bold text-soft">
 										<span class="text-warm">{found.playerName}</span> finished {ordinal(
 											found.placement
-										)} ({found.wins}–{found.losses})
+										)} ({found.wins}–{found.losses}{found.draws ? `–${found.draws}` : ''})
 									</p>
 								{:else}
 									<span></span>

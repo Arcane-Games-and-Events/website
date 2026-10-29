@@ -13,7 +13,7 @@
 				})
 			: '—';
 	const dollars = (c) => `$${(Number(c || 0) / 100).toFixed(Number(c) % 100 === 0 ? 0 : 2)}`;
-	const noun = data.plan === 'yearly' ? 'year' : 'month';
+	const noun = $derived(data.plan === 'yearly' ? 'year' : 'month');
 
 	const next = [
 		{

@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db/index.js';
 import { event, match, decklist, standing, lssEvent, ticket } from '$lib/server/db/schema.js';
-import { calculateFinalStandings, isBye } from '$lib/server/tournament-processor.js';
+import { calculateFinalStandings, isBye, recordOf } from '$lib/server/tournament-processor.js';
 import { asc, desc, eq, sql } from 'drizzle-orm';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import {
@@ -225,9 +225,7 @@ export async function load({ url, setHeaders }) {
 						playerName: r.name,
 						gemId: r.playerId,
 						placement: r.placement,
-						wins: r.matchesWon,
-						losses: r.matchesPlayed - r.matchesWon,
-						draws: 0,
+						...recordOf(r),
 						agePoints: r.points,
 						prizeAmount: r.prize
 					}));

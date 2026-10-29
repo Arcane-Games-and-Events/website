@@ -338,7 +338,7 @@
 								{ordinal(f.rank)}<span class="text-[14px] text-fade"> / {f.of}</span>
 							</p>
 							{#if f.wins != null}<p class="text-[10px] font-semibold text-fade tabular-nums">
-									{f.wins}–{f.losses ?? 0}
+									{f.wins}–{f.losses ?? 0}{f.draws ? `–${f.draws}` : ''}
 								</p>{/if}
 						</div>
 					{:else if !t.refunded}

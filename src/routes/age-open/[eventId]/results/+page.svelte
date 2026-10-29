@@ -226,7 +226,9 @@
 								<p
 									class="mt-1 text-[10px] font-extrabold tracking-[0.18em] text-paper-bg/60 uppercase"
 								>
-									on {champion.hero} · {champion.wins}–{champion.losses}
+									on {champion.hero} · {champion.wins}–{champion.losses}{champion.draws
+										? `–${champion.draws}`
+										: ''}
 								</p>
 							{/if}
 						</div>
@@ -448,7 +450,9 @@
 								{/if}
 							</span>
 							<span class="text-right">
-								<span class="block text-[13px] font-bold tabular-nums">{r.wins}–{r.losses}</span>
+								<span class="block text-[13px] font-bold tabular-nums"
+									>{r.wins}–{r.losses}{r.draws ? `–${r.draws}` : ''}</span
+								>
 								<span class="block text-[10px] font-bold text-fade tabular-nums"
 									>{r.agePoints ?? 0} pts{Number(r.prizeAmount) > 0
 										? ` · ${money(r.prizeAmount)}`
