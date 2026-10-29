@@ -26,12 +26,14 @@ if (!input || !output) {
 	process.exit(1);
 }
 
-const FIRST = 'Avery Blake Casey Dakota Emerson Finley Gray Harper Indigo Jordan Kendall Logan Morgan Noel Oakley Parker Quinn Reese Sage Taylor Umber Vale Winter Xen Yael Zion Arden Briar Cove Darby Ellis Fallon Greer Hollis Isle Jules Kit Lark Marlow Nova Onyx Perry Rowan Shay Tatum Uri Vesper Wren Yarrow Zephyr Ash Bellamy Cypress Dale Eden Flint Gale Haven Ira Jem Kai Lane'.split(
-	' '
-);
-const LAST = 'Ashford Brightwater Cobalt Dunmore Everly Fairbanks Glenholm Hartwell Ironwood Juniper Kestrel Larkspur Merriweather Northcott Oakhurst Pemberton Quillfeather Ravensworth Stormvale Thistlewood Underhill Vantage Whitlock Yardley Zellwood Alderton Blackwood Copperfield Driftwood Eastbrook Foxglove Greymoor Holloway Inkwell Jessamine Kingsley Lockridge Mossgrove Nettlefield Orchard Pinecrest Redfern Silverton Tidewell Upton Verity Westmere Amberly Briarcliff Clearwater Duskmoor Elmstead Fernhill Goldcrest Harrow Ivybridge Jasperly Kettering Lindenfeld Mapleton'.split(
-	' '
-);
+const FIRST =
+	'Avery Blake Casey Dakota Emerson Finley Gray Harper Indigo Jordan Kendall Logan Morgan Noel Oakley Parker Quinn Reese Sage Taylor Umber Vale Winter Xen Yael Zion Arden Briar Cove Darby Ellis Fallon Greer Hollis Isle Jules Kit Lark Marlow Nova Onyx Perry Rowan Shay Tatum Uri Vesper Wren Yarrow Zephyr Ash Bellamy Cypress Dale Eden Flint Gale Haven Ira Jem Kai Lane'.split(
+		' '
+	);
+const LAST =
+	'Ashford Brightwater Cobalt Dunmore Everly Fairbanks Glenholm Hartwell Ironwood Juniper Kestrel Larkspur Merriweather Northcott Oakhurst Pemberton Quillfeather Ravensworth Stormvale Thistlewood Underhill Vantage Whitlock Yardley Zellwood Alderton Blackwood Copperfield Driftwood Eastbrook Foxglove Greymoor Holloway Inkwell Jessamine Kingsley Lockridge Mossgrove Nettlefield Orchard Pinecrest Redfern Silverton Tidewell Upton Verity Westmere Amberly Briarcliff Clearwater Duskmoor Elmstead Fernhill Goldcrest Harrow Ivybridge Jasperly Kettering Lindenfeld Mapleton'.split(
+		' '
+	);
 
 const ids = new Map();
 const names = new Map();
@@ -109,7 +111,12 @@ function rewrite(text, nameCols, idCols) {
 const files = readdirSync(input).filter((f) => f.toLowerCase().endsWith('.csv'));
 const pick = (word) => files.find((f) => f.toLowerCase().includes(word));
 const plan = [
-	[pick('pairings'), 'pairings.csv', ['Player 1 Name', 'Player 2 Name'], ['Player 1 ID', 'Player 2 ID']],
+	[
+		pick('pairings'),
+		'pairings.csv',
+		['Player 1 Name', 'Player 2 Name'],
+		['Player 1 ID', 'Player 2 ID']
+	],
 	[pick('standings'), 'standings.csv', ['Name'], ['Player ID']],
 	[pick('heroes'), 'heroes.csv', ['Player Name'], ['Player ID']]
 ].filter(([source]) => source);
