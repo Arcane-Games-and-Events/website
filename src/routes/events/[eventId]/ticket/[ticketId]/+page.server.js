@@ -3,7 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { ticket, event as eventTable } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 
-export async function load({ params, locals }) {
+export async function load({ params, locals, url }) {
 	const { eventId, ticketId } = params;
 
 	// Fetch the ticket with event details
@@ -16,6 +16,9 @@ export async function load({ params, locals }) {
 			gemId: ticket.gemId,
 			amountPaid: ticket.amountPaid,
 			createdAt: ticket.createdAt,
+			refunded: ticket.refunded,
+			enteredIntoGem: ticket.enteredIntoGem,
+			orderId: ticket.orderId,
 			userId: ticket.userId,
 			eventId: ticket.eventId,
 			event: {
@@ -24,7 +27,9 @@ export async function load({ params, locals }) {
 				location: eventTable.location,
 				address: eventTable.address,
 				eventDate: eventTable.eventDate,
-				format: eventTable.format
+				format: eventTable.format,
+				circuit: eventTable.circuit,
+				price: eventTable.price
 			}
 		})
 		.from(ticket)
@@ -36,14 +41,28 @@ export async function load({ params, locals }) {
 		throw error(404, 'Ticket not found');
 	}
 
-	// Optional: Verify the ticket belongs to the current user
-	// Uncomment if you want to restrict access
-	// if (locals.user && ticketData.userId !== locals.user.id) {
-	// 	throw error(403, 'You do not have access to this ticket');
-	// }
+	// Only the buyer, an admin or event staff can see a ticket. Anyone else
+	// gets the same 404 as a ticket that doesn't exist.
+	const u = locals.user;
+	const isOwner = !!u && ticketData.userId === u.id;
+	const isStaff =
+		!!u && (u.role === 'admin' || (u.additionalRoles || []).includes('tournament staff'));
+	if (!isOwner && !isStaff) {
+		throw error(404, 'Ticket not found');
+	}
+
+	// Any other tickets from the same order, for the "and N more" line.
+	const siblings = ticketData.orderId
+		? await db
+				.select({ id: ticket.id, firstName: ticket.firstName, lastName: ticket.lastName })
+				.from(ticket)
+				.where(and(eq(ticket.orderId, ticketData.orderId), eq(ticket.refunded, false)))
+		: [];
 
 	return {
 		ticket: ticketData,
-		isOwner: locals.user?.id === ticketData.userId
+		siblings: siblings.filter((t) => t.id !== ticketData.id),
+		isOwner,
+		isNew: url.searchParams.get('new') === '1'
 	};
 }

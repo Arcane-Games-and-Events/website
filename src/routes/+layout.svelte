@@ -39,6 +39,8 @@
 	const editorialRoutes = ['/', '/premium', '/age-open', '/library', '/academy', '/partner'];
 	const editorialPrefixes = [
 		'/account',
+		'/premium/',
+		'/events/',
 		'/library/',
 		'/academy/',
 		'/player/',

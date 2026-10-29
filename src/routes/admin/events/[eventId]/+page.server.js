@@ -7,7 +7,6 @@ import {
 	calculateFinalStandings
 } from '$lib/server/tournament-processor.js';
 import { bump } from '$lib/server/cache/index.js';
-import { markRefunded } from '$lib/server/payments/ledger.js';
 import { parseDatetimeLocal } from '$lib/server/dates.js';
 import { listHeroNames } from '$lib/server/cards/heroes.js';
 import { eventPeriod, rebuildStandings } from '$lib/server/standings/rebuild.js';
@@ -198,8 +197,8 @@ export async function load({ params, locals }) {
 export const actions = {
 	// Refund a ticket
 	refund: async ({ request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
-			return fail(403, { error: 'Unauthorized' });
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { error: 'Only admins can refund tickets' });
 		}
 
 		const formData = await request.formData();
@@ -207,52 +206,25 @@ export const actions = {
 
 		try {
 			const [ticketData] = await db.select().from(ticket).where(eq(ticket.id, ticketId)).limit(1);
-
-			if (!ticketData) {
-				return fail(404, { error: 'Ticket not found' });
+			if (!ticketData) return fail(404, { error: 'Ticket not found' });
+			if (ticketData.refunded) return fail(400, { error: 'Ticket already refunded' });
+			if (!ticketData.transactionId || !(Number(ticketData.amountPaid) > 0)) {
+				return fail(400, { error: 'This ticket was free; nothing to refund.' });
 			}
 
-			if (ticketData.refunded) {
-				return fail(400, { error: 'Ticket already refunded' });
+			const { refundTransaction } = await import('$lib/server/payments/refunds.js');
+			const result = await refundTransaction({
+				transId: ticketData.transactionId,
+				amountCents: Math.round(Number(ticketData.amountPaid) * 100),
+				reason: formData.get('reason')?.toString() || 'admin refund',
+				requestedBy: locals.user.id,
+				orderId: ticketData.orderId,
+				ticketIds: [ticketData.id]
+			});
+			if (!result.ok && result.status !== 'waiting_settlement') {
+				return fail(result.status === 'pending' ? 202 : 400, { error: result.message });
 			}
-
-			if (!ticketData.transactionId || !ticketData.amountPaid) {
-				return fail(400, { error: 'Ticket does not have transaction information' });
-			}
-
-			const { authnet } = await import('$lib/server/authnet/client.js');
-			let refundType = '';
-
-			try {
-				await authnet.voidTransaction(ticketData.transactionId);
-				refundType = 'voided';
-			} catch (voidError) {
-				console.log('Void failed, attempting refund:', voidError.message);
-				await authnet.refundTransaction({
-					transactionId: ticketData.transactionId,
-					amount: ticketData.amountPaid,
-					cardNumber: '1111'
-				});
-				refundType = 'refunded';
-			}
-
-			await db
-				.update(ticket)
-				.set({
-					refunded: true,
-					refundedAt: new Date()
-				})
-				.where(eq(ticket.id, ticketId));
-			await markRefunded(ticketData.transactionId, ticketData.amountPaid);
-			if (ticketData.orderId) {
-				await db
-					.update(order)
-					.set({ refundedAt: new Date() })
-					.where(eq(order.id, ticketData.orderId));
-			}
-
-			await bump('tickets');
-			return { success: true, message: `Ticket ${refundType} successfully` };
+			return { success: true, message: result.message };
 		} catch (err) {
 			console.error('Error refunding ticket:', err);
 			return fail(500, { error: err.message || 'Failed to refund ticket' });

@@ -13,18 +13,21 @@
 	let promoError = '';
 	let verifying = false;
 
+	let verifiedQuote = null; // the server's quote for the verified code + plan
+
 	$: promoCodeTrimmed = promoCode.trim().toUpperCase();
 	$: hasPromoCode = promoCodeTrimmed.length > 0;
 	$: promoApplied = hasPromoCode && verifiedCode === promoCodeTrimmed;
 
-	// Partner: $5 off either plan. Member: $10 off.
-	$: discountAmount = (() => {
-		if (!promoApplied) return 0;
-		if (verifiedType === 'partner') return 5;
-		if (verifiedType === 'member') return 10;
-		return 0;
-	})();
-	$: planFirstCharge = Math.max(parseFloat(planDetails.amount) - discountAmount, 0).toFixed(2);
+	// What will be charged: the server's quote for the plan, with the
+	// verified code applied. Amounts are in cents.
+	$: baseQuote = data.prices[selectedPlan];
+	$: quote =
+		promoApplied && verifiedQuote && verifiedQuote.plan === selectedPlan
+			? verifiedQuote
+			: { ...baseQuote, plan: selectedPlan, renewalCents: baseQuote.listCents };
+	$: discountAmount = quote.discountCents / 100;
+	$: planFirstCharge = (quote.amountCents / 100).toFixed(2);
 
 	$: if (hasPromoCode && verifiedCode && verifiedCode !== promoCodeTrimmed) {
 		verifiedCode = null;
@@ -47,13 +50,14 @@
 		promoError = '';
 		try {
 			const res = await fetch(
-				`/api/partner-code/validate?code=${encodeURIComponent(promoCodeTrimmed)}`
+				`/api/partner-code/validate?code=${encodeURIComponent(promoCodeTrimmed)}&plan=${selectedPlan}`
 			);
 			const body = await res.json();
 			if (body.valid) {
 				verifiedCode = promoCodeTrimmed;
 				verifiedPartnerName = body.partnerName || null;
 				verifiedType = body.type || null;
+				verifiedQuote = body.quote || null;
 			} else {
 				verifiedCode = null;
 				verifiedPartnerName = null;
@@ -68,23 +72,36 @@
 	}
 
 	// ============ premium state ============
-	function hasActivePremium(user) {
+	// A member who is paying, comped or admin sees the "you're a member"
+	// state; a cancelled member (still inside the paid period) is offered
+	// a resume instead of a new signup.
+	function hasActivePremium(user, membership) {
 		if (!user) return false;
 		if (user.role === 'admin') return true;
-		if (user.role !== 'premium') return false;
-		if (user.subscriptionStatus === 'active') return true;
-		if (user.subscriptionStatus === 'cancelled') return false;
-		if (user.subscriptionId && !user.subscriptionStatus) return true;
-		if (!user.subscriptionId && !user.subscriptionStatus) return true;
-		return false;
+		// Any live membership, cancelled ones included: a cancelled member
+		// resumes from their account rather than starting a second one.
+		if (membership) return true;
+		return user.role === 'premium';
 	}
 
-	const isPremium = hasActivePremium(data.user);
-	const isCancelled = data.user?.subscriptionStatus === 'cancelled';
+	const isPremium = hasActivePremium(data.user, data.membership);
+	const isCancelled =
+		data.membership?.status === 'cancelled' ||
+		(!data.membership && data.user?.subscriptionStatus === 'cancelled');
 
 	// ============ plan selection ============
 	let annual = true;
 	$: selectedPlan = annual ? 'yearly' : 'monthly';
+
+	// Changing plan re-quotes an applied code for the new plan.
+	function selectPlan(v) {
+		if (annual === v) return;
+		annual = v;
+		if (promoApplied && verifiedQuote && verifiedQuote.plan !== (v ? 'yearly' : 'monthly')) {
+			verifiedCode = null;
+			verifyPromoCode();
+		}
+	}
 	$: planDetails = annual
 		? {
 				amount: '110.00',
@@ -177,7 +194,7 @@
 	/** @type {HTMLElement | undefined} */
 	let joinEl;
 	function toJoin(plan) {
-		if (plan !== undefined) annual = plan;
+		if (plan !== undefined) selectPlan(plan);
 		joinEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	}
 </script>
@@ -220,9 +237,12 @@
 									class="block text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase"
 									>Subscription cancelled</span
 								>
-								Your access runs to the end of this billing period. Want to stay? You can re-subscribe
-								from your
-								<a href="/account" class="underline underline-offset-2">account</a>.
+								Your access runs to the end of this billing period{data.membership?.currentPeriodEnd
+									? ` (${new Date(data.membership.currentPeriodEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })})`
+									: ''}. Want to stay? Resume with one click from your
+								<a href="/account/membership" class="underline underline-offset-2"
+									>membership page</a
+								>.
 							</p>
 						{/if}
 					</div>
@@ -346,7 +366,7 @@
 											type="button"
 											role="radio"
 											aria-checked={on}
-											onclick={() => (annual = opt.v)}
+											onclick={() => selectPlan(opt.v)}
 											class="relative flex flex-col border-2 px-3.5 pt-3 pb-2.5 text-left transition-colors {on
 												? 'border-[var(--pm-deep)] bg-white/55'
 												: 'border-[var(--pm-rule)] hover:border-[var(--pm-deep)]/50'}"
@@ -513,16 +533,15 @@
 										{/if}
 
 										<EditorialPaymentForm
-											amount={planDetails.amount}
-											description={planDetails.description}
-											submitUrl="/api/subscribe"
+											plan={selectedPlan}
+											promoCode={promoApplied ? promoCodeTrimmed : ''}
+											{quote}
+											cards={data.savedCards || []}
+											accept={data.accept}
+											user={data.user}
 											submitText={promoApplied
 												? `Become a member · $${planFirstCharge} today`
 												: `Become a member · $${annual ? 110 : 10} / ${annual ? 'yr' : 'mo'}`}
-											isSubscription={true}
-											subscriptionType={selectedPlan}
-											showTestData={data.isSandbox}
-											extraFields={hasPromoCode ? { promoCode: promoCodeTrimmed } : {}}
 										/>
 									{/if}
 								</div>

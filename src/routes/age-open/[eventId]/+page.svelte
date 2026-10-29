@@ -1,5 +1,6 @@
 <script>
-	import PaymentForm from '$lib/components/PaymentForm.svelte';
+	import PaymentMethodPicker from '$lib/components/payments/PaymentMethodPicker.svelte';
+	import { trackConversion } from '$lib/analytics/siteTracker.js';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import { getCircuit, DEFAULT_CIRCUIT } from '$lib/data/circuits.js';
 	import FormatTag from '$lib/components/age/FormatTag.svelte';
@@ -124,11 +125,94 @@
 		return parseFloat(price).toFixed(2);
 	}
 
-	// Build GEM IDs string for payment
-	$: gemIdsForPayment = tickets
-		.map((t) => t.gemId)
-		.filter(Boolean)
-		.join(',');
+	// ============ checkout ============
+	// One idempotency key per attempt: a retry after a network hiccup reuses
+	// the same checkout instead of charging twice. A decline gets a new key.
+	const newKey = () =>
+		globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+	let idempotencyKey = newKey();
+	let picker;
+	let paying = false;
+	let payError = '';
+	let payNotice = '';
+	let pendingCheckoutId = null;
+	let checkoutNoted = false;
+
+	function noteCheckout() {
+		if (checkoutNoted) return;
+		checkoutNoted = true;
+		trackConversion('checkout_started');
+	}
+
+	async function purchase(e) {
+		e.preventDefault();
+		if (paying) return;
+		payError = '';
+		payNotice = '';
+		paying = true;
+		try {
+			const payment = await picker.getPayment();
+			const res = await fetch(`/api/events/${data.event.id}/purchase`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					players: tickets.map((t) => ({
+						firstName: t.firstName.trim(),
+						lastName: t.lastName.trim(),
+						gemId: t.gemId.trim() || null
+					})),
+					payment,
+					idempotencyKey
+				})
+			});
+			const body = await res.json().catch(() => ({}));
+			if (res.status === 202 && body.checkoutId) {
+				pendingCheckoutId = body.checkoutId;
+				payNotice = body.message || 'Confirming your payment…';
+				await pollCheckout(body.checkoutId);
+				return;
+			}
+			if (res.ok && body.success) {
+				if (body.saveRequested && !body.cardSaved) {
+					sessionStorage.setItem('age:cardNotSaved', '1');
+				}
+				window.location.href = body.redirectUrl;
+				return;
+			}
+			payError = body.error || 'The payment could not be completed.';
+			// Anything the server refused is over; the next try is a new attempt.
+			idempotencyKey = newKey();
+		} catch (err) {
+			if (!payError) payError = err?.message || 'Something went wrong. Please try again.';
+		} finally {
+			paying = false;
+		}
+	}
+
+	async function pollCheckout(id) {
+		for (let i = 0; i < 40; i++) {
+			await new Promise((r) => setTimeout(r, i < 5 ? 2000 : 5000));
+			try {
+				const res = await fetch(`/api/checkout/${id}`);
+				const body = await res.json();
+				if (body.status === 'fulfilled') {
+					window.location.href = body.redirectUrl;
+					return;
+				}
+				if (body.status && body.status !== 'pending') {
+					payNotice = '';
+					payError = body.error || 'The payment did not go through.';
+					pendingCheckoutId = null;
+					idempotencyKey = newKey();
+					return;
+				}
+			} catch {
+				/* keep polling */
+			}
+		}
+		payNotice =
+			"We're still confirming this payment. You'll get an email either way; please don't pay again.";
+	}
 
 	// Get circuit config reactively
 	$: circuitConfig = getCircuitConfig(data.event.circuit);
@@ -493,7 +577,7 @@
 							{/if}
 							{#if data.userTicket[0]?.orderId}
 								<a
-									href="/account/orders/{data.userTicket[0].orderId}"
+									href="/account/purchases/{data.userTicket[0].orderId}"
 									class="mt-5 inline-block border-b-2 border-warm-light pb-1 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-[letter-spacing] hover:tracking-[0.26em]"
 								>
 									View order details →
@@ -731,16 +815,48 @@
 									</p>
 								</div>
 								<div class="px-5 py-6 md:px-7">
-									<PaymentForm
-										amount={totalAmount}
-										description={`${tickets.length}x Ticket for ${data.event.title}`}
-										submitUrl={`/api/events/${data.event.id}/purchase`}
-										submitText="Complete Purchase - ${totalAmount}"
-										gemId={gemIdsForPayment}
-										savedCards={data.savedCards || []}
-										showSaveCardOption={true}
-										showTestData={data.isSandbox}
-									/>
+									<form on:submit={purchase} on:focusin={noteCheckout} class="space-y-5">
+										{#if payError}
+											<div
+												class="border-[1.5px] border-hero-rb bg-hero-rb/[0.06] px-4 py-3 text-[12.5px] font-semibold text-hero-rb"
+												role="alert"
+											>
+												{payError}
+											</div>
+										{/if}
+										{#if payNotice}
+											<div
+												class="border-[1.5px] border-line2 bg-paper px-4 py-3 text-[12.5px] font-semibold text-ink"
+												role="status"
+											>
+												{payNotice}
+											</div>
+										{/if}
+										<PaymentMethodPicker
+											bind:this={picker}
+											cards={data.savedCards || []}
+											accept={data.accept}
+											firstName={data.userFirstName}
+											lastName={data.userLastName}
+											disabled={paying || !!pendingCheckoutId}
+										/>
+										<button
+											type="submit"
+											disabled={paying || !!pendingCheckoutId || !data.accept?.ready}
+											class="inline-flex h-[54px] w-full items-center justify-center gap-2 border-[1.5px] border-prem bg-prem text-[13px] font-bold tracking-[0.07em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+										>
+											{#if paying || pendingCheckoutId}
+												Processing…
+											{:else if Number(totalAmount) === 0}
+												Register free
+											{:else}
+												Complete purchase · ${totalAmount}
+											{/if}
+										</button>
+										<p class="m-0 text-center text-[11px] text-fade">
+											Refundable from your account up to 24 hours before the event.
+										</p>
+									</form>
 								</div>
 							</div>
 						{/if}

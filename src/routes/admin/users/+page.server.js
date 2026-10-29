@@ -194,7 +194,25 @@ export const actions = {
 				.set({ assignedBy: null })
 				.where(eq(eventStaff.assignedBy, userId));
 
-			// 10. Delete the user (savedCard cascades automatically)
+			// 10. Stop any billing: end the membership, and cancel an old
+			//     Authorize.net subscription so it can't keep charging.
+			const { endForDeletedUser } = await import('$lib/server/billing/subscriptions.js');
+			await endForDeletedUser(userId);
+			const [legacy] = await db
+				.select({ subscriptionId: user.subscriptionId })
+				.from(user)
+				.where(eq(user.id, userId))
+				.limit(1);
+			if (legacy?.subscriptionId && /^\d+$/.test(legacy.subscriptionId)) {
+				const { authnet } = await import('$lib/server/authnet/client.js');
+				try {
+					await authnet.arbCancel(legacy.subscriptionId);
+				} catch (err) {
+					console.error('Could not cancel ARB on delete:', err?.message || err);
+				}
+			}
+
+			// 11. Delete the user (savedCard cascades automatically)
 			await db.delete(user).where(eq(user.id, userId));
 
 			return { success: true, message: `User ${targetUser.email} has been deleted` };

@@ -41,6 +41,7 @@ export const auth = new Lucia(adapter, {
 		// the Desk + admin guards (`hasCapability`, `canEditEntries`, etc.).
 		// See src/lib/server/auth/roles.js.
 		additionalRoles: data.additionalRoles,
+		customerProfileId: data.customerProfileId,
 		subscriptionId: data.subscriptionId,
 		subscriptionType: data.subscriptionType,
 		subscriptionStatus: data.subscriptionStatus,

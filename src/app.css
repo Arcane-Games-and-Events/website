@@ -416,6 +416,28 @@ a.fp-ul:focus-visible {
 	font-stretch: 62%;
 	font-variation-settings: 'wdth' 62;
 }
+/* A ticket stub with its right edge torn off: a faint, irregular jag. */
+.ao-torn {
+	clip-path: polygon(
+		0 0,
+		calc(100% - 4px) 0,
+		100% 6%,
+		calc(100% - 3px) 13%,
+		calc(100% - 1px) 21%,
+		calc(100% - 4px) 30%,
+		calc(100% - 2px) 38%,
+		100% 47%,
+		calc(100% - 4px) 55%,
+		calc(100% - 1px) 63%,
+		calc(100% - 3px) 72%,
+		100% 80%,
+		calc(100% - 4px) 88%,
+		calc(100% - 2px) 95%,
+		calc(100% - 3px) 100%,
+		0 100%
+	);
+}
+
 .ao-perf {
 	background-image: linear-gradient(to bottom, currentColor 50%, transparent 50%);
 	background-size: 1px 8px;

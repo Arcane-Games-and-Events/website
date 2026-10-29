@@ -170,9 +170,8 @@ export async function load({ params, locals, setHeaders }) {
 				if (names.size > 0) cardImages = await resolveCardImages(names);
 			}
 
-			// Premium gating. Per the memory note for the Desk: premium
-			// entries stay premium forever — no 30-day-to-free cutover. So we
-			// just check accessMode instead of `isPremiumNow`.
+			// Premium gating. A piece is free or premium, and premium is
+			// permanent: nothing turns free with age.
 			const isPremium = article.accessMode === 'premium';
 			let isPreview = false;
 			let hasPremiumAccess = false;

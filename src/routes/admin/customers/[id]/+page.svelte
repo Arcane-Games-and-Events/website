@@ -50,12 +50,23 @@
 		switch (status) {
 			case 'active':
 				return '[--tone:var(--color-prem)]';
-			case 'cancelled':
+			case 'past_due':
+			case 'payment_failed':
 				return '[--tone:var(--color-hero-rb)]';
+			case 'cancelled':
+				return '[--tone:#8a6116]';
 			default:
 				return '[--tone:var(--color-fade)]';
 		}
 	}
+	const adminEnhance = () => {
+		cancelLoading = true;
+		return async ({ update }) => {
+			cancelLoading = false;
+			await update();
+			await invalidateAll();
+		};
+	};
 	function orderTypeChip(t) {
 		switch (t) {
 			case 'ticket':
@@ -262,89 +273,337 @@
 	</div>
 </section>
 
-<!-- ============ SUBSCRIPTION ============ -->
-{#if data.customer && (data.customer.subscriptionId || data.customer.subscriptionStatus)}
+<!-- ============ MEMBERSHIP ============ -->
+{#if data.customer && (data.membership?.subscription || data.membership?.legacy || data.membership?.comp || data.customer.subscriptionId || data.customer.subscriptionStatus)}
+	{@const sub = data.membership?.subscription}
 	<section class="overflow-x-clip border-t border-line2">
 		<div class="mx-auto w-full max-w-[1200px] px-5 py-[28px] md:px-8">
-			<div class="mb-[18px]">
-				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-					Subscription
-				</span>
-				<h2 class="mt-[6px] font-newsreader text-[22px] font-semibold">Membership.</h2>
+			<div class="mb-[18px] flex flex-wrap items-end justify-between gap-3">
+				<div>
+					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+						>Membership</span
+					>
+					<h2 class="mt-[6px] font-newsreader text-[22px] font-semibold">
+						{#if sub}{sub.plan === 'yearly' ? 'Annual' : 'Monthly'} at {formatCurrency(
+								sub.priceCents / 100
+							)}{:else if data.membership?.legacy}On the old Authorize.net subscription{:else if data.membership?.comp}Complimentary{:else}Membership.{/if}
+					</h2>
+				</div>
+				{#if sub?.legacyArbId}<span class="text-[11px] text-fade"
+						>migrated from ARB {sub.legacyArbId}{sub.legacyArbCancelledAt
+							? ''
+							: ' · ARB not yet cancelled'}</span
+					>{/if}
 			</div>
-			<div class="overflow-hidden border border-line2 p-6">
-				<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-					<div class="grid grid-cols-2 gap-[24px] sm:grid-cols-4">
-						<div>
-							<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>Status</span
+
+			<div class="border border-line2 p-6">
+				<div class="grid grid-cols-2 gap-[24px] sm:grid-cols-5">
+					<div>
+						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+							>Status</span
+						>
+						<div class="mt-[6px]">
+							<span
+								class="inline-flex w-fit shrink-0 items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap text-[var(--tone,var(--color-ink))] capitalize before:block before:h-2 before:w-2 before:shrink-0 before:bg-[var(--tone,var(--color-line2))] before:content-[''] {subStatusChip(
+									sub ? sub.status : data.customer.subscriptionStatus
+								)}"
 							>
-							<div class="mt-[6px]">
-								<span
-									class="inline-flex w-fit shrink-0 items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap text-[var(--tone,var(--color-ink))] capitalize before:block before:h-2 before:w-2 before:shrink-0 before:bg-[var(--tone,var(--color-line2))] before:content-[''] {subStatusChip(
-										data.customer.subscriptionStatus
-									)}"
-								>
-									{data.customer.subscriptionStatus || 'None'}
-								</span>
-							</div>
-						</div>
-						<div>
-							<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>Type</span
-							>
-							<p class="mt-[6px] font-newsreader text-[16px] font-semibold capitalize">
-								{data.customer.subscriptionType || 'N/A'}
-							</p>
-						</div>
-						<div>
-							<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>Started</span
-							>
-							<p class="mt-[6px] font-newsreader text-[16px] font-semibold">
-								{formatDate(data.customer.subscriptionStartDate)}
-							</p>
-						</div>
-						<div>
-							<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>Next Billing</span
-							>
-							<p class="mt-[6px] font-newsreader text-[16px] font-semibold">
-								{formatDate(data.customer.nextBillingDate)}
-							</p>
+								{(sub ? sub.status : data.customer.subscriptionStatus || 'None').replace(
+									'_',
+									' '
+								)}{sub?.hold ? ' · held' : ''}
+							</span>
 						</div>
 					</div>
-					{#if data.customer.subscriptionStatus === 'active'}
+					<div>
+						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+							>Started</span
+						>
+						<p class="mt-[6px] font-newsreader text-[16px] font-semibold">
+							{formatDate(sub ? sub.startedAt : data.customer.subscriptionStartDate)}
+						</p>
+					</div>
+					<div>
+						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+							>Paid through</span
+						>
+						<p class="mt-[6px] font-newsreader text-[16px] font-semibold">
+							{formatDate(
+								sub
+									? sub.currentPeriodEnd
+									: data.customer.subscriptionEndDate || data.customer.nextBillingDate
+							)}
+						</p>
+					</div>
+					<div>
+						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+							>Next charge</span
+						>
+						<p class="mt-[6px] font-newsreader text-[16px] font-semibold">
+							{sub
+								? sub.status === 'past_due'
+									? `retry ${formatDate(sub.nextAttemptAt)}`
+									: formatDate(sub.nextChargeAt)
+								: formatDate(data.customer.nextBillingDate)}
+						</p>
+					</div>
+					<div>
+						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+							>Card</span
+						>
+						<p class="mt-[6px] font-newsreader text-[16px] font-semibold">
+							{data.membership?.card
+								? `${data.membership.card.brand} •••• ${data.membership.card.lastFour}`
+								: '—'}
+						</p>
+					</div>
+				</div>
+				{#if sub?.pendingPlan}<p class="mt-3 text-[12px] text-soft">
+						Switching to {sub.pendingPlan} at {formatCurrency(sub.pendingPriceCents / 100)} on {formatDate(
+							sub.currentPeriodEnd
+						)}.
+					</p>{/if}
+				{#if sub?.flags?.length}<p class="mt-2 text-[12px] text-[#8a6116]">
+						Flags: {sub.flags.join(', ')}
+					</p>{/if}
+
+				{#if sub && data.membership.live}
+					<div class="mt-5 flex flex-wrap gap-2 border-t border-line2 pt-4">
+						{#if sub.status === 'past_due' || (sub.status === 'active' && sub.nextChargeAt && new Date(sub.nextChargeAt) <= new Date())}
+							<form method="POST" action="?/chargeNow" use:enhance={adminEnhance}>
+								<input type="hidden" name="subscriptionId" value={sub.id} /><button
+									class="inline-flex h-[32px] items-center bg-ink px-3 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
+									disabled={cancelLoading}>Charge now</button
+								>
+							</form>
+						{/if}
+						<form method="POST" action="?/extend" use:enhance={adminEnhance} class="flex gap-1">
+							<input type="hidden" name="subscriptionId" value={sub.id} /><input
+								type="number"
+								name="days"
+								min="1"
+								max="366"
+								value="30"
+								class="h-[32px] w-[72px] border border-line2 bg-paper px-2 text-[11px]"
+							/><button
+								class="inline-flex h-[32px] items-center border border-line2 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:border-ink disabled:opacity-40"
+								disabled={cancelLoading}>Extend days</button
+							>
+						</form>
+						<form method="POST" action="?/hold" use:enhance={adminEnhance}>
+							<input type="hidden" name="subscriptionId" value={sub.id} /><input
+								type="hidden"
+								name="hold"
+								value={sub.hold ? '0' : '1'}
+							/><button
+								class="inline-flex h-[32px] items-center border border-line2 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:border-ink disabled:opacity-40"
+								disabled={cancelLoading}>{sub.hold ? 'Lift billing hold' : 'Hold billing'}</button
+							>
+						</form>
+						{#if sub.status !== 'cancelled'}
+							<form
+								method="POST"
+								action="?/cancelSubscription"
+								use:enhance={adminEnhance}
+								onsubmit={(e) => {
+									if (
+										!confirm(
+											'Cancel at period end? The member keeps access until the period ends and is not charged again.'
+										)
+									)
+										e.preventDefault();
+								}}
+							>
+								<button
+									class="inline-flex h-[32px] items-center border border-line2 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:border-ink disabled:opacity-40"
+									disabled={cancelLoading}>Cancel at period end</button
+								>
+							</form>
+						{/if}
+						<form
+							method="POST"
+							action="?/endNow"
+							use:enhance={adminEnhance}
+							class="ml-auto"
+							onsubmit={(e) => {
+								if (
+									!confirm(
+										'End this membership right now? Access stops immediately. Refund charges separately below if owed.'
+									)
+								)
+									e.preventDefault();
+							}}
+						>
+							<input type="hidden" name="subscriptionId" value={sub.id} /><button
+								class="inline-flex h-[32px] items-center px-2 text-[10px] font-extrabold tracking-[0.14em] text-hero-rb uppercase hover:text-ink disabled:opacity-40"
+								disabled={cancelLoading}>End now</button
+							>
+						</form>
+					</div>
+				{:else if data.membership?.legacy && data.customer.subscriptionStatus !== 'cancelled'}
+					<div class="mt-5 flex flex-wrap gap-2 border-t border-line2 pt-4">
+						<a
+							href="/admin/orders/migration"
+							class="inline-flex h-[32px] items-center border border-line2 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:border-ink"
+							>Migrate on the ARB page</a
+						>
 						<form
 							method="POST"
 							action="?/cancelSubscription"
-							use:enhance={() => {
+							use:enhance={adminEnhance}
+							class="ml-auto"
+							onsubmit={(e) => {
 								if (
 									!confirm(
-										'Cancel this subscription? The user will be downgraded to the free tier.'
+										'Cancel the Authorize.net subscription? The member keeps access to the end of the paid period.'
 									)
-								) {
-									return () => {};
-								}
-								cancelLoading = true;
-								return async ({ update }) => {
-									await update();
-									cancelLoading = false;
-									invalidateAll();
-								};
+								)
+									e.preventDefault();
 							}}
 						>
 							<button
-								type="submit"
+								class="inline-flex h-[32px] items-center bg-hero-rb px-3 text-[10px] font-extrabold tracking-[0.14em] text-white uppercase hover:brightness-110 disabled:opacity-40"
 								disabled={cancelLoading}
-								class="inline-flex h-[40px] shrink-0 items-center bg-hero-rb px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+								>{cancelLoading ? 'Cancelling…' : 'Cancel ARB subscription'}</button
 							>
-								{cancelLoading ? 'Cancelling…' : 'Cancel Subscription'}
-							</button>
 						</form>
-					{/if}
-				</div>
+					</div>
+				{/if}
 			</div>
+
+			{#if data.membership?.invoices?.length}
+				<h3 class="mt-6 text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
+					Periods
+				</h3>
+				<ul class="mt-2 border-t border-line2 text-[13px]">
+					{#each data.membership.invoices as inv (inv.id)}
+						<li
+							class="grid gap-x-4 border-b border-line2 py-2 md:grid-cols-[220px_120px_minmax(0,1fr)_120px]"
+						>
+							<span>{formatDate(inv.periodStart)} – {formatDate(inv.periodEnd)}</span>
+							<span class="capitalize">{inv.kind} · {inv.status}</span>
+							<span class="text-soft"
+								>{inv.invoiceNumber || ''}{inv.transId ? ` · txn ${inv.transId}` : ''}{inv.lastError
+									? ` · ${inv.lastError}`
+									: ''}</span
+							>
+							<span class="text-right tabular-nums"
+								>{formatCurrency(inv.amountCents / 100)}{inv.refundedCents
+									? ` (−${formatCurrency(inv.refundedCents / 100)})`
+									: ''}</span
+							>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
+	</section>
+{/if}
+
+<!-- ============ LEDGER ============ -->
+{#if data.ledger?.length}
+	<section class="overflow-x-clip border-t border-line2">
+		<div class="mx-auto w-full max-w-[1200px] px-5 py-[28px] md:px-8">
+			<div class="mb-[18px]">
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+					>Payments</span
+				>
+				<h2 class="mt-[6px] font-newsreader text-[22px] font-semibold">
+					Every charge, with refunds.
+				</h2>
+			</div>
+			<ul class="border-t border-line2 text-[13px]">
+				{#each data.ledger as p (p.id)}
+					{@const left = Number(p.amount) - Number(p.refundedAmount)}
+					<li
+						class="grid gap-x-4 gap-y-2 border-b border-line2 py-3 md:grid-cols-[150px_minmax(0,1fr)_auto] md:items-center"
+					>
+						<span class="tabular-nums">{formatDate(p.occurredAt)}</span>
+						<span class="min-w-0">
+							<span class="font-semibold">{formatCurrency(p.amount)}</span>
+							<span class="text-soft">
+								· {p.kind.replace('_', ' ')} · txn {p.transId}{p.subscriptionId
+									? ` · sub ${p.subscriptionId}`
+									: ''}{p.discountAmount > 0
+									? ` · ${formatCurrency(p.discountAmount)} off`
+									: ''}</span
+							>
+							{#if Number(p.refundedAmount) > 0}<span class="text-hero-rb">
+									· {formatCurrency(p.refundedAmount)} refunded {formatDate(p.refundedAt)}</span
+								>{/if}
+						</span>
+						{#if left > 0.001 && /^\d+$/.test(p.transId)}
+							<form
+								method="POST"
+								action="?/refundTransaction"
+								use:enhance={adminEnhance}
+								class="flex flex-wrap items-center gap-1"
+								onsubmit={(e) => {
+									if (
+										!confirm(
+											`Refund ${formatCurrency(e.currentTarget.amount.value)} of transaction ${p.transId}?`
+										)
+									)
+										e.preventDefault();
+								}}
+							>
+								<input type="hidden" name="transId" value={p.transId} />
+								<input
+									type="number"
+									name="amount"
+									step="0.01"
+									min="0.01"
+									max={left.toFixed(2)}
+									value={left.toFixed(2)}
+									class="h-[32px] w-[90px] border border-line2 bg-paper px-2 text-[11px] tabular-nums"
+								/>
+								{#if p.kind.startsWith('sub')}
+									<select
+										name="subscriptionEffect"
+										class="h-[32px] border border-line2 bg-paper py-0 pr-7 pl-2 text-[11px]"
+									>
+										<option value="keep">keep membership</option>
+										<option value="cancel_at_period_end">cancel at period end</option>
+										<option value="end_now">end now</option>
+									</select>
+								{/if}
+								<button
+									class="inline-flex h-[32px] items-center px-2 text-[10px] font-extrabold tracking-[0.14em] text-hero-rb uppercase hover:text-ink disabled:opacity-40"
+									disabled={cancelLoading}>Refund</button
+								>
+							</form>
+						{/if}
+					</li>
+				{/each}
+			</ul>
+		</div>
+	</section>
+{/if}
+
+{#if data.history?.length}
+	<section class="overflow-x-clip border-t border-line2">
+		<div class="mx-auto w-full max-w-[1200px] px-5 py-[28px] md:px-8">
+			<div class="mb-[18px]">
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+					>History</span
+				>
+				<h2 class="mt-[6px] font-newsreader text-[22px] font-semibold">Membership timeline.</h2>
+			</div>
+			<ul class="border-t border-line2 text-[12.5px]">
+				{#each data.history as h (h.id)}
+					<li
+						class="grid gap-x-4 border-b border-line2 py-2 md:grid-cols-[170px_140px_minmax(0,1fr)]"
+					>
+						<span class="text-soft tabular-nums"
+							>{formatDate(h.at, { hour: 'numeric', minute: '2-digit' })}</span
+						>
+						<span class="font-semibold capitalize">{h.kind.replace('_', ' ')}</span>
+						<span class="text-soft"
+							>{h.reason || ''}{h.meta ? ` ${JSON.stringify(h.meta).slice(0, 160)}` : ''}</span
+						>
+					</li>
+				{/each}
+			</ul>
 		</div>
 	</section>
 {/if}

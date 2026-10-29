@@ -10,7 +10,8 @@ import {
 	nextMonths,
 	monthLabel,
 	PRICE,
-	payingWhere
+	payingWhere,
+	mrrCents
 } from './util.js';
 
 /**
@@ -64,7 +65,12 @@ export function projection() {
 			const monthly = n(c.monthly);
 			const yearly = n(c.yearly);
 			const paying = monthly + yearly;
-			const mrr = money(monthly * PRICE.monthly + (yearly * PRICE.yearly) / 12);
+			let mrr = money(monthly * PRICE.monthly + (yearly * PRICE.yearly) / 12);
+			try {
+				mrr = money((await mrrCents(db)) / 100);
+			} catch (err) {
+				if (err?.code !== '42P01' && err?.cause?.code !== '42P01') throw err;
+			}
 
 			const f = Object.fromEntries(rows(flow).map((r) => [r.kind, n(r.count)]));
 			const newPerMonth = (f.subscribed || 0) / 3;

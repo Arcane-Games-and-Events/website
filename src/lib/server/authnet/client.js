@@ -1,1052 +1,948 @@
 import ApiContracts from 'authorizenet/lib/apicontracts.js';
-import ApiControllers from 'authorizenet/lib/apicontrollers.js';
-import Constants from 'authorizenet/lib/constants.js';
 import { env } from '$env/dynamic/private';
 
 /**
- * Authorize.net API Client
- * Handles payments, subscriptions, and customer profiles
+ * Authorize.net client.
+ *
+ * The SDK's contract classes build request bodies in the field order the
+ * API demands; everything else is ours. Requests go over `fetch` with a
+ * timeout, and every response is read as plain JSON, so a missing field is
+ * `undefined` rather than a method call on nothing, and a transport failure
+ * is reported as such instead of hanging a promise forever (the SDK's
+ * `execute` never calls back on error).
+ *
+ * Two kinds of result:
+ *
+ * - Money-moving calls (`chargeProfile`, `chargeOpaque`, `voidTransaction`,
+ *   `refundTransaction`) resolve to an **outcome**:
+ *   `{ outcome: 'approved' | 'declined' | 'error' | 'unknown', ... }`.
+ *   They never throw. `unknown` means the gateway may or may not have acted
+ *   (timeout, network error, held for review, duplicate filter); the caller
+ *   must reconcile by invoice number, never retry blindly.
+ *
+ * - Everything else resolves to data or throws an `AuthnetError` carrying
+ *   the gateway's code (`E00040`…). `err.unknown` is true for transport
+ *   failures.
  */
+
+export class AuthnetError extends Error {
+	/**
+	 * @param {string} message
+	 * @param {{ code?: string | null, unknown?: boolean, cause?: unknown }} [opts]
+	 */
+	constructor(message, { code = null, unknown = false, cause } = {}) {
+		super(message, cause ? { cause } : undefined);
+		this.name = 'AuthnetError';
+		this.code = code;
+		this.unknown = unknown;
+	}
+}
+
+const ENDPOINT = {
+	sandbox: 'https://apitest.authorize.net/xml/v1/request.api',
+	production: 'https://api2.authorize.net/xml/v1/request.api'
+};
+
+/** Card brand names as Authorize.net reports them → how we show them. */
+const CARD_TYPES = {
+	visa: 'Visa',
+	mastercard: 'Mastercard',
+	americanexpress: 'American Express',
+	amex: 'American Express',
+	discover: 'Discover',
+	jcb: 'JCB',
+	dinersclub: 'Diners Club'
+};
+export function cardTypeLabel(type) {
+	if (!type) return 'Card';
+	return CARD_TYPES[String(type).replace(/\s/g, '').toLowerCase()] || String(type);
+}
+
+/** The last four digits of a masked account number ("XXXX1111"). */
+export function lastFourOf(masked) {
+	const m = String(masked || '').match(/(\d{4})\s*$/);
+	return m ? m[1] : null;
+}
+
+/** "2028-12" or "XXXX" → { month, year } or null. */
+export function parseExpiration(exp) {
+	if (!exp) return null;
+	const s = String(exp);
+	let m = s.match(/^(\d{4})-(\d{2})$/);
+	if (m) return { year: Number(m[1]), month: Number(m[2]) };
+	m = s.match(/^(\d{2})(\d{2})$/);
+	if (m) return { year: 2000 + Number(m[2]), month: Number(m[1]) };
+	m = s.match(/^(\d{1,2})\/(\d{2,4})$/);
+	if (m)
+		return { year: m[2].length === 2 ? 2000 + Number(m[2]) : Number(m[2]), month: Number(m[1]) };
+	return null;
+}
+
+const cents = (c) => (Number(c) / 100).toFixed(2);
+const asArray = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
+
+/** `{ code, text }` of the first top-level message. */
+function topMessage(resp) {
+	const m = asArray(resp?.messages?.message)[0];
+	return { code: m?.code ?? null, text: m?.text ?? null };
+}
+const isOk = (resp) => resp?.messages?.resultCode === 'Ok';
+
+/**
+ * Decline reason codes worth a specific message. Everything else gets the
+ * generic line. https://developer.authorize.net/api/reference/responseCodes.html
+ */
+const DECLINE_TEXT = {
+	2: 'Your card was declined.',
+	3: 'Your card was declined.',
+	4: 'Your card was declined. Please contact your bank.',
+	6: 'The card number is not valid.',
+	7: 'The expiration date is not valid.',
+	8: 'This card has expired.',
+	17: 'This card type is not accepted.',
+	27: 'The billing address does not match the card. Check the ZIP code.',
+	28: 'This card type is not accepted.',
+	37: 'The card number is not valid.',
+	44: 'The security code was declined by your bank.',
+	45: 'The address and security code were declined by your bank.',
+	65: 'The security code does not match.',
+	78: 'The security code is not valid.',
+	250: 'This transaction was blocked by a fraud filter.',
+	251: 'This transaction was blocked by a fraud filter.',
+	254: 'This transaction was blocked by a fraud filter.'
+};
+
+/** A sentence for a member about a non-approved outcome. */
+export function describeOutcome(outcome) {
+	if (!outcome) return 'The payment could not be completed.';
+	if (outcome.outcome === 'approved') return 'Approved.';
+	if (outcome.outcome === 'declined') {
+		return DECLINE_TEXT[Number(outcome.code)] || 'Your card was declined.';
+	}
+	if (outcome.outcome === 'unknown') {
+		return "We couldn't confirm the payment with the card network. Please don't try again yet; we'll check and email you.";
+	}
+	return outcome.message || 'The payment could not be completed.';
+}
+
 class AuthNetClient {
 	get apiLoginId() {
 		return env.AUTHNET_API_LOGIN_ID;
 	}
-
 	get transactionKey() {
 		return env.AUTHNET_TRANSACTION_KEY;
 	}
-
+	/** 'sandbox' | 'production' */
 	get environment() {
-		return env.AUTHNET_ENVIRONMENT || 'sandbox';
+		return env.AUTHNET_ENVIRONMENT === 'production' ? 'production' : 'sandbox';
+	}
+	get isProduction() {
+		return this.environment === 'production';
+	}
+	get timeoutMs() {
+		return Number(env.AUTHNET_TIMEOUT_MS) || 20000;
+	}
+	get configured() {
+		return !!(this.apiLoginId && this.transactionKey);
 	}
 
-	/**
-	 * Get merchant authentication
-	 */
-	getMerchantAuth() {
-		const merchantAuth = new ApiContracts.MerchantAuthenticationType();
-		merchantAuth.setName(this.apiLoginId);
-		merchantAuth.setTransactionKey(this.transactionKey);
-		return merchantAuth;
+	merchantAuth() {
+		const auth = new ApiContracts.MerchantAuthenticationType();
+		auth.setName(this.apiLoginId);
+		auth.setTransactionKey(this.transactionKey);
+		return auth;
 	}
 
+	// ---------------------------------------------------------------- transport
+
 	/**
-	 * Charge a credit card (one-time payment)
-	 * @param {Object} options - Payment options
-	 * @param {string} options.amount - Amount to charge
-	 * @param {string} options.cardNumber - Credit card number
-	 * @param {string} options.expirationDate - Expiration date (MMYY format)
-	 * @param {string} options.cardCode - CVV code
-	 * @param {string} options.description - Transaction description
-	 * @param {Object} options.billTo - Billing information
-	 * @returns {Promise<Object>} Transaction result
+	 * POST a built request and return the response body as plain JSON.
+	 * Throws `AuthnetError({ unknown: true })` when no well-formed response
+	 * came back; a gateway error response is returned as-is for the caller
+	 * to interpret.
 	 */
-	async chargeCard(options) {
-		return new Promise((resolve, reject) => {
-			const merchantAuth = this.getMerchantAuth();
-
-			// Create credit card object
-			const creditCard = new ApiContracts.CreditCardType();
-			creditCard.setCardNumber(options.cardNumber);
-			creditCard.setExpirationDate(options.expirationDate);
-			creditCard.setCardCode(options.cardCode);
-
-			// Create payment type
-			const payment = new ApiContracts.PaymentType();
-			payment.setCreditCard(creditCard);
-
-			// Create order information
-			const orderDetails = new ApiContracts.OrderType();
-			orderDetails.setDescription(options.description || 'Purchase');
-
-			// Create billing address (only set fields that are provided)
-			let billTo = null;
-			if (options.billTo) {
-				billTo = new ApiContracts.CustomerAddressType();
-				if (options.billTo.firstName) billTo.setFirstName(options.billTo.firstName);
-				if (options.billTo.lastName)
-					if (options.billTo.lastName) billTo.setLastName(options.billTo.lastName);
-				if (options.billTo.address)
-					if (options.billTo.address) billTo.setAddress(options.billTo.address);
-				if (options.billTo.city) if (options.billTo.city) billTo.setCity(options.billTo.city);
-				if (options.billTo.state) if (options.billTo.state) billTo.setState(options.billTo.state);
-				if (options.billTo.zip) if (options.billTo.zip) billTo.setZip(options.billTo.zip);
-				billTo.setCountry(options.billTo.country || 'US');
+	async send(request) {
+		if (!this.configured) {
+			throw new AuthnetError('Authorize.net is not configured', { code: 'CONFIG' });
+		}
+		const body = JSON.stringify(request.getJSON());
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+		let text;
+		try {
+			const res = await fetch(ENDPOINT[this.environment], {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body,
+				signal: controller.signal
+			});
+			text = await res.text();
+			if (!res.ok) {
+				throw new AuthnetError(`Authorize.net responded ${res.status}`, {
+					code: `HTTP${res.status}`,
+					unknown: true
+				});
 			}
-
-			// Create transaction request
-			const transactionRequest = new ApiContracts.TransactionRequestType();
-			transactionRequest.setTransactionType(
-				ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION
+		} catch (err) {
+			if (err instanceof AuthnetError) throw err;
+			const timedOut = err?.name === 'AbortError';
+			throw new AuthnetError(
+				timedOut ? 'Authorize.net did not answer in time' : 'Could not reach Authorize.net',
+				{ code: timedOut ? 'TIMEOUT' : 'NETWORK', unknown: true, cause: err }
 			);
-			transactionRequest.setPayment(payment);
-			transactionRequest.setAmount(options.amount);
-			transactionRequest.setOrder(orderDetails);
-			if (billTo) {
-				transactionRequest.setBillTo(billTo);
-			}
-
-			// Create request
-			const request = new ApiContracts.CreateTransactionRequest();
-			request.setMerchantAuthentication(merchantAuth);
-			request.setTransactionRequest(transactionRequest);
-
-			// Execute transaction
-			const ctrl = new ApiControllers.CreateTransactionController(request.getJSON());
-
-			// Explicitly set the environment
-			if (this.environment === 'production') {
-				ctrl.setEnvironment(Constants.constants.endpoint.production);
-			} else {
-				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
-			}
-
-			ctrl.execute(() => {
-				const apiResponse = ctrl.getResponse();
-				const response = new ApiContracts.CreateTransactionResponse(apiResponse);
-
-				if (response !== null) {
-					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-						const transactionResponse = response.getTransactionResponse();
-
-						if (transactionResponse.getMessages() !== null) {
-							resolve({
-								success: true,
-								transactionId: transactionResponse.getTransId(),
-								responseCode: transactionResponse.getResponseCode(),
-								messageCode: transactionResponse.getMessages().getMessage()[0].getCode(),
-								description: transactionResponse.getMessages().getMessage()[0].getDescription(),
-								authCode: transactionResponse.getAuthCode()
-							});
-						} else {
-							if (transactionResponse.getErrors() !== null) {
-								reject(new Error(transactionResponse.getErrors().getError()[0].getErrorText()));
-							} else {
-								reject(new Error('Transaction failed with unknown error'));
-							}
-						}
-					} else {
-						const errors = response.getTransactionResponse().getErrors();
-						reject(new Error(errors.getError()[0].getErrorText()));
-					}
-				} else {
-					reject(new Error('No response from Authorize.net'));
-				}
+		} finally {
+			clearTimeout(timer);
+		}
+		try {
+			// The API prefixes its JSON with a byte-order mark.
+			return JSON.parse(text.replace(/^\uFEFF/, ''));
+		} catch (err) {
+			throw new AuthnetError('Authorize.net returned an unreadable response', {
+				code: 'PARSE',
+				unknown: true,
+				cause: err
 			});
-		});
+		}
 	}
 
+	/** `send`, then throw on a gateway error. */
+	async call(request) {
+		const resp = await this.send(request);
+		if (!isOk(resp)) {
+			const { code, text } = topMessage(resp);
+			throw new AuthnetError(text || 'Authorize.net rejected the request', { code });
+		}
+		return resp;
+	}
+
+	/** Run a createTransaction request and classify the result. */
+	async transact(transactionRequest, { refId } = {}) {
+		const request = new ApiContracts.CreateTransactionRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		if (refId) request.setRefId(String(refId).slice(0, 20));
+		request.setTransactionRequest(transactionRequest);
+		let resp;
+		try {
+			resp = await this.send(request);
+		} catch (err) {
+			return {
+				outcome: 'unknown',
+				transport: true,
+				transId: null,
+				code: err.code || 'NETWORK',
+				message: err.message,
+				raw: null
+			};
+		}
+		return classifyTransaction(resp);
+	}
+
+	// ---------------------------------------------------------------- charges
+
 	/**
-	 * Create a customer payment profile (for recurring billing)
-	 * @param {Object} options - Customer profile options
-	 * @returns {Promise<Object>} Customer profile result
+	 * Build the parts every charge shares: amount, order, customer, and the
+	 * stored-credential flags for renewals.
 	 */
-	async createCustomerProfile(options) {
-		return new Promise((resolve, reject) => {
-			const merchantAuth = this.getMerchantAuth();
+	buildTransaction({
+		type = ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION,
+		amountCents,
+		invoiceNumber,
+		description,
+		customerId,
+		email,
+		billTo,
+		recurring = null,
+		networkTransId = null
+	}) {
+		const tr = new ApiContracts.TransactionRequestType();
+		tr.setTransactionType(type);
+		tr.setAmount(cents(amountCents));
 
-			// Create credit card object
-			const creditCard = new ApiContracts.CreditCardType();
-			creditCard.setCardNumber(options.cardNumber);
-			creditCard.setExpirationDate(options.expirationDate);
-			creditCard.setCardCode(options.cardCode);
+		if (invoiceNumber || description) {
+			const order = new ApiContracts.OrderType();
+			if (invoiceNumber) order.setInvoiceNumber(String(invoiceNumber).slice(0, 20));
+			if (description) order.setDescription(String(description).slice(0, 255));
+			tr.setOrder(order);
+		}
+		if (customerId || email) {
+			const customer = new ApiContracts.CustomerDataType();
+			if (customerId) customer.setId(String(customerId).slice(0, 20));
+			if (email) customer.setEmail(String(email).slice(0, 255));
+			tr.setCustomer(customer);
+		}
+		if (billTo) tr.setBillTo(buildAddress(billTo));
 
-			const payment = new ApiContracts.PaymentType();
-			payment.setCreditCard(creditCard);
-
-			// Create customer payment profile
-			const paymentProfile = new ApiContracts.CustomerPaymentProfileType();
-			paymentProfile.setPayment(payment);
-
-			if (options.billTo) {
-				const billTo = new ApiContracts.CustomerAddressType();
-				if (options.billTo.firstName) billTo.setFirstName(options.billTo.firstName);
-				if (options.billTo.lastName) billTo.setLastName(options.billTo.lastName);
-				if (options.billTo.address) billTo.setAddress(options.billTo.address);
-				if (options.billTo.city) billTo.setCity(options.billTo.city);
-				if (options.billTo.state) billTo.setState(options.billTo.state);
-				if (options.billTo.zip) billTo.setZip(options.billTo.zip);
-				billTo.setCountry(options.billTo.country || 'US');
-				paymentProfile.setBillTo(billTo);
-			}
-
-			// Create customer profile
-			const customerProfile = new ApiContracts.CustomerProfileType();
-			// Authorize.net merchantCustomerId has max length of 20 characters
-			customerProfile.setMerchantCustomerId(options.customerId.substring(0, 20));
-			customerProfile.setEmail(options.email);
-			customerProfile.setPaymentProfiles([paymentProfile]);
-
-			// Create request
-			const request = new ApiContracts.CreateCustomerProfileRequest();
-			request.setMerchantAuthentication(merchantAuth);
-			request.setProfile(customerProfile);
-			request.setValidationMode(ApiContracts.ValidationModeEnum.TESTMODE);
-
-			const ctrl = new ApiControllers.CreateCustomerProfileController(request.getJSON());
-
-			// Explicitly set the environment
-			if (this.environment === 'production') {
-				ctrl.setEnvironment(Constants.constants.endpoint.production);
+		if (recurring) {
+			// Tell the card network this is a stored-credential charge: the
+			// first of a series, or a merchant-initiated renewal that refers
+			// back to it. Renewals are approved more often with these set.
+			const po = new ApiContracts.ProcessingOptions();
+			if (recurring === 'first') {
+				po.setIsFirstRecurringPayment(true);
 			} else {
-				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
-			}
-
-			ctrl.execute(() => {
-				const apiResponse = ctrl.getResponse();
-				const response = new ApiContracts.CreateCustomerProfileResponse(apiResponse);
-
-				if (response !== null) {
-					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-						resolve({
-							success: true,
-							customerProfileId: response.getCustomerProfileId(),
-							paymentProfileId: response.getCustomerPaymentProfileIdList().getNumericString()[0]
-						});
-					} else {
-						reject(new Error(response.getMessages().getMessage()[0].getText()));
-					}
-				} else {
-					reject(new Error('No response from Authorize.net'));
+				po.setIsSubsequentAuth(true);
+				if (networkTransId) {
+					const sai = new ApiContracts.SubsequentAuthInformation();
+					sai.setOriginalNetworkTransId(String(networkTransId));
+					sai.setReason(ApiContracts.MerchantInitTransReasonEnum.RESUBMISSION);
+					tr.setSubsequentAuthInformation(sai);
 				}
-			});
-		});
+			}
+			tr.setProcessingOptions(po);
+		}
+		return tr;
 	}
 
 	/**
-	 * Create a subscription (ARB - Automated Recurring Billing)
-	 * @param {Object} options - Subscription options
-	 * @returns {Promise<Object>} Subscription result
-	 */
-	async createSubscription(options) {
-		return new Promise((resolve, reject) => {
-			const merchantAuth = this.getMerchantAuth();
-
-			// Payment schedule
-			const interval = new ApiContracts.PaymentScheduleType.Interval();
-			interval.setLength(options.intervalLength || 1);
-			interval.setUnit(options.intervalUnit || ApiContracts.ARBSubscriptionUnitEnum.MONTHS);
-
-			const paymentSchedule = new ApiContracts.PaymentScheduleType();
-			paymentSchedule.setInterval(interval);
-			paymentSchedule.setStartDate(options.startDate || new Date().toISOString().split('T')[0]);
-			paymentSchedule.setTotalOccurrences(options.totalOccurrences || 9999); // 9999 = ongoing
-
-			// Credit card
-			const creditCard = new ApiContracts.CreditCardType();
-			creditCard.setCardNumber(options.cardNumber);
-			creditCard.setExpirationDate(options.expirationDate);
-			creditCard.setCardCode(options.cardCode);
-
-			const payment = new ApiContracts.PaymentType();
-			payment.setCreditCard(creditCard);
-
-			// Customer
-			const customer = new ApiContracts.CustomerType();
-			customer.setEmail(options.email);
-
-			// Billing
-			let billTo = null;
-			if (options.billTo) {
-				billTo = new ApiContracts.NameAndAddressType();
-				if (options.billTo.firstName) billTo.setFirstName(options.billTo.firstName);
-				if (options.billTo.lastName) billTo.setLastName(options.billTo.lastName);
-			}
-
-			// Subscription
-			const subscription = new ApiContracts.ARBSubscriptionType();
-			subscription.setName(options.subscriptionName || 'Subscription');
-			subscription.setPaymentSchedule(paymentSchedule);
-			subscription.setAmount(options.amount);
-			subscription.setPayment(payment);
-			subscription.setCustomer(customer);
-			if (billTo) {
-				subscription.setBillTo(billTo);
-			}
-
-			// Create request
-			const request = new ApiContracts.ARBCreateSubscriptionRequest();
-			request.setMerchantAuthentication(merchantAuth);
-			request.setSubscription(subscription);
-
-			const ctrl = new ApiControllers.ARBCreateSubscriptionController(request.getJSON());
-
-			// Explicitly set the environment
-			if (this.environment === 'production') {
-				ctrl.setEnvironment(Constants.constants.endpoint.production);
-			} else {
-				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
-			}
-
-			ctrl.execute(() => {
-				const apiResponse = ctrl.getResponse();
-				const response = new ApiContracts.ARBCreateSubscriptionResponse(apiResponse);
-
-				if (response !== null) {
-					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-						resolve({
-							success: true,
-							subscriptionId: response.getSubscriptionId()
-						});
-					} else {
-						reject(new Error(response.getMessages().getMessage()[0].getText()));
-					}
-				} else {
-					reject(new Error('No response from Authorize.net'));
-				}
-			});
-		});
-	}
-
-	/**
-	 * Create a subscription from customer profile (ARB - Automated Recurring Billing)
-	 * @param {Object} options - Subscription options
-	 * @returns {Promise<Object>} Subscription result
-	 */
-	async createSubscriptionFromCustomerProfile(options) {
-		return new Promise((resolve, reject) => {
-			const merchantAuth = this.getMerchantAuth();
-
-			// Payment schedule
-			const interval = new ApiContracts.PaymentScheduleType.Interval();
-			interval.setLength(options.intervalLength || 1);
-			interval.setUnit(options.intervalUnit || ApiContracts.ARBSubscriptionUnitEnum.MONTHS);
-
-			const paymentSchedule = new ApiContracts.PaymentScheduleType();
-			paymentSchedule.setInterval(interval);
-			paymentSchedule.setStartDate(options.startDate || new Date().toISOString().split('T')[0]);
-			paymentSchedule.setTotalOccurrences(options.totalOccurrences || 9999);
-
-			// Customer profile for ARB subscription (uses CustomerProfileIdType, not CustomerProfilePaymentType)
-			// Note: When using a customer profile, we cannot also send customer data
-			const customerProfile = new ApiContracts.CustomerProfileIdType();
-			customerProfile.setCustomerProfileId(options.customerProfileId);
-			customerProfile.setCustomerPaymentProfileId(options.paymentProfileId);
-
-			// Subscription
-			const subscription = new ApiContracts.ARBSubscriptionType();
-			subscription.setName(options.subscriptionName || 'Subscription');
-			subscription.setPaymentSchedule(paymentSchedule);
-			subscription.setAmount(options.amount);
-			subscription.setProfile(customerProfile);
-
-			// Create request
-			const request = new ApiContracts.ARBCreateSubscriptionRequest();
-			request.setMerchantAuthentication(merchantAuth);
-			request.setSubscription(subscription);
-
-			const ctrl = new ApiControllers.ARBCreateSubscriptionController(request.getJSON());
-
-			// Explicitly set the environment
-			if (this.environment === 'production') {
-				ctrl.setEnvironment(Constants.constants.endpoint.production);
-			} else {
-				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
-			}
-
-			ctrl.execute(() => {
-				const apiResponse = ctrl.getResponse();
-				const response = new ApiContracts.ARBCreateSubscriptionResponse(apiResponse);
-
-				if (response !== null) {
-					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-						resolve({
-							success: true,
-							subscriptionId: response.getSubscriptionId()
-						});
-					} else {
-						reject(new Error(response.getMessages().getMessage()[0].getText()));
-					}
-				} else {
-					reject(new Error('No response from Authorize.net'));
-				}
-			});
-		});
-	}
-
-	/**
-	 * Cancel a subscription
-	 * @param {string} subscriptionId - Subscription ID to cancel
-	 * @returns {Promise<Object>} Cancellation result
-	 */
-	async cancelSubscription(subscriptionId) {
-		return new Promise((resolve, reject) => {
-			const merchantAuth = this.getMerchantAuth();
-
-			const request = new ApiContracts.ARBCancelSubscriptionRequest();
-			request.setMerchantAuthentication(merchantAuth);
-			request.setSubscriptionId(subscriptionId);
-
-			const ctrl = new ApiControllers.ARBCancelSubscriptionController(request.getJSON());
-
-			// Explicitly set the environment
-			if (this.environment === 'production') {
-				ctrl.setEnvironment(Constants.constants.endpoint.production);
-			} else {
-				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
-			}
-
-			ctrl.execute(() => {
-				const apiResponse = ctrl.getResponse();
-				const response = new ApiContracts.ARBCancelSubscriptionResponse(apiResponse);
-
-				if (response !== null) {
-					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-						resolve({
-							success: true,
-							subscriptionId
-						});
-					} else {
-						reject(new Error(response.getMessages().getMessage()[0].getText()));
-					}
-				} else {
-					reject(new Error('No response from Authorize.net'));
-				}
-			});
-		});
-	}
-
-	/**
-	 * Update an existing ARB subscription's next start date.
-	 * Used to delay the next charge by N days when delivering a comp-month reward.
+	 * Charge a stored card (customer + payment profile).
 	 *
-	 * @param {Object} options
-	 * @param {string} options.subscriptionId
-	 * @param {string} options.startDate - YYYY-MM-DD, the new next-charge date
-	 * @returns {Promise<Object>}
+	 * @param {{ customerProfileId: string, paymentProfileId: string, amountCents: number,
+	 *   invoiceNumber: string, description?: string, customerId?: string, email?: string,
+	 *   recurring?: 'first' | 'subsequent' | null, networkTransId?: string | null }} opts
 	 */
-	async updateSubscriptionStartDate({ subscriptionId, startDate }) {
-		return new Promise((resolve, reject) => {
-			const merchantAuth = this.getMerchantAuth();
-
-			const paymentSchedule = new ApiContracts.PaymentScheduleType();
-			paymentSchedule.setStartDate(startDate);
-
-			const subscription = new ApiContracts.ARBSubscriptionType();
-			subscription.setPaymentSchedule(paymentSchedule);
-
-			const request = new ApiContracts.ARBUpdateSubscriptionRequest();
-			request.setMerchantAuthentication(merchantAuth);
-			request.setSubscriptionId(subscriptionId);
-			request.setSubscription(subscription);
-
-			const ctrl = new ApiControllers.ARBUpdateSubscriptionController(request.getJSON());
-
-			if (this.environment === 'production') {
-				ctrl.setEnvironment(Constants.constants.endpoint.production);
-			} else {
-				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
-			}
-
-			ctrl.execute(() => {
-				const apiResponse = ctrl.getResponse();
-				const response = new ApiContracts.ARBUpdateSubscriptionResponse(apiResponse);
-
-				if (response !== null) {
-					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-						resolve({ success: true, subscriptionId, startDate });
-					} else {
-						reject(new Error(response.getMessages().getMessage()[0].getText()));
-					}
-				} else {
-					reject(new Error('No response from Authorize.net'));
-				}
-			});
-		});
+	async chargeProfile(opts) {
+		const tr = this.buildTransaction(opts);
+		const profile = new ApiContracts.CustomerProfilePaymentType();
+		profile.setCustomerProfileId(String(opts.customerProfileId));
+		const pp = new ApiContracts.PaymentProfile();
+		pp.setPaymentProfileId(String(opts.paymentProfileId));
+		profile.setPaymentProfile(pp);
+		tr.setProfile(profile);
+		return this.transact(tr, { refId: opts.invoiceNumber });
 	}
 
 	/**
-	 * Void a transaction (for unsettled transactions)
-	 * @param {string} transactionId - Transaction ID to void
-	 * @returns {Promise<Object>} Void result
-	 */
-	async voidTransaction(transactionId) {
-		return new Promise((resolve, reject) => {
-			const merchantAuth = this.getMerchantAuth();
-
-			// Create transaction request
-			const transactionRequest = new ApiContracts.TransactionRequestType();
-			transactionRequest.setTransactionType(ApiContracts.TransactionTypeEnum.VOIDTRANSACTION);
-			transactionRequest.setRefTransId(transactionId);
-
-			// Create request
-			const request = new ApiContracts.CreateTransactionRequest();
-			request.setMerchantAuthentication(merchantAuth);
-			request.setTransactionRequest(transactionRequest);
-
-			// Execute transaction
-			const ctrl = new ApiControllers.CreateTransactionController(request.getJSON());
-
-			// Explicitly set the environment
-			if (this.environment === 'production') {
-				ctrl.setEnvironment(Constants.constants.endpoint.production);
-			} else {
-				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
-			}
-
-			ctrl.execute(() => {
-				const apiResponse = ctrl.getResponse();
-				const response = new ApiContracts.CreateTransactionResponse(apiResponse);
-
-				if (response !== null) {
-					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-						const transactionResponse = response.getTransactionResponse();
-
-						if (transactionResponse.getMessages() !== null) {
-							resolve({
-								success: true,
-								transactionId: transactionResponse.getTransId(),
-								responseCode: transactionResponse.getResponseCode(),
-								messageCode: transactionResponse.getMessages().getMessage()[0].getCode(),
-								description: transactionResponse.getMessages().getMessage()[0].getDescription()
-							});
-						} else {
-							if (transactionResponse.getErrors() !== null) {
-								reject(new Error(transactionResponse.getErrors().getError()[0].getErrorText()));
-							} else {
-								reject(new Error('Void failed with unknown error'));
-							}
-						}
-					} else {
-						const errors = response.getTransactionResponse().getErrors();
-						reject(new Error(errors.getError()[0].getErrorText()));
-					}
-				} else {
-					reject(new Error('No response from Authorize.net'));
-				}
-			});
-		});
-	}
-
-	/**
-	 * Get or create a customer profile for CIM
-	 * @param {Object} options - Customer options
-	 * @param {string} options.customerId - Unique customer ID (usually user.id)
-	 * @param {string} options.email - Customer email
-	 * @returns {Promise<Object>} Customer profile result
-	 */
-	async getOrCreateCustomerProfile(options) {
-		return new Promise((resolve, reject) => {
-			const merchantAuth = this.getMerchantAuth();
-
-			// Create customer profile without payment (we'll add payment profiles separately)
-			const customerProfile = new ApiContracts.CustomerProfileType();
-			// Authorize.net merchantCustomerId has max length of 20 characters
-			customerProfile.setMerchantCustomerId(options.customerId.substring(0, 20));
-			customerProfile.setEmail(options.email);
-
-			// Create request
-			const request = new ApiContracts.CreateCustomerProfileRequest();
-			request.setMerchantAuthentication(merchantAuth);
-			request.setProfile(customerProfile);
-
-			const ctrl = new ApiControllers.CreateCustomerProfileController(request.getJSON());
-
-			if (this.environment === 'production') {
-				ctrl.setEnvironment(Constants.constants.endpoint.production);
-			} else {
-				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
-			}
-
-			ctrl.execute(() => {
-				const apiResponse = ctrl.getResponse();
-				const response = new ApiContracts.CreateCustomerProfileResponse(apiResponse);
-
-				if (response !== null) {
-					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-						resolve({
-							success: true,
-							customerProfileId: response.getCustomerProfileId()
-						});
-					} else {
-						// Check if profile already exists (error code E00039)
-						const errorCode = response.getMessages().getMessage()[0].getCode();
-						if (errorCode === 'E00039') {
-							// Profile exists, extract the ID from the error message
-							const errorText = response.getMessages().getMessage()[0].getText();
-							const match = errorText.match(/ID (\d+)/);
-							if (match) {
-								resolve({
-									success: true,
-									customerProfileId: match[1],
-									existing: true
-								});
-							} else {
-								reject(new Error(errorText));
-							}
-						} else {
-							reject(new Error(response.getMessages().getMessage()[0].getText()));
-						}
-					}
-				} else {
-					reject(new Error('No response from Authorize.net'));
-				}
-			});
-		});
-	}
-
-	/**
-	 * Add a payment profile (saved card) to an existing customer profile
-	 * @param {Object} options - Payment profile options
-	 * @param {string} options.customerProfileId - Existing customer profile ID
-	 * @param {string} options.cardNumber - Credit card number
-	 * @param {string} options.expirationDate - Expiration date (MMYY format)
-	 * @param {string} options.cardCode - CVV code
-	 * @param {Object} options.billTo - Billing information
-	 * @returns {Promise<Object>} Payment profile result with card info
-	 */
-	async addPaymentProfile(options) {
-		return new Promise((resolve, reject) => {
-			const merchantAuth = this.getMerchantAuth();
-
-			// Create credit card object
-			const creditCard = new ApiContracts.CreditCardType();
-			creditCard.setCardNumber(options.cardNumber);
-			creditCard.setExpirationDate(options.expirationDate);
-			creditCard.setCardCode(options.cardCode);
-
-			const payment = new ApiContracts.PaymentType();
-			payment.setCreditCard(creditCard);
-
-			// Create payment profile
-			const paymentProfile = new ApiContracts.CustomerPaymentProfileType();
-			paymentProfile.setPayment(payment);
-
-			// Only set billTo if we have meaningful billing data
-			if (options.billTo && (options.billTo.firstName || options.billTo.lastName)) {
-				const billTo = new ApiContracts.CustomerAddressType();
-				if (options.billTo.firstName) billTo.setFirstName(options.billTo.firstName);
-				if (options.billTo.lastName) billTo.setLastName(options.billTo.lastName);
-				if (options.billTo.address) billTo.setAddress(options.billTo.address);
-				if (options.billTo.city) billTo.setCity(options.billTo.city);
-				if (options.billTo.state) billTo.setState(options.billTo.state);
-				if (options.billTo.zip) billTo.setZip(options.billTo.zip);
-				billTo.setCountry(options.billTo.country || 'US');
-				paymentProfile.setBillTo(billTo);
-			}
-
-			// Create request
-			const request = new ApiContracts.CreateCustomerPaymentProfileRequest();
-			request.setMerchantAuthentication(merchantAuth);
-			request.setCustomerProfileId(options.customerProfileId);
-			request.setPaymentProfile(paymentProfile);
-			// Use TESTMODE for sandbox, LIVEMODE for production
-			const validationMode =
-				this.environment === 'production'
-					? ApiContracts.ValidationModeEnum.LIVEMODE
-					: ApiContracts.ValidationModeEnum.TESTMODE;
-			request.setValidationMode(validationMode);
-
-			const ctrl = new ApiControllers.CreateCustomerPaymentProfileController(request.getJSON());
-
-			if (this.environment === 'production') {
-				ctrl.setEnvironment(Constants.constants.endpoint.production);
-			} else {
-				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
-			}
-
-			ctrl.execute(() => {
-				const apiResponse = ctrl.getResponse();
-				const response = new ApiContracts.CreateCustomerPaymentProfileResponse(apiResponse);
-
-				if (response !== null) {
-					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-						// Determine card type from number
-						const cardType = this.getCardType(options.cardNumber);
-						const lastFour = options.cardNumber.slice(-4);
-						const expMonth = options.expirationDate.substring(0, 2);
-						const expYear = '20' + options.expirationDate.substring(2, 4);
-
-						resolve({
-							success: true,
-							paymentProfileId: response.getCustomerPaymentProfileId(),
-							cardType,
-							lastFour,
-							expirationMonth: expMonth,
-							expirationYear: expYear
-						});
-					} else {
-						reject(new Error(response.getMessages().getMessage()[0].getText()));
-					}
-				} else {
-					reject(new Error('No response from Authorize.net'));
-				}
-			});
-		});
-	}
-
-	/**
-	 * Delete a payment profile (saved card)
-	 * @param {string} customerProfileId - Customer profile ID
-	 * @param {string} paymentProfileId - Payment profile ID to delete
-	 * @returns {Promise<Object>} Deletion result
-	 */
-	async deletePaymentProfile(customerProfileId, paymentProfileId) {
-		return new Promise((resolve, reject) => {
-			const merchantAuth = this.getMerchantAuth();
-
-			const request = new ApiContracts.DeleteCustomerPaymentProfileRequest();
-			request.setMerchantAuthentication(merchantAuth);
-			request.setCustomerProfileId(customerProfileId);
-			request.setCustomerPaymentProfileId(paymentProfileId);
-
-			const ctrl = new ApiControllers.DeleteCustomerPaymentProfileController(request.getJSON());
-
-			if (this.environment === 'production') {
-				ctrl.setEnvironment(Constants.constants.endpoint.production);
-			} else {
-				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
-			}
-
-			ctrl.execute(() => {
-				const apiResponse = ctrl.getResponse();
-				const response = new ApiContracts.DeleteCustomerPaymentProfileResponse(apiResponse);
-
-				if (response !== null) {
-					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-						resolve({ success: true });
-					} else {
-						reject(new Error(response.getMessages().getMessage()[0].getText()));
-					}
-				} else {
-					reject(new Error('No response from Authorize.net'));
-				}
-			});
-		});
-	}
-
-	/**
-	 * Charge a saved card using customer profile
-	 * @param {Object} options - Charge options
-	 * @param {string} options.customerProfileId - Customer profile ID
-	 * @param {string} options.paymentProfileId - Payment profile ID
-	 * @param {string} options.amount - Amount to charge
-	 * @param {string} options.description - Transaction description
-	 * @returns {Promise<Object>} Transaction result
-	 */
-	async chargeCustomerProfile(options) {
-		return new Promise((resolve, reject) => {
-			const merchantAuth = this.getMerchantAuth();
-
-			// Profile to charge
-			const profileToCharge = new ApiContracts.CustomerProfilePaymentType();
-			profileToCharge.setCustomerProfileId(options.customerProfileId);
-			const paymentProfile = new ApiContracts.PaymentProfile();
-			paymentProfile.setPaymentProfileId(options.paymentProfileId);
-			profileToCharge.setPaymentProfile(paymentProfile);
-
-			// Order details
-			const orderDetails = new ApiContracts.OrderType();
-			orderDetails.setDescription(options.description || 'Purchase');
-
-			// Transaction request
-			const transactionRequest = new ApiContracts.TransactionRequestType();
-			transactionRequest.setTransactionType(
-				ApiContracts.TransactionTypeEnum.AUTHCAPTURETRANSACTION
-			);
-			transactionRequest.setAmount(options.amount);
-			transactionRequest.setProfile(profileToCharge);
-			transactionRequest.setOrder(orderDetails);
-
-			// Create request
-			const request = new ApiContracts.CreateTransactionRequest();
-			request.setMerchantAuthentication(merchantAuth);
-			request.setTransactionRequest(transactionRequest);
-
-			const ctrl = new ApiControllers.CreateTransactionController(request.getJSON());
-
-			if (this.environment === 'production') {
-				ctrl.setEnvironment(Constants.constants.endpoint.production);
-			} else {
-				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
-			}
-
-			ctrl.execute(() => {
-				const apiResponse = ctrl.getResponse();
-				const response = new ApiContracts.CreateTransactionResponse(apiResponse);
-
-				if (response !== null) {
-					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-						const transactionResponse = response.getTransactionResponse();
-
-						if (transactionResponse.getMessages() !== null) {
-							resolve({
-								success: true,
-								transactionId: transactionResponse.getTransId(),
-								responseCode: transactionResponse.getResponseCode(),
-								messageCode: transactionResponse.getMessages().getMessage()[0].getCode(),
-								description: transactionResponse.getMessages().getMessage()[0].getDescription(),
-								authCode: transactionResponse.getAuthCode()
-							});
-						} else {
-							if (transactionResponse.getErrors() !== null) {
-								reject(new Error(transactionResponse.getErrors().getError()[0].getErrorText()));
-							} else {
-								reject(new Error('Transaction failed with unknown error'));
-							}
-						}
-					} else {
-						const transactionResponse = response.getTransactionResponse();
-						if (transactionResponse && transactionResponse.getErrors()) {
-							reject(new Error(transactionResponse.getErrors().getError()[0].getErrorText()));
-						} else {
-							reject(new Error(response.getMessages().getMessage()[0].getText()));
-						}
-					}
-				} else {
-					reject(new Error('No response from Authorize.net'));
-				}
-			});
-		});
-	}
-
-	/**
-	 * Get subscription status from Authorize.net
-	 * @param {string} subscriptionId - Subscription ID
-	 * @returns {Promise<Object>} Subscription status
-	 */
-	async getSubscriptionStatus(subscriptionId) {
-		return new Promise((resolve, reject) => {
-			const merchantAuth = this.getMerchantAuth();
-
-			const request = new ApiContracts.ARBGetSubscriptionStatusRequest();
-			request.setMerchantAuthentication(merchantAuth);
-			request.setSubscriptionId(subscriptionId);
-
-			const ctrl = new ApiControllers.ARBGetSubscriptionStatusController(request.getJSON());
-
-			if (this.environment === 'production') {
-				ctrl.setEnvironment(Constants.constants.endpoint.production);
-			} else {
-				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
-			}
-
-			ctrl.execute(() => {
-				const apiResponse = ctrl.getResponse();
-				const response = new ApiContracts.ARBGetSubscriptionStatusResponse(apiResponse);
-
-				if (response !== null) {
-					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-						// Status can be: active, expired, suspended, cancelled, terminated
-						resolve({
-							success: true,
-							subscriptionId,
-							status: response.getStatus()
-						});
-					} else {
-						reject(new Error(response.getMessages().getMessage()[0].getText()));
-					}
-				} else {
-					reject(new Error('No response from Authorize.net'));
-				}
-			});
-		});
-	}
-
-	/**
-	 * Get subscription details including transactions
-	 * @param {string} subscriptionId - Subscription ID
-	 * @returns {Promise<Object>} Subscription details
-	 */
-	/**
-	 * Details of one transaction: amount, status, time, and the subscription
-	 * and payment number it belongs to. Used by the ledger backfill and the
-	 * nightly sync to confirm what was collected.
+	 * Charge a card tokenized in the browser by Accept.js.
 	 *
-	 * @param {string} transId
-	 * @returns {Promise<{ transId: string, status: string|null, submitTimeUTC: string|null, settleAmount: number|null, authAmount: number|null, responseCode: number|null, subscriptionId: string|null, payNum: number|null, email: string|null }>}
+	 * @param {{ opaqueData: { dataDescriptor: string, dataValue: string }, amountCents: number,
+	 *   invoiceNumber: string, description?: string, customerId?: string, email?: string,
+	 *   billTo?: object, recurring?: 'first' | null }} opts
+	 */
+	async chargeOpaque(opts) {
+		const tr = this.buildTransaction(opts);
+		const payment = new ApiContracts.PaymentType();
+		payment.setOpaqueData(buildOpaque(opts.opaqueData));
+		tr.setPayment(payment);
+		return this.transact(tr, { refId: opts.invoiceNumber });
+	}
+
+	/** Void an unsettled transaction. `approved` means it is voided. */
+	async voidTransaction(transId, { refId } = {}) {
+		const tr = new ApiContracts.TransactionRequestType();
+		tr.setTransactionType(ApiContracts.TransactionTypeEnum.VOIDTRANSACTION);
+		tr.setRefTransId(String(transId));
+		return this.transact(tr, { refId });
+	}
+
+	/**
+	 * Refund a settled transaction. Needs the real last four digits of the
+	 * card that was charged (from `getTransactionDetails`).
+	 *
+	 * @param {{ transId: string, amountCents: number, lastFour: string, expiration?: string,
+	 *   invoiceNumber?: string }} opts
+	 */
+	async refundTransaction({ transId, amountCents, lastFour, expiration = 'XXXX', invoiceNumber }) {
+		const card = new ApiContracts.CreditCardType();
+		card.setCardNumber(String(lastFour));
+		card.setExpirationDate(expiration || 'XXXX');
+		const payment = new ApiContracts.PaymentType();
+		payment.setCreditCard(card);
+
+		const tr = new ApiContracts.TransactionRequestType();
+		tr.setTransactionType(ApiContracts.TransactionTypeEnum.REFUNDTRANSACTION);
+		tr.setAmount(cents(amountCents));
+		tr.setPayment(payment);
+		tr.setRefTransId(String(transId));
+		if (invoiceNumber) {
+			const order = new ApiContracts.OrderType();
+			order.setInvoiceNumber(String(invoiceNumber).slice(0, 20));
+			tr.setOrder(order);
+		}
+		return this.transact(tr, { refId: invoiceNumber });
+	}
+
+	// ---------------------------------------------------------------- lookups
+
+	/**
+	 * Everything about one transaction, or null when the gateway has no
+	 * record of it.
 	 */
 	async getTransactionDetails(transId) {
-		return new Promise((resolve, reject) => {
-			const request = new ApiContracts.GetTransactionDetailsRequest();
-			request.setMerchantAuthentication(this.getMerchantAuth());
-			request.setTransId(String(transId));
-
-			const ctrl = new ApiControllers.GetTransactionDetailsController(request.getJSON());
-			ctrl.setEnvironment(
-				this.environment === 'production'
-					? Constants.constants.endpoint.production
-					: Constants.constants.endpoint.sandbox
-			);
-
-			ctrl.execute(() => {
-				const apiResponse = ctrl.getResponse();
-				const response = new ApiContracts.GetTransactionDetailsResponse(apiResponse);
-				if (
-					response === null ||
-					response.getMessages().getResultCode() !== ApiContracts.MessageTypeEnum.OK
-				) {
-					const msg = response?.getMessages?.()?.getMessage?.()?.[0];
-					reject(
-						new Error(msg ? `${msg.getCode()}: ${msg.getText()}` : 'Transaction lookup failed')
-					);
-					return;
-				}
-				const t = response.getTransaction();
-				const sub = t.getSubscription?.();
-				const num = (v) => (v == null || v === '' ? null : Number(v));
-				resolve({
-					transId: String(t.getTransId()),
-					status: t.getTransactionStatus?.() ?? null,
-					submitTimeUTC: t.getSubmitTimeUTC?.() ?? null,
-					settleAmount: num(t.getSettleAmount?.()),
-					authAmount: num(t.getAuthAmount?.()),
-					responseCode: num(t.getResponseCode?.()),
-					subscriptionId: sub?.getId?.() != null ? String(sub.getId()) : null,
-					payNum: num(sub?.getPayNum?.()),
-					email: t.getCustomer?.()?.getEmail?.() ?? null
-				});
-			});
-		});
+		const request = new ApiContracts.GetTransactionDetailsRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		request.setTransId(String(transId));
+		const resp = await this.send(request);
+		if (!isOk(resp)) {
+			const { code, text } = topMessage(resp);
+			if (code === 'E00040') return null;
+			throw new AuthnetError(text || 'Transaction lookup failed', { code });
+		}
+		const t = resp.transaction;
+		if (!t) return null;
+		const card = t.payment?.creditCard;
+		return {
+			transId: String(t.transId),
+			type: t.transactionType, // authCaptureTransaction | refundTransaction | voidTransaction …
+			status: t.transactionStatus, // settledSuccessfully | capturedPendingSettlement | voided | refundSettledSuccessfully | declined …
+			responseCode: t.responseCode,
+			authCode: t.authCode ?? null,
+			submittedAt: t.submitTimeUTC ? new Date(t.submitTimeUTC) : null,
+			authAmountCents: toCents(t.authAmount),
+			settleAmountCents: toCents(t.settleAmount),
+			invoiceNumber: t.order?.invoiceNumber ?? null,
+			description: t.order?.description ?? null,
+			lastFour: lastFourOf(card?.cardNumber),
+			cardNumber: card?.cardNumber ?? null,
+			cardType: card?.cardType ?? null,
+			expiration: card?.expirationDate ?? null,
+			customerId: t.customer?.id ?? null,
+			email: t.customer?.email ?? null,
+			customerProfileId: t.profile?.customerProfileId ?? null,
+			paymentProfileId: t.profile?.customerPaymentProfileId ?? null,
+			refTransId: t.refTransId ?? null,
+			networkTransId: t.networkTransId ?? null,
+			subscriptionId: t.subscription?.id != null ? String(t.subscription.id) : null,
+			payNum: t.subscription?.payNum ?? null,
+			returnedItems: asArray(t.returnedItems?.returnedItem ?? t.returnedItems),
+			raw: t
+		};
 	}
 
-	async getSubscription(subscriptionId) {
-		return new Promise((resolve, reject) => {
-			const merchantAuth = this.getMerchantAuth();
+	/** Transactions captured but not yet settled (today's batch). */
+	async listUnsettled({ limit = 1000, offset = 1 } = {}) {
+		const request = new ApiContracts.GetUnsettledTransactionListRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		request.setPaging(paging(limit, offset));
+		const resp = await this.call(request);
+		return asArray(resp.transactions?.transaction ?? resp.transactions).map(summary);
+	}
 
-			const request = new ApiContracts.ARBGetSubscriptionRequest();
-			request.setMerchantAuthentication(merchantAuth);
-			request.setSubscriptionId(subscriptionId);
-			request.setIncludeTransactions(true);
+	/** Transactions charged against a customer profile, newest first. */
+	async listForCustomer(customerProfileId, { paymentProfileId, limit = 100, offset = 1 } = {}) {
+		const request = new ApiContracts.GetTransactionListForCustomerRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		request.setCustomerProfileId(String(customerProfileId));
+		if (paymentProfileId) request.setCustomerPaymentProfileId(String(paymentProfileId));
+		const sorting = new ApiContracts.TransactionListSorting();
+		sorting.setOrderBy(ApiContracts.TransactionListOrderFieldEnum.SUBMITTIMEUTC);
+		sorting.setOrderDescending(true);
+		request.setSorting(sorting);
+		request.setPaging(paging(limit, offset));
+		const resp = await this.call(request);
+		return asArray(resp.transactions?.transaction ?? resp.transactions).map(summary);
+	}
 
-			const ctrl = new ApiControllers.ARBGetSubscriptionController(request.getJSON());
+	// ---------------------------------------------------------------- customer profiles
 
-			if (this.environment === 'production') {
-				ctrl.setEnvironment(Constants.constants.endpoint.production);
-			} else {
-				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
-			}
+	/**
+	 * Create a customer profile (no card yet). When one already exists for
+	 * this merchantCustomerId / email, the existing id is returned.
+	 *
+	 * @returns {Promise<{ customerProfileId: string, existed: boolean }>}
+	 */
+	async createCustomerProfile({ merchantCustomerId, email, description }) {
+		const profile = new ApiContracts.CustomerProfileType();
+		profile.setMerchantCustomerId(String(merchantCustomerId).slice(0, 20));
+		if (email) profile.setEmail(String(email).slice(0, 255));
+		if (description) profile.setDescription(String(description).slice(0, 255));
+		const request = new ApiContracts.CreateCustomerProfileRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		request.setProfile(profile);
+		const resp = await this.send(request);
+		if (isOk(resp) && resp.customerProfileId) {
+			return { customerProfileId: String(resp.customerProfileId), existed: false };
+		}
+		const { code, text } = topMessage(resp);
+		if (code === 'E00039') {
+			// "A duplicate record with ID 123456 already exists."
+			const m = String(text || '').match(/ID\s+(\d+)/i);
+			if (m) return { customerProfileId: m[1], existed: true };
+		}
+		throw new AuthnetError(text || 'Could not create the customer profile', { code });
+	}
 
-			ctrl.execute(() => {
-				const apiResponse = ctrl.getResponse();
-				const response = new ApiContracts.ARBGetSubscriptionResponse(apiResponse);
-
-				if (response !== null) {
-					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-						const sub = response.getSubscription();
-						const arbTransactions = sub.getArbTransactions();
-
-						// Parse transactions if available
-						let transactions = [];
-						if (arbTransactions && arbTransactions.getArbTransaction) {
-							const txList = arbTransactions.getArbTransaction();
-							if (Array.isArray(txList)) {
-								transactions = txList.map((tx) => ({
-									transId: tx.getTransId(),
-									response: tx.getResponse(),
-									submitTimeUTC: tx.getSubmitTimeUTC(),
-									payNum: tx.getPayNum()
-								}));
-							}
-						}
-
-						resolve({
-							success: true,
-							subscriptionId,
-							name: sub.getName(),
-							status: sub.getStatus(),
-							amount: sub.getAmount(),
-							transactions
-						});
-					} else {
-						reject(new Error(response.getMessages().getMessage()[0].getText()));
-					}
-				} else {
-					reject(new Error('No response from Authorize.net'));
-				}
-			});
-		});
+	/** A customer profile with its stored cards, or null when it no longer exists. */
+	async getCustomerProfile(customerProfileId) {
+		const request = new ApiContracts.GetCustomerProfileRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		request.setCustomerProfileId(String(customerProfileId));
+		request.setUnmaskExpirationDate(true);
+		request.setIncludeIssuerInfo(false);
+		const resp = await this.send(request);
+		if (!isOk(resp)) {
+			const { code, text } = topMessage(resp);
+			if (code === 'E00040') return null;
+			throw new AuthnetError(text || 'Customer profile lookup failed', { code });
+		}
+		const p = resp.profile;
+		if (!p) return null;
+		return {
+			customerProfileId: String(p.customerProfileId),
+			merchantCustomerId: p.merchantCustomerId ?? null,
+			email: p.email ?? null,
+			description: p.description ?? null,
+			paymentProfiles: asArray(p.paymentProfiles).map(paymentProfileOf),
+			raw: p
+		};
 	}
 
 	/**
-	 * Determine card type from card number
-	 * @param {string} cardNumber - Credit card number
-	 * @returns {string} Card type
+	 * Store a tokenized card on a customer profile.
+	 *
+	 * `validationMode`: 'none' when a charge follows at once, 'liveMode' to
+	 * run a zero-dollar check now (a card the member adds for later must be
+	 * real), 'testMode' in the sandbox only.
+	 *
+	 * On E00039 the card is already stored: the existing profile id comes
+	 * back with `duplicate: true` so the caller can refresh its expiry.
+	 *
+	 * @returns {Promise<{ paymentProfileId: string, duplicate: boolean }>}
 	 */
-	getCardType(cardNumber) {
-		const num = cardNumber.replace(/\D/g, '');
-		if (/^4/.test(num)) return 'Visa';
-		if (/^5[1-5]/.test(num)) return 'Mastercard';
-		if (/^3[47]/.test(num)) return 'Amex';
-		if (/^6(?:011|5)/.test(num)) return 'Discover';
-		return 'Card';
+	async createPaymentProfile({ customerProfileId, opaqueData, billTo, validationMode = 'none' }) {
+		const payment = new ApiContracts.PaymentType();
+		payment.setOpaqueData(buildOpaque(opaqueData));
+		const pp = new ApiContracts.CustomerPaymentProfileType();
+		pp.setCustomerType(ApiContracts.CustomerTypeEnum.INDIVIDUAL);
+		if (billTo) pp.setBillTo(buildAddress(billTo));
+		pp.setPayment(payment);
+
+		const request = new ApiContracts.CreateCustomerPaymentProfileRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		request.setCustomerProfileId(String(customerProfileId));
+		request.setPaymentProfile(pp);
+		request.setValidationMode(validationEnum(validationMode, this.isProduction));
+		const resp = await this.send(request);
+		if (isOk(resp) && resp.customerPaymentProfileId) {
+			return { paymentProfileId: String(resp.customerPaymentProfileId), duplicate: false };
+		}
+		const { code, text } = topMessage(resp);
+		if (code === 'E00039' && resp.customerPaymentProfileId) {
+			return { paymentProfileId: String(resp.customerPaymentProfileId), duplicate: true };
+		}
+		throw new AuthnetError(friendlyProfileError(code, text), { code });
+	}
+
+	/** One stored card, or null when it no longer exists. */
+	async getPaymentProfile(customerProfileId, paymentProfileId) {
+		const request = new ApiContracts.GetCustomerPaymentProfileRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		request.setCustomerProfileId(String(customerProfileId));
+		request.setCustomerPaymentProfileId(String(paymentProfileId));
+		request.setUnmaskExpirationDate(true);
+		request.setIncludeIssuerInfo(false);
+		const resp = await this.send(request);
+		if (!isOk(resp)) {
+			const { code, text } = topMessage(resp);
+			if (code === 'E00040') return null;
+			throw new AuthnetError(text || 'Card lookup failed', { code });
+		}
+		return resp.paymentProfile ? paymentProfileOf(resp.paymentProfile) : null;
+	}
+
+	/** Replace the card behind an existing payment profile (a reissued card). */
+	async updatePaymentProfile({
+		customerProfileId,
+		paymentProfileId,
+		opaqueData,
+		billTo,
+		validationMode = 'liveMode'
+	}) {
+		const payment = new ApiContracts.PaymentType();
+		payment.setOpaqueData(buildOpaque(opaqueData));
+		const pp = new ApiContracts.CustomerPaymentProfileExType();
+		pp.setCustomerType(ApiContracts.CustomerTypeEnum.INDIVIDUAL);
+		if (billTo) pp.setBillTo(buildAddress(billTo));
+		pp.setPayment(payment);
+		pp.setCustomerPaymentProfileId(String(paymentProfileId));
+
+		const request = new ApiContracts.UpdateCustomerPaymentProfileRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		request.setCustomerProfileId(String(customerProfileId));
+		request.setPaymentProfile(pp);
+		request.setValidationMode(validationEnum(validationMode, this.isProduction));
+		const resp = await this.send(request);
+		if (isOk(resp)) return true;
+		const { code, text } = topMessage(resp);
+		throw new AuthnetError(friendlyProfileError(code, text), { code });
+	}
+
+	/** Remove a stored card. A card that is already gone counts as removed. */
+	async deletePaymentProfile(customerProfileId, paymentProfileId) {
+		const request = new ApiContracts.DeleteCustomerPaymentProfileRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		request.setCustomerProfileId(String(customerProfileId));
+		request.setCustomerPaymentProfileId(String(paymentProfileId));
+		const resp = await this.send(request);
+		if (isOk(resp)) return true;
+		const { code, text } = topMessage(resp);
+		if (code === 'E00040') return true;
+		throw new AuthnetError(text || 'Could not remove the card', { code });
 	}
 
 	/**
-	 * Refund a transaction (for settled transactions)
-	 * @param {Object} options - Refund options
-	 * @param {string} options.transactionId - Original transaction ID to refund
-	 * @param {string} options.amount - Amount to refund
-	 * @param {string} options.cardNumber - Last 4 digits of card (e.g., "1111")
-	 * @returns {Promise<Object>} Refund result
+	 * Store the card from a past transaction as a customer + payment
+	 * profile. Used to save a card after a one-time charge, and to recover
+	 * a card for a member whose ARB subscription has no profile behind it.
+	 *
+	 * @returns {Promise<{ customerProfileId: string, paymentProfileId: string | null }>}
 	 */
-	async refundTransaction(options) {
-		return new Promise((resolve, reject) => {
-			const merchantAuth = this.getMerchantAuth();
-
-			// Create credit card object with last 4 digits
-			const creditCard = new ApiContracts.CreditCardType();
-			creditCard.setCardNumber(options.cardNumber);
-			creditCard.setExpirationDate('XXXX'); // Not required for refund
-
-			const payment = new ApiContracts.PaymentType();
-			payment.setCreditCard(creditCard);
-
-			// Create transaction request
-			const transactionRequest = new ApiContracts.TransactionRequestType();
-			transactionRequest.setTransactionType(ApiContracts.TransactionTypeEnum.REFUNDTRANSACTION);
-			transactionRequest.setAmount(options.amount);
-			transactionRequest.setPayment(payment);
-			transactionRequest.setRefTransId(options.transactionId);
-
-			// Create request
-			const request = new ApiContracts.CreateTransactionRequest();
-			request.setMerchantAuthentication(merchantAuth);
-			request.setTransactionRequest(transactionRequest);
-
-			// Execute transaction
-			const ctrl = new ApiControllers.CreateTransactionController(request.getJSON());
-
-			// Explicitly set the environment
-			if (this.environment === 'production') {
-				ctrl.setEnvironment(Constants.constants.endpoint.production);
-			} else {
-				ctrl.setEnvironment(Constants.constants.endpoint.sandbox);
-			}
-
-			ctrl.execute(() => {
-				const apiResponse = ctrl.getResponse();
-				const response = new ApiContracts.CreateTransactionResponse(apiResponse);
-
-				if (response !== null) {
-					if (response.getMessages().getResultCode() === ApiContracts.MessageTypeEnum.OK) {
-						const transactionResponse = response.getTransactionResponse();
-
-						if (transactionResponse.getMessages() !== null) {
-							resolve({
-								success: true,
-								transactionId: transactionResponse.getTransId(),
-								responseCode: transactionResponse.getResponseCode(),
-								messageCode: transactionResponse.getMessages().getMessage()[0].getCode(),
-								description: transactionResponse.getMessages().getMessage()[0].getDescription()
-							});
-						} else {
-							if (transactionResponse.getErrors() !== null) {
-								reject(new Error(transactionResponse.getErrors().getError()[0].getErrorText()));
-							} else {
-								reject(new Error('Refund failed with unknown error'));
-							}
-						}
-					} else {
-						const errors = response.getTransactionResponse().getErrors();
-						reject(new Error(errors.getError()[0].getErrorText()));
-					}
-				} else {
-					reject(new Error('No response from Authorize.net'));
-				}
-			});
-		});
+	async createProfileFromTransaction({
+		transId,
+		customerProfileId,
+		merchantCustomerId,
+		email,
+		description
+	}) {
+		const request = new ApiContracts.CreateCustomerProfileFromTransactionRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		request.setTransId(String(transId));
+		if (customerProfileId) {
+			// Add the card to a profile the customer already has.
+			request.setCustomerProfileId(String(customerProfileId));
+		} else {
+			const customer = new ApiContracts.CustomerProfileBaseType();
+			if (merchantCustomerId)
+				customer.setMerchantCustomerId(String(merchantCustomerId).slice(0, 20));
+			if (email) customer.setEmail(String(email).slice(0, 255));
+			if (description) customer.setDescription(String(description).slice(0, 255));
+			request.setCustomer(customer);
+		}
+		const resp = await this.send(request);
+		if (isOk(resp)) {
+			return {
+				customerProfileId: String(resp.customerProfileId ?? customerProfileId),
+				paymentProfileId: asArray(
+					resp.customerPaymentProfileIdList?.numericString ?? resp.customerPaymentProfileIdList
+				)[0]
+					? String(
+							asArray(
+								resp.customerPaymentProfileIdList?.numericString ??
+									resp.customerPaymentProfileIdList
+							)[0]
+						)
+					: null
+			};
+		}
+		const { code, text } = topMessage(resp);
+		if (code === 'E00039') {
+			const m = String(text || '').match(/ID\s+(\d+)/i);
+			if (m) return { customerProfileId: m[1], paymentProfileId: null, existed: true };
+		}
+		throw new AuthnetError(text || 'Could not store the card from this transaction', { code });
 	}
+
+	// ---------------------------------------------------------------- ARB (legacy subscriptions)
+
+	/**
+	 * Page through ARB subscriptions.
+	 * `status`: 'active' | 'inactive' | 'cardExpiringThisMonth' | 'expiringThisMonth'
+	 */
+	async arbList({ status = 'active', offset = 1, limit = 1000 } = {}) {
+		const SEARCH = {
+			active: ApiContracts.ARBGetSubscriptionListSearchTypeEnum.SUBSCRIPTIONACTIVE,
+			inactive: ApiContracts.ARBGetSubscriptionListSearchTypeEnum.SUBSCRIPTIONINACTIVE,
+			cardExpiringThisMonth:
+				ApiContracts.ARBGetSubscriptionListSearchTypeEnum.CARDEXPIRINGTHISMONTH,
+			expiringThisMonth:
+				ApiContracts.ARBGetSubscriptionListSearchTypeEnum.SUBSCRIPTIONEXPIRINGTHISMONTH
+		};
+		const request = new ApiContracts.ARBGetSubscriptionListRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		request.setSearchType(SEARCH[status] || SEARCH.active);
+		const sorting = new ApiContracts.ARBGetSubscriptionListSorting();
+		sorting.setOrderBy(ApiContracts.ARBGetSubscriptionListOrderFieldEnum.ID);
+		sorting.setOrderDescending(false);
+		request.setSorting(sorting);
+		request.setPaging(paging(limit, offset));
+		const resp = await this.call(request);
+		const rows = asArray(resp.subscriptionDetails?.subscriptionDetail ?? resp.subscriptionDetails);
+		return {
+			total: Number(resp.totalNumInResultSet ?? rows.length),
+			subscriptions: rows.map((s) => ({
+				id: String(s.id),
+				name: s.name ?? null,
+				status: normalizeArbStatus(s.status),
+				createdAt: s.createTimeStampUTC ? new Date(s.createTimeStampUTC) : null,
+				firstName: s.firstName ?? null,
+				lastName: s.lastName ?? null,
+				totalOccurrences: s.totalOccurrences ?? null,
+				pastOccurrences: s.pastOccurrences ?? null,
+				paymentMethod: s.paymentMethod ?? null,
+				accountNumber: s.accountNumber ?? null,
+				amountCents: toCents(s.amount),
+				customerProfileId: s.customerProfileId != null ? String(s.customerProfileId) : null,
+				paymentProfileId:
+					s.customerPaymentProfileId != null ? String(s.customerPaymentProfileId) : null
+			}))
+		};
+	}
+
+	/** One ARB subscription with its payment history, or null when unknown. */
+	async arbGet(subscriptionId, { includeTransactions = true } = {}) {
+		const request = new ApiContracts.ARBGetSubscriptionRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		request.setSubscriptionId(String(subscriptionId));
+		request.setIncludeTransactions(includeTransactions);
+		const resp = await this.send(request);
+		if (!isOk(resp)) {
+			const { code, text } = topMessage(resp);
+			if (code === 'E00035' || code === 'E00040' || /not (be )?found/i.test(text || ''))
+				return null;
+			throw new AuthnetError(text || 'Subscription lookup failed', { code });
+		}
+		const s = resp.subscription;
+		if (!s) return null;
+		const card = s.profile?.paymentProfile?.payment?.creditCard;
+		const txs = asArray(s.arbTransactions?.arbTransaction ?? s.arbTransactions).map((t) => ({
+			transId: t.transId != null ? String(t.transId) : null,
+			response: t.response ?? null,
+			approved: /approved/i.test(String(t.response ?? '')),
+			submittedAt: t.submitTimeUTC ? new Date(t.submitTimeUTC) : null,
+			payNum: Number(t.payNum) || null,
+			attemptNum: Number(t.attemptNum) || null
+		}));
+		return {
+			id: String(subscriptionId),
+			name: s.name ?? null,
+			status: normalizeArbStatus(s.status),
+			amountCents: toCents(s.amount),
+			trialAmountCents: toCents(s.trialAmount),
+			interval: {
+				length: Number(s.paymentSchedule?.interval?.length) || null,
+				unit: s.paymentSchedule?.interval?.unit ?? null
+			},
+			startDate: s.paymentSchedule?.startDate ?? null,
+			totalOccurrences: s.paymentSchedule?.totalOccurrences ?? null,
+			trialOccurrences: s.paymentSchedule?.trialOccurrences ?? null,
+			customerProfileId:
+				s.profile?.customerProfileId != null ? String(s.profile.customerProfileId) : null,
+			paymentProfileId:
+				s.profile?.paymentProfile?.customerPaymentProfileId != null
+					? String(s.profile.paymentProfile.customerPaymentProfileId)
+					: null,
+			merchantCustomerId: s.profile?.merchantCustomerId ?? null,
+			email: s.profile?.email ?? null,
+			card: card
+				? {
+						number: card.cardNumber ?? null,
+						lastFour: lastFourOf(card.cardNumber),
+						type: card.cardType ?? null,
+						expiration: card.expirationDate ?? null
+					}
+				: null,
+			billTo: s.profile?.paymentProfile?.billTo ?? null,
+			transactions: txs,
+			raw: s
+		};
+	}
+
+	/**
+	 * Cancel an ARB subscription. One that is already cancelled, expired or
+	 * terminated counts as cancelled.
+	 *
+	 * @returns {Promise<{ cancelled: true, already: boolean }>}
+	 */
+	async arbCancel(subscriptionId) {
+		const request = new ApiContracts.ARBCancelSubscriptionRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		request.setSubscriptionId(String(subscriptionId));
+		const resp = await this.send(request);
+		if (isOk(resp)) return { cancelled: true, already: false };
+		const { code, text } = topMessage(resp);
+		if (/already (been )?(cancel|terminat|expir)/i.test(text || '') || code === 'E00037') {
+			return { cancelled: true, already: true };
+		}
+		// E00035 / E00040: no such subscription, so nothing can charge from it.
+		if (code === 'E00035' || code === 'E00040') return { cancelled: true, already: true };
+		throw new AuthnetError(text || 'Could not cancel the subscription', { code });
+	}
+
+	/**
+	 * Break-glass: recreate an ARB subscription from a stored card. Only
+	 * used if self-billing has to be abandoned for a member after their ARB
+	 * was cancelled.
+	 */
+	async arbCreateFromProfile({
+		customerProfileId,
+		paymentProfileId,
+		amountCents,
+		intervalLength = 1,
+		intervalUnit = 'months',
+		startDate,
+		name
+	}) {
+		const interval = new ApiContracts.PaymentScheduleType.Interval();
+		interval.setLength(intervalLength);
+		interval.setUnit(
+			intervalUnit === 'days'
+				? ApiContracts.ARBSubscriptionUnitEnum.DAYS
+				: ApiContracts.ARBSubscriptionUnitEnum.MONTHS
+		);
+		const schedule = new ApiContracts.PaymentScheduleType();
+		schedule.setInterval(interval);
+		schedule.setStartDate(startDate);
+		schedule.setTotalOccurrences(9999);
+
+		const profile = new ApiContracts.CustomerProfileIdType();
+		profile.setCustomerProfileId(String(customerProfileId));
+		profile.setCustomerPaymentProfileId(String(paymentProfileId));
+
+		const sub = new ApiContracts.ARBSubscriptionType();
+		sub.setName(String(name || 'AGE Premium').slice(0, 50));
+		sub.setPaymentSchedule(schedule);
+		sub.setAmount(cents(amountCents));
+		sub.setProfile(profile);
+
+		const request = new ApiContracts.ARBCreateSubscriptionRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		request.setSubscription(sub);
+		const resp = await this.call(request);
+		return { subscriptionId: String(resp.subscriptionId) };
+	}
+}
+
+// ---------------------------------------------------------------- helpers
+
+function classifyTransaction(resp) {
+	const tr = resp?.transactionResponse;
+	const top = topMessage(resp);
+	if (!tr || tr.responseCode == null) {
+		// No transaction happened: a malformed request, bad credentials, or
+		// the gateway's own "unexpected system error" (E00001), after which
+		// the charge may or may not exist.
+		return {
+			outcome: top.code === 'E00001' ? 'unknown' : 'error',
+			transId: null,
+			code: top.code,
+			message: top.text || 'Authorize.net rejected the request',
+			raw: resp
+		};
+	}
+	const err = asArray(tr.errors?.error ?? tr.errors)[0];
+	const msg = asArray(tr.messages?.message ?? tr.messages)[0];
+	const base = {
+		transId: tr.transId && tr.transId !== '0' ? String(tr.transId) : null,
+		authCode: tr.authCode || null,
+		accountNumber: tr.accountNumber || null,
+		lastFour: lastFourOf(tr.accountNumber),
+		cardType: tr.accountType || null,
+		networkTransId: tr.networkTransId || null,
+		responseCode: String(tr.responseCode),
+		avs: tr.avsResultCode ?? null,
+		cvv: tr.cvvResultCode ?? null,
+		code: err?.errorCode ?? msg?.code ?? top.code,
+		message: err?.errorText ?? msg?.description ?? top.text ?? null,
+		raw: resp
+	};
+	switch (String(tr.responseCode)) {
+		case '1':
+			return { outcome: 'approved', ...base };
+		case '2':
+			return { outcome: 'declined', ...base };
+		case '4':
+			// Held for review: the money may be captured later, or not.
+			return { outcome: 'unknown', held: true, ...base };
+		default:
+			// Code 11: the duplicate filter saw the same card and amount
+			// within the window. The first attempt may have gone through.
+			if (String(err?.errorCode) === '11') return { outcome: 'unknown', duplicate: true, ...base };
+			return { outcome: 'error', ...base };
+	}
+}
+
+function toCents(v) {
+	if (v == null || v === '') return null;
+	return Math.round(Number(v) * 100);
+}
+
+function paging(limit, offset) {
+	const p = new ApiContracts.Paging();
+	p.setLimit(Math.min(1000, Math.max(1, Number(limit) || 100)));
+	p.setOffset(Math.max(1, Number(offset) || 1));
+	return p;
+}
+
+function summary(t) {
+	return {
+		transId: String(t.transId),
+		submittedAt: t.submitTimeUTC ? new Date(t.submitTimeUTC) : null,
+		status: t.transactionStatus ?? null,
+		invoiceNumber: t.invoiceNumber ?? null,
+		firstName: t.firstName ?? null,
+		lastName: t.lastName ?? null,
+		cardType: t.accountType ?? null,
+		accountNumber: t.accountNumber ?? null,
+		lastFour: lastFourOf(t.accountNumber),
+		settleAmountCents: toCents(t.settleAmount),
+		subscriptionId: t.subscription?.id != null ? String(t.subscription.id) : null,
+		payNum: t.subscription?.payNum ?? null,
+		customerProfileId:
+			t.profile?.customerProfileId != null ? String(t.profile.customerProfileId) : null,
+		paymentProfileId:
+			t.profile?.customerPaymentProfileId != null
+				? String(t.profile.customerPaymentProfileId)
+				: null,
+		hasReturnedItems: !!t.hasReturnedItems
+	};
+}
+
+function paymentProfileOf(p) {
+	const card = p.payment?.creditCard;
+	const exp = parseExpiration(card?.expirationDate);
+	return {
+		paymentProfileId: String(p.customerPaymentProfileId),
+		cardNumber: card?.cardNumber ?? null,
+		lastFour: lastFourOf(card?.cardNumber),
+		cardType: card?.cardType ?? null,
+		expiration: card?.expirationDate ?? null,
+		expMonth: exp?.month ?? null,
+		expYear: exp?.year ?? null,
+		billTo: p.billTo ?? null,
+		isDefault: !!p.defaultPaymentProfile
+	};
+}
+
+function buildOpaque(opaqueData) {
+	if (!opaqueData?.dataDescriptor || !opaqueData?.dataValue) {
+		throw new AuthnetError('Missing card token', { code: 'TOKEN' });
+	}
+	const od = new ApiContracts.OpaqueDataType();
+	od.setDataDescriptor(String(opaqueData.dataDescriptor));
+	od.setDataValue(String(opaqueData.dataValue));
+	return od;
+}
+
+function buildAddress(billTo) {
+	const a = new ApiContracts.CustomerAddressType();
+	if (billTo.firstName) a.setFirstName(String(billTo.firstName).slice(0, 50));
+	if (billTo.lastName) a.setLastName(String(billTo.lastName).slice(0, 50));
+	if (billTo.address) a.setAddress(String(billTo.address).slice(0, 60));
+	if (billTo.city) a.setCity(String(billTo.city).slice(0, 40));
+	if (billTo.state) a.setState(String(billTo.state).slice(0, 40));
+	if (billTo.zip) a.setZip(String(billTo.zip).slice(0, 20));
+	a.setCountry(String(billTo.country || 'US').slice(0, 60));
+	return a;
+}
+
+function validationEnum(mode, isProduction) {
+	if (mode === 'none') return ApiContracts.ValidationModeEnum.NONE;
+	if (mode === 'testMode' || (mode === 'liveMode' && !isProduction)) {
+		return ApiContracts.ValidationModeEnum.TESTMODE;
+	}
+	return ApiContracts.ValidationModeEnum.LIVEMODE;
+}
+
+function friendlyProfileError(code, text) {
+	if (code === 'E00027') return 'The card could not be verified. Check the details and try again.';
+	if (code === 'E00040') return 'The saved card could not be found.';
+	if (code === 'E00042') return 'This account has too many cards saved. Remove one first.';
+	return text || 'The card could not be saved.';
+}
+
+function normalizeArbStatus(s) {
+	const v = String(s || '').toLowerCase();
+	if (v === 'canceled' || v === 'cancelled') return 'cancelled';
+	return v || null;
 }
 
 export const authnet = new AuthNetClient();

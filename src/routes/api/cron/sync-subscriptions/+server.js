@@ -1,380 +1,69 @@
 import { json } from '@sveltejs/kit';
-import { authnet } from '$lib/server/authnet/client.js';
-import { db } from '$lib/server/db/index.js';
-import { bump } from '$lib/server/cache/index.js';
-import { user as userTable } from '$lib/server/db/schema.js';
-import { eq, isNotNull, and, ne } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
-import { sendPaymentFailedEmail } from '$lib/server/email.js';
-import { recordPayment, markVerified, logMemberEvent } from '$lib/server/payments/ledger.js';
+import { authnet } from '$lib/server/authnet/client.js';
+import { legacyMembers, syncLegacyMember } from '$lib/server/billing/legacy.js';
 
 /**
- * Sync subscription statuses from Authorize.net
+ * GET /api/cron/sync-subscriptions — daily.
  *
- * This endpoint polls Authorize.net for the current status of all active subscriptions
- * and updates the local database accordingly. Use as a backup to webhooks.
+ * Only for members still on an Authorize.net ARB subscription (no rows in
+ * the new billing system). Brings their status, dates and ledger in line
+ * with Authorize.net; cancels an ARB that is still charging a member who
+ * cancelled. Everyone else is handled by /api/cron/billing.
  *
- * Can be called by:
- * - Vercel Cron (daily)
- * - Manual trigger for debugging
- *
- * Security: Requires CRON_SECRET header or admin user
+ * Removed once the last legacy member is migrated or lapsed.
  */
 export async function GET({ request, locals }) {
-	// Verify authorization
-	const authHeader = request.headers.get('authorization');
-	const isValidCronSecret = env.CRON_SECRET && authHeader === `Bearer ${env.CRON_SECRET}`;
-	const isAdmin = locals.user?.role === 'admin';
-
-	if (!isValidCronSecret && !isAdmin) {
+	const header = request.headers.get('authorization');
+	const cronOk = env.CRON_SECRET && header === `Bearer ${env.CRON_SECRET}`;
+	if (!cronOk && locals.user?.role !== 'admin')
 		return json({ error: 'Unauthorized' }, { status: 401 });
-	}
 
+	const results = { checked: 0, updated: 0, errors: [], details: [] };
 	try {
-		// Get all users with active subscriptions
-		const usersWithSubscriptions = await db
-			.select()
-			.from(userTable)
-			.where(and(isNotNull(userTable.subscriptionId), ne(userTable.subscriptionStatus, 'expired')));
-
-		const results = {
-			checked: 0,
-			updated: 0,
-			errors: [],
-			details: []
-		};
-
-		for (const user of usersWithSubscriptions) {
+		const members = await legacyMembers();
+		for (const u of members) {
 			results.checked++;
-
 			try {
-				// Get subscription status from Authorize.net
-				const subStatus = await authnet.getSubscriptionStatus(user.subscriptionId);
-				const authnetStatus = subStatus.status?.toLowerCase();
-
-				// Map Authorize.net status to our status
-				let newStatus = user.subscriptionStatus;
-				let shouldUpdate = false;
-				let shouldSyncBillingDate = false;
-
-				// Authorize.net statuses: active, expired, suspended, cancelled, terminated
-				if (authnetStatus === 'active') {
-					if (
-						user.subscriptionStatus !== 'active' &&
-						user.subscriptionStatus !== 'payment_failed'
-					) {
-						// Subscription is active in Authorize.net but not locally
-						newStatus = 'active';
-						shouldUpdate = true;
-					}
-					// Always sync billing date and check transaction history for active subscriptions
-					shouldSyncBillingDate = true;
-				} else if (authnetStatus === 'expired' || authnetStatus === 'terminated') {
-					// Subscription has ended
-					newStatus = 'expired';
-					shouldUpdate = true;
-				} else if (authnetStatus === 'cancelled' && user.subscriptionStatus !== 'cancelled') {
-					// Subscription was cancelled
-					newStatus = 'cancelled';
-					shouldUpdate = true;
-				} else if (authnetStatus === 'suspended' && user.subscriptionStatus !== 'payment_failed') {
-					// Subscription is suspended (payment issues)
-					newStatus = 'payment_failed';
-					shouldUpdate = true;
-				}
-
-				if (shouldUpdate || shouldSyncBillingDate) {
-					// Get full subscription details to check for recent transactions
-					const subDetails = await authnet.getSubscription(user.subscriptionId);
-
-					// Calculate next billing date based on latest transaction
-					let nextBillingDate = user.nextBillingDate;
-					if (subDetails.transactions && subDetails.transactions.length > 0) {
-						// Sort by payNum descending to get the most recent
-						const sortedTx = [...subDetails.transactions].sort((a, b) => b.payNum - a.payNum);
-						const latestTx = sortedTx[0];
-
-						// Check if the latest transaction was approved
-						const isApproved =
-							latestTx.response === '1' ||
-							latestTx.response === 1 ||
-							(typeof latestTx.response === 'string' &&
-								latestTx.response.toLowerCase().includes('approved'));
-
-						// Check if the latest transaction was declined/failed
-						const isDeclined =
-							latestTx.response === '2' ||
-							latestTx.response === '3' ||
-							latestTx.response === 2 ||
-							latestTx.response === 3 ||
-							(typeof latestTx.response === 'string' &&
-								latestTx.response.toLowerCase().includes('decline'));
-
-						if (isApproved) {
-							const txDate = new Date(latestTx.submitTimeUTC);
-							// Calculate next billing based on subscription type
-							if (user.subscriptionType === 'yearly') {
-								nextBillingDate = new Date(txDate);
-								nextBillingDate.setFullYear(nextBillingDate.getFullYear() + 1);
-							} else if (user.subscriptionType === 'weekly_test') {
-								nextBillingDate = new Date(txDate);
-								nextBillingDate.setDate(nextBillingDate.getDate() + 7);
-							} else {
-								nextBillingDate = new Date(txDate);
-								nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
-							}
-
-							// Latest transaction approved — if user was payment_failed, restore to active
-							if (user.subscriptionStatus === 'payment_failed') {
-								newStatus = 'active';
-								shouldUpdate = true;
-							}
-						}
-
-						// If Authorize.net says "active" but the latest transaction was declined,
-						// override to payment_failed. This catches the case where Authorize.net
-						// keeps the subscription active during its retry period.
-						if (
-							authnetStatus === 'active' &&
-							isDeclined &&
-							user.subscriptionStatus !== 'payment_failed'
-						) {
-							newStatus = 'payment_failed';
-							shouldUpdate = true;
-						}
-					}
-
-					// Build update data
-					const updateData = {};
-
-					// Update status if changed
-					if (shouldUpdate) {
-						updateData.subscriptionStatus = newStatus;
-
-						// Update role based on status
-						if (newStatus === 'expired') {
-							// Subscription ended — downgrade immediately
-							updateData.role = 'free';
-							updateData.subscriptionId = null;
-						} else if (newStatus === 'cancelled') {
-							// Check if past end date
-							const now = new Date();
-							if (user.subscriptionEndDate && now >= new Date(user.subscriptionEndDate)) {
-								updateData.role = 'free';
-								updateData.subscriptionId = null;
-							}
-						} else if (newStatus === 'payment_failed') {
-							// Set grace period based on when the payment actually failed, not when we detected it
-							if (!user.subscriptionEndDate) {
-								const sortedTx = subDetails.transactions
-									? [...subDetails.transactions].sort((a, b) => b.payNum - a.payNum)
-									: [];
-								const declinedTx = sortedTx[0];
-								const failedDate = declinedTx?.submitTimeUTC
-									? new Date(declinedTx.submitTimeUTC)
-									: new Date();
-								const gracePeriodEnd = new Date(failedDate);
-								gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
-								updateData.subscriptionEndDate = gracePeriodEnd;
-							}
-						} else if (newStatus === 'active') {
-							updateData.role = 'premium';
-							updateData.subscriptionEndDate = null;
-						}
-					}
-
-					// For payment_failed users past their grace period, downgrade
-					// Always recalculate from the actual declined transaction date to avoid
-					// stale grace periods set by earlier runs
-					if (
-						(newStatus === 'payment_failed' || user.subscriptionStatus === 'payment_failed') &&
-						user.role === 'premium'
-					) {
-						let shouldDowngrade = false;
-						const sortedTx = subDetails.transactions
-							? [...subDetails.transactions].sort((a, b) => b.payNum - a.payNum)
-							: [];
-						const latestTx = sortedTx[0];
-
-						if (latestTx?.submitTimeUTC) {
-							// Calculate grace period from the actual failed transaction date
-							const failedDate = new Date(latestTx.submitTimeUTC);
-							const gracePeriodEnd = new Date(failedDate);
-							gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
-
-							// Update subscriptionEndDate to reflect the correct grace period
-							updateData.subscriptionEndDate = gracePeriodEnd;
-
-							if (new Date() >= gracePeriodEnd) {
-								shouldDowngrade = true;
-							}
-						} else {
-							// No transaction date available — fall back to stored end date
-							const endDate = updateData.subscriptionEndDate || user.subscriptionEndDate;
-							if (endDate && new Date() >= new Date(endDate)) {
-								shouldDowngrade = true;
-							}
-						}
-
-						if (shouldDowngrade) {
-							updateData.role = 'free';
-							updateData.subscriptionStatus = 'expired';
-							updateData.subscriptionId = null;
-						}
-					}
-
-					// Send payment failed email if transitioning to payment_failed
-					if (
-						updateData.subscriptionStatus === 'payment_failed' &&
-						user.subscriptionStatus !== 'payment_failed'
-					) {
-						try {
-							const baseUrl = env.PUBLIC_BASE_URL || 'https://www.age.events';
-							await sendPaymentFailedEmail(user.email, {
-								gracePeriodEnd: updateData.subscriptionEndDate || user.subscriptionEndDate,
-								updatePaymentUrl: `${baseUrl}/account/billing`
-							});
-						} catch (emailErr) {
-							console.error(
-								`Failed to send payment failed email to ${user.email}:`,
-								emailErr.message
-							);
-						}
-					}
-
-					// Always update billing date if we have a new one and it's different
-					if (nextBillingDate && nextBillingDate.getTime() !== user.nextBillingDate?.getTime()) {
-						updateData.nextBillingDate = nextBillingDate;
-					}
-
-					// Only update if there's something to change
-					if (Object.keys(updateData).length > 0) {
-						await db.update(userTable).set(updateData).where(eq(userTable.id, user.id));
-						await bump(`user:${user.id}`, 'users');
-						if (updateData.subscriptionStatus === 'expired') {
-							await logMemberEvent({
-								userId: user.id,
-								kind: 'expired',
-								subscriptionId: user.subscriptionId,
-								subscriptionType: user.subscriptionType,
-								meta: { from: user.subscriptionStatus, authnetStatus }
-							});
-						} else if (
-							updateData.subscriptionStatus === 'payment_failed' &&
-							user.subscriptionStatus !== 'payment_failed'
-						) {
-							await logMemberEvent({
-								userId: user.id,
-								kind: 'payment_failed',
-								subscriptionId: user.subscriptionId,
-								subscriptionType: user.subscriptionType,
-								meta: { authnetStatus }
-							});
-						}
-
-						results.updated++;
-						results.details.push({
-							email: user.email,
-							oldStatus: user.subscriptionStatus,
-							newStatus: updateData.subscriptionStatus || user.subscriptionStatus,
-							authnetStatus,
-							billingDateUpdated: !!updateData.nextBillingDate
-						});
-					}
+				const r = await syncLegacyMember(u);
+				if (r.changed) {
+					results.updated++;
+					results.details.push({
+						email: u.email,
+						from: u.subscriptionStatus,
+						to: r.to,
+						set: r.set,
+						note: r.note
+					});
+				} else if (r.note) {
+					results.details.push({ email: u.email, note: r.note });
 				}
 			} catch (err) {
-				console.error(`Error checking subscription for ${user.email}:`, err.message);
+				console.error(`Legacy sync failed for ${u.email}:`, err?.message || err);
 				results.errors.push({
-					email: user.email,
-					subscriptionId: user.subscriptionId,
-					error: err.message
+					email: u.email,
+					subscriptionId: u.subscriptionId,
+					error: err?.message || String(err)
 				});
 			}
 		}
-
-		// Ledger reconciliation: every approved subscription charge becomes a
-		// payment row, and rows the unsigned webhook wrote get confirmed.
-		results.ledger = await reconcileLedger(usersWithSubscriptions);
-
-		return json({
-			success: true,
-			...results
-		});
+		return json({ success: true, ...results });
 	} catch (err) {
 		console.error('Subscription sync error:', err);
 		return json({ error: err.message }, { status: 500 });
 	}
 }
 
-/**
- * POST: Sync a specific user's subscription
- */
+/** POST: look one ARB subscription up (admin). */
 export async function POST({ request, locals }) {
-	// Only allow admins
-	if (locals.user?.role !== 'admin') {
+	if (locals.user?.role !== 'admin')
 		return json({ error: 'Admin access required' }, { status: 403 });
-	}
-
+	const { subscriptionId } = await request.json();
+	if (!subscriptionId) return json({ error: 'subscriptionId is required' }, { status: 400 });
 	try {
-		const { email, subscriptionId } = await request.json();
-
-		if (!subscriptionId) {
-			return json({ error: 'subscriptionId is required' }, { status: 400 });
-		}
-
-		// Get subscription details from Authorize.net
-		const subDetails = await authnet.getSubscription(subscriptionId);
-
-		return json({
-			success: true,
-			subscription: subDetails
-		});
+		const sub = await authnet.arbGet(subscriptionId);
+		return json({ success: true, subscription: sub ? { ...sub, raw: undefined } : null });
 	} catch (err) {
-		console.error('Subscription check error:', err);
 		return json({ error: err.message }, { status: 500 });
 	}
-}
-
-/**
- * Make sure every approved subscription charge Authorize.net knows about is
- * in the `payment` ledger, and confirm the rows the webhook wrote. One
- * subscription lookup per member; amounts come from the subscription's
- * fixed charge (ARB bills the same amount each period).
- */
-async function reconcileLedger(users) {
-	const summary = { checked: 0, added: 0, verified: 0, errors: 0 };
-	for (const user of users) {
-		if (!user.subscriptionId) continue;
-		try {
-			const sub = await authnet.getSubscription(user.subscriptionId);
-			summary.checked++;
-			const approved = (sub.transactions || []).filter((tx) => {
-				const r = String(tx.response ?? '').toLowerCase();
-				return r === '1' || r.includes('approved');
-			});
-			const ids = approved.map((tx) => String(tx.transId));
-			for (const tx of approved) {
-				const added = await recordPayment({
-					transId: tx.transId,
-					kind: Number(tx.payNum) === 1 && !user.usedPartnerCode ? 'sub_first' : 'sub_renewal',
-					amount: sub.amount,
-					userId: user.id,
-					userEmail: user.email,
-					subscriptionId: user.subscriptionId,
-					subscriptionType: user.subscriptionType || null,
-					payNum: Number(tx.payNum) || null,
-					occurredAt: tx.submitTimeUTC ? new Date(tx.submitTimeUTC) : new Date(),
-					source: 'sync',
-					verifiedAt: new Date()
-				});
-				if (added) summary.added++;
-			}
-			await markVerified(ids);
-			summary.verified += ids.length;
-		} catch (err) {
-			summary.errors++;
-			console.error(`Ledger reconciliation failed for ${user.email}:`, err?.message || err);
-		}
-	}
-	return summary;
 }

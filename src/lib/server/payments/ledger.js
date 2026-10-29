@@ -12,15 +12,21 @@ import { isMissingTable, isMissingColumn } from '$lib/server/contentAnalytics/co
  * standing. Both are written from the payment paths and read by the admin
  * revenue and member pages.
  *
- * Every function here swallows "table does not exist" so the site keeps
- * working before the migration has been run, and never throws into a
- * payment flow — a missed ledger row is recoverable (the nightly sync and
- * the backfill rebuild from Authorize.net), a failed payment is not.
+ * Called on their own, these functions swallow errors (a missed ledger
+ * row is recoverable, a failed payment is not). Called with `{ tx }` inside
+ * a database transaction they rethrow, so the transaction rolls back as a
+ * whole: either every effect of a payment is recorded or none is.
  */
 
 const quiet = (label) => (err) => {
 	if (!isMissingTable(err)) console.error(`[ledger] ${label} failed:`, err?.message || err);
 };
+
+/** Rethrow inside a transaction; log and carry on outside one. */
+function settle(label, err, tx) {
+	if (tx) throw err;
+	quiet(label)(err);
+}
 
 /**
  * Record a transaction. Safe to call twice for the same transaction: the
@@ -35,11 +41,12 @@ const quiet = (label) => (err) => {
  *   discountAmount?: number|string|null, discountKind?: string|null, promoCode?: string|null,
  *   refundedAt?: Date|null, refundedAmount?: number|string|null, verifiedAt?: Date|null
  * }} row
+ * @param {{ tx?: any }} [opts]
  * @returns {Promise<boolean>} true when a row was inserted
  */
-export async function recordPayment(row) {
+export async function recordPayment(row, { tx } = {}) {
 	try {
-		const inserted = await db
+		const inserted = await (tx || db)
 			.insert(payment)
 			.values({
 				provider: 'authnet',
@@ -68,27 +75,31 @@ export async function recordPayment(row) {
 			.returning({ id: payment.id });
 		return inserted.length > 0;
 	} catch (err) {
-		quiet('recordPayment')(err);
+		settle('recordPayment', err, tx);
 		return false;
 	}
 }
 
 /**
  * Mark a transaction refunded or voided. `amount` defaults to the full
- * amount collected.
+ * amount collected; a partial refund adds to what was already returned,
+ * capped at the amount collected.
  */
-export async function markRefunded(transId, amount = null, at = new Date()) {
+export async function markRefunded(transId, amount = null, at = new Date(), { tx } = {}) {
 	if (!transId) return;
 	try {
-		await db
+		await (tx || db)
 			.update(payment)
 			.set({
 				refundedAt: at,
-				refundedAmount: amount == null ? sql`${payment.amount}` : money(amount)
+				refundedAmount:
+					amount == null
+						? sql`${payment.amount}`
+						: sql`least(${payment.amount}, ${payment.refundedAmount} + ${money(amount)}::numeric)`
 			})
 			.where(eq(payment.transId, String(transId)));
 	} catch (err) {
-		quiet('markRefunded')(err);
+		settle('markRefunded', err, tx);
 	}
 }
 
@@ -109,14 +120,16 @@ export async function markVerified(transIds, at = new Date()) {
  * Add a line to a member's history.
  *
  * @param {{
- *   userId: string, kind: 'subscribed'|'cancelled'|'payment_failed'|'expired'|'comped'|'comp_removed',
+ *   userId: string,
+ *   kind: 'subscribed'|'cancelled'|'resumed'|'plan_switched'|'payment_failed'|'payment_recovered'|'expired'|'ended'|'refunded'|'migrated'|'card_updated'|'comped'|'comp_removed',
  *   subscriptionId?: string|null, subscriptionType?: string|null, reason?: string|null,
  *   actorId?: string|null, meta?: object|null, at?: Date
  * }} row
+ * @param {{ tx?: any }} [opts]
  */
-export async function logMemberEvent(row) {
+export async function logMemberEvent(row, { tx } = {}) {
 	try {
-		await db.insert(memberEvent).values({
+		await (tx || db).insert(memberEvent).values({
 			userId: row.userId,
 			kind: row.kind,
 			subscriptionId: row.subscriptionId ?? null,
@@ -127,7 +140,7 @@ export async function logMemberEvent(row) {
 			meta: row.meta ?? null
 		});
 	} catch (err) {
-		quiet('logMemberEvent')(err);
+		settle('logMemberEvent', err, tx);
 	}
 }
 
@@ -149,6 +162,15 @@ export const COMP_REASONS = ['staff', 'writer', 'teacher', 'partner', 'friend', 
 export async function setMemberRole({ userId, role, compReason, actorId }) {
 	const [row] = await db.select().from(userTable).where(eq(userTable.id, userId)).limit(1);
 	if (!row) return { ok: false, error: 'User not found' };
+
+	// A paying member's role follows their membership (see billing/access.js);
+	// the role controls are for comps and admins.
+	if (row.subscriptionId && row.role !== 'admin' && role !== 'admin') {
+		return {
+			ok: false,
+			error: 'This member has a paid membership. Manage it from the Membership panel instead.'
+		};
+	}
 
 	const becomesComp = role === 'premium' && !row.subscriptionId;
 	const wasComp = row.role === 'premium' && !row.subscriptionId;
@@ -185,6 +207,9 @@ export async function setMemberRole({ userId, role, compReason, actorId }) {
 }
 
 /** Two-decimal string for a numeric column. */
-function money(v) {
+export function money(v) {
 	return (Math.round(Number(v || 0) * 100) / 100).toFixed(2);
 }
+
+/** Two-decimal string for an amount in cents. */
+export const centsToMoney = (cents) => (Number(cents || 0) / 100).toFixed(2);

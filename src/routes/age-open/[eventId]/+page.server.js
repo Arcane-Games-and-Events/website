@@ -1,10 +1,13 @@
 import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { event, savedCard, ticket } from '$lib/server/db/schema.js';
+import { event, ticket } from '$lib/server/db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import { calculatePremiumDiscount } from '$lib/server/premium-discount.js';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
+import { listCards, publicCard } from '$lib/server/payments/cards.js';
+import { acceptConfig } from '$lib/server/payments/accept-config.js';
+import { userHasPremiumAccess } from '$lib/server/articles/access.js';
 
 /**
  * Cached fetch for the public event row. Any event write makes it stale.
@@ -50,9 +53,7 @@ export async function load({ params, locals }) {
 			// races against fetchEvent (harmless — key is per-event and
 			// idempotent) or short-circuits after.
 			fetchRegisteredCount(params.eventId),
-			locals.user
-				? db.select().from(savedCard).where(eq(savedCard.userId, locals.user.id))
-				: Promise.resolve([]),
+			locals.user ? listCards(locals.user.id) : Promise.resolve([]),
 			locals.user
 				? db
 						.select()
@@ -70,7 +71,7 @@ export async function load({ params, locals }) {
 		if (!eventData) throw error(404, 'Event not found');
 
 		// Check if user is premium for discount display
-		const isPremium = locals.user?.role === 'premium' || locals.user?.role === 'admin';
+		const isPremium = userHasPremiumAccess(locals.user);
 		const hasPremiumDiscount = eventData.premiumDiscount && isPremium;
 
 		// Calculate discounted price if applicable
@@ -100,7 +101,8 @@ export async function load({ params, locals }) {
 			userGemId,
 			userFirstName,
 			userLastName,
-			savedCards: userSavedCards,
+			savedCards: userSavedCards.map(publicCard),
+			accept: acceptConfig(),
 			// Match the legacy shape: array-with-length OR null (not [])
 			userTicket: existingTickets.length > 0 ? existingTickets : null,
 			// Zero out the capacity count when the event has no cap so the

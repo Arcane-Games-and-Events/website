@@ -90,3 +90,21 @@ export const payingWhere = (alias = '"user"') =>
 
 /** Premium prices, in dollars. */
 export const PRICE = { monthly: 10, yearly: 110 };
+
+/**
+ * Monthly recurring revenue in cents, at the prices members actually pay:
+ * memberships in the new billing system at their own price, members still
+ * on an old Authorize.net subscription at list price.
+ */
+export async function mrrCents(db) {
+	const result = await db.execute(sql`
+		select
+			coalesce((select sum(case when plan = 'yearly' then price_cents / 12.0 else price_cents end)
+				from subscription where status in ('active', 'past_due')), 0) as new_mrr,
+			coalesce((select sum(case when subscription_type = 'yearly' then 11000 / 12.0 else 1000 end)
+				from "user" u where ${payingWhere('u')}
+				and not exists (select 1 from subscription s where s.user_id = u.id)), 0) as legacy_mrr
+	`);
+	const r = first(result);
+	return Math.round(n(r.new_mrr) + n(r.legacy_mrr));
+}

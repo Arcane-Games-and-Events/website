@@ -55,8 +55,14 @@ function getRedis() {
 	return g.__ageRedisClient;
 }
 
+/**
+ * The Redis client, or null when caching is off. For the few things that
+ * need Redis directly (rate limits); page data goes through `cached`.
+ */
+export const redis = () => getRedis();
+
 /** Prefix a bare key with the env namespace (`events:all` → `prod:events:all`). */
-function k(key) {
+export function k(key) {
 	return `${APP_ENV}:${key}`;
 }
 const versionKey = (tag) => k(`v:${tag}`);

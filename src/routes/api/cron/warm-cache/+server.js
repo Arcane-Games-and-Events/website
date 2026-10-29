@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import { checkBillingHeartbeat } from '$lib/server/billing/heartbeat.js';
 
 /**
  * Cache warming for public read-heavy pages.
@@ -77,7 +78,11 @@ export async function GET({ request, locals, url }) {
 
 	const baseUrl = url.origin;
 	const startedAt = Date.now();
-	const results = await Promise.all(WARM_URLS.map((path) => warm(baseUrl, path)));
+	const [results, billing] = await Promise.all([
+		Promise.all(WARM_URLS.map((path) => warm(baseUrl, path))),
+		// Piggyback: is the hourly billing job alive?
+		checkBillingHeartbeat()
+	]);
 	const totalMs = Date.now() - startedAt;
 
 	const ok = results.filter((r) => !r.error && r.status >= 200 && r.status < 400).length;
@@ -89,6 +94,7 @@ export async function GET({ request, locals, url }) {
 		ok,
 		failed,
 		totalMs,
+		billing,
 		results
 	});
 }

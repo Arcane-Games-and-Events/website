@@ -94,7 +94,12 @@ export const order = pgTable('order', {
 	currency: text('currency'),
 	meta: jsonb('meta'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
-	refundedAt: timestamp('refunded_at', { withTimezone: true, mode: 'date' })
+	refundedAt: timestamp('refunded_at', { withTimezone: true, mode: 'date' }),
+	// Migration 024
+	userId: text('user_id'),
+	kind: text('kind'), // ticket | subscription_first | subscription_renewal | legacy_subscription
+	refundedAmount: decimal('refunded_amount', { precision: 10, scale: 2 }).notNull().default('0'),
+	checkoutId: uuid('checkout_id')
 });
 
 // EVENTS
@@ -152,7 +157,8 @@ export const ticket = pgTable('ticket', {
 
 	// Timestamps
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
-	voidedAt: timestamp('voided_at', { withTimezone: true, mode: 'date' })
+	voidedAt: timestamp('voided_at', { withTimezone: true, mode: 'date' }),
+	checkoutId: uuid('checkout_id') // migration 024
 });
 
 // ENTITLEMENTS (for courses and digital products)
@@ -366,7 +372,18 @@ export const savedCard = pgTable('saved_card', {
 	nickname: text('nickname'), // Optional user-defined name like "Personal Card"
 
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
-	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+
+	// Migration 024. `exp_month` / `exp_year` are the normalized expiry (the
+	// text columns above hold whatever the old form sent); a card is never
+	// deleted, only marked.
+	status: text('status').notNull().default('active'), // active | expired | invalid | deleted | duplicate
+	expMonth: smallint('exp_month'),
+	expYear: smallint('exp_year'),
+	deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
+	verifiedAt: timestamp('verified_at', { withTimezone: true, mode: 'date' }),
+	source: text('source'), // checkout | subscribe | account | migration | transaction
+	environment: text('environment') // sandbox | production
 });
 
 // FAB CARD LOOKUP (card image URLs for fast decklist resolution)
@@ -634,7 +651,12 @@ export const memberReferral = pgTable('member_referral', {
 	status: text('status').default('pending'),
 	rewardEarnedAt: timestamp('reward_earned_at', { withTimezone: true, mode: 'date' }),
 	rewardAppliedAt: timestamp('reward_applied_at', { withTimezone: true, mode: 'date' }),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	// Migration 024
+	subscriptionId: uuid('subscription_id'),
+	qualifyingTransId: text('qualifying_trans_id'),
+	rewardSubscriptionId: uuid('reward_subscription_id'),
+	rewardNote: text('reward_note')
 });
 
 // One row per redemption. Commission earned on first successful charge only.
@@ -654,7 +676,11 @@ export const partnerReferral = pgTable('partner_referral', {
 	payoutStatus: text('payout_status').default('pending'), // 'pending' | 'paid'
 	paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
 	paidNotes: text('paid_notes'),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	// Migration 024
+	subscriptionId: uuid('subscription_id'),
+	voidedAt: timestamp('voided_at', { withTimezone: true, mode: 'date' }),
+	voidReason: text('void_reason')
 });
 
 // ============================================================================
@@ -1097,4 +1123,225 @@ export const deskRevision = pgTable(
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 	},
 	(t) => [index('cms_revision_entity_idx').on(t.entityType, t.entityId, t.createdAt)]
+);
+
+// ============================================================================
+// Self-billed memberships (migration 024)
+// ============================================================================
+// A membership is a `subscription` row; every charge is planned as a
+// `subscription_invoice` before the card is charged. See
+// src/lib/server/billing/README.md for the state machine.
+
+export const subscription = pgTable('subscription', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	ref: text('ref').notNull().unique(), // legacy ARB id, or this row's id
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	plan: text('plan').notNull(), // monthly | yearly
+	priceCents: integer('price_cents').notNull(),
+	anchorDay: smallint('anchor_day').notNull(),
+	status: text('status').notNull(), // incomplete | active | past_due | cancelled | ended
+	startedAt: timestamp('started_at', { withTimezone: true, mode: 'date' }),
+	currentPeriodStart: timestamp('current_period_start', { withTimezone: true, mode: 'date' }),
+	currentPeriodEnd: timestamp('current_period_end', { withTimezone: true, mode: 'date' }),
+	nextChargeAt: timestamp('next_charge_at', { withTimezone: true, mode: 'date' }),
+	cancelledAt: timestamp('cancelled_at', { withTimezone: true, mode: 'date' }),
+	endedAt: timestamp('ended_at', { withTimezone: true, mode: 'date' }),
+	endReason: text('end_reason'),
+	customerProfileId: text('customer_profile_id'),
+	paymentProfileId: text('payment_profile_id'),
+	savedCardId: uuid('saved_card_id').references(() => savedCard.id, { onDelete: 'set null' }),
+	failedAttempts: smallint('failed_attempts').notNull().default(0),
+	firstFailedAt: timestamp('first_failed_at', { withTimezone: true, mode: 'date' }),
+	nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true, mode: 'date' }),
+	graceUntil: timestamp('grace_until', { withTimezone: true, mode: 'date' }),
+	pendingPlan: text('pending_plan'),
+	pendingPriceCents: integer('pending_price_cents'),
+	promoCode: text('promo_code'),
+	promoKind: text('promo_kind'), // partner | member_referral
+	partnerReferralId: uuid('partner_referral_id'),
+	memberReferralId: uuid('member_referral_id'),
+	networkTransId: text('network_trans_id'),
+	legacyArbId: text('legacy_arb_id').unique(),
+	legacyArbCancelledAt: timestamp('legacy_arb_cancelled_at', { withTimezone: true, mode: 'date' }),
+	migratedAt: timestamp('migrated_at', { withTimezone: true, mode: 'date' }),
+	hold: boolean('hold').notNull().default(false),
+	leaseUntil: timestamp('lease_until', { withTimezone: true, mode: 'date' }),
+	leaseToken: text('lease_token'),
+	flags: text('flags')
+		.array()
+		.notNull()
+		.default(sql`'{}'::text[]`),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+export const subscriptionInvoice = pgTable(
+	'subscription_invoice',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		subscriptionId: uuid('subscription_id')
+			.notNull()
+			.references(() => subscription.id, { onDelete: 'cascade' }),
+		seq: integer('seq').notNull(),
+		kind: text('kind').notNull(), // first | renewal | migrated
+		plan: text('plan'),
+		periodStart: timestamp('period_start', { withTimezone: true, mode: 'date' }).notNull(),
+		periodEnd: timestamp('period_end', { withTimezone: true, mode: 'date' }).notNull(),
+		listCents: integer('list_cents').notNull(),
+		discountCents: integer('discount_cents').notNull().default(0),
+		amountCents: integer('amount_cents').notNull(),
+		status: text('status').notNull(), // open | charging | paid | failed | void | refunded | unknown
+		invoiceNumber: text('invoice_number').unique(),
+		attempts: smallint('attempts').notNull().default(0),
+		lastAttemptAt: timestamp('last_attempt_at', { withTimezone: true, mode: 'date' }),
+		lastError: text('last_error'),
+		transId: text('trans_id').unique(),
+		networkTransId: text('network_trans_id'),
+		paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
+		orderId: uuid('order_id').references(() => order.id, { onDelete: 'set null' }),
+		refundedCents: integer('refunded_cents').notNull().default(0),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+	},
+	(t) => [
+		unique('subscription_invoice_subscription_id_period_start_key').on(
+			t.subscriptionId,
+			t.periodStart
+		)
+	]
+);
+
+// A ticket purchase, written before the card is charged.
+export const checkout = pgTable('checkout', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	eventId: text('event_id')
+		.notNull()
+		.references(() => event.id, { onDelete: 'cascade' }),
+	idempotencyKey: text('idempotency_key').notNull().unique(),
+	invoiceNumber: text('invoice_number').unique(),
+	status: text('status').notNull(), // pending | charging | paid | fulfilled | declined | failed | unknown | expired
+	quantity: smallint('quantity').notNull(),
+	listCents: integer('list_cents').notNull(),
+	discountCents: integer('discount_cents').notNull().default(0),
+	amountCents: integer('amount_cents').notNull(),
+	payload: jsonb('payload').notNull(),
+	transId: text('trans_id').unique(),
+	orderId: uuid('order_id').references(() => order.id, { onDelete: 'set null' }),
+	lastError: text('last_error'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+// One row per void or refund attempted at the gateway.
+export const refund = pgTable('refund', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	transId: text('trans_id').notNull(),
+	amountCents: integer('amount_cents').notNull(),
+	method: text('method'), // void | refund | none
+	status: text('status').notNull(), // pending | waiting_settlement | succeeded | failed
+	refundTransId: text('refund_trans_id'),
+	invoiceNumber: text('invoice_number'),
+	reason: text('reason'),
+	requestedBy: text('requested_by').references(() => user.id, { onDelete: 'set null' }),
+	orderId: uuid('order_id').references(() => order.id, { onDelete: 'set null' }),
+	ticketIds: uuid('ticket_ids')
+		.array()
+		.notNull()
+		.default(sql`'{}'::uuid[]`),
+	subscriptionInvoiceId: uuid('subscription_invoice_id').references(() => subscriptionInvoice.id, {
+		onDelete: 'set null'
+	}),
+	subscriptionEffect: text('subscription_effect'), // keep | end_now | cancel_at_period_end
+	refundRequestId: uuid('refund_request_id'),
+	lastError: text('last_error'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' })
+});
+
+// A member asking for a ticket refund inside the 24-hour window.
+export const refundRequest = pgTable('refund_request', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	ticketId: uuid('ticket_id')
+		.notNull()
+		.references(() => ticket.id, { onDelete: 'cascade' }),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	reason: text('reason'),
+	status: text('status').notNull().default('pending'), // pending | approved | declined | withdrawn
+	decidedBy: text('decided_by').references(() => user.id, { onDelete: 'set null' }),
+	decidedAt: timestamp('decided_at', { withTimezone: true, mode: 'date' }),
+	decisionNote: text('decision_note'),
+	refundId: uuid('refund_id').references(() => refund.id, { onDelete: 'set null' }),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+// Snapshot of each Authorize.net ARB subscription and the migration worklist.
+export const legacyArb = pgTable('legacy_arb', {
+	arbId: text('arb_id').primaryKey(),
+	arbStatus: text('arb_status'),
+	name: text('name'),
+	amountCents: integer('amount_cents'),
+	intervalLength: smallint('interval_length'),
+	intervalUnit: text('interval_unit'),
+	startDate: text('start_date'), // DATE, read as text
+	totalOccurrences: integer('total_occurrences'),
+	customerProfileId: text('customer_profile_id'),
+	paymentProfileId: text('payment_profile_id'),
+	cardLastFour: text('card_last_four'),
+	cardType: text('card_type'),
+	cardExpiration: text('card_expiration'),
+	profileEmail: text('profile_email'),
+	payCount: integer('pay_count'),
+	lastApprovedAt: timestamp('last_approved_at', { withTimezone: true, mode: 'date' }),
+	lastApprovedTransId: text('last_approved_trans_id'),
+	lastDeclinedAt: timestamp('last_declined_at', { withTimezone: true, mode: 'date' }),
+	nextBillingDate: timestamp('next_billing_date', { withTimezone: true, mode: 'date' }),
+	userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+	matchMethod: text('match_method'),
+	classification: text('classification'),
+	flags: text('flags')
+		.array()
+		.notNull()
+		.default(sql`'{}'::text[]`),
+	decision: text('decision'), // approve | skip | cancel | assign
+	decidedBy: text('decided_by').references(() => user.id, { onDelete: 'set null' }),
+	decidedAt: timestamp('decided_at', { withTimezone: true, mode: 'date' }),
+	userBefore: jsonb('user_before'),
+	chargesAfterCancel: jsonb('charges_after_cancel'),
+	raw: jsonb('raw'),
+	scannedAt: timestamp('scanned_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	subscriptionId: uuid('subscription_id').references(() => subscription.id, {
+		onDelete: 'set null'
+	}),
+	migratedAt: timestamp('migrated_at', { withTimezone: true, mode: 'date' }),
+	cancelledAt: timestamp('cancelled_at', { withTimezone: true, mode: 'date' }),
+	error: text('error')
+});
+
+export const billingRun = pgTable('billing_run', {
+	id: bigserial('id', { mode: 'number' }).primaryKey(),
+	startedAt: timestamp('started_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	finishedAt: timestamp('finished_at', { withTimezone: true, mode: 'date' }),
+	mode: text('mode').notNull(), // live | observe
+	summary: jsonb('summary'),
+	error: text('error')
+});
+
+// Emails that must only go out once: UNIQUE(kind, ref) is the guard.
+export const billingNotice = pgTable(
+	'billing_notice',
+	{
+		id: bigserial('id', { mode: 'number' }).primaryKey(),
+		kind: text('kind').notNull(),
+		ref: text('ref').notNull(),
+		userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+		sentAt: timestamp('sent_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+	},
+	(t) => [unique('billing_notice_kind_ref_key').on(t.kind, t.ref)]
 );

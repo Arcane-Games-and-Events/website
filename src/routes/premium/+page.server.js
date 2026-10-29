@@ -1,9 +1,12 @@
 import { db } from '$lib/server/db';
-import { savedCard, standing, deskEntry } from '$lib/server/db/schema.js';
+import { standing, deskEntry } from '$lib/server/db/schema.js';
 import { and, count, countDistinct, eq, isNotNull, lte, or } from 'drizzle-orm';
 import { cached } from '$lib/server/cache/index.js';
 import { playerKey } from '$lib/server/players/key.js';
-import { env } from '$env/dynamic/private';
+import { listCards, publicCard } from '$lib/server/payments/cards.js';
+import { acceptConfig } from '$lib/server/payments/accept-config.js';
+import { liveSubscription } from '$lib/server/billing/access.js';
+import { quoteFirstCharge, PLANS } from '$lib/server/billing/plans.js';
 import {
 	getPartnerByCode,
 	getPartnerPublicName,
@@ -51,16 +54,12 @@ async function loadImpact() {
 
 export async function load({ locals, url }) {
 	const impactPromise = loadImpact();
-	// Fetch saved cards if user is logged in
-	let userSavedCards = [];
-	if (locals.user) {
-		userSavedCards = await db.select().from(savedCard).where(eq(savedCard.userId, locals.user.id));
-	}
+	const [cards, live] = locals.user
+		? await Promise.all([listCards(locals.user.id), liveSubscription(locals.user.id)])
+		: [[], null];
 
-	// Look up partner code from query string (set by /premium/[code] redirect or direct link)
+	// A code in the query string (from /premium/[code] or a shared link).
 	const rawCode = url.searchParams.get('code');
-	// Resolve the code as either a partner code or a member referral code.
-	// Codes share one namespace, so try member referral first then fall back.
 	let partnerReferral = null;
 	if (rawCode) {
 		const member = await getMemberReferralByCode(rawCode);
@@ -84,8 +83,22 @@ export async function load({ locals, url }) {
 
 	return {
 		user: locals.user,
-		savedCards: userSavedCards,
-		isSandbox: env.AUTHNET_ENVIRONMENT === 'sandbox',
+		savedCards: cards.map(publicCard),
+		accept: acceptConfig(),
+		// The member's standing in the new billing system, if any.
+		membership: live
+			? {
+					status: live.status,
+					plan: live.plan,
+					currentPeriodEnd: live.currentPeriodEnd,
+					nextChargeAt: live.nextChargeAt
+				}
+			: null,
+		prices: {
+			monthly: quoteFirstCharge('monthly'),
+			yearly: quoteFirstCharge('yearly'),
+			labels: { monthly: PLANS.monthly.label, yearly: PLANS.yearly.label }
+		},
 		partnerReferral,
 		impact: await impactPromise
 	};

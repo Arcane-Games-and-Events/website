@@ -1,7 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { bump } from '$lib/server/cache/index.js';
-import { markRefunded } from '$lib/server/payments/ledger.js';
 import {
 	adminCounts,
 	listOrders,
@@ -80,123 +79,6 @@ export async function load({ locals }) {
 }
 
 export const actions = {
-	// Admin refund order - bypasses user restrictions
-	refundOrder: async ({ request, locals }) => {
-		if (!locals.user || locals.user.role !== 'admin') {
-			return fail(403, { error: 'Admin access required' });
-		}
-
-		const formData = await request.formData();
-		const orderId = formData.get('orderId');
-
-		if (!orderId) {
-			return fail(400, { error: 'Order ID is required' });
-		}
-
-		try {
-			// Fetch order details
-			const [orderData] = await db.select().from(order).where(eq(order.id, orderId)).limit(1);
-
-			if (!orderData) {
-				return fail(404, { error: 'Order not found' });
-			}
-
-			const { authnet } = await import('$lib/server/authnet/client.js');
-			let refundType = '';
-
-			// Handle subscription orders
-			if (orderData.meta?.type === 'subscription') {
-				// Cancel the subscription if we have the ID
-				if (orderData.meta.subscriptionId) {
-					try {
-						await authnet.cancelSubscription(orderData.meta.subscriptionId);
-					} catch (cancelErr) {
-						console.log(
-							'Subscription cancellation error (may already be cancelled):',
-							cancelErr.message
-						);
-					}
-				}
-
-				// Downgrade user to free tier
-				const downgraded = await db
-					.update(user)
-					.set({
-						subscriptionStatus: 'cancelled',
-						role: 'free'
-					})
-					.where(eq(user.email, orderData.userEmail))
-					.returning({ id: user.id });
-				await bump('users', 'orders', ...downgraded.map((u) => `user:${u.id}`));
-
-				// Try to void/refund the payment
-				try {
-					await authnet.voidTransaction(orderData.providerRef);
-					refundType = 'voided';
-				} catch (voidError) {
-					console.log('Void failed, attempting refund:', voidError.message);
-					try {
-						await authnet.refundTransaction({
-							transactionId: orderData.providerRef,
-							amount: orderData.amount,
-							cardNumber: '1111'
-						});
-						refundType = 'refunded';
-					} catch (refundError) {
-						// Payment might already be refunded or too old
-						console.log('Refund also failed:', refundError.message);
-						refundType = 'subscription cancelled (payment refund failed - may be too old)';
-					}
-				}
-
-				return {
-					success: true,
-					message: `Subscription cancelled and ${refundType}. User downgraded to free tier.`
-				};
-			}
-
-			// For ticket and course orders: Try VOID first, then REFUND
-			try {
-				await authnet.voidTransaction(orderData.providerRef);
-				refundType = 'voided';
-			} catch (voidError) {
-				console.log('Void failed, attempting refund:', voidError.message);
-				await authnet.refundTransaction({
-					transactionId: orderData.providerRef,
-					amount: orderData.amount,
-					cardNumber: '1111'
-				});
-				refundType = 'refunded';
-			}
-
-			await markRefunded(orderData.providerRef, orderData.amount);
-			await db.update(order).set({ refundedAt: new Date() }).where(eq(order.id, orderData.id));
-
-			// Update related records based on order type
-			if (orderData.meta?.type === 'ticket' && orderData.meta.ticketId) {
-				// Mark ticket as refunded
-				await db
-					.update(ticket)
-					.set({
-						refunded: true,
-						refundedAt: new Date()
-					})
-					.where(eq(ticket.id, orderData.meta.ticketId));
-			} else if (orderData.meta?.type === 'course' && orderData.meta.entitlementId) {
-				// Revoke course entitlement
-				await db.delete(entitlement).where(eq(entitlement.id, orderData.meta.entitlementId));
-			}
-
-			return {
-				success: true,
-				message: `Order ${refundType} successfully`
-			};
-		} catch (err) {
-			console.error('Error refunding order:', err);
-			return fail(500, { error: err.message || 'Failed to process refund' });
-		}
-	},
-
 	// Server-side search for orders
 	searchOrders: async ({ request, locals }) => {
 		if (!locals.user || locals.user.role !== 'admin') {

@@ -26,3 +26,6 @@ design_handoff_age_site
 
 # real sandbox ids created by scripts/seed-authnet.mjs
 scripts/.seed-authnet-map.json
+
+# Local https certificates for testing card entry (see vite.config.js)
+*.pem

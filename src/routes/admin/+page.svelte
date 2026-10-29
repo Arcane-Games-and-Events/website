@@ -53,10 +53,31 @@
 			count ? [{ count, text: count === 1 ? singular : plural, href, tone }] : [];
 		return [
 			...one(
-				a.paymentFailed,
+				a.refundRequests,
+				'ticket refund request to review',
+				'ticket refund requests to review',
+				'/admin/orders/refunds',
+				'text-hero-rb'
+			),
+			...one(
+				a.unknownCharges,
+				'membership charge with an unknown outcome',
+				'membership charges with unknown outcomes',
+				'/admin/orders/subscriptions',
+				'text-hero-rb'
+			),
+			...one(
+				a.arbReview,
+				'old Authorize.net subscription to review',
+				'old Authorize.net subscriptions to review',
+				'/admin/orders/migration',
+				'text-hero-rb'
+			),
+			...one(
+				a.pastDue || a.paymentFailed,
 				'member with a failed payment',
 				'members with failed payments',
-				'/admin/users',
+				'/admin/orders/subscriptions',
 				'text-hero-rb'
 			),
 			...one(

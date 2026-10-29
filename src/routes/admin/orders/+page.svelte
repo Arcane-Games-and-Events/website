@@ -6,6 +6,8 @@
 	import Figures from '$lib/components/age/admin/Figures.svelte';
 	import Section from '$lib/components/age/admin/Section.svelte';
 	import Pager from '$lib/components/age/admin/Pager.svelte';
+	import AdminSubnav from '$lib/components/age/admin/AdminSubnav.svelte';
+	import { ORDERS_SUBNAV } from '$lib/components/age/admin/subnav.js';
 	import * as ui from '$lib/components/age/admin/ui.js';
 
 	let { data, form } = $props();
@@ -171,6 +173,7 @@
 	{/snippet}
 </DeskHeader>
 <AdminTabs />
+<AdminSubnav items={ORDERS_SUBNAV} label="Orders" />
 
 {#if form?.success}
 	<AdminNotice tone="success" message={form.message} />

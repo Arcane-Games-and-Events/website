@@ -2,6 +2,7 @@ import { db } from '$lib/server/db/index.js';
 import { event, order } from '$lib/server/db/schema.js';
 import { asc, desc, gte, sql } from 'drizzle-orm';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
+import { mrrCents } from '$lib/server/admin/util.js';
 
 /**
  * Reads behind the admin home page. Each is one query; the ledger-based
@@ -38,13 +39,19 @@ export function memberFigures() {
 			const r = (result.rows || result)[0] || {};
 			const monthly = n(r.monthly);
 			const yearly = n(r.yearly);
+			let mrr = monthly * 10 + (yearly * 110) / 12;
+			try {
+				mrr = (await mrrCents(db)) / 100;
+			} catch (err) {
+				if (err?.code !== '42P01' && err?.cause?.code !== '42P01') throw err;
+			}
 			return {
 				paying: n(r.paying),
 				monthly,
 				yearly,
 				comped: n(r.comped),
 				paymentFailed: n(r.payment_failed),
-				mrr: monthly * 10 + (yearly * 110) / 12
+				mrr
 			};
 		},
 		{ tags: ['users'], ttl: CACHE_TTL.FIVE_MINUTES }
@@ -69,7 +76,11 @@ export function attention() {
 						where event_date < now() - interval '1 day'
 						and coalesce(status, 'upcoming') not in ('cancelled', 'completed')) as events_unclosed,
 					(select count(*) from vods where is_published = false) as vods_unpublished,
-					(select count(*) from cms_entry where draft_updated_at is not null) as desk_reviews
+					(select count(*) from cms_entry where draft_updated_at is not null) as desk_reviews,
+					(select count(*) from refund_request where status = 'pending') as refund_requests,
+					(select count(*) from subscription where status = 'past_due') as past_due,
+					(select count(*) from subscription_invoice where status = 'unknown') as unknown_charges,
+					(select count(*) from legacy_arb where decision is null and classification not in ('migrate', 'inactive', 'test')) as arb_review
 			`);
 			const r = (result.rows || result)[0] || {};
 			return {
@@ -78,10 +89,14 @@ export function attention() {
 				eventsSoon: n(r.events_soon),
 				eventsUnclosed: n(r.events_unclosed),
 				vodsUnpublished: n(r.vods_unpublished),
-				deskReviews: n(r.desk_reviews)
+				deskReviews: n(r.desk_reviews),
+				refundRequests: n(r.refund_requests),
+				pastDue: n(r.past_due),
+				unknownCharges: n(r.unknown_charges),
+				arbReview: n(r.arb_review)
 			};
 		},
-		{ tags: ['users', 'events', 'vods', 'entries'], ttl: CACHE_TTL.FIVE_MINUTES }
+		{ tags: ['users', 'events', 'vods', 'entries', 'orders'], ttl: CACHE_TTL.FIVE_MINUTES }
 	);
 }
 

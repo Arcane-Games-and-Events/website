@@ -1,271 +1,228 @@
 import { json } from '@sveltejs/kit';
-import { authnet } from '$lib/server/authnet/client.js';
+import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
-import { bump } from '$lib/server/cache/index.js';
-import { recordPayment } from '$lib/server/payments/ledger.js';
+import { event as eventTable } from '$lib/server/db/schema.js';
+import { authnet, describeOutcome } from '$lib/server/authnet/client.js';
+import { guardPayment } from '$lib/server/ratelimit.js';
+import { userHasPremiumAccess } from '$lib/server/articles/access.js';
 import { recordConversion } from '$lib/server/contentAnalytics/collect.js';
-import { ticket, order, event as eventTable, savedCard, user } from '$lib/server/db/schema.js';
-import { eq, and, sql } from 'drizzle-orm';
-import crypto from 'crypto';
-import { calculatePremiumDiscount } from '$lib/server/premium-discount.js';
+import { ownedCard, isExpired, saveCardFromTransaction } from '$lib/server/payments/cards.js';
+import {
+	claimCheckout,
+	createCheckout,
+	fulfilCheckout,
+	markCheckout,
+	validatePlayers
+} from '$lib/server/payments/checkout.js';
 
 /**
- * Purchase event tickets (one-time payment)
+ * POST /api/events/[eventId]/purchase
+ *
+ * Body: {
+ *   players: [{ firstName, lastName, gemId? }],
+ *   payment: { savedCardId } | { opaqueData, billTo, expiry, lastFour, saveCard },
+ *   idempotencyKey: string
+ * }
+ *
+ * The price is worked out on the server. A `checkout` row holds the seats
+ * and carries the invoice number before the card is charged; an approved
+ * charge becomes an order and tickets exactly once.
+ *
+ * Responses: 200 success · 202 pending (poll /api/checkout/[id]) ·
+ * 400 bad request · 402 declined · 409 full / in progress · 429 slow down.
  */
-export async function POST({ params, request, locals, cookies, url }) {
+export async function POST({ params, request, locals, cookies, url, getClientAddress }) {
+	const user = locals.user;
+	if (!user) return json({ error: 'Sign in to buy tickets.' }, { status: 401 });
+
+	let body;
 	try {
-		const { eventId } = params;
-		const currentUser = locals.user;
+		body = await request.json();
+	} catch {
+		return json({ error: 'Bad request' }, { status: 400 });
+	}
+	const { players: rawPlayers, payment = {}, idempotencyKey } = body || {};
+	if (!idempotencyKey || typeof idempotencyKey !== 'string' || idempotencyKey.length > 80) {
+		return json({ error: 'Bad request' }, { status: 400 });
+	}
 
-		// Require authentication
-		if (!currentUser) {
-			return json({ error: 'Authentication required' }, { status: 401 });
+	const limited = await guardPayment({
+		userId: user.id,
+		ip: getClientAddress(),
+		card: !!payment.opaqueData
+	});
+	if (limited)
+		return json(
+			{ error: limited.error },
+			{ status: 429, headers: { 'Retry-After': String(limited.retryAfter) } }
+		);
+
+	const [ev] = await db.select().from(eventTable).where(eq(eventTable.id, params.eventId)).limit(1);
+	if (!ev) return json({ error: 'Event not found' }, { status: 404 });
+	if (ev.status === 'cancelled')
+		return json({ error: 'This event has been cancelled.' }, { status: 400 });
+	if (ev.eventDate) {
+		const end = new Date(ev.eventDate);
+		end.setUTCHours(23, 59, 59, 999);
+		if (end < new Date())
+			return json({ error: 'Registration for this event has closed.' }, { status: 400 });
+	}
+
+	const v = validatePlayers(rawPlayers, { gemIdRequired: !!ev.gemIdRequired });
+	if (v.error) return json({ error: v.error }, { status: 400 });
+
+	const isPremium = userHasPremiumAccess(user);
+	const created = await createCheckout({
+		user,
+		event: ev,
+		players: v.players,
+		idempotencyKey,
+		isPremium,
+		saveCard: !!payment.saveCard
+	});
+	if (created.error)
+		return json({ error: created.error, full: created.full }, { status: created.status });
+	let co = created.checkout;
+
+	// A retry of a request we already finished, or one still in flight.
+	if (co.status === 'fulfilled') return json(await success(co, user));
+	if (co.status === 'charging' || co.status === 'unknown' || co.status === 'paid') {
+		return json(
+			{ pending: true, checkoutId: co.id, message: 'Your payment is being confirmed.' },
+			{ status: 202 }
+		);
+	}
+
+	// Free (fully discounted) order: no gateway.
+	if (co.amountCents === 0) {
+		const claimed = await claimCheckout(co.id);
+		if (!claimed) return json({ pending: true, checkoutId: co.id }, { status: 202 });
+		const result = await fulfilCheckout(co.id, { transId: null, email: user.email });
+		await recordConversion({ cookies, url }, user.id, 'ticket', {
+			meta: { eventId: ev.id, amount: 0, premiumDiscount: true, quantity: v.players.length }
+		});
+		return json(await success(result.checkout, user, result));
+	}
+
+	// The card.
+	let charge;
+	if (payment.savedCardId) {
+		let card;
+		try {
+			card = await ownedCard(user.id, payment.savedCardId);
+		} catch {
+			return json({ error: 'Saved card not found.' }, { status: 404 });
 		}
-
-		const body = await request.json();
-		const {
-			amount,
-			cardNumber,
-			expirationDate,
-			cardCode,
-			description,
-			billTo,
-			gemId,
-			// Saved card fields
-			useSavedCard,
-			savedCardId,
-			customerProfileId,
-			paymentProfileId,
-			// Save card option
-			saveCard
-		} = body;
-
-		// Verify event exists
-		const [eventData] = await db.select().from(eventTable).where(eq(eventTable.id, eventId));
-		if (!eventData) {
-			return json({ error: 'Event not found' }, { status: 404 });
+		if (card.status !== 'active' || isExpired(card)) {
+			return json({ error: 'That saved card has expired. Use a different card.' }, { status: 400 });
 		}
-
-		// Validate Gem ID if required
-		if (eventData.gemIdRequired && !gemId) {
-			return json({ error: 'Gem ID is required for this event' }, { status: 400 });
-		}
-
-		// Check capacity if player cap is set
-		if (eventData.playerCap !== null && eventData.playerCap !== undefined) {
-			const [{ count: activeTicketCount }] = await db
-				.select({ count: sql`count(*)::int` })
-				.from(ticket)
-				.where(and(eq(ticket.eventId, eventId), eq(ticket.refunded, false)));
-
-			if (activeTicketCount >= eventData.playerCap) {
-				return json({ error: 'Event is full', full: true }, { status: 409 });
-			}
-		}
-
-		// Calculate expected price with premium discount
-		let expectedPrice = parseFloat(eventData.price);
-		const isPremium = currentUser.role === 'premium' || currentUser.role === 'admin';
-
-		if (eventData.premiumDiscount && isPremium) {
-			const discount = calculatePremiumDiscount(expectedPrice, eventData.eventDate);
-			expectedPrice = discount.finalPrice;
-		}
-
-		// Validate amount matches expected price
-		if (Math.abs(parseFloat(amount) - expectedPrice) > 0.01) {
-			return json({ error: 'Invalid payment amount' }, { status: 400 });
-		}
-
-		let result;
-		let cardLastFour = null;
-
-		if (useSavedCard && savedCardId) {
-			// Verify the saved card belongs to the user
-			const [card] = await db
-				.select()
-				.from(savedCard)
-				.where(and(eq(savedCard.id, savedCardId), eq(savedCard.userId, currentUser.id)))
-				.limit(1);
-
-			if (!card) {
-				return json({ error: 'Saved card not found' }, { status: 404 });
-			}
-
-			cardLastFour = card.lastFour;
-
-			// Process payment with saved card
-			result = await authnet.chargeCustomerProfile({
+		charge = () =>
+			authnet.chargeProfile({
 				customerProfileId: card.customerProfileId,
 				paymentProfileId: card.paymentProfileId,
-				amount,
-				description: description || `Ticket for ${eventData.title}`
+				amountCents: co.amountCents,
+				invoiceNumber: co.invoiceNumber,
+				description:
+					`${v.players.length} ticket${v.players.length > 1 ? 's' : ''}: ${ev.title}`.slice(0, 255),
+				customerId: user.id,
+				email: user.email
 			});
-		} else {
-			// Process one-time payment with new card
-			cardLastFour = cardNumber ? cardNumber.slice(-4) : null;
-			result = await authnet.chargeCard({
-				amount,
-				cardNumber,
-				expirationDate,
-				cardCode,
-				description: description || `Ticket for ${eventData.title}`,
-				billTo
+		charge.lastFour = card.lastFour;
+		charge.cardType = card.cardType;
+	} else if (payment.opaqueData?.dataValue) {
+		charge = () =>
+			authnet.chargeOpaque({
+				opaqueData: payment.opaqueData,
+				amountCents: co.amountCents,
+				invoiceNumber: co.invoiceNumber,
+				description:
+					`${v.players.length} ticket${v.players.length > 1 ? 's' : ''}: ${ev.title}`.slice(0, 255),
+				customerId: user.id,
+				email: user.email,
+				billTo: payment.billTo || { firstName: user.firstName, lastName: user.lastName }
 			});
-
-			// If payment successful and user wants to save card, save it
-			if (result.success && saveCard) {
-				try {
-					// Get or create customer profile
-					const profileResult = await authnet.getOrCreateCustomerProfile({
-						customerId: currentUser.id,
-						email: currentUser.email
-					});
-
-					// Save customer profile ID to user if not already saved
-					if (profileResult && profileResult.customerProfileId) {
-						await db
-							.update(user)
-							.set({ customerProfileId: profileResult.customerProfileId })
-							.where(eq(user.id, currentUser.id));
-
-						// Add payment profile
-						const paymentProfile = await authnet.addPaymentProfile({
-							customerProfileId: profileResult.customerProfileId,
-							cardNumber,
-							expirationDate,
-							cardCode,
-							billTo
-						});
-
-						if (paymentProfile) {
-							// Check if card already exists (by last four and expiration)
-							const [existingCard] = await db
-								.select()
-								.from(savedCard)
-								.where(
-									and(
-										eq(savedCard.userId, currentUser.id),
-										eq(savedCard.lastFour, paymentProfile.lastFour)
-									)
-								)
-								.limit(1);
-
-							if (!existingCard) {
-								// Check if user has any saved cards (to set default)
-								const userCards = await db
-									.select()
-									.from(savedCard)
-									.where(eq(savedCard.userId, currentUser.id))
-									.limit(1);
-
-								const isFirstCard = userCards.length === 0;
-
-								// Save the card to database
-								await db.insert(savedCard).values({
-									userId: currentUser.id,
-									customerProfileId: profileResult.customerProfileId,
-									paymentProfileId: paymentProfile.paymentProfileId,
-									cardType: paymentProfile.cardType,
-									lastFour: paymentProfile.lastFour,
-									expirationMonth: paymentProfile.expirationMonth,
-									expirationYear: paymentProfile.expirationYear,
-									isDefault: isFirstCard
-								});
-							}
-						}
-					}
-				} catch (saveError) {
-					// Log but don't fail the purchase if card save fails
-					console.error('Error saving card:', saveError);
-				}
-			}
-		}
-
-		if (result.success) {
-			// Generate unique ticket code
-			const ticketCode = crypto.randomBytes(8).toString('hex').toUpperCase();
-
-			// Create order record first (so we can link ticket to it)
-			const [newOrder] = await db
-				.insert(order)
-				.values({
-					provider: 'authnet',
-					providerRef: result.transactionId,
-					userEmail: currentUser.email,
-					amount,
-					currency: 'USD',
-					meta: {
-						type: 'ticket',
-						eventId,
-						eventTitle: eventData.title,
-						ticketCode,
-						gemId: gemId || null,
-						transactionId: result.transactionId,
-						premiumDiscount: eventData.premiumDiscount && isPremium,
-						cardLastFour
-					}
-				})
-				.returning();
-
-			// Create ticket record with orderId link
-			// Use billTo name if provided, otherwise fall back to user's account name
-			const [newTicket] = await db
-				.insert(ticket)
-				.values({
-					userId: currentUser.id,
-					eventId,
-					orderId: newOrder.id,
-					code: ticketCode,
-					quantity: 1,
-					firstName: billTo?.firstName || currentUser.firstName || null,
-					lastName: billTo?.lastName || currentUser.lastName || null,
-					gemId: gemId || null,
-					amountPaid: parseFloat(amount).toFixed(2),
-					transactionId: result.transactionId,
-					enteredIntoGem: false
-				})
-				.returning();
-
-			// Update order meta with ticketId for backwards compatibility
-			await db
-				.update(order)
-				.set({ meta: { ...newOrder.meta, ticketId: newTicket.id } })
-				.where(eq(order.id, newOrder.id));
-			await bump('tickets', 'orders');
-
-			const discounted = eventData.premiumDiscount && isPremium;
-			await recordPayment({
-				transId: result.transactionId,
-				kind: 'ticket',
-				amount,
-				listAmount: eventData.price,
-				discountAmount: discounted
-					? calculatePremiumDiscount(Number(eventData.price), eventData.eventDate).discountAmount
-					: 0,
-				discountKind: discounted ? 'premium_event' : null,
-				userId: currentUser.id,
-				userEmail: currentUser.email,
-				orderId: newOrder.id,
-				ticketId: newTicket.id,
-				eventId,
-				source: 'app'
-			});
-			await recordConversion({ cookies, url }, currentUser.id, 'ticket', {
-				meta: { eventId, amount: Number(amount), premiumDiscount: !!discounted }
-			});
-
-			return json({
-				success: true,
-				ticketCode,
-				ticketId: newTicket.id,
-				redirectUrl: `/events/${eventId}/ticket/${newTicket.id}`
-			});
-		} else {
-			return json({ error: result.error || 'Payment failed' }, { status: 500 });
-		}
-	} catch (err) {
-		console.error('Ticket purchase error:', err);
-		return json({ error: err.message || 'Payment processing failed' }, { status: 500 });
+		charge.lastFour = String(payment.lastFour || '').slice(-4) || null;
+	} else {
+		return json({ error: 'Choose a saved card or enter a new one.' }, { status: 400 });
 	}
+
+	const claimed = await claimCheckout(co.id);
+	if (!claimed) return json({ pending: true, checkoutId: co.id }, { status: 202 });
+	co = claimed;
+
+	const outcome = await charge();
+
+	if (outcome.outcome === 'approved') {
+		await markCheckout(co.id, 'paid', { transId: outcome.transId });
+		const result = await fulfilCheckout(co.id, {
+			transId: outcome.transId,
+			lastFour: outcome.lastFour || charge.lastFour,
+			cardType: outcome.cardType || charge.cardType,
+			networkTransId: outcome.networkTransId,
+			email: user.email
+		});
+		let cardSaved = false;
+		if (payment.opaqueData && payment.saveCard) {
+			const saved = await saveCardFromTransaction({
+				user,
+				transId: outcome.transId,
+				source: 'checkout'
+			});
+			cardSaved = !!saved;
+		}
+		await recordConversion({ cookies, url }, user.id, 'ticket', {
+			meta: {
+				eventId: ev.id,
+				amount: co.amountCents / 100,
+				premiumDiscount: co.discountCents > 0,
+				quantity: v.players.length
+			}
+		});
+		return json(
+			await success(result.checkout, user, result, {
+				cardSaved,
+				saveRequested: !!(payment.opaqueData && payment.saveCard)
+			})
+		);
+	}
+	if (outcome.outcome === 'unknown') {
+		await markCheckout(co.id, 'unknown', {
+			error: outcome.message,
+			transId: outcome.transId || null
+		});
+		return json(
+			{ pending: true, checkoutId: co.id, message: describeOutcome(outcome) },
+			{ status: 202 }
+		);
+	}
+	await markCheckout(co.id, outcome.outcome === 'declined' ? 'declined' : 'failed', {
+		error: `${outcome.code || ''} ${outcome.message || ''}`.trim()
+	});
+	return json(
+		{ error: describeOutcome(outcome), code: outcome.code },
+		{ status: outcome.outcome === 'declined' ? 402 : 502 }
+	);
+}
+
+async function success(co, user, result = null, extra = {}) {
+	let order = result?.order;
+	let tickets = result?.tickets;
+	if (!tickets) {
+		const r = await fulfilCheckout(co.id, { transId: co.transId, email: user.email });
+		order = r.order;
+		tickets = r.tickets;
+	}
+	const first = tickets[0];
+	return {
+		success: true,
+		orderId: order?.id,
+		ticketId: first?.id,
+		ticketCode: first?.code,
+		ticketIds: tickets.map((t) => t.id),
+		redirectUrl:
+			tickets.length > 1
+				? `/account/purchases/${order.id}?new=1`
+				: `/events/${co.eventId}/ticket/${first.id}?new=1`,
+		...extra
+	};
 }

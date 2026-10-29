@@ -1,94 +1,30 @@
 // src/lib/server/articles/access.js
 
 /**
- * Check if a user has premium access
- * This takes into account:
- * - Admin role (always has access)
- * - Premium role with active subscription
- * - Premium role with cancelled subscription but within paid period
- * - Premium role with payment_failed status but within grace period
+ * Whether a user can read premium pieces.
  *
- * @param {Object|null} user - The user object from locals.user
- * @returns {boolean} Whether the user has premium access
+ * The role is decided by `applyAccess` (src/lib/server/billing/access.js)
+ * whenever a membership changes, and the hourly billing job ends
+ * memberships on time. The date checks here only cover the hour between a
+ * period ending and the job noticing.
+ *
+ * @param {Object|null} user - locals.user
+ * @returns {boolean}
  */
 export function userHasPremiumAccess(user) {
 	if (!user) return false;
-
-	// Admins always have premium access
 	if (user.role === 'admin') return true;
-
-	// Check if user has premium role
 	if (user.role !== 'premium') return false;
 
-	// Premium with active subscription
-	if (user.subscriptionStatus === 'active') return true;
-
-	// Premium with cancelled subscription - check if within paid period
-	if (user.subscriptionStatus === 'cancelled' && user.subscriptionEndDate) {
-		const endDate = new Date(user.subscriptionEndDate);
-		const now = new Date();
-		return now < endDate;
+	// A cancelled membership, or one in its grace period after a failed
+	// payment, is good until its end date and not a minute longer.
+	if (
+		(user.subscriptionStatus === 'cancelled' || user.subscriptionStatus === 'payment_failed') &&
+		user.subscriptionEndDate
+	) {
+		return new Date() < new Date(user.subscriptionEndDate);
 	}
 
-	// Premium with payment_failed - check if within grace period
-	// Users get a 7-day grace period to update their payment method
-	if (user.subscriptionStatus === 'payment_failed') {
-		// No grace period set (webhook missed) — deny access
-		if (!user.subscriptionEndDate) return false;
-		const endDate = new Date(user.subscriptionEndDate);
-		const now = new Date();
-		return now < endDate;
-	}
-
-	// Legacy: Premium role without subscription tracking (backwards compatibility)
-	// If they have subscriptionId but no subscriptionStatus, assume active
-	if (user.subscriptionId && !user.subscriptionStatus) return true;
-
-	// Legacy: Premium role with no subscription tracking at all (manual upgrade)
-	// If they have premium role but no subscription fields, assume active
-	if (!user.subscriptionId && !user.subscriptionStatus) return true;
-
-	return false;
-}
-
-/**
- * Check if an article requires premium access based on its settings
- */
-export function isPremiumNow(post, now = new Date()) {
-	// Sanity check
-	if (!post) return true;
-
-	// Handle new capitalized values
-	const accessMode = post.accessMode;
-
-	// ALWAYS free when declared as Free
-	if (accessMode === 'Free' || accessMode === 'free') {
-		return false;
-	}
-
-	// Premium posts become free after 1 month
-	if (accessMode === 'Premium' || accessMode === 'premium') {
-		// If no published date, keep it gated
-		if (!post.publishedAt) return true;
-
-		// Calculate 1 month (30 days) in milliseconds
-		const oneMonthMs = 30 * 24 * 60 * 60 * 1000;
-		const publishedTime = new Date(post.publishedAt).getTime();
-		const currentTime = now.getTime();
-
-		// Check if it's been more than 1 month since publication
-		const isPremiumPeriod = currentTime < publishedTime + oneMonthMs;
-		return isPremiumPeriod;
-	}
-
-	// Legacy support: premium for 14 days after publish
-	if (accessMode === 'premium_window') {
-		if (!post.publishedAt) return true;
-		const twoWeeksMs = 14 * 24 * 60 * 60 * 1000;
-		const published = new Date(post.publishedAt).getTime();
-		return Date.now() < published + twoWeeksMs;
-	}
-
-	// Unknown/mis-typed value? Be safe and gate.
+	// Active members, comps, and legacy rows without a status.
 	return true;
 }

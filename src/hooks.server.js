@@ -1,11 +1,8 @@
 // src/hooks.server.js
 import { auth, sessionCacheKey } from '$lib/server/lucia';
 import { db } from '$lib/server/db';
-import { user as userTable } from '$lib/server/db/schema.js';
-import { eq } from 'drizzle-orm';
 import { error, redirect } from '@sveltejs/kit';
-import { cached, bump, CACHE_TTL } from '$lib/server/cache/index.js';
-import { logMemberEvent } from '$lib/server/payments/ledger.js';
+import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 
 // Paths exempt from CSRF protection (external webhooks)
 const CSRF_EXEMPT_PATHS = ['/api/webhooks/'];
@@ -97,56 +94,6 @@ export const handle = async ({ event, resolve }) => {
 			// if valid & fresh, renew cookie
 			const renewed = auth.createSessionCookie(session.id);
 			event.cookies.set(renewed.name, renewed.value, { ...renewed.attributes, path: '/' });
-		}
-
-		// Check for expired subscriptions (cancelled or payment_failed) and downgrade to free
-		if (user && user.role === 'premium') {
-			const now = new Date();
-			let shouldDowngrade = false;
-
-			if (user.subscriptionEndDate) {
-				const endDate = new Date(user.subscriptionEndDate);
-
-				// Handle cancelled subscriptions that have reached their end date
-				if (user.subscriptionStatus === 'cancelled' && now >= endDate) {
-					shouldDowngrade = true;
-				}
-
-				// Handle payment_failed subscriptions that have exceeded grace period
-				if (user.subscriptionStatus === 'payment_failed' && now >= endDate) {
-					shouldDowngrade = true;
-				}
-			} else if (user.subscriptionStatus === 'payment_failed') {
-				// payment_failed but no subscriptionEndDate was ever set (e.g. webhook missed)
-				// Downgrade immediately — there's no valid grace period
-				shouldDowngrade = true;
-			}
-
-			if (shouldDowngrade) {
-				await db
-					.update(userTable)
-					.set({
-						role: 'free',
-						subscriptionStatus: 'expired',
-						subscriptionId: null
-					})
-					.where(eq(userTable.id, user.id));
-
-				await logMemberEvent({
-					userId: user.id,
-					kind: 'expired',
-					subscriptionId: user.subscriptionId,
-					subscriptionType: user.subscriptionType,
-					meta: { from: user.subscriptionStatus }
-				});
-				user = {
-					...user,
-					role: 'free',
-					subscriptionStatus: 'expired',
-					subscriptionId: null
-				};
-				await bump(`user:${user.id}`);
-			}
 		}
 	}
 
