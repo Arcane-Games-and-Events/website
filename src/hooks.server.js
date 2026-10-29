@@ -1,6 +1,5 @@
 // src/hooks.server.js
 import { auth, sessionCacheKey } from '$lib/server/lucia';
-import { db } from '$lib/server/db';
 import { error, redirect } from '@sveltejs/kit';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 

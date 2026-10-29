@@ -1,6 +1,5 @@
 import { fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { bump } from '$lib/server/cache/index.js';
 import {
 	adminCounts,
 	listOrders,
@@ -8,8 +7,8 @@ import {
 	orderAnalytics,
 	ticketStatsByEvent
 } from '$lib/server/admin/dashboard.js';
-import { order, user, ticket, entitlement } from '$lib/server/db/schema.js';
-import { eq, sql, or, ilike } from 'drizzle-orm';
+import { order, ticket } from '$lib/server/db/schema.js';
+import { sql, or, ilike } from 'drizzle-orm';
 
 const EMPTY = {
 	allOrders: [],

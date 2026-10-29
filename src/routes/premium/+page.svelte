@@ -102,17 +102,6 @@
 			verifyPromoCode();
 		}
 	}
-	$: planDetails = annual
-		? {
-				amount: '110.00',
-				description: 'Premium Yearly Subscription',
-				buttonText: 'Subscribe for $110/year'
-			}
-		: {
-				amount: '10.00',
-				description: 'Premium Monthly Subscription',
-				buttonText: 'Subscribe for $10/month'
-			};
 
 	// ============ pitch content ============
 	const impact = data.impact;

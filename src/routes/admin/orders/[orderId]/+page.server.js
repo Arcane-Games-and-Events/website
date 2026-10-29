@@ -1,6 +1,5 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { bump } from '$lib/server/cache/index.js';
 import { order, user, ticket, entitlement, event } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 

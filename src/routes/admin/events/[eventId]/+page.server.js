@@ -1,6 +1,6 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { event, ticket, user, eventStaff, decklist, match, order } from '$lib/server/db/schema.js';
+import { event, ticket, user, eventStaff, decklist, match } from '$lib/server/db/schema.js';
 import { eq, and, ilike } from 'drizzle-orm';
 import {
 	processTournamentResults,
