@@ -1,15 +1,11 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { bump } from '$lib/server/cache/index.js';
+import { logMemberEvent, setMemberRole } from '$lib/server/payments/ledger.js';
 import { order, user, ticket, entitlement, event } from '$lib/server/db/schema.js';
 import { eq, desc, inArray } from 'drizzle-orm';
 
 export async function load({ params, locals }) {
-	// Require admin authentication
-	if (!locals.user || locals.user.role !== 'admin') {
-		throw redirect(302, '/login?redirect=/admin');
-	}
-
 	const customerId = decodeURIComponent(params.id);
 
 	// Determine if this is a user ID or an email (for guest customers)
@@ -218,12 +214,20 @@ export const actions = {
 		}
 
 		try {
-			const changed = await db
-				.update(user)
-				.set({ role })
+			const [target] = await db
+				.select({ id: user.id })
+				.from(user)
 				.where(isEmail ? eq(user.email, customerId) : eq(user.id, customerId))
-				.returning({ id: user.id });
-			await bump('users', ...changed.map((u) => `user:${u.id}`));
+				.limit(1);
+			if (!target) return fail(404, { error: 'User not found' });
+			const result = await setMemberRole({
+				userId: target.id,
+				role,
+				compReason: formData.get('compReason')?.toString() || null,
+				actorId: locals.user.id
+			});
+			if (!result.ok) return fail(400, { error: result.error });
+			await bump('users', `user:${target.id}`);
 
 			return { success: true, message: `Role updated to ${role}` };
 		} catch (err) {
@@ -276,6 +280,14 @@ export const actions = {
 				})
 				.where(eq(user.id, userData.id));
 			await bump(`user:${userData.id}`, 'users');
+			await logMemberEvent({
+				userId: userData.id,
+				kind: 'cancelled',
+				subscriptionId: userData.subscriptionId,
+				subscriptionType: userData.subscriptionType,
+				actorId: locals.user.id,
+				meta: { byAdmin: true }
+			});
 
 			return { success: true, message: 'Subscription cancelled and user downgraded to free tier' };
 		} catch (err) {

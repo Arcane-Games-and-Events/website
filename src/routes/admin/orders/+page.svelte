@@ -1,6 +1,12 @@
 <script>
+	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import { deserialize } from '$app/forms';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
+	import Figures from '$lib/components/age/admin/Figures.svelte';
+	import Section from '$lib/components/age/admin/Section.svelte';
+	import Pager from '$lib/components/age/admin/Pager.svelte';
+	import * as ui from '$lib/components/age/admin/ui.js';
 
 	let { data, form } = $props();
 
@@ -90,7 +96,6 @@
 			});
 	});
 
-	const totalOrdersPages = $derived(Math.ceil(filteredOrders.length / ordersPerPage));
 	const paginatedOrders = $derived(
 		filteredOrders.slice((ordersPage - 1) * ordersPerPage, ordersPage * ordersPerPage)
 	);
@@ -120,50 +125,52 @@
 		return email || 'Unknown';
 	}
 
-	function typeChip(t) {
-		switch (t) {
-			case 'ticket':
-				return 'bg-warm text-white';
-			case 'course':
-				return 'bg-accent text-white';
-			case 'subscription':
-				return 'bg-prem text-white';
-			default:
-				return 'border-line2 text-fade border';
-		}
-	}
-
-	function statusChip(s) {
-		if (s === 'refunded') return 'bg-warm text-white';
-		return 'bg-prem text-white';
-	}
+	const TYPE = {
+		ticket: 'Ticket',
+		course: 'Course',
+		subscription: 'Membership',
+		subscription_partner_first: 'Membership · partner',
+		subscription_member_first: 'Membership · referral'
+	};
+	const typeLabel = (t) => TYPE[t] || 'Payment';
+	const typeTone = (t) =>
+		t === 'ticket'
+			? ui.pillTone.in_progress
+			: t?.startsWith('subscription')
+				? ui.pillTone.premium
+				: '';
+	const SORTS = [
+		['date-desc', 'Newest'],
+		['date-asc', 'Oldest'],
+		['amount-desc', 'Largest'],
+		['amount-asc', 'Smallest']
+	];
+	const sortKey = $derived(`${ordersSortBy}-${ordersSortDir}`);
+	const setSort = (k) => {
+		[ordersSortBy, ordersSortDir] = k.split('-');
+	};
+	const filtering = $derived(
+		!!ordersSearchQuery || ordersTypeFilter !== 'all' || ordersDateFilter !== 'all'
+	);
 </script>
 
-<svelte:head><title>Orders · AGE Ops</title></svelte:head>
+<svelte:head><title>Orders · Admin</title></svelte:head>
 
-<!-- ============ HEADER ============ -->
-<header class="mx-auto w-full max-w-[1600px] px-4 pt-[42px] pb-[28px] md:px-10 lg:px-14">
-	<div class="mb-[18px] flex flex-wrap items-center gap-[16px]">
-		<span class="font-mono-system text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase">
-			Orders
-		</span>
-		<span class="hidden h-[1px] flex-1 bg-line2 md:block"></span>
+<DeskHeader
+	kicker="Admin"
+	title="Orders"
+	subtitle="Tickets and memberships — search, filter, drill in."
+>
+	{#snippet actions(compact)}
 		<a
-			href="/admin/analytics"
-			class="font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:text-ink"
+			href="/admin/analytics?view=revenue"
+			class="inline-flex items-center border border-paper-bg/30 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-paper-bg/10 {compact
+				? 'h-[30px]'
+				: 'h-[36px]'}">Revenue →</a
 		>
-			Full Analytics →
-		</a>
-	</div>
-	<h1
-		class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]"
-	>
-		Every order, one desk.
-	</h1>
-	<p class="mt-3 max-w-[680px] font-newsreader text-[19px] leading-[1.42] text-soft italic">
-		Tickets, subscriptions, courses — search, filter, drill in.
-	</p>
-</header>
+	{/snippet}
+</DeskHeader>
+<AdminTabs />
 
 {#if form?.success}
 	<AdminNotice tone="success" message={form.message} />
@@ -172,363 +179,149 @@
 	<AdminNotice tone="error" message={form.error} />
 {/if}
 
-<!-- ============ QUICK STATS ============ -->
-<section class="overflow-x-clip border-y-[3px] border-double border-ink">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[28px] md:px-10 lg:px-14">
-		<div class="grid grid-cols-2 gap-[24px] md:grid-cols-4">
-			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>Total Orders</span
-				>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-ink"
-				>
-					{data.stats?.totalOrders || 0}
-				</div>
-			</div>
-			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>This Month</span
-				>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-prem"
-				>
-					{formatCurrency(data.revenueStats?.month || 0)}
-				</div>
-			</div>
-			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>Filtered</span
-				>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-ink"
-				>
-					{filteredOrders.length}
-				</div>
-			</div>
-			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>Showing</span
-				>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-ink"
-				>
-					{paginatedOrders.length}
-				</div>
-			</div>
-		</div>
-	</div>
-</section>
+<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+	<Figures
+		items={[
+			{ label: 'Orders', value: ui.fmt(data.stats?.totalOrders) },
+			{
+				label: 'This month',
+				value: ui.money(data.revenueStats?.month, 0),
+				tone: 'text-prem',
+				note: 'orders placed'
+			},
+			{ label: 'All time', value: ui.money(data.revenueStats?.allTime, 0) },
+			{
+				label: 'Refunded tickets',
+				value: ui.fmt(data.refundStats?.refundedTickets),
+				tone: data.refundStats?.refundedTickets ? 'text-hero-rb' : ''
+			},
+			{ label: 'Members', value: ui.fmt(data.stats?.premiumUsers), note: 'premium accounts' },
+			{
+				label: 'Matching',
+				value: ui.fmt(filteredOrders.length),
+				note: filtering ? 'with current filters' : 'all orders'
+			}
+		]}
+	/>
 
-<!-- ============ FILTERS ============ -->
-<section class="overflow-x-clip border-b-[3px] border-double border-ink">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[24px] md:px-10 lg:px-14">
-		<div class="flex flex-col gap-[14px] lg:flex-row lg:items-center lg:justify-between">
-			<div class="relative flex-1 lg:max-w-md">
-				<input
-					type="text"
-					value={ordersSearchQuery}
-					oninput={handleOrderSearch}
-					placeholder="Search email, name, order ID, or transaction ref"
-					class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
-				/>
-				{#if ordersSearchLoading}
-					<div class="absolute top-1/2 right-3 -translate-y-1/2">
-						<svg class="h-4 w-4 animate-spin text-warm" fill="none" viewBox="0 0 24 24">
-							<circle
-								class="opacity-25"
-								cx="12"
-								cy="12"
-								r="10"
-								stroke="currentColor"
-								stroke-width="4"
-							></circle>
-							<path
-								class="opacity-75"
-								fill="currentColor"
-								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-							></path>
-						</svg>
-					</div>
-				{/if}
-				{#if ordersSearchQuery.length >= 2 && ordersSearchResults !== null}
-					<p
-						class="mt-[6px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-					>
-						Searching all {data.stats.totalOrders} orders
-					</p>
-				{/if}
-			</div>
-
-			<div class="flex flex-wrap gap-[10px]">
-				<select
-					bind:value={ordersTypeFilter}
-					class="border-[1.5px] border-ink bg-paper-bg px-[12px] py-[9px] font-mono-system text-[11px] font-bold tracking-[0.08em] text-ink uppercase focus:outline-none"
+	<!-- search + filters -->
+	<div class="mt-8 flex flex-wrap items-center gap-3">
+		<label class="{ui.search} min-w-[260px] flex-1" aria-label="Search orders">
+			<svg
+				viewBox="0 0 20 20"
+				class="h-4 w-4 shrink-0 text-fade"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.6"
+				aria-hidden="true"
+			>
+				<circle cx="9" cy="9" r="5.5" /><path d="m13.5 13.5 3 3" stroke-linecap="round" />
+			</svg>
+			<input
+				type="search"
+				value={ordersSearchQuery}
+				oninput={handleOrderSearch}
+				placeholder="Email, name, order id or transaction"
+				class={ui.searchInput}
+			/>
+			{#if ordersSearchLoading}
+				<span
+					class="h-3.5 w-3.5 shrink-0 animate-spin border-2 border-line2 border-t-ink"
+					aria-hidden="true"
+				></span>
+			{/if}
+		</label>
+		<select bind:value={ordersTypeFilter} class={ui.select} aria-label="Type">
+			<option value="all">All types</option>
+			<option value="ticket">Tickets</option>
+			<option value="subscription">Memberships</option>
+			<option value="course">Courses</option>
+		</select>
+		<select bind:value={ordersDateFilter} class={ui.select} aria-label="Date">
+			<option value="all">All time</option>
+			<option value="today">Today</option>
+			<option value="week">Last 7 days</option>
+			<option value="month">This month</option>
+		</select>
+		<div class="flex gap-px border border-line2 bg-line2" role="group" aria-label="Sort">
+			{#each SORTS as [k, l] (k)}
+				<button
+					type="button"
+					onclick={() => setSort(k)}
+					class="h-[38px] px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase {sortKey === k
+						? 'bg-ink text-paper-bg'
+						: 'bg-paper-bg text-soft hover:text-ink'}">{l}</button
 				>
-					<option value="all">All Types</option>
-					<option value="ticket">Tickets</option>
-					<option value="course">Courses</option>
-					<option value="subscription">Subscriptions</option>
-				</select>
-				<select
-					bind:value={ordersDateFilter}
-					class="border-[1.5px] border-ink bg-paper-bg px-[12px] py-[9px] font-mono-system text-[11px] font-bold tracking-[0.08em] text-ink uppercase focus:outline-none"
-				>
-					<option value="all">All Time</option>
-					<option value="today">Today</option>
-					<option value="week">Last 7 Days</option>
-					<option value="month">This Month</option>
-				</select>
-			</div>
-		</div>
-	</div>
-</section>
-
-<!-- ============ ORDERS ============ -->
-<section class="overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
-		<!-- Mobile cards -->
-		<div class="space-y-[14px] lg:hidden">
-			{#each paginatedOrders as order (order.id)}
-				<a
-					href="/admin/orders/{order.id}"
-					class="block border-[1.5px] border-ink p-4 transition-colors hover:bg-panel"
-				>
-					<div class="flex items-start justify-between gap-3">
-						<div class="min-w-0">
-							<div class="font-newsreader text-[16px] font-semibold">
-								{getUserName(order.userEmail)}
-							</div>
-							<div class="text-[12px] text-fade">{order.userEmail}</div>
-							<div
-								class="mt-[4px] font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
-							>
-								{formatDate(order.createdAt)}
-							</div>
-						</div>
-						<div class="shrink-0 text-right">
-							<div class="font-archivo text-[18px] font-extrabold tracking-[-0.01em] text-prem">
-								{formatCurrency(order.amount)}
-							</div>
-							<span
-								class="mt-[6px] inline-flex items-center px-[8px] py-[3px] font-mono-system text-[9.5px] font-bold tracking-[0.08em] uppercase {typeChip(
-									order.meta?.type
-								)}"
-							>
-								{order.meta?.type || 'payment'}
-							</span>
-						</div>
-					</div>
-					<div class="mt-3 flex items-center justify-between border-t border-line2 pt-3">
-						<span
-							class="font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
-						>
-							ID · {order.id?.slice(0, 8)}
-						</span>
-						<span
-							class="font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-warm uppercase"
-						>
-							View →
-						</span>
-					</div>
-				</a>
-			{:else}
-				<div class="border-ink border-[1.5px] p-8 text-center overflow-hidden">
-					<p class="font-newsreader text-soft text-[19px] italic">No orders found.</p>
-					<p class="text-fade mt-2 text-[13px]">
-						{ordersSearchQuery || ordersTypeFilter !== 'all' || ordersDateFilter !== 'all'
-							? 'Try adjusting your search or filters.'
-							: 'Orders will appear here when customers make purchases.'}
-					</p>
-				</div>
 			{/each}
-
-			{#if totalOrdersPages > 1}
-				<div class="flex items-center justify-between border-[1.5px] border-ink px-4 py-3">
-					<button
-						onclick={() => (ordersPage = Math.max(1, ordersPage - 1))}
-						disabled={ordersPage === 1}
-						class="border border-line2 px-[12px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
-					>
-						← Prev
-					</button>
-					<span
-						class="font-mono-system text-[10.5px] font-bold tracking-[0.08em] text-fade uppercase"
-					>
-						{ordersPage} / {totalOrdersPages}
-					</span>
-					<button
-						onclick={() => (ordersPage = Math.min(totalOrdersPages, ordersPage + 1))}
-						disabled={ordersPage === totalOrdersPages}
-						class="border border-line2 px-[12px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
-					>
-						Next →
-					</button>
-				</div>
-			{/if}
-		</div>
-
-		<!-- Desktop table -->
-		<div class="hidden border-[1.5px] border-ink lg:block">
-			<div class="overflow-x-auto">
-				<table class="w-full min-w-[900px]">
-					<thead class="border-b-[1.5px] border-ink">
-						<tr class="text-left">
-							<th
-								class="px-5 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Customer</th
-							>
-							<th
-								class="px-5 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Order ID</th
-							>
-							<th
-								class="px-5 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-							>
-								<button
-									onclick={() => {
-										ordersSortBy = 'amount';
-										ordersSortDir = ordersSortDir === 'desc' ? 'asc' : 'desc';
-									}}
-									class="inline-flex items-center gap-1 hover:text-ink"
-								>
-									Amount
-									{#if ordersSortBy === 'amount'}
-										<span>{ordersSortDir === 'desc' ? '↓' : '↑'}</span>
-									{/if}
-								</button>
-							</th>
-							<th
-								class="px-5 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Type</th
-							>
-							<th
-								class="px-5 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Status</th
-							>
-							<th
-								class="px-5 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-							>
-								<button
-									onclick={() => {
-										ordersSortBy = 'date';
-										ordersSortDir = ordersSortDir === 'desc' ? 'asc' : 'desc';
-									}}
-									class="inline-flex items-center gap-1 hover:text-ink"
-								>
-									Date
-									{#if ordersSortBy === 'date'}
-										<span>{ordersSortDir === 'desc' ? '↓' : '↑'}</span>
-									{/if}
-								</button>
-							</th>
-							<th
-								class="px-5 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-							></th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each paginatedOrders as order (order.id)}
-							<tr class="border-b border-line2 transition-colors hover:bg-panel">
-								<td class="px-5 py-[14px]">
-									<a
-										href="/admin/customers/{encodeURIComponent(order.userEmail)}"
-										class="block transition-colors hover:text-warm"
-									>
-										<div class="font-newsreader text-[15px] font-semibold">
-											{getUserName(order.userEmail)}
-										</div>
-										<div class="text-[12px] text-fade">{order.userEmail}</div>
-									</a>
-								</td>
-								<td class="px-5 py-[14px]">
-									<code
-										class="font-mono-system text-[11px] font-bold tracking-[0.02em] text-fade"
-										title={order.id}
-									>
-										{order.id?.slice(0, 8)}
-									</code>
-								</td>
-								<td
-									class="px-5 py-[14px] text-right font-archivo text-[16px] font-extrabold tracking-[-0.01em] text-prem"
-								>
-									{formatCurrency(order.amount)}
-								</td>
-								<td class="px-5 py-[14px]">
-									<span
-										class="inline-flex items-center px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase {typeChip(
-											order.meta?.type
-										)}"
-									>
-										{order.meta?.type || 'payment'}
-									</span>
-								</td>
-								<td class="px-5 py-[14px]">
-									<span
-										class="inline-flex items-center px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase {statusChip(
-											order.status
-										)}"
-									>
-										{order.status || 'completed'}
-									</span>
-								</td>
-								<td
-									class="px-5 py-[14px] font-mono-system text-[10.5px] font-bold tracking-[0.06em] text-fade uppercase"
-								>
-									{formatDate(order.createdAt)}
-								</td>
-								<td class="px-5 py-[14px] text-right">
-									<a
-										href="/admin/orders/{order.id}"
-										class="font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] text-warm uppercase transition-colors hover:text-ink"
-									>
-										View →
-									</a>
-								</td>
-							</tr>
-						{:else}
-							<tr>
-								<td colspan="7" class="px-6 py-12 text-center">
-									<p class="font-newsreader text-soft text-[19px] italic">No orders found.</p>
-									<p class="text-fade mt-2 text-[13px]">
-										{ordersSearchQuery || ordersTypeFilter !== 'all' || ordersDateFilter !== 'all'
-											? 'Try adjusting your search or filters.'
-											: 'Orders will appear here when customers make purchases.'}
-									</p>
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-
-			{#if totalOrdersPages > 1}
-				<div class="flex items-center justify-between border-t-[1.5px] border-ink px-5 py-[14px]">
-					<button
-						onclick={() => (ordersPage = Math.max(1, ordersPage - 1))}
-						disabled={ordersPage === 1}
-						class="border border-line2 px-[14px] py-[8px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
-					>
-						← Previous
-					</button>
-					<span
-						class="font-mono-system text-[10.5px] font-bold tracking-[0.08em] text-fade uppercase"
-					>
-						Page {ordersPage} of {totalOrdersPages}
-					</span>
-					<button
-						onclick={() => (ordersPage = Math.min(totalOrdersPages, ordersPage + 1))}
-						disabled={ordersPage === totalOrdersPages}
-						class="border border-line2 px-[14px] py-[8px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
-					>
-						Next →
-					</button>
-				</div>
-			{/if}
 		</div>
 	</div>
-</section>
+	{#if ordersSearchQuery.length >= 2 && ordersSearchResults !== null}
+		<p class="{ui.note} mt-2">Searched all {ui.fmt(data.stats.totalOrders)} orders.</p>
+	{/if}
+
+	<Section
+		title="Orders"
+		class="mt-8"
+		note="{ui.fmt(filteredOrders.length)} {filteredOrders.length === 1 ? 'order' : 'orders'}"
+	>
+		<div class="{ui.rowHead} grid-cols-[minmax(0,1fr)_150px_100px_110px_90px_60px] gap-3">
+			<span>Customer</span><span>Type</span><span>Status</span><span>Date</span><span
+				class="text-right">Amount</span
+			><span></span>
+		</div>
+		<ul>
+			{#each paginatedOrders as order (order.id)}
+				<li class={ui.row}>
+					<a
+						href="/admin/orders/{order.id}"
+						class="group block py-3 transition-colors hover:bg-paper md:grid md:grid-cols-[minmax(0,1fr)_150px_100px_110px_90px_60px] md:items-center md:gap-3"
+					>
+						<span class="block min-w-0">
+							<span class="{ui.titleText} block truncate group-hover:text-warm"
+								>{getUserName(order.userEmail)}</span
+							>
+							<span class="block truncate text-[11.5px] text-fade"
+								>{order.userEmail}<span class="md:hidden">
+									· {formatDate(order.createdAt)}</span
+								></span
+							>
+						</span>
+						<span class="mt-1.5 flex flex-wrap items-center gap-1.5 md:contents">
+							<span class="{ui.pill} {typeTone(order.meta?.type)}"
+								>{typeLabel(order.meta?.type)}</span
+							>
+							<span
+								class="{ui.pill} {order.status === 'refunded'
+									? ui.pillTone.refunded
+									: order.status === 'active'
+										? ui.pillTone.active
+										: ''}">{order.status || 'completed'}</span
+							>
+						</span>
+						<span class="hidden text-[12.5px] text-soft tabular-nums md:block"
+							>{formatDate(order.createdAt)}</span
+						>
+						<span class="mt-1 block font-semibold tabular-nums md:mt-0 md:text-right"
+							>{formatCurrency(order.amount)}</span
+						>
+						<span class="hidden text-right md:block"><span class={ui.textAction}>View →</span></span
+						>
+					</a>
+				</li>
+			{:else}
+				<li class={ui.empty}>
+					{filtering
+						? 'No orders match these filters.'
+						: 'No orders yet. They appear here as customers buy tickets and memberships.'}
+				</li>
+			{/each}
+		</ul>
+		<Pager
+			page={ordersPage}
+			perPage={ordersPerPage}
+			count={filteredOrders.length}
+			label="orders"
+			onchange={(p) => (ordersPage = p)}
+		/>
+	</Section>
+</div>

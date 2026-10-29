@@ -6,6 +6,7 @@ import { user as userTable } from '$lib/server/db/schema.js';
 import { eq, isNotNull, and, ne } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import { sendPaymentFailedEmail } from '$lib/server/email.js';
+import { recordPayment, markVerified, logMemberEvent } from '$lib/server/payments/ledger.js';
 
 /**
  * Sync subscription statuses from Authorize.net
@@ -250,6 +251,26 @@ export async function GET({ request, locals }) {
 					if (Object.keys(updateData).length > 0) {
 						await db.update(userTable).set(updateData).where(eq(userTable.id, user.id));
 						await bump(`user:${user.id}`, 'users');
+						if (updateData.subscriptionStatus === 'expired') {
+							await logMemberEvent({
+								userId: user.id,
+								kind: 'expired',
+								subscriptionId: user.subscriptionId,
+								subscriptionType: user.subscriptionType,
+								meta: { from: user.subscriptionStatus, authnetStatus }
+							});
+						} else if (
+							updateData.subscriptionStatus === 'payment_failed' &&
+							user.subscriptionStatus !== 'payment_failed'
+						) {
+							await logMemberEvent({
+								userId: user.id,
+								kind: 'payment_failed',
+								subscriptionId: user.subscriptionId,
+								subscriptionType: user.subscriptionType,
+								meta: { authnetStatus }
+							});
+						}
 
 						results.updated++;
 						results.details.push({
@@ -270,6 +291,10 @@ export async function GET({ request, locals }) {
 				});
 			}
 		}
+
+		// Ledger reconciliation: every approved subscription charge becomes a
+		// payment row, and rows the unsigned webhook wrote get confirmed.
+		results.ledger = await reconcileLedger(usersWithSubscriptions);
 
 		return json({
 			success: true,
@@ -308,4 +333,48 @@ export async function POST({ request, locals }) {
 		console.error('Subscription check error:', err);
 		return json({ error: err.message }, { status: 500 });
 	}
+}
+
+/**
+ * Make sure every approved subscription charge Authorize.net knows about is
+ * in the `payment` ledger, and confirm the rows the webhook wrote. One
+ * subscription lookup per member; amounts come from the subscription's
+ * fixed charge (ARB bills the same amount each period).
+ */
+async function reconcileLedger(users) {
+	const summary = { checked: 0, added: 0, verified: 0, errors: 0 };
+	for (const user of users) {
+		if (!user.subscriptionId) continue;
+		try {
+			const sub = await authnet.getSubscription(user.subscriptionId);
+			summary.checked++;
+			const approved = (sub.transactions || []).filter((tx) => {
+				const r = String(tx.response ?? '').toLowerCase();
+				return r === '1' || r.includes('approved');
+			});
+			const ids = approved.map((tx) => String(tx.transId));
+			for (const tx of approved) {
+				const added = await recordPayment({
+					transId: tx.transId,
+					kind: Number(tx.payNum) === 1 && !user.usedPartnerCode ? 'sub_first' : 'sub_renewal',
+					amount: sub.amount,
+					userId: user.id,
+					userEmail: user.email,
+					subscriptionId: user.subscriptionId,
+					subscriptionType: user.subscriptionType || null,
+					payNum: Number(tx.payNum) || null,
+					occurredAt: tx.submitTimeUTC ? new Date(tx.submitTimeUTC) : new Date(),
+					source: 'sync',
+					verifiedAt: new Date()
+				});
+				if (added) summary.added++;
+			}
+			await markVerified(ids);
+			summary.verified += ids.length;
+		} catch (err) {
+			summary.errors++;
+			console.error(`Ledger reconciliation failed for ${user.email}:`, err?.message || err);
+		}
+	}
+	return summary;
 }

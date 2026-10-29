@@ -55,6 +55,15 @@ export const user = pgTable('user', {
 	// Partner program — tracks the partner code a user redeemed (one per user, ever)
 	usedPartnerCode: text('used_partner_code'),
 
+	// Comped premium (premium without a subscription): why, when and by
+	// whom. Set by the admin role controls; see migration 022.
+	compReason: text('comp_reason'), // 'staff' | 'writer' | 'teacher' | 'partner' | 'friend' | 'trial' | 'other'
+	compedAt: timestamp('comped_at', { withTimezone: true, mode: 'date' }),
+	compedBy: text('comped_by'),
+	// Kept when subscription_id is cleared on expiry, so a lapsed
+	// subscriber is still told apart from a comp.
+	lastSubscriptionId: text('last_subscription_id'),
+
 	createdAt: timestamp('created_at', {
 		withTimezone: true,
 		mode: 'date'
@@ -84,7 +93,8 @@ export const order = pgTable('order', {
 	amount: text('amount'),
 	currency: text('currency'),
 	meta: jsonb('meta'),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	refundedAt: timestamp('refunded_at', { withTimezone: true, mode: 'date' })
 });
 
 // EVENTS
@@ -483,6 +493,10 @@ export const eventPlayerHero = pgTable(
 	{
 		id: uuid('id').defaultRandom().primaryKey(),
 
+		// The event these heroes were played at (migration 023). Rows from
+		// before the link are found by season/circuit/month instead.
+		eventId: text('event_id').references(() => event.id, { onDelete: 'cascade' }),
+
 		// Event context (matches standings structure)
 		season: text('season').notNull(), // e.g., "2025"
 		circuit: text('circuit').notNull(), // e.g., "Los Angeles", "St. Louis"
@@ -757,8 +771,86 @@ export const caConversion = pgTable('ca_conversion', {
 	id: bigserial('id', { mode: 'number' }).primaryKey(),
 	visitorId: uuid('visitor_id'),
 	userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
-	kind: text('kind').notNull(),
-	at: timestamp('at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+	kind: text('kind').notNull(), // signup | premium | checkout_started | ticket
+	at: timestamp('at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	// Added by migration 022 for the site funnel.
+	sessionId: uuid('session_id'),
+	path: text('path'),
+	meta: jsonb('meta')
+});
+
+// ----------------------------------------------------------------------------
+// REVENUE LEDGER + MEMBER HISTORY (migration 022) — see $lib/server/payments/ledger.js
+// ----------------------------------------------------------------------------
+
+// One row per Authorize.net transaction: what was collected and for what.
+export const payment = pgTable('payment', {
+	id: bigserial('id', { mode: 'number' }).primaryKey(),
+	provider: text('provider').notNull().default('authnet'),
+	transId: text('trans_id').notNull().unique(),
+	kind: text('kind').notNull(), // sub_first | sub_renewal | sub_promo_first | ticket
+	userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+	userEmail: text('user_email'),
+	subscriptionId: text('subscription_id'),
+	subscriptionType: text('subscription_type'),
+	payNum: integer('pay_num'),
+	orderId: uuid('order_id').references(() => order.id, { onDelete: 'set null' }),
+	ticketId: uuid('ticket_id').references(() => ticket.id, { onDelete: 'set null' }),
+	eventId: text('event_id').references(() => event.id, { onDelete: 'set null' }),
+	amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+	listAmount: decimal('list_amount', { precision: 10, scale: 2 }),
+	discountAmount: decimal('discount_amount', { precision: 10, scale: 2 }).notNull().default('0'),
+	discountKind: text('discount_kind'), // premium_event | partner | member_referral
+	promoCode: text('promo_code'),
+	occurredAt: timestamp('occurred_at', { withTimezone: true, mode: 'date' }).notNull(),
+	refundedAmount: decimal('refunded_amount', { precision: 10, scale: 2 }).notNull().default('0'),
+	refundedAt: timestamp('refunded_at', { withTimezone: true, mode: 'date' }),
+	source: text('source').notNull(), // app | webhook | sync | backfill
+	verifiedAt: timestamp('verified_at', { withTimezone: true, mode: 'date' }),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+// Every change to a member's standing.
+export const memberEvent = pgTable('member_event', {
+	id: bigserial('id', { mode: 'number' }).primaryKey(),
+	userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+	kind: text('kind').notNull(), // subscribed | cancelled | payment_failed | expired | comped | comp_removed
+	subscriptionId: text('subscription_id'),
+	subscriptionType: text('subscription_type'),
+	reason: text('reason'),
+	actorId: text('actor_id').references(() => user.id, { onDelete: 'set null' }),
+	at: timestamp('at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	meta: jsonb('meta')
+});
+
+// One row per page view anywhere on the site (migration 022). Library
+// pieces also keep a detailed ca_view row; view_id links the two.
+export const caPageview = pgTable('ca_pageview', {
+	id: uuid('id').primaryKey(),
+	visitorId: uuid('visitor_id').notNull(),
+	sessionId: uuid('session_id').notNull(),
+	userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+	audience: text('audience').notNull(), // anonymous | free | premium | staff
+	path: text('path').notNull(),
+	route: text('route'),
+	entryId: uuid('entry_id').references(() => deskEntry.id, { onDelete: 'set null' }),
+	viewId: uuid('view_id').references(() => caView.id, { onDelete: 'set null' }),
+	source: text('source'),
+	referrerDomain: text('referrer_domain'),
+	fromPath: text('from_path'),
+	utmSource: text('utm_source'),
+	utmMedium: text('utm_medium'),
+	utmCampaign: text('utm_campaign'),
+	device: text('device'),
+	browser: text('browser'),
+	os: text('os'),
+	country: text('country'),
+	viewportW: integer('viewport_w'),
+	startedAt: timestamp('started_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	lastSeenAt: timestamp('last_seen_at', { withTimezone: true, mode: 'date' })
+		.notNull()
+		.defaultNow(),
+	visibleSeconds: integer('visible_seconds').notNull().default(0)
 });
 
 // Tags shared across entries. Slug uniqueness is enforced at the DB layer.

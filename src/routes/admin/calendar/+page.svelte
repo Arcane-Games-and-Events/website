@@ -1,7 +1,12 @@
 <script>
+	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
+	import Figures from '$lib/components/age/admin/Figures.svelte';
+	import Section from '$lib/components/age/admin/Section.svelte';
+	import * as ui from '$lib/components/age/admin/ui.js';
 
 	let { data, form } = $props();
 
@@ -55,664 +60,384 @@
 		'Other'
 	];
 
-	function statusChip(startDate, endDate) {
+	function statusOf(startDate, endDate) {
 		const now = new Date();
-		const isActive = now >= startDate && now <= endDate;
-		const isPast = now > endDate;
-		if (isActive) return { label: 'Active', cls: 'bg-prem text-white' };
-		if (isPast) return { label: 'Completed', cls: 'border-line2 text-fade border' };
-		return { label: 'Upcoming', cls: 'bg-accent text-white' };
+		if (now >= startDate && now <= endDate) return { label: 'Active', tone: ui.pillTone.active };
+		if (now > endDate) return { label: 'Completed', tone: ui.pillTone.completed };
+		return { label: 'Upcoming', tone: ui.pillTone.upcoming };
 	}
+	const activeNow = $derived(
+		(data.lssEvents || []).filter((s) => {
+			const now = new Date();
+			return now >= new Date(s.startDate) && now <= new Date(s.endDate);
+		}).length
+	);
+	const hidden = $derived((data.lssEvents || []).filter((s) => !s.isActive).length);
+	const day = (d, year = false) =>
+		new Date(d).toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			...(year ? { year: 'numeric' } : {}),
+			timeZone: 'UTC'
+		});
+	const ymd = (d) => new Date(d).toISOString().split('T')[0];
+	const chip =
+		'flex cursor-pointer items-center gap-2 border border-line2 px-2.5 py-1.5 text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:text-paper-bg';
 </script>
 
-<svelte:head><title>Calendar · AGE Ops</title></svelte:head>
+<svelte:head><title>Calendar · Admin</title></svelte:head>
 
-<!-- ============ HEADER ============ -->
-<header class="mx-auto w-full max-w-[1600px] px-4 pt-[42px] pb-[28px] md:px-10 lg:px-14">
-	<div class="mb-[18px] flex flex-wrap items-center gap-[16px]">
-		<span class="font-mono-system text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase">
-			Calendar
-		</span>
-		<span class="hidden h-[1px] flex-1 bg-line2 md:block"></span>
+<DeskHeader
+	kicker="Admin"
+	title="LSS calendar"
+	subtitle="Skirmishes, RtN, ProQuests, Callings — the competitive road."
+>
+	{#snippet actions(compact)}
 		<button
+			type="button"
 			onclick={() => (showAddSeasonForm = !showAddSeasonForm)}
-			class="inline-flex items-center bg-ink px-[14px] py-[9px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
+			class="inline-flex items-center bg-paper-bg px-3 text-[10px] font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-warm-light {compact
+				? 'h-[30px]'
+				: 'h-[36px]'}">+ Add event</button
 		>
-			+ Add Event
-		</button>
-	</div>
-	<h1
-		class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]"
-	>
-		LSS calendar.
-	</h1>
-	<p class="mt-3 max-w-[680px] font-newsreader text-[19px] leading-[1.42] text-soft italic">
-		Skirmishes, RtN, ProQuests, Callings — everything on the competitive road.
-	</p>
-</header>
+	{/snippet}
+</DeskHeader>
+<AdminTabs />
 
 {#if successMessage}
-	<AdminNotice tone="success" message={successMessage} />
+	<AdminNotice tone="success" message={successMessage} ondismiss={() => (successMessage = '')} />
 {/if}
 {#if errorMessage}
-	<AdminNotice tone="error" message={errorMessage} />
+	<AdminNotice tone="error" message={errorMessage} ondismiss={() => (errorMessage = '')} />
 {/if}
 
-<!-- ============ ADD FORM ============ -->
-{#if showAddSeasonForm}
-	<section class="overflow-x-clip border-y-[3px] border-double border-ink">
-		<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
-			<div class="mb-[22px]">
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-				>
-					New Season
-				</span>
-				<h2
-					class="mt-[6px] font-newsreader text-[clamp(24px,3vw,32px)] leading-[1] font-semibold tracking-[-0.01em]"
-				>
-					What's on the schedule?
-				</h2>
+<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+	<Figures
+		items={[
+			{ label: 'On the calendar', value: ui.fmt((data.lssEvents || []).length) },
+			{ label: 'Active now', value: ui.fmt(activeNow), tone: 'text-prem' },
+			{ label: 'Upcoming', value: ui.fmt(upcomingLssEvents.length - activeNow), tone: 'text-warm' },
+			{ label: 'Completed', value: ui.fmt(completedLssEvents.length) },
+			{ label: 'Hidden', value: ui.fmt(hidden), note: 'not shown on the site' }
+		]}
+		cols="md:grid-cols-5"
+	/>
+
+	{#if showAddSeasonForm}
+		<form
+			method="POST"
+			action="?/createLssSeason"
+			use:enhance={() => {
+				return async ({ result, update }) => {
+					if (result.type === 'success') {
+						showAddSeasonForm = false;
+						await invalidateAll();
+					}
+					await update();
+				};
+			}}
+			class="{ui.panel} mt-8 p-5 md:p-6"
+		>
+			<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-fade uppercase">New event</p>
+			<h2 class="mt-1 mb-5 font-newsreader text-[22px] font-semibold">What's on the schedule?</h2>
+			<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+				<label class="block">
+					<span class={ui.label}>Event name <span class="text-hero-rb">*</span></span>
+					<input
+						name="name"
+						type="text"
+						required
+						value=""
+						placeholder="Skirmish Season 5"
+						class="{ui.input} mt-1.5"
+					/>
+				</label>
+				<label class="block">
+					<span class={ui.label}>Type</span>
+					<select name="eventType" class="{ui.select} mt-1.5 w-full">
+						<option value="">Select type</option>
+						{#each TYPES as t (t)}<option value={t}>{t}</option>{/each}
+					</select>
+				</label>
+				<label class="block">
+					<span class={ui.label}>Start <span class="text-hero-rb">*</span></span>
+					<input name="startDate" type="date" required value="" class="{ui.input} mt-1.5" />
+				</label>
+				<label class="block">
+					<span class={ui.label}>End <span class="text-hero-rb">*</span></span>
+					<input name="endDate" type="date" required value="" class="{ui.input} mt-1.5" />
+				</label>
 			</div>
-
-			<form
-				method="POST"
-				action="?/createLssSeason"
-				use:enhance={() => {
-					return async ({ result, update }) => {
-						if (result.type === 'success') {
-							showAddSeasonForm = false;
-							await invalidateAll();
-						}
-						await update();
-					};
-				}}
-				class="overflow-hidden border-[1.5px] border-ink p-6"
-			>
-				<div class="grid gap-[18px] md:grid-cols-2 lg:grid-cols-4">
-					<div>
-						<label
-							for="seasonName"
-							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+			<div class="mt-5">
+				<span class={ui.label}>Formats</span>
+				<div class="mt-2 flex flex-wrap gap-1.5">
+					{#each FORMATS as f (f)}
+						<label class={chip}
+							><input type="checkbox" name="format" value={f} class="sr-only" />{f}</label
 						>
-							Event Name <span class="text-warm">*</span>
-						</label>
-						<input
-							id="seasonName"
-							name="name"
-							type="text"
-							required
-							placeholder="e.g., Skirmish Season 5"
-							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
-						/>
-					</div>
-					<div>
-						<label
-							for="eventType"
-							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-						>
-							Type
-						</label>
-						<select
-							id="eventType"
-							name="eventType"
-							class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[12px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
-						>
-							<option value="">Select type</option>
-							{#each TYPES as t (t)}
-								<option value={t}>{t}</option>
-							{/each}
-						</select>
-					</div>
-					<div>
-						<label
-							for="startDate"
-							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-						>
-							Start <span class="text-warm">*</span>
-						</label>
-						<input
-							id="startDate"
-							name="startDate"
-							type="date"
-							required
-							class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[13px] text-ink focus:outline-none"
-						/>
-					</div>
-					<div>
-						<label
-							for="endDate"
-							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-						>
-							End <span class="text-warm">*</span>
-						</label>
-						<input
-							id="endDate"
-							name="endDate"
-							type="date"
-							required
-							class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[13px] text-ink focus:outline-none"
-						/>
-					</div>
+					{/each}
 				</div>
+			</div>
+			<div class="mt-5 grid gap-4 md:grid-cols-2">
+				<label class="block">
+					<span class={ui.label}>Description</span>
+					<input
+						name="description"
+						type="text"
+						value=""
+						placeholder="Optional"
+						class="{ui.input} mt-1.5"
+					/>
+				</label>
+				<label class="block">
+					<span class={ui.label}>Official link</span>
+					<input
+						name="link"
+						type="url"
+						value=""
+						placeholder="https://fabtcg.com/…"
+						class="{ui.input} mt-1.5"
+					/>
+				</label>
+			</div>
+			<div class="mt-6 flex justify-end gap-2">
+				<button type="button" onclick={() => (showAddSeasonForm = false)} class={ui.ghost}
+					>Cancel</button
+				>
+				<button type="submit" class={ui.btn}>Add to calendar →</button>
+			</div>
+		</form>
+	{/if}
 
-				<div class="mt-[22px]">
-					<span
-						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-						>Format(s)</span
-					>
-					<div class="flex flex-wrap gap-[10px]">
-						{#each FORMATS as fmt (fmt)}
-							<label
-								class="flex cursor-pointer items-center gap-2 border border-line2 px-[10px] py-[6px] font-mono-system text-[11px] font-bold tracking-[0.06em] uppercase transition-colors hover:border-ink"
-							>
-								<input
-									type="checkbox"
-									name="format"
-									value={fmt}
-									class="h-[13px] w-[13px] border-ink accent-[color:var(--ed-warm)]"
-								/>
-								{fmt}
-							</label>
-						{/each}
-					</div>
-				</div>
-
-				<div class="mt-[22px] grid gap-[18px] md:grid-cols-2">
-					<div>
-						<label
-							for="description"
-							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-							>Description</label
-						>
-						<textarea
-							id="description"
-							name="description"
-							rows="2"
-							placeholder="Optional description…"
-							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
-						></textarea>
-					</div>
-					<div>
-						<label
-							for="link"
-							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-							>Official Link</label
-						>
-						<input
-							id="link"
-							name="link"
-							type="url"
-							placeholder="https://fabtcg.com/…"
-							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink placeholder:text-fade focus:outline-none"
-						/>
-					</div>
-				</div>
-
-				<div class="mt-[24px] flex justify-end gap-3">
-					<button
-						type="button"
-						onclick={() => (showAddSeasonForm = false)}
-						class="inline-flex items-center border border-line2 px-[18px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
-					>
-						Cancel
-					</button>
-					<button
-						type="submit"
-						class="inline-flex items-center bg-ink px-[22px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
-					>
-						Create Event →
-					</button>
-				</div>
-			</form>
-		</div>
-	</section>
-{/if}
-
-<!-- ============ TABS ============ -->
-<section class="overflow-x-clip border-t-[3px] border-double border-ink">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[24px] md:px-10 lg:px-14">
-		<div class="flex gap-1 border-b-[1.5px] border-ink">
+	<div class="mt-8 flex flex-wrap items-center justify-between gap-3">
+		<div class="flex gap-px border border-line2 bg-line2" role="group" aria-label="Show">
 			<button
+				type="button"
 				onclick={() => (calendarSubTab = 'upcoming')}
-				class="relative px-[16px] py-[12px] font-mono-system text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors {calendarSubTab ===
+				class="h-[38px] px-3.5 text-[10px] font-extrabold tracking-[0.14em] uppercase {calendarSubTab ===
 				'upcoming'
-					? 'text-ink'
-					: 'text-fade hover:text-ink'}"
+					? 'bg-ink text-paper-bg'
+					: 'bg-paper-bg text-soft hover:text-ink'}"
+				>Upcoming & active · {upcomingLssEvents.length}</button
 			>
-				Upcoming / Active · {upcomingLssEvents.length}
-				{#if calendarSubTab === 'upcoming'}<span
-						class="absolute inset-x-[10px] bottom-[-1.5px] h-[2px] bg-warm"
-					></span>{/if}
-			</button>
 			<button
+				type="button"
 				onclick={() => (calendarSubTab = 'completed')}
-				class="relative px-[16px] py-[12px] font-mono-system text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors {calendarSubTab ===
+				class="h-[38px] px-3.5 text-[10px] font-extrabold tracking-[0.14em] uppercase {calendarSubTab ===
 				'completed'
-					? 'text-ink'
-					: 'text-fade hover:text-ink'}"
+					? 'bg-ink text-paper-bg'
+					: 'bg-paper-bg text-soft hover:text-ink'}">Completed · {completedLssEvents.length}</button
 			>
-				Completed · {completedLssEvents.length}
-				{#if calendarSubTab === 'completed'}<span
-						class="absolute inset-x-[10px] bottom-[-1.5px] h-[2px] bg-warm"
-					></span>{/if}
-			</button>
 		</div>
 	</div>
-</section>
 
-<!-- ============ LIST ============ -->
-<section class="overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[24px] pb-[64px] md:px-10 lg:px-14">
-		{#if displayedLssEvents.length === 0}
-			<div class="overflow-hidden border-[1.5px] border-ink p-12 text-center">
-				<p class="font-newsreader text-[19px] text-soft italic">
-					No {calendarSubTab === 'upcoming' ? 'upcoming' : 'completed'} events.
-				</p>
-				{#if calendarSubTab === 'upcoming'}
-					<p class="mt-2 text-[13px] text-fade">
-						Click "Add Event" to create a new tournament season.
-					</p>
-				{/if}
-			</div>
-		{:else}
-			<!-- Mobile -->
-			<div class="space-y-[14px] sm:hidden">
-				{#each displayedLssEvents as season (season.id)}
-					{@const startDate = new Date(season.startDate)}
-					{@const endDate = new Date(season.endDate)}
-					{@const status = statusChip(startDate, endDate)}
-					<div class="overflow-hidden border-[1.5px] border-ink p-4">
-						<div class="flex items-start justify-between gap-2">
-							<div class="min-w-0 flex-1">
-								<div class="flex items-center gap-2">
-									<span class="truncate font-newsreader text-[16px] font-semibold"
-										>{season.name}</span
-									>
-									{#if season.link}
-										<a
-											href={season.link}
-											target="_blank"
-											rel="noopener noreferrer"
-											class="shrink-0 text-warm"
-											aria-label="View official page">↗</a
-										>
-									{/if}
-								</div>
-								{#if season.eventType}
-									<span
-										class="mt-[6px] inline-flex items-center border border-line2 px-[7px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-									>
-										{season.eventType}
-									</span>
-								{/if}
+	<Section
+		title={calendarSubTab === 'upcoming' ? 'Upcoming and active' : 'Completed'}
+		class="mt-6"
+		note="{ui.fmt(displayedLssEvents.length)} {displayedLssEvents.length === 1
+			? 'event'
+			: 'events'}"
+	>
+		<div
+			class="{ui.rowHead} grid-cols-[minmax(0,1fr)_130px_minmax(0,180px)_170px_100px_120px] gap-3"
+		>
+			<span>Event</span><span>Type</span><span>Formats</span><span>Dates</span><span>Status</span
+			><span class="text-right">Actions</span>
+		</div>
+		<ul>
+			{#each displayedLssEvents as season (season.id)}
+				{@const start = new Date(season.startDate)}
+				{@const end = new Date(season.endDate)}
+				{@const status = statusOf(start, end)}
+				<li class={ui.row}>
+					{#if editingSeasonId === season.id}
+						<form
+							method="POST"
+							action="?/updateLssSeason"
+							use:enhance={() => {
+								return async ({ result, update }) => {
+									if (result.type === 'success') {
+										editingSeasonId = null;
+										await invalidateAll();
+									}
+									await update();
+								};
+							}}
+							class="my-3 border-l-[3px] border-ink bg-paper p-5"
+						>
+							<input type="hidden" name="seasonId" value={season.id} />
+							<p class="mb-4 text-[9.5px] font-extrabold tracking-[0.2em] text-fade uppercase">
+								Editing · {season.name}
+							</p>
+							<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+								<label class="block">
+									<span class={ui.label}>Event name <span class="text-hero-rb">*</span></span>
+									<input
+										name="name"
+										type="text"
+										required
+										value={season?.name || ''}
+										placeholder="Skirmish Season 5"
+										class="{ui.input} mt-1.5"
+									/>
+								</label>
+								<label class="block">
+									<span class={ui.label}>Type</span>
+									<select name="eventType" class="{ui.select} mt-1.5 w-full">
+										<option value="">Select type</option>
+										{#each TYPES as t (t)}<option value={t} selected={season?.eventType === t}
+												>{t}</option
+											>{/each}
+									</select>
+								</label>
+								<label class="block">
+									<span class={ui.label}>Start <span class="text-hero-rb">*</span></span>
+									<input
+										name="startDate"
+										type="date"
+										required
+										value={season ? ymd(season.startDate) : ''}
+										class="{ui.input} mt-1.5"
+									/>
+								</label>
+								<label class="block">
+									<span class={ui.label}>End <span class="text-hero-rb">*</span></span>
+									<input
+										name="endDate"
+										type="date"
+										required
+										value={season ? ymd(season.endDate) : ''}
+										class="{ui.input} mt-1.5"
+									/>
+								</label>
 							</div>
-							<span
-								class="inline-flex items-center px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] uppercase {status.cls}"
-							>
-								{status.label}
+							<div class="mt-5">
+								<span class={ui.label}>Formats</span>
+								<div class="mt-2 flex flex-wrap gap-1.5">
+									{#each FORMATS as f (f)}
+										<label class={chip}
+											><input
+												type="checkbox"
+												name="format"
+												value={f}
+												checked={(season?.format || '').includes(f)}
+												class="sr-only"
+											/>{f}</label
+										>
+									{/each}
+								</div>
+							</div>
+							<div class="mt-5 grid gap-4 md:grid-cols-2">
+								<label class="block">
+									<span class={ui.label}>Description</span>
+									<input
+										name="description"
+										type="text"
+										value={season?.description || ''}
+										placeholder="Optional"
+										class="{ui.input} mt-1.5"
+									/>
+								</label>
+								<label class="block">
+									<span class={ui.label}>Official link</span>
+									<input
+										name="link"
+										type="url"
+										value={season?.link || ''}
+										placeholder="https://fabtcg.com/…"
+										class="{ui.input} mt-1.5"
+									/>
+								</label>
+							</div>
+							<div class="mt-5 flex flex-wrap items-center justify-between gap-3">
+								<label class="flex items-center gap-2 text-[12.5px]">
+									<input
+										type="checkbox"
+										name="isActive"
+										value="true"
+										checked={season.isActive}
+										class="h-4 w-4 border-line2 text-ink focus:ring-0"
+									/>
+									Show on the site
+								</label>
+								<div class="flex gap-2">
+									<button type="button" onclick={() => (editingSeasonId = null)} class={ui.ghost}
+										>Cancel</button
+									>
+									<button type="submit" class={ui.btn}>Save →</button>
+								</div>
+							</div>
+						</form>
+					{:else}
+						<div
+							class="py-3 md:grid md:grid-cols-[minmax(0,1fr)_130px_minmax(0,180px)_170px_100px_120px] md:items-center md:gap-3"
+						>
+							<span class="flex min-w-0 items-center gap-2">
+								<span class="{ui.titleText} truncate">{season.name}</span>
+								{#if season.link}<a
+										href={season.link}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="shrink-0 text-warm hover:text-ink"
+										aria-label="Official page">↗</a
+									>{/if}
+								{#if !season.isActive}<span class="{ui.pill} {ui.pillTone.inactive}">Hidden</span
+									>{/if}
+							</span>
+							<span class="mt-1.5 flex flex-wrap items-center gap-1.5 md:contents">
+								<span
+									>{#if season.eventType}<span class={ui.pill}>{season.eventType}</span>{:else}<span
+											class="text-fade">—</span
+										>{/if}</span
+								>
+								<span class="truncate text-[12px] text-soft" title={season.format || ''}
+									>{season.format || '—'}</span
+								>
+								<span class="text-[12.5px] whitespace-nowrap text-soft tabular-nums"
+									>{day(start)} – {day(end, true)}</span
+								>
+								<span><span class="{ui.pill} {status.tone}">{status.label}</span></span>
+							</span>
+							<span class="mt-2 flex items-center gap-1 md:mt-0 md:justify-end">
+								<button
+									type="button"
+									onclick={() => (editingSeasonId = season.id)}
+									class={ui.ghostSm}>Edit</button
+								>
+								<form
+									method="POST"
+									action="?/deleteLssSeason"
+									use:enhance={() => {
+										return async ({ result, update }) => {
+											if (result.type === 'success') await invalidateAll();
+											await update();
+										};
+									}}
+								>
+									<input type="hidden" name="seasonId" value={season.id} />
+									<button
+										type="submit"
+										onclick={(e) => {
+											if (!confirm('Delete this event?')) e.preventDefault();
+										}}
+										class={ui.danger}>Delete</button
+									>
+								</form>
 							</span>
 						</div>
-						<div
-							class="mt-[10px] font-mono-system text-[11px] font-bold tracking-[0.06em] text-fade uppercase"
-						>
-							{startDate.toLocaleDateString('en-US', {
-								month: 'short',
-								day: 'numeric',
-								timeZone: 'UTC'
-							})} — {endDate.toLocaleDateString('en-US', {
-								month: 'short',
-								day: 'numeric',
-								year: 'numeric',
-								timeZone: 'UTC'
-							})}
-						</div>
-						{#if season.format}
-							<p class="mt-[6px] truncate text-[12px] text-fade">{season.format}</p>
-						{/if}
-						<div class="mt-3 flex gap-2 border-t border-line2 pt-3">
-							<button
-								onclick={() => (editingSeasonId = season.id)}
-								class="flex-1 border border-line2 px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
-							>
-								Edit
-							</button>
-							<form method="POST" action="?/deleteLssSeason" use:enhance class="flex-1">
-								<input type="hidden" name="seasonId" value={season.id} />
-								<button
-									type="submit"
-									onclick={(e) => {
-										if (!confirm('Delete this event?')) e.preventDefault();
-									}}
-									class="w-full bg-warm px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
-								>
-									Delete
-								</button>
-							</form>
-						</div>
-					</div>
-				{/each}
-			</div>
-
-			<!-- Desktop -->
-			<div class="hidden border-[1.5px] border-ink sm:block">
-				<div class="overflow-x-auto">
-					<table class="w-full min-w-[900px]">
-						<thead class="border-b-[1.5px] border-ink">
-							<tr class="text-left">
-								<th
-									class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-									>Name</th
-								>
-								<th
-									class="hidden px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase sm:table-cell"
-									>Type</th
-								>
-								<th
-									class="hidden px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase lg:table-cell"
-									>Format</th
-								>
-								<th
-									class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-									>Dates</th
-								>
-								<th
-									class="hidden px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase md:table-cell"
-									>Status</th
-								>
-								<th
-									class="px-4 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-									>Actions</th
-								>
-							</tr>
-						</thead>
-						<tbody>
-							{#each displayedLssEvents as season (season.id)}
-								{@const startDate = new Date(season.startDate)}
-								{@const endDate = new Date(season.endDate)}
-								{@const status = statusChip(startDate, endDate)}
-								{@const isEditing = editingSeasonId === season.id}
-
-								{#if isEditing}
-									<tr>
-										<td colspan="6" class="p-0">
-											<form
-												method="POST"
-												action="?/updateLssSeason"
-												use:enhance={() => {
-													return async ({ result, update }) => {
-														if (result.type === 'success') {
-															editingSeasonId = null;
-															await invalidateAll();
-														}
-														await update();
-													};
-												}}
-												class="border-y border-line2 bg-panel p-5"
-											>
-												<input type="hidden" name="seasonId" value={season.id} />
-												<div class="grid gap-[14px] md:grid-cols-4">
-													<div>
-														<label
-															for="edit-name-{season.id}"
-															class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-															>Name</label
-														>
-														<input
-															id="edit-name-{season.id}"
-															name="name"
-															type="text"
-															required
-															value={season.name}
-															class="w-full border-[1.5px] border-ink bg-paper-bg px-[10px] py-[7px] font-newsreader text-[14px] text-ink focus:outline-none"
-														/>
-													</div>
-													<div>
-														<label
-															for="edit-type-{season.id}"
-															class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-															>Type</label
-														>
-														<select
-															id="edit-type-{season.id}"
-															name="eventType"
-															class="w-full border-[1.5px] border-ink bg-paper-bg px-[10px] py-[7px] font-mono-system text-[11px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
-														>
-															<option value="">Select</option>
-															{#each TYPES as t (t)}
-																<option value={t} selected={season.eventType === t}>{t}</option>
-															{/each}
-														</select>
-													</div>
-													<div>
-														<label
-															for="edit-start-{season.id}"
-															class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-															>Start</label
-														>
-														<input
-															id="edit-start-{season.id}"
-															name="startDate"
-															type="date"
-															required
-															value={startDate.toISOString().split('T')[0]}
-															class="w-full border-[1.5px] border-ink bg-paper-bg px-[10px] py-[7px] font-mono-system text-[12px] text-ink focus:outline-none"
-														/>
-													</div>
-													<div>
-														<label
-															for="edit-end-{season.id}"
-															class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-															>End</label
-														>
-														<input
-															id="edit-end-{season.id}"
-															name="endDate"
-															type="date"
-															required
-															value={endDate.toISOString().split('T')[0]}
-															class="w-full border-[1.5px] border-ink bg-paper-bg px-[10px] py-[7px] font-mono-system text-[12px] text-ink focus:outline-none"
-														/>
-													</div>
-												</div>
-												<div class="mt-[14px]">
-													<span
-														class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-														>Format(s)</span
-													>
-													<div class="flex flex-wrap gap-[8px]">
-														{#each FORMATS as fmt (fmt)}
-															<label
-																class="flex cursor-pointer items-center gap-2 border border-line2 px-[8px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.06em] uppercase transition-colors hover:border-ink"
-															>
-																<input
-																	type="checkbox"
-																	name="format"
-																	value={fmt}
-																	checked={(season.format || '').includes(fmt)}
-																	class="h-[12px] w-[12px] border-ink accent-[color:var(--ed-warm)]"
-																/>
-																{fmt}
-															</label>
-														{/each}
-													</div>
-												</div>
-												<div class="mt-[14px] grid gap-[14px] md:grid-cols-2">
-													<div>
-														<label
-															for="edit-desc-{season.id}"
-															class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-															>Description</label
-														>
-														<input
-															id="edit-desc-{season.id}"
-															name="description"
-															type="text"
-															value={season.description || ''}
-															placeholder="Optional…"
-															class="w-full border-[1.5px] border-ink bg-paper-bg px-[10px] py-[7px] font-newsreader text-[14px] text-ink placeholder:text-fade focus:outline-none"
-														/>
-													</div>
-													<div>
-														<label
-															for="edit-link-{season.id}"
-															class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-															>Official Link</label
-														>
-														<input
-															id="edit-link-{season.id}"
-															name="link"
-															type="url"
-															value={season.link || ''}
-															placeholder="https://…"
-															class="w-full border-[1.5px] border-ink bg-paper-bg px-[10px] py-[7px] font-mono-system text-[12px] text-ink placeholder:text-fade focus:outline-none"
-														/>
-													</div>
-												</div>
-												<div class="mt-[16px] flex items-center justify-between">
-													<label
-														class="flex items-center gap-2 font-mono-system text-[11px] font-bold tracking-[0.06em] uppercase"
-													>
-														<input
-															type="checkbox"
-															name="isActive"
-															value="true"
-															checked={season.isActive}
-															class="h-[13px] w-[13px] border-ink accent-[color:var(--ed-warm)]"
-														/>
-														Show on calendar
-													</label>
-													<div class="flex gap-2">
-														<button
-															type="button"
-															onclick={() => (editingSeasonId = null)}
-															class="inline-flex items-center border border-line2 px-[14px] py-[7px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
-														>
-															Cancel
-														</button>
-														<button
-															type="submit"
-															class="inline-flex items-center bg-ink px-[14px] py-[7px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
-														>
-															Save →
-														</button>
-													</div>
-												</div>
-											</form>
-										</td>
-									</tr>
-								{:else}
-									<tr class="border-b border-line2 transition-colors hover:bg-panel">
-										<td class="px-4 py-[14px]">
-											<div class="flex items-center gap-2">
-												<span
-													class="max-w-[220px] truncate font-newsreader text-[15px] font-semibold"
-													>{season.name}</span
-												>
-												{#if season.link}
-													<a
-														href={season.link}
-														target="_blank"
-														rel="noopener noreferrer"
-														class="flex-shrink-0 text-warm hover:text-ink"
-														aria-label="View official page">↗</a
-													>
-												{/if}
-												{#if !season.isActive}
-													<span
-														class="inline-flex items-center bg-warm px-[7px] py-[3px] font-mono-system text-[9px] font-bold tracking-[0.08em] text-white uppercase"
-														>Hidden</span
-													>
-												{/if}
-											</div>
-										</td>
-										<td class="hidden px-4 py-[14px] sm:table-cell">
-											{#if season.eventType}
-												<span
-													class="inline-flex items-center border border-line2 px-[8px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-												>
-													{season.eventType}
-												</span>
-											{:else}
-												<span class="text-fade">—</span>
-											{/if}
-										</td>
-										<td class="hidden px-4 py-[14px] lg:table-cell">
-											{#if season.format}
-												<span
-													class="font-mono-system text-[11px] font-bold tracking-[0.04em] text-fade"
-													title={season.format}
-												>
-													{season.format.length > 25
-														? season.format.substring(0, 25) + '…'
-														: season.format}
-												</span>
-											{:else}
-												<span class="text-fade">—</span>
-											{/if}
-										</td>
-										<td
-											class="px-4 py-[14px] font-mono-system text-[10.5px] font-bold tracking-[0.06em] whitespace-nowrap text-fade uppercase"
-										>
-											{startDate.toLocaleDateString('en-US', {
-												month: 'short',
-												day: 'numeric',
-												timeZone: 'UTC'
-											})} — {endDate.toLocaleDateString('en-US', {
-												month: 'short',
-												day: 'numeric',
-												year: 'numeric',
-												timeZone: 'UTC'
-											})}
-										</td>
-										<td class="hidden px-4 py-[14px] md:table-cell">
-											<span
-												class="inline-flex items-center px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] uppercase {status.cls}"
-											>
-												{status.label}
-											</span>
-										</td>
-										<td class="px-4 py-[14px] text-right">
-											<div class="inline-flex items-center gap-2">
-												<button
-													onclick={() => (editingSeasonId = season.id)}
-													class="inline-flex items-center border border-line2 px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
-													title="Edit"
-												>
-													Edit
-												</button>
-												<form
-													method="POST"
-													action="?/deleteLssSeason"
-													use:enhance={() => {
-														return async ({ result, update }) => {
-															if (result.type === 'success') await invalidateAll();
-															await update();
-														};
-													}}
-													class="inline"
-												>
-													<input type="hidden" name="seasonId" value={season.id} />
-													<button
-														type="submit"
-														onclick={(e) => {
-															if (!confirm('Delete this event?')) e.preventDefault();
-														}}
-														class="inline-flex items-center bg-warm px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
-														title="Delete"
-													>
-														Delete
-													</button>
-												</form>
-											</div>
-										</td>
-									</tr>
-								{/if}
-							{/each}
-						</tbody>
-					</table>
-				</div>
-			</div>
-		{/if}
-	</div>
-</section>
+					{/if}
+				</li>
+			{:else}
+				<li class={ui.empty}>
+					No {calendarSubTab === 'upcoming' ? 'upcoming' : 'completed'} events.{#if calendarSubTab === 'upcoming'}
+						<span>&nbsp;</span>
+						<button
+							type="button"
+							onclick={() => (showAddSeasonForm = true)}
+							class="{ui.textAction} not-italic">Add one →</button
+						>{/if}
+				</li>
+			{/each}
+		</ul>
+	</Section>
+</div>

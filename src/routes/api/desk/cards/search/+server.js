@@ -13,7 +13,7 @@ import { canEditEntries, canEditCourses } from '$lib/server/auth/roles.js';
  *
  * Backend: `@flesh-and-blood/search` on top of the `@flesh-and-blood/cards`
  * data set. Updates now ship via `npm update @flesh-and-blood/search` — no
- * manual CSV uploads through `/admin/cards`, no custom `fab_card_lookup`
+ * manual CSV uploads, no custom `fab_card_lookup`
  * table to keep in sync as new sets release.
  */
 

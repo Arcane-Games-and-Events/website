@@ -13,6 +13,7 @@
 	 * joined to their event by the loader).
 	 */
 	import { reveal } from '$lib/actions/reveal.js';
+	import { placementLabel } from '$lib/utils/placement.js';
 	import { CIRCUITS, circuitVar } from '$lib/data/circuits.js';
 	import { heroImageUrl } from '$lib/heroImage.js';
 	import FormatTag from '../FormatTag.svelte';
@@ -24,7 +25,6 @@
 
 	const abbr = (name) => CIRCUITS[name]?.abbreviation ?? name;
 	const LABEL = 'text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase';
-	const ordinal = (n) => (n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : n ? `${n}th` : '—');
 	const fmt = (d, opts) => new Date(d).toLocaleDateString('en-US', { timeZone: 'UTC', ...opts });
 	const finishTone = (p) =>
 		p === 1 ? 'text-gold' : p && p <= 8 ? 'text-warm' : p ? 'text-fade' : 'text-fade/50';
@@ -432,7 +432,7 @@
 								<span
 									class="ao-cond text-center text-[24px] leading-none font-black tabular-nums {finishTone(
 										d.placement
-									)}">{d.placement ? ordinal(d.placement) : '—'}</span
+									)}">{placementLabel(d.placement)}</span
 								>
 								<span class="flex min-w-0 items-center gap-3">
 									<span

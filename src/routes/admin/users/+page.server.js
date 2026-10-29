@@ -1,6 +1,7 @@
-import { redirect, fail } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { bump } from '$lib/server/cache/index.js';
+import { setMemberRole } from '$lib/server/payments/ledger.js';
 import { adminCounts, listUsers } from '$lib/server/admin/dashboard.js';
 import {
 	user,
@@ -19,11 +20,6 @@ import {
 import { eq, or, ilike } from 'drizzle-orm';
 
 export async function load({ locals }) {
-	// Require admin authentication
-	if (!locals.user || locals.user.role !== 'admin') {
-		throw redirect(302, '/login?redirect=/admin/users');
-	}
-
 	try {
 		const [counts, allUsers] = await Promise.all([adminCounts(), listUsers()]);
 		return { user: locals.user, allUsers, stats: { totalUsers: counts.totalUsers } };
@@ -56,7 +52,13 @@ export const actions = {
 		}
 
 		try {
-			await db.update(user).set({ role: newRole }).where(eq(user.id, userId));
+			const result = await setMemberRole({
+				userId,
+				role: newRole,
+				compReason: formData.get('compReason')?.toString() || null,
+				actorId: locals.user.id
+			});
+			if (!result.ok) return fail(400, { error: result.error });
 			await bump(`user:${userId}`, 'users');
 
 			return { success: true, message: `User role updated to ${newRole}` };

@@ -2,6 +2,8 @@ import { json } from '@sveltejs/kit';
 import { authnet } from '$lib/server/authnet/client.js';
 import { db } from '$lib/server/db/index.js';
 import { bump } from '$lib/server/cache/index.js';
+import { recordPayment } from '$lib/server/payments/ledger.js';
+import { recordConversion } from '$lib/server/contentAnalytics/collect.js';
 import { ticket, order, event as eventTable, savedCard, user } from '$lib/server/db/schema.js';
 import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
@@ -10,7 +12,7 @@ import { calculatePremiumDiscount } from '$lib/server/premium-discount.js';
 /**
  * Purchase event tickets (one-time payment)
  */
-export async function POST({ params, request, locals }) {
+export async function POST({ params, request, locals, cookies, url }) {
 	try {
 		const { eventId } = params;
 		const currentUser = locals.user;
@@ -231,6 +233,27 @@ export async function POST({ params, request, locals }) {
 				.set({ meta: { ...newOrder.meta, ticketId: newTicket.id } })
 				.where(eq(order.id, newOrder.id));
 			await bump('tickets', 'orders');
+
+			const discounted = eventData.premiumDiscount && isPremium;
+			await recordPayment({
+				transId: result.transactionId,
+				kind: 'ticket',
+				amount,
+				listAmount: eventData.price,
+				discountAmount: discounted
+					? calculatePremiumDiscount(Number(eventData.price), eventData.eventDate).discountAmount
+					: 0,
+				discountKind: discounted ? 'premium_event' : null,
+				userId: currentUser.id,
+				userEmail: currentUser.email,
+				orderId: newOrder.id,
+				ticketId: newTicket.id,
+				eventId,
+				source: 'app'
+			});
+			await recordConversion({ cookies, url }, currentUser.id, 'ticket', {
+				meta: { eventId, amount: Number(amount), premiumDiscount: !!discounted }
+			});
 
 			return json({
 				success: true,

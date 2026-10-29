@@ -1,4 +1,7 @@
 <script>
+	import { untrack } from 'svelte';
+	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import { enhance } from '$app/forms';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
 
@@ -7,10 +10,10 @@
 	const p = $derived(data.partner);
 	const referrals = $derived(data.referrals || []);
 
-	let code = $state(data.partner.code);
-	let displayName = $state(data.partner.displayName || '');
-	let payoutNotes = $state(data.partner.payoutNotes || '');
-	let isActive = $state(data.partner.isActive);
+	let code = $state(untrack(() => data.partner.code));
+	let displayName = $state(untrack(() => data.partner.displayName || ''));
+	let payoutNotes = $state(untrack(() => data.partner.payoutNotes || ''));
+	let isActive = $state(untrack(() => data.partner.isActive));
 
 	let selectedReferralIds = $state(new Set());
 	let paidNotes = $state('');
@@ -59,39 +62,28 @@
 	}
 </script>
 
-<svelte:head><title>{p.firstName} {p.lastName} · Partner Admin</title></svelte:head>
+<svelte:head><title>{p.firstName} {p.lastName} · Admin</title></svelte:head>
 
 <!-- ============ HEADER ============ -->
-<header class="mx-auto w-full max-w-[1600px] px-4 pt-[42px] pb-[28px] md:px-10 lg:px-14">
+<DeskHeader kicker="Admin" title="{p.firstName} {p.lastName}" subtitle={p.email} />
+<AdminTabs />
+<section class="mx-auto w-full max-w-[1200px] px-5 pt-[24px] pb-[20px] md:px-8">
 	<a
 		href="/admin/partners"
-		class="inline-flex items-center font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:text-ink"
+		class="inline-flex items-center text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 	>
 		← Back to Partners
 	</a>
 	<div class="mt-[18px] mb-[18px] flex flex-wrap items-center gap-[16px]">
-		<span class="font-mono-system text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase">
-			Partner
-		</span>
-		<span class="hidden h-[1px] flex-1 bg-line2 md:block"></span>
 		<span
-			class="inline-flex items-center px-[10px] py-[5px] font-mono-system text-[10px] font-bold tracking-[0.1em] uppercase {p.isActive
-				? 'bg-prem text-white'
-				: 'border border-line2 text-fade'}"
+			class="inline-flex w-fit shrink-0 items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap text-[var(--tone,var(--color-ink))] capitalize before:block before:h-2 before:w-2 before:shrink-0 before:bg-[var(--tone,var(--color-line2))] before:content-[''] {p.isActive
+				? '[--tone:var(--color-prem)]'
+				: '[--tone:var(--color-fade)]'}"
 		>
 			{p.isActive ? 'Active' : 'Inactive'}
 		</span>
 	</div>
-	<h1
-		class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]"
-	>
-		{p.firstName}
-		{p.lastName}
-	</h1>
-	<p class="mt-3 font-mono-system text-[11px] font-bold tracking-[0.08em] text-fade uppercase">
-		{p.email}
-	</p>
-</header>
+</section>
 
 {#if form?.error}
 	<AdminNotice tone="error" message={form.error} />
@@ -101,25 +93,21 @@
 {/if}
 
 <!-- ============ PARTNER LINK ============ -->
-<section class="overflow-x-clip border-y-[3px] border-double border-ink">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[28px] md:px-10 lg:px-14">
+<section class="overflow-x-clip border-t border-line2">
+	<div class="mx-auto w-full max-w-[1200px] px-5 py-[28px] md:px-8">
 		<div class="flex flex-wrap items-center justify-between gap-3">
 			<div class="min-w-0 flex-1">
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-				>
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 					Partner Link
 				</span>
-				<code
-					class="mt-[6px] block truncate font-mono-system text-[15px] font-bold tracking-[0.02em] text-ink"
-				>
+				<code class="mt-[6px] block truncate text-[15px] font-medium text-ink">
 					{typeof window !== 'undefined' ? window.location.origin : ''}/premium/{p.code}
 				</code>
 			</div>
 			<button
 				type="button"
 				onclick={copyLink}
-				class="inline-flex items-center bg-ink px-[16px] py-[9px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
+				class="inline-flex h-[40px] shrink-0 items-center gap-2 bg-ink px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				Copy
 			</button>
@@ -137,25 +125,19 @@
 		};
 	}}
 >
-	<section class="overflow-x-clip border-b-[3px] border-double border-ink">
-		<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
+	<section class="overflow-x-clip border-t border-line2">
+		<div class="mx-auto w-full max-w-[1200px] px-5 py-[36px] md:px-8">
 			<div class="mb-[22px]">
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-				>
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 					01 · Settings
 				</span>
-				<h2
-					class="mt-[6px] font-newsreader text-[clamp(24px,3vw,32px)] leading-[1] font-semibold tracking-[-0.01em]"
-				>
-					Configuration.
-				</h2>
+				<h2 class="mt-[6px] font-newsreader text-[22px] font-semibold">Configuration.</h2>
 			</div>
-			<div class="space-y-[22px] overflow-hidden border-[1.5px] border-ink p-6">
+			<div class="space-y-[22px] overflow-hidden border border-line2 p-6">
 				<div>
 					<label
 						for="code"
-						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 					>
 						Promo Code <span class="text-warm">*</span>
 					</label>
@@ -165,13 +147,13 @@
 						name="code"
 						bind:value={code}
 						required
-						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[15px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
+						class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 					/>
 				</div>
 				<div>
 					<label
 						for="displayName"
-						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 					>
 						Public display name <span class="text-fade">(optional)</span>
 					</label>
@@ -181,7 +163,7 @@
 						name="displayName"
 						bind:value={displayName}
 						placeholder="Podcast name, internet handle, brand, etc."
-						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
+						class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 					/>
 					<p class="mt-[6px] text-[12px] text-fade">
 						Shown to users in the referral banner. Falls back to {p.firstName} if empty.
@@ -190,7 +172,7 @@
 				<div>
 					<label
 						for="payoutNotes"
-						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 					>
 						Payout notes
 					</label>
@@ -199,7 +181,7 @@
 						name="payoutNotes"
 						bind:value={payoutNotes}
 						rows="3"
-						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink focus:outline-none"
+						class="w-full border border-line2 bg-paper px-3 py-2 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 					></textarea>
 				</div>
 				<label class="flex cursor-pointer items-center gap-3">
@@ -207,7 +189,7 @@
 						type="checkbox"
 						name="isActive"
 						bind:checked={isActive}
-						class="h-[16px] w-[16px] border-ink accent-[color:var(--ed-prem)]"
+						class="h-4 w-4 border-line2 text-ink focus:ring-0"
 					/>
 					<span class="font-newsreader text-[15px] font-semibold">
 						Active <span class="text-[13px] font-normal text-fade italic"
@@ -219,7 +201,7 @@
 			<div class="mt-[22px] flex justify-end">
 				<button
 					type="submit"
-					class="inline-flex items-center bg-prem px-[22px] py-[13px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110"
+					class="inline-flex h-[40px] shrink-0 items-center bg-prem px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					Save Changes →
 				</button>
@@ -229,18 +211,14 @@
 </form>
 
 <!-- ============ REFERRALS ============ -->
-<section class="overflow-x-clip border-b-[3px] border-double border-ink">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
+<section class="overflow-x-clip border-t border-line2">
+	<div class="mx-auto w-full max-w-[1200px] px-5 py-[36px] md:px-8">
 		<div class="mb-[22px] flex flex-wrap items-end justify-between gap-3">
 			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-				>
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 					02 · Referrals
 				</span>
-				<h2
-					class="mt-[6px] font-newsreader text-[clamp(24px,3vw,32px)] leading-[1] font-semibold tracking-[-0.01em]"
-				>
+				<h2 class="mt-[6px] font-newsreader text-[22px] font-semibold">
 					{referrals.length} on record.
 				</h2>
 			</div>
@@ -249,7 +227,7 @@
 					<button
 						type="button"
 						onclick={selectAllReady}
-						class="font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] text-accent uppercase transition-colors hover:text-ink"
+						class="text-[9.5px] font-extrabold tracking-[0.18em] uppercase"
 					>
 						Select {readyReferrals.length} ready
 					</button>
@@ -258,7 +236,7 @@
 					<button
 						type="button"
 						onclick={selectAllPending}
-						class="font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] text-warm uppercase transition-colors hover:text-ink"
+						class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase transition-colors hover:text-ink"
 					>
 						Select all pending
 					</button>
@@ -267,8 +245,8 @@
 		</div>
 
 		{#if referrals.length === 0}
-			<div class="overflow-hidden border-[1.5px] border-ink p-8 text-center">
-				<p class="font-newsreader text-[19px] text-soft italic">No referrals yet.</p>
+			<div class="overflow-hidden border border-line2 p-8 text-center">
+				<p class="font-newsreader text-[17px] text-soft italic">No referrals yet.</p>
 			</div>
 		{:else}
 			<form
@@ -284,40 +262,40 @@
 					<input type="hidden" name="referralId" value={id} />
 				{/each}
 
-				<div class="overflow-x-auto border-[1.5px] border-ink">
+				<div class="overflow-x-auto border border-line2">
 					<table class="w-full min-w-[860px]">
-						<thead class="border-b-[1.5px] border-ink">
+						<thead class="border-b border-line2">
 							<tr class="text-left">
 								<th class="w-8 px-3 py-[12px]"></th>
 								<th
-									class="px-3 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 									>Referred User</th
 								>
 								<th
-									class="px-3 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 									>Plan</th
 								>
 								<th
-									class="px-3 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="px-4 py-[12px] text-right text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 									>Commission</th
 								>
 								<th
-									class="px-3 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 									>Created</th
 								>
 								<th
-									class="px-3 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 									>Payout Due</th
 								>
 								<th
-									class="px-3 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 									>Status</th
 								>
 							</tr>
 						</thead>
 						<tbody>
 							{#each referrals as r (r.id)}
-								<tr class="border-b border-line2 transition-colors hover:bg-panel">
+								<tr class="border-b border-line2 transition-colors hover:bg-paper">
 									<td class="px-3 py-[12px]">
 										{#if r.payoutStatus === 'pending'}
 											<input
@@ -335,50 +313,45 @@
 										<div class="text-[12px] text-fade">{r.referredEmail || ''}</div>
 									</td>
 									<td
-										class="px-3 py-[12px] font-mono-system text-[11px] font-bold tracking-[0.06em] text-ink uppercase"
+										class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] uppercase"
 									>
 										{r.subscriptionType}
 									</td>
 									<td
-										class="px-3 py-[12px] text-right font-archivo text-[15px] font-extrabold tracking-[-0.01em] text-ink"
+										class="px-3 py-[12px] text-right text-[15px] font-semibold text-ink tabular-nums"
 									>
 										{fmt(r.commissionAmount)}
 									</td>
-									<td
-										class="px-3 py-[12px] font-mono-system text-[10.5px] font-bold tracking-[0.06em] text-fade uppercase"
-									>
+									<td class="px-4 py-[12px] text-[11.5px] text-fade">
 										{fmtDate(r.createdAt)}
 									</td>
 									<td class="px-3 py-[12px] text-[10.5px]">
 										{#if r.payoutStatus === 'paid'}
 											<span class="text-fade">—</span>
 										{:else if r.readyToPay}
-											<span
-												class="font-mono-system font-extrabold tracking-[0.08em] text-accent uppercase"
+											<span class="text-[9.5px] font-extrabold tracking-[0.18em] uppercase"
 												>{fmtDate(r.payoutDueAt)}</span
 											>
 										{:else}
-											<span class="font-mono-system font-bold tracking-[0.06em] text-fade uppercase"
-												>{fmtDate(r.payoutDueAt)}</span
-											>
+											<span class="text-[11.5px] text-fade">{fmtDate(r.payoutDueAt)}</span>
 										{/if}
 									</td>
 									<td class="px-3 py-[12px]">
 										{#if r.payoutStatus === 'paid'}
 											<span
-												class="inline-flex items-center bg-prem px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] text-white uppercase"
+												class="inline-flex shrink-0 items-center text-[11.5px] font-semibold text-prem"
 											>
 												Paid {r.paidAt ? fmtDate(r.paidAt) : ''}
 											</span>
 										{:else if r.readyToPay}
 											<span
-												class="inline-flex items-center bg-accent px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] text-white uppercase"
+												class="inline-flex shrink-0 items-center text-[11.5px] font-semibold text-[#8a6116]"
 											>
 												Ready
 											</span>
 										{:else}
 											<span
-												class="inline-flex items-center bg-warm px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] text-white uppercase"
+												class="inline-flex shrink-0 items-center text-[11.5px] font-semibold text-warm"
 											>
 												Pending
 											</span>
@@ -391,13 +364,10 @@
 				</div>
 
 				{#if selectedCount > 0}
-					<div class="mt-4 border-[1.5px] border-ink bg-prem p-5 text-white">
+					<div class="mt-4 border-l-[3px] border-prem bg-prem/10 p-5">
 						<div class="mb-3 flex flex-wrap items-center justify-between gap-3">
 							<div>
-								<span
-									class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
-									style="color: #d6eedf;"
-								>
+								<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase">
 									Selected
 								</span>
 								<p class="mt-[2px] font-newsreader text-[19px] font-semibold">
@@ -410,12 +380,10 @@
 						<div class="mb-4">
 							<label
 								for="paidNotes"
-								class="mb-[6px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
-								style="color: #d6eedf;"
+								class="mb-[6px] block text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase"
 							>
-								Payout reference <span
-									class="tracking-normal normal-case italic"
-									style="color: #d6eedf;">(optional)</span
+								Payout reference <span class="tracking-normal text-prem normal-case italic"
+									>(optional)</span
 								>
 							</label>
 							<input
@@ -424,12 +392,12 @@
 								name="paidNotes"
 								bind:value={paidNotes}
 								placeholder="QuickBooks transaction ID, check number, etc."
-								class="w-full border border-white/40 bg-transparent px-[12px] py-[8px] font-newsreader text-[15px] text-white placeholder:text-white/60 focus:outline-none"
+								class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 							/>
 						</div>
 						<button
 							type="submit"
-							class="inline-flex items-center bg-white px-[22px] py-[13px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-prem uppercase transition-[filter] hover:brightness-95"
+							class="inline-flex h-[40px] shrink-0 items-center gap-2 bg-prem px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							Mark as paid →
 						</button>
@@ -442,16 +410,12 @@
 
 <!-- ============ DANGER ============ -->
 <section class="overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
-		<div class="border-[1.5px] border-warm p-6">
-			<span
-				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
-			>
+	<div class="mx-auto w-full max-w-[1200px] px-5 py-[36px] md:px-8">
+		<div class="border border-hero-rb/60 p-6">
+			<span class="text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase">
 				Danger Zone
 			</span>
-			<h2
-				class="mt-[6px] font-newsreader text-[clamp(22px,2.6vw,28px)] leading-[1] font-semibold tracking-[-0.01em] text-warm"
-			>
+			<h2 class="mt-[6px] font-newsreader text-[22px] font-semibold text-warm">
 				Delete this partner.
 			</h2>
 			<p class="mt-[10px] max-w-[680px] text-[14px] leading-[1.55] text-soft">
@@ -482,7 +446,7 @@
 				<button
 					type="submit"
 					disabled={hasReferrals}
-					class="inline-flex items-center bg-warm px-[22px] py-[13px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+					class="inline-flex h-[40px] shrink-0 items-center bg-hero-rb px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
 				>
 					Delete Partner
 				</button>

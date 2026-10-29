@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db/index.js';
 import { event, match, decklist, standing, lssEvent, ticket } from '$lib/server/db/schema.js';
-import { calculateFinalStandings } from '$lib/server/tournament-processor.js';
+import { calculateFinalStandings, isBye } from '$lib/server/tournament-processor.js';
 import { asc, desc, eq, sql } from 'drizzle-orm';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import {
@@ -53,7 +53,7 @@ export async function load({ url, setHeaders }) {
 		// the underlying tables makes every combo stale; five minutes at most
 		// so upcoming/past splits follow the clock.
 		return await cached(
-			`age-open:page:v2:${activeTab}|${selectedSeason}|${selectedCircuit || 'none'}`,
+			`age-open:page:v3:${activeTab}|${selectedSeason}|${selectedCircuit || 'none'}`,
 			async () => {
 				// Each raw table read is cached on its own as well, so tabs
 				// share them. Each fetch is gated on whether the current tab actually needs
@@ -196,77 +196,59 @@ export async function load({ url, setHeaders }) {
 					}
 				}
 
-				// Build results array by computing standings from matches. This is
-				// the single biggest CPU cost on this page — ~30 tournament
-				// processor invocations. Only do it for the 'results' tab.
+				// Archive results. An event's stored `tournament_results` (saved at
+				// CSV upload, in Swiss-rank order) are what the admin Results tab and
+				// the standings use, so they come first. Older events without them
+				// are worked out from their match rows. An In Progress event is
+				// listed even before its first upload, so the live strip shows it.
+				const fromMatches = (matches) => {
+					const playerMap = new Map();
+					const note = (id, name) => {
+						if ((!id && !name) || isBye(id, name)) return;
+						const key = id || name;
+						if (!playerMap.has(key)) playerMap.set(key, { playerId: id, name, wins: 0 });
+					};
+					for (const m of matches) {
+						note(m.player1GemId, m.player1Name);
+						note(m.player2GemId, m.player2Name);
+					}
+					const pairings = matches.map((m) => ({
+						round: m.round,
+						table: m.table,
+						player1Id: m.player1GemId,
+						player1Name: m.player1Name,
+						player2Id: m.player2GemId,
+						player2Name: m.player2Name,
+						result: m.winner === 'player1' ? '1WIN' : m.winner === 'player2' ? '2WIN' : 'DRAW'
+					}));
+					return calculateFinalStandings([...playerMap.values()], pairings).results.map((r) => ({
+						playerName: r.name,
+						gemId: r.playerId,
+						placement: r.placement,
+						wins: r.matchesWon,
+						losses: r.matchesPlayed - r.matchesWon,
+						draws: 0,
+						agePoints: r.points,
+						prizeAmount: r.prize
+					}));
+				};
 				const allResults = !needsArchive
 					? []
 					: archiveEvents
-							.filter((evt) => matchesByEventId.has(evt.id))
 							.map((evt) => {
-								const matches = matchesByEventId.get(evt.id);
-
-								// Extract unique players from matches
-								const playerMap = new Map();
-								for (const match of matches) {
-									if (match.player1GemId || match.player1Name) {
-										const key = match.player1GemId || match.player1Name;
-										if (!playerMap.has(key)) {
-											playerMap.set(key, {
-												playerId: match.player1GemId,
-												name: match.player1Name,
-												wins: 0
-											});
-										}
-									}
-									if (match.player2GemId || match.player2Name) {
-										const key = match.player2GemId || match.player2Name;
-										if (!playerMap.has(key)) {
-											playerMap.set(key, {
-												playerId: match.player2GemId,
-												name: match.player2Name,
-												wins: 0
-											});
-										}
+								let results = [];
+								if (Array.isArray(evt.tournamentResults) && evt.tournamentResults.length > 0) {
+									results = evt.tournamentResults;
+								} else if (matchesByEventId.has(evt.id)) {
+									try {
+										results = fromMatches(matchesByEventId.get(evt.id));
+									} catch (err) {
+										console.error(`Error calculating results for event ${evt.id}:`, err);
 									}
 								}
-
-								// Convert matches to pairings format
-								const pairings = matches.map((m) => ({
-									round: m.round,
-									table: m.table,
-									player1Id: m.player1GemId,
-									player1Name: m.player1Name,
-									player2Id: m.player2GemId,
-									player2Name: m.player2Name,
-									result: m.winner === 'player1' ? '1WIN' : m.winner === 'player2' ? '2WIN' : 'DRAW'
-								}));
-
-								// Calculate standings from matches
-								let computedResults = [];
-								try {
-									const swissStandings = Array.from(playerMap.values());
-									const standings = calculateFinalStandings(swissStandings, pairings);
-									computedResults = standings.results.map((r) => ({
-										playerName: r.name,
-										gemId: r.playerId,
-										placement: r.placement,
-										wins: r.matchesWon,
-										losses: r.matchesPlayed - r.matchesWon,
-										draws: 0,
-										agePoints: r.points,
-										prizeAmount: r.prize
-									}));
-								} catch (err) {
-									console.error(`Error calculating results for event ${evt.id}:`, err);
-								}
-
-								return {
-									event: evt,
-									results: computedResults
-								};
+								return { event: evt, results };
 							})
-							.filter((r) => r.results.length > 0);
+							.filter((r) => r.results.length > 0 || r.event.status === 'in_progress');
 
 				let standings = [];
 
@@ -538,9 +520,9 @@ export async function load({ url, setHeaders }) {
 					return new Date(b.event.eventDate) - new Date(a.event.eventDate);
 				});
 
-				// Filter events to only show upcoming ones for the events list, with ticket counts
+				// Events still ahead or running now (In Progress), with ticket counts
 				const upcomingEvents = events
-					.filter((e) => e.status === 'upcoming')
+					.filter((e) => e.status === 'upcoming' || e.status === 'in_progress')
 					.map((e) => ({
 						...e,
 						registeredCount: ticketCountMap.get(e.id) || 0

@@ -1,4 +1,11 @@
-import { startView, beatView, isMissingTable } from '$lib/server/contentAnalytics/collect.js';
+import {
+	startView,
+	beatView,
+	startPageview,
+	beatPageview,
+	recordClientConversion,
+	isMissingTable
+} from '$lib/server/contentAnalytics/collect.js';
 
 /**
  * POST /api/ca — content analytics collection.
@@ -20,6 +27,9 @@ export async function POST(event) {
 		try {
 			if (body.t === 'start') await startView(body, event);
 			else if (body.t === 'beat') await beatView(body);
+			else if (body.t === 'pv') await startPageview(body, event);
+			else if (body.t === 'pvbeat') await beatPageview(body);
+			else if (body.t === 'conv') await recordClientConversion(body, event);
 		} catch (err) {
 			if (!isMissingTable(err)) console.error('[content-analytics] collect failed:', err?.message);
 		}

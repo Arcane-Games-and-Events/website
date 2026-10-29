@@ -848,6 +848,58 @@ class AuthNetClient {
 	 * @param {string} subscriptionId - Subscription ID
 	 * @returns {Promise<Object>} Subscription details
 	 */
+	/**
+	 * Details of one transaction: amount, status, time, and the subscription
+	 * and payment number it belongs to. Used by the ledger backfill and the
+	 * nightly sync to confirm what was collected.
+	 *
+	 * @param {string} transId
+	 * @returns {Promise<{ transId: string, status: string|null, submitTimeUTC: string|null, settleAmount: number|null, authAmount: number|null, responseCode: number|null, subscriptionId: string|null, payNum: number|null, email: string|null }>}
+	 */
+	async getTransactionDetails(transId) {
+		return new Promise((resolve, reject) => {
+			const request = new ApiContracts.GetTransactionDetailsRequest();
+			request.setMerchantAuthentication(this.getMerchantAuth());
+			request.setTransId(String(transId));
+
+			const ctrl = new ApiControllers.GetTransactionDetailsController(request.getJSON());
+			ctrl.setEnvironment(
+				this.environment === 'production'
+					? Constants.constants.endpoint.production
+					: Constants.constants.endpoint.sandbox
+			);
+
+			ctrl.execute(() => {
+				const apiResponse = ctrl.getResponse();
+				const response = new ApiContracts.GetTransactionDetailsResponse(apiResponse);
+				if (
+					response === null ||
+					response.getMessages().getResultCode() !== ApiContracts.MessageTypeEnum.OK
+				) {
+					const msg = response?.getMessages?.()?.getMessage?.()?.[0];
+					reject(
+						new Error(msg ? `${msg.getCode()}: ${msg.getText()}` : 'Transaction lookup failed')
+					);
+					return;
+				}
+				const t = response.getTransaction();
+				const sub = t.getSubscription?.();
+				const num = (v) => (v == null || v === '' ? null : Number(v));
+				resolve({
+					transId: String(t.getTransId()),
+					status: t.getTransactionStatus?.() ?? null,
+					submitTimeUTC: t.getSubmitTimeUTC?.() ?? null,
+					settleAmount: num(t.getSettleAmount?.()),
+					authAmount: num(t.getAuthAmount?.()),
+					responseCode: num(t.getResponseCode?.()),
+					subscriptionId: sub?.getId?.() != null ? String(sub.getId()) : null,
+					payNum: num(sub?.getPayNum?.()),
+					email: t.getCustomer?.()?.getEmail?.() ?? null
+				});
+			});
+		});
+	}
+
 	async getSubscription(subscriptionId) {
 		return new Promise((resolve, reject) => {
 			const merchantAuth = this.getMerchantAuth();

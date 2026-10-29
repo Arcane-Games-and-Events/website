@@ -1,5 +1,6 @@
 import { db } from '$lib/server/db';
 import { standing, match, decklist, event, eventPlayerHero } from '$lib/server/db/schema';
+import { HERO_COLUMNS } from '$lib/server/events/heroes.js';
 import { eq, desc, or, asc, inArray, and, isNull } from 'drizzle-orm';
 import { error, fail } from '@sveltejs/kit';
 import { calculatePercentile, calculateRankPercentile } from '$lib/age-rating.js';
@@ -403,7 +404,7 @@ async function buildPlayerProfile(gemId) {
 	// === HERO HISTORY ===
 	// Query hero choices for this player from event_player_heroes
 	const heroHistory = await db
-		.select()
+		.select(HERO_COLUMNS)
 		.from(eventPlayerHero)
 		.where(eq(eventPlayerHero.gemId, gemId))
 		.orderBy(desc(eventPlayerHero.season), eventPlayerHero.month);
@@ -462,7 +463,7 @@ async function buildPlayerProfile(gemId) {
 	const opponentHeroMap = {};
 	if (opponentGemIds.size > 0) {
 		const relevantHeroes = await db
-			.select()
+			.select(HERO_COLUMNS)
 			.from(eventPlayerHero)
 			.where(inArray(eventPlayerHero.gemId, [...opponentGemIds]));
 

@@ -1,6 +1,7 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { user, order, ticket } from '$lib/server/db/schema';
+import { bump } from '$lib/server/cache/index.js';
 import { eq, desc, inArray } from 'drizzle-orm';
 import { Argon2id } from 'oslo/password';
 import { authnet } from '$lib/server/authnet/client.js';

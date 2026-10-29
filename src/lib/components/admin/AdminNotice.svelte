@@ -1,22 +1,40 @@
 <script>
 	/**
-	 * Admin success / error banner shown after a form action. The section
-	 * spans the admin content width; `pad` sets its vertical spacing.
+	 * Admin success / error / info banner shown after a form action, in the
+	 * Desk's notice style. `pad` sets its vertical spacing; `ondismiss`
+	 * adds a close control.
 	 *
-	 * @type {{ tone: 'success' | 'error', message: string, pad?: string }}
+	 * @type {{ tone: 'success' | 'error' | 'info', message: string, pad?: string, ondismiss?: () => void }}
 	 */
-	let { tone, message, pad = 'pb-[12px]' } = $props();
+	let { tone, message, pad = 'pt-6', ondismiss } = $props();
+	const TONE = {
+		success: { box: 'border-prem bg-prem/10', label: 'text-prem', text: 'Done' },
+		error: {
+			box: 'border-hero-rb bg-hero-rb/[0.06]',
+			label: 'text-hero-rb',
+			text: 'Something went wrong'
+		},
+		info: { box: 'border-gold bg-gold/10', label: 'text-[#8a6116]', text: 'Note' }
+	};
+	const t = $derived(TONE[tone] || TONE.info);
 </script>
 
-<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 {pad} md:px-10 lg:px-14">
+<section class="mx-auto w-full max-w-[1200px] px-5 {pad} md:px-8">
 	<div
-		class="border-[1.5px] border-ink p-4 text-white {tone === 'success' ? 'bg-prem' : 'bg-warm'}"
+		class="flex items-start justify-between gap-4 border-l-[3px] px-4 py-3 {t.box}"
+		role={tone === 'error' ? 'alert' : 'status'}
 	>
-		<span
-			class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
-			style="color: {tone === 'success' ? '#d6eedf' : 'rgba(255,255,255,0.75)'};"
-			>{tone === 'success' ? 'Success' : 'Error'}</span
-		>
-		<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{message}</p>
+		<div>
+			<p class="text-[9.5px] font-extrabold tracking-[0.2em] uppercase {t.label}">{t.text}</p>
+			<p class="mt-0.5 text-[13.5px] text-ink">{message}</p>
+		</div>
+		{#if ondismiss}
+			<button
+				type="button"
+				onclick={ondismiss}
+				class="shrink-0 text-[18px] leading-none text-fade hover:text-ink"
+				aria-label="Dismiss">×</button
+			>
+		{/if}
 	</div>
 </section>

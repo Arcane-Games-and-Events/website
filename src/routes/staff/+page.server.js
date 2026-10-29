@@ -28,25 +28,8 @@ export async function load({ locals }) {
 			.where(eq(eventStaff.userId, locals.user.id))
 			.orderBy(event.eventDate);
 
-		// Compute status for each event
-		const assignedEvents = assignments.map((a) => {
-			let computedStatus = a.eventStatus;
-			if (a.eventStatus !== 'completed' && a.eventStatus !== 'cancelled') {
-				const now = new Date();
-				const eventDate = a.eventDate ? new Date(a.eventDate) : null;
-				if (eventDate) {
-					if (now < eventDate) {
-						computedStatus = 'upcoming';
-					} else {
-						computedStatus = 'in_progress';
-					}
-				}
-			}
-			return {
-				...a,
-				computedStatus
-			};
-		});
+		// The stored status is the status; nothing is inferred from the date.
+		const assignedEvents = assignments.map((a) => ({ ...a, status: a.eventStatus || 'upcoming' }));
 
 		return {
 			user: locals.user,

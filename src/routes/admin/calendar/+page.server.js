@@ -1,4 +1,4 @@
-import { redirect, fail } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { lssEvent } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -9,10 +9,6 @@ import { listLssEvents } from '$lib/server/admin/dashboard.js';
 // LSS write below bumps it so the calendar updates on the next request.
 
 export async function load({ locals }) {
-	if (!locals.user || locals.user.role !== 'admin') {
-		throw redirect(302, '/login?redirect=/admin/calendar');
-	}
-
 	const lssEvents = await listLssEvents().catch((err) => {
 		console.error('Admin calendar load error:', err);
 		return [];

@@ -34,7 +34,7 @@ const note = (...a) => DEV && console.info('[analytics]', ...a);
 
 // ---------------------------------------------------------------- ids
 
-function uuid() {
+export function uuid() {
 	if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
 	return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
 		const r = (Math.random() * 16) | 0;
@@ -51,7 +51,7 @@ function store(kind) {
 }
 
 /** Anonymous per-browser id. Mirrored to a cookie so sign-ups can be credited. */
-function visitorId() {
+export function visitorId() {
 	const ls = store('local');
 	let id = ls?.getItem('age_vid');
 	if (!id) {
@@ -65,7 +65,7 @@ function visitorId() {
 }
 
 /** Per-tab session that renews after 30 minutes of inactivity. */
-function sessionId() {
+export function sessionId() {
 	const ss = store('session');
 	const now = Date.now();
 	let id = ss?.getItem('age_sid');
@@ -90,7 +90,7 @@ export function notePath(path) {
 
 // ---------------------------------------------------------------- transport
 
-function send(payload, { beacon = false } = {}) {
+export function send(payload, { beacon = false } = {}) {
 	const body = JSON.stringify(payload);
 	try {
 		if (beacon && navigator.sendBeacon) {

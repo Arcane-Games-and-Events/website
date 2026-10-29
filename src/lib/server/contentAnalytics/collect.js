@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db/index.js';
-import { caView, caEvent, caConversion, deskEntry } from '$lib/server/db/schema.js';
+import { caView, caEvent, caConversion, caPageview, deskEntry } from '$lib/server/db/schema.js';
 import { and, eq, gt, sql } from 'drizzle-orm';
 import { canEditEntries, canEditCourses, isAdmin } from '$lib/server/auth/roles.js';
 import { userHasPremiumAccess } from '$lib/server/articles/access.js';
@@ -276,15 +276,119 @@ export async function beatView(p) {
  * @param {string | null | undefined} userId
  * @param {'signup' | 'premium'} kind
  */
-export async function recordConversion(event, userId, kind) {
+export async function recordConversion(event, userId, kind, extra = {}) {
 	try {
 		const vid = event.cookies.get('age_vid');
+		const sid = extra.sessionId ?? event.cookies.get('age_sid');
 		await db.insert(caConversion).values({
 			visitorId: isUuid(vid) ? vid : null,
 			userId: userId || null,
-			kind
+			kind,
+			sessionId: isUuid(sid) ? sid : null,
+			path: extra.path ?? event.url?.pathname ?? null,
+			meta: extra.meta ?? null
 		});
 	} catch (err) {
+		if (isMissingColumn(err)) {
+			// Migration 022 not run yet — keep the old shape.
+			try {
+				const vid = event.cookies.get('age_vid');
+				await db
+					.insert(caConversion)
+					.values({ visitorId: isUuid(vid) ? vid : null, userId: userId || null, kind });
+			} catch {
+				// Best effort.
+			}
+			return;
+		}
 		if (!isMissingTable(err)) console.error('[content-analytics] conversion failed:', err?.message);
 	}
+}
+
+/** Postgres "column does not exist" (42703). */
+export function isMissingColumn(err) {
+	const code = err?.code || err?.cause?.code;
+	return code === '42703';
+}
+
+// ---------------------------------------------------------------- page views
+
+/**
+ * Open a page view (any public page). Same request facts as a content
+ * view; `entryId` and `viewId` tie a Library page to its ca_view row.
+ * @param {any} p
+ * @param {import('@sveltejs/kit').RequestEvent} event
+ */
+export async function startPageview(p, event) {
+	if (!isUuid(p?.id) || !isUuid(p?.visitorId) || !isUuid(p?.sessionId)) return;
+	const path = str(p.path, 300);
+	if (!path || !path.startsWith('/')) return;
+	const ua = event.request.headers.get('user-agent') || '';
+	if (isBot(ua)) return;
+
+	const referrerDomain = referrerDomainOf(p.referrer);
+	const fromPath = str(p.fromPath, 300);
+	const utmSource = str(p.utm?.source, 100);
+	const utmMedium = str(p.utm?.medium, 100);
+	const utmCampaign = str(p.utm?.campaign, 150);
+	const user = event.locals.user;
+	const source = classifySource({ referrerDomain, fromPath, utmMedium, utmSource });
+
+	await db
+		.insert(caPageview)
+		.values({
+			id: p.id,
+			visitorId: p.visitorId,
+			sessionId: p.sessionId,
+			userId: user?.id || null,
+			audience: audienceOf(user),
+			path,
+			route: str(p.route, 200),
+			entryId: isUuid(p.entryId) ? p.entryId : null,
+			viewId: isUuid(p.viewId) ? p.viewId : null,
+			source,
+			referrerDomain: source === 'internal' ? null : referrerDomain,
+			fromPath,
+			utmSource,
+			utmMedium,
+			utmCampaign,
+			...parseUserAgent(ua),
+			country: str(event.request.headers.get('x-vercel-ip-country'), 2),
+			viewportW: int(p.viewportW, 10000) || null
+		})
+		.onConflictDoNothing();
+}
+
+/** Record how long a page was visible. */
+export async function beatPageview(p) {
+	if (!isUuid(p?.id)) return;
+	const visible = int(p.visible, MAX_SECONDS);
+	await db
+		.update(caPageview)
+		.set({
+			visibleSeconds: sql`greatest(${caPageview.visibleSeconds}, ${visible})`,
+			lastSeenAt: new Date()
+		})
+		.where(eq(caPageview.id, p.id));
+}
+
+const CLIENT_KINDS = new Set(['checkout_started']);
+
+/**
+ * A funnel step reported by the browser. Money steps (sign-up, subscribe,
+ * ticket) are recorded by the server, so only `checkout_started` is
+ * accepted here.
+ */
+export async function recordClientConversion(p, event) {
+	if (!CLIENT_KINDS.has(p?.kind)) return;
+	const ua = event.request.headers.get('user-agent') || '';
+	if (isBot(ua)) return;
+	await db.insert(caConversion).values({
+		visitorId: isUuid(p.visitorId) ? p.visitorId : null,
+		sessionId: isUuid(p.sessionId) ? p.sessionId : null,
+		userId: event.locals.user?.id || null,
+		kind: p.kind,
+		path: str(p.path, 300),
+		meta: p.meta && typeof p.meta === 'object' ? p.meta : null
+	});
 }

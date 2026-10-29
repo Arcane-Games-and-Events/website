@@ -16,7 +16,7 @@ export function load() {
 }
 
 export const actions = {
-	default: async ({ request, cookies, url }) => {
+	default: async ({ request, cookies, url, getClientAddress }) => {
 		const form = await request.formData();
 		const firstName = form.get('firstName');
 		const lastName = form.get('lastName');

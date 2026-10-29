@@ -80,8 +80,8 @@
 		cancelled: { label: 'Cancelled', tone: 'border-hero-rb text-hero-rb' }
 	};
 	const st = $derived(
-		STATUS[data.event.computedStatus] ?? {
-			label: data.event.computedStatus || 'Draft',
+		STATUS[data.event.status] ?? {
+			label: data.event.status || 'Draft',
 			tone: 'border-paper-bg/30 text-paper-bg/60'
 		}
 	);

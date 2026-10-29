@@ -1,4 +1,7 @@
 <script>
+	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
+	import AdminSubnav from '$lib/components/age/admin/AdminSubnav.svelte';
 	import { getCircuitNames } from '$lib/data/circuits.js';
 	import { MONTH_NAMES } from '$lib/data/months.js';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
@@ -22,31 +25,22 @@
 	];
 </script>
 
-<svelte:head><title>Create Event · AGE Ops</title></svelte:head>
+<svelte:head><title>Create Event · Admin</title></svelte:head>
 
 <!-- ============ HEADER ============ -->
-<header class="mx-auto w-full max-w-[1600px] px-4 pt-[42px] pb-[28px] md:px-10 lg:px-14">
-	<a
-		href="/admin/events"
-		class="inline-flex items-center font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:text-ink"
-	>
-		← Back to Events
-	</a>
-	<div class="mt-[18px] mb-[18px] flex flex-wrap items-center gap-[16px]">
-		<span class="font-mono-system text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase">
-			New Event
-		</span>
-		<span class="hidden h-[1px] flex-1 bg-line2 md:block"></span>
-	</div>
-	<h1
-		class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]"
-	>
-		Stand up a new event.
-	</h1>
-	<p class="mt-3 max-w-[680px] font-newsreader text-[19px] leading-[1.42] text-soft italic">
-		Add a tournament or gaming event to the AGE Open Series.
-	</p>
-</header>
+<DeskHeader
+	kicker="Admin"
+	title="New event"
+	subtitle="Add a tournament or gaming event to the AGE Open Series."
+/>
+<AdminTabs />
+<AdminSubnav
+	label="Events"
+	items={[
+		{ href: '/admin/events', label: 'Events' },
+		{ href: '/admin/events/new', label: 'New event' }
+	]}
+/>
 
 <form method="POST">
 	{#if form?.error}
@@ -54,26 +48,20 @@
 	{/if}
 
 	<!-- ============ BASIC INFO ============ -->
-	<section class="overflow-x-clip border-t-[3px] border-double border-ink">
-		<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
+	<section class="overflow-x-clip border-t border-line2">
+		<div class="mx-auto w-full max-w-[1200px] px-5 py-[36px] md:px-8">
 			<div class="mb-[22px]">
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-				>
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 					01 · Basic Information
 				</span>
-				<h2
-					class="mt-[6px] font-newsreader text-[clamp(24px,3vw,32px)] leading-[1] font-semibold tracking-[-0.01em]"
-				>
-					What is it?
-				</h2>
+				<h2 class="mt-[6px] font-newsreader text-[22px] font-semibold">What is it?</h2>
 			</div>
 
-			<div class="space-y-[22px] overflow-hidden border-[1.5px] border-ink p-6">
+			<div class="space-y-[22px] overflow-hidden border border-line2 p-6">
 				<div>
 					<label
 						for="title"
-						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 					>
 						Event Name <span class="text-warm">*</span>
 					</label>
@@ -84,14 +72,14 @@
 						required
 						value={form?.values?.title || ''}
 						placeholder="e.g., Winter Championship 2025"
-						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
+						class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 					/>
 				</div>
 
 				<div>
 					<label
 						for="location"
-						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 					>
 						Venue Name <span class="text-warm">*</span>
 					</label>
@@ -102,14 +90,14 @@
 						required
 						value={form?.values?.location || ''}
 						placeholder="e.g., Downtown Game Store"
-						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
+						class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 					/>
 				</div>
 
 				<div>
 					<label
 						for="address"
-						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 					>
 						Address
 					</label>
@@ -119,7 +107,7 @@
 						name="address"
 						value={form?.values?.address || ''}
 						placeholder="e.g., 123 Main St, Los Angeles, CA 90001"
-						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
+						class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 					/>
 				</div>
 
@@ -127,7 +115,7 @@
 					<div>
 						<label
 							for="format"
-							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 						>
 							Format <span class="text-warm">*</span>
 						</label>
@@ -135,7 +123,7 @@
 							id="format"
 							name="format"
 							required
-							class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[13px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
+							class="h-[40px] w-full border border-line2 bg-paper py-0 pr-8 pl-3 text-[13px] text-ink focus:border-ink focus:ring-0"
 						>
 							<option value="">Select a format</option>
 							{#each formats as format}
@@ -147,14 +135,14 @@
 					<div>
 						<label
 							for="circuit"
-							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 						>
 							Circuit
 						</label>
 						<select
 							id="circuit"
 							name="circuit"
-							class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[13px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
+							class="h-[40px] w-full border border-line2 bg-paper py-0 pr-8 pl-3 text-[13px] text-ink focus:border-ink focus:ring-0"
 						>
 							<option value="">No circuit</option>
 							{#each circuits as circuit}
@@ -168,14 +156,14 @@
 					<div>
 						<label
 							for="month"
-							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 						>
 							Month
 						</label>
 						<select
 							id="month"
 							name="month"
-							class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[13px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
+							class="h-[40px] w-full border border-line2 bg-paper py-0 pr-8 pl-3 text-[13px] text-ink focus:border-ink focus:ring-0"
 						>
 							<option value="">Select month</option>
 							{#each months as month}
@@ -189,7 +177,7 @@
 					<div>
 						<label
 							for="eventDate"
-							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 						>
 							Event Date & Time <span class="text-warm">*</span>
 						</label>
@@ -199,14 +187,14 @@
 							name="eventDate"
 							required
 							value={form?.values?.eventDate || ''}
-							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink focus:outline-none"
+							class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 						/>
 					</div>
 
 					<div>
 						<label
 							for="price"
-							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 						>
 							Entry Fee ($) <span class="text-warm">*</span>
 						</label>
@@ -221,7 +209,7 @@
 								step="0.01"
 								value={form?.values?.price || ''}
 								placeholder="25.00"
-								class="w-full border-[1.5px] border-ink bg-paper-bg py-[10px] pr-[14px] pl-[26px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
+								class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 							/>
 						</div>
 					</div>
@@ -230,7 +218,7 @@
 				<div>
 					<label
 						for="description"
-						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 					>
 						Description
 					</label>
@@ -240,7 +228,7 @@
 						rows="4"
 						value={form?.values?.description || ''}
 						placeholder="Details about the event, prizes, schedule, etc."
-						class="w-full resize-none border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] leading-[1.5] text-ink placeholder:text-fade focus:outline-none"
+						class="w-full border border-line2 bg-paper px-3 py-2 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 					></textarea>
 				</div>
 			</div>
@@ -248,32 +236,26 @@
 	</section>
 
 	<!-- ============ SETTINGS ============ -->
-	<section class="overflow-x-clip border-y-[3px] border-double border-ink">
-		<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
+	<section class="overflow-x-clip border-t border-line2">
+		<div class="mx-auto w-full max-w-[1200px] px-5 py-[36px] md:px-8">
 			<div class="mb-[22px]">
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-				>
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 					02 · Event Settings
 				</span>
-				<h2
-					class="mt-[6px] font-newsreader text-[clamp(24px,3vw,32px)] leading-[1] font-semibold tracking-[-0.01em]"
-				>
-					The rules of engagement.
-				</h2>
+				<h2 class="mt-[6px] font-newsreader text-[22px] font-semibold">The rules of engagement.</h2>
 			</div>
 
 			<div class="space-y-[16px]">
 				<!-- GEM ID -->
 				<label
-					class="flex cursor-pointer items-start gap-[16px] border-[1.5px] border-ink p-5 transition-colors hover:bg-panel"
+					class="flex cursor-pointer items-start gap-[16px] border border-line2 p-5 transition-colors hover:bg-paper"
 				>
 					<input
 						type="checkbox"
 						id="gemIdRequired"
 						name="gemIdRequired"
 						bind:checked={gemIdRequired}
-						class="mt-[3px] h-[18px] w-[18px] border-ink accent-[color:var(--ed-ink)]"
+						class="h-4 w-4 border-line2 text-ink focus:ring-0"
 					/>
 					<div class="flex-1">
 						<span class="font-newsreader text-[17px] font-semibold">Require GEM ID</span>
@@ -285,21 +267,19 @@
 
 				<!-- Premium Discount -->
 				<label
-					class="flex cursor-pointer items-start gap-[16px] border-[1.5px] border-ink p-5 transition-colors hover:bg-panel"
+					class="flex cursor-pointer items-start gap-[16px] border border-line2 p-5 transition-colors hover:bg-paper"
 				>
 					<input
 						type="checkbox"
 						id="premiumDiscount"
 						name="premiumDiscount"
 						bind:checked={premiumDiscount}
-						class="mt-[3px] h-[18px] w-[18px] border-ink accent-[color:var(--ed-prem)]"
+						class="h-4 w-4 border-line2 text-ink focus:ring-0"
 					/>
 					<div class="flex-1">
 						<div class="flex items-center gap-2">
 							<span class="font-newsreader text-[17px] font-semibold">Premium Member Discount</span>
-							<span
-								class="inline-flex items-center bg-prem px-[7px] py-[3px] font-mono-system text-[9.5px] font-bold tracking-[0.12em] text-white uppercase"
-							>
+							<span class="inline-flex shrink-0 items-center text-[11.5px] font-semibold text-prem">
 								Premium
 							</span>
 						</div>
@@ -311,12 +291,12 @@
 
 				<!-- Player Cap -->
 				<label
-					class="flex cursor-pointer items-start gap-[16px] border-[1.5px] border-ink p-5 transition-colors hover:bg-panel"
+					class="flex cursor-pointer items-start gap-[16px] border border-line2 p-5 transition-colors hover:bg-paper"
 				>
 					<input
 						type="checkbox"
 						bind:checked={hasPlayerCap}
-						class="mt-[3px] h-[18px] w-[18px] border-ink accent-[color:var(--ed-warm)]"
+						class="h-4 w-4 border-line2 text-ink focus:ring-0"
 					/>
 					<div class="flex-1">
 						<span class="font-newsreader text-[17px] font-semibold">Player Cap</span>
@@ -331,7 +311,7 @@
 								bind:value={playerCapValue}
 								placeholder="e.g., 32"
 								onclick={(e) => e.stopPropagation()}
-								class="mt-[12px] w-[140px] border-[1.5px] border-ink bg-paper-bg px-[14px] py-[8px] font-mono-system text-[13px] font-bold tracking-[0.06em] text-ink placeholder:text-fade focus:outline-none"
+								class="mt-[12px] h-[40px] w-[140px] border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 							/>
 						{/if}
 					</div>
@@ -342,17 +322,17 @@
 
 	<!-- ============ ACTIONS ============ -->
 	<section class="overflow-x-clip">
-		<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
+		<div class="mx-auto w-full max-w-[1200px] px-5 py-[36px] md:px-8">
 			<div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
 				<a
 					href="/admin/events"
-					class="inline-flex items-center justify-center border border-line2 px-[22px] py-[13px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:border-ink"
+					class="inline-flex h-[40px] shrink-0 items-center justify-center gap-2 border border-line2 px-4 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
 				>
 					Cancel
 				</a>
 				<button
 					type="submit"
-					class="inline-flex items-center justify-center bg-ink px-[24px] py-[13px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
+					class="inline-flex h-[40px] shrink-0 items-center justify-center gap-2 bg-ink px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					Create Event →
 				</button>

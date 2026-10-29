@@ -1,13 +1,8 @@
-import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { partner, partnerReferral, user } from '$lib/server/db/schema.js';
 import { eq, sql, desc } from 'drizzle-orm';
 
-export async function load({ locals }) {
-	if (!locals.user || locals.user.role !== 'admin') {
-		throw redirect(302, '/login?redirect=/admin/partners');
-	}
-
+export async function load() {
 	// All partners joined with their user info + aggregated referral stats
 	const partners = await db
 		.select({

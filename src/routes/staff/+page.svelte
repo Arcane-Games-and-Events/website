@@ -6,11 +6,11 @@
 
 	const events = $derived(data.assignedEvents || []);
 	const active = $derived(
-		events.filter((e) => e.computedStatus !== 'completed' && e.computedStatus !== 'cancelled')
+		events.filter((e) => e.status !== 'completed' && e.status !== 'cancelled')
 	);
 	const past = $derived(
 		events
-			.filter((e) => e.computedStatus === 'completed' || e.computedStatus === 'cancelled')
+			.filter((e) => e.status === 'completed' || e.status === 'cancelled')
 			.slice()
 			.reverse()
 	);
@@ -44,7 +44,7 @@
 
 {#snippet eventRow(ev)}
 	{@const d = dateParts(ev.eventDate)}
-	{@const st = status(ev.computedStatus)}
+	{@const st = status(ev.status)}
 	<li>
 		<a
 			href="/staff/{ev.eventId}"

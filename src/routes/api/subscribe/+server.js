@@ -10,6 +10,7 @@ import {
 } from '$lib/server/db/schema.js';
 import { auth, forgetSession } from '$lib/server/lucia.js';
 import { bump } from '$lib/server/cache/index.js';
+import { recordPayment, logMemberEvent } from '$lib/server/payments/ledger.js';
 import { recordConversion } from '$lib/server/contentAnalytics/collect.js';
 import { eq, and } from 'drizzle-orm';
 import {
@@ -42,7 +43,7 @@ function calculateNextBillingDate(startDate, subscriptionType) {
 /**
  * Create a premium subscription
  */
-export async function POST({ request, locals, cookies }) {
+export async function POST({ request, locals, cookies, url }) {
 	try {
 		// Ensure user is logged in
 		const currentUser = locals.user;
@@ -299,17 +300,29 @@ export async function POST({ request, locals, cookies }) {
 			const userUpdate = {
 				role: 'premium',
 				subscriptionId: result.subscriptionId,
+				lastSubscriptionId: result.subscriptionId,
 				subscriptionType,
 				subscriptionStatus: 'active',
 				subscriptionStartDate,
 				subscriptionEndDate: null, // No end date for active subscriptions
-				nextBillingDate
+				nextBillingDate,
+				// A paying member is no longer a comp.
+				compReason: null,
+				compedAt: null,
+				compedBy: null
 			};
 			// usedPartnerCode tracks any redeemed promo code (partner OR member referral)
 			if (hasAnyDiscount) {
 				userUpdate.usedPartnerCode = normalizedCode;
 			}
 			await db.update(userTable).set(userUpdate).where(eq(userTable.id, currentUser.id));
+			await logMemberEvent({
+				userId: currentUser.id,
+				kind: 'subscribed',
+				subscriptionId: result.subscriptionId,
+				subscriptionType,
+				meta: { promo: hasAnyDiscount ? normalizedCode : null }
+			});
 
 			console.log('User role updated to premium with subscription details saved');
 
@@ -353,6 +366,40 @@ export async function POST({ request, locals, cookies }) {
 					})
 					.returning({ id: order.id });
 				firstChargeOrderId = firstChargeOrder.id;
+				await recordPayment({
+					transId: firstChargeResult.transactionId,
+					kind: 'sub_promo_first',
+					amount: firstChargeAmount,
+					listAmount: amount,
+					discountAmount: Number(amount) - Number(firstChargeAmount),
+					discountKind: hasPartnerDiscount ? 'partner' : 'member_referral',
+					promoCode: normalizedCode,
+					userId: currentUser.id,
+					userEmail: currentUser.email,
+					subscriptionId: result.subscriptionId,
+					subscriptionType,
+					payNum: 1,
+					orderId: firstChargeOrderId,
+					source: 'app'
+				});
+			} else if (hasAnyDiscount) {
+				// Member referral, monthly: the first month is free. A $0 row
+				// keeps the discount in the ledger.
+				await recordPayment({
+					transId: `member0:${result.subscriptionId}`,
+					kind: 'sub_promo_first',
+					amount: 0,
+					listAmount: amount,
+					discountAmount: amount,
+					discountKind: 'member_referral',
+					promoCode: normalizedCode,
+					userId: currentUser.id,
+					userEmail: currentUser.email,
+					subscriptionId: result.subscriptionId,
+					subscriptionType,
+					payNum: 1,
+					source: 'app'
+				});
 			} else if (!hasAnyDiscount) {
 				await db.insert(order).values({
 					provider: 'authnet',
@@ -395,7 +442,9 @@ export async function POST({ request, locals, cookies }) {
 
 			// Content analytics: record the upgrade so the pieces this reader read
 			// beforehand get credit. Never throws or blocks the subscription.
-			await recordConversion({ cookies }, currentUser.id, 'premium');
+			await recordConversion({ cookies, url }, currentUser.id, 'premium', {
+				meta: { subscriptionType, promo: hasAnyDiscount ? normalizedCode : null }
+			});
 
 			return json(
 				{

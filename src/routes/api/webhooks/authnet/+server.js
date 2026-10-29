@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { bump } from '$lib/server/cache/index.js';
+import { recordPayment, logMemberEvent } from '$lib/server/payments/ledger.js';
 import { webhookEvent, user as userTable, ticket, memberReferral } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import crypto from 'crypto';
@@ -112,6 +113,26 @@ async function handleSubscriptionEvent(payload) {
 		const now = new Date();
 		const nextBillingDate = calculateNextBillingDate(now, user.subscriptionType || 'monthly');
 
+		// Ledger: the money collected. The Silent Post is unsigned, so the row
+		// stays unverified until the nightly sync confirms it with
+		// Authorize.net. Pay number 1 is the subscription's first charge
+		// unless a promo first charge was taken separately.
+		if (payload.x_trans_id && payload.x_amount) {
+			const payNum = Number(subscriptionPayNum) || null;
+			await recordPayment({
+				transId: payload.x_trans_id,
+				kind: payNum === 1 && !user.usedPartnerCode ? 'sub_first' : 'sub_renewal',
+				amount: payload.x_amount,
+				userId: user.id,
+				userEmail: user.email,
+				subscriptionId,
+				subscriptionType: user.subscriptionType || null,
+				payNum,
+				occurredAt: now,
+				source: 'webhook'
+			});
+		}
+
 		// Update user: ensure premium role, update billing date, clear any failed status
 		await db
 			.update(userTable)
@@ -149,6 +170,13 @@ async function handleSubscriptionEvent(payload) {
 			})
 			.where(eq(userTable.id, user.id));
 		await bump(`user:${user.id}`, 'users');
+		await logMemberEvent({
+			userId: user.id,
+			kind: 'payment_failed',
+			subscriptionId,
+			subscriptionType: user.subscriptionType || null,
+			meta: { responseCode, payNum: Number(subscriptionPayNum) || null }
+		});
 
 		// Send email notification to user about failed payment
 		const baseUrl = env.PUBLIC_BASE_URL || 'https://www.age.events';

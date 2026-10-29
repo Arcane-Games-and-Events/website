@@ -1,20 +1,15 @@
-import { redirect, fail } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { standing, match, event } from '$lib/server/db/schema.js';
-import { eq, and, sql, inArray } from 'drizzle-orm';
-import { playerKeyFromIdName } from '$lib/server/players/key.js';
-import { calculateFinalStandings } from '$lib/server/tournament-processor.js';
+import { standing, match } from '$lib/server/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
+import { rebuildStandings } from '$lib/server/standings/rebuild.js';
+import { bump } from '$lib/server/cache/index.js';
 import { listStandings } from '$lib/server/admin/dashboard.js';
 import { MONTH_NAMES } from '$lib/data/months.js';
 
 const MONTHS = MONTH_NAMES.map((m) => m.toLowerCase());
 
 export async function load({ locals }) {
-	// Require admin authentication
-	if (!locals.user || locals.user.role !== 'admin') {
-		throw redirect(302, '/login?redirect=/admin/players');
-	}
-
 	try {
 		const rows = await listStandings();
 
@@ -365,243 +360,21 @@ export const actions = {
 		}
 
 		try {
-			const monthKeys = [
-				'january',
-				'february',
-				'march',
-				'april',
-				'may',
-				'june',
-				'july',
-				'august',
-				'september',
-				'october',
-				'november',
-				'december'
-			];
-
-			// Get all matches for this season/circuit
-			const allMatches = await db
-				.select()
-				.from(match)
-				.where(and(eq(match.year, season), eq(match.circuit, circuit)));
-
-			if (allMatches.length === 0) {
-				return fail(400, { error: `No matches found for ${circuit} ${season}` });
+			const summary = await db.transaction((tx) => rebuildStandings({ season, circuit }, tx));
+			await bump('standings');
+			if (summary.events === 0) {
+				return fail(400, { error: `No results or matches found for ${circuit} ${season}` });
 			}
-
-			// Group matches: real events keyed by eventId, legacy matches with
-			// no eventId (e.g. historically imported) keyed by month.
-			const groups = new Map();
-			for (const m of allMatches) {
-				const groupKey = m.eventId || `month:${m.month}`;
-				if (!groups.has(groupKey)) {
-					groups.set(groupKey, { eventId: m.eventId || null, month: m.month, matches: [] });
-				}
-				groups.get(groupKey).matches.push(m);
+			const cap = (k) => k[0].toUpperCase() + k.slice(1);
+			const skipped = summary.skipped.length
+				? ` Left alone: ${summary.skipped.map(cap).join(', ')} — those months only have imported matches without Swiss ranks, so rebuilding them would replace the stored figures with an estimate.`
+				: '';
+			if (summary.months.length === 0) {
+				return { success: true, message: `Nothing rebuilt for ${circuit} ${season}.${skipped}` };
 			}
-
-			// Fetch the events so we can prefer their stored tournamentResults.
-			// Those are computed at CSV-upload time using the authoritative
-			// Swiss standings rank, so placements + AGE points are exact.
-			// Recomputing from matches alone has no rank and can only win-sort,
-			// which mis-places players (a rank-14 finish would land at the
-			// participation tier instead of 13-16 = 8 pts).
-			const eventIds = [...new Set(allMatches.map((m) => m.eventId).filter(Boolean))];
-			const eventsById = new Map();
-			if (eventIds.length > 0) {
-				const eventRows = await db.select().from(event).where(inArray(event.id, eventIds));
-				for (const e of eventRows) eventsById.set(e.id, e);
-			}
-
-			// For each player, accumulate per-month points across events
-			const playerMonthlyStats = new Map();
-
-			const accumulate = (gemId, name, monthKey, points, wins, matches) => {
-				const key = playerKeyFromIdName(gemId, name);
-				if (!playerMonthlyStats.has(key)) {
-					playerMonthlyStats.set(key, { gemId: gemId || null, name, months: {} });
-				}
-				const pd = playerMonthlyStats.get(key);
-				if (name) pd.name = name;
-				const ex = pd.months[monthKey] || { points: 0, wins: 0, matches: 0 };
-				pd.months[monthKey] = {
-					points: ex.points + points,
-					wins: ex.wins + wins,
-					matches: ex.matches + matches
-				};
-			};
-
-			for (const [, group] of groups) {
-				const monthKey = (group.month || '').toLowerCase();
-				if (!monthKeys.includes(monthKey)) continue;
-
-				const evt = group.eventId ? eventsById.get(group.eventId) : null;
-				const storedResults =
-					evt && Array.isArray(evt.tournamentResults) ? evt.tournamentResults : null;
-
-				if (storedResults) {
-					// Authoritative path — use the per-event results stored at
-					// upload time (correct Swiss-rank-based placements + points).
-					for (const r of storedResults) {
-						accumulate(
-							r.gemId || null,
-							r.playerName,
-							monthKey,
-							r.agePoints || 0,
-							r.wins || 0,
-							(r.wins || 0) + (r.losses || 0)
-						);
-					}
-				} else {
-					// Fallback — no stored results (legacy / unlinked matches).
-					// Compute from matches; placements are win-sorted (approximate)
-					// because there's no Swiss rank to order by.
-					const swissByKey = new Map();
-					for (const m of group.matches) {
-						if (m.player1GemId || m.player1Name) {
-							const key = m.player1GemId || m.player1Name;
-							if (!swissByKey.has(key)) {
-								swissByKey.set(key, {
-									playerId: m.player1GemId,
-									name: m.player1Name,
-									wins: 0
-								});
-							}
-							if (m.winner === 'player1') swissByKey.get(key).wins++;
-						}
-						if (m.player2GemId || m.player2Name) {
-							const key = m.player2GemId || m.player2Name;
-							if (!swissByKey.has(key)) {
-								swissByKey.set(key, {
-									playerId: m.player2GemId,
-									name: m.player2Name,
-									wins: 0
-								});
-							}
-							if (m.winner === 'player2') swissByKey.get(key).wins++;
-						}
-					}
-
-					const pairings = group.matches.map((m) => ({
-						round: m.round,
-						table: m.table,
-						player1Id: m.player1GemId,
-						player1Name: m.player1Name,
-						player2Id: m.player2GemId,
-						player2Name: m.player2Name,
-						result: m.winner === 'player1' ? '1WIN' : m.winner === 'player2' ? '2WIN' : 'DRAW'
-					}));
-
-					let computed;
-					try {
-						computed = calculateFinalStandings(Array.from(swissByKey.values()), pairings);
-					} catch (err) {
-						console.warn(`Skipping group (processor failed): ${err.message}`);
-						continue;
-					}
-
-					for (const r of computed.results) {
-						accumulate(
-							r.playerId || null,
-							r.name,
-							monthKey,
-							r.points || 0,
-							r.matchesWon || 0,
-							r.matchesPlayed || 0
-						);
-					}
-				}
-			}
-
-			// Get existing standings for this season/circuit
-			const existingStandings = await db
-				.select()
-				.from(standing)
-				.where(and(eq(standing.season, season), eq(standing.circuit, circuit)));
-
-			// Lookup maps:
-			//   - GEM-ID rows match only by GEM ID (never by name).
-			//   - GEM-less rows match by playerName, but only against GEM-less
-			//     results. A GEM-less result never matches a GEM-ID row and vice
-			//     versa — that mismatch was the bug that merged two same-named
-			//     players into one row.
-			const standingByGemId = new Map(
-				existingStandings.filter((s) => s.gemId).map((s) => [s.gemId, s])
-			);
-			const standingByGemlessName = new Map(
-				existingStandings.filter((s) => !s.gemId).map((s) => [s.playerName, s])
-			);
-
-			let updated = 0;
-			let created = 0;
-
-			// Update each player's standing with calculated monthly stats
-			for (const [, playerData] of playerMonthlyStats) {
-				const existingStanding = playerData.gemId
-					? standingByGemId.get(playerData.gemId)
-					: standingByGemlessName.get(playerData.name);
-
-				// Calculate totals from monthly data
-				let totalPoints = 0;
-				let totalWins = 0;
-				let totalMatches = 0;
-
-				const monthlyUpdate = {};
-				for (const monthKey of monthKeys) {
-					const monthStats = playerData.months[monthKey];
-					if (monthStats) {
-						monthlyUpdate[`${monthKey}Points`] = monthStats.points;
-						monthlyUpdate[`${monthKey}MatchesWon`] = monthStats.wins;
-						monthlyUpdate[`${monthKey}Matches`] = monthStats.matches;
-						totalPoints += monthStats.points;
-						totalWins += monthStats.wins;
-						totalMatches += monthStats.matches;
-					} else {
-						monthlyUpdate[`${monthKey}Points`] = 0;
-						monthlyUpdate[`${monthKey}MatchesWon`] = 0;
-						monthlyUpdate[`${monthKey}Matches`] = 0;
-					}
-				}
-
-				const winPercentage =
-					totalMatches > 0 ? Math.round((totalWins / totalMatches) * 10000) / 100 : null;
-
-				if (existingStanding) {
-					// Update existing standing
-					await db
-						.update(standing)
-						.set({
-							totalPoints,
-							matchesWon: totalWins,
-							matchesPlayed: totalMatches,
-							winPercentage,
-							gemId: playerData.gemId || existingStanding.gemId,
-							...monthlyUpdate,
-							updatedAt: new Date()
-						})
-						.where(eq(standing.id, existingStanding.id));
-					updated++;
-				} else {
-					// Create new standing
-					await db.insert(standing).values({
-						season,
-						circuit,
-						playerName: playerData.name,
-						gemId: playerData.gemId || null,
-						totalPoints,
-						matchesWon: totalWins,
-						matchesPlayed: totalMatches,
-						winPercentage,
-						...monthlyUpdate
-					});
-					created++;
-				}
-			}
-
 			return {
 				success: true,
-				message: `Recalculated standings for ${circuit} ${season}: ${updated} updated, ${created} created from ${allMatches.length} matches`
+				message: `Rebuilt ${summary.months.map(cap).join(', ')} ${season} for ${circuit}: ${summary.updated} updated, ${summary.created} created.${skipped}`
 			};
 		} catch (err) {
 			console.error('Error recalculating standings:', err);

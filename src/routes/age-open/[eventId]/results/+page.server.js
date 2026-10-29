@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { event, match, eventPlayerHero, decklist } from '$lib/server/db/schema.js';
+import { event, match, decklist } from '$lib/server/db/schema.js';
+import { listEventHeroes } from '$lib/server/events/heroes.js';
 import { eq, asc, and } from 'drizzle-orm';
 import { calculateFinalStandings } from '$lib/server/tournament-processor.js';
 import { playerKeyFromIdName } from '$lib/server/players/key.js';
@@ -137,22 +138,9 @@ async function buildEventResults(eventId) {
 		let heroData = [];
 		let metagameBreakdown = [];
 		if (eventData.circuit && eventData.month && eventData.eventDate) {
-			const season = new Date(eventData.eventDate).getUTCFullYear().toString();
-			heroData = await cached(
-				`events:heroes:${season}|${eventData.circuit}|${eventData.month}`,
-				() =>
-					db
-						.select()
-						.from(eventPlayerHero)
-						.where(
-							and(
-								eq(eventPlayerHero.season, season),
-								eq(eventPlayerHero.circuit, eventData.circuit),
-								eq(eventPlayerHero.month, eventData.month)
-							)
-						),
-				{ tags: ['events'] }
-			);
+			heroData = await cached(`events:heroes:${eventData.id}`, () => listEventHeroes(eventData), {
+				tags: ['events']
+			});
 		}
 
 		// Create hero lookup maps

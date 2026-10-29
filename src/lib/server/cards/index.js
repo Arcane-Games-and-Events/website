@@ -24,7 +24,7 @@ function normalizePitch(input) {
 
 /**
  * Look up a card from the database by lookup key
- * Cached for a day; a card-data upload in /admin/cards bumps `cards`.
+ * Cached for a day under the `cards` tag.
  */
 async function lookupCardFromDb(lookupKey) {
 	const cacheKey = `card:${lookupKey}`;

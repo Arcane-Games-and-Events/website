@@ -1,7 +1,12 @@
 <script>
+	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
+	import Figures from '$lib/components/age/admin/Figures.svelte';
+	import Section from '$lib/components/age/admin/Section.svelte';
+	import * as ui from '$lib/components/age/admin/ui.js';
 
 	let { data, form } = $props();
 
@@ -109,29 +114,34 @@
 		return `${m}m ${s}s`;
 	}
 
-	function statusChip(status) {
-		switch (status) {
-			case 'ready':
-				return 'bg-prem text-white';
-			case 'preparing':
-				return 'bg-accent text-white';
-			case 'errored':
-				return 'bg-warm text-white';
-			default:
-				return 'border-line2 text-fade border';
-		}
-	}
+	const STATUS = {
+		ready: ['Ready', ui.pillTone.active],
+		preparing: ['Processing', ui.pillTone.in_progress],
+		errored: ['Error', ui.pillTone.refunded],
+		waiting: ['Waiting for video', ui.pillTone.inactive]
+	};
+	const statusOf = (s) => STATUS[s] || STATUS.waiting;
+	const counts = $derived.by(() => {
+		const v = data.vods || [];
+		return {
+			total: v.length,
+			published: v.filter((x) => x.isPublished).length,
+			processing: v.filter((x) => x.status === 'preparing' || x.status === 'waiting').length,
+			premium: v.filter((x) => x.isPremium).length
+		};
+	});
+	const thumb = (v) =>
+		`https://image.mux.com/${v.muxPlaybackId}/thumbnail.webp?width=288&height=160&fit_mode=smartcrop${v.thumbnailToken ? `&token=${v.thumbnailToken}` : ''}`;
 </script>
 
-<svelte:head><title>VODs · AGE Ops</title></svelte:head>
+<svelte:head><title>VODs · Admin</title></svelte:head>
 
-<!-- ============ HEADER ============ -->
-<header class="mx-auto w-full max-w-[1600px] px-4 pt-[42px] pb-[28px] md:px-10 lg:px-14">
-	<div class="mb-[18px] flex flex-wrap items-center gap-[16px]">
-		<span class="font-mono-system text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase">
-			VODs
-		</span>
-		<span class="hidden h-[1px] flex-1 bg-line2 md:block"></span>
+<DeskHeader
+	kicker="Admin"
+	title="Tournament VODs"
+	subtitle="Upload, publish and paywall tournament recordings hosted on Mux."
+>
+	{#snippet actions(compact)}
 		<button
 			type="button"
 			onclick={() => {
@@ -139,115 +149,89 @@
 				editingVodId = null;
 				vodFormError = '';
 			}}
-			class="inline-flex items-center bg-ink px-[14px] py-[9px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
+			class="inline-flex items-center bg-paper-bg px-3 text-[10px] font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-warm-light {compact
+				? 'h-[30px]'
+				: 'h-[36px]'}">+ New VOD</button
 		>
-			+ New VOD
-		</button>
-	</div>
-	<h1
-		class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]"
-	>
-		Tournament VODs.
-	</h1>
-	<p class="mt-3 max-w-[680px] font-newsreader text-[19px] leading-[1.42] text-soft italic">
-		Upload, publish, and paywall tournament recordings hosted on Mux.
-	</p>
-</header>
+	{/snippet}
+</DeskHeader>
+<AdminTabs />
 
 {#if successMessage}
-	<AdminNotice tone="success" message={successMessage} />
+	<AdminNotice tone="success" message={successMessage} ondismiss={() => (successMessage = '')} />
 {/if}
 {#if errorMessage}
-	<AdminNotice tone="error" message={errorMessage} />
+	<AdminNotice tone="error" message={errorMessage} ondismiss={() => (errorMessage = '')} />
 {/if}
 
-<!-- ============ FORM ============ -->
-{#if showAddVodForm || editingVodId}
-	{@const editingVod = editingVodId ? (data.vods || []).find((v) => v.id === editingVodId) : null}
-	<section class="overflow-x-clip border-t-[3px] border-double border-ink">
-		<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
-			<div class="mb-[22px]">
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-				>
-					{editingVod ? 'Edit VOD' : 'New VOD'}
-				</span>
-				<h2
-					class="mt-[6px] font-newsreader text-[clamp(24px,3vw,32px)] leading-[1] font-semibold tracking-[-0.01em]"
-				>
-					{editingVod ? editingVod.title : 'Details.'}
-				</h2>
-			</div>
+<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+	<Figures
+		items={[
+			{ label: 'VODs', value: ui.fmt(counts.total) },
+			{ label: 'Published', value: ui.fmt(counts.published), tone: 'text-prem' },
+			{
+				label: 'Processing',
+				value: ui.fmt(counts.processing),
+				tone: counts.processing ? 'text-[#8a6116]' : ''
+			},
+			{ label: 'Premium', value: ui.fmt(counts.premium), note: 'members only' }
+		]}
+		cols="md:grid-cols-4"
+	/>
 
-			<form
-				method="POST"
-				action={editingVod ? '?/updateVod' : '?/createVod'}
-				use:enhance={() => {
-					return async ({ result }) => {
-						if (result.type === 'success') {
-							const fileToUpload = pendingVodFile;
-							const newVodId = result.data?.vod?.id;
-							resetVodForms();
-							await invalidateAll();
-							if (fileToUpload && newVodId) startVodUpload(newVodId, fileToUpload);
-						} else if (result.type === 'failure') {
-							vodFormError = result.data?.error || 'An error occurred';
-						}
-					};
-				}}
-				class="space-y-[22px] border-[1.5px] border-ink p-6"
-			>
-				{#if editingVod}
-					<input type="hidden" name="vodId" value={editingVod.id} />
-				{/if}
-
-				<div>
-					<label
-						for="vod-title"
-						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-					>
-						Title <span class="text-warm">*</span>
-					</label>
+	{#if showAddVodForm || editingVodId}
+		{@const editingVod = editingVodId ? (data.vods || []).find((v) => v.id === editingVodId) : null}
+		<form
+			method="POST"
+			action={editingVod ? '?/updateVod' : '?/createVod'}
+			use:enhance={() => {
+				return async ({ result }) => {
+					if (result.type === 'success') {
+						const fileToUpload = pendingVodFile;
+						const newVodId = result.data?.vod?.id;
+						resetVodForms();
+						await invalidateAll();
+						if (fileToUpload && newVodId) startVodUpload(newVodId, fileToUpload);
+					} else if (result.type === 'failure') {
+						vodFormError = result.data?.error || 'An error occurred';
+					}
+				};
+			}}
+			class="{ui.panel} mt-8 p-5 md:p-6"
+		>
+			{#if editingVod}<input type="hidden" name="vodId" value={editingVod.id} />{/if}
+			<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-fade uppercase">
+				{editingVod ? 'Editing' : 'New VOD'}
+			</p>
+			<h2 class="mt-1 mb-5 font-newsreader text-[22px] font-semibold">
+				{editingVod ? editingVod.title : 'Details'}
+			</h2>
+			<div class="space-y-5">
+				<label class="block">
+					<span class={ui.label}>Title <span class="text-hero-rb">*</span></span>
 					<input
 						type="text"
-						id="vod-title"
 						name="title"
 						value={editingVod?.title || ''}
 						required
-						placeholder="e.g., AGE Open January 2026 · Top 8"
-						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
+						placeholder="AGE Open January 2026 · Top 8"
+						class="{ui.input} mt-1.5"
 					/>
-				</div>
-
-				<div>
-					<label
-						for="vod-description"
-						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-					>
-						Description
-					</label>
+				</label>
+				<label class="block">
+					<span class={ui.label}>Description</span>
 					<textarea
-						id="vod-description"
 						name="description"
 						rows="3"
-						placeholder="Description of the VOD…"
-						class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] leading-[1.5] text-ink placeholder:text-fade focus:outline-none"
-						>{editingVod?.description || ''}</textarea
+						placeholder="What's in this recording"
+						class="{ui.textarea} mt-1.5">{editingVod?.description || ''}</textarea
 					>
-				</div>
-
-				<div class="overflow-hidden border-[1.5px] border-ink p-5">
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-					>
-						Player Matchup
-					</span>
-					<div class="mt-[14px] grid grid-cols-1 gap-[18px] md:grid-cols-2">
-						<div class="space-y-[10px]">
-							<span
-								class="font-mono-system text-[10px] font-bold tracking-[0.1em] text-fade uppercase"
-								>Player 1</span
-							>
+				</label>
+				<div>
+					<span class={ui.label}>Matchup</span>
+					<div class="mt-2 grid gap-4 md:grid-cols-2">
+						<div class="space-y-2">
+							<span class={ui.label}>Player 1</span>
 							<div class="relative">
 								<input
 									type="text"
@@ -257,26 +241,24 @@
 									oninput={(e) => searchPlayers(e.target.value, 1)}
 									onfocus={(e) => searchPlayers(e.target.value, 1)}
 									onblur={() => setTimeout(() => (player1Suggestions = []), 200)}
-									placeholder="Player name…"
-									class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[8px] font-newsreader text-[14px] text-ink placeholder:text-fade focus:outline-none"
+									placeholder="Player name"
+									class={ui.input}
 								/>
 								{#if player1Suggestions.length > 0}
 									<div
-										class="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto border-[1.5px] border-ink bg-paper-bg shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
+										class="absolute z-10 mt-1 max-h-44 w-full overflow-y-auto border border-ink bg-paper-bg"
 									>
 										{#each player1Suggestions as name (name)}
 											<button
 												type="button"
-												class="w-full px-[12px] py-[7px] text-left font-newsreader text-[14px] hover:bg-panel"
+												class="w-full px-3 py-2 text-left text-[13.5px] hover:bg-paper"
 												onmousedown={(e) => {
 													e.preventDefault();
 													const input = e.target.closest('.relative').querySelector('input');
 													input.value = name;
 													player1Suggestions = [];
-												}}
+												}}>{name}</button
 											>
-												{name}
-											</button>
 										{/each}
 									</div>
 								{/if}
@@ -286,15 +268,12 @@
 								name="player1Hero"
 								list="heroes-list"
 								value={editingVod?.player1Hero || ''}
-								placeholder="Hero…"
-								class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[8px] font-mono-system text-[13px] tracking-[0.04em] text-ink placeholder:text-fade focus:outline-none"
+								placeholder="Hero"
+								class={ui.input}
 							/>
 						</div>
-						<div class="space-y-[10px]">
-							<span
-								class="font-mono-system text-[10px] font-bold tracking-[0.1em] text-fade uppercase"
-								>Player 2</span
-							>
+						<div class="space-y-2">
+							<span class={ui.label}>Player 2</span>
 							<div class="relative">
 								<input
 									type="text"
@@ -304,26 +283,24 @@
 									oninput={(e) => searchPlayers(e.target.value, 2)}
 									onfocus={(e) => searchPlayers(e.target.value, 2)}
 									onblur={() => setTimeout(() => (player2Suggestions = []), 200)}
-									placeholder="Player name…"
-									class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[8px] font-newsreader text-[14px] text-ink placeholder:text-fade focus:outline-none"
+									placeholder="Player name"
+									class={ui.input}
 								/>
 								{#if player2Suggestions.length > 0}
 									<div
-										class="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto border-[1.5px] border-ink bg-paper-bg shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
+										class="absolute z-10 mt-1 max-h-44 w-full overflow-y-auto border border-ink bg-paper-bg"
 									>
 										{#each player2Suggestions as name (name)}
 											<button
 												type="button"
-												class="w-full px-[12px] py-[7px] text-left font-newsreader text-[14px] hover:bg-panel"
+												class="w-full px-3 py-2 text-left text-[13.5px] hover:bg-paper"
 												onmousedown={(e) => {
 													e.preventDefault();
 													const input = e.target.closest('.relative').querySelector('input');
 													input.value = name;
 													player2Suggestions = [];
-												}}
+												}}>{name}</button
 											>
-												{name}
-											</button>
 										{/each}
 									</div>
 								{/if}
@@ -333,31 +310,18 @@
 								name="player2Hero"
 								list="heroes-list"
 								value={editingVod?.player2Hero || ''}
-								placeholder="Hero…"
-								class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[8px] font-mono-system text-[13px] tracking-[0.04em] text-ink placeholder:text-fade focus:outline-none"
+								placeholder="Hero"
+								class={ui.input}
 							/>
 						</div>
 					</div>
+					<datalist id="heroes-list">
+						{#each data.heroNames as hero (hero)}<option value={hero}></option>{/each}
+					</datalist>
 				</div>
-
-				<datalist id="heroes-list">
-					{#each data.heroNames as hero (hero)}
-						<option value={hero}></option>
-					{/each}
-				</datalist>
-
-				<div>
-					<label
-						for="vod-event"
-						class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-					>
-						Linked Event
-					</label>
-					<select
-						id="vod-event"
-						name="eventId"
-						class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[13px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
-					>
+				<label class="block">
+					<span class={ui.label}>Linked event</span>
+					<select name="eventId" class="{ui.select} mt-1.5 w-full">
 						<option value="" selected={!editingVod?.eventId}>No linked event</option>
 						{#each data.events || [] as evt (evt.id)}
 							<option value={evt.id} selected={editingVod?.eventId === evt.id}>
@@ -366,294 +330,185 @@
 							</option>
 						{/each}
 					</select>
-				</div>
-
+				</label>
 				{#if !editingVod}
-					<div>
-						<label
-							for="vod-file"
-							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-						>
-							Video File
-						</label>
+					<label class="block">
+						<span class={ui.label}>Video file</span>
 						<input
 							type="file"
-							id="vod-file"
 							accept="video/*"
-							onchange={(e) => {
-								pendingVodFile = e.target.files?.[0] || null;
-							}}
-							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink file:mr-4 file:border-0 file:bg-ink file:px-[14px] file:py-[8px] file:text-[10px] file:font-extrabold file:tracking-[0.14em] file:text-white file:uppercase focus:outline-none"
+							onchange={(e) => (pendingVodFile = e.target.files?.[0] || null)}
+							class="mt-1.5 block w-full text-[13px] text-soft file:mr-3 file:h-[36px] file:border-0 file:bg-ink file:px-3 file:text-[10px] file:font-extrabold file:tracking-[0.14em] file:text-paper-bg file:uppercase hover:file:bg-warm"
 						/>
-						<p class="mt-[6px] text-[12px] text-fade">
-							Optional — you can also upload after creating the VOD.
-						</p>
-					</div>
+						<span class="{ui.note} mt-1.5 block"
+							>Optional — you can also upload after creating the VOD.</span
+						>
+					</label>
 				{/if}
-
-				<label class="flex items-center gap-3">
+				<label class="flex items-center gap-2.5 text-[13.5px]">
 					<input
 						type="checkbox"
-						id="vod-premium"
 						name="isPremium"
 						value="true"
 						checked={editingVod ? editingVod.isPremium !== false : true}
-						class="h-[16px] w-[16px] border-ink accent-[color:var(--ed-prem)]"
+						class="h-4 w-4 border-line2 text-prem focus:ring-0"
 					/>
-					<span class="font-newsreader text-[15px] font-semibold">
-						Premium content <span class="text-[13px] font-normal text-fade italic"
-							>— requires subscription</span
-						>
-					</span>
+					<span
+						><span class="font-semibold">Premium</span>
+						<span class="text-soft">— members only</span></span
+					>
 				</label>
+				{#if vodFormError}<p class="text-[13px] text-hero-rb" role="alert">{vodFormError}</p>{/if}
+			</div>
+			<div class="mt-6 flex justify-end gap-2">
+				<button type="button" onclick={() => resetVodForms()} class={ui.ghost}>Cancel</button>
+				<button type="submit" class={ui.btn}>{editingVod ? 'Save changes' : 'Create VOD'} →</button>
+			</div>
+		</form>
+	{/if}
 
-				{#if vodFormError}
-					<p class="font-mono-system text-[11px] font-bold tracking-[0.06em] text-warm uppercase">
-						{vodFormError}
-					</p>
-				{/if}
-
-				<div class="flex gap-3">
-					<button
-						type="submit"
-						class="inline-flex items-center bg-ink px-[22px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
-					>
-						{editingVod ? 'Update VOD' : 'Create VOD'} →
-					</button>
-					<button
-						type="button"
-						onclick={() => resetVodForms()}
-						class="inline-flex items-center border border-line2 px-[18px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
-					>
-						Cancel
-					</button>
-				</div>
-			</form>
-		</div>
-	</section>
-{/if}
-
-<!-- ============ LIST ============ -->
-<section class="overflow-x-clip border-t-[3px] border-double border-ink">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
-		{#if (data.vods || []).length > 0}
-			<div class="space-y-[16px]">
-				{#each data.vods || [] as vodItem (vodItem.id)}
-					<div class="overflow-hidden border-[1.5px] border-ink">
-						<div class="flex items-start gap-4 p-4">
-							<div
-								class="relative h-[80px] w-[142px] shrink-0 overflow-hidden border border-line2 bg-panel"
-							>
-								{#if vodItem.muxPlaybackId}
-									<img
-										src="https://image.mux.com/{vodItem.muxPlaybackId}/thumbnail.webp?width=288&height=160&fit_mode=smartcrop{vodItem.thumbnailToken
-											? `&token=${vodItem.thumbnailToken}`
-											: ''}"
-										alt=""
-										class="h-full w-full object-cover"
-									/>
-								{:else}
-									<div class="flex h-full items-center justify-center text-[24px] text-fade">
-										▶
-									</div>
-								{/if}
-								{#if vodItem.duration}
-									<div
-										class="absolute right-[4px] bottom-[4px] bg-ink px-[6px] py-[2px] font-mono-system text-[9px] font-bold tracking-[0.06em] text-white"
-									>
-										{formatVodDuration(vodItem.duration)}
-									</div>
-								{/if}
-							</div>
-
-							<div class="min-w-0 flex-1">
-								<div class="flex items-start justify-between gap-2">
-									<div class="min-w-0 flex-1">
-										<h4
-											class="truncate font-newsreader text-[17px] font-semibold tracking-[-0.01em]"
+	<Section
+		title="Recordings"
+		class="mt-10"
+		note="{ui.fmt(counts.total)} {counts.total === 1 ? 'VOD' : 'VODs'}"
+	>
+		<ul>
+			{#each data.vods || [] as v (v.id)}
+				{@const [statusLabel, statusTone] = statusOf(v.status)}
+				<li class={ui.row}>
+					<div class="flex gap-4 py-3.5">
+						<div class="relative h-[72px] w-[128px] shrink-0 overflow-hidden bg-panel">
+							{#if v.muxPlaybackId}
+								<img src={thumb(v)} alt="" class="h-full w-full object-cover" loading="lazy" />
+							{:else}
+								<div
+									class="flex h-full items-center justify-center text-[20px] text-fade"
+									aria-hidden="true"
+								>
+									▶
+								</div>
+							{/if}
+							{#if v.duration}<span
+									class="absolute right-1 bottom-1 bg-ink px-1.5 py-[1px] text-[9px] font-bold text-paper-bg tabular-nums"
+									>{formatVodDuration(v.duration)}</span
+								>{/if}
+						</div>
+						<div class="min-w-0 flex-1">
+							<div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+								<div class="min-w-0 flex-1">
+									<h3 class="{ui.titleText} truncate">{v.title}</h3>
+									{#if v.player1Name && v.player2Name}<p class="text-[12px] text-soft">
+											{v.player1Name} vs {v.player2Name}{#if v.player1Hero || v.player2Hero}
+												· {v.player1Hero || '?'} / {v.player2Hero || '?'}{/if}
+										</p>{/if}
+									<div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+										<span class="{ui.pill} {statusTone}">{statusLabel}</span>
+										<span
+											class="{ui.pill} {v.isPublished ? ui.pillTone.active : ui.pillTone.inactive}"
+											>{v.isPublished ? 'Published' : 'Draft'}</span
 										>
-											{vodItem.title}
-										</h4>
-										<div class="mt-[8px] flex flex-wrap items-center gap-[8px]">
-											<span
-												class="inline-flex items-center px-[8px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase {statusChip(
-													vodItem.status
-												)}"
-											>
-												{vodItem.status === 'ready'
-													? 'Ready'
-													: vodItem.status === 'preparing'
-														? 'Processing'
-														: vodItem.status === 'errored'
-															? 'Error'
-															: 'Waiting'}
-											</span>
-											{#if vodItem.isPublished}
-												<span
-													class="inline-flex items-center bg-prem px-[8px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-white uppercase"
-												>
-													Published
-												</span>
-											{:else}
-												<span
-													class="inline-flex items-center border border-line2 px-[8px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-												>
-													Draft
-												</span>
-											{/if}
-											{#if vodItem.isPremium}
-												<span
-													class="inline-flex items-center px-[8px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-prem uppercase"
-												>
-													Premium
-												</span>
-											{/if}
-											{#if vodItem.player1Name && vodItem.player2Name}
-												<span
-													class="font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
-												>
-													{vodItem.player1Name} vs {vodItem.player2Name}
-												</span>
-											{/if}
-										</div>
-									</div>
-
-									<!-- Actions -->
-									<div class="flex shrink-0 items-center gap-[6px]">
-										{#if !vodItem.muxAssetId && vodItem.status === 'waiting'}
-											<label
-												class="cursor-pointer border border-line2 px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
-												title="Upload video"
-											>
-												Upload
-												<input
-													type="file"
-													accept="video/*"
-													class="hidden"
-													onchange={(e) => startVodUpload(vodItem.id, e.target)}
-												/>
-											</label>
-										{/if}
-										{#if vodItem.status === 'waiting' || vodItem.status === 'preparing'}
-											<form
-												method="POST"
-												action="?/syncVod"
-												use:enhance={() =>
-													async ({ result }) => {
-														if (result.type === 'success') await invalidateAll();
-													}}
-												class="inline"
-											>
-												<input type="hidden" name="vodId" value={vodItem.id} />
-												<button
-													type="submit"
-													class="border border-line2 px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
-													title="Sync status from Mux"
-												>
-													Sync
-												</button>
-											</form>
-										{/if}
-										{#if vodItem.status === 'ready'}
-											<form
-												method="POST"
-												action={vodItem.isPublished ? '?/unpublishVod' : '?/publishVod'}
-												use:enhance={() =>
-													async ({ result }) => {
-														if (result.type === 'success') await invalidateAll();
-													}}
-												class="inline"
-											>
-												<input type="hidden" name="vodId" value={vodItem.id} />
-												<button
-													type="submit"
-													class="inline-flex items-center px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-[filter] {vodItem.isPublished
-														? 'border border-line2 text-ink hover:border-ink'
-														: 'bg-prem text-white hover:brightness-110'}"
-													title={vodItem.isPublished ? 'Unpublish' : 'Publish'}
-												>
-													{vodItem.isPublished ? 'Unpublish' : 'Publish'}
-												</button>
-											</form>
-										{/if}
-										<button
-											type="button"
-											onclick={() => {
-												editingVodId = vodItem.id;
-												showAddVodForm = false;
-												vodFormError = '';
-											}}
-											class="border border-line2 px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
-											title="Edit VOD"
-										>
-											Edit
-										</button>
-										<form
-											method="POST"
-											action="?/deleteVod"
-											use:enhance={() => {
-												if (
-													!confirm('Delete this VOD? This will also delete the video from Mux.')
-												) {
-													return ({ cancel }) => cancel();
-												}
-												return async ({ result }) => {
-													if (result.type === 'success') await invalidateAll();
-												};
-											}}
-											class="inline"
-										>
-											<input type="hidden" name="vodId" value={vodItem.id} />
-											<button
-												type="submit"
-												class="inline-flex items-center bg-warm px-[10px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
-												title="Delete VOD"
-											>
-												Delete
-											</button>
-										</form>
+										{#if v.isPremium}<span class="{ui.pill} {ui.pillTone.premium}">Premium</span
+											>{/if}
 									</div>
 								</div>
-
-								{#if vodUploading && uploadingVodId === vodItem.id}
-									<div class="mt-3">
-										<div class="mb-[6px] flex items-center justify-between">
-											<span
-												class="font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-warm uppercase"
-												>Uploading…</span
+								<div class="flex shrink-0 flex-wrap items-center gap-1">
+									{#if !v.muxAssetId && v.status === 'waiting'}
+										<label class="{ui.ghostSm} cursor-pointer" title="Upload video"
+											>Upload<input
+												type="file"
+												accept="video/*"
+												class="hidden"
+												onchange={(e) => startVodUpload(v.id, e.target)}
+											/></label
+										>
+									{/if}
+									{#if v.status === 'waiting' || v.status === 'preparing'}
+										<form
+											method="POST"
+											action="?/syncVod"
+											use:enhance={() =>
+												async ({ result }) => {
+													if (result.type === 'success') await invalidateAll();
+												}}
+										>
+											<input type="hidden" name="vodId" value={v.id} />
+											<button type="submit" class={ui.ghostSm} title="Check status with Mux"
+												>Sync</button
 											>
-											<span
-												class="font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-												>{vodUploadProgress}%</span
+										</form>
+									{/if}
+									{#if v.status === 'ready'}
+										<form
+											method="POST"
+											action={v.isPublished ? '?/unpublishVod' : '?/publishVod'}
+											use:enhance={() =>
+												async ({ result }) => {
+													if (result.type === 'success') await invalidateAll();
+												}}
+										>
+											<input type="hidden" name="vodId" value={v.id} />
+											<button type="submit" class={v.isPublished ? ui.ghostSm : ui.btnSm}
+												>{v.isPublished ? 'Unpublish' : 'Publish'}</button
 											>
-										</div>
-										<div class="h-[6px] overflow-hidden bg-line2">
-											<div
-												class="h-full bg-warm transition-all duration-300"
-												style="width: {vodUploadProgress}%"
-											></div>
-										</div>
-									</div>
-								{/if}
+										</form>
+									{/if}
+									<button
+										type="button"
+										onclick={() => {
+											editingVodId = v.id;
+											showAddVodForm = false;
+											vodFormError = '';
+										}}
+										class={ui.ghostSm}>Edit</button
+									>
+									<form
+										method="POST"
+										action="?/deleteVod"
+										use:enhance={() => {
+											if (!confirm('Delete this VOD? This also deletes the video from Mux.'))
+												return ({ cancel }) => cancel();
+											return async ({ result }) => {
+												if (result.type === 'success') await invalidateAll();
+											};
+										}}
+									>
+										<input type="hidden" name="vodId" value={v.id} />
+										<button type="submit" class={ui.danger}>Delete</button>
+									</form>
+								</div>
 							</div>
+							{#if vodUploading && uploadingVodId === v.id}
+								<div class="mt-3">
+									<div
+										class="mb-1 flex items-center justify-between text-[10px] font-extrabold tracking-[0.14em] uppercase"
+									>
+										<span class="text-warm">Uploading…</span><span class="text-fade tabular-nums"
+											>{vodUploadProgress}%</span
+										>
+									</div>
+									<div class="h-[6px] bg-line" aria-hidden="true">
+										<div
+											class="h-full bg-warm transition-[width] duration-300"
+											style="width: {vodUploadProgress}%"
+										></div>
+									</div>
+								</div>
+							{/if}
 						</div>
 					</div>
-				{/each}
-			</div>
-		{:else}
-			<div class="overflow-hidden border-[1.5px] border-ink p-12 text-center">
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase"
-				>
-					Empty Shelf
-				</span>
-				<h3 class="mt-[6px] font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
-					No VODs yet.
-				</h3>
-				<p class="mt-2 font-newsreader text-[17px] text-soft italic">
-					Create your first VOD to get started.
-				</p>
-			</div>
-		{/if}
-	</div>
-</section>
+				</li>
+			{:else}
+				<li class={ui.empty}>
+					No recordings yet. <button
+						type="button"
+						onclick={() => {
+							showAddVodForm = true;
+							editingVodId = null;
+						}}
+						class="{ui.textAction} not-italic">Create the first one →</button
+					>
+				</li>
+			{/each}
+		</ul>
+	</Section>
+</div>

@@ -12,19 +12,21 @@
 	import { afterNavigate, onNavigate } from '$app/navigation';
 	import NavProgress from '$lib/components/NavProgress.svelte';
 	import { notePath } from '$lib/analytics/contentTracker.js';
+	import { trackPageview } from '$lib/analytics/siteTracker.js';
 
-	// Content analytics: remember the current page so a view opened by the
-	// next navigation knows which page on the site the reader came from.
-	afterNavigate(({ to }) => notePath(to?.url?.pathname ?? null));
+	// Analytics: record the page view, and remember the current page so a
+	// Library view opened by the next navigation knows where the reader
+	// came from.
+	afterNavigate(({ to }) => {
+		notePath(to?.url?.pathname ?? null);
+		if (to?.url) trackPageview({ path: to.url.pathname, routeId: to.route?.id ?? null });
+	});
 	import AgeHeader from '$lib/components/age/AgeHeader.svelte';
 	import AgeFooter from '$lib/components/age/AgeFooter.svelte';
 
 	// Auth pages that should not show the sidebar
 	const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
 	$: isAuthPage = authRoutes.some((route) => $page.url.pathname.startsWith(route));
-
-	// Admin pages have their own layout
-	$: isAdminPage = $page.url.pathname.startsWith('/admin');
 
 	// Routes that render the editorial redesign chrome (AgeShell) and
 	// therefore opt out of the global header + footer wrapper. Extend
@@ -35,7 +37,15 @@
 	// they render the editorial chrome by virtue of wrapping their own
 	// markup in <AgeShell>.
 	const editorialRoutes = ['/', '/premium', '/age-open', '/library', '/academy', '/partner'];
-	const editorialPrefixes = ['/account', '/library/', '/academy/', '/player/', '/staff', '/desk'];
+	const editorialPrefixes = [
+		'/account',
+		'/library/',
+		'/academy/',
+		'/player/',
+		'/staff',
+		'/desk',
+		'/admin'
+	];
 	// Substring tests for paths that don't fit a clean prefix — e.g. the
 	// AGE Open decklist viewer lives under `/age-open/[eventId]/decklist/
 	// [decklistId]`, where the prefix would catch sibling pages that
@@ -94,8 +104,6 @@
 <NavProgress />
 
 {#if isAuthPage}
-	<slot />
-{:else if isAdminPage}
 	<slot />
 {:else if isEditorialPage || isErrorPage}
 	<slot />

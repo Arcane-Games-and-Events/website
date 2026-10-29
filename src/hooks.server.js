@@ -3,8 +3,9 @@ import { auth, sessionCacheKey } from '$lib/server/lucia';
 import { db } from '$lib/server/db';
 import { user as userTable } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
-import { error } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import { cached, bump, CACHE_TTL } from '$lib/server/cache/index.js';
+import { logMemberEvent } from '$lib/server/payments/ledger.js';
 
 // Paths exempt from CSRF protection (external webhooks)
 const CSRF_EXEMPT_PATHS = ['/api/webhooks/'];
@@ -131,6 +132,13 @@ export const handle = async ({ event, resolve }) => {
 					})
 					.where(eq(userTable.id, user.id));
 
+				await logMemberEvent({
+					userId: user.id,
+					kind: 'expired',
+					subscriptionId: user.subscriptionId,
+					subscriptionType: user.subscriptionType,
+					meta: { from: user.subscriptionStatus }
+				});
 				user = {
 					...user,
 					role: 'free',
@@ -145,6 +153,17 @@ export const handle = async ({ event, resolve }) => {
 	// expose to routes/layouts
 	event.locals.user = user;
 	event.locals.session = session;
+
+	// /admin is for admins only. Checked here, before any load function
+	// runs, because SvelteKit runs page and layout loads in parallel and a
+	// page's queries would otherwise execute for a visitor the admin
+	// layout is about to turn away.
+	if (url.pathname.startsWith('/admin')) {
+		if (!user) {
+			throw redirect(302, `/login?redirect=${encodeURIComponent(url.pathname + url.search)}`);
+		}
+		if (user.role !== 'admin') throw redirect(302, '/');
+	}
 
 	// Content analytics are collected in the browser (see /api/ca), so
 	// nothing is logged per request here.

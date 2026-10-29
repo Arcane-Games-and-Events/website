@@ -1,4 +1,11 @@
 <script>
+	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
+	import Figures from '$lib/components/age/admin/Figures.svelte';
+	import Section from '$lib/components/age/admin/Section.svelte';
+	import Pager from '$lib/components/age/admin/Pager.svelte';
+	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
+	import * as ui from '$lib/components/age/admin/ui.js';
 	import { enhance, deserialize } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 
@@ -93,7 +100,6 @@
 	const paginatedUsers = $derived(
 		filteredUsers.slice((usersPage - 1) * usersPerPage, usersPage * usersPerPage)
 	);
-	const totalUsersPages = $derived(Math.ceil(filteredUsers.length / usersPerPage));
 
 	async function searchUsersOnServer(query) {
 		if (!query || query.length < 2) {
@@ -128,516 +134,254 @@
 		userSearchTimeout = setTimeout(() => searchUsersOnServer(query), 300);
 	}
 
-	function roleChip(role) {
-		switch (role) {
-			case 'admin':
-				return 'bg-warm text-white';
-			case 'premium':
-				return 'bg-prem text-white';
-			case 'tournament staff':
-				return 'bg-accent text-white';
-			case 'writer':
-				return 'bg-ink text-white';
-			default:
-				return 'border-line2 text-fade border';
+	const ROLE = {
+		free: 'Free',
+		premium: 'Premium',
+		admin: 'Admin',
+		writer: 'Writer',
+		'tournament staff': 'Staff'
+	};
+	const counts = $derived.by(() => {
+		const c = { total: 0, premium: 0, free: 0, admin: 0, staff: 0, writer: 0 };
+		for (const u of data.allUsers || []) {
+			c.total++;
+			if (u.role === 'premium') c.premium++;
+			else if (u.role === 'admin') c.admin++;
+			else if (u.role === 'tournament staff') c.staff++;
+			else if (u.role === 'writer') c.writer++;
+			else c.free++;
 		}
-	}
+		return c;
+	});
+	const name = (u) =>
+		u.first_name && u.last_name ? `${u.first_name} ${u.last_name}` : u.first_name || u.email;
 </script>
 
-<svelte:head><title>Users · AGE Ops</title></svelte:head>
+<svelte:head><title>Members · Admin</title></svelte:head>
 
-<!-- ============ HEADER ============ -->
-<header class="mx-auto w-full max-w-[1600px] px-4 pt-[42px] pb-[28px] md:px-10 lg:px-14">
-	<div class="mb-[18px] flex flex-wrap items-center gap-[16px]">
-		<span class="font-mono-system text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase">
-			Users
-		</span>
-		<span class="hidden h-[1px] flex-1 bg-line2 md:block"></span>
-		<span
-			class="font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+<DeskHeader
+	kicker="Admin"
+	title="Members"
+	subtitle="{ui.fmt(data.stats.totalUsers)} accounts · search, change roles, manage removals."
+>
+	{#snippet actions(compact)}
+		<a
+			href="/admin/analytics?view=members"
+			class="inline-flex items-center border border-paper-bg/30 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-paper-bg/10 {compact
+				? 'h-[30px]'
+				: 'h-[36px]'}">Report →</a
 		>
-			{data.stats.totalUsers} registered
-		</span>
-	</div>
-	<h1
-		class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]"
-	>
-		Users & roles.
-	</h1>
-	<p class="mt-3 max-w-[680px] font-newsreader text-[19px] leading-[1.42] text-soft italic">
-		Search accounts, promote or demote roles, and manage removals.
-	</p>
-</header>
+	{/snippet}
+</DeskHeader>
+<AdminTabs />
 
 {#if successMessage}
-	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[12px] md:px-10 lg:px-14">
-		<div class="flex items-center justify-between border-[1.5px] border-ink bg-prem p-4 text-white">
-			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
-					style="color: #d6eedf;">Success</span
-				>
-				<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{successMessage}</p>
-			</div>
-			<button
-				onclick={() => (successMessage = '')}
-				class="text-white hover:brightness-95"
-				aria-label="Dismiss">×</button
-			>
-		</div>
-	</section>
+	<AdminNotice tone="success" message={successMessage} ondismiss={() => (successMessage = '')} />
 {/if}
 {#if errorMessage}
-	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[12px] md:px-10 lg:px-14">
-		<div class="flex items-center justify-between border-[1.5px] border-ink bg-warm p-4 text-white">
-			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
-					style="color: rgba(255,255,255,0.75);">Error</span
-				>
-				<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{errorMessage}</p>
-			</div>
-			<button
-				onclick={() => (errorMessage = '')}
-				class="text-white hover:brightness-95"
-				aria-label="Dismiss">×</button
-			>
-		</div>
-	</section>
+	<AdminNotice tone="error" message={errorMessage} ondismiss={() => (errorMessage = '')} />
 {/if}
 
-<!-- ============ SEARCH ============ -->
-<section class="overflow-x-clip border-y-[3px] border-double border-ink">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[24px] md:px-10 lg:px-14">
-		<label
-			for="user-search"
-			class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-		>
-			Search Users
-		</label>
-		<div class="relative">
+<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+	<Figures
+		items={[
+			{ label: 'Accounts', value: ui.fmt(data.stats.totalUsers) },
+			{ label: 'Premium', value: ui.fmt(counts.premium), tone: 'text-prem' },
+			{ label: 'Free', value: ui.fmt(counts.free) },
+			{ label: 'Admins', value: ui.fmt(counts.admin) },
+			{ label: 'Staff', value: ui.fmt(counts.staff) },
+			{ label: 'Writers', value: ui.fmt(counts.writer) }
+		]}
+	/>
+
+	<!-- search -->
+	<div class="mt-8 flex flex-wrap items-center gap-3">
+		<label class="{ui.search} min-w-[260px] flex-1" aria-label="Search members">
+			<svg
+				viewBox="0 0 20 20"
+				class="h-4 w-4 shrink-0 text-fade"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.6"
+				aria-hidden="true"
+			>
+				<circle cx="9" cy="9" r="5.5" /><path d="m13.5 13.5 3 3" stroke-linecap="round" />
+			</svg>
 			<input
 				id="user-search"
-				type="text"
+				type="search"
 				value={userSearchQuery}
 				oninput={handleUserSearch}
-				placeholder="Name or email address"
-				class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
+				placeholder="Name or email"
+				class={ui.searchInput}
 			/>
 			{#if userSearchLoading}
-				<div class="absolute top-1/2 right-3 -translate-y-1/2">
-					<svg class="h-4 w-4 animate-spin text-warm" fill="none" viewBox="0 0 24 24">
-						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
-						></circle>
-						<path
-							class="opacity-75"
-							fill="currentColor"
-							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-						></path>
-					</svg>
-				</div>
+				<span
+					class="h-3.5 w-3.5 shrink-0 animate-spin border-2 border-line2 border-t-ink"
+					aria-hidden="true"
+				></span>
 			{/if}
-		</div>
-		{#if userSearchQuery.length >= 2 && userSearchResults !== null}
-			<p
-				class="mt-[8px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-			>
-				Searching all {data.stats.totalUsers} users · {filteredUsers.length} result{filteredUsers.length !==
-				1
-					? 's'
-					: ''}
-			</p>
-		{:else if userSearchQuery.length >= 2}
-			<p
-				class="mt-[8px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-			>
-				Filtering from {(data.allUsers || []).length} loaded users · type more to search all {data
-					.stats.totalUsers}
-			</p>
-		{/if}
-	</div>
-</section>
-
-<!-- ============ USERS ============ -->
-<section class="overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
-		<!-- Mobile -->
-		<div class="space-y-[14px] lg:hidden">
-			{#each paginatedUsers as user (user.id)}
-				<div class="overflow-hidden border-[1.5px] border-ink p-4">
-					<div class="flex items-start justify-between gap-3">
-						<a
-							href="/admin/customers/{user.id}"
-							class="min-w-0 flex-1 transition-colors hover:text-warm"
-						>
-							<div class="truncate font-newsreader text-[16px] font-semibold">
-								{user.first_name && user.last_name
-									? `${user.first_name} ${user.last_name}`
-									: user.email}
-							</div>
-							<div class="truncate text-[12px] text-fade">{user.email}</div>
-							<div
-								class="mt-[4px] font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
-							>
-								Joined {new Date(user.createdAt).toLocaleDateString('en-US', {
-									month: 'short',
-									day: 'numeric',
-									year: 'numeric'
-								})}
-								{#if user.id === data.user.id}<span class="text-warm"> · You</span>{/if}
-							</div>
-						</a>
-						<span
-							class="inline-flex shrink-0 items-center px-[8px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase {roleChip(
-								user.role
-							)}"
-						>
-							{user.role.replace('_', ' ')}
-						</span>
-					</div>
-					<div class="mt-3 flex items-center gap-2 border-t border-line2 pt-3">
-						{#if user.id !== data.user.id}
-							<form
-								method="POST"
-								action="?/updateUserRole"
-								use:enhance
-								class="flex flex-1 items-center gap-2"
-							>
-								<input type="hidden" name="userId" value={user.id} />
-								<select
-									name="role"
-									class="flex-1 border-[1.5px] border-ink bg-paper-bg px-[8px] py-[7px] font-mono-system text-[11px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
-								>
-									<option value="free" selected={user.role === 'free'}>Free</option>
-									<option value="premium" selected={user.role === 'premium'}>Premium</option>
-									<option value="writer" selected={user.role === 'writer'}>Writer</option>
-									<option value="tournament staff" selected={user.role === 'tournament staff'}
-										>Staff</option
-									>
-									<option value="admin" selected={user.role === 'admin'}>Admin</option>
-								</select>
-								<button
-									type="submit"
-									class="inline-flex items-center bg-ink px-[12px] py-[7px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-125"
-								>
-									Update
-								</button>
-							</form>
-						{:else}
-							<span
-								class="flex-1 font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-								>Current User</span
-							>
-						{/if}
-						<a
-							href="/admin/customers/{user.id}"
-							class="inline-flex items-center border border-line2 px-[10px] py-[7px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
-						>
-							View
-						</a>
-						{#if user.id !== data.user.id}
-							<button
-								onclick={() => openDeleteModal(user)}
-								class="inline-flex items-center bg-warm px-[10px] py-[7px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
-							>
-								Delete
-							</button>
-						{/if}
-					</div>
-				</div>
+		</label>
+		<span class={ui.note}>
+			{#if userSearchQuery.length >= 2 && userSearchResults !== null}
+				{ui.fmt(filteredUsers.length)} result{filteredUsers.length === 1 ? '' : 's'} across all {ui.fmt(
+					data.stats.totalUsers
+				)} accounts
+			{:else if userSearchQuery.length >= 2}
+				Filtering the {ui.fmt((data.allUsers || []).length)} loaded accounts…
 			{:else}
-				<div class="border-ink border-[1.5px] p-8 text-center overflow-hidden">
-					<p class="font-newsreader text-soft text-[19px] italic">No users found.</p>
-				</div>
-			{/each}
-			{#if totalUsersPages > 1}
-				<div class="flex items-center justify-between border-[1.5px] border-ink p-3">
-					<span
-						class="font-mono-system text-[10.5px] font-bold tracking-[0.08em] text-fade uppercase"
-					>
-						{(usersPage - 1) * usersPerPage + 1}–{Math.min(
-							usersPage * usersPerPage,
-							filteredUsers.length
-						)} of {filteredUsers.length}
-					</span>
-					<div class="flex gap-2">
-						<button
-							onclick={() => usersPage--}
-							disabled={usersPage <= 1}
-							class="border border-line2 px-[12px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
-						>
-							← Prev
-						</button>
-						<button
-							onclick={() => usersPage++}
-							disabled={usersPage >= totalUsersPages}
-							class="border border-line2 px-[12px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
-						>
-							Next →
-						</button>
-					</div>
-				</div>
+				Showing {ui.fmt(filteredUsers.length)}
 			{/if}
-		</div>
-
-		<!-- Desktop -->
-		<div class="hidden border-[1.5px] border-ink lg:block">
-			<div class="overflow-x-auto">
-				<table class="w-full min-w-[900px]">
-					<thead class="border-b-[1.5px] border-ink">
-						<tr class="text-left">
-							<th
-								class="px-6 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>User</th
-							>
-							<th
-								class="px-6 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Role</th
-							>
-							<th
-								class="px-6 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Joined</th
-							>
-							<th
-								class="px-6 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Actions</th
-							>
-						</tr>
-					</thead>
-					<tbody>
-						{#each paginatedUsers as user (user.id)}
-							<tr class="group border-b border-line2 transition-colors hover:bg-panel">
-								<td class="px-6 py-[14px]">
-									<a
-										href="/admin/customers/{user.id}"
-										class="block transition-colors hover:text-warm"
-									>
-										<div class="font-newsreader text-[16px] font-semibold">
-											{user.first_name && user.last_name
-												? `${user.first_name} ${user.last_name}`
-												: user.email}
-										</div>
-										<div class="text-[12px] text-fade">{user.email}</div>
-										{#if user.id === data.user.id}
-											<span
-												class="mt-[2px] block font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-warm uppercase"
-												>You</span
-											>
-										{/if}
-									</a>
-								</td>
-								<td class="px-6 py-[14px]">
-									<span
-										class="inline-flex items-center px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase {roleChip(
-											user.role
-										)}"
-									>
-										{user.role.replace('_', ' ')}
-									</span>
-								</td>
-								<td
-									class="px-6 py-[14px] font-mono-system text-[10.5px] font-bold tracking-[0.06em] text-fade uppercase"
-								>
-									{new Date(user.createdAt).toLocaleDateString('en-US', {
-										month: 'short',
-										day: 'numeric',
-										year: 'numeric'
-									})}
-								</td>
-								<td class="px-6 py-[14px] text-right">
-									<div class="flex items-center justify-end gap-2">
-										{#if user.id !== data.user.id}
-											<form
-												method="POST"
-												action="?/updateUserRole"
-												use:enhance
-												class="inline-flex items-center gap-2"
-											>
-												<input type="hidden" name="userId" value={user.id} />
-												<select
-													name="role"
-													class="border-[1.5px] border-ink bg-paper-bg px-[8px] py-[6px] font-mono-system text-[10px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
-												>
-													<option value="free" selected={user.role === 'free'}>Free</option>
-													<option value="premium" selected={user.role === 'premium'}>Premium</option
-													>
-													<option value="writer" selected={user.role === 'writer'}>Writer</option>
-													<option
-														value="tournament staff"
-														selected={user.role === 'tournament staff'}>Tournament Staff</option
-													>
-													<option value="admin" selected={user.role === 'admin'}>Admin</option>
-												</select>
-												<button
-													type="submit"
-													class="inline-flex items-center bg-ink px-[12px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-125"
-												>
-													Update
-												</button>
-											</form>
-										{:else}
-											<span
-												class="inline-flex items-center border border-line2 px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-											>
-												Current
-											</span>
-										{/if}
-										<a
-											href="/admin/customers/{user.id}"
-											class="inline-flex items-center border border-line2 px-[12px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
-										>
-											View
-										</a>
-										{#if user.id !== data.user.id}
-											<button
-												onclick={() => openDeleteModal(user)}
-												class="inline-flex items-center bg-warm px-[12px] py-[6px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
-											>
-												Delete
-											</button>
-										{/if}
-									</div>
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-				{#if filteredUsers.length === 0}
-					<div class="border-t border-line2 p-12 text-center">
-						<p class="font-newsreader text-[19px] text-soft italic">
-							No users found matching "{userSearchQuery}".
-						</p>
-					</div>
-				{/if}
-			</div>
-			{#if totalUsersPages > 1}
-				<div class="flex items-center justify-between border-t-[1.5px] border-ink px-6 py-[14px]">
-					<span
-						class="font-mono-system text-[10.5px] font-bold tracking-[0.08em] text-fade uppercase"
-					>
-						{(usersPage - 1) * usersPerPage + 1}–{Math.min(
-							usersPage * usersPerPage,
-							filteredUsers.length
-						)} of {filteredUsers.length} users
-					</span>
-					<div class="flex items-center gap-2">
-						<button
-							onclick={() => usersPage--}
-							disabled={usersPage <= 1}
-							class="border border-line2 px-[14px] py-[8px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
-						>
-							← Previous
-						</button>
-						<span
-							class="font-mono-system text-[10.5px] font-bold tracking-[0.08em] text-fade uppercase"
-							>Page {usersPage} of {totalUsersPages}</span
-						>
-						<button
-							onclick={() => usersPage++}
-							disabled={usersPage >= totalUsersPages}
-							class="border border-line2 px-[14px] py-[8px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
-						>
-							Next →
-						</button>
-					</div>
-				</div>
-			{/if}
-		</div>
+		</span>
 	</div>
-</section>
+
+	<Section title="Accounts" class="mt-8" note="newest first">
+		<div class="{ui.rowHead} grid-cols-[minmax(0,1fr)_110px_120px_minmax(0,440px)] gap-3">
+			<span>Member</span><span>Role</span><span>Joined</span><span class="text-right">Actions</span>
+		</div>
+		<ul>
+			{#each paginatedUsers as user (user.id)}
+				<li class={ui.row}>
+					<div
+						class="py-3 md:grid md:grid-cols-[minmax(0,1fr)_110px_120px_minmax(0,440px)] md:items-center md:gap-3"
+					>
+						<a href="/admin/customers/{user.id}" class="block min-w-0 hover:text-warm">
+							<span class="{ui.titleText} block truncate">{name(user)}</span>
+							<span class="block truncate text-[11.5px] text-fade"
+								>{user.email}{user.id === data.user.id ? ' · you' : ''}</span
+							>
+						</a>
+						<span class="mt-1.5 block md:mt-0">
+							<span class="{ui.pill} {ui.pillTone[user.role] || ''}"
+								>{ROLE[user.role] || user.role}</span
+							>
+						</span>
+						<span class="mt-1 block text-[12.5px] text-soft tabular-nums md:mt-0"
+							>{ui.dateShort(user.createdAt)}</span
+						>
+						<div class="mt-2.5 flex flex-wrap items-center gap-1.5 md:mt-0 md:justify-end">
+							{#if user.id !== data.user.id}
+								<form
+									method="POST"
+									action="?/updateUserRole"
+									use:enhance
+									class="flex items-center gap-1.5"
+								>
+									<input type="hidden" name="userId" value={user.id} />
+									<select name="role" class={ui.selectSm} aria-label="Role">
+										<option value="free" selected={user.role === 'free'}>Free</option>
+										<option value="premium" selected={user.role === 'premium'}>Premium</option>
+										<option value="writer" selected={user.role === 'writer'}>Writer</option>
+										<option value="tournament staff" selected={user.role === 'tournament staff'}
+											>Staff</option
+										>
+										<option value="admin" selected={user.role === 'admin'}>Admin</option>
+									</select>
+									<select
+										name="compReason"
+										class={ui.selectSm}
+										title="Why this member gets Premium without paying"
+										aria-label="Comp reason"
+									>
+										<option value="">Comp reason…</option>
+										<option value="staff">Staff</option>
+										<option value="writer">Writer</option>
+										<option value="teacher">Teacher</option>
+										<option value="partner">Partner</option>
+										<option value="friend">Friend</option>
+										<option value="trial">Trial</option>
+										<option value="other">Other</option>
+									</select>
+									<button type="submit" class={ui.btnSm}>Save</button>
+								</form>
+								<button type="button" onclick={() => openDeleteModal(user)} class={ui.danger}
+									>Delete</button
+								>
+							{:else}
+								<span class={ui.note}>Signed in as you</span>
+							{/if}
+						</div>
+					</div>
+				</li>
+			{:else}
+				<li class={ui.empty}>
+					{userSearchQuery ? `No members match “${userSearchQuery}”.` : 'No members yet.'}
+				</li>
+			{/each}
+		</ul>
+
+		<Pager
+			page={usersPage}
+			perPage={usersPerPage}
+			count={filteredUsers.length}
+			label="members"
+			onchange={(p) => (usersPage = p)}
+		/>
+	</Section>
+</div>
 
 <!-- ============ DELETE MODAL ============ -->
 {#if deleteStep > 0 && deleteTarget}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-		onkeydown={(e) => e.key === 'Escape' && closeDeleteModal()}
-	>
+	<div class={ui.modalBackdrop} onkeydown={(e) => e.key === 'Escape' && closeDeleteModal()}>
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<div class="absolute inset-0" onclick={closeDeleteModal}></div>
-		<div
-			class="relative w-full max-w-md border-[3px] border-double border-ink bg-paper-bg shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
-		>
-			{#if deleteStep === 1}
-				<div class="p-6">
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
-						>Danger Zone</span
-					>
-					<h3 class="mt-[6px] font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
-						Delete this user?
-					</h3>
-					<div class="mt-4 border border-line2 bg-panel p-4">
-						<p class="font-newsreader text-[16px] font-semibold">{deleteTarget.email}</p>
-						{#if deleteTarget.first_name || deleteTarget.last_name}
-							<p class="mt-[2px] text-[13px] text-fade">
-								{deleteTarget.first_name || ''}
-								{deleteTarget.last_name || ''}
-							</p>
-						{/if}
-					</div>
-					<p class="mt-[16px] text-[13px] leading-[1.55] text-warm">
-						This permanently deletes the account, sessions, saved cards, and entitlements. Tickets
-						and orders are preserved for audit.
+		<div class={ui.modal} role="dialog" aria-modal="true" aria-labelledby="delete-title">
+			<div class="p-6">
+				{#if deleteStep === 1}
+					<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase">
+						Delete account
 					</p>
-					<div class="mt-6 flex justify-end gap-3">
-						<button
-							onclick={closeDeleteModal}
-							class="inline-flex items-center border border-line2 px-[16px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
-						>
-							Cancel
-						</button>
-						<button
-							onclick={proceedToEmailConfirm}
-							class="inline-flex items-center bg-warm px-[18px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110"
-						>
-							Yes, continue →
-						</button>
-					</div>
-				</div>
-			{:else if deleteStep === 2}
-				<div class="p-6">
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
-						>Confirm Deletion</span
-					>
-					<h3 class="mt-[6px] font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
-						Type the email.
+					<h3 id="delete-title" class="mt-1.5 font-newsreader text-[24px] font-semibold">
+						Delete this member?
 					</h3>
-					<p class="mt-3 text-[14px] leading-[1.5] text-soft">
-						Type the user's email exactly to confirm.
+					<div class="mt-4 border-l-[3px] border-line2 pl-3">
+						<p class={ui.titleText}>{name(deleteTarget)}</p>
+						<p class="text-[12.5px] text-fade">{deleteTarget.email}</p>
+					</div>
+					<p class="mt-4 text-[13.5px] leading-[1.55] text-soft">
+						This permanently deletes the account, its sessions, saved cards and course access.
+						Tickets and orders are kept for the records.
 					</p>
+					<div class="mt-6 flex justify-end gap-2">
+						<button type="button" onclick={closeDeleteModal} class={ui.ghost}>Cancel</button>
+						<button type="button" onclick={proceedToEmailConfirm} class={ui.dangerFill}
+							>Continue →</button
+						>
+					</div>
+				{:else}
+					<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase">
+						Confirm deletion
+					</p>
+					<h3 id="delete-title" class="mt-1.5 font-newsreader text-[24px] font-semibold">
+						Type the email to confirm.
+					</h3>
 					<code
-						class="mt-3 block border border-line2 bg-panel p-[10px] font-mono-system text-[13px] font-bold tracking-[0.02em] text-warm"
+						class="mt-3 block border border-line2 bg-paper px-3 py-2 text-[13px] text-ink select-all"
+						>{deleteTarget.email}</code
 					>
-						{deleteTarget.email}
-					</code>
 					<input
 						type="text"
 						bind:value={deleteConfirmEmail}
-						placeholder="Type email to confirm…"
-						class="mt-4 w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] tracking-[0.02em] text-ink placeholder:text-fade focus:outline-none"
+						placeholder="Email"
+						class="{ui.input} mt-3"
 						onkeydown={(e) => {
 							if (e.key === 'Enter' && deleteConfirmEmail === deleteTarget.email) confirmDelete();
 						}}
 					/>
-					<div class="mt-6 flex justify-end gap-3">
+					<div class="mt-6 flex justify-end gap-2">
+						<button type="button" onclick={() => (deleteStep = 1)} class={ui.ghost}>Back</button>
 						<button
-							onclick={() => (deleteStep = 1)}
-							class="inline-flex items-center border border-line2 px-[16px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
-						>
-							Back
-						</button>
-						<button
+							type="button"
 							onclick={confirmDelete}
 							disabled={deleteConfirmEmail !== deleteTarget.email || deleteLoading}
-							class="inline-flex items-center bg-warm px-[18px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+							class={ui.dangerFill}
 						>
-							{#if deleteLoading}Deleting…{:else}Permanently Delete{/if}
+							{deleteLoading ? 'Deleting…' : 'Delete permanently'}
 						</button>
 					</div>
-				</div>
-			{/if}
+				{/if}
+			</div>
 		</div>
 	</div>
 {/if}

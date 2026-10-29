@@ -4,6 +4,7 @@ import { db } from '$lib/server/db/index.js';
 import { user as userTable } from '$lib/server/db/schema.js';
 import { auth, forgetSession } from '$lib/server/lucia.js';
 import { bump } from '$lib/server/cache/index.js';
+import { logMemberEvent } from '$lib/server/payments/ledger.js';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -63,6 +64,13 @@ export async function POST({ locals }) {
 						nextBillingDate: null // No more billing
 					})
 					.where(eq(userTable.id, currentUser.id));
+				await logMemberEvent({
+					userId: currentUser.id,
+					kind: 'cancelled',
+					subscriptionId: currentUser.subscriptionId,
+					subscriptionType: currentUser.subscriptionType,
+					meta: { accessUntil: subscriptionEndDate }
+				});
 
 				// Invalidate current session and create new one with updated subscription status
 				if (locals.session) {

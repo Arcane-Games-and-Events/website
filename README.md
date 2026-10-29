@@ -34,6 +34,16 @@ pnpm lint       # Prettier check + ESLint
 pnpm format     # Format with Prettier
 ```
 
+### Test data
+
+`node scripts/seed-dev.mjs seed` fills a development database with a year of
+activity: 100 accounts (password `seedpass123`), memberships, past events,
+ticket sales and site browsing. `node scripts/seed-authnet.mjs run` then
+gives those purchases real Authorize.net sandbox records (needs
+`AUTHNET_ENVIRONMENT=sandbox`; relax the sandbox's velocity filter first).
+`node scripts/seed-dev.mjs unseed` removes everything the seed added. Never
+run these against production.
+
 ## Design guidelines
 
 The site is styled like a print magazine. Keep new pages consistent:

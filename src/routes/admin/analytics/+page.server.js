@@ -1,198 +1,102 @@
-import { redirect } from '@sveltejs/kit';
 import { loadAnalytics } from '$lib/server/admin/analytics.js';
+import {
+	monthlyLedger,
+	memberValue,
+	discountsByEvent,
+	ledgerHealth
+} from '$lib/server/admin/revenue.js';
+import { cohorts, payingMembers, history } from '$lib/server/admin/members.js';
+import { projection } from '$lib/server/admin/projections.js';
+import { siteOverview, premiumFunnel } from '$lib/server/admin/siteAnalytics.js';
+import { parseRange } from '$lib/server/contentAnalytics/query.js';
+import { authnet } from '$lib/server/authnet/client.js';
+import { fail } from '@sveltejs/kit';
+import { db } from '$lib/server/db/index.js';
+import { user as userTable } from '$lib/server/db/schema.js';
+import { eq } from 'drizzle-orm';
+import { bump } from '$lib/server/cache/index.js';
+import { COMP_REASONS, logMemberEvent } from '$lib/server/payments/ledger.js';
 
-export async function load({ locals }) {
-	if (!locals.user || locals.user.role !== 'admin') {
-		throw redirect(302, '/login?redirect=/admin/analytics');
-	}
+const VIEWS = ['revenue', 'members', 'projections', 'site'];
+const safe = (promise, fallback = null) =>
+	promise.catch((err) => {
+		console.error('Admin analytics:', err);
+		return fallback;
+	});
 
-	try {
-		const data = await loadAnalytics();
+/**
+ * /admin/analytics?view=revenue|members|projections|site
+ *
+ * Each view loads only its own reports. Every report answers
+ * `{ available: false }` until migration 022 has been run, and the page
+ * says so instead of showing empty charts.
+ */
+export async function load({ locals, url }) {
+	const view = VIEWS.includes(url.searchParams.get('view'))
+		? url.searchParams.get('view')
+		: 'revenue';
+	const range = parseRange(url.searchParams.get('range'));
+	const out = { user: locals.user, view, range };
 
-		if (!data) {
-			return { user: locals.user, error: 'No analytics data returned.' };
-		}
-
-		// User and ticket growth (revenue growth comes with the data)
-		const newThisMonth = data.users?.newThisMonth || 0;
-		const newLastMonth = data.users?.newLastMonth || 0;
-		const userGrowth =
-			newLastMonth > 0 ? (((newThisMonth - newLastMonth) / newLastMonth) * 100).toFixed(1) : null;
-
-		const ticketsThisMonth = data.tickets?.thisMonth || 0;
-		const ticketsLastMonth = data.tickets?.lastMonth || 0;
-		const ticketGrowth =
-			ticketsLastMonth > 0
-				? (((ticketsThisMonth - ticketsLastMonth) / ticketsLastMonth) * 100).toFixed(1)
-				: null;
-
-		// Compute top customers avg order value
-		const topCustomers = data.customers?.topCustomers || [];
-		const totalOrders = topCustomers.reduce((s, c) => s + (c.orderCount || 0), 0);
-		const avgOrderValue =
-			totalOrders > 0
-				? (topCustomers.reduce((s, c) => s + (c.totalSpent || 0), 0) / totalOrders).toFixed(2)
-				: '0.00';
-
-		// Compute premium metrics from the new premium section
-		const p = data.premium || {};
-		const paidMonthlyActive = parseInt(p.paidMonthlyActive) || 0;
-		const paidYearlyActive = parseInt(p.paidYearlyActive) || 0;
-		const mrr = paidMonthlyActive * 9.99 + paidYearlyActive * 8.25;
-		const paidActive = parseInt(p.paidActive) || 0;
-		const paidCancelled = parseInt(p.paidCancelled) || 0;
-		const churn =
-			paidActive + paidCancelled > 0
-				? ((paidCancelled / (paidActive + paidCancelled)) * 100).toFixed(1)
-				: '0.0';
-
-		// Ticket refund rate
-		const ticketTotal = parseInt(data.tickets?.total) || 0;
-		const ticketRefunded = parseInt(data.tickets?.refunded) || 0;
-		const refundRate = ticketTotal > 0 ? ((ticketRefunded / ticketTotal) * 100).toFixed(1) : '0.0';
-
+	if (view === 'revenue') {
+		const [ledger, members, events, health, legacy] = await Promise.all([
+			safe(monthlyLedger({ months: 12 })),
+			safe(memberValue({ months: 12 })),
+			safe(discountsByEvent({ months: 12 })),
+			safe(ledgerHealth()),
+			safe(loadAnalytics())
+		]);
 		return {
-			user: locals.user,
-			revenue: {
-				...data.revenue,
-				today: parseFloat(data.revenue?.today) || 0,
-				todayOrders: parseInt(data.revenue?.todayOrders) || 0,
-				week: parseFloat(data.revenue?.week) || 0,
-				weekOrders: parseInt(data.revenue?.weekOrders) || 0,
-				month: parseFloat(data.revenue?.month) || 0,
-				monthOrders: parseInt(data.revenue?.monthOrders) || 0,
-				lastMonth: parseFloat(data.revenue?.lastMonth) || 0,
-				ytd: parseFloat(data.revenue?.ytd) || 0,
-				allTime: parseFloat(data.revenue?.allTime) || 0,
-				allTimeOrders: parseInt(data.revenue?.allTimeOrders) || 0,
-				byType: (data.revenue?.byType || []).map((t) => ({
-					type: t.type,
-					total: parseFloat(t.total) || 0,
-					count: parseInt(t.count) || 0
-				})),
-				monthlyTrend: (data.revenue?.monthlyTrend || []).map((m) => ({
-					month: m.month,
-					monthName: m.monthName,
-					total: parseFloat(m.total) || 0,
-					count: parseInt(m.count) || 0
-				})),
-				growth: data.revenue?.growth != null ? String(data.revenue.growth) : null
-			},
-			users: {
-				total: parseInt(data.users?.total) || 0,
-				newThisMonth,
-				newLastMonth,
-				byRole: (data.users?.byRole || []).map((r) => ({
-					role: r.role || 'unknown',
-					count: parseInt(r.count) || 0
-				})),
-				activeSubscribers: parseInt(data.users?.activeSubscribers) || 0,
-				subscriptionBreakdown: (data.users?.subscriptionBreakdown || []).map((s) => ({
-					type: s.type,
-					status: s.status,
-					count: parseInt(s.count) || 0
-				})),
-				growth: userGrowth
-			},
-			premium: {
-				totalPremium: parseInt(p.totalPremium) || 0,
-				paidPremium: parseInt(p.paidPremium) || 0,
-				assignedPremium: parseInt(p.assignedPremium) || 0,
-				paidActive,
-				paidCancelled,
-				paidExpired: parseInt(p.paidExpired) || 0,
-				paidPaymentFailed: parseInt(p.paidPaymentFailed) || 0,
-				paidMonthlyActive,
-				paidYearlyActive,
-				paidMonthlyCancelled: parseInt(p.paidMonthlyCancelled) || 0,
-				paidYearlyCancelled: parseInt(p.paidYearlyCancelled) || 0,
-				mrr,
-				arr: mrr * 12,
-				churn,
-				recentSignups: (p.recentSignups || []).map((s) => ({
-					email: s.email,
-					firstName: s.firstName,
-					lastName: s.lastName,
-					type: s.type,
-					subscriptionType: s.subscriptionType,
-					subscriptionStatus: s.subscriptionStatus,
-					createdAt: s.createdAt
-				})),
-				monthlyTrend: (p.monthlyTrend || []).map((m) => ({
-					month: m.month,
-					monthName: m.monthName,
-					paid: parseInt(m.paid) || 0,
-					assigned: parseInt(m.assigned) || 0,
-					total: parseInt(m.total) || 0
-				}))
-			},
-			events: {
-				total: parseInt(data.events?.total) || 0,
-				upcoming: parseInt(data.events?.upcoming) || 0,
-				byCircuit: (data.events?.byCircuit || []).map((c) => ({
-					circuit: c.circuit,
-					count: parseInt(c.count) || 0
-				})),
-				byFormat: (data.events?.byFormat || []).map((f) => ({
-					format: f.format,
-					count: parseInt(f.count) || 0
-				}))
-			},
-			tickets: {
-				total: ticketTotal,
-				thisMonth: ticketsThisMonth,
-				thisMonthRevenue: parseFloat(data.tickets?.thisMonthRevenue) || 0,
-				lastMonth: ticketsLastMonth,
-				refunded: ticketRefunded,
-				refundRate,
-				totalRevenue: parseFloat(data.tickets?.totalRevenue) || 0,
-				avgTicketPrice: parseFloat(data.tickets?.avgTicketPrice) || 0,
-				topEvents: (data.tickets?.topEvents || []).map((e) => ({
-					eventId: e.eventId,
-					title: e.title,
-					circuit: e.circuit,
-					count: parseInt(e.count) || 0,
-					revenue: parseFloat(e.revenue) || 0
-				})),
-				byCircuit: (data.tickets?.byCircuit || []).map((c) => ({
-					circuit: c.circuit,
-					count: parseInt(c.count) || 0,
-					revenue: parseFloat(c.revenue) || 0
-				})),
-				monthlyTrend: (data.tickets?.monthlyTrend || []).map((m) => ({
-					month: m.month,
-					monthName: m.monthName,
-					count: parseInt(m.count) || 0,
-					revenue: parseFloat(m.revenue) || 0
-				})),
-				growth: ticketGrowth
-			},
-			customers: {
-				total: topCustomers.length,
-				avgOrderValue,
-				topCustomers
-			},
-			players: {
-				total: parseInt(data.players?.total) || 0,
-				byCircuit: (data.players?.byCircuit || []).map((c) => ({
-					circuit: c.circuit,
-					count: parseInt(c.count) || 0
-				})),
-				topPlayers: (data.players?.topPlayers || []).map((p) => ({
-					name: p.name,
-					gemId: p.gemId,
-					circuit: p.circuit,
-					points: p.points || 0,
-					matchesWon: p.matchesWon || 0,
-					matchesPlayed: p.matchesPlayed || 0
-				}))
-			}
-		};
-	} catch (error) {
-		console.error('Analytics load error:', error);
-		return {
-			user: locals.user,
-			error: 'Failed to load analytics data.'
+			...out,
+			ledger,
+			members,
+			events,
+			health,
+			tickets: legacy?.tickets ?? null,
+			// The backfill reads from whichever Authorize.net environment the
+			// server is pointed at; in sandbox the ledger holds test data too.
+			sandbox: authnet.environment !== 'production'
 		};
 	}
+	if (view === 'members') {
+		const [groups, paying, flow] = await Promise.all([
+			safe(cohorts()),
+			safe(payingMembers()),
+			safe(history({ months: 12 }))
+		]);
+		return { ...out, groups, paying, flow };
+	}
+	if (view === 'projections') {
+		const [forecast, flow] = await Promise.all([safe(projection()), safe(history({ months: 12 }))]);
+		return { ...out, forecast, flow };
+	}
+	const [site, funnel] = await Promise.all([
+		safe(siteOverview({ days: range })),
+		safe(premiumFunnel({ days: range }))
+	]);
+	return { ...out, site, funnel };
 }
+
+export const actions = {
+	/** Change (or clear) the reason recorded for a comped membership. */
+	compReason: async ({ request, locals }) => {
+		const form = await request.formData();
+		const userId = form.get('userId')?.toString();
+		const reason = form.get('reason')?.toString() || null;
+		if (!userId) return fail(400, { error: 'Missing user' });
+		if (reason && !COMP_REASONS.includes(reason)) return fail(400, { error: 'Unknown reason' });
+		await db
+			.update(userTable)
+			.set({ compReason: reason, compedBy: locals.user.id })
+			.where(eq(userTable.id, userId));
+		await logMemberEvent({
+			userId,
+			kind: 'comped',
+			reason,
+			actorId: locals.user.id,
+			meta: { reasonChanged: true }
+		});
+		await bump('users', `user:${userId}`);
+		return { success: true };
+	}
+};

@@ -40,7 +40,8 @@
 	const upcoming = $derived(
 		(data.events ?? [])
 			.filter((e) => {
-				if (!e.eventDate) return false;
+				// Running events appear under recent results, marked live.
+				if (!e.eventDate || e.status === 'in_progress') return false;
 				const end = new Date(e.eventDate);
 				end.setUTCHours(23, 59, 59, 999);
 				return end >= new Date();

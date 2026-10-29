@@ -1,52 +1,27 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import {
-	event,
-	ticket,
-	user,
-	eventStaff,
-	decklist,
-	standing,
-	match,
-	eventPlayerHero
-} from '$lib/server/db/schema.js';
+import { event, ticket, user, eventStaff, decklist, match, order } from '$lib/server/db/schema.js';
 import { eq, and, ilike } from 'drizzle-orm';
 import {
 	processTournamentResults,
 	calculateFinalStandings
 } from '$lib/server/tournament-processor.js';
 import { bump } from '$lib/server/cache/index.js';
+import { markRefunded } from '$lib/server/payments/ledger.js';
 import { parseDatetimeLocal } from '$lib/server/dates.js';
-import { playerKeyFromIdName } from '$lib/server/players/key.js';
 import { listHeroNames } from '$lib/server/cards/heroes.js';
-import { MONTH_NAMES } from '$lib/data/months.js';
+import { eventPeriod, rebuildStandings } from '$lib/server/standings/rebuild.js';
+import {
+	listEventHeroes,
+	replaceEventHeroes,
+	deleteEventHeroes
+} from '$lib/server/events/heroes.js';
 
 export async function load({ params, locals }) {
-	// Require authentication (admin or tournament staff)
-	if (!locals.user) {
-		throw redirect(302, '/login');
-	}
-
-	const isAdmin = locals.user.role === 'admin';
-	const isTournamentStaff = locals.user.role === 'tournament staff';
-
-	// If tournament staff, check if they're assigned to this event
-	if (isTournamentStaff) {
-		const assignment = await db
-			.select()
-			.from(eventStaff)
-			.where(and(eq(eventStaff.userId, locals.user.id), eq(eventStaff.eventId, params.eventId)))
-			.limit(1);
-
-		if (assignment.length === 0) {
-			throw error(
-				403,
-				'You are not assigned to this event. Please contact an administrator to be assigned to this event.'
-			);
-		}
-	} else if (!isAdmin) {
-		throw redirect(302, '/login');
-	}
+	// The admin layout only lets admins this far; tournament staff run
+	// their events from /staff/[eventId]. The flags stay for the template.
+	const isAdmin = true;
+	const isTournamentStaff = false;
 
 	try {
 		// Fetch event details
@@ -56,30 +31,9 @@ export async function load({ params, locals }) {
 			throw error(404, 'Event not found');
 		}
 
-		// Compute dynamic status based on date and completion
-		// Respect manually set statuses (completed, cancelled, in_progress)
-		// Only auto-compute if status is 'upcoming' or not set
-		let computedStatus = eventData.status;
-		if (
-			eventData.status === 'completed' ||
-			eventData.status === 'cancelled' ||
-			eventData.status === 'in_progress'
-		) {
-			computedStatus = eventData.status; // Keep manually set status
-		} else {
-			// Auto-compute for 'upcoming' or null status based on date
-			const now = new Date();
-			const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : null;
-			if (eventDate) {
-				if (now < eventDate) {
-					computedStatus = 'upcoming';
-				} else {
-					computedStatus = 'in_progress';
-				}
-			}
-		}
-		// Update the event data with computed status
-		eventData.computedStatus = computedStatus;
+		// The stored status is the status — nothing is inferred from the date.
+		// A past-dated event that was never closed just shows as such.
+		if (!eventData.status) eventData.status = 'upcoming';
 
 		// Fetch all tickets for this event with user information
 		const tickets = await db
@@ -183,23 +137,14 @@ export async function load({ params, locals }) {
 			.from(decklist)
 			.where(eq(decklist.eventId, params.eventId));
 
-		// Fetch existing hero data for this event (for metagame display)
-		// Use season/circuit/month to match the standings structure
-		const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : null;
-		const eventYear = eventDate ? eventDate.getUTCFullYear().toString() : null;
-		let existingHeroes = [];
-		if (eventData.circuit && eventData.month && eventYear) {
-			existingHeroes = await db
-				.select()
-				.from(eventPlayerHero)
-				.where(
-					and(
-						eq(eventPlayerHero.season, eventYear),
-						eq(eventPlayerHero.circuit, eventData.circuit),
-						eq(eventPlayerHero.month, eventData.month)
-					)
-				);
-		}
+		// Hero data for the metagame tab
+		const existingHeroes = await listEventHeroes(eventData);
+
+		// Standings file under the event's date; a `month` that disagrees with
+		// it is flagged on the page so it can be fixed.
+		const period = eventData.eventDate ? eventPeriod(eventData.eventDate) : null;
+		const monthMismatch =
+			period && eventData.month && period.monthName !== eventData.month ? period.monthName : null;
 
 		// Fetch staff assignments for this event (admin only)
 		let assignedStaff = [];
@@ -232,6 +177,7 @@ export async function load({ params, locals }) {
 			existingMatches,
 			existingDecklists,
 			existingHeroes,
+			monthMismatch,
 			heroNames: listHeroNames(),
 			assignedStaff,
 			stats: {
@@ -297,6 +243,13 @@ export const actions = {
 					refundedAt: new Date()
 				})
 				.where(eq(ticket.id, ticketId));
+			await markRefunded(ticketData.transactionId, ticketData.amountPaid);
+			if (ticketData.orderId) {
+				await db
+					.update(order)
+					.set({ refundedAt: new Date() })
+					.where(eq(order.id, ticketData.orderId));
+			}
 
 			await bump('tickets');
 			return { success: true, message: `Ticket ${refundType} successfully` };
@@ -328,6 +281,13 @@ export const actions = {
 		const playerCapRaw = formData.get('playerCap');
 		const playerCap = playerCapRaw ? parseInt(playerCapRaw) : null;
 
+		const parsedDate = parseDatetimeLocal(eventDate);
+		if (month && parsedDate && eventPeriod(parsedDate).monthName !== month) {
+			return fail(400, {
+				error: `The month is set to ${month} but the event date is in ${eventPeriod(parsedDate).monthName}. Standings file under the date, so the two must agree.`
+			});
+		}
+
 		try {
 			const updateData = {
 				title,
@@ -336,7 +296,7 @@ export const actions = {
 				format,
 				circuit: circuit || null,
 				month: month || null,
-				eventDate: parseDatetimeLocal(eventDate),
+				eventDate: parsedDate,
 				description: description || null,
 				gemIdRequired,
 				premiumDiscount,
@@ -527,7 +487,7 @@ export const actions = {
 				eventDate: eventData.eventDate
 			});
 
-			// Format results for standings sync
+			// The results as stored on the event (the authoritative Swiss order)
 			const resultsJson = processedResults.results.map((result) => ({
 				playerName: result.name,
 				gemId: result.playerId || null,
@@ -539,301 +499,60 @@ export const actions = {
 				prizeAmount: result.prize > 0 ? result.prize.toFixed(2) : null
 			}));
 
-			// Sync standings directly (update season_standing table)
-			let standingsUpdated = false;
-			let standingsError = null;
-			let isReupload = false;
-			if (eventData.circuit) {
-				try {
-					const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
-					const currentYear = eventDate.getUTCFullYear().toString();
-					const eventMonthName = MONTH_NAMES[eventDate.getUTCMonth()];
-					const monthKey = eventMonthName.toLowerCase();
+			const period = eventPeriod(eventData.eventDate);
+			const matchesToInsert = (processedResults.matches || []).map((m) => ({
+				eventId: params.eventId,
+				// Legacy grouping fields, kept in step with the event's date
+				year: period.season,
+				circuit: eventData.circuit,
+				month: period.monthName,
+				round: m.round,
+				table: m.table || null,
+				player1GemId: m.player1GemId || null,
+				player1Name: m.player1Name,
+				player2GemId: m.player2GemId || null,
+				player2Name: m.player2Name,
+				winner: m.winner || null
+			}));
 
-					// Check if this is a re-upload by looking for existing matches
-					const existingEventMatches = await db
-						.select()
-						.from(match)
-						.where(eq(match.eventId, params.eventId));
-
-					if (existingEventMatches.length > 0) {
-						isReupload = true;
-
-						// Reconstruct the old per-player AGE points using the SAME
-						// formula the addition path uses (calculateFinalStandings).
-						// Previously the subtract step used a simplified wins-sort
-						// table; the resulting subtract amounts didn't match the
-						// add amounts, which inflated standings by the difference
-						// on every re-upload.
-						const oldPlayerMap = new Map();
-						for (const m of existingEventMatches) {
-							if (m.player1GemId || m.player1Name) {
-								const key = m.player1GemId || m.player1Name;
-								if (!oldPlayerMap.has(key)) {
-									oldPlayerMap.set(key, {
-										playerId: m.player1GemId,
-										name: m.player1Name,
-										wins: 0
-									});
-								}
-								if (m.winner === 'player1') oldPlayerMap.get(key).wins++;
-							}
-							if (m.player2GemId || m.player2Name) {
-								const key = m.player2GemId || m.player2Name;
-								if (!oldPlayerMap.has(key)) {
-									oldPlayerMap.set(key, {
-										playerId: m.player2GemId,
-										name: m.player2Name,
-										wins: 0
-									});
-								}
-								if (m.winner === 'player2') oldPlayerMap.get(key).wins++;
-							}
-						}
-
-						const oldPairings = existingEventMatches.map((m) => ({
-							round: m.round,
-							table: m.table,
-							player1Id: m.player1GemId,
-							player1Name: m.player1Name,
-							player2Id: m.player2GemId,
-							player2Name: m.player2Name,
-							result: m.winner === 'player1' ? '1WIN' : m.winner === 'player2' ? '2WIN' : 'DRAW'
-						}));
-
-						const oldPointsMap = new Map();
-						try {
-							const oldComputed = calculateFinalStandings(
-								Array.from(oldPlayerMap.values()),
-								oldPairings
-							);
-							for (const r of oldComputed.results) {
-								oldPointsMap.set(playerKeyFromIdName(r.playerId, r.name), {
-									points: r.points || 0,
-									wins: r.matchesWon || 0,
-									matches: r.matchesPlayed || 0
-								});
-							}
-						} catch (err) {
-							console.warn(
-								'Could not recompute old tournament results for subtraction; falling back to zero subtraction:',
-								err.message
-							);
-						}
-
-						// Subtract old contribution from standings
-						const existingStandings = await db
-							.select()
-							.from(standing)
-							.where(
-								and(eq(standing.season, currentYear), eq(standing.circuit, eventData.circuit))
-							);
-
-						const monthPointsCol = `${monthKey}Points`;
-						const monthMatchesWonCol = `${monthKey}MatchesWon`;
-						const monthMatchesCol = `${monthKey}Matches`;
-
-						for (const existingRow of existingStandings) {
-							const key = playerKeyFromIdName(existingRow.gemId, existingRow.playerName);
-							const oldStats = oldPointsMap.get(key);
-							if (oldStats) {
-								await db
-									.update(standing)
-									.set({
-										totalPoints: Math.max(0, (existingRow.totalPoints || 0) - oldStats.points),
-										matchesWon: Math.max(0, (existingRow.matchesWon || 0) - oldStats.wins),
-										matchesPlayed: Math.max(0, (existingRow.matchesPlayed || 0) - oldStats.matches),
-										[monthPointsCol]: Math.max(
-											0,
-											(existingRow[monthPointsCol] || 0) - oldStats.points
-										),
-										[monthMatchesWonCol]: Math.max(
-											0,
-											(existingRow[monthMatchesWonCol] || 0) - oldStats.wins
-										),
-										[monthMatchesCol]: Math.max(
-											0,
-											(existingRow[monthMatchesCol] || 0) - oldStats.matches
-										)
-									})
-									.where(eq(standing.id, existingRow.id));
-							}
-						}
-					}
-
-					// Now add new standings contribution
-					// Re-fetch standings after potential subtraction
-					const existingStandings = await db
-						.select()
-						.from(standing)
-						.where(and(eq(standing.season, currentYear), eq(standing.circuit, eventData.circuit)));
-
-					// Build lookup maps for existing standings.
-					//   - GEM-ID rows are matched only by GEM ID (never by name).
-					//   - GEM-less rows are matched by playerName, and only against
-					//     GEM-less results. A GEM-less result never matches a GEM-ID
-					//     row (and vice versa) — that was the bug that merged two
-					//     same-named players into one row.
-					const byGemId = new Map(
-						existingStandings.filter((s) => s.gemId).map((s) => [s.gemId, s])
+			// Matches, results and standings change together or not at all. The
+			// standings are rebuilt from every event in the season rather than
+			// adjusted, so uploading the same file twice gives the same numbers;
+			// players dropped by the new file lose their points from the old one.
+			const wasUpcoming = eventData.status === 'upcoming' || !eventData.status;
+			let rebuilt = null;
+			await db.transaction(async (tx) => {
+				await tx.delete(match).where(eq(match.eventId, params.eventId));
+				if (matchesToInsert.length > 0) await tx.insert(match).values(matchesToInsert);
+				await tx
+					.update(event)
+					.set({
+						tournamentResults: resultsJson,
+						...(wasUpcoming ? { status: 'in_progress' } : {})
+					})
+					.where(eq(event.id, params.eventId));
+				if (eventData.circuit) {
+					rebuilt = await rebuildStandings(
+						{ season: period.season, circuit: eventData.circuit, months: [period.monthKey] },
+						tx
 					);
-					const byGemlessName = new Map(
-						existingStandings.filter((s) => !s.gemId).map((s) => [s.playerName, s])
-					);
-
-					const monthPointsCol = `${monthKey}Points`;
-					const monthMatchesWonCol = `${monthKey}MatchesWon`;
-					const monthMatchesCol = `${monthKey}Matches`;
-
-					// Process each result
-					for (const result of resultsJson) {
-						const existing = result.gemId
-							? byGemId.get(result.gemId)
-							: byGemlessName.get(result.playerName);
-
-						if (existing) {
-							// Update existing standing - add new points/matches to totals and monthly
-							const newTotalPoints = (existing.totalPoints || 0) + result.agePoints;
-							const newMatchesWon = (existing.matchesWon || 0) + result.wins;
-							const newMatchesPlayed = (existing.matchesPlayed || 0) + result.wins + result.losses;
-							const newWinPercentage =
-								newMatchesPlayed > 0
-									? Math.round((newMatchesWon / newMatchesPlayed) * 10000) / 100
-									: null;
-
-							// Get current monthly values
-							const currentMonthPoints = existing[monthPointsCol] || 0;
-							const currentMonthWon = existing[monthMatchesWonCol] || 0;
-							const currentMonthMatches = existing[monthMatchesCol] || 0;
-
-							await db
-								.update(standing)
-								.set({
-									totalPoints: newTotalPoints,
-									matchesWon: newMatchesWon,
-									matchesPlayed: newMatchesPlayed,
-									winPercentage: newWinPercentage,
-									gemId: result.gemId || existing.gemId,
-									[monthPointsCol]: currentMonthPoints + result.agePoints,
-									[monthMatchesWonCol]: currentMonthWon + result.wins,
-									[monthMatchesCol]: currentMonthMatches + result.wins + result.losses,
-									updatedAt: new Date()
-								})
-								.where(eq(standing.id, existing.id));
-						} else {
-							// Insert new standing
-							const insertData = {
-								season: currentYear,
-								circuit: eventData.circuit,
-								gemId: result.gemId || null,
-								playerName: result.playerName,
-								totalPoints: result.agePoints,
-								matchesWon: result.wins,
-								matchesPlayed: result.wins + result.losses,
-								winPercentage:
-									result.wins + result.losses > 0
-										? Math.round((result.wins / (result.wins + result.losses)) * 10000) / 100
-										: null,
-								[monthPointsCol]: result.agePoints,
-								[monthMatchesWonCol]: result.wins,
-								[monthMatchesCol]: result.wins + result.losses
-							};
-							const [inserted] = await db.insert(standing).values(insertData).returning();
-							// Track the freshly-inserted row in the lookup maps so a
-							// duplicate entry later in the same CSV updates this row
-							// instead of attempting another INSERT (which would hit the
-							// unique constraint).
-							if (inserted) {
-								if (inserted.gemId) {
-									byGemId.set(inserted.gemId, inserted);
-								} else {
-									byGemlessName.set(inserted.playerName, inserted);
-								}
-							}
-						}
-					}
-					standingsUpdated = true;
-					console.log(
-						`Standings synced for ${resultsJson.length} players in ${eventData.circuit}${isReupload ? ' (re-upload)' : ''}`
-					);
-				} catch (err) {
-					standingsError = err.message;
-					console.error('Standings sync failed:', err.message);
 				}
-			}
+			});
 
-			// Store matches (source of truth for computing results)
-			// Delete existing matches for this event
-			await db.delete(match).where(eq(match.eventId, params.eventId));
-
-			// Insert new matches with eventId
-			if (processedResults.matches?.length > 0) {
-				const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
-				const eventMonthName = MONTH_NAMES[eventDate.getUTCMonth()];
-				const eventYear = eventDate.getUTCFullYear().toString();
-
-				const matchesToInsert = processedResults.matches.map((m) => ({
-					eventId: params.eventId,
-					// Legacy fields for backwards compatibility
-					year: eventYear,
-					circuit: eventData.circuit,
-					month: eventMonthName,
-					// Match data
-					round: m.round,
-					table: m.table || null,
-					player1GemId: m.player1GemId || null,
-					player1Name: m.player1Name,
-					player2GemId: m.player2GemId || null,
-					player2Name: m.player2Name,
-					winner: m.winner || null
-				}));
-				await db.insert(match).values(matchesToInsert);
-			}
-
-			// Store tournament results on the event (preserves Swiss standings order)
-			await db
-				.update(event)
-				.set({ tournamentResults: resultsJson })
-				.where(eq(event.id, params.eventId));
-
-			// CSV processing rewrites this event's matches and can shift
-			// every player's standings.
 			await bump('events', 'matches', 'standings');
 
-			const standingsMessage = standingsUpdated
-				? ' Standings updated.'
-				: eventData.circuit
-					? ` (Standings sync failed: ${standingsError || 'unknown error'})`
-					: '';
+			const standingsMessage = rebuilt
+				? ` ${eventData.circuit} ${period.monthName} ${period.season} standings rebuilt.`
+				: ' No circuit set, so standings were not touched.';
 
 			return {
 				success: true,
-				message: `Processed ${processedResults.results.length} players and ${processedResults.matches?.length || 0} matches.${standingsMessage} Winner: ${processedResults.summary.winner?.name || 'Unknown'}`,
+				message: `Processed ${processedResults.results.length} players and ${matchesToInsert.length} matches.${standingsMessage}${wasUpcoming ? ' Event is now in progress.' : ''} Winner: ${processedResults.summary.winner?.name || 'Unknown'}`,
 				processedResults: processedResults.summary
 			};
 		} catch (err) {
 			console.error('Error processing CSV:', err);
 			return fail(500, { error: `Failed to process CSV: ${err.message}` });
-		}
-	},
-
-	// Save progress without finalizing
-	saveProgress: async ({ params, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
-			return fail(403, { error: 'Unauthorized' });
-		}
-
-		try {
-			await db.update(event).set({ status: 'in_progress' }).where(eq(event.id, params.eventId));
-			await bump('events');
-
-			return {
-				success: true,
-				message: 'Progress saved. Results are stored but standings have not been updated yet.'
-			};
-		} catch (err) {
-			console.error('Error saving progress:', err);
-			return fail(500, { error: 'Failed to save progress' });
 		}
 	},
 
@@ -1105,8 +824,7 @@ export const actions = {
 				});
 			}
 
-			const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : new Date();
-			const season = eventDate.getUTCFullYear().toString();
+			const { season } = eventPeriod(eventData.eventDate);
 
 			const csvText = await heroesFile.text();
 			const lines = csvText.trim().split('\n');
@@ -1186,19 +904,7 @@ export const actions = {
 				return fail(400, { error: 'No valid hero data found in CSV' });
 			}
 
-			// Delete existing hero data for this season/circuit/month
-			await db
-				.delete(eventPlayerHero)
-				.where(
-					and(
-						eq(eventPlayerHero.season, season),
-						eq(eventPlayerHero.circuit, eventData.circuit),
-						eq(eventPlayerHero.month, eventData.month)
-					)
-				);
-
-			// Insert new hero data
-			await db.insert(eventPlayerHero).values(heroData);
+			await replaceEventHeroes(eventData, heroData);
 			await bump('events');
 
 			return {
@@ -1229,17 +935,7 @@ export const actions = {
 				return fail(400, { error: 'Event not properly configured' });
 			}
 
-			const season = new Date(eventData.eventDate).getUTCFullYear().toString();
-
-			await db
-				.delete(eventPlayerHero)
-				.where(
-					and(
-						eq(eventPlayerHero.season, season),
-						eq(eventPlayerHero.circuit, eventData.circuit),
-						eq(eventPlayerHero.month, eventData.month)
-					)
-				);
+			await deleteEventHeroes(eventData);
 
 			await bump('events');
 			return { success: true, message: 'Hero data deleted' };
@@ -1263,35 +959,25 @@ export const actions = {
 				.where(eq(event.id, params.eventId))
 				.limit(1);
 
-			// Delete in order due to foreign key constraints
-			// 1. Delete event matches
-			await db.delete(match).where(eq(match.eventId, params.eventId));
+			if (!eventData) return fail(404, { error: 'Event not found' });
 
-			// 2. Delete event decklists
-			await db.delete(decklist).where(eq(decklist.eventId, params.eventId));
-
-			// 3. Delete hero data (by season/circuit/month)
-			if (eventData?.circuit && eventData?.month && eventData?.eventDate) {
-				const season = new Date(eventData.eventDate).getUTCFullYear().toString();
-				await db
-					.delete(eventPlayerHero)
-					.where(
-						and(
-							eq(eventPlayerHero.season, season),
-							eq(eventPlayerHero.circuit, eventData.circuit),
-							eq(eventPlayerHero.month, eventData.month)
-						)
-					);
-			}
-
-			// 4. Delete staff assignments
-			await db.delete(eventStaff).where(eq(eventStaff.eventId, params.eventId));
-
-			// 5. Delete tickets
-			await db.delete(ticket).where(eq(ticket.eventId, params.eventId));
-
-			// 6. Finally delete the event
-			await db.delete(event).where(eq(event.id, params.eventId));
+			// Everything the event owns goes with it, and the season's standings
+			// are rebuilt without its results — in one transaction.
+			await db.transaction(async (tx) => {
+				await tx.delete(match).where(eq(match.eventId, params.eventId));
+				await tx.delete(decklist).where(eq(decklist.eventId, params.eventId));
+				await deleteEventHeroes(eventData, tx);
+				await tx.delete(eventStaff).where(eq(eventStaff.eventId, params.eventId));
+				await tx.delete(ticket).where(eq(ticket.eventId, params.eventId));
+				await tx.delete(event).where(eq(event.id, params.eventId));
+				// Only an event that fed the standings changes them on delete.
+				const hadResults =
+					Array.isArray(eventData.tournamentResults) && eventData.tournamentResults.length > 0;
+				if (eventData.circuit && eventData.eventDate && hadResults) {
+					const { season, monthKey } = eventPeriod(eventData.eventDate);
+					await rebuildStandings({ season, circuit: eventData.circuit, months: [monthKey] }, tx);
+				}
+			});
 
 			// Deleting a whole event removes its decklists, matches, tickets
 			// and standings points.

@@ -5,11 +5,7 @@ import { eq, sql, ilike, or } from 'drizzle-orm';
 import { normalizePartnerCode } from '$lib/server/partner-code.js';
 import { bump } from '$lib/server/cache/index.js';
 
-export async function load({ locals, url }) {
-	if (!locals.user || locals.user.role !== 'admin') {
-		throw redirect(302, '/login?redirect=/admin/partners/new');
-	}
-
+export async function load({ url }) {
 	// Optional user search
 	const q = url.searchParams.get('q')?.trim() || '';
 	let searchResults = [];

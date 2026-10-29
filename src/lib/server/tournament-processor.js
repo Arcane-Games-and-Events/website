@@ -17,6 +17,15 @@ function identityOf(id, name) {
 	return playerKeyFromIdName(id, name);
 }
 
+/**
+ * GEM exports a bye as a pairing against nobody — no player ID and a name
+ * such as "None" or "BYE". The seated player still gets their win; the
+ * empty side must never be counted as a participant.
+ */
+export function isBye(id, name) {
+	return !id && /^(|none|bye|-)$/i.test((name || '').trim());
+}
+
 // AGE Open Points Structure
 export const AGE_POINTS = {
 	1: { points: 30, prize: 400 }, // Winner
@@ -138,61 +147,58 @@ export function parsePairings(csvString) {
 		.filter((p) => p.round > 0);
 }
 
+/** Match counts of the rounds that make up a cut, largest cut first. */
+const CUTS = [
+	{ size: 8, tail: [4, 2, 1] },
+	{ size: 4, tail: [2, 1] },
+	{ size: 2, tail: [1] }
+];
+
 /**
- * Determine the round structure from pairings data and swiss standings
- * Uses max wins from swiss standings as the primary source for swiss rounds count
+ * Work out where Swiss ends and the single-elimination cut begins.
+ *
+ * A cut shows up as the last rounds having exactly 4, 2 and 1 matches
+ * (Top 8), 2 and 1 (Top 4) or a lone final, each with fewer matches than
+ * the first Swiss round has. When more than one reading fits (an eight-player
+ * event's Swiss rounds also have four matches), the Swiss standings decide:
+ * an undefeated player's win count is the number of Swiss rounds. Without a
+ * cut, every round is Swiss.
  */
 export function determineRoundStructure(pairings, swissStandings = []) {
 	const roundCounts = {};
-
 	for (const pairing of pairings) {
 		roundCounts[pairing.round] = (roundCounts[pairing.round] || 0) + 1;
 	}
-
 	const rounds = Object.keys(roundCounts)
 		.map(Number)
 		.sort((a, b) => a - b);
-	const maxRound = Math.max(...rounds);
+	const counts = rounds.map((r) => roundCounts[r]);
+	const maxRound = rounds.length > 0 ? rounds[rounds.length - 1] : 0;
 
-	// Use max wins from swiss standings as the number of swiss rounds
-	// This is more reliable than trying to detect bracket structure
-	const maxWins =
-		swissStandings.length > 0 ? Math.max(...swissStandings.map((p) => p.wins || 0)) : 0;
+	const candidates = CUTS.filter(({ tail }) => {
+		if (rounds.length <= tail.length) return false;
+		const end = counts.slice(-tail.length);
+		return end.every((c, i) => c === tail[i]) && end[0] <= counts[0];
+	}).map(({ size, tail }) => ({
+		size,
+		bracketStartRound: rounds[rounds.length - tail.length],
+		swissRounds: rounds[rounds.length - tail.length - 1]
+	}));
 
-	// Find where Swiss ends and Top 8 begins
-	// Top 8 bracket: QF = 4 matches, SF = 2 matches, Finals = 1 match
-	let top8StartRound = null;
-
-	// Look for the transition point where match count drops significantly
-	for (let i = rounds.length - 1; i >= 0; i--) {
-		const round = rounds[i];
-		const count = roundCounts[round];
-
-		// Finals round should have 1 match
-		if (count === 1 && i >= 2) {
-			const semisRound = rounds[i - 1];
-			const quartersRound = rounds[i - 2];
-
-			if (roundCounts[semisRound] === 2 && roundCounts[quartersRound] === 4) {
-				top8StartRound = quartersRound;
-				break;
-			}
-		}
-	}
-
-	// If we couldn't detect bracket, assume last 3 rounds are Top 8
-	if (!top8StartRound && maxRound >= 3) {
-		top8StartRound = maxRound - 2;
-	}
-
-	// Determine swiss rounds: prefer max wins from standings, fall back to bracket detection
-	const swissRounds = maxWins > 0 ? maxWins : top8StartRound ? top8StartRound - 1 : maxRound;
+	// Only real Swiss standings (ranked, from the GEM export) carry Swiss-only
+	// win counts; standings rebuilt from match rows include bracket wins.
+	const ranked = swissStandings.some((p) => p.rank > 0);
+	const maxWins = ranked ? Math.max(0, ...swissStandings.map((p) => p.wins || 0)) : 0;
+	const cut =
+		candidates.find((c) => maxWins > 0 && c.swissRounds === maxWins) || candidates[0] || null;
 
 	return {
 		totalRounds: maxRound,
-		swissRounds,
-		top8StartRound,
-		hasTop8: !!top8StartRound,
+		swissRounds: cut ? cut.swissRounds : maxRound,
+		bracketSize: cut ? cut.size : 0,
+		bracketStartRound: cut ? cut.bracketStartRound : null,
+		hasBracket: !!cut,
+		hasTop8: cut?.size === 8,
 		roundCounts
 	};
 }
@@ -222,14 +228,18 @@ function getMatchLoser(match) {
 }
 
 /**
- * Trace through the Top 8 bracket to determine final placements
+ * Trace the cut to final placements. `size` is 8 (quarters, semis, final),
+ * 4 (semis, final) or 2 (final only); losers of each round take the next
+ * tied placement band.
  */
-export function traceBracket(pairings, top8StartRound) {
-	if (!top8StartRound) return null;
+export function traceBracket(pairings, bracketStartRound, size = 8) {
+	if (!bracketStartRound || !size) return null;
 
-	const quarters = pairings.filter((p) => p.round === top8StartRound);
-	const semis = pairings.filter((p) => p.round === top8StartRound + 1);
-	const finals = pairings.filter((p) => p.round === top8StartRound + 2);
+	const roundsInCut = size === 8 ? 3 : size === 4 ? 2 : 1;
+	const inRound = (offset) => pairings.filter((p) => p.round === bracketStartRound + offset);
+	const quarters = roundsInCut === 3 ? inRound(0) : [];
+	const semis = roundsInCut >= 2 ? inRound(roundsInCut - 2) : [];
+	const finals = inRound(roundsInCut - 1);
 
 	if (finals.length !== 1) {
 		console.warn('Invalid bracket structure: expected 1 finals match');
@@ -251,6 +261,7 @@ export function traceBracket(pairings, top8StartRound) {
 		second,
 		thirdFourth,
 		fifthEighth,
+		size,
 		bracket: {
 			quarters,
 			semis,
@@ -325,7 +336,11 @@ export function calculateTiebreakers(standings, pairings, swissRounds) {
  */
 export function calculateFinalStandings(swissStandings, pairings) {
 	const roundStructure = determineRoundStructure(pairings, swissStandings);
-	const bracketResults = traceBracket(pairings, roundStructure.top8StartRound);
+	const bracketResults = traceBracket(
+		pairings,
+		roundStructure.bracketStartRound,
+		roundStructure.bracketSize
+	);
 	const tiebreakers = calculateTiebreakers(swissStandings, pairings, roundStructure.swissRounds);
 
 	const results = [];
@@ -425,7 +440,11 @@ export function calculateFinalStandings(swissStandings, pairings) {
 	const allParticipants = new Map();
 	for (const pairing of pairings) {
 		// Add player 1
-		if (pairing.player1Name && !isAlreadyPlaced(pairing.player1Id, pairing.player1Name)) {
+		if (
+			pairing.player1Name &&
+			!isBye(pairing.player1Id, pairing.player1Name) &&
+			!isAlreadyPlaced(pairing.player1Id, pairing.player1Name)
+		) {
 			const key = pairing.player1Id || pairing.player1Name;
 			if (!allParticipants.has(key)) {
 				allParticipants.set(key, {
@@ -435,7 +454,11 @@ export function calculateFinalStandings(swissStandings, pairings) {
 			}
 		}
 		// Add player 2
-		if (pairing.player2Name && !isAlreadyPlaced(pairing.player2Id, pairing.player2Name)) {
+		if (
+			pairing.player2Name &&
+			!isBye(pairing.player2Id, pairing.player2Name) &&
+			!isAlreadyPlaced(pairing.player2Id, pairing.player2Name)
+		) {
 			const key = pairing.player2Id || pairing.player2Name;
 			if (!allParticipants.has(key)) {
 				allParticipants.set(key, {
@@ -564,12 +587,14 @@ export async function processTournamentResults(swissStandingsCsv, pairingsCsv, e
 		eventInfo,
 		summary: {
 			totalPlayers: standings.totalPlayers,
-			top8Players: standings.bracketResults ? 8 : 0,
+			cutSize: standings.bracketResults?.size || 0,
+			top8Players: standings.bracketResults?.size === 8 ? 8 : 0,
 			totalRounds: standings.roundStructure.totalRounds,
 			swissRounds: standings.roundStructure.swissRounds,
-			bracketRounds: standings.roundStructure.hasTop8
+			bracketRounds: standings.roundStructure.hasBracket
 				? standings.roundStructure.totalRounds - standings.roundStructure.swissRounds
 				: 0,
+			hasBracket: standings.roundStructure.hasBracket,
 			hasTop8: standings.roundStructure.hasTop8,
 			winner: standings.results.find((r) => r.placement === 1),
 			totalPointsDistributed: standings.results.reduce((sum, r) => sum + r.points, 0),

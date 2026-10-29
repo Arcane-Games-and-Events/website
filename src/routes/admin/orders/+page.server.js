@@ -1,6 +1,7 @@
-import { redirect, fail } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { bump } from '$lib/server/cache/index.js';
+import { markRefunded } from '$lib/server/payments/ledger.js';
 import {
 	adminCounts,
 	listOrders,
@@ -20,11 +21,6 @@ const EMPTY = {
 };
 
 export async function load({ locals }) {
-	// Require admin authentication
-	if (!locals.user || locals.user.role !== 'admin') {
-		throw redirect(302, '/login?redirect=/admin/orders');
-	}
-
 	try {
 		const [allOrders, allUsers, revenueStats, counts, ticketStats] = await Promise.all([
 			listOrders(),
@@ -172,6 +168,9 @@ export const actions = {
 				});
 				refundType = 'refunded';
 			}
+
+			await markRefunded(orderData.providerRef, orderData.amount);
+			await db.update(order).set({ refundedAt: new Date() }).where(eq(order.id, orderData.id));
 
 			// Update related records based on order type
 			if (orderData.meta?.type === 'ticket' && orderData.meta.ticketId) {

@@ -1,4 +1,10 @@
 <script>
+	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
+	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
+	import Figures from '$lib/components/age/admin/Figures.svelte';
+	import Section from '$lib/components/age/admin/Section.svelte';
+	import * as ui from '$lib/components/age/admin/ui.js';
 	let { data } = $props();
 
 	const partners = $derived(data.partners || []);
@@ -27,244 +33,119 @@
 	}
 </script>
 
-<svelte:head><title>Partners · AGE Ops</title></svelte:head>
+<svelte:head><title>Partners · Admin</title></svelte:head>
 
-<!-- ============ HEADER ============ -->
-<header class="mx-auto w-full max-w-[1600px] px-4 pt-[42px] pb-[28px] md:px-10 lg:px-14">
-	<div class="mb-[18px] flex flex-wrap items-center gap-[16px]">
-		<span class="font-mono-system text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase">
-			Partners
-		</span>
-		<span class="hidden h-[1px] flex-1 bg-line2 md:block"></span>
+<DeskHeader
+	kicker="Admin"
+	title="Partners"
+	subtitle="Partner accounts, promo codes and commission payouts."
+>
+	{#snippet actions(compact)}
 		<a
 			href="/admin/partners/new"
-			class="inline-flex items-center bg-ink px-[14px] py-[9px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
+			class="inline-flex items-center bg-paper-bg px-3 text-[10px] font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-warm-light {compact
+				? 'h-[30px]'
+				: 'h-[36px]'}">+ New partner</a
 		>
-			+ New Partner
-		</a>
-	</div>
-	<h1
-		class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]"
-	>
-		AGE Partners.
-	</h1>
-	<p class="mt-3 max-w-[680px] font-newsreader text-[19px] leading-[1.42] text-soft italic">
-		Partner accounts, promo codes, and commission payouts.
-	</p>
-</header>
+	{/snippet}
+</DeskHeader>
+<AdminTabs />
 
 {#if totals.readyToPayCount > 0}
-	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[18px] md:px-10 lg:px-14">
-		<div
-			class="flex flex-wrap items-center justify-between gap-3 border-[1.5px] border-ink bg-prem p-4 text-white"
-		>
-			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
-					style="color: #d6eedf;"
-				>
-					Payout Due
-				</span>
-				<p class="mt-[2px] font-newsreader text-[18px] font-semibold">
-					{totals.readyToPayCount} referral{totals.readyToPayCount === 1 ? '' : 's'} ready to pay ·
-					{fmt(totals.readyToPayAmount)}
-				</p>
-			</div>
-			<span
-				class="font-mono-system text-[10px] font-bold tracking-[0.1em] uppercase"
-				style="color: #d6eedf;"
-			>
-				Payout date (created + 30d) has passed.
-			</span>
-		</div>
-	</section>
+	<AdminNotice
+		tone="info"
+		message="{totals.readyToPayCount} referral{totals.readyToPayCount === 1
+			? ''
+			: 's'} ready to pay out, {fmt(
+			totals.readyToPayAmount
+		)} in all. A referral is payable 30 days after it was made."
+	/>
 {/if}
 
-<!-- ============ TOTALS ============ -->
-<section class="overflow-x-clip border-y-[3px] border-double border-ink">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[28px] md:px-10 lg:px-14">
-		<div class="grid grid-cols-2 gap-x-[24px] gap-y-[22px] md:grid-cols-4">
-			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-				>
-					Total Referrals
-				</span>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-ink"
-				>
-					{totals.totalReferrals}
-				</div>
-			</div>
-			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-				>
-					Pending Payout
-				</span>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-warm"
-				>
-					{fmt(totals.totalPending)}
-				</div>
-			</div>
-			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-				>
-					Ready to Pay
-				</span>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-accent"
-				>
-					{fmt(totals.readyToPayAmount)}
-				</div>
-			</div>
-			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-				>
-					Total Paid Out
-				</span>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-prem"
-				>
-					{fmt(totals.totalPaid)}
-				</div>
-			</div>
-		</div>
-	</div>
-</section>
+<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+	<Figures
+		items={[
+			{
+				label: 'Partners',
+				value: ui.fmt(partners.length),
+				note: `${ui.fmt(partners.filter((p) => p.isActive).length)} active`
+			},
+			{ label: 'Referrals', value: ui.fmt(totals.totalReferrals) },
+			{ label: 'Pending payout', value: fmt(totals.totalPending), tone: 'text-warm' },
+			{
+				label: 'Ready to pay',
+				value: fmt(totals.readyToPayAmount),
+				tone: totals.readyToPayCount ? 'text-hero-rb' : ''
+			},
+			{ label: 'Paid out', value: fmt(totals.totalPaid), tone: 'text-prem' }
+		]}
+		cols="md:grid-cols-5"
+	/>
 
-<!-- ============ PARTNERS TABLE ============ -->
-<section class="overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
-		{#if partners.length === 0}
-			<div class="overflow-hidden border-[1.5px] border-ink p-8 text-center">
-				<p class="font-newsreader text-[19px] text-soft italic">
-					No partners yet. <a
-						href="/admin/partners/new"
-						class="text-warm underline underline-offset-2 hover:text-ink"
+	<Section
+		title="Partners"
+		class="mt-10"
+		note="{ui.fmt(partners.length)} {partners.length === 1 ? 'partner' : 'partners'}"
+	>
+		<div class="{ui.rowHead} grid-cols-[minmax(0,1fr)_120px_80px_110px_90px_90px_100px_80px] gap-3">
+			<span>Partner</span><span>Code</span><span class="text-right">Referrals</span><span
+				class="text-right">Pending</span
+			><span class="text-right">Paid</span><span>Status</span><span>Since</span><span></span>
+		</div>
+		<ul>
+			{#each partners as p (p.id)}
+				<li class={ui.row}>
+					<a
+						href="/admin/partners/{p.id}"
+						class="group block py-3 transition-colors hover:bg-paper md:grid md:grid-cols-[minmax(0,1fr)_120px_80px_110px_90px_90px_100px_80px] md:items-center md:gap-3"
 					>
-						Create the first one
-					</a>.
-				</p>
-			</div>
-		{:else}
-			<div class="overflow-x-auto border-[1.5px] border-ink">
-				<table class="w-full min-w-[900px]">
-					<thead class="border-b-[1.5px] border-ink">
-						<tr class="text-left">
-							<th
-								class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Partner</th
+						<span class="block min-w-0">
+							<span class="{ui.titleText} block truncate group-hover:text-warm"
+								>{p.firstName}
+								{p.lastName}{#if p.displayName}<span class="font-normal text-soft">
+										as “{p.displayName}”</span
+									>{/if}</span
 							>
-							<th
-								class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Code</th
+							<span class="block truncate text-[11.5px] text-fade">{p.email}</span>
+						</span>
+						<span class="mt-1.5 flex flex-wrap items-center gap-1.5 md:contents">
+							<span
+								><code
+									class="inline-block border border-line2 bg-paper px-1.5 py-[1px] text-[11px] tracking-[0.04em] text-warm"
+									>{p.code}</code
+								></span
 							>
-							<th
-								class="px-4 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Referrals</th
+							<span class="text-[12.5px] tabular-nums md:text-right"
+								><span class="text-fade md:hidden">Referrals </span>{ui.fmt(p.referralCount)}</span
 							>
-							<th
-								class="px-4 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Pending</th
+							<span class="text-[12.5px] tabular-nums md:text-right">
+								<span class="text-fade md:hidden">Pending </span>{fmt(p.pendingCommission)}
+								{#if Number(p.readyToPayAmount) > 0}<span class="block text-[10.5px] text-hero-rb"
+										>{fmt(p.readyToPayAmount)} ready</span
+									>{/if}
+							</span>
+							<span class="text-[12.5px] text-prem tabular-nums md:text-right"
+								><span class="text-fade md:hidden">Paid </span>{fmt(p.paidCommission)}</span
 							>
-							<th
-								class="px-4 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Paid</th
+							<span
+								><span class="{ui.pill} {p.isActive ? ui.pillTone.active : ui.pillTone.inactive}"
+									>{p.isActive ? 'Active' : 'Inactive'}</span
+								></span
 							>
-							<th
-								class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Status</th
-							>
-							<th
-								class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Created</th
-							>
-							<th class="px-4 py-[12px] font-mono-system"></th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each partners as p (p.id)}
-							<tr class="border-b border-line2 transition-colors hover:bg-panel">
-								<td class="px-4 py-[14px]">
-									<div class="font-newsreader text-[16px] font-semibold">
-										{p.firstName}
-										{p.lastName}
-									</div>
-									{#if p.displayName}
-										<div
-											class="mt-[2px] font-mono-system text-[10px] font-bold tracking-[0.06em] text-warm uppercase"
-										>
-											as "{p.displayName}"
-										</div>
-									{/if}
-									<div class="mt-[2px] text-[12px] text-fade">{p.email}</div>
-								</td>
-								<td class="px-4 py-[14px]">
-									<code
-										class="inline-block border border-line2 bg-panel px-[8px] py-[4px] font-mono-system text-[11px] font-bold tracking-[0.06em] text-warm"
-									>
-										{p.code}
-									</code>
-								</td>
-								<td
-									class="px-4 py-[14px] text-right font-archivo text-[16px] font-extrabold tracking-[-0.01em] text-ink"
-								>
-									{p.referralCount}
-								</td>
-								<td class="px-4 py-[14px] text-right">
-									<div class="font-archivo text-[15px] font-extrabold tracking-[-0.01em] text-warm">
-										{fmt(p.pendingCommission)}
-									</div>
-									{#if Number(p.readyToPayAmount) > 0}
-										<div
-											class="mt-[2px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-accent uppercase"
-										>
-											{fmt(p.readyToPayAmount)} ready
-										</div>
-									{/if}
-								</td>
-								<td
-									class="px-4 py-[14px] text-right font-archivo text-[15px] font-extrabold tracking-[-0.01em] text-prem"
-								>
-									{fmt(p.paidCommission)}
-								</td>
-								<td class="px-4 py-[14px]">
-									{#if p.isActive}
-										<span
-											class="inline-flex items-center bg-prem px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] text-white uppercase"
-										>
-											Active
-										</span>
-									{:else}
-										<span
-											class="inline-flex items-center border border-line2 px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] text-fade uppercase"
-										>
-											Inactive
-										</span>
-									{/if}
-								</td>
-								<td
-									class="px-4 py-[14px] font-mono-system text-[10.5px] font-bold tracking-[0.06em] text-fade uppercase"
-								>
-									{fmtDate(p.createdAt)}
-								</td>
-								<td class="px-4 py-[14px] text-right">
-									<a
-										href="/admin/partners/{p.id}"
-										class="font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] text-warm uppercase transition-colors hover:text-ink"
-									>
-										Manage →
-									</a>
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		{/if}
-	</div>
-</section>
+							<span class="text-[12.5px] text-soft tabular-nums">{fmtDate(p.createdAt)}</span>
+						</span>
+						<span class="hidden text-right md:block"
+							><span class={ui.textAction}>Manage →</span></span
+						>
+					</a>
+				</li>
+			{:else}
+				<li class={ui.empty}>
+					No partners yet. <a href="/admin/partners/new" class="{ui.textAction} not-italic"
+						>Create the first one →</a
+					>
+				</li>
+			{/each}
+		</ul>
+	</Section>
+</div>

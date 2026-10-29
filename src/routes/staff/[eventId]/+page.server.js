@@ -29,20 +29,7 @@ export async function load({ params, locals }) {
 			throw error(404, 'Event not found');
 		}
 
-		// Compute dynamic status
-		let computedStatus = eventData.status;
-		if (eventData.status !== 'completed' && eventData.status !== 'cancelled') {
-			const now = new Date();
-			const eventDate = eventData.eventDate ? new Date(eventData.eventDate) : null;
-			if (eventDate) {
-				if (now < eventDate) {
-					computedStatus = 'upcoming';
-				} else {
-					computedStatus = 'in_progress';
-				}
-			}
-		}
-		eventData.computedStatus = computedStatus;
+		if (!eventData.status) eventData.status = 'upcoming';
 
 		// Fetch all tickets for this event with user information
 		const tickets = await db

@@ -1,6 +1,30 @@
 <script>
+	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
+	import AdminSubnav from '$lib/components/age/admin/AdminSubnav.svelte';
 	import { getCircuit } from '$lib/data/circuits.js';
+
+	/** Row wash + label colour per circuit, so a row reads as its circuit at a glance. */
+	const CIRCUIT_ROW = {
+		'Los Angeles': {
+			row: 'bg-blue-500/[0.06] hover:bg-blue-500/[0.12]',
+			text: 'text-blue-700'
+		},
+		'St. Louis': {
+			row: 'bg-green-600/[0.06] hover:bg-green-600/[0.12]',
+			text: 'text-green-700'
+		},
+		'New England': {
+			row: 'bg-purple-500/[0.06] hover:bg-purple-500/[0.12]',
+			text: 'text-purple-700'
+		}
+	};
+	const circuitRow = (c) => CIRCUIT_ROW[c] || { row: 'hover:bg-paper', text: 'text-soft' };
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
+	import Figures from '$lib/components/age/admin/Figures.svelte';
+	import Section from '$lib/components/age/admin/Section.svelte';
+	import Pager from '$lib/components/age/admin/Pager.svelte';
+	import * as ui from '$lib/components/age/admin/ui.js';
 
 	let { data, form } = $props();
 
@@ -40,7 +64,6 @@
 	const paginatedEvents = $derived(
 		filteredEvents.slice((eventsPage - 1) * eventsPerPage, eventsPage * eventsPerPage)
 	);
-	const totalEventsPages = $derived(Math.ceil(filteredEvents.length / eventsPerPage));
 
 	function getEventTicketStats(eventId) {
 		return data.eventAnalytics?.ticketsByEvent?.[eventId] || { sold: 0, revenue: 0, refunded: 0 };
@@ -56,45 +79,53 @@
 		return new Date(date).toLocaleDateString('en-US', { ...options, timeZone: 'UTC' });
 	}
 
-	function statusChip(status) {
-		switch (status) {
-			case 'completed':
-				return 'bg-prem text-white';
-			case 'in_progress':
-				return 'bg-warm text-white';
-			case 'cancelled':
-				return 'border-line2 text-fade border';
-			default:
-				return 'bg-accent text-white';
-		}
-	}
+	const STATUS = {
+		upcoming: 'Upcoming',
+		in_progress: 'In progress',
+		completed: 'Completed',
+		cancelled: 'Cancelled'
+	};
+	const filtering = $derived(
+		!!eventsSearchQuery || eventsStatusFilter !== 'active' || eventsCircuitFilter !== 'all'
+	);
+	const time = (d) =>
+		new Date(d).toLocaleTimeString('en-US', {
+			hour: 'numeric',
+			minute: '2-digit',
+			timeZone: 'UTC'
+		});
+	$effect(() => {
+		eventsSearchQuery;
+		eventsStatusFilter;
+		eventsCircuitFilter;
+		eventsPage = 1;
+	});
 </script>
 
-<svelte:head><title>Events · AGE Ops</title></svelte:head>
+<svelte:head><title>Events · Admin</title></svelte:head>
 
-<!-- ============ HEADER ============ -->
-<header class="mx-auto w-full max-w-[1600px] px-4 pt-[42px] pb-[28px] md:px-10 lg:px-14">
-	<div class="mb-[18px] flex flex-wrap items-center gap-[16px]">
-		<span class="font-mono-system text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase">
-			Events
-		</span>
-		<span class="hidden h-[1px] flex-1 bg-line2 md:block"></span>
+<DeskHeader
+	kicker="Admin"
+	title="Events"
+	subtitle="Schedule, status, tickets and revenue across every circuit."
+>
+	{#snippet actions(compact)}
 		<a
 			href="/admin/events/new"
-			class="inline-flex items-center bg-ink px-[14px] py-[9px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
+			class="inline-flex items-center bg-paper-bg px-3 text-[10px] font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-warm-light {compact
+				? 'h-[30px]'
+				: 'h-[36px]'}">+ New event</a
 		>
-			+ New Event
-		</a>
-	</div>
-	<h1
-		class="font-newsreader text-[clamp(36px,5.4vw,60px)] leading-[0.95] font-semibold tracking-[-0.02em]"
-	>
-		Every AGE Open, one desk.
-	</h1>
-	<p class="mt-3 max-w-[680px] font-newsreader text-[19px] leading-[1.42] text-soft italic">
-		Schedule, status, tickets, and revenue across every circuit.
-	</p>
-</header>
+	{/snippet}
+</DeskHeader>
+<AdminTabs />
+<AdminSubnav
+	label="Events"
+	items={[
+		{ href: '/admin/events', label: 'Events' },
+		{ href: '/admin/events/new', label: 'New event' }
+	]}
+/>
 
 {#if form?.success}
 	<AdminNotice tone="success" message={form.message} />
@@ -103,368 +134,162 @@
 	<AdminNotice tone="error" message={form.error} />
 {/if}
 
-<!-- ============ STATS ============ -->
-<section class="overflow-x-clip border-y-[3px] border-double border-ink">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[28px] md:px-10 lg:px-14">
-		<div class="grid grid-cols-2 gap-[24px] md:grid-cols-4">
-			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>Total Events</span
-				>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-ink"
-				>
-					{data.eventAnalytics?.totalEvents || 0}
-				</div>
-			</div>
-			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>Upcoming</span
-				>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-accent"
-				>
-					{data.eventAnalytics?.upcomingEvents || 0}
-				</div>
-			</div>
-			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>Tickets Sold</span
-				>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-ink"
-				>
-					{data.eventAnalytics?.totalTicketsSold || 0}
-				</div>
-			</div>
-			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>Revenue</span
-				>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-prem"
-				>
-					{formatCurrency(data.eventAnalytics?.totalTicketRevenue || 0)}
-				</div>
-			</div>
-		</div>
-	</div>
-</section>
+<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+	<Figures
+		items={[
+			{
+				label: 'Events',
+				value: ui.fmt(data.eventAnalytics?.totalEvents),
+				note: `${ui.fmt(data.eventAnalytics?.pastEvents)} past`
+			},
+			{ label: 'Upcoming', value: ui.fmt(data.eventAnalytics?.upcomingEvents), tone: 'text-warm' },
+			{ label: 'In progress', value: ui.fmt(data.eventAnalytics?.byStatus?.in_progress) },
+			{ label: 'Tickets sold', value: ui.fmt(data.eventAnalytics?.totalTicketsSold) },
+			{
+				label: 'Ticket revenue',
+				value: ui.money(data.eventAnalytics?.totalTicketRevenue, 0),
+				tone: 'text-prem'
+			},
+			{ label: 'Average ticket', value: ui.money(data.eventAnalytics?.avgTicketPrice, 0) }
+		]}
+	/>
 
-<!-- ============ CIRCUIT ROW ============ -->
-{#if (data.eventAnalytics?.byCircuit || []).length > 0}
-	<section class="overflow-x-clip border-b-[3px] border-double border-ink">
-		<div class="mx-auto w-full max-w-[1600px] px-4 py-[18px] md:px-10 lg:px-14">
-			<div class="flex flex-wrap items-center gap-[16px]">
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-				>
-					By Circuit
-				</span>
-				{#each data.eventAnalytics?.byCircuit || [] as circuit (circuit.name || 'other')}
-					<div class="flex items-center gap-[8px]">
-						<span class="inline-block h-[10px] w-[10px] {getCircuit(circuit.name).colors.dot}"
-						></span>
-						<span class="font-newsreader text-[15px] font-semibold">{circuit.name || 'Other'}</span>
-						<span
-							class="inline-flex items-center border border-line2 px-[7px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-						>
-							{circuit.count}
-						</span>
-					</div>
-				{/each}
-			</div>
-		</div>
-	</section>
-{/if}
-
-<!-- ============ FILTERS ============ -->
-<section class="overflow-x-clip border-b-[3px] border-double border-ink">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[24px] md:px-10 lg:px-14">
-		<div class="flex flex-col gap-[14px] sm:flex-row sm:items-center sm:justify-between">
-			<div class="relative flex-1 sm:max-w-md">
-				<input
-					type="text"
-					bind:value={eventsSearchQuery}
-					placeholder="Search title, circuit, or location"
-					class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
-				/>
-				{#if eventsSearchQuery}
-					<button
-						type="button"
-						onclick={() => (eventsSearchQuery = '')}
-						class="absolute top-1/2 right-2 -translate-y-1/2 text-[16px] text-fade hover:text-ink"
-						aria-label="Clear search"
-					>
-						×
-					</button>
-				{/if}
-			</div>
-			<div class="flex flex-wrap items-center gap-[10px]">
-				<select
-					bind:value={eventsStatusFilter}
-					class="border-[1.5px] border-ink bg-paper-bg px-[12px] py-[9px] font-mono-system text-[11px] font-bold tracking-[0.08em] text-ink uppercase focus:outline-none"
-				>
-					<option value="active">Active</option>
-					<option value="all">All Status</option>
-					<option value="upcoming">Upcoming</option>
-					<option value="in_progress">In Progress</option>
-					<option value="completed">Completed</option>
-					<option value="cancelled">Cancelled</option>
-				</select>
-				<select
-					bind:value={eventsCircuitFilter}
-					class="border-[1.5px] border-ink bg-paper-bg px-[12px] py-[9px] font-mono-system text-[11px] font-bold tracking-[0.08em] text-ink uppercase focus:outline-none"
-				>
-					<option value="all">All Circuits</option>
-					{#each data.eventAnalytics?.byCircuit || [] as circuit (circuit.name)}
-						<option value={circuit.name}>{circuit.name}</option>
-					{/each}
-				</select>
-			</div>
-		</div>
-	</div>
-</section>
-
-<!-- ============ LIST ============ -->
-<section class="overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
-		<div class="mb-[16px] flex items-center justify-between">
-			<span
-				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+	<!-- search + filters -->
+	<div class="mt-8 flex flex-wrap items-center gap-3">
+		<label class="{ui.search} min-w-[240px] flex-1" aria-label="Search events">
+			<svg
+				viewBox="0 0 20 20"
+				class="h-4 w-4 shrink-0 text-fade"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.6"
+				aria-hidden="true"
 			>
-				{filteredEvents.length} events shown
-			</span>
-			{#if filteredEvents.length !== (data.events || []).length}
+				<circle cx="9" cy="9" r="5.5" /><path d="m13.5 13.5 3 3" stroke-linecap="round" />
+			</svg>
+			<input
+				type="search"
+				bind:value={eventsSearchQuery}
+				placeholder="Title, circuit or venue"
+				class={ui.searchInput}
+			/>
+		</label>
+		<select bind:value={eventsStatusFilter} class={ui.select} aria-label="Status">
+			<option value="active">Upcoming and in progress</option>
+			<option value="all">Every status</option>
+			<option value="upcoming">Upcoming</option>
+			<option value="in_progress">In progress</option>
+			<option value="completed">Completed</option>
+			<option value="cancelled">Cancelled</option>
+		</select>
+		<div class="flex flex-wrap gap-1" role="group" aria-label="Circuit">
+			<button
+				type="button"
+				onclick={() => (eventsCircuitFilter = 'all')}
+				class="h-[38px] border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase {eventsCircuitFilter ===
+				'all'
+					? 'border-ink bg-ink text-paper-bg'
+					: 'border-line2 bg-paper-bg text-soft hover:text-ink'}">All circuits</button
+			>
+			{#each data.eventAnalytics?.byCircuit || [] as c (c.name || 'other')}
 				<button
-					onclick={() => {
-						eventsSearchQuery = '';
-						eventsStatusFilter = 'all';
-						eventsCircuitFilter = 'all';
-					}}
-					class="font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] text-warm uppercase transition-colors hover:text-ink"
+					type="button"
+					onclick={() => (eventsCircuitFilter = c.name)}
+					class="flex h-[38px] items-center gap-2 border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase {eventsCircuitFilter ===
+					c.name
+						? 'border-ink bg-ink text-paper-bg'
+						: 'border-line2 bg-paper-bg text-soft hover:text-ink'}"
 				>
-					Clear filters
+					<span class="inline-block h-2 w-2 {getCircuit(c.name).colors.dot}" aria-hidden="true"
+					></span>{c.name || 'Other'}<span class="opacity-60">{c.count}</span>
 				</button>
-			{/if}
-		</div>
-
-		<!-- Mobile -->
-		<div class="overflow-hidden border-[1.5px] border-ink sm:hidden">
-			{#each paginatedEvents as event (event.id)}
-				{@const ticketStats = getEventTicketStats(event.id)}
-				<a
-					href="/admin/events/{event.id}"
-					class="flex items-center gap-3 border-b border-line2 p-4 transition-colors last:border-b-0 hover:bg-panel"
-				>
-					<span class="w-[3px] self-stretch {getCircuit(event.circuit).colors.dot}"></span>
-					<div class="min-w-0 flex-1">
-						<div class="flex items-start justify-between gap-2">
-							<div class="min-w-0">
-								<div class="truncate font-newsreader text-[16px] font-semibold">{event.title}</div>
-								<div class="mt-[6px] flex flex-wrap items-center gap-2">
-									{#if event.circuit}
-										<span
-											class="inline-flex items-center border border-line2 px-[7px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-										>
-											{event.circuit}
-										</span>
-									{/if}
-									<span
-										class="inline-flex items-center px-[7px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase {statusChip(
-											event.status
-										)}"
-									>
-										{event.status || 'upcoming'}
-									</span>
-								</div>
-							</div>
-							<span class="shrink-0 font-mono-system text-[12px] font-bold text-fade">→</span>
-						</div>
-						<div
-							class="mt-[8px] flex items-center gap-3 font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
-						>
-							<span>
-								{#if event.eventDate}
-									{formatDate(event.eventDate)}
-								{:else}
-									No date
-								{/if}
-							</span>
-							<span class="text-warm">{ticketStats.sold} tickets</span>
-						</div>
-					</div>
-				</a>
-			{:else}
-				<div class="p-8 text-center">
-					<p class="font-newsreader text-soft text-[17px] italic">
-						{eventsSearchQuery || eventsStatusFilter !== 'all' || eventsCircuitFilter !== 'all'
-							? 'No events match your filters.'
-							: 'No events yet.'}
-					</p>
-				</div>
 			{/each}
 		</div>
-
-		<!-- Desktop -->
-		<div class="hidden border-[1.5px] border-ink sm:block">
-			<div class="overflow-x-auto">
-				<table class="w-full min-w-[900px]">
-					<thead class="border-b-[1.5px] border-ink">
-						<tr class="text-left">
-							<th
-								class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Event</th
-							>
-							<th
-								class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Circuit</th
-							>
-							<th
-								class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Date</th
-							>
-							<th
-								class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Status</th
-							>
-							<th
-								class="px-4 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Tickets</th
-							>
-							<th
-								class="px-4 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-								>Revenue</th
-							>
-						</tr>
-					</thead>
-					<tbody>
-						{#each paginatedEvents as event (event.id)}
-							{@const ticketStats = getEventTicketStats(event.id)}
-							<tr
-								class="group cursor-pointer border-b border-line2 transition-colors hover:bg-panel"
-								onclick={() => (window.location.href = `/admin/events/${event.id}`)}
-							>
-								<td class="px-4 py-[14px]">
-									<div class="flex items-center gap-3">
-										<span class="h-[28px] w-[3px] {getCircuit(event.circuit).colors.dot}"></span>
-										<div class="min-w-0">
-											<div
-												class="truncate font-newsreader text-[16px] font-semibold transition-colors group-hover:text-warm"
-											>
-												{event.title}
-											</div>
-											<div class="text-[12px] text-fade">{event.format || '—'}</div>
-										</div>
-									</div>
-								</td>
-								<td class="px-4 py-[14px]">
-									{#if event.circuit}
-										<span
-											class="inline-flex items-center border border-line2 px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-										>
-											{event.circuit}
-										</span>
-									{:else}
-										<span class="text-fade">—</span>
-									{/if}
-								</td>
-								<td class="px-4 py-[14px]">
-									{#if event.eventDate}
-										<div class="font-newsreader text-[15px] font-semibold">
-											{formatDate(event.eventDate)}
-										</div>
-										<div
-											class="mt-[2px] font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
-										>
-											{new Date(event.eventDate).toLocaleTimeString('en-US', {
-												hour: 'numeric',
-												minute: '2-digit',
-												timeZone: 'UTC'
-											})}
-										</div>
-									{:else}
-										<span
-											class="inline-flex items-center bg-warm px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-white uppercase"
-										>
-											No Date
-										</span>
-									{/if}
-								</td>
-								<td class="px-4 py-[14px]">
-									<span
-										class="inline-flex items-center px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase {statusChip(
-											event.status
-										)}"
-									>
-										{event.status || 'upcoming'}
-									</span>
-								</td>
-								<td
-									class="px-4 py-[14px] text-right font-archivo text-[15px] font-extrabold tracking-[-0.01em] text-ink"
-								>
-									{ticketStats.sold}
-								</td>
-								<td
-									class="px-4 py-[14px] text-right font-archivo text-[15px] font-extrabold tracking-[-0.01em] text-prem"
-								>
-									{formatCurrency(ticketStats.revenue)}
-								</td>
-							</tr>
-						{:else}
-							<tr>
-								<td colspan="6" class="px-4 py-12 text-center">
-									<p class="font-newsreader text-soft text-[19px] italic">
-										{eventsSearchQuery ||
-										eventsStatusFilter !== 'all' ||
-										eventsCircuitFilter !== 'all'
-											? 'No events match your filters.'
-											: 'No events yet.'}
-									</p>
-									{#if !eventsSearchQuery && eventsStatusFilter === 'all' && eventsCircuitFilter === 'all'}
-										<a
-											href="/admin/events/new"
-											class="bg-ink font-mono-system mt-4 inline-flex items-center px-[18px] py-[10px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase text-white hover:brightness-125 transition-[filter]"
-										>
-											+ Create First Event
-										</a>
-									{/if}
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-
-			{#if totalEventsPages > 1}
-				<div class="flex items-center justify-between border-t-[1.5px] border-ink px-5 py-[14px]">
-					<span
-						class="font-mono-system text-[10.5px] font-bold tracking-[0.08em] text-fade uppercase"
-					>
-						Page {eventsPage} of {totalEventsPages}
-					</span>
-					<div class="flex gap-2">
-						<button
-							onclick={() => (eventsPage = Math.max(1, eventsPage - 1))}
-							disabled={eventsPage === 1}
-							class="border border-line2 px-[14px] py-[8px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
-						>
-							← Previous
-						</button>
-						<button
-							onclick={() => (eventsPage = Math.min(totalEventsPages, eventsPage + 1))}
-							disabled={eventsPage === totalEventsPages}
-							class="border border-line2 px-[14px] py-[8px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
-						>
-							Next →
-						</button>
-					</div>
-				</div>
-			{/if}
-		</div>
 	</div>
-</section>
+
+	<Section title="Events" class="mt-8" note="{ui.fmt(filteredEvents.length)} shown · soonest first">
+		<div class="{ui.rowHead} grid-cols-[minmax(0,1fr)_120px_130px_110px_70px_90px] gap-3">
+			<span>Event</span><span>Circuit</span><span>Date</span><span>Status</span><span
+				class="text-right">Tickets</span
+			><span class="text-right">Revenue</span>
+		</div>
+		<ul>
+			{#each paginatedEvents as event (event.id)}
+				{@const stats = getEventTicketStats(event.id)}
+				<li class={ui.row}>
+					<a
+						href="/admin/events/{event.id}"
+						class="group block py-3 transition-colors md:grid md:grid-cols-[minmax(0,1fr)_120px_130px_110px_70px_90px] md:items-center md:gap-3 {circuitRow(
+							event.circuit
+						).row}"
+					>
+						<span class="flex min-w-0 items-center gap-3">
+							<span
+								class="h-9 w-[3px] shrink-0 {getCircuit(event.circuit).colors.dot}"
+								aria-hidden="true"
+							></span>
+							<span class="min-w-0">
+								<span class="{ui.titleText} block truncate group-hover:text-warm"
+									>{event.title}</span
+								>
+								<span class="block truncate text-[11.5px] text-fade"
+									>{[event.format, event.location].filter(Boolean).join(' · ') || '—'}</span
+								>
+							</span>
+						</span>
+						<span class="mt-1.5 flex flex-wrap items-center gap-1.5 md:contents">
+							<span
+								class="inline-flex items-center gap-1.5 text-[10px] font-extrabold tracking-[0.14em] uppercase {circuitRow(
+									event.circuit
+								).text}"
+								><span
+									class="h-2 w-2 shrink-0 {getCircuit(event.circuit).colors.dot}"
+									aria-hidden="true"
+								></span>{event.circuit || '—'}</span
+							>
+							<span class="text-[12.5px] text-soft tabular-nums md:block">
+								{#if event.eventDate}{formatDate(event.eventDate)}<span
+										class="block text-[10.5px] text-fade">{time(event.eventDate)}</span
+									>{:else}<span class="text-hero-rb">No date</span>{/if}
+							</span>
+							<span class="{ui.pill} {ui.pillTone[event.status || 'upcoming'] || ''}"
+								>{STATUS[event.status || 'upcoming'] || event.status}</span
+							>
+						</span>
+						<span class="mt-1 block text-[12.5px] tabular-nums md:mt-0 md:text-right"
+							><span class="text-fade md:hidden">Tickets </span>{ui.fmt(stats.sold)}</span
+						>
+						<span class="block font-semibold tabular-nums md:text-right"
+							>{formatCurrency(stats.revenue)}</span
+						>
+					</a>
+				</li>
+			{:else}
+				<li class={ui.empty}>
+					{filtering ? 'No events match these filters.' : 'No events yet.'}
+					{#if !filtering}<a href="/admin/events/new" class="{ui.textAction} ml-2 not-italic"
+							>Create the first one →</a
+						>{/if}
+				</li>
+			{/each}
+		</ul>
+		{#if filtering}
+			<button
+				type="button"
+				onclick={() => {
+					eventsSearchQuery = '';
+					eventsStatusFilter = 'all';
+					eventsCircuitFilter = 'all';
+				}}
+				class="{ui.textAction} mt-4">Clear filters</button
+			>
+		{/if}
+		<Pager
+			page={eventsPage}
+			perPage={eventsPerPage}
+			count={filteredEvents.length}
+			label="events"
+			onchange={(p) => (eventsPage = p)}
+		/>
+	</Section>
+</div>

@@ -3,9 +3,9 @@
 	 * One 100% bar split into parts, with a legend (always) and direct labels
 	 * inside segments wide enough to hold them. 2px surface gap between parts.
 	 *
-	 * @type {{ parts: { key: string, n: number, pct: number | null, color: string, ink?: string }[] }}
+	 * @type {{ parts: { key: string, n: number, pct: number | null, color: string, ink?: string }[], format?: (n: number) => string }}
 	 */
-	let { parts = [] } = $props();
+	let { parts = [], format = (n) => n.toLocaleString() } = $props();
 	const shown = $derived(parts.filter((p) => p.n > 0));
 </script>
 
@@ -34,7 +34,7 @@
 			<li class="flex items-center gap-2">
 				<span class="h-3 w-3" style="background: {p.color};" aria-hidden="true"></span>
 				<span class="font-semibold">{p.key}</span>
-				<span class="text-soft tabular-nums">{p.pct ?? 0}% · {p.n.toLocaleString()}</span>
+				<span class="text-soft tabular-nums">{p.pct ?? 0}% · {format(p.n)}</span>
 			</li>
 		{/each}
 	</ul>

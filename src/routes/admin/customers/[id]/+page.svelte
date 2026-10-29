@@ -1,4 +1,6 @@
 <script>
+	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 
@@ -33,37 +35,37 @@
 	function roleChip(role) {
 		switch (role) {
 			case 'admin':
-				return 'bg-warm text-white';
+				return '[--tone:var(--color-warm)]';
 			case 'premium':
-				return 'bg-prem text-white';
+				return '[--tone:var(--color-prem)]';
 			case 'tournament staff':
-				return 'bg-accent text-white';
+				return '[--tone:#8a6116]';
 			case 'writer':
-				return 'bg-ink text-white';
+				return '[--tone:var(--color-ink)]';
 			default:
-				return 'border-line2 text-fade border';
+				return '[--tone:var(--color-fade)]';
 		}
 	}
 	function subStatusChip(status) {
 		switch (status) {
 			case 'active':
-				return 'bg-prem text-white';
+				return '[--tone:var(--color-prem)]';
 			case 'cancelled':
-				return 'bg-warm text-white';
+				return '[--tone:var(--color-hero-rb)]';
 			default:
-				return 'border-line2 text-fade border';
+				return '[--tone:var(--color-fade)]';
 		}
 	}
 	function orderTypeChip(t) {
 		switch (t) {
 			case 'ticket':
-				return 'bg-warm text-white';
+				return '[--tone:var(--color-warm)]';
 			case 'course':
-				return 'bg-accent text-white';
+				return '[--tone:#8a6116]';
 			case 'subscription':
-				return 'bg-prem text-white';
+				return '[--tone:var(--color-prem)]';
 			default:
-				return 'border-line2 text-fade border';
+				return '[--tone:var(--color-fade)]';
 		}
 	}
 </script>
@@ -76,9 +78,17 @@
 </svelte:head>
 
 <!-- ============ HEADER ============ -->
-<header class="mx-auto w-full max-w-[1600px] px-4 pt-[42px] pb-[28px] md:px-10 lg:px-14">
+<DeskHeader
+	kicker="Admin"
+	title={data.customer
+		? `${data.customer.firstName || ''} ${data.customer.lastName || ''}`.trim() || 'Customer'
+		: 'Guest customer'}
+	subtitle={data.customerEmail}
+/>
+<AdminTabs />
+<section class="mx-auto w-full max-w-[1200px] px-5 pt-[24px] pb-[20px] md:px-8">
 	<nav
-		class="flex items-center gap-2 font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+		class="flex items-center gap-2 text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 	>
 		<a href="/admin/users" class="transition-colors hover:text-ink">Users</a>
 		<span>›</span>
@@ -91,19 +101,14 @@
 	</nav>
 
 	{#if form?.success}
-		<div class="mt-[18px] border-[1.5px] border-ink bg-prem p-4 text-white">
-			<span
-				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
-				style="color: #d6eedf;">Success</span
-			>
+		<div class="mt-[18px] border-l-[3px] border-prem bg-prem/10 p-4">
+			<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase">Success</span>
 			<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{form.message}</p>
 		</div>
 	{/if}
 	{#if form?.error}
-		<div class="mt-[18px] border-[1.5px] border-ink bg-warm p-4 text-white">
-			<span
-				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
-				style="color: rgba(255,255,255,0.75);">Error</span
+		<div class="mt-[18px] border-l-[3px] border-hero-rb bg-hero-rb/[0.06] p-4">
+			<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-hero-rb uppercase">Error</span
 			>
 			<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{form.error}</p>
 		</div>
@@ -112,7 +117,7 @@
 	<div class="mt-[18px] flex flex-wrap items-start justify-between gap-[18px]">
 		<div class="flex items-start gap-[18px]">
 			<div
-				class="flex h-[72px] w-[72px] items-center justify-center border-[1.5px] border-ink bg-panel font-newsreader text-[26px] font-semibold"
+				class="flex h-[72px] w-[72px] items-center justify-center border border-line2 bg-paper font-newsreader text-[26px] font-semibold"
 			>
 				{#if data.customer}
 					{data.customer.firstName.charAt(0)}{data.customer.lastName.charAt(0)}
@@ -121,27 +126,13 @@
 				{/if}
 			</div>
 			<div class="min-w-0">
-				<div class="mb-[8px] flex flex-wrap items-center gap-[10px]">
-					<span
-						class="font-mono-system text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase"
-					>
-						Customer
-					</span>
-				</div>
-				<h1
-					class="font-newsreader text-[clamp(32px,4.8vw,52px)] leading-[0.95] font-semibold tracking-[-0.02em]"
-				>
-					{#if data.customer}{data.customer.firstName} {data.customer.lastName}{:else}Guest Customer{/if}
-				</h1>
 				<div class="mt-[10px] flex flex-wrap items-center gap-[10px]">
-					<span
-						class="font-mono-system text-[11px] font-bold tracking-[0.06em] text-fade uppercase"
-					>
+					<span class="text-[11.5px] text-fade">
 						{data.customerEmail}
 					</span>
 					<button
 						onclick={copyEmail}
-						class="inline-flex items-center border border-line2 px-[8px] py-[3px] font-mono-system text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+						class="inline-flex h-[32px] shrink-0 items-center border border-line2 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
 						title="Copy email"
 					>
 						{copySuccess ? 'Copied' : 'Copy'}
@@ -150,30 +141,26 @@
 				<div class="mt-[10px] flex flex-wrap items-center gap-[8px]">
 					{#if data.customer}
 						<span
-							class="inline-flex items-center px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] uppercase {roleChip(
+							class="inline-flex w-fit shrink-0 items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap text-[var(--tone,var(--color-ink))] capitalize before:block before:h-2 before:w-2 before:shrink-0 before:bg-[var(--tone,var(--color-line2))] before:content-[''] {roleChip(
 								data.customer.role
 							)}"
 						>
 							{data.customer.role}
 						</span>
 						{#if data.customer.gemId}
-							<span
-								class="inline-flex items-center border border-line2 px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] text-warm uppercase"
-							>
+							<span class="inline-flex shrink-0 items-center text-[11.5px] font-semibold text-warm">
 								GEM · {data.customer.gemId}
 							</span>
 						{/if}
 					{:else}
 						<span
-							class="inline-flex items-center border border-line2 px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] text-fade uppercase"
+							class="inline-flex w-fit shrink-0 items-center gap-1.5 text-[12px] font-medium whitespace-nowrap text-ink text-soft capitalize before:block before:h-[7px] before:w-[7px] before:shrink-0 before:bg-[var(--tone,var(--color-line2))] before:content-['']"
 						>
 							No Account
 						</span>
 					{/if}
 				</div>
-				<p
-					class="mt-[10px] font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
-				>
+				<p class="mt-[10px] text-[11.5px] text-fade">
 					{#if data.customer}
 						Member since {formatDate(data.customer.createdAt)}
 					{:else if data.stats.firstOrder}
@@ -199,7 +186,7 @@
 			>
 				<select
 					name="role"
-					class="border-[1.5px] border-ink bg-paper-bg px-[12px] py-[9px] font-mono-system text-[11px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
+					class="h-[40px] border border-line2 bg-paper py-0 pr-8 pl-3 text-[13px] text-ink focus:border-ink focus:ring-0"
 				>
 					<option value="free" selected={data.customer.role === 'free'}>Free</option>
 					<option value="premium" selected={data.customer.role === 'premium'}>Premium</option>
@@ -209,63 +196,65 @@
 					>
 					<option value="admin" selected={data.customer.role === 'admin'}>Admin</option>
 				</select>
+				<select
+					name="compReason"
+					title="Why this member gets Premium without paying"
+					class="h-[40px] border border-line2 bg-paper py-0 pr-8 pl-3 text-[13px] text-ink focus:border-ink focus:ring-0"
+				>
+					<option value="">Comp reason…</option>
+					<option value="staff" selected={data.customer.compReason === 'staff'}>Staff</option>
+					<option value="writer" selected={data.customer.compReason === 'writer'}>Writer</option>
+					<option value="teacher" selected={data.customer.compReason === 'teacher'}>Teacher</option>
+					<option value="partner" selected={data.customer.compReason === 'partner'}>Partner</option>
+					<option value="friend" selected={data.customer.compReason === 'friend'}>Friend</option>
+					<option value="trial" selected={data.customer.compReason === 'trial'}>Trial</option>
+					<option value="other" selected={data.customer.compReason === 'other'}>Other</option>
+				</select>
 				<button
 					type="submit"
 					disabled={roleLoading}
-					class="inline-flex items-center bg-ink px-[14px] py-[9px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125 disabled:opacity-50"
+					class="inline-flex h-[32px] shrink-0 items-center gap-1.5 bg-ink px-3 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					{roleLoading ? 'Updating…' : 'Update Role'}
 				</button>
 			</form>
 		{/if}
 	</div>
-</header>
+</section>
 
 <!-- ============ STATS ============ -->
-<section class="overflow-x-clip border-y-[3px] border-double border-ink">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[28px] md:px-10 lg:px-14">
+<section class="overflow-x-clip border-t border-line2">
+	<div class="mx-auto w-full max-w-[1200px] px-5 py-[28px] md:px-8">
 		<div class="grid grid-cols-2 gap-[24px] md:grid-cols-4">
 			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 					>Lifetime Value</span
 				>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-prem"
-				>
+				<div class="ao-cond mt-[6px] text-[30px] leading-none font-black text-prem tabular-nums">
 					{formatCurrency(data.stats.totalSpent)}
 				</div>
 			</div>
 			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 					>Total Orders</span
 				>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-ink"
-				>
+				<div class="ao-cond mt-[6px] text-[30px] leading-none font-black text-ink tabular-nums">
 					{data.stats.totalOrders}
 				</div>
 			</div>
 			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 					>Avg Order</span
 				>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-ink"
-				>
+				<div class="ao-cond mt-[6px] text-[30px] leading-none font-black text-ink tabular-nums">
 					{formatCurrency(data.stats.avgOrderValue)}
 				</div>
 			</div>
 			<div>
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 					>Active Tickets</span
 				>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-ink"
-				>
+				<div class="ao-cond mt-[6px] text-[30px] leading-none font-black text-ink tabular-nums">
 					{data.activeTicketsCount}
 				</div>
 			</div>
@@ -275,29 +264,24 @@
 
 <!-- ============ SUBSCRIPTION ============ -->
 {#if data.customer && (data.customer.subscriptionId || data.customer.subscriptionStatus)}
-	<section class="overflow-x-clip border-b-[3px] border-double border-ink">
-		<div class="mx-auto w-full max-w-[1600px] px-4 py-[28px] md:px-10 lg:px-14">
+	<section class="overflow-x-clip border-t border-line2">
+		<div class="mx-auto w-full max-w-[1200px] px-5 py-[28px] md:px-8">
 			<div class="mb-[18px]">
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-				>
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 					Subscription
 				</span>
-				<h2 class="mt-[6px] font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
-					Membership.
-				</h2>
+				<h2 class="mt-[6px] font-newsreader text-[22px] font-semibold">Membership.</h2>
 			</div>
-			<div class="overflow-hidden border-[1.5px] border-ink p-6">
+			<div class="overflow-hidden border border-line2 p-6">
 				<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div class="grid grid-cols-2 gap-[24px] sm:grid-cols-4">
 						<div>
-							<span
-								class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 								>Status</span
 							>
 							<div class="mt-[6px]">
 								<span
-									class="inline-flex items-center px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] uppercase {subStatusChip(
+									class="inline-flex w-fit shrink-0 items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap text-[var(--tone,var(--color-ink))] capitalize before:block before:h-2 before:w-2 before:shrink-0 before:bg-[var(--tone,var(--color-line2))] before:content-[''] {subStatusChip(
 										data.customer.subscriptionStatus
 									)}"
 								>
@@ -306,8 +290,7 @@
 							</div>
 						</div>
 						<div>
-							<span
-								class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 								>Type</span
 							>
 							<p class="mt-[6px] font-newsreader text-[16px] font-semibold capitalize">
@@ -315,8 +298,7 @@
 							</p>
 						</div>
 						<div>
-							<span
-								class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 								>Started</span
 							>
 							<p class="mt-[6px] font-newsreader text-[16px] font-semibold">
@@ -324,8 +306,7 @@
 							</p>
 						</div>
 						<div>
-							<span
-								class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 								>Next Billing</span
 							>
 							<p class="mt-[6px] font-newsreader text-[16px] font-semibold">
@@ -356,7 +337,7 @@
 							<button
 								type="submit"
 								disabled={cancelLoading}
-								class="inline-flex items-center bg-warm px-[18px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110 disabled:opacity-50"
+								class="inline-flex h-[40px] shrink-0 items-center bg-hero-rb px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
 							>
 								{cancelLoading ? 'Cancelling…' : 'Cancel Subscription'}
 							</button>
@@ -369,73 +350,48 @@
 {/if}
 
 <!-- ============ ORDER BREAKDOWN ============ -->
-<section class="overflow-x-clip border-b-[3px] border-double border-ink">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[28px] md:px-10 lg:px-14">
+<section class="overflow-x-clip border-t border-line2">
+	<div class="mx-auto w-full max-w-[1200px] px-5 py-[28px] md:px-8">
 		<div class="mb-[18px]">
-			<span
-				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-			>
+			<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 				Order Breakdown
 			</span>
-			<h2 class="mt-[6px] font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
-				Where it went.
-			</h2>
+			<h2 class="mt-[6px] font-newsreader text-[22px] font-semibold">Where it went.</h2>
 		</div>
 		<div class="grid grid-cols-1 gap-[18px] sm:grid-cols-3">
-			<div class="overflow-hidden border-[1.5px] border-ink p-5">
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+			<div class="overflow-hidden border border-line2 p-5">
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 					>Tickets</span
 				>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(22px,3vw,32px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-ink"
-				>
+				<div class="ao-cond mt-[6px] text-[30px] leading-none font-black text-ink tabular-nums">
 					{data.ordersByType.ticket.count}
-					<span class="font-mono-system text-[11px] font-bold tracking-[0.06em] text-fade uppercase"
-						>orders</span
-					>
+					<span class="text-[11.5px] text-fade">orders</span>
 				</div>
-				<span
-					class="mt-[6px] block font-mono-system text-[12px] font-bold tracking-[0.06em] text-warm uppercase"
-				>
+				<span class="mt-[6px] block text-[9.5px] font-extrabold tracking-[0.18em] uppercase">
 					{formatCurrency(data.ordersByType.ticket.total)}
 				</span>
 			</div>
-			<div class="overflow-hidden border-[1.5px] border-ink p-5">
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+			<div class="overflow-hidden border border-line2 p-5">
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 					>Courses</span
 				>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(22px,3vw,32px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-ink"
-				>
+				<div class="ao-cond mt-[6px] text-[30px] leading-none font-black text-ink tabular-nums">
 					{data.ordersByType.course.count}
-					<span class="font-mono-system text-[11px] font-bold tracking-[0.06em] text-fade uppercase"
-						>orders</span
-					>
+					<span class="text-[11.5px] text-fade">orders</span>
 				</div>
-				<span
-					class="mt-[6px] block font-mono-system text-[12px] font-bold tracking-[0.06em] text-accent uppercase"
-				>
+				<span class="mt-[6px] block text-[9.5px] font-extrabold tracking-[0.18em] uppercase">
 					{formatCurrency(data.ordersByType.course.total)}
 				</span>
 			</div>
-			<div class="overflow-hidden border-[1.5px] border-ink p-5">
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+			<div class="overflow-hidden border border-line2 p-5">
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 					>Subscriptions</span
 				>
-				<div
-					class="mt-[6px] font-archivo text-[clamp(22px,3vw,32px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-ink"
-				>
+				<div class="ao-cond mt-[6px] text-[30px] leading-none font-black text-ink tabular-nums">
 					{data.ordersByType.subscription.count}
-					<span class="font-mono-system text-[11px] font-bold tracking-[0.06em] text-fade uppercase"
-						>orders</span
-					>
+					<span class="text-[11.5px] text-fade">orders</span>
 				</div>
-				<span
-					class="mt-[6px] block font-mono-system text-[12px] font-bold tracking-[0.06em] text-prem uppercase"
-				>
+				<span class="mt-[6px] block text-[9.5px] font-extrabold tracking-[0.18em] uppercase">
 					{formatCurrency(data.ordersByType.subscription.total)}
 				</span>
 			</div>
@@ -445,11 +401,11 @@
 
 <!-- ============ TABS ============ -->
 <section class="overflow-x-clip">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
-		<div class="mb-[24px] flex gap-1 border-b-[1.5px] border-ink">
+	<div class="mx-auto w-full max-w-[1200px] px-5 py-[36px] md:px-8">
+		<div class="mb-[24px] flex gap-1 border-b border-line2">
 			<button
 				onclick={() => (activeTab = 'orders')}
-				class="relative px-[16px] py-[12px] font-mono-system text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors {activeTab ===
+				class="relative px-[16px] py-[12px] text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors {activeTab ===
 				'orders'
 					? 'text-ink'
 					: 'text-fade hover:text-ink'}"
@@ -461,7 +417,7 @@
 			</button>
 			<button
 				onclick={() => (activeTab = 'tickets')}
-				class="relative px-[16px] py-[12px] font-mono-system text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors {activeTab ===
+				class="relative px-[16px] py-[12px] text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors {activeTab ===
 				'tickets'
 					? 'text-ink'
 					: 'text-fade hover:text-ink'}"
@@ -474,7 +430,7 @@
 			{#if data.customer}
 				<button
 					onclick={() => (activeTab = 'courses')}
-					class="relative px-[16px] py-[12px] font-mono-system text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors {activeTab ===
+					class="relative px-[16px] py-[12px] text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors {activeTab ===
 					'courses'
 						? 'text-ink'
 						: 'text-fade hover:text-ink'}"
@@ -488,30 +444,30 @@
 		</div>
 
 		{#if activeTab === 'orders'}
-			<div class="overflow-hidden border-[1.5px] border-ink">
+			<div class="overflow-hidden border border-line2">
 				{#if data.orders.length === 0}
 					<div class="p-12 text-center">
-						<p class="font-newsreader text-[19px] text-soft italic">No orders found.</p>
+						<p class="font-newsreader text-[17px] text-soft italic">No orders found.</p>
 					</div>
 				{:else}
 					<div class="overflow-x-auto">
 						<table class="w-full min-w-[720px]">
-							<thead class="border-b-[1.5px] border-ink">
+							<thead class="border-b border-line2">
 								<tr class="text-left">
 									<th
-										class="px-5 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+										class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 										>Date</th
 									>
 									<th
-										class="px-5 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+										class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 										>Type</th
 									>
 									<th
-										class="px-5 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+										class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 										>Description</th
 									>
 									<th
-										class="px-5 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+										class="px-4 py-[12px] text-right text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 										>Amount</th
 									>
 									<th class="px-5 py-[12px]"></th>
@@ -519,15 +475,13 @@
 							</thead>
 							<tbody>
 								{#each data.orders as order (order.id)}
-									<tr class="border-b border-line2 transition-colors hover:bg-panel">
-										<td
-											class="px-5 py-[14px] font-mono-system text-[10.5px] font-bold tracking-[0.06em] text-fade uppercase"
-										>
+									<tr class="border-b border-line2 transition-colors hover:bg-paper">
+										<td class="px-4 py-[12px] text-[11.5px] text-fade">
 											{formatDate(order.createdAt)}
 										</td>
 										<td class="px-5 py-[14px]">
 											<span
-												class="inline-flex items-center px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase {orderTypeChip(
+												class="inline-flex w-fit shrink-0 items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap text-[var(--tone,var(--color-ink))] capitalize before:block before:h-2 before:w-2 before:shrink-0 before:bg-[var(--tone,var(--color-line2))] before:content-[''] {orderTypeChip(
 													order.meta?.type
 												)}"
 											>
@@ -538,14 +492,14 @@
 											{order.meta?.eventTitle || order.meta?.product || order.meta?.plan || 'Order'}
 										</td>
 										<td
-											class="px-5 py-[14px] text-right font-archivo text-[15px] font-extrabold tracking-[-0.01em] text-prem"
+											class="px-5 py-[14px] text-right text-[15px] font-semibold text-prem tabular-nums"
 										>
 											{formatCurrency(order.amount)}
 										</td>
 										<td class="px-5 py-[14px] text-right">
 											<a
 												href="/admin/orders/{order.id}"
-												class="font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] text-warm uppercase transition-colors hover:text-ink"
+												class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase transition-colors hover:text-ink"
 											>
 												View →
 											</a>
@@ -560,47 +514,47 @@
 		{/if}
 
 		{#if activeTab === 'tickets'}
-			<div class="overflow-hidden border-[1.5px] border-ink">
+			<div class="overflow-hidden border border-line2">
 				{#if data.tickets.length === 0}
 					<div class="p-12 text-center">
-						<p class="font-newsreader text-[19px] text-soft italic">No tickets found.</p>
+						<p class="font-newsreader text-[17px] text-soft italic">No tickets found.</p>
 					</div>
 				{:else}
 					<div class="overflow-x-auto">
 						<table class="w-full min-w-[860px]">
-							<thead class="border-b-[1.5px] border-ink">
+							<thead class="border-b border-line2">
 								<tr class="text-left">
 									<th
-										class="px-5 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+										class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 										>Event</th
 									>
 									<th
-										class="px-5 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+										class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 										>Ticket Code</th
 									>
 									<th
-										class="px-5 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+										class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 										>Player</th
 									>
 									<th
-										class="px-5 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+										class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 										>Date</th
 									>
 									<th
-										class="px-5 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+										class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 										>Status</th
 									>
 								</tr>
 							</thead>
 							<tbody>
 								{#each data.tickets as { ticket, event } (ticket.id)}
-									<tr class="border-b border-line2 transition-colors hover:bg-panel">
+									<tr class="border-b border-line2 transition-colors hover:bg-paper">
 										<td class="px-5 py-[14px] font-newsreader text-[15px] font-semibold">
 											{event?.title || 'Unknown Event'}
 										</td>
 										<td class="px-5 py-[14px]">
 											<code
-												class="inline-block border border-line2 bg-panel px-[8px] py-[3px] font-mono-system text-[11px] font-bold tracking-[0.04em] text-warm"
+												class="inline-block border border-line2 bg-paper px-[8px] py-[3px] text-[12.5px] font-medium text-warm"
 											>
 												{ticket.code}
 											</code>
@@ -609,31 +563,28 @@
 											{ticket.firstName}
 											{ticket.lastName}
 											{#if ticket.gemId}
-												<span
-													class="ml-2 font-mono-system text-[10px] font-bold tracking-[0.06em] text-warm uppercase"
+												<span class="ml-2 text-[9.5px] font-extrabold tracking-[0.18em] uppercase"
 													>GEM · {ticket.gemId}</span
 												>
 											{/if}
 										</td>
-										<td
-											class="px-5 py-[14px] font-mono-system text-[10.5px] font-bold tracking-[0.06em] text-fade uppercase"
-										>
+										<td class="px-4 py-[12px] text-[11.5px] text-fade">
 											{formatDate(event?.eventDate)}
 										</td>
 										<td class="px-5 py-[14px]">
 											{#if ticket.refunded}
 												<span
-													class="inline-flex items-center bg-warm px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] text-white uppercase"
+													class="inline-flex shrink-0 items-center text-[11.5px] font-semibold text-warm"
 													>Refunded</span
 												>
 											{:else if event?.eventDate && new Date(event.eventDate) < new Date()}
 												<span
-													class="inline-flex items-center border border-line2 px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] text-fade uppercase"
+													class="inline-flex w-fit shrink-0 items-center gap-1.5 text-[12px] font-medium whitespace-nowrap text-ink text-soft capitalize before:block before:h-[7px] before:w-[7px] before:shrink-0 before:bg-[var(--tone,var(--color-line2))] before:content-['']"
 													>Past Event</span
 												>
 											{:else}
 												<span
-													class="inline-flex items-center bg-prem px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] text-white uppercase"
+													class="inline-flex shrink-0 items-center text-[11.5px] font-semibold text-prem"
 													>Active</span
 												>
 											{/if}
@@ -648,10 +599,10 @@
 		{/if}
 
 		{#if activeTab === 'courses' && data.customer}
-			<div class="overflow-hidden border-[1.5px] border-ink">
+			<div class="overflow-hidden border border-line2">
 				{#if data.entitlements.length === 0}
 					<div class="p-12 text-center">
-						<p class="font-newsreader text-[19px] text-soft italic">No courses purchased.</p>
+						<p class="font-newsreader text-[17px] text-soft italic">No courses purchased.</p>
 					</div>
 				{:else}
 					<div>
@@ -661,14 +612,12 @@
 							>
 								<div>
 									<p class="font-newsreader text-[16px] font-semibold">{ent.product}</p>
-									<p
-										class="mt-[4px] font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
-									>
+									<p class="mt-[4px] text-[11.5px] text-fade">
 										Purchased {formatDate(ent.createdAt)}
 									</p>
 								</div>
 								<span
-									class="inline-flex items-center bg-prem px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] text-white uppercase"
+									class="inline-flex shrink-0 items-center text-[11.5px] font-semibold text-prem"
 								>
 									Active
 								</span>

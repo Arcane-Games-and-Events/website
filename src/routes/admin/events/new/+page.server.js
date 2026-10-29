@@ -4,13 +4,9 @@ import { bump } from '$lib/server/cache/index.js';
 import { event } from '$lib/server/db/schema';
 import { nanoid } from 'nanoid';
 import { parseDatetimeLocal } from '$lib/server/dates.js';
+import { eventPeriod } from '$lib/server/standings/rebuild.js';
 
-export async function load({ locals }) {
-	// Require admin authentication
-	if (!locals.user || locals.user.role !== 'admin') {
-		throw redirect(302, '/login?redirect=/admin/events/new');
-	}
-
+export async function load() {
 	// No data needed in the component - just auth check
 	return {};
 }
@@ -56,6 +52,15 @@ export const actions = {
 			});
 		}
 
+		// Standings file under the event's date, so the month must agree with it
+		const parsedDate = parseDatetimeLocal(eventDate);
+		if (month && parsedDate && eventPeriod(parsedDate).monthName !== month) {
+			return fail(400, {
+				error: `The month is set to ${month} but the event date is in ${eventPeriod(parsedDate).monthName}. Pick the month the date falls in.`,
+				values: { title, location, address, price, format, circuit, month, eventDate, description }
+			});
+		}
+
 		// Validate price is a valid number
 		const priceNum = parseFloat(price);
 		if (isNaN(priceNum) || priceNum < 0) {
@@ -88,7 +93,7 @@ export const actions = {
 				format,
 				circuit: circuit || null,
 				month: month || null,
-				eventDate: parseDatetimeLocal(eventDate),
+				eventDate: parsedDate,
 				description: description || null,
 				gemIdRequired,
 				premiumDiscount,

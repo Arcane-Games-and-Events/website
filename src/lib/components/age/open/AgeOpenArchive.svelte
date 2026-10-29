@@ -9,7 +9,8 @@
 	 *                sheets: podium, rest of the Top 8, link to full results
 	 *
 	 * Data is `data.eventResults` ({ event, results[] } with placement,
-	 * playerName, gemId, wins, losses, agePoints), built by the loader.
+	 * playerName, gemId, wins, losses, agePoints; results[] is empty for a live
+	 * event before its first upload), built by the loader.
 	 */
 	import { invalidateAll } from '$app/navigation';
 	import { reveal } from '$lib/actions/reveal.js';
@@ -43,6 +44,7 @@
 		[...new Set(all.map((r) => yearOf(r.event)).filter((y) => y !== '—'))].sort().reverse()
 	);
 	const live = $derived(all.filter((r) => r.event.status === 'in_progress'));
+	const archived = $derived(all.filter((r) => r.event.status !== 'in_progress'));
 	const filtered = $derived.by(() => {
 		const terms = norm(q).split(/\s+/).filter(Boolean);
 		return all
@@ -226,7 +228,9 @@
 								<span
 									class="mt-2 block text-[9.5px] font-extrabold tracking-[0.18em] text-paper-bg/60 uppercase"
 								>
-									{r.results.length} players{leader ? ` · ${leader.playerName} leads` : ''}
+									{r.results.length
+										? `${r.results.length} players${leader ? ` · ${leader.playerName} leads` : ''}`
+										: 'Underway · results after the first round'}
 								</span>
 							</span>
 							<span
@@ -243,7 +247,7 @@
 
 <!-- ============ seasons ============ -->
 <section class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20">
-	{#if !all.length}
+	{#if !archived.length}
 		<div class="border border-line bg-paper px-6 py-14 text-center">
 			<p class="ao-cond text-[32px] leading-none font-black uppercase">No results yet</p>
 			<p class="mx-auto mt-3 max-w-[420px] font-newsreader text-[15px] text-soft italic">

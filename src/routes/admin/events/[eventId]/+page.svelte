@@ -1,9 +1,13 @@
 <script>
+	import { untrack } from 'svelte';
+	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { enhance, deserialize } from '$app/forms';
 	import { parseGemDecklist, toStorageFormat } from '$lib/utils/gem-decklist-parser.js';
 	import { getCircuitNames } from '$lib/data/circuits.js';
 	import { MONTH_NAMES } from '$lib/data/months.js';
+	import { PLACEMENT_BANDS, placementBand, placementLabel } from '$lib/utils/placement.js';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
 
 	let { data, form } = $props();
@@ -20,8 +24,9 @@
 	let isEditMode = $state(false);
 	let premiumDiscount = $derived(data.event.premiumDiscount);
 	let gemIdRequired = $derived(data.event.gemIdRequired);
-	let hasPlayerCap = $state(!!data.event.playerCap);
-	let playerCapValue = $state(data.event.playerCap || '');
+	// Seeded once for the edit form; the form owns them after that.
+	let hasPlayerCap = $state(untrack(() => !!data.event.playerCap));
+	let playerCapValue = $state(untrack(() => data.event.playerCap || ''));
 
 	// Sorting state for registrations
 	let sortColumn = $state('createdAt');
@@ -68,6 +73,28 @@
 	// Hero upload state
 	let heroesFile = $state(null);
 	let heroesProcessing = $state(false);
+
+	// Uploads happen in place: the page (and its tab) stays, the data refreshes.
+	const csvEnhance = () => {
+		csvProcessing = true;
+		return async ({ result, update }) => {
+			await update();
+			csvProcessing = false;
+			if (result.type === 'success') {
+				swissStandingsFile = null;
+				pairingsFile = null;
+				setActiveTab('results');
+			}
+		};
+	};
+	const heroesEnhance = () => {
+		heroesProcessing = true;
+		return async ({ result, update }) => {
+			await update();
+			heroesProcessing = false;
+			if (result.type === 'success') heroesFile = null;
+		};
+	};
 
 	// Staff management state
 	let staffSearch = $state('');
@@ -232,8 +259,10 @@
 			}))
 			.sort((a, b) => b.count - a.count);
 	});
-	// Use computed status for display (dynamically calculated based on date)
-	let displayStatus = $derived(data.event.computedStatus || data.event.status);
+	let displayStatus = $derived(data.event.status || 'upcoming');
+	const datePassed = $derived(
+		!!data.event.eventDate && new Date(data.event.eventDate) < new Date()
+	);
 	let isCompleted = $derived(displayStatus === 'completed');
 	let hasResults = $derived((data.existingResults?.length || 0) > 0);
 	// Check if there's a winner (placement 1 means finals were played)
@@ -366,7 +395,7 @@
 			userId: decklist.userId || '',
 			hero: decklist.hero || '',
 			format: decklist.format || '',
-			placement: decklist.placement?.toString() || '',
+			placement: placementBand(decklist.placement),
 			cardsText,
 			isPublic: decklist.isPublic
 		};
@@ -399,22 +428,20 @@
 </script>
 
 <svelte:head>
-	<title>{data.event.title} - Event Management</title>
+	<title>{data.event.title} · Admin</title>
 </svelte:head>
 
 <!-- ============ HEADER ============ -->
-<header class="mx-auto w-full max-w-[1600px] px-4 pt-[42px] pb-[28px] md:px-10 lg:px-14">
+<DeskHeader kicker="Admin" title={data.event.title} subtitle={formatDate(data.event.eventDate)} />
+<AdminTabs />
+<section class="mx-auto w-full max-w-[1200px] px-5 pt-[24px] pb-[20px] md:px-8">
 	<a
 		href="/admin/events"
-		class="inline-flex items-center font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:text-ink"
+		class="inline-flex items-center text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 	>
 		← Back to Events
 	</a>
 	<div class="mt-[18px] mb-[18px] flex flex-wrap items-center gap-[16px]">
-		<span class="font-mono-system text-[11px] font-extrabold tracking-[0.16em] text-warm uppercase">
-			Event
-		</span>
-		<span class="hidden h-[1px] flex-1 bg-line2 md:block"></span>
 		<div class="flex flex-wrap items-center gap-[10px]">
 			<form
 				method="POST"
@@ -426,7 +453,7 @@
 					name="status"
 					value={displayStatus}
 					onchange={() => statusForm.submit()}
-					class="border-[1.5px] border-ink bg-paper-bg py-[7px] pr-[24px] pl-[10px] font-mono-system text-[10.5px] font-bold tracking-[0.08em] text-ink uppercase focus:outline-none"
+					class="h-[32px] border border-line2 bg-paper py-0 pr-7 pl-2 text-[11px] leading-none text-ink focus:border-ink focus:ring-0"
 				>
 					<option value="upcoming">Upcoming</option>
 					<option value="in_progress">In Progress</option>
@@ -434,18 +461,26 @@
 					<option value="cancelled">Cancelled</option>
 				</select>
 			</form>
+			{#if displayStatus === 'upcoming' && datePassed}
+				<span
+					class="inline-flex items-center text-[11.5px] text-fade"
+					title="The event date is in the past but no results have been uploaded"
+				>
+					Date has passed · no results yet
+				</span>
+			{/if}
 
 			{#if !isCompleted && hasWinner}
 				<button
 					type="button"
 					onclick={() => (showCloseConfirm = true)}
-					class="inline-flex items-center bg-prem px-[14px] py-[8px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+					class="inline-flex h-[32px] shrink-0 items-center gap-1.5 bg-prem px-3 text-[10px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					Close Event ✓
 				</button>
 			{:else if !isCompleted && !hasWinner && hasResults}
 				<span
-					class="inline-flex cursor-not-allowed items-center border border-line2 px-[14px] py-[8px] font-mono-system text-[10px] font-bold tracking-[0.1em] text-fade uppercase"
+					class="inline-flex items-center text-[11.5px] text-fade"
 					title="Finals match required to close event"
 				>
 					Awaiting Finals
@@ -454,7 +489,7 @@
 				<form method="POST" action="?/reopenEvent" class="inline">
 					<button
 						type="submit"
-						class="inline-flex items-center border border-warm px-[14px] py-[8px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-warm uppercase transition-colors hover:bg-warm hover:text-white"
+						class="inline-flex h-[32px] shrink-0 items-center border border-warm px-3 text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
 					>
 						Reopen
 					</button>
@@ -462,29 +497,15 @@
 			{/if}
 		</div>
 	</div>
-	<h1
-		class="font-newsreader text-[clamp(32px,4.8vw,52px)] leading-[0.95] font-semibold tracking-[-0.02em]"
-	>
-		{data.event.title}
-	</h1>
-	<p class="mt-[10px] font-mono-system text-[11px] font-bold tracking-[0.08em] text-fade uppercase">
-		{formatDate(data.event.eventDate)}
-	</p>
-</header>
+</section>
 
 {#if form?.success}
-	<section class="mx-auto w-full max-w-[1600px] overflow-x-clip px-4 pb-[12px] md:px-10 lg:px-14">
-		<div class="border-[1.5px] border-ink bg-prem p-4 text-white">
-			<span
-				class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
-				style="color: #d6eedf;">Success</span
-			>
+	<section class="mx-auto w-full max-w-[1200px] overflow-x-clip px-5 pb-[12px] md:px-8">
+		<div class="border-l-[3px] border-prem bg-prem/10 p-4">
+			<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase">Success</span>
 			<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{form.message}</p>
 			{#if form.details}
-				<ul
-					class="mt-[8px] ml-4 list-disc font-mono-system text-[11px] font-bold tracking-[0.06em] uppercase"
-					style="color: #d6eedf;"
-				>
+				<ul class="mt-[8px] ml-4 text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase">
 					<li>Players updated: {form.details.playersUpdated}</li>
 					<li>New players added: {form.details.playersCreated}</li>
 					{#if form.details.errors?.length > 0}
@@ -498,15 +519,22 @@
 {#if form?.error}
 	<AdminNotice tone="error" message={form.error} />
 {/if}
+{#if data.monthMismatch}
+	<AdminNotice
+		tone="info"
+		message="This event's month is set to {data.event
+			.month}, but its date is in {data.monthMismatch}. Standings and match history file under the date — edit the event so the two agree."
+	/>
+{/if}
 
 <!-- ============ TABS ============ -->
-<section class="overflow-x-clip border-y-[3px] border-double border-ink">
-	<div class="mx-auto w-full max-w-[1600px] px-4 py-[16px] md:px-10 lg:px-14">
+<section class="overflow-x-clip border-t border-line2">
+	<div class="mx-auto w-full max-w-[1200px] px-5 py-[16px] md:px-8">
 		<div class="flex gap-1 overflow-x-auto whitespace-nowrap">
 			{#each [{ id: 'overview', label: 'Overview' }, { id: 'registrations', label: `Registrations · ${data.stats.totalTickets}` }, { id: 'import', label: 'Import CSV' }, { id: 'results', label: `Results · ${data.existingResults?.length || 0}` }, { id: 'decklists', label: `Decklists · ${data.existingDecklists?.length || 0}` }, { id: 'metagame', label: `Metagame · ${data.existingHeroes?.length || 0}` }, ...(data.isAdmin ? [{ id: 'staff', label: `Staff · ${data.assignedStaff?.length || 0}` }] : [])] as tab (tab.id)}
 				<button
 					onclick={() => setActiveTab(tab.id)}
-					class="relative px-[16px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors {activeTab ===
+					class="relative px-[16px] py-[10px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors {activeTab ===
 					tab.id
 						? 'text-ink'
 						: 'text-fade hover:text-ink'}"
@@ -520,84 +548,64 @@
 	</div>
 </section>
 
-<div class="mx-auto w-full max-w-[1600px] px-4 py-[36px] md:px-10 lg:px-14">
+<div class="mx-auto w-full max-w-[1200px] px-5 py-[36px] md:px-8">
 	<!-- Tab Content -->
 
 	<!-- Overview Tab -->
 	{#if activeTab === 'overview'}
 		<!-- Stat Strip -->
-		<div class="mb-[24px] overflow-hidden border-[1.5px] border-ink">
+		<div class="mb-[24px] overflow-hidden border border-line2">
 			<div class="grid grid-cols-2 divide-x divide-line2 {data.isAdmin ? 'md:grid-cols-3' : ''}">
 				{#if data.isAdmin}
 					<div class="p-5">
-						<span
-							class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 							>Total Revenue</span
 						>
 						<div
-							class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-prem"
+							class="ao-cond mt-[6px] text-[30px] leading-none font-black text-prem tabular-nums"
 						>
 							${data.stats.totalRevenue}
 						</div>
-						<span
-							class="mt-[4px] block font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-						>
-							before refunds
-						</span>
+						<span class="mt-[4px] block text-[11.5px] text-fade"> before refunds </span>
 					</div>
 				{/if}
 				<div class="p-5">
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 						>Tickets Sold</span
 					>
-					<div
-						class="mt-[6px] font-archivo text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em] text-ink"
-					>
+					<div class="ao-cond mt-[6px] text-[30px] leading-none font-black text-ink tabular-nums">
 						{data.stats.totalTickets}
 					</div>
 					{#if data.event.playerCap}
-						<span
-							class="mt-[4px] block font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-						>
+						<span class="mt-[4px] block text-[11.5px] text-fade">
 							of {data.event.playerCap} cap
 						</span>
 					{:else}
-						<span
-							class="mt-[4px] block font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-						>
-							no cap
-						</span>
+						<span class="mt-[4px] block text-[11.5px] text-fade"> no cap </span>
 					{/if}
 				</div>
 				<div class="p-5">
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 						>Refunds</span
 					>
 					<div
-						class="font-archivo {data.stats.totalRefunded > 0
+						class="ao-cond text-[30px] leading-none font-black tabular-nums {data.stats
+							.totalRefunded > 0
 							? 'text-warm'
 							: 'text-ink'} mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]"
 					>
 						{data.stats.totalRefunded}
 					</div>
-					<span
-						class="mt-[4px] block font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-					>
-						refunded tickets
-					</span>
+					<span class="mt-[4px] block text-[11.5px] text-fade"> refunded tickets </span>
 				</div>
 			</div>
 		</div>
 
 		<!-- Event Details -->
-		<div class="overflow-hidden border-[1.5px] border-ink">
+		<div class="overflow-hidden border border-line2">
 			<div class="flex items-center justify-between gap-3 border-b border-line2 p-5">
 				<div>
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>
+					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 						Event Details
 					</span>
 					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
@@ -606,7 +614,7 @@
 				</div>
 				<button
 					onclick={() => (isEditMode = !isEditMode)}
-					class="inline-flex items-center border border-line2 px-[14px] py-[8px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+					class="inline-flex items-center border border-line2 px-[14px] py-[8px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
 				>
 					{isEditMode ? 'Cancel' : 'Edit'}
 				</button>
@@ -618,7 +626,7 @@
 						<div>
 							<label
 								for="title"
-								class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 							>
 								Event Name <span class="text-warm">*</span>
 							</label>
@@ -628,13 +636,13 @@
 								name="title"
 								required
 								value={data.event.title}
-								class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink focus:outline-none"
+								class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 							/>
 						</div>
 						<div>
 							<label
 								for="location"
-								class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 							>
 								Venue Name <span class="text-warm">*</span>
 							</label>
@@ -644,13 +652,13 @@
 								name="location"
 								required
 								value={data.event.location}
-								class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink focus:outline-none"
+								class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 							/>
 						</div>
 						<div>
 							<label
 								for="address"
-								class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 								>Address</label
 							>
 							<input
@@ -658,13 +666,13 @@
 								id="address"
 								name="address"
 								value={data.event.address || ''}
-								class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink focus:outline-none"
+								class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 							/>
 						</div>
 						<div>
 							<label
 								for="format"
-								class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 							>
 								Format <span class="text-warm">*</span>
 							</label>
@@ -672,7 +680,7 @@
 								id="format"
 								name="format"
 								required
-								class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[13px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
+								class="h-[40px] w-full border border-line2 bg-paper py-0 pr-8 pl-3 text-[13px] text-ink focus:border-ink focus:ring-0"
 							>
 								{#each formats as format}
 									<option value={format} selected={data.event.format === format}>{format}</option>
@@ -682,13 +690,13 @@
 						<div>
 							<label
 								for="circuit"
-								class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 								>Circuit</label
 							>
 							<select
 								id="circuit"
 								name="circuit"
-								class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[13px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
+								class="h-[40px] w-full border border-line2 bg-paper py-0 pr-8 pl-3 text-[13px] text-ink focus:border-ink focus:ring-0"
 							>
 								<option value="">No circuit</option>
 								{#each circuits as circuit}
@@ -701,13 +709,13 @@
 						<div>
 							<label
 								for="month"
-								class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 								>Month</label
 							>
 							<select
 								id="month"
 								name="month"
-								class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[13px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
+								class="h-[40px] w-full border border-line2 bg-paper py-0 pr-8 pl-3 text-[13px] text-ink focus:border-ink focus:ring-0"
 							>
 								<option value="">Select month</option>
 								{#each months as month}
@@ -718,7 +726,7 @@
 						<div>
 							<label
 								for="eventDate"
-								class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 							>
 								Event Date & Time <span class="text-warm">*</span>
 							</label>
@@ -728,13 +736,13 @@
 								name="eventDate"
 								required
 								value={formatDateForInput(data.event.eventDate)}
-								class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink focus:outline-none"
+								class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 							/>
 						</div>
 						<div>
 							<label
 								for="price"
-								class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 							>
 								Entry Fee ($) <span class="text-warm">*</span>
 								{#if data.isTournamentStaff}<span
@@ -750,7 +758,7 @@
 								step="0.01"
 								value={data.event.price}
 								disabled={data.isTournamentStaff}
-								class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink focus:outline-none {data.isTournamentStaff
+								class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0 {data.isTournamentStaff
 									? 'cursor-not-allowed opacity-60'
 									: ''}"
 							/>
@@ -760,7 +768,7 @@
 					<div>
 						<label
 							for="description"
-							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 							>Description</label
 						>
 						<textarea
@@ -768,7 +776,7 @@
 							name="description"
 							rows="3"
 							value={data.event.description || ''}
-							class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] leading-[1.5] text-ink focus:outline-none"
+							class="w-full border border-line2 bg-paper px-3 py-2 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 						></textarea>
 					</div>
 
@@ -779,7 +787,7 @@
 								id="gemIdRequired"
 								name="gemIdRequired"
 								bind:checked={gemIdRequired}
-								class="h-[16px] w-[16px] border-ink accent-[color:var(--ed-ink)]"
+								class="h-4 w-4 border-line2 text-ink focus:ring-0"
 							/>
 							<span class="font-newsreader text-[14px] font-semibold">GEM ID Required</span>
 						</label>
@@ -789,7 +797,7 @@
 								id="premiumDiscount"
 								name="premiumDiscount"
 								bind:checked={premiumDiscount}
-								class="h-[16px] w-[16px] border-ink accent-[color:var(--ed-prem)]"
+								class="h-4 w-4 border-line2 text-ink focus:ring-0"
 							/>
 							<span class="font-newsreader text-[14px] font-semibold">Premium Discount</span>
 						</label>
@@ -798,7 +806,7 @@
 								<input
 									type="checkbox"
 									bind:checked={hasPlayerCap}
-									class="h-[16px] w-[16px] border-ink accent-[color:var(--ed-warm)]"
+									class="h-4 w-4 border-line2 text-ink focus:ring-0"
 								/>
 								<span class="font-newsreader text-[14px] font-semibold">Player Cap</span>
 							</label>
@@ -809,7 +817,7 @@
 									min="1"
 									bind:value={playerCapValue}
 									placeholder="e.g., 32"
-									class="w-[100px] border-[1.5px] border-ink bg-paper-bg px-[10px] py-[6px] font-mono-system text-[12px] text-ink focus:outline-none"
+									class="h-[40px] border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 								/>
 							{/if}
 						</div>
@@ -819,13 +827,13 @@
 						<button
 							type="button"
 							onclick={() => (isEditMode = false)}
-							class="inline-flex items-center border border-line2 px-[18px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+							class="inline-flex items-center border border-line2 px-[18px] py-[11px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
 						>
 							Cancel
 						</button>
 						<button
 							type="submit"
-							class="inline-flex items-center bg-ink px-[22px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
+							class="inline-flex h-[40px] shrink-0 items-center gap-2 bg-ink px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							Save Changes →
 						</button>
@@ -834,9 +842,7 @@
 			{:else}
 				<dl class="grid grid-cols-1 gap-0 md:grid-cols-3">
 					<div class="border-r border-b border-line2 p-5">
-						<dt
-							class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-						>
+						<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 							Location
 						</dt>
 						<dd class="mt-[6px] font-newsreader text-[16px] font-semibold">
@@ -847,9 +853,7 @@
 						{/if}
 					</div>
 					<div class="border-r border-b border-line2 p-5">
-						<dt
-							class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-						>
+						<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 							Format
 						</dt>
 						<dd class="mt-[6px] font-newsreader text-[16px] font-semibold">
@@ -858,74 +862,60 @@
 					</div>
 					<div class="border-b border-line2 p-5">
 						{#if data.event.circuit}
-							<dt
-								class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-							>
+							<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 								Circuit
 							</dt>
 							<dd class="mt-[6px] font-newsreader text-[16px] font-semibold">
 								{data.event.circuit}
 							</dd>
 							{#if data.event.month}
-								<dd
-									class="mt-[2px] font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
-								>
+								<dd class="mt-[2px] text-[11.5px] text-fade">
 									{data.event.month}
 								</dd>
 							{/if}
 						{:else}
-							<dt
-								class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-							>
+							<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 								Entry Fee
 							</dt>
-							<dd
-								class="mt-[6px] font-archivo text-[20px] font-extrabold tracking-[-0.01em] text-prem"
-							>
+							<dd class="mt-[6px] text-[20px] font-semibold text-prem tabular-nums">
 								${parseFloat(data.event.price).toFixed(2)}
 							</dd>
 						{/if}
 					</div>
 					{#if data.event.circuit}
 						<div class="border-r border-b border-line2 p-5 md:col-span-3">
-							<dt
-								class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-							>
+							<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 								Entry Fee
 							</dt>
-							<dd
-								class="mt-[6px] font-archivo text-[20px] font-extrabold tracking-[-0.01em] text-prem"
-							>
+							<dd class="mt-[6px] text-[20px] font-semibold text-prem tabular-nums">
 								${parseFloat(data.event.price).toFixed(2)}
 							</dd>
 						</div>
 					{/if}
 					<div class="p-5 md:col-span-3">
-						<dt
-							class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-						>
+						<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 							Settings
 						</dt>
 						<dd class="mt-[10px] flex flex-wrap gap-[8px]">
 							<span
-								class="inline-flex items-center gap-[6px] px-[10px] py-[5px] font-mono-system text-[10px] font-bold tracking-[0.1em] uppercase {data
+								class="inline-flex w-fit shrink-0 items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap text-[var(--tone,var(--color-ink))] capitalize before:block before:h-2 before:w-2 before:shrink-0 before:bg-[var(--tone,var(--color-line2))] before:content-[''] {data
 									.event.gemIdRequired
-									? 'bg-accent text-white'
-									: 'border border-line2 text-fade'}"
+									? '[--tone:#8a6116]'
+									: '[--tone:var(--color-fade)]'}"
 							>
 								{data.event.gemIdRequired ? '✓' : '—'} GEM ID Required
 							</span>
 							<span
-								class="inline-flex items-center gap-[6px] px-[10px] py-[5px] font-mono-system text-[10px] font-bold tracking-[0.1em] uppercase {data
+								class="inline-flex w-fit shrink-0 items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap text-[var(--tone,var(--color-ink))] capitalize before:block before:h-2 before:w-2 before:shrink-0 before:bg-[var(--tone,var(--color-line2))] before:content-[''] {data
 									.event.premiumDiscount
-									? 'bg-prem text-white'
-									: 'border border-line2 text-fade'}"
+									? '[--tone:var(--color-prem)]'
+									: '[--tone:var(--color-fade)]'}"
 							>
 								{data.event.premiumDiscount ? '✓' : '—'} Premium Discount
 							</span>
 							{#if data.event.playerCap}
 								<span
-									class="inline-flex items-center bg-warm px-[10px] py-[5px] font-mono-system text-[10px] font-bold tracking-[0.1em] text-white uppercase"
+									class="inline-flex shrink-0 items-center text-[11.5px] font-semibold text-warm"
 								>
 									Cap · {data.event.playerCap} players
 								</span>
@@ -934,9 +924,7 @@
 					</div>
 					{#if data.event.description}
 						<div class="border-t border-line2 p-5 md:col-span-3">
-							<dt
-								class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-							>
+							<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 								Description
 							</dt>
 							<dd class="mt-[8px] font-newsreader text-[16px] leading-[1.55] text-soft">
@@ -951,12 +939,10 @@
 		<!-- Danger zone -->
 		{#if data.isAdmin}
 			<div
-				class="mt-[24px] flex flex-wrap items-center justify-between gap-3 border-[1.5px] border-warm p-5"
+				class="mt-[24px] flex flex-wrap items-center justify-between gap-3 border border-hero-rb/60 p-5"
 			>
 				<div>
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
-					>
+					<span class="text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase">
 						Danger Zone
 					</span>
 					<p class="mt-[4px] text-[13px] leading-[1.5] text-soft">
@@ -967,7 +953,7 @@
 				<button
 					type="button"
 					onclick={() => (showDeleteConfirm = true)}
-					class="inline-flex items-center bg-warm px-[18px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110"
+					class="inline-flex h-[40px] shrink-0 items-center bg-hero-rb px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
 				>
 					Delete Event
 				</button>
@@ -977,12 +963,10 @@
 
 	<!-- Registrations Tab -->
 	{#if activeTab === 'registrations'}
-		<div class="overflow-hidden border-[1.5px] border-ink">
+		<div class="overflow-hidden border border-line2">
 			<div class="flex flex-wrap items-center justify-between gap-3 border-b border-line2 p-5">
 				<div>
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>
+					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 						Registered Players
 					</span>
 					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
@@ -990,7 +974,7 @@
 					</h2>
 				</div>
 				<span
-					class="inline-flex items-center bg-ink px-[10px] py-[5px] font-mono-system text-[10px] font-bold tracking-[0.1em] text-white uppercase"
+					class="inline-flex h-[32px] shrink-0 items-center gap-1.5 bg-ink px-3 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-50"
 				>
 					{data.tickets.length}{#if data.event.playerCap}/{data.event.playerCap}{/if} players
 				</span>
@@ -998,7 +982,7 @@
 
 			{#if data.tickets.length === 0}
 				<div class="p-12 text-center">
-					<p class="font-newsreader text-[19px] text-soft italic">No tickets sold yet.</p>
+					<p class="font-newsreader text-[17px] text-soft italic">No tickets sold yet.</p>
 					<p class="mt-2 text-[13px] text-fade">Registrations will appear here.</p>
 				</div>
 			{:else}
@@ -1006,7 +990,7 @@
 				<div class="lg:hidden">
 					{#each sortedTickets as ticket}
 						<div
-							class="border-b border-line2 p-4 last:border-b-0 {ticket.refunded ? 'bg-panel' : ''}"
+							class="border-b border-line2 p-4 last:border-b-0 {ticket.refunded ? 'bg-paper' : ''}"
 						>
 							<div class="flex items-start justify-between gap-3">
 								<div class="min-w-0 flex-1">
@@ -1015,16 +999,14 @@
 										{ticket.lastName || 'N/A'}
 									</div>
 									<div class="mt-1 flex items-center gap-2">
-										<code
-											class="truncate font-mono-system text-[11px] font-bold tracking-[0.04em] text-warm"
-										>
+										<code class="truncate text-[12.5px] font-medium text-warm">
 											{ticket.gemId || 'N/A'}
 										</code>
 										{#if ticket.gemId && ticket.gemId !== 'N/A'}
 											<button
 												type="button"
 												onclick={(e) => copyGemId(ticket.gemId, e)}
-												class="inline-flex items-center border border-line2 px-[7px] py-[2px] font-mono-system text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+												class="inline-flex items-center border border-line2 px-[7px] py-[2px] text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
 												title="Copy GEM ID"
 											>
 												{copiedGemId === ticket.gemId ? 'Copied' : 'Copy'}
@@ -1033,9 +1015,9 @@
 									</div>
 								</div>
 								<span
-									class="inline-flex items-center px-[9px] py-[4px] font-mono-system text-[10px] font-bold tracking-[0.1em] uppercase {ticket.refunded
-										? 'bg-warm text-white'
-										: 'bg-prem text-white'}"
+									class="inline-flex w-fit shrink-0 items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap text-[var(--tone,var(--color-ink))] capitalize before:block before:h-2 before:w-2 before:shrink-0 before:bg-[var(--tone,var(--color-line2))] before:content-[''] {ticket.refunded
+										? '[--tone:var(--color-hero-rb)]'
+										: '[--tone:var(--color-prem)]'}"
 								>
 									{ticket.refunded ? 'Refunded' : 'Paid'}
 								</span>
@@ -1043,16 +1025,11 @@
 							<div
 								class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line2 pt-3"
 							>
-								<span
-									class="font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
-								>
+								<span class="text-[11.5px] text-fade">
 									{formatShortDate(ticket.createdAt)}
 								</span>
 								<div class="flex items-center gap-2">
-									<span
-										class="font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-										>In GEM:</span
-									>
+									<span class="text-[11.5px] text-fade">In GEM:</span>
 									<button
 										type="button"
 										onclick={(e) => {
@@ -1091,7 +1068,7 @@
 										<input type="hidden" name="ticketId" value={ticket.ticketId} />
 										<button
 											type="submit"
-											class="inline-flex items-center bg-warm px-[10px] py-[5px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+											class="inline-flex h-[32px] shrink-0 items-center px-2 text-[10px] font-extrabold tracking-[0.14em] text-hero-rb uppercase transition-colors hover:text-ink disabled:opacity-40"
 										>
 											Refund
 										</button>
@@ -1111,7 +1088,7 @@
 									<th class="px-4 py-[12px]">
 										<button
 											onclick={() => sortBy(col.id)}
-											class="inline-flex items-center gap-1 font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {sortColumn ===
+											class="inline-flex items-center gap-1 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {sortColumn ===
 											col.id
 												? 'text-ink'
 												: 'text-fade hover:text-ink'}"
@@ -1124,7 +1101,7 @@
 									</th>
 								{/each}
 								<th
-									class="px-4 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="px-4 py-[12px] text-right text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 									>Actions</th
 								>
 							</tr>
@@ -1132,8 +1109,8 @@
 						<tbody>
 							{#each sortedTickets as ticket (ticket.ticketId)}
 								<tr
-									class="border-b border-line2 transition-colors hover:bg-panel {ticket.refunded
-										? 'bg-panel'
+									class="border-b border-line2 transition-colors hover:bg-paper {ticket.refunded
+										? 'bg-paper'
 										: ''}"
 								>
 									<td class="px-4 py-[12px] font-newsreader text-[15px] font-semibold"
@@ -1144,16 +1121,14 @@
 									>
 									<td class="px-4 py-[12px]">
 										<div class="inline-flex items-center gap-2">
-											<code
-												class="font-mono-system text-[12px] font-bold tracking-[0.04em] text-warm"
-											>
+											<code class="text-[12.5px] font-medium text-warm">
 												{ticket.gemId || 'N/A'}
 											</code>
 											{#if ticket.gemId && ticket.gemId !== 'N/A'}
 												<button
 													type="button"
 													onclick={(e) => copyGemId(ticket.gemId, e)}
-													class="inline-flex items-center border border-line2 px-[7px] py-[2px] font-mono-system text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+													class="inline-flex items-center border border-line2 px-[7px] py-[2px] text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
 													title="Copy GEM ID"
 												>
 													{copiedGemId === ticket.gemId ? '✓' : 'Copy'}
@@ -1161,16 +1136,14 @@
 											{/if}
 										</div>
 									</td>
-									<td
-										class="px-4 py-[12px] font-mono-system text-[10.5px] font-bold tracking-[0.06em] text-fade uppercase"
-									>
+									<td class="px-4 py-[12px] text-[11.5px] text-fade">
 										{formatShortDate(ticket.createdAt)}
 									</td>
 									<td class="px-4 py-[12px]">
 										<span
-											class="inline-flex items-center px-[9px] py-[3px] font-mono-system text-[10px] font-bold tracking-[0.1em] uppercase {ticket.refunded
-												? 'bg-warm text-white'
-												: 'bg-prem text-white'}"
+											class="inline-flex w-fit shrink-0 items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap text-[var(--tone,var(--color-ink))] capitalize before:block before:h-2 before:w-2 before:shrink-0 before:bg-[var(--tone,var(--color-line2))] before:content-[''] {ticket.refunded
+												? '[--tone:var(--color-hero-rb)]'
+												: '[--tone:var(--color-prem)]'}"
 										>
 											{ticket.refunded ? 'Refunded' : 'Paid'}
 										</span>
@@ -1217,7 +1190,7 @@
 												<input type="hidden" name="ticketId" value={ticket.ticketId} />
 												<button
 													type="submit"
-													class="inline-flex items-center bg-warm px-[10px] py-[5px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+													class="inline-flex h-[32px] shrink-0 items-center px-2 text-[10px] font-extrabold tracking-[0.14em] text-hero-rb uppercase transition-colors hover:text-ink disabled:opacity-40"
 												>
 													Refund
 												</button>
@@ -1237,70 +1210,59 @@
 	{#if activeTab === 'import'}
 		<div class="mx-auto max-w-4xl">
 			{#if isCompleted}
-				<div class="border-[1.5px] border-warm p-8 text-center">
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
-					>
+				<div class="border border-line2 bg-paper p-8 text-center">
+					<span class="text-[9.5px] font-extrabold tracking-[0.2em] text-warm uppercase">
 						Event Finalized
 					</span>
-					<h2 class="mt-[6px] font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
-						Locked.
-					</h2>
+					<h2 class="mt-[6px] font-newsreader text-[22px] font-semibold">Locked.</h2>
 					<p class="mt-[10px] font-newsreader text-[16px] text-soft italic">
 						This event is finalized. Reopen from the Finalize tab to import new results.
 					</p>
 				</div>
 			{:else}
 				{#if form?.processedResults}
-					<div class="mb-[24px] border-[1.5px] border-ink bg-prem p-6 text-white">
-						<span
-							class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] uppercase"
-							style="color: #d6eedf;"
-						>
+					<div class="mb-[24px] border-l-[3px] border-prem bg-prem/10 p-6">
+						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase">
 							Success
 						</span>
 						<h3 class="mt-[4px] font-newsreader text-[22px] font-semibold">Results imported.</h3>
 						<div class="mt-[16px] grid grid-cols-2 gap-[14px] sm:grid-cols-4">
 							<div class="border border-white/30 p-3 text-center">
-								<div class="font-archivo text-[24px] font-extrabold tracking-[-0.02em]">
+								<div class="text-[24px] font-semibold tabular-nums">
 									{form.processedResults.totalPlayers}
 								</div>
 								<span
-									class="mt-[4px] block font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase"
-									style="color: #d6eedf;"
+									class="mt-[4px] block text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase"
 								>
 									Players
 								</span>
 							</div>
 							<div class="border border-white/30 p-3 text-center">
-								<div class="font-archivo text-[24px] font-extrabold tracking-[-0.02em]">
+								<div class="text-[24px] font-semibold tabular-nums">
 									{form.processedResults.totalRounds}
 								</div>
 								<span
-									class="mt-[4px] block font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase"
-									style="color: #d6eedf;"
+									class="mt-[4px] block text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase"
 								>
 									Rounds
 								</span>
 							</div>
 							<div class="border border-white/30 p-3 text-center">
-								<div class="font-archivo text-[24px] font-extrabold tracking-[-0.02em]">
+								<div class="text-[24px] font-semibold tabular-nums">
 									{form.processedResults.totalPointsDistributed}
 								</div>
 								<span
-									class="mt-[4px] block font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase"
-									style="color: #d6eedf;"
+									class="mt-[4px] block text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase"
 								>
 									AGE Points
 								</span>
 							</div>
 							<div class="border border-white/30 p-3 text-center">
-								<div class="font-archivo text-[24px] font-extrabold tracking-[-0.02em]">
+								<div class="text-[24px] font-semibold tabular-nums">
 									${form.processedResults.totalPrizeDistributed}
 								</div>
 								<span
-									class="mt-[4px] block font-mono-system text-[10px] font-bold tracking-[0.08em] uppercase"
-									style="color: #d6eedf;"
+									class="mt-[4px] block text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase"
 								>
 									Prize Pool
 								</span>
@@ -1308,18 +1270,16 @@
 						</div>
 						<button
 							onclick={() => setActiveTab('results')}
-							class="mt-[18px] inline-flex items-center bg-white px-[16px] py-[9px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] text-prem uppercase transition-[filter] hover:brightness-95"
+							class="mt-[18px] inline-flex items-center bg-white px-[16px] py-[9px] text-[10.5px] font-extrabold tracking-[0.12em] text-prem uppercase transition-[filter] hover:brightness-95"
 						>
 							Review Results →
 						</button>
 					</div>
 				{/if}
 
-				<div class="overflow-hidden border-[1.5px] border-ink">
+				<div class="overflow-hidden border border-line2">
 					<div class="border-b border-line2 p-5">
-						<span
-							class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-						>
+						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 							Import Tournament Results
 						</span>
 						<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
@@ -1333,12 +1293,13 @@
 						method="POST"
 						action="?/processCSV"
 						enctype="multipart/form-data"
+						use:enhance={csvEnhance}
 						class="space-y-[18px] p-5"
 					>
 						<div class="grid gap-[14px] sm:grid-cols-2">
 							<!-- Swiss Standings -->
 							<div
-								class="border-[1.5px] border-dashed border-line2 bg-panel p-4 transition-colors hover:border-ink {swissStandingsFile &&
+								class="border border-dashed border-line2 bg-paper p-4 transition-colors hover:border-ink {swissStandingsFile &&
 								swissStandingsFile.length > 0
 									? 'border-prem bg-prem/10'
 									: ''}"
@@ -1354,7 +1315,7 @@
 								/>
 								<label for="swissStandings" class="flex cursor-pointer items-center gap-3">
 									<span
-										class="inline-flex h-[32px] w-[32px] shrink-0 items-center justify-center font-mono-system text-[13px] font-extrabold {swissStandingsFile &&
+										class="inline-flex h-[32px] w-[32px] shrink-0 items-center justify-center text-[13px] font-extrabold {swissStandingsFile &&
 										swissStandingsFile.length > 0
 											? 'bg-prem text-white'
 											: 'border border-line2 text-fade'}"
@@ -1366,9 +1327,7 @@
 											Swiss Standings <span class="text-warm">*</span>
 										</div>
 										{#if swissStandingsFile && swissStandingsFile.length > 0}
-											<p
-												class="mt-[2px] truncate font-mono-system text-[11px] font-bold tracking-[0.02em] text-prem"
-											>
+											<p class="mt-[2px] truncate text-[12.5px] font-medium text-prem">
 												{swissStandingsFile[0].name}
 											</p>
 										{:else}
@@ -1380,7 +1339,7 @@
 
 							<!-- Pairings -->
 							<div
-								class="border-[1.5px] border-dashed border-line2 bg-panel p-4 transition-colors hover:border-ink {pairingsFile &&
+								class="border border-dashed border-line2 bg-paper p-4 transition-colors hover:border-ink {pairingsFile &&
 								pairingsFile.length > 0
 									? 'border-prem bg-prem/10'
 									: ''}"
@@ -1396,7 +1355,7 @@
 								/>
 								<label for="pairings" class="flex cursor-pointer items-center gap-3">
 									<span
-										class="inline-flex h-[32px] w-[32px] shrink-0 items-center justify-center font-mono-system text-[13px] font-extrabold {pairingsFile &&
+										class="inline-flex h-[32px] w-[32px] shrink-0 items-center justify-center text-[13px] font-extrabold {pairingsFile &&
 										pairingsFile.length > 0
 											? 'bg-prem text-white'
 											: 'border border-line2 text-fade'}"
@@ -1408,9 +1367,7 @@
 											Pairings Data <span class="text-warm">*</span>
 										</div>
 										{#if pairingsFile && pairingsFile.length > 0}
-											<p
-												class="mt-[2px] truncate font-mono-system text-[11px] font-bold tracking-[0.02em] text-prem"
-											>
+											<p class="mt-[2px] truncate text-[12.5px] font-medium text-prem">
 												{pairingsFile[0].name}
 											</p>
 										{:else}
@@ -1422,10 +1379,8 @@
 						</div>
 
 						{#if data.existingResults && data.existingResults.length > 0}
-							<div class="border-[1.5px] border-warm bg-warm/10 p-3">
-								<p
-									class="font-mono-system text-[10.5px] font-bold tracking-[0.08em] text-warm uppercase"
-								>
+							<div class="border-l-[3px] border-gold bg-gold/10 p-3">
+								<p class="text-[9.5px] font-extrabold tracking-[0.18em] text-[#8a6116] uppercase">
 									Warning · will replace {data.existingResults.length} existing results
 								</p>
 							</div>
@@ -1434,7 +1389,7 @@
 						<button
 							type="submit"
 							disabled={csvProcessing || !swissStandingsFile || !pairingsFile}
-							class="flex w-full items-center justify-center gap-2 bg-ink px-[22px] py-[13px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-50"
+							class="inline-flex h-[40px] w-full shrink-0 items-center justify-center gap-2 bg-ink px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{csvProcessing ? 'Processing…' : 'Import Results →'}
 						</button>
@@ -1446,12 +1401,10 @@
 
 	<!-- Results Tab -->
 	{#if activeTab === 'results'}
-		<div class="overflow-hidden border-[1.5px] border-ink">
+		<div class="overflow-hidden border border-line2">
 			<div class="flex flex-wrap items-center justify-between gap-3 border-b border-line2 p-5">
 				<div>
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>
+					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 						Tournament Results
 					</span>
 					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
@@ -1459,9 +1412,7 @@
 					</h2>
 				</div>
 				{#if sortedResults.length > 0}
-					<span
-						class="font-mono-system text-[10.5px] font-bold tracking-[0.08em] text-fade uppercase"
-					>
+					<span class="text-[11.5px] text-fade">
 						{sortedResults.length} players · {data.existingMatches?.length || 0} matches
 					</span>
 				{/if}
@@ -1469,7 +1420,7 @@
 
 			{#if sortedResults.length === 0}
 				<div class="p-12 text-center">
-					<p class="font-newsreader text-[19px] text-soft italic">No results recorded yet.</p>
+					<p class="font-newsreader text-[17px] text-soft italic">No results recorded yet.</p>
 					<p class="mt-2 text-[13px] text-fade">Import tournament CSV files to see results here.</p>
 				</div>
 			{:else}
@@ -1478,11 +1429,11 @@
 					{#each sortedResults as result (result.playerName + result.placement)}
 						<div class="flex items-start gap-3 border-b border-line2 p-4 last:border-b-0">
 							<span
-								class="inline-flex h-[36px] w-[36px] shrink-0 items-center justify-center font-mono-system text-[13px] font-extrabold {result.placement ===
+								class="inline-flex h-[36px] w-[36px] shrink-0 items-center justify-center text-[12.5px] font-medium {result.placement ===
 								1
-									? 'bg-warm text-white'
+									? 'bg-gold text-white'
 									: result.placement <= 3
-										? 'bg-ink text-white'
+										? 'bg-ink text-paper-bg'
 										: 'border border-line2 text-fade'}"
 							>
 								{result.placement}
@@ -1492,14 +1443,14 @@
 									{result.playerName}
 								</div>
 								<div class="mt-[3px] flex items-center gap-2">
-									<code class="font-mono-system text-[11px] font-bold tracking-[0.04em] text-warm">
+									<code class="text-[12.5px] font-medium text-warm">
 										{result.gemId || '—'}
 									</code>
 									{#if result.gemId && result.gemId !== '-'}
 										<button
 											type="button"
 											onclick={(e) => copyGemId(result.gemId, e)}
-											class="inline-flex items-center border border-line2 px-[7px] py-[2px] font-mono-system text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+											class="inline-flex items-center border border-line2 px-[7px] py-[2px] text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
 											title="Copy GEM ID"
 										>
 											{copiedGemId === result.gemId ? '✓' : 'Copy'}
@@ -1507,25 +1458,23 @@
 									{/if}
 								</div>
 								<div class="mt-[10px] flex flex-wrap items-center gap-x-4 gap-y-1">
-									<span
-										class="font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-									>
-										Record <span class="font-archivo text-[12px] tracking-[-0.01em] text-ink">
+									<span class="text-[11.5px] text-fade">
+										Record <span
+											class="text-[12px] font-semibold tracking-[-0.01em] text-ink tabular-nums"
+										>
 											{result.wins}-{result.losses}{result.draws > 0 ? `-${result.draws}` : ''}
 										</span>
 									</span>
-									<span
-										class="font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-									>
-										AGE Pts <span class="font-archivo text-[12px] tracking-[-0.01em] text-accent"
+									<span class="text-[11.5px] text-fade">
+										AGE Pts <span
+											class="text-[12px] font-semibold tracking-[-0.01em] text-[#8a6116] tabular-nums"
 											>{result.agePoints}</span
 										>
 									</span>
 									{#if result.prizeAmount}
-										<span
-											class="font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-										>
-											Prize <span class="font-archivo text-[12px] tracking-[-0.01em] text-prem"
+										<span class="text-[11.5px] text-fade">
+											Prize <span
+												class="text-[12px] font-semibold tracking-[-0.01em] text-prem tabular-nums"
 												>${result.prizeAmount}</span
 											>
 										</span>
@@ -1542,41 +1491,41 @@
 						<thead class="border-b-[1.5px] border-line2">
 							<tr class="text-left">
 								<th
-									class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 									>Place</th
 								>
 								<th
-									class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 									>Player</th
 								>
 								<th
-									class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 									>GEM ID</th
 								>
 								<th
-									class="px-4 py-[12px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="px-4 py-[12px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 									>Record</th
 								>
 								<th
-									class="px-4 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="px-4 py-[12px] text-right text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 									>AGE Pts</th
 								>
 								<th
-									class="px-4 py-[12px] text-right font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="px-4 py-[12px] text-right text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 									>Prize</th
 								>
 							</tr>
 						</thead>
 						<tbody>
 							{#each sortedResults as result (result.playerName + result.placement)}
-								<tr class="border-b border-line2 transition-colors hover:bg-panel">
+								<tr class="border-b border-line2 transition-colors hover:bg-paper">
 									<td class="px-4 py-[12px]">
 										<span
-											class="inline-flex h-[28px] w-[28px] items-center justify-center font-mono-system text-[11px] font-extrabold {result.placement ===
+											class="inline-flex h-[28px] w-[28px] items-center justify-center text-[12.5px] font-medium {result.placement ===
 											1
-												? 'bg-warm text-white'
+												? 'bg-gold text-white'
 												: result.placement <= 3
-													? 'bg-ink text-white'
+													? 'bg-ink text-paper-bg'
 													: 'border border-line2 text-fade'}"
 										>
 											{result.placement}
@@ -1587,16 +1536,14 @@
 									>
 									<td class="px-4 py-[12px]">
 										<div class="inline-flex items-center gap-2">
-											<code
-												class="font-mono-system text-[12px] font-bold tracking-[0.04em] text-warm"
-											>
+											<code class="text-[12.5px] font-medium text-warm">
 												{result.gemId || '—'}
 											</code>
 											{#if result.gemId && result.gemId !== '-'}
 												<button
 													type="button"
 													onclick={(e) => copyGemId(result.gemId, e)}
-													class="inline-flex items-center border border-line2 px-[7px] py-[2px] font-mono-system text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+													class="inline-flex items-center border border-line2 px-[7px] py-[2px] text-[9px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
 													title="Copy GEM ID"
 												>
 													{copiedGemId === result.gemId ? '✓' : 'Copy'}
@@ -1604,18 +1551,16 @@
 											{/if}
 										</div>
 									</td>
-									<td
-										class="px-4 py-[12px] font-archivo text-[15px] font-extrabold tracking-[-0.01em] text-ink"
-									>
+									<td class="px-4 py-[12px] text-[15px] font-semibold text-ink tabular-nums">
 										{result.wins}-{result.losses}{result.draws > 0 ? `-${result.draws}` : ''}
 									</td>
 									<td
-										class="px-4 py-[12px] text-right font-archivo text-[15px] font-extrabold tracking-[-0.01em] text-accent"
+										class="px-4 py-[12px] text-right text-[15px] font-semibold text-[#8a6116] tabular-nums"
 									>
 										{result.agePoints}
 									</td>
 									<td
-										class="px-4 py-[12px] text-right font-archivo text-[15px] font-extrabold tracking-[-0.01em] text-prem"
+										class="px-4 py-[12px] text-right text-[15px] font-semibold text-prem tabular-nums"
 									>
 										{result.prizeAmount ? `$${result.prizeAmount}` : '—'}
 									</td>
@@ -1633,9 +1578,7 @@
 		<div class="space-y-[24px]">
 			<div class="flex flex-wrap items-baseline justify-between gap-3">
 				<div>
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>
+					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 						Decklists
 					</span>
 					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
@@ -1645,7 +1588,7 @@
 				{#if !isCompleted}
 					<button
 						onclick={startNewDecklist}
-						class="inline-flex items-center bg-ink px-[14px] py-[9px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
+						class="inline-flex h-[32px] shrink-0 items-center gap-1.5 bg-ink px-3 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						+ Add Decklist
 					</button>
@@ -1654,10 +1597,8 @@
 
 			<!-- Decklist Form Modal -->
 			{#if showDecklistForm}
-				<div class="overflow-hidden border-[1.5px] border-ink p-6">
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>
+				<div class="overflow-hidden border border-line2 p-6">
+					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 						{editingDecklist ? 'Edit Decklist' : 'New Decklist'}
 					</span>
 					<h3
@@ -1670,7 +1611,7 @@
 						<div class="mb-[16px]">
 							<label
 								for="participantSearchInput"
-								class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 							>
 								Select from Registered Players
 							</label>
@@ -1681,7 +1622,7 @@
 									bind:value={participantSearch}
 									onfocus={() => (showParticipantDropdown = true)}
 									placeholder="Search by name or GEM ID"
-									class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
+									class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 								/>
 								{#if participantSearch}
 									<button
@@ -1697,7 +1638,7 @@
 								{/if}
 								{#if showParticipantDropdown}
 									<div
-										class="absolute z-10 mt-1 max-h-48 w-full overflow-auto border-[1.5px] border-ink bg-paper-bg shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
+										class="absolute z-10 mt-1 max-h-48 w-full overflow-auto border border-line2 bg-paper-bg"
 									>
 										{#if filteredParticipants.length === 0}
 											<div class="px-4 py-3 font-newsreader text-[14px] text-fade italic">
@@ -1712,15 +1653,13 @@
 														participantSearch = '';
 														showParticipantDropdown = false;
 													}}
-													class="flex w-full items-center justify-between gap-2 px-[14px] py-[8px] text-left transition-colors hover:bg-panel"
+													class="flex w-full items-center justify-between gap-2 px-[14px] py-[8px] text-left transition-colors hover:bg-paper"
 												>
 													<span class="font-newsreader text-[14px] font-semibold"
 														>{participant.playerName}</span
 													>
 													{#if participant.gemId}
-														<code
-															class="font-mono-system text-[11px] font-bold tracking-[0.04em] text-warm"
-														>
+														<code class="text-[12.5px] font-medium text-warm">
 															{participant.gemId}
 														</code>
 													{/if}
@@ -1739,11 +1678,7 @@
 									aria-label="Close dropdown"
 								></button>
 							{/if}
-							<p
-								class="mt-[8px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-							>
-								Or enter details manually below
-							</p>
+							<p class="mt-[8px] text-[11.5px] text-fade">Or enter details manually below</p>
 						</div>
 					{/if}
 
@@ -1774,7 +1709,7 @@
 							<div>
 								<label
 									for="deckPlayerName"
-									class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 								>
 									Player Name <span class="text-warm">*</span>
 								</label>
@@ -1786,7 +1721,7 @@
 									bind:value={decklistForm.playerName}
 									list="participantNames"
 									autocomplete="off"
-									class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink focus:outline-none"
+									class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 								/>
 								<datalist id="participantNames">
 									{#each data.participants as participant (participant.id || participant.playerName)}
@@ -1797,7 +1732,7 @@
 							<div>
 								<label
 									for="deckGemId"
-									class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 								>
 									GEM ID
 								</label>
@@ -1808,7 +1743,7 @@
 									bind:value={decklistForm.gemId}
 									list="participantGemIds"
 									autocomplete="off"
-									class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[13px] text-ink focus:outline-none"
+									class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 								/>
 								<datalist id="participantGemIds">
 									{#each data.participants.filter((p) => p.gemId) as participant (participant.gemId)}
@@ -1823,7 +1758,7 @@
 							<div class="relative">
 								<label
 									for="heroSearch"
-									class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 								>
 									Hero <span class="text-warm">*</span>
 								</label>
@@ -1839,7 +1774,7 @@
 										}}
 										placeholder="Search hero"
 										autocomplete="off"
-										class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
+										class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 									/>
 									{#if heroSearch}
 										<button
@@ -1857,7 +1792,7 @@
 								</div>
 								{#if showHeroDropdown}
 									<div
-										class="absolute z-20 mt-1 max-h-48 w-full overflow-auto border-[1.5px] border-ink bg-paper-bg shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
+										class="absolute z-20 mt-1 max-h-48 w-full overflow-auto border border-line2 bg-paper-bg"
 									>
 										{#if filteredHeroes.length === 0}
 											<div class="px-4 py-3 font-newsreader text-[14px] text-fade italic">
@@ -1868,15 +1803,13 @@
 												<button
 													type="button"
 													onclick={() => selectHero(hero)}
-													class="w-full px-[14px] py-[7px] text-left font-newsreader text-[14px] transition-colors hover:bg-panel"
+													class="w-full px-[14px] py-[7px] text-left font-newsreader text-[14px] transition-colors hover:bg-paper"
 												>
 													{hero}
 												</button>
 											{/each}
 											{#if filteredHeroes.length > 20}
-												<div
-													class="border-t border-line2 px-4 py-2 font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
-												>
+												<div class="text-[11.5px] text-fade">
 													+{filteredHeroes.length - 20} more…
 												</div>
 											{/if}
@@ -1895,7 +1828,7 @@
 							<div>
 								<label
 									for="placement"
-									class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 								>
 									Placement
 								</label>
@@ -1903,24 +1836,19 @@
 									id="placement"
 									name="placement"
 									bind:value={decklistForm.placement}
-									class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[13px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
+									class="h-[40px] w-full border border-line2 bg-paper py-0 pr-8 pl-3 text-[13px] text-ink focus:border-ink focus:ring-0"
 								>
 									<option value="">Select…</option>
-									<option value="1">1st Place</option>
-									<option value="2">2nd Place</option>
-									<option value="3">3rd Place</option>
-									<option value="4">4th Place</option>
-									<option value="5">5th Place</option>
-									<option value="6">6th Place</option>
-									<option value="7">7th Place</option>
-									<option value="8">8th Place</option>
+									{#each PLACEMENT_BANDS as band (band.value)}
+										<option value={band.value}>{band.label}</option>
+									{/each}
 								</select>
 							</div>
 
 							<div>
 								<label
 									for="deckFormat"
-									class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 								>
 									Format
 								</label>
@@ -1928,7 +1856,7 @@
 									id="deckFormat"
 									name="format"
 									bind:value={decklistForm.format}
-									class="w-full border-[1.5px] border-ink bg-paper-bg px-[12px] py-[10px] font-mono-system text-[13px] font-bold tracking-[0.06em] text-ink uppercase focus:outline-none"
+									class="h-[40px] w-full border border-line2 bg-paper py-0 pr-8 pl-3 text-[13px] text-ink focus:border-ink focus:ring-0"
 								>
 									{#each formats as fmt (fmt)}
 										<option value={fmt}>{fmt}</option>
@@ -1942,7 +1870,7 @@
 							<div>
 								<label
 									for="cardsText"
-									class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 								>
 									Decklist · GEM Format <span class="text-warm">*</span>
 								</label>
@@ -1959,11 +1887,9 @@ Pitch 0/1 (Red)
 3 Blade Flurry
 3 Sharpen Steel
 ..."
-									class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-mono-system text-[12px] leading-[1.5] text-ink placeholder:text-fade focus:outline-none"
+									class="w-full border border-line2 bg-paper px-3 py-2 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 								></textarea>
-								<p
-									class="mt-[8px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-								>
+								<p class="mt-[8px] text-[11.5px] text-fade">
 									Paste decklist directly from GEM export
 								</p>
 							</div>
@@ -1971,11 +1897,11 @@ Pitch 0/1 (Red)
 							<!-- Live Preview -->
 							<div>
 								<span
-									class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 								>
 									Preview
 								</span>
-								<div class="h-[400px] overflow-auto border-[1.5px] border-ink bg-panel p-4">
+								<div class="h-[400px] overflow-auto border border-line2 bg-paper p-4">
 									{#if decklistPreview.totals.total === 0}
 										<p class="font-newsreader text-[15px] text-soft italic">
 											Paste a decklist to see preview…
@@ -1985,7 +1911,7 @@ Pitch 0/1 (Red)
 											{#if decklistPreview.equipment.length > 0}
 												<div>
 													<h4
-														class="mb-[8px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+														class="mb-[8px] text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 													>
 														Equipment · {decklistPreview.totals.equipment}
 													</h4>
@@ -1993,8 +1919,7 @@ Pitch 0/1 (Red)
 														{#each decklistPreview.equipment as card, i (card.name + i)}
 															<div class="flex justify-between font-newsreader text-[13px]">
 																<span>{card.name}</span>
-																<span
-																	class="font-mono-system text-[11px] font-bold tracking-[0.04em] text-fade"
+																<span class="text-[12.5px] font-medium text-fade"
 																	>{card.quantity}</span
 																>
 															</div>
@@ -2005,7 +1930,7 @@ Pitch 0/1 (Red)
 											{#if decklistPreview.red.length > 0}
 												<div>
 													<h4
-														class="mb-[8px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase"
+														class="mb-[8px] text-[9.5px] font-extrabold tracking-[0.2em] text-warm uppercase"
 													>
 														Red · {decklistPreview.totals.red}
 													</h4>
@@ -2013,8 +1938,7 @@ Pitch 0/1 (Red)
 														{#each decklistPreview.red as card, i (card.name + i)}
 															<div class="flex justify-between font-newsreader text-[13px]">
 																<span>{card.name}</span>
-																<span
-																	class="font-mono-system text-[11px] font-bold tracking-[0.04em] text-fade"
+																<span class="text-[12.5px] font-medium text-fade"
 																	>{card.quantity}</span
 																>
 															</div>
@@ -2025,7 +1949,7 @@ Pitch 0/1 (Red)
 											{#if decklistPreview.yellow.length > 0}
 												<div>
 													<h4
-														class="mb-[8px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-accent uppercase"
+														class="mb-[8px] text-[9.5px] font-extrabold tracking-[0.18em] uppercase"
 													>
 														Yellow · {decklistPreview.totals.yellow}
 													</h4>
@@ -2033,8 +1957,7 @@ Pitch 0/1 (Red)
 														{#each decklistPreview.yellow as card, i (card.name + i)}
 															<div class="flex justify-between font-newsreader text-[13px]">
 																<span>{card.name}</span>
-																<span
-																	class="font-mono-system text-[11px] font-bold tracking-[0.04em] text-fade"
+																<span class="text-[12.5px] font-medium text-fade"
 																	>{card.quantity}</span
 																>
 															</div>
@@ -2045,7 +1968,7 @@ Pitch 0/1 (Red)
 											{#if decklistPreview.blue.length > 0}
 												<div>
 													<h4
-														class="mb-[8px] font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-prem uppercase"
+														class="mb-[8px] text-[9.5px] font-extrabold tracking-[0.18em] uppercase"
 													>
 														Blue · {decklistPreview.totals.blue}
 													</h4>
@@ -2053,8 +1976,7 @@ Pitch 0/1 (Red)
 														{#each decklistPreview.blue as card, i (card.name + i)}
 															<div class="flex justify-between font-newsreader text-[13px]">
 																<span>{card.name}</span>
-																<span
-																	class="font-mono-system text-[11px] font-bold tracking-[0.04em] text-fade"
+																<span class="text-[12.5px] font-medium text-fade"
 																	>{card.quantity}</span
 																>
 															</div>
@@ -2065,12 +1987,10 @@ Pitch 0/1 (Red)
 											<div class="border-t border-line2 pt-[10px]">
 												<div class="flex justify-between">
 													<span
-														class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+														class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 														>Total Cards</span
 													>
-													<span
-														class="font-archivo text-[15px] font-extrabold tracking-[-0.01em] text-ink"
-													>
+													<span class="text-[15px] font-semibold text-ink tabular-nums">
 														{decklistPreview.totals.total}
 													</span>
 												</div>
@@ -2086,7 +2006,7 @@ Pitch 0/1 (Red)
 								type="checkbox"
 								id="isPublicCheck"
 								bind:checked={decklistForm.isPublic}
-								class="h-[16px] w-[16px] border-ink accent-[color:var(--ed-warm)]"
+								class="h-4 w-4 border-line2 text-ink focus:ring-0"
 							/>
 							<span class="font-newsreader text-[14px] font-semibold">
 								Make this decklist public
@@ -2097,13 +2017,13 @@ Pitch 0/1 (Red)
 							<button
 								type="button"
 								onclick={cancelDecklistForm}
-								class="inline-flex items-center border border-line2 px-[18px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+								class="inline-flex h-[40px] shrink-0 items-center gap-2 border border-line2 px-4 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
 							>
 								Cancel
 							</button>
 							<button
 								type="submit"
-								class="inline-flex items-center bg-ink px-[22px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125"
+								class="inline-flex h-[40px] shrink-0 items-center gap-2 bg-ink px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								Save Decklist →
 							</button>
@@ -2115,12 +2035,12 @@ Pitch 0/1 (Red)
 			<!-- Decklists Grid -->
 			<div class="grid grid-cols-1 gap-[16px] md:grid-cols-2 lg:grid-cols-3">
 				{#if data.existingDecklists?.length === 0}
-					<div class="col-span-full border-[1.5px] border-ink p-12 text-center">
-						<p class="font-newsreader text-[19px] text-soft italic">No decklists recorded yet.</p>
+					<div class="col-span-full border border-line2 p-12 text-center">
+						<p class="font-newsreader text-[17px] text-soft italic">No decklists recorded yet.</p>
 						{#if !isCompleted}
 							<button
 								onclick={startNewDecklist}
-								class="mt-4 font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] text-warm uppercase transition-colors hover:text-ink"
+								class="mt-4 text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase transition-colors hover:text-ink"
 							>
 								Add the first decklist →
 							</button>
@@ -2128,27 +2048,25 @@ Pitch 0/1 (Red)
 					</div>
 				{:else}
 					{#each data.existingDecklists.sort((a, b) => (a.placement || 99) - (b.placement || 99)) as decklist (decklist.id)}
-						<div class="overflow-hidden border-[1.5px] border-ink p-4">
+						<div class="overflow-hidden border border-line2 p-4">
 							<div class="mb-[10px] flex items-start justify-between">
 								<div class="flex items-start gap-3">
 									{#if decklist.placement}
 										<span
-											class="inline-flex h-[28px] w-[28px] items-center justify-center font-mono-system text-[11px] font-extrabold {decklist.placement ===
+											class="inline-flex h-[28px] shrink-0 items-center justify-center px-2 text-[11px] font-bold whitespace-nowrap {decklist.placement ===
 											1
-												? 'bg-warm text-white'
-												: decklist.placement <= 3
-													? 'bg-ink text-white'
+												? 'bg-gold text-white'
+												: decklist.placement <= 4
+													? 'bg-ink text-paper-bg'
 													: 'border border-line2 text-fade'}"
 										>
-											{decklist.placement}
+											{placementLabel(decklist.placement)}
 										</span>
 									{/if}
 									<div>
 										<h4 class="font-newsreader text-[16px] font-semibold">{decklist.playerName}</h4>
 										{#if decklist.hero}
-											<p
-												class="mt-[2px] font-mono-system text-[11px] font-bold tracking-[0.06em] text-warm uppercase"
-											>
+											<p class="mt-[2px] text-[9.5px] font-extrabold tracking-[0.18em] uppercase">
 												{decklist.hero}
 											</p>
 										{/if}
@@ -2158,7 +2076,7 @@ Pitch 0/1 (Red)
 									<div class="flex gap-2">
 										<button
 											onclick={() => editDecklist(decklist)}
-											class="font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase transition-colors hover:text-ink"
+											class="text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase transition-colors hover:text-ink"
 										>
 											Edit
 										</button>
@@ -2177,7 +2095,7 @@ Pitch 0/1 (Red)
 											<input type="hidden" name="decklistId" value={decklist.id} />
 											<button
 												type="submit"
-												class="font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-warm uppercase transition-colors hover:text-ink"
+												class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase transition-colors hover:text-ink"
 											>
 												Del
 											</button>
@@ -2185,9 +2103,7 @@ Pitch 0/1 (Red)
 									</div>
 								{/if}
 							</div>
-							<div
-								class="flex items-center gap-2 border-t border-line2 pt-[10px] font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
-							>
+							<div class="flex items-center gap-2 text-[11.5px] text-fade">
 								<span>{decklist.cards?.reduce((sum, c) => sum + c.quantity, 0) || 0} cards</span>
 								<span>·</span>
 								<span>{decklist.format || 'Unknown'}</span>
@@ -2197,9 +2113,7 @@ Pitch 0/1 (Red)
 								{/if}
 							</div>
 							{#if !decklist.isPublic}
-								<span
-									class="mt-[8px] inline-block bg-warm px-[7px] py-[2px] font-mono-system text-[9px] font-bold tracking-[0.1em] text-white uppercase"
-								>
+								<span class="mt-[8px] text-[9.5px] font-extrabold tracking-[0.18em] uppercase">
 									Private
 								</span>
 							{/if}
@@ -2214,11 +2128,9 @@ Pitch 0/1 (Red)
 	{#if activeTab === 'metagame'}
 		<div class="space-y-[24px]">
 			<!-- Upload -->
-			<div class="overflow-hidden border-[1.5px] border-ink">
+			<div class="overflow-hidden border border-line2">
 				<div class="border-b border-line2 p-5">
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>
+					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 						Upload Hero Data
 					</span>
 					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
@@ -2231,10 +2143,8 @@ Pitch 0/1 (Red)
 
 				<div class="p-5">
 					{#if !data.event.circuit || !data.event.month}
-						<div class="border-[1.5px] border-warm bg-warm/10 p-4">
-							<span
-								class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase"
-							>
+						<div class="border-l-[3px] border-gold bg-gold/10 p-4">
+							<span class="text-[9.5px] font-extrabold tracking-[0.2em] text-[#8a6116] uppercase">
 								Setup Required
 							</span>
 							<p class="mt-[6px] text-[13px] leading-[1.5] text-soft">
@@ -2246,10 +2156,11 @@ Pitch 0/1 (Red)
 							method="POST"
 							action="?/uploadHeroes"
 							enctype="multipart/form-data"
+							use:enhance={heroesEnhance}
 							class="space-y-[16px]"
 						>
 							<div
-								class="border-[1.5px] border-dashed border-line2 bg-panel p-4 transition-colors hover:border-ink {heroesFile &&
+								class="border border-dashed border-line2 bg-paper p-4 transition-colors hover:border-ink {heroesFile &&
 								heroesFile.length > 0
 									? 'border-prem bg-prem/10'
 									: ''}"
@@ -2265,7 +2176,7 @@ Pitch 0/1 (Red)
 								/>
 								<label for="heroesFile" class="flex cursor-pointer items-center gap-3">
 									<span
-										class="inline-flex h-[36px] w-[36px] shrink-0 items-center justify-center font-mono-system text-[13px] font-extrabold {heroesFile &&
+										class="inline-flex h-[36px] w-[36px] shrink-0 items-center justify-center text-[13px] font-extrabold {heroesFile &&
 										heroesFile.length > 0
 											? 'bg-prem text-white'
 											: 'border border-line2 text-fade'}"
@@ -2274,9 +2185,7 @@ Pitch 0/1 (Red)
 									</span>
 									<div class="min-w-0 flex-1">
 										{#if heroesFile && heroesFile.length > 0}
-											<p
-												class="truncate font-mono-system text-[13px] font-bold tracking-[0.02em] text-prem"
-											>
+											<p class="truncate text-[12.5px] font-medium text-prem">
 												{heroesFile[0].name}
 											</p>
 										{:else}
@@ -2290,10 +2199,8 @@ Pitch 0/1 (Red)
 							</div>
 
 							{#if data.existingHeroes?.length > 0}
-								<div class="border-[1.5px] border-warm bg-warm/10 p-3">
-									<p
-										class="font-mono-system text-[10.5px] font-bold tracking-[0.08em] text-warm uppercase"
-									>
+								<div class="border-l-[3px] border-gold bg-gold/10 p-3">
+									<p class="text-[9.5px] font-extrabold tracking-[0.18em] text-[#8a6116] uppercase">
 										Warning · will replace {data.existingHeroes.length} existing entries
 									</p>
 								</div>
@@ -2303,7 +2210,7 @@ Pitch 0/1 (Red)
 								<button
 									type="submit"
 									disabled={heroesProcessing || !heroesFile}
-									class="inline-flex flex-1 items-center justify-center bg-ink px-[22px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-125 disabled:cursor-not-allowed disabled:opacity-50"
+									class="inline-flex h-[40px] flex-1 shrink-0 items-center justify-center gap-2 bg-ink px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-50"
 								>
 									{heroesProcessing ? 'Processing…' : 'Upload Heroes →'}
 								</button>
@@ -2311,7 +2218,7 @@ Pitch 0/1 (Red)
 									<button
 										type="submit"
 										formaction="?/deleteHeroes"
-										class="inline-flex items-center border border-warm px-[14px] py-[11px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] text-warm uppercase transition-colors hover:bg-warm hover:text-white"
+										class="inline-flex h-[40px] shrink-0 items-center gap-2 border border-hero-rb/60 px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-hero-rb uppercase transition-colors hover:border-hero-rb disabled:cursor-not-allowed disabled:opacity-40"
 									>
 										Clear All
 									</button>
@@ -2323,26 +2230,22 @@ Pitch 0/1 (Red)
 			</div>
 
 			<!-- Metagame Breakdown -->
-			<div class="overflow-hidden border-[1.5px] border-ink">
+			<div class="overflow-hidden border border-line2">
 				<div class="border-b border-line2 p-5">
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>
+					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 						Metagame Breakdown
 					</span>
 					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
 						The field.
 					</h2>
-					<p
-						class="mt-[6px] font-mono-system text-[10.5px] font-bold tracking-[0.08em] text-fade uppercase"
-					>
+					<p class="mt-[6px] text-[11.5px] text-fade">
 						{data.existingHeroes?.length || 0} players registered
 					</p>
 				</div>
 
 				{#if !data.existingHeroes?.length}
 					<div class="p-12 text-center">
-						<p class="font-newsreader text-[19px] text-soft italic">No hero data uploaded yet.</p>
+						<p class="font-newsreader text-[17px] text-soft italic">No hero data uploaded yet.</p>
 						<p class="mt-2 text-[13px] text-fade">
 							Upload a heroes CSV to see the metagame breakdown.
 						</p>
@@ -2351,17 +2254,13 @@ Pitch 0/1 (Red)
 					<div class="space-y-[14px] p-5">
 						{#each heroBreakdown() as { hero, count, percentage }, idx (hero + idx)}
 							<div class="flex items-center gap-4">
-								<span
-									class="w-[24px] text-right font-mono-system text-[11px] font-extrabold tracking-[0.06em] text-fade"
-								>
+								<span class="w-[24px] text-right text-[12.5px] font-medium text-fade">
 									{idx + 1}
 								</span>
 								<div class="min-w-0 flex-1">
 									<div class="mb-[6px] flex items-baseline justify-between gap-3">
 										<span class="truncate font-newsreader text-[15px] font-semibold">{hero}</span>
-										<span
-											class="shrink-0 font-mono-system text-[10.5px] font-bold tracking-[0.08em] text-fade uppercase"
-										>
+										<span class="shrink-0 text-[11.5px] text-fade">
 											{count}
 											<span class="text-warm">· {percentage}%</span>
 										</span>
@@ -2375,22 +2274,18 @@ Pitch 0/1 (Red)
 					</div>
 
 					<div class="border-t border-line2 p-5">
-						<span
-							class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-						>
+						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 							All Players
 						</span>
 						<div
 							class="mt-[14px] grid max-h-96 grid-cols-1 gap-[8px] overflow-y-auto sm:grid-cols-2 lg:grid-cols-3"
 						>
 							{#each data.existingHeroes.sort( (a, b) => a.playerName.localeCompare(b.playerName) ) as entry (entry.playerName + entry.hero)}
-								<div class="flex items-center gap-2 border border-line2 bg-panel p-2">
+								<div class="flex items-center gap-2 border border-line2 bg-paper p-2">
 									<span class="flex-1 truncate font-newsreader text-[13px] font-semibold"
 										>{entry.playerName}</span
 									>
-									<span
-										class="truncate font-mono-system text-[10.5px] font-bold tracking-[0.04em] text-warm uppercase"
-									>
+									<span class="truncate text-[9.5px] font-extrabold tracking-[0.18em] uppercase">
 										{entry.hero}
 									</span>
 								</div>
@@ -2406,11 +2301,9 @@ Pitch 0/1 (Red)
 	{#if activeTab === 'staff' && data.isAdmin}
 		<div class="space-y-[24px]">
 			<!-- Assigned Staff -->
-			<div class="overflow-hidden border-[1.5px] border-ink">
+			<div class="overflow-hidden border border-line2">
 				<div class="border-b border-line2 p-5">
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>
+					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 						Assigned Staff
 					</span>
 					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
@@ -2424,15 +2317,13 @@ Pitch 0/1 (Red)
 								<div class="flex items-center justify-between border border-line2 p-4">
 									<div class="flex items-center gap-3">
 										<span
-											class="flex h-[36px] w-[36px] items-center justify-center border-[1.5px] border-ink bg-panel font-newsreader text-[15px] font-semibold"
+											class="flex h-[36px] w-[36px] items-center justify-center border border-line2 bg-paper font-newsreader text-[15px] font-semibold"
 										>
 											{staff.userEmail?.charAt(0).toUpperCase() || '?'}
 										</span>
 										<div>
 											<div class="font-newsreader text-[15px] font-semibold">{staff.userEmail}</div>
-											<div
-												class="mt-[2px] font-mono-system text-[10px] font-bold tracking-[0.06em] text-fade uppercase"
-											>
+											<div class="mt-[2px] text-[11.5px] text-fade">
 												Assigned {formatShortDate(staff.createdAt)}
 											</div>
 										</div>
@@ -2441,7 +2332,7 @@ Pitch 0/1 (Red)
 										<input type="hidden" name="staffId" value={staff.userId} />
 										<button
 											type="submit"
-											class="inline-flex items-center bg-warm px-[12px] py-[7px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+											class="inline-flex h-[32px] shrink-0 items-center px-2 text-[10px] font-extrabold tracking-[0.14em] text-hero-rb uppercase transition-colors hover:text-ink disabled:opacity-40"
 										>
 											Remove
 										</button>
@@ -2451,7 +2342,7 @@ Pitch 0/1 (Red)
 						</div>
 					{:else}
 						<div class="p-8 text-center">
-							<p class="font-newsreader text-[19px] text-soft italic">
+							<p class="font-newsreader text-[17px] text-soft italic">
 								No staff assigned to this event.
 							</p>
 							<p class="mt-2 text-[13px] text-fade">
@@ -2463,11 +2354,9 @@ Pitch 0/1 (Red)
 			</div>
 
 			<!-- Add Staff -->
-			<div class="overflow-hidden border-[1.5px] border-ink">
+			<div class="overflow-hidden border border-line2">
 				<div class="border-b border-line2 p-5">
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
-					>
+					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 						Add Staff
 					</span>
 					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
@@ -2481,7 +2370,7 @@ Pitch 0/1 (Red)
 					<div class="mb-[16px]">
 						<label
 							for="staff-search"
-							class="mb-[8px] block font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 						>
 							Search by Email
 						</label>
@@ -2492,7 +2381,7 @@ Pitch 0/1 (Red)
 								value={staffSearch}
 								oninput={(e) => handleStaffSearchInput(e.target.value)}
 								placeholder="Email address · min 3 characters"
-								class="w-full border-[1.5px] border-ink bg-paper-bg px-[14px] py-[10px] font-newsreader text-[15px] text-ink placeholder:text-fade focus:outline-none"
+								class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
 							/>
 							{#if staffSearchLoading}
 								<div class="absolute top-1/2 right-3 -translate-y-1/2">
@@ -2514,11 +2403,7 @@ Pitch 0/1 (Red)
 								</div>
 							{/if}
 						</div>
-						<p
-							class="mt-[8px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-						>
-							Type at least 3 characters
-						</p>
+						<p class="mt-[8px] text-[11.5px] text-fade">Type at least 3 characters</p>
 					</div>
 
 					{#if staffSearchResults.length > 0}
@@ -2533,7 +2418,7 @@ Pitch 0/1 (Red)
 									<input type="hidden" name="staffId" value={userResult.id} />
 									<div class="flex items-center gap-3">
 										<span
-											class="flex h-[36px] w-[36px] items-center justify-center border border-line2 bg-panel font-newsreader text-[15px] font-semibold"
+											class="flex h-[36px] w-[36px] items-center justify-center border border-line2 bg-paper font-newsreader text-[15px] font-semibold"
 										>
 											{userResult.email?.charAt(0).toUpperCase() || '?'}
 										</span>
@@ -2541,16 +2426,14 @@ Pitch 0/1 (Red)
 											<div class="font-newsreader text-[15px] font-semibold">
 												{userResult.email}
 											</div>
-											<div
-												class="mt-[2px] font-mono-system text-[10px] font-bold tracking-[0.08em] text-fade uppercase"
-											>
+											<div class="mt-[2px] text-[11.5px] text-fade">
 												Role · {userResult.role || 'user'}
 											</div>
 										</div>
 									</div>
 									<button
 										type="submit"
-										class="inline-flex items-center bg-prem px-[14px] py-[7px] font-mono-system text-[10px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+										class="inline-flex h-[32px] shrink-0 items-center gap-1.5 bg-prem px-3 text-[10px] font-extrabold tracking-[0.14em] text-white uppercase transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
 									>
 										Assign
 									</button>
@@ -2579,18 +2462,12 @@ Pitch 0/1 (Red)
 <!-- Delete Confirmation Modal -->
 {#if showDeleteConfirm}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-		<div
-			class="w-full max-w-md border-[3px] border-double border-ink bg-paper-bg shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
-		>
+		<div class="w-full max-w-md border border-t-[3px] border-line2 border-t-ink bg-paper-bg">
 			<div class="border-b border-line2 p-6">
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
-				>
+				<span class="text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase">
 					Danger Zone
 				</span>
-				<h3 class="mt-[6px] font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
-					Delete this event?
-				</h3>
+				<h3 class="mt-[6px] font-newsreader text-[22px] font-semibold">Delete this event?</h3>
 				<p class="mt-[4px] font-newsreader text-[15px] text-soft italic">
 					This action cannot be undone.
 				</p>
@@ -2605,14 +2482,14 @@ Pitch 0/1 (Red)
 				<button
 					type="button"
 					onclick={() => (showDeleteConfirm = false)}
-					class="inline-flex items-center border border-line2 px-[16px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+					class="inline-flex items-center border border-line2 px-[16px] py-[10px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
 				>
 					Cancel
 				</button>
 				<form method="POST" action="?/deleteEvent">
 					<button
 						type="submit"
-						class="inline-flex items-center bg-warm px-[18px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110"
+						class="inline-flex h-[40px] shrink-0 items-center bg-hero-rb px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
 					>
 						Delete Event
 					</button>
@@ -2625,18 +2502,10 @@ Pitch 0/1 (Red)
 <!-- Close Event Confirmation Modal -->
 {#if showCloseConfirm}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-		<div
-			class="w-full max-w-lg border-[3px] border-double border-ink bg-paper-bg shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
-		>
+		<div class="w-full max-w-lg border border-t-[3px] border-line2 border-t-ink bg-paper-bg">
 			<div class="border-b border-line2 p-6">
-				<span
-					class="font-mono-system text-[10px] font-extrabold tracking-[0.16em] text-prem uppercase"
-				>
-					Finalize
-				</span>
-				<h3 class="mt-[6px] font-newsreader text-[26px] font-semibold tracking-[-0.01em]">
-					Close this event?
-				</h3>
+				<span class="text-[9.5px] font-extrabold tracking-[0.18em] uppercase"> Finalize </span>
+				<h3 class="mt-[6px] font-newsreader text-[22px] font-semibold">Close this event?</h3>
 				<p class="mt-[4px] font-newsreader text-[15px] text-soft italic">
 					Season standings will be updated with results.
 				</p>
@@ -2644,49 +2513,31 @@ Pitch 0/1 (Red)
 
 			<div class="space-y-[16px] p-6">
 				<!-- Summary -->
-				<div class="border border-line2 bg-panel p-4">
-					<span
-						class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-					>
+				<div class="border border-line2 bg-paper p-4">
+					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
 						Summary
 					</span>
 					<dl class="mt-[10px] space-y-[6px]">
 						<div class="flex justify-between">
-							<dt
-								class="font-mono-system text-[11px] font-bold tracking-[0.06em] text-fade uppercase"
-							>
-								Results Recorded
-							</dt>
-							<dd class="font-archivo text-[14px] font-extrabold tracking-[-0.01em] text-ink">
+							<dt class="text-[11.5px] text-fade">Results Recorded</dt>
+							<dd class="text-[14px] font-semibold text-ink tabular-nums">
 								{data.existingResults?.length || 0}
 							</dd>
 						</div>
 						<div class="flex justify-between">
-							<dt
-								class="font-mono-system text-[11px] font-bold tracking-[0.06em] text-fade uppercase"
-							>
-								Decklists Recorded
-							</dt>
-							<dd class="font-archivo text-[14px] font-extrabold tracking-[-0.01em] text-ink">
+							<dt class="text-[11.5px] text-fade">Decklists Recorded</dt>
+							<dd class="text-[14px] font-semibold text-ink tabular-nums">
 								{data.existingDecklists?.length || 0}
 							</dd>
 						</div>
 						<div class="flex justify-between">
-							<dt
-								class="font-mono-system text-[11px] font-bold tracking-[0.06em] text-fade uppercase"
-							>
-								Registered Players
-							</dt>
-							<dd class="font-archivo text-[14px] font-extrabold tracking-[-0.01em] text-ink">
+							<dt class="text-[11.5px] text-fade">Registered Players</dt>
+							<dd class="text-[14px] font-semibold text-ink tabular-nums">
 								{data.participants?.length || 0}
 							</dd>
 						</div>
 						<div class="flex justify-between">
-							<dt
-								class="font-mono-system text-[11px] font-bold tracking-[0.06em] text-fade uppercase"
-							>
-								Circuit
-							</dt>
+							<dt class="text-[11.5px] text-fade">Circuit</dt>
 							<dd class="font-newsreader text-[13px] font-semibold text-ink">
 								{data.event.circuit || 'Not set'}
 							</dd>
@@ -2695,9 +2546,8 @@ Pitch 0/1 (Red)
 				</div>
 
 				{#if !hasResults}
-					<div class="border-[1.5px] border-warm p-3">
-						<span
-							class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase"
+					<div class="border-l-[3px] border-gold bg-gold/10 p-3">
+						<span class="text-[9.5px] font-extrabold tracking-[0.2em] text-[#8a6116] uppercase"
 							>Warning</span
 						>
 						<p class="mt-[2px] text-[13px] text-soft">
@@ -2707,10 +2557,9 @@ Pitch 0/1 (Red)
 				{/if}
 
 				{#if !data.event.circuit}
-					<div class="border-[1.5px] border-warm bg-warm p-3 text-white">
-						<span
-							class="font-mono-system text-[10px] font-extrabold tracking-[0.14em] uppercase"
-							style="color: rgba(255,255,255,0.75);">Error</span
+					<div class="border-l-[3px] border-hero-rb bg-hero-rb/[0.06] p-3">
+						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-hero-rb uppercase"
+							>Error</span
 						>
 						<p class="mt-[2px] font-newsreader text-[14px] font-semibold">
 							This event has no circuit assigned. Edit the event to add one before closing.
@@ -2727,7 +2576,7 @@ Pitch 0/1 (Red)
 				<button
 					type="button"
 					onclick={() => (showCloseConfirm = false)}
-					class="inline-flex items-center border border-line2 px-[16px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+					class="inline-flex items-center border border-line2 px-[16px] py-[10px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
 				>
 					Cancel
 				</button>
@@ -2735,7 +2584,7 @@ Pitch 0/1 (Red)
 					<button
 						type="submit"
 						disabled={!hasResults || !data.event.circuit}
-						class="inline-flex items-center bg-prem px-[18px] py-[10px] font-mono-system text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+						class="inline-flex h-[40px] shrink-0 items-center bg-prem px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						Close Event →
 					</button>

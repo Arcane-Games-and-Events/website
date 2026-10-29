@@ -50,7 +50,8 @@
 	$: hasCover = !isVideoEntry && !!data.article.coverImage?.src;
 	$: videoPoster = data.article.thumbnailImage?.src || data.article.coverImage?.src || '';
 	$: lengthLabel = data.article.readTime ? `${data.article.readTime} min read` : '';
-	$: authorBioHtml = data.article.author?.bio ? renderContent(data.article.author.bio) : '';
+	// The server already turned the profile bio into escaped HTML (bioToHtml).
+	$: authorBioHtml = data.article.author?.bio || '';
 	$: authorLinks = (data.article.author?.socialLinks || [])
 		.slice(0, 3)
 		.map((link) => ({ label: getLinkLabel(link), href: normalizeUrl(link.url) }));

@@ -1,4 +1,11 @@
 <script>
+	import { trackConversion } from '$lib/analytics/siteTracker.js';
+	let checkoutNoted = false;
+	function noteCheckout() {
+		if (checkoutNoted) return;
+		checkoutNoted = true;
+		trackConversion('checkout_started');
+	}
 	/**
 	 * Editorial Premium payment form.
 	 *
@@ -139,6 +146,7 @@
 			</label>
 			<input
 				id="cardNumber"
+				onfocus={noteCheckout}
 				type="text"
 				inputmode="numeric"
 				maxlength="19"

@@ -41,10 +41,42 @@ function getClient() {
 	return g.__ageDbClient;
 }
 
+/**
+ * Run `fn(tx)` inside one database transaction and return its result.
+ *
+ * Drizzle's own `db.transaction` goes through postgres-js `sql.begin`, which
+ * only marks its connection as reserved from the pipelining hook — and
+ * pipelining is off here (`max_pipeline: 0` above), so `sql.begin` raises
+ * UNSAFE_TRANSACTION every time. Instead a connection is reserved outright,
+ * BEGIN/COMMIT run on it, and `fn` gets a Drizzle handle bound to that one
+ * connection. The transaction-mode pooler keeps a single server connection
+ * for the whole BEGIN…COMMIT, so the queries inside can't cross.
+ */
+export async function transaction(fn) {
+	const client = getClient();
+	const reserved = await client.reserve();
+	// Drizzle reads type parsers off `client.options`; a reserved handle has
+	// none of its own, so point it at the pool's.
+	reserved.options = client.options;
+	try {
+		await reserved`begin`;
+		const result = await fn(drizzle(reserved, { schema }));
+		await reserved`commit`;
+		return result;
+	} catch (err) {
+		await reserved`rollback`.catch(() => {});
+		throw err;
+	} finally {
+		reserved.release();
+	}
+}
+
 export const db = new Proxy(
 	{},
 	{
 		get(_, prop) {
+			// Keep the familiar `db.transaction(fn)` shape, see above.
+			if (prop === 'transaction') return transaction;
 			if (!g.__ageDbDrizzle) {
 				g.__ageDbDrizzle = drizzle(getClient(), { schema });
 			}

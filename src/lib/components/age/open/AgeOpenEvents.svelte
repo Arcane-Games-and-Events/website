@@ -51,7 +51,9 @@
 			.sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
 			.map((e) => ({
 				id: e.id,
-				href: `/age-open/${e.id}`,
+				// A running event links to its live standings rather than sign-up.
+				live: e.status === 'in_progress',
+				href: e.status === 'in_progress' ? `/age-open/${e.id}/results` : `/age-open/${e.id}`,
 				title: e.title || `AGE Open · ${e.circuit || ''}`,
 				circuit: e.circuit || '',
 				venue: e.location || '',
@@ -282,14 +284,18 @@
 												style="color: {circuitVar(e.circuit)};">{e.circuit}</span
 											>
 											<span
-												class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+												class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] uppercase {e.live
+													? 'text-hero-rb'
+													: 'text-fade'}"
 											>
 												<span
 													class="h-[6px] w-[6px] animate-pulse-dot rounded-full"
-													style="background: {circuitVar(e.circuit)};"
+													style="background: {e.live
+														? 'var(--ed-hero-rb)'
+														: circuitVar(e.circuit)};"
 													aria-hidden="true"
 												></span>
-												{countdown(e.days)}
+												{e.live ? 'Live now · standings →' : countdown(e.days)}
 											</span>
 										</span>
 										<span
@@ -339,8 +345,9 @@
 												>{/if}
 										</span>
 										<span
-											class="inline-flex items-center bg-warm px-4 py-2.5 text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap text-white uppercase transition-colors group-hover:bg-ink"
-											>Sign up →</span
+											class="inline-flex items-center px-4 py-2.5 text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap text-white uppercase transition-colors group-hover:bg-ink {e.live
+												? 'bg-hero-rb'
+												: 'bg-warm'}">{e.live ? 'Standings →' : 'Sign up →'}</span
 										>
 									</span>
 								</a>

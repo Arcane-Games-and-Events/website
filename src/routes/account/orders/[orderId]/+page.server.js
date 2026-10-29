@@ -1,5 +1,6 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
+import { markRefunded } from '$lib/server/payments/ledger.js';
 import { order, ticket, entitlement, event } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
@@ -158,6 +159,9 @@ export const actions = {
 				});
 				refundType = 'refunded';
 			}
+
+			await markRefunded(orderData.providerRef, orderData.amount);
+			await db.update(order).set({ refundedAt: new Date() }).where(eq(order.id, orderData.id));
 
 			// Handle refund based on order type
 			if (orderData.meta?.type === 'ticket' && orderData.meta.ticketId) {
