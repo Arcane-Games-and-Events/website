@@ -607,10 +607,14 @@
 <style>
 	/* Phones and tablets: the whole cover, edge to edge, its bottom edge
 	   melting into the blur, with the copy straight below it. The hero is as
-	   tall as the two together. */
+	   tall as the two together.
+	   The fade is masked on each image, not on .cover: iOS Safari can paint a
+	   masked, clipped box with an animated child as nothing at all. */
 	.cover {
 		aspect-ratio: 16 / 9;
 		width: 100%;
+	}
+	.cover img {
 		-webkit-mask-image: linear-gradient(180deg, #000 80%, transparent);
 		mask-image: linear-gradient(180deg, #000 80%, transparent);
 	}
@@ -627,10 +631,12 @@
 		}
 		.cover {
 			width: min(100cqw, 100cqh * 16 / 9);
+		}
+		.cover img {
 			-webkit-mask-image: linear-gradient(180deg, #000 86%, transparent);
 			mask-image: linear-gradient(180deg, #000 86%, transparent);
 		}
-		.cover.cover-wide {
+		.cover-wide img {
 			-webkit-mask-image: linear-gradient(180deg, #000 86%, transparent),
 				linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
 			-webkit-mask-composite: source-in;
