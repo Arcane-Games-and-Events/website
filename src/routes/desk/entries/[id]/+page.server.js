@@ -3,6 +3,8 @@ import { db } from '$lib/server/db/index.js';
 import { deskEntry, deskMedia, user as userTable } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { canEditEntries, isAdmin, canEditEntry } from '$lib/server/auth/roles.js';
+import { toLibraryItem } from '$lib/server/media/library.js';
+import { getEntryTag, listTags } from '$lib/server/desk/tags.js';
 
 export async function load({ params, locals }) {
 	if (!canEditEntries(locals.user)) throw redirect(302, '/desk');
@@ -17,7 +19,7 @@ export async function load({ params, locals }) {
 	const editingCoverId = entry.draftCoverImageId || entry.coverImageId;
 	const editingThumbnailId = entry.draftThumbnailImageId || entry.thumbnailImageId;
 
-	const [coverImage, thumbnailImage, author] = await Promise.all([
+	const [coverImage, thumbnailImage, author, tag, tags] = await Promise.all([
 		editingCoverId
 			? db
 					.select()
@@ -46,14 +48,19 @@ export async function load({ params, locals }) {
 					.where(eq(userTable.id, entry.authorId))
 					.limit(1)
 					.then((r) => r[0] || null)
-			: Promise.resolve(null)
+			: Promise.resolve(null),
+		getEntryTag(entry.id),
+		listTags()
 	]);
 
 	return {
 		entry,
-		coverImage,
-		thumbnailImage,
+		// library items, so the pickers can show the responsive preview
+		coverImage: coverImage ? toLibraryItem(coverImage) : null,
+		thumbnailImage: thumbnailImage ? toLibraryItem(thumbnailImage) : null,
 		author,
+		tag,
+		tags,
 		isAdmin: isAdmin(locals.user)
 	};
 }

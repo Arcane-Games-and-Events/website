@@ -1,6 +1,6 @@
 <script>
 	/**
-	 * Desk tabs — Home / Entries / Courses / Analytics / Users / Profile.
+	 * Desk tabs — Home / Entries / Courses / Images / Analytics / Users / Profile.
 	 *
 	 * Each Desk page places this right under its own ink header, so the tabs
 	 * read as the bottom edge of that band. It sticks just under the site
@@ -23,9 +23,11 @@
 					? 'users'
 					: path.startsWith('/desk/analytics')
 						? 'analytics'
-						: path.startsWith('/desk/profile')
-							? 'profile'
-							: 'entries'
+						: path.startsWith('/desk/images')
+							? 'images'
+							: path.startsWith('/desk/profile')
+								? 'profile'
+								: 'entries'
 	);
 	// 20×20 line icons for the phone tab bar.
 	const ICON = {
@@ -34,6 +36,7 @@
 		courses:
 			'M2.5 7 10 3.5 17.5 7 10 10.5zM5.5 8.5V13c1.3 1.2 2.8 1.8 4.5 1.8s3.2-.6 4.5-1.8V8.5M17.5 7v4.5',
 		analytics: 'M3.5 16.5h13M5.5 16.5V11M9 16.5V6.5M12.5 16.5v-6M16 16.5V4',
+		images: 'M3.5 4.5h13v11h-13zM3.5 13l4-4 3.5 3.5 2-2 3.5 3.5M12.75 7.75h.01',
 		users:
 			'M7.5 9.5a2.75 2.75 0 1 0 0-5.5 2.75 2.75 0 0 0 0 5.5zM2.5 16.5c.4-2.8 2.4-4.5 5-4.5s4.6 1.7 5 4.5M13 4.2a2.6 2.6 0 0 1 0 5.1M14.5 12.3c1.6.5 2.7 2 3 4.2',
 		profile: 'M10 9.75a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4 16.5c.5-3 2.9-5 6-5s5.5 2 6 5'
@@ -44,6 +47,12 @@
 			{ id: 'home', href: '/desk', label: 'Home', show: d.canEditEntries },
 			{ id: 'entries', href: '/desk/entries', label: 'Entries', show: d.canEditEntries },
 			{ id: 'courses', href: '/desk/courses', label: 'Courses', show: d.canEditCourses },
+			{
+				id: 'images',
+				href: '/desk/images',
+				label: 'Images',
+				show: d.canEditEntries || d.canEditCourses
+			},
 			{ id: 'analytics', href: '/desk/analytics', label: 'Analytics', show: d.canViewAnalytics },
 			{ id: 'users', href: '/desk/users', label: 'Users', show: d.isAdmin },
 			{ id: 'profile', href: '/desk/profile', label: 'Profile', show: true }

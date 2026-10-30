@@ -11,6 +11,7 @@ import {
 	unique,
 	primaryKey,
 	index,
+	uniqueIndex,
 	bigserial,
 	smallint
 } from 'drizzle-orm/pg-core';
@@ -711,7 +712,20 @@ export const deskMedia = pgTable('cms_media', {
 	width: integer('width'),
 	height: integer('height'),
 	alt: text('alt'),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
+	// Migration 026 — the image library (see src/lib/server/media/).
+	name: text('name'),
+	fileSize: integer('file_size'),
+	status: text('status').notNull().default('ready'), // uploading | processing | ready | failed
+	// Folder holding the resized copies ({prefix}{w}.webp / .avif); null = serve the original.
+	variantPrefix: text('variant_prefix'),
+	variantWidths: integer('variant_widths').array(),
+	hasAvif: boolean('has_avif').notNull().default(false),
+	blur: text('blur'), // tiny WebP data URI shown while the image loads
+	credit: text('credit'),
+	creditUrl: text('credit_url'),
+	derivedFrom: uuid('derived_from').references(() => deskMedia.id, { onDelete: 'set null' }),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
 // Desk author profile — how a writer appears on their pieces (byline name,
@@ -965,7 +979,8 @@ export const deskEntry = pgTable(
 	]
 );
 
-// Many-to-many join between entries and tags. Composite primary key.
+// Join between entries and tags. An entry is filed under one tag at most
+// (migration 027's unique index on entry_id); a tag holds many entries.
 export const deskEntryTag = pgTable(
 	'cms_entry_tag',
 	{
@@ -976,7 +991,10 @@ export const deskEntryTag = pgTable(
 			.notNull()
 			.references(() => deskTag.id, { onDelete: 'cascade' })
 	},
-	(t) => [primaryKey({ columns: [t.entryId, t.tagId] })]
+	(t) => [
+		primaryKey({ columns: [t.entryId, t.tagId] }),
+		uniqueIndex('cms_entry_tag_entry_id_unique').on(t.entryId)
+	]
 );
 
 // Course — the paid container. Groups one or more modules of lessons.

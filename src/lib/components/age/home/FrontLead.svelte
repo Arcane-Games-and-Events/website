@@ -1,7 +1,10 @@
 <script>
 	import { untrack } from 'svelte';
+	import { fade, fly } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
 	import FrontByline from './FrontByline.svelte';
 	import FormatTag from '../FormatTag.svelte';
+	import Picture from '$lib/components/media/Picture.svelte';
 
 	/**
 	 * The front page's opening: the newest Library releases, one at a time,
@@ -18,12 +21,14 @@
 
 	// ============ rotation ============
 	// Every 15 seconds the next release takes over. Picking one jumps to
-	// it; pointing at or tabbing into the hero pauses the clock.
-	// Only a real mouse pauses on hover: on touch screens iOS Safari turns a
-	// tap whose hover changes the page into a hover only, and the click on a
-	// release would never arrive.
+	// it. Hovering doesn't pause it; tabbing into the hero with the keyboard
+	// does, so the copy can be read (a click focuses too, but only keyboard
+	// focus counts).
 	const ROTATE_MS = 15000;
 	let activeIdx = $state(0);
+	// The cover being replaced stays fully visible underneath while the new
+	// one fades in over it, so the picture never dims mid-change.
+	let prevIdx = $state(-1);
 	let paused = $state(false);
 	let reduced = $state(false);
 	let cycle = $state(0); // restarts the progress bar animation
@@ -37,12 +42,21 @@
 		cycle++;
 		if (leads.length < 2 || paused || reduced) return;
 		timer = setTimeout(() => {
-			activeIdx = (activeIdx + 1) % leads.length;
+			go((activeIdx + 1) % leads.length);
 			schedule();
 		}, ROTATE_MS);
 	}
-	function show(i) {
+	// The first release's copy rises in line by line with the page; after a
+	// switch, the new copy comes in as one block (see the {#key} below).
+	let switched = $state(false);
+	function go(i) {
+		if (i === activeIdx) return;
+		switched = true;
+		prevIdx = activeIdx;
 		activeIdx = i;
+	}
+	function show(i) {
+		go(i);
 		schedule();
 	}
 	function pause() {
@@ -127,16 +141,48 @@
 	}
 	const cta = (item) => (item?.kind === 'video' ? 'Watch the video' : 'Read the story');
 	const pad = (n) => String(n).padStart(2, '0');
+	// The full image-library shape when the story has one (AVIF / WebP copies,
+	// blur, credit), else just its plain image.
+	const pic = (item) => item?.picture ?? { src: item?.image, srcset: item?.srcset, alt: item?.alt };
+	const leadPic = $derived(pic(lead));
+	// Stacking for a cover layer: the current one fades in on top; the one it
+	// replaces stays put underneath (and keeps its slow zoom) until covered;
+	// the rest are hidden.
+	const FADE = 'transition-opacity duration-[1600ms] ease-[cubic-bezier(0.45,0,0.2,1)]';
+	const layer = (i, shown) =>
+		i === activeIdx ? `z-[2] ${shown} ${FADE}` : i === prevIdx ? `z-[1] ${shown}` : 'z-0 opacity-0';
+	const heroFirst = $derived(leads[0] ? pic(leads[0]) : null);
 </script>
+
+<svelte:head>
+	<!-- fetch the first cover before anything else on the page -->
+	{#if heroFirst?.avifSrcset}
+		<link
+			rel="preload"
+			as="image"
+			type="image/avif"
+			imagesrcset={heroFirst.avifSrcset}
+			imagesizes="100vw"
+			fetchpriority="high"
+		/>
+	{:else if heroFirst?.srcset}
+		<link
+			rel="preload"
+			as="image"
+			type="image/webp"
+			imagesrcset={heroFirst.srcset}
+			imagesizes="100vw"
+			fetchpriority="high"
+		/>
+	{/if}
+</svelte:head>
 
 {#if lead}
 	<section
 		bind:this={heroEl}
 		class="hero relative isolate flex flex-col overflow-hidden bg-ink text-white"
 		style={heroH ? `--hero-h: ${heroH}px;` : ''}
-		onpointerenter={(e) => e.pointerType === 'mouse' && pause()}
-		onpointerleave={(e) => e.pointerType === 'mouse' && resume()}
-		onfocusin={pause}
+		onfocusin={(e) => /** @type {HTMLElement} */ (e.target).matches?.(':focus-visible') && pause()}
 		onfocusout={resume}
 		aria-roledescription="carousel"
 		aria-label="Latest releases"
@@ -145,11 +191,11 @@
 		<div class="absolute inset-0 -z-20" aria-hidden="true">
 			{#each leads as item, i (item.href)}
 				<img
-					class="absolute inset-0 h-full w-full scale-110 object-cover blur-[48px] saturate-[1.2] transition-opacity duration-[1100ms] ease-out {i ===
-					activeIdx
-						? 'opacity-80'
-						: 'opacity-0'}"
-					src={item.image}
+					class="absolute inset-0 h-full w-full scale-110 object-cover blur-[48px] saturate-[1.2] {layer(
+						i,
+						'opacity-80'
+					)}"
+					src={item.picture?.thumb ?? item.image}
 					alt=""
 					loading={i === 0 ? 'eager' : 'lazy'}
 				/>
@@ -161,16 +207,16 @@
 		<div class="cover-area relative -z-10 lg:absolute lg:inset-0">
 			<div class="cover relative mx-auto {wide ? 'cover-wide' : ''}">
 				{#each leads as item, i (item.href)}
-					<img
-						class="absolute inset-0 h-full w-full object-cover transition-opacity duration-[1100ms] ease-out {i ===
-						activeIdx
-							? 'hero-settle opacity-100'
-							: 'opacity-0'}"
-						src={item.image}
-						srcset={item.srcset}
+					<Picture
+						image={pic(item)}
+						class="absolute inset-0 h-full w-full object-cover {layer(i, 'opacity-100')} {i ===
+							activeIdx || i === prevIdx
+							? 'hero-settle'
+							: ''}"
 						sizes="100vw"
 						alt={i === activeIdx ? item.alt : ''}
-						aria-hidden={i === activeIdx ? undefined : 'true'}
+						ariaHidden={i !== activeIdx}
+						loading={i === 0 ? 'eager' : 'lazy'}
 						fetchpriority={i === 0 ? 'high' : 'auto'}
 					/>
 				{/each}
@@ -191,10 +237,24 @@
 			aria-hidden="true"
 		>
 			<span
-				class="absolute bottom-2.5 left-1/2 hidden -translate-x-1/2 px-3 text-[9px] leading-none font-extrabold tracking-[0.32em] text-white/70 uppercase lg:block"
+				class="absolute bottom-[25px] left-1/2 hidden -translate-x-1/2 px-3 text-[9px] leading-none font-extrabold tracking-[0.32em] text-white/70 uppercase lg:block"
 				>Scroll ↓</span
 			>
 		</div>
+
+		<!-- the cover's credit: on wide screens set into the frame's bottom edge -->
+		{#if leadPic?.credit}
+			<p
+				class="absolute right-10 bottom-2.5 z-10 hidden max-w-[40%] truncate text-right text-[10px] leading-none text-white/65 lg:block"
+			>
+				{#if leadPic.creditUrl}<a
+						href={leadPic.creditUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="hover:text-white">{leadPic.credit}</a
+					>{:else}{leadPic.credit}{/if}
+			</p>
+		{/if}
 
 		<!-- copy and the release list -->
 		<div
@@ -233,49 +293,68 @@
 					</div>
 				{/if}
 
-				{#key activeIdx}
-					<div class="text-center lg:text-left">
-						<p
-							class="fp-rise text-[10.5px] font-extrabold tracking-[0.24em] text-white/90 uppercase md:text-[11.5px]"
-						>
-							Latest release · <span class="text-warm-light">{lead.rubric}</span>
-						</p>
-						<h1
-							use:fitTwoLines
-							class="fp-rise mx-auto mt-3 line-clamp-2 max-w-[22ch] font-newsreader leading-[1.04] font-semibold tracking-[-0.025em] [text-wrap:balance] md:mt-4 lg:mx-0 lg:max-w-[760px] {titleSize}"
-							style="animation-delay: 120ms; text-shadow: 0 2px 30px rgba(23,21,15,0.45);"
-						>
-							<a href={lead.href} class="hover:text-white/90">{lead.title}</a>
-						</h1>
-						{#if lead.dek}
-							<p
-								class="fp-rise mx-auto mt-4 line-clamp-3 max-w-[600px] font-newsreader text-[17px] leading-[1.45] text-white/80 italic md:mt-5 md:text-[19px] lg:mx-0"
-								style="animation-delay: 240ms;"
-							>
-								{lead.dek}
-							</p>
-						{/if}
+				<!-- the outgoing copy fades away in the same spot as the new copy rises in -->
+				<div class="grid">
+					{#key activeIdx}
 						<div
-							class="fp-rise mt-6 flex flex-col items-center gap-x-6 gap-y-4 md:mt-7 md:flex-row md:flex-wrap md:justify-center lg:justify-start"
-							style="animation-delay: 360ms;"
+							class="self-start text-center [grid-area:1/1] lg:self-end lg:text-left {switched
+								? 'hero-switched'
+								: ''}"
+							in:fly={{ y: 10, duration: 750, delay: 180, easing: cubicOut }}
+							out:fade={{ duration: 400 }}
 						>
-							<a
-								href={lead.href}
-								class="inline-flex h-[48px] items-center gap-2 bg-paper-bg px-6 text-[11px] font-extrabold tracking-[0.18em] text-ink uppercase transition-colors [text-shadow:none] hover:bg-warm hover:text-white"
-								>{cta(lead)} <span aria-hidden="true">→</span></a
+							<p
+								class="fp-rise text-[10.5px] font-extrabold tracking-[0.24em] text-white/90 uppercase md:text-[11.5px]"
 							>
-							<FrontByline
-								author={lead.author}
-								date={lead.date}
-								length={lead.length}
-								premium={lead.premium}
-								onDark
-								stack
-								class="lg:justify-start"
-							/>
+								Latest release · <span class="text-warm-light">{lead.rubric}</span>
+							</p>
+							<h1
+								use:fitTwoLines
+								class="fp-rise mx-auto mt-3 line-clamp-2 max-w-[22ch] font-newsreader leading-[1.04] font-semibold tracking-[-0.025em] [text-wrap:balance] md:mt-4 lg:mx-0 lg:max-w-[760px] {titleSize}"
+								style="animation-delay: 120ms; text-shadow: 0 2px 30px rgba(23,21,15,0.45);"
+							>
+								<a href={lead.href} class="hover:text-white/90">{lead.title}</a>
+							</h1>
+							{#if lead.dek}
+								<p
+									class="fp-rise mx-auto mt-4 line-clamp-3 max-w-[600px] font-newsreader text-[17px] leading-[1.45] text-white/80 italic md:mt-5 md:text-[19px] lg:mx-0"
+									style="animation-delay: 240ms;"
+								>
+									{lead.dek}
+								</p>
+							{/if}
+							<div
+								class="fp-rise mt-6 flex flex-col items-center gap-x-6 gap-y-4 md:mt-7 md:flex-row md:flex-wrap md:justify-center lg:justify-start"
+								style="animation-delay: 360ms;"
+							>
+								<a
+									href={lead.href}
+									class="inline-flex h-[48px] items-center gap-2 bg-paper-bg px-6 text-[11px] font-extrabold tracking-[0.18em] text-ink uppercase transition-colors [text-shadow:none] hover:bg-warm hover:text-white"
+									>{cta(lead)} <span aria-hidden="true">→</span></a
+								>
+								<FrontByline
+									author={lead.author}
+									date={lead.date}
+									length={lead.length}
+									premium={lead.premium}
+									onDark
+									stack
+									class="lg:justify-start"
+								/>
+							</div>
+							{#if leadPic?.credit}
+								<p class="mt-5 text-[11px] text-white/55 lg:hidden">
+									Cover: {#if leadPic.creditUrl}<a
+											href={leadPic.creditUrl}
+											target="_blank"
+											rel="noopener noreferrer"
+											class="underline decoration-white/30 underline-offset-2">{leadPic.credit}</a
+										>{:else}{leadPic.credit}{/if}
+								</p>
+							{/if}
 						</div>
-					</div>
-				{/key}
+					{/key}
+				</div>
 			</div>
 
 			<!-- wide screens: the releases, numbered -->
@@ -363,13 +442,11 @@
 				<div class="relative">
 					<div class="fp-plate relative aspect-video overflow-hidden bg-panel">
 						{#if first.image}
-							<img
+							<Picture
+								image={pic(first)}
 								class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-								src={first.image}
-								srcset={first.srcset}
-								sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+								sizes="(min-width: 1024px) 640px, 100vw"
 								alt={first.alt}
-								loading="lazy"
 							/>
 						{/if}
 						{#if first.kind === 'video'}
@@ -480,11 +557,11 @@
 								>
 									<span class="relative block aspect-video overflow-hidden bg-panel">
 										{#if s.image}
-											<img
+											<Picture
+												image={pic(s)}
 												class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
-												src={s.image}
+												sizes="96px"
 												alt={s.alt}
-												loading="lazy"
 											/>
 										{/if}
 										{#if s.kind === 'video'}
@@ -617,7 +694,7 @@
 		aspect-ratio: 16 / 9;
 		width: 100%;
 	}
-	.cover img {
+	.cover :global(img) {
 		-webkit-mask-image: linear-gradient(180deg, #000 80%, transparent);
 		mask-image: linear-gradient(180deg, #000 80%, transparent);
 	}
@@ -635,11 +712,11 @@
 		.cover {
 			width: min(100cqw, 100cqh * 16 / 9);
 		}
-		.cover img {
+		.cover :global(img) {
 			-webkit-mask-image: linear-gradient(180deg, #000 86%, transparent);
 			mask-image: linear-gradient(180deg, #000 86%, transparent);
 		}
-		.cover-wide img {
+		.cover-wide :global(img) {
 			-webkit-mask-image: linear-gradient(180deg, #000 86%, transparent),
 				linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
 			-webkit-mask-composite: source-in;
@@ -662,6 +739,11 @@
 		to {
 			transform: scale(1);
 		}
+	}
+	/* After a switch the copy fades in as one block, so the page-load
+	   line-by-line rise is switched off inside it. */
+	.hero-switched :global(.fp-rise) {
+		animation: none;
 	}
 	/* How long the current release has left on screen. */
 	:global(.hero-progress) {

@@ -6,8 +6,11 @@
  *   {
  *     type: 'upload',
  *     version: 1,
- *     value: { url, alt, width, height, mediaId }
+ *     value: { url, alt, width, height, mediaId, size? }
  *   }
+ *
+ * `size` is how wide it is drawn on the page: small | text | wide | full
+ * (missing = text width). See IMAGE_SIZES in render-lexical.js.
  *
  * The `type` string is deliberately `'upload'` (not `'image'`) so both
  * migrated Payload content and Desk-native uploads render through the same

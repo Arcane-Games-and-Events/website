@@ -59,7 +59,10 @@ export async function load({ locals, url }) {
 			videoProvider: deskEntry.videoProvider,
 			readTime: deskEntry.readTime,
 			thumbUrl: thumb.url,
-			coverUrl: cover.url,
+			// the smallest resized copy when there is one; these are thumbnails
+			coverUrl: sql`case when ${cover.variantPrefix} is not null
+				then replace(${cover.url}, ${cover.storagePath}, ${cover.variantPrefix} || ${cover.variantWidths}[1] || '.webp')
+				else ${cover.url} end`,
 			authorFirstName: userTable.firstName,
 			authorLastName: userTable.lastName
 		})

@@ -1,6 +1,7 @@
 <script>
 	import DeskTabs from '$lib/components/age/desk/DeskTabs.svelte';
 	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import MediaPicker from '$lib/desk/media/MediaPicker.svelte';
 	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { beforeNavigate } from '$app/navigation';
@@ -50,35 +51,12 @@
 			cancel();
 	});
 
-	// ============ photo upload ============
-	let fileEl = $state();
-	let uploading = $state(false);
-	async function onFile(e) {
-		const file = e.currentTarget.files?.[0];
-		e.currentTarget.value = '';
-		if (!file) return;
-		if (!file.type.startsWith('image/')) {
-			error = 'Photos need to be an image file.';
-			return;
-		}
-		uploading = true;
-		error = '';
-		try {
-			const fd = new FormData();
-			fd.append('file', file);
-			const res = await fetch('/api/desk/upload', { method: 'POST', body: fd });
-			if (!res.ok) {
-				const body = await res.json().catch(() => ({}));
-				error = body?.message || `Upload failed (${res.status}).`;
-				return;
-			}
-			const { media } = await res.json();
-			avatar = { id: media.id, url: media.url };
-		} catch (err) {
-			error = err?.message || 'Upload failed.';
-		} finally {
-			uploading = false;
-		}
+	// ============ photo ============
+	// Chosen from (or uploaded to) the image library. The smallest copy is
+	// plenty for a headshot.
+	let pickerOpen = $state(false);
+	function pickPhoto(item) {
+		avatar = { id: item.id, url: item.thumb || item.url };
 	}
 
 	// ============ links ============
@@ -191,10 +169,9 @@
 					<div class="mt-2 flex flex-wrap gap-2">
 						<button
 							type="button"
-							onclick={() => fileEl?.click()}
-							disabled={uploading}
-							class="min-h-[40px] border-[1.5px] border-ink px-4 text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:opacity-60"
-							>{uploading ? 'Uploading…' : avatar ? 'Replace photo' : 'Upload photo'}</button
+							onclick={() => (pickerOpen = true)}
+							class="min-h-[40px] border-[1.5px] border-ink px-4 text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+							>{avatar ? 'Change photo' : 'Choose photo'}</button
 						>
 						{#if avatar}
 							<button
@@ -206,17 +183,10 @@
 						{/if}
 					</div>
 					<p class="mt-1.5 text-[12px] text-fade">A square headshot works best.</p>
-					<input
-						bind:this={fileEl}
-						type="file"
-						accept="image/*"
-						class="sr-only"
-						tabindex="-1"
-						onchange={onFile}
-					/>
 				</div>
 			</div>
 			<input type="hidden" name="avatarMediaId" value={avatar?.id || ''} />
+			<MediaPicker bind:open={pickerOpen} title="Choose a photo" onpick={pickPhoto} />
 
 			<div class="mt-6 grid gap-5 sm:grid-cols-2">
 				<label class="block">

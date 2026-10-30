@@ -211,3 +211,24 @@ export function transformSrcset(url) {
 	const base = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
 	return [480, 960, 1440].map((w) => `${base}?width=${w}&quality=80 ${w}w`).join(', ');
 }
+
+/**
+ * The image-library ids of every inline image in a Lexical document, so the
+ * page can load their responsive copies and credits in one query.
+ *
+ * @param {any} content - Lexical doc
+ * @returns {string[]}
+ */
+export function extractMediaIds(content) {
+	const ids = new Set();
+	const walk = (node) => {
+		if (!node || typeof node !== 'object') return;
+		if (node.type === 'upload') {
+			const id = (node.value || node).mediaId;
+			if (typeof id === 'string' && id) ids.add(id);
+		}
+		if (Array.isArray(node.children)) node.children.forEach(walk);
+	};
+	walk(content?.root);
+	return [...ids];
+}

@@ -1,4 +1,5 @@
 <script>
+	import Picture from '$lib/components/media/Picture.svelte';
 	import LibraryWordmark from '../library/LibraryWordmark.svelte';
 	import FrontByline from './FrontByline.svelte';
 	import PremiumTag from '../PremiumTag.svelte';
@@ -101,10 +102,9 @@
 							class="group grid grid-cols-[132px_1fr] items-center gap-4 bg-paper p-4 md:p-5"
 						>
 							<span class="relative block aspect-video overflow-hidden bg-panel">
-								<img
+								<Picture
+									image={it.picture ?? { src: it.image, srcset: it.srcset, alt: it.alt }}
 									class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
-									src={it.image}
-									srcset={it.srcset}
 									sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
 									alt={it.alt}
 									loading="lazy"
@@ -142,10 +142,9 @@
 						]}"
 					>
 						<span class="relative block aspect-video overflow-hidden bg-panel">
-							<img
+							<Picture
+								image={it.picture ?? { src: it.image, srcset: it.srcset, alt: it.alt }}
 								class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-								src={it.image}
-								srcset={it.srcset}
 								sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
 								alt={it.alt}
 								loading="lazy"
@@ -183,10 +182,9 @@
 					{@const feature = v === 'feature'}
 					<a href={it.href} class="group flex flex-col bg-paper-bg {span[v]}">
 						<span class="relative block aspect-video overflow-hidden bg-panel">
-							<img
+							<Picture
+								image={it.picture ?? { src: it.image, srcset: it.srcset, alt: it.alt }}
 								class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-								src={it.image}
-								srcset={it.srcset}
 								sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
 								alt={it.alt}
 								loading="lazy"

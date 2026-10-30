@@ -25,7 +25,7 @@ import {
 import { alias } from 'drizzle-orm/pg-core';
 import { and, desc, eq, inArray, or, lte } from 'drizzle-orm';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
-import { mediaImage } from '$lib/server/desk/image.js';
+import { mediaImage, mediaColumns } from '$lib/server/desk/image.js';
 
 /**
  * Query the DB for published entries + related media/author rows. Cached
@@ -58,8 +58,8 @@ async function queryPublishedEntries({ limit }) {
 			videoDurationMux: deskEntry.videoDuration,
 			videoDurationYoutube: deskEntry.youtubeDuration,
 			youtubeThumbnailUrl: deskEntry.youtubeThumbnailUrl,
-			cover: { url: cover.url, storagePath: cover.storagePath, width: cover.width, alt: cover.alt },
-			thumb: { url: thumb.url, storagePath: thumb.storagePath, width: thumb.width, alt: thumb.alt },
+			cover: mediaColumns(cover),
+			thumb: mediaColumns(thumb),
 			authorFirstName: userTable.firstName,
 			authorLastName: userTable.lastName
 		})

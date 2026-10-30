@@ -1,474 +1,251 @@
 <script>
-	const lastUpdated = 'November 26, 2024';
+	import LegalPage from '$lib/components/age/legal/LegalPage.svelte';
+
+	const updated = 'October 29, 2026';
+	const toc = [
+		{ id: 'agreement', label: 'Using AGE' },
+		{ id: 'accounts', label: 'Your account' },
+		{ id: 'premium', label: 'AGE Premium' },
+		{ id: 'codes', label: 'Promo and referral codes' },
+		{ id: 'academy', label: 'Academy courses' },
+		{ id: 'events', label: 'AGE Open events and tickets' },
+		{ id: 'payments', label: 'Payments' },
+		{ id: 'content', label: 'Our content' },
+		{ id: 'contributors', label: 'Writing for AGE' },
+		{ id: 'conduct', label: 'What not to do' },
+		{ id: 'ending', label: 'Suspension and closing accounts' },
+		{ id: 'liability', label: 'Disclaimers and liability' },
+		{ id: 'changes', label: 'Changes to these terms' }
+	];
 </script>
 
 <svelte:head>
-	<title>Terms of Service - AGE</title>
+	<title>Terms of Service — AGE</title>
 	<meta
 		name="description"
-		content="Terms of Service for AGE - Read our terms and conditions for using our website and services."
+		content="The terms for using AGE: accounts, AGE Premium, Academy courses, AGE Open tickets and the Library."
 	/>
 </svelte:head>
 
-<!-- Hero Banner -->
-<section
-	class="relative overflow-hidden border-b border-white/10 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800"
+<LegalPage
+	title="Terms of Service"
+	dek="The agreement between you and AGE when you read the Library, join Premium, take a course or play in the AGE Open."
+	{updated}
+	{toc}
+	sibling={{ href: '/privacy', label: 'Privacy Policy' }}
 >
-	<div
-		class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-500/10 via-transparent to-transparent"
-	></div>
-	<div class="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-		<div class="max-w-3xl">
-			<p class="text-sm font-semibold tracking-wider text-purple-400 uppercase">Legal</p>
-			<h1 class="mt-2 text-3xl font-bold text-white sm:text-4xl lg:text-5xl">Terms of Service</h1>
-			<p class="mt-4 text-lg text-gray-400">
-				Please read these terms carefully before using our services.
-			</p>
-			<p class="mt-4 text-sm text-gray-500">Last updated: {lastUpdated}</p>
-		</div>
-	</div>
-</section>
+	{#snippet summary()}
+		<ul>
+			<li>
+				Premium renews automatically each month or year until you cancel. Cancel any time from your
+				account; you keep access until the end of the period you've paid for.
+			</li>
+			<li>
+				You can refund an AGE Open ticket yourself from your account up to 24 hours before the event
+				starts.
+			</li>
+			<li>
+				Event results, standings and published decklists appear on the site and on player profiles.
+			</li>
+			<li>
+				Premium pieces are for your own reading. Please don't share your account or repost them.
+			</li>
+		</ul>
+	{/snippet}
 
-<!-- Content -->
-<div class="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-	<div class="space-y-12">
-		<section class="rounded-xl border border-white/10 bg-gray-900/30 p-6 sm:p-8">
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20">
-					<svg
-						class="h-5 w-5 text-purple-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-				</div>
-				<h2 class="text-xl font-semibold text-white">Agreement to Terms</h2>
-			</div>
-			<p class="leading-relaxed text-gray-300">
-				By accessing or using AGE ("the Service"), you agree to be bound by these Terms of Service.
-				If you disagree with any part of these terms, you may not access the Service.
-			</p>
-		</section>
-
-		<section class="rounded-xl border border-white/10 bg-gray-900/30 p-6 sm:p-8">
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20">
-					<svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-				</div>
-				<h2 class="text-xl font-semibold text-white">Description of Service</h2>
-			</div>
-			<p class="leading-relaxed text-gray-300">
-				AGE provides content related to Flesh and Blood Trading Card Game, including but not limited
-				to articles, strategy guides, deck lists, event information, and community features.
-			</p>
-		</section>
-
-		<section class="rounded-xl border border-white/10 bg-gray-900/30 p-6 sm:p-8">
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20">
-					<svg
-						class="h-5 w-5 text-emerald-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-						/>
-					</svg>
-				</div>
-				<h2 class="text-xl font-semibold text-white">User Accounts</h2>
-			</div>
-			<p class="mb-4 leading-relaxed text-gray-300">
-				When you create an account with us, you must provide accurate, complete, and current
-				information. You are responsible for safeguarding your password and for all activities that
-				occur under your account.
-			</p>
-			<div class="space-y-3">
-				<div class="rounded-lg bg-white/5 p-4">
-					<div class="flex items-center gap-2">
-						<svg
-							class="h-5 w-5 shrink-0 text-emerald-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M5 13l4 4L19 7"
-							/>
-						</svg>
-						<p class="text-sm text-gray-300">
-							You must be at least 13 years old to use this Service
-						</p>
-					</div>
-				</div>
-				<div class="rounded-lg bg-white/5 p-4">
-					<div class="flex items-center gap-2">
-						<svg
-							class="h-5 w-5 shrink-0 text-emerald-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M5 13l4 4L19 7"
-							/>
-						</svg>
-						<p class="text-sm text-gray-300">
-							You are responsible for maintaining the confidentiality of your account
-						</p>
-					</div>
-				</div>
-				<div class="rounded-lg bg-white/5 p-4">
-					<div class="flex items-center gap-2">
-						<svg
-							class="h-5 w-5 shrink-0 text-emerald-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M5 13l4 4L19 7"
-							/>
-						</svg>
-						<p class="text-sm text-gray-300">
-							You agree to notify us immediately of any unauthorized use of your account
-						</p>
-					</div>
-				</div>
-			</div>
-		</section>
-
-		<section class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-6 sm:p-8">
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20">
-					<svg class="h-5 w-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-						/>
-					</svg>
-				</div>
-				<h2 class="text-xl font-semibold text-white">Intellectual Property</h2>
-			</div>
-			<p class="mb-4 leading-relaxed text-gray-300">
-				The Service and its original content (excluding content provided by users) are and will
-				remain the exclusive property of Arcane Games and Events LLC.
-			</p>
-			<div class="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4">
-				<p class="text-sm text-amber-200">
-					<strong>Note:</strong> Flesh and Blood is a trademark of Legend Story Studios. AGE is not affiliated
-					with, endorsed by, or sponsored by Legend Story Studios.
-				</p>
-			</div>
-		</section>
-
-		<section class="rounded-xl border border-white/10 bg-gray-900/30 p-6 sm:p-8">
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/20">
-					<svg class="h-5 w-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
-						/>
-					</svg>
-				</div>
-				<h2 class="text-xl font-semibold text-white">User Content</h2>
-			</div>
-			<p class="leading-relaxed text-gray-300">
-				By posting content on our Service, you grant us the right to use, modify, and display that
-				content in connection with the Service. You represent that you own or have the necessary
-				rights to the content you post.
-			</p>
-		</section>
-
-		<section class="rounded-xl border border-rose-500/20 bg-rose-500/5 p-6 sm:p-8">
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-500/20">
-					<svg class="h-5 w-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-						/>
-					</svg>
-				</div>
-				<h2 class="text-xl font-semibold text-white">Prohibited Uses</h2>
-			</div>
-			<p class="mb-4 leading-relaxed text-gray-300">
-				You agree not to use the Service for any of the following:
-			</p>
-			<ul class="space-y-2">
-				<li class="flex items-start gap-2 text-gray-300">
-					<svg
-						class="mt-0.5 h-5 w-5 shrink-0 text-rose-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M6 18L18 6M6 6l12 12"
-						/>
-					</svg>
-					Any unlawful purpose or to solicit others to perform unlawful acts
-				</li>
-				<li class="flex items-start gap-2 text-gray-300">
-					<svg
-						class="mt-0.5 h-5 w-5 shrink-0 text-rose-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M6 18L18 6M6 6l12 12"
-						/>
-					</svg>
-					Violating any international, federal, or state regulations or laws
-				</li>
-				<li class="flex items-start gap-2 text-gray-300">
-					<svg
-						class="mt-0.5 h-5 w-5 shrink-0 text-rose-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M6 18L18 6M6 6l12 12"
-						/>
-					</svg>
-					Infringing upon the rights of others
-				</li>
-				<li class="flex items-start gap-2 text-gray-300">
-					<svg
-						class="mt-0.5 h-5 w-5 shrink-0 text-rose-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M6 18L18 6M6 6l12 12"
-						/>
-					</svg>
-					Harassing, abusing, insulting, or threatening others
-				</li>
-				<li class="flex items-start gap-2 text-gray-300">
-					<svg
-						class="mt-0.5 h-5 w-5 shrink-0 text-rose-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M6 18L18 6M6 6l12 12"
-						/>
-					</svg>
-					Uploading or transmitting viruses or malicious code
-				</li>
-				<li class="flex items-start gap-2 text-gray-300">
-					<svg
-						class="mt-0.5 h-5 w-5 shrink-0 text-rose-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M6 18L18 6M6 6l12 12"
-						/>
-					</svg>
-					Spamming or using automated systems to access the Service
-				</li>
-			</ul>
-		</section>
-
-		<div class="grid gap-6 sm:grid-cols-2">
-			<section class="rounded-xl border border-white/10 bg-gray-900/30 p-6">
-				<div class="mb-4 flex items-center gap-3">
-					<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-500/20">
-						<svg
-							class="h-5 w-5 text-yellow-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-							/>
-						</svg>
-					</div>
-					<h2 class="text-lg font-semibold text-white">Premium Content</h2>
-				</div>
-				<p class="text-sm leading-relaxed text-gray-400">
-					Some content on the Service may be designated as premium content and require a
-					subscription or payment. Access to premium content is subject to the specific terms of
-					your subscription plan.
-				</p>
-			</section>
-
-			<section class="rounded-xl border border-white/10 bg-gray-900/30 p-6">
-				<div class="mb-4 flex items-center gap-3">
-					<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-red-500/20">
-						<svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-							/>
-						</svg>
-					</div>
-					<h2 class="text-lg font-semibold text-white">Termination</h2>
-				</div>
-				<p class="text-sm leading-relaxed text-gray-400">
-					We may terminate or suspend your account immediately, without prior notice or liability,
-					for any reason, including if you breach these Terms. Upon termination, your right to use
-					the Service will cease immediately.
-				</p>
-			</section>
-		</div>
-
-		<section class="rounded-xl border border-white/10 bg-gray-900/30 p-6 sm:p-8">
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500/20">
-					<svg
-						class="h-5 w-5 text-indigo-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-						/>
-					</svg>
-				</div>
-				<h2 class="text-xl font-semibold text-white">Limitation of Liability</h2>
-			</div>
-			<p class="leading-relaxed text-gray-300">
-				In no event shall Arcane Games and Events LLC, its directors, employees, or agents be liable
-				for any indirect, incidental, special, consequential, or punitive damages resulting from
-				your use of the Service.
-			</p>
-		</section>
-
-		<section class="rounded-xl border border-white/10 bg-gray-900/30 p-6 sm:p-8">
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-500/20">
-					<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-				</div>
-				<h2 class="text-xl font-semibold text-white">Disclaimer</h2>
-			</div>
-			<p class="leading-relaxed text-gray-300">
-				The Service is provided on an "AS IS" and "AS AVAILABLE" basis. We make no warranties,
-				expressed or implied, regarding the Service's operation or the information, content, or
-				materials included therein.
-			</p>
-		</section>
-
-		<!-- Contact Section -->
-		<section
-			class="rounded-xl border border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-blue-500/10 p-6 sm:p-8"
-		>
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20">
-					<svg
-						class="h-5 w-5 text-purple-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-						/>
-					</svg>
-				</div>
-				<h2 class="text-xl font-semibold text-white">Contact Us</h2>
-			</div>
-			<p class="mb-4 leading-relaxed text-gray-300">
-				If you have any questions about these Terms of Service, please contact us:
-			</p>
-			<a
-				href="mailto:info@arcanegamesandevents.com"
-				class="inline-flex items-center gap-2 rounded-lg bg-purple-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-purple-400"
-			>
-				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-					/>
-				</svg>
-				info@arcanegamesandevents.com
-			</a>
-		</section>
-
-		<p class="text-center text-sm text-gray-500">
-			We reserve the right to modify or replace these Terms at any time. Your continued use of the
-			Service after any changes constitutes acceptance of the new Terms.
+	<section id="agreement">
+		<h2>Using AGE</h2>
+		<p>
+			AGE (age.events) is run by Arcane Games and Events LLC (“AGE”, “we”, “us”). It covers Flesh
+			and Blood: articles, videos and bonus gameplay in the Library, courses in the Academy, and the
+			AGE Open tournament circuit. By using the site or buying anything on it, you agree to these
+			terms and to our <a href="/privacy">Privacy Policy</a>. If you don't agree, please don't use
+			AGE.
 		</p>
-	</div>
-</div>
+		<p>
+			You must be at least 13 to make an account. If you're under 18, a parent or guardian must
+			agree to these terms with you and make any purchases.
+		</p>
+	</section>
+
+	<section id="accounts">
+		<h2>Your account</h2>
+		<ul>
+			<li>Give us accurate details, and keep your email address current so receipts reach you.</li>
+			<li>An account is for one person. Keep your password to yourself.</li>
+			<li>
+				You're responsible for what happens under your account. Tell us straight away if you think
+				someone else has used it.
+			</li>
+			<li>
+				If you add a GEM ID, it must be your own. We use it to match you to your tournament results.
+			</li>
+		</ul>
+	</section>
+
+	<section id="premium">
+		<h2>AGE Premium</h2>
+		<p>
+			Premium is a membership that opens every article, video and bonus gameplay match in the
+			Library, and keeps the Academy courses you own up to date. Some pieces are open to everyone;
+			most are for members.
+		</p>
+		<h3>Billing and renewal</h3>
+		<p>
+			You choose a monthly or an annual plan at the price shown when you join. Your membership
+			renews automatically at the end of each month or year, on the same date, and we charge the
+			card saved on your account until you cancel. Annual members get an email a week before each
+			renewal. Prices are in US dollars.
+		</p>
+		<h3>Cancelling</h3>
+		<p>
+			Cancel any time from <a href="/account/membership">Account → Membership</a>. Cancelling stops
+			future charges; you keep Premium until the end of the period you've already paid for, and you
+			can resume before then without being charged again. We don't refund the unused part of a
+			period, except where the law says we must.
+		</p>
+		<h3>When a payment fails</h3>
+		<p>
+			If a renewal is declined, we'll email you and try the card again over the following week. You
+			keep access while we retry. You can update your card from your account at any time; if the
+			charge still can't be made, your membership ends.
+		</p>
+		<h3>Price changes</h3>
+		<p>
+			If the price of your plan changes, we'll email you before your next renewal at the new price,
+			so you have time to cancel if you'd rather not continue.
+		</p>
+	</section>
+
+	<section id="codes">
+		<h2>Promo and referral codes</h2>
+		<p>
+			Partner codes and member referrals give a discount on your first Premium charge, as shown at
+			checkout. A code works once per account, only on the first charge, and has no cash value. If a
+			code is used in a way it wasn't meant for (made-up accounts, for example), we may cancel the
+			discount, or any reward paid for it.
+		</p>
+	</section>
+
+	<section id="academy">
+		<h2>Academy courses</h2>
+		<p>
+			Courses are bought one at a time, for the price shown on the course. Once bought, the course
+			stays on your account to watch and read whenever you like, for as long as we offer it. Premium
+			members receive course updates at no extra charge. If something is wrong with a course you've
+			bought, write to us.
+		</p>
+	</section>
+
+	<section id="events">
+		<h2>AGE Open events and tickets</h2>
+		<h3>Tickets</h3>
+		<p>
+			A ticket is your entry to one event. Some events need a GEM ID to register. Tickets are for
+			the person named on them; ask us before passing one to someone else.
+		</p>
+		<h3>Refunds</h3>
+		<p>
+			You can refund a ticket yourself from <a href="/account/tickets">Account → Tickets</a> up to 24
+			hours before the event starts. After that, write to us. If we cancel an event, we refund every
+			ticket in full.
+		</p>
+		<h3>At the event</h3>
+		<p>
+			Events follow the official Flesh and Blood tournament rules and policies, and the decisions of
+			the event's judges and organizers. We may remove anyone who cheats or makes the event unsafe
+			or unwelcoming for others, without a refund.
+		</p>
+		<h3>Results</h3>
+		<p>
+			By playing, you agree that your name, results, standings, match records, the heroes you played
+			and any decklists we publish can appear on AGE, including on your player profile and in
+			coverage. Events may be photographed, filmed and streamed, and matches may appear as bonus
+			gameplay in the Library.
+		</p>
+	</section>
+
+	<section id="payments">
+		<h2>Payments</h2>
+		<p>
+			Card payments are handled by our payment processor, Authorize.net. Your card number goes
+			straight to them; we never see or store it. By saving a card you allow us to charge it for the
+			purchases and renewals you've agreed to. If you think a charge is wrong, write to us first: we
+			can usually sort it out faster than a dispute with your bank.
+		</p>
+	</section>
+
+	<section id="content">
+		<h2>Our content</h2>
+		<p>
+			Everything we publish (articles, videos, courses, photographs, design and the AGE name and
+			marks) belongs to AGE or to the contributors who made it. You may read and watch it for your
+			own, non-commercial use, and share links to it. Please don't copy, repost, resell or scrape
+			it, especially Premium pieces and courses.
+		</p>
+		<p class="legal-note">
+			Flesh and Blood, its card names and its card images are trademarks and copyright of Legend
+			Story Studios. AGE is not affiliated with, endorsed by or sponsored by Legend Story Studios.
+		</p>
+	</section>
+
+	<section id="contributors">
+		<h2>Writing for AGE</h2>
+		<p>
+			If you write or make content for AGE through the Desk, you keep ownership of it. You give AGE
+			a lasting, worldwide license to publish, edit, format, translate and promote it on AGE and on
+			our channels, and to keep it in the Library.
+		</p>
+		<p>
+			You confirm that your work is your own, and that you have the right to use every image you
+			upload, with the credit it needs. We may edit pieces for length, clarity and style, and may
+			decline or remove anything.
+		</p>
+	</section>
+
+	<section id="conduct">
+		<h2>What not to do</h2>
+		<ul>
+			<li>Break the law, or help anyone else do so.</li>
+			<li>Harass, threaten or abuse anyone, online or at an event.</li>
+			<li>Share your account, or get around the Premium paywall.</li>
+			<li>Scrape the site or use bots, except search engines indexing public pages.</li>
+			<li>Upload anything you don't have the rights to, or anything malicious.</li>
+			<li>Interfere with the site, its security or other people's use of it.</li>
+		</ul>
+	</section>
+
+	<section id="ending">
+		<h2>Suspension and closing accounts</h2>
+		<p>
+			We may suspend or close an account that breaks these terms. Where we can, we'll tell you why
+			first. If we close an account for any reason other than a breach of these terms, we'll refund
+			the unused part of any Premium period you've paid for.
+		</p>
+		<p>To close your own account, write to us.</p>
+	</section>
+
+	<section id="liability">
+		<h2>Disclaimers and liability</h2>
+		<p>
+			AGE is provided “as is” and “as available”. We work to keep it accurate and running, but we
+			can't promise it will be error-free or always available, or that strategy advice will win you
+			games.
+		</p>
+		<p>
+			To the extent the law allows, AGE and its people are not liable for indirect, incidental,
+			special or consequential losses arising from your use of the site or events. Our total
+			liability for any claim is limited to what you paid us in the twelve months before it. Nothing
+			here limits rights you have by law that can't be limited.
+		</p>
+	</section>
+
+	<section id="changes">
+		<h2>Changes to these terms</h2>
+		<p>
+			We'll update these terms as AGE changes, and change the date at the top when we do. If a
+			change affects what you pay or what your membership includes, we'll email you before it takes
+			effect. Using AGE after an update means you accept the new terms.
+		</p>
+	</section>
+</LegalPage>

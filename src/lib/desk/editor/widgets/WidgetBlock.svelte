@@ -12,9 +12,14 @@
 <script>
 	import RenderLexical from '$lib/desk/render/RenderLexical.svelte';
 	import { ARTICLE_PROSE } from '$lib/desk/render/articleProse.js';
+	import { IMAGE_SIZES, imageSize } from '$lib/desk/render/render-lexical.js';
 
-	/** @type {{ type: string, data: any, json: any, onedit: () => void, onremove: () => void }} */
-	let { type, data, json, onedit, onremove } = $props();
+	/** @type {{ type: string, data: any, json: any, onedit: () => void, onremove: () => void, onchange?: (patch: any) => void }} */
+	let { type, data, json, onedit, onremove, onchange } = $props();
+
+	// An image's display size on the page, set right here on the card.
+	const SIZE_KEYS = /** @type {const} */ (['small', 'text', 'wide', 'full']);
+	let size = $derived(imageSize(data));
 
 	let open = $state(false);
 
@@ -96,7 +101,7 @@
 <!-- these listeners only fence events off from the editor around the card -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
-	class="border border-line2 bg-paper-bg font-libre text-ink not-italic"
+	class="border border-line2 bg-paper-bg font-libre whitespace-normal text-ink not-italic"
 	role="group"
 	aria-label="{kind.label}: {title}"
 	onmousedown={stop}
@@ -160,13 +165,48 @@
 				On the page<span class="font-semibold tracking-normal normal-case">As readers see it</span>
 			</p>
 			<div class="overflow-x-auto px-3 pt-3 pb-5 md:px-5" onclickcapture={noNavigate}>
-				<div class={ARTICLE_PROSE}><RenderLexical content={doc} /></div>
+				<div class={ARTICLE_PROSE}><RenderLexical content={doc} bleed={false} /></div>
 			</div>
 		</div>
 	{:else if type === 'upload'}
+		<!-- display size: how wide the image is drawn in the article -->
+		<div
+			class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line2 px-3 py-2"
+			role="group"
+			aria-label="Image size"
+		>
+			<span class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">Size</span>
+			<span class="inline-flex flex-wrap gap-px border border-line2 bg-line2">
+				{#each SIZE_KEYS as key (key)}
+					<button
+						type="button"
+						onmousedown={hold}
+						onclick={() => onchange?.({ size: key })}
+						aria-pressed={size === key}
+						class="h-8 px-2.5 text-[10px] font-extrabold tracking-[0.1em] uppercase transition-colors {size ===
+						key
+							? 'bg-ink text-paper-bg'
+							: 'bg-paper-bg text-soft hover:text-ink'}">{IMAGE_SIZES[key].label}</button
+					>
+				{/each}
+			</span>
+			{#if size === 'wide' || size === 'full'}
+				<span class="text-[11.5px] text-fade"
+					>{size === 'wide'
+						? 'Breaks out past the text column on the page.'
+						: 'Runs edge to edge across the screen on the page.'}</span
+				>
+			{/if}
+		</div>
 		<div class="flex justify-center bg-line/50 p-3">
 			{#if data?.url}
-				<img src={data.url} alt={data.alt || ''} class="block max-h-[300px] w-auto max-w-full" />
+				<img
+					src={data.url}
+					alt={data.alt || ''}
+					class="block max-h-[300px] w-auto max-w-full object-contain {size === 'small'
+						? 'md:max-w-[50%]'
+						: ''}"
+				/>
 			{:else}
 				<p class="py-6 text-[13px] text-fade">This image is missing its file.</p>
 			{/if}

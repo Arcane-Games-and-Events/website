@@ -443,3 +443,70 @@ a.fp-ul:focus-visible {
 	background-size: 1px 8px;
 	background-repeat: repeat-y;
 }
+
+/* Inline images in article and lesson bodies (render-lexical.js).
+ * Four sizes, chosen per image in the Desk: small, text width (default),
+ * wide and full width. Wide and full width are placed against the window
+ * using the column position RenderLexical measures; until then (or with no
+ * JavaScript) they fill the column. The credit sits underneath in small
+ * grey type; on full-width images it lines up with the text column. */
+.lex-fig {
+	margin: 2.25rem 0;
+}
+.lex-fig img {
+	display: block;
+	width: 100%;
+	height: auto;
+	margin: 0;
+}
+.lex-fig--small {
+	width: 85%;
+	margin-left: auto;
+	margin-right: auto;
+}
+@media (min-width: 768px) {
+	.lex-fig--small {
+		width: 50%;
+	}
+}
+.lex-fig--wide,
+.lex-fig--full {
+	position: relative;
+	z-index: 2;
+	max-width: none;
+}
+.lex-fig--wide {
+	width: var(--lex-wide-w, 100%);
+	margin-left: var(--lex-wide-ml, 0);
+}
+.lex-fig--full {
+	width: var(--lex-full-w, 100%);
+	margin-left: var(--lex-full-ml, 0);
+}
+.lex-fig--full img {
+	border-left: 0;
+	border-right: 0;
+}
+.lex-credit {
+	margin-top: 0.5rem;
+	font-family: var(--font-libre, inherit);
+	font-size: 12px;
+	line-height: 1.4;
+	color: var(--color-fade);
+}
+.lex-credit a {
+	color: inherit;
+	text-decoration: underline;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 2px;
+}
+.lex-credit a:hover {
+	color: var(--color-ink);
+}
+.lex-fig--wide .lex-credit {
+	padding-left: var(--lex-wide-cap, 0px);
+}
+.lex-fig--full .lex-credit {
+	padding-left: max(16px, var(--lex-col-left, 0px));
+	padding-right: 16px;
+}

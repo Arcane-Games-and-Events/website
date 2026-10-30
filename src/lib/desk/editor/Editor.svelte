@@ -72,6 +72,7 @@
 	import InsertCardLinkDialog from './InsertCardLinkDialog.svelte';
 	import InsertInlineVideoDialog from './InsertInlineVideoDialog.svelte';
 	import EditImageDialog from './EditImageDialog.svelte';
+	import MediaPicker from '$lib/desk/media/MediaPicker.svelte';
 	import EditorContextMenu from './EditorContextMenu.svelte';
 	import CardLinkPopover from './CardLinkPopover.svelte';
 	import { mountWidget } from './widgets/mount.svelte.js';
@@ -91,8 +92,7 @@
 
 	let activeFormats = { bold: false, italic: false, underline: false, strikethrough: false };
 
-	let imageInputEl;
-	let imageUploading = false;
+	let imagePickerOpen = false;
 
 	let decklistDialogOpen = false;
 	let statsDialogOpen = false;
@@ -402,7 +402,8 @@
 			if (!w) {
 				const handle = mountWidget(el, dec, {
 					onedit: () => editWidget(key),
-					onremove: () => removeWidget(key)
+					onremove: () => removeWidget(key),
+					onchange: (patch) => patchWidget(key, patch)
 				});
 				widgets.set(key, { el, dec, handle });
 			} else if (w.dec !== dec) {
@@ -412,19 +413,20 @@
 		}
 	}
 
-	// For inline images we also clean up the media row + storage object. The
-	// endpoint keeps anything still used as a cover or thumbnail.
+	// Removing an inline image leaves the file in the image library, where
+	// the writer can reuse or delete it.
 	function removeWidget(nodeKey) {
 		if (!editor) return;
-		let mediaIdToDelete = null;
-		editor.getEditorState().read(() => {
-			const data = /** @type {any} */ (getNodeByKey(nodeKey))?.__data;
-			if (data?.mediaId) mediaIdToDelete = data.mediaId;
-		});
 		editor.update(() => getNodeByKey(nodeKey)?.remove());
-		if (mediaIdToDelete) {
-			fetch(`/api/desk/media/${mediaIdToDelete}`, { method: 'DELETE' }).catch(() => {});
-		}
+	}
+
+	// Small changes made right on the card (an image's display size).
+	function patchWidget(nodeKey, patch) {
+		if (!editor) return;
+		editor.update(() => {
+			const node = /** @type {any} */ (getNodeByKey(nodeKey));
+			node?.setData({ ...node.__data, ...patch });
+		});
 	}
 
 	function editWidget(nodeKey) {
@@ -525,47 +527,28 @@
 		});
 	}
 
-	// --- Image upload ----------------------------------------------------------
+	// --- Images ----------------------------------------------------------------
+	// Inline images come from the image library: pick one of your images or
+	// upload a new one in the picker. The node stores a mid-sized copy as its
+	// URL (for the editor card and as a fallback); the page renders the full
+	// set of copies and the credit from the library by `mediaId`.
 
 	function openImagePicker() {
-		imageInputEl?.click();
+		imagePickerOpen = true;
 	}
 
-	async function handleImageFile(e) {
-		const file = e.target?.files?.[0];
-		if (!file) return;
-		if (!file.type.startsWith('image/')) {
-			console.warn('Skipping non-image file');
-			return;
-		}
-		imageUploading = true;
-		try {
-			const fd = new FormData();
-			fd.append('file', file);
-			const res = await fetch('/api/desk/upload', { method: 'POST', body: fd });
-			if (!res.ok) {
-				const body = await res.json().catch(() => ({}));
-				alert(body?.message || `Image upload failed (${res.status})`);
-				return;
-			}
-			const { media } = await res.json();
-			if (!editor || !media) return;
-			editor.update(() => {
-				const node = createImageUploadNode({
-					url: media.url,
-					alt: media.alt || '',
-					width: media.width || null,
-					height: media.height || null,
-					mediaId: media.id
-				});
-				insertNodes([node]);
+	function insertLibraryImage(item) {
+		if (!editor || !item) return;
+		editor.update(() => {
+			const node = createImageUploadNode({
+				url: item.image?.src || item.url,
+				alt: item.alt || '',
+				width: item.image?.width || item.width || null,
+				height: item.image?.height || item.height || null,
+				mediaId: item.id
 			});
-		} catch (err) {
-			alert(err?.message || 'Network error during image upload');
-		} finally {
-			imageUploading = false;
-			if (imageInputEl) imageInputEl.value = '';
-		}
+			insertNodes([node]);
+		});
 	}
 
 	// Toolbar: square buttons in the site's sans. Every button keeps focus
@@ -761,9 +744,8 @@
 						type="button"
 						class={tbBase}
 						title="Insert image"
-						disabled={imageUploading}
 						on:mousedown={keepFocus}
-						on:click={openImagePicker}>{imageUploading ? 'Uploading…' : 'Image'}</button
+						on:click={openImagePicker}>Image</button
 					>
 					<button
 						type="button"
@@ -802,7 +784,7 @@
 						aria-expanded={menu === 'insert'}
 						on:mousedown={keepFocus}
 						on:click={() => toggleMenu('insert')}
-						>{imageUploading ? 'Uploading…' : 'Insert'}
+						>Insert
 						<span class="text-[9px]" aria-hidden="true">▾</span></button
 					>
 					{#if menu === 'insert'}
@@ -822,13 +804,6 @@
 						</div>
 					{/if}
 				</span>
-				<input
-					bind:this={imageInputEl}
-					type="file"
-					accept="image/*"
-					on:change={handleImageFile}
-					class="hidden"
-				/>
 			</div>
 		</div>
 
@@ -889,6 +864,7 @@
 	onsubmit={(d) => (videoInitial ? saveWidget(d) : insertInlineVideo(d))}
 	onclose={endEdit}
 />
+<MediaPicker bind:open={imagePickerOpen} title="Insert an image" onpick={insertLibraryImage} />
 <EditImageDialog
 	bind:open={imageDialogOpen}
 	initial={imageInitial}

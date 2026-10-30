@@ -26,7 +26,7 @@ import {
 import { alias } from 'drizzle-orm/pg-core';
 import { and, asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { cached } from '$lib/server/cache/index.js';
-import { mediaImage } from '$lib/server/desk/image.js';
+import { mediaImage, mediaColumns } from '$lib/server/desk/image.js';
 
 const COURSE_TAGS = { tags: ['courses', 'media'] };
 
@@ -60,8 +60,8 @@ function courseSelect(cover, thumb) {
 		price: deskCourse.price,
 		premiumDiscountPct: deskCourse.premiumDiscountPct,
 		publishedAt: deskCourse.publishedAt,
-		cover: { url: cover.url, storagePath: cover.storagePath, width: cover.width, alt: cover.alt },
-		thumb: { url: thumb.url, storagePath: thumb.storagePath, width: thumb.width, alt: thumb.alt },
+		cover: mediaColumns(cover),
+		thumb: mediaColumns(thumb),
 		authorId: userTable.id,
 		authorFirstName: userTable.firstName,
 		authorLastName: userTable.lastName

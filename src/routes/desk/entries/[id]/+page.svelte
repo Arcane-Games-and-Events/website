@@ -18,7 +18,9 @@
 	import Editor from '$lib/desk/editor/Editor.svelte';
 	import CoverImagePicker from '$lib/desk/editor/CoverImagePicker.svelte';
 	import VideoSlotPicker from '$lib/desk/editor/VideoSlotPicker.svelte';
+	import TagPicker from '$lib/desk/editor/TagPicker.svelte';
 	import { coerceLexicalDoc } from '$lib/desk/editor/utils.js';
+	import { SLUG_MAX, cleanTypedSlug, slugMatchesTitle, titleToSlug } from '$lib/desk/slug.js';
 	import { diffWords, diffArrays } from 'diff';
 
 	export let data;
@@ -44,6 +46,30 @@
 	let accessMode = data?.entry?.accessMode || 'free';
 	let status = data?.entry?.status || 'draft';
 	let body = coerceLexicalDoc(liveOrDraft(data?.entry, 'body'));
+
+	// ---------- web address ----------
+	// While a piece is a draft, its address follows the title as you type
+	// (when it still matches the title). Typing in the address field takes
+	// over; "Match title" hands it back. Published and scheduled pieces keep
+	// their address so links to them don't break, unless you choose to match.
+	const goneLive = ['published', 'scheduled'].includes(data?.entry?.status);
+	let slugFollowsTitle = !goneLive && slugMatchesTitle(slug, title);
+	let slugTitle = title;
+	$: if (slugFollowsTitle && title !== slugTitle) {
+		slugTitle = title;
+		slug = titleToSlug(title) || 'untitled';
+	}
+	function onSlugInput(e) {
+		slugFollowsTitle = false;
+		slug = cleanTypedSlug(e.currentTarget.value);
+		e.currentTarget.value = slug;
+	}
+	function matchTitle() {
+		slug = titleToSlug(title) || 'untitled';
+		slugTitle = title;
+		slugFollowsTitle = status !== 'published' && status !== 'scheduled';
+	}
+	$: slugMatches = slug === (titleToSlug(title) || 'untitled') || slugMatchesTitle(slug, title);
 
 	let isAdmin = !!data?.isAdmin;
 	let scheduleInput = data?.entry?.scheduledFor
@@ -103,6 +129,16 @@
 		}
 	}
 
+	// ---------- tag ----------
+	// One per piece; saved as soon as it's picked, like the author.
+	let tag = data?.tag || null;
+	async function pickTag(next) {
+		const updated = await patchEntry({ tagId: next?.id ?? null });
+		if (!updated) return false;
+		tag = next ? { id: next.id, name: next.name, slug: next.slug } : null;
+		return true;
+	}
+
 	async function patchEntry(fields) {
 		const res = await fetch(`/api/desk/entries/${entry.id}`, {
 			method: 'PATCH',
@@ -124,39 +160,21 @@
 		return j.entry;
 	}
 
+	// Swapping or removing a cover leaves the old image in the writer's
+	// image library, where they can reuse or delete it.
 	async function handleCoverChange(e) {
 		const media = e.detail;
-		// Capture the old media id BEFORE we replace it so we can clean it
-		// up on the server once the entry no longer references it. If the
-		// user is replacing with the same image (same id) we don't delete.
-		const prevId = coverImage?.id || null;
-		const nextId = media?.id || null;
 		coverImage = media;
-		const result = await patchEntry({ coverImageId: nextId });
-		if (result && prevId && prevId !== nextId) {
-			deleteMedia(prevId);
-		}
+		await patchEntry({ coverImageId: media?.id || null });
 	}
 	async function handleThumbnailChange(e) {
 		const media = e.detail;
-		const prevId = thumbnailImage?.id || null;
-		const nextId = media?.id || null;
 		thumbnailImage = media;
-		const result = await patchEntry({ thumbnailImageId: nextId });
-		if (result && prevId && prevId !== nextId) {
-			deleteMedia(prevId);
-		}
+		await patchEntry({ thumbnailImageId: media?.id || null });
 	}
 	async function handleVideoPatch(e) {
 		const fields = e.detail || {};
 		await patchEntry(fields);
-	}
-
-	// Fire-and-forget: DB row + Supabase Storage object are cleaned up if
-	// nothing else still references the media. Silent on the client side —
-	// the endpoint refuses gracefully when a shared image is still needed.
-	function deleteMedia(id) {
-		fetch(`/api/desk/media/${id}`, { method: 'DELETE' }).catch(() => {});
 	}
 
 	// A scheduled entry whose time has passed reads as published everywhere
@@ -449,6 +467,9 @@
 			}
 			const json = await res.json();
 			entry = json.entry;
+			// The server cleans the address and adds -2, -3… if another piece
+			// already has it. Show that, unless it's been edited meanwhile.
+			if (slug === sentSlug && entry.slug && entry.slug !== sentSlug) slug = entry.slug;
 			// Status is server-authoritative for publish/schedule flows, safe to sync.
 			status = entry.status;
 			// Re-baseline dirty against current LOCAL values so any typing that
@@ -473,16 +494,44 @@
 		await save({ status: 'draft' });
 	}
 
+	// ---------- library date ----------
+	// Editing the field changes nothing until "Update date" is pressed (the
+	// browser's picker fires a change for every part typed, which used to
+	// save half-entered dates). After a save, a confirmation shows the new
+	// date until the field is touched again.
+	let publishDateSaving = false;
+	let publishDateSaved = '';
+	$: savedPublishDateInput = entry?.publishedAt ? toLocalInput(new Date(entry.publishedAt)) : '';
+	$: publishDateChanged = publishDateInput !== savedPublishDateInput;
+	$: if (publishDateChanged) publishDateSaved = '';
+
+	const longDate = (d) =>
+		d.toLocaleString('en-US', {
+			weekday: 'short',
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric',
+			hour: 'numeric',
+			minute: '2-digit'
+		});
+
 	async function savePublishDate() {
-		// Empty input = clear the publish date.
-		if (!publishDateInput) {
-			const updated = await patchEntry({ publishedAt: null });
-			if (updated) publishDateInput = '';
-			return;
+		let when = null;
+		if (publishDateInput) {
+			when = new Date(publishDateInput);
+			if (isNaN(when.getTime())) return alert('That date isn’t complete. Check the day and time.');
 		}
-		const when = new Date(publishDateInput);
-		if (isNaN(when.getTime())) return alert('Invalid publish date.');
-		await patchEntry({ publishedAt: when.toISOString() });
+		publishDateSaving = true;
+		const updated = await patchEntry({ publishedAt: when ? when.toISOString() : null });
+		publishDateSaving = false;
+		if (!updated) return;
+		publishDateSaved = updated.publishedAt
+			? `Library date updated to ${longDate(new Date(updated.publishedAt))}.`
+			: 'Library date cleared.';
+	}
+
+	function cancelPublishDate() {
+		publishDateInput = savedPublishDateInput;
 	}
 
 	async function scheduleEntry() {
@@ -638,6 +687,14 @@
 		// Lexical fires one synthetic change on mount as it hydrates. Treat that
 		// as the editor reaching ready — subsequent changes are user input.
 		if (!ready && editorChangeCount === 1) handleEditorReady();
+	}
+	// An empty body has nothing to hydrate, so that first change never comes
+	// and autosave would wait until the body is typed in (a new draft's title
+	// and address wouldn't save). Count the editor as ready once it's mounted.
+	function handleEditorMounted() {
+		setTimeout(() => {
+			if (!ready && editorChangeCount === 0) handleEditorReady();
+		}, 300);
 	}
 </script>
 
@@ -814,18 +871,48 @@
 				{/if}
 
 				{#if isAdmin}
-					<label class="block px-4 py-4">
-						<span class={rowLabel}>Library date</span>
+					<div class="block px-4 py-4">
+						<label for="library-date" class={rowLabel}>Library date</label>
 						<input
+							id="library-date"
 							type="datetime-local"
 							bind:value={publishDateInput}
-							on:change={savePublishDate}
 							class="mt-1.5 {control}"
 						/>
+						{#if publishDateChanged}
+							<div class="mt-2 flex gap-2">
+								<button
+									type="button"
+									on:click={savePublishDate}
+									disabled={publishDateSaving}
+									class="min-h-[38px] flex-1 bg-ink px-3 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:opacity-60"
+									>{publishDateSaving
+										? 'Updating…'
+										: publishDateInput
+											? 'Update date'
+											: 'Clear date'}</button
+								>
+								<button
+									type="button"
+									on:click={cancelPublishDate}
+									disabled={publishDateSaving}
+									class="min-h-[38px] px-3 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase transition-colors hover:text-ink"
+									>Cancel</button
+								>
+							</div>
+						{:else if publishDateSaved}
+							<p
+								class="mt-2 flex items-start gap-2 border-l-[3px] border-prem bg-prem/[0.08] px-3 py-2 text-[12px] leading-snug text-ink"
+								role="status"
+							>
+								<span class="font-extrabold text-prem" aria-hidden="true">✓</span>
+								<span>{publishDateSaved}</span>
+							</p>
+						{/if}
 						<span class="mt-1.5 block text-[11.5px] leading-snug text-fade"
 							>Sets the order in the Library, newest first. Backdate to file a piece in the archive.</span
 						>
-					</label>
+					</div>
 				{/if}
 
 				{#if (isAdmin && displayStatus !== 'archived') || status === 'draft'}
@@ -879,6 +966,11 @@
 				{/if}
 
 				<div class="px-4 py-4">
+					<span class={rowLabel}>Tag</span>
+					<TagPicker value={tag} tags={data?.tags ?? []} onpick={pickTag} />
+				</div>
+
+				<div class="px-4 py-4">
 					<span class={rowLabel} id="access-label">Who can read it</span>
 					<div
 						class="mt-1.5 grid grid-cols-2 gap-px border border-line2 bg-line2"
@@ -905,22 +997,51 @@
 					</div>
 				</div>
 
-				<label class="block px-4 py-4">
-					<span class={rowLabel}>Web address</span>
+				<div class="block px-4 py-4">
+					<div class="flex items-baseline justify-between gap-3">
+						<label for="entry-slug" class={rowLabel}>Web address</label>
+						<span class="text-[10.5px] text-fade tabular-nums">{slug.length}/{SLUG_MAX}</span>
+					</div>
 					<span
 						class="mt-1.5 flex h-[40px] items-center border border-line2 bg-paper focus-within:border-ink"
 					>
 						<span class="shrink-0 pl-2.5 text-[13px] text-fade">/library/</span>
 						<input
+							id="entry-slug"
 							type="text"
-							bind:value={slug}
+							value={slug}
+							on:input={onSlugInput}
+							maxlength={SLUG_MAX}
 							autocapitalize="off"
 							autocorrect="off"
 							spellcheck="false"
 							class="h-full min-w-0 flex-1 border-0 bg-transparent px-0.5 text-[14px] focus:ring-0 focus:outline-none"
 						/>
 					</span>
-				</label>
+					<p
+						class="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-[11.5px] leading-snug text-fade"
+					>
+						<span>
+							{#if slugFollowsTitle}
+								Follows the title as you type.
+							{:else if goneLive && !slugMatches}
+								Live pieces keep their address so links to them still work.
+							{:else if !slugMatches}
+								Set by hand.
+							{:else}
+								Matches the title.
+							{/if}
+						</span>
+						{#if !slugFollowsTitle && !slugMatches}
+							<button
+								type="button"
+								on:click={matchTitle}
+								class="text-[10px] font-extrabold tracking-[0.12em] text-ink uppercase hover:text-warm"
+								>Match title</button
+							>
+						{/if}
+					</p>
+				</div>
 			</div>
 		</section>
 
@@ -1184,6 +1305,7 @@
 								bind:value={body}
 								placeholder="Start writing…"
 								on:change={handleEditorChange}
+								on:ready={handleEditorMounted}
 								toolbarEnd={isWide ? null : toolbarEnd}
 							/>
 						{/if}

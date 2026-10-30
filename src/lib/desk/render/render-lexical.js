@@ -24,7 +24,9 @@ import { getWidget } from './widgets.js';
  * registry becomes a top-level widget segment instead of inline HTML.
  *
  * @param {object} content - Lexical doc, expected shape `{ root: { children: [...] } }`
- * @param {object} ctx - rendering context, `{ cardImages: { [name]: { imageUrl, fallbackUrl } } }`
+ * @param {object} ctx - rendering context: `{ cardImages: { [name]: { imageUrl, fallbackUrl } },
+ *   media: { [mediaId]: mediaImage shape } }` — `media` gives inline images their
+ *   responsive copies, blur and credit (see $lib/server/desk/image.js)
  * @returns {Array<object>} segments
  */
 export function renderLexicalToSegments(content, ctx = {}) {
@@ -107,15 +109,7 @@ function renderNode(node, ctx) {
 	}
 
 	if (node.type === 'upload') {
-		const media = node.value || node;
-		const url = media.url || '';
-		const alt = media.alt || media.filename || '';
-		// Supabase resizes on request, so phones get a phone-sized copy.
-		const srcset = transformSrcset(url);
-		const responsive = srcset
-			? ` srcset="${escapeHtml(srcset)}" sizes="(min-width: 768px) 720px, 100vw"`
-			: '';
-		return `<figure class="my-8"><img src="${escapeHtml(url)}"${responsive} alt="${escapeHtml(alt)}" loading="lazy" decoding="async" /></figure>`;
+		return renderImage(node.value || node, ctx);
 	}
 
 	if (node.type === 'link' || node.type === 'autolink') {
@@ -172,4 +166,70 @@ function renderLink(node, ctx) {
 		// keep as-is
 	}
 	return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${inner}</a>`;
+}
+
+/**
+ * How large an inline image is drawn, and the `sizes` the browser uses to
+ * pick a file for it. Images saved before sizes existed draw at text width.
+ */
+export const IMAGE_SIZES = {
+	small: { label: 'Small', sizes: '(min-width: 768px) 360px, 85vw' },
+	text: { label: 'Text width', sizes: '(min-width: 768px) 760px, 100vw' },
+	wide: { label: 'Wide', sizes: '(min-width: 1180px) 1100px, 100vw' },
+	full: { label: 'Full width', sizes: '100vw' }
+};
+
+/** The size key for an inline image's stored value. */
+export function imageSize(value) {
+	return value?.size && IMAGE_SIZES[value.size] ? value.size : 'text';
+}
+
+/**
+ * An inline image: a <picture> with AVIF and WebP copies when the image is
+ * in the library (`ctx.media`), its blurred preview, and its credit beneath.
+ * Images uploaded before the library keep their old rendering.
+ */
+function renderImage(value, ctx) {
+	const size = imageSize(value);
+	const lib = value.mediaId ? ctx.media?.[value.mediaId] : null;
+	const alt = lib?.alt || value.alt || value.filename || '';
+	const sizes = IMAGE_SIZES[size].sizes;
+	const width = lib?.width || value.width;
+	const height = lib?.height || value.height;
+	const dims = width && height ? ` width="${Number(width)}" height="${Number(height)}"` : '';
+
+	let picture;
+	if (lib?.srcset) {
+		const blur = lib.blur
+			? ` style="background-image:url(&quot;${escapeHtml(lib.blur)}&quot;);background-size:cover" onload="this.style.backgroundImage='none'"`
+			: '';
+		picture =
+			'<picture>' +
+			(lib.avifSrcset
+				? `<source type="image/avif" srcset="${escapeHtml(lib.avifSrcset)}" sizes="${sizes}" />`
+				: '') +
+			`<source type="image/webp" srcset="${escapeHtml(lib.srcset)}" sizes="${sizes}" />` +
+			`<img src="${escapeHtml(lib.src)}" alt="${escapeHtml(alt)}"${dims} loading="lazy" decoding="async"${blur} />` +
+			'</picture>';
+	} else {
+		// Not processed by the library: Supabase resizes on request.
+		const url = lib?.src || value.url || '';
+		const srcset = transformSrcset(url);
+		const responsive = srcset ? ` srcset="${escapeHtml(srcset)}" sizes="${sizes}"` : '';
+		picture = `<img src="${escapeHtml(url)}"${responsive} alt="${escapeHtml(alt)}"${dims} loading="lazy" decoding="async" />`;
+	}
+
+	return `<figure class="lex-fig lex-fig--${size}">${picture}${creditHtml(lib)}</figure>`;
+}
+
+/** The credit under an image, linked when it has a link; nothing when empty. */
+export function creditHtml(image) {
+	const credit = (image?.credit || '').trim();
+	if (!credit) return '';
+	const text = escapeHtml(credit);
+	const url = image.creditUrl && /^https?:\/\//i.test(image.creditUrl) ? image.creditUrl : null;
+	const inner = url
+		? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${text}</a>`
+		: text;
+	return `<figcaption class="lex-credit">${inner}</figcaption>`;
 }

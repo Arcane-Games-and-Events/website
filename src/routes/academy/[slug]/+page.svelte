@@ -1,4 +1,5 @@
 <script>
+	import Picture from '$lib/components/media/Picture.svelte';
 	/**
 	 * Course page — Academy register: a board-green masthead with the
 	 * course's title, instructor and size, then the cover in a plate
@@ -123,10 +124,9 @@
 				<!-- cover -->
 				{#if c.coverImage?.src}
 					<div class="fp-plate-gold relative aspect-video overflow-hidden bg-panel">
-						<img
+						<Picture
+							image={c.coverImage}
 							class="fp-kenburns absolute inset-0 h-full w-full object-cover"
-							src={c.coverImage.src}
-							srcset={c.coverImage.srcset}
 							sizes="(min-width: 1024px) 800px, 100vw"
 							alt={c.coverImage.alt || ''}
 							fetchpriority="high"

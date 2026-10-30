@@ -6,6 +6,7 @@ import {
 	isMissingProfileTable
 } from '$lib/server/desk/authorProfile.js';
 import { authorStats, parseRange } from '$lib/server/contentAnalytics/query.js';
+import { canManage, getMediaRow } from '$lib/server/media/library.js';
 
 /**
  * /desk/profile — every Desk user edits how they appear on their pieces, and
@@ -40,6 +41,19 @@ export const actions = {
 		const form = Object.fromEntries(await request.formData());
 		const parsed = parseProfileInput(form);
 		if (!parsed.ok) return fail(400, { error: parsed.error });
+		// The photo must be one of the user's own library images (editors and
+		// admins can use anyone's), unless it's the photo already set.
+		const photoId = parsed.value.avatarMediaId;
+		if (photoId) {
+			const current = (await getAuthorProfile(locals.user.id).catch(() => null))?.profile?.avatar
+				?.id;
+			if (photoId !== current) {
+				const media = await getMediaRow(photoId);
+				if (!media || !canManage(locals.user, media)) {
+					return fail(400, { error: 'That photo could not be used. Choose one of your images.' });
+				}
+			}
+		}
 		try {
 			await saveAuthorProfile(locals.user.id, parsed.value);
 		} catch (err) {

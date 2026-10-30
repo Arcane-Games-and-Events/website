@@ -2,17 +2,23 @@ import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { deskEntry } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
-import { canEditEntries, canEditEntry, isAdmin } from '$lib/server/auth/roles.js';
+import { mediaImagesById } from '$lib/server/media/library.js';
+import { extractMediaIds } from '$lib/desk/render/lexical-utils.js';
+import { getEntryTag } from '$lib/server/desk/tags.js';
+import { canEditEntries, canEditEntry } from '$lib/server/auth/roles.js';
 import {
 	extractEntryCardNames,
 	resolveCardImages,
 	loadMedia,
 	loadAuthor,
-	buildEntryVideo
+	countAuthorPieces,
+	buildArticleShape
 } from '$lib/server/desk/entryData.js';
 
 /**
- * Preview page loader for an entry. Distinct from the public reader:
+ * Preview page loader for an entry. Builds the same `article` the public
+ * reader renders (`buildArticleShape`), so the page is the live article
+ * view under a preview banner. What differs from the public reader:
  *
  *   - Bypasses the "public-visibility" filter — drafts, scheduled entries,
  *     and archived entries all render here so the writer can see what
@@ -40,21 +46,32 @@ export async function load({ params, locals }) {
 		return entry[field];
 	}
 
-	const title = pick('title') || 'Untitled';
-	const excerpt = pick('excerpt') || null;
-	const body = pick('body') || null;
-
+	// The entry as it will read once its pending edits go live.
+	const merged = {
+		...entry,
+		title: pick('title') || 'Untitled',
+		excerpt: pick('excerpt') || null,
+		body: pick('body') || null,
+		readTime: pick('readTime') || null
+	};
 	const coverImageId = entry.draftCoverImageId || entry.coverImageId;
 	const thumbnailImageId = entry.draftThumbnailImageId || entry.thumbnailImageId;
 
-	const [cover, thumbnail, author] = await Promise.all([
+	const [cover, thumbnail, author, pieces, tag] = await Promise.all([
 		loadMedia(coverImageId),
 		loadMedia(thumbnailImageId),
-		loadAuthor(entry.authorId)
+		loadAuthor(entry.authorId),
+		countAuthorPieces(entry.authorId),
+		getEntryTag(entry.id)
 	]);
-
-	// Video slot — always live on the entry (video changes don't buffer).
-	const video = await buildEntryVideo(entry);
+	const article = await buildArticleShape({
+		entry: merged,
+		cover,
+		thumbnail,
+		author: author ? { ...author, pieces } : null,
+		tags: tag ? [tag] : []
+	});
+	const body = merged.body;
 
 	// Effective published-ness for the banner labels — a scheduled entry
 	// past its start time counts as public everywhere else on the site.
@@ -76,27 +93,20 @@ export async function load({ params, locals }) {
 		if (names.size > 0) cardImages = await resolveCardImages(names);
 	}
 
+	const media = body ? await mediaImagesById(extractMediaIds(body)) : {};
+
 	return {
-		entry: {
+		article,
+		isPremium: entry.accessMode === 'premium',
+		cardImages,
+		media,
+		preview: {
 			id: entry.id,
 			slug: entry.slug,
-			title,
-			excerpt,
-			content: body,
-			publishedAt: entry.publishedAt,
-			scheduledFor: entry.scheduledFor,
-			accessMode: entry.accessMode,
 			status: entry.status,
-			effectiveStatus,
+			scheduledFor: entry.scheduledFor,
 			isLive,
-			hasPendingDraft,
-			coverImage: cover ? { src: cover.url, alt: cover.alt || '' } : null,
-			thumbnailImage: thumbnail ? { src: thumbnail.url, alt: thumbnail.alt || '' } : null,
-			author: author ? { name: `${author.firstName} ${author.lastName || ''}`.trim() } : null,
-			readTime: entry.readTime || null,
-			video
-		},
-		cardImages,
-		isAdmin: isAdmin(locals.user)
+			hasPendingDraft
+		}
 	};
 }

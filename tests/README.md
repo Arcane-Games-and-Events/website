@@ -28,6 +28,11 @@ The schema comes from `tests/db/schema.sql`, a schema-only dump of the dev
 database. After applying a migration, refresh it with `pnpm test:db:schema`
 and commit the result.
 
+A migration that isn't on dev yet can be appended to the end of
+`schema.sql` by hand so tests can use it (026, the image library, is
+appended this way). Write table names as `public.<table>`, because the dump
+clears the search path. The next refresh replaces it with the real dump.
+
 ## Safety
 
 `tests/setup/environment.js` replaces every secret from `.env` before

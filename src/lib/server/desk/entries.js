@@ -8,36 +8,33 @@
  *   - Draft or archived entries: edits go straight to the live columns.
  *   - Published or scheduled entries: content edits (title, excerpt, body,
  *     cover, thumbnail, video slot) are staged in `draft_*` columns and only
- *     become public when an admin calls `approveEntryDraft`. Slug, access
- *     mode, author, and status transitions always go live.
+ *     become public when an admin calls `approveEntryDraft`. Slug, tag,
+ *     access mode, author, and status transitions always go live.
  */
 import { db } from '$lib/server/db/index.js';
 import { deskEntry, deskRevision } from '$lib/server/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { calculateReadTime, lexicalToText } from '$lib/desk/render/lexical-utils.js';
-import { deleteMediaWithGuard } from '$lib/server/desk/media.js';
 import { bump } from '$lib/server/cache/index.js';
+import { titleToSlug, withSuffix } from '$lib/desk/slug.js';
+import { setEntryTag } from '$lib/server/desk/tags.js';
 
 const isPublic = (status) => status === 'published' || status === 'scheduled';
 
 // --- slug helpers -----------------------------------------------------------
 
-export function titleToSlug(title) {
-	return String(title || '')
-		.toLowerCase()
-		.replace(/[^\w\s-]/g, '')
-		.replace(/\s+/g, '-')
-		.replace(/-+/g, '-')
-		.replace(/^-+|-+$/g, '')
-		.slice(0, 80);
-}
+export { titleToSlug };
 
+/**
+ * `desired`, or `desired-2`, `-3`… if another entry already has it. Always
+ * within SLUG_MAX characters.
+ */
 export async function findFreeSlug(desired, excludeId = null) {
-	let base = desired || 'untitled';
+	const base = titleToSlug(desired) || 'untitled';
 	let candidate = base;
 	let n = 2;
 	while (await isSlugTaken(candidate, excludeId)) {
-		candidate = `${base}-${n}`;
+		candidate = withSuffix(base, n);
 		n++;
 	}
 	return candidate;
@@ -116,7 +113,7 @@ function shouldBufferEdits(existing) {
 // is where admin sign-off actually matters (a wrong title / excerpt / body
 // misleads readers). Image changes are handled separately below: they
 // always go live, so the writer's chosen artwork is what visitors see and
-// the client-side deleteMedia call cleans up the replaced file immediately.
+// the replaced image stays in the writer's image library.
 const CONTENT_FIELDS = [
 	{ patch: 'title', draft: 'draftTitle', live: 'title' },
 	{ patch: 'excerpt', draft: 'draftExcerpt', live: 'excerpt' }
@@ -148,7 +145,7 @@ const VIDEO_FIELDS = [
  *
  * For published or scheduled entries, content edits (title, excerpt, body,
  * cover, thumbnail) route into `draft_*`. Status changes, slug edits, author
- * reassign, access mode, and video-slot changes always go live.
+ * reassign, tag, access mode, and video-slot changes always go live.
  *
  * @param {string} id
  * @param {object} patch - any subset of editable fields
@@ -182,8 +179,7 @@ export async function updateEntry(id, patch, actor) {
 	}
 
 	// Cover + thumbnail — always live, never buffered. Image swaps take
-	// effect immediately so the client-side deleteMedia call can clean up
-	// the replaced file right after this update completes.
+	// effect immediately; the replaced image stays in the image library.
 	if ('coverImageId' in patch) updates.coverImageId = patch.coverImageId;
 	if ('thumbnailImageId' in patch) updates.thumbnailImageId = patch.thumbnailImageId;
 
@@ -235,6 +231,9 @@ export async function updateEntry(id, patch, actor) {
 
 	await db.update(deskEntry).set(updates).where(eq(deskEntry.id, id));
 
+	// Tag — always live, like access mode. The caller has checked it exists.
+	const tagChanged = 'tagId' in patch ? await setEntryTag(id, patch.tagId || null) : false;
+
 	// Revision snapshot — only when body actually changed AND is non-null
 	// (the schema requires deskRevision.body NOT NULL).
 	if (patch.body !== undefined && patch.body !== null) {
@@ -250,9 +249,9 @@ export async function updateEntry(id, patch, actor) {
 	// draft buffer. So the cached lists change only when a live column
 	// (status, slug, cover, video, access, author, dates) changes on an entry
 	// that is public before or after the edit. Draft autosaves don't bump.
-	const liveChange = Object.keys(updates).some(
-		(key) => key !== 'updatedAt' && !key.startsWith('draft')
-	);
+	const liveChange =
+		tagChanged ||
+		Object.keys(updates).some((key) => key !== 'updatedAt' && !key.startsWith('draft'));
 	if (liveChange && (isPublic(existing.status) || isPublic(updates.status))) {
 		await bump('entries');
 	}
@@ -309,7 +308,7 @@ export async function approveEntryDraft(id, actor, opts = {}) {
 	// Legacy: any entry that was already buffered before we stopped
 	// buffering image changes will still have draftCoverImageId /
 	// draftThumbnailImageId set. Approve should still swap those onto live
-	// and clean up the replaced files so old drafts don't get stuck.
+	// so old drafts don't get stuck.
 	if (existing.draftCoverImageId != null) updates.coverImageId = existing.draftCoverImageId;
 	if (existing.draftThumbnailImageId != null) {
 		updates.thumbnailImageId = existing.draftThumbnailImageId;
@@ -324,22 +323,6 @@ export async function approveEntryDraft(id, actor, opts = {}) {
 		updates.scheduledFor = null;
 	}
 
-	const orphanedIds = [];
-	if (
-		existing.draftCoverImageId != null &&
-		existing.coverImageId &&
-		existing.coverImageId !== existing.draftCoverImageId
-	) {
-		orphanedIds.push(existing.coverImageId);
-	}
-	if (
-		existing.draftThumbnailImageId != null &&
-		existing.thumbnailImageId &&
-		existing.thumbnailImageId !== existing.draftThumbnailImageId
-	) {
-		orphanedIds.push(existing.thumbnailImageId);
-	}
-
 	await db.update(deskEntry).set(updates).where(eq(deskEntry.id, id));
 
 	// Snapshot the just-approved body so revision history is faithful.
@@ -352,16 +335,7 @@ export async function approveEntryDraft(id, actor, opts = {}) {
 		});
 	}
 
-	// Clean up the images the draft just replaced — Storage + DB row.
-	// The reference guard inside deleteMediaWithGuard is authoritative:
-	// if another entry / course still uses the same image, nothing changes.
-	for (const orphanedId of orphanedIds) {
-		try {
-			await deleteMediaWithGuard(orphanedId);
-		} catch (err) {
-			console.warn(`[approveEntryDraft] media cleanup failed for ${orphanedId}:`, err?.message);
-		}
-	}
+	// Images the draft replaced stay in the image library.
 
 	// Approving a draft flips what visitors see — buffered text became live.
 	await bump('entries');
@@ -372,24 +346,13 @@ export async function approveEntryDraft(id, actor, opts = {}) {
 
 /**
  * Discard buffered draft_* fields without applying them. Live columns unchanged.
- * Draft-side images (that never made it live) get cleaned up here.
+ * Draft-side images stay in the image library.
  */
 export async function discardEntryDraft(id) {
 	const [existing] = await db.select().from(deskEntry).where(eq(deskEntry.id, id)).limit(1);
 	if (!existing) return null;
 
-	// Draft images the writer uploaded that never made it to the live entry.
-	// Captured before we null out the draft columns; deleted after.
-	const orphanedIds = [];
-	if (existing.draftCoverImageId != null && existing.draftCoverImageId !== existing.coverImageId) {
-		orphanedIds.push(existing.draftCoverImageId);
-	}
-	if (
-		existing.draftThumbnailImageId != null &&
-		existing.draftThumbnailImageId !== existing.thumbnailImageId
-	) {
-		orphanedIds.push(existing.draftThumbnailImageId);
-	}
+	// Draft images that never went live stay in the image library.
 
 	await db
 		.update(deskEntry)
@@ -405,14 +368,6 @@ export async function discardEntryDraft(id) {
 			draftUpdatedBy: null
 		})
 		.where(eq(deskEntry.id, id));
-
-	for (const orphanedId of orphanedIds) {
-		try {
-			await deleteMediaWithGuard(orphanedId);
-		} catch (err) {
-			console.warn(`[discardEntryDraft] media cleanup failed for ${orphanedId}:`, err?.message);
-		}
-	}
 
 	const [updated] = await db.select().from(deskEntry).where(eq(deskEntry.id, id)).limit(1);
 	return updated;

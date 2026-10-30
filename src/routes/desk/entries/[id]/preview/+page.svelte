@@ -1,330 +1,86 @@
 <!--
-  Entry preview — mirrors the /library/[slug] reader layout so writers see
-  exactly what visitors will see. The only differences vs the public reader:
+  Entry preview — the piece exactly as the Library shows it (the same
+  ArticleView the public reader renders), under a preview banner. What
+  differs from the public page:
 
-    - Preview banner at the top so no one confuses this with the live page.
-    - Draft-buffered values are always shown (never the older approved copy).
-    - Engagement tracking, share buttons, and the premium paywall are
-      omitted — the author already has access, and telemetry on a preview
-      would pollute real metrics.
+    - Pending edits on a live piece are shown, not the approved copy.
+    - The whole piece shows, Premium or not: there's no paywall here.
+    - No content analytics, so previews don't count as reads.
 -->
 <script>
 	import DeskTabs from '$lib/components/age/desk/DeskTabs.svelte';
-	import { onMount, onDestroy } from 'svelte';
-	import RenderLexical from '$lib/desk/render/RenderLexical.svelte';
-	import LibraryVideoBlock from '$lib/desk/render/LibraryVideoBlock.svelte';
-	import CardHover from '$lib/components/CardHover.svelte';
-	import { extractHeadings } from '$lib/desk/render/lexical-utils.js';
+	import ArticleView from '$lib/components/age/library/ArticleView.svelte';
 
-	export let data;
-	$: entry = data.entry;
-	$: cardImages = data.cardImages || {};
+	let { data } = $props();
+	const p = $derived(data.preview);
 
-	$: tableOfContents = entry?.content ? extractHeadings(entry.content) : [];
+	const longDate = (d) =>
+		new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-	// Poster on the video: thumbnail wins over cover, matching the reader.
-	$: videoPoster = entry?.thumbnailImage?.src || entry?.coverImage?.src || '';
+	const state = $derived(
+		p.hasPendingDraft && p.isLive
+			? { label: 'Pending edits', note: 'How the piece will read once the edits are approved.' }
+			: p.status === 'draft'
+				? { label: 'Draft', note: 'Not published yet.' }
+				: p.status === 'scheduled' && !p.isLive
+					? { label: 'Scheduled', note: `Goes live ${longDate(p.scheduledFor)}.` }
+					: p.status === 'archived'
+						? { label: 'Archived', note: 'Not shown on the site.' }
+						: { label: 'Live', note: 'This is what readers see.' }
+	);
 
-	// Meta date — matches the reader's "January 2026" and "January 24, 2026"
-	// formats so the preview doesn't visibly differ from the published view.
-	$: pubDate = entry?.publishedAt ? new Date(entry.publishedAt) : null;
-
-	// Active TOC section on scroll — same behavior the reader uses so the
-	// sticky rail highlights whichever heading is currently on screen.
-	let activeSection = '';
-	function updateActiveSection() {
-		const headings = document.querySelectorAll(
-			'article h1[id], article h2[id], article h3[id], article h4[id]'
-		);
-		let best = '';
-		let bestTop = -Infinity;
-		for (const h of headings) {
-			const t = h.getBoundingClientRect().top;
-			if (t < 200 && t > bestTop) {
-				bestTop = t;
-				best = h.id;
-			}
-		}
-		if (best) activeSection = best;
-	}
-	onMount(() => {
-		updateActiveSection();
-		window.addEventListener('scroll', updateActiveSection, { passive: true });
+	// The view reads a public reader's data; a preview is never gated.
+	const view = $derived({
+		article: data.article,
+		isPremium: data.isPremium,
+		isPreview: false,
+		cardImages: data.cardImages,
+		media: data.media
 	});
-	onDestroy(() => {
-		if (typeof window !== 'undefined') window.removeEventListener('scroll', updateActiveSection);
-	});
-
-	function fmtBanner(d) {
-		if (!d) return '';
-		return new Date(d).toLocaleDateString('en-US', {
-			month: 'long',
-			day: 'numeric',
-			year: 'numeric'
-		});
-	}
+	const action =
+		'inline-flex h-8 items-center border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors';
 </script>
 
 <svelte:head>
-	<title>Preview · {entry?.title || 'Untitled'} · Desk</title>
+	<title>Preview · {data.article.title} · Desk</title>
 </svelte:head>
 
 <DeskTabs label />
 
-<!-- Preview banner — sticky under the Desk bar so it stays visible
-     while the writer scrolls. Warm-accent so no one confuses the preview
-     with the live page. -->
-<div class="sticky top-[var(--desk-top)] z-10 border-b border-warm bg-warm/10 backdrop-blur-sm">
+<!-- preview banner: sticks under the Desk bar so it's never mistaken for the live page -->
+<div class="sticky top-[var(--desk-top)] z-30 border-b border-ink bg-paper-bg/95 backdrop-blur-sm">
 	<div
-		class="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-14"
+		class="mx-auto flex min-h-[52px] max-w-[1680px] items-center justify-between gap-3 px-4 py-2.5 md:gap-4 md:px-8"
 	>
-		<div class="flex items-center gap-2 font-mono-system text-[11px]">
+		<p class="flex min-w-0 items-center gap-3 text-[12.5px] text-soft">
 			<span
-				class="inline-flex items-center gap-1.5 rounded-full bg-warm/25 px-2 py-0.5 font-bold tracking-wider text-warm uppercase"
+				class="inline-flex shrink-0 items-center gap-2 bg-warm px-2.5 py-1 text-[10px] font-extrabold tracking-[0.16em] text-white uppercase"
 			>
-				<span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-warm"></span>
-				Preview mode
+				<span class="text-[7px]" aria-hidden="true">◆</span> Preview · {state.label}
 			</span>
-			<span class="text-ink/70">
-				{#if entry.status === 'draft'}
-					Draft — not published yet.
-				{:else if entry.status === 'scheduled' && !entry.isLive}
-					Scheduled for {fmtBanner(entry.scheduledFor)}.
-				{:else if entry.hasPendingDraft}
-					Pending edits — this is what the draft will look like once approved.
-				{:else if entry.status === 'published'}
-					Published entry — this preview matches what visitors see.
-				{:else if entry.status === 'archived'}
-					Archived — not shown on the public site.
-				{/if}
-			</span>
-		</div>
-		<div class="flex items-center gap-2 font-mono-system text-[11px]">
-			<a
-				href="/desk/entries/{entry.id}"
-				class="rounded-md border border-line2 bg-paper px-3 py-1.5 text-ink/80 transition-colors hover:bg-ink/5 hover:text-ink"
-			>
-				← Back to editor
-			</a>
-			{#if entry.isLive && !entry.hasPendingDraft && entry.slug}
+			<span class="hidden truncate sm:inline">{state.note}</span>
+		</p>
+		<div class="flex shrink-0 items-center gap-2">
+			{#if p.isLive && !p.hasPendingDraft && p.slug}
 				<a
-					href="/library/{entry.slug}"
+					href="/library/{p.slug}"
 					target="_blank"
 					rel="noopener"
-					class="rounded-md border border-line2 bg-paper px-3 py-1.5 text-ink/80 transition-colors hover:bg-ink/5 hover:text-ink"
+					class="{action} border-line2 text-soft hover:border-ink hover:text-ink"
+					>Open<span class="hidden sm:inline">&nbsp;live</span>&nbsp;↗</a
 				>
-					Open published ↗
-				</a>
 			{/if}
+			<a
+				href="/desk/entries/{p.id}"
+				class="{action} border-ink bg-ink text-paper-bg hover:border-warm hover:bg-warm"
+				>←<span class="hidden sm:inline">&nbsp;Back to</span>&nbsp;Editor</a
+			>
 		</div>
 	</div>
 </div>
 
-<!-- ============ HEADER ============ -->
-<!-- Same kicker + headline + sell-row structure as /library/[slug]. Kicker
-     shows a type badge (Article / Video) plus the Premium chip when the
-     entry is behind the paywall. -->
-{#if entry}
-	<header class="mx-auto w-full max-w-[1600px] px-4 pt-[46px] pb-[34px] md:px-10 lg:px-14">
-		<div class="mb-[22px] flex items-center gap-[18px]">
-			<span
-				class="inline-flex items-center bg-warm px-3 py-[6px] text-[11px] font-extrabold tracking-[0.14em] text-white uppercase"
-			>
-				{entry.video ? 'Video' : 'Article'}
-			</span>
-			{#if entry.accessMode === 'premium'}
-				<span class="font-mono-system text-[11px] font-bold tracking-[0.14em] text-prem uppercase">
-					Premium
-				</span>
-			{/if}
-			<span class="h-[1px] flex-1 bg-line2"></span>
-			{#if pubDate}
-				<span class="font-mono-system text-[11px] font-bold tracking-[0.14em] text-fade uppercase">
-					{pubDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}
-				</span>
-			{:else}
-				<span class="font-mono-system text-[11px] font-bold tracking-[0.14em] text-fade uppercase">
-					Not yet published
-				</span>
-			{/if}
-		</div>
-
-		<h1
-			class="max-w-[1140px] font-newsreader text-[clamp(46px,7vw,90px)] leading-[0.9] font-semibold tracking-[-0.03em] [text-wrap:balance]"
-		>
-			{entry.title}
-		</h1>
-
-		<div
-			class="mt-[26px] flex flex-col items-start justify-between gap-12 md:flex-row md:items-end"
-		>
-			{#if entry.excerpt}
-				<p class="m-0 max-w-[680px] font-newsreader text-[21px] leading-[1.42] text-soft italic">
-					{entry.excerpt}
-				</p>
-			{:else}
-				<span class="block max-w-[680px]"></span>
-			{/if}
-
-			{#if entry.author}
-				<span class="flex flex-shrink-0 items-center gap-[13px]">
-					<span
-						class="flex h-[52px] w-[52px] items-center justify-center rounded-full border-2 border-warm bg-panel text-lg font-bold text-soft"
-					>
-						{entry.author.name.charAt(0).toUpperCase()}
-					</span>
-					<span>
-						<span class="block text-[16px] font-extrabold tracking-[-0.01em]">
-							{entry.author.name}
-						</span>
-						{#if pubDate}
-							<span
-								class="mt-[6px] block font-mono-system text-[12px] font-extrabold tracking-[0.08em] text-warm uppercase"
-							>
-								{pubDate.toLocaleDateString('en-US', {
-									month: 'long',
-									day: 'numeric',
-									year: 'numeric'
-								})}
-							</span>
-						{/if}
-						{#if entry.readTime}
-							<span
-								class="mt-[3px] block font-mono-system text-[10.5px] font-bold tracking-[0.06em] text-fade uppercase"
-							>
-								{entry.readTime} min read
-							</span>
-						{/if}
-					</span>
-				</span>
-			{/if}
-		</div>
-	</header>
-{/if}
-
-<!-- ============ HERO FIGURE ============ -->
-<!-- Video takes precedence over cover, same as the public reader. -->
-{#if entry?.video}
-	<figure class="m-0 mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
-		<LibraryVideoBlock video={entry.video} poster={videoPoster} />
-		<figcaption class="flex gap-3 py-3">
-			<span
-				class="pt-[2px] font-mono-system text-[10px] font-bold tracking-[0.14em] whitespace-nowrap text-warm uppercase"
-			>
-				Video
-			</span>
-			<span class="font-newsreader text-[13px] text-soft italic">
-				{entry.title}
-			</span>
-		</figcaption>
-	</figure>
-{:else if entry?.coverImage?.src}
-	<figure class="m-0 mx-auto w-full max-w-[1600px] px-4 md:px-10 lg:px-14">
-		<div class="border-y-[3px] border-double border-ink">
-			<img
-				src={entry.coverImage.src}
-				alt={entry.title}
-				loading="eager"
-				class="aspect-video w-full object-cover"
-			/>
-		</div>
-		<figcaption class="flex gap-3 py-3">
-			<span
-				class="pt-[2px] font-mono-system text-[10px] font-bold tracking-[0.14em] whitespace-nowrap text-warm uppercase"
-			>
-				Cover
-			</span>
-			<span class="font-newsreader text-[13px] text-soft italic">
-				{entry.title}
-			</span>
-		</figcaption>
-	</figure>
-{/if}
-
-<!-- ============ READING LAYOUT ============ -->
-<!-- Same grid + sticky sidebar the reader uses. TOC + author card on the
-     rail, article body in the main column, both rendered with the reader's
-     prose-* utility set for pixel-parity. -->
-<div
-	class="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-[72px] px-4 pt-[60px] pb-[30px] md:px-14 lg:grid-cols-[232px_minmax(0,1fr)]"
->
-	<aside class="hidden lg:block">
-		<div
-			class="sticky top-[calc(var(--desk-top)+58px)] max-h-[calc(100vh-var(--desk-top)-88px)] overflow-y-auto pr-1"
-		>
-			{#if entry?.author}
-				<div class="font-newsreader text-[20px] font-semibold">
-					{entry.author.name}
-				</div>
-			{/if}
-
-			{#if tableOfContents.length > 0}
-				<nav class="mt-5 border-t border-line2 pt-[15px]">
-					<div class="mb-[10px] text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase">
-						Table of Contents
-					</div>
-					{#each tableOfContents as heading (heading.id)}
-						{@const isTop = heading.level === 2}
-						{@const isActive = activeSection === heading.id}
-						<a
-							href="#{heading.id}"
-							style="padding-left: {(heading.level - 2) * 12}px"
-							class="flex items-baseline gap-[11px] py-[4px] {isTop
-								? 'text-[13px] font-semibold'
-								: 'text-[12.5px] font-medium'} leading-[1.4] transition-colors {isActive
-								? 'text-warm'
-								: 'text-soft hover:text-warm'}"
-						>
-							<span>{heading.text}</span>
-						</a>
-					{/each}
-				</nav>
-			{/if}
-		</div>
-	</aside>
-
-	<!-- ============ BODY ============ -->
-	<article class="min-w-0">
-		<div
-			class="prose max-w-[760px]
-				prose-headings:scroll-mt-24 prose-headings:font-newsreader prose-headings:tracking-[-0.02em]
-				prose-h2:mt-[56px] prose-h2:mb-[18px]
-				prose-h2:text-[38px] prose-h2:font-semibold prose-h2:text-warm
-				prose-h3:mt-10 prose-h3:mb-3 prose-h3:text-[24px] prose-h3:font-semibold
-				prose-p:my-0 prose-p:mb-[24px]
-				prose-p:font-newsreader prose-p:text-[21px]
-				prose-p:leading-[1.7] prose-p:text-ink
-				prose-a:text-accent prose-a:underline
-				prose-a:decoration-[1px]
-				prose-a:underline-offset-[3px] prose-blockquote:my-9 prose-blockquote:border-l-[3px] prose-blockquote:border-warm
-				prose-blockquote:pl-7 prose-blockquote:not-italic
-				prose-strong:font-semibold prose-strong:text-ink
-				prose-em:italic
-				prose-code:rounded-none prose-code:bg-panel
-				prose-code:px-[5px] prose-code:py-[2px]
-				prose-code:font-mono prose-code:text-[14px]
-				prose-code:text-warm
-				prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-none prose-pre:border
-				prose-pre:border-line2 prose-pre:bg-paper prose-li:font-newsreader prose-li:text-[21px] prose-li:leading-[1.7]
-				prose-li:text-ink prose-img:rounded-none
-				prose-img:border prose-img:border-line2
-				prose-hr:border-line2 [&_blockquote_p]:font-newsreader [&_blockquote_p]:text-[26px] [&_blockquote_p]:leading-[1.32]
-				[&_blockquote_p]:font-medium [&_blockquote_p]:tracking-[-0.01em] [&_blockquote_p]:text-ink
-				[&_blockquote_p]:italic
-				[&>:first-child]:mt-0"
-		>
-			{#if entry?.content}
-				<RenderLexical content={entry.content} {cardImages} />
-			{:else if entry?.video}
-				<p class="text-soft">Video-only entry — no article body.</p>
-			{:else}
-				<p class="text-soft">No content yet. Start writing in the editor to see it here.</p>
-			{/if}
-		</div>
-	</article>
-</div>
-
-<!-- Global card-hover tooltip — listens for hovers on any element with
-     `data-card-name` inside the article and pops up the card image.
-     Matches the published reader's behavior exactly. -->
-<CardHover />
+<ArticleView
+	data={view}
+	railTop="calc(var(--desk-top) + 76px)"
+	back={{ href: `/desk/entries/${p.id}`, label: 'Editor' }}
+/>

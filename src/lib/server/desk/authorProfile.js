@@ -1,3 +1,4 @@
+import { hasVariants, variantUrl } from '$lib/server/desk/image.js';
 import { db } from '$lib/server/db/index.js';
 import { deskAuthorProfile, deskMedia } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -12,6 +13,12 @@ export function isMissingProfileTable(err) {
 	return code === '42P01' || (msg.includes('cms_author_profile') && msg.includes('does not exist'));
 }
 
+/** Author photos are small: serve the smallest resized copy when there is one. */
+function avatarUrl(media) {
+	if (!hasVariants(media)) return media.url;
+	return variantUrl(media, Math.min(...media.variantWidths));
+}
+
 /**
  * Load a user's author profile.
  * @returns {Promise<{ available: boolean, profile: null | { displayName: string|null, title: string|null, bio: string|null, avatar: null | { id: string, url: string }, links: any[] } }>}
@@ -24,8 +31,7 @@ export async function getAuthorProfile(userId) {
 				title: deskAuthorProfile.title,
 				bio: deskAuthorProfile.bio,
 				links: deskAuthorProfile.links,
-				avatarId: deskMedia.id,
-				avatarUrl: deskMedia.url
+				avatar: deskMedia
 			})
 			.from(deskAuthorProfile)
 			.leftJoin(deskMedia, eq(deskAuthorProfile.avatarMediaId, deskMedia.id))
@@ -38,7 +44,7 @@ export async function getAuthorProfile(userId) {
 				displayName: row.displayName,
 				title: row.title,
 				bio: row.bio,
-				avatar: row.avatarId ? { id: row.avatarId, url: row.avatarUrl } : null,
+				avatar: row.avatar?.id ? { id: row.avatar.id, url: avatarUrl(row.avatar) } : null,
 				links: Array.isArray(row.links) ? row.links : []
 			}
 		};

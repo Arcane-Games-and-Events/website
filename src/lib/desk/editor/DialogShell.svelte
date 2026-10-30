@@ -10,26 +10,48 @@
 	 *   kicker?: string,
 	 *   title: string,
 	 *   wide?: boolean,
+	 *   xl?: boolean,
 	 *   onclose: () => void,
 	 *   children: import('svelte').Snippet,
 	 *   footer?: import('svelte').Snippet
 	 * }}
 	 */
-	let { open, kicker = 'Insert', title, wide = false, onclose, children, footer } = $props();
+	let {
+		open,
+		kicker = 'Insert',
+		title,
+		wide = false,
+		xl = false,
+		onclose,
+		children,
+		footer
+	} = $props();
 
 	const id = `dlg-${Math.random().toString(36).slice(2, 8)}`;
+
+	// Dialogs can be opened from inside sticky panels, which trap anything
+	// inside them in their own layer (under the Desk tabs, for one). Moving
+	// the dialog to the end of <body> keeps it above everything.
+	/** @param {HTMLElement} node */
+	function toBody(node) {
+		document.body.appendChild(node);
+		return { destroy: () => node.remove() };
+	}
 </script>
 
 {#if open}
 	<div
+		use:toBody
 		class="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-ink/70 p-3 pt-[6vh] font-libre md:p-6 md:pt-[10vh]"
 		role="presentation"
 		onclick={onclose}
 	>
 		<div
-			class="w-full {wide
-				? 'max-w-2xl'
-				: 'max-w-lg'} border-t-[5px] border-ink bg-paper-bg shadow-2xl"
+			class="w-full {xl
+				? 'max-w-5xl'
+				: wide
+					? 'max-w-2xl'
+					: 'max-w-lg'} border-t-[5px] border-ink bg-paper-bg text-ink shadow-2xl"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby={id}

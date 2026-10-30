@@ -7,7 +7,7 @@ import WidgetBlock from './WidgetBlock.svelte';
  *
  * @param {HTMLElement} target
  * @param {{ type: string, data: any, json: any }} decorator  value from the node's decorate()
- * @param {{ onedit: () => void, onremove: () => void }} handlers
+ * @param {{ onedit: () => void, onremove: () => void, onchange?: (patch: any) => void }} handlers
  */
 export function mountWidget(target, decorator, handlers) {
 	const props = $state({

@@ -1,4 +1,5 @@
 <script>
+	import Picture from '$lib/components/media/Picture.svelte';
 	import LibraryWordmark from '$lib/components/age/library/LibraryWordmark.svelte';
 	/**
 	 * Library index — the magazine's archive in the homepage's register:
@@ -10,7 +11,9 @@
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import FrontByline from '$lib/components/age/home/FrontByline.svelte';
 	import PremiumTag from '$lib/components/age/PremiumTag.svelte';
-	import { formatDate, formatDuration } from '$lib/components/age/home/front-adapters.js';
+	import { formatDuration } from '$lib/components/age/home/front-adapters.js';
+	import StoryCard from '$lib/components/age/library/StoryCard.svelte';
+	import { storyCardSheet, toStories } from '$lib/components/age/library/stories.js';
 	import { reveal } from '$lib/actions/reveal.js';
 	import FilterSelect from '$lib/components/age/FilterSelect.svelte';
 	import { page as pageStore } from '$app/stores';
@@ -23,49 +26,7 @@
 	const member = $derived($pageStore.data?.isPremiumMember ?? false);
 
 	// ============ stories ============
-	const FALLBACK = 'https://www.age.events/banner/articles-banner.webp';
-	const cover = (a) => {
-		const c = a?.coverImage;
-		if (!c) return FALLBACK;
-		if (typeof c === 'string') return c;
-		return c.src || c.url || FALLBACK;
-	};
-	const coverSet = (a) => (typeof a?.coverImage === 'object' ? a.coverImage?.srcset : undefined);
-	const isNew = (d) => !!d && (Date.now() - new Date(d).getTime()) / 86400000 <= 7;
-	const stories = $derived(
-		[...(data.articles ?? [])]
-			.sort(
-				(a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime()
-			)
-			.map((a) => ({
-				slug: a.slug,
-				href: `/library/${a.slug}`,
-				title: a.title || 'Untitled',
-				dek: a.excerpt || '',
-				image: cover(a),
-				srcset: coverSet(a),
-				alt: a.coverImage?.alt || a.title || '',
-				kind: a.hasVideo ? 'video' : 'article',
-				rubric: a.tags?.[0]?.name || (a.hasVideo ? 'Video' : 'Article'),
-				tags: (a.tags || []).map((t) => t.name),
-				length: a.hasVideo
-					? formatDuration(a.videoDuration)
-					: a.readTime
-						? `${a.readTime} min read`
-						: '',
-				author: a.author?.name || 'AGE Staff',
-				date: formatDate(a.publishedAt),
-				dateLong: a.publishedAt
-					? new Date(a.publishedAt).toLocaleDateString('en-US', {
-							month: 'long',
-							day: 'numeric',
-							year: 'numeric'
-						})
-					: '',
-				premium: !!a.isPremium,
-				fresh: isNew(a.publishedAt)
-			}))
-	);
+	const stories = $derived(toStories(data.articles));
 	const featured = $derived(stories[0] ?? null);
 	const counts = $derived({
 		articles: stories.filter((s) => s.kind === 'article').length,
@@ -74,6 +35,17 @@
 	});
 	const allTags = $derived([...new Set(stories.flatMap((s) => s.tags))].sort());
 	const topicOptions = $derived([{ v: '', l: 'Any' }, ...allTags.map((t) => ({ v: t, l: t }))]);
+	// The topic index links each tag to its own page.
+	const topics = $derived.by(() => {
+		const by = new Map();
+		for (const s of stories) {
+			if (!s.tagSlug) continue;
+			const t = by.get(s.tagSlug) ?? { name: s.rubric, slug: s.tagSlug, n: 0 };
+			t.n += 1;
+			by.set(s.tagSlug, t);
+		}
+		return [...by.values()].sort((a, b) => a.name.localeCompare(b.name));
+	});
 
 	// ============ gameplay ============
 	const vodThumb = (v) => {
@@ -188,10 +160,6 @@
 		if (n < 1 || n > pageCount || n === curPage) return;
 		pageNo = n;
 		requestAnimationFrame(() => browseEl?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-	}
-	function pickTag(t) {
-		tag = tag === t ? '' : t;
-		browseEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	}
 	const pageNumbers = $derived.by(() => {
 		const total = pageCount;
@@ -386,9 +354,7 @@
 					>
 						<img
 							class="absolute inset-0 hidden h-full w-full scale-105 object-cover blur-2xl brightness-[0.8] md:block"
-							src={featured.image}
-							srcset={featured.srcset}
-							sizes="(min-width: 1024px) 60vw, 100vw"
+							src={featured.picture?.thumb ?? featured.image}
 							alt=""
 							aria-hidden="true"
 						/>
@@ -397,10 +363,13 @@
 							class="lib-hero-mid absolute inset-y-0 left-1/2 hidden aspect-video h-full -translate-x-1/2 md:block"
 							aria-hidden="true"
 						>
-							<img
+							<Picture
+								image={featured.picture ?? {
+									src: featured.image,
+									srcset: featured.srcset,
+									alt: featured.alt
+								}}
 								class="absolute inset-0 h-full w-full object-cover blur-[14px] brightness-[0.95]"
-								src={featured.image}
-								srcset={featured.srcset}
 								sizes="(min-width: 1024px) 60vw, 100vw"
 								alt=""
 							/>
@@ -409,10 +378,13 @@
 						<span
 							class="lib-hero-sharp absolute inset-0 block overflow-hidden md:right-auto md:left-1/2 md:aspect-video md:h-full md:w-auto md:-translate-x-1/2"
 						>
-							<img
+							<Picture
+								image={featured.picture ?? {
+									src: featured.image,
+									srcset: featured.srcset,
+									alt: featured.alt
+								}}
 								class="fp-kenburns absolute inset-0 h-full w-full object-cover"
-								src={featured.image}
-								srcset={featured.srcset}
 								sizes="(min-width: 1024px) 60vw, 100vw"
 								alt={featured.alt}
 								fetchpriority="high"
@@ -649,195 +621,11 @@
 					{#each shown as s, i (s.href)}
 						{@const v = variant(i)}
 						<li
-							class="{SPAN[v]} {v === 'ink'
-								? 'bg-ink'
-								: v === 'row'
-									? 'bg-paper'
-									: 'bg-paper-bg'} border border-line"
+							class="{SPAN[v]} {storyCardSheet(v)} border border-line"
 							use:reveal={{ delay: Math.min(i, 5) * 60, disabled: switched }}
 							in:fly|global={switched ? viewIn(i) : { duration: 0 }}
 						>
-							{#if v === 'ink'}
-								<a href={s.href} class="group flex h-full flex-col p-6 text-paper-bg md:p-7">
-									<span
-										class="flex items-center justify-between gap-3 text-[9.5px] font-extrabold tracking-[0.18em] text-warm-light uppercase"
-									>
-										<span class="flex items-center gap-2">
-											{#if s.kind === 'video'}<span
-													class="flex h-4 w-4 items-center justify-center bg-warm pl-[1px] text-[7px] text-white"
-													aria-hidden="true">▶</span
-												>{/if}
-											{s.rubric}
-										</span>
-										{#if s.fresh}<span class="text-gold">New</span>{/if}
-									</span>
-									<span
-										class="mt-4 block font-newsreader text-[26px] leading-[1.05] font-semibold tracking-[-0.015em] [text-wrap:balance] md:text-[30px]"
-									>
-										<span class="fp-ul">{s.title}</span>
-									</span>
-									{#if s.dek}
-										<span
-											class="mt-3 line-clamp-4 font-newsreader text-[15px] leading-[1.5] text-paper-bg/70 italic"
-											>{s.dek}</span
-										>
-									{/if}
-									<span class="mt-auto block pt-5">
-										<FrontByline
-											author={s.author}
-											length={s.length}
-											premium={s.premium}
-											size="sm"
-											onDark
-										/>
-									</span>
-								</a>
-							{:else if v === 'row'}
-								<a
-									href={s.href}
-									class="group grid h-full grid-cols-[112px_1fr] items-center gap-4 p-4 md:p-5"
-								>
-									<span class="relative block aspect-video overflow-hidden bg-panel">
-										<img
-											class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
-											src={s.image}
-											srcset={s.srcset}
-											sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-											alt={s.alt}
-											loading="lazy"
-										/>
-										{#if s.kind === 'video'}
-											<span
-												class="absolute right-0 bottom-0 flex h-5 w-5 items-center justify-center bg-warm pl-[1px] text-[8px] text-white"
-												aria-hidden="true">▶</span
-											>
-										{/if}
-									</span>
-									<span class="min-w-0">
-										<span
-											class="block text-[9.5px] font-extrabold tracking-[0.18em] text-warm uppercase"
-											>{s.rubric}</span
-										>
-										<span
-											class="mt-1.5 block font-newsreader text-[18px] leading-[1.15] font-semibold"
-										>
-											<span class="fp-ul">{s.title}</span>
-										</span>
-										<span class="mt-2 block">
-											<FrontByline
-												author={s.author}
-												length={s.length}
-												premium={s.premium}
-												size="sm"
-											/>
-										</span>
-									</span>
-								</a>
-							{:else if v === 'wide'}
-								<a href={s.href} class="group grid h-full md:grid-cols-[5fr_7fr]">
-									<span
-										class="relative block aspect-video overflow-hidden bg-panel md:aspect-auto md:h-full"
-									>
-										{#if s.premium}<PremiumTag variant="corner" />{/if}
-										<img
-											class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-											src={s.image}
-											srcset={s.srcset}
-											sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-											alt={s.alt}
-											loading="lazy"
-										/>
-										{#if s.kind === 'video'}
-											<span
-												class="absolute right-0 bottom-0 flex h-7 w-7 items-center justify-center bg-warm pl-[2px] text-[10px] text-white"
-												aria-hidden="true">▶</span
-											>
-										{/if}
-									</span>
-									<span class="flex flex-col justify-center p-6 md:p-8 lg:p-10">
-										<span
-											class="flex items-baseline justify-between gap-3 text-[9.5px] font-extrabold tracking-[0.18em] uppercase"
-										>
-											<span class="text-warm">{s.rubric}</span>
-											{#if s.fresh}<span class="text-gold">New</span>{/if}
-										</span>
-										<span
-											class="mt-3 block font-newsreader text-[26px] leading-[1.06] font-semibold tracking-[-0.01em] [text-wrap:balance] md:text-[32px]"
-										>
-											<span class="fp-ul">{s.title}</span>
-										</span>
-										{#if s.dek}
-											<span
-												class="mt-3 line-clamp-3 font-newsreader text-[16px] leading-[1.5] text-soft italic md:text-[17px]"
-												>{s.dek}</span
-											>
-										{/if}
-										<span class="mt-5 block">
-											<FrontByline author={s.author} length={s.length} premium={false} size="sm" />
-										</span>
-									</span>
-								</a>
-							{:else}
-								<a href={s.href} class="group flex h-full flex-col">
-									<span class="relative block aspect-video overflow-hidden bg-panel">
-										{#if s.premium}<PremiumTag
-												variant="corner"
-												size={v === 'feature' ? 'lg' : 'md'}
-											/>{/if}
-										<img
-											class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-											src={s.image}
-											srcset={s.srcset}
-											sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-											alt={s.alt}
-											loading="lazy"
-										/>
-										{#if s.kind === 'video'}
-											<span
-												class="absolute right-0 bottom-0 flex h-7 w-7 items-center justify-center bg-warm pl-[2px] text-[10px] text-white"
-												aria-hidden="true">▶</span
-											>
-										{/if}
-									</span>
-									<span
-										class="flex flex-1 flex-col {v === 'feature'
-											? 'justify-center p-6 md:p-8 lg:p-10'
-											: 'p-5 md:p-6'}"
-									>
-										<span
-											class="flex items-baseline justify-between gap-3 text-[9.5px] font-extrabold tracking-[0.18em] uppercase"
-										>
-											<span class="truncate text-warm">{s.rubric}</span>
-											{#if s.fresh}<span class="shrink-0 text-gold">New</span>{/if}
-										</span>
-										<span
-											class="mt-2.5 block font-newsreader leading-[1.1] font-semibold [text-wrap:balance] {v ===
-											'feature'
-												? 'text-[30px] leading-[1.02] tracking-[-0.015em] md:text-[40px]'
-												: 'text-[21px] leading-[1.14]'}"
-										>
-											<span class="fp-ul">{s.title}</span>
-										</span>
-										{#if s.dek}
-											<span
-												class="font-newsreader leading-[1.45] text-soft italic {v === 'feature'
-													? 'mt-4 line-clamp-4 text-[16.5px] md:text-[18px]'
-													: 'mt-2.5 line-clamp-2 text-[14.5px]'}"
-											>
-												{s.dek}
-											</span>
-										{/if}
-										<span class="block {v === 'feature' ? 'mt-6' : 'mt-auto pt-4'}">
-											<FrontByline
-												author={s.author}
-												length={s.length}
-												premium={false}
-												size={v === 'feature' ? 'md' : 'sm'}
-											/>
-										</span>
-									</span>
-								</a>
-							{/if}
+							<StoryCard story={s} variant={v} />
 						</li>
 					{/each}
 				</ul>
@@ -930,10 +718,9 @@
 							<a href={f.href} class="group flex h-full flex-col">
 								<span class="relative block aspect-video overflow-hidden bg-ink">
 									{#if f.premium}<PremiumTag variant="corner" />{/if}
-									<img
+									<Picture
+										image={f.picture ?? { src: f.image, srcset: f.srcset, alt: f.alt }}
 										class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-										src={f.image}
-										srcset={f.srcset}
 										sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
 										alt={f.title}
 										loading="lazy"
@@ -976,8 +763,8 @@
 	<!-- ============ topics + premium ============ -->
 	<section class="mx-auto w-full max-w-[1200px] px-5 py-12 md:px-8 md:py-16" use:reveal>
 		<div class="grid gap-10 lg:grid-cols-[1fr_1fr] lg:gap-16">
-			{#if allTags.length}
-				<div>
+			{#if topics.length}
+				<div id="topics" class="scroll-mt-24">
 					<h2
 						class="flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
 					>
@@ -985,24 +772,19 @@
 						Browse by topic
 					</h2>
 					<ul class="mt-4 border-t border-line">
-						{#each allTags as t (t)}
-							{@const n = stories.filter((s) => s.tags.includes(t)).length}
+						{#each topics as t (t.slug)}
 							<li class="border-b border-line">
-								<button
-									type="button"
-									onclick={() => pickTag(t)}
-									aria-pressed={tag === t}
+								<a
+									href="/library/tag/{t.slug}"
 									class="group flex w-full items-baseline justify-between gap-4 py-3.5 text-left"
 								>
-									<span
-										class="font-newsreader text-[18px] font-semibold {tag === t ? 'text-warm' : ''}"
-									>
-										<span class="fp-ul">{t}</span>
+									<span class="font-newsreader text-[18px] font-semibold">
+										<span class="fp-ul">{t.name}</span>
 									</span>
 									<span class="text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
-										>{n} {n === 1 ? 'piece' : 'pieces'} →</span
+										>{t.n} {t.n === 1 ? 'piece' : 'pieces'} →</span
 									>
-								</button>
+								</a>
 							</li>
 						{/each}
 					</ul>

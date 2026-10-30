@@ -36,7 +36,16 @@
 	// via `isAuthPage` above, so they don't need to be listed here —
 	// they render the editorial chrome by virtue of wrapping their own
 	// markup in <AgeShell>.
-	const editorialRoutes = ['/', '/premium', '/age-open', '/library', '/academy', '/partner'];
+	const editorialRoutes = [
+		'/',
+		'/premium',
+		'/age-open',
+		'/library',
+		'/academy',
+		'/partner',
+		'/terms',
+		'/privacy'
+	];
 	const editorialPrefixes = [
 		'/account',
 		'/premium/',

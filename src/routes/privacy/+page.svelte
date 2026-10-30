@@ -1,348 +1,286 @@
 <script>
-	const lastUpdated = 'November 26, 2024';
+	import LegalPage from '$lib/components/age/legal/LegalPage.svelte';
+
+	const updated = 'October 29, 2026';
+	const toc = [
+		{ id: 'about', label: 'About this policy' },
+		{ id: 'collect', label: 'What we collect' },
+		{ id: 'use', label: 'How we use it' },
+		{ id: 'public', label: 'What is public' },
+		{ id: 'cookies', label: 'Cookies and browser storage' },
+		{ id: 'sharing', label: 'Who we share it with' },
+		{ id: 'email', label: 'Emails we send' },
+		{ id: 'retention', label: 'How long we keep it' },
+		{ id: 'security', label: 'Security' },
+		{ id: 'rights', label: 'Your choices and rights' },
+		{ id: 'children', label: 'Children' },
+		{ id: 'changes', label: 'Changes to this policy' }
+	];
 </script>
 
 <svelte:head>
-	<title>Privacy Policy - AGE</title>
+	<title>Privacy Policy — AGE</title>
 	<meta
 		name="description"
-		content="Privacy Policy for AGE - Learn how we collect, use, and protect your personal information."
+		content="What AGE collects, why, who it's shared with, and the choices you have."
 	/>
 </svelte:head>
 
-<!-- Hero Banner -->
-<section
-	class="relative overflow-hidden border-b border-white/10 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800"
+<LegalPage
+	title="Privacy Policy"
+	dek="What we collect when you read, subscribe, buy a course or play in the AGE Open, and what we do with it."
+	{updated}
+	{toc}
+	sibling={{ href: '/terms', label: 'Terms of Service' }}
 >
-	<div
-		class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-500/10 via-transparent to-transparent"
-	></div>
-	<div class="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-		<div class="max-w-3xl">
-			<p class="text-sm font-semibold tracking-wider text-blue-400 uppercase">Legal</p>
-			<h1 class="mt-2 text-3xl font-bold text-white sm:text-4xl lg:text-5xl">Privacy Policy</h1>
-			<p class="mt-4 text-lg text-gray-400">
-				Your privacy is important to us. This policy outlines how we handle your data.
-			</p>
-			<p class="mt-4 text-sm text-gray-500">Last updated: {lastUpdated}</p>
-		</div>
-	</div>
-</section>
+	{#snippet summary()}
+		<ul>
+			<li>We don't sell your information, and we don't run advertising trackers.</li>
+			<li>
+				We count visits and reading with our own analytics, which records your country but never
+				your IP address.
+			</li>
+			<li>Your card number goes straight to our payment processor; we never see or store it.</li>
+			<li>
+				Tournament results and published decklists are public on player profiles, under your GEM ID.
+			</li>
+		</ul>
+	{/snippet}
 
-<!-- Content -->
-<div class="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-	<div class="space-y-12">
-		<section class="rounded-xl border border-white/10 bg-gray-900/30 p-6 sm:p-8">
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20">
-					<svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-						/>
-					</svg>
-				</div>
-				<h2 class="text-xl font-semibold text-white">Introduction</h2>
-			</div>
-			<p class="leading-relaxed text-gray-300">
-				Welcome to AGE ("we," "our," or "us"). We are committed to protecting your personal
-				information and your right to privacy. This Privacy Policy explains how we collect, use,
-				disclose, and safeguard your information when you visit our website.
-			</p>
-		</section>
-
-		<section class="rounded-xl border border-white/10 bg-gray-900/30 p-6 sm:p-8">
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/20">
-					<svg
-						class="h-5 w-5 text-purple-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-						/>
-					</svg>
-				</div>
-				<h2 class="text-xl font-semibold text-white">Information We Collect</h2>
-			</div>
-			<p class="mb-4 leading-relaxed text-gray-300">
-				We may collect information about you in a variety of ways, including:
-			</p>
-			<div class="space-y-3">
-				<div class="rounded-lg bg-white/5 p-4">
-					<h3 class="mb-1 font-medium text-white">Personal Data</h3>
-					<p class="text-sm text-gray-400">
-						Name, email address, and other contact information you voluntarily provide when
-						registering for an account or subscribing to our newsletter.
-					</p>
-				</div>
-				<div class="rounded-lg bg-white/5 p-4">
-					<h3 class="mb-1 font-medium text-white">Usage Data</h3>
-					<p class="text-sm text-gray-400">
-						Information about how you use our website, including pages visited, time spent on pages,
-						and other analytical data.
-					</p>
-				</div>
-				<div class="rounded-lg bg-white/5 p-4">
-					<h3 class="mb-1 font-medium text-white">Device Data</h3>
-					<p class="text-sm text-gray-400">
-						Information about your device, including IP address, browser type, and operating system.
-					</p>
-				</div>
-			</div>
-		</section>
-
-		<section class="rounded-xl border border-white/10 bg-gray-900/30 p-6 sm:p-8">
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/20">
-					<svg
-						class="h-5 w-5 text-emerald-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-						/>
-					</svg>
-				</div>
-				<h2 class="text-xl font-semibold text-white">How We Use Your Information</h2>
-			</div>
-			<p class="mb-4 leading-relaxed text-gray-300">We use the information we collect to:</p>
-			<ul class="space-y-2 text-gray-300">
-				<li class="flex items-start gap-2">
-					<svg
-						class="mt-0.5 h-5 w-5 shrink-0 text-emerald-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M5 13l4 4L19 7"
-						/>
-					</svg>
-					Provide, operate, and maintain our website
-				</li>
-				<li class="flex items-start gap-2">
-					<svg
-						class="mt-0.5 h-5 w-5 shrink-0 text-emerald-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M5 13l4 4L19 7"
-						/>
-					</svg>
-					Improve, personalize, and expand our website
-				</li>
-				<li class="flex items-start gap-2">
-					<svg
-						class="mt-0.5 h-5 w-5 shrink-0 text-emerald-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M5 13l4 4L19 7"
-						/>
-					</svg>
-					Understand and analyze how you use our website
-				</li>
-				<li class="flex items-start gap-2">
-					<svg
-						class="mt-0.5 h-5 w-5 shrink-0 text-emerald-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M5 13l4 4L19 7"
-						/>
-					</svg>
-					Communicate with you, including for customer service and updates
-				</li>
-				<li class="flex items-start gap-2">
-					<svg
-						class="mt-0.5 h-5 w-5 shrink-0 text-emerald-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M5 13l4 4L19 7"
-						/>
-					</svg>
-					Send you marketing and promotional communications (with your consent)
-				</li>
-			</ul>
-		</section>
-
-		<div class="grid gap-6 sm:grid-cols-2">
-			<section class="rounded-xl border border-white/10 bg-gray-900/30 p-6">
-				<div class="mb-4 flex items-center gap-3">
-					<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20">
-						<svg
-							class="h-5 w-5 text-amber-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-							/>
-						</svg>
-					</div>
-					<h2 class="text-lg font-semibold text-white">Cookies</h2>
-				</div>
-				<p class="text-sm leading-relaxed text-gray-400">
-					We may use cookies and similar tracking technologies to track activity on our website. You
-					can instruct your browser to refuse all cookies or to indicate when a cookie is being
-					sent.
-				</p>
-			</section>
-
-			<section class="rounded-xl border border-white/10 bg-gray-900/30 p-6">
-				<div class="mb-4 flex items-center gap-3">
-					<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-500/20">
-						<svg
-							class="h-5 w-5 text-rose-400"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-							/>
-						</svg>
-					</div>
-					<h2 class="text-lg font-semibold text-white">Data Security</h2>
-				</div>
-				<p class="text-sm leading-relaxed text-gray-400">
-					We implement appropriate technical and organizational security measures to protect your
-					personal information. However, no method of transmission over the Internet is 100% secure.
-				</p>
-			</section>
-		</div>
-
-		<section class="rounded-xl border border-white/10 bg-gray-900/30 p-6 sm:p-8">
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/20">
-					<svg class="h-5 w-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-						/>
-					</svg>
-				</div>
-				<h2 class="text-xl font-semibold text-white">Third-Party Services</h2>
-			</div>
-			<p class="leading-relaxed text-gray-300">
-				We may use third-party services that collect, monitor, and analyze data to improve our
-				service. These third parties have their own privacy policies addressing how they use such
-				information.
-			</p>
-		</section>
-
-		<section class="rounded-xl border border-white/10 bg-gray-900/30 p-6 sm:p-8">
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500/20">
-					<svg
-						class="h-5 w-5 text-indigo-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-						/>
-					</svg>
-				</div>
-				<h2 class="text-xl font-semibold text-white">Your Rights</h2>
-			</div>
-			<p class="leading-relaxed text-gray-300">
-				Depending on your location, you may have certain rights regarding your personal information,
-				including the right to access, correct, or delete your data. To exercise these rights,
-				please contact us using the information below.
-			</p>
-		</section>
-
-		<!-- Contact Section -->
-		<section
-			class="rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-purple-500/10 p-6 sm:p-8"
-		>
-			<div class="mb-4 flex items-center gap-3">
-				<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/20">
-					<svg class="h-5 w-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-						/>
-					</svg>
-				</div>
-				<h2 class="text-xl font-semibold text-white">Contact Us</h2>
-			</div>
-			<p class="mb-4 leading-relaxed text-gray-300">
-				If you have any questions about this Privacy Policy or want to exercise your data rights,
-				please contact us:
-			</p>
-			<a
-				href="mailto:info@arcanegamesandevents.com"
-				class="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-400"
-			>
-				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-					/>
-				</svg>
-				info@arcanegamesandevents.com
-			</a>
-		</section>
-
-		<p class="text-center text-sm text-gray-500">
-			We may update this Privacy Policy from time to time. We will notify you of any changes by
-			posting the new Privacy Policy on this page.
+	<section id="about">
+		<h2>About this policy</h2>
+		<p>
+			This policy covers age.events, run by Arcane Games and Events LLC (“AGE”, “we”, “us”). It
+			explains what we collect when you use the site, the Library, the Academy, AGE Premium and the
+			AGE Open, and how we use it. It sits alongside our <a href="/terms">Terms of Service</a>.
 		</p>
-	</div>
-</div>
+	</section>
+
+	<section id="collect">
+		<h2>What we collect</h2>
+		<h3>Your account</h3>
+		<p>
+			Your name, email address and password, which we store only in scrambled (hashed) form. If you
+			add one, your GEM ID.
+		</p>
+		<h3>Purchases</h3>
+		<p>
+			What you bought and when: Premium memberships and renewals, Academy courses and event tickets,
+			with amounts, discounts and refunds. For a saved card we keep the card type, last four digits
+			and expiry date, and the reference our payment processor gives us. The full card number goes
+			from your browser straight to Authorize.net and never reaches us.
+		</p>
+		<h3>Events</h3>
+		<p>
+			Your registration and ticket details, GEM ID, the decklists you submit, and your results,
+			standings, match records and the heroes you played.
+		</p>
+		<h3>Visits and reading</h3>
+		<p>
+			We run our own analytics, not a third-party service. For each page you open, we record the
+			page, the site or campaign that sent you, how long the page was on screen, and for Library
+			pieces how far you read. We also record your device type and browser (read from the browser's
+			user agent) and your country (worked out from your IP address, which we don't store). Visits
+			are grouped by a random ID kept in your browser. When you're signed in, they're linked to your
+			account.
+		</p>
+		<h3>Writers and contributors</h3>
+		<p>
+			If you write for AGE, the pieces, images and image credits you add in the Desk, and your
+			author profile.
+		</p>
+		<h3>When you write to us</h3>
+		<p>The emails you send us and our replies.</p>
+		<h3>Sign-up checks</h3>
+		<p>
+			The sign-up form uses Cloudflare Turnstile to tell people from bots. Turnstile looks at
+			signals from your browser to do this.
+		</p>
+	</section>
+
+	<section id="use">
+		<h2>How we use it</h2>
+		<ul>
+			<li>To run your account and give you what you've paid for.</li>
+			<li>To take payments and renewals, issue refunds, and keep the records the law requires.</li>
+			<li>To run events: registration, pairings, results, standings and coverage.</li>
+			<li>
+				To understand what people read and how they find us, so we can decide what to publish and
+				fix what isn't working. Writers see how their own pieces are read.
+			</li>
+			<li>
+				To credit partners and members for the people they refer, and to keep codes from being
+				misused.
+			</li>
+			<li>To keep the site secure, and to prevent fraud and abuse.</li>
+			<li>To answer you when you write to us.</li>
+		</ul>
+	</section>
+
+	<section id="public">
+		<h2>What is public</h2>
+		<p>
+			Tournament play is public. Your name, results, standings, match records, the heroes you played
+			and any decklists we publish appear on your player profile, which is found by your GEM ID, and
+			in event coverage. Writers' names and author profiles appear with their pieces.
+		</p>
+		<p>
+			Nothing about your reading, your purchases or your membership is public. If you'd like
+			something removed from your player profile, write to us.
+		</p>
+	</section>
+
+	<section id="cookies">
+		<h2>Cookies and browser storage</h2>
+		<p>
+			We use a small number of our own cookies, and no advertising or cross-site tracking cookies.
+		</p>
+		<dl>
+			<div>
+				<dt>auth_session</dt>
+				<dd>Keeps you signed in. Only set when you sign in.</dd>
+			</div>
+			<div>
+				<dt>age_vid</dt>
+				<dd>
+					A random ID for your browser, also kept in browser storage, so our analytics can count
+					returning visitors and credit a sign-up to the visit that led to it.
+				</dd>
+			</div>
+			<div>
+				<dt>age_sid</dt>
+				<dd>A random ID for the current visit. It ends when you close the browser.</dd>
+			</div>
+			<div>
+				<dt>Preferences</dt>
+				<dd>
+					Choices like the Library's grid or mosaic view are kept in your browser's storage and
+					never sent to us.
+				</dd>
+			</div>
+		</dl>
+		<p>
+			You can clear or block cookies in your browser. Blocking auth_session means you can't stay
+			signed in.
+		</p>
+		<p>
+			Payment forms load Authorize.net's script, and YouTube videos come from YouTube. Those
+			services may set their own cookies under their own policies.
+		</p>
+	</section>
+
+	<section id="sharing">
+		<h2>Who we share it with</h2>
+		<p>
+			We don't sell or rent personal information, and we don't share it for advertising. We use
+			these companies to run AGE, and each gets only what it needs to do its job:
+		</p>
+		<dl>
+			<div>
+				<dt>Vercel</dt>
+				<dd>Hosts the website.</dd>
+			</div>
+			<div>
+				<dt>Supabase</dt>
+				<dd>Stores our database and uploaded images.</dd>
+			</div>
+			<div>
+				<dt>Upstash</dt>
+				<dd>Short-lived caching that keeps pages fast.</dd>
+			</div>
+			<div>
+				<dt>Authorize.net</dt>
+				<dd>Processes card payments, saved cards and refunds.</dd>
+			</div>
+			<div>
+				<dt>Resend</dt>
+				<dd>Sends our emails.</dd>
+			</div>
+			<div>
+				<dt>Mux</dt>
+				<dd>Streams our videos.</dd>
+			</div>
+			<div>
+				<dt>YouTube</dt>
+				<dd>Plays videos we embed from YouTube.</dd>
+			</div>
+			<div>
+				<dt>Cloudflare</dt>
+				<dd>Turnstile bot checks on sign-up.</dd>
+			</div>
+		</dl>
+		<p>
+			If you joined with a partner's code or a member's referral, that partner or member sees your
+			first name and that you joined, but not your email or anything else. We may also share
+			information when the law requires it, to protect people's safety or AGE's rights, or as part
+			of a sale or merger of AGE, in which case this policy would still apply.
+		</p>
+	</section>
+
+	<section id="email">
+		<h2>Emails we send</h2>
+		<p>
+			We send emails you need about your account: receipts, renewal reminders for annual plans,
+			notices about failed payments or cancellations, ticket and event details, and password resets.
+			We don't send marketing email unless you've asked for it, and any marketing email will have a
+			way to unsubscribe.
+		</p>
+	</section>
+
+	<section id="retention">
+		<h2>How long we keep it</h2>
+		<p>
+			We keep your account information for as long as you have an account. Purchase and payment
+			records are kept for as long as tax and accounting rules require, even after an account is
+			closed. Tournament results stay part of the public event record. Analytics are used in
+			aggregate, and we delete detailed records once we no longer need them.
+		</p>
+	</section>
+
+	<section id="security">
+		<h2>Security</h2>
+		<p>
+			The site is served over HTTPS, passwords are hashed, card numbers never reach our servers, and
+			only the people who need it can see account and order information. No system is perfectly
+			secure, though. If we learn of a breach that affects you, we'll tell you.
+		</p>
+	</section>
+
+	<section id="rights">
+		<h2>Your choices and rights</h2>
+		<ul>
+			<li>
+				Update your name, GEM ID and password from your account. To change your email address, write
+				to us.
+			</li>
+			<li>Cancel Premium, or remove a saved card, from your account at any time.</li>
+			<li>Clear cookies and browser storage to reset our analytics ID.</li>
+			<li>
+				Ask us for a copy of your information, or to correct or delete it, by writing to us. We'll
+				reply within 30 days. Some records, such as purchases and public results, may need to be
+				kept, as explained above.
+			</li>
+		</ul>
+		<p>
+			Depending on where you live, for example California or the European Union, you may have
+			further rights under local law. We'll honor them, and we won't treat you differently for using
+			them.
+		</p>
+	</section>
+
+	<section id="children">
+		<h2>Children</h2>
+		<p>
+			AGE isn't meant for children under 13, and we don't knowingly collect their information. If
+			you believe a child under 13 has made an account, write to us and we'll delete it.
+		</p>
+	</section>
+
+	<section id="changes">
+		<h2>Changes to this policy</h2>
+		<p>
+			We'll update this policy as AGE changes, and change the date at the top when we do. If a
+			change affects how we use information we already have, we'll email you before it takes effect.
+		</p>
+	</section>
+</LegalPage>

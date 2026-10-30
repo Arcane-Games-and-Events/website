@@ -4788,3 +4788,38 @@ ALTER TABLE public.subscription_invoice ENABLE ROW LEVEL SECURITY;
 
 \unrestrict AaFSXBcqXWPOIvjLkDxnjJDBAg444GREOuGAJPdG5VKJoAjJjQbvOTWeB4lCR3m
 
+
+-- Migration 026 (appended until the next schema refresh; safe to re-run)
+
+ALTER TABLE public.cms_media
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS file_size integer,
+  ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'ready',
+  ADD COLUMN IF NOT EXISTS variant_prefix text,
+  ADD COLUMN IF NOT EXISTS variant_widths integer[],
+  ADD COLUMN IF NOT EXISTS has_avif boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS blur text,
+  ADD COLUMN IF NOT EXISTS credit text,
+  ADD COLUMN IF NOT EXISTS credit_url text,
+  ADD COLUMN IF NOT EXISTS derived_from uuid REFERENCES public.cms_media(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'cms_media_status_check') THEN
+    ALTER TABLE public.cms_media ADD CONSTRAINT cms_media_status_check
+      CHECK (status IN ('uploading', 'processing', 'ready', 'failed'));
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS cms_media_uploaded_by_created_idx
+  ON public.cms_media (uploaded_by, created_at DESC);
+CREATE INDEX IF NOT EXISTS cms_media_created_idx
+  ON public.cms_media (created_at DESC);
+
+UPDATE public.cms_media
+SET name = regexp_replace(regexp_replace(storage_path, '^.*/', ''), '\.[A-Za-z0-9]+$', '')
+WHERE name IS NULL;
+
+-- Migration 027 (appended until the next schema refresh; safe to re-run)
+CREATE UNIQUE INDEX IF NOT EXISTS cms_entry_tag_entry_id_unique ON public.cms_entry_tag (entry_id);

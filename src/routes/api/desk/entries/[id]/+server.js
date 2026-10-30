@@ -5,6 +5,8 @@ import { eq } from 'drizzle-orm';
 import { canEditEntries, isAdmin, canEditEntry } from '$lib/server/auth/roles.js';
 import { updateEntry } from '$lib/server/desk/entries.js';
 import { bump } from '$lib/server/cache/index.js';
+import { canManage, getMediaRow } from '$lib/server/media/library.js';
+import { getTag } from '$lib/server/desk/tags.js';
 
 async function loadEntry(id) {
 	const [row] = await db.select().from(deskEntry).where(eq(deskEntry.id, id)).limit(1);
@@ -54,6 +56,26 @@ export async function PATCH({ params, request, locals }) {
 	}
 	if ('publishedAt' in patch && !admin) {
 		throw error(403, 'Only an admin can change the publish date');
+	}
+
+	// Covers and thumbnails come from the image library: a writer can only
+	// use their own uploads (editors and admins can use anyone's). Keeping
+	// the image already on the entry is always allowed.
+	for (const key of ['coverImageId', 'thumbnailImageId']) {
+		const id = patch[key];
+		if (!id || id === entry[key]) continue;
+		const media = await getMediaRow(id);
+		if (!media) throw error(400, 'That image no longer exists');
+		if (!canManage(user, media)) throw error(403, 'That image belongs to someone else');
+	}
+
+	// One tag per entry, chosen from the shared list (POST /api/desk/tags
+	// makes a new one first). null takes the tag off.
+	if ('tagId' in patch) {
+		if (patch.tagId !== null && typeof patch.tagId !== 'string') throw error(400, 'Invalid tag');
+		if (patch.tagId && !(await getTag(patch.tagId).catch(() => null))) {
+			throw error(400, 'That tag no longer exists');
+		}
 	}
 
 	if (patch.status === 'scheduled') {

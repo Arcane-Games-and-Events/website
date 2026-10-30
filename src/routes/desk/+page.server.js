@@ -2,7 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { deskEntry, deskMedia, user as userTable } from '$lib/server/db/schema.js';
 import { alias } from 'drizzle-orm/pg-core';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { canEditEntries, canEditAllEntries, canPublish } from '$lib/server/auth/roles.js';
 import { deskReads } from '$lib/server/contentAnalytics/query.js';
 
@@ -48,7 +48,10 @@ export const load = async ({ locals, parent }) => {
 			videoProvider: deskEntry.videoProvider,
 			excerpt: deskEntry.excerpt,
 			thumbUrl: thumb.url,
-			coverUrl: cover.url,
+			// the smallest resized copy when there is one; these are thumbnails
+			coverUrl: sql`case when ${cover.variantPrefix} is not null
+				then replace(${cover.url}, ${cover.storagePath}, ${cover.variantPrefix} || ${cover.variantWidths}[1] || '.webp')
+				else ${cover.url} end`,
 			authorFirstName: userTable.firstName,
 			authorLastName: userTable.lastName
 		})
