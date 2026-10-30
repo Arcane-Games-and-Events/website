@@ -4823,3 +4823,22 @@ WHERE name IS NULL;
 
 -- Migration 027 (appended until the next schema refresh; safe to re-run)
 CREATE UNIQUE INDEX IF NOT EXISTS cms_entry_tag_entry_id_unique ON public.cms_entry_tag (entry_id);
+
+-- Migration 028 (appended until the next schema refresh; safe to re-run)
+ALTER TABLE public.ca_view
+  ALTER COLUMN entry_id DROP NOT NULL,
+  ADD COLUMN IF NOT EXISTS vod_id uuid REFERENCES public.vods(id) ON DELETE CASCADE;
+ALTER TABLE public.ca_event
+  ALTER COLUMN entry_id DROP NOT NULL,
+  ADD COLUMN IF NOT EXISTS vod_id uuid REFERENCES public.vods(id) ON DELETE CASCADE;
+ALTER TABLE public.ca_view ADD CONSTRAINT ca_view_owner_check CHECK (entry_id IS NOT NULL OR vod_id IS NOT NULL);
+ALTER TABLE public.ca_event ADD CONSTRAINT ca_event_owner_check CHECK (entry_id IS NOT NULL OR vod_id IS NOT NULL);
+CREATE INDEX IF NOT EXISTS ca_view_vod_started_idx ON public.ca_view (vod_id, started_at) WHERE vod_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ca_event_vod_idx ON public.ca_event (vod_id) WHERE vod_id IS NOT NULL;
+
+-- Migration 029 (appended until the next schema refresh; safe to re-run)
+ALTER TABLE public.vods
+  ADD COLUMN IF NOT EXISTS cover_image_id uuid REFERENCES public.cms_media(id) ON DELETE SET NULL;
+
+-- Migration 030 (appended until the next schema refresh; safe to re-run)
+ALTER TABLE public.cms_entry ADD COLUMN IF NOT EXISTS draft_meta jsonb;

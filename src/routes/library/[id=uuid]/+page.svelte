@@ -1,7 +1,9 @@
 <script>
 	import PremiumTag from '$lib/components/age/PremiumTag.svelte';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import { afterNavigate } from '$app/navigation';
+	import { createContentTracker } from '$lib/analytics/contentTracker.js';
 
 	let { data } = $props();
 
@@ -15,6 +17,21 @@
 		[vodItem?.player1Name, vodItem?.player2Name].filter(Boolean).join(' vs ')
 	);
 	const isPremiumUser = $derived(data.user?.role === 'premium' || data.user?.role === 'admin');
+
+	// --- Analytics: one view per video, restarted when moving straight from
+	// one match to another (same component). Non-members at the paywall
+	// count as gated views. ---
+	/** @type {{ stop: (next?: string) => void } | null} */
+	let tracker = null;
+	let trackedId = null;
+	afterNavigate(({ to }) => {
+		const id = data.vod?.id;
+		if (!id || id === trackedId) return;
+		tracker?.stop(to?.url?.pathname);
+		trackedId = id;
+		tracker = createContentTracker({ vodId: id, gated: !data.canWatch });
+	});
+	onDestroy(() => tracker?.stop());
 
 	// Patch mux-player shadow DOM so the transport chrome sits directly
 	// over the video rather than fighting the paper header/footer bands.
@@ -160,7 +177,9 @@
 					thumbnail-token={tokens?.['thumbnail-token'] || ''}
 					storyboard-token={tokens?.['storyboard-token'] || ''}
 					accent-color="#1e40af"
+					poster={vodItem.cover?.src || undefined}
 					metadata-video-title={vodItem.title}
+					metadata-video-id="vod:{vodItem.id}"
 					stream-type="on-demand"
 					default-hidden-captions
 					forward-seek-offset="10"
@@ -170,7 +189,13 @@
 			{:else}
 				<!-- Paywall / Premium CTA -->
 				<div class="relative overflow-hidden md:aspect-video">
-					{#if vodItem.muxPlaybackId}
+					{#if vodItem.cover}
+						<img
+							src={vodItem.cover.src}
+							alt=""
+							class="absolute inset-0 h-full w-full scale-105 object-cover blur-lg brightness-[0.4]"
+						/>
+					{:else if vodItem.muxPlaybackId}
 						<img
 							src="https://image.mux.com/{vodItem.muxPlaybackId}/thumbnail.webp?width=1600&height=900&fit_mode=smartcrop{vodThumbnailToken
 								? `&token=${vodThumbnailToken}`
@@ -351,7 +376,14 @@
 									aria-hidden="true">{i + 1}</span
 								>
 								<div class="relative aspect-video overflow-hidden bg-panel">
-									{#if related.muxPlaybackId}
+									{#if related.cover}
+										<img
+											src={related.cover.thumb}
+											alt=""
+											class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"
+											loading="lazy"
+										/>
+									{:else if related.muxPlaybackId}
 										<img
 											src="https://image.mux.com/{related.muxPlaybackId}/thumbnail.webp?width=480&height=270&fit_mode=smartcrop{related.thumbnailToken
 												? `&token=${related.thumbnailToken}`

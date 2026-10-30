@@ -29,7 +29,7 @@ database. After applying a migration, refresh it with `pnpm test:db:schema`
 and commit the result.
 
 A migration that isn't on dev yet can be appended to the end of
-`schema.sql` by hand so tests can use it (026, the image library, is
+`schema.sql` by hand so tests can use it (026 to 030 are
 appended this way). Write table names as `public.<table>`, because the dump
 clears the search path. The next refresh replaces it with the real dump.
 

@@ -2,7 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { deskEntry } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
-import { canEditEntries, isAdmin, canEditEntry } from '$lib/server/auth/roles.js';
+import { canApproveEdits, canEditEntries, isAdmin, canEditEntry } from '$lib/server/auth/roles.js';
 import { updateEntry } from '$lib/server/desk/entries.js';
 import { bump } from '$lib/server/cache/index.js';
 import { canManage, getMediaRow } from '$lib/server/media/library.js';
@@ -51,8 +51,8 @@ export async function PATCH({ params, request, locals }) {
 	if (patch.status === 'scheduled' && !admin) {
 		throw error(403, 'Only an admin can schedule entries');
 	}
-	if ('authorId' in patch && patch.authorId !== entry.authorId && !admin) {
-		throw error(403, 'Only an admin can change the author');
+	if ('authorId' in patch && patch.authorId !== entry.authorId && !canApproveEdits(user)) {
+		throw error(403, 'Only an editor or admin can change the author');
 	}
 	if ('publishedAt' in patch && !admin) {
 		throw error(403, 'Only an admin can change the publish date');

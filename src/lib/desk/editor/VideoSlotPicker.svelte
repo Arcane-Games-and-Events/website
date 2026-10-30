@@ -1,95 +1,115 @@
 <!--
-  VideoSlotPicker — sidebar picker for the video slot on an entry or lesson.
-  Two providers, one tab each:
+  VideoSlotPicker — the video slot on an entry (or a lesson or course
+  trailer). The video belongs to this one row; it's uploaded, replaced and
+  removed only here.
 
-    - Mux: direct upload with an in-browser progress bar. Server creates the
-      upload session via /api/desk/mux/upload-url and stamps the target row
-      with muxUploadId + videoProvider='mux' + videoStatus='waiting'. Client
-      PUTs the file bytes to Mux; the webhook fills in assetId, playbackId,
-      duration, aspectRatio, and status='ready' asynchronously.
+    - Upload a file: goes straight to Mux through the app-wide upload
+      manager (big chunks, retries, keeps going while you browse the site;
+      progress shows here and in the upload dock). The row keeps its current
+      video until the new one exists, then the old one is deleted from Mux.
+      Status updates on its own as Mux processes the file.
 
-    - YouTube: paste URL → /api/desk/youtube/preview returns normalized
-      { youtubeUrl, youtubeVideoId, youtubeTitle, youtubeThumbnailUrl,
-      youtubeDuration } which the client PATCHes onto the row.
+    - YouTube link: /api/desk/youtube/preview normalises the link, then the
+      fields are saved onto the row through `onpatch`.
 
   Props:
-    target - 'entry' | 'lesson' — which upload-url target to request.
-    id     - the entry or lesson id.
-    entry  - the entry/lesson row (reads video-slot fields for the preview).
-
-  Events:
-    patch - detail is the field set to PATCH onto the row. Parent forwards
-            it via the entry API so the row lands in the right state.
+    target  - 'entry' | 'lesson' | 'trailer'
+    id      - the row's id
+    entry   - the row (reads its video fields)
+    label   - what the video is for, shown in the upload dock
+    held    - changes wait for an editor or admin (a writer on a live piece):
+              uploads and removals go to the pending slot, and the slot shows it
+    onpatch - (fields) => void: save fields onto the row (YouTube)
+    onrow   - (row) => void: the server changed the row (upload, status, removal)
 -->
 <script>
-	import { createEventDispatcher } from 'svelte';
+	import { uploads, formatBytes, formatLeft } from '$lib/desk/video/uploads.svelte.js';
 
-	export let target = 'entry';
-	export let id = null;
-	export let entry = null;
+	let { target = 'entry', id, entry, label = 'Video', held = false, onpatch, onrow } = $props();
 
-	const dispatch = createEventDispatcher();
+	// Follows the slot's provider; the tabs can still switch it by hand.
+	let activeTab = $derived(entry?.videoProvider === 'youtube' ? 'youtube' : 'mux');
 
-	// Determine the initial tab from the existing provider.
-	$: activeTab = entry?.videoProvider === 'youtube' ? 'youtube' : 'mux';
+	let youtubeInput = $state('');
+	let ytLoading = $state(false);
+	let ytError = $state('');
+	let muxError = $state('');
+	let checking = $state(false);
+	let removing = $state(false);
 
-	let youtubeInput = '';
-	let ytLoading = false;
-	let ytError = '';
+	const up = $derived(uploads.for(target, id));
+	const uploading = $derived(
+		!!up && ['starting', 'uploading', 'offline', 'retrying'].includes(up.state)
+	);
 
-	let muxUploading = false;
-	let muxProgress = 0;
-	let muxError = '';
+	async function sync() {
+		const res = await fetch(`/api/desk/videos/${target}/${id}/sync`, { method: 'POST' });
+		if (!res.ok) {
+			const body = await res.json().catch(() => ({}));
+			throw new Error(body?.message || `Couldn't check (${res.status})`);
+		}
+		const { row } = await res.json();
+		if (row) onrow?.(row);
+		return row;
+	}
 
-	let refreshing = false;
-
-	async function refreshFromMux() {
-		if (refreshing) return;
-		refreshing = true;
+	async function checkNow() {
+		if (checking) return;
+		checking = true;
+		muxError = '';
 		try {
-			const res = await fetch('/api/desk/mux/refresh', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ target, id })
-			});
-			if (!res.ok) {
-				const body = await res.json().catch(() => ({}));
-				muxError = body?.message || `Refresh failed (${res.status})`;
-				return;
-			}
-			const body = await res.json();
-			const updated = body[target];
-			if (!updated) return;
-			// Mirror server state into the parent so the sidebar re-renders
-			// with the fresh values (playbackId, duration, aspectRatio, status).
-			dispatch('patch', {
-				videoProvider: updated.videoProvider,
-				muxUploadId: updated.muxUploadId,
-				muxAssetId: updated.muxAssetId,
-				muxPlaybackId: updated.muxPlaybackId,
-				videoStatus: updated.videoStatus,
-				videoDuration: updated.videoDuration,
-				videoAspectRatio: updated.videoAspectRatio
-			});
+			await sync();
 		} catch (err) {
-			muxError = err?.message || 'Network error during refresh';
+			muxError = err instanceof Error ? err.message : 'Network error';
 		} finally {
-			refreshing = false;
+			checking = false;
 		}
 	}
+
+	// When this row's upload finishes (or fails), pull the row so the slot
+	// shows the new state.
+	let lastSettled = uploads.settled;
+	$effect(() => {
+		const n = uploads.settled;
+		if (n !== lastSettled) {
+			lastSettled = n;
+			if (up && ['ready', 'failed', 'cancelled'].includes(up.state)) sync().catch(() => {});
+		}
+	});
+
+	// A video still processing from an earlier visit: check Mux every few
+	// seconds until it's ready, so nobody has to press anything.
+	$effect(() => {
+		const st = entry?.videoStatus;
+		if (entry?.videoProvider !== 'mux' || uploading) return;
+		if (st !== 'waiting' && st !== 'preparing') return;
+		if (st === 'waiting' && !up) return; // nothing is uploading; see the note below
+		const t = setInterval(() => sync().catch(() => {}), 5000);
+		return () => clearInterval(t);
+	});
 
 	const chip =
 		'shrink-0 border border-current px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.14em] uppercase';
 	const STATUS_WORD = {
 		ready: 'Ready',
-		preparing: 'Processing…',
-		waiting: 'Waiting for upload',
-		errored: 'Upload failed'
+		preparing: 'Processing on Mux…',
+		waiting: 'Waiting for the file',
+		errored: 'Mux couldn’t process it'
+	};
+	const UP_WORD = {
+		starting: 'Starting…',
+		uploading: 'Uploading',
+		offline: 'Waiting for connection…',
+		retrying: 'Connection hiccup, retrying…',
+		processing: 'Processing on Mux…',
+		ready: 'Ready',
+		failed: 'Upload failed',
+		cancelled: 'Cancelled'
 	};
 
 	function formatDuration(sec) {
-		if (!sec || !Number.isFinite(sec)) return '';
-		const s = Math.floor(sec);
+		if (!sec || !Number.isFinite(Number(sec))) return '';
+		const s = Math.floor(Number(sec));
 		const h = Math.floor(s / 3600);
 		const m = Math.floor((s % 3600) / 60);
 		const r = s % 60;
@@ -97,99 +117,42 @@
 		return `${m}:${String(r).padStart(2, '0')}`;
 	}
 
-	function clearVideo() {
-		dispatch('patch', {
-			videoProvider: null,
-			muxUploadId: null,
-			muxAssetId: null,
-			muxPlaybackId: null,
-			videoStatus: null,
-			videoDuration: null,
-			videoAspectRatio: null,
-			youtubeUrl: null,
-			youtubeVideoId: null,
-			youtubeTitle: null,
-			youtubeThumbnailUrl: null,
-			youtubeDuration: null
-		});
+	/** @type {HTMLInputElement | undefined} */
+	let fileInput = $state();
+	function handleFile(e) {
+		const file = e.currentTarget.files?.[0];
+		e.currentTarget.value = '';
+		if (!file) return;
+		muxError = '';
+		uploads.start({ file, target, id, label, href: location.pathname });
 	}
 
-	// --- Mux upload ------------------------------------------------------------
-
-	async function startMuxUpload(file) {
+	async function removeVideo() {
+		if (removing) return;
+		const isMux = entry?.videoProvider === 'mux';
+		const question = held
+			? 'Remove this video? It comes off the site once an editor or admin approves.'
+			: 'Remove this video? It will be deleted from Mux and can’t be brought back.';
+		if (isMux && !confirm(question)) {
+			return;
+		}
+		removing = true;
 		muxError = '';
-		muxUploading = true;
-		muxProgress = 0;
 		try {
-			// Ask server for a Mux upload session. Server stamps the row with
-			// muxUploadId + videoStatus='waiting' so the parent picks up the new
-			// state on next refresh.
-			const res = await fetch('/api/desk/mux/upload-url', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ target, id })
-			});
+			if (up) uploads.dismiss(up.key, { abort: true });
+			const res = await fetch(`/api/desk/videos/${target}/${id}`, { method: 'DELETE' });
 			if (!res.ok) {
 				const body = await res.json().catch(() => ({}));
-				muxError = body?.message || `Failed to start upload (${res.status})`;
-				return;
+				throw new Error(body?.message || `Couldn't remove it (${res.status})`);
 			}
-			const { uploadUrl, uploadId: muxUploadId } = await res.json();
-
-			// PUT the file bytes directly to Mux with progress reporting. Using
-			// XHR (not fetch) because fetch doesn't expose upload progress events
-			// in browsers.
-			await new Promise((resolve, reject) => {
-				const xhr = new XMLHttpRequest();
-				xhr.upload.addEventListener('progress', (e) => {
-					if (e.lengthComputable) muxProgress = Math.round((e.loaded / e.total) * 100);
-				});
-				xhr.addEventListener('load', () => {
-					if (xhr.status >= 200 && xhr.status < 300) resolve();
-					else reject(new Error(`Mux upload failed (${xhr.status})`));
-				});
-				xhr.addEventListener('error', () => reject(new Error('Network error during upload')));
-				xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')));
-				xhr.open('PUT', uploadUrl);
-				xhr.send(file);
-			});
-
-			// Local optimistic state — the server already stamped the row on the
-			// upload-url call, so the parent refreshing entry from the API will
-			// see it. We echo the same values back via `patch` so the sidebar's
-			// local `entry` prop reflects reality without a round trip.
-			dispatch('patch', {
-				videoProvider: 'mux',
-				muxUploadId,
-				videoStatus: 'preparing',
-				muxAssetId: null,
-				muxPlaybackId: null,
-				videoDuration: null,
-				videoAspectRatio: null,
-				youtubeUrl: null,
-				youtubeVideoId: null,
-				youtubeTitle: null,
-				youtubeThumbnailUrl: null,
-				youtubeDuration: null
-			});
+			// Read back what the server now holds (a held removal stays pending).
+			await sync();
 		} catch (err) {
-			muxError = err?.message || 'Upload failed';
+			muxError = err instanceof Error ? err.message : 'Network error';
 		} finally {
-			muxUploading = false;
+			removing = false;
 		}
 	}
-
-	let muxFileInput;
-	function pickMuxFile() {
-		muxFileInput?.click();
-	}
-	function handleMuxFile(e) {
-		const file = e.target?.files?.[0];
-		if (file) startMuxUpload(file);
-		if (e.target) e.target.value = '';
-	}
-
-	// --- YouTube ---------------------------------------------------------------
 
 	async function attachYouTube() {
 		ytError = '';
@@ -210,15 +173,21 @@
 				return;
 			}
 			const preview = await res.json();
-			dispatch('patch', {
+			// A Mux video being swapped for a link is deleted from Mux first.
+			if (entry?.videoProvider === 'mux') {
+				const del = await fetch(`/api/desk/videos/${target}/${id}`, { method: 'DELETE' });
+				if (!del.ok) {
+					ytError = 'Couldn’t remove the uploaded video first. Try again.';
+					return;
+				}
+			}
+			onpatch?.({
 				videoProvider: 'youtube',
 				youtubeUrl: preview.youtubeUrl,
 				youtubeVideoId: preview.youtubeVideoId,
 				youtubeTitle: preview.youtubeTitle,
 				youtubeThumbnailUrl: preview.youtubeThumbnailUrl,
 				youtubeDuration: preview.youtubeDuration,
-				// Clear Mux side so we don't render stale Mux metadata alongside
-				// the new YouTube attachment.
 				muxUploadId: null,
 				muxAssetId: null,
 				muxPlaybackId: null,
@@ -228,7 +197,7 @@
 			});
 			youtubeInput = '';
 		} catch (err) {
-			ytError = err?.message || 'Network error';
+			ytError = err instanceof Error ? err.message : 'Network error';
 		} finally {
 			ytLoading = false;
 		}
@@ -237,7 +206,55 @@
 
 <div class="font-libre">
 	<!-- what's attached right now -->
-	{#if entry?.videoProvider === 'mux'}
+	{#if up && up.state !== 'ready'}
+		<div class="border border-line2 bg-paper px-3 py-2.5">
+			<p class="flex items-center gap-2.5">
+				<span class="{chip} text-warm">File</span>
+				<span class="min-w-0 flex-1 truncate text-[13px]">{up.name}</span>
+				<span class="shrink-0 text-[11.5px] text-fade tabular-nums">{Math.round(up.percent)}%</span>
+			</p>
+			<div class="mt-2 h-1 bg-line2" aria-hidden="true">
+				<div
+					class="h-full transition-[width] duration-300 {up.state === 'failed'
+						? 'bg-hero-rb'
+						: 'bg-warm'}"
+					style="width: {up.percent}%"
+				></div>
+			</div>
+			<p class="mt-1.5 flex flex-wrap justify-between gap-x-3 text-[11.5px] text-fade">
+				<span class={up.state === 'failed' ? 'text-hero-rb' : ''}
+					>{up.state === 'failed' && up.error ? up.error : UP_WORD[up.state]}</span
+				>
+				{#if up.state === 'uploading' && up.bytesPerSec}
+					<span class="tabular-nums"
+						>{formatBytes(up.bytesPerSec)}/s · {formatLeft(up.secondsLeft)}</span
+					>
+				{/if}
+			</p>
+			<p class="mt-1.5 flex gap-4">
+				{#if uploading}
+					<button
+						type="button"
+						onclick={() => uploads.cancel(up.key)}
+						class="text-[9.5px] font-extrabold tracking-[0.12em] text-fade uppercase hover:text-hero-rb"
+						>Cancel upload</button
+					>
+				{:else if up.state === 'failed'}
+					<button
+						type="button"
+						onclick={() => uploads.retry(up.key)}
+						class="text-[9.5px] font-extrabold tracking-[0.12em] text-warm uppercase hover:text-ink"
+						>Try again</button
+					>
+				{/if}
+			</p>
+			{#if uploading}
+				<p class="mt-1 text-[11px] leading-snug text-fade">
+					You can keep working or browse the site; it uploads in the background.
+				</p>
+			{/if}
+		</div>
+	{:else if entry?.videoProvider === 'mux'}
 		<div class="flex items-center gap-2.5 border border-line2 bg-paper px-3 py-2.5">
 			<span class="{chip} text-warm">File</span>
 			<span class="min-w-0 flex-1 truncate text-[13px]"
@@ -247,18 +264,21 @@
 						>&nbsp;·&nbsp;{formatDuration(entry.videoDuration)}</span
 					>{/if}</span
 			>
-			{#if entry.videoStatus !== 'ready' && entry.videoStatus !== 'errored'}
-				<!-- Manual sync from Mux, for environments the webhook can't reach
-				     (local dev, preview branches). In prod the webhook does this. -->
+			{#if entry.videoStatus !== 'ready'}
 				<button
 					type="button"
-					on:click={refreshFromMux}
-					disabled={refreshing}
+					onclick={checkNow}
+					disabled={checking}
 					class="shrink-0 text-[9.5px] font-extrabold tracking-[0.12em] text-warm uppercase hover:text-ink disabled:opacity-60"
-					>{refreshing ? 'Checking…' : 'Check status'}</button
+					>{checking ? 'Checking…' : 'Check now'}</button
 				>
 			{/if}
 		</div>
+		{#if entry.videoStatus === 'waiting' && !up}
+			<p class="mt-1.5 text-[11.5px] leading-snug text-fade">
+				The upload was interrupted before the file finished. Choose it again to upload.
+			</p>
+		{/if}
 	{:else if entry?.videoProvider === 'youtube' && entry?.youtubeVideoId}
 		<div class="flex gap-3 border border-line2 bg-paper p-2">
 			{#if entry.youtubeThumbnailUrl}
@@ -292,7 +312,7 @@
 				type="button"
 				role="tab"
 				aria-selected={activeTab === v}
-				on:click={() => (activeTab = v)}
+				onclick={() => (activeTab = v)}
 				class="min-h-[36px] px-2 text-[9.5px] font-extrabold tracking-[0.12em] uppercase transition-colors {activeTab ===
 				v
 					? 'bg-ink text-paper-bg'
@@ -303,34 +323,36 @@
 
 	{#if activeTab === 'mux'}
 		<input
-			bind:this={muxFileInput}
+			bind:this={fileInput}
 			type="file"
 			accept="video/*"
-			on:change={handleMuxFile}
+			onchange={handleFile}
 			class="hidden"
 		/>
 		<button
 			type="button"
-			on:click={pickMuxFile}
-			disabled={muxUploading}
+			onclick={() => fileInput?.click()}
+			disabled={uploading}
 			class="mt-2 min-h-[40px] w-full border-[1.5px] border-ink px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:cursor-wait disabled:opacity-60"
 		>
-			{muxUploading
-				? `Uploading… ${muxProgress}%`
+			{uploading
+				? 'Uploading…'
 				: entry?.videoProvider === 'mux'
 					? 'Replace video'
 					: 'Choose video file'}
 		</button>
-		{#if muxUploading}
-			<div class="mt-2 h-1 bg-line2">
-				<div class="h-full bg-warm transition-[width]" style="width: {muxProgress}%"></div>
-			</div>
-		{/if}
 		{#if muxError}
 			<p class="mt-1.5 text-[11.5px] text-hero-rb">{muxError}</p>
 		{/if}
 		<p class="mt-1.5 text-[11.5px] leading-snug text-fade">
-			Mux processes the video after it uploads. It’s usually ready in about 30 seconds.
+			{#if held}
+				A new video waits for an editor or admin; the site keeps the current one until then.
+			{:else if entry?.videoProvider === 'mux' && entry?.videoStatus === 'ready'}
+				Replacing keeps the current video until the new one is ready, then deletes the old one.
+			{:else}
+				Large files are fine. Mux processes the video after it uploads, usually within a few
+				minutes.
+			{/if}
 		</p>
 	{:else}
 		<div class="mt-2 flex h-[40px] border border-line2 bg-paper focus-within:border-ink">
@@ -343,7 +365,7 @@
 			/>
 			<button
 				type="button"
-				on:click={attachYouTube}
+				onclick={attachYouTube}
 				disabled={ytLoading || !youtubeInput.trim()}
 				class="shrink-0 bg-ink px-3.5 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-ink"
 				>{ytLoading ? 'Fetching…' : 'Attach'}</button
@@ -357,9 +379,10 @@
 	{#if entry?.videoProvider}
 		<button
 			type="button"
-			on:click={clearVideo}
-			class="mt-3 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:text-hero-rb"
-			>Remove video</button
+			onclick={removeVideo}
+			disabled={removing}
+			class="mt-3 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:text-hero-rb disabled:opacity-50"
+			>{removing ? 'Removing…' : 'Remove video'}</button
 		>
 	{/if}
 </div>

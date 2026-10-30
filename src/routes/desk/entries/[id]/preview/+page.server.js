@@ -4,7 +4,7 @@ import { deskEntry } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { mediaImagesById } from '$lib/server/media/library.js';
 import { extractMediaIds } from '$lib/desk/render/lexical-utils.js';
-import { getEntryTag } from '$lib/server/desk/tags.js';
+import { getEntryTag, getTag } from '$lib/server/desk/tags.js';
 import { canEditEntries, canEditEntry } from '$lib/server/auth/roles.js';
 import {
 	extractEntryCardNames,
@@ -46,23 +46,41 @@ export async function load({ params, locals }) {
 		return entry[field];
 	}
 
-	// The entry as it will read once its pending edits go live.
+	// The entry as it will read once its pending edits go live: the text
+	// from draft_*, and the access, images, tag and video from draft_meta.
+	const meta = entry.draftMeta || {};
+	const pendingVideo = meta.video
+		? {
+				videoProvider: meta.video.provider ?? null,
+				...Object.fromEntries(Object.entries(meta.video).filter(([k]) => k !== 'provider'))
+			}
+		: {};
 	const merged = {
 		...entry,
+		...pendingVideo,
+		accessMode: meta.accessMode ?? entry.accessMode,
 		title: pick('title') || 'Untitled',
 		excerpt: pick('excerpt') || null,
 		body: pick('body') || null,
 		readTime: pick('readTime') || null
 	};
-	const coverImageId = entry.draftCoverImageId || entry.coverImageId;
-	const thumbnailImageId = entry.draftThumbnailImageId || entry.thumbnailImageId;
+	const coverImageId =
+		'coverImageId' in meta ? meta.coverImageId : entry.draftCoverImageId || entry.coverImageId;
+	const thumbnailImageId =
+		'thumbnailImageId' in meta
+			? meta.thumbnailImageId
+			: entry.draftThumbnailImageId || entry.thumbnailImageId;
 
 	const [cover, thumbnail, author, pieces, tag] = await Promise.all([
 		loadMedia(coverImageId),
 		loadMedia(thumbnailImageId),
 		loadAuthor(entry.authorId),
 		countAuthorPieces(entry.authorId),
-		getEntryTag(entry.id)
+		'tagId' in meta
+			? meta.tagId
+				? getTag(meta.tagId).then((t) => t && { id: t.id, name: t.name, slug: t.slug })
+				: null
+			: getEntryTag(entry.id)
 	]);
 	const article = await buildArticleShape({
 		entry: merged,
@@ -97,7 +115,7 @@ export async function load({ params, locals }) {
 
 	return {
 		article,
-		isPremium: entry.accessMode === 'premium',
+		isPremium: merged.accessMode === 'premium',
 		cardImages,
 		media,
 		preview: {

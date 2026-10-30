@@ -1,4 +1,5 @@
 import { db } from '$lib/server/db/index.js';
+import { withCovers } from '$lib/server/video/gameplay.js';
 import { vod, event } from '$lib/server/db/schema.js';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { getMuxThumbnailToken } from '$lib/server/mux.js';
@@ -47,6 +48,7 @@ export async function load({ setHeaders }) {
 					description: vod.description,
 					duration: vod.duration,
 					thumbnail: vod.thumbnail,
+					coverImageId: vod.coverImageId,
 					player1Name: vod.player1Name,
 					player1Hero: vod.player1Hero,
 					player2Name: vod.player2Name,
@@ -71,7 +73,7 @@ export async function load({ setHeaders }) {
 		// half-day, not per request). Failure on a single VOD is silent;
 		// the card falls back to the stored thumbnail.
 		vods = await Promise.all(
-			recentVods.map(async (v) => {
+			(await withCovers(recentVods)).map(async (v) => {
 				if (!v.muxPlaybackId) return v;
 				const token = await getMuxThumbnailToken(v.muxPlaybackId);
 				return token ? { ...v, thumbnailToken: token } : v;

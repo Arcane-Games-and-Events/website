@@ -114,12 +114,13 @@ export function send(payload, { beacon = false } = {}) {
  * Start measuring one piece. Returns `{ stop }`; call `stop()` when the
  * reader leaves it (component destroy or navigation to another piece).
  *
- * @param {{ entryId: string, gated?: boolean, readTimeMinutes?: number | null,
+ * @param {{ entryId?: string, vodId?: string, gated?: boolean, readTimeMinutes?: number | null,
  *           getBody?: () => Element | null, root?: Element | Document }} opts
  */
 export function createContentTracker(opts) {
 	const noop = { stop() {} };
-	if (typeof window === 'undefined' || !opts?.entryId || !trackingAllowed()) return noop;
+	if (typeof window === 'undefined' || !(opts?.entryId || opts?.vodId) || !trackingAllowed())
+		return noop;
 
 	const root = opts.root || document;
 	const getBody = opts.getBody || (() => null);
@@ -153,7 +154,7 @@ export function createContentTracker(opts) {
 	/** @type {{type: string, target: string, at: number} | null} */
 	let pendingExit = null;
 
-	note('view started', { entryId: opts.entryId, viewId: id, visitorId: vid });
+	note('view started', { entryId: opts.entryId, vodId: opts.vodId, viewId: id, visitorId: vid });
 
 	// ---- open the view ----
 	const params = new URLSearchParams(location.search);
@@ -162,6 +163,7 @@ export function createContentTracker(opts) {
 		t: 'start',
 		id,
 		entryId: opts.entryId,
+		vodId: opts.vodId,
 		visitorId: vid,
 		sessionId: sid,
 		gated: !!opts.gated,

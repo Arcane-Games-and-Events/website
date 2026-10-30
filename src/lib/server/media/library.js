@@ -20,7 +20,8 @@ import {
 	deskCourse,
 	deskLesson,
 	deskAuthorProfile,
-	user as userTable
+	user as userTable,
+	vod
 } from '$lib/server/db/schema.js';
 import { canEditAllEntries, canEditEntries, canEditCourses } from '$lib/server/auth/roles.js';
 import { getSupabase, DESK_MEDIA_BUCKET } from '$lib/server/supabase.js';
@@ -236,6 +237,41 @@ export async function mediaUsage(ids) {
 				add(c[col], { kind: 'course', label, title: c.title, href: `/academy/${c.slug}` });
 			}
 		}
+	}
+
+	// A writer's pending cover or thumbnail on a live piece.
+	const pendingEntries = await db
+		.select({ id: deskEntry.id, title: deskEntry.title, meta: deskEntry.draftMeta })
+		.from(deskEntry)
+		.where(
+			or(
+				inArray(sql`${deskEntry.draftMeta} ->> 'coverImageId'`, ids),
+				inArray(sql`${deskEntry.draftMeta} ->> 'thumbnailImageId'`, ids)
+			)
+		);
+	for (const e of pendingEntries) {
+		for (const [key, label] of [
+			['coverImageId', 'Pending cover'],
+			['thumbnailImageId', 'Pending thumbnail']
+		]) {
+			const id = e.meta?.[key];
+			if (id && map.has(id)) {
+				add(id, { kind: 'entry', label, title: e.title, href: `/desk/entries/${e.id}` });
+			}
+		}
+	}
+
+	const vods = await db
+		.select({ id: vod.id, title: vod.title, coverImageId: vod.coverImageId })
+		.from(vod)
+		.where(inArray(vod.coverImageId, ids));
+	for (const v of vods) {
+		add(v.coverImageId, {
+			kind: 'gameplay',
+			label: 'Gameplay cover',
+			title: v.title,
+			href: '/desk/videos'
+		});
 	}
 
 	const profiles = await db

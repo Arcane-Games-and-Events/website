@@ -14,6 +14,7 @@
 <script>
 	import DeskTabs from '$lib/components/age/desk/DeskTabs.svelte';
 	import { onDestroy, onMount } from 'svelte';
+	import { invalidateAll } from '$app/navigation';
 	import { fly } from 'svelte/transition';
 	import Editor from '$lib/desk/editor/Editor.svelte';
 	import CoverImagePicker from '$lib/desk/editor/CoverImagePicker.svelte';
@@ -41,9 +42,9 @@
 	// exists on a live entry, we surface the buffered values so the writer sees
 	// what they'd typed before, not the older approved values.
 	let title = liveOrDraft(data?.entry, 'title') || 'Untitled';
-	let slug = data?.entry?.slug || '';
+	let slug = data?.entry?.draftMeta?.slug ?? data?.entry?.slug ?? '';
 	let excerpt = liveOrDraft(data?.entry, 'excerpt') || '';
-	let accessMode = data?.entry?.accessMode || 'free';
+	let accessMode = data?.entry?.draftMeta?.accessMode ?? data?.entry?.accessMode ?? 'free';
 	let status = data?.entry?.status || 'draft';
 	let body = coerceLexicalDoc(liveOrDraft(data?.entry, 'body'));
 
@@ -72,6 +73,76 @@
 	$: slugMatches = slug === (titleToSlug(title) || 'untitled') || slugMatchesTitle(slug, title);
 
 	let isAdmin = !!data?.isAdmin;
+	// Editors and admins approve pending changes to a live piece, their own
+	// included; everyone's changes to a live piece wait for that.
+	let canApprove = !!data?.canApprove;
+
+	// ---------- pending changes ----------
+	// What waits for approval beyond the text, and how it differs from the
+	// live piece, in plain words for the Pending edits panel.
+	$: pendingMeta = entry?.draftMeta || {};
+	$: live = data?.live || {};
+	$: pendingVideo = pendingMeta.video || null;
+	// The video slot as the picker should show it: the pending one if any.
+	$: videoEntry = pendingVideo
+		? {
+				...entry,
+				videoProvider: pendingVideo.provider ?? null,
+				muxUploadId: pendingVideo.muxUploadId ?? null,
+				muxAssetId: pendingVideo.muxAssetId ?? null,
+				muxPlaybackId: pendingVideo.muxPlaybackId ?? null,
+				videoStatus: pendingVideo.videoStatus ?? null,
+				videoDuration: pendingVideo.videoDuration ?? null,
+				videoAspectRatio: pendingVideo.videoAspectRatio ?? null,
+				youtubeUrl: pendingVideo.youtubeUrl ?? null,
+				youtubeVideoId: pendingVideo.youtubeVideoId ?? null,
+				youtubeTitle: pendingVideo.youtubeTitle ?? null,
+				youtubeThumbnailUrl: pendingVideo.youtubeThumbnailUrl ?? null,
+				youtubeDuration: pendingVideo.youtubeDuration ?? null
+			}
+		: entry;
+	const ACCESS_WORD = { free: 'Free', premium: 'Premium' };
+	$: pendingList = [
+		entry?.draftTitle != null && entry.draftTitle !== entry.title ? 'Title edited' : null,
+		entry?.draftExcerpt != null && entry.draftExcerpt !== entry.excerpt ? 'Summary edited' : null,
+		entry?.draftBody != null ? 'Text edited' : null,
+		'slug' in pendingMeta
+			? `Web address: /library/${live.slug} → /library/${pendingMeta.slug}`
+			: null,
+		'accessMode' in pendingMeta
+			? `Who can read it: ${ACCESS_WORD[live.accessMode] || live.accessMode} → ${ACCESS_WORD[pendingMeta.accessMode] || pendingMeta.accessMode}`
+			: null,
+		'tagId' in pendingMeta
+			? `Tag: ${live.tag?.name || 'none'} → ${pendingMeta.tagId ? tag?.name || 'a new tag' : 'none'}`
+			: null,
+		'coverImageId' in pendingMeta
+			? pendingMeta.coverImageId
+				? live.cover
+					? 'Cover replaced'
+					: 'Cover added'
+				: 'Cover removed'
+			: null,
+		'thumbnailImageId' in pendingMeta
+			? pendingMeta.thumbnailImageId
+				? live.thumbnail
+					? 'Thumbnail replaced'
+					: 'Thumbnail added'
+				: 'Thumbnail removed'
+			: null,
+		pendingVideo
+			? !pendingVideo.provider
+				? 'Video removed'
+				: pendingVideo.provider === 'youtube'
+					? 'Video: YouTube link'
+					: live.video?.provider
+						? 'Video replaced'
+						: 'Video added'
+			: null
+	].filter(Boolean);
+	// Everything but the text, for the review screen (the text has its own diff).
+	$: otherChanges = pendingList.filter(
+		(c) => !['Title edited', 'Summary edited', 'Text edited'].includes(c)
+	);
 	let scheduleInput = data?.entry?.scheduledFor
 		? toLocalInput(new Date(data.entry.scheduledFor))
 		: '';
@@ -172,9 +243,12 @@
 		thumbnailImage = media;
 		await patchEntry({ thumbnailImageId: media?.id || null });
 	}
-	async function handleVideoPatch(e) {
-		const fields = e.detail || {};
-		await patchEntry(fields);
+	async function handleVideoPatch(fields) {
+		await patchEntry(fields || {});
+	}
+	// The video picker changed the row on the server (upload, status, removal).
+	function handleVideoRow(row) {
+		if (row?.id === entry?.id) entry = { ...entry, ...row };
 	}
 
 	// A scheduled entry whose time has passed reads as published everywhere
@@ -413,6 +487,8 @@
 		return items;
 	})();
 	$: editsAreBuffered = status === 'published' || status === 'scheduled';
+	// Changes to a live piece wait for approval (see holdsForApproval).
+	$: held = editsAreBuffered;
 
 	let saveState = 'idle'; // 'idle' | 'saving' | 'saved' | 'error'
 	let lastError = '';
@@ -558,6 +634,19 @@
 		excerpt = entry.excerpt || '';
 		body = coerceLexicalDoc(entry.body);
 		status = entry.status;
+		await reloadSidebar();
+	}
+
+	// After approving or discarding, the sidebar shows the live piece again.
+	async function reloadSidebar() {
+		await invalidateAll();
+		entry = data.entry;
+		slug = entry.slug;
+		accessMode = entry.accessMode;
+		coverImage = data.coverImage;
+		thumbnailImage = data.thumbnailImage;
+		tag = data.tag;
+		canApprove = !!data.canApprove;
 		serverSnapshot = JSON.stringify({ title, slug, excerpt, accessMode, body });
 	}
 
@@ -573,7 +662,7 @@
 		title = entry.title || 'Untitled';
 		excerpt = entry.excerpt || '';
 		body = coerceLexicalDoc(entry.body);
-		serverSnapshot = JSON.stringify({ title, slug, excerpt, accessMode, body });
+		await reloadSidebar();
 	}
 
 	async function deleteEntry() {
@@ -659,9 +748,9 @@
 		errored: 'Error'
 	};
 	$: videoMeta =
-		entry?.videoProvider === 'mux'
-			? `File · ${VIDEO_STATUS[entry.videoStatus] || 'Pending'}`
-			: entry?.videoProvider === 'youtube'
+		videoEntry?.videoProvider === 'mux'
+			? `File · ${VIDEO_STATUS[videoEntry.videoStatus] || 'Pending'}`
+			: videoEntry?.videoProvider === 'youtube'
 				? 'YouTube'
 				: 'None';
 
@@ -692,6 +781,11 @@
 	// and autosave would wait until the body is typed in (a new draft's title
 	// and address wouldn't save). Count the editor as ready once it's mounted.
 	function handleEditorMounted() {
+		// Each mount (page load, back from Review changes, after approving)
+		// starts a fresh baseline: the editor's first change is it loading the
+		// text, not an edit.
+		ready = false;
+		editorChangeCount = 0;
 		setTimeout(() => {
 			if (!ready && editorChangeCount === 0) handleEditorReady();
 		}, 300);
@@ -758,6 +852,18 @@
 	</button>
 {/snippet}
 
+<!-- under a field whose change is waiting for an editor or admin -->
+{#snippet waiting(note)}
+	<div class="mt-2.5 border-l-[3px] border-hero-rb bg-hero-rb/[0.05] px-3 py-2">
+		<p
+			class="flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] text-hero-rb uppercase"
+		>
+			<span class="text-[7px]" aria-hidden="true">◆</span> Waiting for approval
+		</p>
+		<p class="mt-1 text-[12.5px] leading-snug text-soft">{note}</p>
+	</div>
+{/snippet}
+
 {#snippet head(label, tone = 'text-warm', meta = '', metaClass = '')}
 	<div class="flex min-h-[44px] items-center justify-between gap-3 border-b border-line px-4">
 		<h3 class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
@@ -779,15 +885,23 @@
 					entry.draftUpdatedAt ? fmtWhen(entry.draftUpdatedAt) : ''
 				)}
 				<div class="px-4 py-4">
+					{#if pendingList.length}
+						<ul class="mb-3 divide-y divide-line border-y border-line">
+							{#each pendingList as change (change)}
+								<li class="py-2 text-[13px] leading-snug">{change}</li>
+							{/each}
+						</ul>
+					{/if}
 					<p class="text-[13.5px] leading-snug text-soft">
-						{#if isAdmin}
-							These edits aren’t public yet. Use <b class="text-ink">Review changes</b> above the editor
-							to compare them with the live version.
+						{#if canApprove}
+							None of this is on the site yet. Another editor or admin can review it, or you can
+							approve it yourself. <b class="text-ink">Review changes</b> above the editor compares the
+							text with the live version.
 						{:else}
-							Your edits are saved. An admin approves them before they go live.
+							Your changes are saved. An editor or admin approves them before they go live.
 						{/if}
 					</p>
-					{#if isAdmin}
+					{#if canApprove}
 						<div class="mt-3.5 grid gap-2">
 							<button
 								type="button"
@@ -795,7 +909,7 @@
 								class="min-h-[42px] bg-prem px-3 text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110"
 								>Approve · keep {displayStatus}</button
 							>
-							{#if status === 'published' || status === 'scheduled'}
+							{#if isAdmin && (status === 'published' || status === 'scheduled')}
 								<button
 									type="button"
 									on:click={() => approveDraft({ asStatus: 'draft' })}
@@ -844,9 +958,12 @@
 						{/if}
 					{:else}
 						<p class="mt-1 text-[13px] leading-snug text-soft">
-							{#if editsAreBuffered}
-								Your edits are saved as a pending change. An admin approves them before they go
-								live.
+							{#if editsAreBuffered && !canApprove}
+								Changes to a live piece are saved as pending edits. An editor or admin approves them
+								before they go live.
+							{:else if editsAreBuffered}
+								Changes to a live piece are saved as pending edits for review. Any editor or admin
+								can approve them, including you.
 							{:else}
 								Your work saves automatically. An admin publishes it when it’s ready.
 							{/if}
@@ -938,7 +1055,7 @@
 		<section class={panel}>
 			{@render head('Details')}
 			<div class="divide-y divide-line">
-				{#if isAdmin}
+				{#if canApprove}
 					<label class="block px-4 py-4">
 						<span class={rowLabel}>Author</span>
 						<select
@@ -968,6 +1085,9 @@
 				<div class="px-4 py-4">
 					<span class={rowLabel}>Tag</span>
 					<TagPicker value={tag} tags={data?.tags ?? []} onpick={pickTag} />
+					{#if 'tagId' in pendingMeta}{@render waiting(
+							live.tag ? `On the site now: ${live.tag.name}` : 'On the site now: no tag'
+						)}{/if}
 				</div>
 
 				<div class="px-4 py-4">
@@ -995,6 +1115,9 @@
 							</button>
 						{/each}
 					</div>
+					{#if 'accessMode' in pendingMeta}{@render waiting(
+							`On the site now: ${ACCESS_WORD[live.accessMode] || live.accessMode}`
+						)}{/if}
 				</div>
 
 				<div class="block px-4 py-4">
@@ -1041,6 +1164,9 @@
 							>
 						{/if}
 					</p>
+					{#if 'slug' in pendingMeta}{@render waiting(
+							`On the site now: /library/${live.slug}`
+						)}{/if}
 				</div>
 			</div>
 		</section>
@@ -1060,6 +1186,9 @@
 				<p class="mt-2.5 text-[11.5px] leading-snug text-fade">
 					The thumbnail falls back to the cover when empty.
 				</p>
+				{#if 'coverImageId' in pendingMeta || 'thumbnailImageId' in pendingMeta}{@render waiting(
+						'The site keeps showing the current images until it’s approved.'
+					)}{/if}
 			</div>
 		</section>
 
@@ -1067,7 +1196,20 @@
 		<section class={panel}>
 			{@render head('Video', 'text-warm', videoMeta)}
 			<div class="px-4 py-4">
-				<VideoSlotPicker target="entry" id={entry.id} {entry} on:patch={handleVideoPatch} />
+				<VideoSlotPicker
+					target="entry"
+					id={entry.id}
+					entry={videoEntry}
+					{held}
+					label={title || 'Untitled'}
+					onpatch={handleVideoPatch}
+					onrow={handleVideoRow}
+				/>
+				{#if pendingVideo}{@render waiting(
+						live.video?.provider
+							? 'The site keeps playing the current video until it’s approved.'
+							: 'The video goes on the site once it’s approved.'
+					)}{/if}
 			</div>
 		</section>
 	</div>
@@ -1172,23 +1314,42 @@
 							</span>
 						</label>
 					{/if}
-					<label class="mt-5 block">
-						<span class="{fieldLabel} flex items-baseline justify-between gap-3"
-							>Summary<span class="font-semibold tracking-normal normal-case"
-								>Shown on cards and in listings</span
-							></span
-						>
-						<span class="{fieldBox} px-4 py-2.5 md:px-7 md:py-3.5">
-							<textarea
-								bind:value={excerpt}
-								use:autogrow={excerpt}
-								rows="1"
-								placeholder="Add a one-line summary…"
-								aria-label="Summary"
-								class="block w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-newsreader text-[17px] leading-[1.5] text-soft italic placeholder:text-fade/70 focus:ring-0 focus:outline-none md:text-[19px]"
-							></textarea>
-						</span>
-					</label>
+					{#if reviewMode && excerptDiffParts.length > 0}
+						<div class="mt-5">
+							<span class={fieldLabel}>Summary</span>
+							<p
+								class="{fieldBox} px-4 py-2.5 font-newsreader text-[17px] leading-[1.5] text-soft italic md:px-7 md:py-3.5 md:text-[19px]"
+							>
+								{#each excerptDiffParts as part, i (i)}
+									{#if part.added}
+										<span class="diff-word-added">{part.value}</span>
+									{:else if part.removed}
+										<span class="diff-word-removed">{part.value}</span>
+									{:else}
+										<span>{part.value}</span>
+									{/if}
+								{/each}
+							</p>
+						</div>
+					{:else}
+						<label class="mt-5 block">
+							<span class="{fieldLabel} flex items-baseline justify-between gap-3"
+								>Summary<span class="font-semibold tracking-normal normal-case"
+									>Shown on cards and in listings</span
+								></span
+							>
+							<span class="{fieldBox} px-4 py-2.5 md:px-7 md:py-3.5">
+								<textarea
+									bind:value={excerpt}
+									use:autogrow={excerpt}
+									rows="1"
+									placeholder="Add a one-line summary…"
+									aria-label="Summary"
+									class="block w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-newsreader text-[17px] leading-[1.5] text-soft italic placeholder:text-fade/70 focus:ring-0 focus:outline-none md:text-[19px]"
+								></textarea>
+							</span>
+						</label>
+					{/if}
 
 					{#if hasPendingChanges}
 						<div
@@ -1212,6 +1373,18 @@
 								{/each}
 							</span>
 						</div>
+						{#if reviewMode && otherChanges.length}
+							<div class="mt-3 border border-line2 bg-white px-4 py-3">
+								<p class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">
+									Also changed
+								</p>
+								<ul class="mt-1.5 divide-y divide-line">
+									{#each otherChanges as change (change)}
+										<li class="py-1.5 text-[13.5px] leading-snug">{change}</li>
+									{/each}
+								</ul>
+							</div>
+						{/if}
 					{/if}
 
 					<div class="mt-6">
@@ -1225,7 +1398,7 @@
 								</p>
 								<div class="py-4 font-newsreader text-[18px] text-ink">
 									{#if !richDiffItems || richDiffItems.length === 0}
-										<p class="text-fade italic">No body changes; only details were edited.</p>
+										<p class="text-fade italic">The text hasn’t changed.</p>
 									{:else}
 										{#each richDiffItems as item, i (i)}
 											{#if item.kind === 'unchanged'}
@@ -1280,25 +1453,6 @@
 										{/each}
 									{/if}
 								</div>
-								{#if excerptDiffParts.length > 0}
-									<div
-										class="border-t border-line2 py-3 font-newsreader text-[15px] text-soft italic"
-									>
-										<span
-											class="mb-1 block font-libre text-[9.5px] font-extrabold tracking-[0.16em] uppercase not-italic"
-											>Summary</span
-										>
-										{#each excerptDiffParts as part, j (j)}
-											{#if part.added}
-												<span class="diff-word-added">{part.value}</span>
-											{:else if part.removed}
-												<span class="diff-word-removed">{part.value}</span>
-											{:else}
-												<span>{part.value}</span>
-											{/if}
-										{/each}
-									</div>
-								{/if}
 							</div>
 						{:else}
 							<Editor

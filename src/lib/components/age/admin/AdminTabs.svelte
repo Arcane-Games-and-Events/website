@@ -31,11 +31,9 @@
 							? 'events'
 							: path.startsWith('/admin/calendar')
 								? 'calendar'
-								: path.startsWith('/admin/vods')
-									? 'vods'
-									: path.startsWith('/admin/partners')
-										? 'partners'
-										: 'home'
+								: path.startsWith('/admin/partners')
+									? 'partners'
+									: 'home'
 	);
 
 	// 20×20 line icons for the phone tab row.
@@ -47,7 +45,6 @@
 			'M7.5 9.5a2.75 2.75 0 1 0 0-5.5 2.75 2.75 0 0 0 0 5.5zM2.5 16.5c.4-2.8 2.4-4.5 5-4.5s4.6 1.7 5 4.5M13 4.2a2.6 2.6 0 0 1 0 5.1M14.5 12.3c1.6.5 2.7 2 3 4.2',
 		events: 'M4 4.5h12v12H4zM4 8.5h12M7.5 3v3M12.5 3v3',
 		calendar: 'M3.5 6h13v10.5h-13zM3.5 9.5h13M7 3.5v4M13 3.5v4',
-		vods: 'M3.5 5.5h13v9h-13zM8.5 8l3.5 2-3.5 2z',
 		partners: 'M4 10.5 10 4l6 6.5-6 6.5zM10 4v13M4 10.5h12'
 	};
 
@@ -59,7 +56,6 @@
 		{ id: 'members', href: '/admin/users', label: 'Members' },
 		{ id: 'events', href: '/admin/events', label: 'Events' },
 		{ id: 'calendar', href: '/admin/calendar', label: 'Calendar' },
-		{ id: 'vods', href: '/admin/vods', label: 'VODs' },
 		{ id: 'partners', href: '/admin/partners', label: 'Partners' }
 	];
 

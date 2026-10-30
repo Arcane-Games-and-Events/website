@@ -11,6 +11,7 @@
 	import { page } from '$app/stores';
 	import { afterNavigate, onNavigate } from '$app/navigation';
 	import NavProgress from '$lib/components/NavProgress.svelte';
+	import UploadDock from '$lib/desk/video/UploadDock.svelte';
 	import { notePath } from '$lib/analytics/contentTracker.js';
 	import { trackPageview } from '$lib/analytics/siteTracker.js';
 
@@ -113,6 +114,8 @@
 </a>
 
 <NavProgress />
+<!-- video uploads keep going while you browse; shown on every page -->
+<UploadDock />
 
 {#if isAuthPage}
 	<slot />

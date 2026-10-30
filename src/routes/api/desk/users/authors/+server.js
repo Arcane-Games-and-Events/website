@@ -2,12 +2,12 @@ import { json, error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { user as userTable } from '$lib/server/db/schema.js';
 import { asc, or, eq, sql } from 'drizzle-orm';
-import { isAdmin } from '$lib/server/auth/roles.js';
+import { canApproveEdits } from '$lib/server/auth/roles.js';
 
 /**
  * GET /api/desk/users/authors
  *
- * Admin-only. Returns every user eligible to be the author of a Desk entry:
+ * Editors and admins. Returns every user eligible to be the author of a Desk entry:
  * anyone whose billing role is 'admin' OR whose `additional_roles` array
  * contains 'writer' or 'editor'. The entry editor's author-reassignment picker consumes
  * this to build its dropdown.
@@ -17,7 +17,7 @@ import { isAdmin } from '$lib/server/auth/roles.js';
 export async function GET({ locals }) {
 	const user = locals.user;
 	if (!user) throw error(401, 'Unauthorized');
-	if (!isAdmin(user)) throw error(403, 'Admin only');
+	if (!canApproveEdits(user)) throw error(403, 'Editors and admins only');
 
 	const rows = await db
 		.select({

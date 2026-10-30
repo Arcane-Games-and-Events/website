@@ -11,7 +11,7 @@
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import FrontByline from '$lib/components/age/home/FrontByline.svelte';
 	import PremiumTag from '$lib/components/age/PremiumTag.svelte';
-	import { formatDuration } from '$lib/components/age/home/front-adapters.js';
+	import { formatDate, formatDuration } from '$lib/components/age/home/front-adapters.js';
 	import StoryCard from '$lib/components/age/library/StoryCard.svelte';
 	import { storyCardSheet, toStories } from '$lib/components/age/library/stories.js';
 	import { reveal } from '$lib/actions/reveal.js';
@@ -57,22 +57,28 @@
 	};
 	const films = $derived(
 		(data.vods ?? []).map((v) => {
-			const players = [v.player1Name || v.player1Hero, v.player2Name || v.player2Hero]
-				.filter(Boolean)
-				.join(' vs ');
+			const players = [v.player1Name, v.player2Name].filter(Boolean).join(' vs ');
+			const heroes = [v.player1Hero, v.player2Hero].filter(Boolean).join(' vs ');
+			const title = v.title || players || heroes || 'Untitled match';
 			return {
 				id: v.id,
 				href: `/library/${v.id}`,
-				title: v.title || players || 'Untitled match',
-				players,
+				title,
+				players: players !== title ? players : '',
+				// Titles are often the matchup itself; don't print it twice.
+				heroes: heroes && heroes !== title ? heroes : '',
 				image: vodThumb(v),
+				picture: v.cover || null,
 				rubric: v.eventCircuit ? `AGE Open · ${v.eventCircuit}` : v.eventTitle || 'Bonus match',
-				month: v.eventMonth || '',
+				date: formatDate(v.publishedAt),
 				length: formatDuration(v.duration),
 				premium: !!v.isPremium
 			};
 		})
 	);
+	// The newest match as a spread, then a row of the next three.
+	const filmLead = $derived(films[0] ?? null);
+	const filmRow = $derived(films.slice(1, 4));
 
 	// ============ browse filters ============
 	const KIND = [
@@ -687,75 +693,158 @@
 		{/if}
 	</section>
 
-	<!-- ============ gameplay ============ -->
-	{#if films.length}
-		<section class="border-y border-line bg-paper" use:reveal>
+	<!-- ============ gameplay ============
+	     An ink band, like the gameplay page's masthead: the newest match as
+	     a spread, then the next three. -->
+	{#if filmLead}
+		<section class="bg-ink text-paper-bg" use:reveal>
 			<div class="mx-auto w-full max-w-[1200px] px-5 py-12 md:px-8 md:py-16">
-				<div class="flex items-baseline justify-between gap-4">
+				<div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
 					<div>
-						<h2
-							class="flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+						<p
+							class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.24em] text-warm-light uppercase"
 						>
-							<span class="text-[10px] text-warm" aria-hidden="true">◆</span>
+							<span class="text-[8px]" aria-hidden="true">◆</span> AGE Studios
+						</p>
+						<h2
+							class="mt-2 font-newsreader text-[34px] leading-[0.98] font-semibold tracking-[-0.02em] md:text-[46px]"
+						>
 							Bonus gameplay
 						</h2>
-						<p class="mt-2 font-newsreader text-[15px] text-soft italic md:text-[16px]">
-							Feature matches from the AGE Open, filmed by AGE Studios.
+						<p class="mt-2 font-newsreader text-[16px] text-paper-bg/70 italic md:text-[17px]">
+							Feature matches from the AGE Open, filmed on the main stage.
 						</p>
 					</div>
 					<a
 						href="/library/vods"
-						class="shrink-0 text-[10.5px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase transition-colors hover:text-warm"
+						class="inline-block border-b-2 border-warm-light pb-1 text-[10.5px] font-extrabold tracking-[0.18em] whitespace-nowrap uppercase transition-[letter-spacing] hover:tracking-[0.26em]"
 					>
-						{#if data.vodTotal && data.vodTotal > films.length}All {data.vodTotal} matches{:else}All
-							matches{/if}
+						{#if data.vodTotal && data.vodTotal > 1}All {data.vodTotal} matches{:else}All matches{/if}
 						→
 					</a>
 				</div>
-				<ul class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-					{#each films as f (f.id)}
-						<li class="border border-line bg-paper-bg">
-							<a href={f.href} class="group flex h-full flex-col">
-								<span class="relative block aspect-video overflow-hidden bg-ink">
-									{#if f.premium}<PremiumTag variant="corner" />{/if}
-									<Picture
-										image={f.picture ?? { src: f.image, srcset: f.srcset, alt: f.alt }}
-										class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-										sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-										alt={f.title}
-										loading="lazy"
-									/>
-									<span
-										class="absolute right-0 bottom-0 flex h-7 w-7 items-center justify-center bg-warm pl-[2px] text-[10px] text-white"
-										aria-hidden="true">▶</span
-									>
-									{#if f.length}
+				<div class="mt-6 h-[5px] border-t border-b border-paper-bg/30" aria-hidden="true"></div>
+
+				<!-- the newest match -->
+				<a
+					href={filmLead.href}
+					class="group mt-8 grid overflow-hidden border border-paper-bg/20 md:grid-cols-[7fr_5fr]"
+				>
+					<span class="relative block aspect-video overflow-hidden bg-black">
+						<Picture
+							image={filmLead.picture ?? { src: filmLead.image, alt: filmLead.title }}
+							sizes="(min-width: 1024px) 700px, 100vw"
+							alt={filmLead.title}
+							loading="lazy"
+							class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+						/>
+						{#if filmLead.premium}<PremiumTag variant="corner" size="lg" />{/if}
+						<span
+							class="absolute right-0 bottom-0 flex h-10 w-10 items-center justify-center bg-warm pl-[3px] text-[13px] text-white"
+							aria-hidden="true">▶</span
+						>
+						{#if filmLead.length}
+							<span
+								class="absolute bottom-0 left-0 bg-ink/85 px-2.5 py-1 font-newsreader text-[13px] text-paper-bg tabular-nums"
+								>{filmLead.length}</span
+							>
+						{/if}
+					</span>
+					<span class="flex flex-col justify-center p-6 md:p-8 lg:p-10">
+						<span class="text-[9.5px] font-extrabold tracking-[0.2em] text-warm-light uppercase"
+							>Latest match · {filmLead.rubric}</span
+						>
+						<span
+							class="mt-3 block font-newsreader text-[26px] leading-[1.05] font-semibold tracking-[-0.015em] [text-wrap:balance] md:text-[34px]"
+						>
+							<span class="fp-ul">{filmLead.title}</span>
+						</span>
+						{#if filmLead.players}
+							<span class="mt-3 block font-newsreader text-[17px] text-paper-bg/75 italic"
+								>{filmLead.players}</span
+							>
+						{/if}
+						{#if filmLead.heroes}
+							<span
+								class="mt-1.5 block text-[9.5px] font-extrabold tracking-[0.14em] text-paper-bg/50 uppercase"
+								>{filmLead.heroes}</span
+							>
+						{/if}
+						<span class="mt-6 block">
+							<FrontByline
+								author="AGE Studios"
+								date={filmLead.date}
+								length={filmLead.length}
+								premium={false}
+								onDark
+							/>
+						</span>
+					</span>
+				</a>
+
+				<!-- the next three -->
+				{#if filmRow.length}
+					<ul class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+						{#each filmRow as f (f.id)}
+							<li class="border border-paper-bg/20">
+								<a href={f.href} class="group flex h-full flex-col">
+									<span class="relative block aspect-video overflow-hidden bg-black">
+										{#if f.premium}<PremiumTag variant="corner" />{/if}
+										<Picture
+											image={f.picture ?? { src: f.image, alt: f.title }}
+											class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+											sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
+											alt={f.title}
+											loading="lazy"
+										/>
 										<span
-											class="absolute bottom-0 left-0 bg-ink/85 px-2 py-1 font-newsreader text-[12px] text-paper-bg tabular-nums"
-											>{f.length}</span
+											class="absolute right-0 bottom-0 flex h-7 w-7 items-center justify-center bg-warm pl-[2px] text-[10px] text-white"
+											aria-hidden="true">▶</span
 										>
-									{/if}
-								</span>
-								<span class="flex flex-1 flex-col p-5">
-									<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-warm uppercase">
-										{f.rubric}{#if f.month}<span class="text-fade"> · {f.month}</span>{/if}
+										{#if f.length}
+											<span
+												class="absolute bottom-0 left-0 bg-ink/85 px-2 py-1 font-newsreader text-[12px] text-paper-bg tabular-nums"
+												>{f.length}</span
+											>
+										{/if}
 									</span>
-									<span class="mt-2 block font-newsreader text-[19px] leading-[1.15] font-semibold">
-										<span class="fp-ul">{f.title}</span>
-									</span>
-									{#if f.players && f.players !== f.title}
-										<span class="mt-1.5 block font-newsreader text-[14.5px] text-soft italic"
-											>{f.players}</span
+									<span class="flex flex-1 flex-col p-5">
+										<span
+											class="text-[9.5px] font-extrabold tracking-[0.18em] text-warm-light uppercase"
+											>{f.rubric}</span
 										>
-									{/if}
-									<span class="mt-auto block pt-4">
-										<FrontByline author="AGE Studios" premium={false} size="sm" />
+										<span
+											class="mt-2 block font-newsreader text-[19px] leading-[1.15] font-semibold"
+										>
+											<span class="fp-ul">{f.title}</span>
+										</span>
+										{#if f.players}
+											<span
+												class="mt-1.5 block font-newsreader text-[14.5px] text-paper-bg/70 italic"
+												>{f.players}</span
+											>
+										{/if}
+										{#if f.heroes}
+											<span
+												class="mt-1 block text-[9.5px] font-extrabold tracking-[0.14em] text-paper-bg/45 uppercase"
+												>{f.heroes}</span
+											>
+										{/if}
+										<span class="mt-auto block pt-4">
+											<FrontByline
+												author="AGE Studios"
+												date={f.date}
+												premium={false}
+												size="sm"
+												onDark
+											/>
+										</span>
 									</span>
-								</span>
-							</a>
-						</li>
-					{/each}
-				</ul>
+								</a>
+							</li>
+						{/each}
+					</ul>
+				{/if}
 			</div>
 		</section>
 	{/if}

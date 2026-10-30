@@ -484,6 +484,9 @@ export const vod = pgTable('vods', {
 	title: text('title').notNull(),
 	description: text('description'),
 	thumbnail: text('thumbnail'),
+	// A cover from the image library (migration 029); shown instead of a
+	// frame from the video wherever the match is listed.
+	coverImageId: uuid('cover_image_id').references(() => deskMedia.id, { onDelete: 'set null' }),
 	duration: real('duration'),
 	aspectRatio: text('aspect_ratio'),
 	// Player matchup
@@ -749,9 +752,9 @@ export const deskAuthorProfile = pgTable('cms_author_profile', {
 // updated with cumulative numbers while the reader has the page open.
 export const caView = pgTable('ca_view', {
 	id: uuid('id').primaryKey(),
-	entryId: uuid('entry_id')
-		.notNull()
-		.references(() => deskEntry.id, { onDelete: 'cascade' }),
+	// A view belongs to a Library entry or (migration 028) a gameplay video.
+	entryId: uuid('entry_id').references(() => deskEntry.id, { onDelete: 'cascade' }),
+	vodId: uuid('vod_id').references(() => vod.id, { onDelete: 'cascade' }),
 	visitorId: uuid('visitor_id').notNull(),
 	sessionId: uuid('session_id').notNull(),
 	userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
@@ -802,9 +805,8 @@ export const caEvent = pgTable('ca_event', {
 	viewId: uuid('view_id')
 		.notNull()
 		.references(() => caView.id, { onDelete: 'cascade' }),
-	entryId: uuid('entry_id')
-		.notNull()
-		.references(() => deskEntry.id, { onDelete: 'cascade' }),
+	entryId: uuid('entry_id').references(() => deskEntry.id, { onDelete: 'cascade' }),
+	vodId: uuid('vod_id').references(() => vod.id, { onDelete: 'cascade' }),
 	type: text('type').notNull(),
 	label: text('label'),
 	depth: smallint('depth'),
@@ -964,6 +966,10 @@ export const deskEntry = pgTable(
 		draftReadTime: integer('draft_read_time'),
 		draftUpdatedAt: timestamp('draft_updated_at', { withTimezone: true, mode: 'date' }),
 		draftUpdatedBy: text('draft_updated_by').references(() => user.id),
+		// Pending changes beyond the text (migration 030): slug, accessMode,
+		// tagId, coverImageId, thumbnailImageId, video. A present key is a
+		// pending change; null means "remove". See $lib/server/desk/entries.js.
+		draftMeta: jsonb('draft_meta'),
 
 		// Provenance — 'custom' for Desk-native, 'payload' for migrated content
 		source: text('source').notNull().default('custom'),

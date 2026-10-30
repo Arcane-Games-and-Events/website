@@ -1,22 +1,13 @@
 import { json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { db } from '$lib/server/db/index.js';
-import { vod, deskEntry, deskLesson } from '$lib/server/db/schema.js';
-import { eq } from 'drizzle-orm';
 import mux from '$lib/server/mux.js';
-import { bump } from '$lib/server/cache/index.js';
+import { applyMuxState, findOwner } from '$lib/server/video/mux.js';
 
 /**
- * Mux webhook — dispatches events to whichever row's Mux upload_id or
- * asset_id matches. Tries all three video-owning tables in order (VOD,
- * cms_entry, cms_lesson) and updates the first match.
- *
- * Column names differ per table (VOD has status/duration/aspectRatio, Desk
- * uses videoStatus/videoDuration/videoAspectRatio), so each branch writes
- * the correct set. Matching by ID rather than by passthrough is more
- * robust — Mux's event data structure places passthrough at different
- * paths depending on the event type, and we already store both upload_id
- * and asset_id on our own rows anyway.
+ * Mux webhook. Finds the one row the upload or asset belongs to (gameplay,
+ * an article, a lesson or a course trailer; see $lib/server/video/mux.js)
+ * and mirrors Mux's state onto it with `applyMuxState`, the same writer the
+ * Desk's sync uses. Replacing a video deletes the old asset there.
  */
 export async function POST({ request }) {
 	const body = await request.text();
@@ -34,41 +25,31 @@ export async function POST({ request }) {
 	console.log(`Mux webhook: ${type}`);
 
 	try {
-		if (type === 'video.upload.asset_created') {
-			const uploadId = data.upload_id || data.id;
-			const assetId = data.asset_id;
-			if (!uploadId) return json({ received: true });
-			await updateByUploadId(uploadId, {
-				vod: { muxAssetId: assetId, status: 'preparing' },
-				desk: { muxAssetId: assetId, videoStatus: 'preparing' }
+		if (type.startsWith('video.asset.')) {
+			if (!['video.asset.created', 'video.asset.ready', 'video.asset.errored'].includes(type)) {
+				return json({ received: true });
+			}
+			const owner = await findOwner({
+				assetId: data.id,
+				uploadId: data.upload_id,
+				passthrough: data.passthrough
 			});
-		} else if (type === 'video.asset.ready') {
-			const assetId = data.id;
-			const playbackId = data.playback_ids?.[0]?.id || null;
-			const duration = data.duration ?? null;
-			const aspectRatio = data.aspect_ratio || null;
-			if (!assetId) return json({ received: true });
-			await updateByAssetId(assetId, {
-				vod: {
-					muxPlaybackId: playbackId,
-					duration,
-					aspectRatio,
-					status: 'ready'
-				},
-				desk: {
-					muxPlaybackId: playbackId,
-					videoDuration: duration ? Math.round(duration) : null,
-					videoAspectRatio: aspectRatio,
-					videoStatus: 'ready'
-				}
+			if (owner) await applyMuxState(owner.target, owner.row, { asset: data });
+		} else if (type === 'video.upload.asset_created') {
+			const owner = await findOwner({
+				uploadId: data.id,
+				passthrough: data.new_asset_settings?.passthrough
 			});
-		} else if (type === 'video.asset.errored') {
-			const assetId = data.id;
-			if (!assetId) return json({ received: true });
-			await updateByAssetId(assetId, {
-				vod: { status: 'errored' },
-				desk: { videoStatus: 'errored' }
-			});
+			if (owner && data.asset_id) {
+				const asset = await mux.video.assets.retrieve(data.asset_id);
+				await applyMuxState(owner.target, owner.row, { asset });
+			}
+		} else if (type === 'video.upload.cancelled' || type === 'video.upload.errored') {
+			const owner = await findOwner({ uploadId: data.id });
+			if (owner) {
+				const status = type === 'video.upload.cancelled' ? 'cancelled' : 'errored';
+				await applyMuxState(owner.target, owner.row, { upload: { ...data, status } });
+			}
 		}
 	} catch (err) {
 		console.error(`Error handling Mux webhook ${type}:`, err);
@@ -76,55 +57,4 @@ export async function POST({ request }) {
 	}
 
 	return json({ received: true });
-}
-
-/**
- * Update the first row that matches `uploadId` in the vod / cms_entry /
- * cms_lesson tables. Column sets differ per table, so the caller passes
- * both the VOD-shape and Desk-shape update objects.
- */
-async function updateByUploadId(uploadId, { vod: vodSet, desk: deskSet }) {
-	const stamp = { updatedAt: new Date() };
-	const vodRes = await db
-		.update(vod)
-		.set({ ...vodSet, ...stamp })
-		.where(eq(vod.muxUploadId, uploadId))
-		.returning({ id: vod.id });
-	if (vodRes.length) return bump('vods');
-	const entryRes = await db
-		.update(deskEntry)
-		.set({ ...deskSet, ...stamp })
-		.where(eq(deskEntry.muxUploadId, uploadId))
-		.returning({ id: deskEntry.id });
-	if (entryRes.length) return bump('entries');
-	await db
-		.update(deskLesson)
-		.set({ ...deskSet, ...stamp })
-		.where(eq(deskLesson.muxUploadId, uploadId));
-	await bump('courses');
-}
-
-/**
- * Update the first row that matches `assetId` in the vod / cms_entry /
- * cms_lesson tables. Same shape as updateByUploadId but keyed on asset ID.
- */
-async function updateByAssetId(assetId, { vod: vodSet, desk: deskSet }) {
-	const stamp = { updatedAt: new Date() };
-	const vodRes = await db
-		.update(vod)
-		.set({ ...vodSet, ...stamp })
-		.where(eq(vod.muxAssetId, assetId))
-		.returning({ id: vod.id });
-	if (vodRes.length) return bump('vods');
-	const entryRes = await db
-		.update(deskEntry)
-		.set({ ...deskSet, ...stamp })
-		.where(eq(deskEntry.muxAssetId, assetId))
-		.returning({ id: deskEntry.id });
-	if (entryRes.length) return bump('entries');
-	await db
-		.update(deskLesson)
-		.set({ ...deskSet, ...stamp })
-		.where(eq(deskLesson.muxAssetId, assetId));
-	await bump('courses');
 }

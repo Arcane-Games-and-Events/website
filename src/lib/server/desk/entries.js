@@ -6,18 +6,19 @@
  *
  * Draft-buffer semantics:
  *   - Draft or archived entries: edits go straight to the live columns.
- *   - Published or scheduled entries: content edits (title, excerpt, body,
- *     cover, thumbnail, video slot) are staged in `draft_*` columns and only
- *     become public when an admin calls `approveEntryDraft`. Slug, tag,
- *     access mode, author, and status transitions always go live.
+ *   - Published or scheduled entries: every edit waits for an editor or admin
+ *     (`approveEntryDraft`), who may approve their own. Text waits in the
+ *     `draft_*` columns; the web address, access, tag, cover, thumbnail and
+ *     video wait in `draft_meta`. Author and status changes always go live.
  */
 import { db } from '$lib/server/db/index.js';
-import { deskEntry, deskRevision } from '$lib/server/db/schema.js';
+import { deskEntry, deskEntryTag, deskRevision } from '$lib/server/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { calculateReadTime, lexicalToText } from '$lib/desk/render/lexical-utils.js';
 import { bump } from '$lib/server/cache/index.js';
 import { titleToSlug, withSuffix } from '$lib/desk/slug.js';
 import { setEntryTag } from '$lib/server/desk/tags.js';
+import { assetUses, cancelMuxUpload, deleteAsset } from '$lib/server/video/mux.js';
 
 const isPublic = (status) => status === 'published' || status === 'scheduled';
 
@@ -105,25 +106,53 @@ export async function createEntry(input) {
 
 // --- update -----------------------------------------------------------------
 
-function shouldBufferEdits(existing) {
-	return existing.status === 'published' || existing.status === 'scheduled';
+/**
+ * Whether an edit to this entry waits for approval: every change to a live
+ * (published or scheduled) piece does, whoever makes it, so another editor
+ * or admin can review it. Editors and admins can approve, their own
+ * changes included. Drafts save straight through.
+ * @param {any} existing
+ * @param {any} [_actor] - kept for callers; the rule is the same for everyone
+ */
+export function holdsForApproval(existing, _actor) {
+	return isPublic(existing.status);
 }
 
-// Text fields that route into draft_* on live entries — buffering these
-// is where admin sign-off actually matters (a wrong title / excerpt / body
-// misleads readers). Image changes are handled separately below: they
-// always go live, so the writer's chosen artwork is what visitors see and
-// the replaced image stays in the writer's image library.
+/** Key-order-insensitive JSON, so two copies of the same document compare equal. */
+function canonical(v) {
+	if (Array.isArray(v)) return v.map(canonical);
+	if (v && typeof v === 'object') {
+		return Object.fromEntries(
+			Object.keys(v)
+				.sort()
+				.map((k) => [k, canonical(v[k])])
+		);
+	}
+	return v;
+}
+/** Whether two Lexical bodies are the same document. */
+export function sameDoc(a, b) {
+	return JSON.stringify(canonical(a ?? null)) === JSON.stringify(canonical(b ?? null));
+}
+
+/** The live fields a pending change can hold, besides the text. */
+export const PENDING_KEYS = ['slug', 'accessMode', 'tagId', 'coverImageId', 'thumbnailImageId'];
+
+/** The entry's video slot as one object (the shape draft_meta.video holds). */
+export function videoSlotOf(row) {
+	const slot = { provider: row.videoProvider ?? null };
+	for (const f of VIDEO_FIELDS) if (f !== 'videoProvider') slot[f] = row[f] ?? null;
+	return slot;
+}
+
+// Text fields that route into draft_* on a held edit.
 const CONTENT_FIELDS = [
 	{ patch: 'title', draft: 'draftTitle', live: 'title' },
 	{ patch: 'excerpt', draft: 'draftExcerpt', live: 'excerpt' }
 ];
 
-// Video-slot fields — always go live for now. If a writer swaps the video on
-// a published entry, the swap is immediate (public players will pick it up on
-// next request). Buffering video swaps behind draft approval adds complexity
-// (two full Mux+YouTube column sets on the draft side) that isn't worth it
-// until we have a real problem it solves.
+// Video-slot fields. On a held edit they're kept together in
+// draft_meta.video; uploads to Mux go there too ($lib/server/video/mux.js).
 const VIDEO_FIELDS = [
 	'videoProvider',
 	'muxUploadId',
@@ -143,9 +172,10 @@ const VIDEO_FIELDS = [
  * Update an entry. Every non-null-body patch also writes a `cms_revision`
  * snapshot so history is faithful even when edits are buffered.
  *
- * For published or scheduled entries, content edits (title, excerpt, body,
- * cover, thumbnail) route into `draft_*`. Status changes, slug edits, author
- * reassign, tag, access mode, and video-slot changes always go live.
+ * Edits to a published or scheduled entry wait for an editor or admin (see
+ * `holdsForApproval`): the text goes into `draft_*`, and the web address,
+ * access, tag, cover, thumbnail and video into `draft_meta`. Status and
+ * author always go live (gated up-stack).
  *
  * @param {string} id
  * @param {object} patch - any subset of editable fields
@@ -156,37 +186,74 @@ export async function updateEntry(id, patch, actor) {
 	if (!existing) throw new Error('Entry not found');
 
 	const updates = { updatedAt: new Date() };
-	const buffering = shouldBufferEdits(existing);
+	const buffering = holdsForApproval(existing, actor);
 	let touchedDraft = false;
 
-	// Slug always goes live: buffering it would let two versions of the same
-	// entry claim the same URL, and admins are the only ones with permission
-	// to change it anyway (enforced up-stack).
-	if (typeof patch.slug === 'string' && patch.slug !== existing.slug) {
-		updates.slug = await findFreeSlug(titleToSlug(patch.slug) || existing.slug, id);
-	}
-
-	// Title / excerpt — routed by buffering flag.
-	for (const { patch: p, draft, live } of CONTENT_FIELDS) {
-		if (!(p in patch)) continue;
-		const val = patch[p];
-		if (buffering) {
-			updates[draft] = val;
-			touchedDraft = true;
-		} else {
-			updates[live] = val;
+	// Pending non-text changes (draft_meta). A value equal to the live one
+	// isn't a change, and setting a field back to its live value withdraws
+	// the pending change.
+	const meta = { ...(existing.draftMeta || {}) };
+	let metaChanged = false;
+	const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+	function hold(key, value, liveValue) {
+		if (same(value, liveValue)) {
+			if (key in meta) {
+				delete meta[key];
+				metaChanged = true;
+			}
+		} else if (!(key in meta) || !same(meta[key], value)) {
+			meta[key] = value;
+			metaChanged = true;
 		}
 	}
 
-	// Cover + thumbnail — always live, never buffered. Image swaps take
-	// effect immediately; the replaced image stays in the image library.
-	if ('coverImageId' in patch) updates.coverImageId = patch.coverImageId;
-	if ('thumbnailImageId' in patch) updates.thumbnailImageId = patch.thumbnailImageId;
+	// Web address. A held change is cleaned now and made unique on approval.
+	if (typeof patch.slug === 'string') {
+		const clean = titleToSlug(patch.slug) || existing.slug;
+		if (buffering) hold('slug', clean, existing.slug);
+		else if (clean !== existing.slug) updates.slug = await findFreeSlug(clean, id);
+	}
+
+	// Title / excerpt — routed by buffering flag. A held value equal to the
+	// live one isn't a change (autosave sends every field), and clears any
+	// pending edit of that field.
+	for (const { patch: p, draft, live } of CONTENT_FIELDS) {
+		if (!(p in patch)) continue;
+		const val = patch[p];
+		if (!buffering) updates[live] = val;
+		else if ((val ?? '') === (existing[live] ?? '')) {
+			if (existing[draft] != null) updates[draft] = null;
+		} else {
+			updates[draft] = val;
+			touchedDraft = true;
+		}
+	}
+
+	// Cover, thumbnail, access — held like the text.
+	for (const key of ['coverImageId', 'thumbnailImageId', 'accessMode']) {
+		if (!(key in patch)) continue;
+		if (buffering) hold(key, patch[key] ?? null, existing[key]);
+		else updates[key] = patch[key];
+	}
+	// Tag (a join row) — held, or set straight away below.
+	if ('tagId' in patch && buffering) {
+		const [live] = await db
+			.select({ tagId: deskEntryTag.tagId })
+			.from(deskEntryTag)
+			.where(eq(deskEntryTag.entryId, id))
+			.limit(1);
+		hold('tagId', patch.tagId || null, live?.tagId ?? null);
+	}
 
 	// Body + derived read time.
 	if (patch.body !== undefined) {
 		const rt = patch.body ? calculateReadTime(patch.body) : existing.readTime;
-		if (buffering) {
+		if (buffering && sameDoc(patch.body, existing.body)) {
+			if (existing.draftBody != null) {
+				updates.draftBody = null;
+				updates.draftReadTime = null;
+			}
+		} else if (buffering) {
 			updates.draftBody = patch.body;
 			updates.draftReadTime = rt;
 			touchedDraft = true;
@@ -196,14 +263,40 @@ export async function updateEntry(id, patch, actor) {
 		}
 	}
 
-	// Video slot — always live.
-	for (const f of VIDEO_FIELDS) {
-		if (f in patch) updates[f] = patch[f];
+	// Video slot (a YouTube link, or clearing it). Held as one whole slot.
+	const videoKeys = VIDEO_FIELDS.filter((f) => f in patch);
+	if (videoKeys.length) {
+		if (buffering) {
+			const live = videoSlotOf(existing);
+			const slot = { ...(meta.video ?? live) };
+			for (const f of videoKeys) {
+				if (f === 'videoProvider') slot.provider = patch[f];
+				else slot[f] = patch[f];
+			}
+			hold('video', slot, live);
+		} else {
+			for (const f of videoKeys) updates[f] = patch[f];
+		}
 	}
 
-	// Access mode + author — always live (admin gating handled up-stack).
-	if ('accessMode' in patch) updates.accessMode = patch.accessMode;
+	// Author — editors and admins only (checked up-stack), never held.
 	if ('authorId' in patch) updates.authorId = patch.authorId;
+
+	if (metaChanged) {
+		updates.draftMeta = Object.keys(meta).length ? meta : null;
+		touchedDraft = true;
+	}
+	if (buffering) {
+		const textPending = ['draftTitle', 'draftExcerpt', 'draftBody'].some(
+			(k) => (k in updates ? updates[k] : existing[k]) != null
+		);
+		if (!textPending && Object.keys(meta).length === 0) {
+			// Nothing left waiting: the piece is no longer pending.
+			touchedDraft = false;
+			updates.draftUpdatedAt = null;
+			updates.draftUpdatedBy = null;
+		}
+	}
 
 	// Status transitions.
 	if ('status' in patch) {
@@ -231,8 +324,9 @@ export async function updateEntry(id, patch, actor) {
 
 	await db.update(deskEntry).set(updates).where(eq(deskEntry.id, id));
 
-	// Tag — always live, like access mode. The caller has checked it exists.
-	const tagChanged = 'tagId' in patch ? await setEntryTag(id, patch.tagId || null) : false;
+	// Tag set straight away (not held). The caller has checked it exists.
+	const tagChanged =
+		'tagId' in patch && !buffering ? await setEntryTag(id, patch.tagId || null) : false;
 
 	// Revision snapshot — only when body actually changed AND is non-null
 	// (the schema requires deskRevision.body NOT NULL).
@@ -290,9 +384,28 @@ export async function approveEntryDraft(id, actor, opts = {}) {
 		draftCoverImageId: null,
 		draftThumbnailImageId: null,
 		draftReadTime: null,
+		draftMeta: null,
 		draftUpdatedAt: null,
 		draftUpdatedBy: null
 	};
+
+	// The pending non-text changes.
+	const meta = existing.draftMeta || {};
+	if ('slug' in meta && meta.slug && meta.slug !== existing.slug) {
+		updates.slug = await findFreeSlug(meta.slug, id);
+	}
+	if ('accessMode' in meta) updates.accessMode = meta.accessMode;
+	if ('coverImageId' in meta) updates.coverImageId = meta.coverImageId;
+	if ('thumbnailImageId' in meta) updates.thumbnailImageId = meta.thumbnailImageId;
+	let replacedAsset = null;
+	if (meta.video) {
+		const v = meta.video;
+		updates.videoProvider = v.provider ?? null;
+		for (const f of VIDEO_FIELDS) if (f !== 'videoProvider') updates[f] = v[f] ?? null;
+		if (existing.muxAssetId && existing.muxAssetId !== updates.muxAssetId) {
+			replacedAsset = existing.muxAssetId;
+		}
+	}
 
 	if (existing.draftTitle != null) updates.title = existing.draftTitle;
 	// draftExcerpt of null (intentional clear) shouldn't propagate; we treat
@@ -324,6 +437,13 @@ export async function approveEntryDraft(id, actor, opts = {}) {
 	}
 
 	await db.update(deskEntry).set(updates).where(eq(deskEntry.id, id));
+	if ('tagId' in meta) await setEntryTag(id, meta.tagId || null);
+	// The live video the approved change replaced or removed leaves Mux.
+	if (replacedAsset && (await assetUses(replacedAsset)) === 0) {
+		await deleteAsset(replacedAsset).catch((err) =>
+			console.warn('[entries] could not delete replaced video', replacedAsset, err?.message)
+		);
+	}
 
 	// Snapshot the just-approved body so revision history is faithful.
 	if (existing.draftBody != null) {
@@ -364,10 +484,23 @@ export async function discardEntryDraft(id) {
 			draftCoverImageId: null,
 			draftThumbnailImageId: null,
 			draftReadTime: null,
+			draftMeta: null,
 			draftUpdatedAt: null,
 			draftUpdatedBy: null
 		})
 		.where(eq(deskEntry.id, id));
+
+	// A pending uploaded video that never went live leaves Mux.
+	const pendingVideo = existing.draftMeta?.video;
+	if (pendingVideo?.muxUploadId && pendingVideo.videoStatus === 'waiting') {
+		await cancelMuxUpload(pendingVideo.muxUploadId);
+	}
+	const asset = pendingVideo?.muxAssetId;
+	if (asset && asset !== existing.muxAssetId && (await assetUses(asset)) === 0) {
+		await deleteAsset(asset).catch((err) =>
+			console.warn('[entries] could not delete discarded video', asset, err?.message)
+		);
+	}
 
 	const [updated] = await db.select().from(deskEntry).where(eq(deskEntry.id, id)).limit(1);
 	return updated;

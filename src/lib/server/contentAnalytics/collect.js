@@ -1,5 +1,12 @@
 import { db } from '$lib/server/db/index.js';
-import { caView, caEvent, caConversion, caPageview, deskEntry } from '$lib/server/db/schema.js';
+import {
+	caView,
+	caEvent,
+	caConversion,
+	caPageview,
+	deskEntry,
+	vod
+} from '$lib/server/db/schema.js';
 import { and, eq, gt, sql } from 'drizzle-orm';
 import { canEditEntries, canEditCourses, isAdmin } from '$lib/server/auth/roles.js';
 import { userHasPremiumAccess } from '$lib/server/articles/access.js';
@@ -138,23 +145,34 @@ export function audienceOf(user) {
  * @param {import('@sveltejs/kit').RequestEvent} event
  */
 export async function startView(p, event) {
-	if (!isUuid(p?.id) || !isUuid(p?.entryId) || !isUuid(p?.visitorId) || !isUuid(p?.sessionId))
-		return;
+	if (!isUuid(p?.id) || !isUuid(p?.visitorId) || !isUuid(p?.sessionId)) return;
+	if (!isUuid(p?.entryId) && !isUuid(p?.vodId)) return;
 	const ua = event.request.headers.get('user-agent') || '';
 	if (isBot(ua)) return;
 
-	const [entry] = await db
-		.select({
-			id: deskEntry.id,
-			readTime: deskEntry.readTime,
-			videoProvider: deskEntry.videoProvider
-		})
-		.from(deskEntry)
-		.where(eq(deskEntry.id, p.entryId))
-		.limit(1);
-	if (!entry) return;
-
-	const kind = entry.videoProvider ? (entry.readTime ? 'article+video' : 'video') : 'article';
+	// A view belongs to a Library entry or to a bonus gameplay video.
+	let owner;
+	if (isUuid(p.entryId)) {
+		const [entry] = await db
+			.select({
+				id: deskEntry.id,
+				readTime: deskEntry.readTime,
+				videoProvider: deskEntry.videoProvider
+			})
+			.from(deskEntry)
+			.where(eq(deskEntry.id, p.entryId))
+			.limit(1);
+		if (!entry) return;
+		owner = {
+			entryId: entry.id,
+			vodId: null,
+			kind: entry.videoProvider ? (entry.readTime ? 'article+video' : 'video') : 'article'
+		};
+	} else {
+		const [row] = await db.select({ id: vod.id }).from(vod).where(eq(vod.id, p.vodId)).limit(1);
+		if (!row) return;
+		owner = { entryId: null, vodId: row.id, kind: 'gameplay' };
+	}
 	const referrerDomain = referrerDomainOf(p.referrer);
 	const fromPath = str(p.fromPath, 300);
 	const utmSource = str(p.utm?.source, 100);
@@ -167,13 +185,14 @@ export async function startView(p, event) {
 		.insert(caView)
 		.values({
 			id: p.id,
-			entryId: entry.id,
+			entryId: owner.entryId,
+			vodId: owner.vodId,
 			visitorId: p.visitorId,
 			sessionId: p.sessionId,
 			userId: user?.id || null,
 			audience: audienceOf(user),
 			gated: !!p.gated,
-			kind,
+			kind: owner.kind,
 			source,
 			// only outside sites count as referrers; internal visits keep from_path
 			referrerDomain: source === 'internal' ? null : referrerDomain,
@@ -250,7 +269,7 @@ export async function beatView(p) {
 				gt(caView.startedAt, new Date(Date.now() - 12 * 60 * 60 * 1000))
 			)
 		)
-		.returning({ entryId: caView.entryId });
+		.returning({ entryId: caView.entryId, vodId: caView.vodId });
 	if (!row) return;
 
 	const events = (Array.isArray(p.events) ? p.events : [])
@@ -259,6 +278,7 @@ export async function beatView(p) {
 		.map((e) => ({
 			viewId: p.id,
 			entryId: row.entryId,
+			vodId: row.vodId,
 			type: e.type,
 			label: str(e.label, 200),
 			depth: e.depth == null ? null : int(e.depth, 100)

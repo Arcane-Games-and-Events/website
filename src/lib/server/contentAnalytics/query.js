@@ -100,14 +100,14 @@ async function perEntryTotals(since, entryIds = null) {
 				SUM(CASE WHEN v.device = 'mobile' THEN 1 ELSE 0 END)::int AS mobile_views,
 				SUM(CASE WHEN v.device = 'mobile' AND v.completed THEN 1 ELSE 0 END)::int AS mobile_completions
 			FROM ca_view v
-			WHERE v.qualified AND v.audience <> 'staff' AND v.started_at >= ${since}::timestamptz ${only}
+			WHERE v.entry_id IS NOT NULL AND v.qualified AND v.audience <> 'staff' AND v.started_at >= ${since}::timestamptz ${only}
 			GROUP BY v.entry_id`)
 	);
 	const events = rowsOf(
 		await db.execute(sql`
 			SELECT e.entry_id, e.type, COUNT(*)::int AS n
 			FROM ca_event e JOIN ca_view v ON v.id = e.view_id
-			WHERE v.qualified AND v.audience <> 'staff' AND e.at >= ${since}::timestamptz ${only}
+			WHERE e.entry_id IS NOT NULL AND v.qualified AND v.audience <> 'staff' AND e.at >= ${since}::timestamptz ${only}
 			GROUP BY e.entry_id, e.type`)
 	);
 	const conversions = await attributedConversions(since, entryIds);
@@ -189,7 +189,7 @@ async function attributedConversions(since, entryIds = null) {
 					OR (c.user_id IS NOT NULL AND v.user_id = c.user_id)
 				)
 				WHERE c.at >= ${since}::timestamptz
-					AND v.qualified AND v.audience <> 'staff'
+					AND v.entry_id IS NOT NULL AND v.qualified AND v.audience <> 'staff'
 					AND v.started_at <= c.at
 					AND v.started_at >= c.at - ${sql.raw(`interval '${ATTRIBUTION_DAYS} days'`)}
 			)
@@ -371,7 +371,7 @@ export function siteOverview(days) {
 			await db.execute(sql`
 				SELECT to_char(date_trunc('day', started_at), 'YYYY-MM-DD') AS day,
 					COUNT(*)::int AS n, SUM(engaged_seconds)::bigint AS engaged
-				FROM ca_view WHERE qualified AND audience <> 'staff' AND started_at >= ${since}::timestamptz
+				FROM ca_view WHERE entry_id IS NOT NULL AND qualified AND audience <> 'staff' AND started_at >= ${since}::timestamptz
 				GROUP BY 1`)
 		);
 		const breakdown = async (col) =>
@@ -380,7 +380,7 @@ export function siteOverview(days) {
 					SELECT COALESCE(${sql.raw(col)}, 'unknown') AS key, COUNT(*)::int AS n,
 						SUM(CASE WHEN completed THEN 1 ELSE 0 END)::int AS completions,
 						SUM(engaged_seconds)::bigint AS engaged
-					FROM ca_view WHERE qualified AND audience <> 'staff' AND started_at >= ${since}::timestamptz
+					FROM ca_view WHERE entry_id IS NOT NULL AND qualified AND audience <> 'staff' AND started_at >= ${since}::timestamptz
 					GROUP BY 1 ORDER BY 2 DESC LIMIT 10`)
 			).map((r) => ({
 				key: r.key,
@@ -402,7 +402,7 @@ export function siteOverview(days) {
 		const [uniq] = rowsOf(
 			await db.execute(sql`
 				SELECT COUNT(DISTINCT visitor_id)::int AS readers
-				FROM ca_view WHERE qualified AND audience <> 'staff' AND started_at >= ${since}::timestamptz`)
+				FROM ca_view WHERE entry_id IS NOT NULL AND qualified AND audience <> 'staff' AND started_at >= ${since}::timestamptz`)
 		);
 
 		const y = yardstick(totals);
@@ -835,7 +835,7 @@ export function deskReads(entryIds, scopeKey) {
 			await db.execute(sql`
 				SELECT to_char(date_trunc('day', started_at), 'YYYY-MM-DD') AS day, COUNT(*)::int AS n
 				FROM ca_view
-				WHERE qualified AND audience <> 'staff' AND started_at >= ${sinceDate(14)}::timestamptz ${only}
+				WHERE entry_id IS NOT NULL AND qualified AND audience <> 'staff' AND started_at >= ${sinceDate(14)}::timestamptz ${only}
 				GROUP BY 1`)
 		);
 		const meta = totals.size ? await entryMeta([...totals.keys()]) : [];

@@ -446,7 +446,12 @@
 {:else if data.article.video}
 	<figure class="m-0 mx-auto w-full max-w-[1200px] px-5 pt-4 md:px-8 md:pt-6">
 		<div class="fp-plate">
-			<LibraryVideoBlock video={data.article.video} poster={videoPoster} />
+			<LibraryVideoBlock
+				video={data.article.video}
+				poster={videoPoster}
+				metaId="entry:{data.article.id}"
+				metaTitle={data.article.title}
+			/>
 		</div>
 	</figure>
 {/if}

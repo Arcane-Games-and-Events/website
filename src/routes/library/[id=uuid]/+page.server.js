@@ -1,4 +1,5 @@
 import { error } from '@sveltejs/kit';
+import { withCovers } from '$lib/server/video/gameplay.js';
 import { db } from '$lib/server/db/index.js';
 import { vod } from '$lib/server/db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
@@ -51,9 +52,10 @@ export async function load({ params, locals }) {
 				console.warn('Could not fetch related VODs:', err.message);
 			}
 
-			return { vodItem, relatedVods };
+			const [withCover, ...related] = await withCovers([vodItem, ...relatedVods]);
+			return { vodItem: withCover, relatedVods: related };
 		},
-		{ tags: ['vods'] }
+		{ tags: ['vods', 'media'] }
 	);
 
 	const vodItem = viewer?.vodItem;

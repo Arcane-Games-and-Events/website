@@ -101,7 +101,7 @@
 				'/admin/events'
 			),
 			...one(a.deskReviews, 'Desk edit awaiting review', 'Desk edits awaiting review', '/desk'),
-			...one(a.vodsUnpublished, 'VOD not yet published', 'VODs not yet published', '/admin/vods')
+			...one(a.vodsUnpublished, 'VOD not yet published', 'VODs not yet published', '/desk/videos')
 		];
 	});
 	const summary = $derived.by(() => {
@@ -161,7 +161,7 @@
 			count: data.counts?.totalEvents
 		},
 		{ href: '/admin/calendar', label: 'Calendar', note: 'LSS seasons and dates' },
-		{ href: '/admin/vods', label: 'VODs', note: 'Tournament recordings' },
+		{ href: '/desk/videos', label: 'Gameplay videos', note: 'In the Desk' },
 		{ href: '/admin/partners', label: 'Partners', note: 'Promo codes and payouts' },
 		{ href: '/desk', label: 'Desk', note: 'Articles, videos and courses' }
 	]);

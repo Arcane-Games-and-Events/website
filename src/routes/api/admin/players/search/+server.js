@@ -2,9 +2,10 @@ import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { standing } from '$lib/server/db/schema.js';
 import { ilike } from 'drizzle-orm';
+import { canEditAllEntries } from '$lib/server/auth/roles.js';
 
 export async function GET({ url, locals }) {
-	if (!locals.user || locals.user.role !== 'admin') {
+	if (!canEditAllEntries(locals.user)) {
 		return json({ players: [] }, { status: 403 });
 	}
 

@@ -88,8 +88,9 @@ function entryImage(a) {
 	return { ...c, src: c.src || c.url || FALLBACK_IMAGE, alt: c.alt || a?.title || '' };
 }
 
-/** @param {any} v */
+/** A gameplay video's picture: its cover if it has one, else a frame from Mux. @param {any} v */
 function vodImage(v) {
+	if (v?.cover?.src) return v.cover.src;
 	if (v?.muxPlaybackId) {
 		const t = v.thumbnailToken ? `&token=${v.thumbnailToken}` : '';
 		return `https://image.mux.com/${v.muxPlaybackId}/thumbnail.webp?width=720&height=405&fit_mode=smartcrop${t}`;
@@ -143,7 +144,8 @@ function vodStory(v) {
 		title: v?.title || players || 'Untitled match',
 		dek: v?.description || players,
 		image: vodImage(v),
-		alt: v?.title || players || '',
+		picture: v?.cover || undefined,
+		alt: v?.cover?.alt || v?.title || players || '',
 		rubric: v?.eventCircuit ? `Bonus match · ${v.eventCircuit}` : 'Bonus match',
 		length: formatDuration(v?.duration),
 		author: 'AGE Studios',

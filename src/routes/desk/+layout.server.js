@@ -3,6 +3,7 @@ import {
 	canAccessDesk,
 	canEditEntries,
 	canEditCourses,
+	canEditAllEntries,
 	canViewSiteAnalytics,
 	isAdmin
 } from '$lib/server/auth/roles.js';
@@ -29,6 +30,8 @@ export const load = async ({ locals, url }) => {
 		canEditEntries: canEditEntries(locals.user),
 		canEditCourses: canEditCourses(locals.user),
 		canViewAnalytics: canViewSiteAnalytics(locals.user),
+		// Videos: admins and editors see every area; course creators their courses.
+		canManageVideos: canEditAllEntries(locals.user) || canEditCourses(locals.user),
 		isAdmin: isAdmin(locals.user)
 	};
 };

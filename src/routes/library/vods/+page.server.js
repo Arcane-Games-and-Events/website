@@ -1,4 +1,5 @@
 import { db } from '$lib/server/db/index.js';
+import { withCovers } from '$lib/server/video/gameplay.js';
 import { vod, event } from '$lib/server/db/schema.js';
 import { eq, and, or, ilike, asc, desc, sql } from 'drizzle-orm';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
@@ -110,7 +111,7 @@ export async function load({ locals, url, setHeaders }) {
 				// under `mux:thumbnail:{playbackId}`). This is per-VOD (not
 				// per-filter) so signatures stay warm across every list combo.
 				const vodsWithTokens = await Promise.all(
-					vods.map(async (v) => {
+					(await withCovers(vods)).map(async (v) => {
 						if (!v.muxPlaybackId) return v;
 						const token = await getMuxThumbnailToken(v.muxPlaybackId);
 						return token ? { ...v, thumbnailToken: token } : v;
@@ -131,7 +132,7 @@ export async function load({ locals, url, setHeaders }) {
 					totalVods: totalUnfiltered
 				};
 			},
-			{ tags: ['vods', 'events'], ttl: CACHE_TTL.MINUTE }
+			{ tags: ['vods', 'events', 'media'], ttl: CACHE_TTL.MINUTE }
 		);
 
 		return {

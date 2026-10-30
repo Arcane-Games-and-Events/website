@@ -1,4 +1,5 @@
 import { listPublishedEntries } from '$lib/server/desk/list.js';
+import { withCovers } from '$lib/server/video/gameplay.js';
 import { listPublishedCourses } from '$lib/server/desk/courses.js';
 import { db } from '$lib/server/db/index.js';
 import { event, standing, decklist, vod } from '$lib/server/db/schema.js';
@@ -191,8 +192,9 @@ async function fetchRecentVods() {
 					.from(vod)
 					.where(and(eq(vod.isPublished, true), eq(vod.status, 'ready')))
 					.orderBy(desc(vod.publishedAt))
-					.limit(12),
-			{ tags: ['vods'] }
+					.limit(12)
+					.then(withCovers),
+			{ tags: ['vods', 'media'] }
 		);
 
 		return Promise.all(

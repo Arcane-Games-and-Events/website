@@ -108,6 +108,16 @@ export function canEditEntry(user, authorId) {
 }
 
 /**
+ * True if the user can approve (or discard) pending changes to a live
+ * piece, their own included. Editors and admins.
+ * @param {any} user
+ * @returns {boolean}
+ */
+export function canApproveEdits(user) {
+	return canEditAllEntries(user);
+}
+
+/**
  * True if the user can see site-wide reader analytics (every writer's
  * numbers). Admins and editors; writers only ever see their own.
  * @param {any} user

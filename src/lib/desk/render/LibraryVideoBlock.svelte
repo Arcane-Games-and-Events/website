@@ -28,6 +28,9 @@
 
 	export let video = null;
 	export let poster = null;
+	/** Mux Data names for this video (e.g. `entry:{id}` and the piece's title). */
+	export let metaId = '';
+	export let metaTitle = '';
 
 	// Click-to-load facade for YouTube: while `youtubeLoaded === false` we
 	// render the poster image + a play button; on click we swap in the real
@@ -68,6 +71,8 @@
 			playback-token={video.playbackToken || ''}
 			thumbnail-token={video.thumbnailToken || ''}
 			poster={poster || ''}
+			metadata-video-id={metaId || undefined}
+			metadata-video-title={metaTitle || undefined}
 			stream-type="on-demand"
 			style="--controls-backdrop-color: transparent; aspect-ratio: {video.aspectRatio || '16/9'}"
 			class="block h-auto w-full"
