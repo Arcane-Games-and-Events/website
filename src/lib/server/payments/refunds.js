@@ -346,8 +346,12 @@ async function completeRefund(
 			.update(refundTable)
 			.set({ status: 'succeeded', method, refundTransId, amountCents, completedAt: at })
 			.where(eq(refundTable.id, row.id));
-		// Effects already applied when the refund began waiting for settlement.
-		if (row.status === 'waiting_settlement') return await describeFor(tx, row);
+		// Effects already applied when the refund began waiting for settlement,
+		// except the ledger, which waits for the money to actually move.
+		if (row.status === 'waiting_settlement') {
+			await markRefunded(row.transId, amountCents / 100, at, { tx });
+			return await describeFor(tx, row);
+		}
 		return await applySideEffects(tx, { ...row, amountCents }, { at });
 	});
 	await bump('tickets', 'orders', 'users');
