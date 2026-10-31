@@ -93,7 +93,7 @@
 				{hasMux || youtube ? 'Replace' : 'Upload video'}
 			</button>
 			{#if hasMux}
-				<a href="/desk/videos/{target}/{id}" class="{action} hover:text-warm">Analytics</a>
+				<a href="/classroom/videos/{target}/{id}" class="{action} hover:text-warm">Analytics</a>
 			{/if}
 			{#if hasMux || youtube}
 				<button

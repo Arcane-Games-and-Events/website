@@ -59,9 +59,17 @@ async function guarded(key, fn) {
 	}
 }
 
-/** SQL limiting views to an area's videos. */
+const STUDIO_KINDS = ['gameplay', 'podcast', 'interview', 'video'];
+
+/**
+ * SQL limiting views to an area's videos: 'studio' is every Studio item;
+ * a Studio kind ('gameplay', 'podcast', …) just those; 'articles' the
+ * Desk's article videos.
+ */
 function scopeSql(area) {
-	if (area === 'gameplay') return sql`v.vod_id IS NOT NULL`;
+	if (area === 'studio') return sql`v.vod_id IS NOT NULL`;
+	if (STUDIO_KINDS.includes(area))
+		return sql`v.vod_id IN (SELECT id FROM vods WHERE kind = ${area})`;
 	if (area === 'articles') return sql`v.entry_id IS NOT NULL AND v.video_plays > 0`;
 	throw new Error(`No AGE analytics for area ${area}`);
 }
@@ -282,7 +290,7 @@ export function videoOverview(area, days) {
  */
 export function videoDetail(target, id, days) {
 	return guarded(`ca:video:detail:v1:${target}:${id}:${days}`, async () => {
-		const area = target === 'vod' ? 'gameplay' : 'articles';
+		const area = target === 'vod' ? 'studio' : 'articles';
 		const since = sinceDate(Math.max(days, 2));
 		const where = target === 'vod' ? sql`v.vod_id = ${id}::uuid` : sql`v.entry_id = ${id}::uuid`;
 		const all = await loadViews(where, since);

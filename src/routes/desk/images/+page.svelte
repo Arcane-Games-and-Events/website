@@ -9,6 +9,7 @@
 	 * can narrow to their own or to one uploader.
 	 */
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
 	import DeskTabs from '$lib/components/age/desk/DeskTabs.svelte';
 	import MediaGrid from '$lib/desk/media/MediaGrid.svelte';
@@ -65,7 +66,15 @@
 		'h-[42px] border border-line2 bg-white px-3 text-[13.5px] text-ink focus:border-ink focus:ring-0 focus:outline-none';
 </script>
 
-<svelte:head><title>Images — Desk</title></svelte:head>
+<svelte:head
+	><title
+		>Images — {$page.url.pathname.startsWith('/classroom')
+			? 'Classroom'
+			: /^\/studio(\/|$)/.test($page.url.pathname)
+				? 'Studio'
+				: 'Desk'}</title
+	></svelte:head
+>
 
 <svelte:window
 	ondragenter={onDragEnter}
@@ -78,7 +87,7 @@
 	kicker="Image library"
 	title="Images"
 	subtitle={data.canSeeAll
-		? 'Every image uploaded to the Desk. Reuse, edit, credit or remove them.'
+		? `Every image uploaded to the ${data.library === 'classroom' ? 'Classroom' : data.library === 'studio' ? 'Studio' : 'Desk'}. Reuse, edit, credit or remove them.`
 		: 'Everything you’ve uploaded. Reuse, edit, credit or remove your images.'}
 >
 	{#snippet actions(compact)}

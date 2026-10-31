@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
-import { canEditAllEntries } from '$lib/server/auth/roles.js';
-import { createGameplay } from '$lib/server/video/gameplay.js';
+import { canUseStudio } from '$lib/server/auth/roles.js';
+import { createGameplay } from '$lib/server/studio/media.js';
 import { VideoError } from '$lib/server/video/mux.js';
 
 /**
@@ -9,7 +9,7 @@ import { VideoError } from '$lib/server/video/mux.js';
  */
 export async function POST({ locals, request }) {
 	if (!locals.user) throw error(401, 'Unauthorized');
-	if (!canEditAllEntries(locals.user)) throw error(403, 'Not permitted');
+	if (!canUseStudio(locals.user)) throw error(403, 'Not permitted');
 	try {
 		const vod = await createGameplay(locals.user, await request.json().catch(() => ({})));
 		return json({ vod }, { status: 201 });

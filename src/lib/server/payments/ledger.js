@@ -33,7 +33,7 @@ function settle(label, err, tx) {
  * second call is ignored.
  *
  * @param {{
- *   transId: string, kind: 'sub_first'|'sub_renewal'|'sub_promo_first'|'ticket',
+ *   transId: string, kind: 'sub_first'|'sub_renewal'|'sub_promo_first'|'ticket'|'course',
  *   amount: number|string, occurredAt?: Date, source: 'app'|'webhook'|'sync'|'backfill',
  *   userId?: string|null, userEmail?: string|null, subscriptionId?: string|null,
  *   subscriptionType?: string|null, payNum?: number|null, orderId?: string|null,

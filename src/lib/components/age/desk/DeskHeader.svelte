@@ -10,7 +10,7 @@
 	 * full-size on the right from md up.
 	 *
 	 * @type {{
-	 *   kicker?: string,
+	 *   kicker?: string,  // defaults to the section: Desk, Classroom or Studio
 	 *   title: string,
 	 *   accent?: string,
 	 *   subtitle?: string,
@@ -19,7 +19,18 @@
 	 *   actions?: import('svelte').Snippet<[boolean]>
 	 * }}
 	 */
-	let { kicker = 'Desk', title, accent = '', subtitle = '', lead, sub, actions } = $props();
+	import { page } from '$app/stores';
+
+	let { kicker, title, accent = '', subtitle = '', lead, sub, actions } = $props();
+	// The section this header sits in, unless the page names something else.
+	const label = $derived(
+		kicker ??
+			($page.url.pathname.startsWith('/classroom')
+				? 'Classroom'
+				: /^\/studio(\/|$)/.test($page.url.pathname)
+					? 'Studio'
+					: 'Desk')
+	);
 </script>
 
 <section class="bg-ink font-libre text-paper-bg">
@@ -28,7 +39,7 @@
 	>
 		<div class="flex min-h-[28px] items-center justify-between gap-4">
 			<p class="min-w-0 truncate text-[10px] font-extrabold tracking-[0.22em] text-gold uppercase">
-				{#if lead}{@render lead()}{:else}<span aria-hidden="true">◆</span> {kicker}{/if}
+				{#if lead}{@render lead()}{:else}<span aria-hidden="true">◆</span> {label}{/if}
 			</p>
 			{#if actions}<div class="flex shrink-0 items-center gap-2 md:hidden">
 					{@render actions(true)}

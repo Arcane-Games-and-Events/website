@@ -1,8 +1,7 @@
 import { db } from '$lib/server/db/index.js';
-import { withCovers } from '$lib/server/video/gameplay.js';
-import { vod, event } from '$lib/server/db/schema.js';
-import { and, desc, eq, sql } from 'drizzle-orm';
-import { getMuxThumbnailToken } from '$lib/server/mux.js';
+import { latest } from '$lib/server/studio/public.js';
+import { vod } from '$lib/server/db/schema.js';
+import { and, eq, sql } from 'drizzle-orm';
 import { listPublishedEntries } from '$lib/server/desk/list.js';
 
 export async function load({ setHeaders }) {
@@ -27,65 +26,39 @@ export async function load({ setHeaders }) {
 		console.error('Error fetching Desk entries:', error);
 	}
 
-	// ============ VODs (bonus gameplay videos) ============
-	let vods = [];
-	let vodTotal = 0;
+	// ============ From the Studio ============
+	// The newest piece of any kind as the band's spread, then the latest
+	// match, episode and interview (topped up with whatever's newest).
+	let studio = { lead: null, strip: [], total: 0 };
 	try {
-		const baseConditions = [eq(vod.isPublished, true), eq(vod.status, 'ready')];
-
-		// Left-join the event for circuit + month context so cards can show
-		// "AGE Open · Los Angeles · January" style metadata.
-		const [countResult, recentVods] = await Promise.all([
+		const [lead, gameplay, podcasts, interviews, any, [{ total }]] = await Promise.all([
+			latest({ limit: 1 }),
+			latest({ kind: 'gameplay', limit: 2 }),
+			latest({ kind: 'podcast', limit: 2 }),
+			latest({ kind: 'interview', limit: 2 }),
+			latest({ limit: 6 }),
 			db
-				.select({ count: sql`count(*)::int` })
+				.select({ total: sql`count(*)::int` })
 				.from(vod)
-				.where(and(...baseConditions)),
-			db
-				.select({
-					id: vod.id,
-					muxPlaybackId: vod.muxPlaybackId,
-					title: vod.title,
-					description: vod.description,
-					duration: vod.duration,
-					thumbnail: vod.thumbnail,
-					coverImageId: vod.coverImageId,
-					player1Name: vod.player1Name,
-					player1Hero: vod.player1Hero,
-					player2Name: vod.player2Name,
-					player2Hero: vod.player2Hero,
-					isPremium: vod.isPremium,
-					publishedAt: vod.publishedAt,
-					eventCircuit: event.circuit,
-					eventMonth: event.month,
-					eventTitle: event.title
-				})
-				.from(vod)
-				.leftJoin(event, eq(vod.eventId, event.id))
-				.where(and(...baseConditions))
-				.orderBy(desc(vod.publishedAt))
-				.limit(6)
+				.where(and(eq(vod.isPublished, true), eq(vod.status, 'ready')))
 		]);
-
-		vodTotal = countResult[0]?.count || 0;
-
-		// Sign Mux thumbnail tokens via the cached helper (12h Redis cache
-		// under `mux:thumbnail:{playbackId}` — one sign per playbackId per
-		// half-day, not per request). Failure on a single VOD is silent;
-		// the card falls back to the stored thumbnail.
-		vods = await Promise.all(
-			(await withCovers(recentVods)).map(async (v) => {
-				if (!v.muxPlaybackId) return v;
-				const token = await getMuxThumbnailToken(v.muxPlaybackId);
-				return token ? { ...v, thumbnailToken: token } : v;
-			})
-		);
+		const leadId = lead[0]?.id;
+		const strip = [];
+		for (const list of [gameplay, podcasts, interviews]) {
+			const pick = list.find((x) => x.id !== leadId && !strip.some((y) => y.id === x.id));
+			if (pick) strip.push(pick);
+		}
+		for (const x of any) {
+			if (strip.length >= 3) break;
+			if (x.id !== leadId && !strip.some((y) => y.id === x.id)) strip.push(x);
+		}
+		studio = { lead: lead[0] ?? null, strip, total: Number(total) || 0 };
 	} catch (err) {
-		console.warn('Could not fetch VODs:', err.message);
+		console.warn('Could not fetch Studio media:', err.message);
 	}
 
 	return {
 		articles,
-		vods,
-		vodTotal
+		studio
 	};
 }

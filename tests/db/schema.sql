@@ -4842,3 +4842,310 @@ ALTER TABLE public.vods
 
 -- Migration 030 (appended until the next schema refresh; safe to re-run)
 ALTER TABLE public.cms_entry ADD COLUMN IF NOT EXISTS draft_meta jsonb;
+
+-- Migration 031 (appended until the next schema refresh; safe to re-run)
+SET search_path = public;
+ALTER TABLE cms_course
+  ADD COLUMN IF NOT EXISTS submitted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS review_note text,
+  ADD COLUMN IF NOT EXISTS first_published_at timestamptz;
+
+-- A topic is a draft until published. first_published_at never changes once
+-- set: it decides whether a topic is "new since you enrolled" (Premium).
+ALTER TABLE cms_lesson
+  ADD COLUMN IF NOT EXISTS published_at timestamptz,
+  ADD COLUMN IF NOT EXISTS first_published_at timestamptz;
+
+-- A checkout buys tickets to an event or one course.
+ALTER TABLE checkout
+  ALTER COLUMN event_id DROP NOT NULL,
+  ADD COLUMN IF NOT EXISTS course_id uuid REFERENCES cms_course(id) ON DELETE CASCADE;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'checkout_target_check') THEN
+    ALTER TABLE checkout ADD CONSTRAINT checkout_target_check
+      CHECK ((event_id IS NOT NULL) <> (course_id IS NOT NULL));
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS checkout_course_idx ON checkout (course_id) WHERE course_id IS NOT NULL;
+
+-- Analytics: a view belongs to an entry, a gameplay video, a course page or a topic.
+ALTER TABLE ca_view
+  ADD COLUMN IF NOT EXISTS course_id uuid REFERENCES cms_course(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS lesson_id uuid REFERENCES cms_lesson(id) ON DELETE CASCADE;
+ALTER TABLE ca_event
+  ADD COLUMN IF NOT EXISTS course_id uuid REFERENCES cms_course(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS lesson_id uuid REFERENCES cms_lesson(id) ON DELETE CASCADE;
+
+ALTER TABLE ca_view DROP CONSTRAINT IF EXISTS ca_view_owner_check;
+ALTER TABLE ca_view ADD CONSTRAINT ca_view_owner_check
+  CHECK (entry_id IS NOT NULL OR vod_id IS NOT NULL OR course_id IS NOT NULL);
+ALTER TABLE ca_event DROP CONSTRAINT IF EXISTS ca_event_owner_check;
+ALTER TABLE ca_event ADD CONSTRAINT ca_event_owner_check
+  CHECK (entry_id IS NOT NULL OR vod_id IS NOT NULL OR course_id IS NOT NULL);
+
+CREATE INDEX IF NOT EXISTS ca_view_course_started_idx ON ca_view (course_id, started_at) WHERE course_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ca_view_lesson_idx ON ca_view (lesson_id) WHERE lesson_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ca_event_course_idx ON ca_event (course_id) WHERE course_id IS NOT NULL;
+
+-- Who can take a course. One live enrollment per student per course.
+CREATE TABLE IF NOT EXISTS course_enrollment (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  course_id       uuid NOT NULL REFERENCES cms_course(id) ON DELETE CASCADE,
+  user_id         text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  source          text NOT NULL,              -- purchase | comp
+  order_id        uuid REFERENCES "order"(id) ON DELETE SET NULL,
+  added_by        text REFERENCES "user"(id) ON DELETE SET NULL,
+  last_lesson_id  uuid REFERENCES cms_lesson(id) ON DELETE SET NULL,
+  last_seen_at    timestamptz,
+  muted_at        timestamptz,
+  muted_by        text REFERENCES "user"(id) ON DELETE SET NULL,
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  revoked_at      timestamptz,
+  revoked_reason  text
+);
+CREATE UNIQUE INDEX IF NOT EXISTS course_enrollment_live_unique
+  ON course_enrollment (course_id, user_id) WHERE revoked_at IS NULL;
+CREATE INDEX IF NOT EXISTS course_enrollment_user_idx ON course_enrollment (user_id);
+
+-- The teacher earnings ledger: one row per paid enrollment.
+CREATE TABLE IF NOT EXISTS course_sale (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  course_id       uuid NOT NULL REFERENCES cms_course(id) ON DELETE RESTRICT,
+  teacher_id      text REFERENCES "user"(id) ON DELETE SET NULL,
+  enrollment_id   uuid REFERENCES course_enrollment(id) ON DELETE SET NULL,
+  order_id        uuid REFERENCES "order"(id) ON DELETE SET NULL,
+  trans_id        text UNIQUE,
+  gross_cents     integer NOT NULL,
+  refunded_cents  integer NOT NULL DEFAULT 0,
+  share_pct       smallint NOT NULL DEFAULT 90,
+  sold_at         timestamptz NOT NULL DEFAULT now(),
+  payable_at      timestamptz NOT NULL,
+  payout_id       uuid,
+  created_at      timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS course_sale_teacher_idx ON course_sale (teacher_id, payable_at);
+CREATE INDEX IF NOT EXISTS course_sale_course_idx ON course_sale (course_id, sold_at);
+
+-- Payouts AGE has made (outside the site), marked here by an admin.
+CREATE TABLE IF NOT EXISTS teacher_payout (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id      text NOT NULL REFERENCES "user"(id) ON DELETE RESTRICT,
+  pay_date        date NOT NULL,
+  amount_cents    integer NOT NULL,
+  sale_count      integer NOT NULL,
+  status          text NOT NULL DEFAULT 'paid',
+  paid_at         timestamptz NOT NULL DEFAULT now(),
+  paid_by         text REFERENCES "user"(id) ON DELETE SET NULL,
+  reference       text,
+  note            text
+);
+CREATE INDEX IF NOT EXISTS teacher_payout_teacher_idx ON teacher_payout (teacher_id, pay_date);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'course_sale_payout_fk') THEN
+    ALTER TABLE course_sale ADD CONSTRAINT course_sale_payout_fk
+      FOREIGN KEY (payout_id) REFERENCES teacher_payout(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+-- The course discussion. A thread has no parent; a reply points at its thread.
+CREATE TABLE IF NOT EXISTS course_post (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  course_id       uuid NOT NULL REFERENCES cms_course(id) ON DELETE CASCADE,
+  lesson_id       uuid REFERENCES cms_lesson(id) ON DELETE SET NULL,
+  parent_id       uuid REFERENCES course_post(id) ON DELETE CASCADE,
+  author_id       text REFERENCES "user"(id) ON DELETE SET NULL,
+  kind            text NOT NULL DEFAULT 'post',     -- post | update
+  title           text,
+  body            text NOT NULL,
+  pinned          boolean NOT NULL DEFAULT false,
+  locked          boolean NOT NULL DEFAULT false,
+  status          text NOT NULL DEFAULT 'visible',  -- visible | held | removed
+  flag_reasons    text[] NOT NULL DEFAULT '{}',
+  reviewed_by     text REFERENCES "user"(id) ON DELETE SET NULL,
+  reviewed_at     timestamptz,
+  review_note     text,
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  edited_at       timestamptz,
+  last_reply_at   timestamptz,
+  deleted_at      timestamptz
+);
+CREATE INDEX IF NOT EXISTS course_post_threads_idx ON course_post (course_id, last_reply_at) WHERE parent_id IS NULL;
+CREATE INDEX IF NOT EXISTS course_post_parent_idx ON course_post (parent_id, created_at);
+CREATE INDEX IF NOT EXISTS course_post_review_idx ON course_post (course_id) WHERE status = 'held';
+CREATE INDEX IF NOT EXISTS course_post_author_idx ON course_post (author_id, created_at);
+
+CREATE TABLE IF NOT EXISTS course_post_report (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  post_id         uuid NOT NULL REFERENCES course_post(id) ON DELETE CASCADE,
+  reporter_id     text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  reason          text,
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  resolved_at     timestamptz,
+  UNIQUE (post_id, reporter_id)
+);
+
+-- In-site notifications: replies, new threads, teacher updates, new topics.
+CREATE TABLE IF NOT EXISTS notification (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  kind            text NOT NULL,   -- reply | new_thread | course_update | new_topic | post_removed
+  course_id       uuid REFERENCES cms_course(id) ON DELETE CASCADE,
+  lesson_id       uuid REFERENCES cms_lesson(id) ON DELETE CASCADE,
+  post_id         uuid REFERENCES course_post(id) ON DELETE CASCADE,
+  actor_id        text REFERENCES "user"(id) ON DELETE SET NULL,
+  data            jsonb,
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  read_at         timestamptz
+);
+CREATE INDEX IF NOT EXISTS notification_user_idx ON notification (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS notification_unread_idx ON notification (user_id) WHERE read_at IS NULL;
+CREATE INDEX IF NOT EXISTS notification_user_idx ON notification (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS notification_unread_idx ON notification (user_id) WHERE read_at IS NULL;
+
+-- Row level security is on with no policies, as in 022 and 024: the site
+-- reaches these tables only through its own server connection, and the
+-- public API keys get nothing.
+ALTER TABLE course_enrollment  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE course_sale        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE teacher_payout     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE course_post        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE course_post_report ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification       ENABLE ROW LEVEL SECURITY;
+
+-- Migration 032 (appended until the next schema refresh; safe to re-run)
+ALTER TABLE cms_lesson ADD COLUMN IF NOT EXISTS draft_title text;
+ALTER TABLE cms_lesson ADD COLUMN IF NOT EXISTS draft_body jsonb;
+ALTER TABLE cms_lesson ADD COLUMN IF NOT EXISTS draft_updated_at timestamptz;
+
+-- Migration 033 (appended until the next schema refresh; safe to re-run)
+CREATE TABLE IF NOT EXISTS course_activity (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  course_id   uuid NOT NULL REFERENCES cms_course(id) ON DELETE CASCADE,
+  actor_id    text REFERENCES "user"(id) ON DELETE SET NULL,
+  kind        text NOT NULL,
+  lesson_id   uuid REFERENCES cms_lesson(id) ON DELETE SET NULL,
+  note        text,
+  data        jsonb,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS course_activity_course_idx ON course_activity (course_id, created_at DESC);
+
+-- Row level security on with no policies, as in 031.
+ALTER TABLE course_activity ENABLE ROW LEVEL SECURITY;
+
+-- Migration 034 (appended until the next schema refresh; safe to re-run)
+ALTER TABLE cms_media ADD COLUMN IF NOT EXISTS library text NOT NULL DEFAULT 'content';
+DO $$ BEGIN
+  ALTER TABLE cms_media ADD CONSTRAINT cms_media_library_check CHECK (library IN ('content', 'classroom'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS cms_media_library_idx ON cms_media (library, created_at DESC);
+
+WITH course_use AS (
+  SELECT m.id FROM cms_media m
+  WHERE EXISTS (
+          SELECT 1 FROM cms_course c
+          WHERE m.id IN (c.cover_image_id, c.thumbnail_image_id, c.draft_cover_image_id, c.draft_thumbnail_image_id))
+     OR EXISTS (
+          SELECT 1 FROM cms_lesson l
+          WHERE l.body::text LIKE '%' || m.id::text || '%'
+             OR l.draft_body::text LIKE '%' || m.id::text || '%')
+),
+content_use AS (
+  SELECT m.id FROM cms_media m
+  WHERE EXISTS (
+          SELECT 1 FROM cms_entry e
+          WHERE m.id IN (e.cover_image_id, e.thumbnail_image_id, e.draft_cover_image_id, e.draft_thumbnail_image_id)
+             OR e.draft_meta ->> 'coverImageId' = m.id::text
+             OR e.draft_meta ->> 'thumbnailImageId' = m.id::text
+             OR e.body::text LIKE '%' || m.id::text || '%'
+             OR e.draft_body::text LIKE '%' || m.id::text || '%')
+     -- gameplay covers (read this way so it works before or after migration 029)
+     OR EXISTS (SELECT 1 FROM vods v WHERE to_jsonb(v) ->> 'cover_image_id' = m.id::text)
+     OR EXISTS (SELECT 1 FROM cms_author_profile p WHERE p.avatar_media_id = m.id)
+),
+teacher_only AS (
+  SELECT u.id FROM "user" u
+  WHERE u.role <> 'admin'
+    AND 'creator' = ANY (coalesce(u.additional_roles, '{}'))
+    AND NOT ('writer' = ANY (coalesce(u.additional_roles, '{}')))
+    AND NOT ('editor' = ANY (coalesce(u.additional_roles, '{}')))
+)
+UPDATE cms_media m SET library = 'classroom'
+WHERE m.library = 'content'
+  AND m.id NOT IN (SELECT id FROM content_use)
+  AND (m.id IN (SELECT id FROM course_use) OR m.uploaded_by IN (SELECT id FROM teacher_only));
+
+-- Migration 035 (appended until the next schema refresh; safe to re-run)
+CREATE TABLE IF NOT EXISTS studio_show (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug            text NOT NULL UNIQUE,
+  name            text NOT NULL,
+  kind            text NOT NULL DEFAULT 'podcast',
+  description     text,
+  host            text,
+  cover_image_id  uuid REFERENCES cms_media(id) ON DELETE SET NULL,
+  is_active       boolean NOT NULL DEFAULT true,
+  sort_order      integer NOT NULL DEFAULT 0,
+  created_by      text REFERENCES "user"(id) ON DELETE SET NULL,
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  updated_at      timestamptz NOT NULL DEFAULT now()
+);
+DO $$ BEGIN
+  ALTER TABLE studio_show ADD CONSTRAINT studio_show_kind_check CHECK (kind IN ('podcast', 'interview', 'video'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+ALTER TABLE vods ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'gameplay';
+ALTER TABLE vods ADD COLUMN IF NOT EXISTS media_type text NOT NULL DEFAULT 'video';
+ALTER TABLE vods ADD COLUMN IF NOT EXISTS show_id uuid REFERENCES studio_show(id) ON DELETE SET NULL;
+ALTER TABLE vods ADD COLUMN IF NOT EXISTS guests text;
+ALTER TABLE vods ADD COLUMN IF NOT EXISTS season integer;
+ALTER TABLE vods ADD COLUMN IF NOT EXISTS episode_number integer;
+DO $$ BEGIN
+  ALTER TABLE vods ADD CONSTRAINT vods_kind_check CHECK (kind IN ('gameplay', 'podcast', 'interview', 'video'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  ALTER TABLE vods ADD CONSTRAINT vods_media_type_check CHECK (media_type IN ('video', 'audio'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS vods_kind_published_idx ON vods (kind, is_published, published_at DESC);
+CREATE INDEX IF NOT EXISTS vods_show_idx ON vods (show_id);
+
+-- The Studio's image library.
+ALTER TABLE cms_media DROP CONSTRAINT IF EXISTS cms_media_library_check;
+ALTER TABLE cms_media ADD CONSTRAINT cms_media_library_check
+  CHECK (library IN ('content', 'classroom', 'studio'));
+
+-- Covers used only by gameplay or shows move to the Studio's library.
+-- (Gameplay covers are read through to_jsonb so this works before or after
+-- migration 029 added vods.cover_image_id.)
+WITH studio_use AS (
+  SELECT m.id FROM cms_media m
+  WHERE EXISTS (SELECT 1 FROM vods v WHERE to_jsonb(v) ->> 'cover_image_id' = m.id::text)
+     OR EXISTS (SELECT 1 FROM studio_show s WHERE s.cover_image_id = m.id)
+),
+other_use AS (
+  SELECT m.id FROM cms_media m
+  WHERE EXISTS (
+          SELECT 1 FROM cms_entry e
+          WHERE m.id IN (e.cover_image_id, e.thumbnail_image_id, e.draft_cover_image_id, e.draft_thumbnail_image_id)
+             OR e.draft_meta ->> 'coverImageId' = m.id::text
+             OR e.draft_meta ->> 'thumbnailImageId' = m.id::text
+             OR e.body::text LIKE '%' || m.id::text || '%'
+             OR e.draft_body::text LIKE '%' || m.id::text || '%')
+     OR EXISTS (
+          SELECT 1 FROM cms_course c
+          WHERE m.id IN (c.cover_image_id, c.thumbnail_image_id, c.draft_cover_image_id, c.draft_thumbnail_image_id))
+     OR EXISTS (SELECT 1 FROM cms_lesson l WHERE l.body::text LIKE '%' || m.id::text || '%')
+     OR EXISTS (SELECT 1 FROM cms_author_profile p WHERE p.avatar_media_id = m.id)
+)
+UPDATE cms_media m SET library = 'studio'
+WHERE m.library = 'content'
+  AND m.id IN (SELECT id FROM studio_use)
+  AND m.id NOT IN (SELECT id FROM other_use);
+
+-- Row level security on with no policies, as in 031.
+ALTER TABLE studio_show ENABLE ROW LEVEL SECURITY;

@@ -24,6 +24,7 @@
 	export let open = false;
 	export let x = 0;
 	export let y = 0;
+	export let allowVideo = true;
 
 	const dispatch = createEventDispatcher();
 
@@ -153,9 +154,11 @@
 			<button type="button" class={itemClass} on:click={() => pick('insertStatsTable')}>
 				<span class="w-5 font-mono-system text-ink/50">▦</span> Stats table
 			</button>
-			<button type="button" class={itemClass} on:click={() => pick('insertVideo')}>
-				<span class="w-5 text-ink/50">▶</span> Inline video
-			</button>
+			{#if allowVideo}
+				<button type="button" class={itemClass} on:click={() => pick('insertVideo')}>
+					<span class="w-5 text-ink/50">▶</span> Inline video
+				</button>
+			{/if}
 		</div>
 	</div>
 {/if}

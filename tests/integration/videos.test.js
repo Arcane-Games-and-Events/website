@@ -150,12 +150,13 @@ describe('who manages which video', () => {
 		expect(await canManageVideoOf(editor, 'entry', e)).toBe(true);
 	});
 
-	test('a lesson: its course author with the creator role, editors and admins', async () => {
+	test('a lesson: its course’s teacher, and the admins and editors who oversee courses', async () => {
 		const mine = await makeLesson(creator);
 		const theirs = await makeLesson(admin);
 		expect(await canManageVideoOf(creator, 'lesson', mine.lesson)).toBe(true);
 		expect(await canManageVideoOf(creator, 'trailer', mine.course)).toBe(true);
 		expect(await canManageVideoOf(creator, 'lesson', theirs.lesson)).toBe(false);
+		expect(await canManageVideoOf(admin, 'lesson', mine.lesson)).toBe(true);
 		expect(await canManageVideoOf(editor, 'lesson', theirs.lesson)).toBe(true);
 		expect(await canManageVideoOf(writer, 'lesson', mine.lesson)).toBe(false);
 	});
@@ -395,7 +396,7 @@ describe('Mux Data', () => {
 describe('gameplay covers', () => {
 	test('a cover is saved, shown with the video, and counts as a use of the image', async () => {
 		const { deskMedia } = await import('$lib/server/db/schema.js');
-		const { updateGameplay, withCovers } = await import('$lib/server/video/gameplay.js');
+		const { updateGameplay, withCovers } = await import('$lib/server/studio/media.js');
 		const { mediaUsage } = await import('$lib/server/media/library.js');
 		const id = randomUUID();
 		await db.insert(deskMedia).values({

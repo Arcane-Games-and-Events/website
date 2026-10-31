@@ -1,6 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { order, user, ticket, entitlement, event } from '$lib/server/db/schema.js';
+import { order, user, ticket, event, courseEnrollment, deskCourse } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 
 export async function load({ params, locals }) {
@@ -44,17 +44,21 @@ export async function load({ params, locals }) {
 				ticket: ticketData,
 				event: eventData
 			};
-		} else if (orderData.meta?.type === 'course' && orderData.meta.entitlementId) {
-			const [entitlementData] = await db
+		} else if (orderData.kind === 'course' || orderData.meta?.type === 'course') {
+			// A course bought once: the enrollment it created (revoked by a full refund).
+			const [enrollment] = await db
 				.select()
-				.from(entitlement)
-				.where(eq(entitlement.id, orderData.meta.entitlementId))
+				.from(courseEnrollment)
+				.where(eq(courseEnrollment.orderId, orderData.id))
 				.limit(1);
-
-			relatedData = {
-				type: 'course',
-				entitlement: entitlementData
-			};
+			const [course] = orderData.meta?.courseId
+				? await db
+						.select({ id: deskCourse.id, title: deskCourse.title, slug: deskCourse.slug })
+						.from(deskCourse)
+						.where(eq(deskCourse.id, orderData.meta.courseId))
+						.limit(1)
+				: [];
+			relatedData = { type: 'course', enrollment: enrollment || null, course: course || null };
 		} else if (orderData.meta?.type === 'subscription') {
 			relatedData = {
 				type: 'subscription'

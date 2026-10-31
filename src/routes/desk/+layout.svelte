@@ -4,9 +4,8 @@
   Uses the same editorial <AgeHeader> the rest of the redesigned site
   renders, so a writer moving between /library, /account, and /desk sees
   one consistent chrome band. Below that, the Desk bar shows
-  the sections the current user can reach (Entries / Courses / Users) —
-  role-aware, so a pure writer sees only Entries and a pure teacher
-  sees only Courses.
+  the sections the current user can reach (Entries / Images / Videos /
+  Users …), role-aware. Courses aren't here: they're in the Classroom.
 
   No footer: /desk is an authoring app, not a reader page, and the
   editorial footer's subscribe + social block would feel out of place

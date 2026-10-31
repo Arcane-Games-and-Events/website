@@ -872,13 +872,16 @@
 								<div>
 									<p class="font-newsreader text-[16px] font-semibold">{ent.product}</p>
 									<p class="mt-[4px] text-[11.5px] text-fade">
-										Purchased {formatDate(ent.createdAt)}
+										{ent.source === 'comp' ? 'Added free' : 'Purchased'}
+										{formatDate(ent.createdAt)}
 									</p>
 								</div>
 								<span
-									class="inline-flex shrink-0 items-center text-[11.5px] font-semibold text-prem"
+									class="inline-flex shrink-0 items-center text-[11.5px] font-semibold {ent.active
+										? 'text-prem'
+										: 'text-warm'}"
 								>
-									Active
+									{ent.active ? 'Active' : 'Revoked'}
 								</span>
 							</div>
 						{/each}

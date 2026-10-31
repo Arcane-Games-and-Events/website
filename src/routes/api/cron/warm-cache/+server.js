@@ -30,7 +30,8 @@ import { checkBillingHeartbeat } from '$lib/server/billing/heartbeat.js';
 const WARM_URLS = [
 	'/',
 	'/library',
-	'/library/vods',
+	'/studios',
+	'/studios/gameplay',
 	'/age-open',
 	'/age-open?tab=events',
 	'/age-open?tab=standings',

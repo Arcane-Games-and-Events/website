@@ -15,13 +15,18 @@ import {
 	user as userTable
 } from '$lib/server/db/schema.js';
 import { getMuxThumbnailToken } from '$lib/server/mux.js';
-import { canEditAllEntries, canEditCourses } from '$lib/server/auth/roles.js';
+import {
+	canEditAllEntries,
+	canOverseeCourses,
+	canUseClassroom,
+	canUseStudio
+} from '$lib/server/auth/roles.js';
 import { videoOf } from './mux.js';
-import { withCovers } from './gameplay.js';
+import { withCovers } from '$lib/server/studio/media.js';
 
 const fullName = (u) => [u?.firstName, u?.lastName].filter(Boolean).join(' ') || null;
 
-async function withThumb(video) {
+export async function withThumb(video) {
 	if (!video.playbackId) return { ...video, thumbToken: null };
 	try {
 		return { ...video, thumbToken: await getMuxThumbnailToken(video.playbackId) };
@@ -34,10 +39,13 @@ async function withThumb(video) {
 export function areasFor(user) {
 	const all = canEditAllEntries(user);
 	return {
-		gameplay: all,
+		// Studio media (gameplay, episodes, interviews) is managed in the Studio.
+		gameplay: canUseStudio(user),
 		articles: all,
-		courses: all || canEditCourses(user),
-		allCourses: all
+		// Course videos live in the Classroom: teachers see their own courses,
+		// admins and editors every course.
+		courses: canUseClassroom(user),
+		allCourses: canOverseeCourses(user)
 	};
 }
 

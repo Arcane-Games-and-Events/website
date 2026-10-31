@@ -473,7 +473,24 @@ export const podcastEpisode = pgTable('podcast_episodes', {
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
-// VODS (Mux-hosted tournament and event videos)
+// STUDIO SHOWS (migration 035): a podcast or an interview series. Its
+// episodes are `vods` rows with `show_id` set.
+export const studioShow = pgTable('studio_show', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	slug: text('slug').notNull().unique(),
+	name: text('name').notNull(),
+	kind: text('kind').notNull().default('podcast'), // podcast | interview | video
+	description: text('description'),
+	host: text('host'),
+	coverImageId: uuid('cover_image_id').references(() => deskMedia.id, { onDelete: 'set null' }),
+	isActive: boolean('is_active').notNull().default(true),
+	sortOrder: integer('sort_order').notNull().default(0),
+	createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+// VODS (Mux-hosted media: bonus gameplay, podcast episodes, interviews, video)
 export const vod = pgTable('vods', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	// Mux data
@@ -495,6 +512,13 @@ export const vod = pgTable('vods', {
 	player2Name: text('player2_name'),
 	player2Hero: text('player2_hero'),
 	eventId: text('event_id').references(() => event.id, { onDelete: 'set null' }),
+	// The Studio (migration 035): what this is, and for episodes, their show.
+	kind: text('kind').notNull().default('gameplay'), // gameplay | podcast | interview | video
+	mediaType: text('media_type').notNull().default('video'), // video | audio
+	showId: uuid('show_id').references(() => studioShow.id, { onDelete: 'set null' }),
+	guests: text('guests'),
+	season: integer('season'),
+	episodeNumber: integer('episode_number'),
 	// Access
 	isPremium: boolean('is_premium').default(true),
 	// Status
@@ -728,6 +752,10 @@ export const deskMedia = pgTable('cms_media', {
 	credit: text('credit'),
 	creditUrl: text('credit_url'),
 	derivedFrom: uuid('derived_from').references(() => deskMedia.id, { onDelete: 'set null' }),
+	// Migration 034 — which library the image belongs to: 'content' (the
+	// Desk: articles, author photos), 'classroom' (courses) or, from
+	// migration 035, 'studio' (gameplay, episode and show covers).
+	library: text('library').notNull().default('content'),
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
@@ -752,9 +780,12 @@ export const deskAuthorProfile = pgTable('cms_author_profile', {
 // updated with cumulative numbers while the reader has the page open.
 export const caView = pgTable('ca_view', {
 	id: uuid('id').primaryKey(),
-	// A view belongs to a Library entry or (migration 028) a gameplay video.
+	// A view belongs to a Library entry, (028) a gameplay video, or (031) a
+	// course page or one of its topics (courseId set, lessonId for a topic).
 	entryId: uuid('entry_id').references(() => deskEntry.id, { onDelete: 'cascade' }),
 	vodId: uuid('vod_id').references(() => vod.id, { onDelete: 'cascade' }),
+	courseId: uuid('course_id').references(() => deskCourse.id, { onDelete: 'cascade' }),
+	lessonId: uuid('lesson_id').references(() => deskLesson.id, { onDelete: 'cascade' }),
 	visitorId: uuid('visitor_id').notNull(),
 	sessionId: uuid('session_id').notNull(),
 	userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
@@ -807,6 +838,8 @@ export const caEvent = pgTable('ca_event', {
 		.references(() => caView.id, { onDelete: 'cascade' }),
 	entryId: uuid('entry_id').references(() => deskEntry.id, { onDelete: 'cascade' }),
 	vodId: uuid('vod_id').references(() => vod.id, { onDelete: 'cascade' }),
+	courseId: uuid('course_id').references(() => deskCourse.id, { onDelete: 'cascade' }),
+	lessonId: uuid('lesson_id').references(() => deskLesson.id, { onDelete: 'cascade' }),
 	type: text('type').notNull(),
 	label: text('label'),
 	depth: smallint('depth'),
@@ -1033,8 +1066,12 @@ export const deskCourse = pgTable(
 		price: decimal('price', { precision: 10, scale: 2 }).notNull().default('0.00'),
 		premiumDiscountPct: integer('premium_discount_pct').notNull().default(0),
 
-		status: text('status').notNull().default('draft'), // 'draft' | 'published' | 'archived'
+		status: text('status').notNull().default('draft'), // 'draft' | 'in_review' | 'published' | 'archived'
 		publishedAt: timestamp('published_at', { withTimezone: true, mode: 'date' }),
+		// Review before the first publish (migration 031).
+		submittedAt: timestamp('submitted_at', { withTimezone: true, mode: 'date' }),
+		reviewNote: text('review_note'),
+		firstPublishedAt: timestamp('first_published_at', { withTimezone: true, mode: 'date' }),
 
 		authorId: text('author_id').references(() => user.id),
 
@@ -1092,6 +1129,18 @@ export const deskLesson = pgTable(
 
 		body: jsonb('body'),
 		readTime: integer('read_time'),
+
+		// Null = draft topic (migration 031). firstPublishedAt never changes
+		// once set: a topic first published after a student enrolled is
+		// Premium-only for that student.
+		publishedAt: timestamp('published_at', { withTimezone: true, mode: 'date' }),
+		firstPublishedAt: timestamp('first_published_at', { withTimezone: true, mode: 'date' }),
+
+		// Edits to a published topic in a live course wait here until the
+		// teacher presses Update (migration 032).
+		draftTitle: text('draft_title'),
+		draftBody: jsonb('draft_body'),
+		draftUpdatedAt: timestamp('draft_updated_at', { withTimezone: true, mode: 'date' }),
 
 		// Video slot — same shape as deskEntry.
 		videoProvider: text('video_provider'),
@@ -1247,9 +1296,9 @@ export const checkout = pgTable('checkout', {
 	userId: text('user_id')
 		.notNull()
 		.references(() => user.id, { onDelete: 'cascade' }),
-	eventId: text('event_id')
-		.notNull()
-		.references(() => event.id, { onDelete: 'cascade' }),
+	// Tickets to an event, or (migration 031) one course. Exactly one is set.
+	eventId: text('event_id').references(() => event.id, { onDelete: 'cascade' }),
+	courseId: uuid('course_id').references(() => deskCourse.id, { onDelete: 'cascade' }),
 	idempotencyKey: text('idempotency_key').notNull().unique(),
 	invoiceNumber: text('invoice_number').unique(),
 	status: text('status').notNull(), // pending | charging | paid | fulfilled | declined | failed | unknown | expired
@@ -1373,3 +1422,145 @@ export const billingNotice = pgTable(
 	},
 	(t) => [unique('billing_notice_kind_ref_key').on(t.kind, t.ref)]
 );
+
+// ============================================================================
+// Courses: enrollments, earnings, payouts, discussion (migration 031)
+// ============================================================================
+
+// Who can take a course. One live (unrevoked) enrollment per student.
+export const courseEnrollment = pgTable(
+	'course_enrollment',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		courseId: uuid('course_id')
+			.notNull()
+			.references(() => deskCourse.id, { onDelete: 'cascade' }),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		source: text('source').notNull(), // purchase | comp
+		orderId: uuid('order_id').references(() => order.id, { onDelete: 'set null' }),
+		addedBy: text('added_by').references(() => user.id, { onDelete: 'set null' }),
+		lastLessonId: uuid('last_lesson_id').references(() => deskLesson.id, { onDelete: 'set null' }),
+		lastSeenAt: timestamp('last_seen_at', { withTimezone: true, mode: 'date' }),
+		mutedAt: timestamp('muted_at', { withTimezone: true, mode: 'date' }),
+		mutedBy: text('muted_by').references(() => user.id, { onDelete: 'set null' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+		revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),
+		revokedReason: text('revoked_reason')
+	},
+	(t) => [index('course_enrollment_user_idx').on(t.userId)]
+);
+
+// The teacher earnings ledger: one row per paid enrollment. The teacher's
+// part is (gross - refunded) * share_pct / 100; payable from payable_at.
+export const courseSale = pgTable('course_sale', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	courseId: uuid('course_id')
+		.notNull()
+		.references(() => deskCourse.id, { onDelete: 'restrict' }),
+	teacherId: text('teacher_id').references(() => user.id, { onDelete: 'set null' }),
+	enrollmentId: uuid('enrollment_id').references(() => courseEnrollment.id, {
+		onDelete: 'set null'
+	}),
+	orderId: uuid('order_id').references(() => order.id, { onDelete: 'set null' }),
+	transId: text('trans_id').unique(),
+	grossCents: integer('gross_cents').notNull(),
+	refundedCents: integer('refunded_cents').notNull().default(0),
+	sharePct: smallint('share_pct').notNull().default(90),
+	soldAt: timestamp('sold_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	payableAt: timestamp('payable_at', { withTimezone: true, mode: 'date' }).notNull(),
+	payoutId: uuid('payout_id'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+// A payout AGE made outside the site, marked here by an admin.
+export const teacherPayout = pgTable('teacher_payout', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	teacherId: text('teacher_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'restrict' }),
+	payDate: text('pay_date').notNull(), // DATE, read as text
+	amountCents: integer('amount_cents').notNull(),
+	saleCount: integer('sale_count').notNull(),
+	status: text('status').notNull().default('paid'),
+	paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	paidBy: text('paid_by').references(() => user.id, { onDelete: 'set null' }),
+	reference: text('reference'),
+	note: text('note')
+});
+
+// The course discussion. A thread has no parent; replies point at it.
+export const coursePost = pgTable('course_post', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	courseId: uuid('course_id')
+		.notNull()
+		.references(() => deskCourse.id, { onDelete: 'cascade' }),
+	lessonId: uuid('lesson_id').references(() => deskLesson.id, { onDelete: 'set null' }),
+	parentId: uuid('parent_id'),
+	authorId: text('author_id').references(() => user.id, { onDelete: 'set null' }),
+	kind: text('kind').notNull().default('post'), // post | update
+	title: text('title'),
+	body: text('body').notNull(),
+	pinned: boolean('pinned').notNull().default(false),
+	locked: boolean('locked').notNull().default(false),
+	status: text('status').notNull().default('visible'), // visible | held | removed
+	flagReasons: text('flag_reasons')
+		.array()
+		.notNull()
+		.default(sql`'{}'::text[]`),
+	reviewedBy: text('reviewed_by').references(() => user.id, { onDelete: 'set null' }),
+	reviewedAt: timestamp('reviewed_at', { withTimezone: true, mode: 'date' }),
+	reviewNote: text('review_note'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	editedAt: timestamp('edited_at', { withTimezone: true, mode: 'date' }),
+	lastReplyAt: timestamp('last_reply_at', { withTimezone: true, mode: 'date' }),
+	deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' })
+});
+
+// What happened to a course and who did it (migration 033).
+export const courseActivity = pgTable('course_activity', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	courseId: uuid('course_id')
+		.notNull()
+		.references(() => deskCourse.id, { onDelete: 'cascade' }),
+	actorId: text('actor_id').references(() => user.id, { onDelete: 'set null' }),
+	kind: text('kind').notNull(),
+	lessonId: uuid('lesson_id').references(() => deskLesson.id, { onDelete: 'set null' }),
+	note: text('note'),
+	data: jsonb('data'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+export const coursePostReport = pgTable(
+	'course_post_report',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		postId: uuid('post_id')
+			.notNull()
+			.references(() => coursePost.id, { onDelete: 'cascade' }),
+		reporterId: text('reporter_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		reason: text('reason'),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+		resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'date' })
+	},
+	(t) => [unique('course_post_report_post_id_reporter_id_key').on(t.postId, t.reporterId)]
+);
+
+// In-site notifications.
+export const notification = pgTable('notification', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	kind: text('kind').notNull(), // reply | new_thread | course_update | new_topic | post_removed
+	courseId: uuid('course_id').references(() => deskCourse.id, { onDelete: 'cascade' }),
+	lessonId: uuid('lesson_id').references(() => deskLesson.id, { onDelete: 'cascade' }),
+	postId: uuid('post_id').references(() => coursePost.id, { onDelete: 'cascade' }),
+	actorId: text('actor_id').references(() => user.id, { onDelete: 'set null' }),
+	data: jsonb('data'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	readAt: timestamp('read_at', { withTimezone: true, mode: 'date' })
+});

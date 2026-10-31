@@ -23,9 +23,18 @@
 
 	const ROLES = [
 		{ id: 'writer', label: 'Writer', note: 'Writes and edits their own entries' },
-		{ id: 'editor', label: 'Editor', note: 'Edits every entry and sees all analytics' },
+		{
+			id: 'editor',
+			label: 'Editor',
+			note: 'Edits every entry, sees all analytics, oversees courses, and uses the Studio'
+		},
 		// stored as 'creator' (see roles.js); shown as Teacher
-		{ id: 'creator', label: 'Teacher', note: 'Builds and edits courses' }
+		{ id: 'creator', label: 'Teacher', note: 'Builds and runs courses in the Classroom' },
+		{
+			id: 'producer',
+			label: 'Producer',
+			note: 'Makes gameplay, podcasts and interviews in the Studio'
+		}
 	];
 	const TIERS = [
 		{ id: 'free', label: 'Free' },

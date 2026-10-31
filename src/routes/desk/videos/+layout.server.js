@@ -3,12 +3,15 @@ import { areasFor } from '$lib/server/video/list.js';
 import { canSeeUnused } from '$lib/server/video/mux.js';
 
 /**
- * /desk/videos — every Mux video on the site, area by area. Admins and
- * editors see Gameplay, Articles and Courses; course creators see their own
- * courses only.
+ * /desk/videos — the Desk's Mux videos: the videos on articles, for admins
+ * and editors. Gameplay, podcasts and interviews live in the Studio
+ * (/studio); course videos in the Classroom (/classroom/videos).
  */
 export async function load({ locals }) {
-	const areas = areasFor(locals.user);
-	if (!areas.gameplay && !areas.articles && !areas.courses) throw redirect(302, '/desk');
-	return { areas, canSeeUnused: canSeeUnused(locals.user) };
+	const { articles } = areasFor(locals.user);
+	if (!articles) throw redirect(302, '/desk');
+	return {
+		areas: { gameplay: false, articles, courses: false, allCourses: false },
+		canSeeUnused: canSeeUnused(locals.user)
+	};
 }

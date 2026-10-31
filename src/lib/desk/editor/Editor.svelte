@@ -82,6 +82,8 @@
 	export let placeholder = 'Start writing…';
 	/** Optional snippet rendered at the end of the toolbar (save state, settings). */
 	export let toolbarEnd = null;
+	/** False hides every way to insert a video (course topics are text only). */
+	export let allowVideo = true;
 
 	const dispatch = createEventDispatcher();
 
@@ -579,7 +581,7 @@
 		['Numbered list', () => insertList('ol')],
 		['Strikethrough', () => formatText('strikethrough')]
 	];
-	const INSERT_ITEMS = [
+	const ALL_INSERT_ITEMS = [
 		['Link', () => insertLink()],
 		['Image', () => openImagePicker()],
 		['Card link', () => openCardLinkDialog()],
@@ -587,6 +589,9 @@
 		['Stats table', () => (statsDialogOpen = true)],
 		['YouTube video', () => (inlineVideoDialogOpen = true)]
 	];
+	$: INSERT_ITEMS = allowVideo
+		? ALL_INSERT_ITEMS
+		: ALL_INSERT_ITEMS.filter(([lbl]) => lbl !== 'YouTube video');
 	function closeMenuOnOutside(e) {
 		if (menu && !e.target.closest?.('[data-tb-menu]')) menu = null;
 		if (cardPopover && !e.target.closest?.('[data-card-popover], [data-card-link]')) {
@@ -768,13 +773,15 @@
 						on:mousedown={keepFocus}
 						on:click={() => (statsDialogOpen = true)}>Table</button
 					>
-					<button
-						type="button"
-						class={tbBase}
-						title="Insert YouTube video"
-						on:mousedown={keepFocus}
-						on:click={() => (inlineVideoDialogOpen = true)}>Video</button
-					>
+					{#if allowVideo}
+						<button
+							type="button"
+							class={tbBase}
+							title="Insert YouTube video"
+							on:mousedown={keepFocus}
+							on:click={() => (inlineVideoDialogOpen = true)}>Video</button
+						>
+					{/if}
 				</span>
 				<span class="relative @min-[680px]:hidden" data-tb-menu>
 					<button
@@ -883,6 +890,7 @@
 	bind:open={contextMenuOpen}
 	x={contextMenuX}
 	y={contextMenuY}
+	{allowVideo}
 	on:setBlock={(e) => setBlock(e.detail)}
 	on:insertList={(e) => insertList(e.detail)}
 	on:formatText={(e) => formatText(e.detail)}

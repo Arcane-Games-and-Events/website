@@ -9,7 +9,8 @@
 
 	/** @type {{ video: any, cover?: any, width?: number, class?: string }} */
 	let { video, cover = null, width = 320, class: cls = '' } = $props();
-	const src = $derived(video?.status === 'ready' ? muxThumb(video, width) : null);
+	// Audio has no frames, so it shows its cover or a placeholder.
+	const src = $derived(video?.status === 'ready' && !video?.audio ? muxThumb(video, width) : null);
 </script>
 
 <span class="relative block aspect-video overflow-hidden bg-ink {cls}">
@@ -26,7 +27,13 @@
 		<span
 			class="absolute inset-0 flex items-center justify-center text-[9px] font-extrabold tracking-[0.16em] text-paper-bg/50 uppercase"
 		>
-			{video?.status === 'errored' ? 'Failed' : video?.provider ? 'Processing' : 'No video'}
+			{video?.status === 'errored'
+				? 'Failed'
+				: video?.audio && video?.status === 'ready'
+					? '♪ Audio'
+					: video?.provider
+						? 'Processing'
+						: 'No file'}
 		</span>
 	{/if}
 	{#if video?.duration}

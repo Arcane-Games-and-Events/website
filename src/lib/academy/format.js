@@ -21,7 +21,7 @@ export function lengthBand(mins) {
 	return 'long';
 }
 
-const FALLBACK_COVER = 'https://www.age.events/banner/academy-banner.webp';
+export const FALLBACK_COVER = 'https://www.age.events/banner/academy-banner.webp';
 
 /**
  * Normalise a course from `listPublishedCourses` into the shape the

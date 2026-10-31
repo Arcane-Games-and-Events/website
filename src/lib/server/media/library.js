@@ -23,7 +23,13 @@ import {
 	user as userTable,
 	vod
 } from '$lib/server/db/schema.js';
-import { canEditAllEntries, canEditEntries, canEditCourses } from '$lib/server/auth/roles.js';
+import {
+	canEditAllEntries,
+	canEditEntries,
+	canOverseeCourses,
+	canUseClassroom,
+	canUseStudio
+} from '$lib/server/auth/roles.js';
 import { getSupabase, DESK_MEDIA_BUCKET } from '$lib/server/supabase.js';
 import { mediaImage, cleanCreditUrl } from '$lib/server/desk/image.js';
 import { bump } from '$lib/server/cache/index.js';
@@ -39,20 +45,45 @@ export const PAGE_SIZE = 48;
 /** Largest original accepted. The browser scales big photos down first. */
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
-/** Anyone who can upload to the Desk. */
-export function canUseMedia(user) {
-	return canEditEntries(user) || canEditCourses(user);
+/**
+ * The image libraries, one per tool. `content` is the Desk's (articles,
+ * author photos); `classroom` the Classroom's (courses); `studio` the
+ * Studio's (gameplay, episode and show covers). Each page and picker only
+ * shows its own library's images.
+ */
+export const LIBRARIES = ['content', 'classroom', 'studio'];
+
+/** A library name from a request, defaulting to the Desk's. */
+export const libraryOf = (value) => (LIBRARIES.includes(value) ? value : 'content');
+
+/** Who can upload to a library: the tool's own people. */
+export function canUseMedia(user, library = 'content') {
+	if (library === 'classroom') return canUseClassroom(user);
+	if (library === 'studio') return canUseStudio(user);
+	return canEditEntries(user);
 }
 
-/** Admins and editors see and manage every upload. */
-export function canSeeAllMedia(user) {
+/** True if the user can use either library. */
+export function canUseAnyMedia(user) {
+	return LIBRARIES.some((l) => canUseMedia(user, l));
+}
+
+/**
+ * Who sees and manages every upload in a library: admins and editors (in
+ * the Studio, everyone in it: it's one small team's shared shelf).
+ */
+export function canSeeAllMedia(user, library = 'content') {
+	if (library === 'classroom') return canOverseeCourses(user);
+	if (library === 'studio') return canUseStudio(user);
 	return canEditAllEntries(user);
 }
 
-/** True if this user may edit or delete this image. */
+/** True if this user may edit or delete this image (only within its own library). */
 export function canManage(user, row) {
 	if (!user || !row) return false;
-	if (canSeeAllMedia(user)) return true;
+	const library = libraryOf(row.library);
+	if (!canUseMedia(user, library)) return false;
+	if (canSeeAllMedia(user, library)) return true;
 	return !!row.uploadedBy && row.uploadedBy === user.id;
 }
 
@@ -98,11 +129,12 @@ export function toLibraryItem(row, uploader = null) {
  * One page of the library, newest first by default.
  *
  * @param {any} user
- * @param {{ q?: string, scope?: 'mine' | 'all', uploader?: string, sort?: 'new' | 'old' | 'name', before?: string, offset?: number }} opts
+ * @param {{ library?: 'content' | 'classroom', q?: string, scope?: 'mine' | 'all', uploader?: string, sort?: 'new' | 'old' | 'name', before?: string, offset?: number }} opts
  */
 export async function listMedia(user, opts = {}) {
-	const all = canSeeAllMedia(user);
-	const where = [eq(deskMedia.status, 'ready')];
+	const library = libraryOf(opts.library);
+	const all = canSeeAllMedia(user, library);
+	const where = [eq(deskMedia.status, 'ready'), eq(deskMedia.library, library)];
 	if (!all || opts.scope === 'mine') where.push(eq(deskMedia.uploadedBy, user.id));
 	else if (opts.uploader) where.push(eq(deskMedia.uploadedBy, opts.uploader));
 	const q = (opts.q || '').trim();
@@ -145,8 +177,8 @@ export async function listMedia(user, opts = {}) {
 	return { items, nextOffset: more ? offset + PAGE_SIZE : null, all };
 }
 
-/** People who have uploaded images, for the admin / editor filter. */
-export async function listUploaders() {
+/** People who have uploaded images to a library, for the admin / editor filter. */
+export async function listUploaders(library = 'content') {
 	return db
 		.select({
 			id: userTable.id,
@@ -156,7 +188,7 @@ export async function listUploaders() {
 		})
 		.from(deskMedia)
 		.innerJoin(userTable, eq(userTable.id, deskMedia.uploadedBy))
-		.where(eq(deskMedia.status, 'ready'))
+		.where(and(eq(deskMedia.status, 'ready'), eq(deskMedia.library, libraryOf(library))))
 		.groupBy(userTable.id, userTable.firstName, userTable.lastName)
 		.orderBy(userTable.firstName);
 }
@@ -268,9 +300,9 @@ export async function mediaUsage(ids) {
 	for (const v of vods) {
 		add(v.coverImageId, {
 			kind: 'gameplay',
-			label: 'Gameplay cover',
+			label: 'Studio cover',
 			title: v.title,
-			href: '/desk/videos'
+			href: `/studio/media/${v.id}`
 		});
 	}
 
@@ -338,8 +370,9 @@ export async function mediaUsage(ids) {
  *
  * @param {any} user
  * @param {{ filename: string, mimeType: string, size: number }} file
+ * @param {'content' | 'classroom'} [library]
  */
-export async function createUpload(user, file) {
+export async function createUpload(user, file, library = 'content') {
 	const mimeType = String(file.mimeType || '').toLowerCase();
 	if (!ACCEPTED_TYPES.test(mimeType)) {
 		throw new MediaError(400, 'Use a JPEG, PNG, WebP, AVIF, GIF or SVG image.');
@@ -372,7 +405,8 @@ export async function createUpload(user, file) {
 			mimeType,
 			name: nameFromFile(file.filename),
 			fileSize: size || null,
-			status: 'uploading'
+			status: 'uploading',
+			library: libraryOf(library)
 		})
 		.returning();
 	return { media: toLibraryItem(row), uploadUrl: signed.signedUrl, token: signed.token };
@@ -496,6 +530,8 @@ export async function deriveMedia(user, source, edit) {
 			credit: source.credit,
 			creditUrl: source.creditUrl,
 			derivedFrom: source.id,
+			// a crop or rotation stays in the library it came from
+			library: libraryOf(source.library),
 			fileSize: out.buffer.length,
 			status: 'processing'
 		})

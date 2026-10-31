@@ -9,8 +9,8 @@ import { deskReads } from '$lib/server/contentAnalytics/query.js';
 /**
  * /desk — the writers' and editors' desk.
  *
- * Course-only creators have no entries to show here, so they still go
- * straight to their section. Everyone else gets a dashboard of their own
+ * (Teachers' courses are in the Classroom; the layout sends them there.)
+ * Everyone here gets a dashboard of their own
  * work (editors and admins see the whole desk): drafts to continue, scheduled pieces,
  * edits awaiting review, recent publishes and reader numbers.
  *
@@ -20,12 +20,8 @@ import { deskReads } from '$lib/server/contentAnalytics/query.js';
  * dev pool is small and Supabase's pooler stalls when several fresh
  * connections are opened at once.
  */
-export const load = async ({ locals, parent }) => {
-	const { canEditCourses } = await parent();
-	if (!canEditEntries(locals.user)) {
-		if (canEditCourses) throw redirect(302, '/desk/courses');
-		throw redirect(302, '/');
-	}
+export const load = async ({ locals }) => {
+	if (!canEditEntries(locals.user)) throw redirect(302, '/');
 
 	// Editors and admins see every writer's work; only admins approve edits.
 	const seeAll = canEditAllEntries(locals.user);

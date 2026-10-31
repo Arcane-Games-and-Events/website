@@ -22,6 +22,8 @@
 	const assignedEventsCount = $derived($page.data?.assignedEventsCount ?? 0);
 	const isStaff = $derived(assignedEventsCount > 0);
 	const isPartner = $derived($page.data?.isPartner ?? false);
+	// Replies, course updates and new topics (see /my-courses).
+	const unread = $derived($page.data?.unreadNotifications ?? 0);
 
 	let open = $state(false);
 	// Below sm the panel is fixed to the viewport width (the trigger sits
@@ -91,16 +93,19 @@
 
 	const isAdmin = $derived(user?.role === 'admin');
 
-	// Desk visibility mirrors `canAccessDesk` from src/lib/server/auth/roles.js —
-	// admin billing tier OR the writer / editor / creator (teacher) role.
-	const canAccessDesk = $derived(
-		isAdmin ||
-			(Array.isArray(user?.additionalRoles) &&
-				['writer', 'editor', 'creator'].some((r) => user.additionalRoles.includes(r)))
-	);
+	// These mirror `canAccessDesk`, `canUseClassroom` and `canUseStudio` in
+	// src/lib/server/auth/roles.js. The Desk (articles) is for admins,
+	// writers and editors; the Classroom (courses) for admins, editors and
+	// teachers; the Studio (gameplay, podcasts, interviews) for admins,
+	// editors and producers.
+	const extra = $derived(Array.isArray(user?.additionalRoles) ? user.additionalRoles : []);
+	const canAccessDesk = $derived(isAdmin || ['writer', 'editor'].some((r) => extra.includes(r)));
+	const canUseClassroom = $derived(isAdmin || ['editor', 'creator'].some((r) => extra.includes(r)));
+	const canUseStudio = $derived(isAdmin || ['editor', 'producer'].some((r) => extra.includes(r)));
 
 	const ITEMS = $derived([
 		{ label: 'Account', href: '/account' },
+		{ label: 'My courses', href: '/my-courses', badge: unread },
 		{ label: 'Refer a friend', href: '/account/referrals' },
 		...(isPartner ? [{ label: 'Partner', href: '/partner' }] : [])
 	]);
@@ -112,6 +117,19 @@
 			: []),
 		...(canAccessDesk
 			? [{ key: 'desk', label: 'Desk', href: '/desk', tone: 'bg-gold text-ink' }]
+			: []),
+		...(canUseClassroom
+			? [
+					{
+						key: 'classroom',
+						label: 'Classroom',
+						href: '/classroom',
+						tone: 'bg-academy text-paper-bg'
+					}
+				]
+			: []),
+		...(canUseStudio
+			? [{ key: 'studio', label: 'Studio', href: '/studio', tone: 'bg-hero-rb text-white' }]
 			: []),
 		...(isStaff
 			? [
@@ -152,6 +170,12 @@
 		>
 			{initials}
 		</span>
+		{#if unread}
+			<span
+				class="-ml-1 min-w-[18px] bg-warm px-1 text-center text-[10px] leading-[18px] font-extrabold text-white tabular-nums"
+				aria-label="{unread} new">{unread > 9 ? '9+' : unread}</span
+			>
+		{/if}
 		<svg
 			class="h-[15px] w-[15px] shrink-0"
 			viewBox="0 0 20 20"
@@ -249,7 +273,12 @@
 							onclick={close}
 							class="group/mi flex items-center justify-between gap-3 px-4 py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] text-soft uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 						>
-							<span>{item.label}</span>
+							<span
+								>{item.label}{#if item.badge}<span
+										class="ml-2 bg-warm px-1.5 py-[1px] text-[9.5px] tracking-normal text-white tabular-nums"
+										>{item.badge}</span
+									>{/if}</span
+							>
 							<span
 								class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
 								aria-hidden="true">→</span
@@ -298,6 +327,16 @@
 		{:else if key === 'desk'}
 			<!-- pen -->
 			<path d="M13.6 2.9l3.5 3.5L7.5 16H4v-3.5z" /><path d="M11.4 5.1l3.5 3.5" />
+		{:else if key === 'studio'}
+			<!-- microphone -->
+			<rect x="7.5" y="2.5" width="5" height="9" rx="0" /><path
+				d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5"
+			/>
+		{:else if key === 'classroom'}
+			<!-- mortarboard -->
+			<path d="M2 7.5 10 4l8 3.5-8 3.5z" /><path
+				d="M5.5 9v4c1.2 1.1 2.7 1.7 4.5 1.7s3.3-.6 4.5-1.7V9"
+			/>
 		{:else}
 			<!-- shield -->
 			<path d="M10 2l6.5 2.6v4.9c0 4-2.7 6.9-6.5 8.5-3.8-1.6-6.5-4.5-6.5-8.5V4.6z" /><path

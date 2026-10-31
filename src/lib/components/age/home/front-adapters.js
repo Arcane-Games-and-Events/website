@@ -91,6 +91,7 @@ function entryImage(a) {
 /** A gameplay video's picture: its cover if it has one, else a frame from Mux. @param {any} v */
 function vodImage(v) {
 	if (v?.cover?.src) return v.cover.src;
+	if (v?.still) return v.still;
 	if (v?.muxPlaybackId) {
 		const t = v.thumbnailToken ? `&token=${v.thumbnailToken}` : '';
 		return `https://image.mux.com/${v.muxPlaybackId}/thumbnail.webp?width=720&height=405&fit_mode=smartcrop${t}`;
@@ -133,20 +134,30 @@ function entryStory(a) {
 	};
 }
 
-/** @param {any} v */
+/** What a Studio piece is called on the front page. */
+function studioRubric(v) {
+	if (v?.kind === 'podcast') return v?.show?.name ? `New episode · ${v.show.name}` : 'New episode';
+	if (v?.kind === 'interview') return 'Interview';
+	if (v?.kind === 'video') return 'Video';
+	const circuit = v?.event?.circuit ?? v?.eventCircuit;
+	return circuit ? `Bonus match · ${circuit}` : 'Bonus match';
+}
+
+/** A Studio piece (bonus match, episode, interview, video) as a front-page story. */
 function vodStory(v) {
 	const players = [v?.player1Name || v?.player1Hero, v?.player2Name || v?.player2Hero]
 		.filter(Boolean)
 		.join(' vs ');
+	const who = v?.kind && v.kind !== 'gameplay' ? (v?.guests ? `with ${v.guests}` : '') : players;
 	return {
 		kind: /** @type {const} */ ('video'),
-		href: v?.id ? `/library/${v.id}` : '/library',
-		title: v?.title || players || 'Untitled match',
-		dek: v?.description || players,
+		href: v?.id ? `/studios/${v.id}` : '/studios',
+		title: v?.title || who || 'Untitled',
+		dek: v?.description || who,
 		image: vodImage(v),
 		picture: v?.cover || undefined,
-		alt: v?.cover?.alt || v?.title || players || '',
-		rubric: v?.eventCircuit ? `Bonus match · ${v.eventCircuit}` : 'Bonus match',
+		alt: v?.cover?.alt || v?.title || who || '',
+		rubric: studioRubric(v),
 		length: formatDuration(v?.duration),
 		author: 'AGE Studios',
 		date: formatDate(v?.publishedAt),

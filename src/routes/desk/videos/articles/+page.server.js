@@ -6,7 +6,7 @@ import { muxAreaData } from '$lib/server/video/muxData.js';
 
 /** /desk/videos/articles — each entry's uploaded video, or their analytics. */
 export async function load({ locals, url }) {
-	if (!areasFor(locals.user).articles) throw redirect(302, '/desk/videos');
+	if (!areasFor(locals.user).articles) throw redirect(302, '/desk');
 	const entries = await listArticleVideos();
 	if (url.searchParams.get('view') === 'analytics') {
 		const days = parseRange(url.searchParams.get('days'));

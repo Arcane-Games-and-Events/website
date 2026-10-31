@@ -1,7 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import {
 	canManage,
-	canUseMedia,
+	canUseAnyMedia,
 	deriveMedia,
 	getMediaRow,
 	MediaError,
@@ -20,7 +20,7 @@ export const config = { maxDuration: 60 };
 export async function POST({ params, locals, request }) {
 	const user = locals.user;
 	if (!user) throw error(401, 'Unauthorized');
-	if (!canUseMedia(user)) throw error(403, 'Not permitted');
+	if (!canUseAnyMedia(user)) throw error(403, 'Not permitted');
 	const source = await getMediaRow(params.id);
 	if (!source) throw error(404, 'Image not found');
 	if (!canManage(user, source)) throw error(403, 'This image belongs to someone else');

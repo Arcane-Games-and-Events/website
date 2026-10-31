@@ -32,6 +32,12 @@ export async function GET({ params, locals }) {
 		}
 	}
 
+	if (co.status === 'fulfilled' && co.orderId && co.courseId) {
+		return json({
+			status: 'fulfilled',
+			redirectUrl: `/academy/${co.payload?.courseSlug}?enrolled=1`
+		});
+	}
 	if (co.status === 'fulfilled' && co.orderId) {
 		const tickets = await db
 			.select({ id: ticketTable.id })

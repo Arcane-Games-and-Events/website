@@ -14,6 +14,7 @@ const CSRF_EXEMPT_PATHS = ['/api/webhooks/'];
 const NEVER_CACHE_PREFIXES = [
 	'/account',
 	'/admin',
+	'/classroom',
 	'/api',
 	'/staff',
 	'/checkout',
@@ -60,9 +61,33 @@ async function validateSessionCached(sid) {
 	};
 }
 
+// Courses moved out of the Desk into the Classroom, and bonus gameplay into
+// the Studio (2026-10-30). Old links (bookmarks, emails, notifications)
+// land on the new pages.
+const MOVED = [
+	[/^\/desk\/courses\/?$/, '/classroom'],
+	[/^\/desk\/courses\//, '/classroom/courses/'],
+	[/^\/desk\/earnings/, '/classroom/earnings'],
+	[/^\/desk\/payouts/, '/classroom/payouts'],
+	[/^\/desk\/videos\/courses\/?/, '/classroom/videos/'],
+	[/^\/desk\/videos\/(lesson|trailer)\//, '/classroom/videos/$1/'],
+	// Bonus gameplay moved to the Studio (2026-10-30).
+	[/^\/desk\/videos\/?$/, '/studio/media'],
+	[/^\/desk\/videos\/vod\/([^/]+)\/?$/, '/studio/media/$1/analytics']
+];
+
 export const handle = async ({ event, resolve }) => {
-	// Custom CSRF protection (exempts webhook paths)
 	const { request, url } = event;
+	if (request.method === 'GET' && url.pathname.startsWith('/desk/')) {
+		for (const [from, to] of MOVED) {
+			if (from.test(url.pathname)) {
+				const path = url.pathname.replace(from, to).replace(/\/$/, '') || '/classroom';
+				throw redirect(301, path + url.search);
+			}
+		}
+	}
+
+	// Custom CSRF protection (exempts webhook paths)
 	const isExempt = CSRF_EXEMPT_PATHS.some((path) => url.pathname.startsWith(path));
 
 	if (!isExempt && request.method !== 'GET' && request.method !== 'HEAD') {

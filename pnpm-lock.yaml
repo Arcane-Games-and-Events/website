@@ -92,6 +92,9 @@ importers:
       sharp:
         specifier: ^0.34.5
         version: 0.34.5
+      svelte-dnd-action:
+        specifier: 0.9.80
+        version: 0.9.80(svelte@5.46.0)
     devDependencies:
       '@eslint/compat':
         specifier: ^1.2.5
@@ -2403,6 +2406,11 @@ packages:
       svelte: ^4.0.0 || ^5.0.0-next.0
       typescript: ^5.0.0 || ^6.0.0
 
+  svelte-dnd-action@0.9.80:
+    resolution: {integrity: sha512-GweBRVBMp0F3T/e3O8EZoukRbbi+NhYlOghn5cE69CFmkDH1AuY0P/FklTlQxAfWw+SUkSm+iZyvYaRljgKUOA==}
+    peerDependencies:
+      svelte: '>=3.23.0 || ^5.0.0-next.0'
+
   svelte-eslint-parser@1.4.1:
     resolution: {integrity: sha512-1eqkfQ93goAhjAXxZiu1SaKI9+0/sxp4JIWQwUpsz7ybehRE5L8dNuz7Iry7K22R47p5/+s9EM+38nHV2OlgXA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0, pnpm: 10.24.0}
@@ -4570,6 +4578,10 @@ snapshots:
       typescript: 6.0.3
     transitivePeerDependencies:
       - picomatch
+
+  svelte-dnd-action@0.9.80(svelte@5.46.0):
+    dependencies:
+      svelte: 5.46.0
 
   svelte-eslint-parser@1.4.1(svelte@5.46.0):
     dependencies:

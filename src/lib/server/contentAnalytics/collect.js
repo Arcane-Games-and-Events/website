@@ -4,7 +4,9 @@ import {
 	caEvent,
 	caConversion,
 	caPageview,
+	deskCourse,
 	deskEntry,
+	deskLesson,
 	vod
 } from '$lib/server/db/schema.js';
 import { and, eq, gt, sql } from 'drizzle-orm';
@@ -146,11 +148,12 @@ export function audienceOf(user) {
  */
 export async function startView(p, event) {
 	if (!isUuid(p?.id) || !isUuid(p?.visitorId) || !isUuid(p?.sessionId)) return;
-	if (!isUuid(p?.entryId) && !isUuid(p?.vodId)) return;
+	if (!isUuid(p?.entryId) && !isUuid(p?.vodId) && !isUuid(p?.courseId)) return;
 	const ua = event.request.headers.get('user-agent') || '';
 	if (isBot(ua)) return;
 
-	// A view belongs to a Library entry or to a bonus gameplay video.
+	// A view belongs to a Library entry, a bonus gameplay video, or a course
+	// page (courseId) or one of its topics (courseId + lessonId).
 	let owner;
 	if (isUuid(p.entryId)) {
 		const [entry] = await db
@@ -168,10 +171,34 @@ export async function startView(p, event) {
 			vodId: null,
 			kind: entry.videoProvider ? (entry.readTime ? 'article+video' : 'video') : 'article'
 		};
-	} else {
+	} else if (isUuid(p.vodId)) {
 		const [row] = await db.select({ id: vod.id }).from(vod).where(eq(vod.id, p.vodId)).limit(1);
 		if (!row) return;
 		owner = { entryId: null, vodId: row.id, kind: 'gameplay' };
+	} else {
+		const [course] = await db
+			.select({ id: deskCourse.id })
+			.from(deskCourse)
+			.where(eq(deskCourse.id, p.courseId))
+			.limit(1);
+		if (!course) return;
+		let lessonId = null;
+		if (isUuid(p.lessonId)) {
+			const [lesson] = await db
+				.select({ id: deskLesson.id })
+				.from(deskLesson)
+				.where(and(eq(deskLesson.id, p.lessonId), eq(deskLesson.courseId, course.id)))
+				.limit(1);
+			if (!lesson) return;
+			lessonId = lesson.id;
+		}
+		owner = {
+			entryId: null,
+			vodId: null,
+			courseId: course.id,
+			lessonId,
+			kind: lessonId ? 'topic' : 'course'
+		};
 	}
 	const referrerDomain = referrerDomainOf(p.referrer);
 	const fromPath = str(p.fromPath, 300);
@@ -187,6 +214,8 @@ export async function startView(p, event) {
 			id: p.id,
 			entryId: owner.entryId,
 			vodId: owner.vodId,
+			courseId: owner.courseId ?? null,
+			lessonId: owner.lessonId ?? null,
 			visitorId: p.visitorId,
 			sessionId: p.sessionId,
 			userId: user?.id || null,
@@ -269,7 +298,12 @@ export async function beatView(p) {
 				gt(caView.startedAt, new Date(Date.now() - 12 * 60 * 60 * 1000))
 			)
 		)
-		.returning({ entryId: caView.entryId, vodId: caView.vodId });
+		.returning({
+			entryId: caView.entryId,
+			vodId: caView.vodId,
+			courseId: caView.courseId,
+			lessonId: caView.lessonId
+		});
 	if (!row) return;
 
 	const events = (Array.isArray(p.events) ? p.events : [])
@@ -279,6 +313,8 @@ export async function beatView(p) {
 			viewId: p.id,
 			entryId: row.entryId,
 			vodId: row.vodId,
+			courseId: row.courseId,
+			lessonId: row.lessonId,
 			type: e.type,
 			label: str(e.label, 200),
 			depth: e.depth == null ? null : int(e.depth, 100)

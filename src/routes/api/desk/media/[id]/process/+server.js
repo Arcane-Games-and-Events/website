@@ -1,5 +1,10 @@
 import { json, error } from '@sveltejs/kit';
-import { canManage, canUseMedia, getMediaRow, toLibraryItem } from '$lib/server/media/library.js';
+import {
+	canManage,
+	canUseAnyMedia,
+	getMediaRow,
+	toLibraryItem
+} from '$lib/server/media/library.js';
 import { processAvif, processMedia } from '$lib/server/media/process.js';
 
 export const config = { maxDuration: 60 };
@@ -16,7 +21,7 @@ export const config = { maxDuration: 60 };
 export async function POST({ params, locals, url }) {
 	const user = locals.user;
 	if (!user) throw error(401, 'Unauthorized');
-	if (!canUseMedia(user)) throw error(403, 'Not permitted');
+	if (!canUseAnyMedia(user)) throw error(403, 'Not permitted');
 	const row = await getMediaRow(params.id);
 	if (!row) throw error(404, 'Image not found');
 	if (!canManage(user, row)) throw error(403, 'This image belongs to someone else');

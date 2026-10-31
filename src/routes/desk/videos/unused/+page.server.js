@@ -9,7 +9,7 @@ import { getMuxThumbnailToken } from '$lib/server/mux.js';
  * would look unused from here.
  */
 export async function load({ locals }) {
-	if (!canSeeUnused(locals.user)) throw redirect(302, '/desk/videos');
+	if (!canSeeUnused(locals.user)) throw redirect(302, '/desk');
 	const assets = await listUnusedAssets();
 	for (const a of assets) {
 		a.thumbToken = a.playbackId ? await getMuxThumbnailToken(a.playbackId).catch(() => null) : null;

@@ -14,6 +14,8 @@
  * Returns the library item: { id, name, alt, credit, creditUrl, url, image, width, height, … }.
  */
 
+import { currentLibrary } from './api.js';
+
 const MAX_EDGE = 4000;
 const HEIC = /^image\/hei[cf]$/i;
 const SCALABLE = /^image\/(jpeg|png|webp)$/i;
@@ -30,7 +32,9 @@ export async function uploadImage(file, opts = {}) {
 		body: JSON.stringify({
 			filename: prepared.name,
 			mimeType: prepared.type,
-			size: prepared.size
+			size: prepared.size,
+			// the Desk's library or the Classroom's, by the page we're on
+			library: currentLibrary()
 		})
 	});
 	if (!start.ok) throw new Error(await messageOf(start, 'Could not start the upload'));

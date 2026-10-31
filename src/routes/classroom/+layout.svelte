@@ -1,0 +1,44 @@
+<!--
+  Classroom shell — the course tool's paper-and-ink chrome, like the Desk's:
+  the site header, then each page's ink header and the Classroom tabs
+  (Courses · Earnings · Payouts · Images · Videos, by role). No footer.
+-->
+<script>
+	import { onMount } from 'svelte';
+	import AgeHeader from '$lib/components/age/AgeHeader.svelte';
+
+	// Role flags from +layout.server.js reach the tabs via $page.data.
+	export const data = undefined;
+
+	// The site header is sticky and slims down on scroll, so measure it and
+	// publish its height. <DeskTabs> (placed by each page under its header)
+	// sticks just below it; anything else sticky in a Classroom page uses
+	// --desk-top (header + the tab strip: 54px on phones, 46px from md up).
+	let headerH = 71;
+	onMount(() => {
+		const header = document.querySelector('header');
+		if (!header) return;
+		const measure = () => (headerH = Math.round(header.getBoundingClientRect().height));
+		measure();
+		const ro = new ResizeObserver(measure);
+		ro.observe(header);
+		return () => ro.disconnect();
+	});
+</script>
+
+<svelte:head>
+	<title>Classroom · Arcane Games</title>
+</svelte:head>
+
+<!-- Wrapper matches AgeShell's outer element (font, overflow, antialias)
+     so <AgeHeader> inherits the same base typography here as on every
+     other editorial page. Was `font-newsreader` before, which put the
+     header text in a serif face that didn't match the rest of the site. -->
+<div
+	class="min-h-screen overflow-x-clip bg-paper-bg font-libre text-ink antialiased [--desk-tabs-h:54px] md:[--desk-tabs-h:46px]"
+	style="--desk-header: {headerH}px; --desk-top: calc({headerH}px + var(--desk-tabs-h));"
+>
+	<AgeHeader active="" />
+
+	<slot />
+</div>

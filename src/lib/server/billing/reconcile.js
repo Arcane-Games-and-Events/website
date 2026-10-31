@@ -19,6 +19,7 @@ import {
 } from '$lib/server/db/schema.js';
 import { authnet } from '$lib/server/authnet/client.js';
 import { fulfilCheckout, markCheckout } from '$lib/server/payments/checkout.js';
+import { fulfilCourseCheckout } from '$lib/server/courses/purchase.js';
 import { resolvePendingRefund, settleWaitingRefund } from '$lib/server/payments/refunds.js';
 import { getPartnerByCode } from '$lib/server/partner-code.js';
 import { getMemberReferralByCode } from '$lib/server/member-referral.js';
@@ -243,13 +244,15 @@ export async function reconcileInvoice(inv, { now = new Date() } = {}) {
 
 /** Resolve one ticket checkout. Returns true when it is settled one way or the other. */
 export async function reconcileCheckout(co, { now = new Date() } = {}) {
+	// Tickets or a course: the same checkout, fulfilled differently.
+	const fulfil = co.courseId ? fulfilCourseCheckout : fulfilCheckout;
 	if (co.status === 'paid' && co.transId) {
 		const [u] = await db
 			.select({ email: userTable.email })
 			.from(userTable)
 			.where(eq(userTable.id, co.userId))
 			.limit(1);
-		await fulfilCheckout(co.id, { transId: co.transId, email: u?.email });
+		await fulfil(co.id, { transId: co.transId, email: u?.email });
 		return true;
 	}
 	const [u] = await db
@@ -262,7 +265,7 @@ export async function reconcileCheckout(co, { now = new Date() } = {}) {
 		customerProfileId: u?.customerProfileId
 	});
 	if (found && APPROVED.has(found.status)) {
-		await fulfilCheckout(co.id, {
+		await fulfil(co.id, {
 			transId: found.transId,
 			lastFour: found.lastFour,
 			cardType: found.cardType,

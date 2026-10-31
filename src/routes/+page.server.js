@@ -1,10 +1,9 @@
 import { listPublishedEntries } from '$lib/server/desk/list.js';
-import { withCovers } from '$lib/server/video/gameplay.js';
+import { latest } from '$lib/server/studio/public.js';
 import { listPublishedCourses } from '$lib/server/desk/courses.js';
 import { db } from '$lib/server/db/index.js';
-import { event, standing, decklist, vod } from '$lib/server/db/schema.js';
+import { event, standing, decklist } from '$lib/server/db/schema.js';
 import { asc, gte, desc, and, or, eq, isNull } from 'drizzle-orm';
-import { getMuxThumbnailToken } from '$lib/server/mux.js';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import { playerKey as getPlayerKey } from '$lib/server/players/key.js';
 import { topByCircuit } from '$lib/server/players/circuitLeaders.js';
@@ -182,34 +181,12 @@ function fetchFeaturedDecklists() {
 	);
 }
 
+/** The Studio's newest pieces of every kind (the cards carry covers and stills). */
 async function fetchRecentVods() {
 	try {
-		const vodRows = await cached(
-			'vods:home:latest:12',
-			() =>
-				db
-					.select()
-					.from(vod)
-					.where(and(eq(vod.isPublished, true), eq(vod.status, 'ready')))
-					.orderBy(desc(vod.publishedAt))
-					.limit(12)
-					.then(withCovers),
-			{ tags: ['vods', 'media'] }
-		);
-
-		return Promise.all(
-			vodRows.map(async (v) => {
-				if (!v.muxPlaybackId) return v;
-				try {
-					const token = await getMuxThumbnailToken(v.muxPlaybackId);
-					return { ...v, thumbnailToken: token };
-				} catch {
-					return v;
-				}
-			})
-		);
+		return await latest({ limit: 12 });
 	} catch (err) {
-		console.warn('Could not fetch VODs:', err.message);
+		console.warn('Could not fetch Studio media:', err.message);
 		return [];
 	}
 }

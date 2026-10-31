@@ -252,18 +252,22 @@
 					</dl>
 				{:else if data.order.meta?.type === 'course'}
 					<dl class="mt-[16px] grid gap-[18px] border-t border-line2 pt-[16px] sm:grid-cols-2">
-						{#if data.order.meta.courseId}
-							<div>
-								<dt class="text-[11.5px] text-fade">Course ID</dt>
-								<dd class="mt-[4px] text-[12.5px] font-medium text-ink">
-									{data.order.meta.courseId}
-								</dd>
-							</div>
-						{/if}
 						<div>
-							<dt class="text-[11.5px] text-fade">Entitlement</dt>
+							<dt class="text-[11.5px] text-fade">Course</dt>
+							<dd class="mt-[4px] font-newsreader text-[16px] font-semibold">
+								{#if data.relatedData?.course}
+									<a href="/classroom/courses/{data.relatedData.course.id}" class="hover:text-warm"
+										>{data.relatedData.course.title}</a
+									>
+								{:else}
+									{data.order.meta.courseTitle || 'A deleted course'}
+								{/if}
+							</dd>
+						</div>
+						<div>
+							<dt class="text-[11.5px] text-fade">Access</dt>
 							<dd class="mt-[4px]">
-								{#if data.relatedData?.entitlement}
+								{#if data.relatedData?.enrollment && !data.relatedData.enrollment.revokedAt}
 									<span
 										class="inline-flex shrink-0 items-center text-[11.5px] font-semibold text-prem"
 									>

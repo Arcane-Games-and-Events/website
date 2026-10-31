@@ -1,7 +1,8 @@
 <!--
-  VideoAreaNav — the Videos section's areas (Gameplay · Articles · Courses)
-  and, within an area, Videos or Analytics. Each area only ever lists its
-  own videos.
+  VideoAreaNav — the Videos section's areas and, within an area, Videos or
+  Analytics. In the Desk: Articles. In the Classroom: Courses. (Gameplay is
+  in the Studio.)
+  Each area only ever lists its own videos.
 -->
 <script>
 	import { page } from '$app/stores';
@@ -14,20 +15,18 @@
 		$page.url.searchParams.get('view') === 'analytics' ? 'analytics' : 'videos'
 	);
 	const current = $derived(
-		path.startsWith('/desk/videos/articles') || path.startsWith('/desk/videos/entry')
-			? 'articles'
-			: path.startsWith('/desk/videos/courses') ||
-				  path.startsWith('/desk/videos/lesson') ||
-				  path.startsWith('/desk/videos/trailer')
-				? 'courses'
+		path.startsWith('/classroom')
+			? 'courses'
+			: path.startsWith('/desk/videos/articles') || path.startsWith('/desk/videos/entry')
+				? 'articles'
 				: path.startsWith('/desk/videos/unused')
 					? 'unused'
 					: 'gameplay'
 	);
 	const AREAS = [
-		{ id: 'gameplay', href: '/desk/videos', label: 'Gameplay' },
+		{ id: 'gameplay', href: '/studio/media?kind=gameplay', label: 'Gameplay' },
 		{ id: 'articles', href: '/desk/videos/articles', label: 'Articles' },
-		{ id: 'courses', href: '/desk/videos/courses', label: 'Courses' }
+		{ id: 'courses', href: '/classroom/videos', label: 'Courses' }
 	];
 	const shown = $derived(AREAS.filter((a) => areas[a.id]));
 	const viewHref = (v) => `${path}${v === 'analytics' ? '?view=analytics' : ''}`;

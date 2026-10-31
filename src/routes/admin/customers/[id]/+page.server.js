@@ -6,10 +6,11 @@ import {
 	order,
 	user,
 	ticket,
-	entitlement,
 	event,
 	payment,
-	memberEvent
+	memberEvent,
+	courseEnrollment,
+	deskCourse
 } from '$lib/server/db/schema.js';
 import { eq, desc, inArray } from 'drizzle-orm';
 import {
@@ -163,13 +164,22 @@ export async function load({ params, locals }) {
 			return true;
 		});
 
-		// Fetch entitlements (courses) for this customer if they have an account
+		// Courses this customer is in (bought or added free), newest first.
 		const customerEntitlements = customerData
-			? await db
-					.select()
-					.from(entitlement)
-					.where(eq(entitlement.userId, customerData.id))
-					.orderBy(desc(entitlement.createdAt))
+			? (
+					await db
+						.select({
+							id: courseEnrollment.id,
+							product: deskCourse.title,
+							createdAt: courseEnrollment.createdAt,
+							source: courseEnrollment.source,
+							revokedAt: courseEnrollment.revokedAt
+						})
+						.from(courseEnrollment)
+						.innerJoin(deskCourse, eq(courseEnrollment.courseId, deskCourse.id))
+						.where(eq(courseEnrollment.userId, customerData.id))
+						.orderBy(desc(courseEnrollment.createdAt))
+				).map((e) => ({ ...e, active: !e.revokedAt }))
 			: [];
 
 		// The membership (new billing system), the money ledger and the history.

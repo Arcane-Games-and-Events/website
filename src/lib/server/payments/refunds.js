@@ -41,6 +41,7 @@ import {
 	sendRefundRequestReceivedEmail
 } from '$lib/server/email.js';
 import { sendOnce } from '$lib/server/billing/notices.js';
+import { applyCourseRefund } from '$lib/server/courses/purchase.js';
 
 const UNSETTLED = new Set([
 	'capturedPendingSettlement',
@@ -412,6 +413,11 @@ async function applySideEffects(tx, row, { at, provisional = false }) {
 			ord.meta?.type?.startsWith('subscription')
 		) {
 			what = 'your AGE membership';
+		}
+		// A course: the teacher's sale shrinks; a full refund takes the course away.
+		if (ord.kind === 'course') {
+			what = `the course ${ord.meta?.courseTitle || ''}`.trim();
+			await applyCourseRefund(tx, ord, row.amountCents, at);
 		}
 	}
 

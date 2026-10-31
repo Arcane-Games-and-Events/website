@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import { deleteOwnerVideo, ownerFor, ownerSlot, VideoError } from '$lib/server/video/mux.js';
-import { updateGameplay } from '$lib/server/video/gameplay.js';
+import { updateGameplay } from '$lib/server/studio/media.js';
 
 const run = async (fn) => {
 	try {

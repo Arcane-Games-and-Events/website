@@ -368,6 +368,29 @@ export async function sendTicketReceipt(email, o) {
 	});
 }
 
+export async function sendCourseReceipt(email, o) {
+	const rows = [
+		['Course', o.courseTitle],
+		...(o.teacher ? [['Teacher', o.teacher]] : []),
+		['Charged', dollars(o.amountCents)],
+		...(o.lastFour ? [['Card', `•••• ${o.lastFour}`]] : []),
+		...(o.invoiceNumber ? [['Invoice', o.invoiceNumber]] : [])
+	];
+	return sendEmail({
+		to: email,
+		subject: `You’re enrolled: ${o.courseTitle}`,
+		html: layout({
+			kicker: 'Receipt',
+			heading: 'You’re enrolled.',
+			paragraphs: [
+				`${esc(o.courseTitle)} is yours to keep. Every topic in it today stays open to you; topics the teacher adds later are included with AGE Premium.`
+			],
+			rows,
+			cta: { label: 'Start the course', url: `${baseUrl()}/academy/${o.courseSlug}` }
+		})
+	});
+}
+
 export async function sendRefundDoneEmail(email, { amountCents, what, lastFour, voided }) {
 	return sendEmail({
 		to: email,

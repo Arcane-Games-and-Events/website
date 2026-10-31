@@ -43,6 +43,7 @@
 		'/age-open',
 		'/library',
 		'/academy',
+		'/my-courses',
 		'/partner',
 		'/terms',
 		'/privacy'
@@ -56,6 +57,9 @@
 		'/player/',
 		'/staff',
 		'/desk',
+		'/classroom',
+		'/studio',
+		'/studios',
 		'/admin'
 	];
 	// Substring tests for paths that don't fit a clean prefix — e.g. the

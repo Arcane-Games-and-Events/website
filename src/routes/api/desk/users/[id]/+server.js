@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 import { isAdmin } from '$lib/server/auth/roles.js';
 
 const VALID_BILLING_ROLES = new Set(['free', 'premium', 'admin']);
-const VALID_CAPABILITIES = new Set(['writer', 'editor', 'creator', 'tournament staff']);
+const VALID_CAPABILITIES = new Set(['writer', 'editor', 'creator', 'producer', 'tournament staff']);
 
 /**
  * PATCH /api/desk/users/[id]

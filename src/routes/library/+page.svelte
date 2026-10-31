@@ -5,13 +5,11 @@
 	 * Library index — the magazine's archive in the homepage's register:
 	 * a department masthead, the latest release as a plate-framed spread,
 	 * then the browse grid (search, kind, access and topic filters, nine
-	 * to a page) as a hairline mosaic, the newest bonus gameplay, and
+	 * to a page) as a hairline mosaic, the newest from the Studio, and
 	 * a topic index. Filters mirror into the URL so a view can be shared.
 	 */
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import FrontByline from '$lib/components/age/home/FrontByline.svelte';
-	import PremiumTag from '$lib/components/age/PremiumTag.svelte';
-	import { formatDate, formatDuration } from '$lib/components/age/home/front-adapters.js';
 	import StoryCard from '$lib/components/age/library/StoryCard.svelte';
 	import { storyCardSheet, toStories } from '$lib/components/age/library/stories.js';
 	import { reveal } from '$lib/actions/reveal.js';
@@ -22,6 +20,10 @@
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 
+	import WatchFrame from '$lib/components/age/watch/WatchFrame.svelte';
+	import WatchCard from '$lib/components/age/watch/WatchCard.svelte';
+	import { KIND as STUDIO_KIND, byline as studioByline } from '$lib/studio/kinds.js';
+
 	let { data } = $props();
 	const member = $derived($pageStore.data?.isPremiumMember ?? false);
 
@@ -31,7 +33,7 @@
 	const counts = $derived({
 		articles: stories.filter((s) => s.kind === 'article').length,
 		videos: stories.filter((s) => s.kind === 'video').length,
-		films: data.vodTotal || (data.vods ?? []).length
+		films: data.studio?.total ?? 0
 	});
 	const allTags = $derived([...new Set(stories.flatMap((s) => s.tags))].sort());
 	const topicOptions = $derived([{ v: '', l: 'Any' }, ...allTags.map((t) => ({ v: t, l: t }))]);
@@ -47,38 +49,9 @@
 		return [...by.values()].sort((a, b) => a.name.localeCompare(b.name));
 	});
 
-	// ============ gameplay ============
-	const vodThumb = (v) => {
-		if (v?.muxPlaybackId) {
-			const token = v.thumbnailToken ? `&token=${v.thumbnailToken}` : '';
-			return `https://image.mux.com/${v.muxPlaybackId}/thumbnail.webp?width=720&height=405&fit_mode=smartcrop${token}`;
-		}
-		return v?.thumbnail || 'https://www.age.events/banner/age-open-banner.webp';
-	};
-	const films = $derived(
-		(data.vods ?? []).map((v) => {
-			const players = [v.player1Name, v.player2Name].filter(Boolean).join(' vs ');
-			const heroes = [v.player1Hero, v.player2Hero].filter(Boolean).join(' vs ');
-			const title = v.title || players || heroes || 'Untitled match';
-			return {
-				id: v.id,
-				href: `/library/${v.id}`,
-				title,
-				players: players !== title ? players : '',
-				// Titles are often the matchup itself; don't print it twice.
-				heroes: heroes && heroes !== title ? heroes : '',
-				image: vodThumb(v),
-				picture: v.cover || null,
-				rubric: v.eventCircuit ? `AGE Open · ${v.eventCircuit}` : v.eventTitle || 'Bonus match',
-				date: formatDate(v.publishedAt),
-				length: formatDuration(v.duration),
-				premium: !!v.isPremium
-			};
-		})
-	);
-	// The newest match as a spread, then a row of the next three.
-	const filmLead = $derived(films[0] ?? null);
-	const filmRow = $derived(films.slice(1, 4));
+	// ============ from the Studio ============
+	const studioLead = $derived(data.studio?.lead ?? null);
+	const studioStrip = $derived(data.studio?.strip ?? []);
 
 	// ============ browse filters ============
 	const KIND = [
@@ -333,9 +306,7 @@
 						{counts.articles}
 						{counts.articles === 1 ? 'article' : 'articles'}
 						{#if counts.videos}· {counts.videos} video{/if}
-						{#if counts.films}· {counts.films} gameplay {counts.films === 1
-								? 'video'
-								: 'videos'}{/if}
+						{#if counts.films}· {counts.films} from the Studio{/if}
 					</p>
 				</div>
 			</div>
@@ -693,10 +664,10 @@
 		{/if}
 	</section>
 
-	<!-- ============ gameplay ============
-	     An ink band, like the gameplay page's masthead: the newest match as
-	     a spread, then the next three. -->
-	{#if filmLead}
+	<!-- ============ from the Studio ============
+	     An ink band: the Studio's newest piece as a spread, then the latest
+	     match, episode and interview, each labelled with what it is. -->
+	{#if studioLead}
 		<section class="bg-ink text-paper-bg" use:reveal>
 			<div class="mx-auto w-full max-w-[1200px] px-5 py-12 md:px-8 md:py-16">
 				<div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
@@ -709,138 +680,56 @@
 						<h2
 							class="mt-2 font-newsreader text-[34px] leading-[0.98] font-semibold tracking-[-0.02em] md:text-[46px]"
 						>
-							Bonus gameplay
+							From the Studio
 						</h2>
 						<p class="mt-2 font-newsreader text-[16px] text-paper-bg/70 italic md:text-[17px]">
-							Feature matches from the AGE Open, filmed on the main stage.
+							Feature matches from the main stage, podcasts and interviews.
 						</p>
 					</div>
 					<a
-						href="/library/vods"
+						href="/studios"
 						class="inline-block border-b-2 border-warm-light pb-1 text-[10.5px] font-extrabold tracking-[0.18em] whitespace-nowrap uppercase transition-[letter-spacing] hover:tracking-[0.26em]"
 					>
-						{#if data.vodTotal && data.vodTotal > 1}All {data.vodTotal} matches{:else}All matches{/if}
-						→
+						Visit AGE Studios →
 					</a>
 				</div>
 				<div class="mt-6 h-[5px] border-t border-b border-paper-bg/30" aria-hidden="true"></div>
 
-				<!-- the newest match -->
 				<a
-					href={filmLead.href}
+					href={studioLead.href}
 					class="group mt-8 grid overflow-hidden border border-paper-bg/20 md:grid-cols-[7fr_5fr]"
 				>
-					<span class="relative block aspect-video overflow-hidden bg-black">
-						<Picture
-							image={filmLead.picture ?? { src: filmLead.image, alt: filmLead.title }}
-							sizes="(min-width: 1024px) 700px, 100vw"
-							alt={filmLead.title}
-							loading="lazy"
-							class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-						/>
-						{#if filmLead.premium}<PremiumTag variant="corner" size="lg" />{/if}
-						<span
-							class="absolute right-0 bottom-0 flex h-10 w-10 items-center justify-center bg-warm pl-[3px] text-[13px] text-white"
-							aria-hidden="true">▶</span
-						>
-						{#if filmLead.length}
-							<span
-								class="absolute bottom-0 left-0 bg-ink/85 px-2.5 py-1 font-newsreader text-[13px] text-paper-bg tabular-nums"
-								>{filmLead.length}</span
-							>
-						{/if}
-					</span>
+					<WatchFrame item={studioLead} sizes="(min-width: 1024px) 700px, 100vw" />
 					<span class="flex flex-col justify-center p-6 md:p-8 lg:p-10">
 						<span class="text-[9.5px] font-extrabold tracking-[0.2em] text-warm-light uppercase"
-							>Latest match · {filmLead.rubric}</span
+							>Newest · {studioLead.audio ? 'Episode' : STUDIO_KIND[studioLead.kind].short}</span
 						>
 						<span
 							class="mt-3 block font-newsreader text-[26px] leading-[1.05] font-semibold tracking-[-0.015em] [text-wrap:balance] md:text-[34px]"
 						>
-							<span class="fp-ul">{filmLead.title}</span>
+							<span class="fp-ul">{studioLead.title}</span>
 						</span>
-						{#if filmLead.players}
-							<span class="mt-3 block font-newsreader text-[17px] text-paper-bg/75 italic"
-								>{filmLead.players}</span
+						{#if studioByline(studioLead)}
+							<span class="mt-2 block font-newsreader text-[16px] text-paper-bg/70 italic"
+								>{studioByline(studioLead)}</span
 							>
 						{/if}
-						{#if filmLead.heroes}
-							<span
-								class="mt-1.5 block text-[9.5px] font-extrabold tracking-[0.14em] text-paper-bg/50 uppercase"
-								>{filmLead.heroes}</span
-							>
-						{/if}
-						<span class="mt-6 block">
-							<FrontByline
-								author="AGE Studios"
-								date={filmLead.date}
-								length={filmLead.length}
-								premium={false}
-								onDark
-							/>
-						</span>
+						<span
+							class="mt-6 inline-flex w-fit items-center gap-2 bg-warm px-4 py-2.5 text-[10px] font-extrabold tracking-[0.16em] text-white uppercase transition-colors group-hover:bg-paper-bg group-hover:text-ink"
+							>{studioLead.audio ? '♪ Listen' : '▶ Watch'}</span
+						>
 					</span>
 				</a>
 
-				<!-- the next three -->
-				{#if filmRow.length}
-					<ul class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-						{#each filmRow as f (f.id)}
-							<li class="border border-paper-bg/20">
-								<a href={f.href} class="group flex h-full flex-col">
-									<span class="relative block aspect-video overflow-hidden bg-black">
-										{#if f.premium}<PremiumTag variant="corner" />{/if}
-										<Picture
-											image={f.picture ?? { src: f.image, alt: f.title }}
-											class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-											sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
-											alt={f.title}
-											loading="lazy"
-										/>
-										<span
-											class="absolute right-0 bottom-0 flex h-7 w-7 items-center justify-center bg-warm pl-[2px] text-[10px] text-white"
-											aria-hidden="true">▶</span
-										>
-										{#if f.length}
-											<span
-												class="absolute bottom-0 left-0 bg-ink/85 px-2 py-1 font-newsreader text-[12px] text-paper-bg tabular-nums"
-												>{f.length}</span
-											>
-										{/if}
-									</span>
-									<span class="flex flex-1 flex-col p-5">
-										<span
-											class="text-[9.5px] font-extrabold tracking-[0.18em] text-warm-light uppercase"
-											>{f.rubric}</span
-										>
-										<span
-											class="mt-2 block font-newsreader text-[19px] leading-[1.15] font-semibold"
-										>
-											<span class="fp-ul">{f.title}</span>
-										</span>
-										{#if f.players}
-											<span
-												class="mt-1.5 block font-newsreader text-[14.5px] text-paper-bg/70 italic"
-												>{f.players}</span
-											>
-										{/if}
-										{#if f.heroes}
-											<span
-												class="mt-1 block text-[9.5px] font-extrabold tracking-[0.14em] text-paper-bg/45 uppercase"
-												>{f.heroes}</span
-											>
-										{/if}
-										<span class="mt-auto block pt-4">
-											<FrontByline
-												author="AGE Studios"
-												date={f.date}
-												premium={false}
-												size="sm"
-												onDark
-											/>
-										</span>
-									</span>
-								</a>
+				{#if studioStrip.length}
+					<ul class="mt-8 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+						{#each studioStrip as item (item.id)}
+							<li>
+								<WatchCard
+									{item}
+									dark
+									sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
+								/>
 							</li>
 						{/each}
 					</ul>

@@ -7,12 +7,15 @@
  * - `listPreviewLessons`    lessons flagged as free previews, with their
  *                           course, for the "watch free" rail
  * - `getPublishedCourseBySlug`  one course with its syllabus (modules →
- *                           lessons) for /academy/[slug]
+ *                           lessons) for /academy/[slug]; published, or
+ *                           unlisted (archived) for the students who have it
+ * - `getCourseWithDrafts`   the same, uncached, with draft topics, for the
+ *                           course's teacher to preview
  * - `loadCourseProgress`    per-user completion per course (uncached)
  *
- * List + course reads are cached with the `courses` and `media` tags. There
- * is no course editor yet; whatever writes courses, modules or lessons must
- * call `bump('courses')` (the Mux lesson-video paths already do).
+ * Only published topics (`published_at` set) are ever listed to readers.
+ * List + course reads are cached with the `courses` and `media` tags; the
+ * course builder (src/lib/server/courses/builder.js) bumps `courses`.
  */
 import { db } from '$lib/server/db/index.js';
 import {
@@ -49,6 +52,14 @@ export async function getPublishedCourseBySlug(slug) {
 	return cached(`courses:desk:course:${slug}`, () => queryCourseBySlug(slug), COURSE_TAGS);
 }
 
+/** Any status, draft topics included. Uncached: only the teacher sees it. */
+export async function getCourseWithDrafts(slug) {
+	if (!slug) return null;
+	return queryCourseBySlug(slug, { drafts: true });
+}
+
+const LIVE_TOPIC = isNotNull(deskLesson.publishedAt);
+
 /* ============ queries ============ */
 
 function courseSelect(cover, thumb) {
@@ -58,8 +69,9 @@ function courseSelect(cover, thumb) {
 		title: deskCourse.title,
 		description: deskCourse.description,
 		price: deskCourse.price,
-		premiumDiscountPct: deskCourse.premiumDiscountPct,
+		status: deskCourse.status,
 		publishedAt: deskCourse.publishedAt,
+		firstPublishedAt: deskCourse.firstPublishedAt,
 		cover: mediaColumns(cover),
 		thumb: mediaColumns(thumb),
 		authorId: userTable.id,
@@ -79,12 +91,14 @@ function shapeCourse(r, agg) {
 		slug: r.slug,
 		title: r.title,
 		description: r.description,
+		status: r.status,
 		publishedAt: r.publishedAt,
+		firstPublishedAt: r.firstPublishedAt,
+		authorId: r.authorId,
 		coverImage: image,
 		author: authorName ? { id: r.authorId, name: authorName } : null,
 		price,
 		isFree: price === 0,
-		premiumDiscountPct: r.premiumDiscountPct || 0,
 		lessons: agg?.lessons ?? 0,
 		previewLessons: agg?.previews ?? 0,
 		modules: agg?.modules ?? 0,
@@ -103,7 +117,7 @@ async function aggregateLessons(courseIds) {
 			seconds: sql`coalesce(sum(${LESSON_SECONDS}), 0)::int`
 		})
 		.from(deskLesson)
-		.where(inArray(deskLesson.courseId, courseIds))
+		.where(and(inArray(deskLesson.courseId, courseIds), LIVE_TOPIC))
 		.groupBy(deskLesson.courseId);
 	return new Map(agg.map((a) => [a.courseId, a]));
 }
@@ -141,7 +155,7 @@ async function queryPreviewLessons({ limit }) {
 		.from(deskLesson)
 		.innerJoin(deskCourse, eq(deskLesson.courseId, deskCourse.id))
 		.leftJoin(userTable, eq(deskCourse.authorId, userTable.id))
-		.where(and(eq(deskLesson.isPreview, true), eq(deskCourse.status, 'published')))
+		.where(and(eq(deskLesson.isPreview, true), LIVE_TOPIC, eq(deskCourse.status, 'published')))
 		.orderBy(desc(deskCourse.publishedAt), asc(deskLesson.position))
 		.limit(limit);
 	return rows.map((r) => ({
@@ -156,7 +170,7 @@ async function queryPreviewLessons({ limit }) {
 	}));
 }
 
-async function queryCourseBySlug(slug) {
+async function queryCourseBySlug(slug, { drafts = false } = {}) {
 	const cover = alias(deskMedia, 'cover_media');
 	const thumb = alias(deskMedia, 'thumb_media');
 	const [row] = await db
@@ -165,7 +179,11 @@ async function queryCourseBySlug(slug) {
 		.leftJoin(cover, eq(deskCourse.coverImageId, cover.id))
 		.leftJoin(thumb, eq(deskCourse.thumbnailImageId, thumb.id))
 		.leftJoin(userTable, eq(deskCourse.authorId, userTable.id))
-		.where(and(eq(deskCourse.slug, slug), eq(deskCourse.status, 'published')))
+		.where(
+			drafts
+				? eq(deskCourse.slug, slug)
+				: and(eq(deskCourse.slug, slug), inArray(deskCourse.status, ['published', 'archived']))
+		)
 		.limit(1);
 	if (!row) return null;
 
@@ -183,12 +201,16 @@ async function queryCourseBySlug(slug) {
 				title: deskLesson.title,
 				position: deskLesson.position,
 				isPreview: deskLesson.isPreview,
+				publishedAt: deskLesson.publishedAt,
+				firstPublishedAt: deskLesson.firstPublishedAt,
 				seconds: LESSON_SECONDS,
 				hasVideo: sql`(${deskLesson.videoProvider} is not null or ${deskLesson.videoDuration} is not null or ${deskLesson.youtubeDuration} is not null)`,
 				readTime: deskLesson.readTime
 			})
 			.from(deskLesson)
-			.where(eq(deskLesson.courseId, row.id))
+			.where(
+				drafts ? eq(deskLesson.courseId, row.id) : and(eq(deskLesson.courseId, row.id), LIVE_TOPIC)
+			)
 			.orderBy(asc(deskLesson.position)),
 		aggregateLessons([row.id])
 	]);
@@ -199,14 +221,19 @@ async function queryCourseBySlug(slug) {
 		slug: l.slug,
 		title: l.title,
 		isPreview: !!l.isPreview,
+		publishedAt: l.publishedAt,
+		firstPublishedAt: l.firstPublishedAt,
 		minutes: Math.max(1, Math.round((Number(l.seconds) || 0) / 60)),
 		kind: l.hasVideo ? 'video' : 'reading'
 	}));
-	const syllabus = modules.map((m) => ({
-		id: m.id,
-		title: m.title,
-		lessons: shapedLessons.filter((l) => l.moduleId === m.id)
-	}));
+	const syllabus = modules
+		.map((m) => ({
+			id: m.id,
+			title: m.title,
+			lessons: shapedLessons.filter((l) => l.moduleId === m.id)
+		}))
+		// Readers never see a section with nothing published in it.
+		.filter((m) => drafts || m.lessons.length);
 	const orphans = shapedLessons.filter((l) => !l.moduleId);
 	if (orphans.length) syllabus.push({ id: 'unsorted', title: 'Lessons', lessons: orphans });
 

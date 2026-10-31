@@ -114,12 +114,17 @@ export function send(payload, { beacon = false } = {}) {
  * Start measuring one piece. Returns `{ stop }`; call `stop()` when the
  * reader leaves it (component destroy or navigation to another piece).
  *
- * @param {{ entryId?: string, vodId?: string, gated?: boolean, readTimeMinutes?: number | null,
+ * @param {{ entryId?: string, vodId?: string, courseId?: string, lessonId?: string,
+ *           gated?: boolean, readTimeMinutes?: number | null,
  *           getBody?: () => Element | null, root?: Element | Document }} opts
  */
 export function createContentTracker(opts) {
 	const noop = { stop() {} };
-	if (typeof window === 'undefined' || !(opts?.entryId || opts?.vodId) || !trackingAllowed())
+	if (
+		typeof window === 'undefined' ||
+		!(opts?.entryId || opts?.vodId || opts?.courseId) ||
+		!trackingAllowed()
+	)
 		return noop;
 
 	const root = opts.root || document;
@@ -164,6 +169,8 @@ export function createContentTracker(opts) {
 		id,
 		entryId: opts.entryId,
 		vodId: opts.vodId,
+		courseId: opts.courseId,
+		lessonId: opts.lessonId,
 		visitorId: vid,
 		sessionId: sid,
 		gated: !!opts.gated,

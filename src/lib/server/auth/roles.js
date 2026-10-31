@@ -7,7 +7,7 @@
  *      Determines paywall access on the reader side.
  *
  *   2. Capability roles — `user.additionalRoles`, zero or more of 'writer',
- *      'editor', 'creator', 'tournament staff'. Writers see and edit only
+ *      'editor', 'creator', 'producer', 'tournament staff'. Writers see and edit only
  *      their own entries; editors see and edit every entry. Independent of billing tier. A user
  *      can be a free-tier creator, or a premium writer + tournament staff,
  *      etc. Determines what Desk surfaces they can access.
@@ -27,6 +27,7 @@
 const CAPABILITY_WRITER = 'writer';
 const CAPABILITY_EDITOR = 'editor';
 const CAPABILITY_CREATOR = 'creator';
+const CAPABILITY_PRODUCER = 'producer';
 const CAPABILITY_TOURNAMENT_STAFF = 'tournament staff';
 
 // -------------------- billing tier --------------------
@@ -128,23 +129,63 @@ export function canViewSiteAnalytics(user) {
 }
 
 /**
- * True if the user can author courses. Admin or holds the 'creator'
- * capability.
+ * True if the user can use the Classroom (the course tool): teachers, and
+ * the admins and editors who oversee every course.
  * @param {any} user
  * @returns {boolean}
  */
 export function canEditCourses(user) {
-	return isAdmin(user) || hasCapability(user, CAPABILITY_CREATOR);
+	return canOverseeCourses(user) || hasCapability(user, CAPABILITY_CREATOR);
+}
+
+/** The Classroom's name for canEditCourses. */
+export const canUseClassroom = canEditCourses;
+
+/**
+ * True if the user oversees every course in the Classroom: sees and edits
+ * all of them, approves or returns them, moderates their discussions and
+ * unlists them. Admins and editors. Money (payouts, teacher earnings,
+ * removing paying students) stays with admins.
+ * @param {any} user
+ * @returns {boolean}
+ */
+export function canOverseeCourses(user) {
+	return isAdmin(user) || hasCapability(user, CAPABILITY_EDITOR);
 }
 
 /**
- * True if the user can reach the /desk surface at all — needs at least one
- * of writer or creator (or admin).
+ * True if the user is a teacher (holds the 'creator' capability), whether
+ * or not they're also an admin. Teachers see their own earnings.
+ * @param {any} user
+ * @returns {boolean}
+ */
+export function isTeacher(user) {
+	return hasCapability(user, CAPABILITY_CREATOR);
+}
+
+/**
+ * True if the user can use the Studio (bonus gameplay, podcasts, interviews
+ * and other video): admins, editors, and producers — people who only make
+ * media and get neither the Desk nor the Classroom.
+ * @param {any} user
+ * @returns {boolean}
+ */
+export function canUseStudio(user) {
+	return (
+		isAdmin(user) ||
+		hasCapability(user, CAPABILITY_EDITOR) ||
+		hasCapability(user, CAPABILITY_PRODUCER)
+	);
+}
+
+/**
+ * True if the user can reach the Desk (articles, videos, bonus gameplay):
+ * writers, editors and admins. Courses live in the Classroom instead.
  * @param {any} user
  * @returns {boolean}
  */
 export function canAccessDesk(user) {
-	return canEditEntries(user) || canEditCourses(user);
+	return canEditEntries(user);
 }
 
 /**

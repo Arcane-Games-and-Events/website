@@ -2,6 +2,7 @@ import { db } from '$lib/server/db/index.js';
 import { eventStaff, partner, event } from '$lib/server/db/schema.js';
 import { eq, and, gte, or, isNull, asc } from 'drizzle-orm';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
+import { cachedUnreadCount } from '$lib/server/courses/notifications.js';
 
 // Per-user cached lookups on the layout hot path. Each is guarded so an
 // individual failure just falls back to the safe default without failing
@@ -88,10 +89,11 @@ export const load = async ({ locals }) => {
 	// instantly to their defaults.
 	const userId = locals.user?.id ?? null;
 
-	const [assignedEventsCount, isPartner, nextEvent] = await Promise.all([
+	const [assignedEventsCount, isPartner, nextEvent, unreadNotifications] = await Promise.all([
 		userId ? safeStaffCount(userId) : Promise.resolve(0),
 		userId ? safeIsPartner(userId) : Promise.resolve(false),
-		safeNextEvent()
+		safeNextEvent(),
+		userId ? cachedUnreadCount(userId) : Promise.resolve(0)
 	]);
 
 	const isPremiumMember = locals.user?.role === 'premium' || locals.user?.role === 'admin';
@@ -101,6 +103,7 @@ export const load = async ({ locals }) => {
 		assignedEventsCount,
 		isPartner,
 		isPremiumMember,
-		nextEvent
+		nextEvent,
+		unreadNotifications
 	};
 };

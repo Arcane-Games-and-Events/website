@@ -23,8 +23,9 @@ import { db } from '$lib/server/db/index.js';
 import { vod, deskEntry, deskLesson, deskCourse } from '$lib/server/db/schema.js';
 import { bump } from '$lib/server/cache/index.js';
 import {
-	canEditAllEntries,
 	canEditCourses,
+	canOverseeCourses,
+	canUseStudio,
 	canEditEntry,
 	isAdmin
 } from '$lib/server/auth/roles.js';
@@ -159,7 +160,9 @@ export function videoOf(target, row) {
 		playbackId: row[c.playback] ?? null,
 		status: row[c.status] ?? null,
 		duration: row[c.duration] != null ? Number(row[c.duration]) : null,
-		aspectRatio: row[c.aspect] ?? null
+		aspectRatio: row[c.aspect] ?? null,
+		// Studio podcast episodes can be audio only (no frames to show).
+		audio: target === 'vod' && row.mediaType === 'audio'
 	};
 }
 
@@ -202,15 +205,15 @@ async function writePendingVideo(id, fields) {
 // ---------------------------------------------------------------- permissions
 
 /**
- * Who may upload, replace or delete an owner's video. Gameplay: admins and
- * editors. An article: whoever can edit the entry. A lesson or trailer:
- * admins and editors, or the course's author when they hold the creator role.
+ * Who may upload, replace or delete an owner's video. Studio media (gameplay,
+ * episodes, interviews): anyone in the Studio. An article: whoever can edit the entry. A lesson or trailer:
+ * admins and editors (who oversee every course), or the course's own teacher.
  */
 export async function canManageVideoOf(user, target, row) {
 	if (!user || !row) return false;
-	if (target === 'vod') return canEditAllEntries(user);
+	if (target === 'vod') return canUseStudio(user);
 	if (target === 'entry') return canEditEntry(user, row.authorId);
-	if (canEditAllEntries(user)) return true;
+	if (canOverseeCourses(user)) return true;
 	if (!canEditCourses(user)) return false;
 	const authorId =
 		target === 'trailer'
