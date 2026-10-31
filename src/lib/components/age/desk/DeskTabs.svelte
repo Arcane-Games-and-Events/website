@@ -25,11 +25,13 @@
 				? 'media'
 				: path.startsWith('/studio/shows')
 					? 'shows'
-					: path.startsWith('/studio/analytics')
-						? 'analytics'
-						: path.startsWith('/studio/images')
-							? 'images'
-							: 'home'
+					: path.startsWith('/studio/network')
+						? 'network'
+						: path.startsWith('/studio/analytics')
+							? 'analytics'
+							: path.startsWith('/studio/images')
+								? 'images'
+								: 'home'
 			: classroom
 				? path.startsWith('/classroom/earnings')
 					? 'earnings'
@@ -70,7 +72,9 @@
 			'M3.5 5.5h13v9h-13zM10 12.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5zM5.5 8v4M14.5 8v4',
 		payouts: 'M3.5 6.5h13v8h-13zM3.5 9.5h13M6 12.5h3M10 3.5v3',
 		media: 'M3.5 5h13v10h-13zM8.5 7.75v4.5l4-2.25z',
-		shows: 'M7 3.5h6v8a3 3 0 0 1-6 0zM4.5 10a5.5 5.5 0 0 0 11 0M10 15.5v2'
+		shows: 'M7 3.5h6v8a3 3 0 0 1-6 0zM4.5 10a5.5 5.5 0 0 0 11 0M10 15.5v2',
+		network:
+			'M10 10.5v6M7.5 16.5h5M10 10.5a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5zM6.6 12.4a4.5 4.5 0 0 1 0-6.3M13.4 6.1a4.5 4.5 0 0 1 0 6.3M4.4 14.6a7.6 7.6 0 0 1 0-10.7M15.6 3.9a7.6 7.6 0 0 1 0 10.7'
 	};
 
 	const tabs = $derived(
@@ -79,6 +83,7 @@
 					{ id: 'home', href: '/studio', label: 'Home', show: true },
 					{ id: 'media', href: '/studio/media', label: 'Media', show: true },
 					{ id: 'shows', href: '/studio/shows', label: 'Shows', show: true },
+					{ id: 'network', href: '/studio/network', label: 'Network', show: true },
 					{ id: 'analytics', href: '/studio/analytics', label: 'Analytics', show: true },
 					{ id: 'images', href: '/studio/images', label: 'Images', show: true }
 				]

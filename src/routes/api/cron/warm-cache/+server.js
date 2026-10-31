@@ -32,6 +32,7 @@ const WARM_URLS = [
 	'/library',
 	'/studios',
 	'/studios/gameplay',
+	'/studios/network',
 	'/age-open',
 	'/age-open?tab=events',
 	'/age-open?tab=standings',

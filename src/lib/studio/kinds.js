@@ -18,7 +18,11 @@ export const KINDS = [
 	},
 	{ id: 'video', label: 'Video', short: 'Video', one: 'video', newLabel: 'New video' }
 ];
-export const KIND = Object.fromEntries(KINDS.map((k) => [k.id, k]));
+/** Every kind a card can be, including the AGE Network's creators (public pages only). */
+export const KIND = {
+	...Object.fromEntries(KINDS.map((k) => [k.id, k])),
+	network: { id: 'network', label: 'The AGE Network', short: 'Network', one: 'video' }
+};
 
 /** "Ana Lopez (Dorinthea) vs Sam Chu (Fai)" */
 export function matchup(v) {
@@ -41,6 +45,7 @@ export function episodeLabel(v) {
 /** The line under a title: the matchup for gameplay, otherwise show, episode and guests. */
 export function byline(v) {
 	if (v.kind === 'gameplay') return matchup(v);
+	if (v.kind === 'network') return v.creator?.name ?? '';
 	return [v.show?.name, episodeLabel(v), v.guests && `with ${v.guests}`]
 		.filter(Boolean)
 		.join(' · ');

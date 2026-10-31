@@ -5,11 +5,18 @@
  */
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
-import { event, studioShow, vod } from '$lib/server/db/schema.js';
+import {
+	event,
+	studioChannel,
+	studioChannelVideo,
+	studioShow,
+	vod
+} from '$lib/server/db/schema.js';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import { getMuxThumbnailToken } from '$lib/server/mux.js';
 import { withCovers } from './media.js';
 import { listShows, getShowBySlug } from './shows.js';
+import { withAvatars } from './network.js';
 
 const LIVE = and(eq(vod.isPublished, true), eq(vod.status, 'ready'));
 const PER_PAGE = 12;
@@ -261,5 +268,184 @@ export function playerItem(id) {
 			};
 		},
 		{ tags: ['vods', 'media'] }
+	);
+}
+
+// ---------------------------------------------------------------------------
+// The AGE Network: featured videos from outside creators. Free to everyone;
+// only featured, still-available videos from active creators are public.
+
+const NETWORK_LIVE = and(
+	eq(studioChannel.isActive, true),
+	eq(studioChannelVideo.isFeatured, true),
+	eq(studioChannelVideo.isAvailable, true)
+);
+
+/** The public face of a creator. */
+function creatorOf(c) {
+	return {
+		id: c.id,
+		slug: c.slug,
+		name: c.name,
+		kind: c.kind,
+		handle: c.handle,
+		avatar: c.avatar,
+		bannerUrl: c.bannerUrl,
+		description: c.description,
+		youtubeUrl: c.youtubeUrl,
+		subscribeUrl: `${c.youtubeUrl}?sub_confirmation=1`
+	};
+}
+
+/** A network video as a card, shaped like the Studio's own so the same cards show it. */
+function networkCard(v, creator) {
+	return {
+		id: v.youtubeVideoId,
+		href: `/studios/network/${creator.slug}/${v.youtubeVideoId}`,
+		kind: 'network',
+		network: true,
+		audio: false,
+		title: v.title,
+		description: v.description,
+		duration: v.duration,
+		publishedAt: v.publishedAt,
+		featuredAt: v.featuredAt,
+		cover: null,
+		still: v.thumbnailUrl || `https://i.ytimg.com/vi/${v.youtubeVideoId}/hqdefault.jpg`,
+		isPremium: false,
+		creator: { slug: creator.slug, name: creator.name, avatar: creator.avatar, kind: creator.kind }
+	};
+}
+
+async function networkRows(where, { order = 'newest', limit = 24, offset = 0 } = {}) {
+	const rows = await db
+		.select({ v: studioChannelVideo, c: studioChannel })
+		.from(studioChannelVideo)
+		.innerJoin(studioChannel, eq(studioChannelVideo.channelId, studioChannel.id))
+		.where(where)
+		.orderBy(
+			...(order === 'channel'
+				? [
+						sql`${studioChannelVideo.sortOrder} asc nulls last`,
+						desc(studioChannelVideo.publishedAt)
+					]
+				: [desc(studioChannelVideo.featuredAt), desc(studioChannelVideo.publishedAt)])
+		)
+		.limit(limit)
+		.offset(offset);
+	const creators = await withAvatars(rows.map((r) => r.c));
+	return rows.map((r, i) => networkCard(r.v, creatorOf(creators[i])));
+}
+
+/** Creators with something featured, in the Studio's order, with their newest pick. */
+async function liveCreators() {
+	const rows = await db
+		.select({
+			c: studioChannel,
+			n: sql`count(*)::int`,
+			latestAt: sql`max(${studioChannelVideo.featuredAt})`
+		})
+		.from(studioChannel)
+		.innerJoin(studioChannelVideo, eq(studioChannelVideo.channelId, studioChannel.id))
+		.where(NETWORK_LIVE)
+		.groupBy(studioChannel.id)
+		.orderBy(asc(studioChannel.sortOrder), asc(studioChannel.name));
+	const pics = await withAvatars(rows.map((r) => r.c));
+	return rows.map((r, i) => ({
+		...creatorOf(pics[i]),
+		videos: Number(r.n),
+		latestAt: r.latestAt ? new Date(r.latestAt) : null
+	}));
+}
+
+/** The network section of the AGE Studios home: creators and the newest picks. */
+export function networkHome() {
+	return cached(
+		'vods:network:home',
+		async () => {
+			const [creators, latestPicks] = await Promise.all([
+				liveCreators(),
+				networkRows(NETWORK_LIVE, { limit: 10 })
+			]);
+			return { creators, latest: latestPicks, total: creators.reduce((n, c) => n + c.videos, 0) };
+		},
+		{ tags: ['vods', 'media'], ttl: CACHE_TTL.FIVE_MINUTES }
+	);
+}
+
+/** Every featured network video, optionally one kind of creator or one creator. */
+export function networkArchive({ kind = '', creator = '', page = 1 } = {}) {
+	return cached(
+		`vods:network:all:${kind || 'all'}|${creator || 'all'}|${page}`,
+		async () => {
+			const where = [NETWORK_LIVE];
+			if (kind === 'podcast' || kind === 'video') where.push(eq(studioChannel.kind, kind));
+			if (creator) where.push(eq(studioChannel.slug, creator));
+			const [[{ total }], items, creators] = await Promise.all([
+				db
+					.select({ total: sql`count(*)::int` })
+					.from(studioChannelVideo)
+					.innerJoin(studioChannel, eq(studioChannelVideo.channelId, studioChannel.id))
+					.where(and(...where)),
+				networkRows(and(...where), { limit: PER_PAGE * 2, offset: (page - 1) * PER_PAGE * 2 }),
+				liveCreators()
+			]);
+			return {
+				items,
+				creators,
+				total: Number(total),
+				page,
+				totalPages: Math.max(1, Math.ceil(Number(total) / (PER_PAGE * 2)))
+			};
+		},
+		{ tags: ['vods', 'media'], ttl: CACHE_TTL.FIVE_MINUTES }
+	);
+}
+
+/** One creator's page, or null if they're inactive or have nothing featured. */
+export function creatorPage(slug) {
+	return cached(
+		`vods:network:creator:${slug}`,
+		async () => {
+			const [row] = await db
+				.select()
+				.from(studioChannel)
+				.where(and(eq(studioChannel.slug, slug), eq(studioChannel.isActive, true)))
+				.limit(1);
+			if (!row) return null;
+			const [pic] = await withAvatars([row]);
+			const videos = await networkRows(and(NETWORK_LIVE, eq(studioChannel.id, row.id)), {
+				order: 'channel',
+				limit: 200
+			});
+			if (!videos.length) return null;
+			return { creator: creatorOf(pic), videos };
+		},
+		{ tags: ['vods', 'media'], ttl: CACHE_TTL.FIVE_MINUTES }
+	);
+}
+
+/** The network player: the video, its creator, more from them, and more from AGE. */
+export function networkPlayer(slug, youtubeVideoId) {
+	return cached(
+		`vods:network:watch:${slug}:${youtubeVideoId}`,
+		async () => {
+			const page = await creatorPage(slug);
+			if (!page) return null;
+			const at = page.videos.findIndex((v) => v.id === youtubeVideoId);
+			if (at < 0) return null;
+			const [full] = await db
+				.select({ description: studioChannelVideo.description })
+				.from(studioChannelVideo)
+				.where(eq(studioChannelVideo.youtubeVideoId, youtubeVideoId))
+				.limit(1);
+			return {
+				item: { ...page.videos[at], description: full?.description ?? null },
+				creator: page.creator,
+				more: page.videos.filter((v) => v.id !== youtubeVideoId).slice(0, 6),
+				ours: await latest({ limit: 4 })
+			};
+		},
+		{ tags: ['vods', 'media'], ttl: CACHE_TTL.FIVE_MINUTES }
 	);
 }

@@ -531,6 +531,50 @@ export const vod = pgTable('vods', {
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
+// The AGE Network: outside creators' YouTube channels on AGE Studios.
+// Uploads are pulled in for staff to choose from; only featured ones are public.
+export const studioChannel = pgTable('studio_channel', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	slug: text('slug').notNull().unique(),
+	name: text('name').notNull(),
+	kind: text('kind').notNull().default('video'), // podcast | video
+	youtubeChannelId: text('youtube_channel_id').notNull().unique(),
+	youtubeUrl: text('youtube_url').notNull(),
+	handle: text('handle'),
+	avatarUrl: text('avatar_url'),
+	bannerUrl: text('banner_url'),
+	description: text('description'),
+	coverImageId: uuid('cover_image_id').references(() => deskMedia.id, { onDelete: 'set null' }),
+	isActive: boolean('is_active').notNull().default(true),
+	sortOrder: integer('sort_order').notNull().default(0),
+	lastSyncedAt: timestamp('last_synced_at', { withTimezone: true, mode: 'date' }),
+	syncError: text('sync_error'),
+	createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+export const studioChannelVideo = pgTable('studio_channel_video', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	channelId: uuid('channel_id')
+		.notNull()
+		.references(() => studioChannel.id, { onDelete: 'cascade' }),
+	youtubeVideoId: text('youtube_video_id').notNull().unique(),
+	title: text('title').notNull(),
+	description: text('description'),
+	publishedAt: timestamp('published_at', { withTimezone: true, mode: 'date' }),
+	thumbnailUrl: text('thumbnail_url'),
+	duration: integer('duration'),
+	isShort: boolean('is_short').notNull().default(false),
+	isAvailable: boolean('is_available').notNull().default(true),
+	isFeatured: boolean('is_featured').notNull().default(false),
+	featuredAt: timestamp('featured_at', { withTimezone: true, mode: 'date' }),
+	featuredBy: text('featured_by').references(() => user.id, { onDelete: 'set null' }),
+	sortOrder: integer('sort_order'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
 // EVENT PLAYER HEROES (track what hero each player played at each event)
 // Organized by season/circuit/month to match standings structure
 export const eventPlayerHero = pgTable(

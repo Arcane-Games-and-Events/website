@@ -47,7 +47,7 @@
 	{/if}
 	{#if item.isPremium}<PremiumTag variant="corner" size="sm" />{/if}
 	<span
-		class="absolute right-0 bottom-0 flex h-8 w-8 items-center justify-center bg-warm pl-[2px] text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100"
+		class="absolute right-0 bottom-0 flex h-8 w-8 translate-y-1 items-center justify-center bg-studio pl-[2px] text-[11px] text-white opacity-0 transition-[opacity,transform] group-hover:translate-y-0 group-hover:opacity-100"
 		aria-hidden="true">{item.audio ? '♪' : '▶'}</span
 	>
 	{#if item.duration}

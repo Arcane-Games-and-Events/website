@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { canEditEntries, canEditCourses } from '$lib/server/auth/roles.js';
+import { extractYouTubeVideoId, parseIso8601Duration } from '$lib/server/video/youtube.js';
 
 /**
  * POST /api/desk/youtube/preview
@@ -91,48 +92,4 @@ export async function POST({ request, locals }) {
 		youtubeThumbnailUrl: thumbnailUrl,
 		youtubeDuration: duration
 	});
-}
-
-/**
- * Extract a YouTube video ID from a URL. Handles youtube.com/watch?v=…,
- * youtu.be/…, youtube.com/embed/…, and youtube.com/shorts/… forms. Returns
- * null if no ID can be found.
- */
-function extractYouTubeVideoId(raw) {
-	try {
-		const u = new URL(raw.trim());
-		const host = u.hostname.replace(/^www\./, '');
-		if (host === 'youtu.be') {
-			return u.pathname.slice(1) || null;
-		}
-		if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com') {
-			if (u.pathname === '/watch') {
-				return u.searchParams.get('v');
-			}
-			const embedMatch = u.pathname.match(/^\/embed\/([^/]+)/);
-			if (embedMatch) return embedMatch[1];
-			const shortsMatch = u.pathname.match(/^\/shorts\/([^/]+)/);
-			if (shortsMatch) return shortsMatch[1];
-			const liveMatch = u.pathname.match(/^\/live\/([^/]+)/);
-			if (liveMatch) return liveMatch[1];
-		}
-	} catch {
-		// Not a URL — maybe raw ID like "dQw4w9WgXcQ"
-		if (/^[a-zA-Z0-9_-]{11}$/.test(raw.trim())) return raw.trim();
-	}
-	return null;
-}
-
-/**
- * Parse an ISO 8601 duration string (`PT4M13S`) into whole seconds.
- * Returns null on empty / malformed input.
- */
-function parseIso8601Duration(iso) {
-	if (!iso || typeof iso !== 'string') return null;
-	const m = iso.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
-	if (!m) return null;
-	const hours = parseInt(m[1] || '0', 10);
-	const minutes = parseInt(m[2] || '0', 10);
-	const seconds = parseInt(m[3] || '0', 10);
-	return hours * 3600 + minutes * 60 + seconds;
 }

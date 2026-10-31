@@ -228,4 +228,52 @@
 			</p>
 		{/if}
 	</section>
+
+	<!-- the AGE Network -->
+	<section>
+		<h2 class="{kicker} flex items-baseline justify-between border-b-[3px] border-ink pb-2.5">
+			The AGE Network
+			<a href="/studio/network" class="tracking-normal text-fade normal-case hover:text-ink"
+				>Manage creators →</a
+			>
+		</h2>
+		{#if data.network.creators}
+			<dl class="mt-4 grid grid-cols-3 gap-4 border-b border-line pb-4">
+				{#each [['Creators', data.network.creators], ['Featured videos', data.network.featured], ['New this week', data.network.fresh]] as [word, n] (word)}
+					<div>
+						<dt class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">
+							{word}
+						</dt>
+						<dd class="mt-1 font-newsreader text-[28px] leading-none font-semibold tabular-nums">
+							{n}
+						</dd>
+					</div>
+				{/each}
+			</dl>
+			{#if data.network.fresh}
+				<p class="mt-3 text-[13.5px] text-soft">
+					{data.network.fresh} new {data.network.fresh === 1 ? 'upload' : 'uploads'} from the network
+					this week, waiting to be picked or skipped.
+				</p>
+			{/if}
+			{#if data.network.gone}
+				<p class="mt-2 text-[13.5px] text-hero-rb">
+					{data.network.gone} featured {data.network.gone === 1 ? 'video has' : 'videos have'} gone from
+					YouTube and {data.network.gone === 1 ? 'is' : 'are'} hidden.
+				</p>
+			{/if}
+			{#each data.network.failing as f (f.id)}
+				<p class="mt-2 text-[13.5px] text-hero-rb">
+					Sync failed for <a href="/studio/network/{f.id}" class="underline">{f.name}</a>: {f.error}
+				</p>
+			{/each}
+		{:else}
+			<p class="py-4 text-[13.5px] text-soft">
+				No creators yet. <a
+					href="/studio/network"
+					class="underline underline-offset-2 hover:text-ink">Add a YouTube channel</a
+				> and pick which of their videos appear on AGE Studios.
+			</p>
+		{/if}
+	</section>
 </div>

@@ -40,6 +40,15 @@
 	--ed-cc-stl: #2f7d46;
 	--ed-cc-ne: #6a4a86;
 
+	/* AGE Studios sub-brand: a night studio with an on-air signal colour.
+	 * studio = fills behind white text (5:1); studio-light = signal text on
+	 * the night surfaces (7:1); studio-mute = secondary text there (6.4:1). */
+	--ed-studio: #c0461f;
+	--ed-studio-light: #ff7849;
+	--ed-studio-night: #0e0d0a;
+	--ed-studio-panel: #1d1a14;
+	--ed-studio-mute: #a39d8b;
+
 	/* hero-guide accents */
 	--ed-hero-rb: #c0461f;
 	--ed-hero-wz: #2c5ba8;
@@ -66,6 +75,12 @@
 	--color-cc-la: var(--ed-cc-la);
 	--color-cc-stl: var(--ed-cc-stl);
 	--color-cc-ne: var(--ed-cc-ne);
+
+	--color-studio: var(--ed-studio);
+	--color-studio-light: var(--ed-studio-light);
+	--color-studio-night: var(--ed-studio-night);
+	--color-studio-panel: var(--ed-studio-panel);
+	--color-studio-mute: var(--ed-studio-mute);
 
 	--color-hero-rb: var(--ed-hero-rb);
 	--color-hero-wz: var(--ed-hero-wz);
@@ -509,4 +524,51 @@ a.fp-ul:focus-visible {
 .lex-fig--full .lex-credit {
 	padding-left: max(16px, var(--lex-col-left, 0px));
 	padding-right: 16px;
+}
+
+/* ------------------------------------------------------------------
+ * AGE Studios (/studios): broadcast type, the on-air light, the ticker,
+ * snapping rails and the screen texture. Motion stops for readers who
+ * ask for less of it.
+ * ------------------------------------------------------------------ */
+.st-wide {
+	font-family: var(--font-archivo);
+	font-stretch: 125%;
+	font-variation-settings: 'wdth' 125;
+}
+.st-onair {
+	animation: pulse-dot 1.7s infinite;
+}
+.st-ticker {
+	animation: marquee 60s linear infinite;
+}
+.st-ticker:hover {
+	animation-play-state: paused;
+}
+.st-rail {
+	scroll-snap-type: x mandatory;
+	overscroll-behavior-x: contain;
+	scrollbar-width: none;
+}
+.st-rail::-webkit-scrollbar {
+	display: none;
+}
+.st-rail > * {
+	scroll-snap-align: start;
+}
+/* Scanlines and a soft vignette over the lead picture. */
+.st-screen::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.14) 0 1px, transparent 1px 3px),
+		radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / 0.45) 100%);
+	mix-blend-mode: multiply;
+}
+@media (prefers-reduced-motion: reduce) {
+	.st-onair,
+	.st-ticker {
+		animation: none;
+	}
 }

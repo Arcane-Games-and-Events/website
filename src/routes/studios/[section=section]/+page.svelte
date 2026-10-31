@@ -32,6 +32,7 @@
 	<WatchArchive
 		{data}
 		path="/studios/{data.section}"
+		channel={data.section}
 		kicker={c.kicker}
 		title={c.title}
 		lead={c.lead}

@@ -12,6 +12,7 @@
 		{data}
 		gameplay
 		path="/studios/gameplay"
+		channel="gameplay"
 		kicker="From the main stage"
 		title="Bonus gameplay"
 		lead="Feature matches from the AGE Open, filmed on the main stage. Search by player, or pick an event or a hero."
