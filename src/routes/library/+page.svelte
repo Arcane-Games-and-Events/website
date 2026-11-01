@@ -5,8 +5,7 @@
 	 * Library index — the magazine's archive in the homepage's register:
 	 * a department masthead, the latest release as a plate-framed spread,
 	 * then the browse grid (search, kind, access and topic filters, nine
-	 * to a page) as a hairline mosaic, the newest from the Studio, and
-	 * a topic index. Filters mirror into the URL so a view can be shared.
+	 * to a page) as a hairline mosaic, and a topic index. Filters mirror into the URL so a view can be shared.
 	 */
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import FrontByline from '$lib/components/age/home/FrontByline.svelte';
@@ -20,10 +19,6 @@
 	import { fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 
-	import WatchFrame from '$lib/components/age/watch/WatchFrame.svelte';
-	import WatchCard from '$lib/components/age/watch/WatchCard.svelte';
-	import { KIND as STUDIO_KIND, byline as studioByline } from '$lib/studio/kinds.js';
-
 	let { data } = $props();
 	const member = $derived($pageStore.data?.isPremiumMember ?? false);
 
@@ -32,8 +27,7 @@
 	const featured = $derived(stories[0] ?? null);
 	const counts = $derived({
 		articles: stories.filter((s) => s.kind === 'article').length,
-		videos: stories.filter((s) => s.kind === 'video').length,
-		films: data.studio?.total ?? 0
+		videos: stories.filter((s) => s.kind === 'video').length
 	});
 	const allTags = $derived([...new Set(stories.flatMap((s) => s.tags))].sort());
 	const topicOptions = $derived([{ v: '', l: 'Any' }, ...allTags.map((t) => ({ v: t, l: t }))]);
@@ -48,10 +42,6 @@
 		}
 		return [...by.values()].sort((a, b) => a.name.localeCompare(b.name));
 	});
-
-	// ============ from the Studio ============
-	const studioLead = $derived(data.studio?.lead ?? null);
-	const studioStrip = $derived(data.studio?.strip ?? []);
 
 	// ============ browse filters ============
 	const KIND = [
@@ -306,7 +296,6 @@
 						{counts.articles}
 						{counts.articles === 1 ? 'article' : 'articles'}
 						{#if counts.videos}· {counts.videos} video{/if}
-						{#if counts.films}· {counts.films} from the Studio{/if}
 					</p>
 				</div>
 			</div>
@@ -663,80 +652,6 @@
 			</div>
 		{/if}
 	</section>
-
-	<!-- ============ from the Studio ============
-	     An ink band: the Studio's newest piece as a spread, then the latest
-	     match, episode and interview, each labelled with what it is. -->
-	{#if studioLead}
-		<section class="bg-ink text-paper-bg" use:reveal>
-			<div class="mx-auto w-full max-w-[1200px] px-5 py-12 md:px-8 md:py-16">
-				<div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-					<div>
-						<p
-							class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.24em] text-warm-light uppercase"
-						>
-							<span class="text-[8px]" aria-hidden="true">◆</span> AGE Studios
-						</p>
-						<h2
-							class="mt-2 font-newsreader text-[34px] leading-[0.98] font-semibold tracking-[-0.02em] md:text-[46px]"
-						>
-							From the Studio
-						</h2>
-						<p class="mt-2 font-newsreader text-[16px] text-paper-bg/70 italic md:text-[17px]">
-							Feature matches from the main stage, podcasts and interviews.
-						</p>
-					</div>
-					<a
-						href="/studios"
-						class="inline-block border-b-2 border-warm-light pb-1 text-[10.5px] font-extrabold tracking-[0.18em] whitespace-nowrap uppercase transition-[letter-spacing] hover:tracking-[0.26em]"
-					>
-						Visit AGE Studios →
-					</a>
-				</div>
-				<div class="mt-6 h-[5px] border-t border-b border-paper-bg/30" aria-hidden="true"></div>
-
-				<a
-					href={studioLead.href}
-					class="group mt-8 grid overflow-hidden border border-paper-bg/20 md:grid-cols-[7fr_5fr]"
-				>
-					<WatchFrame item={studioLead} sizes="(min-width: 1024px) 700px, 100vw" />
-					<span class="flex flex-col justify-center p-6 md:p-8 lg:p-10">
-						<span class="text-[9.5px] font-extrabold tracking-[0.2em] text-warm-light uppercase"
-							>Newest · {studioLead.audio ? 'Episode' : STUDIO_KIND[studioLead.kind].short}</span
-						>
-						<span
-							class="mt-3 block font-newsreader text-[26px] leading-[1.05] font-semibold tracking-[-0.015em] [text-wrap:balance] md:text-[34px]"
-						>
-							<span class="fp-ul">{studioLead.title}</span>
-						</span>
-						{#if studioByline(studioLead)}
-							<span class="mt-2 block font-newsreader text-[16px] text-paper-bg/70 italic"
-								>{studioByline(studioLead)}</span
-							>
-						{/if}
-						<span
-							class="mt-6 inline-flex w-fit items-center gap-2 bg-warm px-4 py-2.5 text-[10px] font-extrabold tracking-[0.16em] text-white uppercase transition-colors group-hover:bg-paper-bg group-hover:text-ink"
-							>{studioLead.audio ? '♪ Listen' : '▶ Watch'}</span
-						>
-					</span>
-				</a>
-
-				{#if studioStrip.length}
-					<ul class="mt-8 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-						{#each studioStrip as item (item.id)}
-							<li>
-								<WatchCard
-									{item}
-									dark
-									sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
-								/>
-							</li>
-						{/each}
-					</ul>
-				{/if}
-			</div>
-		</section>
-	{/if}
 
 	<!-- ============ topics + premium ============ -->
 	<section class="mx-auto w-full max-w-[1200px] px-5 py-12 md:px-8 md:py-16" use:reveal>

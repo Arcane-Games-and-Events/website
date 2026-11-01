@@ -27,6 +27,7 @@ import {
 import { CourseError, reviewWhere } from './builder.js';
 import { canManageCourse, enrollmentFor } from './access.js';
 import { notify } from './notifications.js';
+import { setTyping, touch } from './live.js';
 import { checkText, spamReasons } from './moderation/check.js';
 
 const TITLE_MAX = 160;
@@ -133,6 +134,11 @@ export async function listThreads(course, viewer, { lessonId = null } = {}) {
 			lessonSlug: deskLesson.slug,
 			lessonTitle: deskLesson.title,
 			replies: sql`(select count(*)::int from course_post r where r.parent_id = ${coursePost.id} and r.status = 'visible' and r.deleted_at is null)`,
+			// The newest visible reply, for the list's "Sam: …" preview.
+			lastReply: sql`(select json_build_object('author', u.first_name || ' ' || coalesce(u.last_name, ''), 'text', left(r.body, 160))
+				from course_post r left join "user" u on u.id = r.author_id
+				where r.parent_id = ${coursePost.id} and r.status = 'visible' and r.deleted_at is null
+				order by r.created_at desc limit 1)`,
 			...author
 		})
 		.from(coursePost)
@@ -151,6 +157,11 @@ export async function listThreads(course, viewer, { lessonId = null } = {}) {
 		author: nameOf(r),
 		isTeacher: r.authorId === course.authorId,
 		lesson: r.lessonSlug ? { slug: r.lessonSlug, title: r.lessonTitle } : null,
+		lastReply: r.lastReply?.author?.trim()
+			? { author: r.lastReply.author.trim(), text: r.lastReply.text }
+			: r.lastReply
+				? { author: 'Former student', text: r.lastReply.text }
+				: null,
 		mine: r.authorId === viewer.id
 	}));
 }
@@ -261,6 +272,7 @@ export async function createThread(course, user, { title, body, lessonId = null 
 		})
 		.returning();
 	if (!check.hold) await announceThread(course, post);
+	await touch(course.id);
 	return post;
 }
 
@@ -288,6 +300,7 @@ export async function reply(threadId, user, { body }) {
 		})
 		.returning();
 	if (!check.hold) await announceReply(course, thread, post);
+	await Promise.all([touch(course.id), setTyping(course.id, thread.id, user, false)]);
 	return post;
 }
 
@@ -319,6 +332,7 @@ export async function editPost(postId, user, { title, body }) {
 		})
 		.where(eq(coursePost.id, post.id))
 		.returning();
+	await touch(course.id);
 	return row;
 }
 
@@ -329,6 +343,7 @@ export async function deletePost(postId, user) {
 	if (post.authorId !== user?.id && !role.moderate)
 		throw new CourseError(403, 'You can only delete your own posts.');
 	await db.update(coursePost).set({ deletedAt: new Date() }).where(eq(coursePost.id, post.id));
+	await touch(course.id);
 }
 
 /** A student reports a post. Enough reports hide it until it's reviewed. */
@@ -353,6 +368,7 @@ export async function reportPost(postId, user, { reason = null } = {}) {
 				flagReasons: [...new Set([...(post.flagReasons || []), 'reported'])]
 			})
 			.where(and(eq(coursePost.id, post.id), eq(coursePost.status, 'visible')));
+		await touch(course.id);
 	}
 	return { ok: true };
 }
@@ -387,6 +403,7 @@ export async function postUpdate(course, user, { title, body }) {
 		students.map((s) => s.userId),
 		{ kind: 'course_update', courseId: course.id, postId: post.id, actorId: user.id }
 	);
+	await touch(course.id);
 	return post;
 }
 
@@ -514,6 +531,7 @@ export async function approvePost(postId, actor) {
 			await announceThread(course, post);
 		}
 	}
+	await touch(course.id);
 }
 
 /** Take a post down. The author is told, with the moderator's note. */
@@ -534,6 +552,7 @@ export async function removePost(postId, actor, { note = null, mute = false } = 
 			data: { note: n, title: post.title || null }
 		});
 	if (mute && post.authorId) await setMuted(course, post.authorId, actor, true);
+	await touch(course.id);
 }
 
 /** Mute (or unmute) a student: they can still read, but not post. */
@@ -552,17 +571,19 @@ export async function setMuted(course, userId, actor, muted) {
 		)
 		.returning({ id: courseEnrollment.id });
 	if (!rows.length) throw new CourseError(404, 'That student isn’t in this course.');
+	await touch(course.id);
 }
 
 /** Pin or lock a thread. */
 export async function setThreadFlag(postId, actor, flag, value) {
-	const { post } = await requireModerator(postId, actor);
+	const { post, course } = await requireModerator(postId, actor);
 	if (post.parentId) throw new CourseError(400, 'Only threads can be pinned or locked.');
 	if (flag !== 'pinned' && flag !== 'locked') throw new CourseError(400, 'Unknown change.');
 	await db
 		.update(coursePost)
 		.set({ [flag]: !!value })
 		.where(eq(coursePost.id, post.id));
+	await touch(course.id);
 }
 
 /** Recent threads for the teacher's Desk tab: unanswered first. */

@@ -34,6 +34,8 @@ export function toCard(c) {
 		title: c?.title || 'Untitled course',
 		dek: c?.description || '',
 		image: c?.coverImage?.src || FALLBACK_COVER,
+		// The full image (all its sizes) for places that draw it large.
+		cover: c?.coverImage ?? null,
 		instructor: c?.author?.name || 'AGE Academy',
 		lessons: c?.lessons || 0,
 		minutes: c?.minutes || 0,

@@ -22,8 +22,8 @@
 
 	const NAV = [
 		{ label: 'Library', href: '/library' },
-		{ label: 'AGE Studios', href: '/studios' },
 		{ label: 'Academy', href: '/academy' },
+		{ label: 'AGE Studios', href: '/studios' },
 		{
 			label: 'AGE Open',
 			href: '/age-open',

@@ -4,8 +4,10 @@ import { userHasPremiumAccess } from '$lib/server/articles/access.js';
 import { courseForReader } from '$lib/server/courses/reader.js';
 import { listCards, publicCard } from '$lib/server/payments/cards.js';
 import { acceptConfig } from '$lib/server/payments/accept-config.js';
+import { discussionRole, listThreads } from '$lib/server/courses/discussion.js';
 
-export async function load({ params, locals, setHeaders }) {
+export async function load({ params, locals, setHeaders, depends }) {
+	depends('academy:course');
 	const r = await courseForReader(params.slug, locals.user);
 	if (!r) error(404, 'Course not found');
 	const { course, owner, enrollment, syllabus, topics } = r;
@@ -29,6 +31,11 @@ export async function load({ params, locals, setHeaders }) {
 		null;
 	const buying = !!locals.user && !owner && !enrollment && course.price > 0;
 
+	// The Discussion tab: the newest few threads for the course's students
+	// (and its teacher); everyone else sees who it's for.
+	const role = await discussionRole(locals.user, course);
+	const threads = role.read ? await listThreads(course, locals.user).catch(() => []) : [];
+
 	return {
 		course: { ...course, syllabus },
 		related,
@@ -45,6 +52,29 @@ export async function load({ params, locals, setHeaders }) {
 			: null,
 		resume: resume ? { slug: resume.slug, title: resume.title } : null,
 		firstFree: topics.find((t) => t.isPreview && t.access === 'open') || null,
+		discussion: {
+			read: role.read,
+			post: role.post,
+			muted: role.muted,
+			total: threads.length,
+			topics: role.post ? topics.map((t) => ({ id: t.id, title: t.title })) : [],
+			threads: threads.slice(0, 5).map((t) => ({
+				id: t.id,
+				kind: t.kind,
+				title: t.title,
+				excerpt: t.excerpt,
+				pinned: t.pinned,
+				locked: t.locked,
+				status: t.status,
+				mine: t.mine,
+				author: t.author,
+				isTeacher: t.isTeacher,
+				lesson: t.lesson,
+				replies: t.replies,
+				lastReply: t.lastReply,
+				at: t.lastReplyAt || t.createdAt
+			}))
+		},
 		savedCards: buying ? (await listCards(locals.user.id)).map(publicCard) : [],
 		accept: buying ? acceptConfig() : null
 	};

@@ -9,9 +9,9 @@
 	import CourseCard from '$lib/components/age/academy/CourseCard.svelte';
 	import { replaceState } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import CourseCover from '$lib/components/age/academy/CourseCover.svelte';
+	import AcademyHero from '$lib/components/age/academy/AcademyHero.svelte';
 	import FilterSelect from '$lib/components/age/FilterSelect.svelte';
-	import { toCard, lengthBand, formatMinutes, formatPrice } from '$lib/academy/format.js';
+	import { toCard, lengthBand } from '$lib/academy/format.js';
 
 	let { data } = $props();
 
@@ -20,31 +20,11 @@
 	const progress = $derived(data.progress ?? {});
 	const previews = $derived(data.previews ?? []);
 
-	// ============ featured: the newest course ============
-	const featured = $derived(
+	// ============ hero: the newest courses ============
+	const featuredRun = $derived(
 		[...courses].sort(
 			(a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime()
-		)[0] ?? null
-	);
-	const featuredMeta = $derived(
-		featured
-			? [featured.lessons ? `${featured.lessons} lessons` : '', formatMinutes(featured.minutes)]
-					.filter(Boolean)
-					.join(' · ')
-			: ''
-	);
-	const featuredTicks = $derived(Array.from({ length: Math.min(featured?.lessons || 0, 24) }));
-	const featuredFree = $derived(
-		featured ? previews.filter((l) => l.courseSlug === featured.slug).slice(0, 3) : []
-	);
-	const featuredAdded = $derived(
-		featured?.publishedAt
-			? new Date(featured.publishedAt).toLocaleDateString('en-US', {
-					month: 'short',
-					day: 'numeric',
-					year: 'numeric'
-				})
-			: ''
+		)
 	);
 
 	// ============ continue learning ============
@@ -205,155 +185,26 @@
 </svelte:head>
 
 <AgeShell active="Academy">
-	<!-- ============ masthead ============ -->
-	<section class="relative bg-academy text-paper-bg">
-		<div
-			class="pointer-events-none absolute inset-x-0 top-0 h-40"
-			style="background: linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0));"
-			aria-hidden="true"
-		></div>
-		<div class="relative mx-auto w-full max-w-[1200px] px-5 pt-12 pb-12 md:px-8 md:pt-16 md:pb-20">
-			<div class="flex items-center gap-4 md:gap-6">
-				<span class="h-px flex-1 bg-gold/50"></span>
-				<div
-					class="flex items-center gap-3 text-[10.5px] font-extrabold tracking-[0.3em] text-gold uppercase md:text-[11.5px]"
-				>
-					<span aria-hidden="true">◆</span>
-					AGE Academy
-					<span aria-hidden="true">◆</span>
-				</div>
-				<span class="h-px flex-1 bg-gold/50"></span>
-			</div>
-			<div class="mx-auto mt-6 max-w-[820px] text-center">
-				<h1
-					class="fp-rise font-newsreader text-[40px] leading-[0.98] font-semibold tracking-[-0.02em] [text-wrap:balance] md:text-[64px]"
-				>
-					Learn the game from the players who define it.
-				</h1>
-				<p
-					class="fp-rise mx-auto mt-4 max-w-[640px] font-newsreader text-[16px] leading-[1.45] text-paper-bg/70 italic md:mt-5 md:text-[19px]"
-					style="animation-delay: 120ms;"
-				>
-					Full courses on decision-making, sideboarding and tempo, written by the pros and broken
-					into short lessons. Buy once, keep for life.
-				</p>
-			</div>
+	<!-- ============ hero: the newest courses ============ -->
+	<AcademyHero courses={featuredRun} {previews} {progress} />
 
-			<!-- featured: the newest course as a spread on the band -->
-			{#if featured}
-				<article
-					class="mt-10 grid gap-8 border-t border-gold/40 pt-8 md:mt-14 md:pt-10 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:gap-14"
-					aria-label="Newest course: {featured.title}"
-				>
-					<!-- cover in a gold plate -->
-					<a href={featured.href} class="group relative block lg:order-2">
-						<span
-							class="pointer-events-none absolute inset-0 translate-x-3 translate-y-3 border border-gold/70 transition-transform duration-1000 ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:translate-x-2.5 group-hover:translate-y-2.5"
-							aria-hidden="true"
-						></span>
-						<CourseCover image={featured.image} slug={featured.slug} class="relative z-[1]">
-							<span
-								class="absolute top-0 left-0 bg-gold px-3 py-1.5 text-[9.5px] font-extrabold tracking-[0.18em] text-[#241b07] uppercase"
-								>Newest course</span
-							>
-							{#if featuredAdded}
-								<span
-									class="absolute right-0 bottom-0 bg-paper-bg px-3 py-1.5 text-[9px] font-extrabold tracking-[0.16em] text-ink uppercase"
-									>Added {featuredAdded}</span
-								>
-							{/if}
-						</CourseCover>
-					</a>
-
-					<!-- copy -->
-					<div class="lg:order-1">
-						<p
-							class="flex items-center gap-2.5 text-[10px] font-extrabold tracking-[0.22em] text-gold uppercase md:text-[10.5px]"
-						>
-							<span aria-hidden="true">◆</span> With {featured.instructor}
-						</p>
-						<h2
-							class="mt-3 font-newsreader text-[32px] leading-[1.02] font-semibold tracking-[-0.015em] [text-wrap:balance] md:text-[44px]"
-						>
-							<a href={featured.href} class="fp-ul">{featured.title}</a>
-						</h2>
-						{#if featured.dek}
-							<p
-								class="mt-4 line-clamp-4 font-newsreader text-[16px] leading-[1.5] text-paper-bg/75 italic md:text-[17.5px]"
-							>
-								{featured.dek}
-							</p>
-						{/if}
-
-						<div class="mt-6 flex items-center gap-3 text-[10.5px] font-semibold text-paper-bg/70">
-							{#if featuredTicks.length}
-								<span class="flex items-end gap-[3px]" aria-hidden="true">
-									{#each featuredTicks as _, i (i)}
-										<span class="block h-[8px] w-[3px] bg-gold"></span>
-									{/each}
-								</span>
-							{/if}
-							{#if featuredMeta}<span>{featuredMeta}</span>{/if}
-						</div>
-
-						{#if featuredFree.length}
-							<div class="mt-6 border-t border-paper-bg/15 pt-4">
-								<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-gold uppercase">
-									Free to read
-								</p>
-								<ol class="mt-2">
-									{#each featuredFree as l, i (l.id)}
-										<li class="flex items-baseline gap-3 py-1.5 text-paper-bg">
-											<span class="w-6 shrink-0 font-newsreader text-[15px] text-gold tabular-nums"
-												>{String(i + 1).padStart(2, '0')}</span
-											>
-											<span class="font-newsreader text-[16.5px] leading-tight font-semibold">
-												{l.title}
-											</span>
-											<span
-												class="ml-auto shrink-0 text-[10px] font-semibold text-paper-bg/55 tabular-nums"
-												>{l.minutes} min</span
-											>
-										</li>
-									{/each}
-								</ol>
-							</div>
-						{/if}
-
-						<div
-							class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-4 border-t border-paper-bg/15 pt-6"
-						>
-							<span class="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-2">
-								<span
-									class="font-newsreader text-[32px] leading-none font-semibold text-gold tabular-nums"
-									>{formatPrice(featured.price)}</span
-								>
-								{#if featured.price > 0}
-									<span
-										class="text-[10px] font-extrabold tracking-[0.14em] whitespace-nowrap text-paper-bg/60 uppercase"
-										>One-time purchase</span
-									>
-								{/if}
-							</span>
-							<span class="flex items-center gap-5">
-								<a
-									href={featured.href}
-									class="inline-flex items-center bg-gold px-5 py-3 text-[10.5px] font-extrabold tracking-[0.16em] whitespace-nowrap text-[#241b07] uppercase transition-[filter] hover:brightness-110"
-								>
-									{featured.price > 0 ? 'Enroll' : 'Start free'} →
-								</a>
-								<a
-									href="{featured.href}#syllabus"
-									class="border-b border-paper-bg/40 pb-0.5 text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap text-paper-bg/80 uppercase transition-colors hover:border-gold hover:text-gold"
-								>
-									See the syllabus
-								</a>
-							</span>
-						</div>
-					</div>
-				</article>
-			{/if}
-		</div>
+	<!-- ============ the promise ============ -->
+	<section class="border-b border-line">
+		<ul
+			class="mx-auto grid w-full max-w-[1200px] grid-cols-2 gap-x-6 gap-y-6 px-5 py-7 md:grid-cols-4 md:px-8 md:py-9"
+		>
+			{#each [['◆', 'Taught by the best', 'Players who have done it at the top tables.'], ['¶', 'Bite-sized lessons', 'Short lessons with drills, so every sitting counts.'], ['∞', 'Yours for life', 'Buy once and keep it. No subscription to read.'], ['▢', 'Any device', 'Read on your phone, tablet or computer.']] as [glyph, t, b] (t)}
+				<li class="flex gap-3">
+					<span class="mt-0.5 w-5 shrink-0 text-center text-[15px] text-gold" aria-hidden="true"
+						>{glyph}</span
+					>
+					<span>
+						<span class="block font-jost text-[15px] font-semibold">{t}</span>
+						<span class="mt-1 block text-[12.5px] leading-[1.45] text-soft">{b}</span>
+					</span>
+				</li>
+			{/each}
+		</ul>
 	</section>
 
 	<!-- ============ continue learning ============ -->

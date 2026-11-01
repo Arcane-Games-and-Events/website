@@ -7,14 +7,12 @@
 	import Picture from '$lib/components/media/Picture.svelte';
 
 	/**
-	 * The front page's opening: the newest Library releases, one at a time,
-	 * filling the screen under the header. Covers are 16:9 with the subject
-	 * anywhere in the frame, so the sharp cover is never cropped: it is sized
-	 * to fit the screen and feathers into a blurred copy of itself that fills
-	 * whatever space is left. Copy sits bottom-left like a magazine cover; the
-	 * releases are listed bottom-right with a bar that fills while each is
-	 * showing. Below the hero, "The Latest" is a mixed strip of pieces, events
-	 * and courses.
+	 * The front page's opening, in the Academy hero's shape on black: the
+	 * newest Library releases one at a time, the cover full-bleed behind the
+	 * headline, the way in, and tabs along the foot whose bar fills while
+	 * each release is showing. The picture fades into black behind the words:
+	 * from the left on wide screens, from the bottom on phones. Below the hero, "The Latest" is a mixed
+	 * strip of pieces, events and courses.
 	 */
 	/** @type {{ leads?: any[], latest?: any[] }} */
 	let { leads = [], latest = [] } = $props();
@@ -26,9 +24,6 @@
 	// focus counts).
 	const ROTATE_MS = 15000;
 	let activeIdx = $state(0);
-	// The cover being replaced stays fully visible underneath while the new
-	// one fades in over it, so the picture never dims mid-change.
-	let prevIdx = $state(-1);
 	let paused = $state(false);
 	let reduced = $state(false);
 	let cycle = $state(0); // restarts the progress bar animation
@@ -52,7 +47,6 @@
 	function go(i) {
 		if (i === activeIdx) return;
 		switched = true;
-		prevIdx = activeIdx;
 		activeIdx = i;
 	}
 	function show(i) {
@@ -81,28 +75,6 @@
 		};
 	});
 
-	// ============ height ============
-	// The hero runs from under the header to the bottom of the screen. CSS
-	// gets it close before JS runs; this makes it exact.
-	/** @type {HTMLElement | undefined} */
-	let heroEl = $state();
-	/** @type {number | null} */
-	let heroH = $state(null);
-	// Wider than 16:9: the cover fits the height and the sides feather out.
-	let wide = $state(false);
-	$effect(() => {
-		if (!heroEl) return;
-		const el = heroEl;
-		const measure = () => {
-			const top = el.getBoundingClientRect().top + window.scrollY;
-			heroH = Math.max(560, Math.round(window.innerHeight - top));
-			wide = window.innerWidth / heroH > 16 / 9;
-		};
-		measure();
-		window.addEventListener('resize', measure);
-		return () => window.removeEventListener('resize', measure);
-	});
-
 	// ============ headline ============
 	// The headline is held to two lines. It starts at the screen's full size
 	// and steps down until it fits, never below a floor; the two-line clamp
@@ -110,14 +82,14 @@
 	// first guess before JS runs.
 	const titleSize = $derived.by(() => {
 		const n = (lead?.title || '').length;
-		if (n <= 34) return 'text-[38px] md:text-[52px] lg:text-[44px] xl:text-[52px]';
-		if (n <= 60) return 'text-[30px] md:text-[40px] lg:text-[36px] xl:text-[42px]';
-		return 'text-[26px] md:text-[34px] lg:text-[32px] xl:text-[36px]';
+		if (n <= 34) return 'text-[38px] md:text-[52px] lg:text-[40px] xl:text-[46px]';
+		if (n <= 60) return 'text-[30px] md:text-[40px] lg:text-[34px] xl:text-[38px]';
+		return 'text-[26px] md:text-[34px] lg:text-[30px] xl:text-[33px]';
 	});
 	const TITLE_SIZES = [
 		// [min screen width, largest size, smallest size]
-		[1280, 52, 32],
-		[1024, 44, 30],
+		[1280, 46, 30],
+		[1024, 40, 28],
 		[768, 52, 30],
 		[0, 38, 20]
 	];
@@ -140,17 +112,10 @@
 		return { destroy: () => window.removeEventListener('resize', fit) };
 	}
 	const cta = (item) => (item?.kind === 'video' ? 'Watch the video' : 'Read the story');
-	const pad = (n) => String(n).padStart(2, '0');
 	// The full image-library shape when the story has one (AVIF / WebP copies,
 	// blur, credit), else just its plain image.
 	const pic = (item) => item?.picture ?? { src: item?.image, srcset: item?.srcset, alt: item?.alt };
 	const leadPic = $derived(pic(lead));
-	// Stacking for a cover layer: the current one fades in on top; the one it
-	// replaces stays put underneath (and keeps its slow zoom) until covered;
-	// the rest are hidden.
-	const FADE = 'transition-opacity duration-[1600ms] ease-[cubic-bezier(0.45,0,0.2,1)]';
-	const layer = (i, shown) =>
-		i === activeIdx ? `z-[2] ${shown} ${FADE}` : i === prevIdx ? `z-[1] ${shown}` : 'z-0 opacity-0';
 	const heroFirst = $derived(leads[0] ? pic(leads[0]) : null);
 </script>
 
@@ -179,73 +144,39 @@
 
 {#if lead}
 	<section
-		bind:this={heroEl}
-		class="hero relative isolate flex flex-col overflow-hidden bg-ink text-white"
-		style={heroH ? `--hero-h: ${heroH}px;` : ''}
+		class="relative isolate overflow-hidden bg-ink text-white"
 		onfocusin={(e) => /** @type {HTMLElement} */ (e.target).matches?.(':focus-visible') && pause()}
 		onfocusout={resume}
 		aria-roledescription="carousel"
 		aria-label="Latest releases"
 	>
-		<!-- the blur: each cover, enlarged and softened, fills the whole screen -->
-		<div class="absolute inset-0 -z-20" aria-hidden="true">
-			{#each leads as item, i (item.href)}
-				<img
-					class="absolute inset-0 h-full w-full scale-110 object-cover blur-[48px] saturate-[1.2] {layer(
-						i,
-						'opacity-80'
-					)}"
-					src={item.picture?.thumb ?? item.image}
-					alt=""
-					loading={i === 0 ? 'eager' : 'lazy'}
-				/>
-			{/each}
-			<div class="absolute inset-0 bg-ink/60 lg:bg-ink/35"></div>
-		</div>
-
-		<!-- the cover itself: the largest 16:9 box that fits, never cropped -->
-		<div class="cover-area relative -z-10 lg:absolute lg:inset-0">
-			<div class="cover relative mx-auto {wide ? 'cover-wide' : ''}">
-				{#each leads as item, i (item.href)}
-					<Picture
-						image={pic(item)}
-						class="absolute inset-0 h-full w-full object-cover {layer(i, 'opacity-100')} {i ===
-							activeIdx || i === prevIdx
-							? 'hero-settle'
-							: ''}"
-						sizes="100vw"
-						alt={i === activeIdx ? item.alt : ''}
-						ariaHidden={i !== activeIdx}
-						loading={i === 0 ? 'eager' : 'lazy'}
-						fetchpriority={i === 0 ? 'high' : 'auto'}
-					/>
-				{/each}
-			</div>
-		</div>
-
-		<!-- wide screens: shade where the words sit, the bottom and the left -->
-		<div
-			class="absolute inset-0 -z-10 hidden lg:block"
-			style="background: linear-gradient(0deg, rgba(23,21,15,0.94) 0%, rgba(23,21,15,0.8) 20%, rgba(23,21,15,0.45) 42%, rgba(23,21,15,0) 62%), linear-gradient(90deg, rgba(23,21,15,0.6) 0%, rgba(23,21,15,0.25) 40%, rgba(23,21,15,0) 60%);"
-			aria-hidden="true"
-		></div>
-
-		<!-- the plate frame; on wide screens the scroll label is set into its bottom edge -->
-		<div
-			class="fp-fade pointer-events-none absolute inset-3 border border-white/35 md:inset-6"
-			style="animation-delay: 400ms;"
-			aria-hidden="true"
-		>
-			<span
-				class="absolute bottom-[25px] left-1/2 hidden -translate-x-1/2 px-3 text-[9px] leading-none font-extrabold tracking-[0.32em] text-white/70 uppercase lg:block"
-				>Scroll ↓</span
+		<!-- the cover: full-bleed, fading into black where the words sit -->
+		{#key lead.href}
+			<div
+				class="hl-fade relative aspect-video w-full overflow-hidden md:absolute md:inset-0 md:aspect-auto"
 			>
-		</div>
+				<Picture
+					image={leadPic}
+					class="hl-zoom absolute inset-0 h-full w-full object-cover"
+					sizes="100vw"
+					alt={lead.alt}
+					loading="eager"
+					fetchpriority={activeIdx === 0 ? 'high' : 'auto'}
+				/>
+				<span
+					class="absolute inset-0 bg-gradient-to-t from-ink via-ink/20 to-transparent md:bg-gradient-to-r md:from-ink md:via-ink/75 md:to-transparent lg:bg-[linear-gradient(90deg,var(--ed-ink)_0%,rgb(23_21_15/0.75)_38%,rgb(23_21_15/0)_85%)]"
+					aria-hidden="true"
+				></span>
+				<span
+					class="absolute inset-x-0 bottom-0 hidden h-40 bg-gradient-to-t from-ink to-transparent md:block"
+					aria-hidden="true"
+				></span>
+			</div>
+		{/key}
 
-		<!-- the cover's credit: on wide screens set into the frame's bottom edge -->
 		{#if leadPic?.credit}
 			<p
-				class="absolute right-10 bottom-2.5 z-10 hidden max-w-[40%] truncate text-right text-[10px] leading-none text-white/65 lg:block"
+				class="absolute right-5 bottom-3 z-10 hidden max-w-[40%] truncate text-right text-[10px] leading-none text-white/55 md:right-8 md:block"
 			>
 				{#if leadPic.creditUrl}<a
 						href={leadPic.creditUrl}
@@ -256,162 +187,117 @@
 			</p>
 		{/if}
 
-		<!-- copy and the release list -->
 		<div
-			class="flex flex-col px-8 pt-3 pb-10 md:px-16 md:pt-4 md:pb-14 lg:grid lg:flex-1 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-end lg:justify-end lg:gap-16 lg:px-20 lg:pt-0 lg:pb-20 xl:px-24"
+			class="relative mx-auto -mt-12 w-full max-w-[1200px] px-5 pb-10 md:mt-0 md:flex md:min-h-[min(78vh,760px)] md:flex-col md:justify-end md:px-8 md:pt-28 md:pb-14"
 		>
-			<div class="min-w-0 [text-shadow:0_1px_14px_rgba(23,21,15,0.55)]">
-				<!-- phones and tablets: one bar per release -->
-				{#if leads.length > 1}
-					<div class="mb-5 flex gap-1.5 lg:hidden" role="tablist" aria-label="Choose a release">
-						{#each leads as item, i (item.href)}
-							<button
-								type="button"
-								role="tab"
-								aria-selected={i === activeIdx}
-								aria-label="Show {item.title}"
-								onclick={() => show(i)}
-								class="relative h-6 flex-1"
-							>
-								<span class="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 bg-white/25">
-									{#if i === activeIdx}
-										{#key cycle}
-											<span
-												class="hero-progress absolute inset-y-0 left-0 bg-white"
-												style="animation-duration: {ROTATE_MS}ms; animation-play-state: {paused ||
-												reduced
-													? 'paused'
-													: 'running'}; {reduced ? 'width: 100%;' : ''}"
-											></span>
-										{/key}
-									{:else if i < activeIdx}
-										<span class="absolute inset-0 bg-white/60"></span>
-									{/if}
-								</span>
-							</button>
-						{/each}
-					</div>
-				{/if}
-
-				<!-- the outgoing copy fades away in the same spot as the new copy rises in -->
-				<div class="grid">
-					{#key activeIdx}
-						<div
-							class="self-start text-center [grid-area:1/1] lg:self-end lg:text-left {switched
-								? 'hero-switched'
-								: ''}"
-							in:fly={{ y: 10, duration: 750, delay: 180, easing: cubicOut }}
-							out:fade={{ duration: 400 }}
+			<!-- the outgoing copy fades away in the same spot as the new copy rises in -->
+			<div class="grid">
+				{#key activeIdx}
+					<div
+						class="max-w-[680px] [grid-area:1/1] {switched ? 'hero-switched' : ''}"
+						in:fly={{ y: 10, duration: 750, delay: 180, easing: cubicOut }}
+						out:fade={{ duration: 400 }}
+					>
+						<p
+							class="fp-rise flex items-center gap-2 text-[10px] font-extrabold tracking-[0.24em] text-warm-light uppercase"
 						>
+							<span aria-hidden="true">◆</span> Latest release · {lead.rubric}
+						</p>
+						<h1
+							use:fitTwoLines
+							class="fp-rise mt-3 line-clamp-2 font-newsreader leading-[1.04] font-semibold tracking-[-0.025em] [text-wrap:balance] {titleSize}"
+							style="animation-delay: 120ms;"
+						>
+							<a href={lead.href} class="hover:text-white/90">{lead.title}</a>
+						</h1>
+						{#if lead.dek}
 							<p
-								class="fp-rise text-[10.5px] font-extrabold tracking-[0.24em] text-white/90 uppercase md:text-[11.5px]"
+								class="fp-rise mt-3 line-clamp-3 max-w-[560px] font-newsreader text-[18px] leading-[1.35] text-white/80 italic md:text-[21px] lg:text-[19px]"
+								style="animation-delay: 240ms;"
 							>
-								Latest release · <span class="text-warm-light">{lead.rubric}</span>
+								{lead.dek}
 							</p>
-							<h1
-								use:fitTwoLines
-								class="fp-rise mx-auto mt-3 line-clamp-2 max-w-[22ch] font-newsreader leading-[1.04] font-semibold tracking-[-0.025em] [text-wrap:balance] md:mt-4 lg:mx-0 lg:max-w-[760px] {titleSize}"
-								style="animation-delay: 120ms; text-shadow: 0 2px 30px rgba(23,21,15,0.45);"
+						{/if}
+						<div
+							class="fp-rise mt-6 flex flex-col items-start gap-x-6 gap-y-4 sm:flex-row sm:items-center"
+							style="animation-delay: 360ms;"
+						>
+							<a
+								href={lead.href}
+								class="inline-flex items-center gap-2 bg-paper-bg px-5 py-3.5 text-[11px] font-extrabold tracking-[0.14em] whitespace-nowrap text-ink uppercase transition-colors hover:bg-warm hover:text-white"
 							>
-								<a href={lead.href} class="hover:text-white/90">{lead.title}</a>
-							</h1>
-							{#if lead.dek}
-								<p
-									class="fp-rise mx-auto mt-4 line-clamp-3 max-w-[600px] font-newsreader text-[17px] leading-[1.45] text-white/80 italic md:mt-5 md:text-[19px] lg:mx-0"
-									style="animation-delay: 240ms;"
-								>
-									{lead.dek}
-								</p>
-							{/if}
-							<div
-								class="fp-rise mt-6 flex flex-col items-center gap-x-6 gap-y-4 md:mt-7 md:flex-row md:flex-wrap md:justify-center lg:justify-start"
-								style="animation-delay: 360ms;"
-							>
-								<a
-									href={lead.href}
-									class="inline-flex h-[48px] items-center gap-2 bg-paper-bg px-6 text-[11px] font-extrabold tracking-[0.18em] text-ink uppercase transition-colors [text-shadow:none] hover:bg-warm hover:text-white"
-									>{cta(lead)} <span aria-hidden="true">→</span></a
-								>
-								<FrontByline
-									author={lead.author}
-									date={lead.date}
-									length={lead.length}
-									premium={lead.premium}
-									onDark
-									stack
-									class="lg:justify-start"
-								/>
-							</div>
-							{#if leadPic?.credit}
-								<p class="mt-5 text-[11px] text-white/55 lg:hidden">
-									Cover: {#if leadPic.creditUrl}<a
-											href={leadPic.creditUrl}
-											target="_blank"
-											rel="noopener noreferrer"
-											class="underline decoration-white/30 underline-offset-2">{leadPic.credit}</a
-										>{:else}{leadPic.credit}{/if}
-								</p>
-							{/if}
+								{cta(lead)} <span aria-hidden="true">→</span>
+							</a>
+							<FrontByline
+								author={lead.author}
+								date={lead.date}
+								length={lead.length}
+								premium={lead.premium}
+								onDark
+							/>
 						</div>
-					{/key}
-				</div>
+						{#if leadPic?.credit}
+							<p class="mt-5 text-[11px] text-white/55 md:hidden">
+								Cover: {#if leadPic.creditUrl}<a
+										href={leadPic.creditUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="underline decoration-white/30 underline-offset-2">{leadPic.credit}</a
+									>{:else}{leadPic.credit}{/if}
+							</p>
+						{/if}
+					</div>
+				{/key}
 			</div>
 
-			<!-- wide screens: the releases, numbered -->
+			<!-- the releases: a bar fills along the top of the one showing -->
 			{#if leads.length > 1}
-				<ol
-					class="hidden border border-white/15 bg-ink/60 px-5 py-1 backdrop-blur-md backdrop-saturate-150 lg:block"
+				<div
+					class="st-rail -mx-5 mt-8 flex scroll-px-5 gap-2 overflow-x-auto px-5 md:mx-0 md:mt-12 md:px-0"
 					role="tablist"
 					aria-label="Choose a release"
 				>
 					{#each leads as item, i (item.href)}
-						<li class="border-b border-white/15 last:border-b-0">
-							<button
-								type="button"
-								role="tab"
-								aria-selected={i === activeIdx}
-								onclick={() => show(i)}
-								class="group relative grid w-full grid-cols-[34px_1fr] gap-3 py-3.5 text-left"
+						<button
+							type="button"
+							role="tab"
+							aria-selected={i === activeIdx}
+							onclick={() => show(i)}
+							class="group relative w-[44%] shrink-0 pt-3 text-left sm:w-[30%] md:w-[260px]"
+						>
+							<span
+								class="absolute inset-x-0 top-0 h-[2px] transition-colors {i === activeIdx
+									? 'bg-white/25'
+									: 'bg-white/20 group-hover:bg-white/60'}"
+								aria-hidden="true"
 							>
-								<span
-									class="ao-cond text-[22px] leading-none font-black tabular-nums {i === activeIdx
-										? 'text-warm-light'
-										: 'text-white/55 group-hover:text-white/85'}">{pad(i + 1)}</span
-								>
-								<span class="min-w-0">
-									<span
-										class="block text-[9px] font-extrabold tracking-[0.2em] uppercase {i ===
-										activeIdx
-											? 'text-white/70'
-											: 'text-white/55'}">{item.rubric}</span
-									>
-									<span
-										class="mt-1 line-clamp-2 block font-newsreader text-[15px] leading-[1.25] font-semibold {i ===
-										activeIdx
-											? 'text-white'
-											: 'text-white/75 group-hover:text-white'}">{item.title}</span
-									>
-								</span>
 								{#if i === activeIdx}
-									<span
-										class="absolute inset-x-0 -bottom-px h-[2px] bg-white/15"
-										aria-hidden="true"
-									>
-										{#key cycle}
-											<span
-												class="hero-progress absolute inset-y-0 left-0 bg-warm-light"
-												style="animation-duration: {ROTATE_MS}ms; animation-play-state: {paused ||
-												reduced
-													? 'paused'
-													: 'running'}; {reduced ? 'width: 100%;' : ''}"
-											></span>
-										{/key}
-									</span>
+									{#key cycle}
+										<span
+											class="hero-progress absolute inset-y-0 left-0 bg-warm-light"
+											style="animation-duration: {ROTATE_MS}ms; animation-play-state: {paused ||
+											reduced
+												? 'paused'
+												: 'running'}; {reduced ? 'width: 100%;' : ''}"
+										></span>
+									{/key}
 								{/if}
-							</button>
-						</li>
+							</span>
+							<span
+								class="block truncate font-jost text-[12px] font-bold tracking-[0.06em] uppercase {i ===
+								activeIdx
+									? 'text-white'
+									: 'text-white/55 group-hover:text-white'}">{item.rubric}</span
+							>
+							<span
+								class="mt-0.5 line-clamp-2 block font-newsreader text-[14px] leading-[1.25] {i ===
+								activeIdx
+									? 'text-white/80'
+									: 'text-white/45 group-hover:text-white/75'}">{item.title}</span
+							>
+						</button>
 					{/each}
-				</ol>
+				</div>
 			{/if}
 		</div>
 	</section>
@@ -685,59 +571,21 @@
 {/if}
 
 <style>
-	/* Phones and tablets: the whole cover, edge to edge, its bottom edge
-	   melting into the blur, with the copy straight below it. The hero is as
-	   tall as the two together.
-	   The fade is masked on each image, not on .cover: iOS Safari can paint a
-	   masked, clipped box with an animated child as nothing at all. */
-	.cover {
-		aspect-ratio: 16 / 9;
-		width: 100%;
+	/* A new cover fades in and settles from a slight zoom. */
+	.hl-fade {
+		animation: hl-fade 700ms ease both;
 	}
-	.cover :global(img) {
-		-webkit-mask-image: linear-gradient(180deg, #000 80%, transparent);
-		mask-image: linear-gradient(180deg, #000 80%, transparent);
+	:global(.hl-zoom) {
+		animation: hl-zoom 9s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 	}
-	/* Wide screens: the hero fills the screen under the header (JS makes it
-	   exact). The cover is the largest 16:9 box that fits, pinned to the top;
-	   on screens wider than 16:9 it fits the height and its sides feather out. */
-	@media (min-width: 1024px) {
-		.hero {
-			min-height: 560px;
-			height: var(--hero-h, calc(100svh - 70px));
-		}
-		.cover-area {
-			container-type: size;
-		}
-		.cover {
-			width: min(100cqw, 100cqh * 16 / 9);
-		}
-		.cover :global(img) {
-			-webkit-mask-image: linear-gradient(180deg, #000 86%, transparent);
-			mask-image: linear-gradient(180deg, #000 86%, transparent);
-		}
-		.cover-wide :global(img) {
-			-webkit-mask-image: linear-gradient(180deg, #000 86%, transparent),
-				linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
-			-webkit-mask-composite: source-in;
-			mask-image: linear-gradient(180deg, #000 86%, transparent),
-				linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
-			mask-composite: intersect;
+	@keyframes hl-fade {
+		from {
+			opacity: 0;
 		}
 	}
-	/* The active cover settles from a slight zoom, inside its own box. */
-	.cover {
-		overflow: hidden;
-	}
-	:global(.hero-settle) {
-		animation: hero-settle 9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-	}
-	@keyframes hero-settle {
+	@keyframes hl-zoom {
 		from {
 			transform: scale(1.04);
-		}
-		to {
-			transform: scale(1);
 		}
 	}
 	/* After a switch the copy fades in as one block, so the page-load
@@ -758,7 +606,8 @@
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
-		:global(.hero-settle) {
+		.hl-fade,
+		:global(.hl-zoom) {
 			animation: none;
 		}
 	}

@@ -27,26 +27,32 @@
 	onDestroy(() => tracker?.stop());
 
 	$: isVideoEntry = !!data.article.video || !!data.article.videoLocked;
-	$: hasCover = !isVideoEntry && !!data.article.coverImage?.src;
+	// The masthead picture: the cover, else (for a video) its thumbnail.
+	$: heroImage = data.article.coverImage?.src
+		? data.article.coverImage
+		: isVideoEntry && data.article.thumbnailImage?.src
+			? data.article.thumbnailImage
+			: null;
+	$: hasCover = !!heroImage;
 </script>
 
 <svelte:head>
 	<title>{data.article.title} — AGE</title>
-	{#if hasCover && data.article.coverImage?.avifSrcset}
+	{#if hasCover && heroImage?.avifSrcset}
 		<link
 			rel="preload"
 			as="image"
 			type="image/avif"
-			imagesrcset={data.article.coverImage.avifSrcset}
+			imagesrcset={heroImage.avifSrcset}
 			imagesizes="(min-width: 1680px) 1680px, 100vw"
 			fetchpriority="high"
 		/>
-	{:else if hasCover && data.article.coverImage?.srcset}
+	{:else if hasCover && heroImage?.srcset}
 		<link
 			rel="preload"
 			as="image"
 			type="image/webp"
-			imagesrcset={data.article.coverImage.srcset}
+			imagesrcset={heroImage.srcset}
 			imagesizes="(min-width: 1680px) 1680px, 100vw"
 			fetchpriority="high"
 		/>

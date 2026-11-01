@@ -3,18 +3,13 @@ import { courseForReader } from '$lib/server/courses/reader.js';
 import { getThread } from '$lib/server/courses/discussion.js';
 import { CourseError } from '$lib/server/courses/builder.js';
 
-/** One discussion thread with its replies. */
-export async function load({ params, locals, setHeaders, depends }) {
+/** One conversation with its replies, open beside the list. */
+export async function load({ params, locals, depends }) {
 	depends('academy:thread');
-	setHeaders({ 'cache-control': 'private, no-store' });
 	const r = await courseForReader(params.slug, locals.user);
 	if (!r) error(404, 'Course not found');
 	try {
-		const t = await getThread(r.course, locals.user, params.threadId);
-		return {
-			course: { id: r.course.id, slug: r.course.slug, title: r.course.title },
-			...t
-		};
+		return { open: await getThread(r.course, locals.user, params.threadId) };
 	} catch (err) {
 		if (err instanceof CourseError) error(err.status === 401 ? 403 : err.status, err.message);
 		throw err;

@@ -1,6 +1,7 @@
 <!--
   ArticleView — a Library piece as readers see it: the cover with the title
-  set over it (or above the video), the author and contents rail, the body,
+  set over it (for a video, its picture with a Watch button; the video plays
+  in that frame, the words stepping aside), the author and contents rail, the body,
   the Premium gate for non-members, and the tag. Rendered by the public
   reader (/library/[slug]) and by the Desk preview, so a preview is exactly
   the live page.
@@ -16,6 +17,7 @@
 	import RenderLexical from '$lib/desk/render/RenderLexical.svelte';
 	import { ARTICLE_PROSE } from '$lib/desk/render/articleProse.js';
 	import LibraryVideoBlock from '$lib/desk/render/LibraryVideoBlock.svelte';
+	import HeroVideo from '$lib/components/age/library/HeroVideo.svelte';
 
 	/**
 	 * Same shape as the reader page's load data: `article` (buildArticleShape),
@@ -42,9 +44,67 @@
 		? `/library/tag/${data.article.tags[0].slug}`
 		: '/library';
 	$: rubricLabel = isVideoEntry && rubric !== 'Video' ? `${rubric} · Video` : rubric;
-	$: hasCover = !isVideoEntry && !!data.article.coverImage?.src;
+	// Articles and videos share the masthead: the cover (else, for a video,
+	// its thumbnail) full width with the title over it. A video plays in that
+	// same frame: its words fade away while it plays and come back when it's
+	// paused or over, their Watch button now reading Resume (Pause on phones).
+	$: heroImage = data.article.coverImage?.src
+		? data.article.coverImage
+		: isVideoEntry && data.article.thumbnailImage?.src
+			? data.article.thumbnailImage
+			: null;
+	$: hasCover = !!heroImage;
+	let started = false; // the player is in the masthead
+	let stopped = false; // paused or over: the words and the play button are back
+	let ended = false;
+	/** @type {any} */
+	let heroVideo;
+	/** @type {ReturnType<typeof setTimeout> | undefined} */
+	let stopTimer;
+	$: if (data.article.id) {
+		// a new piece starts unplayed
+		started = false;
+		stopped = false;
+		ended = false;
+	}
+	$: veiled = started && !stopped; // playing: the words step aside
+	/** @param {'playing' | 'paused' | 'ended'} state */
+	function onVideoState(state) {
+		clearTimeout(stopTimer);
+		if (state === 'playing') {
+			stopped = false;
+			ended = false;
+			return;
+		}
+		// Scrubbing pauses for a moment; only a real stop brings the words back.
+		stopTimer = setTimeout(
+			() => {
+				stopped = true;
+				ended = state === 'ended';
+			},
+			state === 'ended' ? 0 : 350
+		);
+	}
+	$: videoSeconds = data.article.video?.duration || data.article.video?.youtubeDuration || 0;
+	function watch() {
+		if (!data.article.video) {
+			document.getElementById('video-gate')?.scrollIntoView({ behavior: 'smooth' });
+			return;
+		}
+		clearTimeout(stopTimer);
+		if (started) heroVideo?.play();
+		else started = true; // mounts the player, which starts at once
+		stopped = false;
+		ended = false;
+	}
 	$: videoPoster = data.article.thumbnailImage?.src || data.article.coverImage?.src || '';
-	$: lengthLabel = data.article.readTime ? `${data.article.readTime} min read` : '';
+	$: lengthLabel = isVideoEntry
+		? videoSeconds
+			? `${Math.max(1, Math.round(videoSeconds / 60))} min video`
+			: ''
+		: data.article.readTime
+			? `${data.article.readTime} min read`
+			: '';
 	// The server already turned the profile bio into escaped HTML (bioToHtml).
 	$: authorBioHtml = data.article.author?.bio || '';
 	$: authorLinks = (data.article.author?.socialLinks || [])
@@ -260,57 +320,71 @@
 {/if}
 
 <!-- ============ COVER ============
-	     Same composition as the homepage latest release: the 16:9 cover sits
-	     in a plate frame with the copy overlaid on its lower third at md+
-	     (white on an ink scrim) and set beneath it on phones. Video
-	     entries and entries without a cover use the paper variant with
-	     the copy centred above the media. -->
+	     The 16:9 cover runs full width with the copy overlaid on its lower
+	     third at md+ (white on an ink scrim) and set beneath it on phones.
+	     Videos use the same masthead with their picture and play in that
+	     frame: the copy fades away while the video plays and comes back
+	     when it's paused or over; its Watch button becomes Pause / Resume. Pieces
+	     with no picture use the paper variant with the copy centred. -->
 <section class="relative">
 	{#if hasCover}
 		<div class="relative mx-auto aspect-video w-full max-w-[1680px] overflow-hidden bg-ink">
 			<Picture
-				image={data.article.coverImage}
+				image={heroImage}
 				sizes="(min-width: 1680px) 1680px, 100vw"
 				alt={data.article.title}
 				loading="eager"
 				fetchpriority="high"
 				class="fp-kenburns absolute inset-0 h-full w-full object-cover"
 			/>
+			{#if started}
+				<div class="absolute inset-0">
+					<HeroVideo
+						bind:this={heroVideo}
+						video={data.article.video}
+						poster={videoPoster}
+						metaId="entry:{data.article.id}"
+						metaTitle={data.article.title}
+						onstate={onVideoState}
+					/>
+				</div>
+			{/if}
 			<div
-				class="absolute inset-x-0 top-0 h-24"
+				class="pointer-events-none absolute inset-x-0 top-0 h-24 transition-opacity duration-500 {veiled
+					? 'opacity-0'
+					: ''}"
 				style="background: linear-gradient(180deg, rgba(23,21,15,0.35), rgba(23,21,15,0));"
 				aria-hidden="true"
 			></div>
 			<div
-				class="absolute inset-x-0 bottom-0 hidden h-[78%] md:block"
+				class="pointer-events-none absolute inset-x-0 bottom-0 hidden h-[78%] transition-opacity duration-500 md:block {veiled
+					? 'opacity-0'
+					: ''}"
 				style="background: linear-gradient(180deg, rgba(23,21,15,0) 0%, rgba(23,21,15,0.3) 22%, rgba(23,21,15,0.72) 45%, rgba(23,21,15,0.92) 68%, rgba(23,21,15,0.98) 100%);"
-				aria-hidden="true"
-			></div>
-			<div
-				class="fp-fade pointer-events-none absolute inset-3 border border-white/70 md:inset-7"
-				style="animation-delay: 400ms;"
 				aria-hidden="true"
 			></div>
 			<a
 				href={back.href}
-				class="fp-fade absolute top-6 left-6 z-[2] inline-flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.18em] text-white uppercase transition-[gap] hover:gap-3 md:top-10 md:left-10"
+				class="fp-fade absolute top-6 left-6 z-[2] inline-flex {veiled
+					? 'invisible'
+					: ''} items-center gap-2 text-[10.5px] font-extrabold tracking-[0.18em] text-white uppercase transition-[gap] hover:gap-3 md:top-10 md:left-10"
 				style="animation-delay: 600ms; text-shadow: 0 1px 2px rgba(23,21,15,0.6);"
 			>
 				<span aria-hidden="true">←</span>
 				{back.label}
 			</a>
 		</div>
-		{#if data.article.coverImage?.credit}
+		{#if heroImage?.credit}
 			<p
 				class="mx-auto max-w-[1680px] px-5 pt-2 text-right font-libre text-[11.5px] text-fade md:px-7"
 			>
-				{#if data.article.coverImage.creditUrl}<a
-						href={data.article.coverImage.creditUrl}
+				{#if heroImage.creditUrl}<a
+						href={heroImage.creditUrl}
 						target="_blank"
 						rel="noopener noreferrer"
 						class="underline decoration-line2 underline-offset-2 hover:text-ink"
-						>{data.article.coverImage.credit}</a
-					>{:else}{data.article.coverImage.credit}{/if}
+						>{heroImage.credit}</a
+					>{:else}{heroImage.credit}{/if}
 			</p>
 		{/if}
 	{/if}
@@ -320,67 +394,102 @@
 			? 'md:pointer-events-none md:absolute md:inset-x-0 md:bottom-0 md:left-1/2 md:z-[1] md:-translate-x-1/2 md:pb-14 md:[text-shadow:0_1px_2px_rgba(23,21,15,0.6),0_6px_24px_rgba(23,21,15,0.45)] lg:pb-16'
 			: 'md:pt-12 md:pb-6'}"
 	>
-		<a
-			href={rubricHref}
-			class="pointer-events-auto inline-flex items-center gap-3 text-[10.5px] font-extrabold tracking-[0.24em] uppercase md:text-[11.5px] {hasCover
-				? 'text-warm md:text-white/90'
-				: 'text-warm'}"
-		>
-			<span class={hasCover ? 'text-warm md:text-warm-light' : 'text-warm'} aria-hidden="true"
-				>◆</span
-			>
-			{rubricLabel}
-			<span class={hasCover ? 'text-warm md:text-warm-light' : 'text-warm'} aria-hidden="true"
-				>◆</span
-			>
-		</a>
-		<h1
-			use:fitTitle={{ key: data.article.title, phoneLines: 3 }}
-			style="--tc: {Math.max(12, (data.article.title || '').length)};"
-			class="article-title mt-2 font-newsreader leading-[1.0] font-semibold tracking-[-0.02em] [text-wrap:balance] md:mt-3 md:leading-[0.96] {hasCover
-				? 'md:text-white'
+		<!-- fades as one block: the outer block's entrance animation owns its opacity -->
+		<div
+			class="transition-opacity duration-500 {veiled
+				? 'md:pointer-events-none md:opacity-0 md:[&_*]:pointer-events-none'
 				: ''}"
 		>
-			{data.article.title}
-		</h1>
-		{#if data.article.excerpt}
-			<p
-				class="mx-auto mt-2.5 max-w-[640px] text-center font-newsreader text-[17px] leading-[1.45] [text-wrap:balance] italic md:mt-3 md:text-[21px] {hasCover
-					? 'text-soft md:text-white/85'
-					: 'text-soft'}"
+			<a
+				href={rubricHref}
+				class="pointer-events-auto inline-flex items-center gap-3 text-[10.5px] font-extrabold tracking-[0.24em] uppercase md:text-[11.5px] {hasCover
+					? 'text-warm md:text-white/90'
+					: 'text-warm'}"
 			>
-				{data.article.excerpt}
-			</p>
-		{/if}
-		<div
-			class="mt-3.5 flex flex-wrap items-baseline justify-center gap-x-2 text-[11px] md:mt-4 {hasCover
-				? 'text-fade md:text-white/60'
-				: 'text-fade'}"
-		>
-			{#if data.article.author}
-				{#if data.article.author.slug}
-					<a
-						href="/library/author/{data.article.author.slug}"
-						class="pointer-events-auto font-extrabold tracking-[0.12em] uppercase {hasCover
-							? 'text-ink hover:text-warm md:text-white/90 md:hover:text-warm-light'
-							: 'text-ink hover:text-warm'}"
-					>
-						By {data.article.author.name}
-					</a>
-				{:else}
-					<span
-						class="font-extrabold tracking-[0.12em] uppercase {hasCover
-							? 'text-ink md:text-white/90'
-							: 'text-ink'}">By {data.article.author.name}</span
-					>
+				<span class={hasCover ? 'text-warm md:text-warm-light' : 'text-warm'} aria-hidden="true"
+					>◆</span
+				>
+				{rubricLabel}
+				<span class={hasCover ? 'text-warm md:text-warm-light' : 'text-warm'} aria-hidden="true"
+					>◆</span
+				>
+			</a>
+			<h1
+				use:fitTitle={{ key: data.article.title, phoneLines: 3 }}
+				style="--tc: {Math.max(12, (data.article.title || '').length)};"
+				class="article-title mt-2 font-newsreader leading-[1.0] font-semibold tracking-[-0.02em] [text-wrap:balance] md:mt-3 md:leading-[0.96] {hasCover
+					? 'md:text-white'
+					: ''}"
+			>
+				{data.article.title}
+			</h1>
+			{#if data.article.excerpt}
+				<p
+					class="mx-auto mt-2.5 max-w-[640px] text-center font-newsreader text-[17px] leading-[1.45] [text-wrap:balance] italic md:mt-3 md:text-[21px] {hasCover
+						? 'text-soft md:text-white/85'
+						: 'text-soft'}"
+				>
+					{data.article.excerpt}
+				</p>
+			{/if}
+			<div
+				class="mt-3.5 flex flex-wrap items-baseline justify-center gap-x-2 text-[11px] md:mt-4 {hasCover
+					? 'text-fade md:text-white/60'
+					: 'text-fade'}"
+			>
+				{#if data.article.author}
+					{#if data.article.author.slug}
+						<a
+							href="/library/author/{data.article.author.slug}"
+							class="pointer-events-auto font-extrabold tracking-[0.12em] uppercase {hasCover
+								? 'text-ink hover:text-warm md:text-white/90 md:hover:text-warm-light'
+								: 'text-ink hover:text-warm'}"
+						>
+							By {data.article.author.name}
+						</a>
+					{:else}
+						<span
+							class="font-extrabold tracking-[0.12em] uppercase {hasCover
+								? 'text-ink md:text-white/90'
+								: 'text-ink'}">By {data.article.author.name}</span
+						>
+					{/if}
+					<span aria-hidden="true">·</span>
 				{/if}
-				<span aria-hidden="true">·</span>
-			{/if}
-			{#if pubLabel || lengthLabel}
-				<span class="font-semibold">{[pubLabel, lengthLabel].filter(Boolean).join(' · ')}</span>
-			{/if}
-			{#if data.isPremium}
-				<span class="self-center"><PremiumTag /></span>
+				{#if pubLabel || lengthLabel}
+					<span class="font-semibold">{[pubLabel, lengthLabel].filter(Boolean).join(' · ')}</span>
+				{/if}
+				{#if data.isPremium}
+					<span class="self-center"><PremiumTag /></span>
+				{/if}
+			</div>
+			{#if isVideoEntry && hasCover}
+				<div class="mt-5 flex justify-center md:mt-6">
+					{#if data.article.video}
+						<button
+							type="button"
+							onclick={() => (veiled ? heroVideo?.pause() : watch())}
+							class="pointer-events-auto inline-flex items-center gap-2.5 bg-ink px-6 py-3.5 text-[11px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors [text-shadow:none] hover:bg-warm md:bg-paper-bg md:text-ink md:hover:bg-warm md:hover:text-white"
+						>
+							{#if veiled}
+								<span aria-hidden="true">❚❚</span> Pause
+							{:else if ended}
+								<span aria-hidden="true">↻</span> Watch again
+							{:else if started}
+								<span aria-hidden="true">▶</span> Resume
+							{:else}
+								<span aria-hidden="true">▶</span> Watch the video
+							{/if}
+						</button>
+					{:else}
+						<a
+							href="#video-gate"
+							class="pointer-events-auto inline-flex items-center gap-2.5 bg-prem px-6 py-3.5 text-[11px] font-extrabold tracking-[0.16em] text-white uppercase [text-shadow:none] hover:brightness-110"
+						>
+							<span aria-hidden="true">◆</span> Members only · Watch with Premium
+						</a>
+					{/if}
+				</div>
 			{/if}
 		</div>
 	</div>
@@ -388,9 +497,12 @@
 
 {#if data.article.videoLocked}
 	<!-- Premium video, non-member: paywalled frame, no player -->
-	<figure class="m-0 mx-auto w-full max-w-[1200px] px-5 pt-4 md:px-8 md:pt-6">
+	<figure
+		id="video-gate"
+		class="m-0 mx-auto w-full max-w-[1200px] scroll-mt-24 px-5 pt-4 md:px-8 md:pt-6"
+	>
 		<div
-			class="fp-plate relative overflow-hidden bg-[#080b15] md:aspect-video"
+			class="relative overflow-hidden bg-[#080b15] md:aspect-video"
 			data-premium-cta="video-gate"
 		>
 			{#if videoPoster}
@@ -443,16 +555,16 @@
 			</div>
 		</div>
 	</figure>
-{:else if data.article.video}
+{:else if data.article.video && !heroImage}
+	<!-- a video with no picture of its own: the player under the title -->
 	<figure class="m-0 mx-auto w-full max-w-[1200px] px-5 pt-4 md:px-8 md:pt-6">
-		<div class="fp-plate">
-			<LibraryVideoBlock
-				video={data.article.video}
-				poster={videoPoster}
-				metaId="entry:{data.article.id}"
-				metaTitle={data.article.title}
-			/>
-		</div>
+		<LibraryVideoBlock
+			video={data.article.video}
+			poster={videoPoster}
+			metaId="entry:{data.article.id}"
+			metaTitle={data.article.title}
+			bare
+		/>
 	</figure>
 {/if}
 

@@ -85,6 +85,20 @@ describe('threads, replies and notifications', () => {
 		expect(view.replies.map((r) => r.body)).toEqual(['Block with the yellow.', 'Or pitch it.']);
 	});
 
+	test('the list previews the newest reply anyone can see', async () => {
+		const t = await thread();
+		expect((await listThreads(course, bob))[0].lastReply).toBeNull();
+		await reply(t.id, bob, { body: 'Block with the yellow.' });
+		const late = await reply(t.id, cara, { body: 'Or pitch it.' });
+		let [row] = await listThreads(course, alice);
+		expect(row.lastReply).toMatchObject({ text: 'Or pitch it.' });
+		expect(row.lastReply.author).toMatch(/^Cara\b/);
+		await deletePost(late.id, cara);
+		[row] = await listThreads(course, alice);
+		expect(row).toMatchObject({ replies: 1, lastReply: { text: 'Block with the yellow.' } });
+		expect(row.lastReply.author).toMatch(/^Bob\b/);
+	});
+
 	test('a teacher update is pinned and reaches every student', async () => {
 		await thread();
 		await postUpdate(course, teacher, {

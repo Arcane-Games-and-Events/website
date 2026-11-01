@@ -125,6 +125,7 @@ export async function callRoute(
 			url: new URL(url),
 			locals: { user, session: null },
 			cookies: { get: () => undefined, set: () => {}, delete: () => {} },
+			setHeaders: () => {},
 			getClientAddress: () => '127.0.0.1'
 		});
 		return { status: res.status, body: await res.json().catch(() => null) };

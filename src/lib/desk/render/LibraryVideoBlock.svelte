@@ -16,6 +16,7 @@
       // YouTube:
       youtubeVideoId, youtubeTitle, youtubeThumbnailUrl, youtubeDuration
     } | null
+    bare — drop the ink rules above and below
     poster — optional image URL to render OVER the video as the initial
              poster. When provided, overrides the auto-generated poster from
              Mux and swaps YouTube's default thumbnail for a click-to-load
@@ -31,6 +32,8 @@
 	/** Mux Data names for this video (e.g. `entry:{id}` and the piece's title). */
 	export let metaId = '';
 	export let metaTitle = '';
+	/** No ink rules above and below (the article masthead frames it itself). */
+	export let bare = false;
 
 	// Click-to-load facade for YouTube: while `youtubeLoaded === false` we
 	// render the poster image + a play button; on click we swap in the real
@@ -65,7 +68,7 @@
 </script>
 
 {#if video?.provider === 'mux' && video.muxPlaybackId}
-	<div class="border-y-[3px] border-double border-ink bg-black">
+	<div class="bg-black {bare ? '' : 'border-y-[3px] border-double border-ink'}">
 		<mux-player
 			playback-id={video.muxPlaybackId}
 			playback-token={video.playbackToken || ''}
@@ -74,12 +77,13 @@
 			metadata-video-id={metaId || undefined}
 			metadata-video-title={metaTitle || undefined}
 			stream-type="on-demand"
+			accent-color="#60a5fa"
 			style="--controls-backdrop-color: transparent; aspect-ratio: {video.aspectRatio || '16/9'}"
 			class="block h-auto w-full"
 		></mux-player>
 	</div>
 {:else if video?.provider === 'youtube' && video.youtubeVideoId}
-	<div class="border-y-[3px] border-double border-ink bg-black">
+	<div class="bg-black {bare ? '' : 'border-y-[3px] border-double border-ink'}">
 		<div class="relative w-full overflow-hidden" style="padding-top: 56.25%;">
 			{#if youtubeLoaded}
 				<iframe
