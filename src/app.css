@@ -29,6 +29,8 @@
 	/* The same accent on ink / photo backgrounds — blue-800 is too dark
 	 * there, so dark surfaces use blue-400. */
 	--ed-warm-light: #60a5fa;
+	/* the Library's header background: a deep navy of its blue */
+	--ed-warm-deep: #0d1b45;
 	--ed-gold: #c8922e;
 	--ed-prem: #1c7a4b;
 	--ed-prem-light: #7fd6a6; /* Premium green on dark surfaces */
@@ -42,14 +44,9 @@
 	--ed-cc-stl: #2f7d46;
 	--ed-cc-ne: #6a4a86;
 
-	/* AGE Studios sub-brand: a night studio with an on-air signal colour.
-	 * studio = fills behind white text (5:1); studio-light = signal text on
-	 * the night surfaces (7:1); studio-mute = secondary text there (6.4:1). */
+	/* AGE Studios' anchor colour: fills behind white text (5:1), the
+	 * outline of the wordmark, and Interactive projects. */
 	--ed-studio: #c0461f;
-	--ed-studio-light: #ff7849;
-	--ed-studio-night: #0e0d0a;
-	--ed-studio-panel: #1d1a14;
-	--ed-studio-mute: #a39d8b;
 
 	/* hero-guide accents */
 	--ed-hero-rb: #c0461f;
@@ -69,6 +66,7 @@
 	--color-accent: var(--ed-accent);
 	--color-warm: var(--ed-warm);
 	--color-warm-light: var(--ed-warm-light);
+	--color-warm-deep: var(--ed-warm-deep);
 	--color-gold: var(--ed-gold);
 	--color-prem: var(--ed-prem);
 	--color-prem-light: var(--ed-prem-light);
@@ -80,10 +78,6 @@
 	--color-cc-ne: var(--ed-cc-ne);
 
 	--color-studio: var(--ed-studio);
-	--color-studio-light: var(--ed-studio-light);
-	--color-studio-night: var(--ed-studio-night);
-	--color-studio-panel: var(--ed-studio-panel);
-	--color-studio-mute: var(--ed-studio-mute);
 
 	--color-hero-rb: var(--ed-hero-rb);
 	--color-hero-wz: var(--ed-hero-wz);
@@ -362,64 +356,6 @@ a.fp-ul:focus-visible {
 	);
 }
 
-/* Library latest-release hero — at md+ the uncropped 16:9 cover sits
- * centred in a shorter box over a blurred fill. Three layers make the
- * seam soft: the heavy fill, a lightly blurred copy aligned to the sharp
- * cover whose own edges melt into the fill, and the sharp cover fading
- * over an S-curve into that blur. Masks are relative to the picture. */
-@media (min-width: 768px) {
-	.lib-hero-mid {
-		-webkit-mask-image: linear-gradient(
-			to right,
-			transparent 0,
-			#000 7%,
-			#000 93%,
-			transparent 100%
-		);
-		mask-image: linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%);
-	}
-	.lib-hero-sharp {
-		-webkit-mask-image: linear-gradient(
-			to right,
-			rgba(0, 0, 0, 0) 0%,
-			rgba(0, 0, 0, 0.04) 3%,
-			rgba(0, 0, 0, 0.14) 6%,
-			rgba(0, 0, 0, 0.32) 9.5%,
-			rgba(0, 0, 0, 0.55) 13%,
-			rgba(0, 0, 0, 0.76) 16.5%,
-			rgba(0, 0, 0, 0.92) 19.5%,
-			rgba(0, 0, 0, 1) 22%,
-			rgba(0, 0, 0, 1) 78%,
-			rgba(0, 0, 0, 0.92) 80.5%,
-			rgba(0, 0, 0, 0.76) 83.5%,
-			rgba(0, 0, 0, 0.55) 87%,
-			rgba(0, 0, 0, 0.32) 90.5%,
-			rgba(0, 0, 0, 0.14) 94%,
-			rgba(0, 0, 0, 0.04) 97%,
-			rgba(0, 0, 0, 0) 100%
-		);
-		mask-image: linear-gradient(
-			to right,
-			rgba(0, 0, 0, 0) 0%,
-			rgba(0, 0, 0, 0.04) 3%,
-			rgba(0, 0, 0, 0.14) 6%,
-			rgba(0, 0, 0, 0.32) 9.5%,
-			rgba(0, 0, 0, 0.55) 13%,
-			rgba(0, 0, 0, 0.76) 16.5%,
-			rgba(0, 0, 0, 0.92) 19.5%,
-			rgba(0, 0, 0, 1) 22%,
-			rgba(0, 0, 0, 1) 78%,
-			rgba(0, 0, 0, 0.92) 80.5%,
-			rgba(0, 0, 0, 0.76) 83.5%,
-			rgba(0, 0, 0, 0.55) 87%,
-			rgba(0, 0, 0, 0.32) 90.5%,
-			rgba(0, 0, 0, 0.14) 94%,
-			rgba(0, 0, 0, 0.04) 97%,
-			rgba(0, 0, 0, 0) 100%
-		);
-	}
-}
-
 /* Navigation loading bar animation */
 /* page-to-page crossfade (onNavigate in src/routes/+layout.svelte) */
 ::view-transition-old(root),
@@ -530,23 +466,16 @@ a.fp-ul:focus-visible {
 }
 
 /* ------------------------------------------------------------------
- * AGE Studios (/studios): broadcast type, the on-air light, the ticker,
- * snapping rails and the screen texture. Motion stops for readers who
- * ask for less of it.
+ * AGE Studios (/studios): a print shop on paper. Wide display type, flat
+ * colour blocks with a halftone screen, a second colour printed slightly
+ * off register, rubber stamps, and blocks that lift off a coloured plate
+ * on hover. `.st-rail` (snapping side-scrollers) is also used by the
+ * homepage and the Academy. Motion stops for readers who ask for less.
  * ------------------------------------------------------------------ */
 .st-wide {
 	font-family: var(--font-archivo);
 	font-stretch: 125%;
 	font-variation-settings: 'wdth' 125;
-}
-.st-onair {
-	animation: pulse-dot 1.7s infinite;
-}
-.st-ticker {
-	animation: marquee 60s linear infinite;
-}
-.st-ticker:hover {
-	animation-play-state: paused;
 }
 .st-rail {
 	scroll-snap-type: x mandatory;
@@ -559,19 +488,59 @@ a.fp-ul:focus-visible {
 .st-rail > * {
 	scroll-snap-align: start;
 }
-/* Scanlines and a soft vignette over the lead picture. */
-.st-screen::after {
-	content: '';
-	position: absolute;
-	inset: 0;
-	pointer-events: none;
-	background: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.14) 0 1px, transparent 1px 3px),
-		radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / 0.45) 100%);
-	mix-blend-mode: multiply;
+/* A halftone screen over a colour block (sits in an absolutely placed span). */
+.st-dots {
+	background-image: radial-gradient(rgb(255 255 255 / 0.2) 1.1px, transparent 1.4px);
+	background-size: 7px 7px;
+}
+.st-dots-ink {
+	background-image: radial-gradient(rgb(23 21 15 / 0.13) 1.1px, transparent 1.4px);
+	background-size: 7px 7px;
+}
+/* The second colour, printed a little off register. */
+.st-offset {
+	text-shadow: 0.06em 0.05em 0 var(--color-studio);
+}
+/* A block that lifts off its coloured plate on hover: the plate is the
+ * element's own colour (--plate), shown behind it as it moves. */
+.st-lift {
+	--plate: var(--color-ink);
+	position: relative;
+	transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1);
+	box-shadow: 0 0 0 0 var(--plate);
+}
+.group:hover .st-lift,
+.group:focus-visible .st-lift {
+	transform: translate(-5px, -5px);
+	box-shadow: 5px 5px 0 0 var(--plate);
+}
+/* A rubber stamp: "New", "Premium". */
+.st-stamp {
+	transform: rotate(-7deg);
+	border: 2px solid currentColor;
+	outline: 1px solid currentColor;
+	outline-offset: 2px;
 }
 @media (prefers-reduced-motion: reduce) {
-	.st-onair,
-	.st-ticker {
-		animation: none;
+	.st-lift,
+	.group:hover .st-lift,
+	.group:focus-visible .st-lift {
+		transition: none;
+		transform: none;
 	}
+}
+
+/* A row of tabs that scrolls sideways on phones: sideways only (no
+ * vertical wobble, no snapping), no scrollbar, and the swipe stays in the
+ * row instead of moving the page back or forward. */
+.tab-rail {
+	overflow-x: auto;
+	overflow-y: hidden;
+	overscroll-behavior-x: contain;
+	touch-action: pan-x pan-y;
+	scrollbar-width: none;
+	-webkit-overflow-scrolling: touch;
+}
+.tab-rail::-webkit-scrollbar {
+	display: none;
 }

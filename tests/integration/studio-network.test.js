@@ -229,7 +229,7 @@ describe('featuring', () => {
 		expect(home.latest).toMatchObject([
 			{
 				id: 'vid00000001',
-				href: '/studios/network/cardcast/vid00000001',
+				href: '/studios/partners/cardcast/vid00000001',
 				network: true,
 				isPremium: false,
 				creator: { name: 'Card Cast & Friends' }

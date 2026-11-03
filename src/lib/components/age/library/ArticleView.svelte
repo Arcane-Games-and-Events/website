@@ -433,7 +433,7 @@
 				</p>
 			{/if}
 			<div
-				class="mt-3.5 flex flex-wrap items-baseline justify-center gap-x-2 text-[11px] md:mt-4 {hasCover
+				class="mt-3.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-2 text-[11px] md:mt-4 {hasCover
 					? 'text-fade md:text-white/60'
 					: 'text-fade'}"
 			>
@@ -460,7 +460,7 @@
 					<span class="font-semibold">{[pubLabel, lengthLabel].filter(Boolean).join(' · ')}</span>
 				{/if}
 				{#if data.isPremium}
-					<span class="self-center"><PremiumTag /></span>
+					<PremiumTag />
 				{/if}
 			</div>
 			{#if isVideoEntry && hasCover}

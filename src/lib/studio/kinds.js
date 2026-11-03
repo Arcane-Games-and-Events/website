@@ -34,6 +34,15 @@ export function matchup(v) {
 		.join(' vs ');
 }
 
+/** Where an item plays: matches in the Library, everything else on AGE Studios. */
+export const watchHref = (v) =>
+	v.kind === 'gameplay' ? `/library/matches/${v.id}` : `/studios/${v.id}`;
+
+/** "AGE Open Los Angeles · Top 8" — where a match was played. */
+export function matchWhere(v) {
+	return [v.event?.title, v.round].filter(Boolean).join(' · ');
+}
+
 /** "S2 · E14" */
 export function episodeLabel(v) {
 	const parts = [];

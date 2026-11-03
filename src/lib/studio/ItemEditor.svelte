@@ -18,7 +18,7 @@
 	import VideoThumb from '$lib/desk/video/VideoThumb.svelte';
 	import { uploads } from '$lib/desk/video/uploads.svelte.js';
 	import { pollProcessing } from '$lib/desk/video/poll.js';
-	import { KIND, KINDS, STAGE, stageOf } from './kinds.js';
+	import { KIND, KINDS, STAGE, stageOf, watchHref } from './kinds.js';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -59,6 +59,7 @@
 			player2Name: v?.player2Name ?? '',
 			player2Hero: v?.player2Hero ?? '',
 			eventId: v?.eventId ?? '',
+			round: v?.round ?? '',
 			showId: v?.showId ?? showId ?? '',
 			season: v?.season ?? '',
 			episodeNumber: v?.episodeNumber ?? '',
@@ -258,7 +259,7 @@
 			>
 			{#if id && item?.isPublished}
 				<a
-					href="/studios/{id}"
+					href={watchHref({ id, kind: form.kind })}
 					target="_blank"
 					rel="noopener"
 					class="border border-line2 px-3 py-2 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:border-ink"
@@ -472,15 +473,33 @@
 						</label>
 					</div>
 				{/each}
-				<label class="block">
-					<span class={fieldLabel}>Event</span>
-					<select bind:value={form.eventId} class="{control} pr-8">
-						<option value="">No event</option>
-						{#each data.events as ev (ev.id)}
-							<option value={ev.id}>{ev.title}{ev.circuit ? ` · ${ev.circuit}` : ''}</option>
-						{/each}
-					</select>
-				</label>
+				<div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
+					<label class="block">
+						<span class={fieldLabel}>Event</span>
+						<select bind:value={form.eventId} class="{control} pr-8">
+							<option value="">No event</option>
+							{#each data.events as ev (ev.id)}
+								<option value={ev.id}>{ev.title}{ev.circuit ? ` · ${ev.circuit}` : ''}</option>
+							{/each}
+						</select>
+					</label>
+					<label class="block">
+						<span class={fieldLabel}>Round</span>
+						<input
+							bind:value={form.round}
+							list="studio-rounds"
+							maxlength="60"
+							placeholder="Round 5, Top 8…"
+							class={control}
+							autocomplete="off"
+						/>
+						<datalist id="studio-rounds">
+							{#each ['Round 1', 'Round 2', 'Round 3', 'Round 4', 'Round 5', 'Round 6', 'Round 7', 'Top 8', 'Semifinal', 'Final'] as r (r)}<option
+									value={r}
+								></option>{/each}
+						</datalist>
+					</label>
+				</div>
 			{:else}
 				<div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_110px_110px]">
 					<label class="block">

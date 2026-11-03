@@ -180,7 +180,7 @@
 				>Channel on YouTube ↗</a
 			>
 			{#if data.featured.length && c.isActive}
-				<a href="/studios/network/{c.slug}" class="underline hover:text-ink">View on site ↗</a>
+				<a href="/studios/partners/{c.slug}" class="underline hover:text-ink">View on site ↗</a>
 			{/if}
 		</span>
 	</div>
@@ -381,7 +381,7 @@
 				<label class="block">
 					<span class={label}>Web address</span>
 					<span class="mt-1.5 flex border border-line2 bg-white focus-within:border-ink">
-						<span class="pl-2.5 text-[13.5px] leading-10 text-fade">/studios/network/</span>
+						<span class="pl-2.5 text-[13.5px] leading-10 text-fade">/studios/partners/</span>
 						<input
 							value={form.slug}
 							oninput={(e) => (form.slug = cleanTypedSlug(e.currentTarget.value))}

@@ -1,7 +1,7 @@
 /**
- * Library pieces as browse-grid stories: the shape `StoryCard` renders.
- * Shared by the Library index and the tag pages, so a piece looks the same
- * wherever it is listed.
+ * Library pieces as browse-grid stories: the shape `StoryCard` and
+ * `LibraryCard` render. Shared by every Library page and the people
+ * pages, so a piece looks the same wherever it is listed.
  */
 import { formatDate, formatDuration } from '$lib/components/age/home/front-adapters.js';
 

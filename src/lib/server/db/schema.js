@@ -519,6 +519,8 @@ export const vod = pgTable('vods', {
 	guests: text('guests'),
 	season: integer('season'),
 	episodeNumber: integer('episode_number'),
+	// Where in its event a match was played: "Round 5", "Top 8" (migration 041).
+	round: text('round'),
 	// Access
 	isPremium: boolean('is_premium').default(true),
 	// Status
@@ -529,6 +531,26 @@ export const vod = pgTable('vods', {
 	createdBy: text('created_by').references(() => user.id),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
+});
+
+// AGE Studios projects (migration 041): interactive pages, stats, software,
+// films hosted elsewhere. A card on /studios that links to the project.
+export const studioProject = pgTable('studio_project', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	slug: text('slug').notNull().unique(),
+	title: text('title').notNull(),
+	dek: text('dek'),
+	type: text('type').notNull().default('interactive'), // interactive | stats | software | film | feature
+	coverImageId: uuid('cover_image_id').references(() => deskMedia.id, { onDelete: 'set null' }),
+	href: text('href'),
+	isPremium: boolean('is_premium').notNull().default(false),
+	isFeatured: boolean('is_featured').notNull().default(false),
+	status: text('status').notNull().default('draft'), // draft | published
+	publishedAt: timestamp('published_at', { withTimezone: true, mode: 'date' }),
+	sortOrder: integer('sort_order').notNull().default(0),
+	createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
 });
 
 // The AGE Network: outside creators' YouTube channels on AGE Studios.

@@ -1,39 +1,33 @@
-<script>
-	/**
-	 * "the Library." wordmark: a small italic serif "the" tucked over the
-	 * heavy Jost "Library", closed with an accent full stop. Render inside a
-	 * heading with `flex items-end leading-none`.
-	 *
-	 * size: 'lg' (Library page masthead) | 'md' (homepage department head)
-	 * tone: 'dark' (on ink) | 'light' (on paper)
-	 */
-	/** @type {{ size?: 'lg' | 'md', tone?: 'dark' | 'light' }} */
-	let { size = 'lg', tone = 'dark' } = $props();
+<!--
+  LibraryWordmark — the Library's name, set like a masthead: a small spaced
+  THE AGE between fine rules, over "Library" in heavy serif.
 
-	const S = {
-		lg: {
-			the: 'text-[22px] -mb-[0.6em] translate-y-[5px] md:-mb-[0.84em] md:translate-x-[5px] md:translate-y-[10px] md:text-[30px]',
-			word: 'text-[56px] md:text-[96px]'
-		},
-		md: {
-			the: 'text-[19px] -mb-[0.6em] translate-y-[4px] md:-mb-[0.84em] md:translate-x-[4px] md:translate-y-[8px] md:text-[24px]',
-			word: 'text-[48px] md:text-[72px]'
-		}
-	};
-	const s = $derived(S[size] ?? S.lg);
-	const theTone = $derived(tone === 'dark' ? 'text-paper-bg/70' : 'text-soft');
-	const dotTone = $derived(tone === 'dark' ? 'text-warm-light' : 'text-warm');
+  size: 'lg' (the Library's front page) | 'sm' (inner pages, the homepage band)
+  tone: 'dark' (on ink) | 'light' (on paper)
+-->
+<script>
+	/** @type {{ size?: 'lg' | 'sm', tone?: 'dark' | 'light' }} */
+	let { size = 'lg', tone = 'light' } = $props();
+	const lg = $derived(size === 'lg');
+	const blue = $derived(tone === 'dark' ? 'text-warm-light' : 'text-warm');
+	const ink = $derived(tone === 'dark' ? 'text-paper-bg' : 'text-ink');
 </script>
 
-<span class="block">
+<span class="inline-flex flex-col items-start leading-none" role="img" aria-label="The AGE Library">
 	<span
-		class="relative z-[1] block text-right font-newsreader leading-none font-normal italic {theTone} {s.the}"
-		>the</span
+		class="flex items-center font-libre font-bold uppercase {blue} {lg
+			? 'gap-3 text-[10.5px] tracking-[0.45em] md:gap-4 md:text-[12px]'
+			: 'gap-2 text-[8.5px] tracking-[0.4em]'}"
+		aria-hidden="true"
 	>
-	<span class="block font-jost leading-none font-extrabold tracking-[-0.02em] {s.word}"
-		>Library</span
+		The AGE
+		{#if lg}<span class="h-px w-10 bg-current opacity-70 md:w-14"></span>{/if}
+	</span>
+	<span
+		class="block font-newsreader font-bold {ink} {lg
+			? 'mt-2 text-[60px] tracking-[-0.025em] md:text-[92px]'
+			: 'mt-1 text-[30px] tracking-[-0.02em]'}"
+		style="font-variation-settings: 'opsz' 72;"
+		aria-hidden="true">Library</span
 	>
 </span>
-<span class="block font-jost leading-none font-extrabold {dotTone} {s.word}" aria-hidden="true"
-	>.</span
->

@@ -1,9 +1,9 @@
 /**
- * The Studio on the public site: AGE Studios (/studios). Everything here
- * reads published, ready items only; Premium gating and playback tokens are
- * the player page's job.
+ * The Studio on the public site: AGE Studios (/studios) and the Library's
+ * match archive (/library/matches). Everything here reads published, ready
+ * items only; Premium gating and playback tokens are the player page's job.
  */
-import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, ne, or, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
 import {
 	event,
@@ -17,6 +17,8 @@ import { getMuxThumbnailToken } from '$lib/server/mux.js';
 import { withCovers } from './media.js';
 import { listShows, getShowBySlug } from './shows.js';
 import { withAvatars } from './network.js';
+import { publicProjects } from './projects.js';
+import { watchHref } from '$lib/studio/kinds.js';
 
 const LIVE = and(eq(vod.isPublished, true), eq(vod.status, 'ready'));
 const PER_PAGE = 12;
@@ -25,6 +27,7 @@ const fields = {
 	v: vod,
 	eventTitle: event.title,
 	circuit: event.circuit,
+	eventFormat: event.format,
 	showName: studioShow.name,
 	showSlug: studioShow.slug
 };
@@ -44,7 +47,7 @@ async function cardsOf(rows) {
 			}
 			return {
 				id: v.id,
-				href: `/studios/${v.id}`,
+				href: watchHref(v),
 				kind: v.kind,
 				audio,
 				title: v.title,
@@ -53,11 +56,14 @@ async function cardsOf(rows) {
 				player1Hero: v.player1Hero,
 				player2Name: v.player2Name,
 				player2Hero: v.player2Hero,
+				round: v.round,
 				guests: v.guests,
 				season: v.season,
 				episodeNumber: v.episodeNumber,
 				show: v.showId ? { id: v.showId, name: r.showName, slug: r.showSlug } : null,
-				event: v.eventId ? { id: v.eventId, title: r.eventTitle, circuit: r.circuit } : null,
+				event: v.eventId
+					? { id: v.eventId, title: r.eventTitle, circuit: r.circuit, format: r.eventFormat }
+					: null,
 				isPremium: v.isPremium !== false,
 				duration: v.duration,
 				publishedAt: v.publishedAt,
@@ -85,53 +91,34 @@ export async function latest({ kind = null, limit = 6 } = {}) {
 	return cardsOf(rows);
 }
 
-/** AGE Studios' front page, cached until anything in the Studio changes. */
-export function watchHome() {
-	return cached(
-		'vods:watch:home',
-		async () => {
-			const [lead, gameplay, podcasts, interviews, video, shows, counts] = await Promise.all([
-				latest({ limit: 1 }),
-				latest({ kind: 'gameplay', limit: 9 }),
-				latest({ kind: 'podcast', limit: 6 }),
-				latest({ kind: 'interview', limit: 6 }),
-				latest({ kind: 'video', limit: 6 }),
-				listShows({ publicOnly: true }),
-				db
-					.select({ kind: vod.kind, n: sql`count(*)::int` })
-					.from(vod)
-					.where(LIVE)
-					.groupBy(vod.kind)
-			]);
-			return {
-				lead: lead[0] ?? null,
-				gameplay: gameplay.filter((g) => g.id !== lead[0]?.id).slice(0, 8),
-				podcasts,
-				interviews,
-				video,
-				shows: shows.map((s) => ({
-					id: s.id,
-					slug: s.slug,
-					name: s.name,
-					kind: s.kind,
-					host: s.host,
-					description: s.description,
-					cover: s.cover,
-					episodes: s.episodes
-				})),
-				counts: Object.fromEntries(counts.map((c) => [c.kind, Number(c.n)]))
-			};
-		},
-		{ tags: ['vods', 'media'], ttl: CACHE_TTL.FIVE_MINUTES }
-	);
+/** The newest episodes, interviews and films: everything but matches. */
+export async function latestProductions(limit = 6) {
+	const rows = await base()
+		.where(and(LIVE, ne(vod.kind, 'gameplay')))
+		.orderBy(desc(vod.publishedAt))
+		.limit(limit);
+	return cardsOf(rows);
 }
 
+/** A round in the top cut ("Top 8", "Semifinal", "Finals"), as opposed to a Swiss round. */
+const TOP_CUT = sql`${vod.round} ~* '(top|final|semi|quarter)'`;
+
 /**
- * One page of an archive: one kind, with search; gameplay also by event
- * and hero; sorted newest, oldest or longest.
+ * One page of an archive: one kind, with search; matches also by event,
+ * hero, format and stage (Swiss rounds or the top cut); sorted newest,
+ * oldest or longest.
  */
-export function archive({ kind, q = '', eventId = '', hero = '', sort = 'newest', page = 1 }) {
-	const key = `vods:watch:${kind}:${sort}|${eventId || 'all'}|${hero || 'all'}|${q || 'all'}|${page}`;
+export function archive({
+	kind,
+	q = '',
+	eventId = '',
+	hero = '',
+	format = '',
+	stage = '',
+	sort = 'newest',
+	page = 1
+}) {
+	const key = `vods:watch:${kind}:${sort}|${eventId || 'all'}|${hero || 'all'}|${format || 'all'}|${stage || 'all'}|${q || 'all'}|${page}`;
 	return cached(
 		key,
 		async () => {
@@ -143,13 +130,19 @@ export function archive({ kind, q = '', eventId = '', hero = '', sort = 'newest'
 						ilike(vod.title, like),
 						ilike(vod.player1Name, like),
 						ilike(vod.player2Name, like),
+						ilike(vod.player1Hero, like),
+						ilike(vod.player2Hero, like),
 						ilike(vod.guests, like),
+						ilike(event.title, like),
 						ilike(studioShow.name, like)
 					)
 				);
 			}
 			if (eventId) where.push(eq(vod.eventId, eventId));
 			if (hero) where.push(or(ilike(vod.player1Hero, hero), ilike(vod.player2Hero, hero)));
+			if (format) where.push(eq(event.format, format));
+			if (stage === 'top') where.push(TOP_CUT);
+			if (stage === 'swiss') where.push(sql`${vod.round} is not null and not (${TOP_CUT})`);
 			const order =
 				sort === 'oldest'
 					? asc(vod.publishedAt)
@@ -160,6 +153,7 @@ export function archive({ kind, q = '', eventId = '', hero = '', sort = 'newest'
 				db
 					.select({ total: sql`count(*)::int` })
 					.from(vod)
+					.leftJoin(event, eq(vod.eventId, event.id))
 					.leftJoin(studioShow, eq(vod.showId, studioShow.id))
 					.where(and(...where)),
 				base()
@@ -168,11 +162,19 @@ export function archive({ kind, q = '', eventId = '', hero = '', sort = 'newest'
 					.limit(PER_PAGE)
 					.offset((page - 1) * PER_PAGE),
 				db
-					.select({ p1: vod.player1Hero, p2: vod.player2Hero, eventId: vod.eventId })
+					.select({
+						p1: vod.player1Hero,
+						p2: vod.player2Hero,
+						eventId: vod.eventId,
+						format: event.format,
+						round: vod.round
+					})
 					.from(vod)
+					.leftJoin(event, eq(vod.eventId, event.id))
 					.where(and(LIVE, eq(vod.kind, kind)))
 			]);
 			const heroes = [...new Set(all.flatMap((r) => [r.p1, r.p2]).filter(Boolean))].sort();
+			const formats = [...new Set(all.map((r) => r.format).filter(Boolean))].sort();
 			const eventIds = [...new Set(all.map((r) => r.eventId).filter(Boolean))];
 			const events = eventIds.length
 				? await db
@@ -188,7 +190,10 @@ export function archive({ kind, q = '', eventId = '', hero = '', sort = 'newest'
 				page,
 				totalPages: Math.max(1, Math.ceil(Number(total) / PER_PAGE)),
 				heroes,
-				events
+				formats,
+				events,
+				// Offer Swiss / top cut only once some matches say which round they were.
+				hasRounds: all.some((r) => r.round)
 			};
 		},
 		{ tags: ['vods', 'events', 'media'], ttl: CACHE_TTL.MINUTE }
@@ -301,7 +306,7 @@ function creatorOf(c) {
 function networkCard(v, creator) {
 	return {
 		id: v.youtubeVideoId,
-		href: `/studios/network/${creator.slug}/${v.youtubeVideoId}`,
+		href: `/studios/partners/${creator.slug}/${v.youtubeVideoId}`,
 		kind: 'network',
 		network: true,
 		audio: false,
@@ -448,4 +453,41 @@ export function networkPlayer(slug, youtubeVideoId) {
 		},
 		{ tags: ['vods', 'media'], ttl: CACHE_TTL.FIVE_MINUTES }
 	);
+}
+
+/**
+ * AGE Studios' front page: projects first (the featured ones lead), then
+ * shows with their newest episodes, the partners, and the newest matches
+ * (which live in the Library).
+ */
+export async function studiosHub() {
+	const [projects, shows, episodes, partners, matches] = await Promise.all([
+		publicProjects(),
+		cached(
+			'vods:studios:shows',
+			async () =>
+				(await listShows({ publicOnly: true })).map((s) => ({
+					id: s.id,
+					slug: s.slug,
+					name: s.name,
+					kind: s.kind,
+					host: s.host,
+					description: s.description,
+					cover: s.cover,
+					episodes: s.episodes,
+					latestAt: s.latestAt
+				})),
+			{ tags: ['vods', 'media'], ttl: CACHE_TTL.FIVE_MINUTES }
+		),
+		cached('vods:studios:episodes', () => latestProductions(6), {
+			tags: ['vods', 'media'],
+			ttl: CACHE_TTL.FIVE_MINUTES
+		}),
+		networkHome(),
+		cached('vods:studios:matches', () => latest({ kind: 'gameplay', limit: 4 }), {
+			tags: ['vods', 'events', 'media'],
+			ttl: CACHE_TTL.FIVE_MINUTES
+		})
+	]);
+	return { projects, shows, episodes, partners, matches };
 }

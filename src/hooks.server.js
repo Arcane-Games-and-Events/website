@@ -62,8 +62,9 @@ async function validateSessionCached(sid) {
 }
 
 // Courses moved out of the Desk into the Classroom, and bonus gameplay into
-// the Studio (2026-10-30). Old links (bookmarks, emails, notifications)
-// land on the new pages.
+// the Studio (2026-10-30); then matches moved to the Library and the AGE
+// Network became AGE Studios' partners (2026-11-03). Old links (bookmarks,
+// emails, notifications) land on the new pages.
 const MOVED = [
 	[/^\/desk\/courses\/?$/, '/classroom'],
 	[/^\/desk\/courses\//, '/classroom/courses/'],
@@ -73,12 +74,19 @@ const MOVED = [
 	[/^\/desk\/videos\/(lesson|trailer)\//, '/classroom/videos/$1/'],
 	// Bonus gameplay moved to the Studio (2026-10-30).
 	[/^\/desk\/videos\/?$/, '/studio/media'],
-	[/^\/desk\/videos\/vod\/([^/]+)\/?$/, '/studio/media/$1/analytics']
+	[/^\/desk\/videos\/vod\/([^/]+)\/?$/, '/studio/media/$1/analytics'],
+	// Matches moved to the Library; the network became partners (2026-11-03).
+	[/^\/studios\/gameplay\/?$/, '/library/matches'],
+	[/^\/studios\/network(\/|$)/, '/studios/partners$1'],
+	[/^\/studios\/(podcasts|interviews|video)\/?$/, '/studios/shows']
 ];
 
 export const handle = async ({ event, resolve }) => {
 	const { request, url } = event;
-	if (request.method === 'GET' && url.pathname.startsWith('/desk/')) {
+	if (
+		request.method === 'GET' &&
+		(url.pathname.startsWith('/desk/') || url.pathname.startsWith('/studios/'))
+	) {
 		for (const [from, to] of MOVED) {
 			if (from.test(url.pathname)) {
 				const path = url.pathname.replace(from, to).replace(/\/$/, '') || '/classroom';

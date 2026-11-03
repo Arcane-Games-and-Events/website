@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 
-/** A bonus match's page moved to AGE Studios (2026-10-30). */
+/** An old address for a Studio item: matches play at /library/matches (which sends anything else to AGE Studios). */
 export function load({ params }) {
-	throw redirect(301, `/studios/${params.id}`);
+	throw redirect(301, `/library/matches/${params.id}`);
 }

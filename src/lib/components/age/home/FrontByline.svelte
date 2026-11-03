@@ -24,10 +24,10 @@
 
 <div
 	class="{stack
-		? 'flex flex-col items-center gap-y-1 md:flex-row md:flex-wrap md:items-baseline md:justify-center md:gap-x-2 md:gap-y-0'
-		: 'flex flex-wrap items-baseline gap-x-2'} {size === 'sm'
-		? 'text-[10px]'
-		: 'text-[11px]'} {onDark ? 'text-white/60' : 'text-fade'} {extra}"
+		? 'flex flex-col items-center gap-y-1 md:flex-row md:flex-wrap md:items-center md:justify-center md:gap-x-2 md:gap-y-0'
+		: 'flex flex-wrap items-center gap-x-2'} {size === 'sm' ? 'text-[10px]' : 'text-[11px]'} {onDark
+		? 'text-white/60'
+		: 'text-fade'} {extra}"
 >
 	{#if author}
 		<span
@@ -40,10 +40,10 @@
 		<span class={stack ? 'hidden md:inline' : ''} aria-hidden="true">·</span>
 	{/if}
 	{#if tail || premium}
-		<span class="flex items-baseline gap-x-2.5 whitespace-nowrap">
+		<span class="flex items-center gap-x-2.5 whitespace-nowrap">
 			{#if tail}<span class="font-semibold">{tail}</span>{/if}
 			{#if premium}
-				<span class="self-center"><PremiumTag size={size === 'sm' ? 'sm' : 'md'} /></span>
+				<PremiumTag size={size === 'sm' ? 'sm' : 'md'} />
 			{/if}
 		</span>
 	{/if}

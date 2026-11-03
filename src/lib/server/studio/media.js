@@ -26,6 +26,7 @@ const TEXT = {
 	player1Hero: 120,
 	player2Name: 120,
 	player2Hero: 120,
+	round: 60,
 	guests: 300
 };
 

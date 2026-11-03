@@ -23,7 +23,7 @@ import {
 	user as userTable
 } from '$lib/server/db/schema.js';
 import { alias } from 'drizzle-orm/pg-core';
-import { and, desc, eq, inArray, or, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, isNotNull, isNull, or, lte, sql } from 'drizzle-orm';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import { mediaImage, mediaColumns } from '$lib/server/desk/image.js';
 
@@ -43,8 +43,15 @@ export async function listPublishedEntries({ limit = 100, authorId = null } = {}
 	});
 }
 
-async function queryPublishedEntries({ limit, authorId }) {
-	const now = new Date();
+/** Entries readers can see: published, or scheduled for a time that's passed. */
+const live = (now = new Date()) =>
+	or(
+		eq(deskEntry.status, 'published'),
+		and(eq(deskEntry.status, 'scheduled'), lte(deskEntry.scheduledFor, now))
+	);
+
+/** Entry rows with their pictures and author, as cards (tags included). */
+async function entryRows({ where, order = [desc(deskEntry.publishedAt)], limit, offset = 0 }) {
 	const cover = alias(deskMedia, 'cover_media');
 	const thumb = alias(deskMedia, 'thumb_media');
 
@@ -70,17 +77,10 @@ async function queryPublishedEntries({ limit, authorId }) {
 		.leftJoin(cover, eq(deskEntry.coverImageId, cover.id))
 		.leftJoin(thumb, eq(deskEntry.thumbnailImageId, thumb.id))
 		.leftJoin(userTable, eq(deskEntry.authorId, userTable.id))
-		.where(
-			and(
-				or(
-					eq(deskEntry.status, 'published'),
-					and(eq(deskEntry.status, 'scheduled'), lte(deskEntry.scheduledFor, now))
-				),
-				authorId ? eq(deskEntry.authorId, authorId) : undefined
-			)
-		)
-		.orderBy(desc(deskEntry.publishedAt))
-		.limit(limit);
+		.where(where)
+		.orderBy(...order)
+		.limit(limit)
+		.offset(offset);
 
 	// Tags, one query for the whole page of rows.
 	const tagsByEntry = await loadTagsForEntries(rows.map((r) => r.id));
@@ -122,6 +122,122 @@ async function queryPublishedEntries({ limit, authorId }) {
 			videoDuration
 		};
 	});
+}
+
+function queryPublishedEntries({ limit, authorId }) {
+	return entryRows({
+		where: and(live(), authorId ? eq(deskEntry.authorId, authorId) : undefined),
+		limit
+	});
+}
+
+export const LIBRARY_PER_PAGE = 12;
+
+/** `kind`: written pieces have no video; videos do. */
+const kindIs = (kind) =>
+	kind === 'article'
+		? isNull(deskEntry.videoProvider)
+		: kind === 'video'
+			? isNotNull(deskEntry.videoProvider)
+			: undefined;
+
+/**
+ * One page of the Library's articles or videos (or both), searched and
+ * filtered on the server. The search matches the title, the summary, the
+ * author's name and the topic.
+ *
+ * @param {{ q?: string, kind?: 'article' | 'video' | '', access?: 'free' | 'premium' | '',
+ *   tag?: string, sort?: 'newest' | 'oldest', page?: number, perPage?: number }} opts
+ */
+export function searchEntries({
+	q = '',
+	kind = '',
+	access = '',
+	tag = '',
+	sort = 'newest',
+	page = 1,
+	perPage = LIBRARY_PER_PAGE
+} = {}) {
+	const key = `articles:desk:search:${kind || 'all'}|${access || 'all'}|${tag || 'all'}|${sort}|${perPage}|${page}|${q.toLowerCase() || 'all'}`;
+	return cached(
+		key,
+		async () => {
+			const where = [live(), kindIs(kind)];
+			if (access === 'free' || access === 'premium') where.push(eq(deskEntry.accessMode, access));
+			if (tag)
+				where.push(
+					sql`exists (select 1 from ${deskEntryTag} et join ${deskTag} t on t.id = et.tag_id where et.entry_id = ${deskEntry.id} and t.slug = ${tag})`
+				);
+			if (q) {
+				const like = `%${q.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
+				where.push(
+					or(
+						ilike(deskEntry.title, like),
+						ilike(deskEntry.excerpt, like),
+						sql`exists (select 1 from ${userTable} u where u.id = ${deskEntry.authorId} and (u.first_name || ' ' || coalesce(u.last_name, '')) ilike ${like})`,
+						sql`exists (select 1 from ${deskEntryTag} et join ${deskTag} t on t.id = et.tag_id where et.entry_id = ${deskEntry.id} and t.name ilike ${like})`
+					)
+				);
+			}
+			const all = and(...where);
+			const [[{ total }], items] = await Promise.all([
+				db
+					.select({ total: sql`count(*)::int` })
+					.from(deskEntry)
+					.where(all),
+				entryRows({
+					where: all,
+					order: [sort === 'oldest' ? asc(deskEntry.publishedAt) : desc(deskEntry.publishedAt)],
+					limit: perPage,
+					offset: (page - 1) * perPage
+				})
+			]);
+			return {
+				items,
+				total: Number(total),
+				page,
+				totalPages: Math.max(1, Math.ceil(Number(total) / perPage))
+			};
+		},
+		{ tags: ['entries', 'media'], ttl: CACHE_TTL.FIVE_MINUTES }
+	);
+}
+
+/** Topics with live pieces, most first: { name, slug, count }. */
+export function libraryTopics() {
+	return cached(
+		'articles:desk:topics',
+		async () => {
+			const rows = await db
+				.select({ name: deskTag.name, slug: deskTag.slug, count: sql`count(*)::int` })
+				.from(deskTag)
+				.innerJoin(deskEntryTag, eq(deskEntryTag.tagId, deskTag.id))
+				.innerJoin(deskEntry, eq(deskEntryTag.entryId, deskEntry.id))
+				.where(live())
+				.groupBy(deskTag.id)
+				.orderBy(desc(sql`count(*)`), asc(deskTag.name));
+			return rows.map((r) => ({ ...r, count: Number(r.count) }));
+		},
+		{ tags: ['entries'], ttl: CACHE_TTL.FIVE_MINUTES }
+	);
+}
+
+/** How many written pieces and videos the Library holds. */
+export function libraryCounts() {
+	return cached(
+		'articles:desk:counts',
+		async () => {
+			const [row] = await db
+				.select({
+					articles: sql`count(*) filter (where ${deskEntry.videoProvider} is null)::int`,
+					videos: sql`count(*) filter (where ${deskEntry.videoProvider} is not null)::int`
+				})
+				.from(deskEntry)
+				.where(live());
+			return { articles: Number(row?.articles) || 0, videos: Number(row?.videos) || 0 };
+		},
+		{ tags: ['entries'], ttl: CACHE_TTL.FIVE_MINUTES }
+	);
 }
 
 /**

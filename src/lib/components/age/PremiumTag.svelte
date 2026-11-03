@@ -11,9 +11,9 @@
 	/** @type {{ variant?: 'inline' | 'corner', size?: 'sm' | 'md' | 'lg' }} */
 	let { variant = 'inline', size = 'md' } = $props();
 	const sizes = {
-		sm: 'gap-1 px-1.5 py-[2px] text-[8.5px] tracking-[0.14em]',
-		md: 'gap-1.5 px-2 py-[3px] text-[9.5px] tracking-[0.16em]',
-		lg: 'gap-2 px-3 py-1.5 text-[10.5px] tracking-[0.18em]'
+		sm: 'gap-1.5 px-2.5 py-[6px] text-[10px] tracking-[0.14em]',
+		md: 'gap-1.5 px-3 py-[7px] text-[11px] tracking-[0.15em]',
+		lg: 'gap-2 px-3.5 py-2 text-[12px] tracking-[0.17em]'
 	};
 </script>
 

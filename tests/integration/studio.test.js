@@ -7,12 +7,13 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
-import { deskMedia, vod } from '$lib/server/db/schema.js';
+import { deskMedia, event, vod } from '$lib/server/db/schema.js';
 import mux from '$lib/server/mux.js';
 import { load as studioLayout } from '../../src/routes/studio/+layout.server.js';
 import { load as deskLayout } from '../../src/routes/desk/+layout.server.js';
 import { load as classroomLayout } from '../../src/routes/classroom/+layout.server.js';
 import { load as playerLoad } from '../../src/routes/studios/[id=uuid]/+page.server.js';
+import { load as matchLoad } from '../../src/routes/library/matches/[id=uuid]/+page.server.js';
 import { POST as createRoute } from '../../src/routes/api/desk/videos/vod/+server.js';
 import { PATCH as itemRoute } from '../../src/routes/api/desk/videos/[target]/[id]/+server.js';
 import { POST as showsRoute } from '../../src/routes/api/studio/shows/+server.js';
@@ -20,7 +21,7 @@ import { DELETE as deleteShowRoute } from '../../src/routes/api/studio/shows/[id
 import { canManage, listMedia } from '$lib/server/media/library.js';
 import { canManageVideoOf } from '$lib/server/video/mux.js';
 import { studioHome } from '$lib/server/studio/list.js';
-import { archive, latest, playerItem, showPage, watchHome } from '$lib/server/studio/public.js';
+import { archive, latest, playerItem, showPage, studiosHub } from '$lib/server/studio/public.js';
 import { createAdmin, createUser } from '../support/factories.js';
 import { callRoute } from '../support/courses.js';
 
@@ -198,16 +199,19 @@ describe('the Studio’s image library', () => {
 });
 
 describe('AGE Studios', () => {
-	test('the front room groups what’s live by kind, newest first', async () => {
+	test('the hub: shows and their newest episodes, and the newest matches (in the Library)', async () => {
 		const show = await newShow();
 		await live({ kind: 'gameplay', title: 'Old match', publishedAt: new Date(Date.now() - 864e5) });
 		await live({ kind: 'podcast', title: 'Episode', showId: show.id });
 		await live({ kind: 'interview', title: 'Chat' });
 		await live({ kind: 'gameplay', title: 'Hidden', isPublished: false });
-		const h = await watchHome();
-		expect(h.counts).toEqual({ gameplay: 1, podcast: 1, interview: 1 });
-		expect(h.gameplay.map((g) => g.title)).toEqual(['Old match']);
-		expect(h.podcasts[0]).toMatchObject({ title: 'Episode', show: { slug: 'cardboard-hour' } });
+		const h = await studiosHub();
+		expect(h.matches.map((g) => g.title)).toEqual(['Old match']);
+		expect(h.matches[0].href).toMatch(/^\/library\/matches\//);
+		expect(h.episodes.map((e) => e.title).sort()).toEqual(['Chat', 'Episode']);
+		expect(h.episodes.find((e) => e.title === 'Episode')).toMatchObject({
+			show: { slug: 'cardboard-hour' }
+		});
 		expect(h.shows.map((s) => s.name)).toEqual(['Cardboard Hour']);
 		expect((await latest({ kind: 'interview' }))[0].href).toMatch(/^\/studios\//);
 	});
@@ -269,5 +273,65 @@ describe('AGE Studios', () => {
 		const { bump } = await import('$lib/server/cache/index.js');
 		await bump('vods');
 		await expect(asUser(member, free.id)).rejects.toMatchObject({ status: 404 });
+	});
+
+	test('matches play in the Library; everything else on AGE Studios', async () => {
+		const match = await live({ kind: 'gameplay', title: 'Match' });
+		const chat = await live({ kind: 'interview', title: 'Chat' });
+		const at = (load, id) =>
+			load({ params: { id }, locals: { user: null } }).then(
+				() => 'ok',
+				(err) => err.location ?? Promise.reject(err)
+			);
+		expect(await at(matchLoad, match.id)).toBe('ok');
+		expect(await at(playerLoad, match.id)).toBe(`/library/matches/${match.id}`);
+		expect(await at(playerLoad, chat.id)).toBe('ok');
+		expect(await at(matchLoad, chat.id)).toBe(`/studios/${chat.id}`);
+	});
+
+	test('the match archive filters by format and stage, and searches heroes and events', async () => {
+		const [cc] = await db
+			.insert(event)
+			.values({
+				id: `ev-${randomUUID().slice(0, 6)}`,
+				title: 'AGE Open Boston',
+				price: '40.00',
+				circuit: 'New England',
+				month: 'December',
+				eventDate: new Date(),
+				format: 'Classic Constructed',
+				status: 'completed'
+			})
+			.returning();
+		const [blitz] = await db
+			.insert(event)
+			.values({
+				id: `ev-${randomUUID().slice(0, 6)}`,
+				title: 'AGE Open Austin',
+				price: '40.00',
+				circuit: 'Texas',
+				month: 'December',
+				eventDate: new Date(),
+				format: 'Blitz',
+				status: 'completed'
+			})
+			.returning();
+		await live({ kind: 'gameplay', title: 'Swiss', eventId: cc.id, round: 'Round 3' });
+		await live({ kind: 'gameplay', title: 'Final', eventId: cc.id, round: 'Top 8' });
+		await live({ kind: 'gameplay', title: 'Quick', eventId: blitz.id, player1Hero: 'Kano' });
+
+		const all = await archive({ kind: 'gameplay' });
+		expect(all.formats).toEqual(['Blitz', 'Classic Constructed']);
+		expect(all.hasRounds).toBe(true);
+		const titles = (r) => r.items.map((i) => i.title).sort();
+		expect(titles(await archive({ kind: 'gameplay', format: 'Blitz' }))).toEqual(['Quick']);
+		expect(titles(await archive({ kind: 'gameplay', stage: 'top' }))).toEqual(['Final']);
+		expect(titles(await archive({ kind: 'gameplay', stage: 'swiss' }))).toEqual(['Swiss']);
+		expect(titles(await archive({ kind: 'gameplay', q: 'boston' }))).toEqual(['Final', 'Swiss']);
+		expect(titles(await archive({ kind: 'gameplay', q: 'kano' }))).toEqual(['Quick']);
+		expect(all.items.find((i) => i.title === 'Final')).toMatchObject({
+			round: 'Top 8',
+			event: { format: 'Classic Constructed' }
+		});
 	});
 });

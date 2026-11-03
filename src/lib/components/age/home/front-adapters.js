@@ -9,6 +9,7 @@
  */
 
 import { CIRCUITS } from '$lib/data/circuits.js';
+import { watchHref } from '$lib/studio/kinds.js';
 
 const FALLBACK_IMAGE = 'https://www.age.events/banner/articles-banner.webp';
 
@@ -151,7 +152,7 @@ function vodStory(v) {
 	const who = v?.kind && v.kind !== 'gameplay' ? (v?.guests ? `with ${v.guests}` : '') : players;
 	return {
 		kind: /** @type {const} */ ('video'),
-		href: v?.id ? `/studios/${v.id}` : '/studios',
+		href: v?.id ? watchHref(v) : '/studios',
 		title: v?.title || who || 'Untitled',
 		dek: v?.description || who,
 		image: vodImage(v),
@@ -159,7 +160,7 @@ function vodStory(v) {
 		alt: v?.cover?.alt || v?.title || who || '',
 		rubric: studioRubric(v),
 		length: formatDuration(v?.duration),
-		author: 'AGE Studios',
+		author: v?.kind === 'gameplay' ? 'AGE Open' : 'AGE Studios',
 		date: formatDate(v?.publishedAt),
 		dateIso: v?.publishedAt || null,
 		premium: !!v?.isPremium

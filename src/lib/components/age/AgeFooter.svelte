@@ -3,10 +3,12 @@
 		{
 			h: 'Read',
 			items: [
-				{ label: 'Latest Articles', href: '/library' },
-				{ label: 'Pro Insight', href: '/library?tier=premium' },
-				{ label: 'The SAGE Series', href: '/library?series=sage' },
-				{ label: 'Set Reviews', href: '/library?topic=set-review' },
+				{ label: 'Latest Articles', href: '/library/articles' },
+				{ label: 'Pro Insight', href: '/library/articles?access=premium' },
+				{ label: 'The SAGE Series', href: '/library/search?q=SAGE' },
+				{ label: 'Set Reviews', href: '/library/tag/set-review' },
+				{ label: 'Matches', href: '/library/matches' },
+				{ label: 'AGE Studios', href: '/studios' },
 				{ label: 'Premium', href: '/premium' }
 			]
 		},

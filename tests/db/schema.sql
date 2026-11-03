@@ -5261,3 +5261,34 @@ ALTER TABLE cms_media ADD CONSTRAINT cms_media_library_check
 -- 039_people_handles.sql
 ALTER TABLE cms_author_profile ADD COLUMN IF NOT EXISTS handle text;
 CREATE UNIQUE INDEX IF NOT EXISTS cms_author_profile_handle_unique ON cms_author_profile (handle);
+
+-- 041_studios_projects.sql (without the Supabase role grants)
+CREATE TABLE IF NOT EXISTS studio_project (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug            text NOT NULL UNIQUE,
+  title           text NOT NULL,
+  dek             text,
+  type            text NOT NULL DEFAULT 'interactive',
+  cover_image_id  uuid REFERENCES cms_media(id) ON DELETE SET NULL,
+  href            text,
+  is_premium      boolean NOT NULL DEFAULT false,
+  is_featured     boolean NOT NULL DEFAULT false,
+  status          text NOT NULL DEFAULT 'draft',
+  published_at    timestamptz,
+  sort_order      integer NOT NULL DEFAULT 0,
+  created_by      text REFERENCES "user"(id) ON DELETE SET NULL,
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  updated_at      timestamptz NOT NULL DEFAULT now()
+);
+DO $$ BEGIN
+  ALTER TABLE studio_project ADD CONSTRAINT studio_project_type_check
+    CHECK (type IN ('interactive', 'stats', 'software', 'film', 'feature'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  ALTER TABLE studio_project ADD CONSTRAINT studio_project_status_check
+    CHECK (status IN ('draft', 'published'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+CREATE INDEX IF NOT EXISTS studio_project_live_idx
+  ON studio_project (status, is_featured DESC, published_at DESC);
+
+ALTER TABLE vods ADD COLUMN IF NOT EXISTS round text;

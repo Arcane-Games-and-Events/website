@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 
-/** Bonus gameplay moved to AGE Studios (2026-10-30); keep old links and filters working. */
+/** The old bonus gameplay archive: matches now live at /library/matches. */
 export function load({ url }) {
-	throw redirect(301, `/studios/gameplay${url.search}`);
+	throw redirect(301, `/library/matches${url.search}`);
 }
