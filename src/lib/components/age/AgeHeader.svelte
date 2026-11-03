@@ -181,7 +181,7 @@
 			>
 				<img
 					class="h-7 invert sm:h-[30px] md:h-[34px]"
-					src="https://www.age.events/logo.svg"
+					src="/logo.svg"
 					alt="AGE"
 				/>
 			</a>

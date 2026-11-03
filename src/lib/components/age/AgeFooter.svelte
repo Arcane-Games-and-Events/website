@@ -47,7 +47,7 @@
 	>
 		<div>
 			<a href="/" aria-label="AGE home" class="inline-block">
-				<img class="mb-[14px] h-[30px] invert" src="https://www.age.events/logo.svg" alt="AGE" />
+				<img class="mb-[14px] h-[30px] invert" src="/logo.svg" alt="AGE" />
 			</a>
 			<p class="max-w-[320px] text-[13px] leading-[1.55] text-soft">
 				Arcane Games and Events — independent, member-supported competitive Flesh and Blood across

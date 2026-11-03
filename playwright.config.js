@@ -11,12 +11,16 @@ const E2E_DATABASE_URL = (process.env.TEST_DATABASE_URL || testEnvironment().DAT
 	'/age_test_e2e$1'
 );
 process.env.TEST_DATABASE_URL = E2E_DATABASE_URL;
+const PORT = 4173;
+// A stand-in Authorize.net (tests/e2e/fake-gateway.js): cards are charged
+// there, never at the real gateway.
+const GATEWAY_PORT = 4175;
 const env = {
 	...testEnvironment(),
 	DATABASE_URL: E2E_DATABASE_URL,
+	AUTHNET_TEST_ENDPOINT: `http://127.0.0.1:${GATEWAY_PORT}/xml/v1/request.api`,
 	NODE_OPTIONS: '--no-deprecation'
 };
-const PORT = 4173;
 
 export default defineConfig({
 	testDir: 'tests/e2e',
@@ -47,14 +51,21 @@ export default defineConfig({
 			}
 		}
 	],
-	webServer: {
-		command: process.env.E2E_SKIP_BUILD
-			? `pnpm preview --port ${PORT} --strictPort`
-			: // The build is noisy; keep its output in a file and show it only if it fails.
-				`mkdir -p node_modules/.cache && (pnpm build > node_modules/.cache/e2e-build.log 2>&1 || (cat node_modules/.cache/e2e-build.log && exit 1)) && pnpm preview --port ${PORT} --strictPort`,
-		port: PORT,
-		env,
-		timeout: 300_000,
-		reuseExistingServer: !process.env.CI
-	}
+	webServer: [
+		{
+			command: `node tests/e2e/fake-gateway.js ${GATEWAY_PORT}`,
+			port: GATEWAY_PORT,
+			reuseExistingServer: !process.env.CI
+		},
+		{
+			command: process.env.E2E_SKIP_BUILD
+				? `pnpm preview --port ${PORT} --strictPort`
+				: // The build is noisy; keep its output in a file and show it only if it fails.
+					`mkdir -p node_modules/.cache && (pnpm build > node_modules/.cache/e2e-build.log 2>&1 || (cat node_modules/.cache/e2e-build.log && exit 1)) && pnpm preview --port ${PORT} --strictPort`,
+			port: PORT,
+			env,
+			timeout: 300_000,
+			reuseExistingServer: !process.env.CI
+		}
+	]
 });

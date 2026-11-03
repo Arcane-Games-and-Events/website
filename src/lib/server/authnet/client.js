@@ -139,6 +139,18 @@ class AuthNetClient {
 	get isProduction() {
 		return this.environment === 'production';
 	}
+	/**
+	 * Where requests go. The browser tests point the sandbox at a stand-in
+	 * gateway on this machine (`AUTHNET_TEST_ENDPOINT`); it's ignored in
+	 * production and for any address that isn't this machine, so it can
+	 * never send real charges anywhere else.
+	 */
+	get endpoint() {
+		const local = env.AUTHNET_TEST_ENDPOINT;
+		if (local && !this.isProduction && /^http:\/\/(127\.0\.0\.1|localhost):\d+\//.test(local))
+			return local;
+		return ENDPOINT[this.environment];
+	}
 	get timeoutMs() {
 		return Number(env.AUTHNET_TIMEOUT_MS) || 20000;
 	}
@@ -170,7 +182,7 @@ class AuthNetClient {
 		const timer = setTimeout(() => controller.abort(), this.timeoutMs);
 		let text;
 		try {
-			const res = await fetch(ENDPOINT[this.environment], {
+			const res = await fetch(this.endpoint, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body,

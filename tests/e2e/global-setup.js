@@ -1,14 +1,15 @@
 /**
- * Fresh database for the browser tests, with the few rows the public pages
- * need to render something real.
+ * Fresh database for the browser tests: the few rows the public pages need
+ * to render something real, then the signed-in people and courses from
+ * tests/e2e/seed.js (made through Vitest, which can load the app's code).
  */
+import { execFileSync } from 'node:child_process';
 import postgres from 'postgres';
 import { createTestDatabase } from '../setup/database.js';
 import { assertSafeDatabaseUrl } from '../setup/environment.js';
 
 export const SEED = {
-	eventId: 'e2e-open-la',
-	member: { email: 'member@e2e.test', password: 'e2e-password-1' }
+	eventId: 'e2e-open-la'
 };
 
 export default async function globalSetup() {
@@ -26,4 +27,8 @@ export default async function globalSetup() {
 	} finally {
 		await sql.end();
 	}
+	execFileSync('pnpm', ['exec', 'vitest', 'run', '--project', 'e2e-seed', '--reporter', 'dot'], {
+		env: { ...process.env, E2E_SEED: '1', TEST_DATABASE_URL: url },
+		stdio: 'inherit'
+	});
 }

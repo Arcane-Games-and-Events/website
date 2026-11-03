@@ -1,5 +1,5 @@
 import { test } from '@playwright/test';
-import { expectHouseStyle, watch } from './support.js';
+import { expectHouseStyle, stubOutside, watch } from './support.js';
 import { SEED } from './global-setup.js';
 
 const PAGES = [
@@ -18,6 +18,7 @@ const PAGES = [
 for (const [path, name] of PAGES) {
 	test(`${name} renders cleanly`, async ({ page }) => {
 		const w = watch(page);
+		await stubOutside(page);
 		const res = await page.goto(path, { waitUntil: 'networkidle' });
 		test.expect(res.status(), `${path} status`).toBeLessThan(400);
 		await expectHouseStyle(page);

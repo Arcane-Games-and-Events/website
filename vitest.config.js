@@ -35,7 +35,17 @@ export default defineConfig({
 					testTimeout: 30000,
 					hookTimeout: 60000
 				}
-			}
+			},
+			// Only for tests/e2e/global-setup.js, which runs it against the
+			// browser-test database.
+			...(process.env.E2E_SEED
+				? [
+						{
+							extends: true,
+							test: { name: 'e2e-seed', include: ['tests/e2e/seed.js'], environment: 'node' }
+						}
+					]
+				: [])
 		]
 	}
 });
