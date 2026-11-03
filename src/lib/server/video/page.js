@@ -9,8 +9,11 @@ import { getMuxThumbnailToken } from '$lib/server/mux.js';
 const AREA = {
 	vod: { label: 'Studio media', href: (row) => `/studio/media/${row.id}` },
 	entry: { label: 'Articles', href: () => '/desk/videos/articles' },
-	lesson: { label: 'Course', href: (row) => `/classroom/videos/${row.courseId}` },
-	trailer: { label: 'Course', href: (row) => `/classroom/videos/${row.id}` }
+	lesson: {
+		label: 'Course analytics',
+		href: (row) => `/classroom/courses/${row.courseId}/analytics`
+	},
+	trailer: { label: 'Course analytics', href: (row) => `/classroom/courses/${row.id}/analytics` }
 };
 
 /**

@@ -55,11 +55,24 @@ export async function getAuthorProfile(userId) {
 }
 
 const PLATFORM_IDS = new Set(LINK_PLATFORMS.map(([id]) => id));
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const clip = (v, n) =>
 	String(v ?? '')
 		.trim()
 		.slice(0, n);
+
+/**
+ * Validate a teacher's title and bio (the Classroom's profile tab).
+ * @returns {{ ok: true, value: { title: string|null, bio: string|null } } | { ok: false, error: string }}
+ */
+export function parseTeacherProfile(raw) {
+	const title = clip(raw.title, PROFILE_LIMITS.title);
+	const bio = String(raw.bio ?? '')
+		.replace(/\r\n/g, '\n')
+		.trim();
+	if (bio.length > PROFILE_LIMITS.bio)
+		return { ok: false, error: `Keep your bio under ${PROFILE_LIMITS.bio} characters.` };
+	return { ok: true, value: { title: title || null, bio: bio || null } };
+}
 
 /**
  * Validate and normalise profile form input.
@@ -73,10 +86,6 @@ export function parseProfileInput(raw) {
 		.replace(/\r\n/g, '\n')
 		.trim();
 	if (bio.length > L.bio) return { ok: false, error: `Keep your bio under ${L.bio} characters.` };
-
-	const avatarMediaId = clip(raw.avatarMediaId, 64) || null;
-	if (avatarMediaId && !UUID.test(avatarMediaId))
-		return { ok: false, error: 'That photo is invalid.' };
 
 	let links = [];
 	try {
@@ -108,13 +117,16 @@ export function parseProfileInput(raw) {
 			displayName: displayName || null,
 			title: title || null,
 			bio: bio || null,
-			avatarMediaId,
 			links
 		}
 	};
 }
 
-/** Insert or update a user's profile. Throws if the table is missing. */
+/**
+ * Insert or update a user's profile: only the fields given, so a form never
+ * wipes what it doesn't show (the photo is saved on its own: see
+ * $lib/server/profile/photo.js). Throws if the table is missing.
+ */
 export async function saveAuthorProfile(userId, value) {
 	const row = { ...value, updatedAt: new Date() };
 	await db

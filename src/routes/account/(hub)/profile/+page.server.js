@@ -3,6 +3,12 @@ import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { user } from '$lib/server/db/schema';
 import { bump } from '$lib/server/cache/index.js';
+import { profilePhotoOf } from '$lib/server/profile/photo.js';
+
+/** Your details and your profile photo (anyone signed in can set one). */
+export async function load({ locals }) {
+	return { photo: locals.user ? await profilePhotoOf(locals.user.id) : null };
+}
 
 export const actions = {
 	updateProfile: async ({ request, locals }) => {

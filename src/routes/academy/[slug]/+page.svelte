@@ -98,7 +98,7 @@
 
 	// Topics come numbered straight through the course, with what each one
 	// is to this reader: open, locked (buy the course) or locked-premium
-	// (new since they enrolled; included with Premium).
+	// (added after the course launched; included with Premium).
 	const syllabus = $derived(c.syllabus);
 	const justEnrolled = $derived($page.url.searchParams.get('enrolled') === '1');
 	const loginHref = $derived(`/login?redirect=${encodeURIComponent($page.url.pathname)}`);
@@ -241,7 +241,19 @@
 		].filter(Boolean)
 	);
 
-	// ============ phones: the bar at the foot ============
+	// ============ phones: the enroll box in the header, and the bar at the foot ============
+	// The bar slides up only once the header's enroll box has scrolled out of
+	// view, so there's never two Enroll buttons on screen at once.
+	/** @type {HTMLElement | undefined} */
+	let heroCta = $state();
+	let heroCtaInView = $state(true);
+	$effect(() => {
+		if (!heroCta || typeof IntersectionObserver === 'undefined') return;
+		const io = new IntersectionObserver(([e]) => (heroCtaInView = e.isIntersecting));
+		io.observe(heroCta);
+		return () => io.disconnect();
+	});
+
 	/** @type {HTMLElement | undefined} */
 	let priceBox = $state();
 	async function buyFromBar() {
@@ -314,10 +326,20 @@
 					{c.title}
 				</h1>
 				<p class="mt-4 flex items-center gap-3">
-					<span
-						class="flex h-9 w-9 shrink-0 items-center justify-center bg-gold font-newsreader text-[14px] font-semibold text-[#241b07]"
-						aria-hidden="true">{initials}</span
-					>
+					{#if c.author?.photo}
+						<img
+							src={c.author.photo}
+							alt=""
+							class="h-9 w-9 shrink-0 object-cover"
+							width="36"
+							height="36"
+						/>
+					{:else}
+						<span
+							class="flex h-9 w-9 shrink-0 items-center justify-center bg-gold font-newsreader text-[14px] font-semibold text-[#241b07]"
+							aria-hidden="true">{initials}</span
+						>
+					{/if}
 					<span class="text-[14px] leading-tight">
 						<span class="block text-paper-bg/60">With</span>
 						<span class="block font-semibold">{instructor}</span>
@@ -338,6 +360,45 @@
 					</div>
 				{/each}
 			</dl>
+
+			<!-- phones: how to get in, right under the course facts -->
+			<div
+				bind:this={heroCta}
+				class="mt-6 max-w-[600px] border border-paper-bg/20 bg-paper-bg/[0.06] p-4 lg:hidden"
+			>
+				{#if data.owner}
+					<p class="text-[12.5px] text-paper-bg/70">You teach this course.</p>
+				{:else if data.enrolled}
+					<p class="text-[10px] font-extrabold tracking-[0.16em] text-gold uppercase">
+						You’re enrolled · {data.progress?.done ?? 0} of {data.progress?.total ?? 0} done
+					</p>
+					{#if data.resume}
+						<p class="mt-1 truncate font-newsreader text-[15px] text-paper-bg/80 italic">
+							Next: {data.resume.title}
+						</p>
+					{/if}
+				{:else}
+					<p class="flex items-baseline justify-between gap-3">
+						<span class="font-newsreader text-[30px] leading-none font-semibold tabular-nums"
+							>{formatPrice(c.price)}</span
+						>
+						<span
+							class="text-right text-[10px] font-extrabold tracking-[0.14em] text-paper-bg/60 uppercase"
+							>{c.price > 0 ? 'One-time purchase · Lifetime access' : 'Free course'}</span
+						>
+					</p>
+				{/if}
+				{#if !(data.enrolled && !data.resume)}
+					<div class="mt-3">{@render goButton(true)}</div>
+				{/if}
+				{#if !data.owner && !data.enrolled && c.previewLessons}
+					<p class="mt-2.5 text-center text-[11.5px] text-paper-bg/60">
+						Or read {c.previewLessons === 1
+							? 'the free topic'
+							: `the ${c.previewLessons} free topics`} first.
+					</p>
+				{/if}
+			</div>
 		</div>
 	</section>
 
@@ -631,11 +692,20 @@
 							<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
 							About this course
 						</h2>
-						<p
-							class="mt-3 font-newsreader text-[18px] leading-[1.55] first-letter:float-left first-letter:mt-[6px] first-letter:mr-2 first-letter:text-[52px] first-letter:leading-[0.72] first-letter:font-semibold first-letter:text-gold md:text-[19px]"
-						>
-							{c.description}
-						</p>
+						<!-- One paragraph per blank-line break; a single line break stays a line break. -->
+						{#each String(c.description)
+							.split(/\n\s*\n/)
+							.map((p) => p.trim())
+							.filter(Boolean) as para, i (i)}
+							<p
+								class="font-newsreader text-[18px] leading-[1.55] whitespace-pre-line md:text-[19px] {i ===
+								0
+									? 'mt-3 first-letter:float-left first-letter:mt-[6px] first-letter:mr-2 first-letter:text-[52px] first-letter:leading-[0.72] first-letter:font-semibold first-letter:text-gold'
+									: 'mt-4'}"
+							>
+								{para}
+							</p>
+						{/each}
 					{/if}
 
 					<h2
@@ -659,24 +729,52 @@
 						<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
 						Your instructor
 					</h2>
-					<div class="mt-4 flex items-start gap-5 border border-line bg-paper p-5 md:p-6">
-						<span
-							class="flex h-14 w-14 shrink-0 items-center justify-center bg-ink font-newsreader text-[20px] font-semibold text-paper-bg"
-							aria-hidden="true">{initials}</span
-						>
-						<div>
-							<div class="font-newsreader text-[22px] leading-tight font-semibold">
-								{instructor}
+					<div class="mt-4 border border-line bg-paper p-5 md:p-6">
+						<div class="flex items-start gap-5">
+							{#if c.author?.photo}
+								<img
+									src={c.author.photo}
+									alt="Photo of {instructor}"
+									class="h-16 w-16 shrink-0 object-cover md:h-20 md:w-20"
+									width="80"
+									height="80"
+									loading="lazy"
+								/>
+							{:else}
+								<span
+									class="flex h-16 w-16 shrink-0 items-center justify-center bg-ink font-newsreader text-[22px] font-semibold text-paper-bg md:h-20 md:w-20"
+									aria-hidden="true">{initials}</span
+								>
+							{/if}
+							<div class="min-w-0">
+								<div class="font-newsreader text-[22px] leading-tight font-semibold">
+									{instructor}
+								</div>
+								<div class="mt-1 text-[10px] font-extrabold tracking-[0.16em] text-gold uppercase">
+									{c.author?.title || 'AGE Academy instructor'}
+								</div>
+								{#if !c.author?.bio}
+									<p class="mt-3 font-newsreader text-[15.5px] leading-[1.5] text-soft italic">
+										Teaches {c.lessons}
+										{c.lessons === 1 ? 'topic' : 'topics'} in this course{#if published}, published
+											{published}{/if}.
+									</p>
+								{/if}
 							</div>
-							<div class="mt-1 text-[10px] font-extrabold tracking-[0.16em] text-gold uppercase">
-								AGE Academy instructor
-							</div>
-							<p class="mt-3 font-newsreader text-[15.5px] leading-[1.5] text-soft italic">
-								Teaches {c.lessons}
-								{c.lessons === 1 ? 'topic' : 'topics'} in this course{#if published}, published
-									{published}{/if}.
-							</p>
 						</div>
+						{#if c.author?.bio}
+							<!-- A blank line in the bio starts a new paragraph. -->
+							{#each c.author.bio
+								.split(/\n\s*\n/)
+								.map((p) => p.trim())
+								.filter(Boolean) as para, i (i)}
+								<p
+									class="mt-4 font-newsreader text-[16px] leading-[1.6] whitespace-pre-line text-soft"
+								>
+									{para}
+								</p>
+							{/each}
+						{/if}
 					</div>
 				</div>
 			</div>
@@ -871,65 +969,64 @@
 		</section>
 	{/if}
 
-	<!-- ============ phones: price and the way in, always in reach ============ -->
+	<!-- The way in, for the header box (big) and the bar at the foot. -->
+	{#snippet goButton(big)}
+		{@const cls = big
+			? 'flex min-h-[52px] w-full items-center justify-center bg-gold px-5 text-[11.5px] font-extrabold tracking-[0.16em] text-[#241b07] uppercase disabled:opacity-60'
+			: 'flex min-h-[46px] shrink-0 items-center justify-center bg-gold px-5 text-[11.5px] font-extrabold tracking-[0.16em] text-[#241b07] uppercase disabled:opacity-60'}
+		{#if data.owner}
+			<a href="/classroom/courses/{c.id}" class={cls}>Edit course →</a>
+		{:else if data.enrolled}
+			{#if data.resume}
+				<a href="/academy/{c.slug}/{data.resume.slug}" class={cls}
+					>{data.progress?.done ? 'Continue' : 'Start'} →</a
+				>
+			{/if}
+		{:else if !data.signedIn}
+			<a href={loginHref} class={cls}>Sign in to {c.price > 0 ? 'enroll' : 'start'}</a>
+		{:else if c.price <= 0}
+			<button type="button" onclick={enroll} disabled={paying} class={cls}
+				>{paying ? 'Enrolling…' : 'Start free →'}</button
+			>
+		{:else}
+			<button type="button" onclick={buyFromBar} class={cls}
+				>{big ? `Enroll · ${formatPrice(c.price)}` : 'Enroll'} →</button
+			>
+		{/if}
+	{/snippet}
+
+	<!-- ============ phones: price and the way in, once the header box is out of view ============ -->
 	<div
-		class="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-4 border-t border-line2 bg-paper-bg/95 px-5 py-3 backdrop-blur lg:hidden"
+		class="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-4 bg-prem px-5 py-3 text-white shadow-[0_-6px_20px_rgba(0,0,0,0.12)] transition-transform duration-300 ease-out motion-reduce:transition-none lg:hidden {heroCtaInView
+			? 'pointer-events-none translate-y-full'
+			: 'translate-y-0'}"
+		aria-hidden={heroCtaInView ? 'true' : undefined}
+		inert={heroCtaInView}
 	>
 		{#if data.owner}
-			<span class="min-w-0 truncate text-[12px] font-semibold text-soft">You teach this course</span
-			>
-			<a
-				href="/classroom/courses/{c.id}"
-				class="shrink-0 bg-ink px-5 py-3 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase"
-				>Edit →</a
+			<span class="min-w-0 truncate text-[12px] font-semibold text-white/80"
+				>You teach this course</span
 			>
 		{:else if data.enrolled}
 			<span class="min-w-0">
-				<span class="block text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+				<span class="block text-[10px] font-extrabold tracking-[0.16em] text-white/70 uppercase"
 					>{data.progress?.done ?? 0} of {data.progress?.total ?? 0} done</span
 				>
 				<span class="mt-0.5 block truncate font-newsreader text-[14px] italic"
 					>{data.resume?.title ?? c.title}</span
 				>
 			</span>
-			{#if data.resume}
-				<a
-					href="/academy/{c.slug}/{data.resume.slug}"
-					class="shrink-0 bg-ink px-5 py-3 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase"
-					>{data.progress?.done ? 'Continue' : 'Start'} →</a
-				>
-			{/if}
 		{:else}
 			<span class="min-w-0">
 				<span class="block font-newsreader text-[24px] leading-none font-semibold tabular-nums"
 					>{formatPrice(c.price)}</span
 				>
-				<span class="mt-1 block text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+				<span
+					class="mt-1 block text-[10px] font-extrabold tracking-[0.14em] text-white/70 uppercase"
 					>{c.price > 0 ? 'One-time purchase' : 'Free course'}</span
 				>
 			</span>
-			{#if !data.signedIn}
-				<a
-					href={loginHref}
-					class="shrink-0 bg-ink px-5 py-3 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase"
-					>Sign in to {c.price > 0 ? 'enroll' : 'start'}</a
-				>
-			{:else if c.price <= 0}
-				<button
-					type="button"
-					onclick={enroll}
-					disabled={paying}
-					class="shrink-0 bg-ink px-5 py-3 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase disabled:opacity-60"
-					>{paying ? 'Enrolling…' : 'Start free →'}</button
-				>
-			{:else}
-				<button
-					type="button"
-					onclick={buyFromBar}
-					class="shrink-0 bg-ink px-5 py-3 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase"
-					>Enroll →</button
-				>
-			{/if}
 		{/if}
+		{@render goButton(false)}
 	</div>
 </AgeShell>

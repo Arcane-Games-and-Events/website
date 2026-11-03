@@ -1,4 +1,6 @@
-import { imagesPage } from '$lib/server/media/page.js';
+import { redirect } from '@sveltejs/kit';
 
-/** /classroom/images — the Classroom's image library (course covers and topic images). */
-export const load = ({ locals }) => imagesPage(locals, 'classroom');
+/** Course images now live with their course (picked from its Details and topics). */
+export const load = () => {
+	throw redirect(301, '/classroom');
+};

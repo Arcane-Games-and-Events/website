@@ -1,6 +1,6 @@
 <script>
 	/**
-	 * Classroom → Payouts (admins). Teachers are paid every two weeks, outside the
+	 * Classroom → Payouts (admins). Teachers are paid on the 1st of every month, outside the
 	 * site. This shows what each teacher is owed on a pay date (every unpaid
 	 * sale past its 14-day hold) and records a payout once it's sent.
 	 */
@@ -57,7 +57,10 @@
 
 <svelte:head><title>Payouts · Classroom</title></svelte:head>
 
-<DeskHeader title="Payouts" subtitle="Teachers earn 90% of each sale, paid every two weeks." />
+<DeskHeader
+	title="Payouts"
+	subtitle="Teachers earn 90% of each sale, paid on the 1st of every month."
+/>
 <DeskTabs />
 
 <div class="mx-auto w-full max-w-[1200px] space-y-10 px-5 pt-8 pb-16 font-libre md:px-8">

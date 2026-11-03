@@ -22,6 +22,7 @@ import { nextInvoiceNumber } from '$lib/server/payments/invoice.js';
 import { bump } from '$lib/server/cache/index.js';
 import { sendCourseReceipt } from '$lib/server/email.js';
 import { sendOnce } from '$lib/server/billing/notices.js';
+import { notifyClassroom } from './notifications.js';
 
 /** Teachers earn this share of what the student paid. */
 export const TEACHER_SHARE_PCT = 90;
@@ -197,6 +198,11 @@ export async function fulfilCourseCheckout(checkoutId, charge) {
 	});
 
 	await bump('orders', 'courses');
+	if (!result.already && result.course)
+		await notifyClassroom(result.course, 'new_student', {
+			actorId: result.checkout.userId,
+			data: { source: 'purchase', cents: result.checkout.amountCents }
+		});
 	if (!result.already && result.email && result.course) {
 		const [teacher] = result.course.authorId
 			? await db

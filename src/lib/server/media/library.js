@@ -12,7 +12,7 @@
  *   and rotate save a new copy (see `deriveMedia`) so existing uses don't
  *   change under anyone.
  */
-import { and, desc, asc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, desc, asc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
 import {
 	deskMedia,
@@ -121,6 +121,7 @@ export function toLibraryItem(row, uploader = null) {
 		uploadedBy: row.uploadedBy,
 		uploaderName: uploader,
 		derivedFrom: row.derivedFrom ?? null,
+		courseId: row.courseId ?? null,
 		createdAt: row.createdAt
 	};
 }
@@ -128,15 +129,25 @@ export function toLibraryItem(row, uploader = null) {
 /**
  * One page of the library, newest first by default.
  *
+ * In the Classroom each course has its own images: pass `course` (the
+ * caller has checked the user manages it) for that course's images, whoever
+ * uploaded them, or `older` for Classroom uploads not yet filed under a
+ * course (the user's own; admins' and editors' see everyone's).
+ *
  * @param {any} user
- * @param {{ library?: 'content' | 'classroom', q?: string, scope?: 'mine' | 'all', uploader?: string, sort?: 'new' | 'old' | 'name', before?: string, offset?: number }} opts
+ * @param {{ library?: 'content' | 'classroom' | 'studio', course?: string | null, older?: boolean, q?: string, scope?: 'mine' | 'all', uploader?: string, sort?: 'new' | 'old' | 'name', before?: string, offset?: number }} opts
  */
 export async function listMedia(user, opts = {}) {
 	const library = libraryOf(opts.library);
 	const all = canSeeAllMedia(user, library);
 	const where = [eq(deskMedia.status, 'ready'), eq(deskMedia.library, library)];
-	if (!all || opts.scope === 'mine') where.push(eq(deskMedia.uploadedBy, user.id));
-	else if (opts.uploader) where.push(eq(deskMedia.uploadedBy, opts.uploader));
+	if (library === 'classroom' && opts.course && !opts.older) {
+		where.push(eq(deskMedia.courseId, opts.course));
+	} else {
+		if (library === 'classroom' && opts.older) where.push(isNull(deskMedia.courseId));
+		if (!all || opts.scope === 'mine') where.push(eq(deskMedia.uploadedBy, user.id));
+		else if (opts.uploader) where.push(eq(deskMedia.uploadedBy, opts.uploader));
+	}
 	const q = (opts.q || '').trim();
 	if (q) {
 		const like = `%${q.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
@@ -370,9 +381,10 @@ export async function mediaUsage(ids) {
  *
  * @param {any} user
  * @param {{ filename: string, mimeType: string, size: number }} file
- * @param {'content' | 'classroom'} [library]
+ * @param {'content' | 'classroom' | 'studio'} [library]
+ * @param {string | null} [courseId]  the course a Classroom upload belongs to
  */
-export async function createUpload(user, file, library = 'content') {
+export async function createUpload(user, file, library = 'content', courseId = null) {
 	const mimeType = String(file.mimeType || '').toLowerCase();
 	if (!ACCEPTED_TYPES.test(mimeType)) {
 		throw new MediaError(400, 'Use a JPEG, PNG, WebP, AVIF, GIF or SVG image.');
@@ -406,7 +418,8 @@ export async function createUpload(user, file, library = 'content') {
 			name: nameFromFile(file.filename),
 			fileSize: size || null,
 			status: 'uploading',
-			library: libraryOf(library)
+			library: libraryOf(library),
+			courseId: libraryOf(library) === 'classroom' ? courseId || null : null
 		})
 		.returning();
 	return { media: toLibraryItem(row), uploadUrl: signed.signedUrl, token: signed.token };
@@ -532,6 +545,7 @@ export async function deriveMedia(user, source, edit) {
 			derivedFrom: source.id,
 			// a crop or rotation stays in the library it came from
 			library: libraryOf(source.library),
+			courseId: source.courseId ?? null,
 			fileSize: out.buffer.length,
 			status: 'processing'
 		})

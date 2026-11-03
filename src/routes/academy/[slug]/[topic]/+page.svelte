@@ -2,8 +2,8 @@
 	/**
 	 * A course topic: the outline beside it (done ✓, locked 🔒), the text,
 	 * and "Mark complete & continue". Free topics are open to everyone;
-	 * topics new since a student enrolled ask for Premium; anyone else sees
-	 * what the course costs.
+	 * topics added after the course launched ask students for Premium;
+	 * anyone else sees what the course costs.
 	 */
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import RenderLexical from '$lib/desk/render/RenderLexical.svelte';
@@ -219,13 +219,14 @@
 				{:else if l.access === 'locked-premium'}
 					<div class="mt-8 border-[3px] border-double border-prem bg-prem/[0.05] p-6">
 						<p class="text-[10px] font-extrabold tracking-[0.2em] text-prem uppercase">
-							◆ New since you enrolled
+							◆ Added after launch
 						</p>
 						<p class="mt-2 font-newsreader text-[21px] leading-snug font-semibold">
-							Topics added after you bought the course are included with AGE Premium.
+							New topics added to a course after it launched are included with AGE Premium.
 						</p>
 						<p class="mt-2 text-[14px] text-soft">
-							Everything that was in the course when you enrolled stays yours.
+							The course as it launched is yours for good, with every revision and correction the
+							teacher makes to it.
 						</p>
 						<a
 							href="/premium"

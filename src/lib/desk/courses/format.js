@@ -58,3 +58,36 @@ export const WHOSE = {
 	teacher: 'Waiting on the teacher',
 	none: 'Nothing waiting'
 };
+
+/** "today", "3 days ago". */
+export function ago(at, now = new Date()) {
+	const w = waited(at, now);
+	return w === 'today' ? 'today' : w ? `${w} ago` : '';
+}
+
+/**
+ * The three steps every course goes through, and where a stage sits on
+ * them. A returned course is back at Build (in red); an unlisted one went
+ * live and was taken down (greyed).
+ */
+export const STEPS = ['Build', 'Approval', 'Live'];
+export const TRACK = {
+	draft: { at: 0, tone: 'ink', labels: ['Building', 'Approval', 'Live'] },
+	returned: { at: 0, tone: 'red', labels: ['Returned', 'Approval', 'Live'] },
+	in_review: { at: 1, tone: 'gold', labels: ['Built', 'Waiting for approval', 'Live'] },
+	live: { at: 2, tone: 'green', labels: ['Built', 'Approved', 'Live'] },
+	unlisted: { at: 2, tone: 'grey', labels: ['Built', 'Approved', 'Unlisted'] }
+};
+
+/**
+ * The pipeline's columns, in the order a course moves through them: sent
+ * back with a note, being built, waiting for an admin, live, and (taken
+ * down) unlisted.
+ */
+export const STAGES = [
+	{ id: 'returned', label: 'Returned', note: 'Sent back with a note' },
+	{ id: 'draft', label: 'Building', note: 'The teacher is working on it' },
+	{ id: 'in_review', label: 'Waiting for approval', note: 'Needs an admin' },
+	{ id: 'live', label: 'Live', note: 'In the Academy and on sale' },
+	{ id: 'unlisted', label: 'Unlisted', note: 'Taken out of the Academy' }
+];

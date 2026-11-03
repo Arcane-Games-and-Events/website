@@ -798,8 +798,12 @@ export const deskMedia = pgTable('cms_media', {
 	derivedFrom: uuid('derived_from').references(() => deskMedia.id, { onDelete: 'set null' }),
 	// Migration 034 — which library the image belongs to: 'content' (the
 	// Desk: articles, author photos), 'classroom' (courses) or, from
-	// migration 035, 'studio' (gameplay, episode and show covers).
+	// migration 035, 'studio' (gameplay, episode and show covers) or, from
+	// migration 038, 'profile' (profile photos, never shown in a picker).
 	library: text('library').notNull().default('content'),
+	// Migration 037 — the course a Classroom image belongs to (null: an
+	// older upload not yet filed under a course, or another library).
+	courseId: uuid('course_id').references(() => deskCourse.id, { onDelete: 'set null' }),
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 

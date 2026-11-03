@@ -9,10 +9,26 @@
 	import { beforeNavigate, invalidate } from '$app/navigation';
 	import CoverImagePicker from '$lib/desk/editor/CoverImagePicker.svelte';
 	import LessonVideoSlot from '$lib/desk/video/LessonVideoSlot.svelte';
+	import { uploads } from '$lib/desk/video/uploads.svelte.js';
+	import { pollProcessing } from '$lib/desk/video/poll.js';
 	import { cleanTypedSlug } from '$lib/desk/slug.js';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
+
+	// The trailer: refresh when an upload settles or Mux finishes processing it.
+	$effect(() =>
+		pollProcessing([{ target: 'trailer', id: data.course.id, status: data.trailer.status }], () =>
+			invalidate('desk:course')
+		)
+	);
+	let settled = uploads.settled;
+	$effect(() => {
+		if (uploads.settled !== settled) {
+			settled = uploads.settled;
+			invalidate('desk:course');
+		}
+	});
 
 	const course = $derived(data.course);
 	// Edited locally from the first load on; a save never resets what's typed.

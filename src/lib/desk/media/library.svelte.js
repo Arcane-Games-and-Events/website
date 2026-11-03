@@ -17,6 +17,8 @@ export function createLibrary() {
 		error: '',
 		q: '',
 		scope: /** @type {'all' | 'mine'} */ ('all'),
+		// in a course: the Classroom uploads not yet filed under any course
+		older: false,
 		uploader: '',
 		sort: 'new'
 	});
@@ -31,6 +33,7 @@ export function createLibrary() {
 		try {
 			const r = await listLibrary({
 				q: lib.q,
+				older: lib.older,
 				scope: lib.scope,
 				uploader: lib.uploader,
 				sort: lib.sort
@@ -54,6 +57,7 @@ export function createLibrary() {
 		try {
 			const r = await listLibrary({
 				q: lib.q,
+				older: lib.older,
 				scope: lib.scope,
 				uploader: lib.uploader,
 				sort: lib.sort,

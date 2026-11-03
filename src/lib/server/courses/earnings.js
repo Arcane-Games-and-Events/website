@@ -4,22 +4,25 @@
  * - Each paid enrollment is a `course_sale`: the teacher earns share_pct
  *   (90%) of what the student paid, less any refund.
  * - A sale is on hold for 14 days (the refund window), then payable.
- * - AGE pays teachers every two weeks, on PAYOUT_ANCHOR and every 14 days
- *   after. A payout covers every unpaid sale that is payable by its pay
- *   date. AGE pays outside the site; an admin marks the payout as paid
+ * - AGE pays teachers once a month, on the 1st. A payout covers every
+ *   unpaid sale that is payable by its pay date. AGE pays outside the site; an admin marks the payout as paid
  *   here, which stamps the sales so they can never be paid twice.
  * - A refund after a sale was paid doesn't change the payout already made.
  */
 import { and, asc, desc, eq, inArray, isNull, lte, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
 import { courseSale, deskCourse, teacherPayout, user as userTable } from '$lib/server/db/schema.js';
+import { notify } from './notifications.js';
 import { CourseError } from './builder.js';
 
-/** The first pay date (a Friday). Every pay date is this plus a multiple of 14 days. */
-export const PAYOUT_ANCHOR = '2026-11-13';
-const DAY = 864e5;
-const anchor = () => new Date(`${PAYOUT_ANCHOR}T00:00:00Z`).getTime();
+/** Teachers are paid on this day of every month (UTC). */
+export const PAY_DAY = 1;
 const ymd = (t) => new Date(t).toISOString().slice(0, 10);
+/** The pay date in the month `monthsOn` months after `t`'s month. */
+const payDayOf = (t, monthsOn = 0) => {
+	const d = new Date(t);
+	return ymd(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + monthsOn, PAY_DAY));
+};
 /** A pay date covers sales payable any time that day (UTC). */
 export const endOfDay = (date) => new Date(`${date}T23:59:59.999Z`);
 
@@ -27,19 +30,17 @@ export const endOfDay = (date) => new Date(`${date}T23:59:59.999Z`);
 export const shareOf = (s) =>
 	Math.round(((s.grossCents - s.refundedCents) * (s.sharePct ?? 90)) / 100);
 
-/** The first pay date on or after `from` (YYYY-MM-DD). */
+/** The first pay date (the 1st of a month) on or after `from` (YYYY-MM-DD). */
 export function nextPayDate(from = new Date()) {
-	const today = new Date(ymd(from) + 'T00:00:00Z').getTime();
-	const a = anchor();
-	if (today <= a) return PAYOUT_ANCHOR;
-	const steps = Math.ceil((today - a) / (14 * DAY));
-	return ymd(a + steps * 14 * DAY);
+	const today = ymd(from);
+	const thisMonth = payDayOf(from);
+	return today <= thisMonth ? thisMonth : payDayOf(from, 1);
 }
 
 /** `count` pay dates starting from the next one. */
 export function payDates(from = new Date(), count = 6) {
-	const first = new Date(nextPayDate(from) + 'T00:00:00Z').getTime();
-	return Array.from({ length: count }, (_, i) => ymd(first + i * 14 * DAY));
+	const first = new Date(`${nextPayDate(from)}T00:00:00Z`).getTime();
+	return Array.from({ length: count }, (_, i) => payDayOf(first, i));
 }
 
 /** The pay date a sale will be paid on, if it isn't paid already. */
@@ -216,7 +217,7 @@ export async function payoutSales(payoutId) {
 export async function markPaid({ teacherId, payDate, reference = null, note = null, actor }) {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(String(payDate || '')))
 		throw new CourseError(400, 'Choose a pay date.');
-	return db.transaction(async (tx) => {
+	const payout = await db.transaction(async (tx) => {
 		const sales = await tx
 			.select()
 			.from(courseSale)
@@ -256,4 +257,14 @@ export async function markPaid({ teacherId, payDate, reference = null, note = nu
 			);
 		return payout;
 	});
+	try {
+		await notify([teacherId], {
+			kind: 'payout_paid',
+			actorId: actor?.id ?? null,
+			data: { cents: payout.amountCents, payDate, sales: payout.saleCount }
+		});
+	} catch (err) {
+		console.warn('[courses] payout notification not sent:', err?.message || err);
+	}
+	return payout;
 }

@@ -1,7 +1,7 @@
 <!--
   Classroom shell — the course tool's paper-and-ink chrome, like the Desk's:
   the site header, then each page's ink header and the Classroom tabs
-  (Courses · Earnings · Payouts · Images · Videos, by role). No footer.
+  (Home · Courses · Earnings · Payouts, by role). No footer.
 -->
 <script>
 	import { onMount } from 'svelte';

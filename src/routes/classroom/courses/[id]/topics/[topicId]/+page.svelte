@@ -15,6 +15,9 @@
 	import { coerceLexicalDoc } from '$lib/desk/editor/utils.js';
 	import { Autosave } from '$lib/desk/editor/autosave.svelte.js';
 	import { cleanTypedSlug } from '$lib/desk/slug.js';
+	import LessonVideoSlot from '$lib/desk/video/LessonVideoSlot.svelte';
+	import { uploads } from '$lib/desk/video/uploads.svelte.js';
+	import { pollProcessing } from '$lib/desk/video/poll.js';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -34,6 +37,23 @@
 	let flash = $state('');
 	// Bumped to rebuild the editor with the published text after a discard.
 	let editorKey = $state(0);
+
+	// The topic's video: reload just it (never the text being edited) when an
+	// upload settles or Mux finishes processing.
+	const refreshVideo = () => invalidate('desk:topic');
+	$effect(() =>
+		pollProcessing(
+			[{ target: 'lesson', id: data.topic.id, status: data.video.status }],
+			refreshVideo
+		)
+	);
+	let settled = uploads.settled;
+	$effect(() => {
+		if (uploads.settled !== settled) {
+			settled = uploads.settled;
+			refreshVideo();
+		}
+	});
 
 	async function patch(values) {
 		const res = await fetch(api, {
@@ -131,7 +151,7 @@
 		if (!confirm(`Delete “${title}”? Students lose their progress on it. This can’t be undone.`))
 			return;
 		const res = await fetch(api, { method: 'DELETE' });
-		if (res.ok) goto(`/classroom/courses/${course.id}`);
+		if (res.ok) goto(`/classroom/courses/${course.id}/outline`);
 		else message = (await res.json().catch(() => ({}))).message || 'Couldn’t delete';
 	}
 
@@ -161,7 +181,7 @@
 <div class="mx-auto w-full max-w-[1200px] px-5 pb-20 font-libre md:px-8">
 	<div class="flex flex-wrap items-center justify-between gap-3 border-b-[3px] border-ink pb-3">
 		<a
-			href="/classroom/courses/{course.id}"
+			href="/classroom/courses/{course.id}/outline"
 			class="text-[10.5px] font-extrabold tracking-[0.16em] text-soft uppercase hover:text-ink"
 			>← Outline{#if data.section}<span class="tracking-normal text-fade normal-case">
 					&nbsp;· {data.section}</span
@@ -283,8 +303,9 @@
 				{/if}
 				{#if !live && courseLive && !topic.firstPublishedAt}
 					<p class="mt-2 border-l-[3px] border-gold bg-gold/10 px-3 py-2 text-[12px] leading-snug">
-						Publishing tells your students. It’s new since they enrolled, so it’s included for
-						Premium members; others see it locked.
+						Publishing tells your students. The course has launched, so this is a new topic: Premium
+						members can read it, other students see it locked. Edits to topics that were there at
+						launch reach every student.
 					</p>
 				{/if}
 			</div>
@@ -314,9 +335,26 @@
 					class="mt-1 h-[38px] w-full border border-line2 bg-white px-2.5 text-[13.5px] focus:border-ink focus:ring-0"
 				/>
 			</label>
-			<p class="text-[12px] leading-snug text-fade">
-				Topics are text: words, images, decklists, card links and tables.
-			</p>
+			<div class="border-t border-line pt-5">
+				<p class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">Video</p>
+				<p class="mt-1 text-[12px] leading-snug text-fade">
+					Optional. Plays at the top of the topic; it belongs to this topic only.
+				</p>
+				<div class="-mt-1">
+					<LessonVideoSlot
+						target="lesson"
+						id={topic.id}
+						title={title || 'This topic'}
+						video={data.video}
+						youtube={data.youtube}
+						href="/classroom/courses/{course.id}/topics/{topic.id}"
+						onchange={refreshVideo}
+					/>
+				</div>
+				<p class="mt-2 text-[12px] leading-snug text-fade">
+					Images go in the text: use the image button in the editor. They’re kept with this course.
+				</p>
+			</div>
 			<button
 				type="button"
 				onclick={remove}

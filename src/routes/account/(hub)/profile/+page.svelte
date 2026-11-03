@@ -4,6 +4,7 @@
 	import Panel from '$lib/components/account/Panel.svelte';
 	import Notice from '$lib/components/account/Notice.svelte';
 	import * as ui from '$lib/components/account/ui.js';
+	import ProfilePhoto from '$lib/components/age/ProfilePhoto.svelte';
 
 	let { data, form } = $props();
 	let busy = $state(false);
@@ -14,6 +15,15 @@
 <Panel rubric="Profile" title="Your details" lead="How you appear on AGE and at the AGE Open.">
 	{#if form?.success}<Notice tone="success" message={form.message} />{/if}
 	{#if form?.error}<Notice tone="error" message={form.error} />{/if}
+
+	<!-- the same photo on your courses and bylines, if you teach or write -->
+	<div class="{ui.panel} mb-5 px-6 py-5 md:px-7">
+		<ProfilePhoto
+			photo={data.photo}
+			name={data.user.firstName || ''}
+			onchange={() => invalidateAll()}
+		/>
+	</div>
 
 	<form
 		method="POST"

@@ -18,7 +18,7 @@ export async function load({ locals, url, depends, setHeaders }) {
 		courseProgress(u),
 		courseFeed(u),
 		learnerActivity(u.id),
-		listNotifications(u.id)
+		listNotifications(u.id, { scope: 'learning' })
 	]);
 	return {
 		firstName: u.firstName || null,

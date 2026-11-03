@@ -166,58 +166,6 @@ function vodStory(v) {
 	};
 }
 
-/* ============ Academy placeholder ============
- * No course has been published through the Desk yet, so the Academy
- * department runs on this placeholder catalog (generic names) until
- * `data.courses` is non-empty, at which point the live list takes over.
- */
-const COURSES_PLACEHOLDER = [
-	{
-		href: '/academy',
-		title: 'Reading the Board: Decision-Making in Classic Constructed',
-		dek: 'How the best players turn a messy board into a short list of real decisions — and pick the right one on the clock.',
-		image: 'https://www.age.events/banner/academy-banner.webp',
-		instructor: 'Morgan Ellis',
-		lessons: 14,
-		minutes: 218,
-		runtime: formatMinutes(218),
-		price: 79
-	},
-	{
-		href: '/academy',
-		title: 'Punishing the Mirror',
-		dek: '',
-		image: 'https://www.age.events/banner/articles-banner.webp',
-		instructor: 'Jordan Reeves',
-		lessons: 9,
-		minutes: 142,
-		runtime: formatMinutes(142),
-		price: 59
-	},
-	{
-		href: '/academy',
-		title: 'Sideboarding for Sealed',
-		dek: '',
-		image: 'https://www.age.events/banner/studios-banner.webp',
-		instructor: 'Sam Whitfield',
-		lessons: 7,
-		minutes: 95,
-		runtime: formatMinutes(95),
-		price: 0
-	},
-	{
-		href: '/academy',
-		title: 'Tempo & Tempo Loss',
-		dek: '',
-		image: 'https://www.age.events/banner/age-open-banner.webp',
-		instructor: 'Casey Marchetti',
-		lessons: 11,
-		minutes: 174,
-		runtime: formatMinutes(174),
-		price: 49
-	}
-];
-
 /** @param {any} c */
 function courseItem(c) {
 	return {
@@ -257,8 +205,12 @@ export function buildFront(data) {
 	// hero, articles and video together, for the mosaic grid.
 	const library = newest.slice(0, 7);
 
-	const courses = liveCourses.length ? liveCourses : COURSES_PLACEHOLDER;
-	const academy = { featured: courses[0], list: courses.slice(1, 4), live: liveCourses.length > 0 };
+	// Academy department — live courses only. Until one is approved, the
+	// department (and its nav link) stays off the front page.
+	const courses = liveCourses;
+	const academy = courses.length
+		? { featured: courses[0], list: courses.slice(1, 4), live: true }
+		: null;
 
 	// AGE Open department — a recruitment poster: series stats, the next
 	// events with price and a sign-up link, the three circuits, and the
@@ -365,7 +317,7 @@ export function buildFront(data) {
 	// Department nav — only the departments that render this request.
 	const departments = [
 		library.length && { id: 'library', label: 'Library' },
-		{ id: 'academy', label: 'Academy' },
+		academy && { id: 'academy', label: 'Academy' },
 		hasOpen && { id: 'age-open', label: 'AGE Open' },
 		{ id: 'premium', label: 'Premium' }
 	].filter(Boolean);

@@ -1,7 +1,7 @@
 <!--
   VideoAreaNav — the Videos section's areas and, within an area, Videos or
-  Analytics. In the Desk: Articles. In the Classroom: Courses. (Gameplay is
-  in the Studio.)
+  Analytics. In the Desk: Articles. (Gameplay is in the Studio; course
+  videos live in each course in the Classroom.)
   Each area only ever lists its own videos.
 -->
 <script>
@@ -15,18 +15,15 @@
 		$page.url.searchParams.get('view') === 'analytics' ? 'analytics' : 'videos'
 	);
 	const current = $derived(
-		path.startsWith('/classroom')
-			? 'courses'
-			: path.startsWith('/desk/videos/articles') || path.startsWith('/desk/videos/entry')
-				? 'articles'
-				: path.startsWith('/desk/videos/unused')
-					? 'unused'
-					: 'gameplay'
+		path.startsWith('/desk/videos/articles') || path.startsWith('/desk/videos/entry')
+			? 'articles'
+			: path.startsWith('/desk/videos/unused')
+				? 'unused'
+				: 'gameplay'
 	);
 	const AREAS = [
 		{ id: 'gameplay', href: '/studio/media?kind=gameplay', label: 'Gameplay' },
-		{ id: 'articles', href: '/desk/videos/articles', label: 'Articles' },
-		{ id: 'courses', href: '/classroom/videos', label: 'Courses' }
+		{ id: 'articles', href: '/desk/videos/articles', label: 'Articles' }
 	];
 	const shown = $derived(AREAS.filter((a) => areas[a.id]));
 	const viewHref = (v) => `${path}${v === 'analytics' ? '?view=analytics' : ''}`;

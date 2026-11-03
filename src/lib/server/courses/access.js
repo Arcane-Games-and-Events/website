@@ -62,8 +62,8 @@ export function courseRole(user, course, enrollment) {
  *
  * @returns {'open' | 'locked-premium' | 'locked' | 'hidden'}
  *   open            show the topic
- *   locked-premium  enrolled, but the topic is new since they enrolled and
- *                   they aren't Premium: show the upgrade prompt
+ *   locked-premium  enrolled, but the topic was added after the course
+ *                   launched and they aren't Premium: show the upgrade prompt
  *   locked          not enrolled: show the course paywall
  *   hidden          a draft, or the course isn't public: don't show it at all
  */
@@ -74,14 +74,22 @@ export function lessonAccess(user, course, lesson, enrollment) {
 	if (!lesson.publishedAt) return 'hidden';
 	if (lesson.isPreview) return 'open';
 	if (!enrollment || enrollment.revokedAt) return 'locked';
-	if (isNewSince(lesson, enrollment) && !userHasPremiumAccess(user)) return 'locked-premium';
+	if (isAddedAfterLaunch(lesson, course) && !userHasPremiumAccess(user)) return 'locked-premium';
 	return 'open';
 }
 
-/** Was this topic first published after the student enrolled? */
-export function isNewSince(lesson, enrollment) {
-	if (!lesson.firstPublishedAt || !enrollment) return false;
-	return new Date(lesson.firstPublishedAt) > new Date(enrollment.createdAt);
+/**
+ * Was this topic added after the course launched (its first approval)?
+ *
+ * Everyone who buys a course gets it as it launched, whenever they buy,
+ * along with every later edit and correction to those topics. Topics added
+ * after launch are a Premium extra, for every student alike. A topic's
+ * first_published_at is set once and never changes; topics published before
+ * approval take the launch date itself.
+ */
+export function isAddedAfterLaunch(lesson, course) {
+	if (!lesson.firstPublishedAt || !course?.firstPublishedAt) return false;
+	return new Date(lesson.firstPublishedAt) > new Date(course.firstPublishedAt);
 }
 
 /** A course is visible to the public once approved; archived ones only to their students. */

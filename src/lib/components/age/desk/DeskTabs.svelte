@@ -2,7 +2,7 @@
 	/**
 	 * Desk tabs — Home / Entries / Images / Videos / Analytics / Users / Profile.
 	 * In the Classroom the same strip shows the Classroom's tabs instead:
-	 * Courses / Earnings / Payouts / Images / Videos; in the Studio, the
+	 * Home / Courses / Earnings / Payouts / Profile (by role); in the Studio, the
 	 * Studio's: Home / Media / Shows / Analytics / Images.
 	 *
 	 * Each page places this right under its own ink header, so the tabs
@@ -37,11 +37,11 @@
 					? 'earnings'
 					: path.startsWith('/classroom/payouts')
 						? 'payouts'
-						: path.startsWith('/classroom/images')
-							? 'images'
-							: path.startsWith('/classroom/videos')
-								? 'videos'
-								: 'courses'
+						: path.startsWith('/classroom/profile')
+							? 'profile'
+							: path.startsWith('/classroom/courses') && d.oversee
+								? 'courses'
+								: 'home'
 				: path === '/desk' || path === '/desk/'
 					? 'home'
 					: path.startsWith('/desk/users')
@@ -89,11 +89,11 @@
 				]
 			: classroom
 				? [
-						{ id: 'courses', href: '/classroom', label: 'Courses', show: true },
+						{ id: 'home', href: '/classroom', label: 'Home', show: true },
+						{ id: 'courses', href: '/classroom/courses', label: 'Courses', show: d.oversee },
 						{ id: 'earnings', href: '/classroom/earnings', label: 'Earnings', show: d.isTeacher },
 						{ id: 'payouts', href: '/classroom/payouts', label: 'Payouts', show: d.isAdmin },
-						{ id: 'images', href: '/classroom/images', label: 'Images', show: true },
-						{ id: 'videos', href: '/classroom/videos', label: 'Videos', show: true }
+						{ id: 'profile', href: '/classroom/profile', label: 'Profile', show: true }
 					]
 				: [
 						{ id: 'home', href: '/desk', label: 'Home', show: d.canEditEntries },

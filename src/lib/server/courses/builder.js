@@ -136,18 +136,56 @@ export async function updateCourse(course, fields) {
 	return row;
 }
 
+/**
+ * The checklist a course must pass before it can be sent for approval:
+ * each item, whether it's done, and which page of the course fixes it
+ * ('details' or 'outline').
+ * @returns {Promise<{ key: string, label: string, done: boolean, detail?: string, fix: 'details' | 'outline', problem: string }[]>}
+ */
+export async function readinessItems(course) {
+	const [{ live, total }] = await db
+		.select({
+			live: sql`count(${deskLesson.publishedAt})::int`,
+			total: sql`count(*)::int`
+		})
+		.from(deskLesson)
+		.where(eq(deskLesson.courseId, course.id));
+	return [
+		{
+			key: 'title',
+			label: 'A title',
+			done: !!course.title?.trim(),
+			fix: 'details',
+			problem: 'Add a title.'
+		},
+		{
+			key: 'description',
+			label: 'A description',
+			done: !!course.description?.trim(),
+			fix: 'details',
+			problem: 'Add a description.'
+		},
+		{
+			key: 'cover',
+			label: 'A cover image',
+			done: !!course.coverImageId,
+			fix: 'details',
+			problem: 'Add a cover image.'
+		},
+		{
+			key: 'topic',
+			label: 'At least one published topic',
+			done: Number(live) > 0,
+			detail: `${Number(live)} of ${Number(total)} ${Number(total) === 1 ? 'topic' : 'topics'} published`,
+			fix: 'outline',
+			problem: 'Publish at least one topic.'
+		}
+	];
+}
+
 /** What's missing before a course can be sent for review. */
 export async function readinessOf(course) {
-	const problems = [];
-	if (!course.title?.trim()) problems.push('Add a title.');
-	if (!course.description?.trim()) problems.push('Add a description.');
-	if (!course.coverImageId) problems.push('Add a cover image.');
-	const [{ n }] = await db
-		.select({ n: sql`count(*)::int` })
-		.from(deskLesson)
-		.where(and(eq(deskLesson.courseId, course.id), isNotNull(deskLesson.publishedAt)));
-	if (!n) problems.push('Publish at least one topic.');
-	return problems;
+	return (await readinessItems(course)).filter((i) => !i.done).map((i) => i.problem);
 }
 
 export async function submitForReview(course) {

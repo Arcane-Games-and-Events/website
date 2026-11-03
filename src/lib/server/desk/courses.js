@@ -30,6 +30,7 @@ import { alias } from 'drizzle-orm/pg-core';
 import { and, asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { cached } from '$lib/server/cache/index.js';
 import { mediaImage, mediaColumns } from '$lib/server/desk/image.js';
+import { getAuthorProfile } from '$lib/server/desk/authorProfile.js';
 
 const COURSE_TAGS = { tags: ['courses', 'media'] };
 
@@ -237,7 +238,21 @@ async function queryCourseBySlug(slug, { drafts = false } = {}) {
 	const orphans = shapedLessons.filter((l) => !l.moduleId);
 	if (orphans.length) syllabus.push({ id: 'unsorted', title: 'Lessons', lessons: orphans });
 
-	return { ...shapeCourse(row, aggById.get(row.id)), syllabus };
+	// The teacher's profile for "Your instructor": photo, title and bio (and
+	// the name they go by, if they've set one in the Desk).
+	const course = shapeCourse(row, aggById.get(row.id));
+	if (course.author && row.authorId) {
+		const { profile } = await getAuthorProfile(row.authorId).catch(() => ({ profile: null }));
+		if (profile)
+			course.author = {
+				...course.author,
+				name: profile.displayName || course.author.name,
+				title: profile.title || null,
+				bio: profile.bio || null,
+				photo: profile.avatar?.url || null
+			};
+	}
+	return { ...course, syllabus };
 }
 
 /**

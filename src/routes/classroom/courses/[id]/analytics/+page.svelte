@@ -7,6 +7,7 @@
 	import BarList from '$lib/components/age/desk/BarList.svelte';
 	import { dur, fmt, label, SOURCES, DEVICES } from '$lib/desk/analyticsFormat.js';
 	import { money } from '$lib/desk/courses/format.js';
+	import VideoAnalyticsPanel from '$lib/desk/video/VideoAnalyticsPanel.svelte';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -191,4 +192,22 @@
 			</div>
 		</section>
 	</div>
+
+	{#if data.videos}
+		<section>
+			{@render head('Videos')}
+			<p class="mt-2 text-[12.5px] text-fade">
+				The trailer and lesson videos, from Mux. Each one is managed where it lives: the trailer on
+				Details, a lesson’s video in its topic.
+			</p>
+			<div class="mt-4">
+				<VideoAnalyticsPanel
+					report={null}
+					mux={data.videos.mux}
+					days={data.videos.days}
+					rows={data.videos.rows}
+				/>
+			</div>
+		</section>
+	{/if}
 </div>

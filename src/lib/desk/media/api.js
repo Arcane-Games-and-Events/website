@@ -3,8 +3,9 @@
  * Error with the server's message when something goes wrong.
  *
  * There's a library per tool, and the page decides which one a picker
- * shows: Classroom pages use the Classroom's (course images), Studio pages
- * the Studio's (gameplay and episode covers), everything else the Desk's.
+ * shows: Classroom pages use the Classroom's (inside a course, only that
+ * course's images), Studio pages the Studio's (gameplay and episode
+ * covers), everything else the Desk's.
  */
 
 /** The library for the page we're on: the Classroom's, the Studio's, or the Desk's. */
@@ -13,6 +14,12 @@ export function currentLibrary() {
 	if (path.startsWith('/classroom')) return 'classroom';
 	if (/^\/studio(\/|$)/.test(path)) return 'studio';
 	return 'content';
+}
+
+/** The course whose images a Classroom page works with, from /classroom/courses/[id]. */
+export function currentCourse() {
+	const path = typeof location !== 'undefined' ? location.pathname : '';
+	return path.match(/^\/classroom\/courses\/([0-9a-f-]{36})(\/|$)/i)?.[1] ?? null;
 }
 
 async function call(url, init) {
@@ -34,11 +41,17 @@ const json = (method, data) => ({
 });
 
 /**
- * @param {{ library?: string, q?: string, scope?: 'mine' | 'all', uploader?: string, sort?: string, offset?: number }} opts
+ * In a course, the list is that course's images (or, with `older`, the
+ * Classroom uploads not yet filed under a course).
+ *
+ * @param {{ library?: string, older?: boolean, q?: string, scope?: 'mine' | 'all', uploader?: string, sort?: string, offset?: number }} opts
  * @returns {Promise<{ items: any[], nextOffset: number | null, all: boolean }>}
  */
-export function listLibrary(opts = {}) {
+export function listLibrary({ older = false, ...opts } = {}) {
 	const p = new URLSearchParams({ library: currentLibrary() });
+	const course = currentCourse();
+	if (course) p.set('course', course);
+	if (course && older) p.set('older', '1');
 	for (const [k, v] of Object.entries(opts)) if (v) p.set(k, String(v));
 	return call(`/api/desk/media?${p}`);
 }

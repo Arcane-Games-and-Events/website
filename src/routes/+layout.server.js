@@ -89,11 +89,11 @@ export const load = async ({ locals }) => {
 	// instantly to their defaults.
 	const userId = locals.user?.id ?? null;
 
-	const [assignedEventsCount, isPartner, nextEvent, unreadNotifications] = await Promise.all([
+	const [assignedEventsCount, isPartner, nextEvent, unread] = await Promise.all([
 		userId ? safeStaffCount(userId) : Promise.resolve(0),
 		userId ? safeIsPartner(userId) : Promise.resolve(false),
 		safeNextEvent(),
-		userId ? cachedUnreadCount(userId) : Promise.resolve(0)
+		userId ? cachedUnreadCount(userId) : Promise.resolve({ learning: 0, classroom: 0 })
 	]);
 
 	const isPremiumMember = locals.user?.role === 'premium' || locals.user?.role === 'admin';
@@ -104,6 +104,9 @@ export const load = async ({ locals }) => {
 		isPartner,
 		isPremiumMember,
 		nextEvent,
-		unreadNotifications
+		// My courses (replies, updates, new topics) and the Classroom (approvals,
+		// students, flagged posts…) count separately.
+		unreadNotifications: unread?.learning ?? 0,
+		classroomUnread: unread?.classroom ?? 0
 	};
 };

@@ -22,9 +22,40 @@
 	const ticks = (c) => Array.from({ length: Math.min(Math.max(c?.lessons || 0, 0), 24) });
 	const priceLabel = (c) => (c?.price > 0 ? `$${c.price}` : 'Free');
 	const cta = (c) => (c?.price > 0 ? 'Enroll' : 'Start free');
+
+	/**
+	 * The featured card's description, short enough to sit beside the cover:
+	 * whole paragraphs while they fit in `max` characters, otherwise the
+	 * first one cut at a word with "…". Paragraphs are split on blank lines.
+	 */
+	function excerpt(text, max = 260) {
+		const paras = String(text || '')
+			.split(/\n\s*\n/)
+			.map((p) => p.replace(/\s+/g, ' ').trim())
+			.filter(Boolean);
+		const out = [];
+		let used = 0;
+		for (const p of paras) {
+			if (used + p.length <= max) {
+				out.push(p);
+				used += p.length;
+				continue;
+			}
+			if (!out.length) {
+				const cut = p
+					.slice(0, max)
+					.replace(/\s+\S*$/, '')
+					.replace(/[,;:.\s]+$/, '');
+				out.push(`${cut}…`);
+			} else out[out.length - 1] = out[out.length - 1].replace(/\.?$/, '') + '…';
+			break;
+		}
+		return out;
+	}
+	const dek = $derived(excerpt(F?.dek));
 	const VALUES = [
 		'Buy once, keep for life',
-		'Premium members get every course update free',
+		'Premium members get every topic added later',
 		'Taught by the players who define the format'
 	];
 </script>
@@ -93,7 +124,12 @@
 				<span
 					class="relative z-[1] block bg-paper-bg text-ink transition-transform duration-700 ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:-translate-x-px group-hover:-translate-y-px lg:grid lg:grid-cols-[1.15fr_1fr]"
 				>
-					<CourseCover image={F.image} slug={F.slug || F.href}>
+					<!-- wide screens: the cover runs the card's full height beside the text -->
+					<CourseCover
+						image={F.image}
+						slug={F.slug || F.href}
+						class="lg:aspect-auto lg:h-full lg:min-h-[360px]"
+					>
 						<span
 							class="absolute top-0 left-0 bg-gold px-3 py-1.5 text-[9.5px] font-extrabold tracking-[0.18em] text-[#241b07] uppercase"
 						>
@@ -109,11 +145,16 @@
 						>
 							<span class="fp-ul">{F.title}</span>
 						</span>
-						{#if F.dek}
-							<span
-								class="mt-4 block font-newsreader text-[16px] leading-[1.5] text-soft italic md:text-[17px]"
-							>
-								{F.dek}
+						{#if dek.length}
+							<!-- shortened to fit beside the cover; one block per paragraph -->
+							<span class="mt-4 block space-y-3">
+								{#each dek as para, i (i)}
+									<span
+										class="line-clamp-4 block font-newsreader text-[16px] leading-[1.5] text-soft italic md:text-[17px]"
+									>
+										{para}
+									</span>
+								{/each}
 							</span>
 						{/if}
 						<span class="mt-auto block pt-6">

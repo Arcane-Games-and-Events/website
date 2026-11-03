@@ -59,7 +59,7 @@
 
 	<p class="max-w-[760px] text-[13px] leading-relaxed text-soft">
 		You earn {earnings.sharePct}% of what each student pays. A sale is held for {earnings.holdDays}
-		days (the refund window), then paid on the next payout. AGE pays every two weeks, on Fridays, outside
+		days (the refund window), then paid on the next payout. AGE pays on the 1st of every month, outside
 		the site; this page is for your information.
 	</p>
 

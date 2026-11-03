@@ -1,7 +1,7 @@
 <script>
 	import DeskTabs from '$lib/components/age/desk/DeskTabs.svelte';
 	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
-	import MediaPicker from '$lib/desk/media/MediaPicker.svelte';
+	import ProfilePhoto from '$lib/components/age/ProfilePhoto.svelte';
 	import { untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { beforeNavigate } from '$app/navigation';
@@ -35,7 +35,8 @@
 		}))
 	);
 
-	const snapshot = () => JSON.stringify({ displayName, title, bio, a: avatar?.id || null, links });
+	// The photo saves on its own the moment it's uploaded, so it's not part of this form.
+	const snapshot = () => JSON.stringify({ displayName, title, bio, links });
 	let saved = $state(snapshot());
 	const dirty = $derived(snapshot() !== saved);
 
@@ -50,14 +51,6 @@
 		if (dirty && type !== 'form' && !confirm('You have unsaved profile changes. Leave anyway?'))
 			cancel();
 	});
-
-	// ============ photo ============
-	// Chosen from (or uploaded to) the image library. The smallest copy is
-	// plenty for a headshot.
-	let pickerOpen = $state(false);
-	function pickPhoto(item) {
-		avatar = { id: item.id, url: item.thumb || item.url };
-	}
 
 	// ============ links ============
 	function addLink() {
@@ -152,41 +145,15 @@
 				<span class="text-[8px] text-warm" aria-hidden="true">◆</span>Byline
 			</h2>
 
-			<!-- photo -->
-			<div class="mt-6 flex items-center gap-5">
-				<span class="relative block h-[88px] w-[88px] shrink-0 overflow-hidden bg-line">
-					{#if avatar?.url}
-						<img src={avatar.url} alt="" class="absolute inset-0 h-full w-full object-cover" />
-					{:else}
-						<span
-							class="absolute inset-0 flex items-center justify-center text-[28px] font-extrabold text-fade"
-							aria-hidden="true">{(displayName.trim() || fallbackName).charAt(0)}</span
-						>
-					{/if}
-				</span>
-				<div>
-					<p class={label}>Photo</p>
-					<div class="mt-2 flex flex-wrap gap-2">
-						<button
-							type="button"
-							onclick={() => (pickerOpen = true)}
-							class="min-h-[40px] border-[1.5px] border-ink px-4 text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
-							>{avatar ? 'Change photo' : 'Choose photo'}</button
-						>
-						{#if avatar}
-							<button
-								type="button"
-								onclick={() => (avatar = null)}
-								class="min-h-[40px] px-3 text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase transition-colors hover:text-hero-rb"
-								>Remove</button
-							>
-						{/if}
-					</div>
-					<p class="mt-1.5 text-[12px] text-fade">A square headshot works best.</p>
-				</div>
+			<!-- photo: the same one as on your account page and your courses -->
+			<div class="mt-6">
+				<ProfilePhoto
+					photo={avatar}
+					name={displayName.trim() || fallbackName}
+					size={88}
+					onchange={(next) => (avatar = next)}
+				/>
 			</div>
-			<input type="hidden" name="avatarMediaId" value={avatar?.id || ''} />
-			<MediaPicker bind:open={pickerOpen} title="Choose a photo" onpick={pickPhoto} />
 
 			<div class="mt-6 grid gap-5 sm:grid-cols-2">
 				<label class="block">

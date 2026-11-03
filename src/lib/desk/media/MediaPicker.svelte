@@ -3,7 +3,9 @@
   cover, thumbnail, inline image or author photo.
 
   Writers see their own uploads; admins and editors see everyone's and can
-  narrow to their own. Selecting an image (or finishing an upload) opens its
+  narrow to their own. Inside a Classroom course the picker shows that
+  course's images, with the older uploads not filed under a course a tap
+  away; uploads are filed under the course. Selecting an image (or finishing an upload) opens its
   details beside the grid, so alt text and a credit can be set before it's
   used. Drag files anywhere onto the dialog to upload them.
 
@@ -18,6 +20,7 @@
 	import MediaGrid from './MediaGrid.svelte';
 	import MediaDetails from './MediaDetails.svelte';
 	import { createLibrary, imageFiles } from './library.svelte.js';
+	import { currentCourse } from './api.js';
 
 	/** @type {{ open?: boolean, title?: string, onpick: (item: any) => void }} */
 	let { open = $bindable(false), title = 'Choose an image', onpick } = $props();
@@ -27,12 +30,15 @@
 	let fileEl = $state();
 	let dragging = $state(false);
 	let searchTimer;
+	let inCourse = $state(false);
 
 	let wasOpen = false;
 	$effect.pre(() => {
 		if (open && !wasOpen) {
 			selected = null;
 			lib.q = '';
+			lib.older = false;
+			inCourse = !!currentCourse();
 			load();
 		}
 		wasOpen = open;
@@ -46,6 +52,11 @@
 	async function add(files) {
 		const list = imageFiles(files);
 		if (!list.length) return;
+		// uploads are filed under the course, so show the course's images
+		if (lib.older) {
+			lib.older = false;
+			load();
+		}
 		const done = await upload(list);
 		if (done.length) selected = done[0];
 	}
@@ -87,7 +98,24 @@
 				placeholder="Search by name, alt text or credit"
 				class="h-[42px] min-w-0 flex-1 basis-[220px] border border-line2 bg-white px-3 text-[14px] text-ink placeholder:text-fade/70 focus:border-ink focus:ring-0 focus:outline-none"
 			/>
-			{#if lib.all}
+			{#if inCourse}
+				<span class="inline-flex gap-px border border-line2 bg-line2">
+					{#each [[false, 'This course'], [true, 'Older uploads']] as [key, label] (label)}
+						<button
+							type="button"
+							aria-pressed={lib.older === key}
+							onclick={() => {
+								lib.older = key;
+								load();
+							}}
+							class="h-[42px] px-3 text-[10px] font-extrabold tracking-[0.12em] uppercase {lib.older ===
+							key
+								? 'bg-ink text-paper-bg'
+								: 'bg-paper-bg text-soft hover:text-ink'}">{label}</button
+						>
+					{/each}
+				</span>
+			{:else if lib.all}
 				<span class="inline-flex gap-px border border-line2 bg-line2">
 					{#each [['all', 'Everyone'], ['mine', 'Mine']] as [key, label] (key)}
 						<button
@@ -130,7 +158,13 @@
 				{#if lib.loaded && !lib.items.length && !lib.uploads.length}
 					<div class="border border-dashed border-line2 px-6 py-12 text-center">
 						<p class="font-newsreader text-[18px] font-semibold">
-							{lib.q ? 'No images match that search.' : 'No images yet.'}
+							{lib.q
+								? 'No images match that search.'
+								: lib.older
+									? 'No older uploads.'
+									: inCourse
+										? 'No images in this course yet.'
+										: 'No images yet.'}
 						</p>
 						<p class="mt-1 text-[13px] text-fade">Upload one, or drag files here.</p>
 					</div>

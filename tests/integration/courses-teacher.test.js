@@ -16,7 +16,6 @@ import { courseAnalytics } from '$lib/server/courses/analytics.js';
 import { startView } from '$lib/server/contentAnalytics/collect.js';
 import { outlineOf } from '$lib/server/courses/builder.js';
 import {
-	PAYOUT_ANCHOR,
 	markPaid,
 	nextPayDate,
 	payDates,
@@ -170,13 +169,17 @@ describe('earnings and payouts', () => {
 		return row;
 	}
 
-	test('pay dates fall every 14 days from the anchor', () => {
-		expect(nextPayDate(new Date('2026-11-01T10:00:00Z'))).toBe(PAYOUT_ANCHOR);
-		expect(nextPayDate(new Date(`${PAYOUT_ANCHOR}T22:00:00Z`))).toBe(PAYOUT_ANCHOR);
-		expect(nextPayDate(new Date('2026-11-14T00:00:00Z'))).toBe('2026-11-27');
-		expect(nextPayDate(new Date('2026-11-27T12:00:00Z'))).toBe('2026-11-27');
-		const ds = payDates(new Date('2026-12-01T00:00:00Z'), 3);
-		expect(ds).toEqual(['2026-12-11', '2026-12-25', '2027-01-08']);
+	test('pay dates fall on the 1st of every month', () => {
+		// The 1st itself is a pay date all day; from the 2nd it's next month's.
+		expect(nextPayDate(new Date('2026-11-01T22:00:00Z'))).toBe('2026-11-01');
+		expect(nextPayDate(new Date('2026-11-02T00:00:00Z'))).toBe('2026-12-01');
+		expect(nextPayDate(new Date('2026-12-31T23:59:00Z'))).toBe('2027-01-01');
+		expect(nextPayDate(new Date('2027-02-15T12:00:00Z'))).toBe('2027-03-01');
+		expect(payDates(new Date('2026-11-20T00:00:00Z'), 3)).toEqual([
+			'2026-12-01',
+			'2027-01-01',
+			'2027-02-01'
+		]);
 	});
 
 	test('the teacher earns 90%; recent sales are on hold until 14 days have passed', async () => {

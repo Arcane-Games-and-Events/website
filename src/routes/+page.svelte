@@ -42,10 +42,12 @@
 		</div>
 	{/if}
 
-	<div class="h-12 md:h-16"></div>
-	<div use:reveal>
-		<FrontAcademy data={F.academy} />
-	</div>
+	{#if F.academy}
+		<div class="h-12 md:h-16"></div>
+		<div use:reveal>
+			<FrontAcademy data={F.academy} />
+		</div>
+	{/if}
 
 	{#if nudge}
 		<div class="py-12 md:py-16" use:reveal>

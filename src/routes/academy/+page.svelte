@@ -180,7 +180,7 @@
 	<title>Academy — AGE</title>
 	<meta
 		name="description"
-		content="Full written courses from the players who define the format. Buy once, keep for life. Premium members get every course update free."
+		content="Full written courses from the players who define the format. Buy once, keep for life, with every revision included. Premium members also get the new topics added later."
 	/>
 </svelte:head>
 
@@ -474,7 +474,7 @@
 					How the Academy works
 				</h2>
 				<ol class="mt-4 border-t border-line">
-					{#each [['Buy once, keep for life', 'Pay once and the course is yours. No subscription needed to read it.'], ['Lessons, not lectures', 'Short written lessons with drills and self-checks, so each sitting has a point.'], ['Updates free with Premium', 'When an instructor revises a course or adds lessons, Premium members get the new material at no charge.'], ['Free previews', 'Every course opens at least one lesson to everyone before you pay.']] as [t, b], i (t)}
+					{#each [['Buy once, keep for life', 'Pay once and the course is yours. No subscription needed to read it.'], ['Lessons, not lectures', 'Short written lessons with drills and self-checks, so each sitting has a point.'], ['New topics with Premium', 'Every buyer gets the course as it launched, with every revision and correction. Topics added after launch are included with Premium.'], ['Free previews', 'Every course opens at least one lesson to everyone before you pay.']] as [t, b], i (t)}
 						<li class="grid grid-cols-[36px_1fr] gap-3 border-b border-line py-4">
 							<span
 								class="font-newsreader text-[22px] leading-none font-semibold text-gold tabular-nums"
@@ -500,12 +500,12 @@
 					<p
 						class="mt-3 font-newsreader text-[28px] leading-[1.05] font-semibold tracking-[-0.01em] [text-wrap:balance] md:text-[34px]"
 					>
-						Your courses stay current with Premium.
+						Your courses keep growing with Premium.
 					</p>
 					<p class="mt-3 font-newsreader text-[16px] leading-[1.5] text-soft italic">
-						Courses are a one-time purchase. When an instructor revises one you own or adds new
-						lessons, AGE Premium members receive every update free, on top of every article, all
-						gameplay and the Library.
+						Courses are a one-time purchase, and every revision and correction to a course you own
+						is yours free. When an instructor adds new topics after launch, AGE Premium members get
+						them too, on top of every article, all gameplay and the Library.
 					</p>
 					<a
 						href="/premium"

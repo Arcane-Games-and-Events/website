@@ -1,7 +1,7 @@
 /**
  * The Desk course builder: who can build and see courses, the outline and
  * its drag-and-drop order, review before the first publish, and topics
- * going live (with the "new since you enrolled" stamp).
+ * going live (with the "added after launch" stamp).
  */
 import { beforeEach, describe, expect, test } from 'vitest';
 import { eq } from 'drizzle-orm';

@@ -59,7 +59,7 @@ describe('the feed', () => {
 		expect(topics.length).toBeGreaterThan(0);
 	});
 
-	test('a topic added after enrolling is flagged for Premium unless the student has it', async () => {
+	test('a topic added after launch is flagged for Premium unless the student has it', async () => {
 		await newTopic('Members only');
 		const [free] = await courseFeed(student);
 		expect(free.premiumOnly).toBe(true);

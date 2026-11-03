@@ -16,7 +16,7 @@ import {
 	user as userTable
 } from '$lib/server/db/schema.js';
 import { userHasPremiumAccess } from '$lib/server/articles/access.js';
-import { isNewSince } from './access.js';
+import { isAddedAfterLaunch } from './access.js';
 
 /** How far back the feed looks. */
 const FEED_DAYS = 120;
@@ -79,6 +79,7 @@ export async function courseFeed(user, { limit = 40 } = {}) {
 				title: deskLesson.title,
 				isPreview: deskLesson.isPreview,
 				firstPublishedAt: deskLesson.firstPublishedAt,
+				courseLaunch: deskCourse.firstPublishedAt,
 				courseId: deskLesson.courseId,
 				courseSlug: deskCourse.slug,
 				courseTitle: deskCourse.title
@@ -124,7 +125,8 @@ export async function courseFeed(user, { limit = 40 } = {}) {
 			id: t.id,
 			at: t.firstPublishedAt,
 			title: t.title,
-			premiumOnly: !t.isPreview && !premium && isNewSince(t, byCourse.get(t.courseId)),
+			premiumOnly:
+				!t.isPreview && !premium && isAddedAfterLaunch(t, { firstPublishedAt: t.courseLaunch }),
 			course: { slug: t.courseSlug, title: t.courseTitle },
 			href: `/academy/${t.courseSlug}/${t.slug}`
 		}))

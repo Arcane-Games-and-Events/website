@@ -5,7 +5,7 @@
  * waiting on teachers (returned courses, unfinished drafts, live topics with
  * changes not put live). Also one course's full picture, for its Status tab.
  */
-import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
 import {
 	courseActivity,
@@ -19,7 +19,7 @@ import {
 	teacherPayout,
 	user as userTable
 } from '$lib/server/db/schema.js';
-import { listDeskCourses, readinessOf, reviewWhere } from './builder.js';
+import { listDeskCourses, readinessItems, readinessOf, reviewWhere } from './builder.js';
 import { listActivity } from './activity.js';
 import { nextPayDate, payoutsDue, shareOf } from './earnings.js';
 
@@ -114,14 +114,19 @@ function liveProblems(c) {
 	return out;
 }
 
-/** Every course, with its standing and open items, plus the admin's to-do list. */
 /**
- * @param {any} admin  an admin or editor
+ * Every course, with its standing and open items, plus the admin's to-do
+ * list. With `all: false`, the user's own courses (a teacher's home page).
+ * @param {any} admin  an admin or editor (or, with all: false, any teacher)
  * @param {Date} [now]
- * @param {{ money?: boolean }} [opts]  include payouts owed (admins only)
+ * @param {{ money?: boolean, all?: boolean }} [opts]  money: include payouts owed (admins only)
  */
-export async function courseOversight(admin, now = new Date(), { money: withMoney = true } = {}) {
-	const base = await listDeskCourses(admin, { all: true });
+export async function courseOversight(
+	admin,
+	now = new Date(),
+	{ money: withMoney = true, all = true } = {}
+) {
+	const base = await listDeskCourses(admin, { all });
 	const ids = base.length ? base.map((c) => c.id) : NONE;
 
 	const [details, pending, held, money, students, actions, due] = await Promise.all([
@@ -192,7 +197,10 @@ export async function courseOversight(admin, now = new Date(), { money: withMone
 				returnedAt: actions.get(c.id, 'returned'),
 				unlistedAt: actions.get(c.id, 'unlisted')
 			};
-			if (c.status === 'draft') full.problems = await readinessOf(full);
+			if (c.status === 'draft') {
+				full.readiness = await readinessItems(full);
+				full.problems = full.readiness.filter((i) => !i.done).map((i) => i.problem);
+			}
 			const p = pendingBy.get(c.id);
 			const h = heldBy.get(c.id);
 			const m = moneyBy.get(c.id);
@@ -205,6 +213,7 @@ export async function courseOversight(admin, now = new Date(), { money: withMone
 					postsToReview: h ? Number(h.n) : 0
 				}),
 				problems: full.problems || [],
+				readiness: full.readiness || null,
 				liveProblems: problemsLive,
 				pendingTopics: p ? Number(p.n) : 0,
 				pendingSince: p?.oldest ? new Date(p.oldest) : null,
@@ -231,7 +240,7 @@ export async function courseOversight(admin, now = new Date(), { money: withMone
 				since: c.submittedAt,
 				text: `${c.author || 'A teacher'} sent “${c.title}” for approval`,
 				action: 'Review course',
-				href: `/classroom/courses/${c.id}/status`
+				href: `/classroom/courses/${c.id}/review`
 			});
 		if (c.postsToReview)
 			needsYou.push({
@@ -251,7 +260,7 @@ export async function courseOversight(admin, now = new Date(), { money: withMone
 				text: `“${c.title}” is live with problems: ${c.liveProblems.join(', ').toLowerCase()}`,
 				detail: 'Buyers see this now. Ask the teacher to fix it, or unlist it.',
 				action: 'Open course',
-				href: `/classroom/courses/${c.id}/status`
+				href: `/classroom/courses/${c.id}`
 			});
 	}
 	const payDate = nextPayDate(now);
@@ -340,6 +349,17 @@ export async function courseOversight(admin, now = new Date(), { money: withMone
 }
 
 // ------------------------------------------------------------ one course
+
+/** The next course waiting for approval after this one, oldest first. */
+export async function nextInQueue(courseId) {
+	const [next] = await db
+		.select({ id: deskCourse.id, title: deskCourse.title })
+		.from(deskCourse)
+		.where(and(eq(deskCourse.status, 'in_review'), ne(deskCourse.id, courseId)))
+		.orderBy(asc(deskCourse.submittedAt), asc(deskCourse.createdAt))
+		.limit(1);
+	return next || null;
+}
 
 const ACTION_TEXT = {
 	created: 'Created the course',

@@ -11,6 +11,7 @@ import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
 import {
 	courseEnrollment,
+	deskCourse,
 	deskLesson,
 	deskLessonProgress,
 	user as userTable
@@ -18,7 +19,7 @@ import {
 import { isAdmin } from '$lib/server/auth/roles.js';
 import { userHasPremiumAccess } from '$lib/server/articles/access.js';
 import { CourseError } from './builder.js';
-import { isNewSince } from './access.js';
+import { isAddedAfterLaunch } from './access.js';
 
 /**
  * Everyone enrolled (and, with `removed`, those who were), with progress.
@@ -53,7 +54,13 @@ export async function listStudents(courseId, { removed = false } = {}) {
 		.orderBy(sql`${courseEnrollment.createdAt} desc`);
 	if (!rows.length) return [];
 
-	const [topics, done] = await Promise.all([
+	// Topics added after the course launched are a Premium extra.
+	const [launch, topics, done] = await Promise.all([
+		db
+			.select({ firstPublishedAt: deskCourse.firstPublishedAt })
+			.from(deskCourse)
+			.where(eq(deskCourse.id, courseId))
+			.then((r) => r[0] || null),
 		db
 			.select({
 				id: deskLesson.id,
@@ -85,8 +92,9 @@ export async function listStudents(courseId, { removed = false } = {}) {
 
 	return rows.map((r) => {
 		const premium = userHasPremiumAccess(r);
-		const enrollment = { createdAt: r.createdAt };
-		const open = topics.filter((t) => t.isPreview || premium || !isNewSince(t, enrollment)).length;
+		const open = topics.filter(
+			(t) => t.isPreview || premium || !isAddedAfterLaunch(t, launch)
+		).length;
 		const completed = Math.min(doneBy.get(r.userId) || 0, open);
 		return {
 			id: r.id,

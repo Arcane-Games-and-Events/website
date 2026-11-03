@@ -169,7 +169,7 @@
 		},
 		{
 			q: 'Do I need Premium to buy a course?',
-			a: 'No. Courses are bought once and are yours for life. Premium adds the author’s updates to the courses you own.'
+			a: 'No. Courses are bought once and are yours for life, with every revision and correction the author makes. Premium adds the new topics authors add after a course launches.'
 		},
 		{
 			q: 'Monthly or annual?',
@@ -242,7 +242,7 @@
 					<ol
 						class="grid gap-px border-y border-[var(--pm-rule)] bg-[var(--pm-rule)] sm:grid-cols-2 lg:grid-cols-4"
 					>
-						{#each [{ href: '/library', label: 'Library', desc: 'Every premium article and the full gameplay library.' }, { href: '/academy', label: 'Academy', desc: 'Your courses, with author updates included.' }, { href: '/age-open', label: 'AGE Open', desc: 'Standings, results and member event discounts.' }, { href: '/account', label: 'Account', desc: 'Your membership, saved cards and billing.' }] as link, i (link.href)}
+						{#each [{ href: '/library', label: 'Library', desc: 'Every premium article and the full gameplay library.' }, { href: '/academy', label: 'Academy', desc: 'Your courses, with new topics included.' }, { href: '/age-open', label: 'AGE Open', desc: 'Standings, results and member event discounts.' }, { href: '/account', label: 'Account', desc: 'Your membership, saved cards and billing.' }] as link, i (link.href)}
 							<li class="bg-[var(--pm-cream)]">
 								<a
 									href={link.href}

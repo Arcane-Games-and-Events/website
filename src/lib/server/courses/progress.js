@@ -15,7 +15,7 @@ import {
 } from '$lib/server/db/schema.js';
 import { mediaImage } from '$lib/server/desk/image.js';
 import { userHasPremiumAccess } from '$lib/server/articles/access.js';
-import { isNewSince } from './access.js';
+import { isAddedAfterLaunch } from './access.js';
 
 /** The student opened a topic: remember it as their place in the course. */
 export async function openLesson(enrollment, lessonId) {
@@ -70,6 +70,7 @@ export async function courseProgress(user) {
 				slug: deskCourse.slug,
 				title: deskCourse.title,
 				status: deskCourse.status,
+				firstPublishedAt: deskCourse.firstPublishedAt,
 				authorId: deskCourse.authorId,
 				coverImageId: deskCourse.coverImageId,
 				thumbnailImageId: deskCourse.thumbnailImageId
@@ -128,7 +129,7 @@ export async function courseProgress(user) {
 
 	return enrollments.map(({ enrollment, course }) => {
 		const all = topics.filter((t) => t.courseId === course.id);
-		const open = all.filter((t) => t.isPreview || premium || !isNewSince(t, enrollment));
+		const open = all.filter((t) => t.isPreview || premium || !isAddedAfterLaunch(t, course));
 		const locked = all.length - open.length;
 		const doneCount = open.filter((t) => completed.has(t.id)).length;
 		const last = all.find((t) => t.id === enrollment.lastLessonId) || null;

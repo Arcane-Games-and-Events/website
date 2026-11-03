@@ -11,7 +11,7 @@ import {
  * /classroom — the course tool, apart from the Desk (articles, videos,
  * gameplay). Teachers build and run their own courses here; admins and
  * editors oversee every course. Money (payouts, teacher earnings) is for
- * admins. Course images and videos live here and only here.
+ * admins. Course images and videos live inside each course.
  */
 export const load = async ({ locals, url }) => {
 	if (!locals.user) {

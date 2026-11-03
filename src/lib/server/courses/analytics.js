@@ -207,3 +207,138 @@ export async function courseAnalytics(courseId, days = 30) {
 		stop
 	};
 }
+
+/**
+ * The Classroom home's numbers across several courses (a teacher's own, or
+ * every course for admins): course page visits, new students, money, topics
+ * finished and discussion posts in the last `days` days, in total, day by
+ * day and per course. One grouped query per source, whatever the number of
+ * courses.
+ *
+ * @param {string[]} courseIds
+ * @param {number} days 7 | 30 | 90
+ */
+export async function classroomAnalytics(courseIds, days = 30) {
+	const empty = () => ({
+		visits: 0,
+		visitors: 0,
+		newStudents: 0,
+		bought: 0,
+		netCents: 0,
+		earnedCents: 0,
+		finished: 0,
+		posts: 0
+	});
+	if (!courseIds.length)
+		return {
+			days,
+			totals: { ...empty(), conversion: null },
+			daily: { visits: series(days, []), students: series(days, []) },
+			courses: {}
+		};
+	const since = new Date(Date.now() - days * 864e5).toISOString();
+	const ids = sql.join(
+		courseIds.map((id) => sql`${id}::uuid`),
+		sql`, `
+	);
+
+	const [views, visitors, joins, sales, finished, posts] = await Promise.all([
+		db
+			.execute(
+				sql`SELECT v.course_id, (v.started_at AT TIME ZONE 'UTC')::date::text AS day, count(*)::int AS n
+				FROM ca_view v
+				WHERE v.course_id IN (${ids}) AND v.lesson_id IS NULL AND v.qualified AND v.audience <> 'staff'
+					AND v.started_at >= ${since}::timestamptz
+				GROUP BY 1, 2`
+			)
+			.then(rowsOf),
+		db
+			.execute(
+				sql`SELECT v.course_id, count(DISTINCT v.visitor_id)::int AS n,
+					(SELECT count(DISTINCT w.visitor_id)::int FROM ca_view w
+						WHERE w.course_id IN (${ids}) AND w.lesson_id IS NULL AND w.qualified AND w.audience <> 'staff'
+							AND w.started_at >= ${since}::timestamptz) AS total
+				FROM ca_view v
+				WHERE v.course_id IN (${ids}) AND v.lesson_id IS NULL AND v.qualified AND v.audience <> 'staff'
+					AND v.started_at >= ${since}::timestamptz
+				GROUP BY 1`
+			)
+			.then(rowsOf),
+		db
+			.execute(
+				sql`SELECT e.course_id, (e.created_at AT TIME ZONE 'UTC')::date::text AS day, count(*)::int AS n,
+					count(*) FILTER (WHERE e.source = 'purchase')::int AS bought
+				FROM course_enrollment e
+				WHERE e.course_id IN (${ids}) AND e.revoked_at IS NULL AND e.created_at >= ${since}::timestamptz
+				GROUP BY 1, 2`
+			)
+			.then(rowsOf),
+		db
+			.execute(
+				sql`SELECT s.course_id,
+					coalesce(sum(s.gross_cents - s.refunded_cents), 0)::int AS net,
+					coalesce(sum(round((s.gross_cents - s.refunded_cents) * s.share_pct / 100.0)), 0)::int AS earned
+				FROM course_sale s
+				WHERE s.course_id IN (${ids}) AND s.sold_at >= ${since}::timestamptz
+				GROUP BY 1`
+			)
+			.then(rowsOf),
+		db
+			.execute(
+				sql`SELECT l.course_id, count(*)::int AS n
+				FROM cms_lesson_progress p
+				JOIN cms_lesson l ON l.id = p.lesson_id
+				WHERE l.course_id IN (${ids}) AND p.completed_at >= ${since}::timestamptz
+				GROUP BY 1`
+			)
+			.then(rowsOf),
+		db
+			.execute(
+				sql`SELECT p.course_id, count(*)::int AS n
+				FROM course_post p
+				WHERE p.course_id IN (${ids}) AND p.status = 'visible' AND p.deleted_at IS NULL
+					AND p.created_at >= ${since}::timestamptz
+				GROUP BY 1`
+			)
+			.then(rowsOf)
+	]);
+
+	/** @type {Record<string, ReturnType<typeof empty>>} */
+	const courses = {};
+	const of = (id) => (courses[id] ??= empty());
+	for (const r of views) of(r.course_id).visits += Number(r.n);
+	for (const r of visitors) of(r.course_id).visitors = Number(r.n);
+	for (const r of joins) {
+		of(r.course_id).newStudents += Number(r.n);
+		of(r.course_id).bought += Number(r.bought);
+	}
+	for (const r of sales) {
+		of(r.course_id).netCents = Number(r.net);
+		of(r.course_id).earnedCents = Number(r.earned);
+	}
+	for (const r of finished) of(r.course_id).finished = Number(r.n);
+	for (const r of posts) of(r.course_id).posts = Number(r.n);
+
+	const totals = empty();
+	for (const c of Object.values(courses))
+		for (const k of Object.keys(totals)) if (k !== 'visitors') totals[k] += c[k];
+	totals.visitors = Number(visitors[0]?.total) || 0;
+
+	return {
+		days,
+		totals: { ...totals, conversion: pct(totals.bought, totals.visitors) },
+		daily: {
+			visits: series(
+				days,
+				views.map((r) => ({ day: r.day, n: Number(r.n) })),
+				(r) => r.n
+			),
+			students: series(
+				days,
+				joins.map((r) => ({ day: r.day, n: Number(r.n) })),
+				(r) => r.n
+			)
+		},
+		courses
+	};
+}

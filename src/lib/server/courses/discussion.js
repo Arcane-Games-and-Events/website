@@ -26,7 +26,7 @@ import {
 } from '$lib/server/db/schema.js';
 import { CourseError, reviewWhere } from './builder.js';
 import { canManageCourse, enrollmentFor } from './access.js';
-import { notify } from './notifications.js';
+import { notify, notifyClassroom } from './notifications.js';
 import { setTyping, touch } from './live.js';
 import { checkText, spamReasons } from './moderation/check.js';
 
@@ -272,6 +272,7 @@ export async function createThread(course, user, { title, body, lessonId = null 
 		})
 		.returning();
 	if (!check.hold) await announceThread(course, post);
+	else await flagged(course, post);
 	await touch(course.id);
 	return post;
 }
@@ -300,6 +301,7 @@ export async function reply(threadId, user, { body }) {
 		})
 		.returning();
 	if (!check.hold) await announceReply(course, thread, post);
+	else await flagged(course, post);
 	await Promise.all([touch(course.id), setTyping(course.id, thread.id, user, false)]);
 	return post;
 }
@@ -332,6 +334,7 @@ export async function editPost(postId, user, { title, body }) {
 		})
 		.where(eq(coursePost.id, post.id))
 		.returning();
+	if (check.hold && post.status !== 'held') await flagged(course, row);
 	await touch(course.id);
 	return row;
 }
@@ -368,9 +371,19 @@ export async function reportPost(postId, user, { reason = null } = {}) {
 				flagReasons: [...new Set([...(post.flagReasons || []), 'reported'])]
 			})
 			.where(and(eq(coursePost.id, post.id), eq(coursePost.status, 'visible')));
+		await flagged(course, post, null);
 		await touch(course.id);
 	}
 	return { ok: true };
+}
+
+/** A post is held for review: tell the teacher it's waiting (not if they wrote it). */
+function flagged(course, post, actorId = post.authorId) {
+	return notifyClassroom(course, 'post_flagged', {
+		actorId,
+		postId: post.id,
+		data: { postTitle: post.title || null, reply: !!post.parentId }
+	});
 }
 
 /** The teacher posts an update: a pinned thread every student hears about. */

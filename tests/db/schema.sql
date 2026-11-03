@@ -5212,3 +5212,48 @@ CREATE INDEX IF NOT EXISTS studio_channel_video_featured_idx
 -- Row level security on with no policies, as in 031.
 ALTER TABLE studio_channel ENABLE ROW LEVEL SECURITY;
 ALTER TABLE studio_channel_video ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- 037_course_media.sql
+-- ============================================================
+ALTER TABLE cms_media
+  ADD COLUMN IF NOT EXISTS course_id uuid REFERENCES cms_course (id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS cms_media_course_idx ON cms_media (course_id, created_at DESC);
+
+-- 1. covers and thumbnails
+UPDATE cms_media m SET course_id = c.id
+FROM cms_course c
+WHERE m.library = 'classroom' AND m.course_id IS NULL
+  AND m.id IN (c.cover_image_id, c.thumbnail_image_id, c.draft_cover_image_id, c.draft_thumbnail_image_id);
+
+-- 2. images inside a topic (the first course found, if more than one uses it)
+UPDATE cms_media m SET course_id = (
+  SELECT l.course_id FROM cms_lesson l
+  WHERE l.body::text LIKE '%' || m.id::text || '%'
+     OR l.draft_body::text LIKE '%' || m.id::text || '%'
+  ORDER BY l.created_at
+  LIMIT 1)
+WHERE m.library = 'classroom' AND m.course_id IS NULL
+  AND EXISTS (
+    SELECT 1 FROM cms_lesson l
+    WHERE l.body::text LIKE '%' || m.id::text || '%'
+       OR l.draft_body::text LIKE '%' || m.id::text || '%');
+
+-- 3. the uploader's only course
+UPDATE cms_media m SET course_id = sole.course_id
+FROM (
+  SELECT author_id, min(id::text)::uuid AS course_id
+  FROM cms_course
+  WHERE author_id IS NOT NULL
+  GROUP BY author_id
+  HAVING count(*) = 1
+) sole
+WHERE m.library = 'classroom' AND m.course_id IS NULL
+  AND m.uploaded_by = sole.author_id;
+
+-- ============================================================
+-- 038_profile_photos.sql
+-- ============================================================
+ALTER TABLE cms_media DROP CONSTRAINT IF EXISTS cms_media_library_check;
+ALTER TABLE cms_media ADD CONSTRAINT cms_media_library_check
+  CHECK (library IN ('content', 'classroom', 'studio', 'profile'));

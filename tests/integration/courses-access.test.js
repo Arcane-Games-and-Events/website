@@ -100,14 +100,14 @@ describe('free topics', () => {
 });
 
 describe('students', () => {
-	test('enrolled students read every topic that was there when they enrolled', async () => {
+	test('enrolled students read every topic the course launched with', async () => {
 		const s = await createUser();
 		await enrol(live.course, s);
 		for (const t of live.topics) expect(await access(s, t.slug)).toBe('open');
 		expect(await access(await createUser(), live.topics[0].slug)).toBe('locked');
 	});
 
-	test('a topic added after enrolling needs Premium, and locks again when Premium ends', async () => {
+	test('a topic added after launch needs Premium, and locks again when Premium ends', async () => {
 		const s = await createUser();
 		await enrol(live.course, s, { at: daysAgo(3) });
 		const t = await newTopic();
@@ -128,10 +128,24 @@ describe('students', () => {
 		expect(await access(lapsed, live.topics[0].slug)).toBe('open');
 	});
 
-	test('someone who enrols after a topic was added gets it, Premium or not', async () => {
+	test('everyone gets the same course whenever they buy: new topics stay Premium', async () => {
 		const t = await newTopic();
+		// Bought after the topic was added: still the launch version.
+		const late = await createUser();
+		await enrol(live.course, late);
+		expect(await access(late, t.slug)).toBe('locked-premium');
+		for (const lt of live.topics) expect(await access(late, lt.slug)).toBe('open');
+		// Premium members get it, whenever they bought.
+		const member = await createUser({ role: 'premium', subscriptionStatus: 'active' });
+		await enrol(live.course, member);
+		expect(await access(member, t.slug)).toBe('open');
+	});
+
+	test('edits to a launch topic reach every student, Premium or not', async () => {
 		const s = await createUser();
 		await enrol(live.course, s);
+		const [t] = live.topics;
+		await updateTopic(t, { body: doc('Corrected text') });
 		expect(await access(s, t.slug)).toBe('open');
 	});
 

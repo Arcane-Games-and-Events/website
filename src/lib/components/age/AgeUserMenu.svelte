@@ -23,7 +23,10 @@
 	const isStaff = $derived(assignedEventsCount > 0);
 	const isPartner = $derived($page.data?.isPartner ?? false);
 	// Replies, course updates and new topics (see /my-courses).
-	const unread = $derived($page.data?.unreadNotifications ?? 0);
+	const learningUnread = $derived($page.data?.unreadNotifications ?? 0);
+	// Approvals, new students, flagged posts… (see the Classroom home).
+	const classroomUnread = $derived($page.data?.classroomUnread ?? 0);
+	const unread = $derived(learningUnread + classroomUnread);
 
 	let open = $state(false);
 	// Below sm the panel is fixed to the viewport width (the trigger sits
@@ -105,7 +108,7 @@
 
 	const ITEMS = $derived([
 		{ label: 'Account', href: '/account' },
-		{ label: 'My courses', href: '/my-courses', badge: unread },
+		{ label: 'My courses', href: '/my-courses', badge: learningUnread },
 		{ label: 'Refer a friend', href: '/account/referrals' },
 		...(isPartner ? [{ label: 'Partner', href: '/partner' }] : [])
 	]);
@@ -124,7 +127,9 @@
 						key: 'classroom',
 						label: 'Classroom',
 						href: '/classroom',
-						tone: 'bg-academy text-paper-bg'
+						tone: 'bg-academy text-paper-bg',
+						badge: classroomUnread,
+						badgeLabel: `${classroomUnread} new in the Classroom`
 					}
 				]
 			: []),
@@ -247,7 +252,8 @@
 										{#if tool.badge}
 											<span
 												class="inline-flex min-w-[18px] items-center justify-center bg-prem px-[5px] py-[1px] font-newsreader text-[11px] leading-none font-semibold text-white normal-case tabular-nums"
-												aria-label="{tool.badge} assigned {tool.badge === 1 ? 'event' : 'events'}"
+												aria-label={tool.badgeLabel ||
+													`${tool.badge} assigned ${tool.badge === 1 ? 'event' : 'events'}`}
 												>{tool.badge}</span
 											>
 										{/if}
