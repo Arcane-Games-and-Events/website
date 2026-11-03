@@ -1,4 +1,6 @@
 <script>
+	import { fade, fly } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
 	/**
 	 * Editorial user menu — the signed-in trigger and its dropdown for
 	 * `<AgeHeader>`, in the same vocabulary as the header's AGE Open
@@ -32,11 +34,8 @@
 	const unread = $derived(learningUnread + classroomUnread);
 
 	let open = $state(false);
-	// Below sm the panel is fixed to the viewport width (the trigger sits
-	// left of Get Premium and the burger, so a panel hung from it would
-	// run off the screen). Its top is measured from the trigger when it
-	// opens; the header's frosted backdrop makes the header the containing
-	// block for fixed descendants, so the offset is taken from its top.
+	// Below desktop the panel spans the screen like the site menu (☰), fixed
+	// in place; its top is measured when it opens (see measure()).
 	let panelTop = $state(0);
 
 	/** @type {HTMLDivElement | undefined} */
@@ -46,13 +45,36 @@
 		open = false;
 	}
 
+	// The panel never runs off a short screen: it's capped at the space
+	// below the trigger and scrolls inside (measured when it opens, and again
+	// on a resize or rotation).
+	let panelMax = $state(0);
+	// Below desktop it opens where the site menu (☰) does: from the header's
+	// bottom edge, the full width less a margin. On desktop it's a dropdown
+	// under the button.
+	function measure() {
+		if (!root) return;
+		const header = root.closest('header')?.getBoundingClientRect();
+		// The fixed panel is placed from the frosted bar it sits in (its
+		// backdrop makes it the containing block), not the header's top.
+		const frame = root.closest('[class*="backdrop-blur"]')?.getBoundingClientRect() ?? header;
+		const narrow = window.innerWidth < 1024;
+		const from = narrow && header ? header.bottom - 4 : root.getBoundingClientRect().bottom + 8;
+		panelTop = Math.round(from - (frame?.top ?? 0));
+		panelMax = Math.max(200, Math.round(window.innerHeight - from - 16));
+	}
 	function toggle() {
-		if (!open && root) {
-			const base = root.closest('header')?.getBoundingClientRect().top ?? 0;
-			panelTop = Math.round(root.getBoundingClientRect().bottom - base + 8);
+		if (!open) {
+			measure();
+			// Only one menu open at a time: the site menu closes.
+			window.dispatchEvent(new CustomEvent('age:menu', { detail: 'account' }));
 		}
 		open = !open;
 	}
+	/** Another menu opened (the site menu): this one closes. */
+	const onOtherMenu = (/** @type {Event} */ e) => {
+		if (/** @type {CustomEvent} */ (e).detail !== 'account') close();
+	};
 
 	// A pointerdown, not a click: iPad Safari sends no click for a tap on
 	// plain page content, so the menu could never be dismissed there.
@@ -65,10 +87,15 @@
 		if (e.key === 'Escape') close();
 	}
 
+	const onResize = () => open && measure();
 	onMount(() => {
+		window.addEventListener('resize', onResize);
+		window.addEventListener('age:menu', onOtherMenu);
 		window.addEventListener('pointerdown', onWindowClick);
 		window.addEventListener('keydown', onKey);
 		return () => {
+			window.removeEventListener('resize', onResize);
+			window.removeEventListener('age:menu', onOtherMenu);
 			window.removeEventListener('pointerdown', onWindowClick);
 			window.removeEventListener('keydown', onKey);
 		};
@@ -202,8 +229,10 @@
 	{#if open}
 		<div
 			role="menu"
-			class="fp-rise fixed inset-x-4 top-[var(--panel-top)] z-50 border-[3px] border-double border-ink bg-paper-bg shadow-[0_24px_44px_-24px_rgba(20,16,8,0.55)] before:absolute before:inset-x-0 before:-top-[12px] before:h-[12px] before:content-[''] sm:absolute sm:inset-x-auto sm:top-[calc(100%+8px)] sm:right-0 sm:w-[288px]"
-			style="--panel-top: {panelTop}px; animation-duration: 0.3s;"
+			in:fly={{ y: 6, duration: 200, easing: cubicOut }}
+			out:fade={{ duration: 140 }}
+			class="fixed inset-x-4 top-[var(--panel-top)] z-50 overflow-y-auto overscroll-contain border-[3px] border-double border-ink bg-paper-bg shadow-[0_24px_44px_-24px_rgba(20,16,8,0.55)] before:absolute before:inset-x-0 before:-top-[12px] before:h-[12px] before:content-[''] lg:absolute lg:inset-x-auto lg:top-[calc(100%+8px)] lg:right-0 lg:w-[288px]"
+			style="--panel-top: {panelTop}px; {panelMax ? `max-height: ${panelMax}px;` : ''}"
 		>
 			<!-- heading: name, email, membership -->
 			<div class="border-b border-line px-4 pt-3 pb-3">

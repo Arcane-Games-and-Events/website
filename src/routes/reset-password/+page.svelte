@@ -1,7 +1,16 @@
 <script>
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import AuthSplit from '$lib/components/age/auth/AuthSplit.svelte';
-	import { LABEL, INPUT, BUTTON, LINK, ERROR } from '$lib/components/age/auth/authStyles.js';
+	import {
+		KICKER,
+		TITLE,
+		STRAP,
+		LABEL,
+		INPUT,
+		BUTTON,
+		LINK,
+		ERROR
+	} from '$lib/components/age/auth/authStyles.js';
 
 	let { data, form } = $props();
 	let showPassword = $state(false);
@@ -29,11 +38,7 @@
 				<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase">
 					Link expired
 				</p>
-				<h1
-					class="ao-cond mt-2 text-[48px] leading-[0.9] font-black uppercase [word-spacing:0.18em] md:text-[60px]"
-				>
-					This link no longer works
-				</h1>
+				<h1 class="mt-3 {TITLE}">This link no longer works</h1>
 				<p class="mt-4 max-w-[420px] font-newsreader text-[17px] leading-[1.6] text-soft">
 					{data.error}. Reset links last 30 minutes and work once. Request a new one and use it
 					straight away.
@@ -42,23 +47,15 @@
 					>Request a new link <span aria-hidden="true">→</span></a
 				>
 			{:else}
-				<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-warm uppercase">
-					Reset password
-				</p>
-				<h1
-					class="ao-cond mt-2 text-[48px] leading-[0.9] font-black uppercase [word-spacing:0.18em] md:text-[60px]"
-				>
-					Set a new password
-				</h1>
-				<p class="mt-3 font-newsreader text-[16px] text-soft">
-					Choose a new password for your AGE account.
-				</p>
+				<p class={KICKER}><span class="text-[8px]" aria-hidden="true">◆</span> Reset password</p>
+				<h1 class="mt-3 {TITLE}">Set a new password</h1>
+				<p class={STRAP}>Choose a new password for your AGE account.</p>
 
-				<div class="mt-8">
+				<div class="mt-5 md:mt-8">
 					{#if form?.error}
 						<p class={ERROR} role="alert">{form.error}</p>
 					{/if}
-					<form method="POST" class="space-y-5">
+					<form method="POST" class="space-y-4 md:space-y-5">
 						<input type="hidden" name="token" value={data.token} />
 						<div>
 							<div class={LABEL}>

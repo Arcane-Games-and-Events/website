@@ -1,7 +1,16 @@
 <script>
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import AuthSplit from '$lib/components/age/auth/AuthSplit.svelte';
-	import { LABEL, INPUT, BUTTON, LINK, ERROR } from '$lib/components/age/auth/authStyles.js';
+	import {
+		KICKER,
+		TITLE,
+		STRAP,
+		LABEL,
+		INPUT,
+		BUTTON,
+		LINK,
+		ERROR
+	} from '$lib/components/age/auth/authStyles.js';
 
 	let { form } = $props();
 </script>
@@ -28,11 +37,7 @@
 				<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-prem uppercase">
 					Check your email
 				</p>
-				<h1
-					class="ao-cond mt-2 text-[48px] leading-[0.9] font-black uppercase [word-spacing:0.18em] md:text-[60px]"
-				>
-					On its way
-				</h1>
+				<h1 class="mt-3 {TITLE}">On its way</h1>
 				<p class="mt-4 max-w-[420px] font-newsreader text-[17px] leading-[1.6] text-soft">
 					If an account exists for that email, a reset link is in your inbox. It expires in 30
 					minutes. Nothing after a few minutes? Check your spam folder.
@@ -43,23 +48,15 @@
 					><span aria-hidden="true">←</span> Back to sign in</a
 				>
 			{:else}
-				<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-warm uppercase">
-					Password reset
-				</p>
-				<h1
-					class="ao-cond mt-2 text-[48px] leading-[0.9] font-black uppercase [word-spacing:0.18em] md:text-[60px]"
-				>
-					Forgot your password?
-				</h1>
-				<p class="mt-3 font-newsreader text-[16px] text-soft">
-					Enter the email on your AGE account and we’ll send a reset link.
-				</p>
+				<p class={KICKER}><span class="text-[8px]" aria-hidden="true">◆</span> Password reset</p>
+				<h1 class="mt-3 {TITLE}">Forgot your password?</h1>
+				<p class={STRAP}>Enter the email on your AGE account and we’ll send a reset link.</p>
 
-				<div class="mt-8">
+				<div class="mt-5 md:mt-8">
 					{#if form?.error}
 						<p class={ERROR} role="alert">{form.error}</p>
 					{/if}
-					<form method="POST" class="space-y-5">
+					<form method="POST" class="space-y-4 md:space-y-5">
 						<div>
 							<label for="email" class={LABEL}>Email</label>
 							<input

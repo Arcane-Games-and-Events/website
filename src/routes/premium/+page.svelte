@@ -372,9 +372,7 @@
 														? 'border-[var(--pm-deep)] bg-[var(--pm-deep)]'
 														: 'border-[var(--pm-rule)] bg-white/60'}"
 													aria-hidden="true"
-												>
-													{#if on}<span class="h-1.5 w-1.5 bg-[var(--pm-gold)]"></span>{/if}
-												</span>
+												></span>
 												<span class="text-[10.5px] font-extrabold tracking-[0.14em] uppercase"
 													>{opt.l}</span
 												>

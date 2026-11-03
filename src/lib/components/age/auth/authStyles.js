@@ -2,6 +2,15 @@
  * Shared form styling for the sign-in flow (login, sign-up, forgot and
  * reset password), so every field, label and button reads the same.
  */
+/** The small-caps label above a page's title, with the site's ◆. */
+export const KICKER =
+	'flex items-center gap-2 text-[10px] font-extrabold tracking-[0.22em] text-warm uppercase';
+/** The page's title: the site's serif headline, with the short accent bar beneath. */
+export const TITLE =
+	"font-newsreader text-[30px] leading-[1.02] font-semibold tracking-[-0.02em] [text-wrap:balance] after:mt-2.5 after:block after:h-[3px] after:w-10 after:bg-warm after:content-[''] sm:text-[40px] md:text-[46px]";
+/** The italic strapline under the title. */
+export const STRAP =
+	'mt-3 font-newsreader text-[16px] leading-snug text-soft italic md:text-[17px]';
 export const LABEL =
 	'mb-2 flex items-center justify-between text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase';
 export const INPUT =

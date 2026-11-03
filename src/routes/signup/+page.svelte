@@ -2,7 +2,16 @@
 	import { page } from '$app/stores';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import AuthSplit from '$lib/components/age/auth/AuthSplit.svelte';
-	import { LABEL, INPUT, BUTTON, LINK, ERROR } from '$lib/components/age/auth/authStyles.js';
+	import {
+		KICKER,
+		TITLE,
+		STRAP,
+		LABEL,
+		INPUT,
+		BUTTON,
+		LINK,
+		ERROR
+	} from '$lib/components/age/auth/authStyles.js';
 
 	let { form, data } = $props();
 
@@ -21,14 +30,14 @@
 <AgeShell>
 	<AuthSplit
 		image="/banner/articles-banner.webp"
-		kicker="Create your account"
+		kicker="Join AGE"
 		bullets={[
-			'Read free articles and follow the standings',
-			'Register for AGE Opens in your circuit',
-			'Track your Academy courses as you go',
-			'Upgrade to Premium whenever you like'
+			{ dept: 'AGE Open', text: 'Register for events in your circuit and follow your results.' },
+			{ dept: 'Academy', text: 'Take courses from top players and keep your place in each.' },
+			{ dept: 'Standings', text: 'Your AGE Rating and season, updated after every event.' },
+			{ dept: 'Premium', text: 'The full Library and every new Academy topic, when you want it.' }
 		]}
-		footnote="Free to join. Member-supported by choice."
+		footnote="Joining is free. Premium is optional and can be added any time."
 	>
 		{#snippet headline()}
 			Join the <em class="font-medium text-warm-light italic">Flesh and Blood</em> community that plays
@@ -36,22 +45,19 @@
 		{/snippet}
 
 		{#snippet formContent()}
-			<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-warm uppercase">Sign up · free</p>
-			<h1
-				class="ao-cond mt-2 text-[48px] leading-[0.9] font-black uppercase [word-spacing:0.18em] md:text-[60px]"
-			>
-				Join AGE
-			</h1>
-			<p class="mt-3 font-newsreader text-[16px] text-soft">
-				Already have an account? <a class={LINK} href={loginHref}>Sign in</a>.
+			<p class={KICKER}><span class="text-[8px]" aria-hidden="true">◆</span> New account</p>
+			<h1 class="mt-3 {TITLE}">Join AGE</h1>
+			<p class={STRAP}>
+				Free to join. Play AGE Opens, take courses and follow the standings. Already a member?
+				<a class="{LINK} not-italic" href={loginHref}>Sign in</a>
 			</p>
 
-			<div class="mt-8">
+			<div class="mt-5 md:mt-8">
 				{#if form?.error}
 					<p class={ERROR} role="alert">{form.error}</p>
 				{/if}
 
-				<form method="POST" class="space-y-5">
+				<form method="POST" class="space-y-4 md:space-y-5">
 					<div class="grid grid-cols-2 gap-4">
 						<div>
 							<label for="firstName" class={LABEL}>First name</label>
@@ -93,26 +99,6 @@
 					</div>
 
 					<div>
-						<label for="gemId" class={LABEL}>
-							<span>GEM ID</span>
-							<span class="tracking-[0.12em] normal-case">Optional</span>
-						</label>
-						<input
-							id="gemId"
-							name="gemId"
-							type="text"
-							inputmode="numeric"
-							autocomplete="off"
-							placeholder="e.g. 95989628"
-							class={INPUT}
-						/>
-						<p class="mt-2 text-[12px] text-fade">
-							Your Legend Story Studios player number. It links your account to your AGE Open
-							results and rating.
-						</p>
-					</div>
-
-					<div>
 						<div class={LABEL}>
 							<label for="password">Password</label>
 							<button
@@ -136,6 +122,25 @@
 						/>
 					</div>
 
+					<div>
+						<label for="gemId" class={LABEL}>
+							<span>GEM ID</span>
+							<span class="tracking-[0.12em] normal-case">Optional</span>
+						</label>
+						<input
+							id="gemId"
+							name="gemId"
+							type="text"
+							inputmode="numeric"
+							autocomplete="off"
+							placeholder="e.g. 95989628"
+							class={INPUT}
+						/>
+						<p class="mt-1.5 text-[12px] text-fade">
+							Links your AGE Open results and rating. You can add it later.
+						</p>
+					</div>
+
 					{#if data?.turnstileSiteKey}
 						<div
 							class="cf-turnstile"
@@ -146,7 +151,7 @@
 					{/if}
 
 					<button type="submit" class={BUTTON}
-						>Create free account <span aria-hidden="true">→</span></button
+						>Create my account <span aria-hidden="true">→</span></button
 					>
 
 					<p class="text-[12px] leading-[1.6] text-fade">

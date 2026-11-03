@@ -3,6 +3,9 @@
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import AuthSplit from '$lib/components/age/auth/AuthSplit.svelte';
 	import {
+		KICKER,
+		TITLE,
+		STRAP,
 		LABEL,
 		INPUT,
 		BUTTON,
@@ -28,30 +31,28 @@
 <AgeShell>
 	<AuthSplit
 		image="/banner/age-open-banner.webp"
-		kicker="Welcome back"
+		kicker="Members"
 		bullets={[
-			'Pick up every course and article where you left off',
-			'Your saved gameplay and watch-later queue',
-			'Standings, rating and events for your circuit'
+			{ dept: 'Academy', text: 'Your courses, open at the topic you left off.' },
+			{ dept: 'AGE Open', text: 'Your tickets, results and AGE Rating.' },
+			{ dept: 'Library', text: 'Strategy and deck techs from players who win.' },
+			{ dept: 'AGE Studios', text: 'Gameplay, interviews and the night broadcast.' }
 		]}
-		footnote="Signed in, your AGE Rating and season follow you everywhere."
+		footnote="One account across Arcane Games and Events."
 	>
 		{#snippet headline()}
-			All of AGE, <em class="font-medium text-warm-light italic">right where you left it</em>.
+			Welcome back to <em class="font-medium text-warm-light italic">AGE</em>.
 		{/snippet}
 
 		{#snippet formContent()}
-			<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-warm uppercase">Sign in</p>
-			<h1
-				class="ao-cond mt-2 text-[48px] leading-[0.9] font-black uppercase [word-spacing:0.18em] md:text-[60px]"
-			>
-				Welcome back
-			</h1>
-			<p class="mt-3 font-newsreader text-[16px] text-soft">
-				New to AGE? <a class={LINK} href={signupHref}>Create a free account</a>.
+			<p class={KICKER}><span class="text-[8px]" aria-hidden="true">◆</span> Members’ sign in</p>
+			<h1 class="mt-3 {TITLE}">Sign in to AGE</h1>
+			<p class={STRAP}>
+				Your courses, results and reading are where you left them. New here?
+				<a class="{LINK} not-italic" href={signupHref}>Create an account</a>
 			</p>
 
-			<div class="mt-8">
+			<div class="mt-5 md:mt-8">
 				{#if resetSuccess}
 					<p class={SUCCESS} role="status">
 						Password reset. You can sign in with your new password.
@@ -61,7 +62,7 @@
 					<p class={ERROR} role="alert">{form.error}</p>
 				{/if}
 
-				<form method="POST" class="space-y-5">
+				<form method="POST" class="space-y-4 md:space-y-5">
 					<div>
 						<label for="email" class={LABEL}>Email</label>
 						<input
@@ -116,7 +117,8 @@
 				</form>
 
 				<p class="mt-8 border-t border-line pt-5 font-newsreader text-[14px] text-soft italic">
-					Trouble signing in? <a class="{LINK} not-italic" href="/contact">Contact support</a>.
+					Can’t get in? <a class="{LINK} not-italic" href="/contact">Write to us</a> and we’ll sort it
+					out.
 				</p>
 			</div>
 		{/snippet}

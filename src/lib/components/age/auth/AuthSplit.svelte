@@ -3,6 +3,8 @@
 	 * Sign-in flow layout, in the site's ink-and-paper register: an ink
 	 * brand panel (event photo held back in greyscale, a kicker, a serif
 	 * headline, a short list of what you get) beside the paper form panel.
+	 * On phones the form comes first, so its fields are on screen without
+	 * scrolling, and the brand panel follows it.
 	 * Used by login, sign-up, forgot password and reset password.
 	 */
 
@@ -11,7 +13,7 @@
 	 *   image?: string,
 	 *   kicker?: string,
 	 *   headline?: import('svelte').Snippet,
-	 *   bullets?: string[],
+	 *   bullets?: (string | { dept: string, text: string })[],
 	 *   footnote?: string,
 	 *   formContent?: import('svelte').Snippet
 	 * }}
@@ -26,9 +28,11 @@
 	} = $props();
 </script>
 
-<div class="grid min-h-[calc(100vh-61px)] grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-	<!-- brand panel -->
-	<section class="relative overflow-hidden bg-ink text-paper-bg">
+<div
+	class="grid grid-cols-1 lg:min-h-[calc(100vh-61px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
+>
+	<!-- brand panel: beside the form on wide screens, after it on phones -->
+	<section class="relative order-2 overflow-hidden bg-ink text-paper-bg lg:order-1">
 		<img
 			src={image}
 			alt=""
@@ -58,29 +62,40 @@
 				</h2>
 			{/if}
 			{#if bullets.length}
-				<ul class="mt-8 hidden max-w-[420px] border-t border-paper-bg/15 md:block">
+				<!-- what's inside, like a magazine's contents: a department and a line -->
+				<ul class="mt-8 max-w-[440px] border-t-[3px] border-double border-paper-bg/25">
 					{#each bullets as item, i (i)}
-						<li
-							class="flex items-start gap-3 border-b border-paper-bg/15 py-3 text-[14px] font-semibold text-paper-bg/85"
-						>
-							<span class="mt-[7px] h-[7px] w-[7px] shrink-0 bg-warm-light" aria-hidden="true"
-							></span>
-							<span>{item}</span>
+						<li class="border-b border-paper-bg/15 py-3">
+							{#if typeof item === 'string'}
+								<span class="flex items-start gap-3 text-[14px] font-semibold text-paper-bg/85">
+									<span class="mt-[7px] h-[7px] w-[7px] shrink-0 bg-warm-light" aria-hidden="true"
+									></span>
+									<span>{item}</span>
+								</span>
+							{:else}
+								<span
+									class="block text-[9.5px] font-extrabold tracking-[0.22em] text-warm-light uppercase"
+									>{item.dept}</span
+								>
+								<span class="mt-1 block font-newsreader text-[16px] leading-snug text-paper-bg/85"
+									>{item.text}</span
+								>
+							{/if}
 						</li>
 					{/each}
 				</ul>
 			{/if}
 			{#if footnote}
-				<p class="mt-6 hidden font-newsreader text-[15px] text-paper-bg/55 italic md:block">
+				<p class="mt-6 font-newsreader text-[15px] text-paper-bg/55 italic">
 					{footnote}
 				</p>
 			{/if}
 		</div>
 	</section>
 
-	<!-- form panel -->
-	<section class="flex items-center bg-paper-bg">
-		<div class="w-full px-5 py-10 md:px-12 md:py-14 lg:max-w-[560px] lg:px-14 lg:py-16">
+	<!-- form panel: first on phones -->
+	<section class="order-1 flex items-start bg-paper-bg lg:order-2 lg:items-center">
+		<div class="w-full px-5 pt-6 pb-10 md:px-12 md:py-14 lg:max-w-[560px] lg:px-14 lg:py-16">
 			{#if formContent}{@render formContent()}{/if}
 		</div>
 	</section>

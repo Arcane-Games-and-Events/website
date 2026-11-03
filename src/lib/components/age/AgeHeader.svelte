@@ -1,4 +1,6 @@
 <script>
+	import { fade, fly } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import AgeUserMenu from './AgeUserMenu.svelte';
@@ -41,6 +43,8 @@
 
 	const user = $derived($page.data?.user ?? null);
 	const isPremiumMember = $derived(user?.role === 'premium' || user?.role === 'admin');
+	// On phones only Premium members have room for a centred logo.
+	const centreLogo = $derived(!!user && isPremiumMember);
 	// Members already have Premium — drop the pitch from their nav.
 	const items = $derived(isPremiumMember ? NAV.filter((n) => n.label !== 'Premium') : NAV);
 
@@ -92,16 +96,41 @@
 
 	// ============ mobile drawer ============
 	let mobileOpen = $state(false);
+	// The drawer never runs off a short screen: it's capped at the space
+	// below the header and scrolls inside (measured when it opens, and again
+	// on a resize or rotation).
+	/** @type {HTMLElement | undefined} */
+	let headerEl = $state();
+	let drawerMax = $state(0);
+	function measureDrawer() {
+		if (!headerEl) return;
+		drawerMax = Math.max(200, window.innerHeight - headerEl.getBoundingClientRect().bottom - 16);
+	}
 	function toggleMobile() {
 		mobileOpen = !mobileOpen;
-		if (mobileOpen) openMenu = null; // close any desktop dropdown
+		if (mobileOpen) {
+			openMenu = null; // close any desktop dropdown
+			measureDrawer();
+			// Only one menu open at a time: the account menu closes.
+			window.dispatchEvent(new CustomEvent('age:menu', { detail: 'site' }));
+		}
 	}
+	/** Another menu opened (the account menu): this one closes. */
+	$effect(() => {
+		const onOtherMenu = (/** @type {Event} */ e) => {
+			if (/** @type {CustomEvent} */ (e).detail !== 'site') mobileOpen = false;
+		};
+		window.addEventListener('age:menu', onOtherMenu);
+		return () => window.removeEventListener('age:menu', onOtherMenu);
+	});
 	function closeMobile() {
 		mobileOpen = false;
 	}
 </script>
 
-<header class="sticky top-0 z-50">
+<svelte:window onresize={() => mobileOpen && measureDrawer()} />
+
+<header class="sticky top-0 z-50" bind:this={headerEl}>
 	<!-- rust top stripe (full-bleed) -->
 	<div class="h-[5px] bg-warm"></div>
 
@@ -112,21 +141,21 @@
 			: ''}"
 	>
 		<div
-			class="mx-auto grid w-full max-w-[1600px] {user
+			class="mx-auto grid w-full max-w-[1600px] {centreLogo
 				? 'grid-cols-[1fr_auto_1fr]'
 				: 'grid-cols-[auto_1fr_auto]'} items-center gap-3 px-4 transition-[padding] duration-300 sm:grid-cols-[1fr_auto_1fr] sm:px-6 md:px-8 lg:px-10 xl:px-14 {scrolled
 				? 'py-2 md:py-2.5'
 				: 'py-3 md:py-4'}"
 		>
 			<!-- burger — first cell below lg (burger · logo · account), gone at lg+.
-			     The logo is centred, except on phones for guests, whose Sign in and
-			     Premium buttons need the room. -->
+			     The logo is centred, except on phones for anyone who isn't a Premium
+			     member: their Premium button (and a guest's Sign in) need the room. -->
 			<button
 				type="button"
 				onclick={toggleMobile}
 				aria-label="Open menu"
 				aria-expanded={mobileOpen}
-				class="col-start-1 inline-flex h-10 w-10 items-center justify-center self-center justify-self-start border-[1.5px] border-ink bg-transparent text-ink transition-colors hover:bg-ink hover:text-paper-bg lg:hidden"
+				class="col-start-1 inline-flex h-[34px] w-[34px] items-center justify-center self-center justify-self-start border-[1.5px] border-ink bg-transparent text-ink transition-colors hover:bg-ink hover:text-paper-bg lg:hidden"
 			>
 				<svg
 					viewBox="0 0 20 20"
@@ -146,7 +175,7 @@
 			<a
 				href="/"
 				aria-label="AGE home"
-				class="col-start-2 inline-flex {user
+				class="col-start-2 inline-flex {centreLogo
 					? 'justify-self-center'
 					: 'justify-self-start'} sm:justify-self-center lg:col-start-1 lg:justify-self-start"
 			>
@@ -284,16 +313,17 @@
 
 			<div class="col-start-3 flex items-center gap-2.5 justify-self-end sm:gap-5">
 				{#if user}
-					<AgeUserMenu {user} isPremium={isPremiumMember} />
-
 					{#if !isPremiumMember}
 						<a
 							href="/premium"
-							class="hidden cursor-pointer items-center gap-2 border-[1.5px] border-prem bg-prem px-[13px] py-[7px] text-[11px] font-bold tracking-[0.05em] text-white uppercase transition-[filter] hover:brightness-110 sm:inline-flex"
+							class="inline-flex cursor-pointer items-center gap-2 border-[1.5px] border-prem bg-prem px-3 py-2 text-[10px] font-extrabold tracking-[0.12em] whitespace-nowrap text-white uppercase transition-[filter] hover:brightness-110 sm:px-[13px] sm:py-[7px] sm:text-[11px] sm:font-bold sm:tracking-[0.05em]"
 						>
-							Get Premium
+							<span class="sm:hidden"><span aria-hidden="true">◆</span> Premium</span>
+							<span class="hidden sm:inline">Get Premium</span>
 						</a>
 					{/if}
+					<!-- the account button last, at the edge -->
+					<AgeUserMenu {user} isPremium={isPremiumMember} />
 				{:else}
 					<a
 						href="/login?redirect={$page.url.pathname}"
@@ -320,8 +350,11 @@
 	-->
 		{#if mobileOpen}
 			<div
-				class="fp-rise absolute inset-x-4 top-[calc(100%-4px)] z-50 border-[3px] border-double border-ink bg-paper-bg shadow-[0_24px_44px_-24px_rgba(20,16,8,0.55)] lg:hidden"
-				style="animation-duration: 0.3s;"
+				in:fly={{ y: 6, duration: 200, easing: cubicOut }}
+				out:fade={{ duration: 140 }}
+				data-site-menu
+				class="absolute inset-x-4 top-[calc(100%-4px)] z-50 overflow-y-auto overscroll-contain border-[3px] border-double border-ink bg-paper-bg shadow-[0_24px_44px_-24px_rgba(20,16,8,0.55)] lg:hidden"
+				style={drawerMax ? `max-height: ${drawerMax}px;` : undefined}
 			>
 				<div class="flex items-baseline justify-between gap-3 border-b border-line px-4 pt-3 pb-3">
 					<span class="font-newsreader text-[17px] leading-tight font-semibold tracking-[-0.01em]"
