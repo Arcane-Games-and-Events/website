@@ -179,11 +179,7 @@
 					? 'justify-self-center'
 					: 'justify-self-start'} sm:justify-self-center lg:col-start-1 lg:justify-self-start"
 			>
-				<img
-					class="h-7 invert sm:h-[30px] md:h-[34px]"
-					src="/logo.svg"
-					alt="AGE"
-				/>
+				<img class="h-7 invert sm:h-[30px] md:h-[34px]" src="/logo.svg" alt="AGE" />
 			</a>
 
 			<nav
