@@ -11,9 +11,14 @@
 	 *   <AgeShell active="Library">
 	 *     ...page content...
 	 *   </AgeShell>
+	 *
+	 * `phoneBare`: on phones the page is only its own content (no header or
+	 * footer), as for an open discussion, which is a full-screen chat there.
 	 */
-	/** @type {{ active?: string, children?: import('svelte').Snippet }} */
-	let { active = '', children } = $props();
+	/** @type {{ active?: string, phoneBare?: boolean, children?: import('svelte').Snippet }} */
+	let { active = '', phoneBare = false, children } = $props();
+	// `contents` keeps the header sticky to the page, as if unwrapped.
+	const chrome = $derived(phoneBare ? 'max-lg:hidden lg:contents' : 'contents');
 </script>
 
 <!--
@@ -26,7 +31,7 @@
 	full-width.
 -->
 <div class="min-h-screen overflow-x-clip bg-paper-bg font-libre text-ink antialiased">
-	<AgeHeader {active} />
+	<div class={chrome}><AgeHeader {active} /></div>
 	{#if children}{@render children()}{/if}
-	<AgeFooter />
+	<div class={chrome}><AgeFooter /></div>
 </div>

@@ -1,9 +1,14 @@
 /**
  * What lets an open discussion keep itself up to date without a reload.
  *
- * - A counter per course that every change to its discussion moves
- *   (`touch`). Open pages poll it (`liveState`) and fetch the discussion
- *   again only when it has moved, so a quiet poll costs one Redis round trip.
+ * - Every change to a course's discussion (`touch`) is broadcast on the
+ *   course's live channel (Supabase Realtime, $lib/server/realtime.js), so
+ *   open pages fetch the discussion again straight away. Typing and who's
+ *   here travel between browsers on the same channel.
+ * - When live updates are off or a page can't connect, it falls back to
+ *   polling: a counter per course that every change moves. Pages poll it
+ *   (`liveState`) and fetch the discussion again only when it has moved, so
+ *   a quiet poll costs one Redis round trip.
  * - Who's typing in which conversation (`setTyping`), forgotten a few
  *   seconds after their last keystroke.
  *
@@ -12,6 +17,7 @@
  * only delays what other people see.
  */
 import { k, redis } from '$lib/server/cache/index.js';
+import { courseTopic, publish } from '$lib/server/realtime.js';
 
 /** How long someone counts as typing after their last keystroke, in ms. */
 export const TYPING_MS = 6000;
@@ -22,8 +28,14 @@ const mem = g.__ageDiscussionLive ?? (g.__ageDiscussionLive = { v: new Map(), ty
 const vKey = (courseId) => k(`disc:v:${courseId}`);
 const tKey = (courseId) => k(`disc:typing:${courseId}`);
 
-/** Something in a course's discussion changed. */
-export async function touch(courseId) {
+/**
+ * Something in a course's discussion changed.
+ * @param {string} courseId
+ * @param {{ kind?: string, postId?: string, threadId?: string, userId?: string }} [what]
+ *   what changed, for the live channel (ids only)
+ */
+export async function touch(courseId, what = {}) {
+	await publish(courseTopic(courseId), 'changed', what);
 	const r = redis();
 	if (!r) {
 		mem.v.set(courseId, (mem.v.get(courseId) ?? 0) + 1);

@@ -112,11 +112,15 @@
 			: ''}"
 	>
 		<div
-			class="mx-auto grid w-full max-w-[1600px] grid-cols-[auto_1fr_auto] items-center gap-3 px-4 transition-[padding] duration-300 sm:grid-cols-[1fr_auto_1fr] sm:px-6 md:px-8 lg:px-10 xl:px-14 {scrolled
+			class="mx-auto grid w-full max-w-[1600px] {user
+				? 'grid-cols-[1fr_auto_1fr]'
+				: 'grid-cols-[auto_1fr_auto]'} items-center gap-3 px-4 transition-[padding] duration-300 sm:grid-cols-[1fr_auto_1fr] sm:px-6 md:px-8 lg:px-10 xl:px-14 {scrolled
 				? 'py-2 md:py-2.5'
 				: 'py-3 md:py-4'}"
 		>
-			<!-- burger — first cell below lg (burger · logo · account), gone at lg+ -->
+			<!-- burger — first cell below lg (burger · logo · account), gone at lg+.
+			     The logo is centred, except on phones for guests, whose Sign in and
+			     Premium buttons need the room. -->
 			<button
 				type="button"
 				onclick={toggleMobile}
@@ -142,7 +146,9 @@
 			<a
 				href="/"
 				aria-label="AGE home"
-				class="col-start-2 inline-flex justify-self-start sm:justify-self-center lg:col-start-1 lg:justify-self-start"
+				class="col-start-2 inline-flex {user
+					? 'justify-self-center'
+					: 'justify-self-start'} sm:justify-self-center lg:col-start-1 lg:justify-self-start"
 			>
 				<img
 					class="h-7 invert sm:h-[30px] md:h-[34px]"

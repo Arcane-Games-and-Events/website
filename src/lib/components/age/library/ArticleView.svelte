@@ -440,7 +440,7 @@
 				{#if data.article.author}
 					{#if data.article.author.slug}
 						<a
-							href="/library/author/{data.article.author.slug}"
+							href="/people/{data.article.author.slug}"
 							class="pointer-events-auto font-extrabold tracking-[0.12em] uppercase {hasCover
 								? 'text-ink hover:text-warm md:text-white/90 md:hover:text-warm-light'
 								: 'text-ink hover:text-warm'}"

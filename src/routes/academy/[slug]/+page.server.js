@@ -5,9 +5,12 @@ import { courseForReader } from '$lib/server/courses/reader.js';
 import { listCards, publicCard } from '$lib/server/payments/cards.js';
 import { acceptConfig } from '$lib/server/payments/accept-config.js';
 import { discussionRole, listThreads } from '$lib/server/courses/discussion.js';
+import { unreadThreads } from '$lib/server/courses/notifications.js';
 
 export async function load({ params, locals, setHeaders, depends }) {
 	depends('academy:course');
+	// The conversations list marks what you haven't read.
+	depends('app:notifications');
 	const r = await courseForReader(params.slug, locals.user);
 	if (!r) error(404, 'Course not found');
 	const { course, owner, enrollment, syllabus, topics } = r;
@@ -31,10 +34,16 @@ export async function load({ params, locals, setHeaders, depends }) {
 		null;
 	const buying = !!locals.user && !owner && !enrollment && course.price > 0;
 
-	// The Discussion tab: the newest few threads for the course's students
-	// (and its teacher); everyone else sees who it's for.
+	// The Discussion tab: the newest threads for the course's students (and
+	// its teacher), a page at a time; everyone else sees who it's for. Older
+	// ones are on the discussion page itself.
 	const role = await discussionRole(locals.user, course);
-	const threads = role.read ? await listThreads(course, locals.user).catch(() => []) : [];
+	const [threads, unread] = role.read
+		? await Promise.all([
+				listThreads(course, locals.user).catch(() => []),
+				unreadThreads(locals.user?.id, course.id).catch(() => ({}))
+			])
+		: [[], {}];
 
 	return {
 		course: { ...course, syllabus },
@@ -58,7 +67,7 @@ export async function load({ params, locals, setHeaders, depends }) {
 			muted: role.muted,
 			total: threads.length,
 			topics: role.post ? topics.map((t) => ({ id: t.id, title: t.title })) : [],
-			threads: threads.slice(0, 5).map((t) => ({
+			threads: threads.slice(0, 50).map((t) => ({
 				id: t.id,
 				kind: t.kind,
 				title: t.title,
@@ -68,6 +77,8 @@ export async function load({ params, locals, setHeaders, depends }) {
 				status: t.status,
 				mine: t.mine,
 				author: t.author,
+				photo: t.photo,
+				unread: unread[t.id] ?? 0,
 				isTeacher: t.isTeacher,
 				lesson: t.lesson,
 				replies: t.replies,

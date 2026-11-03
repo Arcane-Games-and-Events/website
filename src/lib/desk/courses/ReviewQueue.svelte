@@ -73,8 +73,6 @@
 				{item.parentId ? 'Reply in' : 'Thread'}
 				<a
 					href="/academy/{item.courseSlug}/discussion/{item.thread?.id}#post-{item.id}"
-					target="_blank"
-					rel="noopener"
 					class="font-semibold underline-offset-2 hover:underline">“{item.thread?.title}”</a
 				>
 			</p>

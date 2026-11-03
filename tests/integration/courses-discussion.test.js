@@ -77,7 +77,10 @@ describe('threads, replies and notifications', () => {
 
 		await reply(t.id, bob, { body: 'Block with the yellow.' });
 		await reply(t.id, cara, { body: 'Or pitch it.' });
-		expect(await notesFor(alice, 'reply')).toHaveLength(2);
+		// Both replies share Alice's one notification for the conversation.
+		const forAlice = await notesFor(alice, 'reply');
+		expect(forAlice).toHaveLength(1);
+		expect(forAlice[0].data).toMatchObject({ count: 2 });
 		expect(await notesFor(bob, 'reply')).toHaveLength(1); // Cara's
 		expect(await notesFor(cara, 'reply')).toHaveLength(0);
 

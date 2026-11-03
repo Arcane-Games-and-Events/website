@@ -31,6 +31,7 @@ import { and, asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { cached } from '$lib/server/cache/index.js';
 import { mediaImage, mediaColumns } from '$lib/server/desk/image.js';
 import { getAuthorProfile } from '$lib/server/desk/authorProfile.js';
+import { handleFor } from '$lib/server/profile/handles.js';
 
 const COURSE_TAGS = { tags: ['courses', 'media'] };
 
@@ -242,7 +243,12 @@ async function queryCourseBySlug(slug, { drafts = false } = {}) {
 	// the name they go by, if they've set one in the Desk).
 	const course = shapeCourse(row, aggById.get(row.id));
 	if (course.author && row.authorId) {
-		const { profile } = await getAuthorProfile(row.authorId).catch(() => ({ profile: null }));
+		const [{ profile }, handle] = await Promise.all([
+			getAuthorProfile(row.authorId).catch(() => ({ profile: null })),
+			handleFor(row.authorId)
+		]);
+		// Their people page, /people/<handle> (null until migration 039).
+		course.author.handle = handle;
 		if (profile)
 			course.author = {
 				...course.author,

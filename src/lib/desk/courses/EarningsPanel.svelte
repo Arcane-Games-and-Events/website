@@ -59,8 +59,8 @@
 
 	<p class="max-w-[760px] text-[13px] leading-relaxed text-soft">
 		You earn {earnings.sharePct}% of what each student pays. A sale is held for {earnings.holdDays}
-		days (the refund window), then paid on the next payout. AGE pays on the 1st of every month, outside
-		the site; this page is for your information.
+		days (the refund window), then paid on the next payout. AGE pays on the first Monday of every month,
+		outside the site; this page is for your information.
 	</p>
 
 	<div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">

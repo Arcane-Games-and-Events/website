@@ -1,6 +1,7 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { bump } from '$lib/server/cache/index.js';
+import { publish, staffTopic } from '$lib/server/realtime.js';
 import { event, ticket, user, eventStaff } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 
@@ -95,8 +96,18 @@ export const actions = {
 		const enteredIntoGem = formData.get('enteredIntoGem') === 'true';
 
 		try {
-			await db.update(ticket).set({ enteredIntoGem }).where(eq(ticket.id, ticketId));
+			const rows = await db
+				.update(ticket)
+				.set({ enteredIntoGem })
+				.where(and(eq(ticket.id, String(ticketId)), eq(ticket.eventId, params.eventId)))
+				.returning({ id: ticket.id });
+			if (!rows.length) return fail(404, { error: 'That ticket isn’t for this event' });
 			await bump('tickets');
+			// Every other staff device at the event updates straight away.
+			await publish(staffTopic(params.eventId), 'gem', {
+				ticketId: rows[0].id,
+				entered: enteredIntoGem
+			});
 
 			return {
 				success: true,

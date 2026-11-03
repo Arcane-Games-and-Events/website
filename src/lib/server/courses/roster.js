@@ -20,6 +20,7 @@ import { isAdmin } from '$lib/server/auth/roles.js';
 import { userHasPremiumAccess } from '$lib/server/articles/access.js';
 import { CourseError } from './builder.js';
 import { isAddedAfterLaunch } from './access.js';
+import { touch } from './live.js';
 
 /**
  * Everyone enrolled (and, with `removed`, those who were), with progress.
@@ -164,6 +165,8 @@ export async function removeStudent(course, enrollmentId, actor) {
 		.update(courseEnrollment)
 		.set({ revokedAt: new Date(), revokedReason: 'removed' })
 		.where(eq(courseEnrollment.id, en.id));
+	// An open discussion of theirs stops updating (and drops out of the course).
+	await touch(course.id, { kind: 'removed', userId: en.userId });
 }
 
 const csvCell = (v) => {

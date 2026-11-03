@@ -116,7 +116,15 @@
 	function says(n) {
 		const who = n.actor || 'Someone';
 		const thread = n.threadTitle ? `“${n.threadTitle}”` : 'your thread';
-		if (n.kind === 'reply') return `${who} replied in ${thread}`;
+		if (n.kind === 'reply') {
+			// Replies in one conversation share a notification until it's read.
+			const count = Number(n.data?.count) || 1;
+			const others = Math.max(0, (n.data?.actorIds?.length || 1) - 1);
+			if (others)
+				return `${who} and ${others} ${others === 1 ? 'other' : 'others'} replied in ${thread}`;
+			if (count > 1) return `${who} replied ${count} times in ${thread}`;
+			return `${who} replied in ${thread}`;
+		}
 		if (n.kind === 'post_removed')
 			return `Your post${n.data.title ? ` “${n.data.title}”` : ''} was removed${n.data.note ? `: ${n.data.note}` : '.'}`;
 		return 'Something new';

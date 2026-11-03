@@ -820,6 +820,10 @@ export const deskAuthorProfile = pgTable('cms_author_profile', {
 	links: jsonb('links')
 		.notNull()
 		.default(sql`'[]'::jsonb`),
+	// Also `handle` (migration 039): their public page is /people/<handle>.
+	// Left out here on purpose: Drizzle names every column in an insert, so
+	// declaring it would break profile saves until 039 is applied. It's read
+	// and written with SQL in $lib/server/profile/people.js.
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
 });
 

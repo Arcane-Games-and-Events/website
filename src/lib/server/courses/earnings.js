@@ -4,7 +4,7 @@
  * - Each paid enrollment is a `course_sale`: the teacher earns share_pct
  *   (90%) of what the student paid, less any refund.
  * - A sale is on hold for 14 days (the refund window), then payable.
- * - AGE pays teachers once a month, on the 1st. A payout covers every
+ * - AGE pays teachers once a month, on the first Monday. A payout covers every
  *   unpaid sale that is payable by its pay date. AGE pays outside the site; an admin marks the payout as paid
  *   here, which stamps the sales so they can never be paid twice.
  * - A refund after a sale was paid doesn't change the payout already made.
@@ -15,13 +15,15 @@ import { courseSale, deskCourse, teacherPayout, user as userTable } from '$lib/s
 import { notify } from './notifications.js';
 import { CourseError } from './builder.js';
 
-/** Teachers are paid on this day of every month (UTC). */
-export const PAY_DAY = 1;
+/** Teachers are paid on the first of this weekday in every month (UTC): Monday. */
+export const PAY_WEEKDAY = 1;
 const ymd = (t) => new Date(t).toISOString().slice(0, 10);
-/** The pay date in the month `monthsOn` months after `t`'s month. */
+/** The pay date (the month's first Monday) in the month `monthsOn` months after `t`'s month. */
 const payDayOf = (t, monthsOn = 0) => {
 	const d = new Date(t);
-	return ymd(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + monthsOn, PAY_DAY));
+	const first = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + monthsOn, 1));
+	const day = 1 + ((PAY_WEEKDAY - first.getUTCDay() + 7) % 7);
+	return ymd(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), day));
 };
 /** A pay date covers sales payable any time that day (UTC). */
 export const endOfDay = (date) => new Date(`${date}T23:59:59.999Z`);
@@ -30,7 +32,7 @@ export const endOfDay = (date) => new Date(`${date}T23:59:59.999Z`);
 export const shareOf = (s) =>
 	Math.round(((s.grossCents - s.refundedCents) * (s.sharePct ?? 90)) / 100);
 
-/** The first pay date (the 1st of a month) on or after `from` (YYYY-MM-DD). */
+/** The first pay date (a month's first Monday) on or after `from` (YYYY-MM-DD). */
 export function nextPayDate(from = new Date()) {
 	const today = ymd(from);
 	const thisMonth = payDayOf(from);

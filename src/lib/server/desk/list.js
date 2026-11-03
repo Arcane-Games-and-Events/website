@@ -33,14 +33,17 @@ import { mediaImage, mediaColumns } from '$lib/server/desk/image.js';
  * on each other; any entry or media write makes both stale. Five minutes at
  * most, so a scheduled entry goes live without a write.
  */
-export async function listPublishedEntries({ limit = 100 } = {}) {
-	return cached(`articles:desk:list:${limit}`, () => queryPublishedEntries({ limit }), {
+export async function listPublishedEntries({ limit = 100, authorId = null } = {}) {
+	const key = authorId
+		? `articles:desk:list:${limit}:by:${authorId}`
+		: `articles:desk:list:${limit}`;
+	return cached(key, () => queryPublishedEntries({ limit, authorId }), {
 		tags: ['entries', 'media'],
 		ttl: CACHE_TTL.FIVE_MINUTES
 	});
 }
 
-async function queryPublishedEntries({ limit }) {
+async function queryPublishedEntries({ limit, authorId }) {
 	const now = new Date();
 	const cover = alias(deskMedia, 'cover_media');
 	const thumb = alias(deskMedia, 'thumb_media');
@@ -68,9 +71,12 @@ async function queryPublishedEntries({ limit }) {
 		.leftJoin(thumb, eq(deskEntry.thumbnailImageId, thumb.id))
 		.leftJoin(userTable, eq(deskEntry.authorId, userTable.id))
 		.where(
-			or(
-				eq(deskEntry.status, 'published'),
-				and(eq(deskEntry.status, 'scheduled'), lte(deskEntry.scheduledFor, now))
+			and(
+				or(
+					eq(deskEntry.status, 'published'),
+					and(eq(deskEntry.status, 'scheduled'), lte(deskEntry.scheduledFor, now))
+				),
+				authorId ? eq(deskEntry.authorId, authorId) : undefined
 			)
 		)
 		.orderBy(desc(deskEntry.publishedAt))

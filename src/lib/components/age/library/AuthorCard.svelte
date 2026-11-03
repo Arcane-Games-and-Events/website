@@ -11,7 +11,7 @@
 	let { author, bioHtml = '', links = [], variant = 'end' } = $props();
 
 	const rail = $derived(variant === 'rail');
-	const href = $derived(author?.slug ? `/library/author/${author.slug}` : null);
+	const href = $derived(author?.slug ? `/people/${author.slug}` : null);
 	const initials = $derived(
 		(author?.name || '?')
 			.split(/\s+/)
@@ -126,7 +126,7 @@
 						{href}
 						class="group inline-flex items-center gap-1.5 text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
 					>
-						All articles
+						All their work
 						<span class="transition-transform group-hover:translate-x-0.5" aria-hidden="true"
 							>→</span
 						>

@@ -15,6 +15,8 @@
 	 */
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { unread as counts } from '$lib/realtime/unread.svelte.js';
+	import NotificationBadge from './NotificationBadge.svelte';
 
 	/** @type {{ user: any, isPremium?: boolean }} */
 	let { user, isPremium = false } = $props();
@@ -22,10 +24,11 @@
 	const assignedEventsCount = $derived($page.data?.assignedEventsCount ?? 0);
 	const isStaff = $derived(assignedEventsCount > 0);
 	const isPartner = $derived($page.data?.isPartner ?? false);
-	// Replies, course updates and new topics (see /my-courses).
-	const learningUnread = $derived($page.data?.unreadNotifications ?? 0);
-	// Approvals, new students, flagged posts… (see the Classroom home).
-	const classroomUnread = $derived($page.data?.classroomUnread ?? 0);
+	// Replies, course updates and new topics (see /my-courses), and
+	// approvals, new students, flagged posts… (the Classroom home). Kept
+	// current live (see $lib/realtime/LiveUpdates.svelte).
+	const learningUnread = $derived(counts.learning);
+	const classroomUnread = $derived(counts.classroom);
 	const unread = $derived(learningUnread + classroomUnread);
 
 	let open = $state(false);
@@ -77,8 +80,8 @@
 		return a + b || (user?.email?.charAt(0).toUpperCase() ?? '?');
 	});
 
-	// Trigger label: the first name, or the email's local part, so the
-	// trigger always carries the user's identity rather than "Account".
+	// The first name, or the email's local part: the fallback for the full
+	// name in the button's accessible label.
 	const label = $derived.by(() => {
 		const first = (user?.firstName || '').trim();
 		if (first) return first;
@@ -151,44 +154,46 @@
 </script>
 
 <div class="relative" bind:this={root}>
-	<!-- trigger: an outlined button — the burger's 40px height below lg,
-	     Get Premium's 34px at lg+ where the burger is gone — labelled
-	     with the monogram set into its left end and a person icon (the
-	     "My account" label lives in the tooltip and accessible name);
-	     inverts to ink on hover and while open -->
+	<!-- trigger: the monogram square (green for Premium members) and a caret
+	     that turns while open; the unread count sits on the square's corner,
+	     as notification badges do -->
 	<button
 		type="button"
 		onclick={toggle}
 		aria-haspopup="menu"
 		aria-expanded={open}
-		aria-label="My account — {fullName}"
+		aria-label="My account — {fullName}{unread ? `, ${unread} new` : ''}"
 		title="My account"
-		class="inline-flex h-10 cursor-pointer items-center gap-2 border-[1.5px] border-ink pr-[9px] pl-[3px] transition-colors lg:h-[34px] {open
-			? 'bg-ink text-paper-bg'
-			: 'bg-transparent text-ink hover:bg-ink hover:text-paper-bg'}"
+		class="group/trig relative inline-flex h-10 cursor-pointer items-center gap-2 pr-1 text-ink lg:h-[34px]"
 	>
-		<span
-			class="flex h-[31px] w-[31px] items-center justify-center font-newsreader text-[14px] leading-none font-semibold tracking-[0.02em] text-white normal-case lg:h-[25px] lg:w-[25px] lg:text-[12.5px] {isPremium
-				? 'bg-prem'
-				: 'bg-ink'}"
-			title={isPremium ? 'Premium member' : undefined}
-		>
-			{initials}
-		</span>
-		{#if unread}
+		<span class="relative">
 			<span
-				class="-ml-1 min-w-[18px] bg-warm px-1 text-center text-[10px] leading-[18px] font-extrabold text-white tabular-nums"
-				aria-label="{unread} new">{unread > 9 ? '9+' : unread}</span
+				class="flex h-[34px] w-[34px] items-center justify-center font-newsreader text-[14px] leading-none font-semibold tracking-[0.02em] text-white normal-case ring-offset-2 ring-offset-paper-bg transition-shadow lg:h-[30px] lg:w-[30px] lg:text-[13px] {isPremium
+					? 'bg-prem'
+					: 'bg-ink'} {open
+					? 'ring-2 ring-ink'
+					: 'group-hover/trig:ring-2 group-hover/trig:ring-ink/40'}"
+				title={isPremium ? 'Premium member' : undefined}
 			>
-		{/if}
+				{initials}
+			</span>
+			<NotificationBadge
+				count={unread}
+				class="absolute -top-[7px] left-[calc(100%-11px)]"
+				label="{unread} new"
+			/>
+		</span>
 		<svg
-			class="h-[15px] w-[15px] shrink-0"
-			viewBox="0 0 20 20"
-			fill="currentColor"
+			class="h-[10px] w-[10px] shrink-0 transition-transform duration-200 {open
+				? 'rotate-180'
+				: ''}"
+			viewBox="0 0 10 10"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="1.8"
 			aria-hidden="true"
 		>
-			<circle cx="10" cy="6" r="4" />
-			<path d="M2.5 19c0-4.4 3.4-7.5 7.5-7.5s7.5 3.1 7.5 7.5z" />
+			<path d="M1.5 3.5 5 7l3.5-3.5" />
 		</svg>
 	</button>
 
@@ -249,11 +254,17 @@
 											aria-hidden="true">{@render toolIcon(tool.key)}</span
 										>
 										{tool.label}
-										{#if tool.badge}
+										{#if tool.badge && tool.key === 'classroom'}
+											<NotificationBadge
+												count={tool.badge}
+												ring="ring-paper group-hover/mi:ring-ink"
+												label={tool.badgeLabel}
+											/>
+										{:else if tool.badge}
+											<!-- a count, not something new: assigned events -->
 											<span
-												class="inline-flex min-w-[18px] items-center justify-center bg-prem px-[5px] py-[1px] font-newsreader text-[11px] leading-none font-semibold text-white normal-case tabular-nums"
-												aria-label={tool.badgeLabel ||
-													`${tool.badge} assigned ${tool.badge === 1 ? 'event' : 'events'}`}
+												class="inline-flex min-w-[18px] items-center justify-center border border-line2 px-[5px] py-[1px] text-[10px] leading-none font-bold text-soft normal-case tabular-nums group-hover/mi:border-paper-bg/40 group-hover/mi:text-paper-bg"
+												aria-label="{tool.badge} assigned {tool.badge === 1 ? 'event' : 'events'}"
 												>{tool.badge}</span
 											>
 										{/if}
@@ -279,11 +290,12 @@
 							onclick={close}
 							class="group/mi flex items-center justify-between gap-3 px-4 py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] text-soft uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 						>
-							<span
-								>{item.label}{#if item.badge}<span
-										class="ml-2 bg-warm px-1.5 py-[1px] text-[9.5px] tracking-normal text-white tabular-nums"
-										>{item.badge}</span
-									>{/if}</span
+							<span class="flex items-center gap-2"
+								>{item.label}<NotificationBadge
+									count={item.badge || 0}
+									ring="ring-paper-bg group-hover/mi:ring-ink"
+									label="{item.badge} new in My courses"
+								/></span
 							>
 							<span
 								class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/mi:translate-x-0 group-hover/mi:opacity-100"

@@ -5,7 +5,6 @@ import {
 	parseTeacherProfile,
 	saveAuthorProfile
 } from '$lib/server/desk/authorProfile.js';
-import { bump } from '$lib/server/cache/index.js';
 
 /**
  * Classroom → Profile: how a teacher appears in "Your instructor" on their
@@ -42,7 +41,6 @@ export const actions = {
 			console.error('classroom profile save failed:', err);
 			return fail(500, { error: 'Could not save your profile. Try again.' });
 		}
-		await bump('courses', 'entries');
 		return { saved: true };
 	}
 };

@@ -169,17 +169,25 @@ describe('earnings and payouts', () => {
 		return row;
 	}
 
-	test('pay dates fall on the 1st of every month', () => {
-		// The 1st itself is a pay date all day; from the 2nd it's next month's.
-		expect(nextPayDate(new Date('2026-11-01T22:00:00Z'))).toBe('2026-11-01');
-		expect(nextPayDate(new Date('2026-11-02T00:00:00Z'))).toBe('2026-12-01');
-		expect(nextPayDate(new Date('2026-12-31T23:59:00Z'))).toBe('2027-01-01');
-		expect(nextPayDate(new Date('2027-02-15T12:00:00Z'))).toBe('2027-03-01');
-		expect(payDates(new Date('2026-11-20T00:00:00Z'), 3)).toEqual([
-			'2026-12-01',
-			'2027-01-01',
-			'2027-02-01'
+	test('pay dates fall on the first Monday of every month', () => {
+		// November 2026 starts on a Sunday, so its first Monday is the 2nd. The
+		// pay date is a pay date all day; from the next day it's next month's.
+		expect(nextPayDate(new Date('2026-11-01T22:00:00Z'))).toBe('2026-11-02');
+		expect(nextPayDate(new Date('2026-11-02T23:00:00Z'))).toBe('2026-11-02');
+		expect(nextPayDate(new Date('2026-11-03T00:00:00Z'))).toBe('2026-12-07');
+		expect(nextPayDate(new Date('2026-12-31T23:59:00Z'))).toBe('2027-01-04');
+		// February 2027 starts on a Monday: that's the pay date.
+		expect(nextPayDate(new Date('2027-01-20T12:00:00Z'))).toBe('2027-02-01');
+		expect(payDates(new Date('2026-11-20T00:00:00Z'), 4)).toEqual([
+			'2026-12-07',
+			'2027-01-04',
+			'2027-02-01',
+			'2027-03-01'
 		]);
+		for (const d of payDates(new Date('2026-01-01T00:00:00Z'), 24)) {
+			expect(new Date(`${d}T00:00:00Z`).getUTCDay()).toBe(1);
+			expect(Number(d.slice(8))).toBeLessThanOrEqual(7);
+		}
 	});
 
 	test('the teacher earns 90%; recent sales are on hold until 14 days have passed', async () => {

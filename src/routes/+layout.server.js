@@ -3,6 +3,7 @@ import { eventStaff, partner, event } from '$lib/server/db/schema.js';
 import { eq, and, gte, or, isNull, asc } from 'drizzle-orm';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import { cachedUnreadCount } from '$lib/server/courses/notifications.js';
+import { realtimeClientConfig } from '$lib/server/realtime.js';
 
 // Per-user cached lookups on the layout hot path. Each is guarded so an
 // individual failure just falls back to the safe default without failing
@@ -107,6 +108,8 @@ export const load = async ({ locals }) => {
 		// My courses (replies, updates, new topics) and the Classroom (approvals,
 		// students, flagged posts…) count separately.
 		unreadNotifications: unread?.learning ?? 0,
-		classroomUnread: unread?.classroom ?? 0
+		classroomUnread: unread?.classroom ?? 0,
+		// Where signed-in browsers connect for live updates (null when off).
+		realtime: userId ? realtimeClientConfig() : null
 	};
 };

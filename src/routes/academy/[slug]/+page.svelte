@@ -20,6 +20,7 @@
 	import { onDestroy, onMount, tick } from 'svelte';
 	import Composer from '$lib/components/age/academy/discussion/Composer.svelte';
 	import ThreadRow from '$lib/components/age/academy/discussion/ThreadRow.svelte';
+	import Pager from '$lib/components/age/admin/Pager.svelte';
 	import { createContentTracker } from '$lib/analytics/contentTracker.js';
 	import { formatMinutes, formatPrice, toCard } from '$lib/academy/format.js';
 
@@ -180,6 +181,19 @@
 		['details', 'Details']
 	];
 	let tab = $state('syllabus');
+
+	// Latest conversations, five to a page.
+	const THREADS_PER_PAGE = 5;
+	let threadPage = $state(1);
+	const threadPages = $derived(
+		Math.max(1, Math.ceil(data.discussion.threads.length / THREADS_PER_PAGE))
+	);
+	const shownThreads = $derived(
+		data.discussion.threads.slice(
+			(Math.min(threadPage, threadPages) - 1) * THREADS_PER_PAGE,
+			Math.min(threadPage, threadPages) * THREADS_PER_PAGE
+		)
+	);
 	/** @type {HTMLElement | undefined} */
 	let tabsAnchor = $state();
 	// The tab bar sticks under the site header, which slims as you scroll.
@@ -342,7 +356,15 @@
 					{/if}
 					<span class="text-[14px] leading-tight">
 						<span class="block text-paper-bg/60">With</span>
-						<span class="block font-semibold">{instructor}</span>
+						{#if c.author?.handle}
+							<a
+								href="/people/{c.author.handle}"
+								class="block font-semibold underline decoration-paper-bg/30 underline-offset-[3px] transition-colors hover:text-gold hover:decoration-gold"
+								>{instructor}</a
+							>
+						{:else}
+							<span class="block font-semibold">{instructor}</span>
+						{/if}
 					</span>
 				</p>
 			</div>
@@ -642,7 +664,7 @@
 								<a
 									href="/academy/{c.slug}/discussion"
 									class="text-[10.5px] font-extrabold tracking-[0.16em] text-academy uppercase hover:text-ink"
-									>{data.discussion.total > data.discussion.threads.length
+									>{data.discussion.total > THREADS_PER_PAGE
 										? `All ${data.discussion.total} →`
 										: 'Open →'}</a
 								>
@@ -650,7 +672,7 @@
 						</div>
 						{#if data.discussion.threads.length}
 							<ul class="-mx-4 divide-y divide-line">
-								{#each data.discussion.threads as t (t.id)}
+								{#each shownThreads as t (t.id)}
 									<li>
 										<ThreadRow
 											{t}
@@ -660,6 +682,13 @@
 									</li>
 								{/each}
 							</ul>
+							<Pager
+								page={Math.min(threadPage, threadPages)}
+								perPage={THREADS_PER_PAGE}
+								count={data.discussion.threads.length}
+								label="conversations"
+								onchange={(p) => (threadPage = p)}
+							/>
 						{:else}
 							<p class="mt-6 font-newsreader text-[17px] text-soft italic">
 								Ask a question or share a note to start the conversation.
@@ -747,9 +776,17 @@
 								>
 							{/if}
 							<div class="min-w-0">
-								<div class="font-newsreader text-[22px] leading-tight font-semibold">
-									{instructor}
-								</div>
+								{#if c.author?.handle}
+									<a
+										href="/people/{c.author.handle}"
+										class="block font-newsreader text-[22px] leading-tight font-semibold transition-colors hover:text-warm"
+										><span class="fp-ul">{instructor}</span></a
+									>
+								{:else}
+									<div class="font-newsreader text-[22px] leading-tight font-semibold">
+										{instructor}
+									</div>
+								{/if}
 								<div class="mt-1 text-[10px] font-extrabold tracking-[0.16em] text-gold uppercase">
 									{c.author?.title || 'AGE Academy instructor'}
 								</div>
@@ -774,6 +811,13 @@
 									{para}
 								</p>
 							{/each}
+						{/if}
+						{#if c.author?.handle}
+							<a
+								href="/people/{c.author.handle}"
+								class="mt-5 inline-flex items-center gap-2 border-t border-line pt-3 text-[10px] font-extrabold tracking-[0.16em] text-ink uppercase transition-colors hover:text-warm"
+								>Everything by {instructor} <span aria-hidden="true">→</span></a
+							>
 						{/if}
 					</div>
 				</div>

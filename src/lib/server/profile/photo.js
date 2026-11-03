@@ -23,8 +23,8 @@ export const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
 const SIZE = 800;
 const ACCEPTED = /^image\/(jpeg|png|webp|avif|gif|heic|heif)$/i;
 
-/** Caches that show someone's photo: course pages, bylines, their own pages. */
-const bumpPhotoCaches = (userId) => bump('courses', 'entries', `user:${userId}`);
+/** Caches that show someone's photo: course pages, bylines, people pages, their own pages. */
+const bumpPhotoCaches = (userId) => bump('courses', 'entries', 'people', `user:${userId}`);
 
 /** The user's current photo row, if any. */
 async function currentPhoto(userId) {

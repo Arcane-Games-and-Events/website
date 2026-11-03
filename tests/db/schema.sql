@@ -5257,3 +5257,7 @@ WHERE m.library = 'classroom' AND m.course_id IS NULL
 ALTER TABLE cms_media DROP CONSTRAINT IF EXISTS cms_media_library_check;
 ALTER TABLE cms_media ADD CONSTRAINT cms_media_library_check
   CHECK (library IN ('content', 'classroom', 'studio', 'profile'));
+
+-- 039_people_handles.sql
+ALTER TABLE cms_author_profile ADD COLUMN IF NOT EXISTS handle text;
+CREATE UNIQUE INDEX IF NOT EXISTS cms_author_profile_handle_unique ON cms_author_profile (handle);

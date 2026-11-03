@@ -1,6 +1,6 @@
 <script>
 	/**
-	 * Classroom → Payouts (admins). Teachers are paid on the 1st of every month, outside the
+	 * Classroom → Payouts (admins). Teachers are paid on the first Monday of every month, outside the
 	 * site. This shows what each teacher is owed on a pay date (every unpaid
 	 * sale past its 14-day hold) and records a payout once it's sent.
 	 */
@@ -59,7 +59,7 @@
 
 <DeskHeader
 	title="Payouts"
-	subtitle="Teachers earn 90% of each sale, paid on the 1st of every month."
+	subtitle="Teachers earn 90% of each sale, paid on the first Monday of every month."
 />
 <DeskTabs />
 

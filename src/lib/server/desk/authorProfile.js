@@ -3,6 +3,7 @@ import { db } from '$lib/server/db/index.js';
 import { deskAuthorProfile, deskMedia } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { LINK_PLATFORMS, normalizeUrl } from '$lib/desk/authorLinks.js';
+import { bump } from '$lib/server/cache/index.js';
 
 export const PROFILE_LIMITS = { name: 60, title: 80, bio: 600, links: 4, url: 300, label: 30 };
 
@@ -133,6 +134,8 @@ export async function saveAuthorProfile(userId, value) {
 		.insert(deskAuthorProfile)
 		.values({ userId, ...row })
 		.onConflictDoUpdate({ target: deskAuthorProfile.userId, set: row });
+	// Their people page and course pages show it.
+	await bump('people', 'courses', 'entries');
 }
 
 export { bioToHtml } from '$lib/desk/authorLinks.js';

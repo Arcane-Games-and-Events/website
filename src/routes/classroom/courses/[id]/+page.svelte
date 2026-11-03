@@ -1,13 +1,12 @@
 <script>
 	/**
-	 * Course → Overview, for its teacher and for admins and editors.
-	 * Everything about where this course stands, said plainly: its stage and
-	 * whose move it is, the steps it has been through, the checklist, what's
+	 * Course → Overview, for its teacher and for admins and editors: what's
 	 * open on it, its students and money, every topic's state, and a history
-	 * of who did what. Money shows to the teacher and admins only.
+	 * of who did what. Money shows to the teacher and admins only. (Where the
+	 * course stands, its steps and checklist are in the status bar above the
+	 * tabs, on every tab.)
 	 */
-	import Readiness from '$lib/desk/courses/Readiness.svelte';
-	import { STAGE_TONE, WHOSE, money, shortDate, waited } from '$lib/desk/courses/format.js';
+	import { money, shortDate, waited } from '$lib/desk/courses/format.js';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -19,28 +18,6 @@
 	// Teachers read about their own course; admins about the teacher's.
 	const mine = $derived(data.ownsIt);
 	const teacherName = $derived(mine ? 'you' : s.author || 'the teacher');
-	// The headline, in the teacher's own words on their course.
-	const MINE = {
-		in_review: [
-			'Waiting for approval',
-			'Sent. An admin will approve it or send it back with a note.'
-		],
-		returned: ['Returned', 'Sent back with a note. Make the changes and send it again.'],
-		draft: ['Draft', null]
-	};
-	const head = $derived(
-		mine && MINE[s.standing.stage]
-			? {
-					label: MINE[s.standing.stage][0],
-					line:
-						MINE[s.standing.stage][1] ??
-						(s.problems.length
-							? `Being built. Before you can send it: ${s.problems.join(' ').toLowerCase()}`
-							: 'Ready to send for approval.')
-				}
-			: { label: s.standing.label, line: s.standing.line }
-	);
-
 	// Open items on this course, in the order they matter.
 	const open = $derived([
 		...(course.status === 'in_review'
@@ -182,80 +159,6 @@
 <svelte:head><title>{course.title} · Classroom</title></svelte:head>
 
 <div class="mx-auto w-full max-w-[1200px] space-y-10 px-5 pb-20 font-libre md:px-8">
-	<!-- where it stands -->
-	<section class="border border-t-[3px] border-line2 border-t-ink bg-white p-5 md:p-6">
-		<div class="flex flex-wrap items-start justify-between gap-4">
-			<div class="max-w-[720px] min-w-0">
-				<span
-					class="inline-block border px-2 py-[2px] text-[10px] font-extrabold tracking-[0.14em] uppercase {STAGE_TONE[
-						s.standing.stage
-					]}">{head.label}</span
-				>
-				<p class="mt-3 font-newsreader text-[22px] leading-snug font-semibold md:text-[25px]">
-					{head.line}
-				</p>
-				{#if !mine}
-					<p class="mt-2 text-[13px] text-soft">
-						Teacher: <b class="font-semibold text-ink">{s.author || 'none'}</b>{#if s.authorEmail}
-							· {s.authorEmail}{/if}
-					</p>
-				{/if}
-			</div>
-			<div class="text-right">
-				<p
-					class="text-[10px] font-extrabold tracking-[0.16em] uppercase {s.standing.whose ===
-					'admin'
-						? 'text-hero-rb'
-						: s.standing.whose === 'teacher'
-							? 'text-[#8a6116]'
-							: 'text-fade'}"
-				>
-					{mine && s.standing.whose === 'teacher' ? 'Waiting on you' : WHOSE[s.standing.whose]}
-				</p>
-				{#if s.standing.since}
-					<p class="mt-1 text-[13px] text-soft">
-						Since {shortDate(s.standing.since)}
-						<span class="text-fade">({waited(s.standing.since)})</span>
-					</p>
-				{/if}
-			</div>
-		</div>
-
-		<!-- the steps -->
-		<ol
-			class="mt-6 grid gap-px border border-line2 bg-line2 sm:[grid-template-columns:repeat(var(--steps),minmax(0,1fr))]"
-			style="--steps: {s.steps.length};"
-		>
-			{#each s.steps as step, i (step.id)}
-				<li class="bg-paper-bg px-4 py-3 {step.done ? '' : 'opacity-55'}">
-					<p class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.14em] uppercase">
-						<span
-							class="flex h-5 w-5 items-center justify-center text-[10px] {step.done
-								? 'bg-ink text-paper-bg'
-								: 'border border-line2 text-fade'}">{step.done ? '✓' : i + 1}</span
-						>
-						{step.label}
-					</p>
-					<p class="mt-1 text-[12px] text-soft">
-						{step.at ? shortDate(step.at) : step.done ? 'Done' : 'Not yet'}
-					</p>
-				</li>
-			{/each}
-		</ol>
-
-		{#if course.status === 'draft'}
-			<div
-				class="mt-6 grid gap-4 border-t border-line pt-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-end"
-			>
-				<Readiness items={data.readiness} {base} />
-				<p class="max-w-[300px] text-[12px] leading-snug text-fade">
-					When every item is ticked, send it for approval from the bar above. An admin approves a
-					course once.
-				</p>
-			</div>
-		{/if}
-	</section>
-
 	<!-- open items -->
 	<section>
 		<h2 class="{kicker} flex items-baseline justify-between border-b-[3px] border-ink pb-2.5">

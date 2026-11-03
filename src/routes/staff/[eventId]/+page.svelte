@@ -1,6 +1,8 @@
 <script>
+	import { invalidateAll } from '$app/navigation';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import { CIRCUITS } from '$lib/data/circuits.js';
+	import { joinChannel, realtime } from '$lib/realtime/client.svelte.js';
 
 	let { data, form } = $props();
 
@@ -13,6 +15,37 @@
 		)
 	);
 	let gemEntryLoading = $state({});
+
+	// Live: GEM marks made on other staff devices show here straight away,
+	// with who else is on the console. If the connection drops (venue
+	// Wi-Fi), say so; when it's back, reload the list to catch up.
+	let staffHere = $state(0);
+	let liveStatus = $state(/** @type {'connecting' | 'live' | 'down'} */ ('connecting'));
+	// Plain values, so reloading the page's data doesn't rejoin the channel.
+	const eventId = $derived(data.event.id);
+	const meId = $derived(data.user.id);
+	const meName = $derived(data.user.firstName || 'Staff');
+	$effect(() => {
+		const ch = joinChannel({
+			topic: `staff:${eventId}`,
+			events: {
+				gem: (p) => {
+					if (p?.ticketId) gemOverrides[p.ticketId] = !!p.entered;
+				}
+			},
+			presence: {
+				key: meId,
+				meta: { n: meName },
+				onSync: (state) => (staffHere = Object.keys(state).length)
+			},
+			onStatus: (status) => {
+				if (status === 'live' && liveStatus === 'down')
+					invalidateAll().then(() => (gemOverrides = {}));
+				liveStatus = status;
+			}
+		});
+		return () => ch.leave();
+	});
 	let copiedGemId = $state(null);
 
 	async function copyGemId(gemId) {
@@ -174,6 +207,32 @@
 					.filter(Boolean)
 					.join(' · ')}
 			</p>
+
+			{#if realtime.on}
+				<p
+					class="mt-5 flex items-center gap-2 text-[10px] font-extrabold tracking-[0.18em] uppercase {liveStatus ===
+					'down'
+						? 'text-gold'
+						: 'text-paper-bg/60'}"
+					role="status"
+				>
+					<span
+						class="inline-block h-[7px] w-[7px] {liveStatus === 'live'
+							? 'bg-prem-light'
+							: liveStatus === 'down'
+								? 'bg-gold'
+								: 'bg-paper-bg/40'}"
+						aria-hidden="true"
+					></span>
+					{#if liveStatus === 'live'}
+						Live{staffHere > 1 ? ` · ${staffHere} staff on the console` : ''}
+					{:else if liveStatus === 'down'}
+						Offline, reconnecting. Marks from other devices will appear when it’s back.
+					{:else}
+						Connecting…
+					{/if}
+				</p>
+			{/if}
 
 			<!-- check-in board -->
 			<div class="mt-8 border-y border-paper-bg/25">

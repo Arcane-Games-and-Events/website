@@ -3,6 +3,19 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<script>
+			// iPhone and iPad Safari zoom in on any text field under 16px and stay
+			// zoomed. maximum-scale=1 stops that, and Safari still lets people
+			// pinch to zoom, so it's set on Apple touch devices only (elsewhere it
+			// would block zooming).
+			if (
+				/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+				(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+			)
+				document
+					.querySelector('meta[name=viewport]')
+					.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1');
+		</script>
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<!-- Preconnect to external resources for faster loading -->
 		<link rel="preconnect" href="https://d2wlb52bya4y8z.cloudfront.net" crossorigin />

@@ -59,6 +59,10 @@ export function testEnvironment() {
 		EMAIL_FROM: 'AGE <test@example.com>',
 		SUPABASE_URL: '',
 		SUPABASE_SERVICE_ROLE_KEY: '',
+		// Off: live updates (tests switch them on with a fake sender).
+		REALTIME_ENABLED: '',
+		SUPABASE_JWT_SECRET: '',
+		PUBLIC_SUPABASE_ANON_KEY: '',
 		MUX_TOKEN_ID: '',
 		MUX_TOKEN_SECRET: '',
 		MUX_SIGNING_KEY_ID: '',

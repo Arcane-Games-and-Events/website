@@ -158,7 +158,7 @@ export async function classroomHome(user, { days = 30, now = new Date() } = {}) 
 	const flagged = oversee ? oversight.courses.filter((c) => c.postsToReview).map((c) => c.id) : [];
 	const [images, updates, report, earnings, queue] = await Promise.all([
 		mediaImagesById(coverIds),
-		listNotifications(user.id, { scope: 'classroom', limit: 30 }),
+		listNotifications(user.id, { scope: 'classroom', limit: 300 }),
 		// Teachers see their own courses' numbers; admins and editors the whole Classroom's.
 		classroomAnalytics(
 			(oversee ? oversight.courses : mineFull).map((c) => c.id),

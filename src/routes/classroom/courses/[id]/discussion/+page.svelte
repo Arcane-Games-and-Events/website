@@ -6,6 +6,9 @@
 	 */
 	import { invalidate } from '$app/navigation';
 	import ReviewQueue from '$lib/desk/courses/ReviewQueue.svelte';
+	import Pager from '$lib/components/age/admin/Pager.svelte';
+	import NotificationBadge from '$lib/components/age/NotificationBadge.svelte';
+	import { refreshUnread } from '$lib/realtime/unread.svelte.js';
 	import { shortDate } from '$lib/desk/courses/format.js';
 
 	/** @type {{ data: any }} */
@@ -49,9 +52,37 @@
 		await refresh();
 	}
 
+	// Unread first (what your notifications point to), then the ones you
+	// haven't answered, then the rest.
+	let unreadOnly = $state(false);
+	const unreadCount = $derived(data.threads.filter((t) => t.unread).length);
 	const unanswered = $derived(
-		[...data.threads].sort((a, b) => Number(a.teacherReplied) - Number(b.teacherReplied))
+		[...data.threads]
+			.filter((t) => !unreadOnly || !unreadCount || t.unread)
+			.sort(
+				(a, b) =>
+					Number(!!b.unread) - Number(!!a.unread) ||
+					Number(a.teacherReplied) - Number(b.teacherReplied)
+			)
 	);
+
+	/** Read every notification about this course: the threads' unread marks clear. */
+	async function markAllRead() {
+		unreadOnly = false;
+		await fetch('/api/notifications/read', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ courseId: course.id })
+		}).catch(() => {});
+		await Promise.all([invalidate('app:notifications'), refreshUnread()]);
+	}
+
+	// Ten threads to a page.
+	const PER_PAGE = 10;
+	let threadPage = $state(1);
+	const pages = $derived(Math.max(1, Math.ceil(unanswered.length / PER_PAGE)));
+	const current = $derived(Math.min(threadPage, pages));
+	const shown = $derived(unanswered.slice((current - 1) * PER_PAGE, current * PER_PAGE));
 </script>
 
 {#snippet head(title, note = '')}
@@ -78,17 +109,68 @@
 
 	<div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">
 		<section>
-			{@render head('Threads', 'Ones you haven’t answered first')}
+			<div class="flex items-baseline justify-between gap-3 border-b-[3px] border-ink pb-2.5">
+				<h2 class="text-[10.5px] font-extrabold tracking-[0.16em] uppercase">Threads</h2>
+				<p class="hidden text-[11.5px] text-fade sm:block">
+					Unread, then ones you haven’t answered
+				</p>
+			</div>
+			<!-- The discussion itself, as students see it, where you reply -->
+			<a
+				href="/academy/{course.slug}/discussion"
+				class="mt-3 mb-3 flex min-h-[44px] items-center justify-between gap-3 bg-academy px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-ink"
+			>
+				<span>Open the discussion</span>
+				<span aria-hidden="true">→</span>
+			</a>
+			{#if unreadCount}
+				<!-- What's new for you: show only those, or clear them all -->
+				<div
+					class="flex items-center justify-between gap-3 border-b border-line bg-prem/[0.045] px-3 py-2"
+				>
+					<button
+						type="button"
+						onclick={() => {
+							unreadOnly = !unreadOnly;
+							threadPage = 1;
+						}}
+						aria-pressed={unreadOnly}
+						class="flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors {unreadOnly
+							? 'text-prem'
+							: 'text-ink hover:text-prem'}"
+					>
+						<span class="h-2 w-2 rounded-full bg-prem" aria-hidden="true"></span>
+						{unreadCount} unread{unreadOnly ? ' · show all' : ' · show only these'}
+					</button>
+					<button
+						type="button"
+						onclick={markAllRead}
+						class="shrink-0 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+						>Mark all read</button
+					>
+				</div>
+			{/if}
 			{#if unanswered.length}
 				<ul class="divide-y divide-line">
-					{#each unanswered as t (t.id)}
-						<li class="flex items-start justify-between gap-4 py-3">
+					{#each shown as t (t.id)}
+						<li
+							class="flex items-start justify-between gap-4 border-l-[3px] py-3 pl-3 {t.unread
+								? 'border-prem/60 bg-prem/[0.045]'
+								: 'border-transparent'}"
+						>
 							<div class="min-w-0">
 								<a
 									href="/academy/{course.slug}/discussion/{t.id}"
-									target="_blank"
-									rel="noopener"
-									class="font-newsreader text-[17px] font-semibold hover:text-warm">{t.title}</a
+									class="inline-flex max-w-full items-center gap-2 font-newsreader text-[17px] hover:text-warm {t.unread
+										? 'font-bold text-ink'
+										: 'font-semibold'}"
+									><span class="truncate">{t.title}</span>{#if t.unread}<NotificationBadge
+											count={t.unread}
+											tone="bg-prem"
+											ring="ring-transparent"
+											class="shrink-0"
+											label="{t.unread} new"
+										/>{/if}</a
 								>
 								<p class="text-[12px] text-fade">
 									{t.author} · {t.replies}
@@ -107,6 +189,13 @@
 						</li>
 					{/each}
 				</ul>
+				<Pager
+					page={current}
+					perPage={PER_PAGE}
+					count={unanswered.length}
+					label="threads"
+					onchange={(p) => (threadPage = p)}
+				/>
 			{:else}
 				<p class="mt-4 text-[13.5px] text-soft">No threads yet.</p>
 			{/if}

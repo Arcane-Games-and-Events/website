@@ -8,6 +8,7 @@ import { db } from '$lib/server/db/index.js';
 import { deskEntry, deskMedia, user as userTable } from '$lib/server/db/schema.js';
 import { getAuthorProfile, bioToHtml } from '$lib/server/desk/authorProfile.js';
 import { mediaImage } from '$lib/server/desk/image.js';
+import { handleFor } from '$lib/server/profile/handles.js';
 import { getMuxPlaybackToken, getMuxThumbnailToken } from '$lib/server/mux.js';
 import { resolveCardImage, mapWithConcurrency } from '$lib/server/cards/index.js';
 import { extractCardNamesFromLexical } from '$lib/desk/render/lexical-utils.js';
@@ -139,12 +140,15 @@ export async function buildArticleShape({ entry, cover, thumbnail, author, tags 
 	// The writer's Desk profile (byline name, title, bio, photo, links). A
 	// missing table or failed lookup just falls back to the account name.
 	let profile = null;
+	let handle = null;
 	if (author?.id) {
 		try {
 			profile = (await getAuthorProfile(author.id)).profile;
 		} catch (err) {
 			console.error('author profile lookup failed:', err);
 		}
+		// Their people page, /people/<handle> (null until migration 039).
+		handle = await handleFor(author.id);
 	}
 
 	const video = await buildEntryVideo(entry);
@@ -163,7 +167,7 @@ export async function buildArticleShape({ entry, cover, thumbnail, author, tags 
 		author: author
 			? {
 					name: profile?.displayName || `${author.firstName} ${author.lastName || ''}`.trim(),
-					slug: null,
+					slug: handle,
 					role: profile?.title || null,
 					// escaped server-side: the reader page renders bio strings as HTML
 					bio: profile?.bio ? bioToHtml(profile.bio) : null,

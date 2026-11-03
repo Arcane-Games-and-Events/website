@@ -17,7 +17,7 @@
 </svelte:head>
 
 {#if data.open}
-	<div class="hidden flex-1 flex-col lg:flex">
+	<div class="hidden min-h-0 flex-1 flex-col lg:flex">
 		<Conversation
 			course={data.course}
 			thread={data.open.thread}

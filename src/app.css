@@ -34,6 +34,8 @@
 	--ed-prem-light: #7fd6a6; /* Premium green on dark surfaces */
 	/* Academy sub-brand: the board-green band behind the course cards */
 	--ed-academy: #13261c;
+	/* Notification badges: the one red everyone reads as "new for you" */
+	--ed-alert: #e11d2a;
 
 	/* circuit accents */
 	--ed-cc-la: #1b4f9c;
@@ -71,6 +73,7 @@
 	--color-prem: var(--ed-prem);
 	--color-prem-light: var(--ed-prem-light);
 	--color-academy: var(--ed-academy);
+	--color-alert: var(--ed-alert);
 
 	--color-cc-la: var(--ed-cc-la);
 	--color-cc-stl: var(--ed-cc-stl);
