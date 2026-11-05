@@ -48,6 +48,10 @@ export async function expectHouseStyle(page) {
 			.map((el) => `<${el.tagName.toLowerCase()} class="${String(el.className).slice(0, 80)}">`)
 	);
 	expect(rounded, `rounded corners:\n${rounded.join('\n')}`).toEqual([]);
+
+	// One site header: a page missing from the editorial list in
+	// routes/+layout.svelte gets the global chrome on top of its own.
+	expect(await page.locator('header.sticky.top-0').count(), 'site headers').toBeLessThanOrEqual(1);
 }
 
 /** The seeded people and course for this Playwright project (desktop or phone). */

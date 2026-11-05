@@ -21,6 +21,7 @@ const PAGES = [
 	['/studios/shows', 'Studios shows'],
 	['/studios/partners', 'Studios partners'],
 	['/academy', 'academy'],
+	['/academy-calculator', 'partner calculator'],
 	['/login', 'login'],
 	['/signup', 'signup']
 ];

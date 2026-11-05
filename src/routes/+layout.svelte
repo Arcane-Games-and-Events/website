@@ -44,6 +44,7 @@
 		'/age-open',
 		'/library',
 		'/academy',
+		'/academy-calculator',
 		'/my-courses',
 		'/partner',
 		'/terms',
