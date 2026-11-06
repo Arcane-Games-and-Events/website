@@ -9,6 +9,10 @@
 	 */
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import EarningsChart from '$lib/components/age/academy/EarningsChart.svelte';
+	import CountUp from '$lib/components/age/academy/CountUp.svelte';
+	import { untrack } from 'svelte';
+	import { prefersReducedMotion } from 'svelte/motion';
+	import { fade, slide } from 'svelte/transition';
 	import {
 		APPLY_HREF,
 		AGE,
@@ -24,6 +28,7 @@
 		cents,
 		dollars,
 		headline,
+		projectedMembers,
 		readInputs,
 		saleBreakdown
 	} from '$lib/academy/calculator/compare.js';
@@ -39,6 +44,37 @@
 		if (valid) last = read.inputs;
 	});
 	const r = $derived(calculateComparison(last));
+
+	// Selling enough to join the teacher pool ticks its estimate on, with a
+	// note saying why; dropping back below unticks it again, unless the
+	// creator ticked it themselves.
+	// The projected Premium membership follows sales (the forecast, or half
+	// the copies a year if more) until the creator types their own figure.
+	let membersTyped = $state(false);
+	const projected = $derived(projectedMembers(r.copiesPerYear));
+	$effect(() => {
+		const n = String(projected);
+		untrack(() => {
+			if (!membersTyped) f.poolMembers = n;
+		});
+	});
+
+	const qualifies = $derived(r.copiesPerYear >= POOL.START_COPIES_PER_YEAR);
+	let autoPool = $state(false);
+	let qualified = false;
+	$effect(() => {
+		const q = qualifies;
+		untrack(() => {
+			if (q && !qualified && !f.includePool) {
+				f.includePool = true;
+				autoPool = true;
+			} else if (!q && qualified && autoPool) {
+				f.includePool = false;
+				autoPool = false;
+			}
+		});
+		qualified = q;
+	});
 	const sale = $derived(saleBreakdown(last));
 
 	const plan = $derived(PLANS.find((p) => p.v === r.metafy.plan) ?? PLANS[0]);
@@ -60,6 +96,8 @@
 		return v === 0 && n !== 0 ? '<1%' : `${v}%`;
 	};
 	const count = (n) => Math.round(n).toLocaleString('en-US');
+	/** A transition's length, or none for reduced motion. */
+	const ms = (n) => (prefersReducedMotion.current ? 0 : n);
 
 	// The headline compares direct earnings (sales and referrals), plus the
 	// pool estimate when it's switched on.
@@ -68,15 +106,13 @@
 		h.kind === 'more'
 			? {
 					tone: 'text-gold',
-					line: `You’d earn ${usd0(h.amount)} more per year on AGE`,
-					pct: h.pct === null ? '' : `(+${pct(h.pct)})`
+					after: 'more per year on AGE',
+					sign: '+'
 				}
 			: {
 					tone: 'text-[#f0a58f]',
-					line: h.withPool
-						? `You’d earn ${usd0(h.amount)} less per year on AGE`
-						: `You’d earn ${usd0(h.amount)} less per year in direct sales on AGE`,
-					pct: h.pct === null ? '' : `(−${pct(h.pct)})`
+					after: h.withPool ? 'less per year on AGE' : 'less per year in direct sales on AGE',
+					sign: '−'
 				}
 	);
 	const extras = $derived(
@@ -85,31 +121,60 @@
 			: `Plus what Metafy doesn’t offer: promotion on AGE broadcasts, Premium referral bonuses, and fans paying ${usd(h.fanGap)} less per guide.`
 	);
 
+	// Behind with no referrals counted: a reminder, and how many Premium
+	// signups a month would put AGE ahead (when that's within the field's 100).
+	const referralNudge = $derived(h.kind === 'less' && !last.signupsPerMonth);
+	const referralsToLead = $derived.by(() => {
+		const n = Math.floor(h.amount / (12 * AGE.REFERRAL_BONUS)) + 1;
+		return referralNudge && n <= 100 ? n : null;
+	});
+
 	const T = AGE.TOP_SELLER_COPIES_PER_YEAR;
 	/** The results table, in order; the pool rows only when the estimate is on. */
 	const ROWS = $derived([
 		{
 			k: 'You keep per sale',
-			m: usd(r.metafy.perSale),
-			a: usd(r.age.perSale),
+			m: { v: r.metafy.perSale, f: usd },
+			a: { v: r.age.perSale, f: usd },
 			note: r.age.topSeller
 				? `${usd(r.age.topSellerPerSale)} on copies above ${T} a year (top-seller rate)`
 				: ''
 		},
-		{ k: 'Sales income per year', m: usd0(r.metafy.salesYearly), a: usd0(r.age.salesYearly) },
-		{ k: 'Referral bonuses', m: '—', a: usd0(r.age.referralYearly) },
-		{ k: 'Monthly fee', m: `$${r.metafy.monthlyFee}`, a: '$0' },
-		{ k: 'Per year (direct)', m: usd0(r.metafy.yearly), a: usd0(r.age.yearly), strong: true },
-		{ k: 'Per guide, per year', m: usd0(r.metafy.perGuide), a: usd0(r.age.perGuide) },
-		{ k: 'A fan pays', m: usd(r.metafy.fanPays), a: usd(r.age.fanPays) },
-		{ k: 'A Premium member pays', m: '—', a: usd(r.age.memberPays) },
+		{
+			k: 'Sales income per year',
+			m: { v: r.metafy.salesYearly, f: usd0 },
+			a: { v: r.age.salesYearly, f: usd0 }
+		},
+		{ k: 'Referral bonuses', m: '—', a: { v: r.age.referralYearly, f: usd0 } },
+		{ k: 'Monthly fee', m: { v: r.metafy.monthlyFee, f: usd0 }, a: '$0' },
+		{
+			k: 'Per year (direct)',
+			m: { v: r.metafy.yearly, f: usd0 },
+			a: { v: r.age.yearly, f: usd0 },
+			strong: true
+		},
+		{
+			k: 'Per guide, per year',
+			m: { v: r.metafy.perGuide, f: usd0 },
+			a: { v: r.age.perGuide, f: usd0 }
+		},
+		{ k: 'A fan pays', m: { v: r.metafy.fanPays, f: usd }, a: { v: r.age.fanPays, f: usd } },
+		{ k: 'A Premium member pays', m: '—', a: { v: r.age.memberPays, f: usd } },
 		...(last.includePool
 			? [
-					{ k: 'Possible teacher pool share (estimate)', m: '—', a: usd0(r.age.poolYearly) },
 					{
-						k: 'Total incl. pool estimate',
-						m: usd0(r.metafy.yearly),
-						a: usd0(r.age.yearlyWithPool),
+						k: 'Teacher profit share (estimate)',
+						m: '—',
+						a: { v: r.age.poolYearly, f: usd0 },
+						note:
+							r.copiesPerYear < POOL.START_COPIES_PER_YEAR
+								? `Starts at ${POOL.START_COPIES_PER_YEAR} copies a year`
+								: ''
+					},
+					{
+						k: 'Total incl. profit share',
+						m: { v: r.metafy.yearly, f: usd0 },
+						a: { v: r.age.yearlyWithPool, f: usd0 },
 						strong: true
 					}
 				]
@@ -133,8 +198,10 @@
 		'block min-h-[48px] w-full border border-line2 bg-paper-bg px-3.5 font-newsreader text-[17px] text-ink tabular-nums transition-colors outline-none hover:border-ink focus:border-ink aria-[invalid=true]:border-hero-rb';
 	const ERR = 'mt-1.5 text-[12.5px] font-semibold text-hero-rb';
 	const HINT = 'mt-1.5 text-[12.5px] leading-snug text-fade';
+	// Options sit on a sliding ink block (the `slider` snippet), so they're
+	// see-through; the checked one only changes its text and border.
 	const OPTION =
-		'flex min-h-[48px] cursor-pointer items-center justify-center border border-line2 bg-paper-bg px-3 text-center text-[13px] font-semibold text-ink transition-colors peer-checked:border-ink peer-checked:bg-ink peer-checked:text-paper-bg peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-warm hover:border-ink';
+		'relative flex min-h-[48px] cursor-pointer items-center justify-center border border-line2 px-3 text-center text-[13px] font-semibold text-ink transition-colors duration-300 peer-checked:border-ink peer-checked:text-paper-bg peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-warm hover:border-ink active:scale-[0.98] motion-reduce:transition-none';
 
 	// ============ how the plan works ============
 	const share = (x) => `${Math.round(x * 100)}%`;
@@ -158,6 +225,10 @@
 		[
 			'Bring in members, get paid',
 			`$${AGE.REFERRAL_BONUS} for every AGE Premium signup through your link.`
+		],
+		[
+			'Share in AGE’s profits',
+			`Sell ${POOL.START_COPIES_PER_YEAR} copies a year and you join the profit share: ${share(POOL.PCT)} of AGE Premium revenue, split among partners by how much members read each guide.`
 		]
 	];
 
@@ -205,8 +276,8 @@
 		['Member pricing', `${share(AGE.MEMBER_DISCOUNT)} off for AGE Premium, paid by AGE`, '—', '—'],
 		['Referral bonus', `$${AGE.REFERRAL_BONUS} per Premium signup`, '—', '—'],
 		[
-			'Teacher pool',
-			`A share of AGE Premium revenue once Premium passes ${POOL.START_MEMBERS} members, split by member reading`,
+			'Teacher profit share',
+			`${share(POOL.PCT)} of AGE Premium revenue shared with partners selling ${POOL.START_COPIES_PER_YEAR}+ copies a year, split by member reading`,
 			'—',
 			'—'
 		]
@@ -324,8 +395,8 @@
 		],
 		['Referral bonuses', `$${AGE.REFERRAL_BONUS} for every AGE Premium signup through your link.`],
 		[
-			'Teacher pool',
-			`A share of AGE Premium revenue once Premium passes ${POOL.START_MEMBERS} members, split among partners by how much members read each guide.`
+			'Profit share',
+			`Partners share in AGE Premium: ${share(POOL.PCT)} of its revenue goes to teachers selling ${POOL.START_COPIES_PER_YEAR}+ copies a year, split by how much members read each guide.`
 		],
 		['No monthly fee', 'Nothing to pay to sell. AGE only earns when you do.'],
 		['Your work stays yours', 'You keep ownership of everything you publish.']
@@ -340,6 +411,21 @@
 	/>
 	<meta name="robots" content="noindex, nofollow" />
 </svelte:head>
+
+{#snippet num(x)}{#if typeof x === 'string'}{x}{:else}<CountUp
+			value={x.v}
+			format={x.f}
+		/>{/if}{/snippet}
+
+<!-- the ink block behind a row of options, sliding to the chosen one (gap-2 = 8px) -->
+{#snippet slider(index, n)}
+	<span
+		class="pointer-events-none absolute inset-y-0 left-0 bg-ink transition-transform duration-300 ease-[cubic-bezier(0.2,0.7,0.2,1)] motion-reduce:transition-none"
+		style="width: calc((100% - {(n - 1) *
+			8}px) / {n}); transform: translateX(calc({index} * (100% + 8px)));"
+		aria-hidden="true"
+	></span>
+{/snippet}
 
 {#snippet field(key, label, opts = {})}
 	<div>
@@ -356,6 +442,7 @@
 				autocomplete="off"
 				class="{INPUT} {opts.prefix ? 'pl-7' : ''} {opts.suffix ? 'pr-9' : ''}"
 				bind:value={f[key]}
+				oninput={opts.oninput}
 				aria-invalid={!!errors[key]}
 				aria-describedby={errors[key]
 					? `calc-${key}-err`
@@ -434,7 +521,11 @@
 			<form class="space-y-8" onsubmit={(e) => e.preventDefault()} aria-label="Your numbers">
 				<fieldset>
 					<legend class={LABEL}>Your Metafy plan</legend>
-					<div class="mt-2.5 grid grid-cols-3 gap-2">
+					<div class="relative mt-2.5 grid grid-cols-3 gap-2">
+						{@render slider(
+							PLANS.findIndex((p) => p.v === f.plan),
+							PLANS.length
+						)}
 						{#each PLANS as p (p.v)}
 							<label class="block">
 								<input
@@ -453,7 +544,10 @@
 				</fieldset>
 
 				<div class="grid grid-cols-2 gap-4">
-					{@render field('price', 'Average guide price', { prefix: '$', hint: '$1 to $200.' })}
+					{@render field('price', 'Average guide price', {
+						prefix: '$',
+						hint: 'We recommend $10 to $30.'
+					})}
 					{@render field('guides', 'Number of guides', {
 						whole: true,
 						hint: 'For per-guide figures.'
@@ -464,7 +558,8 @@
 					{@render field('copies', 'Copies sold', { whole: true })}
 					<fieldset class="mt-2.5">
 						<legend class="sr-only">Copies sold per</legend>
-						<div class="grid max-w-[260px] grid-cols-2 gap-2">
+						<div class="relative grid max-w-[260px] grid-cols-2 gap-2">
+							{@render slider(f.period === 'month' ? 0 : 1, 2)}
 							{#each [['month', 'Per month'], ['year', 'Per year']] as [v, l] (v)}
 								<label class="block">
 									<input
@@ -490,7 +585,8 @@
 					<legend class="text-[14px] leading-snug font-semibold text-ink">
 						Do you cover Metafy’s buyer fees for your customers?
 					</legend>
-					<div class="mt-2.5 grid max-w-[260px] grid-cols-2 gap-2">
+					<div class="relative mt-2.5 grid max-w-[260px] grid-cols-2 gap-2">
+						{@render slider(f.coverBuyerFees ? 0 : 1, 2)}
 						{#each [[true, 'Yes'], [false, 'No']] as [v, l] (l)}
 							<label class="block">
 								<input
@@ -512,14 +608,34 @@
 							type="checkbox"
 							class="mt-[2px] h-[18px] w-[18px] shrink-0 cursor-pointer border-line2 text-ink focus:ring-warm"
 							bind:checked={f.includePool}
+							onchange={() => (autoPool = false)}
 						/>
 						<span class="text-[14px] leading-snug font-semibold"
-							>Include a possible teacher pool share (estimate)</span
+							>Include your teacher profit share (estimate)</span
 						>
 					</label>
+					{#if f.includePool && (autoPool || !qualifies)}
+						<p
+							class="mt-3 border-l-2 pl-3 text-[13px] leading-snug font-semibold {qualifies
+								? 'border-gold text-ink'
+								: 'border-line2 text-soft'}"
+							transition:slide={{ duration: ms(240) }}
+						>
+							{#if qualifies}Ticked for you: at {count(r.copiesPerYear)} copies a year you pass the
+								{POOL.START_COPIES_PER_YEAR} that qualifies you for the profit share.{:else}You’d
+								qualify for the profit share at {POOL.START_COPIES_PER_YEAR} copies a year; until then
+								the estimate is $0.{/if}
+						</p>
+					{/if}
 					{#if f.includePool}
-						<div class="mt-5 grid grid-cols-2 gap-4">
-							{@render field('poolMembers', 'AGE Premium members you expect', { whole: true })}
+						<div class="grid grid-cols-2 gap-4 pt-5" transition:slide={{ duration: ms(240) }}>
+							{@render field('poolMembers', 'Projected AGE Premium members', {
+								whole: true,
+								hint: membersTyped
+									? `Your figure. Our projection: ${count(projected)}.`
+									: `Our forecast of ${count(POOL.FORECAST_MEMBERS)}, or half your copies a year if that’s more.`,
+								oninput: () => (membersTyped = true)
+							})}
 							{@render field('poolReadingShare', 'Your share of member reading', {
 								suffix: '%',
 								hint: '0 to 100%.'
@@ -527,9 +643,10 @@
 						</div>
 					{/if}
 					<p class={HINT}>
-						The teacher pool starts once AGE Premium passes 250 members. It’s a share of Premium
-						revenue split among partners by how much members read each guide. This is an estimate,
-						not a guarantee.
+						Teachers share in AGE’s profits: {share(POOL.PCT)} of AGE Premium revenue, after fees, is
+						shared with partner teachers who sell {POOL.START_COPIES_PER_YEAR} copies a year or more
+						across their guides, split by how much members read each guide. This is an estimate, not
+						a guarantee.
 					</p>
 				</div>
 
@@ -561,21 +678,53 @@
 						Your estimate{valid ? '' : ' · fix the highlighted fields'}
 					</p>
 					<p
-						class="mt-2 font-newsreader text-[30px] leading-[1.08] font-semibold tracking-[-0.015em] [text-wrap:balance] md:text-[38px] {verdict.tone}"
+						class="mt-2 font-newsreader text-[30px] leading-[1.08] font-semibold tracking-[-0.015em] [text-wrap:balance] transition-colors duration-500 md:text-[38px] {verdict.tone}"
 					>
-						{verdict.line}{#if verdict.pct}<span class="text-[0.7em] text-paper-bg/70"
-								>&nbsp;{verdict.pct}</span
-							>{/if}{#if h.withPool}<span class="text-[0.7em] text-paper-bg/70"
-								>, including the pool estimate</span
+						You’d earn <CountUp value={h.amount} format={usd0} />
+						{verdict.after}{#if h.pct !== null}<span class="text-[0.7em] text-paper-bg/70"
+								>&nbsp;(<CountUp value={h.pct} format={(x) => verdict.sign + pct(x)} />)</span
+							>{/if}{#if h.withPool}<span
+								class="text-[0.7em] text-paper-bg/70"
+								transition:fade={{ duration: ms(200) }}>, including your profit share</span
 							>{/if}
 					</p>
 					{#if h.kind === 'less'}
-						<p class="mt-2 text-[15px] leading-[1.45] font-semibold text-paper-bg/90">{extras}</p>
+						<p
+							class="pt-2 text-[15px] leading-[1.45] font-semibold text-paper-bg/90"
+							transition:slide={{ duration: ms(240) }}
+						>
+							{extras}
+						</p>
+					{/if}
+					{#if referralNudge}
+						<div
+							class="mt-4 border-l-2 border-gold pl-3 text-[13.5px] leading-[1.5] text-paper-bg/85"
+							transition:slide={{ duration: ms(240) }}
+						>
+							<p>
+								This assumes you refer no Premium members. Sharing your Premium link with your
+								audience earns you ${AGE.REFERRAL_BONUS} a signup{#if referralsToLead}, and {referralsToLead}
+									{referralsToLead === 1 ? 'signup' : 'signups'} a month would put you ahead{/if}.
+							</p>
+							{#if referralsToLead}<button
+									type="button"
+									class="mt-2 text-[12px] font-extrabold tracking-[0.12em] text-gold uppercase underline-offset-4 hover:underline"
+									onclick={() => (f.signupsPerMonth = String(referralsToLead))}
+									>Try {referralsToLead} a month →</button
+								>{/if}
+						</div>
 					{/if}
 					<p class="mt-3 text-[14px] leading-[1.5] text-paper-bg/75">
-						{#if h.withPool}{usd0(r.age.yearlyWithPool)} a year on AGE ({usd0(r.age.yearly)} direct +
-							{usd0(r.age.poolYearly)} pool estimate){:else}{usd0(r.age.yearly)} a year on AGE{/if} against
-						{usd0(r.metafy.yearly)} on {metafyLabel}, from {count(r.copiesPerYear)} copies a year across
+						{#if h.withPool}<CountUp value={r.age.yearlyWithPool} format={usd0} /> a year on AGE (<CountUp
+								value={r.age.yearly}
+								format={usd0}
+							/> direct +
+							<CountUp value={r.age.poolYearly} format={usd0} /> profit share){:else}<CountUp
+								value={r.age.yearly}
+								format={usd0}
+							/> a year on AGE{/if} against
+						<CountUp value={r.metafy.yearly} format={usd0} /> on {metafyLabel}, from
+						<CountUp value={r.copiesPerYear} format={count} /> copies a year across
 						{r.guides}
 						{r.guides === 1 ? 'guide' : 'guides'}.
 					</p>
@@ -603,13 +752,13 @@
 							class="tabular-nums [&>tr]:border-b [&>tr]:border-line [&>tr:last-child]:border-0"
 						>
 							{#each ROWS as row (row.k)}
-								<tr class={row.strong ? 'bg-paper-bg' : ''}>
+								<tr class={row.strong ? 'bg-paper-bg' : ''} in:fade={{ duration: ms(260) }}>
 									<th scope="row" class="px-4 py-3 text-left font-semibold md:px-5">{row.k}</th>
 									<td class="px-3 py-3 text-right {row.strong ? 'font-semibold' : 'text-soft'}"
-										>{row.m}</td
+										>{@render num(row.m)}</td
 									>
 									<td class="px-4 py-3 text-right font-semibold md:px-5">
-										{row.a}
+										{@render num(row.a)}
 										{#if row.note}<span
 												class="mt-0.5 block text-[11.5px] leading-snug font-normal text-fade"
 												>{row.note}</span
@@ -634,13 +783,15 @@
 								>
 								<span
 									class="mt-1.5 font-newsreader text-[24px] leading-none font-semibold tabular-nums md:text-[28px]"
-									>{usd(v)}</span
+									><CountUp value={v} format={usd} /></span
 								>
 								{#if save !== null}
 									<span
 										class="mt-1.5 text-[12px] font-semibold {save > 0
 											? 'text-prem'
-											: 'text-hero-rb'}">{pct(save)} {save > 0 ? 'less' : 'more'} than Metafy</span
+											: 'text-hero-rb'}"
+										><CountUp value={save} format={pct} />
+										{save > 0 ? 'less' : 'more'} than Metafy</span
 									>
 								{/if}
 								<span class="mt-1.5 text-[11.5px] leading-snug text-fade">{note}</span>
@@ -713,13 +864,16 @@
 										>
 										<span class="text-[13px] text-soft"
 											>Fan pays <span class="font-semibold text-ink tabular-nums"
-												>{usd(b.fanPays)}</span
+												><CountUp value={b.fanPays} format={usd} /></span
 											></span
 										>
 									</p>
 									<div class="mt-2 flex h-9 gap-[2px]" aria-hidden="true">
 										{#each segs.filter((x) => x.v > 0.0049) as x (x.k)}
-											<span class="block {x.c}" style="width: {(x.v / total) * 100}%"></span>
+											<span
+												class="block {x.c} transition-[width] duration-500 ease-[cubic-bezier(0.2,0.7,0.2,1)] motion-reduce:transition-none"
+												style="width: {(x.v / total) * 100}%"
+											></span>
 										{/each}
 									</div>
 									<dl class="mt-3 grid grid-cols-3 gap-3 text-[12.5px]">
@@ -728,7 +882,9 @@
 												<dt class="flex items-center gap-1.5 text-fade">
 													<span class="h-2.5 w-2.5 shrink-0 {x.c}" aria-hidden="true"></span>{x.k}
 												</dt>
-												<dd class="mt-0.5 font-semibold tabular-nums">{usd(x.v)}</dd>
+												<dd class="mt-0.5 font-semibold tabular-nums">
+													<CountUp value={x.v} format={usd} />
+												</dd>
 											</div>
 										{/each}
 									</dl>

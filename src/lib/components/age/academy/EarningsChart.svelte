@@ -3,11 +3,17 @@
   a year, for the partner calculator. Both lines are straight between the
   points given (the comparison's chart.points), so values in between are
   read by interpolation. A marker shows the creator's current volume, and
-  the break-even point if there is one; hovering reads both lines.
+  the break-even point if there is one; hovering reads both lines. When
+  the numbers change, the lines, axes and markers ease to their new place
+  (at once with reduced motion).
 
   Props: points ({ copies, metafy, age }[]), max, current, crossover, metafyLabel
 -->
 <script>
+	import { Tween, prefersReducedMotion } from 'svelte/motion';
+	import { cubicOut } from 'svelte/easing';
+	import { fade } from 'svelte/transition';
+
 	/**
 	 * @type {{ points: { copies: number, metafy: number, age: number }[], max: number,
 	 *   current: number, crossover: { copies: number } | null, metafyLabel: string }}
@@ -23,8 +29,8 @@
 	const w = $derived(Math.max(200, width) - M.left - M.right);
 	const h = H - M.top - M.bottom;
 
-	/** Both lines at `x` copies, by interpolation between the points. */
-	function at(x) {
+	/** Both lines at `x` copies, by interpolation between `points`. */
+	function at(x, points) {
 		const i = Math.max(
 			1,
 			points.findIndex((p) => p.copies >= x)
@@ -48,14 +54,34 @@
 
 	const values = $derived(points.flatMap((p) => [p.metafy, p.age]));
 	const yTicks = $derived(ticks(Math.min(0, ...values), Math.max(1, ...values)));
-	const yLo = $derived(yTicks[0]);
-	const yHi = $derived(yTicks[yTicks.length - 1]);
 	const xTicks = $derived(ticks(0, max).filter((v) => v <= max));
 
-	const sx = (x) => (x / max) * w;
-	const sy = (v) => h - ((v - yLo) / (yHi - yLo || 1)) * h;
+	// What's drawn eases towards the real figures. The lines always get
+	// three points (a straight line gets its midpoint) so every state has
+	// the same shape to tween between.
+	const target = $derived({
+		max,
+		current,
+		yLo: yTicks[0],
+		yHi: yTicks[yTicks.length - 1],
+		points:
+			points.length === 3
+				? points
+				: [points[0], { copies: max / 2, ...at(max / 2, points) }, points[points.length - 1]]
+	});
+	const view = Tween.of(() => target, {
+		duration: () => (prefersReducedMotion.current ? 0 : 500),
+		easing: cubicOut
+	});
+	const v = $derived(view.current);
+
+	const sx = (x) => (x / v.max) * w;
+	const sy = (y) => h - ((y - v.yLo) / (v.yHi - v.yLo || 1)) * h;
 	const path = (key) =>
-		points.map((p, i) => `${i ? 'L' : 'M'}${sx(p.copies)},${sy(p[key])}`).join('');
+		v.points.map((p, i) => `${i ? 'L' : 'M'}${sx(p.copies)},${sy(p[key])}`).join('');
+	// Ticks are for the new figures; while the scale moves, only those inside it show.
+	const yShown = $derived(yTicks.filter((y) => y >= v.yLo - 0.5 && y <= v.yHi + 0.5));
+	const xShown = $derived(xTicks.filter((x) => x <= v.max + 0.5));
 
 	const short = (v) => {
 		const a = Math.abs(v);
@@ -69,11 +95,11 @@
 	let hover = $state(null);
 	function onMove(e) {
 		const box = e.currentTarget.getBoundingClientRect();
-		const x = ((e.clientX - box.left - M.left) / w) * max;
-		hover = x < 0 || x > max ? null : x;
+		const x = ((e.clientX - box.left - M.left) / w) * v.max;
+		hover = x < 0 || x > v.max ? null : x;
 	}
-	const read = $derived(hover === null ? null : { x: hover, ...at(hover) });
-	const here = $derived(current <= max ? { x: current, ...at(current) } : null);
+	const read = $derived(hover === null ? null : { x: hover, ...at(hover, v.points) });
+	const here = $derived(v.current <= v.max ? { x: v.current, ...at(v.current, v.points) } : null);
 	const tipLeft = $derived(read ? Math.min(Math.max(sx(read.x) + M.left, 90), width - 90) : 0);
 </script>
 
@@ -101,29 +127,32 @@
 			onpointerleave={() => (hover = null)}
 		>
 			<g transform="translate({M.left},{M.top})">
-				{#each yTicks as v (v)}
-					<line x1="0" x2={w} y1={sy(v)} y2={sy(v)} class="stroke-line" stroke-width="1" />
-					<text
-						x="-10"
-						y={sy(v)}
-						dy="0.32em"
-						text-anchor="end"
-						class="fill-fade text-[11px] tabular-nums">{short(v)}</text
-					>
+				{#each yShown as y (y)}
+					<g in:fade={{ duration: prefersReducedMotion.current ? 0 : 250 }}>
+						<line x1="0" x2={w} y1={sy(y)} y2={sy(y)} class="stroke-line" stroke-width="1" />
+						<text
+							x="-10"
+							y={sy(y)}
+							dy="0.32em"
+							text-anchor="end"
+							class="fill-fade text-[11px] tabular-nums">{short(y)}</text
+						>
+					</g>
 				{/each}
-				{#if yLo < 0}
+				{#if v.yLo < 0}
 					<line x1="0" x2={w} y1={sy(0)} y2={sy(0)} class="stroke-line2" stroke-width="1" />
 				{/if}
-				{#each xTicks as v (v)}
+				{#each xShown as x (x)}
 					<text
-						x={sx(v)}
+						x={sx(x)}
 						y={h + 20}
-						text-anchor={v === 0 ? 'start' : 'middle'}
-						class="fill-fade text-[11px] tabular-nums">{count(v)}</text
+						text-anchor={x === 0 ? 'start' : 'middle'}
+						class="fill-fade text-[11px] tabular-nums"
+						in:fade={{ duration: prefersReducedMotion.current ? 0 : 250 }}>{count(x)}</text
 					>
 				{/each}
 
-				{#if crossover && crossover.copies <= max}
+				{#if crossover && crossover.copies <= v.max}
 					<line
 						x1={sx(crossover.copies)}
 						x2={sx(crossover.copies)}

@@ -33,16 +33,24 @@ export const AGE = {
 };
 
 /**
- * The teacher pool: a share of AGE Premium revenue, switched on once
- * Premium has START_MEMBERS members, and split among partners by how much
- * Premium members read each guide. It doesn't depend on a creator's sales.
- * The calculator only shows it as an opt-in estimate, never in the headline.
+ * The teacher pool: a share of AGE Premium revenue, open to a creator once
+ * they sell START_COPIES_PER_YEAR copies a year (across all their guides),
+ * and split among qualifying partners by how much Premium members read each
+ * guide. The calculator only shows it as an opt-in estimate.
  */
 export const POOL = {
 	/** The pool's share of Premium revenue. */
 	PCT: 0.05,
-	/** The pool is paid only when AGE Premium has at least this many members. */
-	START_MEMBERS: 250,
+	/** A creator shares in the pool once they sell this many copies a year, across all guides. */
+	START_COPIES_PER_YEAR: 250,
+	/** AGE's own forecast of Premium members, the projection's floor. */
+	FORECAST_MEMBERS: 400,
+	/**
+	 * Premium members projected per copy a creator sells a year: a creator
+	 * selling well grows Premium with them, so the projection is the larger
+	 * of the forecast and this share of their copies.
+	 */
+	MEMBERS_PER_COPY: 0.5,
 	/** Premium revenue per member per month, after fees (USD). */
 	NET_REVENUE_PER_MEMBER_MONTH: 9.2
 };
@@ -95,7 +103,7 @@ export const DEFAULTS = {
 	coverBuyerFees: false,
 	signupsPerMonth: '0',
 	includePool: false,
-	poolMembers: '400',
+	poolMembers: String(POOL.FORECAST_MEMBERS),
 	poolReadingShare: '10',
 	coreFeePct: '15',
 	coreFeeFixed: '0'

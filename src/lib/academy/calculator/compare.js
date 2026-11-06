@@ -86,14 +86,22 @@ export function ageReferralYearly(inputs, age = CONSTANTS.age) {
 }
 
 /**
- * An estimated teacher pool share for the year, when the creator asks for
- * one: the pool's share of Premium revenue, if Premium has enough members,
- * times the creator's share of member reading. It doesn't depend on sales.
+ * The AGE Premium membership projected for a creator selling `y` copies a
+ * year: AGE's forecast, or half their copies once that's more.
  */
-export function poolPerYear(inputs, pool = CONSTANTS.pool) {
-	if (!inputs.includePool) return 0;
+export function projectedMembers(y, pool = CONSTANTS.pool) {
+	return Math.max(pool.FORECAST_MEMBERS, Math.round(pool.MEMBERS_PER_COPY * y));
+}
+
+/**
+ * An estimated teacher pool share for the year, when the creator asks for
+ * one: nothing until they sell enough copies a year (`y`, across all
+ * guides) to qualify, then the pool's share of Premium revenue times the
+ * creator's share of member reading.
+ */
+export function poolPerYear(inputs, y, pool = CONSTANTS.pool) {
+	if (!inputs.includePool || y < pool.START_COPIES_PER_YEAR) return 0;
 	const members = inputs.poolMembers || 0;
-	if (members < pool.START_MEMBERS) return 0;
 	return (
 		pool.PCT * members * pool.NET_REVENUE_PER_MEMBER_MONTH * 12 * (inputs.poolReadingShare || 0)
 	);
@@ -112,8 +120,7 @@ const sign = (x) => (x > 0 ? 1 : x < 0 ? -1 : 0);
 /**
  * The copies a year at which the two lines meet, searched from 0 to
  * `limit` with the same functions as everything else. Both lines are
- * straight between the step-down point and the pool's qualifying copies,
- * so each stretch has at most one crossing, found by bisection.
+ * straight on either side of the top-seller point, so each stretch has at most one crossing, found by bisection.
  * @returns {{ copies: number, ageAheadAfter: boolean } | null}
  */
 export function findCrossover(inputs, constants = CONSTANTS, limit = CROSSOVER_LIMIT) {
@@ -154,7 +161,7 @@ export function calculateComparison(inputs, constants = CONSTANTS) {
 	const referral = ageReferralYearly(inputs, age);
 	// Direct earnings: what the headline compares. The pool is extra.
 	const ageTotal = sales + referral;
-	const pool = poolPerYear(inputs, constants.pool);
+	const pool = poolPerYear(inputs, y, constants.pool);
 	const difference = ageTotal - metafyTotal;
 
 	const fanMetafy = inputs.coverBuyerFees ? p : p + fees.total;
@@ -196,8 +203,9 @@ export function calculateComparison(inputs, constants = CONSTANTS) {
 		difference,
 		differencePerGuide: difference / g,
 		differencePct: metafyTotal > 0 ? difference / metafyTotal : null,
-		// The same comparison with the pool estimate added (equal when it's off).
-		includesPool: !!inputs.includePool,
+		// The same comparison with the pool estimate added (equal when it's
+		// off, or the creator doesn't sell enough to qualify).
+		includesPool: pool > 0,
 		differenceWithPool: difference + pool,
 		differencePctWithPool: metafyTotal > 0 ? (difference + pool) / metafyTotal : null,
 		fanGap: cents(fanMetafy) - cents(fanAge),

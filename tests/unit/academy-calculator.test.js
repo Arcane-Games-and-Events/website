@@ -12,6 +12,7 @@ import {
 	headline,
 	metafyBuyerFees,
 	poolPerYear,
+	projectedMembers,
 	readInputs,
 	saleBreakdown
 } from '$lib/academy/calculator/compare.js';
@@ -77,13 +78,30 @@ describe('calculateComparison', () => {
 		expect(off.age.poolYearly).toBe(0);
 	});
 
-	test('no pool below 250 Premium members', () => {
-		expect(poolPerYear({ includePool: true, poolMembers: 200, poolReadingShare: 0.1 })).toBe(0);
-		expect(run({ includePool: true, poolMembers: 200 }).age.poolYearly).toBe(0);
-		expect(poolPerYear({ includePool: true, poolMembers: 250, poolReadingShare: 0.1 })).toBeCloseTo(
-			0.05 * 250 * 9.2 * 12 * 0.1,
+	test('no pool below 250 copies a year, counted across all guides', () => {
+		const on = { includePool: true, poolMembers: 400, poolReadingShare: 0.1 };
+		expect(poolPerYear(on, 249)).toBe(0);
+		expect(poolPerYear(on, 250)).toBeCloseTo(220.8, 6);
+		// 200 copies: on, but not yet qualifying, so the headline is direct only.
+		const below = run({ ...on, copies: 200 });
+		expect(below.age.poolYearly).toBe(0);
+		expect(below.includesPool).toBe(false);
+		expect(headline(below).withPool).toBe(false);
+		// 25 a month across three guides is 300 a year: qualifies.
+		expect(run({ ...on, copies: 25, period: 'month', guides: 3 }).age.poolYearly).toBeCloseTo(
+			220.8,
 			6
 		);
+		// The member count only sizes the pool; it no longer gates it.
+		expect(poolPerYear({ ...on, poolMembers: 100 }, 300)).toBeCloseTo(55.2, 6);
+	});
+
+	test('projected Premium members: the forecast, or half the copies a year if more', () => {
+		expect(projectedMembers(0)).toBe(400);
+		expect(projectedMembers(500)).toBe(400);
+		expect(projectedMembers(800)).toBe(400);
+		expect(projectedMembers(1200)).toBe(600);
+		expect(projectedMembers(1201)).toBe(601);
 	});
 
 	test('Core, $15, 100 copies a year: AGE earns $75 more and fans pay less', () => {
