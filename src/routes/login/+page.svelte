@@ -3,7 +3,6 @@
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import AuthSplit from '$lib/components/age/auth/AuthSplit.svelte';
 	import {
-		KICKER,
 		TITLE,
 		STRAP,
 		LABEL,
@@ -39,20 +38,17 @@
 			{ dept: 'AGE Studios', text: 'Gameplay, interviews and the night broadcast.' }
 		]}
 		footnote="One account across Arcane Games and Events."
+		tabs={{ current: 'login', loginHref: $page.url.pathname + $page.url.search, signupHref }}
 	>
 		{#snippet headline()}
 			Welcome back to <em class="font-medium text-warm-light italic">AGE</em>.
 		{/snippet}
 
 		{#snippet formContent()}
-			<p class={KICKER}><span class="text-[8px]" aria-hidden="true">◆</span> Members’ sign in</p>
-			<h1 class="mt-3 {TITLE}">Sign in to AGE</h1>
-			<p class={STRAP}>
-				Your courses, results and reading are where you left them. New here?
-				<a class="{LINK} not-italic" href={signupHref}>Create an account</a>
-			</p>
+			<h1 class={TITLE}>Sign in to AGE</h1>
+			<p class={STRAP}>Your courses, results and reading, where you left them.</p>
 
-			<div class="mt-5 md:mt-8">
+			<div class="mt-4 md:mt-6">
 				{#if resetSuccess}
 					<p class={SUCCESS} role="status">
 						Password reset. You can sign in with your new password.
@@ -62,7 +58,7 @@
 					<p class={ERROR} role="alert">{form.error}</p>
 				{/if}
 
-				<form method="POST" class="space-y-4 md:space-y-5">
+				<form method="POST" class="space-y-3.5 md:space-y-4">
 					<div>
 						<label for="email" class={LABEL}>Email</label>
 						<input
@@ -116,7 +112,7 @@
 					<button type="submit" class={BUTTON}>Sign in <span aria-hidden="true">→</span></button>
 				</form>
 
-				<p class="mt-8 border-t border-line pt-5 font-newsreader text-[14px] text-soft italic">
+				<p class="mt-6 border-t border-line pt-4 font-newsreader text-[14px] text-soft italic">
 					Can’t get in? <a class="{LINK} not-italic" href="/contact">Write to us</a> and we’ll sort it
 					out.
 				</p>

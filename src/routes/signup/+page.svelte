@@ -3,19 +3,19 @@
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import AuthSplit from '$lib/components/age/auth/AuthSplit.svelte';
 	import {
-		KICKER,
 		TITLE,
 		STRAP,
 		LABEL,
 		INPUT,
 		BUTTON,
-		LINK,
 		ERROR
 	} from '$lib/components/age/auth/authStyles.js';
 
 	let { form, data } = $props();
 
 	let showPassword = $state(false);
+	// GEM ID is optional, so it waits behind a link and the button stays on screen.
+	let showGem = $state(false);
 	const redirectParam = $derived($page.url.searchParams.get('redirect') || '');
 	const loginHref = $derived(
 		redirectParam ? `/login?redirect=${encodeURIComponent(redirectParam)}` : '/login'
@@ -38,6 +38,7 @@
 			{ dept: 'Premium', text: 'The full Library and every new Academy topic, when you want it.' }
 		]}
 		footnote="Joining is free. Premium is optional and can be added any time."
+		tabs={{ current: 'signup', loginHref, signupHref: $page.url.pathname + $page.url.search }}
 	>
 		{#snippet headline()}
 			Join the <em class="font-medium text-warm-light italic">Flesh and Blood</em> community that plays
@@ -45,20 +46,18 @@
 		{/snippet}
 
 		{#snippet formContent()}
-			<p class={KICKER}><span class="text-[8px]" aria-hidden="true">◆</span> New account</p>
-			<h1 class="mt-3 {TITLE}">Join AGE</h1>
-			<p class={STRAP}>
-				Free to join. Play AGE Opens, take courses and follow the standings. Already a member?
-				<a class="{LINK} not-italic" href={loginHref}>Sign in</a>
+			<h1 class={TITLE}>Join AGE</h1>
+			<p class="hidden sm:block {STRAP}">
+				Free to join. Play AGE Opens, take courses and follow the standings.
 			</p>
 
-			<div class="mt-5 md:mt-8">
+			<div class="mt-4 md:mt-6">
 				{#if form?.error}
 					<p class={ERROR} role="alert">{form.error}</p>
 				{/if}
 
-				<form method="POST" class="space-y-4 md:space-y-5">
-					<div class="grid grid-cols-2 gap-4">
+				<form method="POST" class="space-y-3.5 md:space-y-4">
+					<div class="grid grid-cols-2 gap-3 md:gap-4">
 						<div>
 							<label for="firstName" class={LABEL}>First name</label>
 							<input
@@ -122,24 +121,34 @@
 						/>
 					</div>
 
-					<div>
-						<label for="gemId" class={LABEL}>
-							<span>GEM ID</span>
-							<span class="tracking-[0.12em] normal-case">Optional</span>
-						</label>
-						<input
-							id="gemId"
-							name="gemId"
-							type="text"
-							inputmode="numeric"
-							autocomplete="off"
-							placeholder="e.g. 95989628"
-							class={INPUT}
-						/>
-						<p class="mt-1.5 text-[12px] text-fade">
-							Links your AGE Open results and rating. You can add it later.
-						</p>
-					</div>
+					{#if showGem}
+						<div>
+							<label for="gemId" class={LABEL}>
+								<span>GEM ID</span>
+								<span class="tracking-[0.12em] normal-case">Optional</span>
+							</label>
+							<!-- svelte-ignore a11y_autofocus -->
+							<input
+								id="gemId"
+								name="gemId"
+								type="text"
+								inputmode="numeric"
+								autocomplete="off"
+								autofocus
+								placeholder="e.g. 95989628"
+								class={INPUT}
+							/>
+							<p class="mt-1.5 text-[12px] text-fade">Links your AGE Open results and rating.</p>
+						</div>
+					{:else}
+						<button
+							type="button"
+							onclick={() => (showGem = true)}
+							class="block text-left text-[13px] font-semibold text-soft hover:text-ink"
+						>
+							<span class="font-bold text-warm">+ Add your GEM ID</span> (optional)
+						</button>
+					{/if}
 
 					{#if data?.turnstileSiteKey}
 						<div
@@ -154,7 +163,7 @@
 						>Create my account <span aria-hidden="true">→</span></button
 					>
 
-					<p class="text-[12px] leading-[1.6] text-fade">
+					<p class="text-[11.5px] leading-[1.55] text-fade">
 						By creating an account you agree to AGE’s
 						<a class="underline underline-offset-2 hover:text-ink" href="/terms">Terms of Service</a
 						>
