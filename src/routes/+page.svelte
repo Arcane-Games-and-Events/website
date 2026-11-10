@@ -1,6 +1,7 @@
 <script>
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import FrontLead from '$lib/components/age/home/FrontLead.svelte';
+	import FrontLatest from '$lib/components/age/home/FrontLatest.svelte';
 	import FrontLibrary from '$lib/components/age/home/FrontLibrary.svelte';
 	import FrontAcademy from '$lib/components/age/home/FrontAcademy.svelte';
 	import FrontOpen from '$lib/components/age/home/FrontOpen.svelte';
@@ -33,7 +34,8 @@
 </svelte:head>
 
 <AgeShell>
-	<FrontLead leads={F.leads} latest={F.latest} />
+	<FrontLead leads={F.leads} />
+	<FrontLatest items={F.latest} />
 
 	{#if F.library?.length}
 		<FrontFleuron />
