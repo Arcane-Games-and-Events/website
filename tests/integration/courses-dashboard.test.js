@@ -59,14 +59,11 @@ describe('the feed', () => {
 		expect(topics.length).toBeGreaterThan(0);
 	});
 
-	test('a topic added after launch is flagged for Premium unless the student has it', async () => {
-		await newTopic('Members only');
-		const [free] = await courseFeed(student);
-		expect(free.premiumOnly).toBe(true);
-		const member = await createUser({ role: 'premium', subscriptionStatus: 'active' });
-		await enrol(course, member, { at: new Date(Date.now() - 86400000) });
-		const [paid] = await courseFeed(member);
-		expect(paid.premiumOnly).toBe(false);
+	test('a topic added after launch is in the feed for every student', async () => {
+		await newTopic('New for everyone');
+		const [item] = await courseFeed(student);
+		expect(item).toMatchObject({ type: 'topic', title: 'New for everyone' });
+		expect(item.premiumOnly).toBeUndefined();
 	});
 
 	test('held posts and other courses stay out', async () => {

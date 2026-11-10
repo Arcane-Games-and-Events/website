@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
 import { checkout as checkoutTable, ticket as ticketTable } from '$lib/server/db/schema.js';
 import { reconcileCheckout } from '$lib/server/billing/reconcile.js';
+import { doneUrl, isGuidesCheckout } from '$lib/server/partner/checkout.js';
 
 /**
  * GET /api/checkout/[id]
@@ -32,6 +33,9 @@ export async function GET({ params, locals }) {
 		}
 	}
 
+	if (co.status === 'fulfilled' && co.orderId && isGuidesCheckout(co)) {
+		return json({ status: 'fulfilled', redirectUrl: doneUrl(co) });
+	}
 	if (co.status === 'fulfilled' && co.orderId && co.courseId) {
 		return json({
 			status: 'fulfilled',

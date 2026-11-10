@@ -391,6 +391,37 @@ export async function sendCourseReceipt(email, o) {
 	});
 }
 
+/** The Partner-model receipt: one or more guides in one charge, card fee included. */
+export async function sendGuidesReceipt(email, o) {
+	const one = o.items.length === 1;
+	const rows = [
+		...o.items.map((it) => [it.title, dollars(it.paidCents)]),
+		...(o.memberDiscountCents > 0
+			? [['Premium discount', `−${dollars(o.memberDiscountCents)} (included)`]]
+			: []),
+		['Charged', dollars(o.amountCents)],
+		...(o.lastFour ? [['Card', `•••• ${o.lastFour}`]] : []),
+		...(o.invoiceNumber ? [['Invoice', o.invoiceNumber]] : [])
+	];
+	return sendEmail({
+		to: email,
+		subject: one
+			? `You’re enrolled: ${o.items[0].title}`
+			: `You’re enrolled in ${o.items.length} guides`,
+		html: layout({
+			kicker: 'Receipt',
+			heading: 'You’re enrolled.',
+			paragraphs: [
+				`${one ? esc(o.items[0].title) + ' is' : 'These guides are'} yours to keep, with every future update included. Prices include card processing.`
+			],
+			rows,
+			cta: one
+				? { label: 'Start reading', url: `${baseUrl()}/academy/${o.items[0].slug}` }
+				: { label: 'Your guides', url: `${baseUrl()}/my-courses` }
+		})
+	});
+}
+
 export async function sendRefundDoneEmail(email, { amountCents, what, lastFour, voided }) {
 	return sendEmail({
 		to: email,

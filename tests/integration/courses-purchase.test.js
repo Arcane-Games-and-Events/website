@@ -1,7 +1,9 @@
 /**
- * Buying a course with the fake gateway, through the real endpoint: one
- * price for everyone, one charge per purchase, the enrollment and the
- * teacher's sale created together, and refunds taking it back.
+ * Buying a course with the fake gateway, through the real endpoint: the
+ * all-in price (10% less for Premium), one charge per purchase, the
+ * enrollment and the teacher's sale on the Partner ledger created
+ * together, and refunds taking it back. (Carts, levels and the rest of the
+ * Partner terms: partner-model.test.js.)
  */
 import { beforeEach, describe, expect, test } from 'vitest';
 import { eq } from 'drizzle-orm';
@@ -9,9 +11,9 @@ import { db } from '$lib/server/db/index.js';
 import {
 	checkout,
 	courseEnrollment,
-	courseSale,
 	deskCourse,
 	order,
+	partnerLedger,
 	payment
 } from '$lib/server/db/schema.js';
 import { POST as purchaseRoute } from '../../src/routes/api/academy/[slug]/purchase/+server.js';
@@ -19,6 +21,7 @@ import { GET as pollRoute } from '../../src/routes/api/checkout/[id]/+server.js'
 import { refundOrderRemainder } from '$lib/server/payments/refunds.js';
 import { reconcileAll } from '$lib/server/billing/reconcile.js';
 import { installFakeAuthnet } from '../support/fake-authnet.js';
+import { HOLD_DAYS } from '$lib/academy/partner/terms.js';
 import { createAdmin, createSavedCard, createUser } from '../support/factories.js';
 import { callRoute, createTeacher, liveCourse, readyCourse } from '../support/courses.js';
 
@@ -51,7 +54,12 @@ async function buy({
 	const r = await callRoute(purchaseRoute, {
 		params: { slug: c.slug },
 		user: who,
-		body: { payment: pay ?? { savedCardId: card.id }, idempotencyKey: key, ...extra },
+		body: {
+			payment: pay ?? { savedCardId: card.id },
+			idempotencyKey: key,
+			consent: true,
+			...extra
+		},
 		url: `http://localhost/api/academy/${c.slug}/purchase`
 	});
 	return { ...r, key };
@@ -59,23 +67,24 @@ async function buy({
 
 const enrollmentsOf = (userId) =>
 	db.select().from(courseEnrollment).where(eq(courseEnrollment.userId, userId));
-const sales = () => db.select().from(courseSale);
+const sales = () => db.select().from(partnerLedger).where(eq(partnerLedger.entryType, 'sale'));
 
 describe('buying a course', () => {
-	test('charges the course price once and enrols the student, with the teacher’s sale', async () => {
+	test('charges the all-in price once and enrols the student, with the teacher’s sale', async () => {
 		const r = await buy({ amount: 1 });
 		expect(r.status).toBe(200);
 		expect(r.body.redirectUrl).toBe(`/academy/${course.slug}?enrolled=1`);
 
 		expect(gw.charges()).toHaveLength(1);
-		expect(gw.charges()[0].opts.amountCents).toBe(5000);
+		// $50 with the card fee included: (50 + 0.30) / (1 − 0.029) = $51.80.
+		expect(gw.charges()[0].opts.amountCents).toBe(5180);
 		expect(gw.charges()[0].opts.invoiceNumber).toMatch(/^AGE-C\d+$/);
 
 		const [en] = await enrollmentsOf(student.id);
 		expect(en).toMatchObject({ courseId: course.id, source: 'purchase', revokedAt: null });
 		const [ord] = await db.select().from(order).where(eq(order.id, en.orderId));
 		expect(ord).toMatchObject({ kind: 'course', userId: student.id });
-		expect(Number(ord.amount)).toBe(50);
+		expect(Number(ord.amount)).toBe(51.8);
 		const [pay] = await db.select().from(payment).where(eq(payment.orderId, ord.id));
 		expect(pay.kind).toBe('course');
 
@@ -83,16 +92,16 @@ describe('buying a course', () => {
 		expect(sale).toMatchObject({
 			courseId: course.id,
 			teacherId: teacher.id,
-			grossCents: 5000,
-			refundedCents: 0,
-			sharePct: 90,
-			payoutId: null
+			status: 'paid',
+			listCents: 5000,
+			buyerPaidCents: 5180,
+			teacherCents: 4500
 		});
-		const days = (sale.payableAt - sale.soldAt) / 86400000;
-		expect(days).toBe(14);
+		const days = (sale.payableAt - sale.occurredAt) / 86400000;
+		expect(days).toBe(HOLD_DAYS);
 	});
 
-	test('Premium members pay the same price', async () => {
+	test('Premium members pay 10% less, card fee included', async () => {
 		const member = await createUser({
 			role: 'premium',
 			subscriptionStatus: 'active',
@@ -104,7 +113,7 @@ describe('buying a course', () => {
 		});
 		gw.addCard('cp-m', 'pp-m');
 		expect((await buy({ who: member, payment: { savedCardId: mc.id } })).status).toBe(200);
-		expect(gw.charges()[0].opts.amountCents).toBe(5000);
+		expect(gw.charges()[0].opts.amountCents).toBe(4665);
 	});
 
 	test('the same purchase twice charges once; buying again once enrolled is refused', async () => {
@@ -171,7 +180,7 @@ describe('buying a course', () => {
 });
 
 describe('refunds', () => {
-	test('a full refund takes the course away and the sale goes to zero', async () => {
+	test('a full refund takes the course away and reverses the sale', async () => {
 		await buy();
 		const [en] = await enrollmentsOf(student.id);
 		const admin = await createAdmin();
@@ -181,10 +190,10 @@ describe('refunds', () => {
 		expect(after.revokedAt).not.toBeNull();
 		expect(after.revokedReason).toBe('refunded');
 		const [sale] = await sales();
-		expect(sale.refundedCents).toBe(5000);
+		expect(sale.status).toBe('refunded');
 	});
 
-	test('a partial refund lowers the teacher’s sale but keeps the course', async () => {
+	test('a refund of less than the guide keeps the course and the sale', async () => {
 		await buy();
 		const [en] = await enrollmentsOf(student.id);
 		const [ord] = await db.select().from(order).where(eq(order.id, en.orderId));
@@ -199,7 +208,7 @@ describe('refunds', () => {
 		const [after] = await enrollmentsOf(student.id);
 		expect(after.revokedAt).toBeNull();
 		const [sale] = await sales();
-		expect(sale.refundedCents).toBe(2000);
+		expect(sale.status).toBe('paid');
 	});
 
 	test('after a refund the student can buy it again', async () => {

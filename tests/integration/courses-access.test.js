@@ -7,7 +7,7 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
-import { courseEnrollment, deskCourse, deskLesson, user } from '$lib/server/db/schema.js';
+import { courseEnrollment, deskCourse, deskLesson } from '$lib/server/db/schema.js';
 import { load as topicLoad } from '../../src/routes/academy/[slug]/[topic]/+page.server.js';
 import { POST as progressRoute } from '../../src/routes/api/academy/progress/+server.js';
 import { courseForReader } from '$lib/server/courses/reader.js';
@@ -107,38 +107,16 @@ describe('students', () => {
 		expect(await access(await createUser(), live.topics[0].slug)).toBe('locked');
 	});
 
-	test('a topic added after launch needs Premium, and locks again when Premium ends', async () => {
+	test('a topic added after launch is open to every student, Premium or not', async () => {
 		const s = await createUser();
 		await enrol(live.course, s, { at: daysAgo(3) });
 		const t = await newTopic();
-		expect(await access(s, t.slug)).toBe('locked-premium');
-		expect((await pageFor(s, t.slug)).body).toBeNull();
-
-		await db
-			.update(user)
-			.set({ role: 'premium', subscriptionStatus: 'active' })
-			.where(eq(user.id, s.id));
-		const premium = (await db.select().from(user).where(eq(user.id, s.id)))[0];
-		expect(await access(premium, t.slug)).toBe('open');
-
-		await db.update(user).set({ role: 'free' }).where(eq(user.id, s.id));
-		const lapsed = (await db.select().from(user).where(eq(user.id, s.id)))[0];
-		expect(await access(lapsed, t.slug)).toBe('locked-premium');
-		// What they bought stays theirs.
-		expect(await access(lapsed, live.topics[0].slug)).toBe('open');
-	});
-
-	test('everyone gets the same course whenever they buy: new topics stay Premium', async () => {
-		const t = await newTopic();
-		// Bought after the topic was added: still the launch version.
+		expect(await access(s, t.slug)).toBe('open');
+		expect((await pageFor(s, t.slug)).body).not.toBeNull();
+		// Bought after the topic was added: the same.
 		const late = await createUser();
 		await enrol(live.course, late);
-		expect(await access(late, t.slug)).toBe('locked-premium');
-		for (const lt of live.topics) expect(await access(late, lt.slug)).toBe('open');
-		// Premium members get it, whenever they bought.
-		const member = await createUser({ role: 'premium', subscriptionStatus: 'active' });
-		await enrol(live.course, member);
-		expect(await access(member, t.slug)).toBe('open');
+		expect(await access(late, t.slug)).toBe('open');
 	});
 
 	test('edits to a launch topic reach every student, Premium or not', async () => {
@@ -208,13 +186,12 @@ describe('progress', () => {
 		expect((await courseProgress(s))[0].completed).toBe(0);
 	});
 
-	test('topics waiting for Premium aren’t counted against progress', async () => {
+	test('topics added after launch count toward progress like the rest', async () => {
 		const s = await createUser();
 		await enrol(live.course, s, { at: daysAgo(2) });
 		await newTopic();
 		const [p] = await courseProgress(s);
-		expect(p.topics).toBe(3);
-		expect(p.lockedForPremium).toBe(1);
+		expect(p.topics).toBe(4);
 	});
 
 	test('only enrolled students can mark a topic done', async () => {
@@ -229,6 +206,6 @@ describe('progress', () => {
 		const t = await newTopic();
 		expect(
 			(await callRoute(progressRoute, { user: s, body: { lessonId: t.id, complete: true } })).status
-		).toBe(403);
+		).toBe(200);
 	});
 });

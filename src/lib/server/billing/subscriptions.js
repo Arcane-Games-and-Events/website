@@ -41,6 +41,7 @@ import { PLANS, isPlan, listPriceCents, quoteFirstCharge } from './plans.js';
 import { anchorDayOf, periodEndFor } from './dates.js';
 import { applyAccess, liveSubscription, membershipGrantsAccess } from './access.js';
 import { sendOnce } from './notices.js';
+import { attributeSignup } from '$lib/server/partner/referrals.js';
 import {
 	sendCancelledEmail,
 	sendMembershipReceipt,
@@ -109,11 +110,20 @@ export async function quoteSignup({ user, plan, promoCode }) {
  *   consent: boolean }} input
  * @returns {Promise<{ ok: true, subscription: any, amountCents: number } | { ok: false, status: number, error: string, pending?: boolean, subscriptionId?: string }>}
  */
-export async function startSubscription({ user, plan, promoCode, payment, consent }) {
+export async function startSubscription({
+	user,
+	plan,
+	promoCode,
+	payment,
+	consent,
+	referralSource = null
+}) {
 	if (!consent)
 		return { ok: false, status: 400, error: 'Please agree to the automatic renewal terms.' };
 	const quote = await quoteSignup({ user, plan, promoCode });
 	if (!quote.ok) return { ok: false, status: 400, error: quote.error };
+	// How a teacher's code arrived: typed in, or remembered from their link.
+	quote.referralSource = referralSource;
 
 	// Where does this member stand?
 	const live = await liveSubscription(user.id);
@@ -462,6 +472,9 @@ export async function finalizeFirstCharge({ sub, inv, user, card, quote, outcome
 		);
 
 		if (quote.promoKind === 'partner' && quote.partner) {
+			// A teacher's code (Partner model): the teacher's $10 bonus is paid
+			// on the Partner ledger, so no partner commission as well.
+			const byTeacher = await attributeSignup(tx, { user, quote, sub, at: now });
 			const [pr] = await tx
 				.insert(partnerReferral)
 				.values({
@@ -470,9 +483,10 @@ export async function finalizeFirstCharge({ sub, inv, user, card, quote, outcome
 					code: quote.promoCode,
 					subscriptionType: sub.plan,
 					discountAmount: PARTNER_DISCOUNT_AMOUNT.toFixed(2),
-					commissionAmount: PARTNER_DISCOUNT_AMOUNT.toFixed(2),
+					commissionAmount: byTeacher ? '0.00' : PARTNER_DISCOUNT_AMOUNT.toFixed(2),
 					firstChargeOrderId: orderId,
-					payoutStatus: 'pending',
+					payoutStatus: byTeacher ? 'paid' : 'pending',
+					paidNotes: byTeacher ? 'Teacher referral: bonus paid on the Partner statement' : null,
 					subscriptionId: sub.id
 				})
 				.returning({ id: partnerReferral.id });

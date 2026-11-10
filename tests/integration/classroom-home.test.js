@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
-import { courseSale, deskCourse, deskMedia, notification } from '$lib/server/db/schema.js';
+import { deskCourse, deskMedia, notification } from '$lib/server/db/schema.js';
 import { POST as reviewRoute } from '../../src/routes/api/desk/courses/[id]/review/+server.js';
 import { POST as listingRoute } from '../../src/routes/api/desk/courses/[id]/listing/+server.js';
 import { POST as studentsRoute } from '../../src/routes/api/desk/courses/[id]/students/+server.js';
@@ -24,7 +24,8 @@ import {
 	unreadCounts
 } from '$lib/server/courses/notifications.js';
 import { createThread, reportPost } from '$lib/server/courses/discussion.js';
-import { markPaid, nextPayDate } from '$lib/server/courses/earnings.js';
+import { markStatementPaid } from '$lib/server/partner/statements.js';
+import { monthOf } from '$lib/server/partner/ledger.js';
 import { classroomAnalytics } from '$lib/server/courses/analytics.js';
 import { classroomHome, nextSteps } from '$lib/server/courses/home.js';
 import { courseOversight, nextInQueue } from '$lib/server/courses/oversight.js';
@@ -43,6 +44,7 @@ import {
 	createTeacher,
 	enrol,
 	liveCourse,
+	legacySale,
 	readyCourse
 } from '../support/courses.js';
 
@@ -110,7 +112,7 @@ describe('Classroom notifications', () => {
 		expect(await notesOf(teacher, 'course_listed')).toHaveLength(1);
 	});
 
-	test('new students, flagged posts and payouts reach the teacher', async () => {
+	test('flagged posts and payouts reach the teacher; new students don’t', async () => {
 		const { course } = await liveCourse(teacher, { price: '0' });
 		const student = await createUser();
 		const r = await callRoute(studentsRoute, {
@@ -119,8 +121,8 @@ describe('Classroom notifications', () => {
 			body: { email: student.email }
 		});
 		expect(r.status).toBe(200);
-		const [added] = await notesOf(teacher, 'new_student');
-		expect(added.data.source).toBe('comp');
+		// The Classroom's updates are about running the course, not each new student.
+		expect(await notesOf(teacher, 'new_student')).toHaveLength(0);
 
 		// Reported by enough students, a post is held: the teacher is told once.
 		const thread = await createThread(course, student, { title: 'Hello', body: 'Hi all' });
@@ -131,7 +133,7 @@ describe('Classroom notifications', () => {
 		}
 		expect(await notesOf(teacher, 'post_flagged')).toHaveLength(1);
 
-		await db.insert(courseSale).values({
+		await legacySale({
 			courseId: course.id,
 			teacherId: teacher.id,
 			grossCents: 5000,
@@ -139,7 +141,12 @@ describe('Classroom notifications', () => {
 			soldAt: new Date(Date.now() - 30 * 864e5),
 			payableAt: new Date(Date.now() - 16 * 864e5)
 		});
-		await markPaid({ teacherId: teacher.id, payDate: nextPayDate(), actor: admin });
+		await markStatementPaid({
+			teacherId: teacher.id,
+			month: monthOf(new Date(Date.now() - 16 * 864e5)),
+			actor: admin,
+			now: new Date(Date.now() + 40 * 864e5)
+		});
 		const [paid] = await notesOf(teacher, 'payout_paid');
 		expect(paid.data.cents).toBe(4500);
 	});
@@ -305,7 +312,7 @@ describe('the Classroom home', () => {
 		await enrol(a, s1);
 		await enrol(a, s2, { source: 'purchase' });
 		await enrol(b, s3, { source: 'purchase' });
-		await db.insert(courseSale).values([
+		await legacySale([
 			{
 				courseId: a.id,
 				teacherId: teacher.id,
@@ -356,7 +363,7 @@ describe('the Classroom home', () => {
 
 	test('admins see every course and the money; editors don’t see money', async () => {
 		const { course } = await liveCourse(teacher);
-		await db.insert(courseSale).values({
+		await legacySale({
 			courseId: course.id,
 			teacherId: teacher.id,
 			grossCents: 4000,

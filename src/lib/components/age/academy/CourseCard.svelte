@@ -11,6 +11,8 @@
 	 */
 	import CourseCover from './CourseCover.svelte';
 	import { formatMinutes, formatPrice } from '$lib/academy/format.js';
+	import { guidePrices } from '$lib/academy/partner/pricing.js';
+	import { page } from '$app/state';
 
 	/** @type {{ course: any, showDek?: boolean, progress?: { completed: number, total: number } | null, compact?: boolean }} */
 	let { course, showDek = false, progress = null, compact = false } = $props();
@@ -21,6 +23,9 @@
 			.filter(Boolean)
 			.join(' · ')
 	);
+	// Card fee included, and 10% off for Premium members.
+	const member = $derived(!!page.data?.isPremiumMember);
+	const prices = $derived(guidePrices(course?.price, member));
 	const pct = $derived(
 		progress && progress.total ? Math.round((progress.completed / progress.total) * 100) : 0
 	);
@@ -98,9 +103,13 @@
 				<span class="mt-3.5 flex items-center justify-between gap-3 border-t border-line pt-3.5">
 					<span class="flex items-baseline gap-2">
 						<span class="font-newsreader text-[20px] leading-none font-semibold tabular-nums"
-							>{formatPrice(course.price)}</span
+							>{prices ? prices.you : formatPrice(course.price)}</span
 						>
-						{#if course.price > 0}
+						{#if prices}
+							<span class="text-[10.5px] leading-tight text-fade tabular-nums"
+								>{member ? 'Premium price' : `or ${prices.member} with Premium`}</span
+							>
+						{:else if course.price > 0}
 							<span class="text-[9.5px] font-extrabold tracking-[0.12em] text-fade uppercase"
 								>Once</span
 							>

@@ -1,11 +1,12 @@
 /**
- * Buying a course: one price for everyone, bought once and kept.
+ * Course checkouts from before the AGE Partner model, and course refunds.
  *
- * Reuses the ticket checkout machinery (`checkout` rows, invoice numbers,
- * reconciliation of charges whose outcome never came back): a course
- * checkout is a `checkout` row with `course_id` instead of `event_id`.
- * `fulfilCourseCheckout` turns an approved charge into an order, a ledger
- * row, an enrollment and a teacher sale, exactly once.
+ * Guides are bought through $lib/server/partner/checkout.js now. What's
+ * left here finishes a one-course checkout that was still in flight when
+ * the Partner model switched on (reconciliation finds it by invoice
+ * number), and applies refunds to course orders: guides orders on the
+ * Partner ledger, older orders on their course_sale row and its copy in
+ * the ledger.
  */
 import { and, eq, isNull } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
@@ -18,67 +19,15 @@ import {
 	user as userTable
 } from '$lib/server/db/schema.js';
 import { recordPayment } from '$lib/server/payments/ledger.js';
-import { nextInvoiceNumber } from '$lib/server/payments/invoice.js';
 import { bump } from '$lib/server/cache/index.js';
 import { sendCourseReceipt } from '$lib/server/email.js';
 import { sendOnce } from '$lib/server/billing/notices.js';
-import { notifyClassroom } from './notifications.js';
+import { applyGuideRefund, applyLegacyRefund } from '$lib/server/partner/refunds.js';
+import { recordLegacySale } from '$lib/server/partner/ledger.js';
+import { HOLD_DAYS } from '$lib/academy/partner/terms.js';
 
-/** Teachers earn this share of what the student paid. */
-export const TEACHER_SHARE_PCT = 90;
-/** A sale counts toward a payout this long after purchase (the refund window). */
-export const HOLD_DAYS = 14;
-
-/** What a course costs, in cents. The same for everyone, Premium included. */
-export function priceCourse(course) {
-	return Math.max(0, Math.round(Number(course.price || 0) * 100));
-}
-
-/**
- * Create (or return) the checkout for an idempotency key.
- * @returns {Promise<{ checkout: any, existing: boolean } | { error: string, status: number }>}
- */
-export async function createCourseCheckout({ user, course, idempotencyKey }) {
-	const [existing] = await db
-		.select()
-		.from(checkoutTable)
-		.where(eq(checkoutTable.idempotencyKey, idempotencyKey))
-		.limit(1);
-	if (existing) {
-		if (existing.userId !== user.id || existing.courseId !== course.id)
-			return { error: 'Invalid request', status: 400 };
-		return { checkout: existing, existing: true };
-	}
-	const amountCents = priceCourse(course);
-	try {
-		const [row] = await db
-			.insert(checkoutTable)
-			.values({
-				userId: user.id,
-				courseId: course.id,
-				idempotencyKey,
-				invoiceNumber: await nextInvoiceNumber('course'),
-				status: 'pending',
-				quantity: 1,
-				listCents: amountCents,
-				discountCents: 0,
-				amountCents,
-				payload: { courseTitle: course.title, courseSlug: course.slug }
-			})
-			.returning();
-		return { checkout: row, existing: false };
-	} catch (err) {
-		if (err?.code === '23505' || err?.cause?.code === '23505') {
-			const [row] = await db
-				.select()
-				.from(checkoutTable)
-				.where(eq(checkoutTable.idempotencyKey, idempotencyKey))
-				.limit(1);
-			if (row) return { checkout: row, existing: true };
-		}
-		throw err;
-	}
-}
+/** Older one-course sales paid the teacher this share of what the student paid. */
+const LEGACY_SHARE_PCT = 90;
 
 /**
  * Turn a paid (or free) course checkout into an order, a ledger row, an
@@ -177,17 +126,21 @@ export async function fulfilCourseCheckout(checkoutId, charge) {
 		}
 
 		if (co.amountCents > 0) {
-			await tx.insert(courseSale).values({
-				courseId: co.courseId,
-				teacherId: course?.authorId || null,
-				enrollmentId: enrollment.id,
-				orderId: ord.id,
-				transId,
-				grossCents: co.amountCents,
-				sharePct: TEACHER_SHARE_PCT,
-				soldAt: now,
-				payableAt: new Date(now.getTime() + HOLD_DAYS * 86400000)
-			});
+			const [sale] = await tx
+				.insert(courseSale)
+				.values({
+					courseId: co.courseId,
+					teacherId: course?.authorId || null,
+					enrollmentId: enrollment.id,
+					orderId: ord.id,
+					transId,
+					grossCents: co.amountCents,
+					sharePct: LEGACY_SHARE_PCT,
+					soldAt: now,
+					payableAt: new Date(now.getTime() + HOLD_DAYS * 86400000)
+				})
+				.returning();
+			if (sale.teacherId) await recordLegacySale(tx, sale, co.userId);
 		}
 
 		await tx
@@ -198,11 +151,6 @@ export async function fulfilCourseCheckout(checkoutId, charge) {
 	});
 
 	await bump('orders', 'courses');
-	if (!result.already && result.course)
-		await notifyClassroom(result.course, 'new_student', {
-			actorId: result.checkout.userId,
-			data: { source: 'purchase', cents: result.checkout.amountCents }
-		});
 	if (!result.already && result.email && result.course) {
 		const [teacher] = result.course.authorId
 			? await db
@@ -229,8 +177,19 @@ export async function fulfilCourseCheckout(checkoutId, charge) {
  * A refund reached a course order: reduce the teacher's sale and, once the
  * whole price is back, take the course away. Runs inside the refund's
  * transaction (see payments/refunds.js).
+ *
+ * A guides order is refunded guide by guide on the Partner ledger instead
+ * (see $lib/server/partner/refunds.js); an older order also keeps its
+ * copied ledger row in step.
  */
-export async function applyCourseRefund(tx, ord, amountCents, at) {
+export async function applyCourseRefund(tx, ord, amountCents, at, { itemIds = [] } = {}) {
+	if (ord.meta?.partnerModel) return applyGuideRefund(tx, ord, { amountCents, at, itemIds });
+	const legacy = await applyOldCourseRefund(tx, ord, amountCents, at);
+	await applyLegacyRefund(tx, ord, { amountCents, at, fully: legacy.fully });
+	return legacy;
+}
+
+async function applyOldCourseRefund(tx, ord, amountCents, at) {
 	const [sale] = await tx.select().from(courseSale).where(eq(courseSale.orderId, ord.id)).limit(1);
 	let fully = false;
 	if (sale) {

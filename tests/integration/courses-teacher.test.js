@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, test } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
-import { caView, courseSale, teacherPayout } from '$lib/server/db/schema.js';
+import { caView, partnerLedger, teacherPayout } from '$lib/server/db/schema.js';
 import { POST as addRoute } from '../../src/routes/api/desk/courses/[id]/students/+server.js';
 import { DELETE as removeRoute } from '../../src/routes/api/desk/courses/[id]/students/[enrollmentId]/+server.js';
 import { POST as payoutRoute } from '../../src/routes/api/desk/payouts/+server.js';
@@ -15,15 +15,15 @@ import { setComplete } from '$lib/server/courses/progress.js';
 import { courseAnalytics } from '$lib/server/courses/analytics.js';
 import { startView } from '$lib/server/contentAnalytics/collect.js';
 import { outlineOf } from '$lib/server/courses/builder.js';
+import { nextPayDate, payDates, teacherEarnings } from '$lib/server/courses/earnings.js';
+import { monthOf, reverseSales } from '$lib/server/partner/ledger.js';
 import {
-	markPaid,
-	nextPayDate,
-	payDates,
-	payoutsDue,
-	teacherEarnings
-} from '$lib/server/courses/earnings.js';
+	markStatementPaid,
+	monthStatements,
+	statementsDue
+} from '$lib/server/partner/statements.js';
 import { createAdmin, createUser } from '../support/factories.js';
-import { callRoute, createTeacher, enrol, liveCourse } from '../support/courses.js';
+import { callRoute, createTeacher, enrol, legacySale, liveCourse } from '../support/courses.js';
 
 let teacher;
 let admin;
@@ -155,18 +155,14 @@ describe('earnings and payouts', () => {
 		payableAt = null
 	} = {}) {
 		const soldAt = new Date(Date.now() - soldDaysAgo * DAY);
-		const [row] = await db
-			.insert(courseSale)
-			.values({
-				courseId: live.course.id,
-				teacherId,
-				grossCents: gross,
-				refundedCents: refunded,
-				soldAt,
-				payableAt: payableAt || new Date(soldAt.getTime() + 14 * DAY)
-			})
-			.returning();
-		return row;
+		return legacySale({
+			courseId: live.course.id,
+			teacherId,
+			grossCents: gross,
+			refundedCents: refunded,
+			soldAt,
+			payableAt: payableAt || new Date(soldAt.getTime() + 14 * DAY)
+		});
 	}
 
 	test('pay dates fall on the first Monday of every month', () => {
@@ -209,54 +205,62 @@ describe('earnings and payouts', () => {
 		expect((await teacherEarnings(teacher.id)).totals.sales).toBe(3);
 	});
 
-	test('marking paid takes exactly what’s due, once, and only an admin can', async () => {
-		const date = nextPayDate();
-		await sale({ soldDaysAgo: 20 });
-		// Payable the day after this pay date: it waits for the next one.
-		await sale({
-			soldDaysAgo: 0,
-			payableAt: new Date(new Date(`${date}T12:00:00Z`).getTime() + DAY)
-		});
-		const [due] = await payoutsDue(date);
-		expect(due).toMatchObject({ teacherId: teacher.id, sales: 1, cents: 4500 });
+	// The middle of the month `n` months before this one (UTC).
+	const monthsAgo = (n) => {
+		const d = new Date();
+		return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - n, 15));
+	};
+
+	test('marking a month’s statement paid takes it once, and only an admin can', async () => {
+		const month = monthOf(monthsAgo(1));
+		await sale({ soldDaysAgo: 60, payableAt: monthsAgo(1) });
+		// Payable this month: on next month's statement, not this one.
+		await sale({ soldDaysAgo: 0, payableAt: new Date() });
 
 		const asTeacher = await callRoute(payoutRoute, {
 			user: teacher,
-			body: { teacherId: teacher.id, payDate: date }
+			body: { teacherId: teacher.id, month }
 		});
 		expect(asTeacher.status).toBe(403);
 
 		const r = await callRoute(payoutRoute, {
 			user: admin,
-			body: { teacherId: teacher.id, payDate: date, reference: 'TX-1' }
+			body: { teacherId: teacher.id, month, reference: 'TX-1' }
 		});
 		expect(r.status).toBe(200);
 		expect(r.body.payout).toMatchObject({ amountCents: 4500, saleCount: 1, reference: 'TX-1' });
-		expect(await payoutsDue(date)).toHaveLength(0);
 
 		const again = await callRoute(payoutRoute, {
 			user: admin,
-			body: { teacherId: teacher.id, payDate: date }
+			body: { teacherId: teacher.id, month }
 		});
 		expect(again.status).toBe(409);
+		// This month isn't over yet.
+		const early = await callRoute(payoutRoute, {
+			user: admin,
+			body: { teacherId: teacher.id, month: monthOf(new Date()) }
+		});
+		expect(early.status).toBe(409);
 		const e = await teacherEarnings(teacher.id);
 		expect(e.totals.paidCents).toBe(4500);
-		expect(e.totals.onHoldCents).toBe(4500);
 	});
 
-	test('a refund after a payout doesn’t change the payout that was made', async () => {
-		const s = await sale({ soldDaysAgo: 20 });
-		const payout = await markPaid({ teacherId: teacher.id, payDate: nextPayDate(), actor: admin });
-		await db.update(courseSale).set({ refundedCents: 5000 }).where(eq(courseSale.id, s.id));
+	test('a refund after a payout doesn’t change it; it comes off the next statement', async () => {
+		const month = monthOf(monthsAgo(1));
+		const s = await sale({ soldDaysAgo: 60, payableAt: monthsAgo(1) });
+		const payout = await markStatementPaid({ teacherId: teacher.id, month, actor: admin });
+		const [row] = await db.select().from(partnerLedger).where(eq(partnerLedger.legacySaleId, s.id));
+		await db.transaction((tx) => reverseSales(tx, [row], { status: 'refunded', at: new Date() }));
 		const [p] = await db.select().from(teacherPayout).where(eq(teacherPayout.id, payout.id));
 		expect(p.amountCents).toBe(4500);
-		expect((await teacherEarnings(teacher.id)).totals.paidCents).toBe(4500);
+		const [now] = await monthStatements(monthOf(new Date()));
+		expect(now).toMatchObject({ deductedCents: -4500, payableCents: 0 });
 	});
 
-	test('missed pay dates roll into the next payout', async () => {
-		await sale({ soldDaysAgo: 60 });
-		await sale({ soldDaysAgo: 20 });
-		const [due] = await payoutsDue(nextPayDate());
-		expect(due.sales).toBe(2);
+	test('unpaid months stay due, and show as overdue once their pay date passes', async () => {
+		await sale({ soldDaysAgo: 90, payableAt: monthsAgo(2) });
+		await sale({ soldDaysAgo: 60, payableAt: monthsAgo(1) });
+		const [due] = await statementsDue();
+		expect(due).toMatchObject({ teacherId: teacher.id, cents: 9000, sales: 2, overdue: true });
 	});
 });

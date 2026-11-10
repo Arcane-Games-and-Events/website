@@ -113,6 +113,8 @@
 				return `Your post in ${t} was removed${n.data?.note ? `: ${n.data.note}` : ''}`;
 			case 'post_flagged':
 				return `A ${n.data?.reply ? 'reply' : 'post'} in ${t} is waiting for review`;
+			case 'refund_request':
+				return `${who(n)} asked for a refund of ${t}${n.data?.reason ? ` (${n.data.reason})` : ''}`;
 			case 'payout_paid':
 				return `You were paid ${money(n.data?.cents || 0)} for ${n.data?.sales || 0} ${n.data?.sales === 1 ? 'sale' : 'sales'}`;
 			default:
@@ -174,7 +176,8 @@
 		post_flagged: 'bg-hero-rb',
 		course_submitted: 'bg-gold',
 		new_student: 'bg-academy',
-		payout_paid: 'bg-academy'
+		payout_paid: 'bg-academy',
+		refund_request: 'bg-hero-rb'
 	};
 
 	async function read(body) {
@@ -289,7 +292,7 @@
 			<span class="text-prem" aria-hidden="true">✓</span>
 			{items.length
 				? 'You’re all caught up.'
-				: 'Nothing yet. Approvals, new students, conversations and flagged posts show up here.'}
+				: 'Nothing yet. Approvals, conversations, flagged posts and refund requests show up here.'}
 		</p>
 	{/if}
 

@@ -1,22 +1,23 @@
 /**
- * Teacher earnings and payouts.
+ * Teacher earnings, for the Classroom's summaries (the Classroom home, a
+ * course's Earnings tab).
  *
- * - Each paid enrollment is a `course_sale`: the teacher earns share_pct
- *   (90%) of what the student paid, less any refund.
- * - A sale is on hold for 14 days (the refund window), then payable.
- * - AGE pays teachers once a month, on the first Monday. A payout covers every
- *   unpaid sale that is payable by its pay date. AGE pays outside the site; an admin marks the payout as paid
- *   here, which stamps the sales so they can never be paid twice.
- * - A refund after a sale was paid doesn't change the payout already made.
+ * - Sales come from the Partner ledger (see $lib/server/partner/sales.js):
+ *   each copy at the share it was sold at (90%, 93% or 95%) of its list
+ *   price, less refunds. Sales from before the Partner model are in the
+ *   ledger too.
+ * - A sale is on hold for HOLD_DAYS, and until its charge settles, then lands on that
+ *   month's statement, paid on the first Monday of the next month.
+ * - Payouts are made from monthly statements: see partner/statements.js.
  */
-import { and, asc, desc, eq, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
-import { courseSale, deskCourse, teacherPayout, user as userTable } from '$lib/server/db/schema.js';
-import { notify } from './notifications.js';
-import { CourseError } from './builder.js';
+import { deskCourse, teacherPayout, user as userTable } from '$lib/server/db/schema.js';
+import { salesSource } from '$lib/server/partner/sales.js';
+import { monthOf } from '$lib/server/partner/ledger.js';
+import { payDateOf } from '$lib/server/partner/statements.js';
+import { HOLD_DAYS, PAY_WEEKDAY } from '$lib/academy/partner/terms.js';
 
-/** Teachers are paid on the first of this weekday in every month (UTC): Monday. */
-export const PAY_WEEKDAY = 1;
 const ymd = (t) => new Date(t).toISOString().slice(0, 10);
 /** The pay date (the month's first Monday) in the month `monthsOn` months after `t`'s month. */
 const payDayOf = (t, monthsOn = 0) => {
@@ -25,9 +26,6 @@ const payDayOf = (t, monthsOn = 0) => {
 	const day = 1 + ((PAY_WEEKDAY - first.getUTCDay() + 7) % 7);
 	return ymd(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), day));
 };
-/** A pay date covers sales payable any time that day (UTC). */
-export const endOfDay = (date) => new Date(`${date}T23:59:59.999Z`);
-
 /** The teacher's part of a sale, in cents. */
 export const shareOf = (s) =>
 	Math.round(((s.grossCents - s.refundedCents) * (s.sharePct ?? 90)) / 100);
@@ -47,7 +45,7 @@ export function payDates(from = new Date(), count = 6) {
 
 /** The pay date a sale will be paid on, if it isn't paid already. */
 export function payDateFor(sale) {
-	return nextPayDate(new Date(sale.payableAt));
+	return payDateOf(monthOf(sale.payableAt));
 }
 
 /**
@@ -56,27 +54,29 @@ export function payDateFor(sale) {
  * @param {{ courseId?: string, now?: Date }} [opts]
  */
 export async function teacherEarnings(teacherId, { courseId = null, now = new Date() } = {}) {
-	const where = [eq(courseSale.teacherId, teacherId)];
-	if (courseId) where.push(eq(courseSale.courseId, courseId));
+	const S = salesSource();
+	const where = [eq(S.teacherId, teacherId)];
+	if (courseId) where.push(eq(S.courseId, courseId));
 	const sales = await db
 		.select({
-			id: courseSale.id,
-			courseId: courseSale.courseId,
+			id: S.id,
+			courseId: S.courseId,
 			courseTitle: deskCourse.title,
-			grossCents: courseSale.grossCents,
-			refundedCents: courseSale.refundedCents,
-			sharePct: courseSale.sharePct,
-			soldAt: courseSale.soldAt,
-			payableAt: courseSale.payableAt,
-			payoutId: courseSale.payoutId
+			grossCents: S.grossCents,
+			refundedCents: S.refundedCents,
+			sharePct: S.sharePct,
+			soldAt: S.soldAt,
+			payableAt: S.payableAt,
+			payoutId: S.payoutId
 		})
-		.from(courseSale)
-		.innerJoin(deskCourse, eq(courseSale.courseId, deskCourse.id))
+		.from(S)
+		.innerJoin(deskCourse, eq(S.courseId, deskCourse.id))
 		.where(and(...where))
-		.orderBy(desc(courseSale.soldAt));
+		.orderBy(desc(S.soldAt));
 
 	const next = nextPayDate(now);
-	const nextEnd = endOfDay(next);
+	// Paid on or before the next pay date: their statement month has ended by then.
+	const dueNext = (s) => payDateFor(s) <= next;
 	const unpaid = sales.filter((s) => !s.payoutId);
 	const sum = (list) => list.reduce((n, s) => n + shareOf(s), 0);
 
@@ -117,7 +117,7 @@ export async function teacherEarnings(teacherId, { courseId = null, now = new Da
 
 	return {
 		sharePct: 90,
-		holdDays: 14,
+		holdDays: HOLD_DAYS,
 		totals: {
 			sales: sales.length,
 			grossCents: sales.reduce((n, s) => n + s.grossCents, 0),
@@ -131,8 +131,8 @@ export async function teacherEarnings(teacherId, { courseId = null, now = new Da
 		},
 		next: {
 			payDate: next,
-			cents: sum(unpaid.filter((s) => new Date(s.payableAt) <= nextEnd)),
-			sales: unpaid.filter((s) => new Date(s.payableAt) <= nextEnd).length
+			cents: sum(unpaid.filter(dueNext)),
+			sales: unpaid.filter(dueNext).length
 		},
 		schedule: [...schedule.values()].sort((a, b) => a.payDate.localeCompare(b.payDate)),
 		courses: [...byCourse.values()].sort((a, b) => b.earnedCents - a.earnedCents),
@@ -144,36 +144,6 @@ export async function teacherEarnings(teacherId, { courseId = null, now = new Da
 		})),
 		payouts
 	};
-}
-
-/**
- * For admins: what each teacher is owed on a pay date (every unpaid sale
- * payable by then, including any missed from earlier pay dates).
- */
-export async function payoutsDue(payDate = nextPayDate()) {
-	const rows = await db
-		.select({
-			teacherId: courseSale.teacherId,
-			firstName: userTable.firstName,
-			lastName: userTable.lastName,
-			email: userTable.email,
-			sales: sql`count(*)::int`,
-			cents: sql`coalesce(sum(round((${courseSale.grossCents} - ${courseSale.refundedCents}) * ${courseSale.sharePct} / 100.0)), 0)::int`,
-			oldest: sql`min(${courseSale.payableAt})`
-		})
-		.from(courseSale)
-		.innerJoin(userTable, eq(courseSale.teacherId, userTable.id))
-		.where(and(isNull(courseSale.payoutId), lte(courseSale.payableAt, endOfDay(payDate))))
-		.groupBy(courseSale.teacherId, userTable.firstName, userTable.lastName, userTable.email)
-		.orderBy(desc(sql`sum(${courseSale.grossCents})`));
-	return rows.map((r) => ({
-		teacherId: r.teacherId,
-		name: `${r.firstName || ''} ${r.lastName || ''}`.trim() || r.email,
-		email: r.email,
-		sales: Number(r.sales),
-		cents: Number(r.cents),
-		overdue: r.oldest ? nextPayDate(new Date(r.oldest)) < payDate : false
-	}));
 }
 
 /** Recent payouts across all teachers, for the admin history. */
@@ -193,80 +163,4 @@ export async function payoutHistory({ limit = 50 } = {}) {
 		...r.payout,
 		teacher: `${r.firstName || ''} ${r.lastName || ''}`.trim() || r.email
 	}));
-}
-
-/** The sales a payout paid. */
-export async function payoutSales(payoutId) {
-	return db
-		.select({
-			id: courseSale.id,
-			courseTitle: deskCourse.title,
-			grossCents: courseSale.grossCents,
-			refundedCents: courseSale.refundedCents,
-			sharePct: courseSale.sharePct,
-			soldAt: courseSale.soldAt
-		})
-		.from(courseSale)
-		.innerJoin(deskCourse, eq(courseSale.courseId, deskCourse.id))
-		.where(eq(courseSale.payoutId, payoutId))
-		.orderBy(asc(courseSale.soldAt));
-}
-
-/**
- * Admin: record that a teacher was paid for a pay date. Takes exactly the
- * unpaid sales payable by then; a sale is never paid twice.
- */
-export async function markPaid({ teacherId, payDate, reference = null, note = null, actor }) {
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(String(payDate || '')))
-		throw new CourseError(400, 'Choose a pay date.');
-	const payout = await db.transaction(async (tx) => {
-		const sales = await tx
-			.select()
-			.from(courseSale)
-			.where(
-				and(
-					eq(courseSale.teacherId, teacherId),
-					isNull(courseSale.payoutId),
-					lte(courseSale.payableAt, endOfDay(payDate))
-				)
-			)
-			.for('update');
-		if (!sales.length) throw new CourseError(409, 'Nothing is owed to this teacher for that date.');
-		const amountCents = sales.reduce((n, s) => n + shareOf(s), 0);
-		const [payout] = await tx
-			.insert(teacherPayout)
-			.values({
-				teacherId,
-				payDate,
-				amountCents,
-				saleCount: sales.length,
-				paidBy: actor?.id ?? null,
-				reference: reference ? String(reference).slice(0, 200) : null,
-				note: note ? String(note).slice(0, 2000) : null
-			})
-			.returning();
-		await tx
-			.update(courseSale)
-			.set({ payoutId: payout.id })
-			.where(
-				and(
-					inArray(
-						courseSale.id,
-						sales.map((s) => s.id)
-					),
-					isNull(courseSale.payoutId)
-				)
-			);
-		return payout;
-	});
-	try {
-		await notify([teacherId], {
-			kind: 'payout_paid',
-			actorId: actor?.id ?? null,
-			data: { cents: payout.amountCents, payDate, sales: payout.saleCount }
-		});
-	} catch (err) {
-		console.warn('[courses] payout notification not sent:', err?.message || err);
-	}
-	return payout;
 }

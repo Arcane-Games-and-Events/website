@@ -1157,6 +1157,15 @@ export const deskCourse = pgTable(
 		draftUpdatedAt: timestamp('draft_updated_at', { withTimezone: true, mode: 'date' }),
 		draftUpdatedBy: text('draft_updated_by').references(() => user.id),
 
+		// The Partner exclusivity agreement, stored and shown, not enforced,
+		// and when the content last changed (migration 042).
+		exclusive: boolean('exclusive').notNull().default(true),
+		exclusivityStart: text('exclusivity_start'), // DATE, read as text
+		exclusivityEnd: text('exclusivity_end'), // DATE, read as text
+		autoRenew: boolean('auto_renew').notNull().default(true),
+		agreementStatus: text('agreement_status').notNull().default('active'), // active | ended
+		contentUpdatedAt: timestamp('content_updated_at', { withTimezone: true, mode: 'date' }),
+
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
 		updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
 	},
@@ -1384,6 +1393,12 @@ export const checkout = pgTable('checkout', {
 	transId: text('trans_id').unique(),
 	orderId: uuid('order_id').references(() => order.id, { onDelete: 'set null' }),
 	lastError: text('last_error'),
+	// The refund-policy consent given at payment (migration 043).
+	consentGiven: boolean('consent_given').notNull().default(false),
+	consentText: text('consent_text'),
+	consentAt: timestamp('consent_at', { withTimezone: true, mode: 'date' }),
+	consentIp: text('consent_ip'),
+	consentUserAgent: text('consent_user_agent'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
 });
@@ -1409,6 +1424,13 @@ export const refund = pgTable('refund', {
 	}),
 	subscriptionEffect: text('subscription_effect'), // keep | end_now | cancel_at_period_end
 	refundRequestId: uuid('refund_request_id'),
+	// The guides this refund gives back (migration 042).
+	checkoutItemIds: uuid('checkout_item_ids')
+		.array()
+		.notNull()
+		.default(sql`'{}'::uuid[]`),
+	// The guide refund request this is for (migration 043).
+	guideRefundRequestId: uuid('guide_refund_request_id'),
 	lastError: text('last_error'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 	completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' })
@@ -1521,7 +1543,9 @@ export const courseEnrollment = pgTable(
 		mutedBy: text('muted_by').references(() => user.id, { onDelete: 'set null' }),
 		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 		revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),
-		revokedReason: text('revoked_reason')
+		revokedReason: text('revoked_reason'),
+		// When the buyer first opened a paid topic (migration 043). Set once.
+		firstOpenedAt: timestamp('first_opened_at', { withTimezone: true, mode: 'date' })
 	},
 	(t) => [index('course_enrollment_user_idx').on(t.userId)]
 );
@@ -1603,6 +1627,202 @@ export const courseActivity = pgTable('course_activity', {
 	lessonId: uuid('lesson_id').references(() => deskLesson.id, { onDelete: 'set null' }),
 	note: text('note'),
 	data: jsonb('data'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+// ============================================================================
+// The AGE Partner model (migration 042)
+// ============================================================================
+
+// Each teacher's lifetime copies, net of refunds. Locked per sale.
+export const partnerAccount = pgTable('partner_account', {
+	teacherId: text('teacher_id')
+		.primaryKey()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	lifetimeCopies: integer('lifetime_copies').notNull().default(0),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+// The guides in a checkout (a cart). Cents throughout.
+export const checkoutItem = pgTable(
+	'checkout_item',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		checkoutId: uuid('checkout_id')
+			.notNull()
+			.references(() => checkout.id, { onDelete: 'cascade' }),
+		courseId: uuid('course_id')
+			.notNull()
+			.references(() => deskCourse.id, { onDelete: 'restrict' }),
+		teacherId: text('teacher_id').references(() => user.id, { onDelete: 'set null' }),
+		position: smallint('position').notNull(),
+		title: text('title').notNull(),
+		listCents: integer('list_cents').notNull(),
+		memberDiscountCents: integer('member_discount_cents').notNull().default(0),
+		priceCents: integer('price_cents').notNull(),
+		feeCents: integer('fee_cents').notNull().default(0),
+		paidCents: integer('paid_cents').notNull(),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+	},
+	(t) => [unique('checkout_item_checkout_id_course_id_key').on(t.checkoutId, t.courseId)]
+);
+
+// What teachers earn: sales, reversals, referral bonuses, pool shares.
+export const partnerLedger = pgTable('partner_ledger', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	entryType: text('entry_type').notNull(), // sale | reversal | referral_bonus | pool_share | adjustment | age_cost
+	status: text('status').notNull(), // paid | refunded | charged_back | earned | void
+	teacherId: text('teacher_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'restrict' }),
+	orderId: uuid('order_id').references(() => order.id, { onDelete: 'set null' }),
+	checkoutItemId: uuid('checkout_item_id').references(() => checkoutItem.id, {
+		onDelete: 'set null'
+	}),
+	courseId: uuid('course_id').references(() => deskCourse.id, { onDelete: 'set null' }),
+	buyerId: text('buyer_id').references(() => user.id, { onDelete: 'set null' }),
+	reversesId: uuid('reverses_id'),
+	legacySaleId: uuid('legacy_sale_id').references(() => courseSale.id, { onDelete: 'set null' }),
+	referredUserId: text('referred_user_id').references(() => user.id, { onDelete: 'set null' }),
+	poolMonth: text('pool_month'), // DATE, read as text
+	listCents: integer('list_cents').notNull().default(0),
+	buyerType: text('buyer_type'), // member | non_member
+	memberDiscountCents: integer('member_discount_cents').notNull().default(0),
+	buyerPaidCents: integer('buyer_paid_cents').notNull().default(0),
+	cardFeeCents: integer('card_fee_cents').notNull().default(0),
+	shareRate: decimal('share_rate', { precision: 5, scale: 4 }),
+	level: text('level'), // PARTNER | SENIOR | ELITE
+	copyNumber: integer('copy_number'),
+	teacherCents: integer('teacher_cents').notNull(),
+	ageCommissionCents: integer('age_commission_cents').notNull().default(0),
+	ageNetCents: integer('age_net_cents').notNull().default(0),
+	occurredAt: timestamp('occurred_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	payableAt: timestamp('payable_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	statementMonth: text('statement_month').notNull(), // DATE (first of the month), read as text
+	settledPayoutId: uuid('settled_payout_id').references(() => teacherPayout.id, {
+		onDelete: 'set null'
+	}),
+	// When Authorize.net confirmed the sale's charge settled (migration 043).
+	settledAt: timestamp('settled_at', { withTimezone: true, mode: 'date' }),
+	note: text('note'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+// Payout status per teacher per month. No row means pending.
+export const partnerStatement = pgTable(
+	'partner_statement',
+	{
+		teacherId: text('teacher_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'restrict' }),
+		month: text('month').notNull(), // DATE, read as text
+		status: text('status').notNull().default('pending'), // pending | paid
+		amountCents: integer('amount_cents'),
+		payoutId: uuid('payout_id').references(() => teacherPayout.id, { onDelete: 'set null' }),
+		reference: text('reference'),
+		note: text('note'),
+		paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
+		paidBy: text('paid_by').references(() => user.id, { onDelete: 'set null' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+	},
+	(t) => [primaryKey({ columns: [t.teacherId, t.month] })]
+);
+
+// The teacher who referred a Premium member. One per member, ever.
+export const partnerAttribution = pgTable('partner_attribution', {
+	referredUserId: text('referred_user_id')
+		.primaryKey()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	teacherId: text('teacher_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	partnerId: uuid('partner_id').references(() => partner.id, { onDelete: 'set null' }),
+	source: text('source').notNull(), // link | code
+	code: text('code'),
+	subscriptionId: uuid('subscription_id'),
+	status: text('status').notNull().default('pending'), // pending | bonus_recorded | void
+	voidReason: text('void_reason'),
+	attributedAt: timestamp('attributed_at', { withTimezone: true, mode: 'date' })
+		.notNull()
+		.defaultNow(),
+	decidedAt: timestamp('decided_at', { withTimezone: true, mode: 'date' })
+});
+
+// Unique reads by Premium members of guides they own, per month.
+export const guideRead = pgTable(
+	'guide_read',
+	{
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		courseId: uuid('course_id')
+			.notNull()
+			.references(() => deskCourse.id, { onDelete: 'cascade' }),
+		month: text('month').notNull(), // DATE, read as text
+		firstReadAt: timestamp('first_read_at', { withTimezone: true, mode: 'date' })
+			.notNull()
+			.defaultNow()
+	},
+	(t) => [primaryKey({ columns: [t.userId, t.courseId, t.month] })]
+);
+
+// Each month the pool job ran.
+export const poolRun = pgTable('pool_run', {
+	month: text('month').primaryKey(), // DATE, read as text
+	status: text('status').notNull(), // skipped | paid
+	reason: text('reason'),
+	activeMembers: integer('active_members'),
+	netRevenueCents: integer('net_revenue_cents'),
+	poolCents: integer('pool_cents'),
+	totalReads: integer('total_reads'),
+	ranAt: timestamp('ran_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+// A buyer's request to refund one guide (one line item), and what came of
+// it (migration 043). Never more than one live request per line item.
+export const guideRefundRequest = pgTable('guide_refund_request', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	checkoutItemId: uuid('checkout_item_id')
+		.notNull()
+		.references(() => checkoutItem.id, { onDelete: 'restrict' }),
+	orderId: uuid('order_id')
+		.notNull()
+		.references(() => order.id, { onDelete: 'restrict' }),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	courseId: uuid('course_id').references(() => deskCourse.id, { onDelete: 'set null' }),
+	teacherId: text('teacher_id').references(() => user.id, { onDelete: 'set null' }),
+	reason: text('reason').notNull(), // duplicate | broken | not_as_described | unopened | other
+	message: text('message'),
+	status: text('status').notNull().default('pending'), // pending | approved | auto_approved | denied
+	autoReason: text('auto_reason'), // duplicate | unopened
+	decidedBy: text('decided_by'), // system | admin | teacher
+	decidedByUser: text('decided_by_user').references(() => user.id, { onDelete: 'set null' }),
+	decisionNote: text('decision_note'),
+	decidedAt: timestamp('decided_at', { withTimezone: true, mode: 'date' }),
+	refundStatus: text('refund_status').notNull().default('none'), // none | processing | refunded | refund_failed
+	refundId: uuid('refund_id').references(() => refund.id, { onDelete: 'set null' }),
+	amountCents: integer('amount_cents'),
+	gatewayMethod: text('gateway_method'), // void | refund
+	gatewayResponse: text('gateway_response'),
+	attempts: integer('attempts').notNull().default(0),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+// Version history buyers can read: one short note per update.
+export const courseChangelog = pgTable('course_changelog', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	courseId: uuid('course_id')
+		.notNull()
+		.references(() => deskCourse.id, { onDelete: 'cascade' }),
+	lessonId: uuid('lesson_id').references(() => deskLesson.id, { onDelete: 'set null' }),
+	kind: text('kind').notNull(), // topic_updated | topic_added
+	note: text('note'),
+	authorId: text('author_id').references(() => user.id, { onDelete: 'set null' }),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
 });
 

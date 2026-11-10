@@ -42,6 +42,7 @@ import {
 } from '$lib/server/email.js';
 import { sendOnce } from '$lib/server/billing/notices.js';
 import { applyCourseRefund } from '$lib/server/courses/purchase.js';
+import { settleGuideRefund } from '$lib/server/partner/guideRefunds.js';
 
 const UNSETTLED = new Set([
 	'capturedPendingSettlement',
@@ -75,6 +76,7 @@ export const SELF_REFUND_CUTOFF_HOURS = 24;
  *   transId: string, amountCents: number, reason?: string|null, requestedBy?: string|null,
  *   orderId?: string|null, ticketIds?: string[], subscriptionInvoiceId?: string|null,
  *   subscriptionEffect?: 'keep'|'end_now'|'cancel_at_period_end'|null, refundRequestId?: string|null,
+ *   checkoutItemIds?: string[], guideRefundRequestId?: string|null,
  *   notify?: boolean
  * }} input
  * @returns {Promise<{ ok: boolean, status: 'succeeded'|'waiting_settlement'|'pending'|'failed', method?: string, message: string, refundId?: string, voided?: boolean }>}
@@ -89,6 +91,8 @@ export async function refundTransaction(input) {
 		subscriptionInvoiceId = null,
 		subscriptionEffect = null,
 		refundRequestId = null,
+		checkoutItemIds = [],
+		guideRefundRequestId = null,
 		notify = true
 	} = input;
 	let amountCents = Math.round(Number(input.amountCents));
@@ -137,7 +141,9 @@ export async function refundTransaction(input) {
 				ticketIds,
 				subscriptionInvoiceId,
 				subscriptionEffect,
-				refundRequestId
+				refundRequestId,
+				checkoutItemIds,
+				guideRefundRequestId
 			})
 			.returning();
 	} catch (err) {
@@ -347,6 +353,8 @@ async function completeRefund(
 			.update(refundTable)
 			.set({ status: 'succeeded', method, refundTransId, amountCents, completedAt: at })
 			.where(eq(refundTable.id, row.id));
+		// A guide refund request: refunded, and the card fee the processor keeps.
+		await settleGuideRefund(tx, row, method, at);
 		// Effects already applied when the refund began waiting for settlement,
 		// except the ledger, which waits for the money to actually move.
 		if (row.status === 'waiting_settlement') {
@@ -414,10 +422,15 @@ async function applySideEffects(tx, row, { at, provisional = false }) {
 		) {
 			what = 'your AGE membership';
 		}
-		// A course: the teacher's sale shrinks; a full refund takes the course away.
+		// A course: the teacher's sale shrinks; a full refund takes the course
+		// away. Guides (the Partner model) go back one by one.
 		if (ord.kind === 'course') {
 			what = `the course ${ord.meta?.courseTitle || ''}`.trim();
-			await applyCourseRefund(tx, ord, row.amountCents, at);
+			const r = await applyCourseRefund(tx, ord, row.amountCents, at, {
+				itemIds: row.checkoutItemIds || []
+			});
+			if (r?.guides?.length)
+				what = r.guides.length === 1 ? r.guides[0].title : `${r.guides.length} guides`;
 		}
 	}
 

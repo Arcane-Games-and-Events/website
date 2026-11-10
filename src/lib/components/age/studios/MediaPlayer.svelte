@@ -424,7 +424,7 @@
 					Every match and episode, unlocked.
 				</h3>
 				<p class="mt-2.5 font-newsreader text-[15px] leading-[1.5] text-soft italic">
-					Members get every match and episode, Premium articles and course updates.
+					Members get every match and episode, Premium articles and 10% off every Academy guide.
 				</p>
 				<a
 					href="/premium"

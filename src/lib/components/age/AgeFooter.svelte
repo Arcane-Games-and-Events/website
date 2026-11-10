@@ -93,7 +93,7 @@
 	>
 		<span
 			>© {year} Arcane Games and Events LLC · <a href="/privacy">Privacy</a> ·
-			<a href="/terms">Terms</a></span
+			<a href="/terms">Terms</a> · <a href="/refund-policy">Refunds</a></span
 		>
 		<span>Flesh and Blood is a trademark of Legend Story Studios</span>
 	</div>

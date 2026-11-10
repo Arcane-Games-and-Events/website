@@ -41,19 +41,21 @@ describe('calculateComparison', () => {
 		const r = run(pro500);
 		expect(r.metafy.yearly).toBeCloseTo(500 * 25 - 828, 6);
 		expect(r.metafy.yearly).toBeCloseTo(11672, 6);
-		expect(r.age.yearly).toBeCloseTo(250 * 25 * 0.9 + 250 * 25 * 0.93, 6);
-		expect(r.age.yearly).toBeCloseTo(11437.5, 6);
-		expect(r.difference).toBeCloseTo(-234.5, 6);
-		expect(r.age.perGuide).toBeCloseTo(11437.5 / 2, 6);
+		// All 500 copies are within the Partner level's first 1,000.
+		expect(r.age.yearly).toBeCloseTo(500 * 25 * 0.9, 6);
+		expect(r.age.yearly).toBeCloseTo(11250, 6);
+		expect(r.difference).toBeCloseTo(-422, 6);
+		expect(r.age.perGuide).toBeCloseTo(11250 / 2, 6);
 		expect(headline(r).kind).toBe('less');
-		expect(headline(r).amount).toBeCloseTo(234.5, 6);
+		expect(headline(r).amount).toBeCloseTo(422, 6);
 	});
 
-	test('two referrals a month put AGE ahead', () => {
-		const r = run({ ...pro500, signupsPerMonth: 2 });
-		expect(r.age.referralYearly).toBe(240);
-		expect(r.age.yearly).toBeCloseTo(11677.5, 6);
-		expect(r.difference).toBeCloseTo(5.5, 6);
+	test('four referrals a month put AGE ahead', () => {
+		expect(headline(run({ ...pro500, signupsPerMonth: 3 })).kind).toBe('less');
+		const r = run({ ...pro500, signupsPerMonth: 4 });
+		expect(r.age.referralYearly).toBe(480);
+		expect(r.age.yearly).toBeCloseTo(11730, 6);
+		expect(r.difference).toBeCloseTo(58, 6);
 		expect(headline(r).kind).toBe('more');
 	});
 
@@ -65,20 +67,20 @@ describe('calculateComparison', () => {
 		// Direct earnings don't change…
 		expect(on.age.yearly).toBeCloseTo(off.age.yearly, 6);
 		expect(on.difference).toBeCloseTo(off.difference, 6);
-		expect(on.age.yearlyWithPool).toBeCloseTo(11658.3, 6);
-		// …but the headline counts the pool: −234.50 + 220.80 = −13.70.
+		expect(on.age.yearlyWithPool).toBeCloseTo(11470.8, 6);
+		// …but the headline counts the pool: −422 + 220.80 = −201.20.
 		expect(headline(off)).toMatchObject({ kind: 'less', withPool: false });
 		expect(headline(on)).toMatchObject({ kind: 'less', withPool: true });
-		expect(headline(on).amount).toBeCloseTo(13.7, 6);
+		expect(headline(on).amount).toBeCloseTo(201.2, 6);
 		// Enough reading share puts AGE ahead.
 		const more = run({ ...pro500, includePool: true, poolMembers: 400, poolReadingShare: 0.2 });
 		expect(headline(more).kind).toBe('more');
-		expect(headline(more).amount).toBeCloseTo(441.6 - 234.5, 6);
+		expect(headline(more).amount).toBeCloseTo(441.6 - 422, 6);
 		// Off by default.
 		expect(off.age.poolYearly).toBe(0);
 	});
 
-	test('no pool below 250 copies a year, counted across all guides', () => {
+	test('no pool below 250 copies a year (across all guides) or below 250 members', () => {
 		const on = { includePool: true, poolMembers: 400, poolReadingShare: 0.1 };
 		expect(poolPerYear(on, 249)).toBe(0);
 		expect(poolPerYear(on, 250)).toBeCloseTo(220.8, 6);
@@ -92,8 +94,9 @@ describe('calculateComparison', () => {
 			220.8,
 			6
 		);
-		// The member count only sizes the pool; it no longer gates it.
-		expect(poolPerYear({ ...on, poolMembers: 100 }, 300)).toBeCloseTo(55.2, 6);
+		// The pool only runs once AGE has 250 Premium members.
+		expect(poolPerYear({ ...on, poolMembers: 249 }, 300)).toBe(0);
+		expect(poolPerYear({ ...on, poolMembers: 250 }, 300)).toBeCloseTo(138, 6);
 	});
 
 	test('projected Premium members: the forecast, or half the copies a year if more', () => {
@@ -111,32 +114,41 @@ describe('calculateComparison', () => {
 		expect(r.difference).toBeCloseTo(75, 6);
 		expect(r.differencePct).toBeCloseTo(75 / 1275, 6);
 		expect(cents(r.metafy.fanPays)).toBe(18.18);
-		expect(cents(r.age.fanPays)).toBe(15.74);
-		expect(cents(r.age.memberPays)).toBe(14.19);
+		// Card fee covered: (P + $0.30) / (1 − 2.9%), as at checkout.
+		expect(cents(r.age.fanPays)).toBe(15.76);
+		expect(cents(r.age.memberPays)).toBe(14.21);
 		expect(dollars(r.difference)).toBe(75);
 		expect(r.metafy.perSale).toBeCloseTo(12.75, 6);
 		expect(r.age.perSale).toBeCloseTo(13.5, 6);
 		expect(r.age.topSeller).toBe(false);
 	});
 
-	test('the top-seller rate counts copies across all guides', () => {
-		const r = run({ price: 20, copies: 300, guides: 3 });
-		expect(r.age.salesYearly).toBeCloseTo(250 * 20 * 0.9 + 50 * 20 * 0.93, 6);
-		expect(r.age.salesYearly).toBeCloseTo(5430, 6);
+	test('Partner levels count lifetime copies across all guides', () => {
+		const r = run({ price: 20, copies: 1200, guides: 3 });
+		// Copies 1–1,000 at 90%, then Senior at 93%.
+		expect(r.age.salesYearly).toBeCloseTo(1000 * 20 * 0.9 + 200 * 20 * 0.93, 6);
+		expect(r.age.salesYearly).toBeCloseTo(21720, 6);
 		expect(r.age.topSeller).toBe(true);
+		expect(r.age.level.key).toBe('SENIOR');
 		expect(r.age.perSale).toBeCloseTo(18, 6);
-		expect(r.age.topSellerPerSale).toBeCloseTo(18.6, 6);
+		expect(r.age.levelPerSale).toBeCloseTo(18.6, 6);
+		// Past 5,000: Elite at 95%.
+		const elite = run({ price: 20, copies: 6000 });
+		expect(elite.age.salesYearly).toBeCloseTo(1000 * 18 + 4000 * 18.6 + 1000 * 19, 6);
+		expect(elite.age.level.key).toBe('ELITE');
+		// Exactly 1,000 copies is still all Partner.
+		expect(run({ price: 20, copies: 1000 }).age.topSeller).toBe(false);
 	});
 
 	test('fan prices at $25', () => {
 		const r = run({ price: 25 });
 		expect(cents(r.metafy.fanPays)).toBe(28.84);
-		expect(cents(r.age.fanPays)).toBe(26.03);
-		expect(cents(r.age.memberPays)).toBe(23.45);
-		expect(headline(run(pro500)).fanGap).toBe(2.81);
+		expect(cents(r.age.fanPays)).toBe(26.06);
+		expect(cents(r.age.memberPays)).toBe(23.48);
+		expect(headline(run(pro500)).fanGap).toBe(2.78);
 	});
 
-	test('Pro billed annually, $30, 200 copies: every copy below the top-seller rate', () => {
+	test('Pro billed annually, $30, 200 copies: every copy at the Partner level', () => {
 		const r = run({ plan: 'pro-annual', price: 30, copies: 200 });
 		expect(r.metafy.yearly).toBeCloseTo(5172, 6);
 		expect(r.metafy.monthlyFee).toBe(69);
@@ -198,10 +210,9 @@ describe('saleBreakdown', () => {
 describe('findCrossover', () => {
 	test('Pro billed annually catches up once the fee is covered', () => {
 		// AGE leads while 10% of $30 a copy is under $828 a year: 276 copies,
-		// but the top-seller rate at 250 narrows the gap to 7% a copy.
+		// well before the Senior level at 1,000.
 		const c = findCrossover({ ...base, plan: 'pro-annual', price: 30 });
-		const expected = 250 + (828 - 250 * 30 * 0.1) / (30 * 0.07);
-		expect(c?.copies).toBeCloseTo(expected, 4);
+		expect(c?.copies).toBeCloseTo(828 / (30 * 0.1), 4);
 		expect(c?.ageAheadAfter).toBe(false);
 	});
 

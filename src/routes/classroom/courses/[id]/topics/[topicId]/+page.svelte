@@ -2,8 +2,10 @@
 	/**
 	 * Topic editor: the same writing tools as entries (Lexical), text only.
 	 * Saves as you type. Publishing makes it visible to students; in a live
-	 * course, a topic's first publish tells its students about it (and is a
-	 * Premium extra for students who enrolled before it).
+	 * course, a topic's first publish tells its students about it. Under the
+	 * Partner model every student who owns the course gets it (before, it was
+	 * a Premium extra for students who enrolled before it). Updates and new
+	 * topics can carry a short note for the course's changelog.
 	 *
 	 * Once students can read a topic (published, course live), what's typed
 	 * still saves as you go, but privately: students keep the published
@@ -100,7 +102,7 @@
 		const res = await fetch(`${api}/publish`, {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ publish: next })
+			body: JSON.stringify({ publish: next, note: updateNote || null })
 		});
 		const out = await res.json().catch(() => ({}));
 		busy = false;
@@ -109,8 +111,12 @@
 			return;
 		}
 		topic = out.topic;
+		updateNote = '';
 		await invalidate('desk:course');
 	}
+
+	// A line for the course's changelog, sent with an update or a new topic.
+	let updateNote = $state('');
 
 	// Pending changes: put them live, or throw them away.
 	async function changes(action) {
@@ -129,7 +135,7 @@
 		const res = await fetch(`${api}/changes`, {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ action })
+			body: JSON.stringify({ action, note: action === 'apply' ? updateNote || null : null })
 		});
 		const out = await res.json().catch(() => ({}));
 		busy = false;
@@ -144,6 +150,7 @@
 			body = coerceLexicalDoc(out.topic.body);
 			editorKey++;
 		}
+		if (action === 'apply') updateNote = '';
 		flash = action === 'apply' ? 'Updated. Students see the new version now.' : '';
 		await invalidate('desk:course');
 	}
@@ -303,10 +310,24 @@
 				{/if}
 				{#if !live && courseLive && !topic.firstPublishedAt}
 					<p class="mt-2 border-l-[3px] border-gold bg-gold/10 px-3 py-2 text-[12px] leading-snug">
-						Publishing tells your students. The course has launched, so this is a new topic: Premium
-						members can read it, other students see it locked. Edits to topics that were there at
-						launch reach every student.
+						Publishing tells your students. Every student who owns the course gets this new topic.
 					</p>
+				{/if}
+				{#if courseLive && ((staged && pending) || (!live && !topic.firstPublishedAt))}
+					<label class="mt-3 block">
+						<span class="block text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+							>What changed (optional)</span
+						>
+						<input
+							bind:value={updateNote}
+							maxlength="280"
+							placeholder="e.g. Updated for the new set"
+							class="mt-1.5 h-[36px] w-full border border-line2 bg-white px-2.5 text-[13px] focus:border-ink focus:ring-0"
+						/>
+						<span class="mt-1 block text-[11px] text-fade"
+							>Shown in the course’s changelog, with the date.</span
+						>
+					</label>
 				{/if}
 			</div>
 			<label class="flex items-start gap-3">

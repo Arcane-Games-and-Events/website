@@ -2,6 +2,7 @@
 import { auth, sessionCacheKey } from '$lib/server/lucia';
 import { error, redirect } from '@sveltejs/kit';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
+import { rememberReferral } from '$lib/server/partner/referrals.js';
 
 // Paths exempt from CSRF protection (external webhooks)
 const CSRF_EXEMPT_PATHS = ['/api/webhooks/'];
@@ -129,6 +130,11 @@ export const handle = async ({ event, resolve }) => {
 		}
 	}
 
+	// A teacher's referral link (?ref=CODE): remember it for
+	// the Premium signup.
+	const referred = request.method === 'GET' && url.searchParams.has('ref');
+	if (referred) rememberReferral(event.cookies, url.searchParams.get('ref'));
+
 	// expose to routes/layouts
 	event.locals.user = user;
 	event.locals.session = session;
@@ -165,7 +171,8 @@ export const handle = async ({ event, resolve }) => {
 	// This is the change that finally lets `/`, `/library`, `/age-open`
 	// etc. serve from Vercel's edge for logged-in members.
 	const isSensitive = NEVER_CACHE_PREFIXES.some((p) => url.pathname.startsWith(p));
-	if (isSensitive) {
+	// A response that sets the referral cookie must never be shared.
+	if (isSensitive || referred) {
 		response.headers.set('cache-control', 'private, no-cache, no-store, must-revalidate');
 	}
 

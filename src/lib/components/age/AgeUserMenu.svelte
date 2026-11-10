@@ -32,6 +32,14 @@
 	const learningUnread = $derived(counts.learning);
 	const classroomUnread = $derived(counts.classroom);
 	const unread = $derived(learningUnread + classroomUnread);
+	// Guides waiting in the cart; counted on the button with what's new.
+	const cartCount = $derived($page.data?.cartCount ?? 0);
+	const badgeCount = $derived(unread + cartCount);
+	const badgeLabel = $derived(
+		[unread ? `${unread} new` : '', cartCount ? `${cartCount} in your cart` : '']
+			.filter(Boolean)
+			.join(', ')
+	);
 
 	let open = $state(false);
 	// Below desktop the panel spans the screen like the site menu (☰), fixed
@@ -138,7 +146,18 @@
 
 	const ITEMS = $derived([
 		{ label: 'Account', href: '/account' },
-		{ label: 'My courses', href: '/my-courses', badge: learningUnread },
+		{
+			label: 'My courses',
+			href: '/my-courses',
+			badge: learningUnread,
+			badgeLabel: `${learningUnread} new in My courses`
+		},
+		{
+			label: 'Cart',
+			href: '/academy/cart',
+			badge: cartCount,
+			badgeLabel: `${cartCount} ${cartCount === 1 ? 'guide' : 'guides'} in your cart`
+		},
 		{ label: 'Refer a friend', href: '/account/referrals' },
 		...(isPartner ? [{ label: 'Partner', href: '/partner' }] : [])
 	]);
@@ -189,7 +208,7 @@
 		onclick={toggle}
 		aria-haspopup="menu"
 		aria-expanded={open}
-		aria-label="My account — {fullName}{unread ? `, ${unread} new` : ''}"
+		aria-label="My account — {fullName}{badgeLabel ? `, ${badgeLabel}` : ''}"
 		title="My account"
 		class="group/trig relative inline-flex h-10 cursor-pointer items-center gap-2 pr-1 text-ink lg:h-[34px]"
 	>
@@ -205,9 +224,9 @@
 				{initials}
 			</span>
 			<NotificationBadge
-				count={unread}
+				count={badgeCount}
 				class="absolute -top-[7px] left-[calc(100%-11px)]"
-				label="{unread} new"
+				label={badgeLabel}
 			/>
 		</span>
 		<svg
@@ -323,7 +342,7 @@
 								>{item.label}<NotificationBadge
 									count={item.badge || 0}
 									ring="ring-paper-bg group-hover/mi:ring-ink"
-									label="{item.badge} new in My courses"
+									label={item.badgeLabel}
 								/></span
 							>
 							<span

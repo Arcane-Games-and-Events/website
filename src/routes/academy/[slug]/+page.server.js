@@ -6,8 +6,11 @@ import { listCards, publicCard } from '$lib/server/payments/cards.js';
 import { acceptConfig } from '$lib/server/payments/accept-config.js';
 import { discussionRole, listThreads } from '$lib/server/courses/discussion.js';
 import { unreadThreads } from '$lib/server/courses/notifications.js';
+import { readCart } from '$lib/server/partner/cart.js';
+import { guideUpdates } from '$lib/server/partner/updates.js';
+import { orderRefundOptions } from '$lib/server/partner/guideRefunds.js';
 
-export async function load({ params, locals, setHeaders, depends }) {
+export async function load({ params, locals, cookies, setHeaders, depends }) {
 	depends('academy:course');
 	// The conversations list marks what you haven't read.
 	depends('app:notifications');
@@ -52,13 +55,7 @@ export async function load({ params, locals, setHeaders, depends }) {
 		signedIn: !!locals.user,
 		owner,
 		enrolled: !!enrollment,
-		progress: enrollment
-			? {
-					done,
-					total: open.length,
-					lockedForPremium: topics.filter((t) => t.access === 'locked-premium').length
-				}
-			: null,
+		progress: enrollment ? { done, total: open.length } : null,
 		resume: resume ? { slug: resume.slug, title: resume.title } : null,
 		firstFree: topics.find((t) => t.isPreview && t.access === 'open') || null,
 		discussion: {
@@ -86,7 +83,22 @@ export async function load({ params, locals, setHeaders, depends }) {
 				at: t.lastReplyAt || t.createdAt
 			}))
 		},
+		// A buyer who may still ask for a refund (see the refund policy).
+		refund: await refundLink(locals.user, enrollment, course.id),
+		// The cart, and "Last updated" with the changelog.
+		inCart: readCart(cookies).includes(course.id),
+		updates: await guideUpdates(course).catch(() => null),
 		savedCards: buying ? (await listCards(locals.user.id)).map(publicCard) : [],
 		accept: buying ? acceptConfig() : null
 	};
+}
+
+/** Where a buyer can ask for a refund of this guide, while the policy allows it. */
+async function refundLink(user, enrollment, courseId) {
+	if (!user || !enrollment?.orderId || enrollment.source !== 'purchase') return null;
+	const options = await orderRefundOptions(user.id, enrollment.orderId).catch(() => []);
+	const g = options.find((x) => x.courseId === courseId);
+	return g?.canRequest
+		? { href: `/account/purchases/${enrollment.orderId}?refund=${g.itemId}` }
+		: null;
 }

@@ -245,7 +245,7 @@ describe('review before the first publish', () => {
 });
 
 describe('topics in a live course', () => {
-	test('a new topic is stamped once and tells students, flagged Premium-only for non-members', async () => {
+	test('a new topic is stamped once and tells every student', async () => {
 		const { course, sections } = await liveCourse(teacher);
 		const free = await createUser();
 		const premium = await createUser({ role: 'premium', subscriptionStatus: 'active' });
@@ -259,8 +259,7 @@ describe('topics in a live course', () => {
 		expect(stamped).not.toBeNull();
 
 		const notes = await db.select().from(notification).where(eq(notification.lessonId, t.id));
-		const byUser = Object.fromEntries(notes.map((n) => [n.userId, n.data.premiumOnly]));
-		expect(byUser).toEqual({ [free.id]: true, [premium.id]: false });
+		expect(notes.map((n) => n.userId).sort()).toEqual([free.id, premium.id].sort());
 
 		// Unpublish and republish: not new again, nobody told twice.
 		await unpublishTopic(t);

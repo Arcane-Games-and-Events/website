@@ -9,8 +9,10 @@ import {
 	ticket as ticketTable
 } from '$lib/server/db/schema.js';
 import { ticketRefundability } from '$lib/server/payments/refunds.js';
+import { orderRefundOptions } from '$lib/server/partner/guideRefunds.js';
 
-export async function load({ params, locals, url }) {
+export async function load({ params, locals, url, depends }) {
+	depends('account:purchase');
 	const u = locals.user;
 	const [o] = await db
 		.select()
@@ -77,7 +79,7 @@ export async function load({ params, locals, url }) {
 			refunded,
 			refundedAt: o.refundedAt,
 			kind: o.kind || o.meta?.type || 'purchase',
-			title: o.meta?.eventTitle || o.meta?.description || 'AGE Premium',
+			title: o.meta?.eventTitle || o.meta?.description || o.meta?.courseTitle || 'AGE Premium',
 			cardLastFour: o.meta?.cardLastFour || null,
 			cardType: o.meta?.cardType || null,
 			invoiceNumber: o.meta?.invoiceNumber || null,
@@ -103,6 +105,9 @@ export async function load({ params, locals, url }) {
 			can: ticketRefundability(t, ev, pending.find((p) => p.ticketId === t.id) || null),
 			requestPending: pending.some((p) => p.ticketId === t.id)
 		})),
+		// The guides in a guides order, each with what the refund policy allows.
+		guides: o.meta?.partnerModel ? await orderRefundOptions(u.id, o.id) : [],
+		refundAsk: url.searchParams.get('refund'),
 		refunds: refunds.map((r) => ({
 			id: r.id,
 			amountCents: r.amountCents,

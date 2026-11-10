@@ -1,7 +1,6 @@
 import { addStudent, listStudents, rosterCsv } from '$lib/server/courses/roster.js';
 import { body, requireCourse, respond } from '$lib/server/courses/http.js';
 import { logActivity } from '$lib/server/courses/activity.js';
-import { notifyClassroom } from '$lib/server/courses/notifications.js';
 
 /** GET ?format=csv: the roster as a spreadsheet. */
 export async function GET({ params, url, locals }) {
@@ -31,11 +30,6 @@ export async function POST({ params, request, locals }) {
 					.trim()
 					.toLowerCase()
 			}
-		});
-		// An admin adding someone tells the teacher; the teacher adding them doesn't.
-		await notifyClassroom(course, 'new_student', {
-			actorId: locals.user.id,
-			data: { source: 'comp' }
 		});
 		return { enrollment };
 	});

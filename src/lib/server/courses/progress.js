@@ -14,8 +14,6 @@ import {
 	deskModule
 } from '$lib/server/db/schema.js';
 import { mediaImage } from '$lib/server/desk/image.js';
-import { userHasPremiumAccess } from '$lib/server/articles/access.js';
-import { isAddedAfterLaunch } from './access.js';
 
 /** The student opened a topic: remember it as their place in the course. */
 export async function openLesson(enrollment, lessonId) {
@@ -24,6 +22,19 @@ export async function openLesson(enrollment, lessonId) {
 		.update(courseEnrollment)
 		.set({ lastLessonId: lessonId, lastSeenAt: new Date() })
 		.where(eq(courseEnrollment.id, enrollment.id));
+}
+
+/**
+ * The first time a student opens a paid topic of a guide they bought: from
+ * then on the guide counts as opened, which ends the unopened refund. Set
+ * once; free preview topics don't count.
+ */
+export async function markOpened(enrollment, lesson, at = new Date()) {
+	if (!enrollment || enrollment.firstOpenedAt || lesson?.isPreview) return;
+	await db
+		.update(courseEnrollment)
+		.set({ firstOpenedAt: at })
+		.where(and(eq(courseEnrollment.id, enrollment.id), isNull(courseEnrollment.firstOpenedAt)));
 }
 
 /** Mark a topic complete (or not). */
@@ -125,12 +136,10 @@ export async function courseProgress(user) {
 	]);
 	const completed = new Set(done.map((d) => d.lessonId));
 	const mediaById = new Map(images.map((m) => [m.id, m]));
-	const premium = userHasPremiumAccess(user);
-
 	return enrollments.map(({ enrollment, course }) => {
 		const all = topics.filter((t) => t.courseId === course.id);
-		const open = all.filter((t) => t.isPreview || premium || !isAddedAfterLaunch(t, course));
-		const locked = all.length - open.length;
+		// Every student gets every topic, including ones added after launch.
+		const open = all;
 		const doneCount = open.filter((t) => completed.has(t.id)).length;
 		const last = all.find((t) => t.id === enrollment.lastLessonId) || null;
 		const next = open.find((t) => !completed.has(t.id)) || null;
@@ -144,7 +153,6 @@ export async function courseProgress(user) {
 			topics: open.length,
 			completed: doneCount,
 			percent: open.length ? Math.round((doneCount / open.length) * 100) : 0,
-			lockedForPremium: locked,
 			last: last ? { slug: last.slug, title: last.title } : null,
 			next: next ? { slug: next.slug, title: next.title } : null
 		};

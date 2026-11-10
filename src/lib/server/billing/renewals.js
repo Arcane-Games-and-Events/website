@@ -6,7 +6,9 @@
  *  3. end memberships whose time is up (cancelled at period end,
  *     past due past the grace period)
  *  4. remind annual members a week before renewal
- *  5. hand out member-referral rewards
+ *  5. hand out member-referral rewards, and teachers' referral bonuses
+ *     once past the refund window; confirm guide sales settled at
+ *     Authorize.net before they're paid out
  *  6. charge renewals that are due (when BILLING_ENABLED is on)
  *  7. alert an admin about anything it couldn't resolve
  *
@@ -43,6 +45,8 @@ import {
 	sendPaymentRecoveredEmail,
 	sendRenewalReminder
 } from '$lib/server/email.js';
+import { decideReferralBonuses } from '$lib/server/partner/referrals.js';
+import { confirmSettlements } from '$lib/server/partner/settlement.js';
 
 export const billingEnabled = () => env.BILLING_ENABLED === 'true';
 const maxChargesPerRun = () => Number(env.BILLING_MAX_CHARGES_PER_RUN) || Infinity;
@@ -73,6 +77,8 @@ export async function runBilling({ trigger = 'cron' } = {}) {
 	await step('ended', () => endDueSubscriptions(now));
 	await step('reminders', () => sendYearlyReminders(now));
 	await step('referrals', () => applyReferralRewards(now));
+	await step('teacherReferrals', () => decideReferralBonuses({ now }));
+	await step('guideSettlements', () => confirmSettlements({ now }));
 	await step('due', () => countDue(now));
 	if (mode === 'live') {
 		await step('charged', () =>

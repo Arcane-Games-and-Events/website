@@ -14,15 +14,20 @@
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import CourseCard from '$lib/components/age/academy/CourseCard.svelte';
 	import PaymentMethodPicker from '$lib/components/payments/PaymentMethodPicker.svelte';
+	import RefundConsent from '$lib/components/age/academy/RefundConsent.svelte';
 	import { page } from '$app/stores';
 	import { afterNavigate, goto, invalidate, invalidateAll, replaceState } from '$app/navigation';
 	import { createLive } from '$lib/academy/discussionLive.svelte.js';
 	import { onDestroy, onMount, tick } from 'svelte';
+	import { slide } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
+	import { prefersReducedMotion as reduced } from 'svelte/motion';
 	import Composer from '$lib/components/age/academy/discussion/Composer.svelte';
 	import ThreadRow from '$lib/components/age/academy/discussion/ThreadRow.svelte';
 	import Pager from '$lib/components/age/admin/Pager.svelte';
 	import { createContentTracker } from '$lib/analytics/contentTracker.js';
 	import { formatMinutes, formatPrice, toCard } from '$lib/academy/format.js';
+	import { guidePrices } from '$lib/academy/partner/pricing.js';
 
 	let { data } = $props();
 
@@ -64,6 +69,9 @@
 	onDestroy(() => tracker?.stop());
 	const c = $derived(data.course);
 	const member = $derived(data.isPremiumMember ?? false);
+	// Both prices, card fee included; the viewer's own first.
+	const prices = $derived(guidePrices(c.price, member));
+	const priceText = $derived(prices ? prices.you : formatPrice(c.price));
 	const related = $derived((data.related ?? []).map(toCard));
 
 	const instructor = $derived(c.author?.name || 'AGE Academy');
@@ -98,8 +106,7 @@
 	);
 
 	// Topics come numbered straight through the course, with what each one
-	// is to this reader: open, locked (buy the course) or locked-premium
-	// (added after the course launched; included with Premium).
+	// is to this reader: open, or locked (buy the course).
 	const syllabus = $derived(c.syllabus);
 	const justEnrolled = $derived($page.url.searchParams.get('enrolled') === '1');
 	const loginHref = $derived(`/login?redirect=${encodeURIComponent($page.url.pathname)}`);
@@ -116,6 +123,8 @@
 	let payError = $state('');
 	let payNotice = $state('');
 	let pending = $state(false);
+	// The refund-policy box above the pay button.
+	let consent = $state(false);
 
 	async function enroll(e) {
 		e?.preventDefault();
@@ -128,7 +137,7 @@
 			const res = await fetch(`/api/academy/${c.slug}/purchase`, {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ payment, idempotencyKey })
+				body: JSON.stringify({ payment, idempotencyKey, consent })
 			});
 			const body = await res.json().catch(() => ({}));
 			if (res.status === 202 && body.checkoutId) {
@@ -149,6 +158,32 @@
 			paying = false;
 		}
 	}
+
+	// ============ the cart ============
+	// What the page loaded, until Add to cart changes it.
+	let inCart = $derived(!!data.inCart);
+	let adding = $state(false);
+	async function addToCart() {
+		if (adding) return;
+		adding = true;
+		payError = '';
+		try {
+			const res = await fetch('/api/academy/cart', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ courseId: c.id, action: 'add' })
+			});
+			if (res.ok) {
+				inCart = true;
+				await invalidate('app:cart');
+			} else
+				payError = (await res.json().catch(() => ({}))).error || 'Couldn’t add it to your cart.';
+		} finally {
+			adding = false;
+		}
+	}
+	const updatedOn = (t) =>
+		new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 	async function poll(id) {
 		for (let i = 0; i < 40; i++) {
@@ -248,9 +283,7 @@
 				: '',
 			'Yours for life, no subscription needed',
 			'A discussion board for the course',
-			member
-				? 'Topics added later are included with your Premium'
-				: 'Topics added later are included with Premium',
+			'Every future update included',
 			'Read on any device'
 		].filter(Boolean)
 	);
@@ -402,12 +435,19 @@
 				{:else}
 					<p class="flex items-baseline justify-between gap-3">
 						<span class="font-newsreader text-[30px] leading-none font-semibold tabular-nums"
-							>{formatPrice(c.price)}</span
+							>{priceText}</span
 						>
 						<span
 							class="text-right text-[10px] font-extrabold tracking-[0.14em] text-paper-bg/60 uppercase"
 							>{c.price > 0 ? 'One-time purchase · Lifetime access' : 'Free course'}</span
 						>
+					</p>
+				{/if}
+				{#if prices && !data.owner && !data.enrolled}
+					<p class="mt-1.5 text-[11.5px] text-paper-bg/60 tabular-nums">
+						{member
+							? `Premium price · ${prices.nonMember} without`
+							: `or ${prices.member} with Premium`} · card fees included
 					</p>
 				{/if}
 				{#if !(data.enrolled && !data.resume)}
@@ -582,11 +622,6 @@
 															<span
 																class="bg-gold px-1.5 py-[1px] text-[8px] font-extrabold tracking-[0.16em] text-[#241b07] uppercase"
 																>Free</span
-															>
-														{:else if l.access === 'locked-premium'}
-															<span
-																class="bg-prem px-1.5 py-[1px] text-[8px] font-extrabold tracking-[0.16em] text-white uppercase"
-																>New · Premium</span
 															>
 														{/if}
 														{#if data.owner && !l.publishedAt}
@@ -884,12 +919,11 @@
 									>
 								</a>
 							{/if}
-							{#if data.progress.lockedForPremium}
+							{#if data.refund}
 								<a
-									href="/premium"
-									class="mt-3 block text-center text-[9.5px] font-extrabold tracking-[0.16em] text-prem uppercase hover:underline"
-									>◆ {data.progress.lockedForPremium} new
-									{data.progress.lockedForPremium === 1 ? 'topic' : 'topics'} with Premium</a
+									href={data.refund.href}
+									class="mt-3 block text-center text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase hover:text-ink"
+									>Request a refund</a
 								>
 							{/if}
 						{:else}
@@ -898,7 +932,7 @@
 							</div>
 							<div class="mt-2 flex items-baseline gap-3">
 								<span class="font-newsreader text-[44px] leading-none font-semibold tabular-nums">
-									{formatPrice(c.price)}
+									{priceText}
 								</span>
 								{#if c.price > 0}
 									<span class="text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
@@ -906,12 +940,25 @@
 									>
 								{/if}
 							</div>
+							{#if prices}
+								<p class="mt-2 text-[12.5px] leading-snug text-soft tabular-nums">
+									{#if member}
+										Your Premium price: 10% off. {prices.nonMember} without Premium.
+									{:else}
+										or <span class="font-semibold text-prem">{prices.member} with Premium</span>
+									{/if}
+									<span class="block text-[11.5px] text-fade">Card processing included.</span>
+								</p>
+							{/if}
 							{#if !data.signedIn}
 								<a
 									href={loginHref}
 									class="mt-5 flex w-full items-center justify-center bg-ink px-5 py-3.5 text-[11px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-gold hover:text-[#241b07]"
 									>Sign in to {c.price > 0 ? 'enroll' : 'start free'} →</a
 								>
+								{#if c.price > 0}
+									{@render cartButton()}
+								{/if}
 							{:else if c.price <= 0}
 								<button
 									type="button"
@@ -927,22 +974,31 @@
 									class="mt-5 flex w-full items-center justify-center bg-ink px-5 py-3.5 text-[11px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-gold hover:text-[#241b07]"
 									>Enroll →</button
 								>
+								{@render cartButton()}
 							{:else}
-								<form onsubmit={enroll} class="mt-5 space-y-4">
+								<!-- Opening checkout: the panel unfolds where Enroll was, and its
+								     parts rise in one after another (not with reduced motion). -->
+								<form
+									onsubmit={enroll}
+									class="enroll-form mt-5 space-y-4"
+									in:slide={{ duration: reduced.current ? 0 : 380, easing: cubicOut }}
+								>
 									<PaymentMethodPicker
 										bind:this={picker}
 										cards={data.savedCards}
 										accept={data.accept}
 										disabled={paying || pending}
 									/>
+									<RefundConsent bind:checked={consent} disabled={paying || pending} />
 									<button
 										type="submit"
-										disabled={paying || pending || !data.accept?.ready}
+										disabled={paying || pending || !data.accept?.ready || !consent}
 										class="flex h-[50px] w-full items-center justify-center bg-prem text-[11.5px] font-extrabold tracking-[0.1em] text-white uppercase transition-[filter] hover:brightness-110 disabled:opacity-60"
 									>
-										{paying || pending ? 'Processing…' : `Pay ${formatPrice(c.price)}`}
+										{paying || pending ? 'Processing…' : `Pay ${priceText}`}
 									</button>
 								</form>
+								{@render cartButton()}
 							{/if}
 							{#if payError}
 								<p
@@ -967,20 +1023,55 @@
 									>Read a free topic first →</a
 								>
 							{/if}
-							{#if member}
-								<p
-									class="mt-3 text-center text-[9.5px] font-extrabold tracking-[0.16em] text-prem uppercase"
-								>
-									◆ New topics included with your membership
-								</p>
-							{:else}
+							<p
+								class="mt-3 text-center text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+							>
+								Every future update included
+							</p>
+							{#if !member && c.price > 0}
 								<a
 									href="/premium"
-									class="mt-3 block text-center text-[9.5px] font-extrabold tracking-[0.16em] text-prem uppercase hover:underline"
-									>◆ New topics included with Premium · Learn more</a
+									class="mt-1.5 block text-center text-[9.5px] font-extrabold tracking-[0.16em] text-prem uppercase hover:underline"
+									>◆ Premium members save 10% · Learn more</a
 								>
 							{/if}
 						{/if}
+						<div class="mt-5 border-t border-line pt-3.5 text-[12px] text-soft">
+							<p class="flex items-baseline justify-between gap-3">
+								<span>
+									{#if data.updates?.lastUpdated}
+										<span class="text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+											>Last updated</span
+										>
+										{updatedOn(data.updates.lastUpdated)}
+									{/if}
+								</span>
+								<a
+									href="/refund-policy"
+									class="text-[11px] font-semibold underline underline-offset-2 hover:text-ink"
+									>Refund policy</a
+								>
+							</p>
+							{#if data.updates?.changelog.length}
+								<details class="mt-2">
+									<summary
+										class="cursor-pointer text-[9.5px] font-extrabold tracking-[0.14em] uppercase hover:text-academy"
+										>What’s changed</summary
+									>
+									<ul class="mt-2 space-y-2">
+										{#each data.updates.changelog as u (u.id)}
+											<li>
+												<span class="text-fade tabular-nums">{updatedOn(u.at)}</span>
+												· {u.note ||
+													(u.kind === 'topic_added'
+														? `New topic: ${u.topic || 'added'}`
+														: `Updated: ${u.topic || 'a topic'}`)}
+											</li>
+										{/each}
+									</ul>
+								</details>
+							{/if}
+						</div>
 					</div>
 				</div>
 			</aside>
@@ -1013,6 +1104,25 @@
 		</section>
 	{/if}
 
+	<!-- Add to cart: buy several guides in one payment. -->
+	{#snippet cartButton()}
+		{#if inCart}
+			<a
+				href="/academy/cart"
+				class="mt-2.5 flex w-full items-center justify-center border border-ink px-5 py-3 text-[11px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+				>In your cart · Check out →</a
+			>
+		{:else}
+			<button
+				type="button"
+				onclick={addToCart}
+				disabled={adding}
+				class="mt-2.5 flex w-full items-center justify-center border border-ink px-5 py-3 text-[11px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:opacity-60"
+				>{adding ? 'Adding…' : 'Add to cart'}</button
+			>
+		{/if}
+	{/snippet}
+
 	<!-- The way in, for the header box (big) and the bar at the foot. -->
 	{#snippet goButton(big)}
 		{@const cls = big
@@ -1034,7 +1144,7 @@
 			>
 		{:else}
 			<button type="button" onclick={buyFromBar} class={cls}
-				>{big ? `Enroll · ${formatPrice(c.price)}` : 'Enroll'} →</button
+				>{big ? `Enroll · ${priceText}` : 'Enroll'} →</button
 			>
 		{/if}
 	{/snippet}
@@ -1063,7 +1173,7 @@
 		{:else}
 			<span class="min-w-0">
 				<span class="block font-newsreader text-[24px] leading-none font-semibold tabular-nums"
-					>{formatPrice(c.price)}</span
+					>{priceText}</span
 				>
 				<span
 					class="mt-1 block text-[10px] font-extrabold tracking-[0.14em] text-white/70 uppercase"
@@ -1074,3 +1184,27 @@
 		{@render goButton(false)}
 	</div>
 </AgeShell>
+
+<style>
+	/* The payment form's parts rise in, one after another, as it unfolds. */
+	.enroll-form > :global(*) {
+		animation: enroll-rise 460ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+	}
+	.enroll-form > :global(:nth-child(2)) {
+		animation-delay: 90ms;
+	}
+	.enroll-form > :global(:nth-child(3)) {
+		animation-delay: 180ms;
+	}
+	@keyframes enroll-rise {
+		from {
+			opacity: 0;
+			transform: translateY(10px);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.enroll-form > :global(*) {
+			animation: none;
+		}
+	}
+</style>

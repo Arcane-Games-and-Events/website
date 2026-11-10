@@ -16,6 +16,7 @@ import {
 	getMemberReferralByCode,
 	getMemberReferrerPublicName
 } from '$lib/server/member-referral.js';
+import { rememberedReferral } from '$lib/server/partner/referrals.js';
 
 /**
  * "Your membership at work" numbers for the pitch: what AGE has published
@@ -52,14 +53,16 @@ async function loadImpact() {
 	}
 }
 
-export async function load({ locals, url }) {
+export async function load({ locals, url, cookies }) {
 	const impactPromise = loadImpact();
 	const [cards, live] = locals.user
 		? await Promise.all([listCards(locals.user.id), liveSubscription(locals.user.id)])
 		: [[], null];
 
-	// A code in the query string (from /premium/[code] or a shared link).
-	const rawCode = url.searchParams.get('code');
+	// A code in the query string (from /premium/[code] or a shared link), or
+	// a teacher's link: ?ref=CODE now or in the last 30 days.
+	const rawCode =
+		url.searchParams.get('code') || url.searchParams.get('ref') || rememberedReferral(cookies);
 	let partnerReferral = null;
 	if (rawCode) {
 		const member = await getMemberReferralByCode(rawCode);

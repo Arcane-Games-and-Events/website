@@ -130,10 +130,11 @@
 	<section id="academy">
 		<h2>Academy courses</h2>
 		<p>
-			Courses are bought one at a time, for the price shown on the course. Once bought, the course
-			stays on your account to watch and read whenever you like, for as long as we offer it. Premium
-			members receive course updates at no extra charge. If something is wrong with a course you've
-			bought, write to us.
+			Guides are bought one at a time or together in a cart, for the price shown, which includes
+			card processing; AGE Premium members pay 10% less. Once bought, a guide stays on your account
+			to read whenever you like, for as long as we offer it, with every future update included.
+			Refunds follow our <a href="/refund-policy">guide refund policy</a>: sales are final once you
+			open a guide.
 		</p>
 	</section>
 

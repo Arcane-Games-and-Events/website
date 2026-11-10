@@ -1,11 +1,11 @@
-import { markPaid } from '$lib/server/courses/earnings.js';
 import { body, requireAdmin, respond } from '$lib/server/courses/http.js';
+import { markStatementPaid } from '$lib/server/partner/statements.js';
 
-/** POST { teacherId, payDate, reference?, note? }: an admin marks a payout as paid. */
+/** POST { teacherId, month, reference?, note? }: an admin marks a month's statement paid. */
 export async function POST({ request, locals }) {
 	requireAdmin(locals);
-	const { teacherId, payDate, reference, note } = await body(request);
+	const { teacherId, month, reference, note } = await body(request);
 	return respond(async () => ({
-		payout: await markPaid({ teacherId, payDate, reference, note, actor: locals.user })
+		payout: await markStatementPaid({ teacherId, month, reference, note, actor: locals.user })
 	}));
 }

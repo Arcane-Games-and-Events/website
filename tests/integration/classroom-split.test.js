@@ -33,7 +33,7 @@ beforeEach(async () => {
 /** Run a layout load and return where it redirected, or 'ok'. */
 async function landing(load, user, path) {
 	try {
-		await load({ locals: { user }, url: new URL(`http://localhost${path}`) });
+		await load({ locals: { user }, url: new URL(`http://localhost${path}`), depends: () => {} });
 		return 'ok';
 	} catch (err) {
 		if (err?.status >= 300 && err?.status < 400) return err.location;

@@ -1,7 +1,8 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { order, user, ticket, event, courseEnrollment, deskCourse } from '$lib/server/db/schema.js';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
+import { partnerLedger } from '$lib/server/db/schema.js';
 
 export async function load({ params, locals }) {
 	try {
@@ -58,7 +59,32 @@ export async function load({ params, locals }) {
 						.where(eq(deskCourse.id, orderData.meta.courseId))
 						.limit(1)
 				: [];
-			relatedData = { type: 'course', enrollment: enrollment || null, course: course || null };
+			// The Partner ledger: each guide's sale, and whether it was refunded
+			// or charged back.
+			const sales = await db
+				.select({
+					itemId: partnerLedger.checkoutItemId,
+					status: partnerLedger.status,
+					teacherCents: partnerLedger.teacherCents,
+					level: partnerLedger.level,
+					copyNumber: partnerLedger.copyNumber,
+					legacy: partnerLedger.legacySaleId
+				})
+				.from(partnerLedger)
+				.where(and(eq(partnerLedger.orderId, orderData.id), eq(partnerLedger.entryType, 'sale')));
+			const byItem = new Map(sales.map((s) => [s.itemId, s]));
+			const { disputeEvidence } = await import('$lib/server/partner/evidence.js');
+			relatedData = {
+				evidence: await disputeEvidence(orderData.id),
+				type: 'course',
+				enrollment: enrollment || null,
+				course: course || null,
+				guides: (orderData.meta?.guides || []).map((g) => ({
+					...g,
+					sale: byItem.get(g.itemId) || null
+				})),
+				legacySale: sales.find((s) => s.legacy) || null
+			};
 		} else if (orderData.meta?.type === 'subscription') {
 			relatedData = {
 				type: 'subscription'
@@ -80,7 +106,47 @@ export async function load({ params, locals }) {
 	}
 }
 
+const ADMIN_ONLY = (locals) => !locals.user || locals.user.role !== 'admin';
+
 export const actions = {
+	/** Refund one guide from a guides order: everything paid for it, card fee included. */
+	refundGuide: async ({ params, request, locals }) => {
+		if (ADMIN_ONLY(locals)) return fail(403, { error: 'Admin access required' });
+		const form = await request.formData();
+		const itemId = form.get('itemId')?.toString();
+		if (!itemId) return fail(400, { error: 'Choose a guide.' });
+		const { staffRefundGuide } = await import('$lib/server/partner/guideRefunds.js');
+		try {
+			const r = await staffRefundGuide({
+				actor: locals.user,
+				orderId: params.orderId,
+				itemId,
+				note: form.get('reason')?.toString() || null
+			});
+			if (r.refundStatus === 'refund_failed')
+				return fail(400, { error: `The refund failed: ${r.gatewayResponse}` });
+			return { success: true, message: r.gatewayResponse || 'Refund started.' };
+		} catch (err) {
+			return fail(err.status || 500, { error: err.message });
+		}
+	},
+
+	/** Record a chargeback the bank took (one guide, or the whole order). */
+	chargeback: async ({ params, request, locals }) => {
+		if (ADMIN_ONLY(locals)) return fail(403, { error: 'Admin access required' });
+		const form = await request.formData();
+		const itemId = form.get('itemId')?.toString() || null;
+		const { recordChargeback } = await import('$lib/server/partner/refunds.js');
+		const r = await recordChargeback({
+			actor: locals.user,
+			orderId: params.orderId,
+			itemIds: itemId ? [itemId] : [],
+			note: form.get('note')?.toString() || null
+		});
+		if (!r.ok) return fail(400, { error: r.message });
+		return { success: true, message: r.message };
+	},
+
 	refund: async ({ params, request, locals }) => {
 		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Admin access required' });

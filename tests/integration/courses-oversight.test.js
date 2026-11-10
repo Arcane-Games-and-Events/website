@@ -6,7 +6,7 @@
 import { beforeEach, describe, expect, test } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
-import { courseSale, deskCourse } from '$lib/server/db/schema.js';
+import { deskCourse } from '$lib/server/db/schema.js';
 import { POST as reviewRoute } from '../../src/routes/api/desk/courses/[id]/review/+server.js';
 import { PATCH as patchRoute } from '../../src/routes/api/desk/courses/[id]/+server.js';
 import { POST as listingRoute } from '../../src/routes/api/desk/courses/[id]/listing/+server.js';
@@ -21,6 +21,7 @@ import {
 	doc,
 	enrol,
 	liveCourse,
+	legacySale,
 	readyCourse
 } from '../support/courses.js';
 
@@ -128,7 +129,7 @@ describe('what’s waiting on whom', () => {
 		const { course } = await liveCourse(teacher, { title: 'Sold' });
 		const student = await createUser();
 		const en = await enrol(course, student, { source: 'purchase' });
-		await db.insert(courseSale).values({
+		await legacySale({
 			courseId: course.id,
 			teacherId: teacher.id,
 			enrollmentId: en.id,
@@ -184,7 +185,7 @@ describe('one course’s status and history', () => {
 		const buyer = await createUser();
 		const en = await enrol(course, buyer, { source: 'purchase' });
 		await enrol(course, await createUser());
-		await db.insert(courseSale).values({
+		await legacySale({
 			courseId: course.id,
 			teacherId: teacher.id,
 			enrollmentId: en.id,

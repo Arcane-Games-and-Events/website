@@ -68,17 +68,30 @@ export function metafyYearly(inputs, y, metafy = CONSTANTS.metafy) {
 }
 
 /**
- * The creator's AGE sales income for a year of `y` copies. The top-seller
- * rate counts the creator's total copies across all their guides: copies
- * up to the threshold at the teacher share, the rest at the top-seller share.
+ * The creator's AGE sales income for `y` copies, counted from their first
+ * copy (a new partner's first year). Each Partner level covers its band of
+ * lifetime copies across all their guides: copies 1 to 1,000 at Partner,
+ * the next 4,000 at Senior, the rest at Elite. Sales are taken as
+ * non-member sales, where the higher levels apply.
  */
 export function ageSalesYearly(inputs, y, age = CONSTANTS.age) {
-	const t = age.TOP_SELLER_COPIES_PER_YEAR;
-	return (
-		Math.min(y, t) * inputs.price * age.TEACHER_SHARE +
-		Math.max(0, y - t) * inputs.price * age.TOP_SELLER_TEACHER_SHARE
-	);
+	return age.LEVELS.reduce((sum, l, i) => {
+		const next = age.LEVELS[i + 1]?.from ?? Infinity;
+		const band = Math.max(0, Math.min(y, next) - l.from);
+		return sum + band * inputs.price * l.share;
+	}, 0);
 }
+
+/** The highest Partner level reached within `y` copies (a copy past its start). */
+export function levelReached(y, age = CONSTANTS.age) {
+	return age.LEVELS.filter((l) => y > l.from).pop() || age.LEVELS[0];
+}
+
+/** Where AGE's line bends: the copies at which each higher level starts. */
+const bends = (age, limit) => age.LEVELS.map((l) => l.from).filter((x) => x > 0 && x < limit);
+
+/** AGE's all-in price for an amount: the card fee covered, as at checkout. */
+const allInPrice = (amount, age) => (amount + age.CARD_FEE_FIXED) / (1 - age.CARD_FEE_PCT);
 
 /** Premium referral bonuses for a year. */
 export function ageReferralYearly(inputs, age = CONSTANTS.age) {
@@ -102,6 +115,8 @@ export function projectedMembers(y, pool = CONSTANTS.pool) {
 export function poolPerYear(inputs, y, pool = CONSTANTS.pool) {
 	if (!inputs.includePool || y < pool.START_COPIES_PER_YEAR) return 0;
 	const members = inputs.poolMembers || 0;
+	// The pool only runs once AGE has enough Premium members.
+	if (members < (pool.START_MEMBERS ?? 0)) return 0;
 	return (
 		pool.PCT * members * pool.NET_REVENUE_PER_MEMBER_MONTH * 12 * (inputs.poolReadingShare || 0)
 	);
@@ -120,7 +135,8 @@ const sign = (x) => (x > 0 ? 1 : x < 0 ? -1 : 0);
 /**
  * The copies a year at which the two lines meet, searched from 0 to
  * `limit` with the same functions as everything else. Both lines are
- * straight on either side of the top-seller point, so each stretch has at most one crossing, found by bisection.
+ * straight between the points where a new level starts, so each stretch
+ * has at most one crossing, found by bisection.
  * @returns {{ copies: number, ageAheadAfter: boolean } | null}
  */
 export function findCrossover(inputs, constants = CONSTANTS, limit = CROSSOVER_LIMIT) {
@@ -128,9 +144,8 @@ export function findCrossover(inputs, constants = CONSTANTS, limit = CROSSOVER_L
 		const v = yearlyAt(inputs, y, constants);
 		return v.age - v.metafy;
 	};
-	// AGE's line bends where the top-seller rate starts.
-	const t = constants.age.TOP_SELLER_COPIES_PER_YEAR;
-	const points = [0, ...(t > 0 && t < limit ? [t] : []), limit];
+	// AGE's line bends where each higher level starts.
+	const points = [0, ...bends(constants.age, limit), limit];
 	for (let i = 0; i < points.length - 1; i++) {
 		let a = points[i];
 		let b = points[i + 1];
@@ -165,13 +180,13 @@ export function calculateComparison(inputs, constants = CONSTANTS) {
 	const difference = ageTotal - metafyTotal;
 
 	const fanMetafy = inputs.coverBuyerFees ? p : p + fees.total;
-	const fanAge = p * (1 + age.CARD_FEE_PCT) + age.CARD_FEE_FIXED;
-	const memberAge = p * (1 - age.MEMBER_DISCOUNT) * (1 + age.CARD_FEE_PCT) + age.CARD_FEE_FIXED;
+	const fanAge = allInPrice(p, age);
+	const memberAge = allInPrice(p * (1 - age.MEMBER_DISCOUNT), age);
 
 	const crossover = findCrossover(inputs, constants);
 	const max = Math.max(2 * y, crossover ? crossover.copies * 1.2 : 0) || 100;
-	const t = age.TOP_SELLER_COPIES_PER_YEAR;
-	const xs = [0, ...(t < max ? [t] : []), max];
+	const xs = [0, ...bends(age, max), max];
+	const level = levelReached(y, age);
 
 	return {
 		copiesPerYear: y,
@@ -188,8 +203,10 @@ export function calculateComparison(inputs, constants = CONSTANTS) {
 		},
 		age: {
 			perSale: p * age.TEACHER_SHARE,
-			topSellerPerSale: p * age.TOP_SELLER_TEACHER_SHARE,
-			topSeller: y > t,
+			// The best level these copies reach, and what a copy pays there.
+			level,
+			levelPerSale: p * level.share,
+			topSeller: level !== age.LEVELS[0],
 			salesYearly: sales,
 			referralYearly: referral,
 			yearly: ageTotal,
@@ -241,13 +258,13 @@ export function headline(result) {
 
 /**
  * Where one sale's money goes on each, at the creator's first copies
- * (before AGE's top-seller rate): what the fan pays, split into the creator's share,
+ * (the Partner level): what the fan pays, split into the creator's share,
  * the platform's cut and the fees. The parts add up to what the fan pays.
  */
 export function saleBreakdown(inputs, constants = CONSTANTS) {
 	const { age, metafy } = constants;
 	const p = inputs.price;
-	const fanAge = p * (1 + age.CARD_FEE_PCT) + age.CARD_FEE_FIXED;
+	const fanAge = allInPrice(p, age);
 	const fees = metafyBuyerFees(p, metafy);
 	const cut =
 		inputs.plan === 'core'

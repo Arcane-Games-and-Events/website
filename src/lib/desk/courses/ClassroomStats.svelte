@@ -40,7 +40,7 @@
 					{
 						label: money === 'share' ? 'Your earnings' : 'Sales',
 						value: fmtMoney(money === 'share' ? t.earnedCents : t.netCents),
-						note: money === 'share' ? 'Your 90%, after refunds' : 'After refunds'
+						note: money === 'share' ? 'Your share, after refunds' : 'After refunds'
 					}
 				]
 			: []),

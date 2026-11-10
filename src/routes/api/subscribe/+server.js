@@ -3,6 +3,7 @@ import { auth, forgetSession } from '$lib/server/lucia.js';
 import { guardPayment } from '$lib/server/ratelimit.js';
 import { recordConversion } from '$lib/server/contentAnalytics/collect.js';
 import { startSubscription, quoteSignup } from '$lib/server/billing/subscriptions.js';
+import { rememberedReferral } from '$lib/server/partner/referrals.js';
 
 /**
  * POST /api/subscribe
@@ -42,7 +43,30 @@ export async function POST({ request, locals, cookies, url, getClientAddress }) 
 			{ status: 429, headers: { 'Retry-After': String(limited.retryAfter) } }
 		);
 
-	const result = await startSubscription({ user, plan, promoCode, payment, consent: !!consent });
+	// No code typed in: use one a teacher's link left, if it
+	// still applies to this member.
+	const remembered = rememberedReferral(cookies);
+	let code = promoCode;
+	let referralSource = promoCode ? 'code' : null;
+	if (promoCode && remembered && remembered === String(promoCode).trim().toUpperCase())
+		referralSource = 'link'; // the page filled it in from the link
+	else if (
+		!promoCode &&
+		remembered &&
+		(await quoteSignup({ user, plan, promoCode: remembered })).ok
+	) {
+		code = remembered;
+		referralSource = 'link';
+	}
+
+	const result = await startSubscription({
+		user,
+		plan,
+		promoCode: code,
+		payment,
+		consent: !!consent,
+		referralSource
+	});
 
 	if (!result.ok) {
 		if (result.retoken)

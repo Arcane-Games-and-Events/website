@@ -48,7 +48,8 @@
 		'/my-courses',
 		'/partner',
 		'/terms',
-		'/privacy'
+		'/privacy',
+		'/refund-policy'
 	];
 	const editorialPrefixes = [
 		'/account',

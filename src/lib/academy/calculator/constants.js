@@ -1,48 +1,62 @@
 /**
  * The numbers behind the Metafy vs. AGE Partner calculator
- * (/academy-calculator). Change terms here; the page and the math read
- * them from this file only.
+ * (/academy-calculator). AGE's terms come from the Partner terms module
+ * ($lib/academy/partner/terms.js), the same numbers checkout and payouts
+ * use, so the calculator can't promise anything the site doesn't pay.
+ * Metafy's terms and the calculator's own forecasts live here.
  *
  * Shares are fractions of the guide's list price (0.90 = 90%).
  */
+import {
+	CARD_FEE_FIXED_CENTS,
+	CARD_FEE_PCT,
+	LEVELS,
+	MEMBER_DISCOUNT,
+	MEMBER_SALE_SHARE,
+	POOL_MIN_COPIES_PER_YEAR,
+	POOL_PCT,
+	POOL_START_MEMBERS,
+	REFERRAL_BONUS_CENTS
+} from '$lib/academy/partner/terms.js';
 
 /** AGE Partner terms. */
 export const AGE = {
-	/** The teacher keeps this share of list price on every copy. */
-	TEACHER_SHARE: 0.9,
+	/** The teacher keeps this share of list price on every copy at the first level. */
+	TEACHER_SHARE: LEVELS[0].share,
 	/**
-	 * The top-seller rate starts after this many copies a year, counted per
-	 * creator across all their guides (not per guide).
+	 * Partner levels by lifetime copies, across all of a creator's guides:
+	 * a copy is paid at the level the creator held before it sold. The
+	 * higher rates apply to non-member sales.
 	 */
-	TOP_SELLER_COPIES_PER_YEAR: 250,
-	/**
-	 * The teacher's share on each copy past that point in the year (AGE's
-	 * cut drops to 7%). Marginal: earlier copies stay at TEACHER_SHARE.
-	 */
-	TOP_SELLER_TEACHER_SHARE: 0.93,
+	LEVELS,
+	/** Sales to Premium members pay this at every level. */
+	MEMBER_SALE_SHARE,
 	/**
 	 * Premium members pay this much less. AGE funds it: the teacher is
 	 * still paid on the full list price.
 	 */
-	MEMBER_DISCOUNT: 0.1,
+	MEMBER_DISCOUNT,
 	/** Card processing, passed to the buyer inside AGE's all-in price. */
-	CARD_FEE_PCT: 0.029,
-	CARD_FEE_FIXED: 0.3,
-	/** Paid to the teacher for each Premium signup through their link (USD). */
-	REFERRAL_BONUS: 10
+	CARD_FEE_PCT,
+	CARD_FEE_FIXED: CARD_FEE_FIXED_CENTS / 100,
+	/** Paid to the teacher for each Premium signup through their link or code (USD). */
+	REFERRAL_BONUS: REFERRAL_BONUS_CENTS / 100
 };
 
 /**
- * The teacher pool: a share of AGE Premium revenue, open to a creator once
- * they sell START_COPIES_PER_YEAR copies a year (across all their guides),
- * and split among qualifying partners by how much Premium members read each
- * guide. The calculator only shows it as an opt-in estimate.
+ * The teacher pool: a share of AGE Premium revenue, once AGE has
+ * START_MEMBERS active Premium members, open to a creator once they sell
+ * START_COPIES_PER_YEAR copies a year (across all their guides), and split
+ * by how much Premium members read each guide. The calculator only shows
+ * it as an opt-in estimate.
  */
 export const POOL = {
 	/** The pool's share of Premium revenue. */
-	PCT: 0.05,
+	PCT: POOL_PCT,
 	/** A creator shares in the pool once they sell this many copies a year, across all guides. */
-	START_COPIES_PER_YEAR: 250,
+	START_COPIES_PER_YEAR: POOL_MIN_COPIES_PER_YEAR,
+	/** The pool runs once AGE has this many active Premium members. */
+	START_MEMBERS: POOL_START_MEMBERS,
 	/** AGE's own forecast of Premium members, the projection's floor. */
 	FORECAST_MEMBERS: 400,
 	/**

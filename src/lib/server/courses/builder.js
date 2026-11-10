@@ -13,12 +13,12 @@
  *   the first time it is live in a live course and never changes: a topic
  *   first published after a student enrolled is Premium-only for them.
  */
-import { and, asc, eq, gte, inArray, isNotNull, isNull, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, isNull, ne, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
 import {
 	courseEnrollment,
-	courseSale,
 	coursePost,
+	courseChangelog,
 	deskCourse,
 	deskLesson,
 	deskModule,
@@ -28,8 +28,9 @@ import {
 import { bump } from '$lib/server/cache/index.js';
 import { titleToSlug, withSuffix } from '$lib/desk/slug.js';
 import { calculateReadTime, lexicalToText } from '$lib/desk/render/lexical-utils.js';
-import { userHasPremiumAccess } from '$lib/server/articles/access.js';
 import { notify } from './notifications.js';
+import { salesSource } from '$lib/server/partner/sales.js';
+import { EXCLUSIVITY_MONTHS } from '$lib/academy/partner/terms.js';
 
 export class CourseError extends Error {
 	constructor(status, message) {
@@ -215,6 +216,46 @@ export async function returnToDraft(course, { note = null } = {}) {
 	return row;
 }
 
+const ymd = (t) => new Date(t).toISOString().slice(0, 10);
+const addMonths = (t, n) => {
+	const d = new Date(t);
+	return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, d.getUTCDate()));
+};
+
+/**
+ * Admin: set a guide's exclusivity agreement (stored and shown, not
+ * enforced). Dates are YYYY-MM-DD; a new start without an end runs 12 months.
+ */
+export async function setAgreement(course, fields) {
+	const set = {};
+	const date = (v) => {
+		if (v === null || v === '') return null;
+		if (!/^\d{4}-\d{2}-\d{2}$/.test(String(v))) throw new CourseError(400, 'Dates are YYYY-MM-DD.');
+		return String(v);
+	};
+	if ('exclusive' in fields) set.exclusive = !!fields.exclusive;
+	if ('autoRenew' in fields) set.autoRenew = !!fields.autoRenew;
+	if ('exclusivityStart' in fields) set.exclusivityStart = date(fields.exclusivityStart);
+	if ('exclusivityEnd' in fields) set.exclusivityEnd = date(fields.exclusivityEnd);
+	if (set.exclusivityStart && !('exclusivityEnd' in fields))
+		set.exclusivityEnd = ymd(addMonths(`${set.exclusivityStart}T00:00:00Z`, EXCLUSIVITY_MONTHS));
+	if ('agreementStatus' in fields) {
+		if (!['active', 'ended'].includes(fields.agreementStatus))
+			throw new CourseError(400, 'Status is active or ended.');
+		set.agreementStatus = fields.agreementStatus;
+	}
+	const start = set.exclusivityStart ?? course.exclusivityStart;
+	const end = set.exclusivityEnd ?? course.exclusivityEnd;
+	if (start && end && end < start) throw new CourseError(400, 'The end is before the start.');
+	if (!Object.keys(set).length) return course;
+	const [row] = await db
+		.update(deskCourse)
+		.set(set)
+		.where(eq(deskCourse.id, course.id))
+		.returning();
+	return row;
+}
+
 /** Admin: approve the first publish. Every published topic goes live with it. */
 export async function approveCourse(course) {
 	if (course.status !== 'in_review') throw new CourseError(409, 'This course isn’t in review.');
@@ -227,6 +268,14 @@ export async function approveCourse(course) {
 				publishedAt: course.publishedAt || now,
 				firstPublishedAt: course.firstPublishedAt || now,
 				reviewNote: null,
+				// The Partner exclusivity agreement runs from launch.
+				...(course.exclusivityStart
+					? {}
+					: {
+							exclusivityStart: ymd(now),
+							exclusivityEnd: ymd(addMonths(now, EXCLUSIVITY_MONTHS))
+						}),
+				contentUpdatedAt: course.contentUpdatedAt || now,
 				updatedAt: now
 			})
 			.where(eq(deskCourse.id, course.id))
@@ -270,10 +319,11 @@ export async function deleteCourse(course) {
 		.select({ n: sql`count(*)::int` })
 		.from(courseEnrollment)
 		.where(eq(courseEnrollment.courseId, course.id));
+	const S = salesSource();
 	const [{ s }] = await db
 		.select({ s: sql`count(*)::int` })
-		.from(courseSale)
-		.where(eq(courseSale.courseId, course.id));
+		.from(S)
+		.where(eq(S.courseId, course.id));
 	if (n || s)
 		throw new CourseError(409, 'Students have joined this course, so it can only be unlisted.');
 	await db.delete(deskCourse).where(eq(deskCourse.id, course.id));
@@ -528,8 +578,33 @@ export async function updateTopic(topic, fields, { staged = false } = {}) {
 	return row;
 }
 
+/**
+ * Note an update to a live course: it was last updated now, and its
+ * changelog gains a line (the teacher's note, if they wrote one).
+ */
+async function recordUpdate(courseId, { lessonId, kind, note, actor }) {
+	const now = new Date();
+	const [live] = await db
+		.update(deskCourse)
+		.set({ contentUpdatedAt: now })
+		.where(and(eq(deskCourse.id, courseId), isNotNull(deskCourse.firstPublishedAt)))
+		.returning({ id: deskCourse.id });
+	if (!live) return;
+	const text = String(note || '')
+		.trim()
+		.slice(0, 280);
+	await db.insert(courseChangelog).values({
+		courseId,
+		lessonId,
+		kind,
+		note: text || null,
+		authorId: actor?.id ?? null,
+		createdAt: now
+	});
+}
+
 /** Publish a topic's pending changes: students see them from now on. */
-export async function applyTopicChanges(topic, actor) {
+export async function applyTopicChanges(topic, actor, { note = null } = {}) {
 	if (!topic.draftUpdatedAt) throw new CourseError(409, 'There are no changes to update.');
 	const body = topic.draftBody;
 	if (!lexicalToText(body).trim()) throw new CourseError(400, 'A published topic can’t be empty.');
@@ -549,6 +624,7 @@ export async function applyTopicChanges(topic, actor) {
 	await db
 		.insert(deskRevision)
 		.values({ entityType: 'lesson', entityId: topic.id, body, savedBy: actor?.id });
+	await recordUpdate(topic.courseId, { lessonId: topic.id, kind: 'topic_updated', note, actor });
 	await bump('courses');
 	return row;
 }
@@ -567,7 +643,7 @@ export async function discardTopicChanges(topic) {
  * Publish a topic. In a live course, a topic's first publish stamps
  * first_published_at and tells the course's students about it.
  */
-export async function publishTopic(course, topic, actor) {
+export async function publishTopic(course, topic, actor, { note = null } = {}) {
 	if (!lexicalToText(topic.body).trim()) throw new CourseError(400, 'Write something first.');
 	const now = new Date();
 	const courseLive = !!course.firstPublishedAt;
@@ -584,7 +660,10 @@ export async function publishTopic(course, topic, actor) {
 	await db
 		.insert(deskRevision)
 		.values({ entityType: 'lesson', entityId: topic.id, body: topic.body, savedBy: actor?.id });
-	if (first) await announceTopic(course, row, actor);
+	if (first) {
+		await announceTopic(course, row, actor);
+		await recordUpdate(course.id, { lessonId: row.id, kind: 'topic_added', note, actor });
+	}
 	await bump('courses');
 	return row;
 }
@@ -615,28 +694,16 @@ export async function deleteTopic(topic) {
 	await bump('courses');
 }
 
-/** Tell enrolled students about a new topic; non-Premium students learn it's a Premium extra. */
+/** Tell enrolled students about a new topic: every student who owns the course gets it. */
 async function announceTopic(course, topic, actor) {
 	const students = await db
-		.select({
-			id: userTable.id,
-			role: userTable.role,
-			subscriptionStatus: userTable.subscriptionStatus,
-			subscriptionEndDate: userTable.subscriptionEndDate
-		})
+		.select({ id: courseEnrollment.userId })
 		.from(courseEnrollment)
-		.innerJoin(userTable, eq(courseEnrollment.userId, userTable.id))
 		.where(and(eq(courseEnrollment.courseId, course.id), isNull(courseEnrollment.revokedAt)));
-	const premium = students.filter((s) => userHasPremiumAccess(s)).map((s) => s.id);
-	const others = students.filter((s) => !userHasPremiumAccess(s)).map((s) => s.id);
-	const base = {
-		kind: 'new_topic',
-		courseId: course.id,
-		lessonId: topic.id,
-		actorId: actor?.id ?? null
-	};
-	await notify(premium, { ...base, data: { premiumOnly: false } });
-	await notify(others, { ...base, data: { premiumOnly: true } });
+	await notify(
+		students.map((s) => s.id),
+		{ kind: 'new_topic', courseId: course.id, lessonId: topic.id, actorId: actor?.id ?? null }
+	);
 }
 
 // ---------------------------------------------------------------- lists
@@ -671,6 +738,7 @@ export async function listDeskCourses(user, { all = false } = {}) {
 	const monthStart = new Date();
 	monthStart.setUTCDate(1);
 	monthStart.setUTCHours(0, 0, 0, 0);
+	const S = salesSource();
 	const [topics, students, sales, held] = await Promise.all([
 		db
 			.select({
@@ -688,12 +756,14 @@ export async function listDeskCourses(user, { all = false } = {}) {
 			.groupBy(courseEnrollment.courseId),
 		db
 			.select({
-				courseId: courseSale.courseId,
-				cents: sql`coalesce(sum(${courseSale.grossCents} - ${courseSale.refundedCents}), 0)::int`
+				courseId: S.courseId,
+				cents: sql`coalesce(sum(${S.grossCents} - ${S.refundedCents}), 0)::int`
 			})
-			.from(courseSale)
-			.where(and(inArray(courseSale.courseId, ids), gte(courseSale.soldAt, monthStart)))
-			.groupBy(courseSale.courseId),
+			.from(S)
+			.where(
+				and(inArray(S.courseId, ids), sql`${S.soldAt} >= ${monthStart.toISOString()}::timestamptz`)
+			)
+			.groupBy(S.courseId),
 		db
 			.select({ courseId: coursePost.courseId, n: sql`count(*)::int` })
 			.from(coursePost)

@@ -16,6 +16,22 @@
 	let { data } = $props();
 
 	const member = $derived(data.isPremiumMember ?? false);
+	// How the Academy works.
+	const HOW = [
+		[
+			'Buy once, keep for life',
+			'Pay once and the guide is yours. No subscription needed to read it.'
+		],
+		[
+			'Lessons, not lectures',
+			'Short written lessons with drills and self-checks, so each sitting has a point.'
+		],
+		[
+			'Every update included',
+			'Every buyer gets every future update to a guide: new topics, revisions and corrections.'
+		],
+		['Free previews', 'Every guide opens at least one lesson to everyone before you pay.']
+	];
 	const courses = $derived((data.courses ?? []).map(toCard));
 	const progress = $derived(data.progress ?? {});
 	const previews = $derived(data.previews ?? []);
@@ -180,7 +196,7 @@
 	<title>Academy — AGE</title>
 	<meta
 		name="description"
-		content="Full written courses from the players who define the format. Buy once, keep for life, with every revision included. Premium members also get the new topics added later."
+		content="Full written guides from the players who define the format. Buy once, keep for life, with every future update included. Premium members save 10% on every guide."
 	/>
 </svelte:head>
 
@@ -474,7 +490,7 @@
 					How the Academy works
 				</h2>
 				<ol class="mt-4 border-t border-line">
-					{#each [['Buy once, keep for life', 'Pay once and the course is yours. No subscription needed to read it.'], ['Lessons, not lectures', 'Short written lessons with drills and self-checks, so each sitting has a point.'], ['New topics with Premium', 'Every buyer gets the course as it launched, with every revision and correction. Topics added after launch are included with Premium.'], ['Free previews', 'Every course opens at least one lesson to everyone before you pay.']] as [t, b], i (t)}
+					{#each HOW as [t, b], i (t)}
 						<li class="grid grid-cols-[36px_1fr] gap-3 border-b border-line py-4">
 							<span
 								class="font-newsreader text-[22px] leading-none font-semibold text-gold tabular-nums"
@@ -500,12 +516,12 @@
 					<p
 						class="mt-3 font-newsreader text-[28px] leading-[1.05] font-semibold tracking-[-0.01em] [text-wrap:balance] md:text-[34px]"
 					>
-						Your courses keep growing with Premium.
+						Save 10% on every guide with Premium.
 					</p>
 					<p class="mt-3 font-newsreader text-[16px] leading-[1.5] text-soft italic">
-						Courses are a one-time purchase, and every revision and correction to a course you own
-						is yours free. When an instructor adds new topics after launch, AGE Premium members get
-						them too, on top of every article, all gameplay and the Library.
+						Guides are a one-time purchase, and every future update to a guide you own is included.
+						AGE Premium members pay 10% less for every guide, on top of every article, all gameplay
+						and the Library.
 					</p>
 					<a
 						href="/premium"
@@ -523,10 +539,11 @@
 					<p
 						class="mt-3 font-newsreader text-[28px] leading-[1.05] font-semibold tracking-[-0.01em] [text-wrap:balance] md:text-[34px]"
 					>
-						Your courses stay current.
+						Your Premium price: 10% off.
 					</p>
 					<p class="mt-3 font-newsreader text-[16px] leading-[1.5] text-soft italic">
-						As a member, every update an instructor publishes to a course you own is included.
+						As a member you pay 10% less for every guide, and every update to a guide you own is
+						included.
 					</p>
 				</div>
 			{/if}

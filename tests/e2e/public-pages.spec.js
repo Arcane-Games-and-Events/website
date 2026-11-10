@@ -22,6 +22,8 @@ const PAGES = [
 	['/studios/partners', 'Studios partners'],
 	['/academy', 'academy'],
 	['/academy-calculator', 'partner calculator'],
+	['/refund-policy', 'refund policy'],
+	['/academy/cart', 'empty cart'],
 	['/login', 'login'],
 	['/signup', 'signup']
 ];

@@ -1,8 +1,8 @@
 <script>
 	/**
 	 * Purchase history as a ledger: a filter, then each month
-	 * with its purchases. Every row says what was bought, for whom and for
-	 * when, and opens the receipt.
+	 * with its purchases (tickets, Academy guides, membership). Every row
+	 * says what was bought, for whom and for when, and opens the receipt.
 	 */
 	import Panel from '$lib/components/account/Panel.svelte';
 	import * as ui from '$lib/components/account/ui.js';
@@ -14,6 +14,7 @@
 	const FILTERS = [
 		{ key: 'all', label: 'All' },
 		{ key: 'tickets', label: 'Tickets' },
+		{ key: 'guides', label: 'Guides' },
 		{ key: 'membership', label: 'Membership' }
 	];
 
@@ -25,6 +26,7 @@
 	const counts = $derived({
 		all: data.orders.length,
 		tickets: data.orders.filter((o) => o.type === 'tickets').length,
+		guides: data.orders.filter((o) => o.type === 'guides').length,
 		membership: data.orders.filter((o) => o.type === 'membership').length
 	});
 
@@ -45,20 +47,37 @@
 		return groups;
 	});
 
-	const accent = (o) => (o.type === 'membership' ? 'var(--color-prem)' : circuitVar(o.circuit));
+	const accent = (o) =>
+		o.type === 'membership'
+			? 'var(--color-prem)'
+			: o.type === 'guides'
+				? 'var(--color-academy)'
+				: circuitVar(o.circuit);
 	const kicker = (o) =>
 		o.type === 'membership'
 			? o.label
-			: [
-					'Tickets',
-					o.circuit,
-					o.eventDate
-						? utc(o.eventDate, { weekday: 'short', month: 'short', day: 'numeric' })
-						: null
-				]
-					.filter(Boolean)
-					.join(' · ');
+			: o.type === 'guides'
+				? `Academy · ${o.label}`
+				: [
+						'Tickets',
+						o.circuit,
+						o.eventDate
+							? utc(o.eventDate, { weekday: 'short', month: 'short', day: 'numeric' })
+							: null
+					]
+						.filter(Boolean)
+						.join(' · ');
 	const detail = (o) => {
+		if (o.type === 'guides') {
+			const names = o.guides.map((g) => g.title);
+			const list =
+				names.length === 1
+					? 'Yours to keep, with every future update'
+					: names.length > 3
+						? `${names.slice(0, 3).join(', ')} and ${names.length - 3} more`
+						: names.join(', ');
+			return [list, o.memberPrice ? 'Premium price' : ''].filter(Boolean).join(' · ');
+		}
 		if (o.type === 'membership') {
 			if (o.periodStart && o.periodEnd) {
 				return `Covers ${utc(o.periodStart, { month: 'short', day: 'numeric' })} to ${utc(o.periodEnd, { month: 'short', day: 'numeric', year: 'numeric' })}`;
@@ -88,16 +107,17 @@
 <Panel
 	rubric="Purchases"
 	title="Purchase history"
-	lead="Every ticket and membership charge. Open one for the full receipt."
+	lead="Every ticket, guide and membership charge. Open one for the full receipt."
 >
 	{#if data.orders.length === 0}
 		<div class="border border-dashed border-line2 px-6 py-12 text-center">
 			<p class="ao-cond text-[34px] leading-none font-black uppercase">Nothing here yet.</p>
 			<p class="mx-auto mt-3 max-w-[420px] font-newsreader text-[16px] text-soft italic">
-				Tickets and membership charges show up here, each with its receipt.
+				Tickets, Academy guides and membership charges show up here, each with its receipt.
 			</p>
 			<div class="mt-6 flex flex-wrap justify-center gap-2">
 				<a href="/age-open?tab=events" class={ui.btn}>Find an event</a>
+				<a href="/academy" class={ui.ghost}>Browse guides</a>
 				<a href="/premium" class={ui.ghost}>See membership</a>
 			</div>
 		</div>
@@ -126,7 +146,11 @@
 		<!-- ============ the ledger ============ -->
 		{#if months.length === 0}
 			<p class="mt-6 border-t border-line py-8 font-newsreader text-[17px] text-soft italic">
-				No {filter === 'tickets' ? 'ticket purchases' : 'membership charges'} yet.
+				No {filter === 'tickets'
+					? 'ticket purchases'
+					: filter === 'guides'
+						? 'guides bought'
+						: 'membership charges'} yet.
 			</p>
 		{/if}
 		{#each months as m (m.key)}
@@ -170,7 +194,7 @@
 											: ''}">{o.title}</span
 									>
 									<span class="mt-0.5 block text-[12.5px] leading-snug text-soft">{detail(o)}</span>
-									{#if o.discount > 0 || o.promoCode}
+									{#if o.type !== 'guides' && (o.discount > 0 || o.promoCode)}
 										<span
 											class="mt-1 inline-block text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
 										>

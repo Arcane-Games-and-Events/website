@@ -225,7 +225,9 @@
 				/>
 			</div>
 			<span class="mt-1 block text-[11.5px] text-fade"
-				>One price for everyone. You earn 90% of each sale; $0 makes it free.</span
+				>We recommend $10 to $30. You earn 90% of the full price (up to 95% at Senior and Elite);
+				Premium members pay 10% less and AGE covers it. Buyers pay card fees on top. $0 makes it
+				free.</span
 			>
 		</label>
 	</section>

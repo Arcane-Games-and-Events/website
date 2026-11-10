@@ -1,7 +1,7 @@
 /**
  * The public side of a course, for one person: which version of the course
  * they see (the teacher previews drafts), whether they're enrolled, and what
- * each topic is to them (open, Premium-locked, locked, or done).
+ * each topic is to them (open, locked, or done).
  */
 import { and, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
@@ -16,7 +16,7 @@ import { completedIn } from './progress.js';
  * @returns {Promise<null | { course: any, owner: boolean, enrollment: any, completed: Set<string>,
  *   syllabus: any[], topics: any[] }>}
  *   `topics` is the syllabus flattened in reading order, each with `access`
- *   ('open' | 'locked-premium' | 'locked') and `done`.
+ *   ('open' | 'locked') and `done`.
  */
 export async function courseForReader(slug, user) {
 	let course = await getPublishedCourseBySlug(slug);

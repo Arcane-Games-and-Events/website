@@ -107,6 +107,7 @@
 		posts: ['Flagged posts', 'bg-hero-rb/10 text-hero-rb'],
 		problem: ['Live problem', 'bg-hero-rb text-white'],
 		payout: ['Payouts', 'bg-academy text-paper-bg'],
+		refunds: ['Refunds', 'bg-hero-rb text-white'],
 		'payout-missed': ['Missed payout', 'bg-hero-rb text-white']
 	};
 	const kicker = 'text-[10.5px] font-extrabold tracking-[0.16em] uppercase';
@@ -153,6 +154,25 @@
 <DeskTabs />
 
 <div class="mx-auto w-full max-w-[1200px] space-y-12 px-5 pt-8 pb-20 font-libre md:px-8">
+	{#if !h.oversee && data.refundsPending}
+		<!-- refund requests on the teacher's guides (admins see them under "Needs an admin") -->
+		<a
+			href="/classroom/refunds"
+			class="flex flex-wrap items-center justify-between gap-3 border-l-[3px] border-hero-rb bg-hero-rb/[0.06] px-4 py-3.5 transition-colors hover:bg-hero-rb/[0.1]"
+		>
+			<span class="text-[14px] font-semibold">
+				{data.refundsPending}
+				{data.refundsPending === 1 ? 'refund request is' : 'refund requests are'} waiting on your guides
+				<span class="block text-[12px] font-normal text-soft"
+					>You can approve them; AGE decides the rest under the refund policy.</span
+				>
+			</span>
+			<span
+				class="bg-ink px-3 py-2 text-[9.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase"
+				>Review refunds</span
+			>
+		</a>
+	{/if}
 	{#if h.oversee}
 		<!-- the Classroom in numbers -->
 		<dl class="grid grid-cols-2 gap-px border border-line2 bg-line2 md:grid-cols-3 xl:grid-cols-6">
@@ -278,7 +298,9 @@
 								<b class="block text-[10px] font-extrabold tracking-[0.14em] uppercase"
 									>3 · Go live</b
 								>
-								It’s in the Academy and on sale. You keep 90% of every sale.
+								It’s in the Academy and on sale. Keep 90% of every sale (up to 95% as you reach Senior
+								and Elite levels), no monthly fee, $10 for every Premium member you refer, free updates
+								for all your buyers, and promotion across AGE.
 							</li>
 						</ol>
 						<button
@@ -307,7 +329,7 @@
 								{money(h.earnings.next.cents)}
 							</p>
 							<p class="mt-2 text-[12px] text-paper-bg/65">
-								{money(h.earnings.totals.onHoldCents)} still in the 14-day hold · {money(
+								{money(h.earnings.totals.onHoldCents)} still on hold · {money(
 									h.earnings.totals.earnedCents
 								)} earned in all
 							</p>

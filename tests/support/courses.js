@@ -9,7 +9,15 @@
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
-import { courseEnrollment, deskCourse, deskLesson, deskMedia } from '$lib/server/db/schema.js';
+import {
+	courseEnrollment,
+	courseSale,
+	deskCourse,
+	deskLesson,
+	deskMedia,
+	partnerLedger
+} from '$lib/server/db/schema.js';
+import { monthOf } from '$lib/server/partner/ledger.js';
 import {
 	approveCourse,
 	createCourse,
@@ -133,4 +141,44 @@ export async function callRoute(
 		if (err?.status && err?.body) return { status: err.status, body: err.body };
 		throw err;
 	}
+}
+
+/**
+ * A sale from before the Partner model, as it looks once migration 042 has
+ * copied it into the ledger: its course_sale row and its legacy ledger row.
+ * Takes course_sale values (or a list of them); returns the course_sale rows.
+ */
+export async function legacySale(values) {
+	const list = Array.isArray(values) ? values : [values];
+	const rows = [];
+	for (const v of list) {
+		const [row] = await db.insert(courseSale).values(v).returning();
+		const share = row.sharePct;
+		const net = row.grossCents - row.refundedCents;
+		const teacherCents = Math.round((net * share) / 100);
+		await db.insert(partnerLedger).values({
+			entryType: 'sale',
+			status: net <= 0 ? 'refunded' : 'paid',
+			teacherId: row.teacherId,
+			orderId: row.orderId,
+			courseId: row.courseId,
+			legacySaleId: row.id,
+			listCents: row.grossCents,
+			buyerType: 'non_member',
+			buyerPaidCents: net,
+			shareRate: String(share / 100),
+			level: 'PARTNER',
+			teacherCents,
+			ageCommissionCents: net - teacherCents,
+			ageNetCents: net - teacherCents,
+			occurredAt: row.soldAt,
+			payableAt: row.payableAt,
+			statementMonth: monthOf(row.payableAt),
+			settledPayoutId: row.payoutId,
+			// Migration 042/043 count older sales as settled.
+			settledAt: row.payableAt
+		});
+		rows.push(row);
+	}
+	return Array.isArray(values) ? rows : rows[0];
 }

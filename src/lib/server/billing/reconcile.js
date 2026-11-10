@@ -20,6 +20,7 @@ import {
 import { authnet } from '$lib/server/authnet/client.js';
 import { fulfilCheckout, markCheckout } from '$lib/server/payments/checkout.js';
 import { fulfilCourseCheckout } from '$lib/server/courses/purchase.js';
+import { fulfilGuideCheckout, isGuidesCheckout } from '$lib/server/partner/checkout.js';
 import { resolvePendingRefund, settleWaitingRefund } from '$lib/server/payments/refunds.js';
 import { getPartnerByCode } from '$lib/server/partner-code.js';
 import { getMemberReferralByCode } from '$lib/server/member-referral.js';
@@ -244,8 +245,13 @@ export async function reconcileInvoice(inv, { now = new Date() } = {}) {
 
 /** Resolve one ticket checkout. Returns true when it is settled one way or the other. */
 export async function reconcileCheckout(co, { now = new Date() } = {}) {
-	// Tickets or a course: the same checkout, fulfilled differently.
-	const fulfil = co.courseId ? fulfilCourseCheckout : fulfilCheckout;
+	// Tickets, a course, or guides (the Partner model's cart): the same
+	// checkout, fulfilled differently.
+	const fulfil = isGuidesCheckout(co)
+		? fulfilGuideCheckout
+		: co.courseId
+			? fulfilCourseCheckout
+			: fulfilCheckout;
 	if (co.status === 'paid' && co.transId) {
 		const [u] = await db
 			.select({ email: userTable.email })

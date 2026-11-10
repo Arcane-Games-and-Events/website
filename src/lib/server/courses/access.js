@@ -8,14 +8,13 @@
  *   kept forever, or added free by the teacher or an admin).
  * - A topic marked Free to read (`is_preview`) is open to everyone once it is
  *   published, signed in or not.
- * - A topic first published after a student enrolled is open to them only
- *   while they are a Premium member. That is what Premium adds to a course.
+ * - Every student gets every topic, including ones added after launch:
+ *   all buyers get all updates (the AGE Partner terms).
  */
 import { and, eq, isNull } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
 import { courseEnrollment, deskCourse } from '$lib/server/db/schema.js';
 import { canEditCourses, canOverseeCourses } from '$lib/server/auth/roles.js';
-import { userHasPremiumAccess } from '$lib/server/articles/access.js';
 
 /** The course's own teacher, or an admin or editor (they oversee every course). */
 export function canManageCourse(user, course) {
@@ -60,12 +59,10 @@ export function courseRole(user, course, enrollment) {
 /**
  * Can this person read this topic?
  *
- * @returns {'open' | 'locked-premium' | 'locked' | 'hidden'}
- *   open            show the topic
- *   locked-premium  enrolled, but the topic was added after the course
- *                   launched and they aren't Premium: show the upgrade prompt
- *   locked          not enrolled: show the course paywall
- *   hidden          a draft, or the course isn't public: don't show it at all
+ * @returns {'open' | 'locked' | 'hidden'}
+ *   open    show the topic
+ *   locked  not enrolled: show the course paywall
+ *   hidden  a draft, or the course isn't public: don't show it at all
  */
 export function lessonAccess(user, course, lesson, enrollment) {
 	const owner = canManageCourse(user, course);
@@ -74,22 +71,7 @@ export function lessonAccess(user, course, lesson, enrollment) {
 	if (!lesson.publishedAt) return 'hidden';
 	if (lesson.isPreview) return 'open';
 	if (!enrollment || enrollment.revokedAt) return 'locked';
-	if (isAddedAfterLaunch(lesson, course) && !userHasPremiumAccess(user)) return 'locked-premium';
 	return 'open';
-}
-
-/**
- * Was this topic added after the course launched (its first approval)?
- *
- * Everyone who buys a course gets it as it launched, whenever they buy,
- * along with every later edit and correction to those topics. Topics added
- * after launch are a Premium extra, for every student alike. A topic's
- * first_published_at is set once and never changes; topics published before
- * approval take the launch date itself.
- */
-export function isAddedAfterLaunch(lesson, course) {
-	if (!lesson.firstPublishedAt || !course?.firstPublishedAt) return false;
-	return new Date(lesson.firstPublishedAt) > new Date(course.firstPublishedAt);
 }
 
 /** A course is visible to the public once approved; archived ones only to their students. */

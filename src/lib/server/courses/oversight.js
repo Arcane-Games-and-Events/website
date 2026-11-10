@@ -11,7 +11,6 @@ import {
 	courseActivity,
 	courseEnrollment,
 	coursePost,
-	courseSale,
 	deskCourse,
 	deskLesson,
 	deskLessonProgress,
@@ -21,7 +20,10 @@ import {
 } from '$lib/server/db/schema.js';
 import { listDeskCourses, readinessItems, readinessOf, reviewWhere } from './builder.js';
 import { listActivity } from './activity.js';
-import { nextPayDate, payoutsDue, shareOf } from './earnings.js';
+import { nextPayDate, shareOf } from './earnings.js';
+import { statementsDue } from '$lib/server/partner/statements.js';
+import { pendingRefundCount } from '$lib/server/partner/guideRefunds.js';
+import { salesSource } from '$lib/server/partner/sales.js';
 
 const NONE = ['00000000-0000-0000-0000-000000000000'];
 const nameOf = (first, last, fallback = null) =>
@@ -129,6 +131,7 @@ export async function courseOversight(
 	const base = await listDeskCourses(admin, { all });
 	const ids = base.length ? base.map((c) => c.id) : NONE;
 
+	const S = salesSource();
 	const [details, pending, held, money, students, actions, due] = await Promise.all([
 		db
 			.select({
@@ -158,16 +161,16 @@ export async function courseOversight(
 			.groupBy(coursePost.courseId),
 		db
 			.select({
-				courseId: courseSale.courseId,
+				courseId: S.courseId,
 				sales: sql`count(*)::int`,
-				gross: sql`coalesce(sum(${courseSale.grossCents}), 0)::int`,
-				refunded: sql`coalesce(sum(${courseSale.refundedCents}), 0)::int`,
-				owed: sql`coalesce(sum(case when ${courseSale.payoutId} is null then round((${courseSale.grossCents} - ${courseSale.refundedCents}) * ${courseSale.sharePct} / 100.0) else 0 end), 0)::int`,
-				lastSale: sql`max(${courseSale.soldAt})`
+				gross: sql`coalesce(sum(${S.grossCents}), 0)::int`,
+				refunded: sql`coalesce(sum(${S.refundedCents}), 0)::int`,
+				owed: sql`coalesce(sum(case when ${S.payoutId} is null then round((${S.grossCents} - ${S.refundedCents}) * ${S.sharePct} / 100.0) else 0 end), 0)::int`,
+				lastSale: sql`max(${S.soldAt})`
 			})
-			.from(courseSale)
-			.where(inArray(courseSale.courseId, ids))
-			.groupBy(courseSale.courseId),
+			.from(S)
+			.where(inArray(S.courseId, ids))
+			.groupBy(S.courseId),
 		db
 			.select({
 				courseId: courseEnrollment.courseId,
@@ -178,7 +181,7 @@ export async function courseOversight(
 			.where(and(inArray(courseEnrollment.courseId, ids), isNull(courseEnrollment.revokedAt)))
 			.groupBy(courseEnrollment.courseId),
 		lastActions(ids, ['returned', 'unlisted', 'approved']),
-		withMoney ? payoutsDue(nextPayDate(now)) : []
+		withMoney ? statementsDue({ now }) : []
 	]);
 	const by = (rows) => new Map(rows.map((r) => [r.courseId ?? r.id, r]));
 	const detailsBy = by(details);
@@ -279,14 +282,25 @@ export async function courseOversight(
 			payDate,
 			cents: total,
 			text: missed.length
-				? `${missed.length} ${missed.length === 1 ? 'teacher has' : 'teachers have'} money from a pay date that was missed`
+				? `${missed.length} ${missed.length === 1 ? 'teacher has' : 'teachers have'} a statement past its pay date`
 				: `${due.length} ${due.length === 1 ? 'teacher' : 'teachers'} to pay on ${payDay}`,
 			detail: `${due.length} ${due.length === 1 ? 'teacher' : 'teachers'}, ${due.reduce((n, t) => n + t.sales, 0)} sales in total.`,
 			action: 'Payouts',
 			href: '/classroom/payouts'
 		});
 	}
-	const rank = { 'payout-missed': 0, approval: 1, problem: 2, posts: 3, payout: 4 };
+	// Refund requests waiting for a decision (money: admins only).
+	const refunds = withMoney ? await pendingRefundCount() : 0;
+	if (refunds)
+		needsYou.push({
+			kind: 'refunds',
+			since: null,
+			text: `${refunds} refund ${refunds === 1 ? 'request is' : 'requests are'} waiting for a decision`,
+			detail: 'Approve or decline each one; approving refunds the buyer at once.',
+			action: 'Refunds',
+			href: '/classroom/refunds'
+		});
+	const rank = { 'payout-missed': 0, refunds: 1, approval: 2, problem: 3, posts: 4, payout: 5 };
 	needsYou.sort(
 		(a, b) =>
 			rank[a.kind] - rank[b.kind] ||
@@ -364,6 +378,7 @@ export async function nextInQueue(courseId) {
 const ACTION_TEXT = {
 	created: 'Created the course',
 	details_changed: 'Changed the details',
+	agreement_changed: 'Changed the exclusivity agreement',
 	submitted: 'Sent it for approval',
 	withdrawn: 'Withdrew it from approval',
 	returned: 'Returned it to the teacher',
@@ -405,6 +420,7 @@ export async function courseStatus(course, now = new Date()) {
 				.where(eq(userTable.id, course.authorId))
 				.limit(1)
 		: [];
+	const S = salesSource();
 	const [topics, sales, enrollments, held, completions, logged, payouts] = await Promise.all([
 		db
 			.select({
@@ -425,16 +441,16 @@ export async function courseStatus(course, now = new Date()) {
 			.orderBy(asc(deskModule.position), asc(deskLesson.position)),
 		db
 			.select({
-				id: courseSale.id,
-				grossCents: courseSale.grossCents,
-				refundedCents: courseSale.refundedCents,
-				sharePct: courseSale.sharePct,
-				soldAt: courseSale.soldAt,
-				payableAt: courseSale.payableAt,
-				payoutId: courseSale.payoutId
+				id: S.id,
+				grossCents: S.grossCents,
+				refundedCents: S.refundedCents,
+				sharePct: S.sharePct,
+				soldAt: S.soldAt,
+				payableAt: S.payableAt,
+				payoutId: S.payoutId
 			})
-			.from(courseSale)
-			.where(eq(courseSale.courseId, course.id)),
+			.from(S)
+			.where(eq(S.courseId, course.id)),
 		db
 			.select({
 				id: courseEnrollment.id,
@@ -467,11 +483,11 @@ export async function courseStatus(course, now = new Date()) {
 				payDate: teacherPayout.payDate,
 				paidAt: teacherPayout.paidAt,
 				reference: teacherPayout.reference,
-				cents: sql`sum(round((${courseSale.grossCents} - ${courseSale.refundedCents}) * ${courseSale.sharePct} / 100.0))::int`
+				cents: sql`sum(round((${S.grossCents} - ${S.refundedCents}) * ${S.sharePct} / 100.0))::int`
 			})
-			.from(courseSale)
-			.innerJoin(teacherPayout, eq(courseSale.payoutId, teacherPayout.id))
-			.where(eq(courseSale.courseId, course.id))
+			.from(S)
+			.innerJoin(teacherPayout, eq(S.payoutId, teacherPayout.id))
+			.where(eq(S.courseId, course.id))
 			.groupBy(
 				teacherPayout.id,
 				teacherPayout.payDate,

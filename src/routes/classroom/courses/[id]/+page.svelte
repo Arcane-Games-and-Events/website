@@ -7,6 +7,7 @@
 	 * tabs, on every tab.)
 	 */
 	import { money, shortDate, waited } from '$lib/desk/courses/format.js';
+	import AgreementPanel from '$lib/desk/courses/AgreementPanel.svelte';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -94,7 +95,7 @@
 						note: `${s.money.sales} ${s.money.sales === 1 ? 'sale' : 'sales'}${s.money.refundedCents ? ` · ${money(s.money.refundedCents)} refunded` : ''}`
 					},
 					{
-						label: mine ? 'Your 90%' : 'Teacher’s 90%',
+						label: mine ? 'Your share' : 'Teacher’s share',
 						value: money(s.money.shareCents),
 						note: `AGE keeps ${money(s.money.platformCents)}`
 					},
@@ -218,6 +219,10 @@
 			{/each}
 		</dl>
 	</section>
+
+	{#if course.firstPublishedAt}
+		<AgreementPanel {course} admin={!!data.money} />
+	{/if}
 
 	<div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
 		<!-- topics -->

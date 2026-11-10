@@ -87,10 +87,13 @@ test('buying a course: a declined card, then one that works', async ({ page }, t
 	// The fake gateway doesn't keep cards on file.
 	await page.getByLabel('Save this card to my account for next time.').uncheck();
 	const zip = page.locator('#cf-zip');
-	const pay = page.getByRole('button', { name: /^Pay \$40/ });
+	const pay = page.getByRole('button', { name: /^Pay \$41\.50/ });
 
-	// ZIP 46282 is the sandbox's decline.
+	// Payment waits for the refund-policy box.
 	await zip.fill('46282');
+	await expect(pay).toBeDisabled();
+	await page.getByRole('checkbox', { name: /lose my right to a refund/ }).check();
+	// ZIP 46282 is the sandbox's decline.
 	await pay.click();
 	await expect(page.getByRole('alert')).toContainText('declined');
 

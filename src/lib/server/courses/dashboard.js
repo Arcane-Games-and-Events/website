@@ -15,8 +15,6 @@ import {
 	deskLessonProgress,
 	user as userTable
 } from '$lib/server/db/schema.js';
-import { userHasPremiumAccess } from '$lib/server/articles/access.js';
-import { isAddedAfterLaunch } from './access.js';
 
 /** How far back the feed looks. */
 const FEED_DAYS = 120;
@@ -25,8 +23,7 @@ const EXCERPT = 220;
 /**
  * Recent happenings across the student's courses, newest first: threads
  * started (teacher updates marked as such) and topics added since launch.
- * Only visible posts; a topic is flagged `premiumOnly` when this student
- * would need Premium to open it.
+ * Only visible posts.
  */
 export async function courseFeed(user, { limit = 40 } = {}) {
 	if (!user) return [];
@@ -79,7 +76,6 @@ export async function courseFeed(user, { limit = 40 } = {}) {
 				title: deskLesson.title,
 				isPreview: deskLesson.isPreview,
 				firstPublishedAt: deskLesson.firstPublishedAt,
-				courseLaunch: deskCourse.firstPublishedAt,
 				courseId: deskLesson.courseId,
 				courseSlug: deskCourse.slug,
 				courseTitle: deskCourse.title
@@ -100,7 +96,6 @@ export async function courseFeed(user, { limit = 40 } = {}) {
 			.limit(limit)
 	]);
 
-	const premium = userHasPremiumAccess(user);
 	const items = [
 		...threads.map((t) => {
 			const text = String(t.excerpt || '');
@@ -125,8 +120,6 @@ export async function courseFeed(user, { limit = 40 } = {}) {
 			id: t.id,
 			at: t.firstPublishedAt,
 			title: t.title,
-			premiumOnly:
-				!t.isPreview && !premium && isAddedAfterLaunch(t, { firstPublishedAt: t.courseLaunch }),
 			course: { slug: t.courseSlug, title: t.courseTitle },
 			href: `/academy/${t.courseSlug}/${t.slug}`
 		}))

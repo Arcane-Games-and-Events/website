@@ -129,7 +129,8 @@
 		return referralNudge && n <= 100 ? n : null;
 	});
 
-	const T = AGE.TOP_SELLER_COPIES_PER_YEAR;
+	// "Senior from 1,000 copies, 93% · Elite from 5,000 copies, 95%"
+	const [, SENIOR, ELITE] = AGE.LEVELS;
 	/** The results table, in order; the pool rows only when the estimate is on. */
 	const ROWS = $derived([
 		{
@@ -137,7 +138,7 @@
 			m: { v: r.metafy.perSale, f: usd },
 			a: { v: r.age.perSale, f: usd },
 			note: r.age.topSeller
-				? `${usd(r.age.topSellerPerSale)} on copies above ${T} a year (top-seller rate)`
+				? `${usd(r.age.levelPerSale)} on copies past ${count(r.age.level.from)} (${r.age.level.name} level)`
 				: ''
 		},
 		{
@@ -212,7 +213,7 @@
 		],
 		[
 			'Sell more, keep more',
-			`Once you sell more than ${AGE.TOP_SELLER_COPIES_PER_YEAR} copies a year across all your guides, you keep ${share(AGE.TOP_SELLER_TEACHER_SHARE)} of each further copy that year. Earlier copies stay at ${share(AGE.TEACHER_SHARE)}.`
+			`Partner levels count every copy you’ve ever sold, across all your guides, and never reset. Past ${count(SENIOR.from)} copies you reach ${SENIOR.name} and keep ${share(SENIOR.share)}; past ${count(ELITE.from)}, ${ELITE.name} at ${share(ELITE.share)}. Senior and Elite rates apply to non-member sales; sales to Premium members pay ${share(AGE.MEMBER_SALE_SHARE)}.`
 		],
 		[
 			'No buyer fees',
@@ -228,7 +229,7 @@
 		],
 		[
 			'Share in AGE’s profits',
-			`Sell ${POOL.START_COPIES_PER_YEAR} copies a year and you join the profit share: ${share(POOL.PCT)} of AGE Premium revenue, split among partners by how much members read each guide.`
+			`Once AGE has ${count(POOL.START_MEMBERS)} Premium members, ${share(POOL.PCT)} of Premium revenue goes to a profit share. Sell ${POOL.START_COPIES_PER_YEAR} copies a year and you join it, split by how much members read each guide.`
 		]
 	];
 
@@ -242,7 +243,7 @@
 		[
 			'◆',
 			'You keep more',
-			`${share(AGE.TEACHER_SHARE)} of every sale, ${share(AGE.TOP_SELLER_TEACHER_SHARE)} past ${AGE.TOP_SELLER_COPIES_PER_YEAR} copies a year, and no monthly fee.`
+			`${share(AGE.TEACHER_SHARE)} of every sale, up to ${share(ELITE.share)} as you reach ${SENIOR.name} and ${ELITE.name}, and no monthly fee.`
 		],
 		[
 			'✦',
@@ -257,7 +258,7 @@
 	const TERMS = [
 		[
 			'Your share of list price',
-			`${share(AGE.TEACHER_SHARE)}, then ${share(AGE.TOP_SELLER_TEACHER_SHARE)} past ${AGE.TOP_SELLER_COPIES_PER_YEAR} copies a year across all your guides`,
+			`${share(AGE.TEACHER_SHARE)}, then ${share(SENIOR.share)} past ${count(SENIOR.from)} lifetime copies and ${share(ELITE.share)} past ${count(ELITE.from)} (non-member sales)`,
 			share(1 - METAFY.CORE_FEE_PCT),
 			'100%'
 		],
@@ -277,7 +278,7 @@
 		['Referral bonus', `$${AGE.REFERRAL_BONUS} per Premium signup`, '—', '—'],
 		[
 			'Teacher profit share',
-			`${share(POOL.PCT)} of AGE Premium revenue shared with partners selling ${POOL.START_COPIES_PER_YEAR}+ copies a year, split by member reading`,
+			`${share(POOL.PCT)} of AGE Premium revenue, once AGE has ${count(POOL.START_MEMBERS)} members, shared with partners selling ${POOL.START_COPIES_PER_YEAR}+ copies a year, split by member reading`,
 			'—',
 			'—'
 		]
@@ -396,10 +397,14 @@
 		['Referral bonuses', `$${AGE.REFERRAL_BONUS} for every AGE Premium signup through your link.`],
 		[
 			'Profit share',
-			`Partners share in AGE Premium: ${share(POOL.PCT)} of its revenue goes to teachers selling ${POOL.START_COPIES_PER_YEAR}+ copies a year, split by how much members read each guide.`
+			`Partners share in AGE Premium: once AGE has ${count(POOL.START_MEMBERS)} members, ${share(POOL.PCT)} of its revenue goes to teachers selling ${POOL.START_COPIES_PER_YEAR}+ copies a year, split by how much members read each guide.`
 		],
 		['No monthly fee', 'Nothing to pay to sell. AGE only earns when you do.'],
-		['Your work stays yours', 'You keep ownership of everything you publish.']
+		['Your work stays yours', 'You keep ownership of everything you publish.'],
+		[
+			'Refunds',
+			'Refunds follow AGE’s guide refund policy. Refunded sales are deducted from your next payout and don’t count toward your lifetime copies. You can approve refunds for your own guides; AGE handles duplicate charges, technical problems and chargebacks.'
+		]
 	];
 </script>
 
@@ -848,7 +853,7 @@
 					<div>
 						<h3 class="text-[15px] font-bold">Where one {usd(last.price)} sale goes</h3>
 						<p class="mt-1 text-[13px] text-fade">
-							At your price, on your first {AGE.TOP_SELLER_COPIES_PER_YEAR} copies a year.
+							At your price, on your first {count(SENIOR.from)} copies.
 						</p>
 						<div class="mt-6 space-y-8">
 							{#each [['AGE Partner', sale.age, 'AGE', 0], [metafyLabel, sale.metafy, 'Metafy', sale.metafy.monthlyFee]] as [name, b, platform, monthly] (name)}

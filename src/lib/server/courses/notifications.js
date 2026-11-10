@@ -6,7 +6,8 @@
  * - The Classroom (its home page, /classroom): what teachers, admins and
  *   editors need to know about the courses they run: a course sent for
  *   approval, approved or returned, unlisted or relisted by someone else,
- *   new students, new threads and flagged posts, payouts recorded.
+ *   new students, new threads and flagged posts, payouts recorded,
+ *   refund requests on their guides.
  *
  * Each has its own unread count in the header menu. Someone who runs a
  * course (its teacher, or an admin or editor) never hears about it in My
@@ -39,6 +40,7 @@ export const CLASSROOM_KINDS = [
 	'course_listed',
 	'new_student',
 	'payout_paid',
+	'refund_request',
 	'course_reply',
 	'course_post_removed'
 ];
@@ -56,10 +58,19 @@ const FOR_RUNNERS = {
 	course_update: null,
 	new_topic: null
 };
+/**
+ * Kinds no longer shown anywhere: each purchase used to notify the teacher
+ * (new_student); the Classroom's updates are about running a course, so
+ * sales live on Earnings instead. Old rows stay hidden in both places.
+ */
+const RETIRED_KINDS = ['new_student'];
 const isClassroom = (kind) => CLASSROOM_KINDS.includes(kind);
 const scopeWhere = (scope) =>
 	scope === 'classroom'
-		? inArray(notification.kind, CLASSROOM_KINDS)
+		? inArray(
+				notification.kind,
+				CLASSROOM_KINDS.filter((k) => !RETIRED_KINDS.includes(k))
+			)
 		: scope === 'learning'
 			? notInArray(notification.kind, CLASSROOM_KINDS)
 			: undefined;
@@ -284,6 +295,7 @@ function hrefFor(r) {
 /** Where a Classroom notification takes its reader. */
 function classroomHref(r) {
 	if (r.kind === 'payout_paid') return '/classroom/earnings';
+	if (r.kind === 'refund_request') return '/classroom/refunds';
 	if (!r.courseId) return '/classroom';
 	const base = `/classroom/courses/${r.courseId}`;
 	if (r.kind === 'course_submitted') return `${base}/review`;
@@ -382,6 +394,15 @@ export async function markSeen(userId, path) {
 }
 
 /** Everyone who oversees courses: admins and editors. */
+/** Every admin (refunds and money are theirs, not editors'). */
+export async function adminIds() {
+	const rows = await db
+		.select({ id: userTable.id })
+		.from(userTable)
+		.where(eq(userTable.role, 'admin'));
+	return rows.map((r) => r.id);
+}
+
 export async function overseerIds() {
 	const rows = await db
 		.select({ id: userTable.id })

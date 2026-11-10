@@ -149,8 +149,8 @@
 			d: 'Every bonus gameplay video from every AGE Open, ready to rewatch.'
 		},
 		{
-			t: 'Course updates for life',
-			d: 'Own an Academy course and members get the author’s updates as the meta moves.'
+			t: '10% off every guide',
+			d: 'Members pay less for every Academy guide, and every guide comes with its future updates.'
 		},
 		{
 			t: 'AGE Open discounts',
@@ -168,8 +168,8 @@
 			a: 'Any time, from your account. You keep access until the end of the period you have paid for.'
 		},
 		{
-			q: 'Do I need Premium to buy a course?',
-			a: 'No. Courses are bought once and are yours for life, with every revision and correction the author makes. Premium adds the new topics authors add after a course launches.'
+			q: 'Do I need Premium to buy a guide?',
+			a: 'No. Guides are bought once and are yours for life, with every future update included. Premium members pay 10% less for every guide.'
 		},
 		{
 			q: 'Monthly or annual?',
@@ -242,7 +242,7 @@
 					<ol
 						class="grid gap-px border-y border-[var(--pm-rule)] bg-[var(--pm-rule)] sm:grid-cols-2 lg:grid-cols-4"
 					>
-						{#each [{ href: '/library', label: 'Library', desc: 'Every premium article and the full gameplay library.' }, { href: '/academy', label: 'Academy', desc: 'Your courses, with new topics included.' }, { href: '/age-open', label: 'AGE Open', desc: 'Standings, results and member event discounts.' }, { href: '/account', label: 'Account', desc: 'Your membership, saved cards and billing.' }] as link, i (link.href)}
+						{#each [{ href: '/library', label: 'Library', desc: 'Every premium article and the full gameplay library.' }, { href: '/academy', label: 'Academy', desc: 'Your guides, 10% off for members.' }, { href: '/age-open', label: 'AGE Open', desc: 'Standings, results and member event discounts.' }, { href: '/account', label: 'Account', desc: 'Your membership, saved cards and billing.' }] as link, i (link.href)}
 							<li class="bg-[var(--pm-cream)]">
 								<a
 									href={link.href}

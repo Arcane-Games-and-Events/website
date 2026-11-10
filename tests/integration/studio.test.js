@@ -39,7 +39,7 @@ beforeEach(async () => {
 
 async function landing(load, user, path) {
 	try {
-		await load({ locals: { user }, url: new URL(`http://localhost${path}`) });
+		await load({ locals: { user }, url: new URL(`http://localhost${path}`), depends: () => {} });
 		return 'ok';
 	} catch (err) {
 		if (err?.status >= 300 && err?.status < 400) return err.location;

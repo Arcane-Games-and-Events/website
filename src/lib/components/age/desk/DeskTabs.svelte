@@ -2,7 +2,8 @@
 	/**
 	 * Desk tabs — Home / Entries / Images / Videos / Analytics / Users / Profile.
 	 * In the Classroom the same strip shows the Classroom's tabs instead:
-	 * Home / Courses / Earnings / Payouts / Profile (by role); in the Studio, the
+	 * Home / Courses / Earnings / Refunds (with a count waiting) / Payouts /
+	 * Profile (by role); in the Studio, the
 	 * Studio's: Home / Media / Shows / Analytics / Images.
 	 *
 	 * Each page places this right under its own ink header, so the tabs
@@ -14,6 +15,7 @@
 	 */
 	let { label = false, sticky = true } = $props();
 	import { page } from '$app/stores';
+	import NotificationBadge from '$lib/components/age/NotificationBadge.svelte';
 
 	const d = $derived($page.data || {});
 	const path = $derived($page.url.pathname);
@@ -37,13 +39,15 @@
 			: classroom
 				? path.startsWith('/classroom/earnings')
 					? 'earnings'
-					: path.startsWith('/classroom/payouts')
-						? 'payouts'
-						: path.startsWith('/classroom/profile')
-							? 'profile'
-							: path.startsWith('/classroom/courses') && d.oversee
-								? 'courses'
-								: 'home'
+					: path.startsWith('/classroom/refunds')
+						? 'refunds'
+						: path.startsWith('/classroom/payouts')
+							? 'payouts'
+							: path.startsWith('/classroom/profile')
+								? 'profile'
+								: path.startsWith('/classroom/courses') && d.oversee
+									? 'courses'
+									: 'home'
 				: path === '/desk' || path === '/desk/'
 					? 'home'
 					: path.startsWith('/desk/users')
@@ -73,6 +77,7 @@
 		earnings:
 			'M3.5 5.5h13v9h-13zM10 12.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5zM5.5 8v4M14.5 8v4',
 		payouts: 'M3.5 6.5h13v8h-13zM3.5 9.5h13M6 12.5h3M10 3.5v3',
+		refunds: 'M7 6.5 4 9.5l3 3M4 9.5h8.5a3.5 3.5 0 0 1 0 7H9',
 		media: 'M3.5 5h13v10h-13zM8.5 7.75v4.5l4-2.25z',
 		shows: 'M7 3.5h6v8a3 3 0 0 1-6 0zM4.5 10a5.5 5.5 0 0 0 11 0M10 15.5v2',
 		projects:
@@ -97,6 +102,13 @@
 						{ id: 'home', href: '/classroom', label: 'Home', show: true },
 						{ id: 'courses', href: '/classroom/courses', label: 'Courses', show: d.oversee },
 						{ id: 'earnings', href: '/classroom/earnings', label: 'Earnings', show: d.isTeacher },
+						{
+							id: 'refunds',
+							href: '/classroom/refunds',
+							label: 'Refunds',
+							show: d.isTeacher || d.isAdmin,
+							badge: d.refundsPending || 0
+						},
 						{ id: 'payouts', href: '/classroom/payouts', label: 'Payouts', show: d.isAdmin },
 						{ id: 'profile', href: '/classroom/profile', label: 'Profile', show: true }
 					]
@@ -144,16 +156,24 @@
 					? 'border-gold text-paper-bg'
 					: 'border-transparent text-paper-bg/55 active:text-paper-bg'}"
 			>
-				<svg
-					viewBox="0 0 20 20"
-					class="h-[18px] w-[18px] {current === tab.id ? 'text-gold' : ''}"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="1.6"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					aria-hidden="true"><path d={ICON[tab.id]} /></svg
-				>
+				<span class="relative">
+					<svg
+						viewBox="0 0 20 20"
+						class="h-[18px] w-[18px] {current === tab.id ? 'text-gold' : ''}"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.6"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"><path d={ICON[tab.id]} /></svg
+					>
+					{#if tab.badge}<NotificationBadge
+							count={tab.badge}
+							ring="ring-ink"
+							class="absolute -top-2 left-[calc(100%-6px)] scale-90"
+							label="{tab.badge} waiting"
+						/>{/if}
+				</span>
 				<span
 					class="max-w-full truncate px-0.5 text-[8.5px] leading-none font-extrabold tracking-[0.08em] uppercase"
 					>{tab.label}</span
@@ -186,6 +206,12 @@
 						: 'border-transparent text-paper-bg/55 hover:text-paper-bg'}"
 				>
 					{tab.label}
+					{#if tab.badge}<NotificationBadge
+							count={tab.badge}
+							ring="ring-ink"
+							class="ml-2"
+							label="{tab.badge} waiting"
+						/>{/if}
 				</a>
 			{/each}
 		</nav>

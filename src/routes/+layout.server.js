@@ -4,6 +4,7 @@ import { eq, and, gte, or, isNull, asc } from 'drizzle-orm';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import { cachedUnreadCount } from '$lib/server/courses/notifications.js';
 import { realtimeClientConfig } from '$lib/server/realtime.js';
+import { readCart } from '$lib/server/partner/cart.js';
 
 // Per-user cached lookups on the layout hot path. Each is guarded so an
 // individual failure just falls back to the safe default without failing
@@ -81,7 +82,9 @@ async function safeNextEvent() {
 	}
 }
 
-export const load = async ({ locals }) => {
+export const load = async ({ locals, cookies, depends }) => {
+	// Adding to or emptying the cart refreshes the count in the header.
+	depends('app:cart');
 	// This function runs on EVERY navigation — every extra sequential
 	// Redis await here compounds site-wide. Run the three cache lookups
 	// in parallel so the layout latency is `max(A, B, C)` (~150 ms on
@@ -110,6 +113,8 @@ export const load = async ({ locals }) => {
 		unreadNotifications: unread?.learning ?? 0,
 		classroomUnread: unread?.classroom ?? 0,
 		// Where signed-in browsers connect for live updates (null when off).
-		realtime: userId ? realtimeClientConfig() : null
+		realtime: userId ? realtimeClientConfig() : null,
+		// Guides in the cart (a cookie; no database read).
+		cartCount: readCart(cookies).length
 	};
 };

@@ -1,15 +1,16 @@
 import { error } from '@sveltejs/kit';
 import { userHasPremiumAccess } from '$lib/server/articles/access.js';
 import { courseForReader, topicBody } from '$lib/server/courses/reader.js';
-import { openLesson } from '$lib/server/courses/progress.js';
+import { markOpened, openLesson } from '$lib/server/courses/progress.js';
 import { extractEntryCardNames, resolveCardImages } from '$lib/server/desk/entryData.js';
 import { mediaImagesById } from '$lib/server/media/library.js';
 import { extractMediaIds } from '$lib/desk/render/lexical-utils.js';
+import { recordGuideRead } from '$lib/server/partner/pool.js';
 
 /**
- * One topic of a course. Open to its students (topics added after they
- * enrolled need Premium), to everyone when it's Free to read, and to the
- * course's teacher, drafts included.
+ * One topic of a course. Open to its students, to everyone when it's Free
+ * to read, and to the course's teacher, drafts included. A Premium member
+ * reading a guide they own counts toward the teacher pool.
  */
 export async function load({ params, locals, setHeaders }) {
 	const r = await courseForReader(params.slug, locals.user);
@@ -41,7 +42,12 @@ export async function load({ params, locals, setHeaders }) {
 				mediaImagesById(extractMediaIds(body))
 			]);
 		}
-		if (enrollment) await openLesson(enrollment, lesson.id);
+		if (enrollment) {
+			await openLesson(enrollment, lesson.id);
+			await markOpened(enrollment, lesson);
+		}
+		if (enrollment && userHasPremiumAccess(locals.user))
+			await recordGuideRead(locals.user.id, course.id);
 	}
 
 	const open = topics.filter((t) => t.access === 'open');

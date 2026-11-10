@@ -29,6 +29,22 @@
 		refundFormRef.requestSubmit();
 	}
 
+	/** Refund one guide or record a chargeback, then show the result like a refund. */
+	const guideAction = () => {
+		refundLoading = true;
+		refundError = '';
+		refundSuccess = '';
+		return async ({ result }) => {
+			refundLoading = false;
+			if (result.type === 'success') {
+				refundSuccess = result.data?.message || 'Done';
+				await invalidateAll();
+			} else if (result.type === 'failure') {
+				refundError = result.data?.error || 'That didn’t work';
+			}
+		};
+	};
+
 	function formatCurrency(amount) {
 		return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
 			amount || 0
@@ -283,6 +299,107 @@
 							</dd>
 						</div>
 					</dl>
+					{#if data.relatedData?.guides?.length}
+						<!-- A guides order (the Partner model): each guide on its own. -->
+						<ul class="mt-[16px] divide-y divide-line border-y border-line2">
+							{#each data.relatedData.guides as g (g.itemId)}
+								<li class="flex flex-wrap items-center justify-between gap-3 py-3">
+									<div class="min-w-0">
+										<p class="font-newsreader text-[16px] font-semibold">{g.title}</p>
+										<p class="text-[12px] text-fade tabular-nums">
+											Paid {formatCurrency(g.paidCents / 100)} · list {formatCurrency(
+												g.listCents / 100
+											)}
+											{#if g.sale}
+												· teacher {formatCurrency(g.sale.teacherCents / 100)} ({g.sale.level}, copy
+												#{g.sale.copyNumber}) ·
+												<span class={g.sale.status === 'paid' ? '' : 'font-semibold text-hero-rb'}
+													>{g.sale.status.replace('_', ' ')}</span
+												>
+											{/if}
+										</p>
+									</div>
+									{#if g.sale?.status === 'paid'}
+										<div class="flex gap-2">
+											<form method="POST" action="?/refundGuide" use:enhance={guideAction}>
+												<input type="hidden" name="itemId" value={g.itemId} />
+												<button
+													class="h-[34px] border border-hero-rb px-3 text-[9.5px] font-extrabold tracking-[0.14em] text-hero-rb uppercase hover:bg-hero-rb hover:text-white"
+													onclick={(e) => {
+														if (
+															!confirm(`Refund ${g.title} (${formatCurrency(g.paidCents / 100)})?`)
+														)
+															e.preventDefault();
+													}}>Refund guide</button
+												>
+											</form>
+											<form method="POST" action="?/chargeback" use:enhance={guideAction}>
+												<input type="hidden" name="itemId" value={g.itemId} />
+												<button
+													class="h-[34px] border border-line2 px-3 text-[9.5px] font-extrabold tracking-[0.14em] uppercase hover:border-ink"
+													onclick={(e) => {
+														if (
+															!confirm(
+																`Record a chargeback for ${g.title}? This reverses the teacher's sale and removes the guide.`
+															)
+														)
+															e.preventDefault();
+													}}>Chargeback</button
+												>
+											</form>
+										</div>
+									{/if}
+								</li>
+							{/each}
+						</ul>
+					{/if}
+					{#if data.relatedData?.evidence}
+						{@const e = data.relatedData.evidence}
+						<!-- Dispute evidence: what the buyer agreed to, and when they opened each guide. -->
+						<div class="mt-[16px] border border-line2 bg-paper p-4 text-[12.5px]">
+							<div class="flex items-baseline justify-between gap-3">
+								<span class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+									>Dispute evidence</span
+								>
+								<a
+									href="/admin/orders/{data.order.id}/evidence"
+									class="text-[10px] font-extrabold tracking-[0.14em] uppercase hover:text-warm"
+									>Download summary</a
+								>
+							</div>
+							{#if e.consent?.given}
+								<p class="mt-2">
+									Agreed to the refund policy at {formatDate(e.consent.at)}{e.consent.ip
+										? ` from ${e.consent.ip}`
+										: ''}:
+								</p>
+								<p class="mt-1 text-soft italic">“{e.consent.text}”</p>
+							{:else}
+								<p class="mt-2 text-soft">No refund-policy consent recorded for this order.</p>
+							{/if}
+							<ul class="mt-2 space-y-1">
+								{#each e.guides as g, i (g.itemId || i)}
+									<li>
+										<span class="font-semibold">{g.title}</span>: {g.firstOpenedAt
+											? `first opened ${formatDate(g.firstOpenedAt)}`
+											: 'never opened'}{g.topicsCompleted
+											? `, ${g.topicsCompleted} topics completed`
+											: ''}
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
+					{#if !data.relatedData?.guides?.length && data.relatedData?.legacySale?.status === 'paid'}
+						<form method="POST" action="?/chargeback" use:enhance={guideAction} class="mt-3">
+							<button
+								class="h-[34px] border border-line2 px-3 text-[9.5px] font-extrabold tracking-[0.14em] uppercase hover:border-ink"
+								onclick={(e) => {
+									if (!confirm('Record a chargeback for this order?')) e.preventDefault();
+								}}>Record chargeback</button
+							>
+						</form>
+					{/if}
 				{:else if data.order.meta?.type === 'subscription'}
 					<dl class="mt-[16px] grid gap-[18px] border-t border-line2 pt-[16px] sm:grid-cols-2">
 						{#if data.order.meta.subscriptionType}

@@ -114,6 +114,27 @@ export async function load({ locals }) {
 			};
 		}
 
+		// Academy guides: one, or several bought together in one cart.
+		if (o.kind === 'course' || o.meta?.type === 'course') {
+			const guides = o.meta?.guides?.length
+				? o.meta.guides.map((g) => ({ title: g.title, slug: g.slug }))
+				: [{ title: o.meta?.courseTitle || 'Academy guide', slug: o.meta?.courseSlug || null }];
+			return {
+				id: o.id,
+				type: 'guides',
+				createdAt: o.createdAt,
+				amount,
+				refunded,
+				status,
+				card,
+				title: guides.length === 1 ? guides[0].title : `${guides.length} guides`,
+				label: guides.length === 1 ? 'Guide' : 'Guides',
+				guides,
+				discount: Number(o.meta?.discountAmount) || 0,
+				memberPrice: !!o.meta?.member
+			};
+		}
+
 		const ev = eventById.get(o.meta?.eventId) || null;
 		const players = ticketsByOrder.get(o.id) || [];
 		const names = players

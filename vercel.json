@@ -16,6 +16,10 @@
 		{
 			"path": "/api/cron/studio-network",
 			"schedule": "40 * * * *"
+		},
+		{
+			"path": "/api/cron/partner-pool",
+			"schedule": "0 9 2 * *"
 		}
 	],
 	"headers": [

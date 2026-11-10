@@ -9,14 +9,9 @@
  */
 import { and, asc, eq, gte, isNotNull, isNull, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
-import {
-	courseEnrollment,
-	coursePost,
-	courseSale,
-	deskLesson,
-	deskModule
-} from '$lib/server/db/schema.js';
+import { courseEnrollment, coursePost, deskLesson, deskModule } from '$lib/server/db/schema.js';
 import { listStudents } from './roster.js';
+import { salesSource, salesSql } from '$lib/server/partner/sales.js';
 
 const rowsOf = (r) => r?.rows ?? r ?? [];
 const day = (d) => new Date(d).toISOString().slice(0, 10);
@@ -51,6 +46,7 @@ function tally(items, fn, limit = 8) {
 export async function courseAnalytics(courseId, days = 30) {
 	const since = new Date(Date.now() - days * 864e5);
 
+	const S = salesSource();
 	const [views, enrollments, salesRows, topics, posts, students] = await Promise.all([
 		db
 			.execute(
@@ -71,13 +67,15 @@ export async function courseAnalytics(courseId, days = 30) {
 			.where(and(eq(courseEnrollment.courseId, courseId), gte(courseEnrollment.createdAt, since))),
 		db
 			.select({
-				soldAt: courseSale.soldAt,
-				grossCents: courseSale.grossCents,
-				refundedCents: courseSale.refundedCents,
-				sharePct: courseSale.sharePct
+				soldAt: S.soldAt,
+				grossCents: S.grossCents,
+				refundedCents: S.refundedCents,
+				sharePct: S.sharePct
 			})
-			.from(courseSale)
-			.where(and(eq(courseSale.courseId, courseId), gte(courseSale.soldAt, since))),
+			.from(S)
+			.where(
+				and(eq(S.courseId, courseId), sql`${S.soldAt} >= ${since.toISOString()}::timestamptz`)
+			),
 		db
 			.select({
 				id: deskLesson.id,
@@ -278,7 +276,7 @@ export async function classroomAnalytics(courseIds, days = 30) {
 				sql`SELECT s.course_id,
 					coalesce(sum(s.gross_cents - s.refunded_cents), 0)::int AS net,
 					coalesce(sum(round((s.gross_cents - s.refunded_cents) * s.share_pct / 100.0)), 0)::int AS earned
-				FROM course_sale s
+				FROM ${salesSql()} s
 				WHERE s.course_id IN (${ids}) AND s.sold_at >= ${since}::timestamptz
 				GROUP BY 1`
 			)

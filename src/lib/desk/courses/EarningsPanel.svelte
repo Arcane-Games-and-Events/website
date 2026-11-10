@@ -46,7 +46,7 @@
 				{earnings.next.sales === 1 ? 'sale' : 'sales'}
 			</p>
 		</div>
-		{#each [['On hold', t.onHoldCents, `Sales from the last ${earnings.holdDays} days`], ['Earned', t.earnedCents, `${earnings.sharePct}% of ${money(t.grossCents - t.refundedCents)} in sales`], ['Paid to you', t.paidCents, single ? 'From this course' : 'All time']] as [label, cents, sub] (label)}
+		{#each [['On hold', t.onHoldCents, `Sales from the last ${earnings.holdDays} days`], ['Earned', t.earnedCents, `Your share of ${money(t.grossCents - t.refundedCents)} at list price`], ['Paid to you', t.paidCents, single ? 'From this course' : 'All time']] as [label, cents, sub] (label)}
 			<div class="bg-white px-5 py-5">
 				<p class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">{label}</p>
 				<p class="mt-1.5 font-newsreader text-[28px] leading-none font-semibold tabular-nums">
@@ -58,9 +58,10 @@
 	</div>
 
 	<p class="max-w-[760px] text-[13px] leading-relaxed text-soft">
-		You earn {earnings.sharePct}% of what each student pays. A sale is held for {earnings.holdDays}
-		days (the refund window), then paid on the next payout. AGE pays on the first Monday of every month,
-		outside the site; this page is for your information.
+		You earn 90% of each copy’s list price (up to 95% on non-member sales as you reach Senior and
+		Elite). A sale is held for {earnings.holdDays} days, and until Authorize.net confirms the payment,
+		then lands on that month’s statement, paid on the first Monday of the next month. Your levels, referral
+		bonuses and statements are on <a href="/classroom/earnings" class="underline">Earnings</a>.
 	</p>
 
 	<div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
