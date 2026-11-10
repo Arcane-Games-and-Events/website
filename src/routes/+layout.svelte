@@ -49,7 +49,8 @@
 		'/partner',
 		'/terms',
 		'/privacy',
-		'/refund-policy'
+		'/refund-policy',
+		'/contact'
 	];
 	const editorialPrefixes = [
 		'/account',
@@ -64,7 +65,8 @@
 		'/classroom',
 		'/studio',
 		'/studios',
-		'/admin'
+		'/admin',
+		'/contact/'
 	];
 	// Substring tests for paths that don't fit a clean prefix — e.g. the
 	// AGE Open decklist viewer lives under `/age-open/[eventId]/decklist/

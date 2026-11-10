@@ -118,10 +118,11 @@
 					Write to us and a person will answer. Arcane Games and Events LLC runs AGE.
 				</p>
 				<a
-					href="mailto:info@arcanegamesandevents.com"
+					href="/contact"
 					class="mt-4 inline-flex items-center bg-ink px-5 py-3 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm"
-					>info@arcanegamesandevents.com</a
+					>Send us a message</a
 				>
+				<p class="mt-3 text-[12.5px] text-fade">Or by email: info@arcanegamesandevents.com</p>
 			</section>
 		</div>
 	</div>

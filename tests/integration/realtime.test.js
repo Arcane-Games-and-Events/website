@@ -127,7 +127,7 @@ describe('notification badges', () => {
 		await notify([a.id], { kind: 'course_update' });
 		await notify([a.id], { kind: 'new_student' });
 		const r = await callRoute(unreadRoute, { method: 'GET', user: a });
-		expect(r.body).toEqual({ learning: 1, classroom: 1 });
+		expect(r.body).toEqual({ learning: 1, classroom: 1, messages: 0, inbox: 0 });
 		expect((await callRoute(unreadRoute, { method: 'GET' })).status).toBe(401);
 	});
 });
@@ -235,14 +235,20 @@ describe('opening a notification’s page reads it', () => {
 
 		// Somewhere else: nothing changes.
 		let r = await callRoute(seenRoute, { user: alice, body: { path: `/academy/${course.slug}` } });
-		expect(r.body).toEqual({ marked: 0, counts: { learning: 1, classroom: 0 } });
+		expect(r.body).toEqual({
+			marked: 0,
+			counts: { learning: 1, classroom: 0, messages: 0, inbox: 0 }
+		});
 
 		// The conversation itself (a trailing slash is the same page).
 		r = await callRoute(seenRoute, {
 			user: alice,
 			body: { path: `/academy/${course.slug}/discussion/${t.id}/` }
 		});
-		expect(r.body).toEqual({ marked: 1, counts: { learning: 0, classroom: 0 } });
+		expect(r.body).toEqual({
+			marked: 1,
+			counts: { learning: 0, classroom: 0, messages: 0, inbox: 0 }
+		});
 		expect(on(`user:${alice.id}`, 'notes').length).toBeGreaterThan(0);
 
 		// The teacher's "new conversation" stays until they open it.

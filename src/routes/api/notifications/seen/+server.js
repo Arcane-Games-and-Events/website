@@ -1,5 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import { markSeen } from '$lib/server/courses/notifications.js';
+import { cachedMessageCounts } from '$lib/server/contact/inbox.js';
 
 /**
  * POST { path }: the signed-in user opened this page. Marks read whatever
@@ -11,5 +12,9 @@ export async function POST({ request, locals }) {
 	const { path } = await request.json().catch(() => ({}));
 	if (typeof path !== 'string' || !path.startsWith('/') || path.length > 300)
 		error(400, 'Which page?');
-	return json(await markSeen(locals.user.id, path));
+	const [seen, contact] = await Promise.all([
+		markSeen(locals.user.id, path),
+		cachedMessageCounts(locals.user)
+	]);
+	return json({ ...seen, counts: { ...seen.counts, ...contact } });
 }

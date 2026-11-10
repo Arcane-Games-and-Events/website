@@ -5,6 +5,7 @@ import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import { cachedUnreadCount } from '$lib/server/courses/notifications.js';
 import { realtimeClientConfig } from '$lib/server/realtime.js';
 import { readCart } from '$lib/server/partner/cart.js';
+import { cachedMessageCounts } from '$lib/server/contact/inbox.js';
 
 // Per-user cached lookups on the layout hot path. Each is guarded so an
 // individual failure just falls back to the safe default without failing
@@ -93,11 +94,12 @@ export const load = async ({ locals, cookies, depends }) => {
 	// instantly to their defaults.
 	const userId = locals.user?.id ?? null;
 
-	const [assignedEventsCount, isPartner, nextEvent, unread] = await Promise.all([
+	const [assignedEventsCount, isPartner, nextEvent, unread, contact] = await Promise.all([
 		userId ? safeStaffCount(userId) : Promise.resolve(0),
 		userId ? safeIsPartner(userId) : Promise.resolve(false),
 		safeNextEvent(),
-		userId ? cachedUnreadCount(userId) : Promise.resolve({ learning: 0, classroom: 0 })
+		userId ? cachedUnreadCount(userId) : Promise.resolve({ learning: 0, classroom: 0 }),
+		cachedMessageCounts(locals.user)
 	]);
 
 	const isPremiumMember = locals.user?.role === 'premium' || locals.user?.role === 'admin';
@@ -112,6 +114,10 @@ export const load = async ({ locals, cookies, depends }) => {
 		// students, flagged posts…) count separately.
 		unreadNotifications: unread?.learning ?? 0,
 		classroomUnread: unread?.classroom ?? 0,
+		// Replies from AGE to this person's messages, and (admins) unread
+		// conversations in the contact inbox.
+		messagesUnread: contact.messages,
+		inboxUnread: contact.inbox,
 		// Where signed-in browsers connect for live updates (null when off).
 		realtime: userId ? realtimeClientConfig() : null,
 		// Guides in the cart (a cookie; no database read).

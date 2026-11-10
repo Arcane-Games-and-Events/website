@@ -330,9 +330,9 @@
 		</section>
 
 		<p class="mt-12 text-center font-newsreader text-[15px] text-soft">
-			Questions about the partner program? Email
-			<a href="mailto:info@arcanegamesandevents.com" class="font-semibold text-warm underline"
-				>info@arcanegamesandevents.com</a
+			Questions about the partner program?
+			<a href="/contact?topic=partnerships" class="font-semibold text-warm underline"
+				>Send us a message</a
 			>.
 		</p>
 	</div>

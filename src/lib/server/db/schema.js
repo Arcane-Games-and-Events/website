@@ -1858,3 +1858,43 @@ export const notification = pgTable('notification', {
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 	readAt: timestamp('read_at', { withTimezone: true, mode: 'date' })
 });
+
+// The contact inbox (migration 044): messages to AGE, answered on the site.
+export const contactThread = pgTable('contact_thread', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	// The private link a guest follows back to the conversation.
+	token: text('token').notNull().unique(),
+	userId: text('user_id').references(() => user.id, { onDelete: 'set null' }),
+	name: text('name').notNull(),
+	email: text('email').notNull(),
+	topic: text('topic').notNull().default('general'),
+	subject: text('subject').notNull(),
+	status: text('status').notNull().default('open'), // open | done
+	ip: text('ip'),
+	userAgent: text('user_agent'),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	lastMessageAt: timestamp('last_message_at', { withTimezone: true, mode: 'date' })
+		.notNull()
+		.defaultNow(),
+	lastMemberAt: timestamp('last_member_at', { withTimezone: true, mode: 'date' })
+		.notNull()
+		.defaultNow(),
+	lastStaffAt: timestamp('last_staff_at', { withTimezone: true, mode: 'date' }),
+	memberReadAt: timestamp('member_read_at', { withTimezone: true, mode: 'date' })
+		.notNull()
+		.defaultNow(),
+	staffReadAt: timestamp('staff_read_at', { withTimezone: true, mode: 'date' })
+});
+
+export const contactMessage = pgTable('contact_message', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	threadId: uuid('thread_id')
+		.notNull()
+		.references(() => contactThread.id, { onDelete: 'cascade' }),
+	authorId: text('author_id').references(() => user.id, { onDelete: 'set null' }),
+	fromStaff: boolean('from_staff').notNull().default(false),
+	// A note only staff see.
+	internal: boolean('internal').notNull().default(false),
+	body: text('body').notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});

@@ -2,6 +2,8 @@
 	import { page } from '$app/stores';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import PremiumTag from '$lib/components/age/PremiumTag.svelte';
+	import NotificationBadge from '$lib/components/age/NotificationBadge.svelte';
+	import { unread } from '$lib/realtime/unread.svelte.js';
 
 	let { data, children } = $props();
 
@@ -9,6 +11,7 @@
 		{ href: '/account/membership', label: 'Membership' },
 		{ href: '/account/tickets', label: 'Tickets' },
 		{ href: '/account/purchases', label: 'Purchases' },
+		{ href: '/account/messages', label: 'Messages' },
 		{ href: '/account/payment-methods', label: 'Payment methods' },
 		{ href: '/account/referrals', label: 'Referrals' },
 		{ href: '/account/profile', label: 'Profile' },
@@ -235,6 +238,12 @@
 								{t.label}
 								{#if t.href === '/account/tickets' && data.counts?.upcomingTickets}
 									<span class="text-[9px] text-fade">{data.counts.upcomingTickets}</span>
+								{/if}
+								{#if t.href === '/account/messages'}
+									<NotificationBadge
+										count={unread.messages}
+										label="{unread.messages} {unread.messages === 1 ? 'reply' : 'replies'} from AGE"
+									/>
 								{/if}
 							</span>
 							<span

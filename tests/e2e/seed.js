@@ -60,6 +60,10 @@ test('seed the browser-test database', async () => {
 		// Someone from the Studio, with an image in the Studio's library.
 		const producer = await createUser(person('producer', { additionalRoles: ['producer'] }));
 		const image = await createMedia(producer);
+		// An admin, for the contact inbox, and someone who writes to it (no
+		// course, so no other journey gives them a badge).
+		const admin = await createUser(person('admin', { role: 'admin' }));
+		const writer = await createUser(person('writer'));
 		await db.update(deskMedia).set({ library: 'studio' }).where(eq(deskMedia.id, image.id));
 		seed[project] = {
 			course: { id: course.id, slug: course.slug, title: course.title },
@@ -67,7 +71,9 @@ test('seed the browser-test database', async () => {
 			teacher: { email: teacher.email, name: `${teacher.firstName} ${teacher.lastName}` },
 			student: { email: student.email, name: `${student.firstName} ${student.lastName}` },
 			buyer: { email: buyer.email, name: `${buyer.firstName} ${buyer.lastName}` },
-			producer: { email: producer.email }
+			producer: { email: producer.email },
+			admin: { email: admin.email },
+			writer: { email: writer.email }
 		};
 	}
 	mkdirSync(dirname(SEED_FILE), { recursive: true });

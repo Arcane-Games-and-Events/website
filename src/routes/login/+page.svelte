@@ -113,8 +113,8 @@
 				</form>
 
 				<p class="mt-6 border-t border-line pt-4 font-newsreader text-[14px] text-soft italic">
-					Can’t get in? <a class="{LINK} not-italic" href="/contact">Write to us</a> and we’ll sort it
-					out.
+					Can’t get in? <a class="{LINK} not-italic" href="/contact?topic=account">Write to us</a> and
+					we’ll sort it out.
 				</p>
 			</div>
 		{/snippet}

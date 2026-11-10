@@ -53,6 +53,13 @@
 			count ? [{ count, text: count === 1 ? singular : plural, href, tone }] : [];
 		return [
 			...one(
+				a.inboxUnread,
+				'unread message in the inbox',
+				'unread messages in the inbox',
+				'/admin/inbox?show=unread',
+				'text-hero-rb'
+			),
+			...one(
 				a.refundRequests,
 				'ticket refund request to review',
 				'ticket refund requests to review',

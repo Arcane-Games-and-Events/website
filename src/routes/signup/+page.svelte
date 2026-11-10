@@ -1,5 +1,6 @@
 <script>
 	import { page } from '$app/stores';
+	import Turnstile from '$lib/components/age/Turnstile.svelte';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import AuthSplit from '$lib/components/age/auth/AuthSplit.svelte';
 	import {
@@ -24,7 +25,6 @@
 
 <svelte:head>
 	<title>Create your account — AGE</title>
-	<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </svelte:head>
 
 <AgeShell>
@@ -151,12 +151,7 @@
 					{/if}
 
 					{#if data?.turnstileSiteKey}
-						<div
-							class="cf-turnstile"
-							data-sitekey={data.turnstileSiteKey}
-							data-size="flexible"
-							data-appearance="interaction-only"
-						></div>
+						<Turnstile siteKey={data.turnstileSiteKey} />
 					{/if}
 
 					<button type="submit" class={BUTTON}

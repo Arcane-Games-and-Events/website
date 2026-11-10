@@ -31,7 +31,11 @@
 	// current live (see $lib/realtime/LiveUpdates.svelte).
 	const learningUnread = $derived(counts.learning);
 	const classroomUnread = $derived(counts.classroom);
-	const unread = $derived(learningUnread + classroomUnread);
+	// Replies from AGE to your messages, and (admins) unread conversations
+	// in the contact inbox.
+	const messagesUnread = $derived(counts.messages);
+	const inboxUnread = $derived(counts.inbox);
+	const unread = $derived(learningUnread + classroomUnread + messagesUnread + inboxUnread);
 	// Guides waiting in the cart; counted on the button with what's new.
 	const cartCount = $derived($page.data?.cartCount ?? 0);
 	const badgeCount = $derived(unread + cartCount);
@@ -153,6 +157,12 @@
 			badgeLabel: `${learningUnread} new in My courses`
 		},
 		{
+			label: 'Messages',
+			href: '/account/messages',
+			badge: messagesUnread,
+			badgeLabel: `${messagesUnread} ${messagesUnread === 1 ? 'reply' : 'replies'} from AGE`
+		},
+		{
 			label: 'Cart',
 			href: '/academy/cart',
 			badge: cartCount,
@@ -165,7 +175,17 @@
 	// work tools, most powerful first
 	const TOOLS = $derived([
 		...(isAdmin
-			? [{ key: 'admin', label: 'Admin', href: '/admin', tone: 'bg-warm text-white' }]
+			? [
+					{
+						key: 'admin',
+						label: 'Admin',
+						// New messages first: the badge leads to the inbox.
+						href: inboxUnread ? '/admin/inbox' : '/admin',
+						tone: 'bg-warm text-white',
+						badge: inboxUnread,
+						badgeLabel: `${inboxUnread} unread ${inboxUnread === 1 ? 'message' : 'messages'} in the inbox`
+					}
+				]
 			: []),
 		...(canAccessDesk
 			? [{ key: 'desk', label: 'Desk', href: '/desk', tone: 'bg-gold text-ink' }]
@@ -287,7 +307,7 @@
 						<span class="text-warm" aria-hidden="true">◆</span> Your tools
 					</p>
 					<ul role="none" class="m-0 list-none p-0">
-						{#each TOOLS as tool (tool.href)}
+						{#each TOOLS as tool (tool.key)}
 							<li role="none" class="border-t border-line2">
 								<a
 									role="menuitem"
@@ -302,7 +322,7 @@
 											aria-hidden="true">{@render toolIcon(tool.key)}</span
 										>
 										{tool.label}
-										{#if tool.badge && tool.key === 'classroom'}
+										{#if tool.badge && (tool.key === 'classroom' || tool.key === 'admin')}
 											<NotificationBadge
 												count={tool.badge}
 												ring="ring-paper group-hover/mi:ring-ink"

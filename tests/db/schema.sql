@@ -5621,3 +5621,37 @@ WHERE e.id = v.id AND (e.first_opened_at IS NULL OR v.first_view < e.first_opene
 ALTER TABLE partner_ledger ADD COLUMN IF NOT EXISTS settled_at timestamptz;
 CREATE INDEX IF NOT EXISTS partner_ledger_unsettled_idx
   ON partner_ledger (payable_at) WHERE entry_type = 'sale' AND settled_at IS NULL;
+
+-- 044: the contact inbox
+CREATE TABLE IF NOT EXISTS contact_thread (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  token text NOT NULL UNIQUE,
+  user_id text REFERENCES "user"(id) ON DELETE SET NULL,
+  name text NOT NULL,
+  email text NOT NULL,
+  topic text NOT NULL DEFAULT 'general',
+  subject text NOT NULL,
+  status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'done')),
+  ip text,
+  user_agent text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  last_message_at timestamptz NOT NULL DEFAULT now(),
+  last_member_at timestamptz NOT NULL DEFAULT now(),
+  last_staff_at timestamptz,
+  member_read_at timestamptz NOT NULL DEFAULT now(),
+  staff_read_at timestamptz
+);
+CREATE INDEX IF NOT EXISTS contact_thread_user_idx ON contact_thread (user_id, last_message_at DESC);
+CREATE INDEX IF NOT EXISTS contact_thread_inbox_idx ON contact_thread (status, last_message_at DESC);
+
+CREATE TABLE IF NOT EXISTS contact_message (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  thread_id uuid NOT NULL REFERENCES contact_thread(id) ON DELETE CASCADE,
+  author_id text REFERENCES "user"(id) ON DELETE SET NULL,
+  from_staff boolean NOT NULL DEFAULT false,
+  internal boolean NOT NULL DEFAULT false,
+  body text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS contact_message_thread_idx ON contact_message (thread_id, created_at);
+

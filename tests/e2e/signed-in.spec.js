@@ -1,7 +1,8 @@
 /**
  * Journeys for signed-in people, on desktop and phone: signing in, a course
  * conversation between a student and the teacher (with the badge on the
- * account button), and buying a course with a card.
+ * account button), a message to AGE answered from the admin inbox, and
+ * buying a course with a card.
  *
  * Each Playwright project has its own seeded people and course
  * (tests/e2e/seed.js). Cards go to the fake gateway, never Authorize.net.
@@ -63,6 +64,59 @@ test('a conversation between a student and the teacher', async ({ page, browser 
 	await expect(accountButton(page)).not.toHaveAccessibleName(/new/);
 
 	await teacherPage.context().close();
+	w.assertClean();
+});
+
+test('a message to AGE, answered from the admin inbox', async ({ page, browser }, testInfo) => {
+	const { writer, admin } = seedFor(testInfo);
+	const subject = `Where is my receipt? (${testInfo.project.name})`;
+	const w = watch(page);
+
+	// A member writes from the contact page and lands on the conversation.
+	await signIn(page, writer.email, '/contact');
+	await page.getByLabel('About').selectOption('orders');
+	await page.getByLabel('Subject').fill(subject);
+	await page.getByLabel('Message').fill('I bought a guide and can’t find the receipt.');
+	await page.getByRole('button', { name: 'Send message' }).click();
+	await page.waitForURL(/\/account\/messages\/[\w-]+\?sent=1$/);
+	const conversation = new URL(page.url()).pathname;
+	await expect(page.getByText('Sent. Thanks for writing.')).toBeVisible();
+
+	// An admin sees it in the inbox and replies.
+	const adminPage = await asPerson(browser, testInfo, admin.email, '/admin/inbox');
+	await adminPage
+		.getByRole('link', { name: new RegExp(subject.replace(/[()?]/g, '\\$&')) })
+		.click();
+	await adminPage.getByRole('textbox', { name: 'Reply' }).fill('It’s in Account → Purchases.');
+	await adminPage.getByRole('button', { name: 'Send reply' }).click();
+	await expect(adminPage.getByText('Reply sent.')).toBeVisible();
+
+	// The member has a reply waiting; opening it clears the badge.
+	await page.goto('/');
+	await expect(accountButton(page)).toHaveAccessibleName(/1 new/);
+	await page.goto(conversation);
+	await expect(page.getByText('It’s in Account → Purchases.')).toBeVisible();
+	await page.goto('/');
+	await expect(accountButton(page)).not.toHaveAccessibleName(/new/);
+
+	await adminPage.context().close();
+	w.assertClean();
+});
+
+test('a guest writes and gets a private link', async ({ page }, testInfo) => {
+	const w = watch(page);
+	await page.goto('/contact');
+	await page.getByLabel('Your name').fill('Gina Guest');
+	await page.getByLabel('Email').fill(`gina-${testInfo.project.name}@e2e.test`);
+	await page.getByLabel('Subject').fill('Seats in Los Angeles');
+	await page.getByLabel('Message').fill('Are there seats left?');
+	await page.getByRole('button', { name: 'Send message' }).click();
+	await page.waitForURL(/\/contact\/t\/[\w-]+\?sent=1$/);
+	await expect(page.getByRole('button', { name: 'Copy the link' })).toBeVisible();
+
+	// The contact page remembers it.
+	await page.goto('/contact');
+	await expect(page.getByRole('link', { name: /Seats in Los Angeles/ })).toBeVisible();
 	w.assertClean();
 });
 

@@ -22,6 +22,8 @@
 	// counts that are out of date.
 	const loadedLearning = $derived(page.data?.unreadNotifications ?? 0);
 	const loadedClassroom = $derived(page.data?.classroomUnread ?? 0);
+	const loadedMessages = $derived(page.data?.messagesUnread ?? 0);
+	const loadedInbox = $derived(page.data?.inboxUnread ?? 0);
 
 	// Whether the badge holds counts fresher than the ones loaded with the site.
 	let fresh = false;
@@ -30,6 +32,8 @@
 	$effect(() => {
 		unread.learning = loadedLearning;
 		unread.classroom = loadedClassroom;
+		unread.messages = loadedMessages;
+		unread.inbox = loadedInbox;
 		fresh = false;
 	});
 
@@ -43,8 +47,8 @@
 		// What the badge shows now (live updates included), or on the first
 		// page, what the site was loaded with.
 		const total = Math.max(
-			unread.learning + unread.classroom,
-			fresh ? 0 : loadedLearning + loadedClassroom
+			unread.learning + unread.classroom + unread.messages + unread.inbox,
+			fresh ? 0 : loadedLearning + loadedClassroom + loadedMessages + loadedInbox
 		);
 		if (!userId || !to?.url || (total === 0 && live)) return;
 		try {
@@ -59,6 +63,8 @@
 			if (marked) invalidate('app:notifications');
 			unread.learning = Number(counts?.learning) || 0;
 			unread.classroom = Number(counts?.classroom) || 0;
+			unread.messages = Number(counts?.messages) || 0;
+			unread.inbox = Number(counts?.inbox) || 0;
 			fresh = true;
 		} catch {
 			// Offline for a moment: the next page catches up.

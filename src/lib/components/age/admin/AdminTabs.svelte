@@ -1,7 +1,8 @@
 <script>
 	/**
-	 * Admin tabs — Home / Analytics / Orders / Members / Events / Calendar /
-	 * VODs / Partners.
+	 * Admin tabs — Home / Inbox / Analytics / Orders / Members / Events /
+	 * Calendar / Partners. Inbox carries a red count of unread messages from
+	 * the contact page, kept current live.
 	 *
 	 * The admin twin of DeskTabs: each admin page places it under its ink
 	 * header, and it sticks just below the site header (`--desk-header`,
@@ -13,32 +14,37 @@
 	 */
 	let { sticky = true } = $props();
 	import { page } from '$app/stores';
+	import NotificationBadge from '$lib/components/age/NotificationBadge.svelte';
+	import { unread } from '$lib/realtime/unread.svelte.js';
 
 	const d = $derived($page.data || {});
 	const path = $derived($page.url.pathname);
 	const current = $derived(
 		path === '/admin' || path === '/admin/'
 			? 'home'
-			: path.startsWith('/admin/analytics')
-				? 'analytics'
-				: path.startsWith('/admin/orders')
-					? 'orders'
-					: path.startsWith('/admin/users') || path.startsWith('/admin/customers')
-						? 'members'
-						: path.startsWith('/admin/events') ||
-							  path.startsWith('/admin/players') ||
-							  path.startsWith('/admin/import-matches')
-							? 'events'
-							: path.startsWith('/admin/calendar')
-								? 'calendar'
-								: path.startsWith('/admin/partners')
-									? 'partners'
-									: 'home'
+			: path.startsWith('/admin/inbox')
+				? 'inbox'
+				: path.startsWith('/admin/analytics')
+					? 'analytics'
+					: path.startsWith('/admin/orders')
+						? 'orders'
+						: path.startsWith('/admin/users') || path.startsWith('/admin/customers')
+							? 'members'
+							: path.startsWith('/admin/events') ||
+								  path.startsWith('/admin/players') ||
+								  path.startsWith('/admin/import-matches')
+								? 'events'
+								: path.startsWith('/admin/calendar')
+									? 'calendar'
+									: path.startsWith('/admin/partners')
+										? 'partners'
+										: 'home'
 	);
 
 	// 20×20 line icons for the phone tab row.
 	const ICON = {
 		home: 'M3.5 9.5 10 4l6.5 5.5V16a.5.5 0 0 1-.5.5h-3.5v-4.5h-5v4.5H4a.5.5 0 0 1-.5-.5z',
+		inbox: 'M3.5 5h13v11h-13zM3.5 11h4l1 2h3l1-2h4',
 		analytics: 'M3.5 16.5h13M5.5 16.5V11M9 16.5V6.5M12.5 16.5v-6M16 16.5V4',
 		orders: 'M4 5.5h12l-1 7.5H5.5zM7 16.5h.01M13 16.5h.01M4 5.5 3.5 3.5h-1',
 		members:
@@ -51,6 +57,7 @@
 	const payouts = $derived(d.partnerPayoutsSoon || 0);
 	const tabs = [
 		{ id: 'home', href: '/admin', label: 'Home' },
+		{ id: 'inbox', href: '/admin/inbox', label: 'Inbox' },
 		{ id: 'analytics', href: '/admin/analytics', label: 'Analytics' },
 		{ id: 'orders', href: '/admin/orders', label: 'Orders' },
 		{ id: 'members', href: '/admin/users', label: 'Members' },
@@ -107,6 +114,14 @@
 							aria-label="{payouts} payouts due"
 						></span>
 					{/if}
+					{#if tab.id === 'inbox'}
+						<NotificationBadge
+							count={unread.inbox}
+							ring="ring-ink"
+							class="absolute -top-2 left-[calc(100%-6px)]"
+							label="{unread.inbox} unread"
+						/>
+					{/if}
 				</span>
 				<span class="text-[8.5px] leading-none font-extrabold tracking-[0.08em] uppercase"
 					>{tab.label}</span
@@ -128,6 +143,9 @@
 						: 'border-transparent text-paper-bg/55 hover:text-paper-bg'}"
 				>
 					{tab.label}
+					{#if tab.id === 'inbox'}
+						<NotificationBadge count={unread.inbox} ring="ring-ink" label="{unread.inbox} unread" />
+					{/if}
 					{#if tab.id === 'partners' && payouts}
 						<span
 							class="bg-hero-rb px-1.5 py-[1px] text-[9px] leading-none text-white"

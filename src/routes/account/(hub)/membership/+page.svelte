@@ -654,10 +654,9 @@
 							lu.endDate
 						)}.
 					{:else if lu.status === 'payment_failed'}
-						Your last renewal didn't go through. You keep access until {ui.date(lu.endDate)}; email
-						<a href="mailto:info@arcanegamesandevents.com" class="underline"
-							>info@arcanegamesandevents.com</a
-						> and we'll sort the card out with you.
+						Your last renewal didn't go through. You keep access until {ui.date(lu.endDate)};
+						<a href="/contact?topic=orders" class="underline">send us a message</a> and we'll sort the
+						card out with you.
 					{:else}
 						Renews {ui.date(lu.nextBillingDate)}.
 					{/if}

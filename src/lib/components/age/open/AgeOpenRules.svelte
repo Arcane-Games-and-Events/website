@@ -448,9 +448,9 @@
 		</div>
 		<div class="flex flex-wrap gap-3">
 			<a
-				href="mailto:info@arcanegamesandevents.com"
+				href="/contact?topic=events"
 				class="border border-paper-bg bg-paper-bg px-6 py-3 text-[10.5px] font-extrabold tracking-[0.18em] text-ink uppercase transition-colors hover:bg-transparent hover:text-paper-bg"
-				>Email us</a
+				>Message us</a
 			>
 			<a
 				href="https://discord.gg/aUF552mPUq"
