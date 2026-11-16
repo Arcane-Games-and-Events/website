@@ -24,7 +24,7 @@ import { checkBillingHeartbeat } from '$lib/server/billing/heartbeat.js';
 
 // URLs to warm. These are the read-heavy public pages that benefit
 // most from being cached and hurt the most when they're cold. Skip
-// per-record dynamic routes (`/library/[slug]`, `/age-open/[eventId]`)
+// per-record dynamic routes (`/library/[slug]`, `/ageopen/[eventId]`)
 // — there are too many combinations to warm meaningfully. AGE Open
 // tabs are listed explicitly because the outer page cache keys tab.
 const WARM_URLS = [
@@ -38,12 +38,12 @@ const WARM_URLS = [
 	'/studios/shows',
 	'/studios/partners',
 	'/library/matches',
-	'/age-open',
-	'/age-open?tab=events',
-	'/age-open?tab=standings',
-	'/age-open?tab=results',
-	'/age-open?tab=decklists',
-	'/age-open?tab=rules',
+	'/ageopen',
+	'/ageopen?tab=events',
+	'/ageopen?tab=standings',
+	'/ageopen?tab=results',
+	'/ageopen?tab=decklists',
+	'/ageopen?tab=rules',
 	'/academy',
 	'/premium'
 ];

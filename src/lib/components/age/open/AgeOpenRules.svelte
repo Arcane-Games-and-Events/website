@@ -103,12 +103,12 @@
 			</p>
 			<div class="mt-7 flex flex-wrap gap-x-6 gap-y-3">
 				<a
-					href="/age-open?tab=events"
+					href="/ageopen?tab=events"
 					class="border-b-2 border-warm pb-1 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-[letter-spacing] hover:tracking-[0.26em]"
 					>Find an Open →</a
 				>
 				<a
-					href="/age-open?tab=standings"
+					href="/ageopen?tab=standings"
 					class="border-b-2 border-line2 pb-1 text-[10.5px] font-extrabold tracking-[0.18em] text-soft uppercase transition-colors hover:border-ink hover:text-ink"
 					>Season standings</a
 				>
@@ -209,7 +209,7 @@
 				title of AGE Open Series Champion. Every Open you play moves you up the ladder.
 			</p>
 			<a
-				href="/age-open?tab=standings"
+				href="/ageopen?tab=standings"
 				class="mt-7 inline-block border-b-2 border-warm-light pb-1 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-[letter-spacing] hover:tracking-[0.26em]"
 				>See who’s inside the cut →</a
 			>

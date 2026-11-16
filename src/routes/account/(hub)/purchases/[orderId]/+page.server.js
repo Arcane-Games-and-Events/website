@@ -8,7 +8,7 @@ import {
 	refundRequest,
 	ticket as ticketTable
 } from '$lib/server/db/schema.js';
-import { ticketRefundability } from '$lib/server/payments/refunds.js';
+import { ticketRefundability, withVenueZone } from '$lib/server/payments/refunds.js';
 import { orderRefundOptions } from '$lib/server/partner/guideRefunds.js';
 
 export async function load({ params, locals, url, depends }) {
@@ -45,6 +45,8 @@ export async function load({ params, locals, url, depends }) {
 	const [ev] = eventId
 		? await db.select().from(eventTable).where(eq(eventTable.id, eventId)).limit(1)
 		: [];
+	// With its circuit's time zone, for the 24-hour self-refund cutoff.
+	const evZoned = await withVenueZone(ev);
 	const pending = tickets.length
 		? await db
 				.select()
@@ -102,7 +104,7 @@ export async function load({ params, locals, url, depends }) {
 			: null,
 		tickets: tickets.map((t) => ({
 			...t,
-			can: ticketRefundability(t, ev, pending.find((p) => p.ticketId === t.id) || null),
+			can: ticketRefundability(t, evZoned, pending.find((p) => p.ticketId === t.id) || null),
 			requestPending: pending.some((p) => p.ticketId === t.id)
 		})),
 		// The guides in a guides order, each with what the refund policy allows.

@@ -8,7 +8,7 @@
  * Premium — each with the same restrained template.
  */
 
-import { CIRCUITS } from '$lib/data/circuits.js';
+import { CIRCUITS, circuitImage, circuitVar } from '$lib/data/circuits.js';
 import { watchHref } from '$lib/studio/kinds.js';
 
 const FALLBACK_IMAGE = 'https://www.age.events/banner/articles-banner.webp';
@@ -224,6 +224,8 @@ export function buildFront(data) {
 		format: e.format === 'Classic Constructed' ? 'CC' : e.format || '',
 		circuit: circuitSlug(e.circuit),
 		circuitName: e.circuit || '',
+		// The circuit's colour as CSS (from the database; see circuitVar).
+		color: circuitVar(e.circuit || ''),
 		price: e.price != null && Number(e.price) > 0 ? `$${Math.round(Number(e.price))}` : 'Free',
 		premiumDiscount: !!e.premiumDiscount,
 		cap: e.playerCap || null,
@@ -232,20 +234,31 @@ export function buildFront(data) {
 		weekday: e.eventDate
 			? new Date(e.eventDate).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })
 			: '',
-		image: CIRCUITS[e.circuit]?.image || '/banner/age-open-banner.webp',
-		href: e.id ? `/age-open/${e.id}` : '/age-open'
+		image: circuitImage(e.circuit, data?.circuits),
+		href: e.id ? `/ageopen/${e.id}` : '/ageopen'
 	}));
 	const upcoming = allUpcoming.slice(0, 3);
-	const circuits = Object.values(CIRCUITS).map((c) => {
+	// The circuits from the database (the root layout's list), or the
+	// original three before migration 045.
+	const circuitList = data?.circuits?.length
+		? data.circuits.map((c) => ({
+				name: c.name,
+				region: c.region || CIRCUITS[c.name]?.region || '',
+				abbreviation: c.short,
+				image: circuitImage(c.name, data.circuits)
+			}))
+		: Object.values(CIRCUITS);
+	const circuits = circuitList.map((c) => {
 		const next = allUpcoming.find((e) => e.circuitName === c.name) ?? null;
 		return {
 			name: c.name,
 			region: c.region,
 			abbreviation: c.abbreviation,
 			slug: circuitSlug(c.name),
+			color: circuitVar(c.name),
 			image: c.image,
 			next,
-			href: '/age-open?tab=events'
+			href: '/ageopen?tab=events'
 		};
 	});
 	const open = {
@@ -263,7 +276,7 @@ export function buildFront(data) {
 			rank: s.rank ?? 0,
 			name: s.playerName,
 			points: s.totalPoints || 0,
-			href: s.gemId ? `/player/${s.gemId}` : '/age-open?tab=standings'
+			href: s.gemId ? `/player/${s.gemId}` : '/ageopen?tab=standings'
 		}))
 	};
 	const hasOpen = true;
@@ -279,6 +292,7 @@ export function buildFront(data) {
 		alt: '',
 		rubric: `AGE Open · ${e.circuitName || 'Event'}`,
 		circuit: e.circuit,
+		color: e.color,
 		day: e.day,
 		month: e.month,
 		weekday: e.weekday || '',

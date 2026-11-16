@@ -1,7 +1,5 @@
 <script>
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
-	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
-	import AdminSubnav from '$lib/components/age/admin/AdminSubnav.svelte';
+	import AgeOpenHeader, { btn as hbtn } from '$lib/components/age/admin/AgeOpenHeader.svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { calculateDerivedStats, compareStandings } from '$lib/players/standings.js';
@@ -170,29 +168,16 @@
 <svelte:head><title>Standings · Admin</title></svelte:head>
 
 <!-- ============ HEADER ============ -->
-<DeskHeader
-	kicker="Admin"
+<AgeOpenHeader
 	title="Standings"
 	subtitle="{data.standings?.length || 0} standings records · edit on the player profile page."
 >
-	{#snippet actions(compact)}
-		<button
-			type="button"
-			onclick={() => (showCreateStandingModal = true)}
-			class="inline-flex items-center bg-paper-bg px-3 text-[10px] font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-warm-light {compact
-				? 'h-[30px]'
-				: 'h-[36px]'}">+ Add standing</button
+	{#snippet actions()}
+		<button type="button" onclick={() => (showCreateStandingModal = true)} class={hbtn}
+			>+ Add standing</button
 		>
 	{/snippet}
-</DeskHeader>
-<AdminTabs />
-<AdminSubnav
-	label="Events"
-	items={[
-		{ href: '/admin/events', label: 'Events' },
-		{ href: '/admin/events/new', label: 'New event' }
-	]}
-/>
+</AgeOpenHeader>
 
 {#if successMessage}
 	<AdminNotice tone="success" message={successMessage} />

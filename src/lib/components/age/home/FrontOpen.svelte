@@ -1,11 +1,13 @@
 <script>
 	/**
 	 * AGE Open department — in the series' own "tournament day" register
-	 * (as on /age-open): the Open Series logo on an ink poster band with a
+	 * (as on /ageopen): the Open Series logo on an ink poster band with a
 	 * scoreboard of season figures and the next event as an admission
 	 * ticket, then the next events as ticket strips, the three circuits as
 	 * colour-washed cards, and the season leaders.
 	 */
+	import { page } from '$app/state';
+	import { circuitsFrom } from '$lib/data/circuits.js';
 	import FormatTag from '../FormatTag.svelte';
 	import CircuitModal from '../open/CircuitModal.svelte';
 
@@ -17,10 +19,11 @@
 	const leaders = $derived(data?.leaders ?? []);
 	const next = $derived(events[0] ?? null);
 	const later = $derived(events.slice(1, 3));
-	const cc = (slug) => `var(--ed-cc-${slug || 'la'})`;
+	// A circuit's colour as CSS (from front-adapters: circuitVar).
+	const cc = (color) => color || 'var(--ed-cc-la)';
 	const countdown = (n) =>
 		n == null ? '' : n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : `In ${n} days`;
-	// Circuit pop-out (shared with /age-open)
+	// Circuit pop-out (shared with /ageopen)
 	/** @type {string | null} */
 	let openCircuit = $state(null);
 	/** @type {HTMLElement | undefined} */
@@ -62,6 +65,13 @@
 			series.players ? { n: series.players.toLocaleString('en-US'), l: 'Players ranked' } : null
 		].filter(Boolean)
 	);
+
+	// The circuits, from the database (the root layout), or the original three.
+	const circuitLine = $derived(
+		circuitsFrom(page.data?.circuits)
+			.map((c) => c.name)
+			.join(' · ')
+	);
 </script>
 
 <section id="age-open" class="scroll-mt-6">
@@ -87,9 +97,9 @@
 					class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-extrabold tracking-[0.3em] uppercase"
 				>
 					<span class="bg-warm px-2 py-1 text-white">Season ’26</span>
-					<span class="text-paper-bg/70">Los Angeles · St. Louis · New England</span>
+					<span class="text-paper-bg/70">{circuitLine}</span>
 				</p>
-				<a href="/age-open" class="mt-6 block w-fit" aria-label="AGE Open Series">
+				<a href="/ageopen" class="mt-6 block w-fit" aria-label="AGE Open Series">
 					<img
 						src="/age_open_logo.svg"
 						alt="AGE Open Series"
@@ -127,12 +137,12 @@
 				</dl>
 				<div class="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
 					<a
-						href="/age-open?tab=events"
+						href="/ageopen?tab=events"
 						class="inline-flex items-center bg-warm px-5 py-3 text-[10.5px] font-extrabold tracking-[0.18em] text-white uppercase transition-colors hover:bg-white hover:text-ink"
 						>Find an event</a
 					>
 					<a
-						href="/age-open"
+						href="/ageopen"
 						class="border-b-2 border-warm-light pb-1 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-[letter-spacing] hover:tracking-[0.26em]"
 						>The series →</a
 					>
@@ -158,7 +168,7 @@
 								<span
 									class="absolute inset-0"
 									style="background: linear-gradient(90deg, color-mix(in srgb, {cc(
-										next.circuit
+										next.color
 									)} 72%, rgba(23,21,15,0.55)) 0%, rgba(23,21,15,0) 80%);"
 									aria-hidden="true"
 								></span>
@@ -205,7 +215,7 @@
 							<span>
 								<span
 									class="block text-[10px] font-extrabold tracking-[0.18em] uppercase"
-									style="color: {cc(next.circuit)};">{next.month}</span
+									style="color: {cc(next.color)};">{next.month}</span
 								>
 								<span class="ao-cond block text-[44px] leading-[0.85] font-black tabular-nums"
 									>{next.day}</span
@@ -233,11 +243,11 @@
 						>
 							<span
 								class="relative flex flex-col items-center justify-center py-4"
-								style="background: color-mix(in srgb, {cc(e.circuit)} 10%, var(--ed-paper));"
+								style="background: color-mix(in srgb, {cc(e.color)} 10%, var(--ed-paper));"
 							>
 								<span
 									class="text-[10px] font-extrabold tracking-[0.18em] uppercase"
-									style="color: {cc(e.circuit)};">{e.month}</span
+									style="color: {cc(e.color)};">{e.month}</span
 								>
 								<span class="ao-cond text-[46px] leading-[0.85] font-black tabular-nums"
 									>{e.day}</span
@@ -249,7 +259,7 @@
 								<span class="flex flex-wrap items-center gap-x-3 gap-y-1">
 									<span
 										class="text-[9.5px] font-extrabold tracking-[0.2em] uppercase"
-										style="color: {cc(e.circuit)};">{e.circuitName}</span
+										style="color: {cc(e.color)};">{e.circuitName}</span
 									>
 									{#if e.daysUntil != null}
 										<span
@@ -257,7 +267,7 @@
 										>
 											<span
 												class="h-[6px] w-[6px] animate-pulse-dot rounded-full"
-												style="background: {cc(e.circuit)};"
+												style="background: {cc(e.color)};"
 												aria-hidden="true"
 											></span>
 											{countdown(e.daysUntil)}
@@ -305,7 +315,7 @@
 							/>
 							<span
 								class="absolute inset-0 mix-blend-multiply"
-								style="background: {cc(c.slug)}; opacity: 0.55;"
+								style="background: {cc(c.color)}; opacity: 0.55;"
 								aria-hidden="true"
 							></span>
 							<span
@@ -342,7 +352,7 @@
 				<div class="flex items-end justify-between gap-4 border-b-[3px] border-ink pb-2">
 					<p class="ao-cond text-[34px] leading-[0.85] font-black uppercase">Leaders</p>
 					<a
-						href="/age-open?tab=standings"
+						href="/ageopen?tab=standings"
 						class="pb-0.5 text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap uppercase transition-colors hover:text-warm"
 						>Standings →</a
 					>
@@ -372,7 +382,7 @@
 					{/each}
 					<li>
 						<a
-							href="/age-open?tab=events"
+							href="/ageopen?tab=events"
 							class="flex items-center justify-between py-3 text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase transition-colors hover:text-ink"
 						>
 							<span>Your name here</span><span aria-hidden="true">→</span>

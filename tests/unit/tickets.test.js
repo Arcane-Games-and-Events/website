@@ -64,6 +64,19 @@ describe('refund window', () => {
 		expect(venueNow('St. Louis', now).toISOString()).toBe('2026-10-29T14:00:00.000Z');
 		expect(venueNow('New England', now).toISOString()).toBe('2026-10-29T15:00:00.000Z');
 	});
+	test('a new circuit uses the time zone it was given', () => {
+		// 09:00 in Honolulu; without the zone it would fall back to Central (14:00).
+		expect(venueNow('Hawaii', now, 'Pacific/Honolulu').toISOString()).toBe(
+			'2026-10-29T09:00:00.000Z'
+		);
+		expect(venueNow('Hawaii', now).toISOString()).toBe('2026-10-29T14:00:00.000Z');
+		// 26 hours out in Honolulu, but only 21 on Central time: the zone decides.
+		const hi = { eventDate: '2026-10-30T11:00:00Z', circuit: 'Hawaii' };
+		expect(
+			ticketRefundability(paid, { ...hi, timezone: 'Pacific/Honolulu' }, null, now).action
+		).toBe('refund');
+		expect(ticketRefundability(paid, hi, null, now).action).toBe('request');
+	});
 	test('more than 24 hours out: instant refund', () => {
 		expect(ticketRefundability(paid, la('2026-11-05T11:00:00Z'), null, now).action).toBe('refund');
 	});

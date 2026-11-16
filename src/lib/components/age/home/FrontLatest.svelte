@@ -48,7 +48,7 @@
 	};
 	function brandOf(s) {
 		if (s.kind === 'event') {
-			const c = s.circuit ? `var(--ed-cc-${s.circuit}, var(--color-ink))` : 'var(--color-ink)';
+			const c = s.color || 'var(--color-ink)';
 			return { strip: c, text: c };
 		}
 		if (s.kind === 'course') return BRAND.academy;

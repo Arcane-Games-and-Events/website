@@ -11,6 +11,7 @@
 	import FormatTag from '../FormatTag.svelte';
 	import { fade, fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
+	import { page } from '$app/state';
 	import { circuitVar } from '$lib/data/circuits.js';
 
 	/** @type {{ circuit: any, dates?: any[], top?: any[], count?: number, onclose: () => void }} */
@@ -56,7 +57,13 @@
 	);
 	const ordinal = (n) => ['', 'First', 'Second', 'Third', 'Fourth', 'Fifth'][n] ?? `${n}th`;
 
-	const story = $derived(STORY[circuit.name] ?? { est: '', tagline: '', body: '' });
+	// The story is edited in admin (Stores → a circuit → About the circuit);
+	// the text here is what each circuit started with.
+	const story = $derived.by(() => {
+		const built = STORY[circuit.name] ?? { est: '', tagline: '', body: '' };
+		const edited = page.data?.circuits?.find((c) => c.name === circuit.name)?.blurb;
+		return edited ? { ...built, body: edited } : built;
+	});
 	const venues = $derived([...new Set(dates.map((d) => d.venue))].filter(Boolean));
 
 	/** @type {HTMLElement | undefined} */
@@ -297,7 +304,7 @@
 					</p>
 				{/if}
 				<a
-					href="/age-open?tab=events&region={encodeURIComponent(circuit.name)}"
+					href="/ageopen?tab=events&region={encodeURIComponent(circuit.name)}"
 					class="mt-6 flex items-center justify-center gap-2 bg-ink px-5 py-3.5 text-[10.5px] font-extrabold tracking-[0.18em] text-paper-bg uppercase transition-colors hover:bg-warm"
 				>
 					All {circuit.name} events →
@@ -327,7 +334,7 @@
 					{#each top as s, i (s.playerName + i)}
 						<li class="border-b border-line">
 							<a
-								href={s.gemId ? `/player/${s.gemId}` : '/age-open?tab=standings'}
+								href={s.gemId ? `/player/${s.gemId}` : '/ageopen?tab=standings'}
 								class="group grid grid-cols-[38px_1fr_auto] items-baseline gap-3 py-2.5"
 							>
 								<span

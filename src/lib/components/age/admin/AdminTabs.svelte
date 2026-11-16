@@ -1,12 +1,12 @@
 <script>
 	/**
-	 * Admin tabs — Home / Inbox / Analytics / Orders / Members / Events /
-	 * Calendar / Partners. Inbox carries a red count of unread messages from
+	 * Admin tabs — Home / Inbox / Analytics / Orders / Members / AGE Open
+	 * (events, circuits, stores, players) / Calendar / Partners. Inbox carries a red count of unread messages from
 	 * the contact page, kept current live.
 	 *
 	 * The admin twin of DeskTabs: each admin page places it under its ink
 	 * header, and it sticks just below the site header (`--desk-header`,
-	 * measured by the admin layout). Nine tabs don't fit an evenly split
+	 * measured by the admin layout). Eight tabs don't fit an evenly split
 	 * phone bar, so on phones the row scrolls sideways and the active tab
 	 * is brought into view.
 	 *
@@ -30,10 +30,13 @@
 						? 'orders'
 						: path.startsWith('/admin/users') || path.startsWith('/admin/customers')
 							? 'members'
-							: path.startsWith('/admin/events') ||
+							: path.startsWith('/admin/ageopen') ||
+								  path.startsWith('/admin/events') ||
 								  path.startsWith('/admin/players') ||
-								  path.startsWith('/admin/import-matches')
-								? 'events'
+								  path.startsWith('/admin/import-matches') ||
+								  path.startsWith('/admin/circuits') ||
+								  path.startsWith('/admin/stores')
+								? 'ageopen'
 								: path.startsWith('/admin/calendar')
 									? 'calendar'
 									: path.startsWith('/admin/partners')
@@ -49,7 +52,7 @@
 		orders: 'M4 5.5h12l-1 7.5H5.5zM7 16.5h.01M13 16.5h.01M4 5.5 3.5 3.5h-1',
 		members:
 			'M7.5 9.5a2.75 2.75 0 1 0 0-5.5 2.75 2.75 0 0 0 0 5.5zM2.5 16.5c.4-2.8 2.4-4.5 5-4.5s4.6 1.7 5 4.5M13 4.2a2.6 2.6 0 0 1 0 5.1M14.5 12.3c1.6.5 2.7 2 3 4.2',
-		events: 'M4 4.5h12v12H4zM4 8.5h12M7.5 3v3M12.5 3v3',
+		ageopen: 'M10 2.5 12.2 7l4.8.7-3.5 3.4.8 4.9L10 13.7 5.7 16l.8-4.9L3 7.7 7.8 7z',
 		calendar: 'M3.5 6h13v10.5h-13zM3.5 9.5h13M7 3.5v4M13 3.5v4',
 		partners: 'M4 10.5 10 4l6 6.5-6 6.5zM10 4v13M4 10.5h12'
 	};
@@ -61,7 +64,7 @@
 		{ id: 'analytics', href: '/admin/analytics', label: 'Analytics' },
 		{ id: 'orders', href: '/admin/orders', label: 'Orders' },
 		{ id: 'members', href: '/admin/users', label: 'Members' },
-		{ id: 'events', href: '/admin/events', label: 'Events' },
+		{ id: 'ageopen', href: '/admin/ageopen', label: 'AGE Open' },
 		{ id: 'calendar', href: '/admin/calendar', label: 'Calendar' },
 		{ id: 'partners', href: '/admin/partners', label: 'Partners' }
 	];
@@ -132,12 +135,15 @@
 
 	<!-- tablet and up: the text tab row -->
 	<div class="mx-auto hidden h-[44px] max-w-[1200px] items-stretch gap-6 px-5 md:flex md:px-8">
-		<nav class="-ml-3 flex items-stretch gap-1" aria-label="Admin sections">
+		<nav
+			class="-ml-2 flex min-w-0 items-stretch overflow-x-auto [scrollbar-width:none] lg:-ml-3 lg:gap-1 [&::-webkit-scrollbar]:hidden"
+			aria-label="Admin sections"
+		>
 			{#each tabs as tab (tab.id)}
 				<a
 					href={tab.href}
 					aria-current={current === tab.id ? 'page' : undefined}
-					class="flex items-center gap-2 border-b-[3px] px-3 text-[10.5px] font-extrabold tracking-[0.16em] whitespace-nowrap uppercase transition-colors {current ===
+					class="flex shrink-0 items-center gap-2 border-b-[3px] px-2 text-[10.5px] font-extrabold tracking-[0.1em] whitespace-nowrap uppercase transition-colors lg:px-3 lg:tracking-[0.16em] {current ===
 					tab.id
 						? 'border-gold text-paper-bg'
 						: 'border-transparent text-paper-bg/55 hover:text-paper-bg'}"

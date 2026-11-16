@@ -6,17 +6,27 @@
 	 * linking every section of the series so the hub is always one click
 	 * away.
 	 */
+	import { page } from '$app/state';
+	import { circuitsFrom } from '$lib/data/circuits.js';
+
 	/** @type {{ active: string, title: string, strap?: string, children?: import('svelte').Snippet }} */
 	let { active, title, strap = '', children } = $props();
 
 	const SECTIONS = [
-		{ id: 'overview', label: 'Overview', href: '/age-open' },
-		{ id: 'events', label: 'Events', href: '/age-open?tab=events' },
-		{ id: 'standings', label: 'Standings', href: '/age-open?tab=standings' },
-		{ id: 'decklists', label: 'Decklists', href: '/age-open?tab=decklists' },
-		{ id: 'results', label: 'Archive', href: '/age-open?tab=results' },
-		{ id: 'rules', label: 'Rules & Info', href: '/age-open?tab=rules' }
+		{ id: 'overview', label: 'Overview', href: '/ageopen' },
+		{ id: 'events', label: 'Events', href: '/ageopen?tab=events' },
+		{ id: 'standings', label: 'Standings', href: '/ageopen?tab=standings' },
+		{ id: 'decklists', label: 'Decklists', href: '/ageopen?tab=decklists' },
+		{ id: 'results', label: 'Archive', href: '/ageopen?tab=results' },
+		{ id: 'rules', label: 'Rules & Info', href: '/ageopen?tab=rules' }
 	];
+
+	// The circuits, from the database (the root layout), or the original three.
+	const circuitLine = $derived(
+		circuitsFrom(page.data?.circuits)
+			.map((c) => c.name)
+			.join(' · ')
+	);
 </script>
 
 <section class="relative overflow-hidden bg-ink text-paper-bg">
@@ -34,7 +44,7 @@
 
 	<div class="relative mx-auto w-full max-w-[1200px] px-5 pt-8 md:px-8 md:pt-10">
 		<div class="flex flex-wrap items-center justify-between gap-4">
-			<a href="/age-open" class="block w-fit" aria-label="AGE Open Series overview">
+			<a href="/ageopen" class="block w-fit" aria-label="AGE Open Series overview">
 				<img
 					src="/age_open_logo.svg"
 					alt="AGE Open Series"
@@ -44,7 +54,7 @@
 				/>
 			</a>
 			<p class="text-[9.5px] font-extrabold tracking-[0.26em] text-paper-bg/60 uppercase">
-				Season ’26 · Los Angeles · St. Louis · New England
+				Season ’26 · {circuitLine}
 			</p>
 		</div>
 

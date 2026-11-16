@@ -23,7 +23,7 @@
 		},
 		{ href: '/academy', label: 'Academy', desc: 'Courses from the players who write for us.' },
 		{
-			href: '/age-open',
+			href: '/ageopen',
 			label: 'AGE Open',
 			desc: 'Standings, results and your member ticket discount.'
 		},

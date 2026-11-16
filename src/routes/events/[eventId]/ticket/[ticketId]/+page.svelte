@@ -110,7 +110,7 @@
 						>
 					{/if}
 					<a
-						href="/age-open/{ev.id || ''}"
+						href="/ageopen/{ev.id || ''}"
 						class="inline-flex items-center border border-paper-bg/40 px-6 py-3.5 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-colors hover:border-paper-bg"
 						>Event page</a
 					>

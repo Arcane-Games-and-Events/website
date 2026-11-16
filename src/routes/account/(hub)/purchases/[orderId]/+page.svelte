@@ -127,7 +127,7 @@
 				<div class="sm:col-span-2">
 					<dt class={ui.label}>Event</dt>
 					<dd class="mt-1 font-semibold">
-						<a href="/age-open/{data.event.id}" class="hover:text-warm">{data.event.title}</a><span
+						<a href="/ageopen/{data.event.id}" class="hover:text-warm">{data.event.title}</a><span
 							class="text-soft"
 						>
 							· {ui.date(data.event.eventDate)}{data.event.location

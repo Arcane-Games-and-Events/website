@@ -218,7 +218,7 @@
 					{@const leader = r.results.find((p) => p.placement === 1)}
 					<li>
 						<a
-							href="/age-open/{r.event.id}/results"
+							href="/ageopen/{r.event.id}/results"
 							class="group flex items-center justify-between gap-4 border border-paper-bg/20 px-5 py-4 transition-colors hover:border-paper-bg"
 						>
 							<span class="min-w-0">
@@ -308,7 +308,7 @@
 												>{/if}
 										</p>
 										<h3 class="ao-cond mt-2 text-[28px] leading-[0.9] font-black uppercase">
-											<a href="/age-open/{e.id}/results" class="hover:text-warm">{e.title}</a>
+											<a href="/ageopen/{e.id}/results" class="hover:text-warm">{e.title}</a>
 										</h3>
 									</div>
 									<span class="shrink-0"><FormatTag format={e.format} size="sm" short /></span>
@@ -404,7 +404,7 @@
 									<span></span>
 								{/if}
 								<a
-									href="/age-open/{e.id}/results"
+									href="/ageopen/{e.id}/results"
 									class="shrink-0 text-[9.5px] font-extrabold tracking-[0.16em] text-warm uppercase hover:text-ink"
 									>Full results →</a
 								>

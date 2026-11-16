@@ -26,6 +26,8 @@
 	const assignedEventsCount = $derived($page.data?.assignedEventsCount ?? 0);
 	const isStaff = $derived(assignedEventsCount > 0);
 	const isPartner = $derived($page.data?.isPartner ?? false);
+	// A member of one or more local game stores (see /store).
+	const storeCount = $derived($page.data?.storeCount ?? 0);
 	// Replies, course updates and new topics (see /my-courses), and
 	// approvals, new students, flagged posts… (the Classroom home). Kept
 	// current live (see $lib/realtime/LiveUpdates.svelte).
@@ -147,6 +149,8 @@
 	const canAccessDesk = $derived(isAdmin || ['writer', 'editor'].some((r) => extra.includes(r)));
 	const canUseClassroom = $derived(isAdmin || ['editor', 'creator'].some((r) => extra.includes(r)));
 	const canUseStudio = $derived(isAdmin || ['editor', 'producer'].some((r) => extra.includes(r)));
+	// The Studio is hidden from the menu for now; set to true when it returns.
+	const STUDIO_IN_MENU = false;
 
 	const ITEMS = $derived([
 		{ label: 'Account', href: '/account' },
@@ -202,8 +206,11 @@
 					}
 				]
 			: []),
-		...(canUseStudio
+		...(canUseStudio && STUDIO_IN_MENU
 			? [{ key: 'studio', label: 'Studio', href: '/studio', tone: 'bg-hero-rb text-white' }]
+			: []),
+		...(storeCount
+			? [{ key: 'store', label: 'Store', href: '/store', tone: 'bg-ink text-paper-bg' }]
 			: []),
 		...(isStaff
 			? [
@@ -410,6 +417,11 @@
 				cy="9"
 				r="2.2"
 			/><path d="M6.8 15c.6-1.6 1.7-2.5 3.2-2.5s2.6.9 3.2 2.5" />
+		{:else if key === 'store'}
+			<!-- shopfront with an awning -->
+			<path
+				d="M3 8 4.5 3.5h11L17 8M3 8h14M3 8a2.3 2.3 0 0 0 4.7 0 2.3 2.3 0 0 0 4.6 0A2.3 2.3 0 0 0 17 8"
+			/><path d="M4.5 10.5v7h11v-7M8.5 17.5v-4h3v4" />
 		{:else if key === 'desk'}
 			<!-- pen -->
 			<path d="M13.6 2.9l3.5 3.5L7.5 16H4v-3.5z" /><path d="M11.4 5.1l3.5 3.5" />

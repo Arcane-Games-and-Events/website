@@ -791,8 +791,8 @@ async function seedAll() {
 				path,
 				route: path.startsWith('/library/')
 					? '/library/[slug]'
-					: path.startsWith('/age-open/')
-						? '/age-open/[eventId]'
+					: path.startsWith('/ageopen/')
+						? '/ageopen/[eventId]'
 						: path.startsWith('/academy/')
 							? '/academy/[slug]'
 							: path,
@@ -902,7 +902,7 @@ async function seedAll() {
 		['/', 30],
 		['/library', 14],
 		['entry', 30],
-		['/age-open', 10],
+		['/ageopen', 10],
 		['event', 5],
 		['/premium', 6],
 		['/academy', 3],
@@ -911,7 +911,7 @@ async function seedAll() {
 	const randomPath = () => {
 		const p = weighted(PAGES);
 		if (p === 'entry') return pick(entryPaths);
-		if (p === 'event') return `/age-open/${pick(UPCOMING)}`;
+		if (p === 'event') return `/ageopen/${pick(UPCOMING)}`;
 		if (p === 'course') return `/academy/${pick(COURSES)}`;
 		return p;
 	};
@@ -1025,8 +1025,8 @@ async function seedAll() {
 	for (const t of ticketConversions) {
 		const at = t.at.getTime();
 		const s = session(t.user.visitor, at - int(60, 600) * 1000, [
-			'/age-open',
-			`/age-open/${t.eventId}`
+			'/ageopen',
+			`/ageopen/${t.eventId}`
 		]);
 		conversions.push({
 			visitor_id: t.user.visitor.id,
@@ -1034,7 +1034,7 @@ async function seedAll() {
 			user_id: t.user.id,
 			kind: 'ticket',
 			at: new Date(at),
-			path: `/age-open/${t.eventId}`,
+			path: `/ageopen/${t.eventId}`,
 			meta: { eventId: t.eventId, amount: t.amount, premiumDiscount: t.premium }
 		});
 	}

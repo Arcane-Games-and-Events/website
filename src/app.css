@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+/* The design system's tokens (both looks, light and dark) — see docs/design-system.md. */
+@import './lib/ds/tokens.css';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 
@@ -63,7 +65,6 @@
 	--color-fade: var(--ed-fade);
 	--color-line: var(--ed-line);
 	--color-line2: var(--ed-line2);
-	--color-accent: var(--ed-accent);
 	--color-warm: var(--ed-warm);
 	--color-warm-light: var(--ed-warm-light);
 	--color-warm-deep: var(--ed-warm-deep);

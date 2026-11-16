@@ -1,0 +1,258 @@
+/*
+ * AGE design system — the tokens. The one source of every colour, radius,
+ * shadow and typeface a component may use (see docs/design-system.md). Components name a token (`bg-surface`, `text-fg-muted`,
+ * `rounded-card`), never a raw value.
+ *
+ * Two looks, each light and dark:
+ *   editorial  the public site — paper, ink, serif, square. The default.
+ *   app        working tools (admin, Desk, Classroom, Studio, stores) —
+ *              Apple-quiet: grey page, white cards, the system font, one blue.
+ * A wrapper picks the look with data-look="app" | "editorial"; dark mode is
+ * the `.dark` class on it or an ancestor (the same `.dark` the dark:
+ * variant uses).
+ *
+ * Brand colours (studio, prem, academy, the circuits…) stay in app.css and
+ * are the same in every look — the thread back to AGE.
+ *
+ * tests/unit/design-system.test.js reads this file: every text colour must
+ * reach 4.5:1 on the surfaces it's used on, in all four combinations, and
+ * white must reach 4.5:1 on accent and danger (they carry button text).
+ */
+
+/* ---------------------------------------------------------------- editorial · light (default) */
+:root,
+[data-look='editorial'] {
+	--ds-canvas: #fbfaf6;
+	--ds-surface: #ffffff;
+	--ds-surface-raised: #ffffff;
+	--ds-surface-sunken: #f4f0e6;
+	--ds-overlay: rgb(23 21 15 / 0.5);
+
+	--ds-fg: #17150f;
+	--ds-fg-muted: #56503f;
+	--ds-fg-subtle: #6b6453;
+	--ds-fg-on-accent: #ffffff;
+
+	--ds-border: #e4decf;
+	--ds-border-strong: #c7bfa9;
+	--ds-ring: #1e40af;
+
+	--ds-accent: #1e40af;
+	--ds-accent-hover: #1e3a8a;
+	--ds-accent-soft: #eef2fb;
+	--ds-accent-text: #1e40af;
+
+	--ds-success: #1c7a4b;
+	--ds-success-soft: #e8f3ec;
+	--ds-success-text: #1c6b43;
+	--ds-warning: #c8922e;
+	--ds-warning-soft: #f8efdc;
+	--ds-warning-text: #7a5512;
+	--ds-danger: #b42318;
+	--ds-danger-soft: #fbeae6;
+	--ds-danger-text: #a11f15;
+	--ds-info: #1e40af;
+	--ds-info-soft: #eef2fb;
+	--ds-info-text: #1e40af;
+
+	--ds-radius-control: 0;
+	--ds-radius-card: 0;
+	--ds-radius-pill: 0;
+	--ds-shadow-raised: 0 0 0 0 transparent;
+	--ds-shadow-overlay: 0 18px 40px -20px rgb(23 21 15 / 0.55);
+
+	--ds-font-ui: 'Libre Franklin Variable', 'Libre Franklin', system-ui, sans-serif;
+	--ds-font-display: 'Newsreader Variable', 'Newsreader', Georgia, serif;
+}
+
+/* ---------------------------------------------------------------- editorial · dark */
+[data-look='editorial']:where(.dark, .dark *) {
+	--ds-canvas: #17150f;
+	--ds-surface: #201d16;
+	--ds-surface-raised: #2a261d;
+	--ds-surface-sunken: #12100b;
+	--ds-overlay: rgb(0 0 0 / 0.6);
+
+	--ds-fg: #f4f0e6;
+	--ds-fg-muted: #c7bfa9;
+	--ds-fg-subtle: #a39b86;
+	--ds-fg-on-accent: #ffffff;
+
+	--ds-border: #36312a;
+	--ds-border-strong: #4a4436;
+	--ds-ring: #60a5fa;
+
+	--ds-accent: #2563eb;
+	--ds-accent-hover: #1d4ed8;
+	--ds-accent-soft: #172554;
+	--ds-accent-text: #93c5fd;
+
+	--ds-success: #3fa874;
+	--ds-success-soft: #13261c;
+	--ds-success-text: #7fd6a6;
+	--ds-warning: #c8922e;
+	--ds-warning-soft: #3a2a10;
+	--ds-warning-text: #e7b85c;
+	--ds-danger: #b42318;
+	--ds-danger-soft: #3b140d;
+	--ds-danger-text: #f59e8b;
+	--ds-info: #60a5fa;
+	--ds-info-soft: #172554;
+	--ds-info-text: #93c5fd;
+
+	--ds-shadow-overlay: 0 20px 40px -12px rgb(0 0 0 / 0.7);
+}
+
+/* ---------------------------------------------------------------- app · light
+   Quiet like Apple's own tools: a light grey page, white cards, near-black
+   text, hairline separators and one blue. Colour is kept for state. */
+[data-look='app'] {
+	--ds-canvas: #f5f5f7;
+	--ds-surface: #ffffff;
+	--ds-surface-raised: #ffffff;
+	--ds-surface-sunken: #ececf0;
+	--ds-overlay: rgb(0 0 0 / 0.32);
+
+	--ds-fg: #1d1d1f;
+	--ds-fg-muted: #48484d;
+	--ds-fg-subtle: #6a6a70;
+	--ds-fg-on-accent: #ffffff;
+
+	--ds-border: #e3e3e8;
+	--ds-border-strong: #d2d2d7;
+	--ds-ring: #0071e3;
+
+	--ds-accent: #0071e3;
+	--ds-accent-hover: #0062c4;
+	--ds-accent-soft: #e8f1fc;
+	--ds-accent-text: #0066cc;
+
+	--ds-success: #248a3d;
+	--ds-success-soft: #e8f5eb;
+	--ds-success-text: #1d7434;
+	--ds-warning: #c26400;
+	--ds-warning-soft: #fdf1e2;
+	--ds-warning-text: #9a5000;
+	--ds-danger: #d70015;
+	--ds-danger-soft: #fdebec;
+	--ds-danger-text: #c00013;
+	--ds-info: #0071e3;
+	--ds-info-soft: #e8f1fc;
+	--ds-info-text: #0066cc;
+
+	--ds-radius-control: 0.625rem;
+	--ds-radius-card: 1.125rem;
+	--ds-radius-pill: 9999px;
+	--ds-shadow-raised: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+	--ds-shadow-overlay: 0 24px 60px -16px rgb(0 0 0 / 0.28), 0 2px 8px -2px rgb(0 0 0 / 0.06);
+
+	--ds-font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter Variable', 'Inter',
+		system-ui, sans-serif;
+	--ds-font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter Variable', 'Inter',
+		system-ui, sans-serif;
+}
+
+/* ---------------------------------------------------------------- app · dark */
+[data-look='app']:where(.dark, .dark *) {
+	--ds-canvas: #000000;
+	--ds-surface: #1c1c1e;
+	--ds-surface-raised: #2c2c2e;
+	--ds-surface-sunken: #2c2c2e;
+	--ds-overlay: rgb(0 0 0 / 0.6);
+
+	--ds-fg: #f5f5f7;
+	--ds-fg-muted: #d1d1d6;
+	--ds-fg-subtle: #a1a1a6;
+	--ds-fg-on-accent: #ffffff;
+
+	--ds-border: #38383a;
+	--ds-border-strong: #48484a;
+	--ds-ring: #409cff;
+
+	--ds-accent: #0071e3;
+	--ds-accent-hover: #0062c4;
+	--ds-accent-soft: #0b2a4a;
+	--ds-accent-text: #6cb4ff;
+
+	--ds-success: #30d158;
+	--ds-success-soft: #0f2e17;
+	--ds-success-text: #4cd86d;
+	--ds-warning: #ff9f0a;
+	--ds-warning-soft: #3a2507;
+	--ds-warning-text: #ffb340;
+	--ds-danger: #d70015;
+	--ds-danger-soft: #3d0b0e;
+	--ds-danger-text: #ff6961;
+	--ds-info: #0a84ff;
+	--ds-info-soft: #0b2a4a;
+	--ds-info-text: #6cb4ff;
+
+	--ds-shadow-raised: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+	--ds-shadow-overlay: 0 24px 48px -12px rgb(0 0 0 / 0.75);
+}
+
+/* Each look sets its own page colour and type where it's applied. */
+[data-look] {
+	color: var(--ds-fg);
+	font-family: var(--ds-font-ui);
+	color-scheme: light;
+}
+[data-look]:where(.dark, .dark *) {
+	color-scheme: dark;
+}
+
+/* The tokens as Tailwind utilities: bg-surface, text-fg-muted,
+   border-border, rounded-card, shadow-raised, font-ui… */
+@theme inline {
+	--color-canvas: var(--ds-canvas);
+	--color-surface: var(--ds-surface);
+	--color-surface-raised: var(--ds-surface-raised);
+	--color-surface-sunken: var(--ds-surface-sunken);
+	--color-overlay: var(--ds-overlay);
+
+	--color-fg: var(--ds-fg);
+	--color-fg-muted: var(--ds-fg-muted);
+	--color-fg-subtle: var(--ds-fg-subtle);
+	--color-fg-on-accent: var(--ds-fg-on-accent);
+
+	--color-border: var(--ds-border);
+	--color-border-strong: var(--ds-border-strong);
+	--color-ring: var(--ds-ring);
+
+	--color-accent: var(--ds-accent);
+	--color-accent-hover: var(--ds-accent-hover);
+	--color-accent-soft: var(--ds-accent-soft);
+	--color-accent-text: var(--ds-accent-text);
+
+	--color-success: var(--ds-success);
+	--color-success-soft: var(--ds-success-soft);
+	--color-success-text: var(--ds-success-text);
+	--color-warning: var(--ds-warning);
+	--color-warning-soft: var(--ds-warning-soft);
+	--color-warning-text: var(--ds-warning-text);
+	--color-danger: var(--ds-danger);
+	--color-danger-soft: var(--ds-danger-soft);
+	--color-danger-text: var(--ds-danger-text);
+	--color-info: var(--ds-info);
+	--color-info-soft: var(--ds-info-soft);
+	--color-info-text: var(--ds-info-text);
+
+	--radius-control: var(--ds-radius-control);
+	--radius-card: var(--ds-radius-card);
+	--radius-pill: var(--ds-radius-pill);
+
+	--shadow-raised: var(--ds-shadow-raised);
+	--shadow-overlay: var(--ds-shadow-overlay);
+
+	--font-ui: var(--ds-font-ui);
+	--font-display: var(--ds-font-display);
+}
+
+/* A row that scrolls sideways (tabs, chips, figures on phones) without a
+   scrollbar showing. */
+@utility no-scrollbar {
+	scrollbar-width: none;
+	&::-webkit-scrollbar {
+		display: none;
+	}
+}

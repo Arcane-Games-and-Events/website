@@ -127,6 +127,9 @@ export const event = pgTable('events', {
 	// Tournament results (stored when CSV is processed to preserve Swiss standings order)
 	tournamentResults: jsonb('tournament_results'),
 
+	// The store that runs the event; null = run by AGE (migration 045).
+	storeId: uuid('store_id').references(() => store.id, { onDelete: 'set null' }),
+
 	createdBy: text('created_by').references(() => user.id),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
@@ -1896,5 +1899,136 @@ export const contactMessage = pgTable('contact_message', {
 	// A note only staff see.
 	internal: boolean('internal').notNull().default(false),
 	body: text('body').notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+// ============================================================================
+// CIRCUITS AND STORES (migration 045)
+// ============================================================================
+// Each circuit is run by a local game store. events.circuit, standings,
+// heroes and matches still hold the circuit's name as text; circuit.name is
+// what they match.
+
+export const circuit = pgTable('circuit', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	name: text('name').notNull().unique(),
+	slug: text('slug').notNull().unique(),
+	short: text('short').notNull(),
+	region: text('region'),
+	// The venues' clock: event times are stored as wall-clock time there.
+	timezone: text('timezone').notNull().default('America/Chicago'),
+	color: text('color').notNull().default('#5c5a52'),
+	blurb: text('blurb'),
+	// The circuit's picture (uploaded in admin), and where it's stored.
+	imageUrl: text('image_url'),
+	imagePath: text('image_path'),
+	sort: integer('sort').notNull().default(0),
+	active: boolean('active').notNull().default(true),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+export const store = pgTable('store', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	circuitId: uuid('circuit_id')
+		.notNull()
+		.references(() => circuit.id, { onDelete: 'restrict' }),
+	name: text('name').notNull(),
+	slug: text('slug').notNull().unique(),
+	address: text('address'),
+	city: text('city'),
+	state: text('state'),
+	website: text('website'),
+	phone: text('phone'),
+	contactEmail: text('contact_email'),
+	// The store's share of ticket revenue, 0–1; null = the program default.
+	revenueShare: decimal('revenue_share', { precision: 5, scale: 4 }),
+	active: boolean('active').notNull().default(true),
+	createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+export const storeMember = pgTable(
+	'store_member',
+	{
+		storeId: uuid('store_id')
+			.notNull()
+			.references(() => store.id, { onDelete: 'cascade' }),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		role: text('role').notNull().default('manager'), // owner | manager
+		addedBy: text('added_by').references(() => user.id, { onDelete: 'set null' }),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+	},
+	(t) => [primaryKey({ columns: [t.storeId, t.userId] })]
+);
+
+// One row (id = 1): the default revenue share and who pays card fees.
+export const storeProgram = pgTable('store_program', {
+	id: integer('id').primaryKey().default(1),
+	defaultShare: decimal('default_share', { precision: 5, scale: 4 }),
+	feePayer: text('fee_payer').notNull().default('age'), // age | store
+	updatedBy: text('updated_by').references(() => user.id, { onDelete: 'set null' }),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+// What each store earns: a sale and at most one refund per ticket (unique
+// on ticket_id + entry_type), plus manual adjustments.
+export const storeLedger = pgTable('store_ledger', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	storeId: uuid('store_id')
+		.notNull()
+		.references(() => store.id, { onDelete: 'restrict' }),
+	entryType: text('entry_type').notNull(), // sale | refund | adjustment
+	eventId: text('event_id').references(() => event.id, { onDelete: 'set null' }),
+	ticketId: uuid('ticket_id').references(() => ticket.id, { onDelete: 'set null' }),
+	grossCents: integer('gross_cents').notNull().default(0),
+	feeCents: integer('fee_cents').notNull().default(0),
+	shareRate: decimal('share_rate', { precision: 5, scale: 4 }),
+	storeCents: integer('store_cents').notNull(),
+	ageCents: integer('age_cents').notNull().default(0),
+	statementMonth: text('statement_month').notNull(), // DATE, read as text
+	note: text('note'),
+	createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+export const storeStatement = pgTable(
+	'store_statement',
+	{
+		storeId: uuid('store_id')
+			.notNull()
+			.references(() => store.id, { onDelete: 'restrict' }),
+		month: text('month').notNull(), // DATE, read as text
+		status: text('status').notNull().default('open'), // open | locked | paid
+		grossCents: integer('gross_cents'),
+		refundCents: integer('refund_cents'),
+		feeCents: integer('fee_cents'),
+		adjustCents: integer('adjust_cents'),
+		amountCents: integer('amount_cents'),
+		lockedAt: timestamp('locked_at', { withTimezone: true, mode: 'date' }),
+		lockedBy: text('locked_by').references(() => user.id, { onDelete: 'set null' }),
+		paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
+		paidBy: text('paid_by').references(() => user.id, { onDelete: 'set null' }),
+		method: text('method'),
+		reference: text('reference'),
+		note: text('note'),
+		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+	},
+	(t) => [primaryKey({ columns: [t.storeId, t.month] })]
+);
+
+export const storeActivity = pgTable('store_activity', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	storeId: uuid('store_id')
+		.notNull()
+		.references(() => store.id, { onDelete: 'cascade' }),
+	actorId: text('actor_id').references(() => user.id, { onDelete: 'set null' }),
+	kind: text('kind').notNull(),
+	eventId: text('event_id').references(() => event.id, { onDelete: 'set null' }),
+	note: text('note'),
+	data: jsonb('data'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
 });

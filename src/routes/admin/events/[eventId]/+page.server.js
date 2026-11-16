@@ -1,7 +1,7 @@
 import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
-import { event, ticket, user, eventStaff, decklist, match } from '$lib/server/db/schema.js';
-import { eq, and, ilike } from 'drizzle-orm';
+import { event, ticket, user, eventStaff, decklist, match, store } from '$lib/server/db/schema.js';
+import { eq, and, ilike, asc } from 'drizzle-orm';
 import {
 	processTournamentResults,
 	calculateFinalStandings,
@@ -11,6 +11,8 @@ import { bump } from '$lib/server/cache/index.js';
 import { parseDatetimeLocal } from '$lib/server/dates.js';
 import { listHeroNames } from '$lib/server/cards/heroes.js';
 import { eventPeriod, rebuildStandings } from '$lib/server/standings/rebuild.js';
+import { listCircuits } from '$lib/server/stores/circuits.js';
+import { FORMATS } from '$lib/server/stores/portal.js';
 import {
 	listEventHeroes,
 	replaceEventHeroes,
@@ -178,6 +180,22 @@ export async function load({ params, locals }) {
 			monthMismatch,
 			heroNames: listHeroNames(),
 			assignedStaff,
+			// For the details form: every circuit, the stores that can run it.
+			circuits: await listCircuits({ inactive: true }),
+			stores: await db
+				.select({
+					id: store.id,
+					name: store.name,
+					circuitId: store.circuitId,
+					active: store.active
+				})
+				.from(store)
+				.orderBy(asc(store.name))
+				.catch(() => []),
+			formats:
+				!eventData.format || FORMATS.includes(eventData.format)
+					? FORMATS
+					: [...FORMATS, eventData.format],
 			stats: {
 				totalRevenue: isAdmin ? totalRevenue.toFixed(2) : null,
 				totalTickets,
@@ -230,66 +248,81 @@ export const actions = {
 		}
 	},
 
-	// Update event details
+	// Update event details. The month follows the date (standings file under it).
 	updateEvent: async ({ params, request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
-			return fail(403, { error: 'Unauthorized' });
+		if (!locals.user || locals.user.role !== 'admin') {
+			return fail(403, { section: 'details', error: 'Unauthorized' });
 		}
 
-		const isAdmin = locals.user.role === 'admin';
-		const formData = await request.formData();
-		const title = formData.get('title');
-		const location = formData.get('location');
-		const address = formData.get('address');
-		const price = formData.get('price');
-		const format = formData.get('format');
-		const circuit = formData.get('circuit');
-		const month = formData.get('month');
-		const eventDate = formData.get('eventDate');
-		const description = formData.get('description');
-		const gemIdRequired = formData.get('gemIdRequired') === 'on';
-		const premiumDiscount = formData.get('premiumDiscount') === 'on';
-		const playerCapRaw = formData.get('playerCap');
-		const playerCap = playerCapRaw ? parseInt(playerCapRaw) : null;
-
-		const parsedDate = parseDatetimeLocal(eventDate);
-		if (month && parsedDate && eventPeriod(parsedDate).monthName !== month) {
+		const form = await request.formData();
+		const text = (k) => String(form.get(k) ?? '').trim();
+		const title = text('title');
+		const location = text('location');
+		const format = text('format');
+		const circuit = text('circuit');
+		const eventDate = parseDatetimeLocal(text('eventDate'));
+		if (!title || !location || !format || !eventDate || Number.isNaN(eventDate.getTime())) {
 			return fail(400, {
-				error: `The month is set to ${month} but the event date is in ${eventPeriod(parsedDate).monthName}. Standings file under the date, so the two must agree.`
+				section: 'details',
+				error: 'Fill in the title, venue, format, date and start time.'
+			});
+		}
+		const priceNum = Number(text('price'));
+		if (text('price') === '' || !Number.isFinite(priceNum) || priceNum < 0) {
+			return fail(400, {
+				section: 'details',
+				error: 'The entry fee is a dollar amount, 0 or more.'
+			});
+		}
+		const capRaw = text('playerCap');
+		const playerCap = capRaw ? Number(capRaw) : null;
+		if (playerCap != null && (!Number.isInteger(playerCap) || playerCap < 1)) {
+			return fail(400, {
+				section: 'details',
+				error: 'The player cap is a whole number, or no cap.'
 			});
 		}
 
-		try {
-			const updateData = {
-				title,
-				location,
-				address: address || null,
-				format,
-				circuit: circuit || null,
-				month: month || null,
-				eventDate: parsedDate,
-				description: description || null,
-				gemIdRequired,
-				premiumDiscount,
-				playerCap
-			};
-
-			if (isAdmin) {
-				const priceNum = parseFloat(price);
-				if (isNaN(priceNum) || priceNum < 0) {
-					return fail(400, { error: 'Invalid price' });
-				}
-				updateData.price = priceNum.toFixed(2);
+		// A store, if one runs it: it has to be on the event's circuit.
+		const storeId = text('storeId') || null;
+		if (storeId) {
+			const c = (await listCircuits({ inactive: true })).find((x) => x.name === circuit);
+			const [s] = await db
+				.select({ circuitId: store.circuitId })
+				.from(store)
+				.where(eq(store.id, storeId))
+				.limit(1);
+			if (!s || !c || s.circuitId !== c.id) {
+				return fail(400, { section: 'details', error: 'That store isn’t on the chosen circuit.' });
 			}
+		}
 
-			await db.update(event).set(updateData).where(eq(event.id, params.eventId));
+		try {
+			await db
+				.update(event)
+				.set({
+					title,
+					location,
+					address: text('address') || null,
+					price: priceNum.toFixed(2),
+					format,
+					circuit: circuit || null,
+					month: eventPeriod(eventDate).monthName,
+					eventDate,
+					description: text('description') || null,
+					gemIdRequired: form.get('gemIdRequired') === 'on',
+					premiumDiscount: form.get('premiumDiscount') === 'on',
+					playerCap,
+					storeId
+				})
+				.where(eq(event.id, params.eventId));
 
 			await bump('events');
 
-			return { success: true, message: 'Event updated successfully' };
+			return { section: 'details', success: true, message: 'Saved. Players see the changes now.' };
 		} catch (err) {
 			console.error('Error updating event:', err);
-			return fail(500, { error: 'Failed to update event' });
+			return fail(500, { section: 'details', error: 'Failed to update event' });
 		}
 	},
 

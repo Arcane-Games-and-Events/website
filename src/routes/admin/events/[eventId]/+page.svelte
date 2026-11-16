@@ -1,14 +1,17 @@
 <script>
+	import AgeOpenHeader, {
+		btnLine as hbtnLine
+	} from '$lib/components/age/admin/AgeOpenHeader.svelte';
 	import { untrack } from 'svelte';
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
-	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { enhance, deserialize } from '$app/forms';
 	import { parseGemDecklist, toStorageFormat } from '$lib/utils/gem-decklist-parser.js';
-	import { getCircuitNames } from '$lib/data/circuits.js';
-	import { MONTH_NAMES } from '$lib/data/months.js';
+	import { circuitVar } from '$lib/data/circuits.js';
 	import { PLACEMENT_BANDS, placementBand, placementLabel } from '$lib/utils/placement.js';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
+	import EventFields from '$lib/components/age/store/EventFields.svelte';
+	import * as F from '$lib/components/age/store/fields.js';
+	import * as ui from '$lib/components/age/admin/ui.js';
 
 	let { data, form } = $props();
 
@@ -21,12 +24,53 @@
 	}
 
 	// Edit mode for event details
-	let isEditMode = $state(false);
-	let premiumDiscount = $derived(data.event.premiumDiscount);
-	let gemIdRequired = $derived(data.event.gemIdRequired);
-	// Seeded once for the edit form; the form owns them after that.
-	let hasPlayerCap = $state(untrack(() => !!data.event.playerCap));
-	let playerCapValue = $state(untrack(() => data.event.playerCap || ''));
+	let saving = $state(false);
+	// The details form's circuit and store chips, from the event (again when it changes).
+	const circuitOf = () =>
+		data.circuits.find(
+			(c) => c.name.toLowerCase() === (data.event.circuit || '').trim().toLowerCase()
+		)?.name || '';
+	let circuitName = $state('');
+	let storeId = $state('');
+	$effect.pre(() => {
+		data.event.id;
+		untrack(() => {
+			circuitName = circuitOf();
+			storeId = data.event.storeId || '';
+		});
+	});
+	const circuitRow = $derived(data.circuits.find((c) => c.name === circuitName));
+	const circuitStores = $derived(
+		circuitRow
+			? data.stores.filter(
+					(st) => st.circuitId === circuitRow.id && (st.active || st.id === storeId)
+				)
+			: []
+	);
+	// A store from another circuit can't run it.
+	$effect(() => {
+		if (storeId && circuitRow && !circuitStores.some((st) => st.id === storeId)) storeId = '';
+	});
+	const tz = $derived((circuitRow?.timezone || 'America/Chicago').split('/')[1].replace('_', ' '));
+
+	const sectionTitle = 'ao-cond text-[40px] leading-none font-black uppercase md:text-[48px]';
+	const figures = $derived([
+		...(data.isAdmin
+			? [{ label: 'Revenue', value: ui.money(data.stats.totalRevenue), note: 'before refunds' }]
+			: []),
+		{
+			label: 'Tickets sold',
+			value: ui.fmt(data.stats.totalTickets),
+			note: data.event.playerCap ? `of ${data.event.playerCap} cap` : 'no cap'
+		},
+		{
+			label: 'Refunds',
+			value: ui.fmt(data.stats.totalRefunded),
+			note: 'refunded tickets',
+			tone: data.stats.totalRefunded > 0 ? 'text-hero-rb' : ''
+		},
+		{ label: 'Entry fee', value: ui.money(data.event.price), note: 'per player' }
+	]);
 
 	// Sorting state for registrations
 	let sortColumn = $state('createdAt');
@@ -191,8 +235,6 @@
 		}
 	}
 
-	const circuits = getCircuitNames();
-	const months = MONTH_NAMES;
 	const formats = [
 		'Classic Constructed',
 		'Draft',
@@ -302,18 +344,6 @@
 			minute: '2-digit',
 			timeZone: 'UTC'
 		}).format(new Date(dateStr));
-	}
-
-	function formatDateForInput(dateStr) {
-		if (!dateStr) return '';
-		const date = new Date(dateStr);
-		// Format using UTC to preserve the original wall clock time
-		const year = date.getUTCFullYear();
-		const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-		const day = String(date.getUTCDate()).padStart(2, '0');
-		const hours = String(date.getUTCHours()).padStart(2, '0');
-		const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-		return `${year}-${month}-${day}T${hours}:${minutes}`;
 	}
 
 	function confirmRefund(ticketCode) {
@@ -432,17 +462,45 @@
 </svelte:head>
 
 <!-- ============ HEADER ============ -->
-<DeskHeader kicker="Admin" title={data.event.title} subtitle={formatDate(data.event.eventDate)} />
-<AdminTabs />
-<section class="mx-auto w-full max-w-[1200px] px-5 pt-[24px] pb-[20px] md:px-8">
-	<a
-		href="/admin/events"
-		class="inline-flex items-center text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+<AgeOpenHeader
+	title={data.event.title}
+	subtitle={formatDate(data.event.eventDate)}
+	circuit={data.event.circuit}
+	trail={[{ href: '/admin/events', label: 'Events' }]}
+>
+	{#snippet actions()}
+		<a href="/ageopen/{data.event.id}" class={hbtnLine}>Public page ↗</a>
+	{/snippet}
+</AgeOpenHeader>
+<!-- ============ TABS ============ -->
+<!-- The page's one menu under the admin tabs: its sections, and the event's status on the right. -->
+<nav
+	class="sticky top-[calc(var(--desk-header,0px)+var(--desk-tabs-h,46px))] z-30 border-b border-line2 bg-paper-bg/95 backdrop-blur-[2px]"
+	aria-label="Event sections"
+	style="--cc: {data.event.circuit ? circuitVar(data.event.circuit) : 'var(--color-warm)'};"
+>
+	<div
+		class="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-x-6 px-5 md:px-8"
 	>
-		← Back to Events
-	</a>
-	<div class="mt-[18px] mb-[18px] flex flex-wrap items-center gap-[16px]">
-		<div class="flex flex-wrap items-center gap-[10px]">
+		<div
+			class="-ml-3 flex h-[44px] max-w-full min-w-0 items-stretch gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+		>
+			{#each [{ id: 'overview', label: 'Overview' }, { id: 'registrations', label: `Registrations · ${data.stats.totalTickets}` }, { id: 'import', label: 'Import CSV' }, { id: 'results', label: `Results · ${data.existingResults?.length || 0}` }, { id: 'decklists', label: `Decklists · ${data.existingDecklists?.length || 0}` }, { id: 'metagame', label: `Metagame · ${data.existingHeroes?.length || 0}` }, ...(data.isAdmin ? [{ id: 'staff', label: `Staff · ${data.assignedStaff?.length || 0}` }] : [])] as tab (tab.id)}
+				<button
+					type="button"
+					onclick={() => setActiveTab(tab.id)}
+					aria-current={activeTab === tab.id ? 'true' : undefined}
+					class="flex shrink-0 items-center border-b-[3px] px-3 text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap uppercase transition-colors {activeTab ===
+					tab.id
+						? 'text-ink'
+						: 'border-transparent text-soft hover:text-ink'}"
+					style={activeTab === tab.id ? 'border-color: var(--cc)' : ''}
+				>
+					{tab.label}
+				</button>
+			{/each}
+		</div>
+		<div class="flex flex-wrap items-center gap-[10px] py-1.5">
 			<form
 				method="POST"
 				action="?/updateStatus"
@@ -497,10 +555,10 @@
 			{/if}
 		</div>
 	</div>
-</section>
+</nav>
 
-{#if form?.success}
-	<section class="mx-auto w-full max-w-[1200px] overflow-x-clip px-5 pb-[12px] md:px-8">
+{#if form?.success && form.section !== 'details'}
+	<section class="mx-auto w-full max-w-[1200px] overflow-x-clip px-5 pt-6 md:px-8">
 		<div class="border-l-[3px] border-prem bg-prem/10 p-4">
 			<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase">Success</span>
 			<p class="mt-[2px] font-newsreader text-[16px] font-semibold">{form.message}</p>
@@ -516,7 +574,7 @@
 		</div>
 	</section>
 {/if}
-{#if form?.error}
+{#if form?.error && form.section !== 'details'}
 	<AdminNotice tone="error" message={form.error} />
 {/if}
 {#if data.monthMismatch}
@@ -527,459 +585,194 @@
 	/>
 {/if}
 
-<!-- ============ TABS ============ -->
-<section class="overflow-x-clip border-t border-line2">
-	<div class="mx-auto w-full max-w-[1200px] px-5 py-[16px] md:px-8">
-		<div class="flex gap-1 overflow-x-auto whitespace-nowrap">
-			{#each [{ id: 'overview', label: 'Overview' }, { id: 'registrations', label: `Registrations · ${data.stats.totalTickets}` }, { id: 'import', label: 'Import CSV' }, { id: 'results', label: `Results · ${data.existingResults?.length || 0}` }, { id: 'decklists', label: `Decklists · ${data.existingDecklists?.length || 0}` }, { id: 'metagame', label: `Metagame · ${data.existingHeroes?.length || 0}` }, ...(data.isAdmin ? [{ id: 'staff', label: `Staff · ${data.assignedStaff?.length || 0}` }] : [])] as tab (tab.id)}
-				<button
-					onclick={() => setActiveTab(tab.id)}
-					class="relative px-[16px] py-[10px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors {activeTab ===
-					tab.id
-						? 'text-ink'
-						: 'text-fade hover:text-ink'}"
-				>
-					{tab.label}
-					{#if activeTab === tab.id}<span class="absolute inset-x-[10px] bottom-0 h-[2px] bg-warm"
-						></span>{/if}
-				</button>
-			{/each}
-		</div>
-	</div>
-</section>
-
-<div class="mx-auto w-full max-w-[1200px] px-5 py-[36px] md:px-8">
+<div
+	class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-24 md:px-8"
+	style="--cc: {data.event.circuit ? circuitVar(data.event.circuit) : 'var(--color-warm)'};"
+>
 	<!-- Tab Content -->
 
 	<!-- Overview Tab -->
 	{#if activeTab === 'overview'}
-		<!-- Stat Strip -->
-		<div class="mb-[24px] overflow-hidden border border-line2">
-			<div class="grid grid-cols-2 divide-x divide-line2 {data.isAdmin ? 'md:grid-cols-3' : ''}">
-				{#if data.isAdmin}
-					<div class="p-5">
-						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-							>Total Revenue</span
-						>
-						<div
-							class="ao-cond mt-[6px] text-[30px] leading-none font-black text-prem tabular-nums"
-						>
-							${data.stats.totalRevenue}
-						</div>
-						<span class="mt-[4px] block text-[11.5px] text-fade"> before refunds </span>
-					</div>
-				{/if}
-				<div class="p-5">
-					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-						>Tickets Sold</span
-					>
-					<div class="ao-cond mt-[6px] text-[30px] leading-none font-black text-ink tabular-nums">
-						{data.stats.totalTickets}
-					</div>
-					{#if data.event.playerCap}
-						<span class="mt-[4px] block text-[11.5px] text-fade">
-							of {data.event.playerCap} cap
-						</span>
-					{:else}
-						<span class="mt-[4px] block text-[11.5px] text-fade"> no cap </span>
-					{/if}
-				</div>
-				<div class="p-5">
-					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-						>Refunds</span
-					>
-					<div
-						class="ao-cond text-[30px] leading-none font-black tabular-nums {data.stats
-							.totalRefunded > 0
-							? 'text-warm'
-							: 'text-ink'} mt-[6px] text-[clamp(28px,4vw,44px)] leading-[0.9] font-extrabold tracking-[-0.02em]"
-					>
-						{data.stats.totalRefunded}
-					</div>
-					<span class="mt-[4px] block text-[11.5px] text-fade"> refunded tickets </span>
-				</div>
-			</div>
-		</div>
-
-		<!-- Event Details -->
-		<div class="overflow-hidden border border-line2">
-			<div class="flex items-center justify-between gap-3 border-b border-line2 p-5">
-				<div>
-					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-						Event Details
-					</span>
-					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
-						Configuration.
-					</h2>
-				</div>
-				<button
-					onclick={() => (isEditMode = !isEditMode)}
-					class="inline-flex items-center border border-line2 px-[14px] py-[8px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+		<!-- the numbers -->
+		<dl class="grid grid-cols-2 border-t-[3px] border-ink md:grid-cols-4">
+			{#each figures as f, i (f.label)}
+				<div
+					class="border-b border-line2 py-4 pr-4 {i % 2
+						? 'pl-4'
+						: ''} md:border-r md:pl-5 md:first:pl-0 md:last:border-r-0"
 				>
-					{isEditMode ? 'Cancel' : 'Edit'}
-				</button>
+					<dt class={ui.label}>{f.label}</dt>
+					<dd class="ao-cond mt-2 text-[40px] leading-none font-black tabular-nums {f.tone || ''}">
+						{f.value}
+					</dd>
+					<dd class="mt-1.5 text-[11.5px] text-soft">{f.note}</dd>
+				</div>
+			{/each}
+		</dl>
+
+		<!-- details -->
+		<section class="mt-16">
+			<div class="flex flex-wrap items-end justify-between gap-3">
+				<h2 class={sectionTitle}>Details</h2>
+				<p class="text-[12.5px] text-soft">Changes go live as soon as you save</p>
 			</div>
+			{#if form?.section === 'details' && form.error}<AdminNotice
+					tone="error"
+					message={form.error}
+					pad="pt-4 px-0! md:px-0!"
+				/>{/if}
+			{#if form?.section === 'details' && form.success}<AdminNotice
+					tone="success"
+					message={form.message}
+					pad="pt-4 px-0! md:px-0!"
+				/>{/if}
+			{#key data.event.id}
+				<form
+					method="POST"
+					action="?/updateEvent"
+					class="mt-6 border border-line2 bg-white"
+					style={circuitRow ? `--cc: ${circuitRow.color}` : ''}
+					use:enhance={() => {
+						saving = true;
+						return async ({ update }) => {
+							await update({ reset: false });
+							saving = false;
+						};
+					}}
+				>
+					<div class="flex flex-col gap-7 px-5 py-6 md:px-7">
+						<!-- circuit and store -->
+						<div class={F.groupFirst}>
+							<div>
+								<p class={F.groupTitle}>Circuit</p>
+								<p class={F.groupNote}>Where it counts toward the standings, and who runs it.</p>
+							</div>
+							<div class="flex flex-col gap-5">
+								<fieldset>
+									<legend class={F.label}>Circuit</legend>
+									<div class="flex flex-wrap gap-2">
+										{#each data.circuits as c (c.id)}
+											<label
+												class={F.chip(circuitName === c.name)}
+												style={circuitName === c.name ? `background: ${c.color}` : ''}
+											>
+												<input
+													type="radio"
+													name="circuit"
+													value={c.name}
+													bind:group={circuitName}
+													class="sr-only"
+												/>
+												<span
+													class="mr-2 h-2.5 w-2.5 shrink-0 {circuitName === c.name
+														? 'bg-white'
+														: ''}"
+													style={circuitName === c.name ? '' : `background: ${c.color}`}
+													aria-hidden="true"
+												></span>
+												{c.name}{c.active ? '' : ' (inactive)'}
+											</label>
+										{/each}
+									</div>
+									{#if !circuitRow}
+										<p class={F.hint}>Not on a circuit, so it doesn’t count toward standings.</p>
+									{/if}
+								</fieldset>
+								{#if circuitRow}
+									<fieldset>
+										<legend class={F.label}>Run by</legend>
+										<div class="flex flex-wrap gap-2">
+											<label class={F.chip(!storeId)} style={!storeId ? F.chipOn : ''}>
+												<input
+													type="radio"
+													name="storeId"
+													value=""
+													bind:group={storeId}
+													class="sr-only"
+												/>
+												AGE
+											</label>
+											{#each circuitStores as st (st.id)}
+												<label
+													class={F.chip(storeId === st.id)}
+													style={storeId === st.id ? F.chipOn : ''}
+												>
+													<input
+														type="radio"
+														name="storeId"
+														value={st.id}
+														bind:group={storeId}
+														class="sr-only"
+													/>
+													{st.name}
+												</label>
+											{/each}
+										</div>
+										<p class={F.hint}>
+											{circuitStores.length
+												? 'A store’s event counts toward its payouts and season.'
+												: `${circuitRow.name} has no active store yet.`}
+										</p>
+									</fieldset>
+								{/if}
+							</div>
+						</div>
 
-			{#if isEditMode}
-				<form method="POST" action="?/updateEvent" class="space-y-[18px] p-5">
-					<div class="grid grid-cols-1 gap-[16px] md:grid-cols-2">
-						<div>
-							<label
-								for="title"
-								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-							>
-								Event Name <span class="text-warm">*</span>
-							</label>
-							<input
-								type="text"
-								id="title"
-								name="title"
-								required
-								value={data.event.title}
-								class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
-							/>
-						</div>
-						<div>
-							<label
-								for="location"
-								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-							>
-								Venue Name <span class="text-warm">*</span>
-							</label>
-							<input
-								type="text"
-								id="location"
-								name="location"
-								required
-								value={data.event.location}
-								class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
-							/>
-						</div>
-						<div>
-							<label
-								for="address"
-								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>Address</label
-							>
-							<input
-								type="text"
-								id="address"
-								name="address"
-								value={data.event.address || ''}
-								class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
-							/>
-						</div>
-						<div>
-							<label
-								for="format"
-								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-							>
-								Format <span class="text-warm">*</span>
-							</label>
-							<select
-								id="format"
-								name="format"
-								required
-								class="h-[40px] w-full border border-line2 bg-paper py-0 pr-8 pl-3 text-[13px] text-ink focus:border-ink focus:ring-0"
-							>
-								{#each formats as format}
-									<option value={format} selected={data.event.format === format}>{format}</option>
-								{/each}
-							</select>
-						</div>
-						<div>
-							<label
-								for="circuit"
-								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>Circuit</label
-							>
-							<select
-								id="circuit"
-								name="circuit"
-								class="h-[40px] w-full border border-line2 bg-paper py-0 pr-8 pl-3 text-[13px] text-ink focus:border-ink focus:ring-0"
-							>
-								<option value="">No circuit</option>
-								{#each circuits as circuit}
-									<option value={circuit} selected={data.event.circuit === circuit}
-										>{circuit}</option
-									>
-								{/each}
-							</select>
-						</div>
-						<div>
-							<label
-								for="month"
-								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>Month</label
-							>
-							<select
-								id="month"
-								name="month"
-								class="h-[40px] w-full border border-line2 bg-paper py-0 pr-8 pl-3 text-[13px] text-ink focus:border-ink focus:ring-0"
-							>
-								<option value="">Select month</option>
-								{#each months as month}
-									<option value={month} selected={data.event.month === month}>{month}</option>
-								{/each}
-							</select>
-						</div>
-						<div>
-							<label
-								for="eventDate"
-								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-							>
-								Event Date & Time <span class="text-warm">*</span>
-							</label>
-							<input
-								type="datetime-local"
-								id="eventDate"
-								name="eventDate"
-								required
-								value={formatDateForInput(data.event.eventDate)}
-								class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
-							/>
-						</div>
-						<div>
-							<label
-								for="price"
-								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-							>
-								Entry Fee ($) <span class="text-warm">*</span>
-								{#if data.isTournamentStaff}<span
-										class="tracking-normal text-fade normal-case italic">(read-only)</span
-									>{/if}
-							</label>
-							<input
-								type="number"
-								id="price"
-								name="price"
-								required
-								min="0"
-								step="0.01"
-								value={data.event.price}
-								disabled={data.isTournamentStaff}
-								class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0 {data.isTournamentStaff
-									? 'cursor-not-allowed opacity-60'
-									: ''}"
+						<div class="border-t border-line2 pt-6">
+							<EventFields
+								value={data.event}
+								formats={data.formats}
+								timezoneLabel={tz}
+								today={new Date().toISOString().slice(0, 10)}
 							/>
 						</div>
 					</div>
-
-					<div>
-						<label
-							for="description"
-							class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-							>Description</label
-						>
-						<textarea
-							id="description"
-							name="description"
-							rows="3"
-							value={data.event.description || ''}
-							class="w-full border border-line2 bg-paper px-3 py-2 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
-						></textarea>
-					</div>
-
-					<div class="flex flex-wrap gap-[18px] border-t border-line2 pt-[16px]">
-						<label class="flex cursor-pointer items-center gap-2">
-							<input
-								type="checkbox"
-								id="gemIdRequired"
-								name="gemIdRequired"
-								bind:checked={gemIdRequired}
-								class="h-4 w-4 border-line2 text-ink focus:ring-0"
-							/>
-							<span class="font-newsreader text-[14px] font-semibold">GEM ID Required</span>
-						</label>
-						<label class="flex cursor-pointer items-center gap-2">
-							<input
-								type="checkbox"
-								id="premiumDiscount"
-								name="premiumDiscount"
-								bind:checked={premiumDiscount}
-								class="h-4 w-4 border-line2 text-ink focus:ring-0"
-							/>
-							<span class="font-newsreader text-[14px] font-semibold">Premium Discount</span>
-						</label>
-						<div class="flex items-center gap-3">
-							<label class="flex cursor-pointer items-center gap-2">
-								<input
-									type="checkbox"
-									bind:checked={hasPlayerCap}
-									class="h-4 w-4 border-line2 text-ink focus:ring-0"
-								/>
-								<span class="font-newsreader text-[14px] font-semibold">Player Cap</span>
-							</label>
-							{#if hasPlayerCap}
-								<input
-									type="number"
-									name="playerCap"
-									min="1"
-									bind:value={playerCapValue}
-									placeholder="e.g., 32"
-									class="h-[40px] border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
-								/>
-							{/if}
-						</div>
-					</div>
-
-					<div class="flex gap-3 border-t border-line2 pt-[16px]">
+					<div
+						class="sticky bottom-0 z-10 flex items-center justify-between gap-4 border-t border-line2 bg-white px-5 py-3.5 shadow-[0_-12px_24px_-18px_rgb(23_21_15/0.35)] md:px-7"
+					>
+						<span class="text-[12px] text-soft">Players see these changes right away.</span>
 						<button
-							type="button"
-							onclick={() => (isEditMode = false)}
-							class="inline-flex items-center border border-line2 px-[18px] py-[11px] text-[10.5px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink"
+							class="inline-flex h-[44px] shrink-0 items-center px-6 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:opacity-50"
+							style="background: var(--cc, var(--color-ink))"
+							disabled={saving}>{saving ? 'Saving…' : 'Save details'}</button
 						>
-							Cancel
-						</button>
-						<button
-							type="submit"
-							class="inline-flex h-[40px] shrink-0 items-center gap-2 bg-ink px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-50"
-						>
-							Save Changes →
-						</button>
 					</div>
 				</form>
-			{:else}
-				<dl class="grid grid-cols-1 gap-0 md:grid-cols-3">
-					<div class="border-r border-b border-line2 p-5">
-						<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-							Location
-						</dt>
-						<dd class="mt-[6px] font-newsreader text-[16px] font-semibold">
-							{data.event.location || 'N/A'}
-						</dd>
-						{#if data.event.address}
-							<dd class="mt-[2px] text-[12px] text-fade">{data.event.address}</dd>
-						{/if}
-					</div>
-					<div class="border-r border-b border-line2 p-5">
-						<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-							Format
-						</dt>
-						<dd class="mt-[6px] font-newsreader text-[16px] font-semibold">
-							{data.event.format || 'N/A'}
-						</dd>
-					</div>
-					<div class="border-b border-line2 p-5">
-						{#if data.event.circuit}
-							<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-								Circuit
-							</dt>
-							<dd class="mt-[6px] font-newsreader text-[16px] font-semibold">
-								{data.event.circuit}
-							</dd>
-							{#if data.event.month}
-								<dd class="mt-[2px] text-[11.5px] text-fade">
-									{data.event.month}
-								</dd>
-							{/if}
-						{:else}
-							<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-								Entry Fee
-							</dt>
-							<dd class="mt-[6px] text-[20px] font-semibold text-prem tabular-nums">
-								${parseFloat(data.event.price).toFixed(2)}
-							</dd>
-						{/if}
-					</div>
-					{#if data.event.circuit}
-						<div class="border-r border-b border-line2 p-5 md:col-span-3">
-							<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-								Entry Fee
-							</dt>
-							<dd class="mt-[6px] text-[20px] font-semibold text-prem tabular-nums">
-								${parseFloat(data.event.price).toFixed(2)}
-							</dd>
-						</div>
-					{/if}
-					<div class="p-5 md:col-span-3">
-						<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-							Settings
-						</dt>
-						<dd class="mt-[10px] flex flex-wrap gap-[8px]">
-							<span
-								class="inline-flex w-fit shrink-0 items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap text-[var(--tone,var(--color-ink))] capitalize before:block before:h-2 before:w-2 before:shrink-0 before:bg-[var(--tone,var(--color-line2))] before:content-[''] {data
-									.event.gemIdRequired
-									? '[--tone:#8a6116]'
-									: '[--tone:var(--color-fade)]'}"
-							>
-								{data.event.gemIdRequired ? '✓' : '—'} GEM ID Required
-							</span>
-							<span
-								class="inline-flex w-fit shrink-0 items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap text-[var(--tone,var(--color-ink))] capitalize before:block before:h-2 before:w-2 before:shrink-0 before:bg-[var(--tone,var(--color-line2))] before:content-[''] {data
-									.event.premiumDiscount
-									? '[--tone:var(--color-prem)]'
-									: '[--tone:var(--color-fade)]'}"
-							>
-								{data.event.premiumDiscount ? '✓' : '—'} Premium Discount
-							</span>
-							{#if data.event.playerCap}
-								<span
-									class="inline-flex shrink-0 items-center text-[11.5px] font-semibold text-warm"
-								>
-									Cap · {data.event.playerCap} players
-								</span>
-							{/if}
-						</dd>
-					</div>
-					{#if data.event.description}
-						<div class="border-t border-line2 p-5 md:col-span-3">
-							<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-								Description
-							</dt>
-							<dd class="mt-[8px] font-newsreader text-[16px] leading-[1.55] text-soft">
-								{data.event.description}
-							</dd>
-						</div>
-					{/if}
-				</dl>
-			{/if}
-		</div>
+			{/key}
+		</section>
 
-		<!-- Danger zone -->
+		<!-- danger zone -->
 		{#if data.isAdmin}
-			<div
-				class="mt-[24px] flex flex-wrap items-center justify-between gap-3 border border-hero-rb/60 p-5"
-			>
-				<div>
-					<span class="text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase">
-						Danger Zone
-					</span>
-					<p class="mt-[4px] text-[13px] leading-[1.5] text-soft">
-						Permanently delete this event and all its tickets, results, decklists, and staff
-						assignments.
-					</p>
-				</div>
-				<button
-					type="button"
-					onclick={() => (showDeleteConfirm = true)}
-					class="inline-flex h-[40px] shrink-0 items-center bg-hero-rb px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+			<section class="mt-16">
+				<h2 class={sectionTitle}>Delete</h2>
+				<div
+					class="mt-6 flex flex-wrap items-center justify-between gap-4 border border-l-[4px] border-line2 border-l-hero-rb bg-white px-5 py-5 md:px-7"
 				>
-					Delete Event
-				</button>
-			</div>
+					<p class="max-w-[620px] text-[13.5px] leading-snug text-soft">
+						Permanently delete this event and all its tickets, results, decklists, and staff
+						assignments. This can’t be undone.
+					</p>
+					<button
+						type="button"
+						onclick={() => (showDeleteConfirm = true)}
+						class="inline-flex h-[44px] shrink-0 items-center bg-hero-rb px-6 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110"
+					>
+						Delete event
+					</button>
+				</div>
+			</section>
 		{/if}
 	{/if}
 
 	<!-- Registrations Tab -->
 	{#if activeTab === 'registrations'}
-		<div class="overflow-hidden border border-line2">
-			<div class="flex flex-wrap items-center justify-between gap-3 border-b border-line2 p-5">
-				<div>
-					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-						Registered Players
-					</span>
-					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
-						The roster.
-					</h2>
-				</div>
-				<span
-					class="inline-flex h-[32px] shrink-0 items-center gap-1.5 bg-ink px-3 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-50"
-				>
-					{data.tickets.length}{#if data.event.playerCap}/{data.event.playerCap}{/if} players
-				</span>
-			</div>
-
+		<div class="flex flex-wrap items-end justify-between gap-3">
+			<h2 class={sectionTitle}>Registrations</h2>
+			<p class="text-[12.5px] text-soft">
+				{data.tickets.length}{data.event.playerCap ? ` of ${data.event.playerCap}` : ''} players
+			</p>
+		</div>
+		<div class="mt-6 overflow-hidden border border-line2 bg-white">
 			{#if data.tickets.length === 0}
 				<div class="p-12 text-center">
 					<p class="font-newsreader text-[17px] text-soft italic">No tickets sold yet.</p>
@@ -1208,27 +1001,26 @@
 
 	<!-- Import CSV Tab -->
 	{#if activeTab === 'import'}
-		<div class="mx-auto max-w-4xl">
+		<div>
 			{#if isCompleted}
-				<div class="border border-line2 bg-paper p-8 text-center">
-					<span class="text-[9.5px] font-extrabold tracking-[0.2em] text-warm uppercase">
-						Event Finalized
-					</span>
-					<h2 class="mt-[6px] font-newsreader text-[22px] font-semibold">Locked.</h2>
-					<p class="mt-[10px] font-newsreader text-[16px] text-soft italic">
-						This event is finalized. Reopen from the Finalize tab to import new results.
-					</p>
-				</div>
+				<h2 class={sectionTitle}>Import results</h2>
+				<p class="mt-6 border border-dashed border-line2 px-5 py-5 text-[13.5px] text-soft">
+					This event is closed. Reopen it (top right) to import new results.
+				</p>
 			{:else}
 				{#if form?.processedResults}
-					<div class="mb-[24px] border-l-[3px] border-prem bg-prem/10 p-6">
+					<div
+						class="mb-10 border border-l-[4px] border-line2 border-l-prem bg-white px-5 py-5 md:px-7"
+					>
 						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase">
 							Success
 						</span>
-						<h3 class="mt-[4px] font-newsreader text-[22px] font-semibold">Results imported.</h3>
+						<h3 class="ao-cond mt-1 text-[28px] leading-none font-black uppercase">
+							Results imported
+						</h3>
 						<div class="mt-[16px] grid grid-cols-2 gap-[14px] sm:grid-cols-4">
-							<div class="border border-white/30 p-3 text-center">
-								<div class="text-[24px] font-semibold tabular-nums">
+							<div class="border-t border-line2 pt-3">
+								<div class="ao-cond text-[32px] leading-none font-black tabular-nums">
 									{form.processedResults.totalPlayers}
 								</div>
 								<span
@@ -1237,8 +1029,8 @@
 									Players
 								</span>
 							</div>
-							<div class="border border-white/30 p-3 text-center">
-								<div class="text-[24px] font-semibold tabular-nums">
+							<div class="border-t border-line2 pt-3">
+								<div class="ao-cond text-[32px] leading-none font-black tabular-nums">
 									{form.processedResults.totalRounds}
 								</div>
 								<span
@@ -1247,8 +1039,8 @@
 									Rounds
 								</span>
 							</div>
-							<div class="border border-white/30 p-3 text-center">
-								<div class="text-[24px] font-semibold tabular-nums">
+							<div class="border-t border-line2 pt-3">
+								<div class="ao-cond text-[32px] leading-none font-black tabular-nums">
 									{form.processedResults.totalPointsDistributed}
 								</div>
 								<span
@@ -1257,8 +1049,8 @@
 									AGE Points
 								</span>
 							</div>
-							<div class="border border-white/30 p-3 text-center">
-								<div class="text-[24px] font-semibold tabular-nums">
+							<div class="border-t border-line2 pt-3">
+								<div class="ao-cond text-[32px] leading-none font-black tabular-nums">
 									${form.processedResults.totalPrizeDistributed}
 								</div>
 								<span
@@ -1270,25 +1062,18 @@
 						</div>
 						<button
 							onclick={() => setActiveTab('results')}
-							class="mt-[18px] inline-flex items-center bg-white px-[16px] py-[9px] text-[10.5px] font-extrabold tracking-[0.12em] text-prem uppercase transition-[filter] hover:brightness-95"
+							class="mt-5 inline-flex h-[40px] items-center bg-prem px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110"
 						>
 							Review Results →
 						</button>
 					</div>
 				{/if}
 
-				<div class="overflow-hidden border border-line2">
-					<div class="border-b border-line2 p-5">
-						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-							Import Tournament Results
-						</span>
-						<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
-							GEM CSV upload.
-						</h2>
-						<p class="mt-[6px] text-[13px] leading-[1.5] text-soft">
-							Upload GEM CSV exports to calculate standings and record matches.
-						</p>
-					</div>
+				<div class="flex flex-wrap items-end justify-between gap-3">
+					<h2 class={sectionTitle}>Import results</h2>
+					<p class="text-[12.5px] text-soft">GEM CSV exports → standings and matches</p>
+				</div>
+				<div class="mt-6 overflow-hidden border border-line2 bg-white">
 					<form
 						method="POST"
 						action="?/processCSV"
@@ -1401,23 +1186,15 @@
 
 	<!-- Results Tab -->
 	{#if activeTab === 'results'}
-		<div class="overflow-hidden border border-line2">
-			<div class="flex flex-wrap items-center justify-between gap-3 border-b border-line2 p-5">
-				<div>
-					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-						Tournament Results
-					</span>
-					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
-						The final standings.
-					</h2>
-				</div>
-				{#if sortedResults.length > 0}
-					<span class="text-[11.5px] text-fade">
-						{sortedResults.length} players · {data.existingMatches?.length || 0} matches
-					</span>
-				{/if}
-			</div>
-
+		<div class="flex flex-wrap items-end justify-between gap-3">
+			<h2 class={sectionTitle}>Results</h2>
+			{#if sortedResults.length > 0}
+				<p class="text-[12.5px] text-soft">
+					{sortedResults.length} players · {data.existingMatches?.length || 0} matches
+				</p>
+			{/if}
+		</div>
+		<div class="mt-6 overflow-hidden border border-line2 bg-white">
 			{#if sortedResults.length === 0}
 				<div class="p-12 text-center">
 					<p class="font-newsreader text-[17px] text-soft italic">No results recorded yet.</p>
@@ -1576,43 +1353,31 @@
 	<!-- Decklists Tab -->
 	{#if activeTab === 'decklists'}
 		<div class="space-y-[24px]">
-			<div class="flex flex-wrap items-baseline justify-between gap-3">
-				<div>
-					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-						Decklists
-					</span>
-					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
-						The bring-list.
-					</h2>
-				</div>
+			<div class="flex flex-wrap items-end justify-between gap-3">
+				<h2 class={sectionTitle}>Decklists</h2>
 				{#if !isCompleted}
 					<button
 						onclick={startNewDecklist}
-						class="inline-flex h-[32px] shrink-0 items-center gap-1.5 bg-ink px-3 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-50"
+						class="inline-flex h-[36px] items-center px-4 text-[10px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110"
+						style="background: var(--cc)"
 					>
-						+ Add Decklist
+						+ Add decklist
 					</button>
 				{/if}
 			</div>
 
 			<!-- Decklist Form Modal -->
 			{#if showDecklistForm}
-				<div class="overflow-hidden border border-line2 p-6">
-					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-						{editingDecklist ? 'Edit Decklist' : 'New Decklist'}
-					</span>
-					<h3
-						class="mt-[4px] mb-[18px] font-newsreader text-[20px] font-semibold tracking-[-0.01em]"
-					>
-						{editingDecklist ? editingDecklist.playerName : 'Details.'}
+				<div
+					class="overflow-hidden border border-t-[4px] border-line2 border-t-[var(--cc)] bg-white px-5 py-6 md:px-7"
+				>
+					<h3 class="ao-cond mb-6 text-[28px] leading-none font-black uppercase">
+						{editingDecklist ? `Edit ${editingDecklist.playerName}’s list` : 'New decklist'}
 					</h3>
 
 					{#if data.participants.length > 0 && !editingDecklist}
 						<div class="mb-[16px]">
-							<label
-								for="participantSearchInput"
-								class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-							>
+							<label for="participantSearchInput" class={F.label}>
 								Select from Registered Players
 							</label>
 							<div class="relative">
@@ -1622,7 +1387,7 @@
 									bind:value={participantSearch}
 									onfocus={() => (showParticipantDropdown = true)}
 									placeholder="Search by name or GEM ID"
-									class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
+									class={F.field}
 								/>
 								{#if participantSearch}
 									<button
@@ -1707,10 +1472,7 @@
 
 						<div class="grid grid-cols-1 gap-[16px] md:grid-cols-2">
 							<div>
-								<label
-									for="deckPlayerName"
-									class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>
+								<label for="deckPlayerName" class={F.label}>
 									Player Name <span class="text-warm">*</span>
 								</label>
 								<input
@@ -1721,7 +1483,7 @@
 									bind:value={decklistForm.playerName}
 									list="participantNames"
 									autocomplete="off"
-									class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
+									class={F.field}
 								/>
 								<datalist id="participantNames">
 									{#each data.participants as participant (participant.id || participant.playerName)}
@@ -1730,12 +1492,7 @@
 								</datalist>
 							</div>
 							<div>
-								<label
-									for="deckGemId"
-									class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>
-									GEM ID
-								</label>
+								<label for="deckGemId" class={F.label}> GEM ID </label>
 								<input
 									type="text"
 									id="deckGemId"
@@ -1743,7 +1500,7 @@
 									bind:value={decklistForm.gemId}
 									list="participantGemIds"
 									autocomplete="off"
-									class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
+									class={F.field}
 								/>
 								<datalist id="participantGemIds">
 									{#each data.participants.filter((p) => p.gemId) as participant (participant.gemId)}
@@ -1756,10 +1513,7 @@
 						<div class="grid grid-cols-1 gap-[16px] md:grid-cols-3">
 							<!-- Hero -->
 							<div class="relative">
-								<label
-									for="heroSearch"
-									class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>
+								<label for="heroSearch" class={F.label}>
 									Hero <span class="text-warm">*</span>
 								</label>
 								<div class="relative">
@@ -1774,7 +1528,7 @@
 										}}
 										placeholder="Search hero"
 										autocomplete="off"
-										class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
+										class={F.field}
 									/>
 									{#if heroSearch}
 										<button
@@ -1826,17 +1580,12 @@
 							</div>
 
 							<div>
-								<label
-									for="placement"
-									class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>
-									Placement
-								</label>
+								<label for="placement" class={F.label}> Placement </label>
 								<select
 									id="placement"
 									name="placement"
 									bind:value={decklistForm.placement}
-									class="h-[40px] w-full border border-line2 bg-paper py-0 pr-8 pl-3 text-[13px] text-ink focus:border-ink focus:ring-0"
+									class={F.select}
 								>
 									<option value="">Select…</option>
 									{#each PLACEMENT_BANDS as band (band.value)}
@@ -1846,17 +1595,12 @@
 							</div>
 
 							<div>
-								<label
-									for="deckFormat"
-									class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>
-									Format
-								</label>
+								<label for="deckFormat" class={F.label}> Format </label>
 								<select
 									id="deckFormat"
 									name="format"
 									bind:value={decklistForm.format}
-									class="h-[40px] w-full border border-line2 bg-paper py-0 pr-8 pl-3 text-[13px] text-ink focus:border-ink focus:ring-0"
+									class={F.select}
 								>
 									{#each formats as fmt (fmt)}
 										<option value={fmt}>{fmt}</option>
@@ -1868,10 +1612,7 @@
 						<div class="grid grid-cols-1 gap-[24px] lg:grid-cols-2">
 							<!-- Cards Textarea -->
 							<div>
-								<label
-									for="cardsText"
-									class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>
+								<label for="cardsText" class={F.label}>
 									Decklist · GEM Format <span class="text-warm">*</span>
 								</label>
 								<textarea
@@ -1887,7 +1628,7 @@ Pitch 0/1 (Red)
 3 Blade Flurry
 3 Sharpen Steel
 ..."
-									class="w-full border border-line2 bg-paper px-3 py-2 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
+									class="{F.field} h-auto py-3 leading-relaxed"
 								></textarea>
 								<p class="mt-[8px] text-[11.5px] text-fade">
 									Paste decklist directly from GEM export
@@ -1896,11 +1637,7 @@ Pitch 0/1 (Red)
 
 							<!-- Live Preview -->
 							<div>
-								<span
-									class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>
-									Preview
-								</span>
+								<span class={F.label}> Preview </span>
 								<div class="h-[400px] overflow-auto border border-line2 bg-paper p-4">
 									{#if decklistPreview.totals.total === 0}
 										<p class="font-newsreader text-[15px] text-soft italic">
@@ -2128,19 +1865,11 @@ Pitch 0/1 (Red)
 	{#if activeTab === 'metagame'}
 		<div class="space-y-[24px]">
 			<!-- Upload -->
-			<div class="overflow-hidden border border-line2">
-				<div class="border-b border-line2 p-5">
-					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-						Upload Hero Data
-					</span>
-					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
-						Hero roster.
-					</h2>
-					<p class="mt-[6px] text-[13px] leading-[1.5] text-soft">
-						Import hero choices from the GEM export.
-					</p>
-				</div>
-
+			<div class="flex flex-wrap items-end justify-between gap-3">
+				<h2 class={sectionTitle}>Heroes</h2>
+				<p class="text-[12.5px] text-soft">Hero choices from the GEM export</p>
+			</div>
+			<div class="overflow-hidden border border-line2 bg-white">
 				<div class="p-5">
 					{#if !data.event.circuit || !data.event.month}
 						<div class="border-l-[3px] border-gold bg-gold/10 p-4">
@@ -2230,19 +1959,11 @@ Pitch 0/1 (Red)
 			</div>
 
 			<!-- Metagame Breakdown -->
-			<div class="overflow-hidden border border-line2">
-				<div class="border-b border-line2 p-5">
-					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-						Metagame Breakdown
-					</span>
-					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
-						The field.
-					</h2>
-					<p class="mt-[6px] text-[11.5px] text-fade">
-						{data.existingHeroes?.length || 0} players registered
-					</p>
-				</div>
-
+			<div class="mt-10 flex flex-wrap items-end justify-between gap-3">
+				<h2 class={sectionTitle}>Metagame</h2>
+				<p class="text-[12.5px] text-soft">{data.existingHeroes?.length || 0} players</p>
+			</div>
+			<div class="overflow-hidden border border-line2 bg-white">
 				{#if !data.existingHeroes?.length}
 					<div class="p-12 text-center">
 						<p class="font-newsreader text-[17px] text-soft italic">No hero data uploaded yet.</p>
@@ -2301,15 +2022,11 @@ Pitch 0/1 (Red)
 	{#if activeTab === 'staff' && data.isAdmin}
 		<div class="space-y-[24px]">
 			<!-- Assigned Staff -->
-			<div class="overflow-hidden border border-line2">
-				<div class="border-b border-line2 p-5">
-					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-						Assigned Staff
-					</span>
-					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
-						Who's on the desk.
-					</h2>
-				</div>
+			<div class="flex flex-wrap items-end justify-between gap-3">
+				<h2 class={sectionTitle}>Staff</h2>
+				<p class="text-[12.5px] text-soft">They run the event from their staff page</p>
+			</div>
+			<div class="overflow-hidden border border-line2 bg-white">
 				<div class="p-5">
 					{#if data.assignedStaff?.length > 0}
 						<div class="space-y-[10px]">
@@ -2354,26 +2071,14 @@ Pitch 0/1 (Red)
 			</div>
 
 			<!-- Add Staff -->
-			<div class="overflow-hidden border border-line2">
-				<div class="border-b border-line2 p-5">
-					<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
-						Add Staff
-					</span>
-					<h2 class="mt-[4px] font-newsreader text-[22px] font-semibold tracking-[-0.01em]">
-						Bring someone in.
-					</h2>
-					<p class="mt-[6px] text-[13px] leading-[1.5] text-soft">
-						Search any user by email to assign them to this event.
-					</p>
-				</div>
+			<div class="mt-10 flex flex-wrap items-end justify-between gap-3">
+				<h2 class={sectionTitle}>Add staff</h2>
+				<p class="text-[12.5px] text-soft">Search anyone by email</p>
+			</div>
+			<div class="overflow-hidden border border-line2 bg-white">
 				<div class="p-5">
 					<div class="mb-[16px]">
-						<label
-							for="staff-search"
-							class="mb-[8px] block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-						>
-							Search by Email
-						</label>
+						<label for="staff-search" class={F.label}> Search by Email </label>
 						<div class="relative">
 							<input
 								id="staff-search"
@@ -2381,7 +2086,7 @@ Pitch 0/1 (Red)
 								value={staffSearch}
 								oninput={(e) => handleStaffSearchInput(e.target.value)}
 								placeholder="Email address · min 3 characters"
-								class="h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] text-ink placeholder:text-fade focus:border-ink focus:ring-0"
+								class={F.field}
 							/>
 							{#if staffSearchLoading}
 								<div class="absolute top-1/2 right-3 -translate-y-1/2">
@@ -2467,7 +2172,9 @@ Pitch 0/1 (Red)
 				<span class="text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase">
 					Danger Zone
 				</span>
-				<h3 class="mt-[6px] font-newsreader text-[22px] font-semibold">Delete this event?</h3>
+				<h3 class="ao-cond mt-2 text-[30px] leading-none font-black uppercase">
+					Delete this event?
+				</h3>
 				<p class="mt-[4px] font-newsreader text-[15px] text-soft italic">
 					This action cannot be undone.
 				</p>
@@ -2505,7 +2212,9 @@ Pitch 0/1 (Red)
 		<div class="w-full max-w-lg border border-t-[3px] border-line2 border-t-ink bg-paper-bg">
 			<div class="border-b border-line2 p-6">
 				<span class="text-[9.5px] font-extrabold tracking-[0.18em] uppercase"> Finalize </span>
-				<h3 class="mt-[6px] font-newsreader text-[22px] font-semibold">Close this event?</h3>
+				<h3 class="ao-cond mt-2 text-[30px] leading-none font-black uppercase">
+					Close this event?
+				</h3>
 				<p class="mt-[4px] font-newsreader text-[15px] text-soft italic">
 					Season standings will be updated with results.
 				</p>

@@ -6,6 +6,8 @@ import { cachedUnreadCount } from '$lib/server/courses/notifications.js';
 import { realtimeClientConfig } from '$lib/server/realtime.js';
 import { readCart } from '$lib/server/partner/cart.js';
 import { cachedMessageCounts } from '$lib/server/contact/inbox.js';
+import { cachedStoreCount } from '$lib/server/stores/members.js';
+import { listCircuits } from '$lib/server/stores/circuits.js';
 
 // Per-user cached lookups on the layout hot path. Each is guarded so an
 // individual failure just falls back to the safe default without failing
@@ -94,13 +96,16 @@ export const load = async ({ locals, cookies, depends }) => {
 	// instantly to their defaults.
 	const userId = locals.user?.id ?? null;
 
-	const [assignedEventsCount, isPartner, nextEvent, unread, contact] = await Promise.all([
-		userId ? safeStaffCount(userId) : Promise.resolve(0),
-		userId ? safeIsPartner(userId) : Promise.resolve(false),
-		safeNextEvent(),
-		userId ? cachedUnreadCount(userId) : Promise.resolve({ learning: 0, classroom: 0 }),
-		cachedMessageCounts(locals.user)
-	]);
+	const [assignedEventsCount, isPartner, nextEvent, unread, contact, storeCount, circuits] =
+		await Promise.all([
+			userId ? safeStaffCount(userId) : Promise.resolve(0),
+			userId ? safeIsPartner(userId) : Promise.resolve(false),
+			safeNextEvent(),
+			userId ? cachedUnreadCount(userId) : Promise.resolve({ learning: 0, classroom: 0 }),
+			cachedMessageCounts(locals.user),
+			cachedStoreCount(userId),
+			listCircuits().catch(() => [])
+		]);
 
 	const isPremiumMember = locals.user?.role === 'premium' || locals.user?.role === 'admin';
 
@@ -108,6 +113,8 @@ export const load = async ({ locals, cookies, depends }) => {
 		user: locals.user,
 		assignedEventsCount,
 		isPartner,
+		// Stores this account helps run: the Store link in the account menu.
+		storeCount,
 		isPremiumMember,
 		nextEvent,
 		// My courses (replies, updates, new topics) and the Classroom (approvals,
@@ -120,6 +127,16 @@ export const load = async ({ locals, cookies, depends }) => {
 		inboxUnread: contact.inbox,
 		// Where signed-in browsers connect for live updates (null when off).
 		realtime: userId ? realtimeClientConfig() : null,
+		// The AGE Open circuits (cached): names for filters, colours as CSS.
+		circuits: circuits.map(({ name, slug, short, region, color, imageUrl, blurb }) => ({
+			name,
+			slug,
+			short,
+			region,
+			color,
+			image: imageUrl || null,
+			blurb: blurb || null
+		})),
 		// Guides in the cart (a cookie; no database read).
 		cartCount: readCart(cookies).length
 	};

@@ -116,7 +116,7 @@
 				Tickets, Academy guides and membership charges show up here, each with its receipt.
 			</p>
 			<div class="mt-6 flex flex-wrap justify-center gap-2">
-				<a href="/age-open?tab=events" class={ui.btn}>Find an event</a>
+				<a href="/ageopen?tab=events" class={ui.btn}>Find an event</a>
 				<a href="/academy" class={ui.ghost}>Browse guides</a>
 				<a href="/premium" class={ui.ghost}>See membership</a>
 			</div>

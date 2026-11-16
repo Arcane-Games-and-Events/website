@@ -25,6 +25,7 @@
 	});
 	import AgeHeader from '$lib/components/age/AgeHeader.svelte';
 	import AgeFooter from '$lib/components/age/AgeFooter.svelte';
+	import { circuitSlug } from '$lib/data/circuits.js';
 
 	// Auth pages that should not show the sidebar
 	const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
@@ -41,7 +42,7 @@
 	const editorialRoutes = [
 		'/',
 		'/premium',
-		'/age-open',
+		'/ageopen',
 		'/library',
 		'/academy',
 		'/academy-calculator',
@@ -61,6 +62,7 @@
 		'/player/',
 		'/people/',
 		'/staff',
+		'/store',
 		'/desk',
 		'/classroom',
 		'/studio',
@@ -69,16 +71,16 @@
 		'/contact/'
 	];
 	// Substring tests for paths that don't fit a clean prefix — e.g. the
-	// AGE Open decklist viewer lives under `/age-open/[eventId]/decklist/
+	// AGE Open decklist viewer lives under `/ageopen/[eventId]/decklist/
 	// [decklistId]`, where the prefix would catch sibling pages that
 	// haven't been redesigned yet.
 	const editorialContains = ['/decklist/'];
 	// Exact regex patterns for cases where the path's segment shape
-	// matters — used here to mark the event signup page (`/age-open/
-	// [eventId]`) and event results page (`/age-open/[eventId]/results`)
+	// matters — used here to mark the event signup page (`/ageopen/
+	// [eventId]`) and event results page (`/ageopen/[eventId]/results`)
 	// as editorial without catching `/checkout` siblings that haven't
 	// been redesigned yet.
-	const editorialPatterns = [/^\/age-open\/[^/]+\/?$/, /^\/age-open\/[^/]+\/results\/?$/];
+	const editorialPatterns = [/^\/ageopen\/[^/]+\/?$/, /^\/ageopen\/[^/]+\/results\/?$/];
 	$: isEditorialPage =
 		editorialRoutes.includes($page.url.pathname) ||
 		editorialPrefixes.some((p) => $page.url.pathname.startsWith(p)) ||
@@ -90,6 +92,13 @@
 	// up with two stacked navbars on error responses thrown from any
 	// route, including the routes that haven't been redesigned yet.
 	$: isErrorPage = !!$page.error;
+
+	// Each circuit's colour from the database as --cc-<slug of its name>,
+	// which circuitVar() reads. Colours are checked hex; slugs are a-z0-9-.
+	$: circuitCss = ($page.data?.circuits ?? [])
+		.filter((c) => /^#[0-9a-f]{6}$/i.test(c.color) && circuitSlug(c.name))
+		.map((c) => `--cc-${circuitSlug(c.name)}:${c.color}`)
+		.join(';');
 
 	// Page to page: a quick crossfade once the next page is ready (the bar
 	// above covers the wait). Skipped when only the query changes on the same
@@ -122,6 +131,13 @@
 >
 	Skip to main content
 </a>
+
+<svelte:head>
+	{#if circuitCss}
+		<!-- eslint-disable-next-line svelte/no-at-html-tags -- checked colours and slugs only -->
+		{@html `<style>:root{${circuitCss}}</style>`}
+	{/if}
+</svelte:head>
 
 <NavProgress />
 <!-- video uploads keep going while you browse; shown on every page -->

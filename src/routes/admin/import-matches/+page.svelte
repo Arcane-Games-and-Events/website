@@ -1,7 +1,5 @@
 <script>
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
-	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
-	import AdminSubnav from '$lib/components/age/admin/AdminSubnav.svelte';
+	import AgeOpenHeader from '$lib/components/age/admin/AgeOpenHeader.svelte';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
 	let { data, form } = $props();
 
@@ -29,18 +27,9 @@
 <svelte:head><title>Import Match History · Admin</title></svelte:head>
 
 <!-- ============ HEADER ============ -->
-<DeskHeader
-	kicker="Admin"
+<AgeOpenHeader
 	title="Import match history"
 	subtitle="Pull GEM pairings (CSV) and hero rosters into any AGE Circuit event."
-/>
-<AdminTabs />
-<AdminSubnav
-	label="Events"
-	items={[
-		{ href: '/admin/events', label: 'Events' },
-		{ href: '/admin/events/new', label: 'New event' }
-	]}
 />
 
 <!-- ============ STATS ============ -->

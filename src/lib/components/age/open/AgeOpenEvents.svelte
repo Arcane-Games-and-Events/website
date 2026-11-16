@@ -16,14 +16,17 @@
 	import FormatTag from '../FormatTag.svelte';
 	import { page } from '$app/stores';
 	import { reveal } from '$lib/actions/reveal.js';
-	import { CIRCUITS, circuitVar } from '$lib/data/circuits.js';
+	import { circuitImage, circuitVar, circuitsFrom } from '$lib/data/circuits.js';
 	import AgeOpenSubHead from './AgeOpenSubHead.svelte';
 	import EventRowLead from './EventRowLead.svelte';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
 
-	const CIRCUIT_NAMES = ['Los Angeles', 'St. Louis', 'New England'];
+	// The circuits from the database (the root layout), or the original three.
+	const CIRCUIT_LIST = circuitsFrom($page.data?.circuits);
+	const CIRCUIT_NAMES = CIRCUIT_LIST.map((c) => c.name);
+	const shortOf = (name) => CIRCUIT_LIST.find((c) => c.name === name)?.short ?? '';
 
 	const fmt = (d, opts) => new Date(d).toLocaleDateString('en-US', { timeZone: 'UTC', ...opts });
 	const endOfDay = (d) => {
@@ -53,7 +56,7 @@
 				id: e.id,
 				// A running event links to its live standings rather than sign-up.
 				live: e.status === 'in_progress',
-				href: e.status === 'in_progress' ? `/age-open/${e.id}/results` : `/age-open/${e.id}`,
+				href: e.status === 'in_progress' ? `/ageopen/${e.id}/results` : `/ageopen/${e.id}`,
 				title: e.title || `AGE Open · ${e.circuit || ''}`,
 				circuit: e.circuit || '',
 				venue: e.location || '',
@@ -67,7 +70,7 @@
 				monthKey: fmt(e.eventDate, { month: 'long', year: 'numeric' }),
 				weekday: fmt(e.eventDate, { weekday: 'long' }),
 				days: daysUntil(e.eventDate),
-				image: CIRCUITS[e.circuit]?.image || '/banner/age-open-banner.webp'
+				image: circuitImage(e.circuit, $page.data?.circuits)
 			}))
 	);
 	const shown = $derived(upcoming.filter((e) => region === 'all' || e.circuit === region));
@@ -161,14 +164,14 @@
 					id: e.id,
 					done,
 					date: fmt(e.eventDate, { month: 'short', day: 'numeric' }),
-					href: done ? `/age-open/${e.id}/results` : `/age-open/${e.id}`
+					href: done ? `/ageopen/${e.id}/results` : `/ageopen/${e.id}`
 				};
 			});
 			const done = slots.filter((s) => s?.done).length;
 			const ahead = slots.filter((s) => s && !s.done).length;
 			return {
 				name,
-				code: CIRCUITS[name]?.abbreviation ?? name,
+				code: shortOf(name) || name,
 				slots,
 				done,
 				ahead,
@@ -427,7 +430,7 @@
 						>
 						{#each day.events.slice(0, 3) as e (e.id)}
 							<a
-								href="/age-open/{e.id}"
+								href="/ageopen/{e.id}"
 								title="{e.title || 'AGE Open'} · {e.circuit || ''}"
 								class="mt-1 block truncate border-l-[3px] px-1 py-[2px] text-[9.5px] font-bold transition-[filter] hover:brightness-95 md:px-1.5 md:text-[10px]"
 								style="border-left-color: {circuitVar(
@@ -436,9 +439,7 @@
 									e.circuit
 								)} 12%, var(--ed-bg)); color: {circuitVar(e.circuit)};"
 							>
-								<span class="hidden md:inline"
-									>{CIRCUITS[e.circuit]?.abbreviation ?? ''} ·
-								</span>{e.title || 'AGE Open'}
+								<span class="hidden md:inline">{shortOf(e.circuit)} · </span>{e.title || 'AGE Open'}
 							</a>
 						{/each}
 						{#if day.events.length > 3}

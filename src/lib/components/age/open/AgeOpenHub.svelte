@@ -15,16 +15,17 @@
 	 * Section links use `?tab=` so the navbar submenu, old bookmarks and
 	 * these cards all land on the same pages.
 	 */
+	import { page } from '$app/state';
 	import FormatTag from '../FormatTag.svelte';
 	import { reveal } from '$lib/actions/reveal.js';
 	import CircuitModal from './CircuitModal.svelte';
-	import { CIRCUITS, circuitVar } from '$lib/data/circuits.js';
+	import { circuitImage, circuitVar, circuitsFrom } from '$lib/data/circuits.js';
 	import EventRowLead from './EventRowLead.svelte';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
 
-	const tab = (id) => `/age-open?tab=${id}`;
+	const tab = (id) => `/ageopen?tab=${id}`;
 
 	const fmt = (d, opts) => new Date(d).toLocaleDateString('en-US', { timeZone: 'UTC', ...opts });
 	const daysUntil = (d) => {
@@ -49,7 +50,7 @@
 			.sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())
 			.map((e) => ({
 				id: e.id,
-				href: `/age-open/${e.id}`,
+				href: `/ageopen/${e.id}`,
 				title: e.title || `AGE Open · ${e.circuit || ''}`,
 				circuit: e.circuit || '',
 				venue: e.location || '',
@@ -63,7 +64,7 @@
 				weekday: fmt(e.eventDate, { weekday: 'long' }),
 				long: fmt(e.eventDate, { weekday: 'long', month: 'long', day: 'numeric' }),
 				days: daysUntil(e.eventDate),
-				image: CIRCUITS[e.circuit]?.image || '/banner/age-open-banner.webp'
+				image: circuitImage(e.circuit, page.data?.circuits)
 			}))
 	);
 	const next = $derived(upcoming[0] ?? null);
@@ -89,10 +90,11 @@
 
 	// ============ circuits ============
 	const circuits = $derived(
-		Object.values(CIRCUITS).map((c) => ({
+		// The circuits from the database (the root layout), or the original three.
+		circuitsFrom(page.data?.circuits).map((c) => ({
 			name: c.name,
 			region: c.region,
-			abbreviation: c.abbreviation,
+			abbreviation: c.short,
 			image: c.image,
 			next: upcoming.find((e) => e.circuit === c.name) ?? null,
 			count: upcoming.filter((e) => e.circuit === c.name).length
@@ -135,7 +137,7 @@
 		[
 			{ n: 24, l: 'Events this season' },
 			{ n: '$30,000', l: 'Prize pool' },
-			{ n: Object.keys(CIRCUITS).length, l: 'Regions' },
+			{ n: circuits.length, l: 'Regions' },
 			ranked ? { n: ranked.toLocaleString('en-US'), l: 'AGE Open players' } : null
 		].filter(Boolean)
 	);
@@ -185,6 +187,13 @@
 		['Earn points', 'Every finish earns AGE Points toward the season leaderboard.'],
 		['Championship', 'The season’s leaders qualify for the Player’s Championship.']
 	];
+
+	// The circuits, from the database (the root layout), or the original three.
+	const circuitLine = $derived(
+		circuitsFrom(page.data?.circuits)
+			.map((c) => c.name)
+			.join(' · ')
+	);
 </script>
 
 <!-- ============ masthead: tournament poster ============ -->
@@ -209,7 +218,7 @@
 				class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-extrabold tracking-[0.3em] uppercase md:text-[10.5px]"
 			>
 				<span class="bg-warm px-2 py-1 text-white">Season ’26</span>
-				<span class="text-paper-bg/70">Los Angeles · St. Louis · New England</span>
+				<span class="text-paper-bg/70">{circuitLine}</span>
 			</p>
 			<h1 class="mt-7 md:mt-8">
 				<img
@@ -650,7 +659,7 @@
 			{#each past as r (r.id)}
 				<li>
 					<a
-						href="/age-open/{r.id}/results"
+						href="/ageopen/{r.id}/results"
 						class="group flex h-full flex-col border border-line bg-paper-bg transition-colors duration-500 hover:border-ink"
 					>
 						<span class="h-[4px]" style="background: {circuitVar(r.circuit)};" aria-hidden="true"

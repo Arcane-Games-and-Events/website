@@ -193,13 +193,66 @@ export function getCircuit(circuitName) {
 const CIRCUIT_SLUG = { 'Los Angeles': 'la', 'St. Louis': 'stl', 'New England': 'ne' };
 
 /**
- * A circuit's accent colour as a CSS variable (`--ed-cc-la` and so on).
- * Unknown names fall back to Los Angeles.
+ * A circuit name as its address slug: "St. Louis" → "st-louis". Matches
+ * the `circuit.slug` the admin creates (see stores/admin.js slugify).
+ * @param {string | null | undefined} name
+ */
+export function circuitSlug(name) {
+	return String(name || '')
+		.toLowerCase()
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '');
+}
+
+/**
+ * A circuit's accent colour as CSS. The root layout writes every circuit's
+ * colour from the database as `--cc-<slug>`; until then (or for a name it
+ * doesn't know) the original three keep their `--ed-cc-*` colours and
+ * anything else is ink.
  * @param {string} circuitName
  * @returns {string}
  */
 export function circuitVar(circuitName) {
-	return `var(--ed-cc-${CIRCUIT_SLUG[circuitName] ?? 'la'})`;
+	const legacy = CIRCUIT_SLUG[circuitName];
+	const fallback = legacy ? `var(--ed-cc-${legacy})` : 'var(--color-ink)';
+	return `var(--cc-${circuitSlug(circuitName) || 'none'}, ${fallback})`;
+}
+
+/**
+ * The circuits to list, from the root layout's database list
+ * (`page.data.circuits`), or the original three before migration 045.
+ * @param {{ name: string, short?: string }[] | null | undefined} fromLayout
+ * @returns {{ name: string, short: string, region: string, image: string }[]}
+ */
+export function circuitsFrom(fromLayout) {
+	if (fromLayout?.length) {
+		return fromLayout.map((c) => ({
+			name: c.name,
+			short: c.short || c.name,
+			region: c.region || CIRCUITS[c.name]?.region || '',
+			image: circuitImage(c.name, fromLayout)
+		}));
+	}
+	return Object.values(CIRCUITS).map((c) => ({
+		name: c.name,
+		short: c.abbreviation,
+		region: c.region,
+		image: c.image
+	}));
+}
+
+/**
+ * A circuit's picture: the one uploaded in admin (from the root layout's
+ * list), else the original circuits' built-in picture, else the AGE Open
+ * banner.
+ * @param {string | null | undefined} name
+ * @param {{ name: string, image?: string | null }[] | null | undefined} fromLayout
+ */
+export function circuitImage(name, fromLayout) {
+	const uploaded = fromLayout?.find((c) => c.name === name)?.image;
+	return uploaded || CIRCUITS[name || '']?.image || '/banner/age-open-banner.webp';
 }
 
 /**

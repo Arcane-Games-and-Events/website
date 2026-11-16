@@ -106,7 +106,7 @@
 				<!-- body -->
 				<div class="min-w-0">
 					<a
-						href="/age-open/{t.eventId}"
+						href="/ageopen/{t.eventId}"
 						class="relative block aspect-[16/6] overflow-hidden bg-ink"
 					>
 						<img
@@ -144,7 +144,7 @@
 					</a>
 					<div class="px-4 pt-3 pb-4 md:px-5">
 						<a
-							href="/age-open/{t.eventId}"
+							href="/ageopen/{t.eventId}"
 							class="ao-cond block text-[26px] leading-[0.95] font-black [text-wrap:balance] uppercase hover:text-warm md:text-[28px]"
 							>{t.eventTitle}</a
 						>
@@ -319,7 +319,7 @@
 				<div class="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2 px-4 py-4 md:px-5">
 					<div class="min-w-0 flex-1">
 						<a
-							href="/age-open/{t.eventId}/results"
+							href="/ageopen/{t.eventId}/results"
 							class="ao-cond block truncate text-[22px] leading-none font-black uppercase hover:text-warm"
 							>{t.eventTitle}</a
 						>
@@ -342,7 +342,7 @@
 								</p>{/if}
 						</div>
 					{:else if !t.refunded}
-						<a href="/age-open/{t.eventId}/results" class={ui.textAction}>Results →</a>
+						<a href="/ageopen/{t.eventId}/results" class={ui.textAction}>Results →</a>
 					{/if}
 					<a href="/events/{t.eventId}/ticket/{t.id}" class="{ui.textAction} text-fade">Stub</a>
 				</div>
@@ -361,7 +361,7 @@
 			<p class="mx-auto mt-3 max-w-[420px] font-newsreader text-[16px] text-soft italic">
 				The next AGE Open is waiting for you. Members save on every ticket.
 			</p>
-			<a href="/age-open?tab=events" class="{ui.btn} mt-6">Find your next open →</a>
+			<a href="/ageopen?tab=events" class="{ui.btn} mt-6">Find your next open →</a>
 		</div>
 	{/if}
 

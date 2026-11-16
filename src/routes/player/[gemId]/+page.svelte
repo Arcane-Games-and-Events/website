@@ -468,11 +468,11 @@
 		>
 			<div class="fp-rise min-w-0">
 				<a
-					href="/age-open?tab=standings"
+					href="/ageopen?tab=standings"
 					class="inline-block text-[9.5px] font-extrabold tracking-[0.2em] text-paper-bg/60 uppercase transition-colors hover:text-paper-bg"
 					>← Standings</a
 				>
-				<a href="/age-open" class="mt-6 block w-fit" aria-label="AGE Open Series overview">
+				<a href="/ageopen" class="mt-6 block w-fit" aria-label="AGE Open Series overview">
 					<img
 						src="/age_open_logo.svg"
 						alt="AGE Open Series"
@@ -1319,7 +1319,7 @@
 						{#if bestList}
 							{@const bb = heroImageUrl(bestList.decklist.hero)}
 							<a
-								href="/age-open/{bestList.event?.id}/decklist/{bestList.decklist.id}"
+								href="/ageopen/{bestList.event?.id}/decklist/{bestList.decklist.id}"
 								class="group relative flex min-h-[170px] flex-1 items-end overflow-hidden border border-ink bg-ink bg-cover bg-top"
 								style={bb ? `background-image: url('${bb}');` : ''}
 							>
@@ -1677,7 +1677,7 @@
 								{@const hb = heroImageUrl(decklist.hero)}
 								<li class="border-b border-line even:bg-paper-bg/60">
 									<a
-										href="/age-open/{event?.id}/decklist/{decklist.id}"
+										href="/ageopen/{event?.id}/decklist/{decklist.id}"
 										class="grid grid-cols-[minmax(0,1fr)_150px_130px_100px_72px] items-center gap-3 px-4 py-2.5 transition-colors hover:bg-paper-bg"
 									>
 										<span class="flex min-w-0 items-center gap-3">

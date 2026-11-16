@@ -242,7 +242,7 @@
 					<ol
 						class="grid gap-px border-y border-[var(--pm-rule)] bg-[var(--pm-rule)] sm:grid-cols-2 lg:grid-cols-4"
 					>
-						{#each [{ href: '/library', label: 'Library', desc: 'Every premium article and the full gameplay library.' }, { href: '/academy', label: 'Academy', desc: 'Your guides, 10% off for members.' }, { href: '/age-open', label: 'AGE Open', desc: 'Standings, results and member event discounts.' }, { href: '/account', label: 'Account', desc: 'Your membership, saved cards and billing.' }] as link, i (link.href)}
+						{#each [{ href: '/library', label: 'Library', desc: 'Every premium article and the full gameplay library.' }, { href: '/academy', label: 'Academy', desc: 'Your guides, 10% off for members.' }, { href: '/ageopen', label: 'AGE Open', desc: 'Standings, results and member event discounts.' }, { href: '/account', label: 'Account', desc: 'Your membership, saved cards and billing.' }] as link, i (link.href)}
 							<li class="bg-[var(--pm-cream)]">
 								<a
 									href={link.href}

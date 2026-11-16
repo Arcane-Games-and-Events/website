@@ -42,7 +42,7 @@
 	const QUICK_LINKS = [
 		{ label: 'Home', href: '/' },
 		{ label: 'Library', href: '/library' },
-		{ label: 'AGE Open', href: '/age-open' },
+		{ label: 'AGE Open', href: '/ageopen' },
 		{ label: 'Academy', href: '/academy' },
 		{ label: 'Premium', href: '/premium' }
 	];

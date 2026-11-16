@@ -9,6 +9,7 @@ import {
 import {
 	memberRefundTicket,
 	ticketRefundability,
+	withVenueZone,
 	withdrawRefundRequest
 } from '$lib/server/payments/refunds.js';
 
@@ -58,12 +59,17 @@ export async function load({ locals }) {
 		if (!byTicket.has(r.ticketId) || r.status === 'pending') byTicket.set(r.ticketId, r);
 
 	const now = new Date();
+	// Each circuit's time zone, for the 24-hour self-refund cutoff.
+	const zones = new Map();
+	for (const c of new Set(rows.map((t) => t.circuit).filter(Boolean))) {
+		zones.set(c, (await withVenueZone({ circuit: c }))?.timezone || null);
+	}
 	const tickets = rows.map((t) => {
 		const req = byTicket.get(t.id) || null;
 		const pending = req?.status === 'pending' ? req : null;
 		const can = ticketRefundability(
 			{ ...t },
-			{ eventDate: t.eventDate, circuit: t.circuit },
+			{ eventDate: t.eventDate, circuit: t.circuit, timezone: zones.get(t.circuit) },
 			pending,
 			now
 		);

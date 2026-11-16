@@ -8,17 +8,18 @@
 				{ label: 'The SAGE Series', href: '/library/search?q=SAGE' },
 				{ label: 'Set Reviews', href: '/library/tag/set-review' },
 				{ label: 'Matches', href: '/library/matches' },
-				{ label: 'AGE Studios', href: '/studios' },
+				// AGE Studios is hidden for now; put it back here when it returns.
+				// { label: 'AGE Studios', href: '/studios' },
 				{ label: 'Premium', href: '/premium' }
 			]
 		},
 		{
 			h: 'Compete',
 			items: [
-				{ label: 'AGE Open Series', href: '/age-open' },
-				{ label: 'Standings', href: '/age-open?tab=standings' },
-				{ label: 'Decklists', href: '/age-open?tab=decklists' },
-				{ label: 'Players', href: '/age-open?tab=standings' },
+				{ label: 'AGE Open Series', href: '/ageopen' },
+				{ label: 'Standings', href: '/ageopen?tab=standings' },
+				{ label: 'Decklists', href: '/ageopen?tab=decklists' },
+				{ label: 'Players', href: '/ageopen?tab=standings' },
 				{ label: 'Academy', href: '/academy' }
 			]
 		},

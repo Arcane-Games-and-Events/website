@@ -18,6 +18,7 @@ const NEVER_CACHE_PREFIXES = [
 	'/classroom',
 	'/api',
 	'/staff',
+	'/store',
 	'/checkout',
 	'/login',
 	'/signup',
@@ -84,6 +85,14 @@ const MOVED = [
 
 export const handle = async ({ event, resolve }) => {
 	const { request, url } = event;
+	// The AGE Open moved from /age-open to /ageopen (Nov 2026); old links,
+	// emails and search results land on the same page there.
+	if (url.pathname === '/age-open' || url.pathname.startsWith('/age-open/')) {
+		throw redirect(
+			request.method === 'GET' ? 301 : 308,
+			`/ageopen${url.pathname.slice(9)}${url.search}`
+		);
+	}
 	if (
 		request.method === 'GET' &&
 		(url.pathname.startsWith('/desk/') || url.pathname.startsWith('/studios/'))
@@ -168,7 +177,7 @@ export const handle = async ({ event, resolve }) => {
 	// (an unauthed hit still gets `no-store` on `/account` — the redirect
 	// itself shouldn't be cached either). Non-sensitive routes let the
 	// page's own `setHeaders({...})` decide whether it's edge-cacheable.
-	// This is the change that finally lets `/`, `/library`, `/age-open`
+	// This is the change that finally lets `/`, `/library`, `/ageopen`
 	// etc. serve from Vercel's edge for logged-in members.
 	const isSensitive = NEVER_CACHE_PREFIXES.some((p) => url.pathname.startsWith(p));
 	// A response that sets the referral cookie must never be shared.

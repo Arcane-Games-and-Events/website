@@ -1,7 +1,5 @@
 <script>
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
-	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
-	import AdminSubnav from '$lib/components/age/admin/AdminSubnav.svelte';
+	import AgeOpenHeader, { btn as hbtn } from '$lib/components/age/admin/AgeOpenHeader.svelte';
 	import { getCircuit } from '$lib/data/circuits.js';
 
 	/** Row wash + label colour per circuit, so a row reads as its circuit at a glance. */
@@ -104,28 +102,14 @@
 
 <svelte:head><title>Events · Admin</title></svelte:head>
 
-<DeskHeader
-	kicker="Admin"
+<AgeOpenHeader
 	title="Events"
 	subtitle="Schedule, status, tickets and revenue across every circuit."
 >
-	{#snippet actions(compact)}
-		<a
-			href="/admin/events/new"
-			class="inline-flex items-center bg-paper-bg px-3 text-[10px] font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-warm-light {compact
-				? 'h-[30px]'
-				: 'h-[36px]'}">+ New event</a
-		>
+	{#snippet actions()}
+		<a href="/admin/events/new" class={hbtn}>+ New event</a>
 	{/snippet}
-</DeskHeader>
-<AdminTabs />
-<AdminSubnav
-	label="Events"
-	items={[
-		{ href: '/admin/events', label: 'Events' },
-		{ href: '/admin/events/new', label: 'New event' }
-	]}
-/>
+</AgeOpenHeader>
 
 {#if form?.success}
 	<AdminNotice tone="success" message={form.message} />

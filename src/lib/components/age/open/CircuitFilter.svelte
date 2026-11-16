@@ -6,11 +6,15 @@
 	 *
 	 * @type {{ value: string, id: string, labelClass: string }}
 	 */
-	import { circuitVar, getCircuitNames } from '$lib/data/circuits.js';
+	import { page } from '$app/state';
+	import { circuitVar, circuitsFrom } from '$lib/data/circuits.js';
 
 	let { value = $bindable('all'), id, labelClass } = $props();
 
-	const OPTIONS = [['all', 'All'], ...getCircuitNames().map((c) => [c, c])];
+	const OPTIONS = $derived([
+		['all', 'All'],
+		...circuitsFrom(page.data?.circuits).map((c) => [c.name, c.name])
+	]);
 </script>
 
 <div class="min-w-0 lg:shrink-0">

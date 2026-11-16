@@ -135,7 +135,7 @@
 		{ href: '/library', title: 'The Library', text: 'Every premium article, deck tech and video.' },
 		{ href: '/academy', title: 'The Academy', text: 'Courses from the players who write for us.' },
 		{
-			href: '/age-open?tab=events',
+			href: '/ageopen?tab=events',
 			title: 'Member ticket price',
 			text: 'Money off your own ticket to every AGE Open.'
 		},

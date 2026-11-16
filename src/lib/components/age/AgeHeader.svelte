@@ -25,17 +25,18 @@
 	const NAV = [
 		{ label: 'Library', href: '/library' },
 		{ label: 'Academy', href: '/academy' },
-		{ label: 'AGE Studios', href: '/studios' },
+		// AGE Studios is hidden for now; put it back here when it returns.
+		// { label: 'AGE Studios', href: '/studios' },
 		{
 			label: 'AGE Open',
-			href: '/age-open',
+			href: '/ageopen',
 			children: [
-				{ label: 'Overview', href: '/age-open' },
-				{ label: 'Events', href: '/age-open?tab=events' },
-				{ label: 'Standings', href: '/age-open?tab=standings' },
-				{ label: 'Decklists', href: '/age-open?tab=decklists' },
-				{ label: 'Tournament Archive', href: '/age-open?tab=results' },
-				{ label: 'Rules & Info', href: '/age-open?tab=rules' }
+				{ label: 'Overview', href: '/ageopen' },
+				{ label: 'Events', href: '/ageopen?tab=events' },
+				{ label: 'Standings', href: '/ageopen?tab=standings' },
+				{ label: 'Decklists', href: '/ageopen?tab=decklists' },
+				{ label: 'Tournament Archive', href: '/ageopen?tab=results' },
+				{ label: 'Rules & Info', href: '/ageopen?tab=rules' }
 			]
 		},
 		{ label: 'Premium', href: '/premium' }
@@ -199,7 +200,7 @@
 					-->
 						<!--
 						Split trigger: the label is an `<a>` so clicking
-						takes the user to the parent page (e.g. /age-open
+						takes the user to the parent page (e.g. /ageopen
 						= the Overview tab). The chevron is a separate
 						<button> that toggles the dropdown — this is what
 						touch users tap to reach the submenu without

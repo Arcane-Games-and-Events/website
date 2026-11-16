@@ -26,3 +26,31 @@ export function parseDatetimeLocal(datetimeLocalValue) {
 	// Append 'Z' to interpret as UTC, preserving the wall clock time
 	return new Date(datetimeLocalValue + ':00Z');
 }
+
+/**
+ * "Now" on the venue's wall clock, in the same form event times are stored
+ * (the clock's reading treated as UTC), so the two can be compared.
+ *
+ * @param {string} timeZone - IANA zone, e.g. 'America/Chicago'
+ * @param {Date} [now]
+ * @returns {Date}
+ */
+export function wallClockNow(timeZone, now = new Date()) {
+	let parts;
+	try {
+		parts = new Intl.DateTimeFormat('en-US', {
+			timeZone,
+			hourCycle: 'h23',
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit'
+		}).formatToParts(now);
+	} catch {
+		return wallClockNow('America/Chicago', now);
+	}
+	const p = Object.fromEntries(parts.map((x) => [x.type, x.value]));
+	return new Date(Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second));
+}

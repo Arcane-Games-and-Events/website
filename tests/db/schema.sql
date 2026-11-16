@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict AaFSXBcqXWPOIvjLkDxnjJDBAg444GREOuGAJPdG5VKJoAjJjQbvOTWeB4lCR3m
+\restrict 4nf9jZiE0VKpaxci9LYdPYUS7K1O92AyDYFkx0eoJvOES4ZDuY5U7o0AqsEqBRp
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.7 (Homebrew)
@@ -1239,6 +1239,229 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: _bak_024_member_event; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public._bak_024_member_event (
+    id bigint,
+    user_id text,
+    kind text,
+    subscription_id text,
+    subscription_type text,
+    reason text,
+    actor_id text,
+    at timestamp with time zone,
+    meta jsonb
+);
+
+
+--
+-- Name: _bak_024_member_referral; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public._bak_024_member_referral (
+    id uuid,
+    referrer_user_id text,
+    referred_user_id text,
+    code text,
+    subscription_type text,
+    status text,
+    reward_earned_at timestamp with time zone,
+    reward_applied_at timestamp with time zone,
+    created_at timestamp with time zone,
+    subscription_id uuid,
+    qualifying_trans_id text,
+    reward_subscription_id uuid,
+    reward_note text
+);
+
+
+--
+-- Name: _bak_024_member_referral_code; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public._bak_024_member_referral_code (
+    id uuid,
+    user_id text,
+    code text,
+    is_active boolean,
+    created_at timestamp with time zone
+);
+
+
+--
+-- Name: _bak_024_order; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public._bak_024_order (
+    id uuid,
+    provider text,
+    provider_ref text,
+    user_email text,
+    amount text,
+    currency text,
+    meta jsonb,
+    created_at timestamp with time zone,
+    refunded_at timestamp with time zone,
+    user_id text,
+    kind text,
+    refunded_amount numeric(10,2),
+    checkout_id uuid
+);
+
+
+--
+-- Name: _bak_024_partner; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public._bak_024_partner (
+    id uuid,
+    user_id text,
+    code text,
+    is_active boolean,
+    payout_notes text,
+    created_at timestamp with time zone,
+    created_by text,
+    display_name text
+);
+
+
+--
+-- Name: _bak_024_partner_referral; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public._bak_024_partner_referral (
+    id uuid,
+    partner_id uuid,
+    referred_user_id text,
+    code text,
+    subscription_type text,
+    discount_amount numeric(10,2),
+    commission_amount numeric(10,2),
+    first_charge_order_id uuid,
+    payout_status text,
+    paid_at timestamp with time zone,
+    paid_notes text,
+    created_at timestamp with time zone,
+    subscription_id uuid,
+    voided_at timestamp with time zone,
+    void_reason text
+);
+
+
+--
+-- Name: _bak_024_payment; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public._bak_024_payment (
+    id bigint,
+    provider text,
+    trans_id text,
+    kind text,
+    user_id text,
+    user_email text,
+    subscription_id text,
+    subscription_type text,
+    pay_num integer,
+    order_id uuid,
+    ticket_id uuid,
+    event_id text,
+    amount numeric(10,2),
+    list_amount numeric(10,2),
+    discount_amount numeric(10,2),
+    discount_kind text,
+    promo_code text,
+    occurred_at timestamp with time zone,
+    refunded_amount numeric(10,2),
+    refunded_at timestamp with time zone,
+    source text,
+    verified_at timestamp with time zone,
+    created_at timestamp with time zone
+);
+
+
+--
+-- Name: _bak_024_saved_card; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public._bak_024_saved_card (
+    id uuid,
+    user_id text,
+    customer_profile_id text,
+    payment_profile_id text,
+    card_type text,
+    last_four text,
+    expiration_month text,
+    expiration_year text,
+    is_default boolean,
+    nickname text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    status text,
+    exp_month smallint,
+    exp_year smallint,
+    deleted_at timestamp with time zone,
+    verified_at timestamp with time zone,
+    source text,
+    environment text
+);
+
+
+--
+-- Name: _bak_024_ticket; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public._bak_024_ticket (
+    id uuid,
+    user_id text,
+    event_id text,
+    order_id uuid,
+    code text,
+    quantity integer,
+    first_name text,
+    last_name text,
+    gem_id text,
+    amount_paid numeric(10,2),
+    transaction_id text,
+    refunded boolean,
+    refunded_at timestamp with time zone,
+    entered_into_gem boolean,
+    created_at timestamp with time zone,
+    voided_at timestamp with time zone,
+    checkout_id uuid
+);
+
+
+--
+-- Name: _bak_024_user; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public._bak_024_user (
+    id text,
+    email text,
+    hashed_password text,
+    first_name text,
+    last_name text,
+    gem_id text,
+    role text,
+    customer_profile_id text,
+    subscription_id text,
+    subscription_type text,
+    subscription_status text,
+    subscription_start_date timestamp with time zone,
+    subscription_end_date timestamp with time zone,
+    next_billing_date timestamp with time zone,
+    created_at timestamp with time zone,
+    used_partner_code text,
+    additional_roles text[],
+    comp_reason text,
+    comped_at timestamp with time zone,
+    comped_by text,
+    last_subscription_id text
+);
+
+
+--
 -- Name: analytics_event; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1389,11 +1612,15 @@ ALTER SEQUENCE public.ca_conversion_id_seq OWNED BY public.ca_conversion.id;
 CREATE TABLE public.ca_event (
     id bigint NOT NULL,
     view_id uuid NOT NULL,
-    entry_id uuid NOT NULL,
+    entry_id uuid,
     type text NOT NULL,
     label text,
     depth smallint,
-    at timestamp with time zone DEFAULT now() NOT NULL
+    at timestamp with time zone DEFAULT now() NOT NULL,
+    vod_id uuid,
+    course_id uuid,
+    lesson_id uuid,
+    CONSTRAINT ca_event_owner_check CHECK (((entry_id IS NOT NULL) OR (vod_id IS NOT NULL) OR (course_id IS NOT NULL)))
 );
 
 
@@ -1453,7 +1680,7 @@ CREATE TABLE public.ca_pageview (
 
 CREATE TABLE public.ca_view (
     id uuid NOT NULL,
-    entry_id uuid NOT NULL,
+    entry_id uuid,
     visitor_id uuid NOT NULL,
     session_id uuid NOT NULL,
     user_id text,
@@ -1488,7 +1715,11 @@ CREATE TABLE public.ca_view (
     video_seeks integer DEFAULT 0 NOT NULL,
     video_completed boolean DEFAULT false NOT NULL,
     exit_type text,
-    exit_target text
+    exit_target text,
+    vod_id uuid,
+    course_id uuid,
+    lesson_id uuid,
+    CONSTRAINT ca_view_owner_check CHECK (((entry_id IS NOT NULL) OR (vod_id IS NOT NULL) OR (course_id IS NOT NULL)))
 );
 
 
@@ -1499,7 +1730,7 @@ CREATE TABLE public.ca_view (
 CREATE TABLE public.checkout (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     user_id text NOT NULL,
-    event_id text NOT NULL,
+    event_id text,
     idempotency_key text NOT NULL,
     invoice_number text,
     status text NOT NULL,
@@ -1512,7 +1743,58 @@ CREATE TABLE public.checkout (
     order_id uuid,
     last_error text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    course_id uuid,
+    consent_given boolean DEFAULT false NOT NULL,
+    consent_text text,
+    consent_at timestamp with time zone,
+    consent_ip text,
+    consent_user_agent text,
+    CONSTRAINT checkout_target_check CHECK (((event_id IS NOT NULL) <> (course_id IS NOT NULL)))
+);
+
+
+--
+-- Name: checkout_item; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.checkout_item (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    checkout_id uuid NOT NULL,
+    course_id uuid NOT NULL,
+    teacher_id text,
+    "position" smallint NOT NULL,
+    title text NOT NULL,
+    list_cents integer NOT NULL,
+    member_discount_cents integer DEFAULT 0 NOT NULL,
+    price_cents integer NOT NULL,
+    fee_cents integer DEFAULT 0 NOT NULL,
+    paid_cents integer NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT checkout_item_list_cents_check CHECK ((list_cents >= 0))
+);
+
+
+--
+-- Name: circuit; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.circuit (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name text NOT NULL,
+    slug text NOT NULL,
+    short text NOT NULL,
+    region text,
+    timezone text DEFAULT 'America/Chicago'::text NOT NULL,
+    color text DEFAULT '#5c5a52'::text NOT NULL,
+    blurb text,
+    sort integer DEFAULT 0 NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    image_url text,
+    image_path text,
+    CONSTRAINT circuit_color_check CHECK ((color ~ '^#[0-9a-fA-F]{6}$'::text))
 );
 
 
@@ -1527,7 +1809,8 @@ CREATE TABLE public.cms_author_profile (
     bio text,
     avatar_media_id uuid,
     links jsonb DEFAULT '[]'::jsonb NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    handle text
 );
 
 
@@ -1566,7 +1849,16 @@ CREATE TABLE public.cms_course (
     draft_updated_at timestamp with time zone,
     draft_updated_by text,
     created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
+    updated_at timestamp with time zone DEFAULT now(),
+    submitted_at timestamp with time zone,
+    review_note text,
+    first_published_at timestamp with time zone,
+    exclusive boolean DEFAULT true NOT NULL,
+    exclusivity_start date,
+    exclusivity_end date,
+    auto_renew boolean DEFAULT true NOT NULL,
+    agreement_status text DEFAULT 'active'::text NOT NULL,
+    content_updated_at timestamp with time zone
 );
 
 
@@ -1610,7 +1902,8 @@ CREATE TABLE public.cms_entry (
     draft_updated_by text,
     source text DEFAULT 'custom'::text NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
+    updated_at timestamp with time zone DEFAULT now(),
+    draft_meta jsonb
 );
 
 
@@ -1651,7 +1944,12 @@ CREATE TABLE public.cms_lesson (
     youtube_thumbnail_url text,
     youtube_duration integer,
     created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
+    updated_at timestamp with time zone DEFAULT now(),
+    published_at timestamp with time zone,
+    first_published_at timestamp with time zone,
+    draft_title text,
+    draft_body jsonb,
+    draft_updated_at timestamp with time zone
 );
 
 
@@ -1682,7 +1980,22 @@ CREATE TABLE public.cms_media (
     width integer,
     height integer,
     alt text,
-    created_at timestamp with time zone DEFAULT now()
+    created_at timestamp with time zone DEFAULT now(),
+    name text,
+    file_size integer,
+    status text DEFAULT 'ready'::text NOT NULL,
+    variant_prefix text,
+    variant_widths integer[],
+    has_avif boolean DEFAULT false NOT NULL,
+    blur text,
+    credit text,
+    credit_url text,
+    derived_from uuid,
+    updated_at timestamp with time zone DEFAULT now(),
+    library text DEFAULT 'content'::text NOT NULL,
+    course_id uuid,
+    CONSTRAINT cms_media_library_check CHECK ((library = ANY (ARRAY['content'::text, 'classroom'::text, 'studio'::text, 'profile'::text]))),
+    CONSTRAINT cms_media_status_check CHECK ((status = ANY (ARRAY['uploading'::text, 'processing'::text, 'ready'::text, 'failed'::text])))
 );
 
 
@@ -1723,6 +2036,161 @@ CREATE TABLE public.cms_tag (
     slug text NOT NULL,
     name text NOT NULL,
     created_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: contact_message; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.contact_message (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    thread_id uuid NOT NULL,
+    author_id text,
+    from_staff boolean DEFAULT false NOT NULL,
+    internal boolean DEFAULT false NOT NULL,
+    body text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: contact_thread; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.contact_thread (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    token text NOT NULL,
+    user_id text,
+    name text NOT NULL,
+    email text NOT NULL,
+    topic text DEFAULT 'general'::text NOT NULL,
+    subject text NOT NULL,
+    status text DEFAULT 'open'::text NOT NULL,
+    ip text,
+    user_agent text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    last_message_at timestamp with time zone DEFAULT now() NOT NULL,
+    last_member_at timestamp with time zone DEFAULT now() NOT NULL,
+    last_staff_at timestamp with time zone,
+    member_read_at timestamp with time zone DEFAULT now() NOT NULL,
+    staff_read_at timestamp with time zone,
+    CONSTRAINT contact_thread_status_check CHECK ((status = ANY (ARRAY['open'::text, 'done'::text])))
+);
+
+
+--
+-- Name: course_activity; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.course_activity (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    course_id uuid NOT NULL,
+    actor_id text,
+    kind text NOT NULL,
+    lesson_id uuid,
+    note text,
+    data jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: course_changelog; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.course_changelog (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    course_id uuid NOT NULL,
+    lesson_id uuid,
+    kind text NOT NULL,
+    note text,
+    author_id text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: course_enrollment; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.course_enrollment (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    course_id uuid NOT NULL,
+    user_id text NOT NULL,
+    source text NOT NULL,
+    order_id uuid,
+    added_by text,
+    last_lesson_id uuid,
+    last_seen_at timestamp with time zone,
+    muted_at timestamp with time zone,
+    muted_by text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    revoked_at timestamp with time zone,
+    revoked_reason text,
+    first_opened_at timestamp with time zone
+);
+
+
+--
+-- Name: course_post; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.course_post (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    course_id uuid NOT NULL,
+    lesson_id uuid,
+    parent_id uuid,
+    author_id text,
+    kind text DEFAULT 'post'::text NOT NULL,
+    title text,
+    body text NOT NULL,
+    pinned boolean DEFAULT false NOT NULL,
+    locked boolean DEFAULT false NOT NULL,
+    status text DEFAULT 'visible'::text NOT NULL,
+    flag_reasons text[] DEFAULT '{}'::text[] NOT NULL,
+    reviewed_by text,
+    reviewed_at timestamp with time zone,
+    review_note text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    edited_at timestamp with time zone,
+    last_reply_at timestamp with time zone,
+    deleted_at timestamp with time zone
+);
+
+
+--
+-- Name: course_post_report; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.course_post_report (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    post_id uuid NOT NULL,
+    reporter_id text NOT NULL,
+    reason text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    resolved_at timestamp with time zone
+);
+
+
+--
+-- Name: course_sale; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.course_sale (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    course_id uuid NOT NULL,
+    teacher_id text,
+    enrollment_id uuid,
+    order_id uuid,
+    trans_id text,
+    gross_cents integer NOT NULL,
+    refunded_cents integer DEFAULT 0 NOT NULL,
+    share_pct smallint DEFAULT 90 NOT NULL,
+    sold_at timestamp with time zone DEFAULT now() NOT NULL,
+    payable_at timestamp with time zone NOT NULL,
+    payout_id uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -1799,7 +2267,8 @@ CREATE TABLE public.events (
     created_by text,
     created_at timestamp with time zone DEFAULT now(),
     tournament_results jsonb,
-    player_cap integer
+    player_cap integer,
+    store_id uuid
 );
 
 
@@ -1829,6 +2298,50 @@ CREATE TABLE public.fab_card_upload_history (
     lookup_entries integer NOT NULL,
     sets_included jsonb,
     uploaded_at timestamp with time zone DEFAULT now()
+);
+
+
+--
+-- Name: guide_read; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.guide_read (
+    user_id text NOT NULL,
+    course_id uuid NOT NULL,
+    month date NOT NULL,
+    first_read_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: guide_refund_request; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.guide_refund_request (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    checkout_item_id uuid NOT NULL,
+    order_id uuid NOT NULL,
+    user_id text NOT NULL,
+    course_id uuid,
+    teacher_id text,
+    reason text NOT NULL,
+    message text,
+    status text DEFAULT 'pending'::text NOT NULL,
+    auto_reason text,
+    decided_by text,
+    decided_by_user text,
+    decision_note text,
+    decided_at timestamp with time zone,
+    refund_status text DEFAULT 'none'::text NOT NULL,
+    refund_id uuid,
+    amount_cents integer,
+    gateway_method text,
+    gateway_response text,
+    attempts integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT guide_refund_request_reason_check CHECK ((reason = ANY (ARRAY['duplicate'::text, 'broken'::text, 'not_as_described'::text, 'unopened'::text, 'other'::text]))),
+    CONSTRAINT guide_refund_request_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'auto_approved'::text, 'denied'::text])))
 );
 
 
@@ -2013,6 +2526,24 @@ CREATE TABLE public.newsletter_subscriber (
 
 
 --
+-- Name: notification; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.notification (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id text NOT NULL,
+    kind text NOT NULL,
+    course_id uuid,
+    lesson_id uuid,
+    post_id uuid,
+    actor_id text,
+    data jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    read_at timestamp with time zone
+);
+
+
+--
 -- Name: order; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2077,6 +2608,79 @@ CREATE TABLE public.partner (
 
 
 --
+-- Name: partner_account; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.partner_account (
+    teacher_id text NOT NULL,
+    lifetime_copies integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT partner_account_lifetime_copies_check CHECK ((lifetime_copies >= 0))
+);
+
+
+--
+-- Name: partner_attribution; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.partner_attribution (
+    referred_user_id text NOT NULL,
+    teacher_id text NOT NULL,
+    partner_id uuid,
+    source text NOT NULL,
+    code text,
+    subscription_id uuid,
+    status text DEFAULT 'pending'::text NOT NULL,
+    void_reason text,
+    attributed_at timestamp with time zone DEFAULT now() NOT NULL,
+    decided_at timestamp with time zone,
+    CONSTRAINT partner_attribution_check CHECK ((referred_user_id <> teacher_id))
+);
+
+
+--
+-- Name: partner_ledger; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.partner_ledger (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    entry_type text NOT NULL,
+    status text NOT NULL,
+    teacher_id text NOT NULL,
+    order_id uuid,
+    checkout_item_id uuid,
+    course_id uuid,
+    buyer_id text,
+    reverses_id uuid,
+    legacy_sale_id uuid,
+    referred_user_id text,
+    pool_month date,
+    list_cents integer DEFAULT 0 NOT NULL,
+    buyer_type text,
+    member_discount_cents integer DEFAULT 0 NOT NULL,
+    buyer_paid_cents integer DEFAULT 0 NOT NULL,
+    card_fee_cents integer DEFAULT 0 NOT NULL,
+    share_rate numeric(5,4),
+    level text,
+    copy_number integer,
+    teacher_cents integer NOT NULL,
+    age_commission_cents integer DEFAULT 0 NOT NULL,
+    age_net_cents integer DEFAULT 0 NOT NULL,
+    occurred_at timestamp with time zone DEFAULT now() NOT NULL,
+    payable_at timestamp with time zone DEFAULT now() NOT NULL,
+    statement_month date NOT NULL,
+    settled_payout_id uuid,
+    note text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    settled_at timestamp with time zone,
+    CONSTRAINT partner_ledger_status_check CHECK ((status = ANY (ARRAY['paid'::text, 'refunded'::text, 'charged_back'::text, 'earned'::text, 'void'::text]))),
+    CONSTRAINT partner_ledger_type_check CHECK ((entry_type = ANY (ARRAY['sale'::text, 'reversal'::text, 'referral_bonus'::text, 'pool_share'::text, 'adjustment'::text, 'age_cost'::text])))
+);
+
+
+--
 -- Name: partner_referral; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2096,6 +2700,25 @@ CREATE TABLE public.partner_referral (
     subscription_id uuid,
     voided_at timestamp with time zone,
     void_reason text
+);
+
+
+--
+-- Name: partner_statement; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.partner_statement (
+    teacher_id text NOT NULL,
+    month date NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    amount_cents integer,
+    payout_id uuid,
+    reference text,
+    note text,
+    paid_at timestamp with time zone,
+    paid_by text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT partner_statement_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'paid'::text])))
 );
 
 
@@ -2204,6 +2827,22 @@ CREATE TABLE public.podcasts (
 
 
 --
+-- Name: pool_run; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.pool_run (
+    month date NOT NULL,
+    status text NOT NULL,
+    reason text,
+    active_members integer,
+    net_revenue_cents integer,
+    pool_cents integer,
+    total_reads integer,
+    ran_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: refund; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2224,7 +2863,9 @@ CREATE TABLE public.refund (
     refund_request_id uuid,
     last_error text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    completed_at timestamp with time zone
+    completed_at timestamp with time zone,
+    checkout_item_ids uuid[] DEFAULT '{}'::uuid[] NOT NULL,
+    guide_refund_request_id uuid
 );
 
 
@@ -2354,6 +2995,221 @@ CREATE TABLE public.standings (
 
 
 --
+-- Name: store; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.store (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    circuit_id uuid NOT NULL,
+    name text NOT NULL,
+    slug text NOT NULL,
+    address text,
+    city text,
+    state text,
+    website text,
+    phone text,
+    contact_email text,
+    revenue_share numeric(5,4),
+    active boolean DEFAULT true NOT NULL,
+    created_by text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT store_revenue_share_check CHECK (((revenue_share IS NULL) OR ((revenue_share >= (0)::numeric) AND (revenue_share <= (1)::numeric))))
+);
+
+
+--
+-- Name: store_activity; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.store_activity (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    store_id uuid NOT NULL,
+    actor_id text,
+    kind text NOT NULL,
+    event_id text,
+    note text,
+    data jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: store_ledger; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.store_ledger (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    store_id uuid NOT NULL,
+    entry_type text NOT NULL,
+    event_id text,
+    ticket_id uuid,
+    gross_cents integer DEFAULT 0 NOT NULL,
+    fee_cents integer DEFAULT 0 NOT NULL,
+    share_rate numeric(5,4),
+    store_cents integer NOT NULL,
+    age_cents integer DEFAULT 0 NOT NULL,
+    statement_month date NOT NULL,
+    note text,
+    created_by text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT store_ledger_entry_type_check CHECK ((entry_type = ANY (ARRAY['sale'::text, 'refund'::text, 'adjustment'::text])))
+);
+
+
+--
+-- Name: store_member; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.store_member (
+    store_id uuid NOT NULL,
+    user_id text NOT NULL,
+    role text DEFAULT 'manager'::text NOT NULL,
+    added_by text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT store_member_role_check CHECK ((role = ANY (ARRAY['owner'::text, 'manager'::text])))
+);
+
+
+--
+-- Name: store_program; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.store_program (
+    id integer DEFAULT 1 NOT NULL,
+    default_share numeric(5,4),
+    fee_payer text DEFAULT 'age'::text NOT NULL,
+    updated_by text,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT store_program_default_share_check CHECK (((default_share IS NULL) OR ((default_share >= (0)::numeric) AND (default_share <= (1)::numeric)))),
+    CONSTRAINT store_program_fee_payer_check CHECK ((fee_payer = ANY (ARRAY['age'::text, 'store'::text]))),
+    CONSTRAINT store_program_id_check CHECK ((id = 1))
+);
+
+
+--
+-- Name: store_statement; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.store_statement (
+    store_id uuid NOT NULL,
+    month date NOT NULL,
+    status text DEFAULT 'open'::text NOT NULL,
+    gross_cents integer,
+    refund_cents integer,
+    fee_cents integer,
+    adjust_cents integer,
+    amount_cents integer,
+    locked_at timestamp with time zone,
+    locked_by text,
+    paid_at timestamp with time zone,
+    paid_by text,
+    method text,
+    reference text,
+    note text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT store_statement_status_check CHECK ((status = ANY (ARRAY['open'::text, 'locked'::text, 'paid'::text])))
+);
+
+
+--
+-- Name: studio_channel; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.studio_channel (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    slug text NOT NULL,
+    name text NOT NULL,
+    kind text DEFAULT 'video'::text NOT NULL,
+    youtube_channel_id text NOT NULL,
+    youtube_url text NOT NULL,
+    handle text,
+    avatar_url text,
+    banner_url text,
+    description text,
+    cover_image_id uuid,
+    is_active boolean DEFAULT true NOT NULL,
+    sort_order integer DEFAULT 0 NOT NULL,
+    last_synced_at timestamp with time zone,
+    sync_error text,
+    created_by text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT studio_channel_kind_check CHECK ((kind = ANY (ARRAY['podcast'::text, 'video'::text])))
+);
+
+
+--
+-- Name: studio_channel_video; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.studio_channel_video (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    channel_id uuid NOT NULL,
+    youtube_video_id text NOT NULL,
+    title text NOT NULL,
+    description text,
+    published_at timestamp with time zone,
+    thumbnail_url text,
+    duration integer,
+    is_short boolean DEFAULT false NOT NULL,
+    is_available boolean DEFAULT true NOT NULL,
+    is_featured boolean DEFAULT false NOT NULL,
+    featured_at timestamp with time zone,
+    featured_by text,
+    sort_order integer,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: studio_project; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.studio_project (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    slug text NOT NULL,
+    title text NOT NULL,
+    dek text,
+    type text DEFAULT 'interactive'::text NOT NULL,
+    cover_image_id uuid,
+    href text,
+    is_premium boolean DEFAULT false NOT NULL,
+    is_featured boolean DEFAULT false NOT NULL,
+    status text DEFAULT 'draft'::text NOT NULL,
+    published_at timestamp with time zone,
+    sort_order integer DEFAULT 0 NOT NULL,
+    created_by text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT studio_project_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'published'::text]))),
+    CONSTRAINT studio_project_type_check CHECK ((type = ANY (ARRAY['interactive'::text, 'stats'::text, 'software'::text, 'film'::text, 'feature'::text])))
+);
+
+
+--
+-- Name: studio_show; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.studio_show (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    slug text NOT NULL,
+    name text NOT NULL,
+    kind text DEFAULT 'podcast'::text NOT NULL,
+    description text,
+    host text,
+    cover_image_id uuid,
+    is_active boolean DEFAULT true NOT NULL,
+    sort_order integer DEFAULT 0 NOT NULL,
+    created_by text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT studio_show_kind_check CHECK ((kind = ANY (ARRAY['podcast'::text, 'interview'::text, 'video'::text])))
+);
+
+
+--
 -- Name: subscription; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2425,6 +3281,24 @@ CREATE TABLE public.subscription_invoice (
     refunded_cents integer DEFAULT 0 NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: teacher_payout; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.teacher_payout (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    teacher_id text NOT NULL,
+    pay_date date NOT NULL,
+    amount_cents integer NOT NULL,
+    sale_count integer NOT NULL,
+    status text DEFAULT 'paid'::text NOT NULL,
+    paid_at timestamp with time zone DEFAULT now() NOT NULL,
+    paid_by text,
+    reference text,
+    note text
 );
 
 
@@ -2507,7 +3381,17 @@ CREATE TABLE public.vods (
     player1_name text,
     player1_hero text,
     player2_name text,
-    player2_hero text
+    player2_hero text,
+    cover_image_id uuid,
+    kind text DEFAULT 'gameplay'::text NOT NULL,
+    media_type text DEFAULT 'video'::text NOT NULL,
+    show_id uuid,
+    guests text,
+    season integer,
+    episode_number integer,
+    round text,
+    CONSTRAINT vods_kind_check CHECK ((kind = ANY (ARRAY['gameplay'::text, 'podcast'::text, 'interview'::text, 'video'::text]))),
+    CONSTRAINT vods_media_type_check CHECK ((media_type = ANY (ARRAY['video'::text, 'audio'::text])))
 );
 
 
@@ -2653,6 +3537,22 @@ ALTER TABLE ONLY public.checkout
 
 
 --
+-- Name: checkout_item checkout_item_checkout_id_course_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.checkout_item
+    ADD CONSTRAINT checkout_item_checkout_id_course_id_key UNIQUE (checkout_id, course_id);
+
+
+--
+-- Name: checkout_item checkout_item_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.checkout_item
+    ADD CONSTRAINT checkout_item_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: checkout checkout_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2666,6 +3566,30 @@ ALTER TABLE ONLY public.checkout
 
 ALTER TABLE ONLY public.checkout
     ADD CONSTRAINT checkout_trans_id_key UNIQUE (trans_id);
+
+
+--
+-- Name: circuit circuit_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.circuit
+    ADD CONSTRAINT circuit_name_key UNIQUE (name);
+
+
+--
+-- Name: circuit circuit_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.circuit
+    ADD CONSTRAINT circuit_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: circuit circuit_slug_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.circuit
+    ADD CONSTRAINT circuit_slug_key UNIQUE (slug);
 
 
 --
@@ -2773,6 +3697,94 @@ ALTER TABLE ONLY public.cms_tag
 
 
 --
+-- Name: contact_message contact_message_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_message
+    ADD CONSTRAINT contact_message_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: contact_thread contact_thread_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_thread
+    ADD CONSTRAINT contact_thread_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: contact_thread contact_thread_token_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_thread
+    ADD CONSTRAINT contact_thread_token_key UNIQUE (token);
+
+
+--
+-- Name: course_activity course_activity_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_activity
+    ADD CONSTRAINT course_activity_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: course_changelog course_changelog_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_changelog
+    ADD CONSTRAINT course_changelog_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: course_enrollment course_enrollment_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_enrollment
+    ADD CONSTRAINT course_enrollment_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: course_post course_post_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_post
+    ADD CONSTRAINT course_post_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: course_post_report course_post_report_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_post_report
+    ADD CONSTRAINT course_post_report_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: course_post_report course_post_report_post_id_reporter_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_post_report
+    ADD CONSTRAINT course_post_report_post_id_reporter_id_key UNIQUE (post_id, reporter_id);
+
+
+--
+-- Name: course_sale course_sale_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_sale
+    ADD CONSTRAINT course_sale_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: course_sale course_sale_trans_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_sale
+    ADD CONSTRAINT course_sale_trans_id_key UNIQUE (trans_id);
+
+
+--
 -- Name: decklists decklists_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2826,6 +3838,22 @@ ALTER TABLE ONLY public.fab_card_lookup
 
 ALTER TABLE ONLY public.fab_card_upload_history
     ADD CONSTRAINT fab_card_upload_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: guide_read guide_read_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.guide_read
+    ADD CONSTRAINT guide_read_pkey PRIMARY KEY (user_id, course_id, month);
+
+
+--
+-- Name: guide_refund_request guide_refund_request_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.guide_refund_request
+    ADD CONSTRAINT guide_refund_request_pkey PRIMARY KEY (id);
 
 
 --
@@ -2909,6 +3937,14 @@ ALTER TABLE ONLY public.newsletter_subscriber
 
 
 --
+-- Name: notification notification_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification
+    ADD CONSTRAINT notification_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: order order_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2925,11 +3961,35 @@ ALTER TABLE ONLY public.page_view
 
 
 --
+-- Name: partner_account partner_account_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_account
+    ADD CONSTRAINT partner_account_pkey PRIMARY KEY (teacher_id);
+
+
+--
+-- Name: partner_attribution partner_attribution_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_attribution
+    ADD CONSTRAINT partner_attribution_pkey PRIMARY KEY (referred_user_id);
+
+
+--
 -- Name: partner partner_code_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.partner
     ADD CONSTRAINT partner_code_key UNIQUE (code);
+
+
+--
+-- Name: partner_ledger partner_ledger_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_ledger
+    ADD CONSTRAINT partner_ledger_pkey PRIMARY KEY (id);
 
 
 --
@@ -2946,6 +4006,14 @@ ALTER TABLE ONLY public.partner
 
 ALTER TABLE ONLY public.partner_referral
     ADD CONSTRAINT partner_referral_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: partner_statement partner_statement_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_statement
+    ADD CONSTRAINT partner_statement_pkey PRIMARY KEY (teacher_id, month);
 
 
 --
@@ -2997,6 +4065,14 @@ ALTER TABLE ONLY public.podcasts
 
 
 --
+-- Name: pool_run pool_run_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.pool_run
+    ADD CONSTRAINT pool_run_pkey PRIMARY KEY (month);
+
+
+--
 -- Name: refund refund_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3042,6 +4118,134 @@ ALTER TABLE ONLY public.staff_assignments
 
 ALTER TABLE ONLY public.standings
     ADD CONSTRAINT standings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: store_activity store_activity_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_activity
+    ADD CONSTRAINT store_activity_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: store_ledger store_ledger_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_ledger
+    ADD CONSTRAINT store_ledger_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: store_member store_member_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_member
+    ADD CONSTRAINT store_member_pkey PRIMARY KEY (store_id, user_id);
+
+
+--
+-- Name: store store_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store
+    ADD CONSTRAINT store_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: store_program store_program_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_program
+    ADD CONSTRAINT store_program_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: store store_slug_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store
+    ADD CONSTRAINT store_slug_key UNIQUE (slug);
+
+
+--
+-- Name: store_statement store_statement_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_statement
+    ADD CONSTRAINT store_statement_pkey PRIMARY KEY (store_id, month);
+
+
+--
+-- Name: studio_channel studio_channel_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_channel
+    ADD CONSTRAINT studio_channel_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: studio_channel studio_channel_slug_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_channel
+    ADD CONSTRAINT studio_channel_slug_key UNIQUE (slug);
+
+
+--
+-- Name: studio_channel_video studio_channel_video_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_channel_video
+    ADD CONSTRAINT studio_channel_video_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: studio_channel_video studio_channel_video_youtube_video_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_channel_video
+    ADD CONSTRAINT studio_channel_video_youtube_video_id_key UNIQUE (youtube_video_id);
+
+
+--
+-- Name: studio_channel studio_channel_youtube_channel_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_channel
+    ADD CONSTRAINT studio_channel_youtube_channel_id_key UNIQUE (youtube_channel_id);
+
+
+--
+-- Name: studio_project studio_project_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_project
+    ADD CONSTRAINT studio_project_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: studio_project studio_project_slug_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_project
+    ADD CONSTRAINT studio_project_slug_key UNIQUE (slug);
+
+
+--
+-- Name: studio_show studio_show_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_show
+    ADD CONSTRAINT studio_show_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: studio_show studio_show_slug_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_show
+    ADD CONSTRAINT studio_show_slug_key UNIQUE (slug);
 
 
 --
@@ -3098,6 +4302,14 @@ ALTER TABLE ONLY public.subscription
 
 ALTER TABLE ONLY public.subscription
     ADD CONSTRAINT subscription_ref_key UNIQUE (ref);
+
+
+--
+-- Name: teacher_payout teacher_payout_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.teacher_payout
+    ADD CONSTRAINT teacher_payout_pkey PRIMARY KEY (id);
 
 
 --
@@ -3170,6 +4382,13 @@ CREATE INDEX ca_conversion_visitor_idx ON public.ca_conversion USING btree (visi
 
 
 --
+-- Name: ca_event_course_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ca_event_course_idx ON public.ca_event USING btree (course_id) WHERE (course_id IS NOT NULL);
+
+
+--
 -- Name: ca_event_entry_at_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3181,6 +4400,13 @@ CREATE INDEX ca_event_entry_at_idx ON public.ca_event USING btree (entry_id, at)
 --
 
 CREATE INDEX ca_event_view_idx ON public.ca_event USING btree (view_id);
+
+
+--
+-- Name: ca_event_vod_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ca_event_vod_idx ON public.ca_event USING btree (vod_id) WHERE (vod_id IS NOT NULL);
 
 
 --
@@ -3212,10 +4438,24 @@ CREATE INDEX ca_pageview_visitor_idx ON public.ca_pageview USING btree (visitor_
 
 
 --
+-- Name: ca_view_course_started_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ca_view_course_started_idx ON public.ca_view USING btree (course_id, started_at) WHERE (course_id IS NOT NULL);
+
+
+--
 -- Name: ca_view_entry_started_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX ca_view_entry_started_idx ON public.ca_view USING btree (entry_id, started_at);
+
+
+--
+-- Name: ca_view_lesson_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ca_view_lesson_idx ON public.ca_view USING btree (lesson_id) WHERE (lesson_id IS NOT NULL);
 
 
 --
@@ -3240,10 +4480,38 @@ CREATE INDEX ca_view_visitor_idx ON public.ca_view USING btree (visitor_id, star
 
 
 --
+-- Name: ca_view_vod_started_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ca_view_vod_started_idx ON public.ca_view USING btree (vod_id, started_at) WHERE (vod_id IS NOT NULL);
+
+
+--
+-- Name: checkout_course_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX checkout_course_idx ON public.checkout USING btree (course_id) WHERE (course_id IS NOT NULL);
+
+
+--
 -- Name: checkout_event_live_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX checkout_event_live_idx ON public.checkout USING btree (event_id, created_at) WHERE (status = ANY (ARRAY['pending'::text, 'charging'::text, 'paid'::text, 'unknown'::text]));
+
+
+--
+-- Name: checkout_item_course_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX checkout_item_course_idx ON public.checkout_item USING btree (course_id);
+
+
+--
+-- Name: cms_author_profile_handle_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX cms_author_profile_handle_unique ON public.cms_author_profile USING btree (handle);
 
 
 --
@@ -3289,6 +4557,13 @@ CREATE INDEX cms_entry_status_idx ON public.cms_entry USING btree (status);
 
 
 --
+-- Name: cms_entry_tag_entry_id_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX cms_entry_tag_entry_id_unique ON public.cms_entry_tag USING btree (entry_id);
+
+
+--
 -- Name: cms_lesson_course_slug_unique; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3317,6 +4592,34 @@ CREATE UNIQUE INDEX cms_lesson_progress_user_lesson_unique ON public.cms_lesson_
 
 
 --
+-- Name: cms_media_course_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX cms_media_course_idx ON public.cms_media USING btree (course_id, created_at DESC);
+
+
+--
+-- Name: cms_media_created_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX cms_media_created_idx ON public.cms_media USING btree (created_at DESC);
+
+
+--
+-- Name: cms_media_library_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX cms_media_library_idx ON public.cms_media USING btree (library, created_at DESC);
+
+
+--
+-- Name: cms_media_uploaded_by_created_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX cms_media_uploaded_by_created_idx ON public.cms_media USING btree (uploaded_by, created_at DESC);
+
+
+--
 -- Name: cms_module_course_position_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3328,6 +4631,97 @@ CREATE INDEX cms_module_course_position_idx ON public.cms_module USING btree (co
 --
 
 CREATE INDEX cms_revision_entity_idx ON public.cms_revision USING btree (entity_type, entity_id, created_at);
+
+
+--
+-- Name: contact_message_thread_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX contact_message_thread_idx ON public.contact_message USING btree (thread_id, created_at);
+
+
+--
+-- Name: contact_thread_inbox_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX contact_thread_inbox_idx ON public.contact_thread USING btree (status, last_message_at DESC);
+
+
+--
+-- Name: contact_thread_user_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX contact_thread_user_idx ON public.contact_thread USING btree (user_id, last_message_at DESC);
+
+
+--
+-- Name: course_activity_course_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX course_activity_course_idx ON public.course_activity USING btree (course_id, created_at DESC);
+
+
+--
+-- Name: course_changelog_course_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX course_changelog_course_idx ON public.course_changelog USING btree (course_id, created_at DESC);
+
+
+--
+-- Name: course_enrollment_live_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX course_enrollment_live_unique ON public.course_enrollment USING btree (course_id, user_id) WHERE (revoked_at IS NULL);
+
+
+--
+-- Name: course_enrollment_user_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX course_enrollment_user_idx ON public.course_enrollment USING btree (user_id);
+
+
+--
+-- Name: course_post_author_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX course_post_author_idx ON public.course_post USING btree (author_id, created_at);
+
+
+--
+-- Name: course_post_parent_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX course_post_parent_idx ON public.course_post USING btree (parent_id, created_at);
+
+
+--
+-- Name: course_post_review_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX course_post_review_idx ON public.course_post USING btree (course_id) WHERE (status = 'held'::text);
+
+
+--
+-- Name: course_post_threads_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX course_post_threads_idx ON public.course_post USING btree (course_id, last_reply_at) WHERE (parent_id IS NULL);
+
+
+--
+-- Name: course_sale_course_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX course_sale_course_idx ON public.course_sale USING btree (course_id, sold_at);
+
+
+--
+-- Name: course_sale_teacher_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX course_sale_teacher_idx ON public.course_sale USING btree (teacher_id, payable_at);
 
 
 --
@@ -3363,6 +4757,41 @@ CREATE INDEX events_event_date_idx ON public.events USING btree (event_date);
 --
 
 CREATE INDEX events_status_idx ON public.events USING btree (status);
+
+
+--
+-- Name: events_store_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX events_store_idx ON public.events USING btree (store_id, event_date);
+
+
+--
+-- Name: guide_read_month_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX guide_read_month_idx ON public.guide_read USING btree (month, course_id);
+
+
+--
+-- Name: guide_refund_request_live_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX guide_refund_request_live_unique ON public.guide_refund_request USING btree (checkout_item_id) WHERE (status <> 'denied'::text);
+
+
+--
+-- Name: guide_refund_request_queue_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX guide_refund_request_queue_idx ON public.guide_refund_request USING btree (status, created_at);
+
+
+--
+-- Name: guide_refund_request_teacher_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX guide_refund_request_teacher_idx ON public.guide_refund_request USING btree (teacher_id, status);
 
 
 --
@@ -3716,10 +5145,87 @@ CREATE INDEX member_event_user_idx ON public.member_event USING btree (user_id, 
 
 
 --
+-- Name: notification_unread_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX notification_unread_idx ON public.notification USING btree (user_id) WHERE (read_at IS NULL);
+
+
+--
+-- Name: notification_user_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX notification_user_idx ON public.notification USING btree (user_id, created_at DESC);
+
+
+--
 -- Name: order_user_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX order_user_id_idx ON public."order" USING btree (user_id, created_at DESC);
+
+
+--
+-- Name: partner_attribution_pending_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX partner_attribution_pending_idx ON public.partner_attribution USING btree (attributed_at) WHERE (status = 'pending'::text);
+
+
+--
+-- Name: partner_ledger_bonus_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX partner_ledger_bonus_unique ON public.partner_ledger USING btree (referred_user_id) WHERE (entry_type = 'referral_bonus'::text);
+
+
+--
+-- Name: partner_ledger_item_sale_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX partner_ledger_item_sale_unique ON public.partner_ledger USING btree (checkout_item_id) WHERE (entry_type = 'sale'::text);
+
+
+--
+-- Name: partner_ledger_legacy_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX partner_ledger_legacy_unique ON public.partner_ledger USING btree (legacy_sale_id) WHERE (legacy_sale_id IS NOT NULL);
+
+
+--
+-- Name: partner_ledger_order_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX partner_ledger_order_idx ON public.partner_ledger USING btree (order_id) WHERE (order_id IS NOT NULL);
+
+
+--
+-- Name: partner_ledger_pool_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX partner_ledger_pool_unique ON public.partner_ledger USING btree (pool_month, teacher_id) WHERE (entry_type = 'pool_share'::text);
+
+
+--
+-- Name: partner_ledger_reversal_unique; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX partner_ledger_reversal_unique ON public.partner_ledger USING btree (reverses_id) WHERE (entry_type = 'reversal'::text);
+
+
+--
+-- Name: partner_ledger_statement_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX partner_ledger_statement_idx ON public.partner_ledger USING btree (teacher_id, statement_month);
+
+
+--
+-- Name: partner_ledger_unsettled_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX partner_ledger_unsettled_idx ON public.partner_ledger USING btree (payable_at) WHERE ((entry_type = 'sale'::text) AND (settled_at IS NULL));
 
 
 --
@@ -3814,6 +5320,69 @@ CREATE INDEX standings_total_points_idx ON public.standings USING btree (total_p
 
 
 --
+-- Name: store_activity_store_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX store_activity_store_idx ON public.store_activity USING btree (store_id, created_at DESC);
+
+
+--
+-- Name: store_circuit_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX store_circuit_idx ON public.store USING btree (circuit_id);
+
+
+--
+-- Name: store_ledger_event_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX store_ledger_event_idx ON public.store_ledger USING btree (event_id);
+
+
+--
+-- Name: store_ledger_statement_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX store_ledger_statement_idx ON public.store_ledger USING btree (store_id, statement_month);
+
+
+--
+-- Name: store_ledger_ticket_entry_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX store_ledger_ticket_entry_key ON public.store_ledger USING btree (ticket_id, entry_type) WHERE (ticket_id IS NOT NULL);
+
+
+--
+-- Name: store_member_user_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX store_member_user_idx ON public.store_member USING btree (user_id);
+
+
+--
+-- Name: studio_channel_video_channel_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX studio_channel_video_channel_idx ON public.studio_channel_video USING btree (channel_id, published_at DESC);
+
+
+--
+-- Name: studio_channel_video_featured_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX studio_channel_video_featured_idx ON public.studio_channel_video USING btree (is_featured, featured_at DESC) WHERE is_featured;
+
+
+--
+-- Name: studio_project_live_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX studio_project_live_idx ON public.studio_project USING btree (status, is_featured DESC, published_at DESC);
+
+
+--
 -- Name: subscription_due_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3849,6 +5418,13 @@ CREATE INDEX subscription_retry_idx ON public.subscription USING btree (next_att
 
 
 --
+-- Name: teacher_payout_teacher_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX teacher_payout_teacher_idx ON public.teacher_payout USING btree (teacher_id, pay_date);
+
+
+--
 -- Name: ticket_event_active_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3860,6 +5436,20 @@ CREATE INDEX ticket_event_active_idx ON public.ticket USING btree (event_id) WHE
 --
 
 CREATE INDEX ticket_user_event_idx ON public.ticket USING btree (user_id, event_id);
+
+
+--
+-- Name: vods_kind_published_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX vods_kind_published_idx ON public.vods USING btree (kind, is_published, published_at DESC);
+
+
+--
+-- Name: vods_show_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX vods_show_idx ON public.vods USING btree (show_id);
 
 
 --
@@ -3911,6 +5501,14 @@ ALTER TABLE ONLY public.ca_conversion
 
 
 --
+-- Name: ca_event ca_event_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ca_event
+    ADD CONSTRAINT ca_event_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.cms_course(id) ON DELETE CASCADE;
+
+
+--
 -- Name: ca_event ca_event_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3919,11 +5517,27 @@ ALTER TABLE ONLY public.ca_event
 
 
 --
+-- Name: ca_event ca_event_lesson_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ca_event
+    ADD CONSTRAINT ca_event_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES public.cms_lesson(id) ON DELETE CASCADE;
+
+
+--
 -- Name: ca_event ca_event_view_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.ca_event
     ADD CONSTRAINT ca_event_view_id_fkey FOREIGN KEY (view_id) REFERENCES public.ca_view(id) ON DELETE CASCADE;
+
+
+--
+-- Name: ca_event ca_event_vod_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ca_event
+    ADD CONSTRAINT ca_event_vod_id_fkey FOREIGN KEY (vod_id) REFERENCES public.vods(id) ON DELETE CASCADE;
 
 
 --
@@ -3951,11 +5565,27 @@ ALTER TABLE ONLY public.ca_pageview
 
 
 --
+-- Name: ca_view ca_view_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ca_view
+    ADD CONSTRAINT ca_view_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.cms_course(id) ON DELETE CASCADE;
+
+
+--
 -- Name: ca_view ca_view_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.ca_view
     ADD CONSTRAINT ca_view_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES public.cms_entry(id) ON DELETE CASCADE;
+
+
+--
+-- Name: ca_view ca_view_lesson_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ca_view
+    ADD CONSTRAINT ca_view_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES public.cms_lesson(id) ON DELETE CASCADE;
 
 
 --
@@ -3967,11 +5597,51 @@ ALTER TABLE ONLY public.ca_view
 
 
 --
+-- Name: ca_view ca_view_vod_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ca_view
+    ADD CONSTRAINT ca_view_vod_id_fkey FOREIGN KEY (vod_id) REFERENCES public.vods(id) ON DELETE CASCADE;
+
+
+--
+-- Name: checkout checkout_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.checkout
+    ADD CONSTRAINT checkout_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.cms_course(id) ON DELETE CASCADE;
+
+
+--
 -- Name: checkout checkout_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.checkout
     ADD CONSTRAINT checkout_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+--
+-- Name: checkout_item checkout_item_checkout_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.checkout_item
+    ADD CONSTRAINT checkout_item_checkout_id_fkey FOREIGN KEY (checkout_id) REFERENCES public.checkout(id) ON DELETE CASCADE;
+
+
+--
+-- Name: checkout_item checkout_item_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.checkout_item
+    ADD CONSTRAINT checkout_item_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.cms_course(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: checkout_item checkout_item_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.checkout_item
+    ADD CONSTRAINT checkout_item_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public."user"(id) ON DELETE SET NULL;
 
 
 --
@@ -4151,6 +5821,22 @@ ALTER TABLE ONLY public.cms_lesson_progress
 
 
 --
+-- Name: cms_media cms_media_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cms_media
+    ADD CONSTRAINT cms_media_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.cms_course(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cms_media cms_media_derived_from_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cms_media
+    ADD CONSTRAINT cms_media_derived_from_fkey FOREIGN KEY (derived_from) REFERENCES public.cms_media(id) ON DELETE SET NULL;
+
+
+--
 -- Name: cms_media cms_media_uploaded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4172,6 +5858,222 @@ ALTER TABLE ONLY public.cms_module
 
 ALTER TABLE ONLY public.cms_revision
     ADD CONSTRAINT cms_revision_saved_by_fkey FOREIGN KEY (saved_by) REFERENCES public."user"(id);
+
+
+--
+-- Name: contact_message contact_message_author_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_message
+    ADD CONSTRAINT contact_message_author_id_fkey FOREIGN KEY (author_id) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: contact_message contact_message_thread_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_message
+    ADD CONSTRAINT contact_message_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES public.contact_thread(id) ON DELETE CASCADE;
+
+
+--
+-- Name: contact_thread contact_thread_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_thread
+    ADD CONSTRAINT contact_thread_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: course_activity course_activity_actor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_activity
+    ADD CONSTRAINT course_activity_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: course_activity course_activity_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_activity
+    ADD CONSTRAINT course_activity_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.cms_course(id) ON DELETE CASCADE;
+
+
+--
+-- Name: course_activity course_activity_lesson_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_activity
+    ADD CONSTRAINT course_activity_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES public.cms_lesson(id) ON DELETE SET NULL;
+
+
+--
+-- Name: course_changelog course_changelog_author_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_changelog
+    ADD CONSTRAINT course_changelog_author_id_fkey FOREIGN KEY (author_id) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: course_changelog course_changelog_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_changelog
+    ADD CONSTRAINT course_changelog_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.cms_course(id) ON DELETE CASCADE;
+
+
+--
+-- Name: course_changelog course_changelog_lesson_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_changelog
+    ADD CONSTRAINT course_changelog_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES public.cms_lesson(id) ON DELETE SET NULL;
+
+
+--
+-- Name: course_enrollment course_enrollment_added_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_enrollment
+    ADD CONSTRAINT course_enrollment_added_by_fkey FOREIGN KEY (added_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: course_enrollment course_enrollment_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_enrollment
+    ADD CONSTRAINT course_enrollment_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.cms_course(id) ON DELETE CASCADE;
+
+
+--
+-- Name: course_enrollment course_enrollment_last_lesson_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_enrollment
+    ADD CONSTRAINT course_enrollment_last_lesson_id_fkey FOREIGN KEY (last_lesson_id) REFERENCES public.cms_lesson(id) ON DELETE SET NULL;
+
+
+--
+-- Name: course_enrollment course_enrollment_muted_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_enrollment
+    ADD CONSTRAINT course_enrollment_muted_by_fkey FOREIGN KEY (muted_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: course_enrollment course_enrollment_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_enrollment
+    ADD CONSTRAINT course_enrollment_order_id_fkey FOREIGN KEY (order_id) REFERENCES public."order"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: course_enrollment course_enrollment_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_enrollment
+    ADD CONSTRAINT course_enrollment_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: course_post course_post_author_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_post
+    ADD CONSTRAINT course_post_author_id_fkey FOREIGN KEY (author_id) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: course_post course_post_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_post
+    ADD CONSTRAINT course_post_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.cms_course(id) ON DELETE CASCADE;
+
+
+--
+-- Name: course_post course_post_lesson_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_post
+    ADD CONSTRAINT course_post_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES public.cms_lesson(id) ON DELETE SET NULL;
+
+
+--
+-- Name: course_post course_post_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_post
+    ADD CONSTRAINT course_post_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES public.course_post(id) ON DELETE CASCADE;
+
+
+--
+-- Name: course_post_report course_post_report_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_post_report
+    ADD CONSTRAINT course_post_report_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.course_post(id) ON DELETE CASCADE;
+
+
+--
+-- Name: course_post_report course_post_report_reporter_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_post_report
+    ADD CONSTRAINT course_post_report_reporter_id_fkey FOREIGN KEY (reporter_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: course_post course_post_reviewed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_post
+    ADD CONSTRAINT course_post_reviewed_by_fkey FOREIGN KEY (reviewed_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: course_sale course_sale_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_sale
+    ADD CONSTRAINT course_sale_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.cms_course(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: course_sale course_sale_enrollment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_sale
+    ADD CONSTRAINT course_sale_enrollment_id_fkey FOREIGN KEY (enrollment_id) REFERENCES public.course_enrollment(id) ON DELETE SET NULL;
+
+
+--
+-- Name: course_sale course_sale_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_sale
+    ADD CONSTRAINT course_sale_order_id_fkey FOREIGN KEY (order_id) REFERENCES public."order"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: course_sale course_sale_payout_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_sale
+    ADD CONSTRAINT course_sale_payout_fk FOREIGN KEY (payout_id) REFERENCES public.teacher_payout(id) ON DELETE SET NULL;
+
+
+--
+-- Name: course_sale course_sale_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.course_sale
+    ADD CONSTRAINT course_sale_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public."user"(id) ON DELETE SET NULL;
 
 
 --
@@ -4212,6 +6114,86 @@ ALTER TABLE ONLY public.events
 
 ALTER TABLE ONLY public.events
     ADD CONSTRAINT events_created_by_user_id_fk FOREIGN KEY (created_by) REFERENCES public."user"(id);
+
+
+--
+-- Name: events events_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.events
+    ADD CONSTRAINT events_store_id_fkey FOREIGN KEY (store_id) REFERENCES public.store(id) ON DELETE SET NULL;
+
+
+--
+-- Name: guide_read guide_read_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.guide_read
+    ADD CONSTRAINT guide_read_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.cms_course(id) ON DELETE CASCADE;
+
+
+--
+-- Name: guide_read guide_read_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.guide_read
+    ADD CONSTRAINT guide_read_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: guide_refund_request guide_refund_request_checkout_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.guide_refund_request
+    ADD CONSTRAINT guide_refund_request_checkout_item_id_fkey FOREIGN KEY (checkout_item_id) REFERENCES public.checkout_item(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: guide_refund_request guide_refund_request_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.guide_refund_request
+    ADD CONSTRAINT guide_refund_request_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.cms_course(id) ON DELETE SET NULL;
+
+
+--
+-- Name: guide_refund_request guide_refund_request_decided_by_user_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.guide_refund_request
+    ADD CONSTRAINT guide_refund_request_decided_by_user_fkey FOREIGN KEY (decided_by_user) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: guide_refund_request guide_refund_request_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.guide_refund_request
+    ADD CONSTRAINT guide_refund_request_order_id_fkey FOREIGN KEY (order_id) REFERENCES public."order"(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: guide_refund_request guide_refund_request_refund_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.guide_refund_request
+    ADD CONSTRAINT guide_refund_request_refund_id_fkey FOREIGN KEY (refund_id) REFERENCES public.refund(id) ON DELETE SET NULL;
+
+
+--
+-- Name: guide_refund_request guide_refund_request_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.guide_refund_request
+    ADD CONSTRAINT guide_refund_request_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: guide_refund_request guide_refund_request_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.guide_refund_request
+    ADD CONSTRAINT guide_refund_request_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
 
 
 --
@@ -4311,6 +6293,46 @@ ALTER TABLE ONLY public.member_referral
 
 
 --
+-- Name: notification notification_actor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification
+    ADD CONSTRAINT notification_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: notification notification_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification
+    ADD CONSTRAINT notification_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.cms_course(id) ON DELETE CASCADE;
+
+
+--
+-- Name: notification notification_lesson_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification
+    ADD CONSTRAINT notification_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES public.cms_lesson(id) ON DELETE CASCADE;
+
+
+--
+-- Name: notification notification_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification
+    ADD CONSTRAINT notification_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.course_post(id) ON DELETE CASCADE;
+
+
+--
+-- Name: notification notification_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.notification
+    ADD CONSTRAINT notification_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
 -- Name: order order_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4327,11 +6349,115 @@ ALTER TABLE ONLY public.page_view
 
 
 --
+-- Name: partner_account partner_account_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_account
+    ADD CONSTRAINT partner_account_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: partner_attribution partner_attribution_partner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_attribution
+    ADD CONSTRAINT partner_attribution_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partner(id) ON DELETE SET NULL;
+
+
+--
+-- Name: partner_attribution partner_attribution_referred_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_attribution
+    ADD CONSTRAINT partner_attribution_referred_user_id_fkey FOREIGN KEY (referred_user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: partner_attribution partner_attribution_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_attribution
+    ADD CONSTRAINT partner_attribution_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
 -- Name: partner partner_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.partner
     ADD CONSTRAINT partner_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."user"(id);
+
+
+--
+-- Name: partner_ledger partner_ledger_buyer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_ledger
+    ADD CONSTRAINT partner_ledger_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: partner_ledger partner_ledger_checkout_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_ledger
+    ADD CONSTRAINT partner_ledger_checkout_item_id_fkey FOREIGN KEY (checkout_item_id) REFERENCES public.checkout_item(id) ON DELETE SET NULL;
+
+
+--
+-- Name: partner_ledger partner_ledger_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_ledger
+    ADD CONSTRAINT partner_ledger_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.cms_course(id) ON DELETE SET NULL;
+
+
+--
+-- Name: partner_ledger partner_ledger_legacy_sale_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_ledger
+    ADD CONSTRAINT partner_ledger_legacy_sale_id_fkey FOREIGN KEY (legacy_sale_id) REFERENCES public.course_sale(id) ON DELETE SET NULL;
+
+
+--
+-- Name: partner_ledger partner_ledger_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_ledger
+    ADD CONSTRAINT partner_ledger_order_id_fkey FOREIGN KEY (order_id) REFERENCES public."order"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: partner_ledger partner_ledger_referred_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_ledger
+    ADD CONSTRAINT partner_ledger_referred_user_id_fkey FOREIGN KEY (referred_user_id) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: partner_ledger partner_ledger_reverses_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_ledger
+    ADD CONSTRAINT partner_ledger_reverses_id_fkey FOREIGN KEY (reverses_id) REFERENCES public.partner_ledger(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: partner_ledger partner_ledger_settled_payout_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_ledger
+    ADD CONSTRAINT partner_ledger_settled_payout_id_fkey FOREIGN KEY (settled_payout_id) REFERENCES public.teacher_payout(id) ON DELETE SET NULL;
+
+
+--
+-- Name: partner_ledger partner_ledger_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_ledger
+    ADD CONSTRAINT partner_ledger_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public."user"(id) ON DELETE RESTRICT;
 
 
 --
@@ -4364,6 +6490,30 @@ ALTER TABLE ONLY public.partner_referral
 
 ALTER TABLE ONLY public.partner_referral
     ADD CONSTRAINT partner_referral_subscription_id_fkey FOREIGN KEY (subscription_id) REFERENCES public.subscription(id) ON DELETE SET NULL;
+
+
+--
+-- Name: partner_statement partner_statement_paid_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_statement
+    ADD CONSTRAINT partner_statement_paid_by_fkey FOREIGN KEY (paid_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: partner_statement partner_statement_payout_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_statement
+    ADD CONSTRAINT partner_statement_payout_id_fkey FOREIGN KEY (payout_id) REFERENCES public.teacher_payout(id) ON DELETE SET NULL;
+
+
+--
+-- Name: partner_statement partner_statement_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.partner_statement
+    ADD CONSTRAINT partner_statement_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public."user"(id) ON DELETE RESTRICT;
 
 
 --
@@ -4436,6 +6586,14 @@ ALTER TABLE ONLY public.podcast_episodes
 
 ALTER TABLE ONLY public.podcasts
     ADD CONSTRAINT podcasts_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."user"(id);
+
+
+--
+-- Name: refund refund_guide_refund_request_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.refund
+    ADD CONSTRAINT refund_guide_refund_request_id_fkey FOREIGN KEY (guide_refund_request_id) REFERENCES public.guide_refund_request(id) ON DELETE SET NULL;
 
 
 --
@@ -4535,6 +6693,198 @@ ALTER TABLE ONLY public.staff_assignments
 
 
 --
+-- Name: store_activity store_activity_actor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_activity
+    ADD CONSTRAINT store_activity_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: store_activity store_activity_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_activity
+    ADD CONSTRAINT store_activity_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE SET NULL;
+
+
+--
+-- Name: store_activity store_activity_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_activity
+    ADD CONSTRAINT store_activity_store_id_fkey FOREIGN KEY (store_id) REFERENCES public.store(id) ON DELETE CASCADE;
+
+
+--
+-- Name: store store_circuit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store
+    ADD CONSTRAINT store_circuit_id_fkey FOREIGN KEY (circuit_id) REFERENCES public.circuit(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: store store_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store
+    ADD CONSTRAINT store_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: store_ledger store_ledger_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_ledger
+    ADD CONSTRAINT store_ledger_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: store_ledger store_ledger_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_ledger
+    ADD CONSTRAINT store_ledger_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE SET NULL;
+
+
+--
+-- Name: store_ledger store_ledger_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_ledger
+    ADD CONSTRAINT store_ledger_store_id_fkey FOREIGN KEY (store_id) REFERENCES public.store(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: store_ledger store_ledger_ticket_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_ledger
+    ADD CONSTRAINT store_ledger_ticket_id_fkey FOREIGN KEY (ticket_id) REFERENCES public.ticket(id) ON DELETE SET NULL;
+
+
+--
+-- Name: store_member store_member_added_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_member
+    ADD CONSTRAINT store_member_added_by_fkey FOREIGN KEY (added_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: store_member store_member_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_member
+    ADD CONSTRAINT store_member_store_id_fkey FOREIGN KEY (store_id) REFERENCES public.store(id) ON DELETE CASCADE;
+
+
+--
+-- Name: store_member store_member_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_member
+    ADD CONSTRAINT store_member_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: store_program store_program_updated_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_program
+    ADD CONSTRAINT store_program_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: store_statement store_statement_locked_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_statement
+    ADD CONSTRAINT store_statement_locked_by_fkey FOREIGN KEY (locked_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: store_statement store_statement_paid_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_statement
+    ADD CONSTRAINT store_statement_paid_by_fkey FOREIGN KEY (paid_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: store_statement store_statement_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_statement
+    ADD CONSTRAINT store_statement_store_id_fkey FOREIGN KEY (store_id) REFERENCES public.store(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: studio_channel studio_channel_cover_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_channel
+    ADD CONSTRAINT studio_channel_cover_image_id_fkey FOREIGN KEY (cover_image_id) REFERENCES public.cms_media(id) ON DELETE SET NULL;
+
+
+--
+-- Name: studio_channel studio_channel_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_channel
+    ADD CONSTRAINT studio_channel_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: studio_channel_video studio_channel_video_channel_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_channel_video
+    ADD CONSTRAINT studio_channel_video_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES public.studio_channel(id) ON DELETE CASCADE;
+
+
+--
+-- Name: studio_channel_video studio_channel_video_featured_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_channel_video
+    ADD CONSTRAINT studio_channel_video_featured_by_fkey FOREIGN KEY (featured_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: studio_project studio_project_cover_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_project
+    ADD CONSTRAINT studio_project_cover_image_id_fkey FOREIGN KEY (cover_image_id) REFERENCES public.cms_media(id) ON DELETE SET NULL;
+
+
+--
+-- Name: studio_project studio_project_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_project
+    ADD CONSTRAINT studio_project_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: studio_show studio_show_cover_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_show
+    ADD CONSTRAINT studio_show_cover_image_id_fkey FOREIGN KEY (cover_image_id) REFERENCES public.cms_media(id) ON DELETE SET NULL;
+
+
+--
+-- Name: studio_show studio_show_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.studio_show
+    ADD CONSTRAINT studio_show_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
 -- Name: subscription_invoice subscription_invoice_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4564,6 +6914,22 @@ ALTER TABLE ONLY public.subscription
 
 ALTER TABLE ONLY public.subscription
     ADD CONSTRAINT subscription_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE CASCADE;
+
+
+--
+-- Name: teacher_payout teacher_payout_paid_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.teacher_payout
+    ADD CONSTRAINT teacher_payout_paid_by_fkey FOREIGN KEY (paid_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: teacher_payout teacher_payout_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.teacher_payout
+    ADD CONSTRAINT teacher_payout_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public."user"(id) ON DELETE RESTRICT;
 
 
 --
@@ -4599,6 +6965,14 @@ ALTER TABLE ONLY public."user"
 
 
 --
+-- Name: vods vods_cover_image_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vods
+    ADD CONSTRAINT vods_cover_image_id_fkey FOREIGN KEY (cover_image_id) REFERENCES public.cms_media(id) ON DELETE SET NULL;
+
+
+--
 -- Name: vods vods_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4613,6 +6987,86 @@ ALTER TABLE ONLY public.vods
 ALTER TABLE ONLY public.vods
     ADD CONSTRAINT vods_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE SET NULL;
 
+
+--
+-- Name: vods vods_show_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.vods
+    ADD CONSTRAINT vods_show_id_fkey FOREIGN KEY (show_id) REFERENCES public.studio_show(id) ON DELETE SET NULL;
+
+
+--
+-- Name: _bak_024_member_event; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public._bak_024_member_event ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: _bak_024_member_referral; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public._bak_024_member_referral ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: _bak_024_member_referral_code; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public._bak_024_member_referral_code ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: _bak_024_order; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public._bak_024_order ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: _bak_024_partner; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public._bak_024_partner ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: _bak_024_partner_referral; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public._bak_024_partner_referral ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: _bak_024_payment; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public._bak_024_payment ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: _bak_024_saved_card; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public._bak_024_saved_card ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: _bak_024_ticket; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public._bak_024_ticket ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: _bak_024_user; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public._bak_024_user ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: analytics_event; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.analytics_event ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: article_engagement; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.article_engagement ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: billing_notice; Type: ROW SECURITY; Schema: public; Owner: -
@@ -4655,6 +7109,18 @@ ALTER TABLE public.ca_view ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.checkout ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: checkout_item; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.checkout_item ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: circuit; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.circuit ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: cms_author_profile; Type: ROW SECURITY; Schema: public; Owner: -
@@ -4717,10 +7183,118 @@ ALTER TABLE public.cms_revision ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.cms_tag ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: contact_message; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.contact_message ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: contact_thread; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.contact_thread ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: course_activity; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.course_activity ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: course_changelog; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.course_changelog ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: course_enrollment; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.course_enrollment ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: course_post; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.course_post ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: course_post_report; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.course_post_report ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: course_sale; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.course_sale ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: decklists; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.decklists ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: entitlement; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.entitlement ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: event_player_heroes; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.event_player_heroes ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: fab_card_lookup; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.fab_card_lookup ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: fab_card_upload_history; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.fab_card_upload_history ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: guide_read; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.guide_read ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: guide_refund_request; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.guide_refund_request ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: legacy_arb; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
 ALTER TABLE public.legacy_arb ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: lss_events; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.lss_events ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: matches; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.matches ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: member_event; Type: ROW SECURITY; Schema: public; Owner: -
@@ -4741,10 +7315,52 @@ ALTER TABLE public.member_referral ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.member_referral_code ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: newsletter_subscriber; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.newsletter_subscriber ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: notification; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.notification ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: order; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public."order" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: page_view; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.page_view ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: partner; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
 ALTER TABLE public.partner ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: partner_account; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.partner_account ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: partner_attribution; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.partner_attribution ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: partner_ledger; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.partner_ledger ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: partner_referral; Type: ROW SECURITY; Schema: public; Owner: -
@@ -4753,10 +7369,40 @@ ALTER TABLE public.partner ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.partner_referral ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: partner_statement; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.partner_statement ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: password_reset_token; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.password_reset_token ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: payment; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
 ALTER TABLE public.payment ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: podcast_episodes; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.podcast_episodes ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: podcasts; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.podcasts ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: pool_run; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.pool_run ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: refund; Type: ROW SECURITY; Schema: public; Owner: -
@@ -4771,6 +7417,90 @@ ALTER TABLE public.refund ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.refund_request ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: saved_card; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.saved_card ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: session; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.session ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: staff_assignments; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.staff_assignments ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: standings; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.standings ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: store; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.store ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: store_activity; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.store_activity ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: store_ledger; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.store_ledger ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: store_member; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.store_member ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: store_program; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.store_program ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: store_statement; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.store_statement ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: studio_channel; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.studio_channel ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: studio_channel_video; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.studio_channel_video ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: studio_project; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.studio_project ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: studio_show; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.studio_show ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: subscription; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -4783,875 +7513,38 @@ ALTER TABLE public.subscription ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscription_invoice ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: teacher_payout; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.teacher_payout ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: ticket; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.ticket ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: user; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public."user" ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: vods; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.vods ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: webhook_event; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.webhook_event ENABLE ROW LEVEL SECURITY;
+
+--
 -- PostgreSQL database dump complete
 --
 
-\unrestrict AaFSXBcqXWPOIvjLkDxnjJDBAg444GREOuGAJPdG5VKJoAjJjQbvOTWeB4lCR3m
-
-
--- Migration 026 (appended until the next schema refresh; safe to re-run)
-
-ALTER TABLE public.cms_media
-  ADD COLUMN IF NOT EXISTS name text,
-  ADD COLUMN IF NOT EXISTS file_size integer,
-  ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'ready',
-  ADD COLUMN IF NOT EXISTS variant_prefix text,
-  ADD COLUMN IF NOT EXISTS variant_widths integer[],
-  ADD COLUMN IF NOT EXISTS has_avif boolean NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS blur text,
-  ADD COLUMN IF NOT EXISTS credit text,
-  ADD COLUMN IF NOT EXISTS credit_url text,
-  ADD COLUMN IF NOT EXISTS derived_from uuid REFERENCES public.cms_media(id) ON DELETE SET NULL,
-  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'cms_media_status_check') THEN
-    ALTER TABLE public.cms_media ADD CONSTRAINT cms_media_status_check
-      CHECK (status IN ('uploading', 'processing', 'ready', 'failed'));
-  END IF;
-END $$;
-
-CREATE INDEX IF NOT EXISTS cms_media_uploaded_by_created_idx
-  ON public.cms_media (uploaded_by, created_at DESC);
-CREATE INDEX IF NOT EXISTS cms_media_created_idx
-  ON public.cms_media (created_at DESC);
-
-UPDATE public.cms_media
-SET name = regexp_replace(regexp_replace(storage_path, '^.*/', ''), '\.[A-Za-z0-9]+$', '')
-WHERE name IS NULL;
-
--- Migration 027 (appended until the next schema refresh; safe to re-run)
-CREATE UNIQUE INDEX IF NOT EXISTS cms_entry_tag_entry_id_unique ON public.cms_entry_tag (entry_id);
-
--- Migration 028 (appended until the next schema refresh; safe to re-run)
-ALTER TABLE public.ca_view
-  ALTER COLUMN entry_id DROP NOT NULL,
-  ADD COLUMN IF NOT EXISTS vod_id uuid REFERENCES public.vods(id) ON DELETE CASCADE;
-ALTER TABLE public.ca_event
-  ALTER COLUMN entry_id DROP NOT NULL,
-  ADD COLUMN IF NOT EXISTS vod_id uuid REFERENCES public.vods(id) ON DELETE CASCADE;
-ALTER TABLE public.ca_view ADD CONSTRAINT ca_view_owner_check CHECK (entry_id IS NOT NULL OR vod_id IS NOT NULL);
-ALTER TABLE public.ca_event ADD CONSTRAINT ca_event_owner_check CHECK (entry_id IS NOT NULL OR vod_id IS NOT NULL);
-CREATE INDEX IF NOT EXISTS ca_view_vod_started_idx ON public.ca_view (vod_id, started_at) WHERE vod_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS ca_event_vod_idx ON public.ca_event (vod_id) WHERE vod_id IS NOT NULL;
-
--- Migration 029 (appended until the next schema refresh; safe to re-run)
-ALTER TABLE public.vods
-  ADD COLUMN IF NOT EXISTS cover_image_id uuid REFERENCES public.cms_media(id) ON DELETE SET NULL;
-
--- Migration 030 (appended until the next schema refresh; safe to re-run)
-ALTER TABLE public.cms_entry ADD COLUMN IF NOT EXISTS draft_meta jsonb;
-
--- Migration 031 (appended until the next schema refresh; safe to re-run)
-SET search_path = public;
-ALTER TABLE cms_course
-  ADD COLUMN IF NOT EXISTS submitted_at timestamptz,
-  ADD COLUMN IF NOT EXISTS review_note text,
-  ADD COLUMN IF NOT EXISTS first_published_at timestamptz;
-
--- A topic is a draft until published. first_published_at never changes once
--- set: it decides whether a topic is "new since you enrolled" (Premium).
-ALTER TABLE cms_lesson
-  ADD COLUMN IF NOT EXISTS published_at timestamptz,
-  ADD COLUMN IF NOT EXISTS first_published_at timestamptz;
-
--- A checkout buys tickets to an event or one course.
-ALTER TABLE checkout
-  ALTER COLUMN event_id DROP NOT NULL,
-  ADD COLUMN IF NOT EXISTS course_id uuid REFERENCES cms_course(id) ON DELETE CASCADE;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'checkout_target_check') THEN
-    ALTER TABLE checkout ADD CONSTRAINT checkout_target_check
-      CHECK ((event_id IS NOT NULL) <> (course_id IS NOT NULL));
-  END IF;
-END $$;
-
-CREATE INDEX IF NOT EXISTS checkout_course_idx ON checkout (course_id) WHERE course_id IS NOT NULL;
-
--- Analytics: a view belongs to an entry, a gameplay video, a course page or a topic.
-ALTER TABLE ca_view
-  ADD COLUMN IF NOT EXISTS course_id uuid REFERENCES cms_course(id) ON DELETE CASCADE,
-  ADD COLUMN IF NOT EXISTS lesson_id uuid REFERENCES cms_lesson(id) ON DELETE CASCADE;
-ALTER TABLE ca_event
-  ADD COLUMN IF NOT EXISTS course_id uuid REFERENCES cms_course(id) ON DELETE CASCADE,
-  ADD COLUMN IF NOT EXISTS lesson_id uuid REFERENCES cms_lesson(id) ON DELETE CASCADE;
-
-ALTER TABLE ca_view DROP CONSTRAINT IF EXISTS ca_view_owner_check;
-ALTER TABLE ca_view ADD CONSTRAINT ca_view_owner_check
-  CHECK (entry_id IS NOT NULL OR vod_id IS NOT NULL OR course_id IS NOT NULL);
-ALTER TABLE ca_event DROP CONSTRAINT IF EXISTS ca_event_owner_check;
-ALTER TABLE ca_event ADD CONSTRAINT ca_event_owner_check
-  CHECK (entry_id IS NOT NULL OR vod_id IS NOT NULL OR course_id IS NOT NULL);
-
-CREATE INDEX IF NOT EXISTS ca_view_course_started_idx ON ca_view (course_id, started_at) WHERE course_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS ca_view_lesson_idx ON ca_view (lesson_id) WHERE lesson_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS ca_event_course_idx ON ca_event (course_id) WHERE course_id IS NOT NULL;
-
--- Who can take a course. One live enrollment per student per course.
-CREATE TABLE IF NOT EXISTS course_enrollment (
-  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  course_id       uuid NOT NULL REFERENCES cms_course(id) ON DELETE CASCADE,
-  user_id         text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-  source          text NOT NULL,              -- purchase | comp
-  order_id        uuid REFERENCES "order"(id) ON DELETE SET NULL,
-  added_by        text REFERENCES "user"(id) ON DELETE SET NULL,
-  last_lesson_id  uuid REFERENCES cms_lesson(id) ON DELETE SET NULL,
-  last_seen_at    timestamptz,
-  muted_at        timestamptz,
-  muted_by        text REFERENCES "user"(id) ON DELETE SET NULL,
-  created_at      timestamptz NOT NULL DEFAULT now(),
-  revoked_at      timestamptz,
-  revoked_reason  text
-);
-CREATE UNIQUE INDEX IF NOT EXISTS course_enrollment_live_unique
-  ON course_enrollment (course_id, user_id) WHERE revoked_at IS NULL;
-CREATE INDEX IF NOT EXISTS course_enrollment_user_idx ON course_enrollment (user_id);
-
--- The teacher earnings ledger: one row per paid enrollment.
-CREATE TABLE IF NOT EXISTS course_sale (
-  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  course_id       uuid NOT NULL REFERENCES cms_course(id) ON DELETE RESTRICT,
-  teacher_id      text REFERENCES "user"(id) ON DELETE SET NULL,
-  enrollment_id   uuid REFERENCES course_enrollment(id) ON DELETE SET NULL,
-  order_id        uuid REFERENCES "order"(id) ON DELETE SET NULL,
-  trans_id        text UNIQUE,
-  gross_cents     integer NOT NULL,
-  refunded_cents  integer NOT NULL DEFAULT 0,
-  share_pct       smallint NOT NULL DEFAULT 90,
-  sold_at         timestamptz NOT NULL DEFAULT now(),
-  payable_at      timestamptz NOT NULL,
-  payout_id       uuid,
-  created_at      timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS course_sale_teacher_idx ON course_sale (teacher_id, payable_at);
-CREATE INDEX IF NOT EXISTS course_sale_course_idx ON course_sale (course_id, sold_at);
-
--- Payouts AGE has made (outside the site), marked here by an admin.
-CREATE TABLE IF NOT EXISTS teacher_payout (
-  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  teacher_id      text NOT NULL REFERENCES "user"(id) ON DELETE RESTRICT,
-  pay_date        date NOT NULL,
-  amount_cents    integer NOT NULL,
-  sale_count      integer NOT NULL,
-  status          text NOT NULL DEFAULT 'paid',
-  paid_at         timestamptz NOT NULL DEFAULT now(),
-  paid_by         text REFERENCES "user"(id) ON DELETE SET NULL,
-  reference       text,
-  note            text
-);
-CREATE INDEX IF NOT EXISTS teacher_payout_teacher_idx ON teacher_payout (teacher_id, pay_date);
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'course_sale_payout_fk') THEN
-    ALTER TABLE course_sale ADD CONSTRAINT course_sale_payout_fk
-      FOREIGN KEY (payout_id) REFERENCES teacher_payout(id) ON DELETE SET NULL;
-  END IF;
-END $$;
-
--- The course discussion. A thread has no parent; a reply points at its thread.
-CREATE TABLE IF NOT EXISTS course_post (
-  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  course_id       uuid NOT NULL REFERENCES cms_course(id) ON DELETE CASCADE,
-  lesson_id       uuid REFERENCES cms_lesson(id) ON DELETE SET NULL,
-  parent_id       uuid REFERENCES course_post(id) ON DELETE CASCADE,
-  author_id       text REFERENCES "user"(id) ON DELETE SET NULL,
-  kind            text NOT NULL DEFAULT 'post',     -- post | update
-  title           text,
-  body            text NOT NULL,
-  pinned          boolean NOT NULL DEFAULT false,
-  locked          boolean NOT NULL DEFAULT false,
-  status          text NOT NULL DEFAULT 'visible',  -- visible | held | removed
-  flag_reasons    text[] NOT NULL DEFAULT '{}',
-  reviewed_by     text REFERENCES "user"(id) ON DELETE SET NULL,
-  reviewed_at     timestamptz,
-  review_note     text,
-  created_at      timestamptz NOT NULL DEFAULT now(),
-  edited_at       timestamptz,
-  last_reply_at   timestamptz,
-  deleted_at      timestamptz
-);
-CREATE INDEX IF NOT EXISTS course_post_threads_idx ON course_post (course_id, last_reply_at) WHERE parent_id IS NULL;
-CREATE INDEX IF NOT EXISTS course_post_parent_idx ON course_post (parent_id, created_at);
-CREATE INDEX IF NOT EXISTS course_post_review_idx ON course_post (course_id) WHERE status = 'held';
-CREATE INDEX IF NOT EXISTS course_post_author_idx ON course_post (author_id, created_at);
-
-CREATE TABLE IF NOT EXISTS course_post_report (
-  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  post_id         uuid NOT NULL REFERENCES course_post(id) ON DELETE CASCADE,
-  reporter_id     text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-  reason          text,
-  created_at      timestamptz NOT NULL DEFAULT now(),
-  resolved_at     timestamptz,
-  UNIQUE (post_id, reporter_id)
-);
-
--- In-site notifications: replies, new threads, teacher updates, new topics.
-CREATE TABLE IF NOT EXISTS notification (
-  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id         text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-  kind            text NOT NULL,   -- reply | new_thread | course_update | new_topic | post_removed
-  course_id       uuid REFERENCES cms_course(id) ON DELETE CASCADE,
-  lesson_id       uuid REFERENCES cms_lesson(id) ON DELETE CASCADE,
-  post_id         uuid REFERENCES course_post(id) ON DELETE CASCADE,
-  actor_id        text REFERENCES "user"(id) ON DELETE SET NULL,
-  data            jsonb,
-  created_at      timestamptz NOT NULL DEFAULT now(),
-  read_at         timestamptz
-);
-CREATE INDEX IF NOT EXISTS notification_user_idx ON notification (user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS notification_unread_idx ON notification (user_id) WHERE read_at IS NULL;
-CREATE INDEX IF NOT EXISTS notification_user_idx ON notification (user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS notification_unread_idx ON notification (user_id) WHERE read_at IS NULL;
-
--- Row level security is on with no policies, as in 022 and 024: the site
--- reaches these tables only through its own server connection, and the
--- public API keys get nothing.
-ALTER TABLE course_enrollment  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE course_sale        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE teacher_payout     ENABLE ROW LEVEL SECURITY;
-ALTER TABLE course_post        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE course_post_report ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notification       ENABLE ROW LEVEL SECURITY;
-
--- Migration 032 (appended until the next schema refresh; safe to re-run)
-ALTER TABLE cms_lesson ADD COLUMN IF NOT EXISTS draft_title text;
-ALTER TABLE cms_lesson ADD COLUMN IF NOT EXISTS draft_body jsonb;
-ALTER TABLE cms_lesson ADD COLUMN IF NOT EXISTS draft_updated_at timestamptz;
-
--- Migration 033 (appended until the next schema refresh; safe to re-run)
-CREATE TABLE IF NOT EXISTS course_activity (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  course_id   uuid NOT NULL REFERENCES cms_course(id) ON DELETE CASCADE,
-  actor_id    text REFERENCES "user"(id) ON DELETE SET NULL,
-  kind        text NOT NULL,
-  lesson_id   uuid REFERENCES cms_lesson(id) ON DELETE SET NULL,
-  note        text,
-  data        jsonb,
-  created_at  timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS course_activity_course_idx ON course_activity (course_id, created_at DESC);
-
--- Row level security on with no policies, as in 031.
-ALTER TABLE course_activity ENABLE ROW LEVEL SECURITY;
-
--- Migration 034 (appended until the next schema refresh; safe to re-run)
-ALTER TABLE cms_media ADD COLUMN IF NOT EXISTS library text NOT NULL DEFAULT 'content';
-DO $$ BEGIN
-  ALTER TABLE cms_media ADD CONSTRAINT cms_media_library_check CHECK (library IN ('content', 'classroom'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-CREATE INDEX IF NOT EXISTS cms_media_library_idx ON cms_media (library, created_at DESC);
-
-WITH course_use AS (
-  SELECT m.id FROM cms_media m
-  WHERE EXISTS (
-          SELECT 1 FROM cms_course c
-          WHERE m.id IN (c.cover_image_id, c.thumbnail_image_id, c.draft_cover_image_id, c.draft_thumbnail_image_id))
-     OR EXISTS (
-          SELECT 1 FROM cms_lesson l
-          WHERE l.body::text LIKE '%' || m.id::text || '%'
-             OR l.draft_body::text LIKE '%' || m.id::text || '%')
-),
-content_use AS (
-  SELECT m.id FROM cms_media m
-  WHERE EXISTS (
-          SELECT 1 FROM cms_entry e
-          WHERE m.id IN (e.cover_image_id, e.thumbnail_image_id, e.draft_cover_image_id, e.draft_thumbnail_image_id)
-             OR e.draft_meta ->> 'coverImageId' = m.id::text
-             OR e.draft_meta ->> 'thumbnailImageId' = m.id::text
-             OR e.body::text LIKE '%' || m.id::text || '%'
-             OR e.draft_body::text LIKE '%' || m.id::text || '%')
-     -- gameplay covers (read this way so it works before or after migration 029)
-     OR EXISTS (SELECT 1 FROM vods v WHERE to_jsonb(v) ->> 'cover_image_id' = m.id::text)
-     OR EXISTS (SELECT 1 FROM cms_author_profile p WHERE p.avatar_media_id = m.id)
-),
-teacher_only AS (
-  SELECT u.id FROM "user" u
-  WHERE u.role <> 'admin'
-    AND 'creator' = ANY (coalesce(u.additional_roles, '{}'))
-    AND NOT ('writer' = ANY (coalesce(u.additional_roles, '{}')))
-    AND NOT ('editor' = ANY (coalesce(u.additional_roles, '{}')))
-)
-UPDATE cms_media m SET library = 'classroom'
-WHERE m.library = 'content'
-  AND m.id NOT IN (SELECT id FROM content_use)
-  AND (m.id IN (SELECT id FROM course_use) OR m.uploaded_by IN (SELECT id FROM teacher_only));
-
--- Migration 035 (appended until the next schema refresh; safe to re-run)
-CREATE TABLE IF NOT EXISTS studio_show (
-  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug            text NOT NULL UNIQUE,
-  name            text NOT NULL,
-  kind            text NOT NULL DEFAULT 'podcast',
-  description     text,
-  host            text,
-  cover_image_id  uuid REFERENCES cms_media(id) ON DELETE SET NULL,
-  is_active       boolean NOT NULL DEFAULT true,
-  sort_order      integer NOT NULL DEFAULT 0,
-  created_by      text REFERENCES "user"(id) ON DELETE SET NULL,
-  created_at      timestamptz NOT NULL DEFAULT now(),
-  updated_at      timestamptz NOT NULL DEFAULT now()
-);
-DO $$ BEGIN
-  ALTER TABLE studio_show ADD CONSTRAINT studio_show_kind_check CHECK (kind IN ('podcast', 'interview', 'video'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
-ALTER TABLE vods ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'gameplay';
-ALTER TABLE vods ADD COLUMN IF NOT EXISTS media_type text NOT NULL DEFAULT 'video';
-ALTER TABLE vods ADD COLUMN IF NOT EXISTS show_id uuid REFERENCES studio_show(id) ON DELETE SET NULL;
-ALTER TABLE vods ADD COLUMN IF NOT EXISTS guests text;
-ALTER TABLE vods ADD COLUMN IF NOT EXISTS season integer;
-ALTER TABLE vods ADD COLUMN IF NOT EXISTS episode_number integer;
-DO $$ BEGIN
-  ALTER TABLE vods ADD CONSTRAINT vods_kind_check CHECK (kind IN ('gameplay', 'podcast', 'interview', 'video'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN
-  ALTER TABLE vods ADD CONSTRAINT vods_media_type_check CHECK (media_type IN ('video', 'audio'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-CREATE INDEX IF NOT EXISTS vods_kind_published_idx ON vods (kind, is_published, published_at DESC);
-CREATE INDEX IF NOT EXISTS vods_show_idx ON vods (show_id);
-
--- The Studio's image library.
-ALTER TABLE cms_media DROP CONSTRAINT IF EXISTS cms_media_library_check;
-ALTER TABLE cms_media ADD CONSTRAINT cms_media_library_check
-  CHECK (library IN ('content', 'classroom', 'studio'));
-
--- Covers used only by gameplay or shows move to the Studio's library.
--- (Gameplay covers are read through to_jsonb so this works before or after
--- migration 029 added vods.cover_image_id.)
-WITH studio_use AS (
-  SELECT m.id FROM cms_media m
-  WHERE EXISTS (SELECT 1 FROM vods v WHERE to_jsonb(v) ->> 'cover_image_id' = m.id::text)
-     OR EXISTS (SELECT 1 FROM studio_show s WHERE s.cover_image_id = m.id)
-),
-other_use AS (
-  SELECT m.id FROM cms_media m
-  WHERE EXISTS (
-          SELECT 1 FROM cms_entry e
-          WHERE m.id IN (e.cover_image_id, e.thumbnail_image_id, e.draft_cover_image_id, e.draft_thumbnail_image_id)
-             OR e.draft_meta ->> 'coverImageId' = m.id::text
-             OR e.draft_meta ->> 'thumbnailImageId' = m.id::text
-             OR e.body::text LIKE '%' || m.id::text || '%'
-             OR e.draft_body::text LIKE '%' || m.id::text || '%')
-     OR EXISTS (
-          SELECT 1 FROM cms_course c
-          WHERE m.id IN (c.cover_image_id, c.thumbnail_image_id, c.draft_cover_image_id, c.draft_thumbnail_image_id))
-     OR EXISTS (SELECT 1 FROM cms_lesson l WHERE l.body::text LIKE '%' || m.id::text || '%')
-     OR EXISTS (SELECT 1 FROM cms_author_profile p WHERE p.avatar_media_id = m.id)
-)
-UPDATE cms_media m SET library = 'studio'
-WHERE m.library = 'content'
-  AND m.id IN (SELECT id FROM studio_use)
-  AND m.id NOT IN (SELECT id FROM other_use);
-
--- Row level security on with no policies, as in 031.
-ALTER TABLE studio_show ENABLE ROW LEVEL SECURITY;
-
--- 036: the AGE Network — outside creators on AGE Studios.
---
--- A creator (`studio_channel`) is added once from their YouTube channel
--- link. Their recent uploads are pulled in (`studio_channel_video`) for
--- staff to choose from; only videos staff feature reach the public site
--- (/studios/network). Network videos play through YouTube's embed and are
--- free to everyone.
---
--- Additive and idempotent: safe to re-run. Apply before deploying the code
--- that reads these tables.
-
-CREATE TABLE IF NOT EXISTS studio_channel (
-  id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug                text NOT NULL UNIQUE,
-  name                text NOT NULL,
-  kind                text NOT NULL DEFAULT 'video',
-  youtube_channel_id  text NOT NULL UNIQUE,
-  youtube_url         text NOT NULL,
-  handle              text,
-  avatar_url          text,
-  banner_url          text,
-  description         text,
-  cover_image_id      uuid REFERENCES cms_media(id) ON DELETE SET NULL,
-  is_active           boolean NOT NULL DEFAULT true,
-  sort_order          integer NOT NULL DEFAULT 0,
-  last_synced_at      timestamptz,
-  sync_error          text,
-  created_by          text REFERENCES "user"(id) ON DELETE SET NULL,
-  created_at          timestamptz NOT NULL DEFAULT now(),
-  updated_at          timestamptz NOT NULL DEFAULT now()
-);
-DO $$ BEGIN
-  ALTER TABLE studio_channel ADD CONSTRAINT studio_channel_kind_check CHECK (kind IN ('podcast', 'video'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
-CREATE TABLE IF NOT EXISTS studio_channel_video (
-  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  channel_id        uuid NOT NULL REFERENCES studio_channel(id) ON DELETE CASCADE,
-  youtube_video_id  text NOT NULL UNIQUE,
-  title             text NOT NULL,
-  description       text,
-  published_at      timestamptz,
-  thumbnail_url     text,
-  duration          integer,
-  is_short          boolean NOT NULL DEFAULT false,
-  -- false once the video has gone from the channel (deleted or private).
-  is_available      boolean NOT NULL DEFAULT true,
-  is_featured       boolean NOT NULL DEFAULT false,
-  featured_at       timestamptz,
-  featured_by       text REFERENCES "user"(id) ON DELETE SET NULL,
-  sort_order        integer,
-  created_at        timestamptz NOT NULL DEFAULT now(),
-  updated_at        timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS studio_channel_video_channel_idx
-  ON studio_channel_video (channel_id, published_at DESC);
-CREATE INDEX IF NOT EXISTS studio_channel_video_featured_idx
-  ON studio_channel_video (is_featured, featured_at DESC) WHERE is_featured;
-
--- Row level security on with no policies, as in 031.
-ALTER TABLE studio_channel ENABLE ROW LEVEL SECURITY;
-ALTER TABLE studio_channel_video ENABLE ROW LEVEL SECURITY;
-
--- ============================================================
--- 037_course_media.sql
--- ============================================================
-ALTER TABLE cms_media
-  ADD COLUMN IF NOT EXISTS course_id uuid REFERENCES cms_course (id) ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS cms_media_course_idx ON cms_media (course_id, created_at DESC);
-
--- 1. covers and thumbnails
-UPDATE cms_media m SET course_id = c.id
-FROM cms_course c
-WHERE m.library = 'classroom' AND m.course_id IS NULL
-  AND m.id IN (c.cover_image_id, c.thumbnail_image_id, c.draft_cover_image_id, c.draft_thumbnail_image_id);
-
--- 2. images inside a topic (the first course found, if more than one uses it)
-UPDATE cms_media m SET course_id = (
-  SELECT l.course_id FROM cms_lesson l
-  WHERE l.body::text LIKE '%' || m.id::text || '%'
-     OR l.draft_body::text LIKE '%' || m.id::text || '%'
-  ORDER BY l.created_at
-  LIMIT 1)
-WHERE m.library = 'classroom' AND m.course_id IS NULL
-  AND EXISTS (
-    SELECT 1 FROM cms_lesson l
-    WHERE l.body::text LIKE '%' || m.id::text || '%'
-       OR l.draft_body::text LIKE '%' || m.id::text || '%');
-
--- 3. the uploader's only course
-UPDATE cms_media m SET course_id = sole.course_id
-FROM (
-  SELECT author_id, min(id::text)::uuid AS course_id
-  FROM cms_course
-  WHERE author_id IS NOT NULL
-  GROUP BY author_id
-  HAVING count(*) = 1
-) sole
-WHERE m.library = 'classroom' AND m.course_id IS NULL
-  AND m.uploaded_by = sole.author_id;
-
--- ============================================================
--- 038_profile_photos.sql
--- ============================================================
-ALTER TABLE cms_media DROP CONSTRAINT IF EXISTS cms_media_library_check;
-ALTER TABLE cms_media ADD CONSTRAINT cms_media_library_check
-  CHECK (library IN ('content', 'classroom', 'studio', 'profile'));
-
--- 039_people_handles.sql
-ALTER TABLE cms_author_profile ADD COLUMN IF NOT EXISTS handle text;
-CREATE UNIQUE INDEX IF NOT EXISTS cms_author_profile_handle_unique ON cms_author_profile (handle);
-
--- 041_studios_projects.sql (without the Supabase role grants)
-CREATE TABLE IF NOT EXISTS studio_project (
-  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  slug            text NOT NULL UNIQUE,
-  title           text NOT NULL,
-  dek             text,
-  type            text NOT NULL DEFAULT 'interactive',
-  cover_image_id  uuid REFERENCES cms_media(id) ON DELETE SET NULL,
-  href            text,
-  is_premium      boolean NOT NULL DEFAULT false,
-  is_featured     boolean NOT NULL DEFAULT false,
-  status          text NOT NULL DEFAULT 'draft',
-  published_at    timestamptz,
-  sort_order      integer NOT NULL DEFAULT 0,
-  created_by      text REFERENCES "user"(id) ON DELETE SET NULL,
-  created_at      timestamptz NOT NULL DEFAULT now(),
-  updated_at      timestamptz NOT NULL DEFAULT now()
-);
-DO $$ BEGIN
-  ALTER TABLE studio_project ADD CONSTRAINT studio_project_type_check
-    CHECK (type IN ('interactive', 'stats', 'software', 'film', 'feature'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN
-  ALTER TABLE studio_project ADD CONSTRAINT studio_project_status_check
-    CHECK (status IN ('draft', 'published'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-CREATE INDEX IF NOT EXISTS studio_project_live_idx
-  ON studio_project (status, is_featured DESC, published_at DESC);
-
-ALTER TABLE vods ADD COLUMN IF NOT EXISTS round text;
-
--- 042_partner_model.sql (migration file appended verbatim; the backfill finds nothing in a new database)
--- Each teacher's lifetime copies, net of refunds and chargebacks. Locked
--- (SELECT ... FOR UPDATE) while an order is numbered, so two orders at once
--- can't hand out the same copy number.
-CREATE TABLE IF NOT EXISTS partner_account (
-  teacher_id      text PRIMARY KEY REFERENCES "user"(id) ON DELETE CASCADE,
-  lifetime_copies integer NOT NULL DEFAULT 0 CHECK (lifetime_copies >= 0),
-  created_at      timestamptz NOT NULL DEFAULT now(),
-  updated_at      timestamptz NOT NULL DEFAULT now()
-);
-
--- The guides in a checkout. The checkout row keeps the first guide in
--- course_id, so every existing check still holds; payload.kind = 'guides'.
-CREATE TABLE IF NOT EXISTS checkout_item (
-  id                     uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  checkout_id            uuid NOT NULL REFERENCES checkout(id) ON DELETE CASCADE,
-  course_id              uuid NOT NULL REFERENCES cms_course(id) ON DELETE RESTRICT,
-  teacher_id             text REFERENCES "user"(id) ON DELETE SET NULL,
-  position               smallint NOT NULL,
-  title                  text NOT NULL,
-  list_cents             integer NOT NULL CHECK (list_cents >= 0),
-  member_discount_cents  integer NOT NULL DEFAULT 0,
-  price_cents            integer NOT NULL,   -- list less the member discount
-  fee_cents              integer NOT NULL DEFAULT 0,  -- this item's share of the card fee
-  paid_cents             integer NOT NULL,   -- price + fee: what the buyer paid for it
-  created_at             timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (checkout_id, course_id)
-);
-CREATE INDEX IF NOT EXISTS checkout_item_course_idx ON checkout_item (course_id);
-
--- What teachers earn, one row per event. Reversals point at the row they
--- undo. statement_month is the monthly statement the row lands on.
-CREATE TABLE IF NOT EXISTS partner_ledger (
-  id                     uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  entry_type             text NOT NULL,  -- sale | reversal | referral_bonus | pool_share | adjustment
-  status                 text NOT NULL,  -- sale: paid | refunded | charged_back; reversal: refunded | charged_back; others: earned | void
-  teacher_id             text NOT NULL REFERENCES "user"(id) ON DELETE RESTRICT,
-  order_id               uuid REFERENCES "order"(id) ON DELETE SET NULL,
-  checkout_item_id       uuid REFERENCES checkout_item(id) ON DELETE SET NULL,
-  course_id              uuid REFERENCES cms_course(id) ON DELETE SET NULL,
-  buyer_id               text REFERENCES "user"(id) ON DELETE SET NULL,
-  reverses_id            uuid REFERENCES partner_ledger(id) ON DELETE RESTRICT,
-  legacy_sale_id         uuid REFERENCES course_sale(id) ON DELETE SET NULL,
-  referred_user_id       text REFERENCES "user"(id) ON DELETE SET NULL,
-  pool_month             date,
-  list_cents             integer NOT NULL DEFAULT 0,
-  buyer_type             text,           -- member | non_member
-  member_discount_cents  integer NOT NULL DEFAULT 0,
-  buyer_paid_cents       integer NOT NULL DEFAULT 0,
-  card_fee_cents         integer NOT NULL DEFAULT 0,
-  share_rate             numeric(5,4),
-  level                  text,           -- PARTNER | SENIOR | ELITE at the time of sale
-  copy_number            integer,        -- the copy's place in the teacher's lifetime count
-  teacher_cents          integer NOT NULL,  -- negative on reversals
-  age_commission_cents   integer NOT NULL DEFAULT 0,
-  age_net_cents          integer NOT NULL DEFAULT 0,
-  occurred_at            timestamptz NOT NULL DEFAULT now(),
-  payable_at             timestamptz NOT NULL DEFAULT now(),
-  statement_month        date NOT NULL,
-  settled_payout_id      uuid REFERENCES teacher_payout(id) ON DELETE SET NULL,  -- paid by an old-style payout
-  note                   text,
-  created_at             timestamptz NOT NULL DEFAULT now(),
-  updated_at             timestamptz NOT NULL DEFAULT now()
-);
-DO $$ BEGIN
-  ALTER TABLE partner_ledger ADD CONSTRAINT partner_ledger_type_check
-    CHECK (entry_type IN ('sale', 'reversal', 'referral_bonus', 'pool_share', 'adjustment'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN
-  ALTER TABLE partner_ledger ADD CONSTRAINT partner_ledger_status_check
-    CHECK (status IN ('paid', 'refunded', 'charged_back', 'earned', 'void'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
--- Once each: a sale per line item, a reversal per entry, a bonus per member,
--- a pool share per teacher per month, a legacy row per old sale.
-CREATE UNIQUE INDEX IF NOT EXISTS partner_ledger_item_sale_unique
-  ON partner_ledger (checkout_item_id) WHERE entry_type = 'sale';
-CREATE UNIQUE INDEX IF NOT EXISTS partner_ledger_reversal_unique
-  ON partner_ledger (reverses_id) WHERE entry_type = 'reversal';
-CREATE UNIQUE INDEX IF NOT EXISTS partner_ledger_bonus_unique
-  ON partner_ledger (referred_user_id) WHERE entry_type = 'referral_bonus';
-CREATE UNIQUE INDEX IF NOT EXISTS partner_ledger_pool_unique
-  ON partner_ledger (pool_month, teacher_id) WHERE entry_type = 'pool_share';
-CREATE UNIQUE INDEX IF NOT EXISTS partner_ledger_legacy_unique
-  ON partner_ledger (legacy_sale_id) WHERE legacy_sale_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS partner_ledger_statement_idx ON partner_ledger (teacher_id, statement_month);
-CREATE INDEX IF NOT EXISTS partner_ledger_order_idx ON partner_ledger (order_id) WHERE order_id IS NOT NULL;
-
--- Payout status per teacher per month. No row means pending.
-CREATE TABLE IF NOT EXISTS partner_statement (
-  teacher_id    text NOT NULL REFERENCES "user"(id) ON DELETE RESTRICT,
-  month         date NOT NULL,             -- the first of the month
-  status        text NOT NULL DEFAULT 'pending',  -- pending | paid
-  amount_cents  integer,                   -- what was paid
-  payout_id     uuid REFERENCES teacher_payout(id) ON DELETE SET NULL,
-  reference     text,
-  note          text,
-  paid_at       timestamptz,
-  paid_by       text REFERENCES "user"(id) ON DELETE SET NULL,
-  created_at    timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY (teacher_id, month)
-);
-DO $$ BEGIN
-  ALTER TABLE partner_statement ADD CONSTRAINT partner_statement_status_check
-    CHECK (status IN ('pending', 'paid'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
--- The teacher who referred a Premium member, by link or code. One per
--- member, ever, and never the teacher themselves.
-CREATE TABLE IF NOT EXISTS partner_attribution (
-  referred_user_id  text PRIMARY KEY REFERENCES "user"(id) ON DELETE CASCADE,
-  teacher_id        text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-  partner_id        uuid REFERENCES partner(id) ON DELETE SET NULL,
-  source            text NOT NULL,        -- link | code
-  code              text,
-  subscription_id   uuid,
-  status            text NOT NULL DEFAULT 'pending',  -- pending | bonus_recorded | void
-  void_reason       text,
-  attributed_at     timestamptz NOT NULL DEFAULT now(),
-  decided_at        timestamptz,
-  CHECK (referred_user_id <> teacher_id)
-);
-CREATE INDEX IF NOT EXISTS partner_attribution_pending_idx
-  ON partner_attribution (attributed_at) WHERE status = 'pending';
-
--- Unique reads by Premium members of guides they own, per month.
-CREATE TABLE IF NOT EXISTS guide_read (
-  user_id        text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-  course_id      uuid NOT NULL REFERENCES cms_course(id) ON DELETE CASCADE,
-  month          date NOT NULL,
-  first_read_at  timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY (user_id, course_id, month)
-);
-CREATE INDEX IF NOT EXISTS guide_read_month_idx ON guide_read (month, course_id);
-
--- Each month the pool job ran, and what it decided.
-CREATE TABLE IF NOT EXISTS pool_run (
-  month              date PRIMARY KEY,
-  status             text NOT NULL,       -- skipped | paid
-  reason             text,
-  active_members     integer,
-  net_revenue_cents  integer,
-  pool_cents         integer,
-  total_reads        integer,
-  ran_at             timestamptz NOT NULL DEFAULT now()
-);
-
--- The exclusivity agreement per guide (stored and shown, not enforced),
--- and when its content last changed.
-ALTER TABLE cms_course
-  ADD COLUMN IF NOT EXISTS exclusive boolean NOT NULL DEFAULT true,
-  ADD COLUMN IF NOT EXISTS exclusivity_start date,
-  ADD COLUMN IF NOT EXISTS exclusivity_end date,
-  ADD COLUMN IF NOT EXISTS auto_renew boolean NOT NULL DEFAULT true,
-  ADD COLUMN IF NOT EXISTS agreement_status text NOT NULL DEFAULT 'active',  -- active | ended
-  ADD COLUMN IF NOT EXISTS content_updated_at timestamptz;
-
--- Version history buyers can read: one short note per update.
-CREATE TABLE IF NOT EXISTS course_changelog (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  course_id   uuid NOT NULL REFERENCES cms_course(id) ON DELETE CASCADE,
-  lesson_id   uuid REFERENCES cms_lesson(id) ON DELETE SET NULL,
-  kind        text NOT NULL,   -- topic_updated | topic_added
-  note        text,
-  author_id   text REFERENCES "user"(id) ON DELETE SET NULL,
-  created_at  timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS course_changelog_course_idx ON course_changelog (course_id, created_at DESC);
-
--- A refund names the guides it gives back.
-ALTER TABLE refund
-  ADD COLUMN IF NOT EXISTS checkout_item_ids uuid[] NOT NULL DEFAULT '{}';
-
--- Row level security on with no policies, as in 031: only the site's own
--- server connection reads these.
-ALTER TABLE partner_account     ENABLE ROW LEVEL SECURITY;
-ALTER TABLE checkout_item       ENABLE ROW LEVEL SECURITY;
-ALTER TABLE partner_ledger      ENABLE ROW LEVEL SECURITY;
-ALTER TABLE partner_statement   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE partner_attribution ENABLE ROW LEVEL SECURITY;
-ALTER TABLE guide_read          ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pool_run            ENABLE ROW LEVEL SECURITY;
-ALTER TABLE course_changelog    ENABLE ROW LEVEL SECURITY;
-
--- ---------------------------------------------------------------- backfill
-
--- Old sales become legacy ledger sales: 90% of what was paid, less any
--- refund, on the statement for the month they became payable. Re-running
--- refreshes them from course_sale. Once the Partner model code is live,
--- refunds of these sales are recorded on the ledger itself: re-running
--- then leaves those rows alone.
-INSERT INTO partner_ledger (
-  entry_type, status, teacher_id, order_id, course_id, buyer_id, legacy_sale_id,
-  list_cents, buyer_type, buyer_paid_cents, share_rate, level, teacher_cents,
-  age_commission_cents, age_net_cents, occurred_at, payable_at, statement_month,
-  settled_payout_id, note
-)
-SELECT
-  'sale',
-  CASE WHEN s.refunded_cents >= s.gross_cents THEN 'refunded' ELSE 'paid' END,
-  s.teacher_id, s.order_id, s.course_id, e.user_id, s.id,
-  s.gross_cents, 'non_member', s.gross_cents - s.refunded_cents, s.share_pct / 100.0, 'PARTNER',
-  round((s.gross_cents - s.refunded_cents) * s.share_pct / 100.0)::int,
-  (s.gross_cents - s.refunded_cents) - round((s.gross_cents - s.refunded_cents) * s.share_pct / 100.0)::int,
-  (s.gross_cents - s.refunded_cents) - round((s.gross_cents - s.refunded_cents) * s.share_pct / 100.0)::int,
-  s.sold_at, s.payable_at, date_trunc('month', s.payable_at AT TIME ZONE 'UTC')::date,
-  s.payout_id, 'Sold before the Partner model'
-FROM course_sale s
-LEFT JOIN course_enrollment e ON e.id = s.enrollment_id
-WHERE s.teacher_id IS NOT NULL
-ON CONFLICT (legacy_sale_id) WHERE legacy_sale_id IS NOT NULL DO UPDATE SET
-  status = EXCLUDED.status,
-  buyer_paid_cents = EXCLUDED.buyer_paid_cents,
-  teacher_cents = EXCLUDED.teacher_cents,
-  age_commission_cents = EXCLUDED.age_commission_cents,
-  age_net_cents = EXCLUDED.age_net_cents,
-  settled_payout_id = EXCLUDED.settled_payout_id,
-  updated_at = now()
--- ...unless the ledger has already refunded part of it.
-WHERE NOT EXISTS (SELECT 1 FROM partner_ledger r WHERE r.reverses_id = partner_ledger.id);
-
--- Number the legacy copies in the order they sold (refunded ones don't count).
-UPDATE partner_ledger l SET copy_number = n.rn
-FROM (
-  SELECT id, row_number() OVER (PARTITION BY teacher_id ORDER BY occurred_at, id) AS rn
-  FROM partner_ledger
-  WHERE legacy_sale_id IS NOT NULL AND status = 'paid'
-) n
-WHERE l.id = n.id AND l.copy_number IS DISTINCT FROM n.rn;
-
--- Lifetime copies, counted from the ledger: every sale not refunded or
--- charged back. Correct to re-run at any time.
-INSERT INTO partner_account (teacher_id, lifetime_copies)
-SELECT teacher_id, count(*) FILTER (WHERE status = 'paid')
-FROM partner_ledger WHERE entry_type = 'sale'
-GROUP BY teacher_id
-ON CONFLICT (teacher_id) DO UPDATE SET lifetime_copies = EXCLUDED.lifetime_copies, updated_at = now();
-
--- Exclusivity from launch, for 12 months, on guides that have launched.
-UPDATE cms_course
-SET exclusivity_start = (first_published_at AT TIME ZONE 'UTC')::date,
-    exclusivity_end = ((first_published_at AT TIME ZONE 'UTC')::date + interval '12 months')::date
-WHERE exclusivity_start IS NULL AND first_published_at IS NOT NULL;
-
-UPDATE cms_course SET content_updated_at = coalesce(published_at, updated_at)
-WHERE content_updated_at IS NULL AND first_published_at IS NOT NULL;
-
--- 043_guide_refunds.sql (appended verbatim)
-ALTER TABLE course_enrollment ADD COLUMN IF NOT EXISTS first_opened_at timestamptz;
-
-ALTER TABLE checkout
-  ADD COLUMN IF NOT EXISTS consent_given boolean NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS consent_text text,
-  ADD COLUMN IF NOT EXISTS consent_at timestamptz,
-  ADD COLUMN IF NOT EXISTS consent_ip text,
-  ADD COLUMN IF NOT EXISTS consent_user_agent text;
-
-CREATE TABLE IF NOT EXISTS guide_refund_request (
-  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  checkout_item_id  uuid NOT NULL REFERENCES checkout_item(id) ON DELETE RESTRICT,
-  order_id          uuid NOT NULL REFERENCES "order"(id) ON DELETE RESTRICT,
-  user_id           text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-  course_id         uuid REFERENCES cms_course(id) ON DELETE SET NULL,
-  teacher_id        text REFERENCES "user"(id) ON DELETE SET NULL,
-  reason            text NOT NULL,   -- duplicate | broken | not_as_described | unopened | other
-  message           text,
-  status            text NOT NULL DEFAULT 'pending',  -- pending | approved | auto_approved | denied
-  auto_reason       text,            -- duplicate | unopened, when the system approved it
-  decided_by        text,            -- system | admin | teacher
-  decided_by_user   text REFERENCES "user"(id) ON DELETE SET NULL,
-  decision_note     text,
-  decided_at        timestamptz,
-  refund_status     text NOT NULL DEFAULT 'none',     -- none | processing | refunded | refund_failed
-  refund_id         uuid REFERENCES refund(id) ON DELETE SET NULL,
-  amount_cents      integer,         -- what goes back: the line item's amount paid
-  gateway_method    text,            -- void | refund
-  gateway_response  text,
-  attempts          integer NOT NULL DEFAULT 0,
-  created_at        timestamptz NOT NULL DEFAULT now(),
-  updated_at        timestamptz NOT NULL DEFAULT now()
-);
-DO $$ BEGIN
-  ALTER TABLE guide_refund_request ADD CONSTRAINT guide_refund_request_reason_check
-    CHECK (reason IN ('duplicate', 'broken', 'not_as_described', 'unopened', 'other'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN
-  ALTER TABLE guide_refund_request ADD CONSTRAINT guide_refund_request_status_check
-    CHECK (status IN ('pending', 'approved', 'auto_approved', 'denied'));
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
--- One open or approved request per guide bought: a guide is never refunded twice.
-CREATE UNIQUE INDEX IF NOT EXISTS guide_refund_request_live_unique
-  ON guide_refund_request (checkout_item_id) WHERE status <> 'denied';
-CREATE INDEX IF NOT EXISTS guide_refund_request_queue_idx
-  ON guide_refund_request (status, created_at);
-CREATE INDEX IF NOT EXISTS guide_refund_request_teacher_idx
-  ON guide_refund_request (teacher_id, status);
-ALTER TABLE guide_refund_request ENABLE ROW LEVEL SECURITY;
-
-ALTER TABLE refund
-  ADD COLUMN IF NOT EXISTS guide_refund_request_id uuid REFERENCES guide_refund_request(id) ON DELETE SET NULL;
-
-ALTER TABLE partner_ledger DROP CONSTRAINT IF EXISTS partner_ledger_type_check;
-ALTER TABLE partner_ledger ADD CONSTRAINT partner_ledger_type_check
-  CHECK (entry_type IN ('sale', 'reversal', 'referral_bonus', 'pool_share', 'adjustment', 'age_cost'));
-
--- ---------------------------------------------------------------- backfill
-
--- Opened: the paid topic an enrollment last opened (its last_seen_at)...
-UPDATE course_enrollment e SET first_opened_at = e.last_seen_at
-FROM cms_lesson l
-WHERE e.first_opened_at IS NULL AND e.last_lesson_id = l.id AND NOT l.is_preview
-  AND e.last_seen_at IS NOT NULL;
-
--- ...or the earliest logged view of a paid topic by the student since enrolling.
-UPDATE course_enrollment e SET first_opened_at = v.first_view
-FROM (
-  SELECT e2.id, min(cv.started_at) AS first_view
-  FROM course_enrollment e2
-  JOIN ca_view cv ON cv.user_id = e2.user_id AND cv.course_id = e2.course_id
-    AND cv.lesson_id IS NOT NULL AND cv.started_at >= e2.created_at
-  JOIN cms_lesson l ON l.id = cv.lesson_id AND NOT l.is_preview
-  GROUP BY e2.id
-) v
-WHERE e.id = v.id AND (e.first_opened_at IS NULL OR v.first_view < e.first_opened_at);
-
--- 043 (amended): sale settlement
-ALTER TABLE partner_ledger ADD COLUMN IF NOT EXISTS settled_at timestamptz;
-CREATE INDEX IF NOT EXISTS partner_ledger_unsettled_idx
-  ON partner_ledger (payable_at) WHERE entry_type = 'sale' AND settled_at IS NULL;
-
--- 044: the contact inbox
-CREATE TABLE IF NOT EXISTS contact_thread (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  token text NOT NULL UNIQUE,
-  user_id text REFERENCES "user"(id) ON DELETE SET NULL,
-  name text NOT NULL,
-  email text NOT NULL,
-  topic text NOT NULL DEFAULT 'general',
-  subject text NOT NULL,
-  status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'done')),
-  ip text,
-  user_agent text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  last_message_at timestamptz NOT NULL DEFAULT now(),
-  last_member_at timestamptz NOT NULL DEFAULT now(),
-  last_staff_at timestamptz,
-  member_read_at timestamptz NOT NULL DEFAULT now(),
-  staff_read_at timestamptz
-);
-CREATE INDEX IF NOT EXISTS contact_thread_user_idx ON contact_thread (user_id, last_message_at DESC);
-CREATE INDEX IF NOT EXISTS contact_thread_inbox_idx ON contact_thread (status, last_message_at DESC);
-
-CREATE TABLE IF NOT EXISTS contact_message (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  thread_id uuid NOT NULL REFERENCES contact_thread(id) ON DELETE CASCADE,
-  author_id text REFERENCES "user"(id) ON DELETE SET NULL,
-  from_staff boolean NOT NULL DEFAULT false,
-  internal boolean NOT NULL DEFAULT false,
-  body text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS contact_message_thread_idx ON contact_message (thread_id, created_at);
+\unrestrict 4nf9jZiE0VKpaxci9LYdPYUS7K1O92AyDYFkx0eoJvOES4ZDuY5U7o0AqsEqBRp
 

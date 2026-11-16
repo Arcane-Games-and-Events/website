@@ -318,7 +318,7 @@
 					{@const img = heroImageUrl(d.hero)}
 					<li use:reveal={{ delay: i * 70 }}>
 						<a
-							href="/age-open/{d.eventId}/decklist/{d.id}"
+							href="/ageopen/{d.eventId}/decklist/{d.id}"
 							class="group relative flex min-h-[220px] flex-col justify-end overflow-hidden border border-ink bg-ink text-paper-bg"
 						>
 							{#if img}
@@ -403,7 +403,7 @@
 								>
 							{/if}
 							<h2 class="ao-cond truncate text-[26px] leading-none font-black uppercase">
-								<a href="/age-open/{g.eventId}" class="hover:text-warm">{g.title}</a>
+								<a href="/ageopen/{g.eventId}" class="hover:text-warm">{g.title}</a>
 							</h2>
 						</div>
 						<p class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
@@ -426,7 +426,7 @@
 						{@const img = heroImageUrl(d.hero)}
 						<li class="border-b border-line even:bg-paper/50">
 							<a
-								href="/age-open/{d.eventId}/decklist/{d.id}"
+								href="/ageopen/{d.eventId}/decklist/{d.id}"
 								class="group grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-3 px-2 py-2.5 transition-colors hover:bg-paper md:grid-cols-[72px_minmax(0,1fr)_160px_120px_96px] md:gap-4 md:px-4"
 							>
 								<span

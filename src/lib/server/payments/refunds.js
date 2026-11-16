@@ -43,6 +43,8 @@ import {
 import { sendOnce } from '$lib/server/billing/notices.js';
 import { applyCourseRefund } from '$lib/server/courses/purchase.js';
 import { settleGuideRefund } from '$lib/server/partner/guideRefunds.js';
+import { wallClockNow } from '$lib/server/dates.js';
+import { circuitByName } from '$lib/server/stores/circuits.js';
 
 const UNSETTLED = new Set([
 	'capturedPendingSettlement',
@@ -647,40 +649,32 @@ const dollars = (c) => `$${(c / 100).toFixed(2)}`;
 
 // ---------------------------------------------------------------- tickets
 
-/** Hours until an event starts (negative once it has). */
 /**
  * Event times are stored as the venue's wall clock (see src/lib/server/dates.js),
- * so "now" has to be expressed the same way before the two are compared.
+ * so "now" has to be expressed the same way before the two are compared. The
+ * circuit's time zone comes from the circuit table (migration 045) when the
+ * caller has it; otherwise the original three circuits' zones, then Central.
  */
 const VENUE_TZ = {
 	'Los Angeles': 'America/Los_Angeles',
 	'St. Louis': 'America/Chicago',
 	'New England': 'America/New_York'
 };
-export function venueNow(circuit, now = new Date()) {
-	const tz = VENUE_TZ[circuit] || 'America/Chicago';
-	const parts = Object.fromEntries(
-		new Intl.DateTimeFormat('en-US', {
-			timeZone: tz,
-			hourCycle: 'h23',
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
-			hour: '2-digit',
-			minute: '2-digit',
-			second: '2-digit'
-		})
-			.formatToParts(now)
-			.map((p) => [p.type, p.value])
-	);
-	return new Date(
-		Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second)
-	);
+export function venueNow(circuit, now = new Date(), timeZone = null) {
+	return wallClockNow(timeZone || VENUE_TZ[circuit] || 'America/Chicago', now);
 }
 
-export function hoursUntil(eventDate, now = new Date(), circuit = null) {
+/** Hours until an event starts (negative once it has). */
+export function hoursUntil(eventDate, now = new Date(), circuit = null, timeZone = null) {
 	if (!eventDate) return Infinity;
-	return (new Date(eventDate).getTime() - venueNow(circuit, now).getTime()) / 3600000;
+	return (new Date(eventDate).getTime() - venueNow(circuit, now, timeZone).getTime()) / 3600000;
+}
+
+/** The event with its circuit's time zone added, for ticketRefundability. */
+export async function withVenueZone(ev) {
+	if (!ev?.circuit) return ev;
+	const c = await circuitByName(ev.circuit).catch(() => null);
+	return c ? { ...ev, timezone: c.timezone } : ev;
 }
 
 /**
@@ -692,7 +686,7 @@ export function ticketRefundability(ticket, event, pendingRequest = null, now = 
 	if (!ticket.transactionId || !(Number(ticket.amountPaid) > 0)) {
 		return { action: 'none', reason: 'This ticket was free.' };
 	}
-	const h = hoursUntil(event?.eventDate, now, event?.circuit);
+	const h = hoursUntil(event?.eventDate, now, event?.circuit, event?.timezone);
 	if (h <= 0) return { action: 'none', reason: 'The event has started.' };
 	if (pendingRequest)
 		return { action: 'none', reason: 'A refund request is waiting for review.', pending: true };
@@ -711,7 +705,8 @@ export async function memberRefundTicket({ user, ticketId, reason = null }) {
 		.where(and(eq(ticketTable.id, ticketId), eq(ticketTable.userId, user.id)))
 		.limit(1);
 	if (!t) return { ok: false, status: 'failed', message: 'Ticket not found.' };
-	const [ev] = await db.select().from(eventTable).where(eq(eventTable.id, t.eventId)).limit(1);
+	const [row] = await db.select().from(eventTable).where(eq(eventTable.id, t.eventId)).limit(1);
+	const ev = await withVenueZone(row);
 	const [pending] = await db
 		.select({ id: refundRequest.id })
 		.from(refundRequest)

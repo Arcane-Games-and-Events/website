@@ -2,8 +2,9 @@ import { redirect, error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { bump } from '$lib/server/cache/index.js';
 import { publish, staffTopic } from '$lib/server/realtime.js';
-import { event, ticket, user, eventStaff } from '$lib/server/db/schema.js';
+import { event, ticket, user } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
+import { canWorkEvent } from '$lib/server/stores/portal.js';
 
 export async function load({ params, locals }) {
 	// Require authentication
@@ -11,14 +12,8 @@ export async function load({ params, locals }) {
 		throw redirect(302, '/login');
 	}
 
-	// Check if user is assigned to this event
-	const assignment = await db
-		.select()
-		.from(eventStaff)
-		.where(and(eq(eventStaff.userId, locals.user.id), eq(eventStaff.eventId, params.eventId)))
-		.limit(1);
-
-	if (assignment.length === 0) {
+	// Assigned staff, or the people who run the store that runs it.
+	if (!(await canWorkEvent(locals.user, params.eventId))) {
 		throw error(403, 'You are not assigned to this event');
 	}
 
@@ -80,14 +75,8 @@ export const actions = {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
-		// Verify staff assignment
-		const assignment = await db
-			.select()
-			.from(eventStaff)
-			.where(and(eq(eventStaff.userId, locals.user.id), eq(eventStaff.eventId, params.eventId)))
-			.limit(1);
-
-		if (assignment.length === 0) {
+		// Verify staff assignment (or the store that runs it)
+		if (!(await canWorkEvent(locals.user, params.eventId))) {
 			return fail(403, { error: 'You are not assigned to this event' });
 		}
 
