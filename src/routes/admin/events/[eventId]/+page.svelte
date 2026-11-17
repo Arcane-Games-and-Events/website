@@ -341,6 +341,12 @@
 			label: 'Cancelled',
 			note: 'Called off. Clears the staff assigned to it.',
 			tone: 'var(--color-fade)'
+		},
+		{
+			id: 'unpublished',
+			label: 'Unpublished',
+			note: 'Taken off the site; no new tickets. Tickets sold are kept. Set Upcoming to put it back.',
+			tone: 'var(--color-ink)'
 		}
 	];
 	const currentStatus = $derived(STATUSES.find((x) => x.id === displayStatus) ?? STATUSES[0]);

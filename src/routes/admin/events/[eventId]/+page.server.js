@@ -13,6 +13,7 @@ import { listHeroNames } from '$lib/server/cards/heroes.js';
 import { eventPeriod, rebuildStandings } from '$lib/server/standings/rebuild.js';
 import { listCircuits } from '$lib/server/stores/circuits.js';
 import { FORMATS } from '$lib/server/stores/portal.js';
+import { logStoreActivity } from '$lib/server/stores/admin.js';
 import {
 	listEventHeroes,
 	replaceEventHeroes,
@@ -637,12 +638,22 @@ export const actions = {
 		const formData = await request.formData();
 		const newStatus = formData.get('status');
 
-		const validStatuses = ['upcoming', 'in_progress', 'completed', 'cancelled'];
+		const validStatuses = ['upcoming', 'in_progress', 'completed', 'cancelled', 'unpublished'];
 		if (!validStatuses.includes(newStatus)) {
 			return fail(400, { error: 'Invalid status' });
 		}
+		if (newStatus === 'unpublished' && locals.user.role !== 'admin') {
+			return fail(403, { error: 'Only admins can unpublish an event' });
+		}
 
 		try {
+			const [before] = await db
+				.select({ status: event.status, storeId: event.storeId, title: event.title })
+				.from(event)
+				.where(eq(event.id, params.eventId))
+				.limit(1);
+			if (!before) return fail(404, { error: 'Event not found' });
+
 			const updateData = { status: newStatus };
 
 			// If marking as completed, set closedAt and closedBy
@@ -669,10 +680,23 @@ export const actions = {
 
 			await bump('events', ...affectedStaff.map((s) => `user:${s.userId}`));
 
+			// A store sees in its activity when AGE takes its event down or puts it back.
+			const wasHidden = before.status === 'unpublished';
+			if (before.storeId && wasHidden !== (newStatus === 'unpublished')) {
+				await logStoreActivity(
+					before.storeId,
+					locals.user.id,
+					wasHidden ? 'event_republished' : 'event_unpublished',
+					{ eventId: params.eventId, note: before.title }
+				);
+			}
+
 			const statusMessage =
-				newStatus === 'completed' || newStatus === 'cancelled'
-					? `Event status updated to ${newStatus.replace('_', ' ')}. Staff assignments have been cleared.`
-					: `Event status updated to ${newStatus.replace('_', ' ')}`;
+				newStatus === 'unpublished'
+					? 'Unpublished. The event is off the site and nobody can buy a ticket; tickets already sold are kept.'
+					: newStatus === 'completed' || newStatus === 'cancelled'
+						? `Event status updated to ${newStatus.replace('_', ' ')}. Staff assignments have been cleared.`
+						: `Event status updated to ${newStatus.replace('_', ' ')}`;
 
 			return {
 				success: true,

@@ -405,6 +405,40 @@
 		{/if}
 	</section>
 
+	{#if data.storeEvents.length}
+		<!-- events stores scheduled themselves (live without approval) -->
+		<section class="mt-14">
+			<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
+				<h2
+					class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
+				>
+					<span class="text-[8px] text-hero-rb">◆</span>New store events
+				</h2>
+				<span class="text-[11px] text-fade">Scheduled by stores in the last two weeks</span>
+			</div>
+			<ul class="mt-4 flex flex-col gap-5">
+				{#each data.storeEvents as e (e.id)}
+					<li>
+						<p class="mb-1.5 text-[11.5px] text-soft">
+							<a href="/admin/stores/{e.storeSlug}" class="font-semibold text-ink hover:underline"
+								>{e.storeName}</a
+							>
+							· scheduled {ago(e.createdAt)}
+						</p>
+						<ul>
+							<EventRow
+								{e}
+								href="/admin/events/{e.id}"
+								color={circuitVar(e.circuit)}
+								now={data.now}
+							/>
+						</ul>
+					</li>
+				{/each}
+			</ul>
+		</section>
+	{/if}
+
 	<!-- recent orders -->
 	<section class="mt-14">
 		<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">

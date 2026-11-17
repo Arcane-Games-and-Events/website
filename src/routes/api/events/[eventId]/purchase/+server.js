@@ -58,7 +58,8 @@ export async function POST({ params, request, locals, cookies, url, getClientAdd
 		);
 
 	const [ev] = await db.select().from(eventTable).where(eq(eventTable.id, params.eventId)).limit(1);
-	if (!ev) return json({ error: 'Event not found' }, { status: 404 });
+	if (!ev || ev.status === 'unpublished')
+		return json({ error: 'Event not found' }, { status: 404 });
 	if (ev.status === 'cancelled')
 		return json({ error: 'This event has been cancelled.' }, { status: 400 });
 	if (ev.eventDate) {

@@ -76,6 +76,8 @@
 		event_created: 'Event scheduled',
 		event_updated: 'Event changed',
 		event_cancelled: 'Event cancelled',
+		event_unpublished: 'Event unpublished by AGE',
+		event_republished: 'Event published again',
 		staff_added: 'Staff added',
 		staff_removed: 'Staff removed',
 		statement_locked: 'Statement locked',
@@ -86,6 +88,7 @@
 		store_created: 'var(--color-ink)',
 		event_created: 'var(--cc)',
 		event_cancelled: 'var(--color-hero-rb)',
+		event_unpublished: 'var(--color-hero-rb)',
 		member_removed: 'var(--color-hero-rb)',
 		statement_paid: 'var(--color-prem)'
 	};

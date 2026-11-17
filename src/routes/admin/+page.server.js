@@ -1,5 +1,11 @@
 import { adminCounts, orderAnalytics, ticketStatsByEvent } from '$lib/server/admin/dashboard.js';
-import { attention, memberFigures, nextEvents, recentOrders } from '$lib/server/admin/home.js';
+import {
+	attention,
+	memberFigures,
+	newStoreEvents,
+	nextEvents,
+	recentOrders
+} from '$lib/server/admin/home.js';
 import { monthlyLedger } from '$lib/server/admin/revenue.js';
 import { cachedMessageCounts } from '$lib/server/contact/inbox.js';
 import { readyPayoutCount } from '$lib/server/stores/payouts.js';
@@ -11,19 +17,31 @@ const safe = (promise, fallback) =>
 	});
 
 export async function load({ locals }) {
-	const [counts, revenue, members, needs, events, orders, ticketStats, ledger, contact, storePay] =
-		await Promise.all([
-			safe(adminCounts(), null),
-			safe(orderAnalytics(), null),
-			safe(memberFigures(), null),
-			safe(attention(), null),
-			safe(nextEvents(5), []),
-			safe(recentOrders(5), []),
-			safe(ticketStatsByEvent(), {}),
-			safe(monthlyLedger({ months: 12 }), null),
-			cachedMessageCounts(locals.user),
-			safe(readyPayoutCount(), 0)
-		]);
+	const [
+		counts,
+		revenue,
+		members,
+		needs,
+		events,
+		orders,
+		ticketStats,
+		ledger,
+		contact,
+		storePay,
+		storeEvents
+	] = await Promise.all([
+		safe(adminCounts(), null),
+		safe(orderAnalytics(), null),
+		safe(memberFigures(), null),
+		safe(attention(), null),
+		safe(nextEvents(5), []),
+		safe(recentOrders(5), []),
+		safe(ticketStatsByEvent(), {}),
+		safe(monthlyLedger({ months: 12 }), null),
+		cachedMessageCounts(locals.user),
+		safe(readyPayoutCount(), 0),
+		safe(newStoreEvents(), [])
+	]);
 
 	return {
 		firstName: locals.user?.firstName || '',
@@ -38,6 +56,11 @@ export async function load({ locals }) {
 		members,
 		needs: needs ? { ...needs, inboxUnread: contact.inbox, storePayouts: storePay } : null,
 		events: events.map((e) => ({
+			...e,
+			players: ticketStats[e.id]?.sold ?? 0,
+			revenue: ticketStats[e.id]?.revenue ?? 0
+		})),
+		storeEvents: storeEvents.map((e) => ({
 			...e,
 			players: ticketStats[e.id]?.sold ?? 0,
 			revenue: ticketStats[e.id]?.revenue ?? 0

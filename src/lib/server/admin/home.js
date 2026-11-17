@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db/index.js';
-import { event, order } from '$lib/server/db/schema.js';
-import { asc, desc, gte, sql } from 'drizzle-orm';
+import { event, order, store } from '$lib/server/db/schema.js';
+import { asc, desc, eq, gte, sql } from 'drizzle-orm';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import { mrrCents } from '$lib/server/admin/util.js';
 
@@ -120,6 +120,39 @@ export function nextEvents(limit = 5) {
 				.from(event)
 				.where(gte(event.eventDate, sql`now()`))
 				.orderBy(asc(event.eventDate))
+				.limit(limit),
+		{ tags: ['events'], ttl: CACHE_TTL.FIVE_MINUTES }
+	);
+}
+
+/**
+ * Events stores scheduled themselves in the last `days` days, newest
+ * first. They go live without approval, so the admin home shows them for
+ * a look (and an Unpublish if something's wrong).
+ */
+export function newStoreEvents({ days = 14, limit = 5 } = {}) {
+	return cached(
+		`admin:home:new-store-events:${days}:${limit}`,
+		() =>
+			db
+				.select({
+					id: event.id,
+					title: event.title,
+					circuit: event.circuit,
+					eventDate: event.eventDate,
+					status: event.status,
+					playerCap: event.playerCap,
+					location: event.location,
+					format: event.format,
+					price: event.price,
+					createdAt: event.createdAt,
+					storeName: store.name,
+					storeSlug: store.slug
+				})
+				.from(event)
+				.innerJoin(store, eq(store.id, event.storeId))
+				.where(gte(event.createdAt, sql`now() - make_interval(days => ${days})`))
+				.orderBy(desc(event.createdAt))
 				.limit(limit),
 		{ tags: ['events'], ttl: CACHE_TTL.FIVE_MINUTES }
 	);

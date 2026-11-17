@@ -36,13 +36,15 @@
 	const stub = $derived(
 		status === 'cancelled'
 			? 'Cancelled'
-			: status === 'completed' || (days != null && days < 0)
-				? 'Played'
-				: days === 0
-					? 'Today'
-					: days === 1
-						? 'Tomorrow'
-						: `In ${days} days`
+			: status === 'unpublished'
+				? 'Unpublished'
+				: status === 'completed' || (days != null && days < 0)
+					? 'Played'
+					: days === 0
+						? 'Today'
+						: days === 1
+							? 'Tomorrow'
+							: `In ${days} days`
 	);
 	const fill = $derived(ev.playerCap ? Math.min(100, (ev.players / ev.playerCap) * 100) : 0);
 	const publicUrl = $derived(`${page.url.origin}/ageopen/${ev.id}`);
@@ -172,6 +174,14 @@
 				<p class="mt-2 text-[13px] text-soft">
 					{ev.location}{ev.address ? ` · ${ev.address}` : ''}
 				</p>
+				{#if status === 'unpublished'}
+					<p class="mt-3 border-l-[3px] border-hero-rb bg-hero-rb/10 px-3 py-2 text-[12.5px]">
+						AGE has taken this event off the site, so nobody can find it or buy a ticket. Tickets
+						already sold are kept. <a href="/contact" class="font-semibold underline"
+							>Write to AGE</a
+						> to ask about it.
+					</p>
+				{/if}
 			</div>
 
 			<div class="grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">

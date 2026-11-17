@@ -8,6 +8,11 @@ import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import { listCards, publicCard } from '$lib/server/payments/cards.js';
 import { acceptConfig } from '$lib/server/payments/accept-config.js';
 import { userHasPremiumAccess } from '$lib/server/articles/access.js';
+import { isAdmin } from '$lib/server/auth/roles.js';
+import { runsEventStore } from '$lib/server/stores/portal.js';
+
+const canSeeUnpublished = async (account, ev) =>
+	isAdmin(account) || (!!ev.storeId && (await runsEventStore(account, ev.id)));
 
 /**
  * Cached fetch for the public event row. Any event write makes it stale.
@@ -69,6 +74,11 @@ export async function load({ params, locals }) {
 		]);
 
 		if (!eventData) throw error(404, 'Event not found');
+		// An event an admin unpublished is gone for everyone but admins and
+		// the people running the store's events.
+		if (eventData.status === 'unpublished' && !(await canSeeUnpublished(locals.user, eventData))) {
+			throw error(404, 'Event not found');
+		}
 
 		// Check if user is premium for discount display
 		const isPremium = userHasPremiumAccess(locals.user);

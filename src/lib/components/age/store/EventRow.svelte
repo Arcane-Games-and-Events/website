@@ -23,7 +23,7 @@
 	const fmt = (o) => (d ? d.toLocaleString('en-US', { timeZone: 'UTC', ...o }) : '');
 	const status = $derived(e.status || 'upcoming');
 	const past = $derived(status === 'completed' || (d ? d.getTime() + 86400000 <= now : false));
-	const off = $derived(status === 'cancelled');
+	const off = $derived(status === 'cancelled' || status === 'unpublished');
 	const live = $derived(status === 'in_progress' && !off);
 	const ahead = $derived(!past && !off);
 	const full = $derived(e.playerCap && e.players >= e.playerCap);
@@ -32,7 +32,9 @@
 	const days = $derived(d ? Math.max(0, dateOnly(d.getTime()) - dateOnly(now)) : null);
 	const label = $derived(
 		off
-			? 'Cancelled'
+			? status === 'unpublished'
+				? 'Unpublished'
+				: 'Cancelled'
 			: live
 				? 'Live now'
 				: past
