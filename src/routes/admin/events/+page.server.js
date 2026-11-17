@@ -2,6 +2,7 @@ import { listRecentEvents, ticketStatsByEvent } from '$lib/server/admin/dashboar
 
 function getEmptyEventsData() {
 	return {
+		now: Date.now(),
 		events: [],
 		eventAnalytics: {
 			totalEvents: 0,
@@ -131,7 +132,8 @@ export async function load() {
 
 		return {
 			events,
-			eventAnalytics
+			eventAnalytics,
+			now: Date.now()
 		};
 	} catch (error) {
 		console.error('Failed to load admin events data:', error);

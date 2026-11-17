@@ -1,5 +1,5 @@
 <script>
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminHeader, { btnLine as hbtnLine } from '$lib/components/age/admin/AdminHeader.svelte';
 	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import Figures from '$lib/components/age/admin/Figures.svelte';
 	import Section from '$lib/components/age/admin/Section.svelte';
@@ -159,20 +159,14 @@
 
 <svelte:head><title>Members · Admin</title></svelte:head>
 
-<DeskHeader
-	kicker="Admin"
+<AdminHeader
 	title="Members"
 	subtitle="{ui.fmt(data.stats.totalUsers)} accounts · search, change roles, manage removals."
 >
-	{#snippet actions(compact)}
-		<a
-			href="/admin/analytics?view=members"
-			class="inline-flex items-center border border-paper-bg/30 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-paper-bg/10 {compact
-				? 'h-[30px]'
-				: 'h-[36px]'}">Report →</a
-		>
+	{#snippet actions()}
+		<a href="/admin/analytics?view=members" class={hbtnLine}>Report →</a>
 	{/snippet}
-</DeskHeader>
+</AdminHeader>
 <AdminTabs />
 
 {#if successMessage}

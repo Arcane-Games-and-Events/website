@@ -122,6 +122,7 @@ export function toLibraryItem(row, uploader = null) {
 		uploaderName: uploader,
 		derivedFrom: row.derivedFrom ?? null,
 		courseId: row.courseId ?? null,
+		entryId: row.entryId ?? null,
 		createdAt: row.createdAt
 	};
 }
@@ -132,10 +133,11 @@ export function toLibraryItem(row, uploader = null) {
  * In the Classroom each course has its own images: pass `course` (the
  * caller has checked the user manages it) for that course's images, whoever
  * uploaded them, or `older` for Classroom uploads not yet filed under a
- * course (the user's own; admins' and editors' see everyone's).
+ * course (the user's own; admins' and editors' see everyone's). The Desk
+ * works the same way with `entry`: an article's or video's own images.
  *
  * @param {any} user
- * @param {{ library?: 'content' | 'classroom' | 'studio', course?: string | null, older?: boolean, q?: string, scope?: 'mine' | 'all', uploader?: string, sort?: 'new' | 'old' | 'name', before?: string, offset?: number }} opts
+ * @param {{ library?: 'content' | 'classroom' | 'studio', course?: string | null, entry?: string | null, older?: boolean, q?: string, scope?: 'mine' | 'all', uploader?: string, sort?: 'new' | 'old' | 'name', before?: string, offset?: number }} opts
  */
 export async function listMedia(user, opts = {}) {
 	const library = libraryOf(opts.library);
@@ -143,8 +145,11 @@ export async function listMedia(user, opts = {}) {
 	const where = [eq(deskMedia.status, 'ready'), eq(deskMedia.library, library)];
 	if (library === 'classroom' && opts.course && !opts.older) {
 		where.push(eq(deskMedia.courseId, opts.course));
+	} else if (library === 'content' && opts.entry && !opts.older) {
+		where.push(eq(deskMedia.entryId, opts.entry));
 	} else {
 		if (library === 'classroom' && opts.older) where.push(isNull(deskMedia.courseId));
+		if (library === 'content' && opts.entry && opts.older) where.push(isNull(deskMedia.entryId));
 		if (!all || opts.scope === 'mine') where.push(eq(deskMedia.uploadedBy, user.id));
 		else if (opts.uploader) where.push(eq(deskMedia.uploadedBy, opts.uploader));
 	}
@@ -383,8 +388,15 @@ export async function mediaUsage(ids) {
  * @param {{ filename: string, mimeType: string, size: number }} file
  * @param {'content' | 'classroom' | 'studio'} [library]
  * @param {string | null} [courseId]  the course a Classroom upload belongs to
+ * @param {string | null} [entryId]  the entry a Desk upload belongs to
  */
-export async function createUpload(user, file, library = 'content', courseId = null) {
+export async function createUpload(
+	user,
+	file,
+	library = 'content',
+	courseId = null,
+	entryId = null
+) {
 	const mimeType = String(file.mimeType || '').toLowerCase();
 	if (!ACCEPTED_TYPES.test(mimeType)) {
 		throw new MediaError(400, 'Use a JPEG, PNG, WebP, AVIF, GIF or SVG image.');
@@ -419,7 +431,8 @@ export async function createUpload(user, file, library = 'content', courseId = n
 			fileSize: size || null,
 			status: 'uploading',
 			library: libraryOf(library),
-			courseId: libraryOf(library) === 'classroom' ? courseId || null : null
+			courseId: libraryOf(library) === 'classroom' ? courseId || null : null,
+			entryId: libraryOf(library) === 'content' ? entryId || null : null
 		})
 		.returning();
 	return { media: toLibraryItem(row), uploadUrl: signed.signedUrl, token: signed.token };
@@ -546,6 +559,7 @@ export async function deriveMedia(user, source, edit) {
 			// a crop or rotation stays in the library it came from
 			library: libraryOf(source.library),
 			courseId: source.courseId ?? null,
+			entryId: source.entryId ?? null,
 			fileSize: out.buffer.length,
 			status: 'processing'
 		})

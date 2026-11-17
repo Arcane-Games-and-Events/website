@@ -77,6 +77,9 @@ const MOVED = [
 	// Bonus gameplay moved to the Studio (2026-10-30).
 	[/^\/desk\/videos\/?$/, '/studio/media'],
 	[/^\/desk\/videos\/vod\/([^/]+)\/?$/, '/studio/media/$1/analytics'],
+	// Desk images and article videos are managed inside each entry (2026-11-16).
+	[/^\/desk\/images\/?$/, '/desk/entries'],
+	[/^\/desk\/videos\/articles\/?$/, '/desk/entries'],
 	// Matches moved to the Library; the network became partners (2026-11-03).
 	[/^\/studios\/gameplay\/?$/, '/library/matches'],
 	[/^\/studios\/network(\/|$)/, '/studios/partners$1'],

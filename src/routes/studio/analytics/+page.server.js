@@ -3,14 +3,17 @@ import { videoOverview } from '$lib/server/contentAnalytics/video.js';
 import { parseRange } from '$lib/server/contentAnalytics/query.js';
 import { muxAreaData } from '$lib/server/video/muxData.js';
 
-const AREAS = ['studio', 'gameplay', 'podcast', 'interview', 'video'];
+// Bonus matches' numbers are in the Desk, on each match.
+const AREAS = ['studio', 'podcast', 'interview', 'video'];
 
 /** /studio/analytics?kind=…&days=… — how the Studio's media is doing, all of it or one kind. */
 export async function load({ url }) {
 	const asked = url.searchParams.get('kind');
 	const area = AREAS.includes(asked) ? asked : 'studio';
 	const days = parseRange(url.searchParams.get('days'));
-	const items = (await listItems()).filter((i) => area === 'studio' || i.kind === area);
+	const items = (await listItems()).filter(
+		(i) => i.kind !== 'gameplay' && (area === 'studio' || i.kind === area)
+	);
 	const report = await videoOverview(area, days);
 	const mux = await muxAreaData(
 		items.map((i) => i.video.assetId),

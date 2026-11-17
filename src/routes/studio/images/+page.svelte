@@ -1,6 +1,6 @@
 <script>
-	/** The same image library page as the Desk's, showing the Studio's images. */
-	import ImagesPage from '../../desk/images/+page.svelte';
+	/** The image library page, showing the Studio's images. */
+	import ImagesPage from '$lib/desk/media/LibraryPage.svelte';
 
 	let { data } = $props();
 </script>

@@ -2,8 +2,8 @@
  * Calculate premium discount for an event.
  *
  * Events on or before April 13, 2026 use the legacy 10% discount.
- * Events after that date use a $10 flat discount.
- * If the event price is $10 or less with the flat discount, it's free.
+ * Events after that date use a $5 flat discount ($10 until November 2026).
+ * If the event price is $5 or less with the flat discount, it's free.
  *
  * @param {number} price - The event's base price
  * @param {Date|string|null} eventDate - The event's date
@@ -23,11 +23,11 @@ export function calculatePremiumDiscount(price, eventDate) {
 		};
 	}
 
-	// New: $10 flat discount
-	const discountAmount = Math.min(10, price);
+	// New: $5 flat discount
+	const discountAmount = Math.min(5, price);
 	return {
 		finalPrice: Math.max(price - discountAmount, 0),
 		discountAmount,
-		discountLabel: '$10'
+		discountLabel: '$5'
 	};
 }

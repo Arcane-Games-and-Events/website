@@ -1,5 +1,5 @@
 <script>
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminHeader from '$lib/components/age/admin/AdminHeader.svelte';
 	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import AdminSubnav from '$lib/components/age/admin/AdminSubnav.svelte';
 	import RevenueView from '$lib/components/age/admin/analytics/RevenueView.svelte';
@@ -24,13 +24,11 @@
 
 <svelte:head><title>{title} · Analytics · Admin</title></svelte:head>
 
-<DeskHeader kicker="Admin · Analytics" {title} {subtitle}>
-	{#snippet actions(compact)}
+<AdminHeader kicker="Admin · Analytics" {title} {subtitle}>
+	{#snippet actions()}
 		{#if view === 'site'}
 			<div
-				class="flex gap-px border border-paper-bg/25 bg-paper-bg/25 {compact
-					? 'h-[30px]'
-					: 'h-[36px]'}"
+				class="flex h-[40px] gap-px border border-paper-bg/25 bg-paper-bg/25"
 				role="group"
 				aria-label="Date range"
 			>
@@ -47,7 +45,7 @@
 			</div>
 		{/if}
 	{/snippet}
-</DeskHeader>
+</AdminHeader>
 <AdminTabs />
 <AdminSubnav
 	label="Analytics"

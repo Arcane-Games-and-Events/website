@@ -44,18 +44,19 @@
 
 <svelte:head><title>Studio</title></svelte:head>
 
-<DeskHeader title="Studio" subtitle="Gameplay, podcasts, interviews and video.">
+<DeskHeader title="Studio" subtitle="Podcasts, interviews and video.">
 	{#snippet actions(compact)}
-		{#each KINDS as k (k.id)}
+		<!-- Bonus matches are uploaded in the Desk. -->
+		{#each KINDS.filter((x) => x.id !== 'gameplay') as k (k.id)}
 			<a
 				href="/studio/media/new?kind={k.id}"
 				class="{compact
 					? 'h-8 px-2.5 text-[9px]'
 					: 'h-10 px-4 text-[10px]'} inline-flex items-center font-extrabold tracking-[0.14em] uppercase transition-colors {k.id ===
-				'gameplay'
+				'podcast'
 					? 'bg-gold text-ink hover:bg-paper-bg'
 					: 'border border-paper-bg/40 text-paper-bg hover:border-paper-bg'} {compact &&
-				k.id !== 'gameplay'
+				k.id !== 'podcast'
 					? 'hidden sm:inline-flex'
 					: ''}">{compact ? `+ ${k.short}` : k.newLabel}</a
 			>

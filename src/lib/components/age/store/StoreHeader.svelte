@@ -22,11 +22,13 @@
 		{ id: 'season', href: base, label: 'Season' },
 		{ id: 'events', href: `${base}/events`, label: 'Events' },
 		{ id: 'calendar', href: `${base}/calendar`, label: 'Calendar' },
+		{ id: 'payouts', href: `${base}/payouts`, label: 'Payouts' },
 		{ id: 'members', href: `${base}/members`, label: 'Members' }
 	]);
 	const current = $derived.by(() => {
 		const rest = page.url.pathname.slice(base.length);
-		for (const t of ['events', 'calendar', 'members']) if (rest.startsWith(`/${t}`)) return t;
+		for (const t of ['events', 'calendar', 'payouts', 'members'])
+			if (rest.startsWith(`/${t}`)) return t;
 		return 'season';
 	});
 	const place = $derived([s.city, s.state].filter(Boolean).join(', '));

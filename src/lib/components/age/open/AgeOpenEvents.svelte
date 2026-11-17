@@ -197,7 +197,7 @@
 		[
 			'−10%',
 			'Member pricing',
-			'AGE Premium members save 10% on every entry, all season.',
+			'AGE Premium members save $5 on every entry, all season.',
 			'text-prem'
 		]
 	];
@@ -344,7 +344,7 @@
 											>
 											{#if e.discount}<span
 													class="text-[8.5px] font-extrabold tracking-[0.14em] text-prem uppercase"
-													>Members save 10%</span
+													>Members save $5</span
 												>{/if}
 										</span>
 										<span

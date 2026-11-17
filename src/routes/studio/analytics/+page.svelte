@@ -8,7 +8,10 @@
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
-	const AREAS = [['studio', 'Everything'], ...KINDS.map((k) => [k.id, k.label])];
+	const AREAS = [
+		['studio', 'Everything'],
+		...KINDS.filter((k) => k.id !== 'gameplay').map((k) => [k.id, k.label])
+	];
 	const hrefFor = (a) => {
 		const p = new URLSearchParams($page.url.searchParams);
 		if (a === 'studio') p.delete('kind');

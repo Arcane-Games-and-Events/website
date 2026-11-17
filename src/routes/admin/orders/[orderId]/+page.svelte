@@ -1,5 +1,5 @@
 <script>
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminHeader from '$lib/components/age/admin/AdminHeader.svelte';
 	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import Figures from '$lib/components/age/admin/Figures.svelte';
 	import { enhance } from '$app/forms';
@@ -83,21 +83,14 @@
 <svelte:head><title>Order · {data.order.id.slice(0, 8)} · Admin</title></svelte:head>
 
 <!-- ============ HEADER ============ -->
-<DeskHeader
-	kicker="Admin"
+<AdminHeader
+	trail={[{ href: '/admin/orders', label: 'Orders' }]}
 	title="Order {data.order.id.slice(0, 8)}"
 	subtitle="{typeLabel(data.order.meta?.type)} · {formatDateTime(data.order.createdAt)}"
 />
 <AdminTabs />
 <div class="mx-auto w-full max-w-[1200px] px-5 pt-6 md:px-8">
-	<nav
-		class="flex items-center gap-2 text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-	>
-		<a href="/admin/orders" class="transition-colors hover:text-ink">Orders</a>
-		<span>›</span>
-		<span class="text-warm">{data.order.id.slice(0, 8)}</span>
-	</nav>
-	<div class="mt-4">
+	<div>
 		<Figures
 			cols="md:grid-cols-4"
 			items={[

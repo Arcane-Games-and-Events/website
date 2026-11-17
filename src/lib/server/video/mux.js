@@ -25,6 +25,7 @@ import { bump } from '$lib/server/cache/index.js';
 import {
 	canEditCourses,
 	canOverseeCourses,
+	canManageBonusMatches,
 	canUseStudio,
 	canEditEntry,
 	isAdmin
@@ -205,13 +206,15 @@ async function writePendingVideo(id, fields) {
 // ---------------------------------------------------------------- permissions
 
 /**
- * Who may upload, replace or delete an owner's video. Studio media (gameplay,
- * episodes, interviews): anyone in the Studio. An article: whoever can edit the entry. A lesson or trailer:
+ * Who may upload, replace or delete an owner's video. Bonus matches: editors
+ * and admins (they live in the Desk). Other Studio media (episodes,
+ * interviews): anyone in the Studio. An article: whoever can edit the entry. A lesson or trailer:
  * admins and editors (who oversee every course), or the course's own teacher.
  */
 export async function canManageVideoOf(user, target, row) {
 	if (!user || !row) return false;
-	if (target === 'vod') return canUseStudio(user);
+	if (target === 'vod')
+		return row.kind === 'gameplay' ? canManageBonusMatches(user) : canUseStudio(user);
 	if (target === 'entry') return canEditEntry(user, row.authorId);
 	if (canOverseeCourses(user)) return true;
 	if (!canEditCourses(user)) return false;

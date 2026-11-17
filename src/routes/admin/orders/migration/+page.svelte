@@ -1,6 +1,6 @@
 <script>
 	import { invalidateAll } from '$app/navigation';
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminHeader, { btn as hbtn } from '$lib/components/age/admin/AdminHeader.svelte';
 	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import AdminSubnav from '$lib/components/age/admin/AdminSubnav.svelte';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
@@ -144,20 +144,12 @@
 
 <svelte:head><title>ARB migration — Admin</title></svelte:head>
 
-<DeskHeader
-	kicker="Admin"
+<AdminHeader
 	title="ARB migration"
 	subtitle="Moving members from Authorize.net subscriptions to AGE's own billing."
 >
-	{#snippet actions(compact)}
-		<button
-			type="button"
-			onclick={scanAll}
-			disabled={!!busy}
-			class="inline-flex items-center bg-paper-bg px-3 text-[10px] font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-warm-light disabled:opacity-50 {compact
-				? 'h-[30px]'
-				: 'h-[36px]'}"
-		>
+	{#snippet actions()}
+		<button type="button" onclick={scanAll} disabled={!!busy} class={hbtn}>
 			{busy === 'scan'
 				? `Scanning ${scanProgress ? `${scanProgress.done}/${scanProgress.total}` : '…'}`
 				: data.lastScan
@@ -165,7 +157,7 @@
 					: 'Scan Authorize.net'}
 		</button>
 	{/snippet}
-</DeskHeader>
+</AdminHeader>
 <AdminTabs />
 <AdminSubnav items={ORDERS_SUBNAV} label="Orders" />
 

@@ -1,7 +1,7 @@
 <script>
 	/**
-	 * Studio → Media: everything the Studio makes — bonus gameplay, podcast
-	 * episodes, interviews and other video — with tabs by kind, a filter by
+	 * Studio → Media: everything the Studio makes — podcast episodes,
+	 * interviews and other video (bonus matches are in the Desk) — with tabs by kind, a filter by
 	 * where each is in production, and search. Open one to edit it.
 	 */
 	import { invalidate } from '$app/navigation';
@@ -12,7 +12,9 @@
 	import { uploads } from '$lib/desk/video/uploads.svelte.js';
 	import { pollProcessing } from '$lib/desk/video/poll.js';
 	import { shortDate } from '$lib/desk/video/format.js';
-	import { KIND, KINDS, STAGE, byline } from '$lib/studio/kinds.js';
+	import { KIND, KINDS as ALL_KINDS, STAGE, byline } from '$lib/studio/kinds.js';
+
+	const KINDS = ALL_KINDS.filter((k) => k.id !== 'gameplay');
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -69,7 +71,7 @@
 
 <DeskHeader
 	title="Media"
-	subtitle="Gameplay, podcasts, interviews and video: everything the Studio puts out."
+	subtitle="Podcasts, interviews and video. Bonus matches are uploaded in the Desk."
 >
 	{#snippet actions(compact)}
 		<a

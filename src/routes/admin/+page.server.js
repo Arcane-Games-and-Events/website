@@ -2,6 +2,7 @@ import { adminCounts, orderAnalytics, ticketStatsByEvent } from '$lib/server/adm
 import { attention, memberFigures, nextEvents, recentOrders } from '$lib/server/admin/home.js';
 import { monthlyLedger } from '$lib/server/admin/revenue.js';
 import { cachedMessageCounts } from '$lib/server/contact/inbox.js';
+import { readyPayoutCount } from '$lib/server/stores/payouts.js';
 
 const safe = (promise, fallback) =>
 	promise.catch((err) => {
@@ -10,7 +11,7 @@ const safe = (promise, fallback) =>
 	});
 
 export async function load({ locals }) {
-	const [counts, revenue, members, needs, events, orders, ticketStats, ledger, contact] =
+	const [counts, revenue, members, needs, events, orders, ticketStats, ledger, contact, storePay] =
 		await Promise.all([
 			safe(adminCounts(), null),
 			safe(orderAnalytics(), null),
@@ -19,8 +20,9 @@ export async function load({ locals }) {
 			safe(nextEvents(5), []),
 			safe(recentOrders(5), []),
 			safe(ticketStatsByEvent(), {}),
-			safe(monthlyLedger({ months: 2 }), null),
-			cachedMessageCounts(locals.user)
+			safe(monthlyLedger({ months: 12 }), null),
+			cachedMessageCounts(locals.user),
+			safe(readyPayoutCount(), 0)
 		]);
 
 	return {
@@ -29,9 +31,18 @@ export async function load({ locals }) {
 		revenue,
 		// The ledger (migration 022) is the real figure; orders are the fallback.
 		ledger: ledger?.available ? ledger.figures : null,
+		months: ledger?.available
+			? ledger.months.map((m) => ({ month: m.month, label: m.label, net: m.net }))
+			: [],
+		share: ledger?.available ? ledger.share : null,
 		members,
-		needs: needs ? { ...needs, inboxUnread: contact.inbox } : null,
-		events: events.map((e) => ({ ...e, sold: ticketStats[e.id]?.sold ?? 0 })),
+		needs: needs ? { ...needs, inboxUnread: contact.inbox, storePayouts: storePay } : null,
+		events: events.map((e) => ({
+			...e,
+			players: ticketStats[e.id]?.sold ?? 0,
+			revenue: ticketStats[e.id]?.revenue ?? 0
+		})),
+		now: Date.now(),
 		orders
 	};
 }

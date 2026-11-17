@@ -1,5 +1,5 @@
 <script>
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminHeader, { btn as hbtn } from '$lib/components/age/admin/AdminHeader.svelte';
 	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
@@ -87,21 +87,16 @@
 
 <svelte:head><title>Calendar · Admin</title></svelte:head>
 
-<DeskHeader
-	kicker="Admin"
+<AdminHeader
 	title="LSS calendar"
 	subtitle="Skirmishes, RtN, ProQuests, Callings — the competitive road."
 >
-	{#snippet actions(compact)}
-		<button
-			type="button"
-			onclick={() => (showAddSeasonForm = !showAddSeasonForm)}
-			class="inline-flex items-center bg-paper-bg px-3 text-[10px] font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-warm-light {compact
-				? 'h-[30px]'
-				: 'h-[36px]'}">+ Add event</button
+	{#snippet actions()}
+		<button type="button" onclick={() => (showAddSeasonForm = !showAddSeasonForm)} class={hbtn}
+			>+ Add event</button
 		>
 	{/snippet}
-</DeskHeader>
+</AdminHeader>
 <AdminTabs />
 
 {#if successMessage}

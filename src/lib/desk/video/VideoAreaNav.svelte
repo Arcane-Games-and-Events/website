@@ -22,7 +22,7 @@
 				: 'gameplay'
 	);
 	const AREAS = [
-		{ id: 'gameplay', href: '/studio/media?kind=gameplay', label: 'Gameplay' },
+		{ id: 'gameplay', href: '/desk/matches', label: 'Bonus matches' },
 		{ id: 'articles', href: '/desk/videos/articles', label: 'Articles' }
 	];
 	const shown = $derived(AREAS.filter((a) => areas[a.id]));

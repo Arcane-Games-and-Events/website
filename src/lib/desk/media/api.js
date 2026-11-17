@@ -5,14 +5,16 @@
  * There's a library per tool, and the page decides which one a picker
  * shows: Classroom pages use the Classroom's (inside a course, only that
  * course's images), Studio pages the Studio's (gameplay and episode
- * covers), everything else the Desk's.
+ * covers), everything else the Desk's (inside an entry, only that entry's
+ * images).
  */
 
-/** The library for the page we're on: the Classroom's, the Studio's, or the Desk's. */
+/** The library for the page we're on: the Classroom's, the Studio's (and bonus matches'), or the Desk's. */
 export function currentLibrary() {
 	const path = typeof location !== 'undefined' ? location.pathname : '';
 	if (path.startsWith('/classroom')) return 'classroom';
-	if (/^\/studio(\/|$)/.test(path)) return 'studio';
+	// Bonus matches moved to the Desk; their covers stay in the Studio's library.
+	if (/^\/studio(\/|$)/.test(path) || /^\/desk\/matches(\/|$)/.test(path)) return 'studio';
 	return 'content';
 }
 
@@ -20,6 +22,12 @@ export function currentLibrary() {
 export function currentCourse() {
 	const path = typeof location !== 'undefined' ? location.pathname : '';
 	return path.match(/^\/classroom\/courses\/([0-9a-f-]{36})(\/|$)/i)?.[1] ?? null;
+}
+
+/** The entry whose images a Desk page works with, from /desk/entries/[id]. */
+export function currentEntry() {
+	const path = typeof location !== 'undefined' ? location.pathname : '';
+	return path.match(/^\/desk\/entries\/([0-9a-f-]{36})(\/|$)/i)?.[1] ?? null;
 }
 
 async function call(url, init) {
@@ -42,7 +50,8 @@ const json = (method, data) => ({
 
 /**
  * In a course, the list is that course's images (or, with `older`, the
- * Classroom uploads not yet filed under a course).
+ * Classroom uploads not yet filed under a course); in an entry, the same
+ * for the entry.
  *
  * @param {{ library?: string, older?: boolean, q?: string, scope?: 'mine' | 'all', uploader?: string, sort?: string, offset?: number }} opts
  * @returns {Promise<{ items: any[], nextOffset: number | null, all: boolean }>}
@@ -50,8 +59,10 @@ const json = (method, data) => ({
 export function listLibrary({ older = false, ...opts } = {}) {
 	const p = new URLSearchParams({ library: currentLibrary() });
 	const course = currentCourse();
+	const entry = currentEntry();
 	if (course) p.set('course', course);
-	if (course && older) p.set('older', '1');
+	if (entry) p.set('entry', entry);
+	if ((course || entry) && older) p.set('older', '1');
 	for (const [k, v] of Object.entries(opts)) if (v) p.set(k, String(v));
 	return call(`/api/desk/media?${p}`);
 }

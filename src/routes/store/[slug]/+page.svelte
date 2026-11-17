@@ -10,7 +10,6 @@
 	const d = $derived(data.dash);
 	const base = $derived(`/store/${w.store.slug}`);
 	const color = $derived(w.circuit.color);
-	const pct = (v) => `${Math.round(Number(v) * 10000) / 100}%`;
 </script>
 
 <svelte:head><title>Season · {w.store.name}</title></svelte:head>
@@ -21,8 +20,8 @@
 	<NextUp next={d.next} now={d.now} {base} {color} canAdd={w.store.active} />
 
 	<!-- your numbers -->
-	<dl class="mt-10 grid grid-cols-2 border-t-[3px] border-ink md:grid-cols-4">
-		{#each [{ label: `Players in ${d.year}`, value: ui.fmt(d.players), note: 'across your Opens' }, { label: 'Ticket sales', value: ui.money(d.sales, 0), note: 'after refunds' }, { label: 'Your share', value: data.share != null ? pct(data.share) : '—', note: data.share != null ? 'of ticket sales' : 'AGE sets this soon' }, { label: 'Owed to you', value: ui.money(data.owedCents / 100), note: 'paid monthly', tone: data.owedCents ? 'text-prem' : '' }] as f, i (f.label)}
+	<dl class="mt-10 grid grid-cols-2 border-t-[3px] border-ink md:grid-cols-3">
+		{#each [{ label: `Players in ${d.year}`, value: ui.fmt(d.players), note: 'across your Opens' }, { label: 'Ticket sales', value: ui.money(d.sales, 0), note: 'after refunds' }, { label: 'Owed to you', value: ui.money(data.owedCents / 100), note: 'paid after each event', tone: data.owedCents ? 'text-prem' : '' }] as f, i (f.label)}
 			<div
 				class="border-b border-line2 py-4 pr-4 {i % 2 ? 'pl-4 md:pl-5' : ''} {i > 1
 					? 'md:pl-5'

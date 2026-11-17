@@ -7,6 +7,10 @@ import {
 	MediaError
 } from '$lib/server/media/library.js';
 import { managedCourse } from '$lib/server/courses/access.js';
+import { db } from '$lib/server/db/index.js';
+import { deskEntry } from '$lib/server/db/schema.js';
+import { canEditEntry } from '$lib/server/auth/roles.js';
+import { eq } from 'drizzle-orm';
 
 /** A Classroom request names its course; the user must manage it. */
 async function courseFor(user, library, value) {
@@ -17,14 +21,29 @@ async function courseFor(user, library, value) {
 	return r.course.id;
 }
 
+/** A Desk request names its entry; the user must be able to edit it. */
+async function entryFor(user, library, value) {
+	if (library !== 'content' || !value) return null;
+	if (!/^[0-9a-f-]{36}$/i.test(String(value))) throw error(400, 'Bad entry');
+	const [row] = await db
+		.select({ id: deskEntry.id, authorId: deskEntry.authorId })
+		.from(deskEntry)
+		.where(eq(deskEntry.id, String(value)))
+		.limit(1);
+	if (!row) throw error(404, 'No such entry');
+	if (!canEditEntry(user, row.authorId)) throw error(403, 'Not your entry');
+	return row.id;
+}
+
 /**
- * GET /api/desk/media?library=content|classroom|studio&course=&older=1&q=&scope=mine|all&uploader=&sort=new|old|name&offset=
+ * GET /api/desk/media?library=content|classroom|studio&course=&entry=&older=1&q=&scope=mine|all&uploader=&sort=new|old|name&offset=
  *   One page of one image library. Uploaders only ever get their own images;
  *   admins and editors can see everyone's. In the Classroom, `course` gives
  *   that course's images (for anyone who manages the course) and `older`
- *   the uploads not yet filed under a course.
+ *   the uploads not yet filed under a course. In the Desk, `entry` does the
+ *   same for an article or video entry (for anyone who can edit it).
  *
- * POST /api/desk/media  { filename, mimeType, size, library, course }
+ * POST /api/desk/media  { filename, mimeType, size, library, course, entry }
  *   Starts an upload: creates the library row and returns a signed URL the
  *   browser uploads the file to directly. Then POST /api/desk/media/[id]/process.
  */
@@ -34,9 +53,11 @@ export async function GET({ url, locals }) {
 	const library = libraryOf(url.searchParams.get('library'));
 	if (!canUseMedia(user, library)) throw error(403, 'Not permitted');
 	const course = await courseFor(user, library, url.searchParams.get('course'));
+	const entry = await entryFor(user, library, url.searchParams.get('entry'));
 	const result = await listMedia(user, {
 		library,
 		course,
+		entry,
 		older: url.searchParams.get('older') === '1',
 		q: url.searchParams.get('q') || '',
 		scope: url.searchParams.get('scope') === 'mine' ? 'mine' : 'all',
@@ -54,8 +75,9 @@ export async function POST({ request, locals }) {
 	const library = libraryOf(body.library);
 	if (!canUseMedia(user, library)) throw error(403, 'Not permitted');
 	const course = await courseFor(user, library, body.course);
+	const entry = await entryFor(user, library, body.entry);
 	try {
-		return json(await createUpload(user, body, library, course), { status: 201 });
+		return json(await createUpload(user, body, library, course, entry), { status: 201 });
 	} catch (err) {
 		if (err instanceof MediaError) throw error(err.status, err.message);
 		throw err;

@@ -1,5 +1,5 @@
 <script>
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminHeader, { btn as hbtn } from '$lib/components/age/admin/AdminHeader.svelte';
 	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
 	import Figures from '$lib/components/age/admin/Figures.svelte';
@@ -35,20 +35,11 @@
 
 <svelte:head><title>Partners · Admin</title></svelte:head>
 
-<DeskHeader
-	kicker="Admin"
-	title="Partners"
-	subtitle="Partner accounts, promo codes and commission payouts."
->
-	{#snippet actions(compact)}
-		<a
-			href="/admin/partners/new"
-			class="inline-flex items-center bg-paper-bg px-3 text-[10px] font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-warm-light {compact
-				? 'h-[30px]'
-				: 'h-[36px]'}">+ New partner</a
-		>
+<AdminHeader title="Partners" subtitle="Partner accounts, promo codes and commission payouts.">
+	{#snippet actions()}
+		<a href="/admin/partners/new" class={hbtn}>+ New partner</a>
 	{/snippet}
-</DeskHeader>
+</AdminHeader>
 <AdminTabs />
 
 {#if totals.readyToPayCount > 0}

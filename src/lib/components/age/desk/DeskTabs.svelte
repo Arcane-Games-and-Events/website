@@ -1,6 +1,6 @@
 <script>
 	/**
-	 * Desk tabs — Home / Entries / Images / Videos / Analytics / Users / Profile.
+	 * Desk tabs — Home / Entries / Bonus matches / Analytics / Users / Profile.
 	 * In the Classroom the same strip shows the Classroom's tabs instead:
 	 * Home / Courses / Earnings / Refunds (with a count waiting) / Payouts /
 	 * Profile (by role); in the Studio, the
@@ -54,13 +54,11 @@
 						? 'users'
 						: path.startsWith('/desk/analytics')
 							? 'analytics'
-							: path.startsWith('/desk/images')
-								? 'images'
-								: path.startsWith('/desk/videos')
-									? 'videos'
-									: path.startsWith('/desk/profile')
-										? 'profile'
-										: 'entries'
+							: path.startsWith('/desk/matches')
+								? 'matches'
+								: path.startsWith('/desk/profile')
+									? 'profile'
+									: 'entries'
 	);
 	// 20×20 line icons for the phone tab bar.
 	const ICON = {
@@ -71,6 +69,7 @@
 		analytics: 'M3.5 16.5h13M5.5 16.5V11M9 16.5V6.5M12.5 16.5v-6M16 16.5V4',
 		images: 'M3.5 4.5h13v11h-13zM3.5 13l4-4 3.5 3.5 2-2 3.5 3.5M12.75 7.75h.01',
 		videos: 'M3.5 5h13v10h-13zM8.5 7.75v4.5l4-2.25z',
+		matches: 'M3.5 5h13v10h-13zM10 5v10M7 10h.01M13 10h.01',
 		users:
 			'M7.5 9.5a2.75 2.75 0 1 0 0-5.5 2.75 2.75 0 0 0 0 5.5zM2.5 16.5c.4-2.8 2.4-4.5 5-4.5s4.6 1.7 5 4.5M13 4.2a2.6 2.6 0 0 1 0 5.1M14.5 12.3c1.6.5 2.7 2 3 4.2',
 		profile: 'M10 9.75a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4 16.5c.5-3 2.9-5 6-5s5.5 2 6 5',
@@ -115,12 +114,13 @@
 				: [
 						{ id: 'home', href: '/desk', label: 'Home', show: d.canEditEntries },
 						{ id: 'entries', href: '/desk/entries', label: 'Entries', show: d.canEditEntries },
-						{ id: 'images', href: '/desk/images', label: 'Images', show: d.canEditEntries },
 						{
-							id: 'videos',
-							href: '/desk/videos/articles',
-							label: 'Videos',
-							show: d.canManageVideos
+							id: 'matches',
+							href: '/desk/matches',
+							label: 'Bonus matches',
+							// the phone tab bar's narrow cells
+							short: 'Matches',
+							show: d.canManageBonusMatches
 						},
 						{
 							id: 'analytics',
@@ -176,7 +176,7 @@
 				</span>
 				<span
 					class="max-w-full truncate px-0.5 text-[8.5px] leading-none font-extrabold tracking-[0.08em] uppercase"
-					>{tab.label}</span
+					>{tab.short ?? tab.label}</span
 				>
 			</a>
 		{/each}

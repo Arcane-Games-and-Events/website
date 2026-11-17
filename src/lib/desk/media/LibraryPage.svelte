@@ -1,6 +1,7 @@
 <script>
 	/**
-	 * Desk → Images. The image library: search, sort and browse uploads,
+	 * An image library page (the Studio's Images tab; the Desk's was retired
+	 * when entries began holding their own images). The image library: search, sort and browse uploads,
 	 * upload more (button or drag and drop anywhere on the page), and open an
 	 * image to edit its name, alt text and credit, crop or rotate it into a
 	 * new copy, see where it's used, or delete it.

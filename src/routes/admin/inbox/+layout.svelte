@@ -5,7 +5,7 @@
 -->
 <script>
 	import { page } from '$app/state';
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminHeader from '$lib/components/age/admin/AdminHeader.svelte';
 	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
 	import { TOPIC_SHORT } from '$lib/contact/topics.js';
@@ -39,8 +39,7 @@
 
 <svelte:head><title>Inbox · Admin</title></svelte:head>
 
-<DeskHeader
-	kicker="Admin"
+<AdminHeader
 	title="Inbox"
 	subtitle="Messages from the contact page. People read your replies on the site; nothing is emailed."
 />

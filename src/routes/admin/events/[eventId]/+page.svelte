@@ -316,8 +316,38 @@
 	// Close event confirmation state
 	let showCloseConfirm = $state(false);
 
-	// Status form reference for auto-submit
-	let statusForm;
+	// ============ status menu ============
+	const STATUSES = [
+		{
+			id: 'upcoming',
+			label: 'Upcoming',
+			note: 'Before the day. The public page takes sign-ups.',
+			tone: 'var(--color-warm)'
+		},
+		{
+			id: 'in_progress',
+			label: 'In progress',
+			note: 'Running now. The public page shows live standings.',
+			tone: 'var(--color-hero-rb)'
+		},
+		{
+			id: 'completed',
+			label: 'Completed',
+			note: 'Finished. Clears the staff assigned to it.',
+			tone: 'var(--color-prem)'
+		},
+		{
+			id: 'cancelled',
+			label: 'Cancelled',
+			note: 'Called off. Clears the staff assigned to it.',
+			tone: 'var(--color-fade)'
+		}
+	];
+	const currentStatus = $derived(STATUSES.find((x) => x.id === displayStatus) ?? STATUSES[0]);
+	let statusOpen = $state(false);
+	let statusSaving = $state(false);
+	/** @type {HTMLElement | undefined} */
+	let statusBox = $state();
 
 	// Helper functions
 	function formatDate(dateStr) {
@@ -457,6 +487,16 @@
 	}
 </script>
 
+<svelte:window
+	onclick={(e) => {
+		if (statusOpen && statusBox && !statusBox.contains(/** @type {Node} */ (e.target)))
+			statusOpen = false;
+	}}
+	onkeydown={(e) => {
+		if (e.key === 'Escape') statusOpen = false;
+	}}
+/>
+
 <svelte:head>
 	<title>{data.event.title} · Admin</title>
 </svelte:head>
@@ -473,7 +513,7 @@
 	{/snippet}
 </AgeOpenHeader>
 <!-- ============ TABS ============ -->
-<!-- The page's one menu under the admin tabs: its sections, and the event's status on the right. -->
+<!-- The page's one menu under the admin tabs: its sections. -->
 <nav
 	class="sticky top-[calc(var(--desk-header,0px)+var(--desk-tabs-h,46px))] z-30 border-b border-line2 bg-paper-bg/95 backdrop-blur-[2px]"
 	aria-label="Event sections"
@@ -500,62 +540,125 @@
 				</button>
 			{/each}
 		</div>
-		<div class="flex flex-wrap items-center gap-[10px] py-1.5">
-			<form
-				method="POST"
-				action="?/updateStatus"
-				class="inline-flex items-center gap-2"
-				bind:this={statusForm}
-			>
-				<select
-					name="status"
-					value={displayStatus}
-					onchange={() => statusForm.submit()}
-					class="h-[32px] border border-line2 bg-paper py-0 pr-7 pl-2 text-[11px] leading-none text-ink focus:border-ink focus:ring-0"
-				>
-					<option value="upcoming">Upcoming</option>
-					<option value="in_progress">In Progress</option>
-					<option value="completed">Completed</option>
-					<option value="cancelled">Cancelled</option>
-				</select>
-			</form>
-			{#if displayStatus === 'upcoming' && datePassed}
-				<span
-					class="inline-flex items-center text-[11.5px] text-fade"
-					title="The event date is in the past but no results have been uploaded"
-				>
-					Date has passed · no results yet
-				</span>
-			{/if}
+	</div>
+</nav>
 
-			{#if !isCompleted && hasWinner}
-				<button
-					type="button"
-					onclick={() => (showCloseConfirm = true)}
-					class="inline-flex h-[32px] shrink-0 items-center gap-1.5 bg-prem px-3 text-[10px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-				>
-					Close Event ✓
-				</button>
-			{:else if !isCompleted && !hasWinner && hasResults}
-				<span
-					class="inline-flex items-center text-[11.5px] text-fade"
-					title="Finals match required to close event"
-				>
-					Awaiting Finals
+<!-- the event's status, under the tabs and in line with the page -->
+<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 md:px-8">
+	<div class="flex flex-wrap items-center gap-[10px]">
+		<div class="relative" bind:this={statusBox}>
+			<button
+				type="button"
+				onclick={() => (statusOpen = !statusOpen)}
+				aria-haspopup="true"
+				aria-expanded={statusOpen}
+				disabled={statusSaving}
+				class="inline-flex h-[34px] items-center gap-2.5 pr-3 pl-3.5 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:opacity-60"
+				style="background: {currentStatus.tone}"
+			>
+				<span class="text-white/70">Status</span>
+				<span class="h-3 w-px bg-white/40" aria-hidden="true"></span>
+				<span class="relative flex h-2 w-2" aria-hidden="true">
+					{#if displayStatus === 'in_progress'}
+						<span class="absolute inset-0 animate-ping rounded-full bg-white/70"></span>
+					{/if}
+					<span class="relative h-2 w-2 rounded-full bg-white"></span>
 				</span>
-			{:else if isCompleted && data.isAdmin}
-				<form method="POST" action="?/reopenEvent" class="inline">
-					<button
-						type="submit"
-						class="inline-flex h-[32px] shrink-0 items-center border border-warm px-3 text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
+				{statusSaving ? 'Saving…' : currentStatus.label}
+				<svg
+					viewBox="0 0 12 12"
+					class="h-2.5 w-2.5 transition-transform {statusOpen ? 'rotate-180' : ''}"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					aria-hidden="true"><path d="m2.5 4.5 3.5 3.5 3.5-3.5" /></svg
+				>
+			</button>
+			{#if statusOpen}
+				<form
+					method="POST"
+					action="?/updateStatus"
+					use:enhance={() => {
+						statusOpen = false;
+						statusSaving = true;
+						return async ({ update }) => {
+							await update();
+							statusSaving = false;
+						};
+					}}
+					class="absolute left-0 z-40 mt-1.5 w-[300px] max-w-[calc(100vw-2.5rem)] border border-ink bg-paper-bg shadow-[0_18px_40px_-20px_rgb(23_21_15/0.6)]"
+				>
+					<p
+						class="border-b border-line2 px-4 py-2.5 text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
 					>
-						Reopen
-					</button>
+						Set the event’s status
+					</p>
+					{#each STATUSES as st (st.id)}
+						{@const on = st.id === displayStatus}
+						<button
+							type="submit"
+							name="status"
+							value={st.id}
+							disabled={on}
+							class="group flex w-full items-start gap-3 border-l-[4px] px-4 py-3 text-left transition-colors {on
+								? 'bg-paper'
+								: 'border-transparent hover:bg-paper'}"
+							style={on ? `border-color: ${st.tone}` : ''}
+						>
+							<span class="mt-1 h-2.5 w-2.5 shrink-0" style="background: {st.tone}"></span>
+							<span class="min-w-0 flex-1">
+								<span
+									class="ao-cond block text-[20px] leading-none font-black uppercase"
+									style={on ? `color: ${st.tone}` : ''}>{st.label}</span
+								>
+								<span class="mt-1 block text-[11.5px] leading-snug text-soft">{st.note}</span>
+							</span>
+							{#if on}
+								<span class="mt-0.5 text-[9px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									>Now</span
+								>
+							{/if}
+						</button>
+					{/each}
 				</form>
 			{/if}
 		</div>
+		{#if displayStatus === 'upcoming' && datePassed}
+			<span
+				class="inline-flex items-center text-[11.5px] text-fade"
+				title="The event date is in the past but no results have been uploaded"
+			>
+				Date has passed · no results yet
+			</span>
+		{/if}
+
+		{#if !isCompleted && hasWinner}
+			<button
+				type="button"
+				onclick={() => (showCloseConfirm = true)}
+				class="inline-flex h-[32px] shrink-0 items-center gap-1.5 bg-prem px-3 text-[10px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+			>
+				Close Event ✓
+			</button>
+		{:else if !isCompleted && !hasWinner && hasResults}
+			<span
+				class="inline-flex items-center text-[11.5px] text-fade"
+				title="Finals match required to close event"
+			>
+				Awaiting Finals
+			</span>
+		{:else if isCompleted && data.isAdmin}
+			<form method="POST" action="?/reopenEvent" class="inline">
+				<button
+					type="submit"
+					class="inline-flex h-[32px] shrink-0 items-center border border-warm px-3 text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-40"
+				>
+					Reopen
+				</button>
+			</form>
+		{/if}
 	</div>
-</nav>
+</div>
 
 {#if form?.success && form.section !== 'details'}
 	<section class="mx-auto w-full max-w-[1200px] overflow-x-clip px-5 pt-6 md:px-8">
@@ -586,7 +689,7 @@
 {/if}
 
 <div
-	class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-24 md:px-8"
+	class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-24 md:px-8"
 	style="--cc: {data.event.circuit ? circuitVar(data.event.circuit) : 'var(--color-warm)'};"
 >
 	<!-- Tab Content -->

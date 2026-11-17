@@ -352,7 +352,7 @@
 						{#if data.event.premiumDiscount}
 							<span
 								class="bg-prem px-2 py-1 text-[9.5px] font-extrabold tracking-[0.16em] text-white uppercase"
-								>◆ Members save {data.discountLabel || '10%'}</span
+								>◆ Members save {data.discountLabel || '$5'}</span
 							>
 						{/if}
 						{#if hasPlayerCap && isFull}
@@ -429,7 +429,7 @@
 						<dd
 							class="mt-1 text-[10px] font-extrabold tracking-[0.12em] text-paper-bg/55 uppercase"
 						>
-							Members save {data.discountLabel || '10%'}
+							Members save {data.discountLabel || '$5'}
 						</dd>
 					{/if}
 				</div>

@@ -143,14 +143,8 @@ export async function storeEvent(storeId, eventId) {
 	return { ...row.event, players: row.players, sales: row.sales, staff };
 }
 
-/** What the store has earned in months whose statement isn't paid yet. */
-export async function storeOwedCents(storeId) {
-	const res = await db.execute(sql`SELECT coalesce(sum(l.store_cents), 0)::int AS cents
-		FROM store_ledger l WHERE l.store_id = ${storeId} AND NOT EXISTS (
-			SELECT 1 FROM store_statement st WHERE st.store_id = l.store_id
-			AND st.month = l.statement_month AND st.status = 'paid')`);
-	return Number((res.rows || res)[0]?.cents || 0);
-}
+/** What the store is owed now: closed-out events not paid yet, and money carried. */
+export { storeOwed as storeOwedCents } from './payouts.js';
 
 export async function storeMembers(storeId) {
 	return db

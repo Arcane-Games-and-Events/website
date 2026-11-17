@@ -8,19 +8,17 @@
   what's been typed; the page remounts this after a save.
 
   Props: value (the store, or defaults), circuits ({ id, name, color,
-  active }[]), defaultShare (the program default, 0–1, or null)
+  active }[])
 -->
 <script>
 	import { untrack } from 'svelte';
 	import * as F from '$lib/components/age/store/fields.js';
 
-	/** @type {{ value?: any, circuits: any[], defaultShare?: string | number | null }} */
-	let { value = {}, circuits, defaultShare = null } = $props();
+	/** @type {{ value?: any, circuits: any[] }} */
+	let { value = {}, circuits } = $props();
 
 	const v = untrack(() => value);
 	const circuitList = untrack(() => circuits);
-	const fallbackShare = untrack(() => defaultShare);
-	const pct = (x) => (x == null || x === '' ? '' : String(Math.round(Number(x) * 10000) / 100));
 
 	let circuitId = $state(v.circuitId || '');
 	let active = $state(v.active ?? true);
@@ -151,32 +149,12 @@
 	<div class={F.group}>
 		<div>
 			<p class={F.groupTitle}>Money</p>
-			<p class={F.groupNote}>AGE takes the ticket payments and pays the store its share monthly.</p>
+			<p class={F.groupNote}>
+				AGE takes the ticket payments. After each event the store gets its ticket sales minus the
+				card fee (set in the program settings).
+			</p>
 		</div>
 		<div class="flex flex-col gap-5">
-			<div class="max-w-[280px]">
-				<label for="s-share" class={F.label}>Store’s share of ticket sales</label>
-				<div class="relative">
-					<input
-						id="s-share"
-						name="revenueShare"
-						inputmode="decimal"
-						maxlength="6"
-						value={pct(v.revenueShare)}
-						placeholder={fallbackShare == null ? 'Not set' : pct(fallbackShare)}
-						class="{F.field} pr-9 font-semibold tabular-nums"
-					/>
-					<span
-						class="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 text-[15px] font-semibold text-soft"
-						>%</span
-					>
-				</div>
-				<p class={F.hint}>
-					Blank uses the program default{fallbackShare == null
-						? ' (not set yet)'
-						: ` (${pct(fallbackShare)}%)`}.
-				</p>
-			</div>
 			{#if v.id}
 				<input type="hidden" name="hasActive" value="1" />
 				<label

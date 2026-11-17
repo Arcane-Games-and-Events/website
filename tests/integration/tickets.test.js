@@ -130,7 +130,7 @@ describe('buying tickets', () => {
 		expect(gw.charges()[0].opts.amountCents).toBe(expected.amountCents);
 		const [co] = await checkoutsOf(member.id);
 		const paid = (await ticketsOf(co.orderId)).map((t) => Number(t.amountPaid)).sort();
-		expect(paid).toEqual([30, 40]);
+		expect(paid).toEqual([35, 40]);
 	});
 
 	test('the same purchase sent twice charges once', async () => {
@@ -199,7 +199,7 @@ describe('buying tickets', () => {
 	});
 
 	test('a fully discounted ticket is issued without touching the gateway', async () => {
-		const cheap = await createEvent({ price: '10.00' });
+		const cheap = await createEvent({ price: '5.00' });
 		const member = await createUser({ role: 'premium', subscriptionStatus: 'active' });
 		const r = await buy({ who: member, event: cheap, payment: {} });
 		expect(r.status).toBe(200);

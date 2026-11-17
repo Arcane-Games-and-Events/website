@@ -27,6 +27,7 @@ import {
 import { applyEdit, inspect, renderAvif, renderWebp } from '$lib/server/media/process.js';
 import * as mediaRoute from '../../src/routes/api/desk/media/[id]/+server.js';
 import * as entryRoute from '../../src/routes/api/desk/entries/[id]/+server.js';
+import * as libraryRoute from '../../src/routes/api/desk/media/+server.js';
 import { createAdmin, createUser } from '../support/factories.js';
 
 const writerRoles = { additionalRoles: ['writer'] };
@@ -125,6 +126,75 @@ describe('who sees which images', () => {
 		await createMedia(writer, { name: 'Something else' });
 		const { items } = await listMedia(writer, { q: 'dragon' });
 		expect(items.map((i) => i.id).sort()).toEqual([a.id, b.id, c.id].sort());
+	});
+});
+
+describe('an entry’s own images', () => {
+	const list = (user, params) =>
+		libraryRoute.GET({
+			locals: { user },
+			url: new URL(`http://test/api/desk/media?${new URLSearchParams(params)}`)
+		});
+
+	test('an entry shows only its images; older uploads are a tap away', async () => {
+		const piece = await createEntry(writer);
+		const other = await createEntry(writer);
+		const here = await createMedia(writer, { entryId: piece.id });
+		await createMedia(writer, { entryId: other.id });
+		const loose = await createMedia(writer);
+		const ids = async (params) =>
+			(await (await list(writer, { library: 'content', ...params })).json()).items.map((i) => i.id);
+		expect(await ids({ entry: piece.id })).toEqual([here.id]);
+		expect(await ids({ entry: piece.id, older: '1' })).toEqual([loose.id]);
+	});
+
+	test('an editor sees a writer’s entry images; another writer can’t', async () => {
+		const piece = await createEntry(writer);
+		const img = await createMedia(writer, { entryId: piece.id });
+		const res = await list(editor, { library: 'content', entry: piece.id });
+		expect((await res.json()).items.map((i) => i.id)).toEqual([img.id]);
+		expect(await status(() => list(otherWriter, { library: 'content', entry: piece.id }))).toBe(
+			403
+		);
+	});
+
+	test('an upload made in an entry is filed under it', async () => {
+		const piece = await createEntry(writer);
+		const res = await libraryRoute
+			.POST(
+				event(
+					writer,
+					{},
+					{
+						filename: 'cover.jpg',
+						mimeType: 'image/jpeg',
+						size: 1000,
+						library: 'content',
+						entry: piece.id
+					}
+				)
+			)
+			.catch((err) => err);
+		// Storage isn't configured in tests, so the upload stops before the row
+		// exists; the entry check runs first, and another writer is refused.
+		expect(res.status).not.toBe(403);
+		expect(
+			await status(() =>
+				libraryRoute.POST(
+					event(
+						otherWriter,
+						{},
+						{
+							filename: 'cover.jpg',
+							mimeType: 'image/jpeg',
+							size: 1000,
+							library: 'content',
+							entry: piece.id
+						}
+					)
+				)
+			)
+		).toBe(403);
 	});
 });
 

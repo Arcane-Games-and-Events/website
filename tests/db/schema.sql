@@ -7548,3 +7548,26 @@ ALTER TABLE public.webhook_event ENABLE ROW LEVEL SECURITY;
 
 \unrestrict 4nf9jZiE0VKpaxci9LYdPYUS7K1O92AyDYFkx0eoJvOES4ZDuY5U7o0AqsEqBRp
 
+
+-- Migration 049 (entry images), appended until the next refresh.
+ALTER TABLE public.cms_media ADD COLUMN IF NOT EXISTS entry_id uuid REFERENCES public.cms_entry (id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS cms_media_entry_idx ON public.cms_media USING btree (entry_id, created_at DESC);
+
+-- Migration 050 (store payouts), appended until the next refresh.
+ALTER TABLE public.store_program
+  ADD COLUMN IF NOT EXISTS fee_pct numeric(6,4) NOT NULL DEFAULT 0.0290 CHECK (fee_pct >= 0 AND fee_pct < 1),
+  ADD COLUMN IF NOT EXISTS fee_fixed_cents integer NOT NULL DEFAULT 30 CHECK (fee_fixed_cents >= 0);
+CREATE TABLE IF NOT EXISTS public.store_payout (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id uuid NOT NULL REFERENCES public.store(id) ON DELETE RESTRICT,
+  event_id text REFERENCES public.events(id) ON DELETE SET NULL,
+  status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'paid')),
+  gross_cents integer, refund_cents integer, fee_cents integer, adjust_cents integer,
+  carried_cents integer, amount_cents integer,
+  paid_at timestamptz, paid_by text REFERENCES public."user"(id) ON DELETE SET NULL,
+  method text, reference text, note text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS store_payout_event_key ON public.store_payout (store_id, event_id) WHERE event_id IS NOT NULL;
+ALTER TABLE public.store_ledger ADD COLUMN IF NOT EXISTS payout_id uuid REFERENCES public.store_payout(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS store_ledger_payout_idx ON public.store_ledger (store_id, payout_id);

@@ -14,7 +14,7 @@
  * Returns the library item: { id, name, alt, credit, creditUrl, url, image, width, height, … }.
  */
 
-import { currentCourse, currentLibrary } from './api.js';
+import { currentCourse, currentEntry, currentLibrary } from './api.js';
 
 const MAX_EDGE = 4000;
 const HEIC = /^image\/hei[cf]$/i;
@@ -33,9 +33,10 @@ export async function uploadImage(file, opts = {}) {
 			filename: prepared.name,
 			mimeType: prepared.type,
 			size: prepared.size,
-			// the library for the page we're on; in a course, filed under it
+			// the library for the page we're on; in a course or an entry, filed under it
 			library: currentLibrary(),
-			course: currentCourse()
+			course: currentCourse(),
+			entry: currentEntry()
 		})
 	});
 	if (!start.ok) throw new Error(await messageOf(start, 'Could not start the upload'));

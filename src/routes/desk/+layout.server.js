@@ -4,6 +4,7 @@ import {
 	canEditEntries,
 	canEditAllEntries,
 	canUseClassroom,
+	canManageBonusMatches,
 	canViewSiteAnalytics,
 	isAdmin
 } from '$lib/server/auth/roles.js';
@@ -31,6 +32,8 @@ export const load = async ({ locals, url }) => {
 		canViewAnalytics: canViewSiteAnalytics(locals.user),
 		// Videos: gameplay and article videos, for admins and editors.
 		canManageVideos: canEditAllEntries(locals.user),
+		// Bonus matches: uploading AGE Open gameplay, for admins and editors.
+		canManageBonusMatches: canManageBonusMatches(locals.user),
 		isAdmin: isAdmin(locals.user)
 	};
 };

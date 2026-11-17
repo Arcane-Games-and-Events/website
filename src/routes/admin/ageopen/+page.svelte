@@ -33,7 +33,7 @@
 {#if !data.ready}
 	<AdminNotice
 		tone="info"
-		message="Circuits and stores need migration 045. Run supabase/migrations/045_stores.sql in the Supabase SQL editor, then reload."
+		message="Circuits and stores need migrations 045 and 050. Run supabase/migrations/045_stores.sql and 050_store_payouts.sql in the Supabase SQL editor, then reload."
 	/>
 {:else}
 	<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-24 md:px-8">

@@ -96,6 +96,16 @@ export function canEditAllEntries(user) {
 }
 
 /**
+ * True if the user can upload and manage bonus matches (gameplay from the
+ * AGE Open), which live in the Desk: editors and admins.
+ * @param {any} user
+ * @returns {boolean}
+ */
+export function canManageBonusMatches(user) {
+	return isAdmin(user) || hasCapability(user, CAPABILITY_EDITOR);
+}
+
+/**
  * True if the user can open and edit this particular entry: editors and
  * admins can edit any entry, writers only the ones they wrote.
  * @param {any} user

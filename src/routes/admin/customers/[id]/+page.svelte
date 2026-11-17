@@ -1,5 +1,5 @@
 <script>
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminHeader from '$lib/components/age/admin/AdminHeader.svelte';
 	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
@@ -89,8 +89,8 @@
 </svelte:head>
 
 <!-- ============ HEADER ============ -->
-<DeskHeader
-	kicker="Admin"
+<AdminHeader
+	trail={[{ href: '/admin/users', label: 'Members' }]}
 	title={data.customer
 		? `${data.customer.firstName || ''} ${data.customer.lastName || ''}`.trim() || 'Customer'
 		: 'Guest customer'}
@@ -98,19 +98,6 @@
 />
 <AdminTabs />
 <section class="mx-auto w-full max-w-[1200px] px-5 pt-[24px] pb-[20px] md:px-8">
-	<nav
-		class="flex items-center gap-2 text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-	>
-		<a href="/admin/users" class="transition-colors hover:text-ink">Users</a>
-		<span>›</span>
-		<span class="truncate text-warm">
-			{data.customer
-				? `${data.customer.firstName || ''} ${data.customer.lastName || ''}`.trim() ||
-					data.customerEmail
-				: data.customerEmail}
-		</span>
-	</nav>
-
 	{#if form?.success}
 		<div class="mt-[18px] border-l-[3px] border-prem bg-prem/10 p-4">
 			<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase">Success</span>

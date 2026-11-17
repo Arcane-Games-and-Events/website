@@ -7,8 +7,11 @@ import { getMuxThumbnailToken } from '$lib/server/mux.js';
 
 /** Where each kind of video is managed, for the "back" link. */
 const AREA = {
-	vod: { label: 'Studio media', href: (row) => `/studio/media/${row.id}` },
-	entry: { label: 'Articles', href: () => '/desk/videos/articles' },
+	vod: {
+		label: (row) => (row.kind === 'gameplay' ? 'The match' : 'The item'),
+		href: (row) => (row.kind === 'gameplay' ? `/desk/matches/${row.id}` : `/studio/media/${row.id}`)
+	},
+	entry: { label: 'The entry', href: (row) => `/desk/entries/${row.id}` },
 	lesson: {
 		label: 'Course analytics',
 		href: (row) => `/classroom/courses/${row.courseId}/analytics`
@@ -43,7 +46,10 @@ export async function videoPage({ locals, params, url }) {
 		video: { ...video, thumbToken },
 		published: params.target === 'vod' ? !!row.isPublished : row.status === 'published',
 		publishedAt: row.publishedAt ?? null,
-		back: { label: area.label, href: area.href(row) },
+		back: {
+			label: typeof area.label === 'function' ? area.label(row) : area.label,
+			href: area.href(row)
+		},
 		editHref: params.target === 'entry' ? `/desk/entries/${row.id}` : null,
 		pieceAnalyticsHref: params.target === 'entry' ? `/desk/analytics/${row.id}` : null,
 		days,

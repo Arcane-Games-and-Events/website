@@ -14,6 +14,8 @@
 	import SeasonTrack from '$lib/components/age/store/SeasonTrack.svelte';
 	import EventRow from '$lib/components/age/store/EventRow.svelte';
 	import PeopleSearch from '$lib/components/age/store/PeopleSearch.svelte';
+	import PayoutList from '$lib/components/age/store/PayoutList.svelte';
+	import * as F from '$lib/components/age/store/fields.js';
 	import * as ui from '$lib/components/age/admin/ui.js';
 
 	let { data, form } = $props();
@@ -37,13 +39,28 @@
 	);
 	const owners = $derived(data.members.filter((m) => m.role === 'owner').length);
 	const pct = (v) => (v == null ? null : `${Math.round(Number(v) * 10000) / 100}%`);
-	const share = $derived(pct(s.revenueShare) || pct(data.program?.defaultShare));
+	const fee = $derived(
+		`${pct(data.program?.feePct ?? 0.029)} + $${((data.program?.feeFixedCents ?? 30) / 100).toFixed(2)}`
+	);
+	let adjusting = $state(false);
+	// "AGE Open LA - Los Angeles - Dec 12, 2026" for the adjustment's event list.
+	const eventOption = (p) =>
+		[
+			p.title,
+			c.name,
+			p.eventDate
+				? new Date(p.eventDate).toLocaleDateString('en-US', {
+						timeZone: 'UTC',
+						month: 'short',
+						day: 'numeric',
+						year: 'numeric'
+					})
+				: 'No date'
+		].join(' - ') + (p.state === 'paid' ? ' (paid, carries to the next payout)' : '');
 	const nameOf = (m) => `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.email;
 	const initials = (m) =>
 		`${(m.firstName || '')[0] || ''}${(m.lastName || '')[0] || ''}`.toUpperCase() ||
 		(m.email || '?')[0].toUpperCase();
-	const monthLabel = (m) =>
-		new Date(`${m}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 	const since = $derived(
 		new Date(s.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 	);
@@ -166,14 +183,18 @@
 
 		<!-- the numbers -->
 		<dl class="mt-10 grid grid-cols-2 border-t-[3px] border-ink md:grid-cols-4">
-			{#each [{ label: 'Players, all time', value: ui.fmt(players), note: `${data.rows.length} events` }, { label: 'Ticket sales', value: ui.money(sales, 0), note: 'after refunds' }, { label: 'Revenue share', value: share || '—', note: s.revenueShare != null ? 'this store' : share ? 'program default' : 'not set yet' }, { label: 'Owed', value: ui.money(data.owedCents / 100), note: 'unpaid statements', tone: data.owedCents ? 'text-hero-rb' : '' }] as f, i (f.label)}
+			{#each [{ label: 'Players, all time', value: ui.fmt(players), note: `${data.rows.length} events` }, { label: 'Ticket sales', value: ui.money(sales, 0), note: 'after refunds' }, { label: 'Card fee', value: fee, note: 'per card payment', small: true }, { label: 'Owed', value: ui.money(data.owedCents / 100), note: 'ready to pay', tone: data.owedCents ? 'text-hero-rb' : '' }] as f, i (f.label)}
 				<div
 					class="border-b border-line2 py-4 pr-4 {i % 2
 						? 'pl-4'
 						: ''} md:border-r md:pl-5 md:first:pl-0 md:last:border-r-0"
 				>
 					<dt class={ui.label}>{f.label}</dt>
-					<dd class="ao-cond mt-2 text-[40px] leading-none font-black tabular-nums {f.tone || ''}">
+					<dd
+						class="ao-cond mt-2 leading-none font-black tabular-nums {f.small
+							? 'text-[28px]'
+							: 'text-[40px]'} {f.tone || ''}"
+					>
 						{f.value}
 					</dd>
 					<dd class="mt-1.5 text-[11.5px] text-soft">{f.note}</dd>
@@ -345,7 +366,7 @@
 			</h3>
 			<ul class="mt-4 flex flex-col gap-2.5">
 				{#each ahead as e (e.id)}
-					<EventRow {e} href="/admin/events/{e.id}" color={c.color} now={data.now}>
+					<EventRow {e} href="/admin/events/{e.id}" color={c.color} circuit={c.name} now={data.now}>
 						{#snippet after()}{@render unlink(e)}{/snippet}
 					</EventRow>
 				{:else}
@@ -362,7 +383,13 @@
 				</h3>
 				<ul class="mt-4 flex flex-col gap-2.5">
 					{#each before as e (e.id)}
-						<EventRow {e} href="/admin/events/{e.id}" color={c.color} now={data.now}>
+						<EventRow
+							{e}
+							href="/admin/events/{e.id}"
+							color={c.color}
+							circuit={c.name}
+							now={data.now}
+						>
 							{#snippet after()}{@render unlink(e)}{/snippet}
 						</EventRow>
 					{/each}
@@ -438,44 +465,95 @@
 				<h2 class="ao-cond text-[40px] leading-none font-black uppercase md:text-[48px]">
 					Payouts
 				</h2>
-				<p class="text-[12.5px] text-soft">Monthly statements</p>
-			</div>
-			{#if data.statements.length}
-				<ul class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-					{#each data.statements as st (st.month)}
-						<li
-							class="border border-t-[4px] border-line2 bg-white px-5 py-4"
-							style="border-top-color: {st.status === 'paid'
-								? 'var(--color-prem)'
-								: st.status === 'locked'
-									? 'var(--color-gold)'
-									: 'var(--color-line2)'}"
-						>
-							<p class="flex items-baseline justify-between gap-3">
-								<span class="font-newsreader text-[17px] font-semibold">{monthLabel(st.month)}</span
-								>
-								<span class="text-[9.5px] font-extrabold tracking-[0.16em] text-soft uppercase"
-									>{st.status}</span
-								>
-							</p>
-							<p class="ao-cond mt-2 text-[32px] leading-none font-black tabular-nums">
-								{st.amountCents != null ? ui.money(st.amountCents / 100) : '—'}
-							</p>
-							{#if st.paidAt}
-								<p class="mt-1.5 text-[11.5px] text-soft">
-									Paid {ui.dateShort(st.paidAt)}{st.method ? ` · ${st.method}` : ''}{st.reference
-										? ` · ${st.reference}`
-										: ''}
-								</p>
-							{/if}
-						</li>
-					{/each}
-				</ul>
-			{:else}
-				<p class="mt-6 border border-dashed border-line2 px-5 py-5 text-[13.5px] text-soft">
-					No statements yet. They start once the store’s events sell tickets.
+				<p class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-soft">
+					After each event: ticket sales minus card fees
+					<a
+						href="/admin/stores/{s.slug}/payouts.csv"
+						class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
+						>CSV ↓</a
+					>
+					<button
+						type="button"
+						onclick={() => (adjusting = !adjusting)}
+						class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
+						aria-expanded={adjusting}>+ Adjustment</button
+					>
 				</p>
+			</div>
+			{#if notice('payouts')?.error}<AdminNotice
+					tone="error"
+					message={form.error}
+					pad="pt-4 px-0! md:px-0!"
+				/>{/if}
+			{#if notice('payouts')?.saved}<AdminNotice
+					tone="success"
+					message={form.saved}
+					pad="pt-4 px-0! md:px-0!"
+				/>{/if}
+
+			{#if adjusting}
+				<form
+					method="POST"
+					action="?/adjust"
+					class="mt-6 border border-line2 bg-white px-5 py-5 md:px-7"
+					use:enhance={() =>
+						async ({ update, result }) => {
+							await update();
+							if (result.type === 'success') adjusting = false;
+						}}
+				>
+					<div class={F.groupFirst}>
+						<div>
+							<p class={F.groupTitle}>Adjustment</p>
+							<p class={F.groupNote}>
+								Add money to a payout, or take it off with a minus sign. The store sees the reason.
+							</p>
+						</div>
+						<div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_150px]">
+							<label class="block">
+								<span class={F.label}>Event</span>
+								<select name="eventId" required class={F.select}>
+									{#each data.payouts.payouts.filter((p) => p.state !== 'cancelled') as p (p.eventId)}
+										<option value={p.eventId}>{eventOption(p)}</option>
+									{/each}
+								</select>
+							</label>
+							<label class="block">
+								<span class={F.label}>Amount ($)</span>
+								<input
+									name="amount"
+									inputmode="decimal"
+									required
+									placeholder="25.00 or -10"
+									class={F.field}
+								/>
+							</label>
+							<label class="block md:col-span-2">
+								<span class={F.label}>Reason</span>
+								<input
+									name="note"
+									required
+									maxlength="300"
+									placeholder="e.g. Venue cost AGE agreed to cover"
+									class={F.field}
+								/>
+							</label>
+							<div class="md:col-span-2">
+								<button
+									class="inline-flex h-[44px] items-center px-6 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110"
+									style="background: var(--cc)">Add adjustment</button
+								>
+							</div>
+						</div>
+					</div>
+				</form>
 			{/if}
+
+			<PayoutList
+				list={data.payouts.payouts}
+				carriedCents={data.payouts.carriedCents}
+				admin={true}
+			/>
 		</section>
 
 		<!-- details -->

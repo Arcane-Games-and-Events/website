@@ -6,17 +6,17 @@ describe('ticket pricing', () => {
 	const ev = { price: '35.00', premiumDiscount: true, eventDate: '2026-12-01T00:00:00Z' };
 	test('the member discount applies to the first ticket only', () => {
 		const p = priceTickets(ev, 3, true);
-		expect(p.amountCents).toBe(2500 + 3500 + 3500);
-		expect(p.discountCents).toBe(1000);
-		expect(p.lines.map((l) => l.amountCents)).toEqual([2500, 3500, 3500]);
+		expect(p.amountCents).toBe(3000 + 3500 + 3500);
+		expect(p.discountCents).toBe(500);
+		expect(p.lines.map((l) => l.amountCents)).toEqual([3000, 3500, 3500]);
 	});
 	test('no discount for non-members', () => {
 		const p = priceTickets(ev, 2, false);
 		expect(p.amountCents).toBe(7000);
 		expect(p.discountCents).toBe(0);
 	});
-	test('a $10 event is free for a member', () => {
-		expect(priceTickets({ ...ev, price: '10.00' }, 1, true).amountCents).toBe(0);
+	test('a $5 event is free for a member', () => {
+		expect(priceTickets({ ...ev, price: '5.00' }, 1, true).amountCents).toBe(0);
 	});
 	test('events before April 14 2026 used 10% off', () => {
 		expect(priceTickets({ ...ev, eventDate: '2026-01-01T00:00:00Z' }, 1, true).amountCents).toBe(

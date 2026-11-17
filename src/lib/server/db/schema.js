@@ -829,6 +829,9 @@ export const deskMedia = pgTable('cms_media', {
 	// Migration 037 — the course a Classroom image belongs to (null: an
 	// older upload not yet filed under a course, or another library).
 	courseId: uuid('course_id').references(() => deskCourse.id, { onDelete: 'set null' }),
+	// Migration 049 — the entry a Desk image belongs to (null: an older
+	// upload not yet filed under an entry, an author photo, or another library).
+	entryId: uuid('entry_id').references(() => deskEntry.id, { onDelete: 'set null' }),
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
@@ -1970,6 +1973,9 @@ export const storeProgram = pgTable('store_program', {
 	id: integer('id').primaryKey().default(1),
 	defaultShare: decimal('default_share', { precision: 5, scale: 4 }),
 	feePayer: text('fee_payer').notNull().default('age'), // age | store
+	// Migration 050 — the card fee taken from a store's ticket sales, per payment.
+	feePct: decimal('fee_pct', { precision: 6, scale: 4 }).notNull().default('0.0290'),
+	feeFixedCents: integer('fee_fixed_cents').notNull().default(30),
 	updatedBy: text('updated_by').references(() => user.id, { onDelete: 'set null' }),
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
 });
@@ -1991,7 +1997,32 @@ export const storeLedger = pgTable('store_ledger', {
 	ageCents: integer('age_cents').notNull().default(0),
 	statementMonth: text('statement_month').notNull(), // DATE, read as text
 	note: text('note'),
+	// Migration 050 — the payout this row is paid in (null: carried to the next one).
+	payoutId: uuid('payout_id').references(() => storePayout.id, { onDelete: 'set null' }),
 	createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+// Migration 050 — one payout per store event: open until an admin marks it
+// paid, when its amounts are frozen.
+export const storePayout = pgTable('store_payout', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	storeId: uuid('store_id')
+		.notNull()
+		.references(() => store.id, { onDelete: 'restrict' }),
+	eventId: text('event_id').references(() => event.id, { onDelete: 'set null' }),
+	status: text('status').notNull().default('open'), // open | paid
+	grossCents: integer('gross_cents'),
+	refundCents: integer('refund_cents'),
+	feeCents: integer('fee_cents'),
+	adjustCents: integer('adjust_cents'),
+	carriedCents: integer('carried_cents'),
+	amountCents: integer('amount_cents'),
+	paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
+	paidBy: text('paid_by').references(() => user.id, { onDelete: 'set null' }),
+	method: text('method'),
+	reference: text('reference'),
+	note: text('note'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
 });
 

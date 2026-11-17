@@ -10,14 +10,7 @@
 	let { data, form } = $props();
 	let busy = $state(false);
 	let owner = $state(null);
-	const value = $derived(
-		form?.value
-			? {
-					...form.value,
-					revenueShare: form.value.revenueShare ? Number(form.value.revenueShare) / 100 : null
-				}
-			: { circuitId: data.circuitId }
-	);
+	const value = $derived(form?.value ? form.value : { circuitId: data.circuitId });
 </script>
 
 <svelte:head><title>New store · Admin</title></svelte:head>
@@ -50,7 +43,7 @@
 		}}
 	>
 		<div class="flex flex-col gap-7 px-5 py-6 md:px-7">
-			<StoreFields {value} circuits={data.circuits} defaultShare={data.program?.defaultShare} />
+			<StoreFields {value} circuits={data.circuits} />
 
 			<div class={F.group}>
 				<div>

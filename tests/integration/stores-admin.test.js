@@ -27,7 +27,6 @@ import {
 import sharp from 'sharp';
 import {
 	linkEvents,
-	parseShare,
 	deleteCircuit,
 	removeCircuitImage,
 	setCircuitImage,
@@ -139,8 +138,8 @@ describe('stores', () => {
 			firstName: 'Olive',
 			lastName: 'Owner'
 		});
-		const s = await newStore({ ownerEmail: 'owner@store.test', revenueShare: '40' });
-		expect(s).toMatchObject({ slug: 'bay-area-games', revenueShare: '0.4000', active: true });
+		const s = await newStore({ ownerEmail: 'owner@store.test' });
+		expect(s).toMatchObject({ slug: 'bay-area-games', active: true });
 		const members = await db.select().from(storeMember).where(eq(storeMember.storeId, s.id));
 		expect(members).toEqual([expect.objectContaining({ userId: owner.id, role: 'owner' })]);
 		const log = await db.select().from(storeActivity).where(eq(storeActivity.storeId, s.id));
@@ -161,14 +160,6 @@ describe('stores', () => {
 		await newStore();
 		const second = await newStore();
 		expect(second.slug).toBe('bay-area-games-2');
-	});
-
-	test('a revenue share over 100% is refused', async () => {
-		const r = await callAction(newStoreActions, 'default', {
-			user: admin,
-			fields: { name: 'Big Share', circuitId: la.id, revenueShare: '150' }
-		});
-		expect(r.data.error).toMatch(/0 to 100/);
 	});
 
 	test('unticking Active on the details form makes the store inactive', async () => {
@@ -287,22 +278,23 @@ describe('events', () => {
 	});
 });
 
-describe('program settings', () => {
-	test('percentages are stored as a share', () => {
-		expect(parseShare('40')).toBe('0.4000');
-		expect(parseShare('37.5%')).toBe('0.3750');
-		expect(parseShare('')).toBeNull();
-		expect(parseShare('abc')).toBeUndefined();
-	});
-
-	test('saving the default share and fee payer', async () => {
+describe('the card fee', () => {
+	test('saving the rate stores a percentage and cents', async () => {
 		const r = await callAction(overviewActions, 'program', {
 			user: admin,
-			fields: { defaultShare: '60', feePayer: 'store' }
+			fields: { feePct: '2.75%', feeFixed: '$0.25' }
 		});
 		expect(r.data.saved).toBeTruthy();
 		const [p] = await db.select().from(storeProgram);
-		expect(p).toMatchObject({ defaultShare: '0.6000', feePayer: 'store', updatedBy: admin.id });
+		expect(p).toMatchObject({ feePct: '0.0275', feeFixedCents: 25, updatedBy: admin.id });
+	});
+
+	test('a rate that isn’t a number is refused', async () => {
+		const r = await callAction(overviewActions, 'program', {
+			user: admin,
+			fields: { feePct: 'lots', feeFixed: '0.30' }
+		});
+		expect(r.status).toBe(400);
 	});
 });
 

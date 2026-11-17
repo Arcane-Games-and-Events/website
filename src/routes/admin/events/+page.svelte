@@ -1,23 +1,8 @@
 <script>
 	import AgeOpenHeader, { btn as hbtn } from '$lib/components/age/admin/AgeOpenHeader.svelte';
-	import { getCircuit } from '$lib/data/circuits.js';
+	import { circuitVar, getCircuit } from '$lib/data/circuits.js';
+	import EventRow from '$lib/components/age/store/EventRow.svelte';
 
-	/** Row wash + label colour per circuit, so a row reads as its circuit at a glance. */
-	const CIRCUIT_ROW = {
-		'Los Angeles': {
-			row: 'bg-blue-500/[0.06] hover:bg-blue-500/[0.12]',
-			text: 'text-blue-700'
-		},
-		'St. Louis': {
-			row: 'bg-green-600/[0.06] hover:bg-green-600/[0.12]',
-			text: 'text-green-700'
-		},
-		'New England': {
-			row: 'bg-purple-500/[0.06] hover:bg-purple-500/[0.12]',
-			text: 'text-purple-700'
-		}
-	};
-	const circuitRow = (c) => CIRCUIT_ROW[c] || { row: 'hover:bg-paper', text: 'text-soft' };
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
 	import Figures from '$lib/components/age/admin/Figures.svelte';
 	import Section from '$lib/components/age/admin/Section.svelte';
@@ -67,31 +52,9 @@
 		return data.eventAnalytics?.ticketsByEvent?.[eventId] || { sold: 0, revenue: 0, refunded: 0 };
 	}
 
-	function formatCurrency(amount) {
-		return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
-			amount || 0
-		);
-	}
-
-	function formatDate(date, options = { month: 'short', day: 'numeric', year: 'numeric' }) {
-		return new Date(date).toLocaleDateString('en-US', { ...options, timeZone: 'UTC' });
-	}
-
-	const STATUS = {
-		upcoming: 'Upcoming',
-		in_progress: 'In progress',
-		completed: 'Completed',
-		cancelled: 'Cancelled'
-	};
 	const filtering = $derived(
 		!!eventsSearchQuery || eventsStatusFilter !== 'active' || eventsCircuitFilter !== 'all'
 	);
-	const time = (d) =>
-		new Date(d).toLocaleTimeString('en-US', {
-			hour: 'numeric',
-			minute: '2-digit',
-			timeZone: 'UTC'
-		});
 	$effect(() => {
 		eventsSearchQuery;
 		eventsStatusFilter;
@@ -192,64 +155,17 @@
 	</div>
 
 	<Section title="Events" class="mt-8" note="{ui.fmt(filteredEvents.length)} shown · soonest first">
-		<div class="{ui.rowHead} grid-cols-[minmax(0,1fr)_120px_130px_110px_70px_90px] gap-3">
-			<span>Event</span><span>Circuit</span><span>Date</span><span>Status</span><span
-				class="text-right">Tickets</span
-			><span class="text-right">Revenue</span>
-		</div>
-		<ul>
+		<ul class="mt-4 flex flex-col gap-3">
 			{#each paginatedEvents as event (event.id)}
 				{@const stats = getEventTicketStats(event.id)}
-				<li class={ui.row}>
-					<a
-						href="/admin/events/{event.id}"
-						class="group block py-3 transition-colors md:grid md:grid-cols-[minmax(0,1fr)_120px_130px_110px_70px_90px] md:items-center md:gap-3 {circuitRow(
-							event.circuit
-						).row}"
-					>
-						<span class="flex min-w-0 items-center gap-3">
-							<span
-								class="h-9 w-[3px] shrink-0 {getCircuit(event.circuit).colors.dot}"
-								aria-hidden="true"
-							></span>
-							<span class="min-w-0">
-								<span class="{ui.titleText} block truncate group-hover:text-warm"
-									>{event.title}</span
-								>
-								<span class="block truncate text-[11.5px] text-fade"
-									>{[event.format, event.location].filter(Boolean).join(' · ') || '—'}</span
-								>
-							</span>
-						</span>
-						<span class="mt-1.5 flex flex-wrap items-center gap-1.5 md:contents">
-							<span
-								class="inline-flex items-center gap-1.5 text-[10px] font-extrabold tracking-[0.14em] uppercase {circuitRow(
-									event.circuit
-								).text}"
-								><span
-									class="h-2 w-2 shrink-0 {getCircuit(event.circuit).colors.dot}"
-									aria-hidden="true"
-								></span>{event.circuit || '—'}</span
-							>
-							<span class="text-[12.5px] text-soft tabular-nums md:block">
-								{#if event.eventDate}{formatDate(event.eventDate)}<span
-										class="block text-[10.5px] text-fade">{time(event.eventDate)}</span
-									>{:else}<span class="text-hero-rb">No date</span>{/if}
-							</span>
-							<span class="{ui.pill} {ui.pillTone[event.status || 'upcoming'] || ''}"
-								>{STATUS[event.status || 'upcoming'] || event.status}</span
-							>
-						</span>
-						<span class="mt-1 block text-[12.5px] tabular-nums md:mt-0 md:text-right"
-							><span class="text-fade md:hidden">Tickets </span>{ui.fmt(stats.sold)}</span
-						>
-						<span class="block font-semibold tabular-nums md:text-right"
-							>{formatCurrency(stats.revenue)}</span
-						>
-					</a>
-				</li>
+				<EventRow
+					e={{ ...event, players: stats.sold, revenue: stats.revenue }}
+					href="/admin/events/{event.id}"
+					color={circuitVar(event.circuit)}
+					now={data.now}
+				/>
 			{:else}
-				<li class={ui.empty}>
+				<li class="border border-dashed border-line2 px-5 py-6 text-[13.5px] text-soft">
 					{filtering ? 'No events match these filters.' : 'No events yet.'}
 					{#if !filtering}<a href="/admin/events/new" class="{ui.textAction} ml-2 not-italic"
 							>Create the first one →</a

@@ -12,6 +12,9 @@ import mux from '$lib/server/mux.js';
 import { load as studioLayout } from '../../src/routes/studio/+layout.server.js';
 import { load as deskLayout } from '../../src/routes/desk/+layout.server.js';
 import { load as classroomLayout } from '../../src/routes/classroom/+layout.server.js';
+import { load as deskMatches } from '../../src/routes/desk/matches/+page.server.js';
+import { load as matchAnalytics } from '../../src/routes/desk/matches/[id]/analytics/+page.server.js';
+import { load as studioItemAnalytics } from '../../src/routes/studio/media/[id]/analytics/+page.server.js';
 import { load as playerLoad } from '../../src/routes/studios/[id=uuid]/+page.server.js';
 import { load as matchLoad } from '../../src/routes/library/matches/[id=uuid]/+page.server.js';
 import { POST as createRoute } from '../../src/routes/api/desk/videos/vod/+server.js';
@@ -99,10 +102,61 @@ describe('who uses the Studio', () => {
 	});
 
 	test('producers manage Studio media; writers can’t create it', async () => {
-		const row = await live({ kind: 'gameplay' });
+		const row = await live({ kind: 'podcast' });
 		expect(await canManageVideoOf(producer, 'vod', row)).toBe(true);
 		expect(await canManageVideoOf(writer, 'vod', row)).toBe(false);
-		expect((await create(writer, { title: 'Nope' })).status).toBe(403);
+		expect((await create(writer, { kind: 'podcast', title: 'Nope' })).status).toBe(403);
+	});
+
+	test('bonus matches are editors’ and admins’ only (they live in the Desk)', async () => {
+		const match = await live({ kind: 'gameplay' });
+		expect(await canManageVideoOf(editor, 'vod', match)).toBe(true);
+		expect(await canManageVideoOf(admin, 'vod', match)).toBe(true);
+		expect(await canManageVideoOf(producer, 'vod', match)).toBe(false);
+		expect((await create(producer, { kind: 'gameplay', title: 'Nope' })).status).toBe(403);
+		expect((await create(producer, { title: 'Nope' })).status).toBe(403);
+		expect((await create(editor, { kind: 'gameplay', title: 'Match' })).status).toBe(201);
+		// a producer can't turn their episode into a bonus match either
+		const ep = await create(producer, { kind: 'interview', title: 'Chat' });
+		expect((await patch(producer, ep.body.vod.id, { kind: 'gameplay' })).status).toBe(403);
+	});
+
+	test('the Desk’s Bonus matches tab lists only matches, for editors and admins', async () => {
+		const match = await live({ kind: 'gameplay', title: 'A match' });
+		await live({ kind: 'podcast', title: 'An episode' });
+		const page = (user) => deskMatches({ locals: { user }, depends: () => {} });
+		const { items } = await page(editor);
+		expect(items.map((i) => i.id)).toEqual([match.id]);
+		await expect(page(writer)).rejects.toMatchObject({ status: 302, location: '/desk' });
+		expect(
+			(await deskLayout({ locals: { user: writer }, url: new URL('http://t/desk') }))
+				.canManageBonusMatches
+		).toBe(false);
+		expect(
+			(await deskLayout({ locals: { user: editor }, url: new URL('http://t/desk') }))
+				.canManageBonusMatches
+		).toBe(true);
+	});
+
+	test('a match’s analytics live beside it in the Desk', async () => {
+		const match = await live({ kind: 'gameplay', title: 'A match' });
+		const ep = await live({ kind: 'podcast', title: 'An episode' });
+		const at = (load, user, id) =>
+			load({
+				locals: { user },
+				params: { id },
+				url: new URL(`http://t/x/${id}/analytics`)
+			});
+		const page = await at(matchAnalytics, editor, match.id);
+		expect(page).toMatchObject({ target: 'vod', id: match.id, title: 'A match' });
+		expect(page.back).toEqual({ label: 'The match', href: `/desk/matches/${match.id}` });
+		await expect(at(matchAnalytics, writer, match.id)).rejects.toMatchObject({ status: 302 });
+		await expect(at(matchAnalytics, editor, ep.id)).rejects.toMatchObject({
+			location: `/studio/media/${ep.id}/analytics`
+		});
+		await expect(at(studioItemAnalytics, editor, match.id)).rejects.toMatchObject({
+			location: `/desk/matches/${match.id}/analytics`
+		});
 	});
 });
 
@@ -132,7 +186,7 @@ describe('media and shows', () => {
 
 	test('only podcasts can be audio, and gameplay never has a show', async () => {
 		const show = await newShow();
-		const r = await create(producer, {
+		const r = await create(editor, {
 			kind: 'gameplay',
 			mediaType: 'audio',
 			title: 'Match',

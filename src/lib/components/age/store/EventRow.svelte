@@ -1,15 +1,22 @@
 <!--
-  EventRow — one of a store's events as a ticket strip: the date on a stub
-  (the circuit's colour while it's ahead, grey once played or cancelled),
-  the title in the poster face, time and format, sign-ups filling against
-  the cap, and its state. The whole strip opens the event.
+  EventRow — one event as the AGE Open card the public Events tab uses
+  (see AgeOpenEvents): the date on a stub tinted in the circuit's colour,
+  from md the circuit photo fading in from that colour, the title in the
+  poster face, format, time and place, sign-ups filling against the cap,
+  and on the right the takings (or the entry fee) with a Manage button.
+  A played or cancelled event goes grey. The whole card opens the event.
 
-  Props: e (the event), href, color (circuit), now (wall-clock ms), after
-  (an optional control beside the strip, e.g. admin's Unlink)
+  Props: e (the event), href, color (circuit, any CSS colour), now
+  (wall-clock ms), circuit (the circuit's name when `e` doesn't carry it),
+  after (an optional control beside the card, e.g. admin's Unlink)
 -->
 <script>
-	/** @type {{ e: any, href: string, color: string, now: number, after?: import('svelte').Snippet }} */
-	let { e, href, color, now, after } = $props();
+	import { page } from '$app/stores';
+	import { circuitImage, circuitVar } from '$lib/data/circuits.js';
+	import FormatTag from '$lib/components/age/FormatTag.svelte';
+
+	/** @type {{ e: any, href: string, color?: string | null, now: number, circuit?: string, after?: import('svelte').Snippet }} */
+	let { e, href, color = null, now, circuit = '', after } = $props();
 
 	// Event times are the venue's wall clock, stored as UTC (see dates.js).
 	const d = $derived(e.eventDate ? new Date(e.eventDate) : null);
@@ -17,83 +24,205 @@
 	const status = $derived(e.status || 'upcoming');
 	const past = $derived(status === 'completed' || (d ? d.getTime() + 86400000 <= now : false));
 	const off = $derived(status === 'cancelled');
+	const live = $derived(status === 'in_progress' && !off);
 	const ahead = $derived(!past && !off);
 	const full = $derived(e.playerCap && e.players >= e.playerCap);
+	// Whole calendar days to go, so every list counts the same whatever its clock.
+	const dateOnly = (ms) => Math.floor(ms / 86400000);
+	const days = $derived(d ? Math.max(0, dateOnly(d.getTime()) - dateOnly(now)) : null);
 	const label = $derived(
 		off
 			? 'Cancelled'
-			: past
-				? 'Played'
-				: status === 'in_progress'
-					? 'Live now'
+			: live
+				? 'Live now'
+				: past
+					? 'Played'
 					: full
 						? 'Full'
-						: 'Sign-ups open'
+						: days === 0
+							? 'Today'
+							: days === 1
+								? 'Tomorrow'
+								: days !== null
+									? `In ${days} days`
+									: 'No date'
+	);
+	const name = $derived(circuit || e.circuit || '');
+	const tone = $derived(ahead ? color || circuitVar(name) : 'var(--color-fade)');
+	const image = $derived(circuitImage(name, $page.data?.circuits));
+	const takings = $derived(e.revenue ?? e.sales ?? null);
+	const money = (v) =>
+		new Intl.NumberFormat('en-US', {
+			style: 'currency',
+			currency: 'USD',
+			maximumFractionDigits: 0
+		}).format(Number(v) || 0);
+	const where = $derived(
+		[fmt({ weekday: 'long' }), fmt({ hour: 'numeric', minute: '2-digit' }), e.location]
+			.filter(Boolean)
+			.join(' · ')
 	);
 </script>
 
 <li class="flex items-stretch gap-2">
 	<a
 		{href}
-		class="group flex min-w-0 flex-1 items-stretch border border-line2 bg-white transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_-24px_rgb(23_21_15/0.55)] {off
+		class="group grid min-w-0 flex-1 grid-cols-[76px_minmax(0,1fr)] border border-line bg-paper-bg transition-colors duration-500 hover:border-ink md:grid-cols-[100px_200px_minmax(0,1fr)_auto] {off
 			? 'opacity-60'
 			: ''}"
 	>
+		<!-- the date stub -->
 		<span
-			class="ao-torn flex w-[64px] shrink-0 flex-col items-center justify-center py-3 leading-none md:w-[76px] {ahead
-				? 'text-white'
-				: 'bg-line text-soft'}"
-			style={ahead ? `background: ${color}` : ''}
+			class="relative row-span-2 flex flex-col items-center justify-center py-4 leading-none md:row-span-1"
+			style="background: color-mix(in srgb, {tone} 10%, var(--ed-paper));"
 		>
-			<span class="text-[9px] font-extrabold tracking-[0.18em] uppercase opacity-80"
-				>{fmt({ month: 'short' })}</span
-			>
-			<span class="ao-cond mt-1 text-[34px] font-black tabular-nums md:text-[40px]"
-				>{fmt({ day: 'numeric' })}</span
-			>
-			<span class="mt-0.5 text-[9px] font-bold uppercase opacity-80"
-				>{fmt({ weekday: 'short' })}</span
-			>
-		</span>
-		<span
-			class="flex min-w-0 flex-1 flex-col justify-center gap-1.5 px-4 py-3 md:flex-row md:items-center md:gap-6 md:px-5"
-		>
-			<span class="min-w-0 flex-1">
+			{#if d}
+				<span class="text-[10px] font-extrabold tracking-[0.18em] uppercase" style="color: {tone};"
+					>{fmt({ month: 'short' })}</span
+				>
 				<span
-					class="ao-cond block truncate text-[22px] leading-tight font-black uppercase group-hover:text-warm md:text-[24px] {off
-						? 'line-through'
-						: ''}">{e.title}</span
+					class="ao-cond mt-1 text-[46px] leading-[0.85] font-black tabular-nums md:text-[54px] {ahead
+						? ''
+						: 'text-soft'}">{fmt({ day: 'numeric' })}</span
 				>
-				<span class="block truncate text-[12px] text-soft"
-					>{fmt({ hour: 'numeric', minute: '2-digit' })} · {e.location || '—'}{e.format
-						? ` · ${e.format}`
-						: ''}</span
+				<span class="mt-1 text-[8.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+					>{fmt({ weekday: 'short' })}</span
 				>
-			</span>
-			<span class="flex shrink-0 items-center gap-4 md:w-[300px] md:justify-end">
-				<span class="flex min-w-0 flex-1 items-center gap-2.5 md:max-w-[150px]">
-					<span class="h-[5px] min-w-[40px] flex-1 bg-line">
-						<span
-							class="block h-full"
-							style="width: {e.playerCap
-								? Math.min(100, (e.players / e.playerCap) * 100)
-								: Math.min(100, e.players * 3)}%; background: {ahead
-								? color
-								: 'var(--color-fade)'};"
-						></span>
-					</span>
-					<span class="shrink-0 text-[12px] font-semibold tabular-nums"
-						>{e.players}{e.playerCap ? `/${e.playerCap}` : ''}</span
+			{:else}
+				<span class="text-[9.5px] font-extrabold tracking-[0.14em] text-hero-rb uppercase">TBD</span
+				>
+			{/if}
+			{#if !ahead}
+				<!-- on phones, where the photo is hidden, the stamp sits on the stub -->
+				<span
+					class="mt-2 max-w-full px-1 py-0.5 text-[8px] font-extrabold tracking-[0.06em] uppercase md:hidden {off
+						? 'bg-hero-rb text-white'
+						: 'bg-ink text-paper-bg'}"
+					aria-hidden="true">{label}</span
+				>
+			{/if}
+			<span class="ao-perf absolute inset-y-2 right-0 w-px text-line2" aria-hidden="true"></span>
+		</span>
+
+		<!-- the circuit photo, from md -->
+		<span class="relative hidden overflow-hidden bg-ink md:block">
+			<img
+				src={image}
+				alt=""
+				loading="lazy"
+				class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.05] {ahead
+					? ''
+					: 'grayscale'}"
+			/>
+			<span
+				class="absolute inset-0"
+				style="background: linear-gradient(90deg, color-mix(in srgb, {tone} 55%, transparent) 0%, transparent 85%);"
+				aria-hidden="true"
+			></span>
+			{#if !ahead}
+				<!-- a stamp over the photo once it's played or called off -->
+				<span class="absolute inset-0 grid place-items-center" aria-hidden="true">
+					<span
+						class="ao-cond -rotate-3 border-2 px-3 pt-1 pb-0.5 text-[24px] leading-none font-black tracking-[0.04em] uppercase {off
+							? 'border-hero-rb bg-hero-rb/90 text-white'
+							: 'border-paper-bg/80 bg-ink/75 text-paper-bg'}">{label}</span
 					>
 				</span>
+			{/if}
+		</span>
+
+		<!-- what and where -->
+		<span class="min-w-0 px-4 pt-4 pb-2 md:px-6 md:py-5">
+			<span class="flex flex-wrap items-center gap-x-3 gap-y-1">
+				{#if name}
+					<span
+						class="text-[9.5px] font-extrabold tracking-[0.2em] uppercase"
+						style="color: {tone};">{name}</span
+					>
+				{/if}
 				<span
-					class="w-[118px] shrink-0 text-right text-[9.5px] font-extrabold tracking-[0.14em] uppercase {ahead
-						? full
+					class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] uppercase {live
+						? 'text-hero-rb'
+						: full && ahead
 							? 'text-hero-rb'
-							: 'text-prem'
-						: 'text-fade'}">{label}</span
+							: 'text-fade'}"
 				>
+					{#if ahead}
+						<span
+							class="h-[6px] w-[6px] rounded-full {live ? 'animate-pulse-dot' : ''}"
+							style="background: {live ? 'var(--ed-hero-rb)' : tone};"
+							aria-hidden="true"
+						></span>
+					{/if}
+					{label}
+				</span>
 			</span>
+			<span
+				class="ao-cond mt-1 block text-[26px] leading-[0.95] font-black uppercase group-hover:text-warm md:text-[30px] {off
+					? 'line-through'
+					: ''}">{e.title}</span
+			>
+			{#if e.format || where}
+				<span class="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5"
+					>{#if e.format}<FormatTag format={e.format} short />{/if}<span
+						class="min-w-0 truncate text-[11px] font-semibold text-fade">{where}</span
+					></span
+				>
+			{/if}
+			<span class="mt-3 flex h-[14px] items-center gap-3">
+				{#if e.playerCap}
+					<span class="block h-[3px] w-full max-w-[200px] bg-line">
+						<span
+							class="block h-full"
+							style="width: {Math.min(
+								100,
+								((e.players || 0) / e.playerCap) * 100
+							)}%; background: {tone};"
+						></span>
+					</span>
+					<span
+						class="shrink-0 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase tabular-nums"
+						>{e.players || 0}/{e.playerCap} seats</span
+					>
+				{:else}
+					<span
+						class="text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase tabular-nums"
+						>{e.players || 0} {e.players === 1 ? 'player' : 'players'} · no cap</span
+					>
+				{/if}
+			</span>
+		</span>
+
+		<!-- takings and the way in -->
+		<span
+			class="flex items-center justify-between gap-4 px-4 pb-4 md:flex-col md:items-end md:justify-center md:px-6 md:pb-0"
+		>
+			{#if takings !== null}
+				<span class="md:text-right">
+					<span class="ao-cond block text-[30px] leading-none font-black tabular-nums"
+						>{money(takings)}</span
+					>
+					<span class="text-[8.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>in ticket sales</span
+					>
+				</span>
+			{:else if e.price != null}
+				<span class="md:text-right">
+					<span class="ao-cond block text-[30px] leading-none font-black tabular-nums"
+						>{Number(e.price) > 0 ? money(e.price) : 'Free'}</span
+					>
+					<span class="text-[8.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						>entry</span
+					>
+				</span>
+			{:else}
+				<span></span>
+			{/if}
+			<span
+				class="inline-flex items-center px-4 py-2.5 text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap text-white uppercase transition-colors group-hover:bg-ink {live
+					? 'bg-hero-rb'
+					: 'bg-warm'}">Manage →</span
+			>
 		</span>
 	</a>
 	{@render after?.()}

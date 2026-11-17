@@ -1,7 +1,9 @@
 <script>
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminHeader from '$lib/components/age/admin/AdminHeader.svelte';
 	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import { onMount } from 'svelte';
+	import { circuitVar } from '$lib/data/circuits.js';
+	import EventRow from '$lib/components/age/store/EventRow.svelte';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -44,6 +46,15 @@
 			subscription_member_first: 'Membership · referral',
 			course: 'Course'
 		})[meta?.type] || 'Order';
+
+	const orderTone = (meta) =>
+		meta?.type === 'ticket'
+			? 'bg-warm'
+			: meta?.type === 'course'
+				? 'bg-academy'
+				: String(meta?.type || '').startsWith('subscription')
+					? 'bg-prem'
+					: 'bg-fade';
 
 	// ============ needs attention ============
 	const needs = $derived.by(() => {
@@ -88,6 +99,13 @@
 				'text-hero-rb'
 			),
 			...one(
+				a.storePayouts,
+				'store payout ready to pay',
+				'store payouts ready to pay',
+				'/admin/circuits',
+				'text-hero-rb'
+			),
+			...one(
 				a.payoutsDue,
 				'partner payout due',
 				'partner payouts due',
@@ -118,224 +136,341 @@
 		return 'Nothing needs your attention right now.';
 	});
 
+	// ============ revenue ============
+	const thisMonth = $derived(
+		data.ledger ? data.ledger.thisMonth : Number(data.revenue?.month) || 0
+	);
+	const lastMonth = $derived(data.ledger?.lastMonth ?? null);
+	const months = $derived(data.months ?? []);
+	const peak = $derived(Math.max(1, ...months.map((m) => m.net)));
+	const year = $derived(months.reduce((t, m) => t + m.net, 0));
+	const split = $derived.by(() => {
+		const subs = Number(data.share?.subscriptions) || 0;
+		const tix = Number(data.share?.tickets) || 0;
+		const all = subs + tix;
+		return all ? { subs, tix, subsPct: Math.round((subs / all) * 100) } : null;
+	});
+
 	// ============ figures ============
 	const figures = $derived([
-		data.ledger
-			? {
-					label: 'Revenue this month',
-					value: money(data.ledger.thisMonth),
-					note: `${money(data.ledger.lastMonth)} last month`
-				}
-			: { label: 'Revenue this month', value: money(data.revenue?.month), note: 'orders placed' },
 		{
 			label: 'Paying members',
 			value: fmt(data.members?.paying),
-			note: `${fmt(data.members?.monthly)} monthly · ${fmt(data.members?.yearly)} yearly`
+			note: `${fmt(data.members?.monthly)} monthly · ${fmt(data.members?.yearly)} yearly`,
+			tone: 'border-prem'
 		},
-		{ label: 'Comped members', value: fmt(data.members?.comped), note: 'premium, no subscription' },
-		{ label: 'MRR', value: money(data.members?.mrr), note: '$10 monthly · $110 yearly' },
+		{
+			label: 'MRR',
+			value: money(data.members?.mrr),
+			note: '$10 monthly · $110 yearly',
+			tone: 'border-prem'
+		},
+		{
+			label: 'Comped members',
+			value: fmt(data.members?.comped),
+			note: 'premium, no subscription',
+			tone: 'border-gold'
+		},
 		{
 			label: 'Tickets sold',
 			value: fmt(data.counts?.totalTicketsSold),
-			note: `${fmt(data.counts?.totalRefunded)} refunded`
+			note: `${fmt(data.counts?.totalRefunded)} refunded`,
+			tone: 'border-warm'
 		},
 		{
 			label: 'Upcoming events',
 			value: fmt(data.counts?.upcomingEvents),
-			note: `${fmt(data.counts?.pastEvents)} past`
+			note: `${fmt(data.counts?.pastEvents)} past`,
+			tone: 'border-warm'
 		}
 	]);
 
 	// ============ sections ============
+	// The Studio is left out while AGE Studios is hidden from the site.
 	const sections = $derived([
-		{ href: '/admin/analytics', label: 'Analytics', note: 'Revenue, members, projections, site' },
+		{
+			href: '/admin/analytics',
+			label: 'Analytics',
+			note: 'Revenue, members, projections, site',
+			tone: 'bg-ink'
+		},
 		{
 			href: '/admin/orders',
 			label: 'Orders',
 			note: `${fmt(data.counts?.totalOrders)} orders`,
-			count: data.counts?.totalOrders
+			tone: 'bg-prem'
 		},
 		{
 			href: '/admin/users',
 			label: 'Members',
 			note: `${fmt(data.counts?.totalUsers)} accounts`,
-			count: data.counts?.totalUsers
+			tone: 'bg-warm'
 		},
 		{
 			href: '/admin/events',
 			label: 'Events',
-			note: `${fmt(data.counts?.totalEvents)} events`,
-			count: data.counts?.totalEvents
+			note: `${fmt(data.counts?.totalEvents)} ${data.counts?.totalEvents === 1 ? 'event' : 'events'}`,
+			tone: 'bg-hero-rb'
 		},
-		{ href: '/admin/calendar', label: 'Calendar', note: 'LSS seasons and dates' },
-		{ href: '/studio', label: 'Studio', note: 'Gameplay, podcasts and interviews' },
-		{ href: '/admin/partners', label: 'Partners', note: 'Promo codes and payouts' },
-		{ href: '/desk', label: 'Desk', note: 'Articles and their videos' },
-		{ href: '/classroom', label: 'Classroom', note: 'Courses, teachers and payouts' }
+		{ href: '/admin/calendar', label: 'Calendar', note: 'LSS seasons and dates', tone: 'bg-gold' },
+		{
+			href: '/admin/partners',
+			label: 'Partners',
+			note: 'Promo codes and payouts',
+			tone: 'bg-warm-deep'
+		},
+		{ href: '/desk', label: 'Desk', note: 'Articles and their videos', tone: 'bg-gold' },
+		{
+			href: '/classroom',
+			label: 'Classroom',
+			note: 'Courses, teachers and payouts',
+			tone: 'bg-academy'
+		}
 	]);
 </script>
 
 <svelte:head><title>Admin · Arcane Games</title></svelte:head>
 
-<DeskHeader kicker="Admin" title="{greeting}, {name}." subtitle={summary}>
+<AdminHeader title="{greeting}, {name}." subtitle={summary}>
 	{#snippet lead()}
-		<span aria-hidden="true">◆</span> Admin{#if dateline}<span class="text-paper-bg/50">
-				· {dateline}</span
+		<span class="text-gold">◆</span> Admin{#if dateline}&nbsp;<span class="text-paper-bg/50"
+				>· {dateline}</span
 			>{/if}
 	{/snippet}
-</DeskHeader>
+</AdminHeader>
 <AdminTabs />
 
 <div class="mx-auto w-full max-w-[1200px] px-5 pb-20 md:px-8">
+	<!-- the month at a glance -->
+	<div
+		class="mt-10 grid gap-px border border-line2 bg-line2 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]"
+	>
+		<!-- revenue -->
+		<section class="min-w-0 bg-paper-bg px-5 py-6 md:px-7 md:py-7">
+			<div class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+				<h2
+					class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
+				>
+					<span class="text-[8px] text-prem">◆</span>Revenue so far this month
+				</h2>
+				<a
+					href="/admin/analytics"
+					class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
+					>Analytics →</a
+				>
+			</div>
+			<div class="mt-3 flex flex-wrap items-end gap-x-5 gap-y-2">
+				<p class="ao-cond text-[72px] leading-[0.85] font-black tabular-nums md:text-[96px]">
+					{money(thisMonth)}
+				</p>
+				{#if lastMonth !== null}
+					<p class="pb-1.5 text-[12px] text-soft">
+						{money(lastMonth)} in all of last month
+					</p>
+				{/if}
+			</div>
+
+			{#if months.length}
+				<!-- twelve months, the current one in orange -->
+				<div class="mt-7">
+					<ol
+						class="flex h-[132px] items-end gap-[3px] border-b border-ink"
+						aria-label="Net revenue by month"
+					>
+						{#each months as m, i (m.month)}
+							{@const current = i === months.length - 1}
+							<li
+								class="group relative flex h-full flex-1 items-end"
+								aria-label="{m.label}: {money(m.net)}"
+							>
+								<span
+									class="block w-full transition-colors {current
+										? 'bg-warm'
+										: 'bg-ink/80 group-hover:bg-ink'}"
+									style="height: {Math.max(2, (Math.max(0, m.net) / peak) * 100)}%"
+								></span>
+								<span
+									class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 bg-ink px-2 py-1 text-[11px] whitespace-nowrap text-paper-bg tabular-nums opacity-0 transition-opacity group-hover:opacity-100"
+									>{m.label} · {money(m.net)}</span
+								>
+							</li>
+						{/each}
+					</ol>
+					<ol class="mt-1.5 flex gap-[3px]" aria-hidden="true">
+						{#each months as m, i (m.month)}
+							<li
+								class="flex-1 text-center text-[9px] font-extrabold tracking-[0.08em] uppercase {i ===
+								months.length - 1
+									? 'text-warm'
+									: 'text-fade'}"
+							>
+								{m.label.slice(0, 1)}<span class="max-sm:hidden">{m.label.slice(1, 3)}</span>
+							</li>
+						{/each}
+					</ol>
+				</div>
+				<div class="mt-5 grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-8">
+					<p class="text-[12px] text-soft">
+						<span class="ao-cond mr-1.5 text-[24px] leading-none font-black text-ink tabular-nums"
+							>{money(year)}</span
+						>in the last 12 months
+					</p>
+					{#if split}
+						<div class="min-w-0">
+							<div class="flex h-2 gap-[2px]" aria-hidden="true">
+								<span class="bg-prem" style="width: {split.subsPct}%"></span>
+								<span class="flex-1 bg-warm"></span>
+							</div>
+							<div
+								class="mt-1.5 flex justify-between gap-3 text-[10px] font-extrabold tracking-[0.12em] uppercase"
+							>
+								<span class="text-prem">Memberships {money(split.subs)}</span>
+								<span class="text-warm">Tickets {money(split.tix)}</span>
+							</div>
+						</div>
+					{/if}
+				</div>
+			{/if}
+		</section>
+
+		<!-- briefing -->
+		<section class="min-w-0 bg-ink px-5 py-6 text-paper-bg md:px-7 md:py-7">
+			<h2
+				class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
+			>
+				<span class="text-[8px] text-warm">◆</span>Your briefing
+			</h2>
+			{#if needs.length}
+				<ul class="mt-4">
+					{#each needs as item (item.text)}
+						<li class="border-b border-paper-bg/15 last:border-b-0">
+							<a href={item.href} class="group flex items-baseline gap-4 py-2.5">
+								<span
+									class="ao-cond w-10 shrink-0 text-[28px] leading-none font-black tabular-nums {item.tone ===
+									'text-hero-rb'
+										? 'text-warm-light'
+										: 'text-paper-bg/60'}">{item.count}</span
+								>
+								<span class="font-newsreader text-[16px] leading-snug group-hover:underline"
+									>{item.text}</span
+								>
+								<span class="ml-auto text-[12px] text-paper-bg/40 group-hover:text-paper-bg">→</span
+								>
+							</a>
+						</li>
+					{/each}
+				</ul>
+			{:else}
+				<p class="ao-cond mt-6 text-[56px] leading-none font-black uppercase">All clear.</p>
+				<p class="mt-3 font-newsreader text-[17px] text-paper-bg/70 italic">
+					Nothing is waiting on you.
+				</p>
+			{/if}
+		</section>
+	</div>
+
 	<!-- figures -->
-	<dl class="grid grid-cols-2 gap-px border border-line2 bg-line2 md:grid-cols-3 xl:grid-cols-6">
+	<dl class="mt-10 grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-3 lg:grid-cols-5">
 		{#each figures as f (f.label)}
-			<div class="bg-paper-bg px-4 py-4 md:px-5">
+			<div class="border-t-[3px] pt-3 {f.tone}">
 				<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">{f.label}</dt>
-				<dd class="ao-cond mt-2 text-[32px] leading-none font-black tabular-nums">{f.value}</dd>
+				<dd class="ao-cond mt-2 text-[40px] leading-none font-black tabular-nums">{f.value}</dd>
 				<dd class="mt-1.5 text-[11px] text-soft">{f.note}</dd>
 			</div>
 		{/each}
 	</dl>
 
-	<div class="mt-12 grid gap-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-16">
-		<div class="min-w-0">
-			<!-- needs attention -->
-			<section>
-				<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-					<h2
-						class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-					>
-						<span class="text-[8px] text-hero-rb">◆</span>Needs attention
-					</h2>
-				</div>
-				{#if needs.length}
-					<ul>
-						{#each needs as item (item.text)}
-							<li class="border-b border-line2">
-								<a href={item.href} class="flex items-baseline gap-4 py-3 hover:bg-paper">
-									<span
-										class="ao-cond w-10 shrink-0 text-[24px] leading-none font-black tabular-nums {item.tone}"
-										>{item.count}</span
-									>
-									<span class="font-newsreader text-[17px]">{item.text}</span>
-									<span
-										class="ml-auto text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase"
-										>Open →</span
-									>
-								</a>
-							</li>
-						{/each}
-					</ul>
-				{:else}
-					<p class="py-6 font-newsreader text-[17px] text-soft italic">
-						All clear. Nothing is waiting on you.
-					</p>
-				{/if}
-			</section>
-
-			<!-- sections -->
-			<section class="mt-12">
-				<div class="border-b-[3px] border-ink pb-2">
-					<h2
-						class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-					>
-						<span class="text-[8px] text-warm">◆</span>Sections
-					</h2>
-				</div>
-				<ul class="mt-4 grid gap-px border border-line2 bg-line2 sm:grid-cols-2 lg:grid-cols-3">
-					{#each sections as s (s.href)}
-						<li class="bg-paper-bg">
-							<a href={s.href} class="group block px-5 py-5 hover:bg-paper">
-								<span class="block font-newsreader text-[20px] font-semibold group-hover:text-warm"
-									>{s.label}</span
-								>
-								<span class="mt-1 block text-[12px] text-soft">{s.note}</span>
-							</a>
-						</li>
-					{/each}
-				</ul>
-			</section>
+	<!-- next events -->
+	<section class="mt-14">
+		<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
+			<h2
+				class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
+			>
+				<span class="text-[8px] text-warm">◆</span>Next events
+			</h2>
+			<a
+				href="/admin/events"
+				class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
+				>All →</a
+			>
 		</div>
+		{#if data.events.length}
+			<ul class="mt-4 flex flex-col gap-3">
+				{#each data.events as e (e.id)}
+					<EventRow {e} href="/admin/events/{e.id}" color={circuitVar(e.circuit)} now={data.now} />
+				{/each}
+			</ul>
+		{:else}
+			<p class="py-5 font-newsreader text-[16px] text-soft italic">No upcoming events.</p>
+		{/if}
+	</section>
 
-		<aside class="min-w-0">
-			<section>
-				<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-					<h2
-						class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-					>
-						<span class="text-[8px] text-warm">◆</span>Next events
-					</h2>
-					<a
-						href="/admin/events"
-						class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
-						>All →</a
-					>
-				</div>
-				{#if data.events.length}
-					<ul>
-						{#each data.events as e (e.id)}
-							<li class="border-b border-line2">
-								<a
-									href="/admin/events/{e.id}"
-									class="flex items-baseline gap-3 py-3 hover:bg-paper"
+	<!-- recent orders -->
+	<section class="mt-14">
+		<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
+			<h2
+				class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
+			>
+				<span class="text-[8px] text-prem">◆</span>Recent orders
+			</h2>
+			<a
+				href="/admin/orders"
+				class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
+				>All →</a
+			>
+		</div>
+		{#if data.orders.length}
+			<ul class="grid md:grid-cols-2 md:gap-x-10">
+				{#each data.orders as o (o.id)}
+					<li class="border-b border-line2">
+						<a href="/admin/orders/{o.id}" class="flex items-center gap-3 py-3 hover:bg-paper">
+							<span class="h-2 w-2 shrink-0 {orderTone(o.meta)}" aria-hidden="true"></span>
+							<span class="min-w-0 flex-1">
+								<span class="block truncate text-[13px]">{o.userEmail || 'Guest'}</span>
+								<span class="block text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
+									>{orderKind(o.meta)} · {ago(o.createdAt)}</span
 								>
-									<span
-										class="w-14 shrink-0 text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
-										>{when(e.eventDate)}</span
-									>
-									<span class="min-w-0 truncate font-newsreader text-[16px] font-semibold"
-										>{e.title}</span
-									>
-									<span class="ml-auto shrink-0 text-[11px] text-soft tabular-nums"
-										>{e.sold}{e.playerCap ? `/${e.playerCap}` : ''}</span
-									>
-								</a>
-							</li>
-						{/each}
-					</ul>
-				{:else}
-					<p class="py-5 font-newsreader text-[16px] text-soft italic">No upcoming events.</p>
-				{/if}
-			</section>
+							</span>
+							<span class="ao-cond shrink-0 text-[20px] font-black tabular-nums"
+								>{money(o.amount)}</span
+							>
+						</a>
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<p class="py-5 font-newsreader text-[16px] text-soft italic">No orders yet.</p>
+		{/if}
+	</section>
 
-			<section class="mt-10">
-				<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-					<h2
-						class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-					>
-						<span class="text-[8px] text-prem">◆</span>Recent orders
-					</h2>
-					<a
-						href="/admin/orders"
-						class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
-						>All →</a
-					>
-				</div>
-				{#if data.orders.length}
-					<ul>
-						{#each data.orders as o (o.id)}
-							<li class="border-b border-line2">
-								<a
-									href="/admin/orders/{o.id}"
-									class="flex items-baseline gap-3 py-3 hover:bg-paper"
-								>
-									<span class="min-w-0 flex-1">
-										<span class="block truncate text-[13px]">{o.userEmail || 'Guest'}</span>
-										<span
-											class="block text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
-											>{orderKind(o.meta)} · {ago(o.createdAt)}</span
-										>
-									</span>
-									<span class="shrink-0 font-semibold tabular-nums">{money(o.amount)}</span>
-								</a>
-							</li>
-						{/each}
-					</ul>
-				{:else}
-					<p class="py-5 font-newsreader text-[16px] text-soft italic">No orders yet.</p>
-				{/if}
-			</section>
-		</aside>
-	</div>
+	<!-- sections -->
+	<section class="mt-14">
+		<div class="border-b-[3px] border-ink pb-2">
+			<h2
+				class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
+			>
+				<span class="text-[8px] text-warm">◆</span>Sections
+			</h2>
+		</div>
+		<ul class="mt-4 grid grid-cols-2 gap-px border border-line2 bg-line2 md:grid-cols-4">
+			{#each sections as s (s.href)}
+				<li class="bg-paper-bg">
+					<a href={s.href} class="group relative block h-full px-5 pt-6 pb-5 hover:bg-paper">
+						<span
+							class="absolute inset-x-0 top-0 h-[4px] transition-[height] group-hover:h-[7px] {s.tone}"
+							aria-hidden="true"
+						></span>
+						<span class="ao-cond block text-[26px] leading-none font-black uppercase md:text-[30px]"
+							>{s.label}</span
+						>
+						<span class="mt-2 block text-[12px] text-soft">{s.note}</span>
+						<span
+							class="mt-4 block text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase group-hover:text-warm"
+							>Open →</span
+						>
+					</a>
+				</li>
+			{/each}
+		</ul>
+	</section>
 </div>

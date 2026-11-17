@@ -103,7 +103,7 @@ export function attention() {
 /** The next upcoming events, soonest first. */
 export function nextEvents(limit = 5) {
 	return cached(
-		`admin:home:next-events:${limit}`,
+		`admin:home:next-events:v2:${limit}`,
 		() =>
 			db
 				.select({
@@ -112,7 +112,10 @@ export function nextEvents(limit = 5) {
 					circuit: event.circuit,
 					eventDate: event.eventDate,
 					status: event.status,
-					playerCap: event.playerCap
+					playerCap: event.playerCap,
+					location: event.location,
+					format: event.format,
+					price: event.price
 				})
 				.from(event)
 				.where(gte(event.eventDate, sql`now()`))

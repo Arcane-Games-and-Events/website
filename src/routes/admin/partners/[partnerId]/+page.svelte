@@ -1,6 +1,6 @@
 <script>
 	import { untrack } from 'svelte';
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminHeader from '$lib/components/age/admin/AdminHeader.svelte';
 	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import { enhance } from '$app/forms';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
@@ -65,16 +65,14 @@
 <svelte:head><title>{p.firstName} {p.lastName} · Admin</title></svelte:head>
 
 <!-- ============ HEADER ============ -->
-<DeskHeader kicker="Admin" title="{p.firstName} {p.lastName}" subtitle={p.email} />
+<AdminHeader
+	trail={[{ href: '/admin/partners', label: 'Partners' }]}
+	title="{p.firstName} {p.lastName}"
+	subtitle={p.email}
+/>
 <AdminTabs />
 <section class="mx-auto w-full max-w-[1200px] px-5 pt-[24px] pb-[20px] md:px-8">
-	<a
-		href="/admin/partners"
-		class="inline-flex items-center text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-	>
-		← Back to Partners
-	</a>
-	<div class="mt-[18px] mb-[18px] flex flex-wrap items-center gap-[16px]">
+	<div class="mb-[18px] flex flex-wrap items-center gap-[16px]">
 		<span
 			class="inline-flex w-fit shrink-0 items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap text-[var(--tone,var(--color-ink))] capitalize before:block before:h-2 before:w-2 before:shrink-0 before:bg-[var(--tone,var(--color-line2))] before:content-[''] {p.isActive
 				? '[--tone:var(--color-prem)]'

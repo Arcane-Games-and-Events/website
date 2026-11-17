@@ -3,7 +3,7 @@
 
   Renders the editorial <AgeHeader> so an admin moving between the site,
   the Desk and the admin pages sees one header. Each admin page places its
-  own ink <DeskHeader kicker="Admin"> and the <AdminTabs> strip under it.
+  own <AdminHeader> poster band and the <AdminTabs> strip under it.
 
   No footer: this is a working surface, not a reader page.
 -->

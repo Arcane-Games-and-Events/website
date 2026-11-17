@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { deleteOwnerVideo, ownerFor, ownerSlot, VideoError } from '$lib/server/video/mux.js';
 import { updateGameplay } from '$lib/server/studio/media.js';
+import { canManageBonusMatches } from '$lib/server/auth/roles.js';
 
 const run = async (fn) => {
 	try {
@@ -23,6 +24,9 @@ export async function PATCH({ params, locals, request }) {
 	return run(async () => {
 		const row = await ownerFor(locals.user, 'vod', params.id);
 		const input = await request.json().catch(() => ({}));
+		if (input.kind === 'gameplay' && !canManageBonusMatches(locals.user)) {
+			throw error(403, 'Only editors and admins can manage bonus matches');
+		}
 		return json({ vod: await updateGameplay(row, input) });
 	});
 }

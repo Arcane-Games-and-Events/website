@@ -377,12 +377,21 @@
 	{/if}
 
 	{#if entry?.videoProvider}
-		<button
-			type="button"
-			onclick={removeVideo}
-			disabled={removing}
-			class="mt-3 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:text-hero-rb disabled:opacity-50"
-			>{removing ? 'Removing…' : 'Remove video'}</button
-		>
+		<div class="mt-3 flex items-center gap-4">
+			{#if target === 'entry' && entry?.videoProvider === 'mux'}
+				<a
+					href="/desk/videos/entry/{id}"
+					class="text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:text-warm"
+					>Analytics</a
+				>
+			{/if}
+			<button
+				type="button"
+				onclick={removeVideo}
+				disabled={removing}
+				class="text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:text-hero-rb disabled:opacity-50"
+				>{removing ? 'Removing…' : 'Remove video'}</button
+			>
+		</div>
 	{/if}
 </div>

@@ -62,12 +62,13 @@ async function guarded(key, fn) {
 const STUDIO_KINDS = ['gameplay', 'podcast', 'interview', 'video'];
 
 /**
- * SQL limiting views to an area's videos: 'studio' is every Studio item;
+ * SQL limiting views to an area's videos: 'studio' is every Studio item
+ * but bonus matches (they're the Desk's now);
  * a Studio kind ('gameplay', 'podcast', …) just those; 'articles' the
  * Desk's article videos.
  */
 function scopeSql(area) {
-	if (area === 'studio') return sql`v.vod_id IS NOT NULL`;
+	if (area === 'studio') return sql`v.vod_id IN (SELECT id FROM vods WHERE kind <> 'gameplay')`;
 	if (STUDIO_KINDS.includes(area))
 		return sql`v.vod_id IN (SELECT id FROM vods WHERE kind = ${area})`;
 	if (area === 'articles') return sql`v.entry_id IS NOT NULL AND v.video_plays > 0`;

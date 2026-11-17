@@ -47,7 +47,7 @@
 		</h3>
 		<ul class="mt-4 flex flex-col gap-2.5">
 			{#each ahead as e (e.id)}
-				<EventRow {e} href="{base}/events/{e.id}" {color} now={data.now} />
+				<EventRow {e} href="{base}/events/{e.id}" {color} circuit={w.circuit.name} now={data.now} />
 			{:else}
 				<li class="border border-dashed border-line2 px-5 py-6 text-[13.5px] text-soft">
 					Nothing scheduled.
@@ -68,7 +68,13 @@
 			</h3>
 			<ul class="mt-4 flex flex-col gap-2.5">
 				{#each before as e (e.id)}
-					<EventRow {e} href="{base}/events/{e.id}" {color} now={data.now} />
+					<EventRow
+						{e}
+						href="{base}/events/{e.id}"
+						{color}
+						circuit={w.circuit.name}
+						now={data.now}
+					/>
 				{/each}
 			</ul>
 		</section>

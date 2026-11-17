@@ -14,6 +14,7 @@ import {
 	unlinkEvent,
 	updateStore
 } from '$lib/server/stores/admin.js';
+import { addAdjustment, markPayoutPaid } from '$lib/server/stores/payouts.js';
 
 /** /admin/stores/[slug] — one store: members, events, payouts, details, activity. */
 export async function load({ params }) {
@@ -50,6 +51,35 @@ const act = (section, fn) => async (event) => {
 };
 
 export const actions = {
+	// A closed-out event's payout, paid by hand (date, method, reference).
+	markPaid: act('payouts', async ({ store, form, actorId }) => {
+		const res = await markPayoutPaid(
+			store.id,
+			form.get('eventId'),
+			{
+				paidAt: String(form.get('paidAt') || ''),
+				method: String(form.get('method') || ''),
+				reference: String(form.get('reference') || '')
+			},
+			actorId
+		);
+		if (res.error) return res;
+		return { saved: `Marked paid: $${(res.amountCents / 100).toFixed(2)}.` };
+	}),
+
+	adjust: act('payouts', async ({ store, form, actorId }) => {
+		const res = await addAdjustment(
+			store.id,
+			{
+				eventId: String(form.get('eventId') || ''),
+				amount: String(form.get('amount') || ''),
+				note: String(form.get('note') || '')
+			},
+			actorId
+		);
+		return res.error ? res : { saved: 'Adjustment added.' };
+	}),
+
 	update: act('details', async ({ store, form, actorId }) => {
 		const { values, error: invalid } = storeForm(form);
 		if (invalid) return { error: invalid };

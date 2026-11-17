@@ -1,5 +1,5 @@
 <script>
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminHeader from '$lib/components/age/admin/AdminHeader.svelte';
 	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import { enhance } from '$app/forms';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
@@ -20,8 +20,8 @@
 <svelte:head><title>New Partner · Admin</title></svelte:head>
 
 <!-- ============ HEADER ============ -->
-<DeskHeader
-	kicker="Admin"
+<AdminHeader
+	trail={[{ href: '/admin/partners', label: 'Partners' }]}
 	title="New partner"
 	subtitle="Promote an existing user to AGE Partner and assign them a promo code."
 />

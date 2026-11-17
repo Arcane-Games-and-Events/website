@@ -1,7 +1,7 @@
 <script>
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminHeader from '$lib/components/age/admin/AdminHeader.svelte';
 	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import AdminSubnav from '$lib/components/age/admin/AdminSubnav.svelte';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
@@ -26,8 +26,7 @@
 
 <svelte:head><title>Refund requests — Admin</title></svelte:head>
 
-<DeskHeader
-	kicker="Admin"
+<AdminHeader
 	title="Refund requests"
 	subtitle="Tickets members asked to refund inside the 24-hour window."
 />

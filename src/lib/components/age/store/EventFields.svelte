@@ -231,7 +231,7 @@
 				>
 			</div>
 			<div class="flex flex-col gap-3">
-				{#each [{ name: 'gemIdRequired', on: v.gemIdRequired ?? true, title: 'Ask for a GEM ID', note: 'Players give it when they sign up, so you can enter them and report results.' }, { name: 'premiumDiscount', on: v.premiumDiscount ?? true, title: 'Premium members get 10% off', note: 'Taken off at checkout. AGE covers the difference.' }] as t (t.name)}
+				{#each [{ name: 'gemIdRequired', on: v.gemIdRequired ?? true, title: 'Ask for a GEM ID', note: 'Players give it when they sign up, so you can enter them and report results.' }, { name: 'premiumDiscount', on: v.premiumDiscount ?? true, title: 'Premium members get $5 off', note: 'Taken off at checkout; the store is paid what the player paid.' }] as t (t.name)}
 					<label
 						class="flex cursor-pointer items-start justify-between gap-5 border border-line2 bg-white px-4 py-3 transition-colors hover:border-ink/40"
 					>

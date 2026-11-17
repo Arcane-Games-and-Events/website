@@ -1,8 +1,8 @@
 /**
  * The admin side of circuits and stores (migration 045): the overview,
  * creating and editing circuits and stores, a store's members, linking
- * events to a store, and the program settings (default revenue share,
- * who pays card fees).
+ * events to a store, and the program row. Payouts and the card fee are in
+ * payouts.js.
  *
  * Every write here is admin-only; the route checks that before calling.
  */
@@ -15,15 +15,17 @@ import {
 	storeActivity,
 	storeMember,
 	storeProgram,
-	storeStatement,
 	user
 } from '$lib/server/db/schema.js';
 import sharp from 'sharp';
 import { bump } from '$lib/server/cache/index.js';
 import { getSupabase, DESK_MEDIA_BUCKET } from '$lib/server/supabase.js';
 import { CIRCUITS_TAG } from './circuits.js';
+import { owedSql, storePayouts, syncLedger } from './payouts.js';
 
-export const missingStores = (err) => err?.code === '42P01' || err?.cause?.code === '42P01';
+// A missing table (045) or column (050) means a migration still needs applying.
+export const missingStores = (err) =>
+	['42P01', '42703'].includes(err?.code) || ['42P01', '42703'].includes(err?.cause?.code);
 
 /** "Bay Area Games" → "bay-area-games". */
 export function slugify(text) {
@@ -34,17 +36,6 @@ export function slugify(text) {
 		.replace(/[^a-z0-9]+/g, '-')
 		.replace(/^-+|-+$/g, '')
 		.slice(0, 60);
-}
-
-/** "40" or "40%" → 0.4; blank → null; anything else → undefined (invalid). */
-export function parseShare(raw) {
-	const s = String(raw ?? '')
-		.trim()
-		.replace(/%$/, '');
-	if (!s) return null;
-	const n = Number(s);
-	if (!Number.isFinite(n) || n < 0 || n > 100) return undefined;
-	return (Math.round(n * 100) / 10000).toFixed(4);
 }
 
 /** Record what happened in a store. Never fails the action it describes. */
@@ -65,10 +56,10 @@ export async function logStoreActivity(storeId, actorId, kind, { eventId, note, 
 
 // ---------------------------------------------------------------- reading
 
-/** The program row: default share and fee payer. */
+/** The program row: the card fee taken from stores' ticket sales. */
 export async function getProgram() {
 	const [row] = await db.select().from(storeProgram).where(eq(storeProgram.id, 1)).limit(1);
-	return row || { id: 1, defaultShare: null, feePayer: 'age' };
+	return row || { id: 1, feePct: '0.0290', feeFixedCents: 30 };
 }
 
 /**
@@ -83,6 +74,8 @@ export async function storesOverview(now = new Date()) {
 		Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
 	).toISOString();
 
+	// Write any new ticket sales and refunds into the ledger first.
+	await syncLedger();
 	const [circuits, stores, program] = await Promise.all([
 		db.select().from(circuit).orderBy(asc(circuit.sort), asc(circuit.name)),
 		db
@@ -93,7 +86,6 @@ export async function storesOverview(now = new Date()) {
 				slug: store.slug,
 				city: store.city,
 				state: store.state,
-				revenueShare: store.revenueShare,
 				active: store.active,
 				createdAt: store.createdAt,
 				members: sql`(SELECT count(*)::int FROM store_member m WHERE m.store_id = store.id)`,
@@ -113,10 +105,8 @@ export async function storesOverview(now = new Date()) {
 					FROM ticket t JOIN events e ON e.id = t.event_id
 					WHERE e.store_id = store.id AND e.event_date >= ${monthStart}::timestamptz AND e.event_date < ${nextMonth}::timestamptz
 					AND coalesce(t.refunded, false) = false AND t.voided_at IS NULL)`,
-				owedCents: sql`(SELECT coalesce(sum(l.store_cents), 0)::int FROM store_ledger l
-					WHERE l.store_id = store.id AND NOT EXISTS (
-						SELECT 1 FROM store_statement s WHERE s.store_id = l.store_id
-						AND s.month = l.statement_month AND s.status = 'paid'))`
+				// Open payouts of closed-out events, plus money carried (payouts.js).
+				owedCents: owedSql(sql`store.id`)
 			})
 			.from(store)
 			.orderBy(asc(store.name)),
@@ -187,7 +177,7 @@ export async function storeDetail(slug) {
 	if (!row) return null;
 	const s = row.store;
 
-	const [members, events, unlinked, statements, activity, program, owed] = await Promise.all([
+	const [members, events, unlinked, payouts, activity, program] = await Promise.all([
 		db
 			.select({
 				userId: storeMember.userId,
@@ -227,12 +217,7 @@ export async function storeDetail(slug) {
 			)
 			.orderBy(desc(event.eventDate))
 			.limit(50),
-		db
-			.select()
-			.from(storeStatement)
-			.where(eq(storeStatement.storeId, s.id))
-			.orderBy(desc(storeStatement.month))
-			.limit(24),
+		storePayouts(s.id),
 		db
 			.select({
 				id: storeActivity.id,
@@ -249,12 +234,7 @@ export async function storeDetail(slug) {
 			.where(eq(storeActivity.storeId, s.id))
 			.orderBy(desc(storeActivity.createdAt))
 			.limit(40),
-		getProgram(),
-		// Earned in months whose statement isn't paid yet.
-		db.execute(sql`SELECT coalesce(sum(l.store_cents), 0)::int AS cents FROM store_ledger l
-			WHERE l.store_id = ${s.id} AND NOT EXISTS (
-				SELECT 1 FROM store_statement st WHERE st.store_id = l.store_id
-				AND st.month = l.statement_month AND st.status = 'paid')`)
+		getProgram()
 	]);
 
 	return {
@@ -263,10 +243,10 @@ export async function storeDetail(slug) {
 		members,
 		events,
 		unlinked,
-		statements,
+		payouts,
 		activity,
 		program,
-		owedCents: Number((owed.rows || owed)[0]?.cents || 0)
+		owedCents: payouts.owedCents
 	};
 }
 
@@ -384,8 +364,6 @@ export function storeForm(form) {
 	if (!v.name) return { error: 'Give the store a name.' };
 	const circuitId = String(form.get('circuitId') || '');
 	if (!circuitId) return { error: 'Pick the store’s circuit.' };
-	const share = parseShare(form.get('revenueShare'));
-	if (share === undefined) return { error: 'The revenue share is a percentage from 0 to 100.' };
 	if (v.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.contactEmail)) {
 		return { error: 'That contact email doesn’t look right.' };
 	}
@@ -401,7 +379,6 @@ export function storeForm(form) {
 			website: website || null,
 			phone: v.phone || null,
 			contactEmail: v.contactEmail || null,
-			revenueShare: share,
 			active: form.has('hasActive') ? form.get('active') === 'on' : true
 		}
 	};
@@ -608,19 +585,6 @@ export async function unlinkEvent(storeId, eventId, actorId) {
 	if (!e) return { error: 'That event isn’t linked to this store.' };
 	await logStoreActivity(storeId, actorId, 'event_unlinked', { eventId: e.id, note: e.title });
 	await bump('events');
-	return { ok: true };
-}
-
-/** Save the program settings. */
-export async function saveProgram({ defaultShare, feePayer }, actorId) {
-	if (!['age', 'store'].includes(feePayer)) return { error: 'Pick who pays card fees.' };
-	await db
-		.insert(storeProgram)
-		.values({ id: 1, defaultShare, feePayer, updatedBy: actorId || null })
-		.onConflictDoUpdate({
-			target: storeProgram.id,
-			set: { defaultShare, feePayer, updatedBy: actorId || null, updatedAt: new Date() }
-		});
 	return { ok: true };
 }
 

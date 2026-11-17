@@ -305,7 +305,7 @@
 									<span class="ao-cond text-[30px] leading-none font-black">{next.price}</span>
 									{#if next.discount}<span
 											class="text-[9px] font-extrabold tracking-[0.14em] text-prem uppercase"
-											>Members save 10%</span
+											>Members save $5</span
 										>{/if}
 								</span>
 								<span

@@ -1,5 +1,5 @@
 <script>
-	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
+	import AdminHeader, { btnLine as hbtnLine } from '$lib/components/age/admin/AdminHeader.svelte';
 	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import { deserialize } from '$app/forms';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
@@ -158,20 +158,11 @@
 
 <svelte:head><title>Orders · Admin</title></svelte:head>
 
-<DeskHeader
-	kicker="Admin"
-	title="Orders"
-	subtitle="Tickets and memberships — search, filter, drill in."
->
-	{#snippet actions(compact)}
-		<a
-			href="/admin/analytics?view=revenue"
-			class="inline-flex items-center border border-paper-bg/30 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-paper-bg/10 {compact
-				? 'h-[30px]'
-				: 'h-[36px]'}">Revenue →</a
-		>
+<AdminHeader title="Orders" subtitle="Tickets and memberships — search, filter, drill in.">
+	{#snippet actions()}
+		<a href="/admin/analytics?view=revenue" class={hbtnLine}>Revenue →</a>
 	{/snippet}
-</DeskHeader>
+</AdminHeader>
 <AdminTabs />
 <AdminSubnav items={ORDERS_SUBNAV} label="Orders" />
 
