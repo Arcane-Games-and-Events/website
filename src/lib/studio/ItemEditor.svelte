@@ -473,6 +473,9 @@
 								maxlength="4000"
 								class="{F.field} h-auto py-3 leading-relaxed"
 							></textarea>
+							<span class="{F.hint} block"
+								>Hide a spoiler by wrapping it in double bars: ||like this||.</span
+							>
 						</label>
 
 						{#if form.kind === 'gameplay'}

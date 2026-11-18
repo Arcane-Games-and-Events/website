@@ -24,12 +24,16 @@
 
   Small and Medium images can sit left or right with the text wrapping
   around them; the closing .lex-end keeps them inside the body.
+
+  Spoilers (see $lib/spoilers.js): inline ones reveal on tap or Enter;
+  spoiler blocks are a <details> and can hold widgets too.
 -->
 <script>
 	import { onMount } from 'svelte';
 	import { renderLexicalToSegments } from './render-lexical.js';
 	import { getWidget } from './widgets.js';
 	import { registerBuiltinWidgets } from './widgets/index.js';
+	import { installSpoilers, SPOILER_NOTE } from '$lib/spoilers.js';
 
 	// Side-effecting registration — safe to call repeatedly.
 	registerBuiltinWidgets();
@@ -43,6 +47,8 @@
 
 	/** @type {HTMLElement | undefined} */
 	let probe;
+	onMount(installSpoilers);
+
 	onMount(() => {
 		const column = probe?.parentElement;
 		if (!bleed || !column) return;
@@ -79,19 +85,37 @@
 {#if !content}
 	<p class="text-ink/50">No content available.</p>
 {:else}
-	{#each segments as segment, i (i)}
-		{#if segment.kind === 'html'}
-			{@html segment.html}
-		{:else if segment.kind === 'widget'}
-			{@const widget = getWidget(segment.type)}
-			{#if widget}
-				<svelte:component
-					this={widget.RenderView}
-					{...widget.getProps(segment.node, { cardImages })}
-				/>
+	{#snippet render(list)}
+		{#each list as segment, i (i)}
+			{#if segment.kind === 'html'}
+				{@html segment.html}
+			{:else if segment.kind === 'widget'}
+				{@const widget = getWidget(segment.type)}
+				{#if widget}
+					<svelte:component
+						this={widget.RenderView}
+						{...widget.getProps(segment.node, { cardImages })}
+					/>
+				{/if}
+			{:else if segment.kind === 'spoiler'}
+				<details class="spoiler-block">
+					<summary>
+						<span class="spoiler-block-head">
+							<span class="spoiler-block-label">Spoiler</span>
+							{#if segment.title}
+								<span class="spoiler-block-title">{segment.title}</span>
+							{:else}
+								<span class="spoiler-block-note">{SPOILER_NOTE}</span>
+							{/if}
+						</span>
+						<span class="spoiler-block-show">Show</span><span class="spoiler-block-hide">Hide</span>
+					</summary>
+					<div class="spoiler-block-body">{@render render(segment.segments)}</div>
+				</details>
 			{/if}
-		{/if}
-	{/each}
+		{/each}
+	{/snippet}
+	{@render render(segments)}
 	<span class="lex-end" aria-hidden="true"></span>
 	<span bind:this={probe} hidden></span>
 {/if}

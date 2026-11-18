@@ -55,7 +55,7 @@ async function isSlugTaken(slug, excludeId) {
 }
 
 export function deriveExcerpt(body, maxWords = 30) {
-	const text = lexicalToText(body);
+	const text = lexicalToText(body, '[spoiler]');
 	const words = text.split(/\s+/).filter(Boolean);
 	if (words.length <= maxWords) return text.trim();
 	return words.slice(0, maxWords).join(' ').trim() + '…';

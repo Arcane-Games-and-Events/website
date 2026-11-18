@@ -18,6 +18,8 @@
 	import { createContentTracker } from '$lib/analytics/contentTracker.js';
 	import { KIND, byline, episodeLabel, matchWhere } from '$lib/studio/kinds.js';
 	import { clock } from '$lib/desk/video/format.js';
+	import SpoilerText from '$lib/components/age/SpoilerText.svelte';
+	import { stripSpoilers } from '$lib/spoilers.js';
 
 	/** @type {{ data: any, home: 'matches' | 'studios' }} */
 	let { data, home } = $props();
@@ -157,7 +159,7 @@
 	<title>{item.title} · {match ? 'Matches · Library' : 'AGE Studios'}</title>
 	<meta
 		name="description"
-		content={item.description?.slice(0, 160) || `${verb} ${item.title} on AGE`}
+		content={stripSpoilers(item.description)?.slice(0, 160) || `${verb} ${item.title} on AGE`}
 	/>
 	{#if data.canWatch}
 		<link
@@ -382,7 +384,7 @@
 						? 'first-letter:text-warm'
 						: 'first-letter:text-studio'}"
 				>
-					{item.description}
+					<SpoilerText text={item.description} />
 				</div>
 			</div>
 		{/if}

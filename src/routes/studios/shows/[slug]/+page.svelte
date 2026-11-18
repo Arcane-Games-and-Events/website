@@ -6,6 +6,7 @@
 	import MediaFrame from '$lib/components/age/studios/MediaFrame.svelte';
 	import { episodeLabel } from '$lib/studio/kinds.js';
 	import { clock } from '$lib/desk/video/format.js';
+	import { stripSpoilers } from '$lib/spoilers.js';
 
 	let { data } = $props();
 	const s = $derived(data.show);
@@ -126,7 +127,7 @@
 									>{/if}
 								{#if e.description}
 									<span class="mt-1.5 line-clamp-2 block text-[13.5px] text-soft"
-										>{e.description}</span
+										>{stripSpoilers(e.description)}</span
 									>
 								{/if}
 							</span>

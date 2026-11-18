@@ -7,6 +7,7 @@ import {
 	transformSrcset
 } from './lexical-utils.js';
 import { getWidget } from './widgets.js';
+import { SPOILER_OPEN, SPOILER_CLOSE, spoilerBlockHtml } from '$lib/spoilers.js';
 
 /**
  * Walk a Lexical document and produce a list of segments.
@@ -14,13 +15,16 @@ import { getWidget } from './widgets.js';
  * Each segment is either:
  *   - { kind: 'html', html: string }
  *   - { kind: 'widget', type: string, node: object }
+ *   - { kind: 'spoiler', title, segments: [...] } — a spoiler block, whose contents
+ *     can include widgets too
  *
  * The Svelte renderer emits HTML segments via `{@html}` and widget segments
  * via the registered Svelte component. This is how custom blocks slot in
  * without breaking the streamed render of surrounding paragraphs.
  *
  * Built-in node types: paragraph, heading, list, listitem, quote, code,
- * upload, link/autolink, linebreak, text. Anything registered in the widget
+ * upload, link/autolink, linebreak, text, spoiler (inline) and spoiler_block.
+ * Anything registered in the widget
  * registry becomes a top-level widget segment instead of inline HTML.
  *
  * @param {object} content - Lexical doc, expected shape `{ root: { children: [...] } }`
@@ -30,9 +34,12 @@ import { getWidget } from './widgets.js';
  * @returns {Array<object>} segments
  */
 export function renderLexicalToSegments(content, ctx = {}) {
-	const segments = [];
-	if (!content?.root || content.root.type !== 'root') return segments;
+	if (!content?.root || content.root.type !== 'root') return [];
+	return segmentsOf(content.root.children, ctx);
+}
 
+function segmentsOf(children, ctx) {
+	const segments = [];
 	let buffer = '';
 
 	const flush = () => {
@@ -42,7 +49,16 @@ export function renderLexicalToSegments(content, ctx = {}) {
 		}
 	};
 
-	for (const child of content.root.children || []) {
+	for (const child of children || []) {
+		if (child.type === 'spoiler_block') {
+			flush();
+			segments.push({
+				kind: 'spoiler',
+				title: String(child.title || '').trim(),
+				segments: segmentsOf(child.children, ctx)
+			});
+			continue;
+		}
 		// Top-level widget block? Flush buffered HTML and emit a widget segment.
 		const widget = getWidget(child.type);
 		if (widget) {
@@ -71,9 +87,22 @@ function renderNode(node, ctx) {
 		return `<p>${renderChildren(node.children, ctx)}</p>`;
 	}
 
+	if (node.type === 'spoiler') {
+		return (
+			SPOILER_OPEN + renderChildren(node.children, { ...ctx, inSpoiler: true }) + SPOILER_CLOSE
+		);
+	}
+
+	// Only reached when a spoiler block isn't at the top (pasted oddities);
+	// widgets inside it are dropped.
+	if (node.type === 'spoiler_block') {
+		return spoilerBlockHtml(renderChildren(node.children, ctx), escapeHtml(node.title || ''));
+	}
+
 	if (node.type === 'heading') {
 		const tag = node.tag || 'h2';
-		const text = extractLexicalText(node.children);
+		// a spoiler in a heading doesn't end up in its link
+		const text = extractLexicalText(node.children, 'spoiler');
 		const id = slugify(text);
 		return `<${tag} id="${id}">${renderChildren(node.children, ctx)}</${tag}>`;
 	}
@@ -139,6 +168,8 @@ function renderText(node) {
 
 function renderLink(node, ctx) {
 	const inner = renderChildren(node.children, ctx);
+	// links inside a hidden spoiler join the tab order once it's revealed
+	const tab = ctx.inSpoiler ? ' tabindex="-1"' : '';
 	const rawUrl = node.fields?.url || node.url || '#';
 
 	const card = parseCardLinkUrl(rawUrl);
@@ -153,7 +184,7 @@ function renderLink(node, ctx) {
 			? ` data-card-fallback="${escapeHtml(img.fallbackUrl)}"`
 			: '';
 		return (
-			`<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" ` +
+			`<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer"${tab} ` +
 			`data-card-name="${escapeHtml(card.cardId)}"${pitchAttr}${customUrlAttr}${imageAttr}${fallbackAttr} ` +
 			`class="card-link">${inner}</a>`
 		);
@@ -165,7 +196,7 @@ function renderLink(node, ctx) {
 	} catch {
 		// keep as-is
 	}
-	return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${inner}</a>`;
+	return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"${tab}>${inner}</a>`;
 }
 
 /**

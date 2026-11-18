@@ -308,9 +308,13 @@
 		return !!(node && WIDGET_TYPES.has(node.type));
 	}
 
+	// Inline spoilers read as `[spoiler: …]` so adding, removing or editing
+	// one shows up as a change even when the words stay the same.
 	function extractNodeText(node) {
 		if (!node) return '';
 		if (node.text != null) return node.text;
+		if (node.type === 'spoiler')
+			return `[spoiler: ${node.children?.map(extractNodeText).join('') || ''}]`;
 		if (Array.isArray(node.children)) {
 			return node.children.map(extractNodeText).join(node.type === 'list' ? '\n' : '');
 		}
@@ -326,6 +330,9 @@
 	function extractNodeDiffText(node) {
 		if (!node) return '';
 		if (node.text != null) return node.text;
+		if (node.type === 'spoiler') {
+			return `[spoiler: ${node.children?.map(extractNodeDiffText).join('') || ''}]`;
+		}
 		if (node.type === 'link' || node.type === 'autolink') {
 			const url = node.fields?.url || node.url || '';
 			const inner = Array.isArray(node.children)
@@ -394,6 +401,8 @@
 	function nodesEqual(a, b) {
 		if (!a || !b) return false;
 		if (a.type !== b.type) return false;
+		if (!!a.inSpoiler !== !!b.inSpoiler) return false;
+		if ((a.spoilerTitle || '') !== (b.spoilerTitle || '')) return false;
 		if (isWidget(a) || isWidget(b)) return widgetsEqual(a, b);
 		if (nodeTag(a) !== nodeTag(b)) return false;
 		return contentSignature(a) === contentSignature(b);
@@ -403,9 +412,18 @@
 	// probable "edit" — either a widget of the same type or a
 	// text-content block. Returns the appropriate diff item.
 	function pairBlocksAsEdit(l, d) {
+		// moved into or out of a spoiler block, however little else changed
+		const spoiler =
+			!!l.inSpoiler !== !!d.inSpoiler
+				? d.inSpoiler
+					? 'hidden'
+					: 'shown'
+				: d.inSpoiler && l.spoilerTitle !== d.spoilerTitle
+					? 'retitled'
+					: null;
 		if (isWidget(l) || isWidget(d)) {
-			if (widgetsEqual(l, d)) return { kind: 'unchanged-widget', node: d };
-			if (l.type === d.type) return { kind: 'widget-change', node: d };
+			if (widgetsEqual(l, d) && !spoiler) return { kind: 'unchanged-widget', node: d };
+			if (l.type === d.type) return { kind: 'widget-change', node: d, spoiler };
 			return null;
 		}
 		if (nodeTag(l) !== nodeTag(d)) return null;
@@ -413,8 +431,30 @@
 			kind: 'diff',
 			tag: nodeTag(d),
 			parts: diffWords(extractNodeDiffText(l), extractNodeDiffText(d)),
-			node: d
+			node: d,
+			spoiler
 		};
+	}
+
+	function spoilerNote(item) {
+		if (item.spoiler === 'hidden') return 'Moved into a spoiler';
+		if (item.spoiler === 'shown') return 'Taken out of a spoiler';
+		return 'Spoiler title changed';
+	}
+
+	// A spoiler block's contents are compared block by block, each marked
+	// as inside a spoiler, so wrapping paragraphs in one (or taking them
+	// out) shows on exactly those paragraphs.
+	function flattenSpoilerBlocks(children) {
+		return children.flatMap((n) =>
+			n?.type === 'spoiler_block'
+				? (n.children || []).map((c) => ({
+						...c,
+						inSpoiler: true,
+						spoilerTitle: String(n.title || '').trim()
+					}))
+				: [n]
+		);
 	}
 
 	// LCS-based pairing at the top-level Lexical block level. diffArrays
@@ -431,8 +471,8 @@
 	// still shows as remove+add.
 	$: richDiffItems = (() => {
 		if (!hasPendingChanges || entry?.draftBody == null) return null;
-		const live = entry.body?.root?.children || [];
-		const draft = entry.draftBody?.root?.children || [];
+		const live = flattenSpoilerBlocks(entry.body?.root?.children || []);
+		const draft = flattenSpoilerBlocks(entry.draftBody?.root?.children || []);
 
 		const chunks = diffArrays(live, draft, { comparator: nodesEqual });
 		const items = [];
@@ -1402,43 +1442,89 @@
 									{:else}
 										{#each richDiffItems as item, i (i)}
 											{#if item.kind === 'unchanged'}
-												<svelte:element this={nodeTag(item.node)} class="diff-block">
+												<svelte:element
+													this={nodeTag(item.node)}
+													class="diff-block"
+													class:diff-in-spoiler={item.node.inSpoiler}
+													data-spoiler-title={item.node.spoilerTitle || null}
+												>
 													{extractNodeText(item.node)}
 												</svelte:element>
 											{:else if item.kind === 'unchanged-widget'}
-												<div class="diff-widget diff-widget-unchanged">
+												<div
+													class="diff-widget diff-widget-unchanged"
+													class:diff-in-spoiler={item.node.inSpoiler}
+													data-spoiler-title={item.node.spoilerTitle || null}
+												>
 													<span class="diff-widget-label">{widgetLabel(item.node)}</span>
 													<span class="diff-widget-status">unchanged</span>
 												</div>
 											{:else if item.kind === 'added'}
 												{#if isWidget(item.node)}
-													<div class="diff-widget diff-widget-added">
+													<div
+														class="diff-widget diff-widget-added"
+														class:diff-in-spoiler={item.node.inSpoiler}
+														data-spoiler-title={item.node.spoilerTitle || null}
+													>
 														<span class="diff-widget-label">{widgetLabel(item.node)}</span>
 														<span class="diff-widget-status">added</span>
 													</div>
 												{:else}
-													<svelte:element this={nodeTag(item.node)} class="diff-block diff-added">
+													<svelte:element
+														this={nodeTag(item.node)}
+														class="diff-block diff-added"
+														class:diff-in-spoiler={item.node.inSpoiler}
+														data-spoiler-title={item.node.spoilerTitle || null}
+													>
 														{extractNodeText(item.node)}
 													</svelte:element>
 												{/if}
 											{:else if item.kind === 'removed'}
 												{#if isWidget(item.node)}
-													<div class="diff-widget diff-widget-removed">
+													<div
+														class="diff-widget diff-widget-removed"
+														class:diff-in-spoiler={item.node.inSpoiler}
+														data-spoiler-title={item.node.spoilerTitle || null}
+													>
 														<span class="diff-widget-label">{widgetLabel(item.node)}</span>
 														<span class="diff-widget-status">removed</span>
 													</div>
 												{:else}
-													<svelte:element this={nodeTag(item.node)} class="diff-block diff-removed">
+													<svelte:element
+														this={nodeTag(item.node)}
+														class="diff-block diff-removed"
+														class:diff-in-spoiler={item.node.inSpoiler}
+														data-spoiler-title={item.node.spoilerTitle || null}
+													>
 														{extractNodeText(item.node)}
 													</svelte:element>
 												{/if}
 											{:else if item.kind === 'widget-change'}
-												<div class="diff-widget diff-widget-changed">
+												{#if item.spoiler}
+													<p class="diff-spoiler-note">
+														{spoilerNote(item)}
+													</p>
+												{/if}
+												<div
+													class="diff-widget diff-widget-changed"
+													class:diff-in-spoiler={item.node.inSpoiler}
+													data-spoiler-title={item.node.spoilerTitle || null}
+												>
 													<span class="diff-widget-label">{widgetLabel(item.node)}</span>
 													<span class="diff-widget-status">edited</span>
 												</div>
 											{:else if item.kind === 'diff'}
-												<svelte:element this={item.tag} class="diff-block">
+												{#if item.spoiler}
+													<p class="diff-spoiler-note">
+														{spoilerNote(item)}
+													</p>
+												{/if}
+												<svelte:element
+													this={item.tag}
+													class="diff-block"
+													class:diff-in-spoiler={item.node.inSpoiler}
+													data-spoiler-title={item.node.spoilerTitle || null}
+												>
 													{#each item.parts as part, j (j)}
 														{#if part.added}
 															<span class="diff-word-added">{part.value}</span>
@@ -1553,6 +1639,38 @@
 		border-left: 3px solid rgb(185 28 28);
 		padding: 0.25rem 0.5rem 0.25rem 0.75rem;
 		text-decoration: line-through;
+	}
+
+	/* Blocks inside a spoiler block: a navy rail and a small label, and a
+	   note over any block that moved into or out of one. */
+	.desk-diff-view :global(.diff-in-spoiler) {
+		position: relative;
+		border-left: 3px solid var(--color-warm-deep);
+		padding-left: 0.75rem;
+	}
+	.desk-diff-view :global(.diff-in-spoiler[data-spoiler-title]::before) {
+		content: 'Spoiler · ' attr(data-spoiler-title);
+	}
+	.desk-diff-view :global(.diff-in-spoiler::before) {
+		content: 'Spoiler';
+		display: block;
+		font-family: var(--font-libre);
+		font-size: 9.5px;
+		font-weight: 800;
+		font-style: normal;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		text-decoration: none;
+		color: var(--color-warm-deep);
+	}
+	.desk-diff-view :global(.diff-spoiler-note) {
+		margin: 1rem 0 -0.5rem;
+		font-family: var(--font-libre);
+		font-size: 10.5px;
+		font-weight: 800;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: rgb(20 83 45);
 	}
 
 	/* Word-level add/remove — inline highlights inside a block whose

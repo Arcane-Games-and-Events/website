@@ -15,6 +15,7 @@
 	import { fade, fly } from 'svelte/transition';
 	import CardHover from '$lib/components/CardHover.svelte';
 	import RenderLexical from '$lib/desk/render/RenderLexical.svelte';
+	import { extractLexicalText } from '$lib/desk/render/lexical-utils.js';
 	import { ARTICLE_PROSE } from '$lib/desk/render/articleProse.js';
 	import LibraryVideoBlock from '$lib/desk/render/LibraryVideoBlock.svelte';
 	import HeroVideo from '$lib/components/age/library/HeroVideo.svelte';
@@ -236,9 +237,12 @@
 
 	function extractLexicalHeadings(node, headings) {
 		if (!node) return;
+		// headings inside a spoiler block stay out of the contents
+		if (node.type === 'spoiler_block') return;
 
 		if (node.type === 'heading') {
-			const text = extractLexicalText(node.children);
+			// matches the heading's id on the page (render-lexical.js)
+			const text = extractLexicalText(node.children, 'spoiler');
 			const id = slugify(text);
 			// Level usually comes as `tag: 'h2'`; older shapes (`tag: 2`,
 			// `level`, `format`) are still accepted so the TOC keeps h3+.
@@ -260,11 +264,6 @@
 		if (node.children) {
 			node.children.forEach((child) => extractLexicalHeadings(child, headings));
 		}
-	}
-
-	function extractLexicalText(children) {
-		if (!children) return '';
-		return children.map((child) => child.text || extractLexicalText(child.children)).join('');
 	}
 
 	function slugify(text) {

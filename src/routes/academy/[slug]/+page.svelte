@@ -28,6 +28,25 @@
 	import { createContentTracker } from '$lib/analytics/contentTracker.js';
 	import { formatMinutes, formatPrice, toCard } from '$lib/academy/format.js';
 	import { guidePrices } from '$lib/academy/partner/pricing.js';
+	import SpoilerText from '$lib/components/age/SpoilerText.svelte';
+	import { splitSpoilers, stripSpoilers } from '$lib/spoilers.js';
+
+	/**
+	 * The course description as paragraphs (split on blank lines) and
+	 * spoiler blocks.
+	 * @param {string} text
+	 */
+	function descriptionBlocks(text) {
+		return splitSpoilers(text).flatMap((run) =>
+			run.spoiler
+				? [{ spoiler: true, text: run.text }]
+				: run.text
+						.split(/\n\s*\n/)
+						.map((p) => p.trim())
+						.filter(Boolean)
+						.map((p) => ({ spoiler: false, text: p }))
+		);
+	}
 
 	let { data } = $props();
 
@@ -312,7 +331,10 @@
 
 <svelte:head>
 	<title>{c.title} — Academy — AGE</title>
-	<meta name="description" content={c.description || `${c.title}, a course from AGE Academy.`} />
+	<meta
+		name="description"
+		content={stripSpoilers(c.description) || `${c.title}, a course from AGE Academy.`}
+	/>
 </svelte:head>
 
 <svelte:window onhashchange={() => fromHash(window.location.hash)} />
@@ -756,19 +778,25 @@
 							<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
 							About this course
 						</h2>
-						<!-- One paragraph per blank-line break; a single line break stays a line break. -->
-						{#each String(c.description)
-							.split(/\n\s*\n/)
-							.map((p) => p.trim())
-							.filter(Boolean) as para, i (i)}
-							<p
-								class="font-newsreader text-[18px] leading-[1.55] whitespace-pre-line md:text-[19px] {i ===
-								0
-									? 'mt-3 first-letter:float-left first-letter:mt-[6px] first-letter:mr-2 first-letter:text-[52px] first-letter:leading-[0.72] first-letter:font-semibold first-letter:text-gold'
-									: 'mt-4'}"
-							>
-								{para}
-							</p>
+						<!-- One paragraph per blank-line break; a single line break stays a line break.
+						     ||Spoilers|| (which may run over several paragraphs) are spoiler blocks. -->
+						{#each descriptionBlocks(c.description) as block, i (i)}
+							{#if block.spoiler}
+								<div
+									class="font-newsreader text-[18px] leading-[1.55] whitespace-pre-line md:text-[19px]"
+								>
+									<SpoilerText text={`||${block.text}||`} />
+								</div>
+							{:else}
+								<p
+									class="font-newsreader text-[18px] leading-[1.55] whitespace-pre-line md:text-[19px] {i ===
+									0
+										? 'mt-3 first-letter:float-left first-letter:mt-[6px] first-letter:mr-2 first-letter:text-[52px] first-letter:leading-[0.72] first-letter:font-semibold first-letter:text-gold'
+										: 'mt-4'}"
+								>
+									{block.text}
+								</p>
+							{/if}
 						{/each}
 					{/if}
 

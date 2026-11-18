@@ -8,6 +8,7 @@
     setBlock       — 'paragraph' | 'quote' | 'h2' | 'h3' | 'h4'
     insertList     — 'ul' | 'ol'
     formatText     — 'bold' | 'italic' | 'underline' | 'strikethrough'
+    spoiler        — no detail (spoiler block)
     insertImage    — no detail
     insertCardLink — no detail
     insertDecklist — no detail
@@ -159,6 +160,9 @@
 					<span class="w-5 text-ink/50">▶</span> Inline video
 				</button>
 			{/if}
+			<button type="button" class={itemClass} on:click={() => pick('spoiler')}>
+				<span class="w-5 text-ink/50">▤</span> Spoiler block
+			</button>
 		</div>
 	</div>
 {/if}

@@ -26,7 +26,9 @@
 		$isDecoratorNode as isDecoratorNode,
 		$isTextNode as isTextNode,
 		$getNearestNodeFromDOMNode as getNearestNodeFromDOMNode,
-		FORMAT_TEXT_COMMAND
+		FORMAT_TEXT_COMMAND,
+		KEY_ENTER_COMMAND,
+		COMMAND_PRIORITY_LOW
 	} from 'lexical';
 	import {
 		HeadingNode,
@@ -67,6 +69,15 @@
 		InlineVideoNode,
 		$createInlineVideoNode as createInlineVideoNode
 	} from './nodes/InlineVideoNode.js';
+	import {
+		SpoilerNode,
+		SpoilerBlockNode,
+		$isSpoilerBlockNode as isSpoilerBlockNode,
+		$toggleSpoilerBlock as toggleSpoilerBlockNode,
+		$selectionSpoilerBlock as selectionSpoilerBlock,
+		$exitSpoilerBlockOnEnter as exitSpoilerBlockOnEnter
+	} from './nodes/SpoilerNodes.js';
+	import SpoilerTitleDialog from './SpoilerTitleDialog.svelte';
 	import InsertDecklistDialog from './InsertDecklistDialog.svelte';
 	import InsertStatsTableDialog from './InsertStatsTableDialog.svelte';
 	import InsertCardLinkDialog from './InsertCardLinkDialog.svelte';
@@ -92,7 +103,13 @@
 	let unregister = null;
 	let isEmpty = true;
 
-	let activeFormats = { bold: false, italic: false, underline: false, strikethrough: false };
+	let activeFormats = {
+		bold: false,
+		italic: false,
+		underline: false,
+		strikethrough: false,
+		spoilerBlock: false
+	};
 
 	let imagePickerOpen = false;
 
@@ -174,7 +191,9 @@
 				DecklistNode,
 				StatsTableNode,
 				ImageUploadNode,
-				InlineVideoNode
+				InlineVideoNode,
+				SpoilerNode,
+				SpoilerBlockNode
 			],
 			onError: (err) => {
 				console.error('[lexical]', err);
@@ -185,9 +204,10 @@
 
 		editorEl.addEventListener('click', handleContentClick);
 		editorEl.addEventListener('keydown', () => (cardPopover = null));
+		editorEl.addEventListener('spoiler-title', openSpoilerTitle);
 
-		// Ensure every decorator node has a writable sibling after it — a
-		// bare paragraph. Fires in two cases:
+		// Ensure every decorator node (and spoiler block) has a writable
+		// sibling after it — a bare paragraph. Fires in two cases:
 		//   1. Decorator is the LAST child of root — otherwise the cursor
 		//      has nowhere to land past it and typing is impossible.
 		//   2. Decorator's next sibling is ANOTHER decorator — otherwise
@@ -197,7 +217,7 @@
 		// doc from here is safe (no cycle-triggering).
 		function ensureTrailingParagraph(node) {
 			const next = node.getNextSibling();
-			if (next === null || isDecoratorNode(next)) {
+			if (next === null || isDecoratorNode(next) || isSpoilerBlockNode(next)) {
 				node.insertAfter(createParagraphNode());
 			}
 		}
@@ -217,6 +237,11 @@
 			editor.registerNodeTransform(StatsTableNode, ensureTrailingParagraph),
 			editor.registerNodeTransform(ImageUploadNode, ensureTrailingParagraph),
 			editor.registerNodeTransform(InlineVideoNode, ensureTrailingParagraph),
+			editor.registerNodeTransform(SpoilerBlockNode, (node) => {
+				if (node.getChildrenSize() === 0) node.remove();
+				else ensureTrailingParagraph(node);
+			}),
+			editor.registerCommand(KEY_ENTER_COMMAND, onEnter, COMMAND_PRIORITY_LOW),
 			editor.registerDecoratorListener(syncWidgets),
 			editor.registerMutationListener(LinkNode, markCardLinks),
 			editor.registerUpdateListener(({ editorState }) => {
@@ -230,7 +255,8 @@
 							bold: sel.hasFormat('bold'),
 							italic: sel.hasFormat('italic'),
 							underline: sel.hasFormat('underline'),
-							strikethrough: sel.hasFormat('strikethrough')
+							strikethrough: sel.hasFormat('strikethrough'),
+							spoilerBlock: !!selectionSpoilerBlock()
 						};
 					}
 				});
@@ -290,6 +316,37 @@
 				setBlocksType(sel, () => createHeadingNode(kind));
 			}
 		});
+	}
+
+	// Spoiler block: wraps the paragraphs at the caret or in the selection;
+	// used again inside one, it takes the block apart.
+	function toggleSpoilerBlock() {
+		if (!editor) return;
+		editor.update(() => toggleSpoilerBlockNode());
+		editor.focus();
+	}
+
+	// The block's header asks for its title (see SpoilerBlockNode).
+	let spoilerTitleOpen = false;
+	let spoilerTitleKey = null;
+	let spoilerTitleInitial = '';
+	function openSpoilerTitle(e) {
+		spoilerTitleKey = e.detail.key;
+		editor.getEditorState().read(() => {
+			spoilerTitleInitial = /** @type {any} */ (getNodeByKey(spoilerTitleKey))?.getTitle() || '';
+		});
+		spoilerTitleOpen = true;
+	}
+	function saveSpoilerTitle(title) {
+		const key = spoilerTitleKey;
+		editor?.update(() => /** @type {any} */ (getNodeByKey(key))?.setTitle(title));
+	}
+
+	// command listeners already run inside an editor update
+	function onEnter(e) {
+		const done = exitSpoilerBlockOnEnter();
+		if (done) e?.preventDefault();
+		return done;
 	}
 
 	function insertList(kind) {
@@ -587,7 +644,8 @@
 		['Card link', () => openCardLinkDialog()],
 		['Decklist', () => (decklistDialogOpen = true)],
 		['Stats table', () => (statsDialogOpen = true)],
-		['YouTube video', () => (inlineVideoDialogOpen = true)]
+		['YouTube video', () => (inlineVideoDialogOpen = true)],
+		['Spoiler block', () => toggleSpoilerBlock()]
 	];
 	$: INSERT_ITEMS = allowVideo
 		? ALL_INSERT_ITEMS
@@ -736,7 +794,7 @@
 				</span>
 
 				<!-- link and inserts: inline when there's room, a menu otherwise -->
-				<span class="hidden items-center gap-0.5 @min-[680px]:flex">
+				<span class="hidden items-center gap-0.5 @min-[900px]:flex">
 					<button
 						type="button"
 						class={tbBase}
@@ -782,8 +840,16 @@
 							on:click={() => (inlineVideoDialogOpen = true)}>Video</button
 						>
 					{/if}
+					<button
+						type="button"
+						class="{tbShape} {activeFormats.spoilerBlock ? tbActive : tbIdle}"
+						title="Spoiler block: hide whole paragraphs until the reader opens them"
+						aria-pressed={!!activeFormats.spoilerBlock}
+						on:mousedown={keepFocus}
+						on:click={toggleSpoilerBlock}>Spoiler block</button
+					>
 				</span>
-				<span class="relative @min-[680px]:hidden" data-tb-menu>
+				<span class="relative @min-[900px]:hidden" data-tb-menu>
 					<button
 						type="button"
 						class="{tbShape} gap-1 {menu === 'insert' ? tbActive : tbIdle}"
@@ -886,6 +952,12 @@
 	onclose={() => (cardInitial = null)}
 />
 
+<SpoilerTitleDialog
+	bind:open={spoilerTitleOpen}
+	initial={spoilerTitleInitial}
+	onsubmit={saveSpoilerTitle}
+/>
+
 <EditorContextMenu
 	bind:open={contextMenuOpen}
 	x={contextMenuX}
@@ -894,6 +966,7 @@
 	on:setBlock={(e) => setBlock(e.detail)}
 	on:insertList={(e) => insertList(e.detail)}
 	on:formatText={(e) => formatText(e.detail)}
+	on:spoiler={toggleSpoilerBlock}
 	on:insertImage={openImagePicker}
 	on:insertCardLink={openCardLinkDialog}
 	on:insertDecklist={() => (decklistDialogOpen = true)}
@@ -965,6 +1038,68 @@
 		text-decoration: none;
 		padding: 0 0.12em;
 		cursor: pointer;
+	}
+	/* spoilers stay readable while writing: a block sits in a dashed box
+	   under a header with its title; older inline spoilers are shaded */
+	.desk-editor-content :global(.desk-spoiler) {
+		background: color-mix(in srgb, var(--color-ink, #141008) 9%, transparent);
+		border-bottom: 1.5px dotted color-mix(in srgb, var(--color-ink, #141008) 55%, transparent);
+		padding: 0 0.12em;
+	}
+	.desk-editor-content :global(.desk-spoiler-block) {
+		margin: 1.5rem 0;
+		border: 1px dashed color-mix(in srgb, var(--color-ink, #141008) 45%, transparent);
+		background: color-mix(in srgb, var(--color-ink, #141008) 3%, transparent);
+	}
+	.desk-editor-content :global(.desk-spoiler-head) {
+		display: flex;
+		align-items: center;
+		min-height: 2.75rem;
+		gap: 0.75rem;
+		padding: 0.6rem 1rem;
+		border-bottom: 1px dashed color-mix(in srgb, var(--color-ink, #141008) 25%, transparent);
+		user-select: none;
+	}
+	.desk-editor-content :global(.desk-spoiler-label) {
+		flex-shrink: 0;
+		line-height: 1;
+		font-family: var(--font-libre, sans-serif);
+		font-size: 10px;
+		font-weight: 800;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--color-warm-deep, #0d1b45);
+	}
+	.desk-editor-content :global(.desk-spoiler-title) {
+		flex: 1;
+		min-width: 0;
+		line-height: 1.3;
+		font-size: 16px;
+		font-weight: 600;
+	}
+	.desk-editor-content :global(.desk-spoiler-title[data-empty]) {
+		font-weight: 400;
+		font-style: italic;
+		color: color-mix(in srgb, var(--color-ink, #141008) 50%, transparent);
+	}
+	.desk-editor-content :global(.desk-spoiler-edit) {
+		flex-shrink: 0;
+		line-height: 1;
+		font-family: var(--font-libre, sans-serif);
+		font-size: 10.5px;
+		font-weight: 800;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--color-soft, #56503f);
+		text-decoration: underline;
+		text-underline-offset: 3px;
+		cursor: pointer;
+	}
+	.desk-editor-content :global(.desk-spoiler-edit:hover) {
+		color: var(--color-ink, #141008);
+	}
+	.desk-editor-content :global(.desk-spoiler-body) {
+		padding: 0.25rem 1rem;
 	}
 	.desk-editor-content :global(.desk-b) {
 		font-weight: 700;

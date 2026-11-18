@@ -10,6 +10,7 @@
 
 import { CIRCUITS, circuitImage, circuitVar } from '$lib/data/circuits.js';
 import { watchHref } from '$lib/studio/kinds.js';
+import { stripSpoilers } from '$lib/spoilers.js';
 
 const FALLBACK_IMAGE = 'https://www.age.events/banner/articles-banner.webp';
 
@@ -154,7 +155,7 @@ function vodStory(v) {
 		kind: /** @type {const} */ ('video'),
 		href: v?.id ? watchHref(v) : '/studios',
 		title: v?.title || who || 'Untitled',
-		dek: v?.description || who,
+		dek: stripSpoilers(v?.description) || who,
 		image: vodImage(v),
 		picture: v?.cover || undefined,
 		alt: v?.cover?.alt || v?.title || who || '',
@@ -173,7 +174,7 @@ function courseItem(c) {
 		href: c?.slug ? `/academy/${c.slug}` : '/academy',
 		slug: c?.slug || '',
 		title: c?.title || 'Untitled course',
-		dek: c?.description || '',
+		dek: stripSpoilers(c?.description) || '',
 		image: c?.coverImage?.src || 'https://www.age.events/banner/academy-banner.webp',
 		instructor: c?.author?.name || 'AGE Academy',
 		lessons: c?.lessons || 0,

@@ -30,13 +30,22 @@ export function slugify(text) {
 /**
  * Recursively concatenate the text content of Lexical children.
  * Handles nested formatting nodes by reading `child.text` or recursing.
+ *
+ * With `spoiler` set, spoilers are kept out: each inline spoiler becomes
+ * that word and spoiler blocks are left out entirely (excerpts, heading
+ * links). Without it, everything counts (reading time, empty checks).
+ *
+ * @param {any[]} children
+ * @param {string | null} [spoiler]
  */
-export function extractLexicalText(children) {
+export function extractLexicalText(children, spoiler = null) {
 	if (!children || !Array.isArray(children)) return '';
 	return children
 		.map((child) => {
+			if (spoiler != null && child.type === 'spoiler') return spoiler;
+			if (spoiler != null && child.type === 'spoiler_block') return '';
 			if (child.text != null) return child.text;
-			if (child.children) return extractLexicalText(child.children);
+			if (child.children) return extractLexicalText(child.children, spoiler);
 			return '';
 		})
 		.join('');
@@ -52,8 +61,10 @@ export function extractHeadings(content) {
 
 	function walk(node) {
 		if (!node) return;
+		// headings inside a spoiler block stay out of the contents
+		if (node.type === 'spoiler_block') return;
 		if (node.type === 'heading') {
-			const text = extractLexicalText(node.children);
+			const text = extractLexicalText(node.children, 'spoiler');
 			const id = slugify(text);
 			const level = parseInt(node.tag?.replace('h', '')) || 2;
 			out.push({ text, id, level });
@@ -66,12 +77,16 @@ export function extractHeadings(content) {
 }
 
 /**
- * Flatten a Lexical document to plain text. Used for excerpt generation
- * and reading-time calculation.
+ * Flatten a Lexical document to plain text. Used for reading time and
+ * empty checks; excerpts pass `spoiler` (see extractLexicalText) so they
+ * never give anything away.
+ *
+ * @param {any} content
+ * @param {string | null} [spoiler]
  */
-export function lexicalToText(content) {
+export function lexicalToText(content, spoiler = null) {
 	if (!content?.root) return '';
-	return extractLexicalText(content.root.children || []);
+	return extractLexicalText(content.root.children || [], spoiler);
 }
 
 /**

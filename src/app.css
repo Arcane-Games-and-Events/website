@@ -502,6 +502,241 @@ a.fp-ul:focus-visible {
 	padding-right: 16px;
 }
 
+/* Spoilers ($lib/spoilers.js), in the site's paper and navy. Hidden inline
+ * words sit under a navy cover with a ◆ SPOILER label laid over it, so the
+ * cover takes exactly the space of the words and nothing moves. Showing
+ * and hiding is a gentle cross-fade; hover only softens the navy. Open,
+ * the words keep a dotted underline, and a second tap hides them again.
+ * A spoiler block is a paper panel with the ◆ kicker, an italic note and
+ * a square navy Show button (outlined Hide once open); its contents fade
+ * in and out. The drop cap and wide images stay out of it. */
+.spoiler,
+.spoiler-block {
+	/* the cover colour: the Library's deep navy */
+	--spoiler-cover: var(--color-warm-deep);
+	--spoiler-fade: 450ms ease;
+}
+.spoiler {
+	position: relative;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+	padding: 0 0.15em;
+	box-decoration-break: clone;
+	-webkit-box-decoration-break: clone;
+	background-color: transparent;
+	text-decoration: underline dotted transparent;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 4px;
+	transition:
+		background-color var(--spoiler-fade),
+		color var(--spoiler-fade),
+		text-decoration-color var(--spoiler-fade);
+}
+.spoiler * {
+	transition: color var(--spoiler-fade);
+}
+.spoiler:not([data-open]) {
+	background-color: var(--spoiler-cover);
+	color: transparent;
+}
+.spoiler:not([data-open]):hover {
+	background-color: color-mix(in srgb, var(--spoiler-cover) 85%, var(--color-paper-bg));
+}
+/* says what it is before anyone touches it. Too-short spoilers
+   (data-short, set in spoilers.js) go without. */
+.spoiler:not([data-short])::before {
+	content: '◆ Spoiler';
+	position: absolute;
+	left: 0.45em;
+	top: 50%;
+	transform: translateY(-50%);
+	white-space: nowrap;
+	line-height: 1;
+	pointer-events: none;
+	font-family: var(--font-libre, sans-serif);
+	font-size: 0.5em;
+	font-weight: 800;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--color-paper-bg);
+	opacity: 1;
+	transition: opacity var(--spoiler-fade);
+}
+.spoiler[data-open]::before {
+	opacity: 0;
+}
+.spoiler:not([data-open]) .spoiler-text {
+	pointer-events: none;
+	user-select: none;
+}
+.spoiler:not([data-open]) * {
+	color: transparent !important;
+	text-decoration-color: transparent !important;
+}
+.spoiler[data-open] {
+	text-decoration-color: var(--color-ink);
+}
+/* the dotted rule turns solid: tap again to hide */
+.spoiler[data-open]:hover {
+	text-decoration-style: solid;
+}
+.spoiler:focus-visible {
+	outline: 2px solid var(--color-ink);
+	outline-offset: 2px;
+}
+.spoiler-block {
+	clear: both;
+	margin: 2.5rem 0;
+	border: 1px solid var(--color-line2);
+	background: var(--color-panel);
+}
+.spoiler-block > summary {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	padding: 1rem 1.25rem;
+	cursor: pointer;
+	list-style: none;
+	font-family: var(--font-libre, inherit);
+}
+.spoiler-block > summary::-webkit-details-marker {
+	display: none;
+}
+.spoiler-block > summary:focus-visible {
+	outline: 2px solid var(--color-ink);
+	outline-offset: -2px;
+}
+.spoiler-block-head {
+	flex: 1;
+	min-width: 0;
+}
+.spoiler-block-label {
+	display: block;
+	font-size: 11px;
+	font-weight: 800;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	color: var(--color-ink);
+}
+.spoiler-block-label::before {
+	content: '◆';
+	margin-right: 0.55rem;
+	font-size: 8px;
+	vertical-align: 2px;
+	color: var(--color-warm);
+}
+/* the writer's title, or a note when there isn't one */
+.spoiler-block-title,
+.spoiler-block-note {
+	display: block;
+	margin-top: 0.3rem;
+	font-family: var(--font-newsreader, serif);
+	line-height: 1.3;
+}
+.spoiler-block-title {
+	font-size: 20px;
+	font-weight: 600;
+	color: var(--color-ink);
+	white-space: normal;
+}
+.spoiler-block-note {
+	font-size: 17px;
+	font-style: italic;
+	color: var(--color-soft);
+	white-space: normal;
+}
+.spoiler-block[open] .spoiler-block-note {
+	display: none;
+}
+.spoiler-block-show,
+.spoiler-block-hide {
+	flex-shrink: 0;
+	border: 1px solid var(--color-ink);
+	padding: 0.55rem 1rem;
+	font-size: 11px;
+	font-weight: 800;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	transition:
+		background-color 150ms ease-out,
+		color 150ms ease-out;
+}
+.spoiler-block-show {
+	border-color: var(--spoiler-cover);
+	background: var(--spoiler-cover);
+	color: var(--color-paper-bg);
+}
+.spoiler-block > summary:hover .spoiler-block-show {
+	border-color: color-mix(in srgb, var(--spoiler-cover) 85%, var(--color-paper-bg));
+	background: color-mix(in srgb, var(--spoiler-cover) 85%, var(--color-paper-bg));
+}
+.spoiler-block-hide {
+	color: var(--color-ink);
+}
+.spoiler-block > summary:hover .spoiler-block-hide {
+	background: var(--color-ink);
+	color: var(--color-paper-bg);
+}
+.spoiler-block-show::after {
+	content: ' ↓';
+}
+.spoiler-block-hide::after {
+	content: ' ↑';
+}
+.spoiler-block[open] .spoiler-block-show,
+.spoiler-block:not([open]) .spoiler-block-hide {
+	display: none;
+}
+.spoiler-block[open] > summary {
+	border-bottom: 1px solid var(--color-line2);
+}
+.spoiler-block-body {
+	padding: 1.5rem 1.25rem 0.5rem;
+	background: var(--color-paper-bg);
+	animation: spoiler-open var(--spoiler-fade);
+	transition: opacity 300ms ease;
+}
+@keyframes spoiler-open {
+	from {
+		opacity: 0;
+	}
+}
+/* closing: the contents fade out first (spoilers.js), then the block shuts */
+.spoiler-block[data-closing] .spoiler-block-body {
+	opacity: 0;
+}
+.spoiler-block-body::after {
+	content: '';
+	display: block;
+	clear: both;
+}
+.spoiler-block-body > :first-child {
+	margin-top: 0;
+}
+.spoiler-block-body p:first-of-type::first-letter {
+	float: none;
+	margin: 0;
+	font-size: inherit;
+	line-height: inherit;
+	font-weight: inherit;
+	color: inherit;
+}
+.spoiler-block .lex-fig--wide,
+.spoiler-block .lex-fig--full {
+	width: 100%;
+	margin-left: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+	.spoiler,
+	.spoiler-block-show,
+	.spoiler-block-hide {
+		transition: none;
+	}
+	.spoiler-block-body {
+		animation: none;
+	}
+}
+
 /* ------------------------------------------------------------------
  * AGE Studios (/studios): a print shop on paper. Wide display type, flat
  * colour blocks with a halftone screen, a second colour printed slightly

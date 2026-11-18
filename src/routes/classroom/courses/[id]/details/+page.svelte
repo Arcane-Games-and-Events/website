@@ -209,7 +209,8 @@
 				class="mt-1.5 w-full border border-line2 bg-white px-2.5 py-2 text-[14.5px] leading-relaxed focus:border-ink focus:ring-0"
 			></textarea>
 			<span class="mt-1 block text-[11.5px] text-fade"
-				>Shown on the course page and in the Academy. What will students learn?</span
+				>Shown on the course page and in the Academy. What will students learn? Hide a spoiler by
+				wrapping it in double bars: ||like this||.</span
 			>
 		</label>
 		<label class="block max-w-[220px]">
