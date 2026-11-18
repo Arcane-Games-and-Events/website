@@ -709,7 +709,15 @@
 				</p>
 				<p class="mt-4 max-w-[560px] font-newsreader text-[17px] leading-[1.5] text-soft">
 					Your membership is on the house{data.compReason ? ` (${data.compReason})` : ''}, with our
-					thanks. Nothing is charged and nothing needs doing.
+					thanks. Nothing is charged and nothing needs doing.{#if data.compEndsAt}
+						It runs until <strong class="font-semibold text-ink"
+							>{new Date(data.compEndsAt).toLocaleDateString('en-US', {
+								timeZone: 'America/Los_Angeles',
+								month: 'long',
+								day: 'numeric',
+								year: 'numeric'
+							})}</strong
+						>; after that you can join to keep reading.{/if}
 				</p>
 			</div>
 		</div>

@@ -2,11 +2,11 @@
 	import AdminHeader, { btnLine as hbtnLine } from '$lib/components/age/admin/AdminHeader.svelte';
 	import AdminTabs from '$lib/components/age/admin/AdminTabs.svelte';
 	import Figures from '$lib/components/age/admin/Figures.svelte';
-	import Section from '$lib/components/age/admin/Section.svelte';
 	import Pager from '$lib/components/age/admin/Pager.svelte';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
 	import * as ui from '$lib/components/age/admin/ui.js';
-	import { enhance, deserialize } from '$app/forms';
+	import MemberAccess from '$lib/components/age/admin/MemberAccess.svelte';
+	import { deserialize } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 
 	let { data, form } = $props();
@@ -97,10 +97,6 @@
 		);
 	});
 
-	const paginatedUsers = $derived(
-		filteredUsers.slice((usersPage - 1) * usersPerPage, usersPage * usersPerPage)
-	);
-
 	async function searchUsersOnServer(query) {
 		if (!query || query.length < 2) {
 			userSearchResults = null;
@@ -134,27 +130,103 @@
 		userSearchTimeout = setTimeout(() => searchUsersOnServer(query), 300);
 	}
 
+	// What kind of member each account is, for the badge, the tint and the filters.
+	const DAY = 86400000;
+	const REASON = {
+		staff: 'Staff',
+		writer: 'Writer',
+		teacher: 'Teacher',
+		partner: 'Partner',
+		friend: 'Friend',
+		trial: 'Trial',
+		other: 'Other'
+	};
+	const KIND = {
+		paying: { label: 'Paying', tile: 'bg-prem text-white', badge: 'bg-prem text-white' },
+		comp: { label: 'Comped', tile: 'bg-gold text-ink', badge: 'bg-gold text-ink' },
+		admin: { label: 'Admin', tile: 'bg-ink text-paper-bg', badge: 'bg-ink text-paper-bg' },
+		team: { label: 'Team', tile: 'bg-warm text-white', badge: 'bg-warm text-white' },
+		free: { label: 'Free', tile: 'bg-line text-soft', badge: 'border border-line2 text-soft' }
+	};
+	const kindOf = (u) =>
+		u.role === 'admin'
+			? 'admin'
+			: u.role === 'premium'
+				? u.subscriptionId
+					? 'paying'
+					: 'comp'
+				: u.role === 'writer' || u.role === 'tournament staff'
+					? 'team'
+					: 'free';
 	const ROLE = {
 		free: 'Free',
 		premium: 'Premium',
 		admin: 'Admin',
 		writer: 'Writer',
-		'tournament staff': 'Staff'
+		'tournament staff': 'Tournament staff'
 	};
+	const STATUS = { cancelled: 'cancelled', payment_failed: 'payment failed', expired: 'expired' };
+	const now = Date.now();
+	const daysLeft = (d) => Math.ceil((new Date(d).getTime() - now) / DAY);
+	const endDate = (d) =>
+		new Date(d).toLocaleDateString('en-US', {
+			timeZone: 'America/Los_Angeles',
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric'
+		});
+	const pacificDay = (d) =>
+		d
+			? new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date(d))
+			: '';
+	/** The line under the badge: plan and status, or the comp's reason and end. */
+	const detail = (u, kind) => {
+		if (kind === 'paying')
+			return `${u.plan === 'yearly' ? 'Annual' : 'Monthly'}${STATUS[u.subscriptionStatus] ? ` · ${STATUS[u.subscriptionStatus]}` : ''}`;
+		if (kind === 'comp') return REASON[u.compReason] || 'Reason not recorded';
+		if (kind === 'team') return ROLE[u.role];
+		if (kind === 'admin') return 'Full access';
+		return 'No membership';
+	};
+
 	const counts = $derived.by(() => {
-		const c = { total: 0, premium: 0, free: 0, admin: 0, staff: 0, writer: 0 };
+		const c = { all: 0, paying: 0, comp: 0, free: 0, team: 0, ending: 0 };
 		for (const u of data.allUsers || []) {
-			c.total++;
-			if (u.role === 'premium') c.premium++;
-			else if (u.role === 'admin') c.admin++;
-			else if (u.role === 'tournament staff') c.staff++;
-			else if (u.role === 'writer') c.writer++;
-			else c.free++;
+			const k = kindOf(u);
+			c.all++;
+			if (k === 'admin' || k === 'team') c.team++;
+			else c[k]++;
+			if (k === 'comp' && u.compEndsAt && daysLeft(u.compEndsAt) <= 14) c.ending++;
 		}
 		return c;
 	});
+	const FILTERS = [
+		{ id: 'all', label: 'All' },
+		{ id: 'paying', label: 'Paying' },
+		{ id: 'comp', label: 'Comped' },
+		{ id: 'free', label: 'Free' },
+		{ id: 'team', label: 'Admins & team' }
+	];
+	let show = $state('all');
+	const shown = $derived(
+		show === 'all'
+			? filteredUsers
+			: filteredUsers.filter((u) => {
+					const k = kindOf(u);
+					return show === 'team' ? k === 'team' || k === 'admin' : k === show;
+				})
+	);
+	const pageRows = $derived(shown.slice((usersPage - 1) * usersPerPage, usersPage * usersPerPage));
+
+	// One row's role controls open at a time, under the row.
+	let editing = $state(/** @type {string | null} */ (null));
+	const startEdit = (u) => (editing = editing === u.id ? null : u.id);
+
 	const name = (u) =>
 		u.first_name && u.last_name ? `${u.first_name} ${u.last_name}` : u.first_name || u.email;
+	const initials = (u) =>
+		`${(u.first_name || '')[0] || ''}${(u.last_name || '')[0] || ''}`.toUpperCase() ||
+		(u.email || '?')[0].toUpperCase();
 </script>
 
 <svelte:head><title>Members · Admin</title></svelte:head>
@@ -180,17 +252,22 @@
 	<Figures
 		items={[
 			{ label: 'Accounts', value: ui.fmt(data.stats.totalUsers) },
-			{ label: 'Premium', value: ui.fmt(counts.premium), tone: 'text-prem' },
+			{ label: 'Paying', value: ui.fmt(counts.paying), tone: 'text-prem' },
+			{ label: 'Comped', value: ui.fmt(counts.comp), tone: 'text-gold' },
 			{ label: 'Free', value: ui.fmt(counts.free) },
-			{ label: 'Admins', value: ui.fmt(counts.admin) },
-			{ label: 'Staff', value: ui.fmt(counts.staff) },
-			{ label: 'Writers', value: ui.fmt(counts.writer) }
+			{ label: 'Admins & team', value: ui.fmt(counts.team) },
+			{
+				label: 'Comps ending',
+				value: ui.fmt(counts.ending),
+				tone: counts.ending ? 'text-hero-rb' : '',
+				note: 'next two weeks'
+			}
 		]}
 	/>
 
-	<!-- search -->
-	<div class="mt-8 flex flex-wrap items-center gap-3">
-		<label class="{ui.search} min-w-[260px] flex-1" aria-label="Search members">
+	<!-- search and filters -->
+	<div class="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+		<label class="{ui.search} w-full lg:max-w-[420px]" aria-label="Search members">
 			<svg
 				viewBox="0 0 20 20"
 				class="h-4 w-4 shrink-0 text-fade"
@@ -216,102 +293,187 @@
 				></span>
 			{/if}
 		</label>
-		<span class={ui.note}>
-			{#if userSearchQuery.length >= 2 && userSearchResults !== null}
-				{ui.fmt(filteredUsers.length)} result{filteredUsers.length === 1 ? '' : 's'} across all {ui.fmt(
-					data.stats.totalUsers
-				)} accounts
-			{:else if userSearchQuery.length >= 2}
-				Filtering the {ui.fmt((data.allUsers || []).length)} loaded accounts…
-			{:else}
-				Showing {ui.fmt(filteredUsers.length)}
-			{/if}
-		</span>
-	</div>
-
-	<Section title="Accounts" class="mt-8" note="newest first">
-		<div class="{ui.rowHead} grid-cols-[minmax(0,1fr)_110px_120px_minmax(0,440px)] gap-3">
-			<span>Member</span><span>Role</span><span>Joined</span><span class="text-right">Actions</span>
-		</div>
-		<ul>
-			{#each paginatedUsers as user (user.id)}
-				<li class={ui.row}>
-					<div
-						class="py-3 md:grid md:grid-cols-[minmax(0,1fr)_110px_120px_minmax(0,440px)] md:items-center md:gap-3"
-					>
-						<a href="/admin/customers/{user.id}" class="block min-w-0 hover:text-warm">
-							<span class="{ui.titleText} block truncate">{name(user)}</span>
-							<span class="block truncate text-[11.5px] text-fade"
-								>{user.email}{user.id === data.user.id ? ' · you' : ''}</span
-							>
-						</a>
-						<span class="mt-1.5 block md:mt-0">
-							<span class="{ui.pill} {ui.pillTone[user.role] || ''}"
-								>{ROLE[user.role] || user.role}</span
-							>
-						</span>
-						<span class="mt-1 block text-[12.5px] text-soft tabular-nums md:mt-0"
-							>{ui.dateShort(user.createdAt)}</span
-						>
-						<div class="mt-2.5 flex flex-wrap items-center gap-1.5 md:mt-0 md:justify-end">
-							{#if user.id !== data.user.id}
-								<form
-									method="POST"
-									action="?/updateUserRole"
-									use:enhance
-									class="flex items-center gap-1.5"
-								>
-									<input type="hidden" name="userId" value={user.id} />
-									<select name="role" class={ui.selectSm} aria-label="Role">
-										<option value="free" selected={user.role === 'free'}>Free</option>
-										<option value="premium" selected={user.role === 'premium'}>Premium</option>
-										<option value="writer" selected={user.role === 'writer'}>Writer</option>
-										<option value="tournament staff" selected={user.role === 'tournament staff'}
-											>Staff</option
-										>
-										<option value="admin" selected={user.role === 'admin'}>Admin</option>
-									</select>
-									<select
-										name="compReason"
-										class={ui.selectSm}
-										title="Why this member gets Premium without paying"
-										aria-label="Comp reason"
-									>
-										<option value="">Comp reason…</option>
-										<option value="staff">Staff</option>
-										<option value="writer">Writer</option>
-										<option value="teacher">Teacher</option>
-										<option value="partner">Partner</option>
-										<option value="friend">Friend</option>
-										<option value="trial">Trial</option>
-										<option value="other">Other</option>
-									</select>
-									<button type="submit" class={ui.btnSm}>Save</button>
-								</form>
-								<button type="button" onclick={() => openDeleteModal(user)} class={ui.danger}
-									>Delete</button
-								>
-							{:else}
-								<span class={ui.note}>Signed in as you</span>
-							{/if}
-						</div>
-					</div>
-				</li>
-			{:else}
-				<li class={ui.empty}>
-					{userSearchQuery ? `No members match “${userSearchQuery}”.` : 'No members yet.'}
-				</li>
+		<div class="flex flex-wrap gap-1.5" role="group" aria-label="Show">
+			{#each FILTERS as f (f.id)}
+				{@const n = counts[f.id]}
+				<button
+					type="button"
+					onclick={() => {
+						show = f.id;
+						usersPage = 1;
+					}}
+					aria-pressed={show === f.id}
+					class="inline-flex h-[36px] items-center gap-2 border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {show ===
+					f.id
+						? 'border-ink bg-ink text-paper-bg'
+						: 'border-line2 bg-white text-soft hover:border-ink hover:text-ink'}"
+				>
+					{#if f.id !== 'all'}<span
+							class="h-2 w-2 {KIND[f.id === 'team' ? 'admin' : f.id].tile.split(' ')[0]}"
+							aria-hidden="true"
+						></span>{/if}
+					{f.label}
+					<span class="tabular-nums opacity-60">{ui.fmt(n)}</span>
+				</button>
 			{/each}
-		</ul>
+		</div>
+	</div>
+	{#if counts.ending}
+		<p class="mt-3 text-[12px] text-hero-rb">
+			{counts.ending}
+			{counts.ending === 1 ? 'comp ends' : 'comps end'} in the next two weeks.
+			<button
+				type="button"
+				class="font-semibold underline"
+				onclick={() => {
+					show = 'comp';
+					usersPage = 1;
+				}}>Show comped members</button
+			>
+		</p>
+	{/if}
+	<p class="mt-3 {ui.note}">
+		{#if userSearchQuery.length >= 2 && userSearchResults !== null}
+			{ui.fmt(shown.length)} result{shown.length === 1 ? '' : 's'} across all {ui.fmt(
+				data.stats.totalUsers
+			)} accounts
+		{:else}
+			Showing {ui.fmt(shown.length)}, newest first
+		{/if}
+	</p>
 
-		<Pager
-			page={usersPage}
-			perPage={usersPerPage}
-			count={filteredUsers.length}
-			label="members"
-			onchange={(p) => (usersPage = p)}
-		/>
-	</Section>
+	<ul class="mt-4 flex flex-col gap-2">
+		{#each pageRows as user (user.id)}
+			{@const k = kindOf(user)}
+			{@const K = KIND[k]}
+			{@const left = k === 'comp' && user.compEndsAt ? daysLeft(user.compEndsAt) : null}
+			{@const me = user.id === data.user.id}
+			<li
+				class="border border-l-[4px] transition-[background-color,border-color,box-shadow] duration-200 motion-reduce:transition-none {k ===
+				'comp'
+					? 'border-gold/40 border-l-gold bg-gold/[0.07]'
+					: k === 'paying'
+						? 'border-line2 border-l-prem bg-white'
+						: k === 'admin' || k === 'team'
+							? 'border-line2 border-l-ink bg-white'
+							: 'border-line2 border-l-line2 bg-white'} {editing === user.id
+					? 'shadow-[0_6px_24px_-12px_rgba(0,0,0,0.35)]'
+					: ''}"
+			>
+				<div
+					class="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-x-3.5 gap-y-2 px-3.5 py-3 md:grid-cols-[48px_minmax(0,1fr)_230px_96px_148px] md:gap-x-5 md:px-4"
+				>
+					<a
+						href="/admin/customers/{user.id}"
+						class="ao-cond flex h-[44px] w-[44px] items-center justify-center text-[19px] leading-none font-black md:h-[48px] md:w-[48px] md:text-[21px] {K.tile}"
+						aria-hidden="true"
+						tabindex="-1">{initials(user)}</a
+					>
+					<a href="/admin/customers/{user.id}" class="group min-w-0">
+						<span
+							class="block truncate font-newsreader text-[17px] leading-tight font-semibold group-hover:text-warm"
+							>{name(user)}{#if me}<span class="font-libre text-[11px] font-normal text-fade">
+									· you</span
+								>{/if}</span
+						>
+						<span class="mt-0.5 block truncate text-[12px] text-fade">{user.email}</span>
+						{#if user.gemId || user.extraRoles?.length}
+							<span class="mt-1 flex flex-wrap gap-1">
+								{#if user.gemId}<span
+										class="border border-line2 px-1.5 py-px font-mono text-[10px] text-soft"
+										>GEM {user.gemId}</span
+									>{/if}
+								{#each user.extraRoles || [] as r (r)}<span
+										class="border border-line2 px-1.5 py-px text-[9.5px] font-extrabold tracking-[0.1em] text-soft uppercase"
+										>{r}</span
+									>{/each}
+							</span>
+						{/if}
+					</a>
+					<!-- membership: the thing to scan for -->
+					<span
+						class="col-span-3 col-start-2 row-start-2 min-w-0 md:col-span-1 md:col-start-3 md:row-start-1"
+					>
+						<span class="flex items-center gap-2">
+							<span
+								class="px-2 py-[3px] text-[9.5px] font-extrabold tracking-[0.16em] uppercase {K.badge}"
+								>{K.label}</span
+							>
+							<span class="truncate text-[12.5px] text-soft">{detail(user, k)}</span>
+						</span>
+						{#if k === 'comp'}
+							<span
+								class="mt-1 block text-[11.5px] {left !== null && left <= 14
+									? 'font-semibold text-hero-rb'
+									: 'text-fade'}"
+								>{left === null
+									? 'No end date'
+									: left <= 0
+										? 'Ends today'
+										: `Ends ${endDate(user.compEndsAt)} · ${left} ${left === 1 ? 'day' : 'days'} left`}</span
+							>
+						{/if}
+					</span>
+					<span class="hidden text-[12px] text-soft tabular-nums md:block"
+						><span class="{ui.label} block">Joined</span>{ui.dateShort(user.createdAt)}</span
+					>
+					<span
+						class="col-start-3 row-start-1 flex items-center gap-1.5 justify-self-end md:col-start-5"
+					>
+						{#if !me}
+							<button
+								type="button"
+								onclick={() => startEdit(user)}
+								aria-expanded={editing === user.id}
+								class="inline-flex h-[34px] items-center gap-1.5 border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {editing ===
+								user.id
+									? 'border-ink bg-ink text-paper-bg'
+									: 'border-line2 bg-white hover:border-ink'}"
+								>{editing === user.id ? 'Close' : 'Edit'}</button
+							>
+						{/if}
+						<a
+							href="/admin/customers/{user.id}"
+							class="hidden h-[34px] items-center px-2 text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink sm:inline-flex"
+							>Open →</a
+						>
+					</span>
+				</div>
+
+				{#if editing === user.id}
+					<MemberAccess
+						member={{
+							id: user.id,
+							firstName: user.first_name,
+							role: user.role,
+							subscriptionId: user.subscriptionId,
+							compReason: user.compReason,
+							compEndsOn: pacificDay(user.compEndsAt)
+						}}
+						action="?/updateUserRole"
+						onclose={() => (editing = null)}
+						ondelete={() => openDeleteModal(user)}
+					/>
+				{/if}
+			</li>
+		{:else}
+			<li class={ui.empty}>
+				{userSearchQuery
+					? `No members match “${userSearchQuery}”.`
+					: show === 'all'
+						? 'No members yet.'
+						: 'Nobody here.'}
+			</li>
+		{/each}
+	</ul>
+
+	<Pager
+		page={usersPage}
+		perPage={usersPerPage}
+		count={shown.length}
+		label="members"
+		onchange={(p) => (usersPage = p)}
+	/>
 </div>
 
 <!-- ============ DELETE MODAL ============ -->

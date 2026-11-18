@@ -9,6 +9,7 @@ import {
 import { monthlyLedger } from '$lib/server/admin/revenue.js';
 import { cachedMessageCounts } from '$lib/server/contact/inbox.js';
 import { readyPayoutCount } from '$lib/server/stores/payouts.js';
+import { expiringComps } from '$lib/server/admin/comps.js';
 
 const safe = (promise, fallback) =>
 	promise.catch((err) => {
@@ -28,7 +29,8 @@ export async function load({ locals }) {
 		ledger,
 		contact,
 		storePay,
-		storeEvents
+		storeEvents,
+		compsEnding
 	] = await Promise.all([
 		safe(adminCounts(), null),
 		safe(orderAnalytics(), null),
@@ -40,7 +42,8 @@ export async function load({ locals }) {
 		safe(monthlyLedger({ months: 12 }), null),
 		cachedMessageCounts(locals.user),
 		safe(readyPayoutCount(), 0),
-		safe(newStoreEvents(), [])
+		safe(newStoreEvents(), []),
+		safe(expiringComps({ days: 14 }), [])
 	]);
 
 	return {
@@ -54,7 +57,14 @@ export async function load({ locals }) {
 			: [],
 		share: ledger?.available ? ledger.share : null,
 		members,
-		needs: needs ? { ...needs, inboxUnread: contact.inbox, storePayouts: storePay } : null,
+		needs: needs
+			? {
+					...needs,
+					inboxUnread: contact.inbox,
+					storePayouts: storePay,
+					compsEnding: compsEnding.length
+				}
+			: null,
 		events: events.map((e) => ({
 			...e,
 			players: ticketStats[e.id]?.sold ?? 0,

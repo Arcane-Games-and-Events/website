@@ -7,7 +7,8 @@
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import { onMount, tick } from 'svelte';
-	import { TOPIC_SHORT, LIMITS } from '$lib/contact/topics.js';
+	import { TOPIC_SHORT, TOPIC_TONE, LIMITS } from '$lib/contact/topics.js';
+	import * as F from '$lib/components/age/store/fields.js';
 	import { initialsOf, stamp } from '$lib/contact/format.js';
 	import * as ui from '$lib/components/age/admin/ui.js';
 
@@ -23,13 +24,6 @@
 
 	const accountName = $derived(
 		t.userId ? [t.accountFirst, t.accountLast].filter(Boolean).join(' ') || t.name : ''
-	);
-	const roleLabel = $derived(
-		t.accountRole === 'admin'
-			? 'Admin'
-			: t.accountRole === 'premium'
-				? 'Premium member'
-				: 'Free member'
 	);
 	const staffName = (msg) => [msg.authorFirst, msg.authorLast].filter(Boolean).join(' ') || 'AGE';
 	const send = () => {
@@ -56,102 +50,125 @@
 		if (!matchMedia('(min-width: 768px)').matches) profileOpen = false;
 	});
 	const roles = $derived((p?.account?.additionalRoles || []).filter(Boolean));
+	const tone = $derived(TOPIC_TONE[t.topic] || 'var(--color-ink)');
+	// Who wrote, as on the Members list: the tile and badge colour.
+	const who = $derived(
+		!t.userId
+			? { label: 'Guest', bg: 'var(--color-line2)', ink: 'text-ink' }
+			: t.accountRole === 'admin'
+				? { label: 'Admin', bg: 'var(--color-ink)', ink: 'text-paper-bg' }
+				: t.accountRole === 'premium'
+					? p?.membership
+						? { label: 'Paying member', bg: 'var(--color-prem)', ink: 'text-white' }
+						: { label: 'Premium member', bg: 'var(--color-gold)', ink: 'text-ink' }
+					: { label: 'Free member', bg: 'var(--color-line2)', ink: 'text-ink' }
+	);
 </script>
 
 <svelte:head><title>{t.subject} · Inbox · Admin</title></svelte:head>
 
-<div class="px-5 pt-5 pb-20 lg:pr-0 lg:pl-8">
+<div class="px-5 pb-20 lg:pr-0 lg:pl-8">
 	<!-- toolbar -->
 	<div class="flex flex-wrap items-center gap-2">
-		<a href="/admin/inbox{backSearch}" class="{ui.ghostSm} lg:hidden">← Inbox</a>
+		<a
+			href="/admin/inbox{backSearch}"
+			class="inline-flex h-[36px] items-center border border-line2 bg-white px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:border-ink lg:hidden"
+			>← Inbox</a
+		>
 		<span class="flex-1"></span>
 		<form method="POST" action="?/unread" use:enhance>
 			<input type="hidden" name="back" value={backSearch} />
-			<button class={ui.ghostSm}>Mark unread</button>
+			<button
+				class="inline-flex h-[36px] items-center border border-line2 bg-white px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:border-ink"
+				>Mark unread</button
+			>
 		</form>
 		<form method="POST" action="?/status" use:enhance>
 			<input type="hidden" name="status" value={t.status === 'done' ? 'open' : 'done'} />
-			<button class={t.status === 'done' ? ui.ghostSm : ui.btnSm}
+			<button
+				class="inline-flex h-[36px] items-center px-4 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-[filter] {t.status ===
+				'done'
+					? 'border border-ink bg-white hover:bg-ink hover:text-paper-bg'
+					: 'bg-prem text-white hover:brightness-110'}"
 				>{t.status === 'done' ? 'Reopen' : '✓ Mark done'}</button
 			>
 		</form>
 	</div>
 
-	<!-- subject -->
-	<header class="mt-5 border-b border-line2 pb-4">
-		<p class={ui.label}>
-			<span class="text-warm">◆</span>
-			{TOPIC_SHORT[t.topic] || 'Question'} ·
-			<span class={t.status === 'done' ? 'text-prem' : 'text-warm'}
-				>{t.status === 'done' ? 'Done' : 'Open'}</span
-			>
-		</p>
-		<h2
-			class="mt-1.5 font-newsreader text-[26px] leading-[1.1] font-semibold tracking-[-0.02em] [text-wrap:balance] md:text-[30px]"
-		>
-			{t.subject}
-		</h2>
-	</header>
-
-	<!-- who -->
-	<dl
-		class="grid grid-cols-2 gap-x-6 gap-y-3 border-b border-line2 py-4 text-[13px] md:grid-cols-4"
+	<!-- the subject, and who wrote -->
+	<header
+		class="mt-4 border border-l-[6px] border-line2 bg-white"
+		style="border-left-color: {tone}"
 	>
-		<div class="col-span-2 min-w-0 md:col-span-1">
-			<dt class={ui.label}>From</dt>
-			<dd class="mt-1 truncate font-semibold">
-				{#if p}<a href={p.href} class="hover:text-warm hover:underline">{t.name}</a
-					>{:else}{t.name}{/if}
-			</dd>
-			<dd class="truncate text-fade">{t.email}</dd>
+		<div class="px-5 pt-5 pb-4 md:px-6">
+			<p class="flex flex-wrap items-center gap-2">
+				<span
+					class="px-2 py-[3px] text-[9.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+					style="background: {tone}">{TOPIC_SHORT[t.topic] || 'Question'}</span
+				>
+				<span
+					class="px-2 py-[2px] text-[9.5px] font-extrabold tracking-[0.16em] uppercase {t.status ===
+					'done'
+						? 'bg-prem text-white'
+						: 'border border-warm text-warm'}">{t.status === 'done' ? 'Done' : 'Open'}</span
+				>
+				<span class="text-[11.5px] text-fade">Started {stamp(t.createdAt)}</span>
+			</p>
+			<h2
+				class="mt-2.5 font-newsreader text-[26px] leading-[1.1] font-semibold tracking-[-0.02em] [text-wrap:balance] md:text-[32px]"
+			>
+				{t.subject}
+			</h2>
 		</div>
-		<div>
-			<dt class={ui.label}>Account</dt>
-			<dd class="mt-1">
-				{#if t.userId}
-					<span class="{ui.pill} {t.accountRole === 'premium' ? ui.pillTone.premium : ''}"
-						>{roleLabel}</span
-					>
-					{#if accountName && accountName !== t.name}<span class="block text-fade"
-							>{accountName}</span
-						>{/if}
-				{:else}
-					<span class="text-soft">Guest</span>
-					<span class="block text-[11.5px] text-fade">Reads replies on a private link</span>
-				{/if}
-			</dd>
-		</div>
-		<div>
-			<dt class={ui.label}>Started</dt>
-			<dd class="mt-1">{stamp(t.createdAt)}</dd>
-		</div>
-		<div>
-			<dt class={ui.label}>Earlier</dt>
-			<dd class="mt-1">
+		<div
+			class="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-line2 bg-paper/50 px-5 py-3.5 md:px-6"
+		>
+			<span class="flex min-w-0 items-center gap-3">
+				<span
+					class="ao-cond flex h-[44px] w-[44px] shrink-0 items-center justify-center text-[19px] leading-none font-black {who.ink}"
+					style="background: {who.bg}"
+					aria-hidden="true">{initialsOf(t.name)}</span
+				>
+				<span class="min-w-0">
+					<span class="block truncate text-[14.5px] font-bold">
+						{#if p}<a href={p.href} class="hover:text-warm hover:underline">{t.name}</a
+							>{:else}{t.name}{/if}
+						{#if accountName && accountName !== t.name}<span class="font-normal text-fade">
+								· {accountName}</span
+							>{/if}
+					</span>
+					<span class="block truncate text-[12px] text-fade">{t.email}</span>
+				</span>
+			</span>
+			<span
+				class="px-2 py-[2px] text-[9.5px] font-extrabold tracking-[0.16em] uppercase {who.ink}"
+				style="background: {who.bg}">{who.label}</span
+			>
+			{#if !t.userId}<span class="text-[11.5px] text-fade">Reads replies on a private link</span
+				>{/if}
+			<span class="ml-auto text-[12px]">
 				{#if t.others}
 					<a
 						href="/admin/inbox?show=all&q={encodeURIComponent(t.email)}"
 						class="font-semibold text-warm hover:underline"
-						>{t.others} other {t.others === 1 ? 'conversation' : 'conversations'}</a
+						>{t.others} other {t.others === 1 ? 'conversation' : 'conversations'} →</a
 					>
 				{:else}<span class="text-fade">First conversation</span>{/if}
-			</dd>
+			</span>
 		</div>
-	</dl>
+	</header>
 
 	<!-- their profile -->
 	{#if p}
-		<details class="group border-b border-line2" bind:open={profileOpen}>
+		<details class="group mt-3 border border-line2 bg-white" bind:open={profileOpen}>
 			<summary
-				class="flex cursor-pointer list-none items-center gap-3 py-3 [&::-webkit-details-marker]:hidden"
+				class="flex cursor-pointer list-none items-center gap-3 px-5 py-3 hover:bg-paper/50 md:px-6 [&::-webkit-details-marker]:hidden"
 			>
-				<span class={ui.label}>Profile</span>
+				<span class="ao-cond text-[20px] leading-none font-black uppercase">Their profile</span>
 				<span class="min-w-0 flex-1 truncate text-[12.5px] text-soft">
 					{#if p.account}
-						{p.account.firstName}
-						{p.account.lastName}
-						{#if p.membership}· Premium {p.membership.plan}{/if}
-						· {p.orders.count}
+						{p.membership ? `Premium ${p.membership.plan} · ` : ''}{ui.money(p.orders.spent)} spent ·
+						{p.orders.count}
 						{p.orders.count === 1 ? 'order' : 'orders'}
 					{:else}
 						No account · {p.orders.count} {p.orders.count === 1 ? 'order' : 'orders'} as a guest
@@ -163,26 +180,19 @@
 				>
 			</summary>
 
-			<div class="pb-5">
+			<div class="border-t border-line2 px-5 py-5 md:px-6">
 				{#if p.matchedByEmail}
-					<p class="mb-3 border-l-[3px] border-warm bg-warm/5 px-3 py-2 text-[12.5px] text-soft">
+					<p class="mb-4 border-l-[3px] border-warm bg-warm/5 px-3 py-2 text-[12.5px] text-soft">
 						Written signed out, but this email has an account. Their replies move into it when they
 						open the private link signed in.
 					</p>
 				{/if}
 
-				<dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-[13px] md:grid-cols-4">
+				<dl class="grid grid-cols-2 gap-px border border-line2 bg-line2 md:grid-cols-4">
 					{#if p.account}
-						{#if roles.length}<div class="col-span-2 md:col-span-4">
-								<dt class={ui.label}>Roles</dt>
-								<dd class="mt-1 flex flex-wrap gap-x-3 gap-y-1">
-									{#each roles as r (r)}<span class="{ui.pill} {ui.pillTone[r] || ''}">{r}</span
-										>{/each}
-								</dd>
-							</div>{/if}
-						<div>
-							<dt class={ui.label}>Membership</dt>
-							<dd class="mt-1 capitalize">
+						<div class="bg-white px-4 py-3">
+							<dt class={F.label}>Membership</dt>
+							<dd class="text-[13px] capitalize">
 								{#if p.membership}{plan(
 										p.membership
 									)}{:else if p.account.legacyStatus === 'active'}Old subscription{:else}<span
@@ -190,34 +200,39 @@
 									>{/if}
 							</dd>
 						</div>
-						<div>
-							<dt class={ui.label}>Joined</dt>
-							<dd class="mt-1">{ui.dateShort(p.account.createdAt)}</dd>
+						<div class="bg-white px-4 py-3">
+							<dt class={F.label}>Joined</dt>
+							<dd class="text-[13px]">{ui.dateShort(p.account.createdAt)}</dd>
 						</div>
-						<div>
-							<dt class={ui.label}>GEM ID</dt>
-							<dd class="mt-1 tabular-nums">
+						<div class="bg-white px-4 py-3">
+							<dt class={F.label}>GEM ID</dt>
+							<dd class="font-mono text-[13px]">
 								{#if p.account.gemId}{p.account.gemId}{:else}<span class="text-fade">None</span
 									>{/if}
 							</dd>
 						</div>
 					{/if}
-					<div>
-						<dt class={ui.label}>Spent</dt>
-						<dd class="mt-1 font-semibold text-prem tabular-nums">
+					<div class="bg-white px-4 py-3">
+						<dt class={F.label}>Spent</dt>
+						<dd class="ao-cond text-[22px] leading-none font-black text-prem tabular-nums">
 							{ui.money(p.orders.spent)}
-							<span class="font-normal text-fade"
-								>· {p.orders.count} {p.orders.count === 1 ? 'order' : 'orders'}</span
-							>
 						</dd>
 					</div>
 				</dl>
+				{#if roles.length}
+					<p class="mt-3 flex flex-wrap gap-1.5">
+						{#each roles as r (r)}<span
+								class="border border-line2 px-2 py-0.5 text-[9.5px] font-extrabold tracking-[0.12em] uppercase"
+								>{r}</span
+							>{/each}
+					</p>
+				{/if}
 
-				<div class="mt-4 grid gap-x-6 gap-y-4 md:grid-cols-3">
+				<div class="mt-5 grid gap-x-6 gap-y-5 md:grid-cols-3">
 					<div class="min-w-0">
-						<p class={ui.label}>Recent orders</p>
+						<p class={F.label}>Recent orders</p>
 						{#if p.orders.recent.length}
-							<ul class="mt-1.5 space-y-1">
+							<ul class="space-y-1.5">
 								{#each p.orders.recent as o (o.id)}
 									<li>
 										<a
@@ -226,8 +241,9 @@
 										>
 											<span class="min-w-0 flex-1 truncate">{o.label}</span>
 											<span
-												class="shrink-0 tabular-nums {o.refunded ? 'text-fade line-through' : ''}"
-												>{ui.money(o.amount)}</span
+												class="shrink-0 font-semibold tabular-nums {o.refunded
+													? 'text-fade line-through'
+													: ''}">{ui.money(o.amount)}</span
 											>
 										</a>
 										<span class="block text-[11px] text-fade"
@@ -236,13 +252,13 @@
 									</li>
 								{/each}
 							</ul>
-						{:else}<p class="mt-1.5 text-[13px] text-fade">None</p>{/if}
+						{:else}<p class="text-[13px] text-fade">None</p>{/if}
 					</div>
 					{#if p.account}
 						<div class="min-w-0">
-							<p class={ui.label}>Courses · {p.courses.length}</p>
+							<p class={F.label}>Courses · {p.courses.length}</p>
 							{#if p.courses.length}
-								<ul class="mt-1.5 space-y-1 text-[13px]">
+								<ul class="space-y-1 text-[13px]">
 									{#each p.courses.slice(0, 3) as c (c.slug)}
 										<li class="truncate">{c.title}</li>
 									{/each}
@@ -250,12 +266,12 @@
 											and {p.courses.length - 3} more
 										</li>{/if}
 								</ul>
-							{:else}<p class="mt-1.5 text-[13px] text-fade">None</p>{/if}
+							{:else}<p class="text-[13px] text-fade">None</p>{/if}
 						</div>
 						<div class="min-w-0">
-							<p class={ui.label}>Upcoming events · {p.events.length}</p>
+							<p class={F.label}>Upcoming events · {p.events.length}</p>
 							{#if p.events.length}
-								<ul class="mt-1.5 space-y-1 text-[13px]">
+								<ul class="space-y-1 text-[13px]">
 									{#each p.events.slice(0, 3) as e, i (i)}
 										<li class="flex items-baseline gap-2">
 											<span class="min-w-0 flex-1 truncate">{e.title}</span>
@@ -263,27 +279,40 @@
 										</li>
 									{/each}
 								</ul>
-							{:else}<p class="mt-1.5 text-[13px] text-fade">None</p>{/if}
+							{:else}<p class="text-[13px] text-fade">None</p>{/if}
 						</div>
 					{/if}
 				</div>
 
-				<a href={p.href} class="mt-4 inline-block {ui.ghostSm}">Open full profile →</a>
+				<a
+					href={p.href}
+					class="mt-5 inline-flex text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
+					>Open their page →</a
+				>
 			</div>
 		</details>
 	{/if}
 
 	<!-- the thread -->
-	<ol>
+	<ol class="mt-6 flex flex-col gap-3">
 		{#each t.messages as msg (msg.id)}
 			<li
-				class="border-b border-line py-5 {msg.internal
-					? '-mx-3 my-2 border-b-0 bg-gold/10 px-3'
-					: ''}"
+				class="border border-l-[4px] {msg.internal
+					? 'border-dashed border-gold bg-gold/10 md:ml-12'
+					: msg.fromStaff
+						? 'border-line2 bg-warm/[0.04] md:ml-12'
+						: 'border-line2 bg-white md:mr-12'}"
+				style="border-left-style: solid; border-left-color: {msg.internal
+					? 'var(--color-gold)'
+					: msg.fromStaff
+						? 'var(--color-warm)'
+						: who.bg === 'var(--color-line2)'
+							? 'var(--color-ink)'
+							: who.bg}"
 			>
-				<div class="flex items-center gap-3">
+				<div class="flex items-center gap-3 px-4 pt-3.5 md:px-5">
 					<span
-						class="flex h-8 w-8 shrink-0 items-center justify-center text-[11px] font-bold {msg.internal
+						class="ao-cond flex h-8 w-8 shrink-0 items-center justify-center text-[14px] leading-none font-black {msg.internal
 							? 'bg-gold text-ink'
 							: msg.fromStaff
 								? 'bg-warm text-white'
@@ -295,11 +324,14 @@
 						{#if msg.internal}
 							<b>{staffName(msg)}</b>
 							<span
-								class="ml-1 text-[9px] font-extrabold tracking-[0.16em] text-[#8a6116] uppercase"
+								class="ml-1 bg-gold px-1.5 py-px text-[9px] font-extrabold tracking-[0.16em] text-ink uppercase"
 								>Internal note</span
 							>
 						{:else if msg.fromStaff}
-							<b>{staffName(msg)}</b> <span class="text-fade">· AGE</span>
+							<b>{staffName(msg)}</b>
+							<span class="ml-1 text-[9px] font-extrabold tracking-[0.16em] text-warm uppercase"
+								>AGE replied</span
+							>
 						{:else if p}
 							<a href={p.href} class="font-bold hover:text-warm hover:underline">{t.name}</a>
 						{:else}
@@ -309,7 +341,7 @@
 					<time class="shrink-0 text-[11.5px] text-fade tabular-nums">{stamp(msg.createdAt)}</time>
 				</div>
 				<div
-					class="mt-3 pl-11 font-newsreader text-[16px] leading-[1.6] break-words whitespace-pre-line"
+					class="px-4 pt-2.5 pb-4 font-newsreader text-[16.5px] leading-[1.6] break-words whitespace-pre-line md:pr-6 md:pl-[60px]"
 				>
 					{msg.body}
 				</div>
@@ -318,53 +350,77 @@
 	</ol>
 
 	<!-- reply -->
-	<form method="POST" action="?/reply" class="mt-6" use:enhance={send}>
-		<div class="flex items-end justify-between gap-3">
-			<div class="flex gap-px border border-line2 bg-line2" role="tablist" aria-label="Write">
+	<form
+		method="POST"
+		action="?/reply"
+		class="mt-6 border border-l-[4px] border-line2 bg-white"
+		style="--cc: {mode === 'note'
+			? 'var(--color-gold)'
+			: 'var(--color-warm)'}; border-left-color: var(--cc)"
+		use:enhance={send}
+	>
+		<div class="flex flex-wrap items-center justify-between gap-3 px-4 pt-4 md:px-5">
+			<div class="flex gap-1.5" role="tablist" aria-label="Write">
 				{#each [['reply', `Reply to ${t.name.split(' ')[0]}`], ['note', 'Internal note']] as [key, label] (key)}
 					<button
 						type="button"
 						role="tab"
 						aria-selected={mode === key}
 						onclick={() => (mode = key)}
-						class="px-3 py-1.5 text-[9.5px] font-extrabold tracking-[0.14em] uppercase transition-colors {mode ===
+						class="inline-flex h-[34px] items-center border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {mode ===
 						key
 							? key === 'note'
-								? 'bg-gold text-ink'
-								: 'bg-ink text-paper-bg'
-							: 'bg-paper-bg text-soft hover:text-ink'}">{label}</button
+								? 'border-transparent bg-gold text-ink'
+								: 'border-transparent bg-warm text-white'
+							: 'border-line2 bg-white text-soft hover:border-ink hover:text-ink'}">{label}</button
 					>
 				{/each}
 			</div>
-			<p class="hidden text-[11.5px] text-fade sm:block">
+			<p class="text-[11.5px] text-fade">
 				{mode === 'note' ? 'Only admins see notes.' : 'They see this on the site, not by email.'}
 			</p>
 		</div>
 		<input type="hidden" name="internal" value={mode === 'note' ? '1' : '0'} />
-		<textarea
-			bind:this={box}
-			name="body"
-			rows="6"
-			required
-			maxlength={LIMITS.body}
-			placeholder={mode === 'note' ? 'A note for the team' : 'Write your reply'}
-			aria-label={mode === 'note' ? 'Internal note' : 'Reply'}
-			class="mt-2 block {ui.textarea} font-newsreader text-[16px] leading-[1.55] {mode === 'note'
-				? 'border-gold bg-gold/5'
-				: ''}"
-		></textarea>
-		{#if f.error}
-			<p class="mt-2 text-[13px] font-semibold text-hero-rb" role="alert">{f.error}</p>
-		{:else if f.sent}
-			<p class="mt-2 text-[13px] font-semibold text-prem" role="status">
-				{f.sent === 'note' ? 'Note added.' : 'Reply sent. They’ll see a badge on their account.'}
-			</p>
-		{/if}
-		<div class="mt-3 flex flex-wrap justify-end gap-2">
-			{#if mode === 'reply' && t.status !== 'done'}
-				<button name="done" value="1" class={ui.ghost} disabled={busy}>Send & mark done</button>
+		<div class="px-4 pt-3 pb-4 md:px-5">
+			<textarea
+				bind:this={box}
+				name="body"
+				rows="6"
+				required
+				maxlength={LIMITS.body}
+				placeholder={mode === 'note' ? 'A note for the team' : 'Write your reply'}
+				aria-label={mode === 'note' ? 'Internal note' : 'Reply'}
+				class="{F.field} h-auto py-3 font-newsreader text-[16.5px] leading-[1.55] {mode === 'note'
+					? 'bg-gold/5'
+					: ''}"
+			></textarea>
+			{#if f.error}
+				<p class="mt-2 text-[13px] font-semibold text-hero-rb" role="alert">{f.error}</p>
+			{:else if f.sent}
+				<p class="mt-2 text-[13px] font-semibold text-prem" role="status">
+					{f.sent === 'note' ? 'Note added.' : 'Reply sent. They’ll see a badge on their account.'}
+				</p>
 			{/if}
-			<button class={ui.btn} disabled={busy}
+		</div>
+		<div
+			class="flex flex-wrap items-center justify-end gap-2 border-t border-line2 bg-paper/60 px-4 py-3 md:px-5"
+		>
+			{#if mode === 'reply' && t.status !== 'done'}
+				<button
+					name="done"
+					value="1"
+					disabled={busy}
+					class="inline-flex h-[40px] items-center border border-prem bg-white px-4 text-[10px] font-extrabold tracking-[0.14em] text-prem uppercase hover:bg-prem hover:text-white disabled:opacity-50"
+					>Send & mark done</button
+				>
+			{/if}
+			<button
+				disabled={busy}
+				class="inline-flex h-[40px] items-center px-5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-[filter] hover:brightness-110 disabled:opacity-50 {mode ===
+				'note'
+					? 'text-ink'
+					: 'text-white'}"
+				style="background: var(--cc)"
 				>{busy ? 'Sending…' : mode === 'note' ? 'Add note' : 'Send reply'}</button
 			>
 		</div>

@@ -172,8 +172,7 @@
 			badge: cartCount,
 			badgeLabel: `${cartCount} ${cartCount === 1 ? 'guide' : 'guides'} in your cart`
 		},
-		{ label: 'Refer a friend', href: '/account/referrals' },
-		...(isPartner ? [{ label: 'Partner', href: '/partner' }] : [])
+		{ label: 'Refer a friend', href: '/account/referrals' }
 	]);
 
 	// work tools, most powerful first
@@ -222,6 +221,9 @@
 						badge: assignedEventsCount
 					}
 				]
+			: []),
+		...(isPartner
+			? [{ key: 'partner', label: 'Partner', href: '/partner', tone: 'bg-ink text-gold' }]
 			: [])
 	]);
 </script>
@@ -434,6 +436,11 @@
 			<!-- mortarboard -->
 			<path d="M2 7.5 10 4l8 3.5-8 3.5z" /><path
 				d="M5.5 9v4c1.2 1.1 2.7 1.7 4.5 1.7s3.3-.6 4.5-1.7V9"
+			/>
+		{:else if key === 'partner'}
+			<!-- a coupon with its notch -->
+			<path d="M2.5 6h15v2.4a1.6 1.6 0 0 0 0 3.2V14h-15v-2.4a1.6 1.6 0 0 0 0-3.2Z" /><path
+				d="M8 8.2 12 11.8M8.2 11.6h.01M11.8 8.4h.01"
 			/>
 		{:else}
 			<!-- shield -->

@@ -116,7 +116,10 @@ export async function load({ params, locals, setHeaders }) {
 			let isPreview = false;
 			let hasPremiumAccess = false;
 			if (isPremium) {
-				hasPremiumAccess = userHasPremiumAccess(locals.user);
+				// Writers read their own premium pieces without a membership.
+				hasPremiumAccess =
+					userHasPremiumAccess(locals.user) ||
+					(!!locals.user && locals.user.id === deskRow.entry.authorId);
 				if (!hasPremiumAccess) {
 					isPreview = true;
 					// One paragraph only — it is rendered blurred behind the gate, so

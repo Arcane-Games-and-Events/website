@@ -31,10 +31,32 @@
 		];
 	});
 	let reasonFilter = $state('all');
-	const comps = $derived(
-		(g?.comped.list || []).filter((m) => reasonFilter === 'all' || m.reason === reasonFilter)
+	// Comps ending in the next 30 days, soonest first, behind the "Ending soon" chip.
+	const SOON = Date.now() + 30 * 86400000;
+	const endingSoon = $derived(
+		(g?.comped.list || [])
+			.filter((m) => m.endsAt && new Date(m.endsAt).getTime() <= SOON)
+			.sort((a, b) => new Date(a.endsAt).getTime() - new Date(b.endsAt).getTime())
 	);
-	const REASONS = ['staff', 'writer', 'teacher', 'partner', 'friend', 'trial', 'other'];
+	const comps = $derived(
+		reasonFilter === 'ending'
+			? endingSoon
+			: (g?.comped.list || []).filter((m) => reasonFilter === 'all' || m.reason === reasonFilter)
+	);
+	const REASONS = ['staff', 'teacher', 'partner', 'friend', 'trial', 'other'];
+	// A comp's end as the YYYY-MM-DD of its last day in Pacific time (date inputs).
+	const pacificDay = (d) =>
+		d
+			? new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date(d))
+			: '';
+	const tomorrow = pacificDay(Date.now() + 86400000);
+	const endLabel = (d) =>
+		new Date(d).toLocaleDateString('en-US', {
+			timeZone: 'America/Los_Angeles',
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric'
+		});
 </script>
 
 {#if !g}
@@ -159,6 +181,17 @@
 				note="{fmt(g.comped.total)} {g.comped.total === 1 ? 'person' : 'people'}"
 			>
 				<div class="mb-4 flex flex-wrap gap-1">
+					{#if endingSoon.length}
+						<button
+							type="button"
+							onclick={() => (reasonFilter = 'ending')}
+							class="border px-3.5 py-2 text-[10px] font-extrabold tracking-[0.14em] uppercase {reasonFilter ===
+							'ending'
+								? 'border-hero-rb bg-hero-rb text-white'
+								: 'border-hero-rb/50 bg-paper-bg text-hero-rb hover:border-hero-rb'}"
+							>Ending soon · {endingSoon.length}</button
+						>
+					{/if}
 					{#each ['all', ...REASONS] as r (r)}
 						<button
 							type="button"
@@ -190,6 +223,30 @@
 								<span class="text-[11px] text-soft"
 									>since {day(m.compedAt)}{m.compedBy ? ` by ${m.compedBy}` : ''}</span
 								>
+								<form
+									method="POST"
+									action="/admin/analytics?/compEnd"
+									use:enhance
+									class="flex items-center gap-1.5"
+								>
+									<input type="hidden" name="userId" value={m.id} />
+									<label
+										class="flex items-center gap-1.5 text-[10px] font-extrabold tracking-[0.12em] uppercase {m.endsAt &&
+										new Date(m.endsAt).getTime() <= SOON
+											? 'text-hero-rb'
+											: 'text-fade'}"
+										>{m.endsAt ? `Ends ${endLabel(m.endsAt)}` : 'No end'}
+										<input
+											type="date"
+											name="compEndsOn"
+											value={pacificDay(m.endsAt)}
+											min={tomorrow}
+											onchange={(e) => e.currentTarget.form?.requestSubmit()}
+											class="h-[32px] border border-line2 bg-paper px-2 text-[11px] font-normal tracking-normal text-ink normal-case focus:border-ink focus:ring-0"
+											aria-label="Comp ends for {m.name}"
+										/>
+									</label>
+								</form>
 								<form
 									method="POST"
 									action="/admin/analytics?/compReason"

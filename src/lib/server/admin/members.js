@@ -21,7 +21,7 @@ import {
 /** Counts for paying vs comped, plus the comped list. */
 export function cohorts() {
 	return guarded(
-		'admin:members:cohorts:v1',
+		'admin:members:cohorts:v2',
 		async () => {
 			const [counts, comped] = await Promise.all([
 				db.execute(sql`
@@ -41,6 +41,7 @@ export function cohorts() {
 				db.execute(sql`
 					select u.id, u.email, u.first_name, u.last_name, u.comp_reason, u.comped_at,
 						u.additional_roles, u.last_subscription_id,
+						to_jsonb(u)->>'comp_ends_at' as comp_ends_at,
 						b.first_name as by_first, b.last_name as by_last
 					from "user" u
 					left join "user" b on b.id = u.comped_by
@@ -55,6 +56,7 @@ export function cohorts() {
 				name: `${r.first_name || ''} ${r.last_name || ''}`.trim() || r.email,
 				reason: r.comp_reason || 'unknown',
 				compedAt: r.comped_at,
+				endsAt: r.comp_ends_at ? new Date(r.comp_ends_at) : null,
 				compedBy: r.by_first ? `${r.by_first} ${r.by_last || ''}`.trim() : null,
 				roles: pgArray(r.additional_roles),
 				wasSubscriber: !!r.last_subscription_id
@@ -166,7 +168,8 @@ export function history({ months = 12 } = {}) {
 				expired: 'expired',
 				payment_failed: 'failed',
 				comped: 'comped',
-				comp_removed: 'compRemoved'
+				comp_removed: 'compRemoved',
+				comp_expired: 'compRemoved'
 			};
 			for (const r of rows(events)) {
 				const m = byMonth.get(r.month);

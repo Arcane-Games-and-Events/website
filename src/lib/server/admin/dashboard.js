@@ -161,21 +161,32 @@ export function listOrders() {
 }
 
 /** Every account: the columns the admin tables show. */
+/**
+ * What the Members list shows for each account: who they are, their role,
+ * and their membership: paying (plan and status) or comped (reason, and
+ * when it ends; comp_ends_at is read through to_jsonb so this works
+ * before migration 046).
+ */
+export const MEMBER_ROW = {
+	id: user.id,
+	email: user.email,
+	role: user.role,
+	createdAt: user.createdAt,
+	first_name: user.firstName,
+	last_name: user.lastName,
+	gemId: user.gemId,
+	extraRoles: user.additionalRoles,
+	subscriptionId: user.subscriptionId,
+	plan: user.subscriptionType,
+	subscriptionStatus: user.subscriptionStatus,
+	compReason: user.compReason,
+	compEndsAt: sql`(to_jsonb("user")->>'comp_ends_at')`
+};
+
 export function listUsers() {
 	return cached(
-		'admin:users:all',
-		() =>
-			db
-				.select({
-					id: user.id,
-					email: user.email,
-					role: user.role,
-					createdAt: user.createdAt,
-					first_name: user.firstName,
-					last_name: user.lastName
-				})
-				.from(user)
-				.orderBy(desc(user.createdAt)),
+		'admin:users:all:v2',
+		() => db.select(MEMBER_ROW).from(user).orderBy(desc(user.createdAt)),
 		{ tags: ['users'] }
 	);
 }

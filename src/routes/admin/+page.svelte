@@ -125,6 +125,12 @@
 				'events in the next two weeks',
 				'/admin/events'
 			),
+			...one(
+				a.compsEnding,
+				'comp ending in the next two weeks',
+				'comps ending in the next two weeks',
+				'/admin/analytics?view=members'
+			),
 			...one(a.deskReviews, 'Desk edit awaiting review', 'Desk edits awaiting review', '/desk'),
 			...one(a.vodsUnpublished, 'VOD not yet published', 'VODs not yet published', '/studio/media')
 		];

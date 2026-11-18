@@ -2,6 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { bump } from '$lib/server/cache/index.js';
 import { setMemberRole } from '$lib/server/payments/ledger.js';
+import { compEndDay, getCompEnd, parseCompEnd } from '$lib/server/admin/comps.js';
 import {
 	order,
 	user,
@@ -47,6 +48,8 @@ export async function load({ params, locals }) {
 					gemId: user.gemId,
 					role: user.role,
 					compReason: user.compReason,
+					compedAt: user.compedAt,
+					additionalRoles: user.additionalRoles,
 					subscriptionId: user.subscriptionId,
 					subscriptionType: user.subscriptionType,
 					subscriptionStatus: user.subscriptionStatus,
@@ -70,6 +73,8 @@ export async function load({ params, locals }) {
 					gemId: user.gemId,
 					role: user.role,
 					compReason: user.compReason,
+					compedAt: user.compedAt,
+					additionalRoles: user.additionalRoles,
 					subscriptionId: user.subscriptionId,
 					subscriptionType: user.subscriptionType,
 					subscriptionStatus: user.subscriptionStatus,
@@ -217,7 +222,9 @@ export async function load({ params, locals }) {
 		return {
 			user: locals.user,
 			customerEmail,
-			customer: customerData || null,
+			customer: customerData
+				? { ...customerData, compEndsOn: compEndDay(await getCompEnd(customerData.id)) }
+				: null,
 			hasAccount: !!customerData,
 			membership,
 			ledger,
@@ -272,28 +279,37 @@ export const actions = {
 			return fail(400, { error: 'Role is required' });
 		}
 
-		const validRoles = ['free', 'premium', 'writer', 'tournament staff', 'admin'];
-		if (!validRoles.includes(role)) {
-			return fail(400, { error: 'Invalid role' });
-		}
+		// Writer and tournament staff are old roles: kept if unchanged, never newly set.
+		const validRoles = ['free', 'premium', 'admin'];
 
 		try {
 			const [target] = await db
-				.select({ id: user.id })
+				.select({ id: user.id, role: user.role })
 				.from(user)
 				.where(isEmail ? eq(user.email, customerId) : eq(user.id, customerId))
 				.limit(1);
 			if (!target) return fail(404, { error: 'User not found' });
+			if (!validRoles.includes(role) && target.role !== role) {
+				return fail(400, { error: 'Invalid role' });
+			}
+			const end = parseCompEnd(formData.get('compEndsOn'));
+			if (end.error) return fail(400, { error: end.error });
 			const result = await setMemberRole({
 				userId: target.id,
 				role,
 				compReason: formData.get('compReason')?.toString() || null,
+				compEndsAt: end.endsAt,
 				actorId: locals.user.id
 			});
 			if (!result.ok) return fail(400, { error: result.error });
 			await bump('users', `user:${target.id}`);
 
-			return { success: true, message: `Role updated to ${role}` };
+			return {
+				success: true,
+				message: result.endKept
+					? `Role updated to ${role}`
+					: `Role updated to ${role}. The end date wasn’t kept: migration 046 hasn’t run yet.`
+			};
 		} catch (err) {
 			console.error('Error updating role:', err);
 			return fail(500, { error: 'Failed to update role' });

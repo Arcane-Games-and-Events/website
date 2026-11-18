@@ -16,6 +16,7 @@ import { user as userTable } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { bump } from '$lib/server/cache/index.js';
 import { COMP_REASONS, logMemberEvent } from '$lib/server/payments/ledger.js';
+import { parseCompEnd, setCompEnd } from '$lib/server/admin/comps.js';
 
 const VIEWS = ['revenue', 'members', 'projections', 'site'];
 const safe = (promise, fallback = null) =>
@@ -96,6 +97,28 @@ export const actions = {
 			actorId: locals.user.id,
 			meta: { reasonChanged: true }
 		});
+		await bump('users', `user:${userId}`);
+		return { success: true };
+	},
+
+	/** Set or clear when a comp ends (migration 046). */
+	compEnd: async ({ request }) => {
+		const form = await request.formData();
+		const userId = form.get('userId')?.toString();
+		if (!userId) return fail(400, { error: 'Missing user' });
+		const end = parseCompEnd(form.get('compEndsOn'));
+		if (end.error) return fail(400, { error: end.error });
+		const [u] = await db
+			.select({ role: userTable.role, subscriptionId: userTable.subscriptionId })
+			.from(userTable)
+			.where(eq(userTable.id, userId))
+			.limit(1);
+		if (!u || u.role !== 'premium' || u.subscriptionId) {
+			return fail(400, { error: 'Only a comp can have an end date.' });
+		}
+		if (!(await setCompEnd(userId, end.endsAt)) && end.endsAt) {
+			return fail(400, { error: 'Apply migration 046 first: comps can’t have end dates yet.' });
+		}
 		await bump('users', `user:${userId}`);
 		return { success: true };
 	}

@@ -47,6 +47,7 @@ import {
 } from '$lib/server/email.js';
 import { decideReferralBonuses } from '$lib/server/partner/referrals.js';
 import { confirmSettlements } from '$lib/server/partner/settlement.js';
+import { expireComps } from '$lib/server/admin/comps.js';
 
 export const billingEnabled = () => env.BILLING_ENABLED === 'true';
 const maxChargesPerRun = () => Number(env.BILLING_MAX_CHARGES_PER_RUN) || Infinity;
@@ -75,6 +76,7 @@ export async function runBilling({ trigger = 'cron' } = {}) {
 	await step('reconciled', () => reconcileAll({ now }));
 	await step('abandoned', () => expireStaleIncompletes(null));
 	await step('ended', () => endDueSubscriptions(now));
+	await step('compsEnded', () => expireComps(now));
 	await step('reminders', () => sendYearlyReminders(now));
 	await step('referrals', () => applyReferralRewards(now));
 	await step('teacherReferrals', () => decideReferralBonuses({ now }));

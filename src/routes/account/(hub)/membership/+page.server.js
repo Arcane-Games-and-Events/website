@@ -16,6 +16,7 @@ import {
 import { cancelLegacyMembership } from '$lib/server/billing/legacy.js';
 import { chargeSubscriptionNow } from '$lib/server/billing/renewals.js';
 import { liveSubscription } from '$lib/server/billing/access.js';
+import { getCompEnd } from '$lib/server/admin/comps.js';
 
 export async function load({ locals }) {
 	const m = await membershipFor(locals.user.id);
@@ -69,6 +70,7 @@ export async function load({ locals }) {
 		cards: m.cards,
 		comp: m.comp,
 		compReason: m.user.compReason,
+		compEndsAt: m.comp ? await getCompEnd(m.user.id) : null,
 		legacy: m.legacy,
 		legacyUser: m.legacy
 			? {

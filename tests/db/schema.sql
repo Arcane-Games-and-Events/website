@@ -7571,3 +7571,7 @@ CREATE TABLE IF NOT EXISTS public.store_payout (
 CREATE UNIQUE INDEX IF NOT EXISTS store_payout_event_key ON public.store_payout (store_id, event_id) WHERE event_id IS NOT NULL;
 ALTER TABLE public.store_ledger ADD COLUMN IF NOT EXISTS payout_id uuid REFERENCES public.store_payout(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS store_ledger_payout_idx ON public.store_ledger (store_id, payout_id);
+
+-- 046_comp_end_dates.sql
+ALTER TABLE public."user" ADD COLUMN IF NOT EXISTS comp_ends_at timestamptz;
+CREATE INDEX IF NOT EXISTS user_comp_ends_idx ON public."user" (comp_ends_at) WHERE comp_ends_at IS NOT NULL;

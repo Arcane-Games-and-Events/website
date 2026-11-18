@@ -2,7 +2,8 @@ import { fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { bump } from '$lib/server/cache/index.js';
 import { setMemberRole } from '$lib/server/payments/ledger.js';
-import { adminCounts, listUsers } from '$lib/server/admin/dashboard.js';
+import { parseCompEnd } from '$lib/server/admin/comps.js';
+import { adminCounts, listUsers, MEMBER_ROW } from '$lib/server/admin/dashboard.js';
 import {
 	user,
 	session,
@@ -17,7 +18,7 @@ import {
 	podcastEpisode,
 	vod
 } from '$lib/server/db/schema.js';
-import { eq, or, ilike } from 'drizzle-orm';
+import { desc, eq, or, ilike } from 'drizzle-orm';
 
 export async function load({ locals }) {
 	try {
@@ -41,9 +42,15 @@ export const actions = {
 		const newRole = formData.get('role');
 
 		// Validate role
-		const validRoles = ['free', 'premium', 'admin', 'writer', 'tournament staff'];
+		// Writer and tournament staff are old roles: kept if unchanged, never newly set.
+		const validRoles = ['free', 'premium', 'admin'];
 		if (!validRoles.includes(newRole)) {
-			return fail(400, { error: 'Invalid role' });
+			const [current] = await db
+				.select({ role: user.role })
+				.from(user)
+				.where(eq(user.id, String(userId)))
+				.limit(1);
+			if (current?.role !== newRole) return fail(400, { error: 'Invalid role' });
 		}
 
 		// Prevent admin from changing their own role
@@ -52,10 +59,14 @@ export const actions = {
 		}
 
 		try {
+			const end = parseCompEnd(formData.get('compEndsOn'));
+			if (end.error) return fail(400, { error: end.error });
 			const result = await setMemberRole({
 				userId,
 				role: newRole,
 				compReason: formData.get('compReason')?.toString() || null,
+				// The comp fields are only sent for a comp; an empty date means no end.
+				compEndsAt: formData.has('compEndsOn') ? end.endsAt : undefined,
 				actorId: locals.user.id
 			});
 			if (!result.ok) return fail(400, { error: result.error });
@@ -84,14 +95,7 @@ export const actions = {
 		try {
 			const searchPattern = `%${query}%`;
 			const results = await db
-				.select({
-					id: user.id,
-					email: user.email,
-					role: user.role,
-					createdAt: user.createdAt,
-					first_name: user.firstName,
-					last_name: user.lastName
-				})
+				.select(MEMBER_ROW)
 				.from(user)
 				.where(
 					or(
@@ -100,20 +104,13 @@ export const actions = {
 						ilike(user.lastName, searchPattern)
 					)
 				)
-				.orderBy(user.createdAt)
+				.orderBy(desc(user.createdAt))
 				.limit(100);
 
 			return {
 				success: true,
 				searchType: 'users',
-				results: results.map((u) => ({
-					id: u.id,
-					email: u.email,
-					role: u.role,
-					createdAt: u.createdAt,
-					first_name: u.first_name,
-					last_name: u.last_name
-				}))
+				results
 			};
 		} catch (err) {
 			console.error('Error searching users:', err);

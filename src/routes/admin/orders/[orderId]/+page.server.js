@@ -14,8 +14,19 @@ export async function load({ params, locals }) {
 		}
 
 		// Fetch customer info
+		// Only what the page shows (never the whole row: it holds the password hash).
 		const [customerData] = await db
-			.select()
+			.select({
+				id: user.id,
+				email: user.email,
+				firstName: user.firstName,
+				lastName: user.lastName,
+				role: user.role,
+				subscriptionId: user.subscriptionId,
+				subscriptionStatus: user.subscriptionStatus,
+				compReason: user.compReason,
+				gemId: user.gemId
+			})
 			.from(user)
 			.where(eq(user.email, orderData.userEmail))
 			.limit(1);

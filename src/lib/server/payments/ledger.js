@@ -2,6 +2,7 @@ import { db } from '$lib/server/db/index.js';
 import { memberEvent, payment, user as userTable } from '$lib/server/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { isMissingTable, isMissingColumn } from '$lib/server/contentAnalytics/collect.js';
+import { setCompEnd } from '$lib/server/admin/comps.js';
 
 /**
  * The money ledger and the membership history (migration 022).
@@ -145,7 +146,9 @@ export async function logMemberEvent(row, { tx } = {}) {
 }
 
 /** Reasons an admin can give for comping a membership. */
-export const COMP_REASONS = ['staff', 'writer', 'teacher', 'partner', 'friend', 'trial', 'other'];
+// Writers aren't comped any more (migration 046): they read their own
+// premium pieces without it. 'writer' stays a label for the history.
+export const COMP_REASONS = ['staff', 'teacher', 'partner', 'friend', 'trial', 'other'];
 
 /**
  * Change a member's billing role from the admin pages, keeping the comp
@@ -154,12 +157,16 @@ export const COMP_REASONS = ['staff', 'writer', 'teacher', 'partner', 'friend', 
  * - premium without a subscription → a comp; needs a reason
  * - leaving premium from a comp → comp removed
  *
- * Before migration 022 the comp columns don't exist; then only the role
- * is written. Returns `{ ok, error? }`.
+ * A comp can carry an end date (`compEndsAt`, migration 046): a Date sets
+ * it, null clears it, undefined leaves it as it is. Ending a comp clears it.
  *
- * @param {{ userId: string, role: string, compReason?: string|null, actorId: string }} input
+ * Before migration 022 the comp columns don't exist; then only the role
+ * is written. Returns `{ ok, error?, endKept? }`; endKept is false when an
+ * end date was asked for but 046 hasn't run.
+ *
+ * @param {{ userId: string, role: string, compReason?: string|null, compEndsAt?: Date|null, actorId: string }} input
  */
-export async function setMemberRole({ userId, role, compReason, actorId }) {
+export async function setMemberRole({ userId, role, compReason, compEndsAt, actorId }) {
 	const [row] = await db.select().from(userTable).where(eq(userTable.id, userId)).limit(1);
 	if (!row) return { ok: false, error: 'User not found' };
 
@@ -198,12 +205,18 @@ export async function setMemberRole({ userId, role, compReason, actorId }) {
 		await db.update(userTable).set({ role }).where(eq(userTable.id, userId));
 	}
 
+	let endKept = true;
+	if (becomesComp && compEndsAt !== undefined) {
+		const saved = await setCompEnd(userId, compEndsAt);
+		endKept = saved || !compEndsAt;
+	} else if (wasComp && !becomesComp) await setCompEnd(userId, null);
+
 	if (becomesComp && (!wasComp || (compReason && compReason !== row.compReason))) {
 		await logMemberEvent({ userId, kind: 'comped', reason: compReason, actorId });
 	} else if (wasComp && !becomesComp) {
 		await logMemberEvent({ userId, kind: 'comp_removed', reason: row.compReason, actorId });
 	}
-	return { ok: true };
+	return { ok: true, endKept };
 }
 
 /** Two-decimal string for a numeric column. */

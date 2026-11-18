@@ -26,3 +26,14 @@ export const TOPIC_SHORT = {
 export const isTopic = (t) => TOPICS.some((x) => x.id === t);
 
 export const LIMITS = { name: 100, email: 200, subject: 150, body: 5000 };
+
+/** Each topic's colour in the inbox (a CSS colour). */
+export const TOPIC_TONE = {
+	general: 'var(--color-ink)',
+	account: 'var(--color-warm)',
+	orders: 'var(--color-prem)',
+	events: 'var(--color-hero-rb)',
+	academy: 'var(--color-gold)',
+	partnerships: 'var(--color-soft)',
+	feedback: 'var(--color-fade)'
+};

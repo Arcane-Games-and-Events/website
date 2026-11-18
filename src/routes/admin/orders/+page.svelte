@@ -4,7 +4,6 @@
 	import { deserialize } from '$app/forms';
 	import AdminNotice from '$lib/components/admin/AdminNotice.svelte';
 	import Figures from '$lib/components/age/admin/Figures.svelte';
-	import Section from '$lib/components/age/admin/Section.svelte';
 	import Pager from '$lib/components/age/admin/Pager.svelte';
 	import AdminSubnav from '$lib/components/age/admin/AdminSubnav.svelte';
 	import { ORDERS_SUBNAV } from '$lib/components/age/admin/subnav.js';
@@ -127,20 +126,42 @@
 		return email || 'Unknown';
 	}
 
-	const TYPE = {
-		ticket: 'Ticket',
-		course: 'Course',
-		subscription: 'Membership',
-		subscription_partner_first: 'Membership · partner',
-		subscription_member_first: 'Membership · referral'
+	// Each kind of order's colour, as on a member's page.
+	const TYPES = {
+		ticket: { word: 'Ticket', tone: 'var(--color-warm)' },
+		course: { word: 'Course', tone: 'var(--color-gold)' },
+		subscription: { word: 'Membership', tone: 'var(--color-prem)' },
+		subscription_partner_first: { word: 'Membership · partner', tone: 'var(--color-prem)' },
+		subscription_member_first: { word: 'Membership · referral', tone: 'var(--color-prem)' }
 	};
-	const typeLabel = (t) => TYPE[t] || 'Payment';
-	const typeTone = (t) =>
-		t === 'ticket'
-			? ui.pillTone.in_progress
-			: t?.startsWith('subscription')
-				? ui.pillTone.premium
-				: '';
+	const typeOf = (t) => TYPES[t] || { word: 'Payment', tone: 'var(--color-ink)' };
+	const TYPE_CHIPS = [
+		{ id: 'all', label: 'All' },
+		{ id: 'ticket', label: 'Tickets', tone: TYPES.ticket.tone },
+		{ id: 'subscription', label: 'Memberships', tone: TYPES.subscription.tone },
+		{ id: 'course', label: 'Courses', tone: TYPES.course.tone }
+	];
+	const typeCounts = $derived.by(() => {
+		const c = { all: 0, ticket: 0, subscription: 0, course: 0 };
+		for (const o of data.allOrders || []) {
+			c.all++;
+			if (o.meta?.type in c) c[o.meta.type]++;
+		}
+		return c;
+	});
+	const DATES = [
+		['all', 'All time'],
+		['today', 'Today'],
+		['week', 'Last 7 days'],
+		['month', 'This month']
+	];
+	const orderTitle = (o) =>
+		o.meta?.eventTitle ||
+		o.meta?.courseTitle ||
+		o.meta?.product ||
+		(o.meta?.subscriptionType || o.meta?.plan
+			? `${(o.meta.subscriptionType || o.meta.plan) === 'yearly' ? 'Annual' : 'Monthly'} membership`
+			: typeOf(o.meta?.type).word);
 	const SORTS = [
 		['date-desc', 'Newest'],
 		['date-asc', 'Oldest'],
@@ -198,9 +219,9 @@
 		]}
 	/>
 
-	<!-- search + filters -->
-	<div class="mt-8 flex flex-wrap items-center gap-3">
-		<label class="{ui.search} min-w-[260px] flex-1" aria-label="Search orders">
+	<!-- search, filters, sort -->
+	<div class="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+		<label class="{ui.search} w-full lg:max-w-[420px]" aria-label="Search orders">
 			<svg
 				viewBox="0 0 20 20"
 				class="h-4 w-4 shrink-0 text-fade"
@@ -225,97 +246,147 @@
 				></span>
 			{/if}
 		</label>
-		<select bind:value={ordersTypeFilter} class={ui.select} aria-label="Type">
-			<option value="all">All types</option>
-			<option value="ticket">Tickets</option>
-			<option value="subscription">Memberships</option>
-			<option value="course">Courses</option>
-		</select>
-		<select bind:value={ordersDateFilter} class={ui.select} aria-label="Date">
-			<option value="all">All time</option>
-			<option value="today">Today</option>
-			<option value="week">Last 7 days</option>
-			<option value="month">This month</option>
-		</select>
-		<div class="flex gap-px border border-line2 bg-line2" role="group" aria-label="Sort">
-			{#each SORTS as [k, l] (k)}
+		<div class="flex flex-wrap gap-1.5" role="group" aria-label="Type">
+			{#each TYPE_CHIPS as f (f.id)}
 				<button
 					type="button"
-					onclick={() => setSort(k)}
-					class="h-[38px] px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase {sortKey === k
-						? 'bg-ink text-paper-bg'
-						: 'bg-paper-bg text-soft hover:text-ink'}">{l}</button
+					onclick={() => (ordersTypeFilter = f.id)}
+					aria-pressed={ordersTypeFilter === f.id}
+					class="inline-flex h-[36px] items-center gap-2 border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {ordersTypeFilter ===
+					f.id
+						? 'border-ink bg-ink text-paper-bg'
+						: 'border-line2 bg-white text-soft hover:border-ink hover:text-ink'}"
 				>
+					{#if f.tone}<span class="h-2 w-2" style="background: {f.tone}" aria-hidden="true"
+						></span>{/if}
+					{f.label}
+					<span class="tabular-nums opacity-60">{ui.fmt(typeCounts[f.id] || 0)}</span>
+				</button>
 			{/each}
 		</div>
 	</div>
-	{#if ordersSearchQuery.length >= 2 && ordersSearchResults !== null}
-		<p class="{ui.note} mt-2">Searched all {ui.fmt(data.stats.totalOrders)} orders.</p>
-	{/if}
-
-	<Section
-		title="Orders"
-		class="mt-8"
-		note="{ui.fmt(filteredOrders.length)} {filteredOrders.length === 1 ? 'order' : 'orders'}"
-	>
-		<div class="{ui.rowHead} grid-cols-[minmax(0,1fr)_150px_100px_110px_90px_60px] gap-3">
-			<span>Customer</span><span>Type</span><span>Status</span><span>Date</span><span
-				class="text-right">Amount</span
-			><span></span>
-		</div>
-		<ul>
-			{#each paginatedOrders as order (order.id)}
-				<li class={ui.row}>
-					<a
-						href="/admin/orders/{order.id}"
-						class="group block py-3 transition-colors hover:bg-paper md:grid md:grid-cols-[minmax(0,1fr)_150px_100px_110px_90px_60px] md:items-center md:gap-3"
-					>
-						<span class="block min-w-0">
-							<span class="{ui.titleText} block truncate group-hover:text-warm"
-								>{getUserName(order.userEmail)}</span
-							>
-							<span class="block truncate text-[11.5px] text-fade"
-								>{order.userEmail}<span class="md:hidden">
-									· {formatDate(order.createdAt)}</span
-								></span
-							>
-						</span>
-						<span class="mt-1.5 flex flex-wrap items-center gap-1.5 md:contents">
-							<span class="{ui.pill} {typeTone(order.meta?.type)}"
-								>{typeLabel(order.meta?.type)}</span
-							>
-							<span
-								class="{ui.pill} {order.status === 'refunded'
-									? ui.pillTone.refunded
-									: order.status === 'active'
-										? ui.pillTone.active
-										: ''}">{order.status || 'completed'}</span
-							>
-						</span>
-						<span class="hidden text-[12.5px] text-soft tabular-nums md:block"
-							>{formatDate(order.createdAt)}</span
-						>
-						<span class="mt-1 block font-semibold tabular-nums md:mt-0 md:text-right"
-							>{formatCurrency(order.amount)}</span
-						>
-						<span class="hidden text-right md:block"><span class={ui.textAction}>View →</span></span
-						>
-					</a>
-				</li>
-			{:else}
-				<li class={ui.empty}>
-					{filtering
-						? 'No orders match these filters.'
-						: 'No orders yet. They appear here as customers buy tickets and memberships.'}
-				</li>
+	<div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+		<div class="flex flex-wrap gap-1.5" role="group" aria-label="When">
+			{#each DATES as [k, l] (k)}
+				<button
+					type="button"
+					onclick={() => (ordersDateFilter = k)}
+					aria-pressed={ordersDateFilter === k}
+					class="h-[32px] border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {ordersDateFilter ===
+					k
+						? 'border-warm bg-warm text-white'
+						: 'border-line2 bg-white text-soft hover:border-ink hover:text-ink'}">{l}</button
+				>
 			{/each}
-		</ul>
-		<Pager
-			page={ordersPage}
-			perPage={ordersPerPage}
-			count={filteredOrders.length}
-			label="orders"
-			onchange={(p) => (ordersPage = p)}
-		/>
-	</Section>
+		</div>
+		<div class="flex w-full items-center gap-2 sm:w-auto">
+			<span class={ui.label}>Sort</span>
+			<div
+				class="flex flex-1 gap-px border border-line2 bg-line2 sm:flex-none"
+				role="group"
+				aria-label="Sort"
+			>
+				{#each SORTS as [k, l] (k)}
+					<button
+						type="button"
+						onclick={() => setSort(k)}
+						aria-pressed={sortKey === k}
+						class="h-[32px] flex-1 px-2 text-[10px] font-extrabold tracking-[0.12em] uppercase sm:px-3 {sortKey ===
+						k
+							? 'bg-ink text-paper-bg'
+							: 'bg-white text-soft hover:text-ink'}">{l}</button
+					>
+				{/each}
+			</div>
+		</div>
+	</div>
+	<p class="mt-3 {ui.note}">
+		{#if ordersSearchQuery.length >= 2 && ordersSearchResults !== null}
+			{ui.fmt(filteredOrders.length)} found across all {ui.fmt(data.stats.totalOrders)} orders
+		{:else}
+			Showing {ui.fmt(filteredOrders.length)}
+			{filteredOrders.length === 1 ? 'order' : 'orders'}{filtering ? ' with these filters' : ''}
+		{/if}
+	</p>
+
+	<ul class="mt-4 flex flex-col gap-2">
+		{#each paginatedOrders as order (order.id)}
+			{@const ty = typeOf(order.meta?.type)}
+			{@const refunded = order.status === 'refunded'}
+			{@const d = new Date(order.createdAt)}
+			<li>
+				<a
+					href="/admin/orders/{order.id}"
+					class="group grid grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-x-3.5 gap-y-2 border border-l-[4px] px-3.5 py-3 transition-[border-color,background-color] duration-200 md:grid-cols-[60px_minmax(0,1fr)_200px_120px_20px] md:gap-x-5 md:px-4 {refunded
+						? 'border-hero-rb/30 bg-hero-rb/[0.04] hover:border-hero-rb/60'
+						: 'border-line2 bg-white hover:border-ink'}"
+					style="border-left-color: {refunded ? 'var(--color-hero-rb)' : ty.tone}"
+				>
+					<!-- the date stub -->
+					<span class="flex flex-col items-center leading-none">
+						<span class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+							>{formatDate(order.createdAt, { month: 'short' })}</span
+						>
+						<span class="ao-cond text-[28px] font-black tabular-nums md:text-[30px]"
+							>{d.getUTCDate()}</span
+						>
+						<span class="text-[9.5px] text-fade tabular-nums">{d.getUTCFullYear()}</span>
+					</span>
+					<span class="min-w-0">
+						<span
+							class="block truncate font-newsreader text-[17px] leading-tight font-semibold group-hover:text-warm"
+							>{getUserName(order.userEmail)}</span
+						>
+						<span class="mt-0.5 block truncate text-[12px] text-fade"
+							>{getUserName(order.userEmail) !== order.userEmail
+								? `${order.userEmail} · `
+								: ''}{orderTitle(order)}</span
+						>
+					</span>
+					<!-- type and status: what to scan for -->
+					<span
+						class="col-span-2 col-start-2 row-start-2 flex flex-wrap items-center gap-1.5 md:col-span-1 md:col-start-3 md:row-start-1"
+					>
+						<span
+							class="px-2 py-[3px] text-[9.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+							style="background: {ty.tone}">{ty.word}</span
+						>
+						{#if refunded}
+							<span
+								class="bg-hero-rb px-2 py-[3px] text-[9.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+								>Refunded</span
+							>
+						{:else}
+							<span
+								class="border border-line2 px-2 py-[2px] text-[9.5px] font-extrabold tracking-[0.16em] text-soft uppercase"
+								>{order.status === 'active' ? 'Active' : 'Paid'}</span
+							>
+						{/if}
+					</span>
+					<span
+						class="ao-cond col-start-3 row-start-1 text-right text-[24px] leading-none font-black tabular-nums md:col-start-4 md:text-[28px] {refunded
+							? 'text-fade line-through'
+							: ''}">{formatCurrency(order.amount)}</span
+					>
+					<span
+						class="hidden text-warm transition-transform duration-200 group-hover:translate-x-0.5 md:block"
+						aria-hidden="true">→</span
+					>
+				</a>
+			</li>
+		{:else}
+			<li class={ui.empty}>
+				{filtering
+					? 'No orders match these filters.'
+					: 'No orders yet. They appear here as customers buy tickets and memberships.'}
+			</li>
+		{/each}
+	</ul>
+	<Pager
+		page={ordersPage}
+		perPage={ordersPerPage}
+		count={filteredOrders.length}
+		label="orders"
+		onchange={(p) => (ordersPage = p)}
+	/>
 </div>
