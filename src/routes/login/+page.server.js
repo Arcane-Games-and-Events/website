@@ -5,9 +5,11 @@ import { db } from '$lib/server/db';
 import { user } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { fail, redirect } from '@sveltejs/kit';
+import { ACCOUNT_LIMITS, clientIp, minutes, overLimit } from '$lib/server/ratelimit.js';
+import { safeRedirect } from '$lib/server/redirect.js';
 
 export const actions = {
-	default: async ({ request, cookies, url }) => {
+	default: async ({ request, cookies, url, getClientAddress }) => {
 		const form = await request.formData();
 		const email = form.get('email');
 		const password = form.get('password');
@@ -19,6 +21,15 @@ export const actions = {
 		if (typeof email !== 'string' || typeof password !== 'string') {
 			return fail(400, { error: 'Invalid input' });
 		}
+
+		const wait = await overLimit(
+			['login:ip', clientIp(getClientAddress), ACCOUNT_LIMITS.loginPerIp],
+			['login:email', email.trim().toLowerCase(), ACCOUNT_LIMITS.loginPerEmail]
+		);
+		if (wait)
+			return fail(429, {
+				error: `Too many sign-in attempts. Try again in ${minutes(wait)}.`
+			});
 
 		const [u] = await db.select().from(user).where(eq(user.email, email));
 		if (!u || !u.hashedPassword) {
@@ -49,8 +60,6 @@ export const actions = {
 
 		cookies.set(cookie.name, cookie.value, cookieAttributes);
 
-		// Validate redirect URL is a local path (security measure)
-		const safeRedirect = redirectTo.startsWith('/') ? redirectTo : '/';
-		throw redirect(302, safeRedirect);
+		throw redirect(302, safeRedirect(redirectTo));
 	}
 };

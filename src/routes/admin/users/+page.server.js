@@ -8,17 +8,43 @@ import {
 	user,
 	session,
 	ticket,
-	entitlement,
 	passwordResetToken,
 	eventStaff,
 	decklist,
 	event,
 	lssEvent,
-	podcast,
-	podcastEpisode,
 	vod
 } from '$lib/server/db/schema.js';
-import { desc, eq, or, ilike } from 'drizzle-orm';
+import { desc, eq, or, ilike, sql } from 'drizzle-orm';
+
+/**
+ * The retired tables (entitlement, podcasts, the old analytics) are dropped
+ * after launch; until then they can still point at a user, so clear those
+ * links. Each runs only while its table exists.
+ */
+const LEGACY_LINKS = [
+	['entitlement', (id) => sql`delete from entitlement where user_id = ${id}`],
+	['podcasts', (id) => sql`update podcasts set created_by = null where created_by = ${id}`],
+	[
+		'podcast_episodes',
+		(id) => sql`update podcast_episodes set created_by = null where created_by = ${id}`
+	],
+	[
+		'article_engagement',
+		(id) => sql`update article_engagement set user_id = null where user_id = ${id}`
+	],
+	['analytics_event', (id) => sql`update analytics_event set user_id = null where user_id = ${id}`],
+	['page_view', (id) => sql`update page_view set user_id = null where user_id = ${id}`]
+];
+
+async function clearLegacyLinks(userId) {
+	for (const [table, statement] of LEGACY_LINKS) {
+		const res = await db.execute(
+			sql`select to_regclass(${'public.' + table}) is not null as present`
+		);
+		if ((res.rows || res)[0]?.present) await db.execute(statement(userId));
+	}
+}
 
 export async function load({ locals }) {
 	try {
@@ -160,8 +186,8 @@ export const actions = {
 			// 2. Delete password reset tokens
 			await db.delete(passwordResetToken).where(eq(passwordResetToken.userId, userId));
 
-			// 3. Delete entitlements
-			await db.delete(entitlement).where(eq(entitlement.userId, userId));
+			// 3. Clear the retired tables that can still point at the user.
+			await clearLegacyLinks(userId);
 
 			// 4. Delete staff assignments
 			await db.delete(eventStaff).where(eq(eventStaff.userId, userId));
@@ -178,11 +204,6 @@ export const actions = {
 
 			// 8. Nullify references in other tables
 			await db.update(lssEvent).set({ createdBy: null }).where(eq(lssEvent.createdBy, userId));
-			await db.update(podcast).set({ createdBy: null }).where(eq(podcast.createdBy, userId));
-			await db
-				.update(podcastEpisode)
-				.set({ createdBy: null })
-				.where(eq(podcastEpisode.createdBy, userId));
 			await db.update(vod).set({ createdBy: null }).where(eq(vod.createdBy, userId));
 
 			// 9. Nullify assignedBy in staff assignments

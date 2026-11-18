@@ -2,13 +2,15 @@ import { error, json } from '@sveltejs/kit';
 import { requireUser } from '$lib/server/courses/http.js';
 import { liveAccess } from '$lib/server/courses/liveAccess.js';
 import { liveState } from '$lib/server/courses/live.js';
+import { discussionPolling } from '$lib/server/switches.js';
 
 /**
  * GET: the discussion's version (it moves whenever anything in it changes)
  * and who's typing where, plus what the page needs to join the course's
  * live channel (its id, and who this is). Open discussion pages ask once,
  * then listen live; they poll this only while live updates aren't working,
- * and fetch the discussion again only when the version moves.
+ * and fetch the discussion again only when the version moves. `poll` says
+ * how often to ask (the DISCUSSION_POLLING switch): normal, slow or off.
  */
 export async function GET({ params, locals, setHeaders }) {
 	const user = requireUser(locals);
@@ -19,6 +21,7 @@ export async function GET({ params, locals, setHeaders }) {
 		...(await liveState(access.courseId, user.id)),
 		courseId: access.courseId,
 		me: { id: user.id, name: user.firstName || 'Someone' },
-		post: access.post
+		post: access.post,
+		poll: discussionPolling()
 	});
 }

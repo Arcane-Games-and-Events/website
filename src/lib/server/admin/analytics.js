@@ -125,10 +125,15 @@ SELECT json_build_object(
         )
     ),
     'courses', json_build_object(
-        'total', (SELECT COUNT(*) FROM entitlement),
+        'total', (SELECT COUNT(*) FROM course_enrollment WHERE revoked_at IS NULL),
         'byProduct', (
             SELECT COALESCE(json_agg(json_build_object('product', product, 'count', cnt)), '[]'::json)
-            FROM (SELECT product, COUNT(*) as cnt FROM entitlement GROUP BY product ORDER BY cnt DESC) p
+            FROM (
+                SELECT c.title as product, COUNT(*) as cnt
+                FROM course_enrollment ce JOIN cms_course c ON c.id = ce.course_id
+                WHERE ce.revoked_at IS NULL
+                GROUP BY c.title ORDER BY cnt DESC
+            ) p
         )
     ),
     'players', json_build_object(
@@ -214,7 +219,7 @@ SELECT json_build_object(
 
 export function loadAnalytics() {
 	return cached(
-		'admin:analytics:v1',
+		'admin:analytics:v2',
 		async () => {
 			const result = await db.execute(sql.raw(ANALYTICS_SQL));
 			const row = (result.rows || result || [])[0];

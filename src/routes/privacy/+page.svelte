@@ -1,7 +1,7 @@
 <script>
 	import LegalPage from '$lib/components/age/legal/LegalPage.svelte';
 
-	const updated = 'October 29, 2026';
+	const updated = 'November 18, 2026';
 	const toc = [
 		{ id: 'about', label: 'About this policy' },
 		{ id: 'collect', label: 'What we collect' },
@@ -103,7 +103,10 @@
 		<ul>
 			<li>To run your account and give you what you've paid for.</li>
 			<li>To take payments and renewals, issue refunds, and keep the records the law requires.</li>
-			<li>To run events: registration, pairings, results, standings and coverage.</li>
+			<li>
+				To run events, with the stores that host them: registration, check-in, pairings, results,
+				standings and coverage.
+			</li>
 			<li>
 				To understand what people read and how they find us, so we can decide what to publish and
 				fix what isn't working. Writers see how their own pieces are read.
@@ -209,6 +212,14 @@
 				<dd>Turnstile bot checks on sign-up.</dd>
 			</div>
 		</dl>
+		<p>
+			AGE Opens are run by local game stores. When you buy a ticket to a store's event, the people
+			that store has added to run its events on AGE see your name, your GEM ID, the tickets you've
+			bought to that store's events and what you paid for them, and whether you're an AGE Premium
+			member (Premium members pay less for tickets). They use this to check players in, run the
+			event and settle up with AGE. They don't see your email address, your other purchases or
+			anything about your reading.
+		</p>
 		<p>
 			If you joined with a partner's code or a member's referral, that partner or member sees your
 			first name and that you joined, but not your email or anything else. We may also share

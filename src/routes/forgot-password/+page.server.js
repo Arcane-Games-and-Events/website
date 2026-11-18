@@ -6,6 +6,7 @@ import { sendPasswordResetEmail } from '$lib/server/email';
 import { sha256 } from 'oslo/crypto';
 import { encodeHex } from 'oslo/encoding';
 import { generateIdFromEntropySize } from 'lucia';
+import { ACCOUNT_LIMITS, clientIp, minutes, overLimit } from '$lib/server/ratelimit.js';
 
 export async function load({ locals }) {
 	// If already logged in, redirect to account
@@ -16,13 +17,20 @@ export async function load({ locals }) {
 }
 
 export const actions = {
-	default: async ({ request, url }) => {
+	default: async ({ request, url, getClientAddress }) => {
 		const form = await request.formData();
 		const email = form.get('email');
 
 		if (typeof email !== 'string' || !email.includes('@')) {
 			return fail(400, { error: 'Please enter a valid email address' });
 		}
+
+		const wait = await overLimit(
+			['reset:ip', clientIp(getClientAddress), ACCOUNT_LIMITS.resetPerIp],
+			['reset:email', email.trim().toLowerCase(), ACCOUNT_LIMITS.resetPerEmail]
+		);
+		if (wait)
+			return fail(429, { error: `Too many reset requests. Try again in ${minutes(wait)}.` });
 
 		// Find user by email
 		const [existingUser] = await db.select().from(user).where(eq(user.email, email.toLowerCase()));

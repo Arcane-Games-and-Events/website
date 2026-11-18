@@ -9,6 +9,7 @@
  * skipped rather than reported down, so a local machine doesn't fill the
  * history with false alarms.
  */
+import { readOnly } from '$lib/server/switches.js';
 import { and, desc, eq, gte, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
 import { billingRun, statusCheck, statusIncident, statusUpdate } from '$lib/server/db/schema.js';
@@ -255,6 +256,14 @@ export async function statusPage() {
  * that's on and asks for one. Null when there's none (or before 047).
  */
 export async function siteBanner() {
+	// Read-only mode shows its own banner, ahead of any incident.
+	if (readOnly())
+		return {
+			id: 'read-only',
+			kind: 'maintenance',
+			title: 'Read-only for a little while: browsing works, changes are paused',
+			impact: 'maintenance'
+		};
 	try {
 		return await cached(
 			'status:banner:v1',

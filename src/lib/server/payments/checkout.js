@@ -6,7 +6,7 @@
  * carries the invoice number), and `fulfilCheckout` turns an approved
  * charge into an order and tickets exactly once.
  */
-import { and, eq, gt, inArray, sql } from 'drizzle-orm';
+import { and, eq, gt, inArray, or, sql } from 'drizzle-orm';
 import crypto from 'node:crypto';
 import { db } from '$lib/server/db/index.js';
 import {
@@ -24,6 +24,8 @@ import { sendOnce } from '$lib/server/billing/notices.js';
 
 /** Minutes a pending checkout holds its seats. */
 export const HOLD_MINUTES = 15;
+/** Hours a charged (or unsure) checkout holds its seats while its tickets are issued. */
+export const CHARGED_HOLD_HOURS = 24;
 export const MAX_TICKETS_PER_ORDER = 8;
 
 const toCents = (v) => Math.round(Number(v) * 100);
@@ -60,21 +62,33 @@ export function priceTickets(event, quantity, isPremium) {
 	};
 }
 
-/** Seats taken: issued tickets plus checkouts still in flight. */
+/**
+ * Seats taken: issued tickets plus checkouts still in flight. An unpaid
+ * (`pending`) checkout holds its seats for HOLD_MINUTES; one that is being
+ * charged, was paid, or whose charge result is unknown holds them for
+ * CHARGED_HOLD_HOURS, so a slow charge can't free its seats for someone
+ * else while its tickets are still on the way.
+ */
 export async function seatsTaken(eventId, { tx = db, excludeCheckoutId = null } = {}) {
 	const [{ tickets }] = await tx
 		.select({ tickets: sql`count(*)::int` })
 		.from(ticketTable)
 		.where(and(eq(ticketTable.eventId, eventId), eq(ticketTable.refunded, false)));
 	const holdsSince = new Date(Date.now() - HOLD_MINUTES * 60000);
+	const chargedSince = new Date(Date.now() - CHARGED_HOLD_HOURS * 3600000);
 	const [{ held }] = await tx
 		.select({ held: sql`coalesce(sum(${checkoutTable.quantity}), 0)::int` })
 		.from(checkoutTable)
 		.where(
 			and(
 				eq(checkoutTable.eventId, eventId),
-				inArray(checkoutTable.status, ['pending', 'charging', 'paid', 'unknown']),
-				gt(checkoutTable.createdAt, holdsSince),
+				or(
+					and(
+						inArray(checkoutTable.status, ['charging', 'paid', 'unknown']),
+						gt(checkoutTable.createdAt, chargedSince)
+					),
+					and(eq(checkoutTable.status, 'pending'), gt(checkoutTable.createdAt, holdsSince))
+				),
 				excludeCheckoutId ? sql`${checkoutTable.id} <> ${excludeCheckoutId}` : sql`true`
 			)
 		);

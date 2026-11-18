@@ -8,6 +8,8 @@ import { fail, redirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { verifyTurnstileToken } from '$lib/server/turnstile.js';
 import { recordConversion } from '$lib/server/contentAnalytics/collect.js';
+import { ACCOUNT_LIMITS, clientIp, minutes, overLimit } from '$lib/server/ratelimit.js';
+import { safeRedirect } from '$lib/server/redirect.js';
 
 export function load() {
 	return {
@@ -28,8 +30,15 @@ export const actions = {
 		// Get redirect URL from query params (default to home)
 		const redirectTo = url.searchParams.get('redirect') || '/';
 
+		const ip = clientIp(getClientAddress);
+		const wait = await overLimit(['signup:ip', ip, ACCOUNT_LIMITS.signupPerIp]);
+		if (wait)
+			return fail(429, {
+				error: `Too many new accounts from here. Try again in ${minutes(wait)}.`
+			});
+
 		// Verify CAPTCHA before expensive operations
-		const turnstileResult = await verifyTurnstileToken(turnstileToken, getClientAddress());
+		const turnstileResult = await verifyTurnstileToken(turnstileToken, ip ?? undefined);
 		if (!turnstileResult.success) {
 			return fail(400, { error: turnstileResult.error });
 		}
@@ -75,8 +84,6 @@ export const actions = {
 		// beforehand get credit. Never throws or blocks sign-up.
 		await recordConversion({ cookies }, id, 'signup');
 
-		// Validate redirect URL is a local path (security measure)
-		const safeRedirect = redirectTo.startsWith('/') ? redirectTo : '/';
-		throw redirect(302, safeRedirect);
+		throw redirect(302, safeRedirect(redirectTo));
 	}
 };

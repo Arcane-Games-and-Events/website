@@ -165,14 +165,6 @@ export const ticket = pgTable('ticket', {
 	checkoutId: uuid('checkout_id') // migration 024
 });
 
-// ENTITLEMENTS (for courses and digital products)
-export const entitlement = pgTable('entitlement', {
-	id: uuid('id').defaultRandom().primaryKey(), // <-- uuid + defaultRandom
-	userId: text('user_id'),
-	product: text('product').notNull(),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
-});
-
 // WEBHOOK IDEMPOTENCY
 export const webhookEvent = pgTable('webhook_event', {
 	id: text('id').primaryKey(), // Auth.Net event id as text (no default)
@@ -188,17 +180,6 @@ export const passwordResetToken = pgTable('password_reset_token', {
 		.references(() => user.id),
 	expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
-});
-
-// NEWSLETTER SUBSCRIBERS
-export const newsletterSubscriber = pgTable('newsletter_subscriber', {
-	id: uuid('id').defaultRandom().primaryKey(),
-	email: text('email').notNull().unique(),
-	resendContactId: text('resend_contact_id'), // Resend Audience contact ID
-	status: text('status').notNull().default('active'), // active, unsubscribed
-	source: text('source').default('website'), // where they signed up
-	subscribedAt: timestamp('subscribed_at', { withTimezone: true, mode: 'date' }).defaultNow(),
-	unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true, mode: 'date' })
 });
 
 // STAFF ASSIGNMENTS (who runs an event on the day; see /staff)
@@ -430,52 +411,6 @@ export const lssEvent = pgTable('lss_events', {
 	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
-// PODCASTS (podcast series like "Cardboard and Beyond")
-// Retired from the site (no public page or admin screen). The tables and
-// their data are kept, and the definitions stay so a schema push can't drop
-// them; users.delete still clears their created_by references.
-export const podcast = pgTable('podcasts', {
-	id: uuid('id').defaultRandom().primaryKey(),
-	name: text('name').notNull(), // e.g., "Cardboard and Beyond"
-	description: text('description'), // Description of the podcast
-	coverImage: text('cover_image'), // URL to podcast cover art
-	youtubePlaylistUrl: text('youtube_playlist_url'), // Link to YouTube playlist
-	isActive: boolean('is_active').default(true), // Whether podcast is active
-	sortOrder: integer('sort_order').default(0), // For ordering multiple podcasts
-	createdBy: text('created_by').references(() => user.id),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
-	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
-});
-
-// PODCAST EPISODES (individual episodes from YouTube)
-export const podcastEpisode = pgTable('podcast_episodes', {
-	id: uuid('id').defaultRandom().primaryKey(),
-	podcastId: uuid('podcast_id')
-		.notNull()
-		.references(() => podcast.id, { onDelete: 'cascade' }),
-
-	// YouTube data (scraped)
-	youtubeUrl: text('youtube_url').notNull(), // YouTube video URL
-	youtubeVideoId: text('youtube_video_id'), // Extracted video ID
-	title: text('title').notNull(), // Video title (scraped or manual)
-	thumbnailUrl: text('thumbnail_url'), // YouTube thumbnail URL
-	publishedAt: timestamp('published_at', { withTimezone: true, mode: 'date' }), // YouTube publish date
-
-	// Manual metadata
-	description: text('description'), // Episode description
-	guest: text('guest'), // Guest name(s)
-	season: integer('season'), // Season number
-	episode: integer('episode'), // Episode number
-	duration: text('duration'), // Duration string e.g., "45:32"
-
-	// Status
-	isPublished: boolean('is_published').default(true), // Whether to show on site
-
-	createdBy: text('created_by').references(() => user.id),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
-	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
-});
-
 // STUDIO SHOWS (migration 035): a podcast or an interview series. Its
 // episodes are `vods` rows with `show_id` set.
 export const studioShow = pgTable('studio_show', {
@@ -637,70 +572,6 @@ export const eventPlayerHero = pgTable(
 		)
 	})
 );
-
-// LEGACY ANALYTICS (retired 2026-10-27) — page_view, article_engagement and
-// analytics_event are no longer written or read anywhere; content analytics
-// now live in ca_view / ca_event / ca_conversion (see contentAnalytics/).
-// The definitions stay so a schema push can never drop the tables (and their
-// history) by accident. Drop them deliberately with a migration when ready.
-// PAGE VIEW - site-wide page view tracking
-export const pageView = pgTable('page_view', {
-	id: uuid('id').defaultRandom().primaryKey(),
-	userId: text('user_id').references(() => user.id),
-	sessionId: text('session_id'),
-	path: text('path').notNull(),
-	referrer: text('referrer'),
-	referrerDomain: text('referrer_domain'),
-	utmSource: text('utm_source'),
-	utmMedium: text('utm_medium'),
-	utmCampaign: text('utm_campaign'),
-	deviceType: text('device_type'),
-	browser: text('browser'),
-	country: text('country'),
-	isNewVisitor: boolean('is_new_visitor').default(false),
-	articleSlug: text('article_slug'),
-	articleTitle: text('article_title'),
-	articleAuthor: text('article_author'),
-	articleTags: text('article_tags'),
-	articleAccessMode: text('article_access_mode'),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
-});
-
-// ARTICLE ENGAGEMENT - deep per-article reading behavior
-export const articleEngagement = pgTable('article_engagement', {
-	id: uuid('id').defaultRandom().primaryKey(),
-	pageViewId: uuid('page_view_id').references(() => pageView.id),
-	userId: text('user_id').references(() => user.id),
-	sessionId: text('session_id'),
-	articleSlug: text('article_slug').notNull(),
-	timeOnPageSeconds: integer('time_on_page_seconds'),
-	maxScrollDepth: integer('max_scroll_depth'),
-	readCompleted: boolean('read_completed').default(false),
-	contentEngaged: boolean('content_engaged').default(false),
-	exitedTo: text('exited_to'),
-	shareClicked: text('share_clicked'),
-	premiumCtaViewed: boolean('premium_cta_viewed').default(false),
-	premiumCtaClicked: boolean('premium_cta_clicked').default(false),
-	decklistInteractions: integer('decklist_interactions').default(0),
-	cardHovers: integer('card_hovers').default(0),
-	userRoleAtRead: text('user_role_at_read'),
-	signedUpAfter: boolean('signed_up_after').default(false),
-	upgradedAfter: boolean('upgraded_after').default(false),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow(),
-	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).defaultNow()
-});
-
-// ANALYTICS EVENT - flexible event tracking for interactions across the site
-export const analyticsEvent = pgTable('analytics_event', {
-	id: uuid('id').defaultRandom().primaryKey(),
-	pageViewId: uuid('page_view_id').references(() => pageView.id),
-	userId: text('user_id').references(() => user.id),
-	sessionId: text('session_id'),
-	eventType: text('event_type').notNull(),
-	eventData: jsonb('event_data'),
-	path: text('path'),
-	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
-});
 
 // AGE PARTNER PROGRAM
 // 1:1 with a user. Partners get a custom promo code that gives new premium

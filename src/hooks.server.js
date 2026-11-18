@@ -1,6 +1,7 @@
 // src/hooks.server.js
 import { auth, sessionCacheKey } from '$lib/server/lucia';
-import { error, redirect } from '@sveltejs/kit';
+import { error, json, redirect } from '@sveltejs/kit';
+import { blockedWrite, READ_ONLY_MESSAGE } from '$lib/server/switches.js';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import { rememberReferral } from '$lib/server/partner/referrals.js';
 import { env } from '$env/dynamic/private';
@@ -151,6 +152,17 @@ export const handle = async ({ event, resolve }) => {
 	// expose to routes/layouts
 	event.locals.user = user;
 	event.locals.session = session;
+
+	// Read-only mode (READ_ONLY, see $lib/server/switches.js): turn changes
+	// away before any action or endpoint runs.
+	if (blockedWrite(request.method, url.pathname, user)) {
+		if (url.pathname === '/api/ca') return new Response(null, { status: 204 });
+		if (request.headers.get('x-sveltekit-action') === 'true')
+			return json({ type: 'error', error: { message: READ_ONLY_MESSAGE } }, { status: 503 });
+		if (url.pathname.startsWith('/api/'))
+			return json({ message: READ_ONLY_MESSAGE, error: READ_ONLY_MESSAGE }, { status: 503 });
+		throw error(503, READ_ONLY_MESSAGE);
+	}
 
 	// /admin is for admins only. Checked here, before any load function
 	// runs, because SvelteKit runs page and layout loads in parallel and a

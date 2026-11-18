@@ -3,6 +3,8 @@
  *
  * Card attempts and checkouts are the targets of card-testing bots, so the
  * payment endpoints cap how often one account or one address can try.
+ * Sign-in, sign-up, password resets and discussion posts have their own
+ * caps (ACCOUNT_LIMITS, POST_LIMITS) against password guessing and floods.
  * Without Redis (local dev with no Upstash) everything is allowed.
  */
 import { redis, k } from '$lib/server/cache/index.js';
@@ -66,4 +68,50 @@ export async function guardPayment({ userId, ip, card = false }) {
 		retryAfter: blocked.retryAfter,
 		error: 'Too many payment attempts. Please wait a while before trying again.'
 	};
+}
+
+/**
+ * Sign-in, sign-up and password resets. Generous for people (a typo or
+ * three), tight for scripts: per address, and per email so guessing one
+ * account's password from many addresses still stops.
+ */
+export const ACCOUNT_LIMITS = {
+	loginPerIp: { max: 30, window: 900 },
+	loginPerEmail: { max: 10, window: 900 },
+	signupPerIp: { max: 5, window: 3600 },
+	resetPerIp: { max: 10, window: 3600 },
+	resetPerEmail: { max: 3, window: 3600 }
+};
+
+/** Course discussions, per account: new threads and replies. */
+export const POST_LIMITS = {
+	threadPerUser: { max: 6, window: 600 },
+	replyPerUser: { max: 20, window: 600 }
+};
+
+/**
+ * Count one hit against each `[name, id, { max, window }]` and return the
+ * wait in seconds if any is over its limit, or 0 when all are fine. A
+ * missing id (no address, signed out) skips that check.
+ */
+export async function overLimit(...checks) {
+	const results = await Promise.all(
+		checks.map(([name, id, { max, window }]) => hit(name, id, max, window))
+	);
+	return results.reduce((wait, r) => (r.ok ? wait : Math.max(wait, r.retryAfter)), 0);
+}
+
+/** Minutes, rounded up, for "try again in N minutes". */
+export function minutes(seconds) {
+	const n = Math.max(1, Math.ceil(seconds / 60));
+	return n === 1 ? 'a minute' : `${n} minutes`;
+}
+
+/** The caller's address, or null when the platform doesn't say. */
+export function clientIp(getClientAddress) {
+	try {
+		return getClientAddress();
+	} catch {
+		return null;
+	}
 }

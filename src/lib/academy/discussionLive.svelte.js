@@ -10,7 +10,8 @@
  * server every few seconds whether anything changed (a cheap check) and
  * runs `onchange` only when it has. Polling is quick while a conversation
  * is busy, slows down after two quiet minutes, and stops while the tab is
- * hidden (catching up when it's back).
+ * hidden (catching up when it's back). The server can slow it to a quarter
+ * of the pace, or stop it, under load (DISCUSSION_POLLING).
  */
 import { joinChannel } from '$lib/realtime/client.svelte.js';
 
@@ -48,6 +49,8 @@ export function createLive(course, { onchange }) {
 	let lastPing = 0;
 	let pingThread = '';
 	let watching = '';
+	/** The server's polling switch: normal | slow | off. */
+	let pace = 'normal';
 	/** @type {{ courseId: string, me: { id: string, name: string }, post: boolean } | null} */
 	let info = null;
 	/** @type {ReturnType<typeof joinChannel> | null} */
@@ -92,6 +95,7 @@ export function createLive(course, { onchange }) {
 				return;
 			}
 			const out = await res.json();
+			pace = out.poll || 'normal';
 			polledTyping = out.typing ?? [];
 			if (polledTyping.length) lastActivity = Date.now();
 			if (out.v >= 0 && version >= 0 && out.v !== version) {
@@ -180,8 +184,9 @@ export function createLive(course, { onchange }) {
 
 	function schedule() {
 		clearTimeout(timer);
-		if (!running || isLive || document.hidden) return;
-		const wait = Date.now() - lastActivity > QUIET_AFTER ? QUIET_MS : BUSY_MS;
+		if (!running || isLive || document.hidden || pace === 'off') return;
+		const wait =
+			(Date.now() - lastActivity > QUIET_AFTER ? QUIET_MS : BUSY_MS) * (pace === 'slow' ? 4 : 1);
 		timer = setTimeout(async () => {
 			await poll();
 			schedule();

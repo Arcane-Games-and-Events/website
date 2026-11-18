@@ -19,7 +19,9 @@ function getClient() {
 	if (!g.__ageDbClient) {
 		if (!env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
 		g.__ageDbClient = postgres(env.DATABASE_URL, {
-			max: 5, // Reduced connections to avoid pool exhaustion
+			// Per server instance. Low, so many instances under load stay well
+			// inside the pooler's connection limit.
+			max: 3,
 			idle_timeout: 10, // Close idle connections quickly
 			connect_timeout: 5, // Fast fail on connection issues (was 30)
 			max_lifetime: 60 * 2, // 2 minute max lifetime
