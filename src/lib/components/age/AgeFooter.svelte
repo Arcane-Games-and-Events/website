@@ -29,6 +29,7 @@
 				{ label: 'About AGE', href: '/about' },
 				{ label: 'Advertise', href: '/advertise' },
 				{ label: 'Contact', href: '/contact' },
+				{ label: 'Status', href: '/status' },
 				{ label: 'Newsletter', href: '/newsletter' }
 			]
 		}

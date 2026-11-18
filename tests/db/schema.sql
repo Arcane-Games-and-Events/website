@@ -7575,3 +7575,64 @@ CREATE INDEX IF NOT EXISTS store_ledger_payout_idx ON public.store_ledger (store
 -- 046_comp_end_dates.sql
 ALTER TABLE public."user" ADD COLUMN IF NOT EXISTS comp_ends_at timestamptz;
 CREATE INDEX IF NOT EXISTS user_comp_ends_idx ON public."user" (comp_ends_at) WHERE comp_ends_at IS NOT NULL;
+
+-- 047_status_roadmap.sql
+
+CREATE TABLE IF NOT EXISTS public.status_check (
+  id         bigserial PRIMARY KEY,
+  component  text NOT NULL,
+  ok         boolean NOT NULL,
+  ms         integer,
+  note       text,
+  at         timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS status_check_component_at_idx ON public.status_check (component, at DESC);
+CREATE INDEX IF NOT EXISTS status_check_at_idx ON public.status_check (at);
+ALTER TABLE public.status_check ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE IF NOT EXISTS public.status_incident (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  kind         text NOT NULL DEFAULT 'incident' CHECK (kind IN ('incident', 'maintenance')),
+  title        text NOT NULL,
+  -- incident: minor | major; maintenance: maintenance
+  impact       text NOT NULL DEFAULT 'minor' CHECK (impact IN ('minor', 'major', 'maintenance')),
+  components   text[] NOT NULL DEFAULT ARRAY[]::text[],
+  -- incident: investigating | identified | monitoring | resolved
+  -- maintenance: scheduled | in_progress | completed
+  status       text NOT NULL DEFAULT 'investigating',
+  starts_at    timestamptz NOT NULL DEFAULT now(),
+  ends_at      timestamptz,
+  resolved_at  timestamptz,
+  banner       boolean NOT NULL DEFAULT true,
+  created_by   text REFERENCES public."user"(id) ON DELETE SET NULL,
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS status_incident_open_idx ON public.status_incident (resolved_at, starts_at DESC);
+ALTER TABLE public.status_incident ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE IF NOT EXISTS public.status_update (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  incident_id  uuid NOT NULL REFERENCES public.status_incident(id) ON DELETE CASCADE,
+  status       text NOT NULL,
+  body         text NOT NULL,
+  created_by   text REFERENCES public."user"(id) ON DELETE SET NULL,
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS status_update_incident_idx ON public.status_update (incident_id, created_at);
+ALTER TABLE public.status_update ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE IF NOT EXISTS public.roadmap_item (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title       text NOT NULL,
+  body        text,
+  stage       text NOT NULL DEFAULT 'later' CHECK (stage IN ('now', 'next', 'later', 'shipped')),
+  area        text,
+  position    integer NOT NULL DEFAULT 0,
+  is_public   boolean NOT NULL DEFAULT true,
+  shipped_at  timestamptz,
+  created_by  text REFERENCES public."user"(id) ON DELETE SET NULL,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS roadmap_item_stage_idx ON public.roadmap_item (stage, position);
+ALTER TABLE public.roadmap_item ENABLE ROW LEVEL SECURITY;

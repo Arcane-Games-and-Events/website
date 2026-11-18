@@ -2063,3 +2063,60 @@ export const storeActivity = pgTable('store_activity', {
 	data: jsonb('data'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
 });
+
+// STATUS PAGE (migration 047): a check per part of the site every five
+// minutes, incidents and maintenance windows, and their updates.
+export const statusCheck = pgTable('status_check', {
+	id: bigserial('id', { mode: 'number' }).primaryKey(),
+	component: text('component').notNull(), // database | cache | video | payments | billing
+	ok: boolean('ok').notNull(),
+	ms: integer('ms'),
+	note: text('note'),
+	at: timestamp('at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+export const statusIncident = pgTable('status_incident', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	kind: text('kind').notNull().default('incident'), // incident | maintenance
+	title: text('title').notNull(),
+	impact: text('impact').notNull().default('minor'), // minor | major | maintenance
+	components: text('components')
+		.array()
+		.notNull()
+		.default(sql`ARRAY[]::text[]`),
+	// incident: investigating | identified | monitoring | resolved
+	// maintenance: scheduled | in_progress | completed
+	status: text('status').notNull().default('investigating'),
+	startsAt: timestamp('starts_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	endsAt: timestamp('ends_at', { withTimezone: true, mode: 'date' }),
+	resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'date' }),
+	banner: boolean('banner').notNull().default(true),
+	createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+export const statusUpdate = pgTable('status_update', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	incidentId: uuid('incident_id')
+		.notNull()
+		.references(() => statusIncident.id, { onDelete: 'cascade' }),
+	status: text('status').notNull(),
+	body: text('body').notNull(),
+	createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+// THE ROADMAP (migration 047): Now, Next, Later, Shipped.
+export const roadmapItem = pgTable('roadmap_item', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	title: text('title').notNull(),
+	body: text('body'),
+	stage: text('stage').notNull().default('later'), // now | next | later | shipped
+	area: text('area'),
+	position: integer('position').notNull().default(0),
+	isPublic: boolean('is_public').notNull().default(true),
+	shippedAt: timestamp('shipped_at', { withTimezone: true, mode: 'date' }),
+	createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});

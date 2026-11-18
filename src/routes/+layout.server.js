@@ -8,6 +8,7 @@ import { readCart } from '$lib/server/partner/cart.js';
 import { cachedMessageCounts } from '$lib/server/contact/inbox.js';
 import { cachedStoreCount } from '$lib/server/stores/members.js';
 import { listCircuits } from '$lib/server/stores/circuits.js';
+import { siteBanner } from '$lib/server/status/index.js';
 
 // Per-user cached lookups on the layout hot path. Each is guarded so an
 // individual failure just falls back to the safe default without failing
@@ -96,16 +97,26 @@ export const load = async ({ locals, cookies, depends }) => {
 	// instantly to their defaults.
 	const userId = locals.user?.id ?? null;
 
-	const [assignedEventsCount, isPartner, nextEvent, unread, contact, storeCount, circuits] =
-		await Promise.all([
-			userId ? safeStaffCount(userId) : Promise.resolve(0),
-			userId ? safeIsPartner(userId) : Promise.resolve(false),
-			safeNextEvent(),
-			userId ? cachedUnreadCount(userId) : Promise.resolve({ learning: 0, classroom: 0 }),
-			cachedMessageCounts(locals.user),
-			cachedStoreCount(userId),
-			listCircuits().catch(() => [])
-		]);
+	const [
+		assignedEventsCount,
+		isPartner,
+		nextEvent,
+		unread,
+		contact,
+		storeCount,
+		circuits,
+		statusBanner
+	] = await Promise.all([
+		userId ? safeStaffCount(userId) : Promise.resolve(0),
+		userId ? safeIsPartner(userId) : Promise.resolve(false),
+		safeNextEvent(),
+		userId ? cachedUnreadCount(userId) : Promise.resolve({ learning: 0, classroom: 0 }),
+		cachedMessageCounts(locals.user),
+		cachedStoreCount(userId),
+		listCircuits().catch(() => []),
+		// An incident or maintenance that's on (Admin → Status), for the banner.
+		siteBanner()
+	]);
 
 	const isPremiumMember = locals.user?.role === 'premium' || locals.user?.role === 'admin';
 
@@ -137,6 +148,7 @@ export const load = async ({ locals, cookies, depends }) => {
 			image: imageUrl || null,
 			blurb: blurb || null
 		})),
+		statusBanner,
 		// Guides in the cart (a cookie; no database read).
 		cartCount: readCart(cookies).length
 	};

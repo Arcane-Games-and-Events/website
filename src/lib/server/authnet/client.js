@@ -376,6 +376,21 @@ class AuthNetClient {
 	// ---------------------------------------------------------------- lookups
 
 	/**
+	 * Are the gateway and our credentials answering? (The status checks.)
+	 * Resolves true, or throws an `AuthnetError`.
+	 */
+	async ping() {
+		const request = new ApiContracts.AuthenticateTestRequest();
+		request.setMerchantAuthentication(this.merchantAuth());
+		const resp = await this.send(request);
+		if (!isOk(resp)) {
+			const { code, text } = topMessage(resp);
+			throw new AuthnetError(text || 'Authorize.net refused the test request', { code });
+		}
+		return true;
+	}
+
+	/**
 	 * Everything about one transaction, or null when the gateway has no
 	 * record of it.
 	 */

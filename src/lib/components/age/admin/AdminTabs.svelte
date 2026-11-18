@@ -1,7 +1,7 @@
 <script>
 	/**
 	 * Admin tabs — Home / Inbox / Analytics / Orders / Members / AGE Open
-	 * (events, circuits, stores, players) / Calendar / Partners. Inbox carries a red count of unread messages from
+	 * (events, circuits, stores, players) / Calendar / Partners / Status. Inbox carries a red count of unread messages from
 	 * the contact page, kept current live.
 	 *
 	 * The admin twin of DeskTabs: each admin page places it under its ink
@@ -41,7 +41,9 @@
 									? 'calendar'
 									: path.startsWith('/admin/partners')
 										? 'partners'
-										: 'home'
+										: path.startsWith('/admin/status')
+											? 'status'
+											: 'home'
 	);
 
 	// 20×20 line icons for the phone tab row.
@@ -54,7 +56,8 @@
 			'M7.5 9.5a2.75 2.75 0 1 0 0-5.5 2.75 2.75 0 0 0 0 5.5zM2.5 16.5c.4-2.8 2.4-4.5 5-4.5s4.6 1.7 5 4.5M13 4.2a2.6 2.6 0 0 1 0 5.1M14.5 12.3c1.6.5 2.7 2 3 4.2',
 		ageopen: 'M10 2.5 12.2 7l4.8.7-3.5 3.4.8 4.9L10 13.7 5.7 16l.8-4.9L3 7.7 7.8 7z',
 		calendar: 'M3.5 6h13v10.5h-13zM3.5 9.5h13M7 3.5v4M13 3.5v4',
-		partners: 'M4 10.5 10 4l6 6.5-6 6.5zM10 4v13M4 10.5h12'
+		partners: 'M4 10.5 10 4l6 6.5-6 6.5zM10 4v13M4 10.5h12',
+		status: 'M2.5 10.5h3l2-5 3.5 10 2-5h4.5'
 	};
 
 	const payouts = $derived(d.partnerPayoutsSoon || 0);
@@ -66,7 +69,8 @@
 		{ id: 'members', href: '/admin/users', label: 'Members' },
 		{ id: 'ageopen', href: '/admin/ageopen', label: 'AGE Open' },
 		{ id: 'calendar', href: '/admin/calendar', label: 'Calendar' },
-		{ id: 'partners', href: '/admin/partners', label: 'Partners' }
+		{ id: 'partners', href: '/admin/partners', label: 'Partners' },
+		{ id: 'status', href: '/admin/status', label: 'Status' }
 	];
 
 	// Keep the active tab visible in the phone row.

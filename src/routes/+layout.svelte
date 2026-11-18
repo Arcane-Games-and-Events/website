@@ -26,6 +26,7 @@
 	import AgeHeader from '$lib/components/age/AgeHeader.svelte';
 	import AgeFooter from '$lib/components/age/AgeFooter.svelte';
 	import { circuitSlug } from '$lib/data/circuits.js';
+	import StatusBanner from '$lib/components/age/status/StatusBanner.svelte';
 
 	// Auth pages that should not show the sidebar
 	const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
@@ -51,7 +52,8 @@
 		'/terms',
 		'/privacy',
 		'/refund-policy',
-		'/contact'
+		'/contact',
+		'/status'
 	];
 	const editorialPrefixes = [
 		'/account',
@@ -131,6 +133,8 @@
 >
 	Skip to main content
 </a>
+
+<StatusBanner banner={$page.data?.statusBanner ?? null} />
 
 <svelte:head>
 	{#if circuitCss}
