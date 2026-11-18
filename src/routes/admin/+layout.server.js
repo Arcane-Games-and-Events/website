@@ -5,7 +5,7 @@ import { partnerReferral } from '$lib/server/db/schema.js';
 import { sql } from 'drizzle-orm';
 
 /**
- * /admin layout guard — admins only. Tournament staff run their events
+ * /admin layout guard — admins only. Event staff run their events
  * from /staff. Logged-out visitors go to the login page and come back
  * here afterwards; everyone else goes home.
  */

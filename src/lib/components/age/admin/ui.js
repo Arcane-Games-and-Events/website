@@ -45,7 +45,6 @@ export const pill =
 export const pillTone = {
 	premium: '[--tone:var(--color-prem)]',
 	admin: '[--tone:var(--color-warm)]',
-	'tournament staff': '[--tone:#8a6116]',
 	writer: '[--tone:var(--color-ink)]',
 	free: '[--tone:var(--color-fade)]',
 	active: '[--tone:var(--color-prem)]',

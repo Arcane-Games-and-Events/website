@@ -34,8 +34,8 @@ export const user = pgTable('user', {
 
 	// Capability roles — stackable, independent of billing tier. A user
 	// can hold any combination of these AND their primary billing role.
-	// Options: 'writer' (author library entries), 'creator' (author
-	// courses), 'tournament staff' (event operations). Empty array = no
+	// Options: 'writer' (author library entries), 'editor', 'creator'
+	// (author courses), 'producer'. Empty array = no
 	// capability roles. See src/lib/server/auth/roles.js for guards.
 	additionalRoles: text('additional_roles')
 		.array()
@@ -201,7 +201,7 @@ export const newsletterSubscriber = pgTable('newsletter_subscriber', {
 	unsubscribedAt: timestamp('unsubscribed_at', { withTimezone: true, mode: 'date' })
 });
 
-// STAFF ASSIGNMENTS (for tournament staff)
+// STAFF ASSIGNMENTS (who runs an event on the day; see /staff)
 export const eventStaff = pgTable('staff_assignments', {
 	id: uuid('id').defaultRandom().primaryKey(),
 	userId: text('user_id')

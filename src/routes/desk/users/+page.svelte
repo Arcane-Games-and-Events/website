@@ -2,9 +2,8 @@
   /desk/users — admin-only user + role management.
 
   Each row sets the billing tier (free / premium / admin) and toggles Desk
-  roles: writer, editor and teacher (stored as 'creator'). Tournament staff
-  is managed in Admin → Users and isn't shown here; any staff role a person
-  already has is kept untouched when their Desk roles change. Every change fires a
+  roles: writer, editor and teacher (stored as 'creator'). Event staff
+  aren't a role: they're added to an event in Admin. Every change fires a
   PATCH to /api/desk/users/[id]; the row updates in place, shows "Saving…" /
   "Saved", and shows the error inline if the server refuses.
 -->
@@ -385,7 +384,7 @@
 
 	<p class="mt-6 max-w-[720px] text-[12.5px] leading-relaxed text-fade">
 		Admins have every Desk role automatically, and only admins can publish, approve edits or manage
-		users. Premium is the paid membership; set it by hand only for comps and staff. Tournament staff
-		is assigned in Admin → Users.
+		users. Premium is the paid membership; set it by hand only for comps. Event staff are added to
+		each event in Admin.
 	</p>
 </div>

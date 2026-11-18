@@ -68,7 +68,7 @@
 					? c.subscriptionId
 						? 'paying'
 						: 'comp'
-					: c.role === 'writer' || c.role === 'tournament staff'
+					: c.role === 'writer'
 						? 'team'
 						: 'free'
 	);
@@ -100,9 +100,7 @@
 				: kind === 'admin'
 					? 'Full access'
 					: kind === 'team'
-						? c.role === 'writer'
-							? 'Writer (old role)'
-							: 'Tournament staff (old role)'
+						? 'Writer (old role)'
 						: kind === 'free'
 							? 'No membership'
 							: 'Bought without an account'

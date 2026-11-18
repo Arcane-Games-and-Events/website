@@ -7,10 +7,12 @@
  *      Determines paywall access on the reader side.
  *
  *   2. Capability roles — `user.additionalRoles`, zero or more of 'writer',
- *      'editor', 'creator', 'producer', 'tournament staff'. Writers see and edit only
- *      their own entries; editors see and edit every entry. Independent of billing tier. A user
- *      can be a free-tier creator, or a premium writer + tournament staff,
- *      etc. Determines what Desk surfaces they can access.
+ *      'editor', 'creator', 'producer'. Writers see and edit only their own
+ *      entries; editors see and edit every entry. Independent of billing
+ *      tier: a user can be a free-tier creator, or a premium writer, etc.
+ *      Determines what Desk surfaces they can access. (Event staff aren't
+ *      a role: they're assigned to an event, see stores/portal.js
+ *      canWorkEvent.)
  *
  * `admin` (billing tier) implicitly grants every capability regardless of
  * `additionalRoles`. Nothing else stacks.
@@ -28,7 +30,6 @@ const CAPABILITY_WRITER = 'writer';
 const CAPABILITY_EDITOR = 'editor';
 const CAPABILITY_CREATOR = 'creator';
 const CAPABILITY_PRODUCER = 'producer';
-const CAPABILITY_TOURNAMENT_STAFF = 'tournament staff';
 
 // -------------------- billing tier --------------------
 
@@ -207,16 +208,6 @@ export function canAccessDesk(user) {
  */
 export function canPublish(user) {
 	return isAdmin(user);
-}
-
-/**
- * True if the user can run event operations (check-in, register players,
- * mark GEM entry). Admin or 'tournament staff' capability.
- * @param {any} user
- * @returns {boolean}
- */
-export function canRunEvents(user) {
-	return isAdmin(user) || hasCapability(user, CAPABILITY_TOURNAMENT_STAFF);
 }
 
 // -------------------- ownership helpers --------------------

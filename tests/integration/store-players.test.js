@@ -11,6 +11,7 @@ import { db } from '$lib/server/db/index.js';
 import {
 	circuit,
 	event,
+	eventStaff,
 	store,
 	storeActivity,
 	storeMember,
@@ -22,6 +23,7 @@ import { load as storeLayout } from '../../src/routes/store/[slug]/+layout.serve
 import { load as playersLoad } from '../../src/routes/store/[slug]/players/+page.server.js';
 import { actions as adminEventActions } from '../../src/routes/admin/events/[eventId]/+page.server.js';
 import { POST as purchase } from '../../src/routes/api/events/[eventId]/purchase/+server.js';
+import { load as ticketLoad } from '../../src/routes/events/[eventId]/ticket/[ticketId]/+page.server.js';
 import { callAction } from '../support/actions.js';
 import { createAdmin, createEvent, createUser, daysFromNow } from '../support/factories.js';
 
@@ -157,8 +159,7 @@ describe('unpublishing a store event', () => {
 
 	test('only admins can unpublish', async () => {
 		const ev = await createEvent({ storeId: shop.id });
-		const staff = await createUser({ role: 'tournament staff' });
-		expect((await setStatus(ev, 'unpublished', staff)).status).toBe(403);
+		expect((await setStatus(ev, 'unpublished', owner)).status).toBe(403);
 	});
 
 	test('nobody can buy a ticket to an unpublished event', async () => {
@@ -198,5 +199,26 @@ describe('new store events on the admin home', () => {
 		const rows = await newStoreEvents();
 		expect(rows.map((r) => r.title)).toEqual(['Store scheduled']);
 		expect(rows[0]).toMatchObject({ storeName: 'Bay Area Games', storeSlug: 'bay-area-games' });
+	});
+});
+
+describe('event staff are whoever is added to the event', () => {
+	test('a ticket opens for the buyer, the event’s staff and its store; nobody else', async () => {
+		const ev = await createEvent({ storeId: shop.id });
+		const buyer = await createUser();
+		const helper = await createUser();
+		const stranger = await createUser();
+		const t = await sell(ev, { userId: buyer.id, firstName: 'Ada', lastName: 'L' });
+		await db.insert(eventStaff).values({ eventId: ev.id, userId: helper.id });
+		const open = (who) =>
+			ticketLoad({
+				params: { eventId: ev.id, ticketId: t.id },
+				locals: { user: who },
+				url: new URL('http://t/x')
+			});
+		for (const who of [buyer, helper, owner, admin]) {
+			expect((await open(who)).ticket.id).toBe(t.id);
+		}
+		await expect(open(stranger)).rejects.toMatchObject({ status: 404 });
 	});
 });

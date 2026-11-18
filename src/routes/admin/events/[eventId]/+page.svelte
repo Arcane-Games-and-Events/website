@@ -2172,7 +2172,7 @@ Pitch 0/1 (Red)
 								No staff assigned to this event.
 							</p>
 							<p class="mt-2 text-[13px] text-fade">
-								Use the search below to assign tournament staff.
+								Search any AGE account below to add them. They run the event from their Staff page.
 							</p>
 						</div>
 					{/if}

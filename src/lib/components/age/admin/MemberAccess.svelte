@@ -2,7 +2,7 @@
   MemberAccess — change what a member can do: Free, Premium or Admin as
   three cards, and for Premium without paying (a comp) the reason as chips
   and an optional last day. Used under a row on the Members list and on a
-  member's own page. Writer and tournament staff are old roles: shown, and
+  member's own page. Writer is an old role: shown, and
   kept until changed, but never offered. Capabilities (writer, teacher,
   producer) live in Desk → Users.
 
@@ -30,7 +30,7 @@
 		trial: 'Trial',
 		other: 'Other'
 	};
-	const OLD = { writer: 'Writer', 'tournament staff': 'Tournament staff' };
+	const OLD = { writer: 'Writer' };
 
 	// svelte-ignore state_referenced_locally
 	let role = $state(member.role);

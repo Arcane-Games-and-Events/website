@@ -155,15 +155,14 @@
 				? u.subscriptionId
 					? 'paying'
 					: 'comp'
-				: u.role === 'writer' || u.role === 'tournament staff'
+				: u.role === 'writer'
 					? 'team'
 					: 'free';
 	const ROLE = {
 		free: 'Free',
 		premium: 'Premium',
 		admin: 'Admin',
-		writer: 'Writer',
-		'tournament staff': 'Tournament staff'
+		writer: 'Writer'
 	};
 	const STATUS = { cancelled: 'cancelled', payment_failed: 'payment failed', expired: 'expired' };
 	const now = Date.now();

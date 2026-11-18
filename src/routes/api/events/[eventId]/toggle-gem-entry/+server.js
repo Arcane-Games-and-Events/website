@@ -5,7 +5,7 @@ import { ticket } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 
 export async function POST({ request, locals }) {
-	if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
+	if (!locals.user || locals.user.role !== 'admin') {
 		throw error(403, 'Unauthorized');
 	}
 

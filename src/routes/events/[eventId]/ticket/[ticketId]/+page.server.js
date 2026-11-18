@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { ticket, event as eventTable } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
+import { canWorkEvent } from '$lib/server/stores/portal.js';
 
 export async function load({ params, locals, url }) {
 	const { eventId, ticketId } = params;
@@ -41,12 +42,12 @@ export async function load({ params, locals, url }) {
 		throw error(404, 'Ticket not found');
 	}
 
-	// Only the buyer, an admin or event staff can see a ticket. Anyone else
-	// gets the same 404 as a ticket that doesn't exist.
+	// Only the buyer, an admin or the event's staff (assigned to it, or the
+	// store that runs it) can see a ticket. Anyone else gets the same 404
+	// as a ticket that doesn't exist.
 	const u = locals.user;
 	const isOwner = !!u && ticketData.userId === u.id;
-	const isStaff =
-		!!u && (u.role === 'admin' || (u.additionalRoles || []).includes('tournament staff'));
+	const isStaff = !!u && (u.role === 'admin' || (await canWorkEvent(u, eventId)));
 	if (!isOwner && !isStaff) {
 		throw error(404, 'Ticket not found');
 	}

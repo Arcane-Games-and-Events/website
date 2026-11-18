@@ -279,7 +279,7 @@ export const actions = {
 			return fail(400, { error: 'Role is required' });
 		}
 
-		// Writer and tournament staff are old roles: kept if unchanged, never newly set.
+		// Writer is an old role: kept if unchanged, never newly set.
 		const validRoles = ['free', 'premium', 'admin'];
 
 		try {

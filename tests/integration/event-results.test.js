@@ -162,7 +162,7 @@ describe('uploading results', () => {
 		expect(await matchCount(ev.id)).toBe(279);
 	});
 
-	test('only admins and tournament staff can upload', async () => {
+	test('only admins can upload', async () => {
 		const member = await createUser();
 		expect((await upload(ev.id, { user: member })).status).toBe(403);
 		expect((await upload(ev.id, { user: null })).status).toBe(403);

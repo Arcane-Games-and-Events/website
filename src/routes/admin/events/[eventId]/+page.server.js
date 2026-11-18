@@ -21,10 +21,9 @@ import {
 } from '$lib/server/events/heroes.js';
 
 export async function load({ params, locals }) {
-	// The admin layout only lets admins this far; tournament staff run
-	// their events from /staff/[eventId]. The flags stay for the template.
+	// The admin layout only lets admins this far; event staff run their
+	// events from /staff/[eventId].
 	const isAdmin = true;
-	const isTournamentStaff = false;
 
 	try {
 		// Fetch event details
@@ -170,7 +169,6 @@ export async function load({ params, locals }) {
 		return {
 			user: locals.user,
 			isAdmin,
-			isTournamentStaff,
 			event: eventData,
 			tickets,
 			participants,
@@ -329,7 +327,7 @@ export const actions = {
 
 	// Toggle GEM ID Required setting
 	toggleGemIdRequired: async ({ params, request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
+		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
@@ -352,7 +350,7 @@ export const actions = {
 
 	// Toggle "Entered into Gem?" status
 	toggleGemEntry: async ({ request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
+		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
@@ -379,7 +377,7 @@ export const actions = {
 
 	// Save a decklist
 	saveDecklist: async ({ params, request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
+		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
@@ -437,7 +435,7 @@ export const actions = {
 
 	// Delete a decklist
 	deleteDecklist: async ({ request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
+		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
@@ -459,7 +457,7 @@ export const actions = {
 	// Process CSV files to import tournament results
 	// Updates standings in real-time - no separate finalize step needed
 	processCSV: async ({ params, request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
+		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
@@ -562,7 +560,7 @@ export const actions = {
 	// Mark event as completed
 	// Standings are already updated in real-time when CSV is uploaded
 	finalizeEvent: async ({ params, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
+		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
@@ -631,7 +629,7 @@ export const actions = {
 
 	// Update event status directly
 	updateStatus: async ({ params, request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
+		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
@@ -708,7 +706,7 @@ export const actions = {
 		}
 	},
 
-	// Assign tournament staff to this event (admin only)
+	// Assign staff to this event (admin only)
 	assignStaff: async ({ params, request, locals }) => {
 		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Only admins can assign staff' });
@@ -749,7 +747,7 @@ export const actions = {
 		}
 	},
 
-	// Remove tournament staff from this event (admin only)
+	// Remove staff from this event (admin only)
 	unassignStaff: async ({ params, request, locals }) => {
 		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Only admins can unassign staff' });
@@ -821,7 +819,7 @@ export const actions = {
 
 	// Upload hero data from CSV
 	uploadHeroes: async ({ params, request, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
+		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Unauthorized' });
 		}
 
@@ -945,7 +943,7 @@ export const actions = {
 
 	// Delete hero data for this event
 	deleteHeroes: async ({ params, locals }) => {
-		if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'tournament staff')) {
+		if (!locals.user || locals.user.role !== 'admin') {
 			return fail(403, { error: 'Unauthorized' });
 		}
 

@@ -42,7 +42,7 @@ export const actions = {
 		const newRole = formData.get('role');
 
 		// Validate role
-		// Writer and tournament staff are old roles: kept if unchanged, never newly set.
+		// Writer is an old role: kept if unchanged, never newly set.
 		const validRoles = ['free', 'premium', 'admin'];
 		if (!validRoles.includes(newRole)) {
 			const [current] = await db
