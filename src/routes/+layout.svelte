@@ -53,7 +53,8 @@
 		'/privacy',
 		'/refund-policy',
 		'/contact',
-		'/status'
+		'/status',
+		'/roadmap'
 	];
 	const editorialPrefixes = [
 		'/account',

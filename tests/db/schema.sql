@@ -7636,3 +7636,12 @@ CREATE TABLE IF NOT EXISTS public.roadmap_item (
 );
 CREATE INDEX IF NOT EXISTS roadmap_item_stage_idx ON public.roadmap_item (stage, position);
 ALTER TABLE public.roadmap_item ENABLE ROW LEVEL SECURITY;
+
+-- 051: roadmap stages
+ALTER TABLE public.roadmap_item DROP CONSTRAINT IF EXISTS roadmap_item_stage_check;
+UPDATE public.roadmap_item
+SET stage = CASE stage WHEN 'now' THEN 'development' WHEN 'next' THEN 'upcoming' WHEN 'later' THEN 'upcoming' ELSE stage END
+WHERE stage IN ('now', 'next', 'later');
+ALTER TABLE public.roadmap_item ALTER COLUMN stage SET DEFAULT 'upcoming';
+ALTER TABLE public.roadmap_item ADD CONSTRAINT roadmap_item_stage_check
+  CHECK (stage IN ('upcoming', 'development', 'testing', 'shipped'));

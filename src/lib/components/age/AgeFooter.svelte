@@ -30,6 +30,7 @@
 				{ label: 'Advertise', href: '/advertise' },
 				{ label: 'Contact', href: '/contact' },
 				{ label: 'Status', href: '/status' },
+				{ label: 'Roadmap', href: '/roadmap' },
 				{ label: 'Newsletter', href: '/newsletter' }
 			]
 		}

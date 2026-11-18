@@ -9,7 +9,8 @@ export const TOPICS = [
 	{ id: 'events', label: 'AGE Open events' },
 	{ id: 'academy', label: 'The Academy or a guide' },
 	{ id: 'partnerships', label: 'Partnerships and press' },
-	{ id: 'feedback', label: 'Feedback on the site' }
+	{ id: 'feedback', label: 'Feedback on the site' },
+	{ id: 'idea', label: 'A feature idea' }
 ];
 
 /** The short name of a topic, for the inbox. */
@@ -20,7 +21,8 @@ export const TOPIC_SHORT = {
 	events: 'Events',
 	academy: 'Academy',
 	partnerships: 'Partnerships',
-	feedback: 'Feedback'
+	feedback: 'Feedback',
+	idea: 'Idea'
 };
 
 export const isTopic = (t) => TOPICS.some((x) => x.id === t);
@@ -35,5 +37,6 @@ export const TOPIC_TONE = {
 	events: 'var(--color-hero-rb)',
 	academy: 'var(--color-gold)',
 	partnerships: 'var(--color-soft)',
-	feedback: 'var(--color-fade)'
+	feedback: 'var(--color-fade)',
+	idea: 'var(--color-warm-deep)'
 };
