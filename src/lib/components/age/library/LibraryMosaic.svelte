@@ -20,8 +20,9 @@
   the picture under a navy shade), navy (its picture above white words on
   the Library's navy), card (picture above words), headline (a big serif
   title and dek on toned paper), side (picture beside words). Pictures zoom
-  a little and titles underline on hover. Phones get one column at natural
-  heights; tablets two.
+  a little and titles underline on hover. Phones get a plain list of cards
+  instead (picture above words, all the same); tablets get the bento two
+  across.
 
   `aside` (a snippet, given a class that fills its slot) takes one slot
   (the first card's, 2, by default) — the Premium ad for non-members — and
@@ -125,8 +126,37 @@
 	>
 {/snippet}
 
+<!-- phones: a plain list of cards, every one the same shape -->
+<ul class="grid gap-8 sm:hidden" aria-label="Latest in the Library">
+	{#each tiles.slice(0, 6) as { s, key } (key)}
+		<li>
+			{#if !s}
+				{@render aside?.('')}
+			{:else}
+				<a href={s.href} class="group block">
+					<span class="relative block aspect-video overflow-hidden bg-panel">
+						{@render picture(s, '100vw')}
+						{@render tags(s)}
+					</span>
+					<span class="mt-3.5 block">{@render kicker(s, 'text-warm')}</span>
+					<span
+						class="mt-1.5 block font-newsreader text-[23px] leading-[1.12] font-semibold tracking-[-0.01em] [text-wrap:balance] decoration-warm decoration-1 underline-offset-4 group-hover:underline"
+						>{s.title}</span
+					>
+					{#if s.dek}<span
+							class="mt-2 line-clamp-2 block font-newsreader text-[16px] leading-[1.45] text-soft italic"
+							>{s.dek}</span
+						>{/if}
+					<span class="mt-2.5 block">{@render byline(s)}</span>
+				</a>
+			{/if}
+		</li>
+	{/each}
+</ul>
+
+<!-- from tablets up: the bento -->
 <ul
-	class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12 lg:gap-5 max-sm:[&>li:nth-child(n+7)]:hidden"
+	class="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-12 lg:gap-5"
 	aria-label="Latest in the Library"
 >
 	{#each tiles as { s, tile, big, span, key } (key)}
