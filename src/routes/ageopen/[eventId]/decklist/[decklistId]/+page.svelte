@@ -3,6 +3,8 @@
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import FormatTag from '$lib/components/age/FormatTag.svelte';
 	import { heroImageUrl } from '$lib/heroImage.js';
+	import HeroMotion from '$lib/components/age/HeroMotion.svelte';
+	import { heroAppear } from '$lib/heroAppear.js';
 	import { CIRCUITS, circuitVar } from '$lib/data/circuits.js';
 	import { PITCH_STYLE } from '$lib/data/pitch.js';
 	import CardLightbox from '$lib/components/age/CardLightbox.svelte';
@@ -273,11 +275,18 @@
 		{#if heroBackdrop}
 			<img
 				src={heroBackdrop}
+				use:heroAppear
+				fetchpriority="high"
 				alt=""
 				aria-hidden="true"
 				class="absolute inset-y-0 right-0 h-full w-full object-cover object-[75%_20%] md:w-[58%]"
 				style="-webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 35%, #000 70%); mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 35%, #000 70%);"
 				onerror={(e) => (e.currentTarget.style.display = 'none')}
+			/>
+			<HeroMotion
+				hero={decklist.hero}
+				class="absolute inset-y-0 right-0 hidden h-full w-[58%] md:block"
+				style="-webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 35%, #000 70%); mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 35%, #000 70%);"
 			/>
 		{/if}
 		<div
@@ -420,7 +429,7 @@
 									<img
 										src={previewCurrentUrl}
 										alt={selectedCard.name || ''}
-										class="h-full w-full {previewCurrentUrl.startsWith('/hero_images/')
+										class="h-full w-full {/^\/hero(_images|-art)\//.test(previewCurrentUrl)
 											? 'object-cover object-[75%_20%]'
 											: 'object-contain'} transition-opacity duration-300 {previewImageLoaded
 											? 'opacity-100'

@@ -7,6 +7,7 @@
 	import { CIRCUITS, circuitVar } from '$lib/data/circuits.js';
 	import { calculateDerivedStats } from '$lib/players/standings.js';
 	import { heroImageUrl } from '$lib/heroImage.js';
+	import HeroMotion from '$lib/components/age/HeroMotion.svelte';
 	import { MONTH_NAMES } from '$lib/data/months.js';
 
 	// ============ helpers for editorial template ============
@@ -1298,6 +1299,7 @@
 								class="relative flex min-h-[170px] flex-1 items-end overflow-hidden border border-ink bg-ink bg-cover bg-top"
 								style={sigBackdrop ? `background-image: url('${sigBackdrop}');` : ''}
 							>
+								<HeroMotion hero={sig.hero} class="absolute inset-0 hidden md:block" />
 								<span
 									class="pointer-events-none absolute inset-0"
 									style="background: linear-gradient(0deg, rgba(23,21,15,0.94) 18%, rgba(23,21,15,0.15) 75%);"

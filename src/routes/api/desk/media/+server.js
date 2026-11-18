@@ -2,6 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import {
 	canUseMedia,
 	createUpload,
+	importHeroArt,
 	libraryOf,
 	listMedia,
 	MediaError
@@ -46,6 +47,10 @@ async function entryFor(user, library, value) {
  * POST /api/desk/media  { filename, mimeType, size, library, course, entry }
  *   Starts an upload: creates the library row and returns a signed URL the
  *   browser uploads the file to directly. Then POST /api/desk/media/[id]/process.
+ *
+ * POST /api/desk/media  { hero, library, course, entry }
+ *   Puts a hero's still (the hero art) into the library instead, ready to
+ *   use: { media }. The same hero in the same place gives the same image.
  */
 export async function GET({ url, locals }) {
 	const user = locals.user;
@@ -77,6 +82,14 @@ export async function POST({ request, locals }) {
 	const course = await courseFor(user, library, body.course);
 	const entry = await entryFor(user, library, body.entry);
 	try {
+		if (typeof body.hero === 'string') {
+			const media = await importHeroArt(user, body.hero, {
+				library,
+				courseId: course,
+				entryId: entry
+			});
+			return json({ media }, { status: 201 });
+		}
 		return json(await createUpload(user, body, library, course, entry), { status: 201 });
 	} catch (err) {
 		if (err instanceof MediaError) throw error(err.status, err.message);

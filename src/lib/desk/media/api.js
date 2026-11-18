@@ -78,3 +78,20 @@ export const deleteMedia = (id) => call(`/api/desk/media/${id}`, { method: 'DELE
 
 /** @returns {Promise<{ media: any }>} */
 export const deriveMedia = (id, edit) => call(`/api/desk/media/${id}/derive`, json('POST', edit));
+
+/**
+ * Put a hero's still (the hero art) into this page's library, course or
+ * entry, ready to use like any upload.
+ * @param {string} hero  the hero's slug
+ * @returns {Promise<{ media: any }>}
+ */
+export const importHero = (hero) =>
+	call(
+		'/api/desk/media',
+		json('POST', {
+			hero,
+			library: currentLibrary(),
+			course: currentCourse() || undefined,
+			entry: currentEntry() || undefined
+		})
+	);

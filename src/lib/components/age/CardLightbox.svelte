@@ -137,7 +137,7 @@
 						<img
 							{src}
 							alt={card.name || ''}
-							class="h-full w-full {src.startsWith('/hero_images/')
+							class="h-full w-full {/^\/hero(_images|-art)\//.test(src)
 								? 'object-cover object-[75%_20%]'
 								: 'object-contain'} drop-shadow-[0_24px_40px_rgba(0,0,0,0.6)] transition-opacity duration-300 {loaded
 								? 'opacity-100'

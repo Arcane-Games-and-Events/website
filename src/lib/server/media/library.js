@@ -12,7 +12,7 @@
  *   and rotate save a new copy (see `deriveMedia`) so existing uses don't
  *   change under anyone.
  */
-import { and, desc, asc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
+import { and, desc, asc, eq, gte, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import { db } from '$lib/server/db/index.js';
 import {
 	deskMedia,
@@ -33,6 +33,7 @@ import {
 import { getSupabase, DESK_MEDIA_BUCKET } from '$lib/server/supabase.js';
 import { mediaImage, cleanCreditUrl } from '$lib/server/desk/image.js';
 import { bump } from '$lib/server/cache/index.js';
+import { HERO_ART, HERO_NAMES } from '$lib/data/heroArt.js';
 import {
 	ACCEPTED_TYPES,
 	applyEdit,
@@ -566,6 +567,81 @@ export async function deriveMedia(user, source, edit) {
 		.returning();
 	const ready = await processMedia(row, { bytes: out.buffer });
 	return ready;
+}
+
+/**
+ * Put a hero's still (the hero art, see scripts/hero-art.mjs) into a
+ * library, so it can be used like any upload: in the library, course or
+ * entry asked for, named after the hero, with alt text and credit. The
+ * same hero picked again in the same place reuses that copy.
+ * @param {any} user
+ * @param {string} slug  a hero slug from HERO_ART
+ * @param {{ library?: string, courseId?: string | null, entryId?: string | null }} [where]
+ */
+export async function importHeroArt(user, slug, where = {}) {
+	const file = HERO_ART[slug];
+	if (!file) throw new MediaError(404, 'No art for that hero.');
+	const library = libraryOf(where.library);
+	const courseId = library === 'classroom' ? where.courseId || null : null;
+	const entryId = library === 'content' ? where.entryId || null : null;
+	const name = `${HERO_NAMES[slug] || slug} (hero art)`;
+
+	const [existing] = await db
+		.select()
+		.from(deskMedia)
+		.where(
+			and(
+				eq(deskMedia.name, name),
+				eq(deskMedia.library, library),
+				eq(deskMedia.status, 'ready'),
+				// only a full-size copy (early copies were 960 wide)
+				gte(deskMedia.width, 1920),
+				courseId ? eq(deskMedia.courseId, courseId) : isNull(deskMedia.courseId),
+				entryId ? eq(deskMedia.entryId, entryId) : isNull(deskMedia.entryId)
+			)
+		)
+		.limit(1);
+	if (existing) return toLibraryItem(existing);
+
+	const supabase = getSupabase();
+	if (!supabase) throw new MediaError(500, 'Storage is not configured');
+	const { data: blob, error: missing } = await supabase.storage
+		.from('hero-art')
+		.download(`still/${file}.webp`);
+	if (missing || !blob) throw new MediaError(404, 'That hero’s art isn’t uploaded yet.');
+	const bytes = Buffer.from(await blob.arrayBuffer());
+
+	const id = crypto.randomUUID();
+	const storagePath = `${id}/original.webp`;
+	const { error } = await supabase.storage
+		.from(DESK_MEDIA_BUCKET)
+		.upload(storagePath, bytes, { contentType: 'image/webp', cacheControl: '31536000' });
+	if (error) throw new MediaError(500, `Could not save the copy: ${error.message}`);
+	const {
+		data: { publicUrl }
+	} = supabase.storage.from(DESK_MEDIA_BUCKET).getPublicUrl(storagePath);
+
+	const [row] = await db
+		.insert(deskMedia)
+		.values({
+			id,
+			uploadedBy: user.id,
+			storagePath,
+			url: publicUrl,
+			mimeType: 'image/webp',
+			name,
+			alt: HERO_NAMES[slug] || null,
+			credit: 'Art © Legend Story Studios',
+			library,
+			courseId,
+			entryId,
+			fileSize: bytes.length,
+			status: 'processing'
+		})
+		.returning();
+	await processMedia(row, { bytes });
+	const [ready] = await db.select().from(deskMedia).where(eq(deskMedia.id, id));
+	return toLibraryItem(ready);
 }
 
 /** Look up images by id and return their page-ready shapes, keyed by id. */

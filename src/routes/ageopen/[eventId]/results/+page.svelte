@@ -13,6 +13,8 @@
 	 */
 	import { CIRCUITS, circuitVar } from '$lib/data/circuits.js';
 	import { heroImageUrl } from '$lib/heroImage.js';
+	import HeroMotion from '$lib/components/age/HeroMotion.svelte';
+	import { heroAppear } from '$lib/heroAppear.js';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import FormatTag from '$lib/components/age/FormatTag.svelte';
 
@@ -146,11 +148,18 @@
 		{#if backdrop}
 			<img
 				src={backdrop}
+				use:heroAppear
+				fetchpriority="high"
 				alt=""
 				aria-hidden="true"
 				class="absolute inset-y-0 right-0 h-full w-full object-cover object-[75%_20%] opacity-80 md:w-[58%]"
 				style="-webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 35%, #000 70%); mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 35%, #000 70%);"
 				onerror={(e) => (e.currentTarget.style.display = 'none')}
+			/>
+			<HeroMotion
+				hero={champion?.hero}
+				class="absolute inset-y-0 right-0 hidden h-full w-[58%] opacity-80 md:block"
+				style="-webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 35%, #000 70%); mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 35%, #000 70%);"
 			/>
 		{/if}
 		<div
