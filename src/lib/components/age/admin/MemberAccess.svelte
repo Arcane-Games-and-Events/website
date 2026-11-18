@@ -4,7 +4,7 @@
   and an optional last day. Used under a row on the Members list and on a
   member's own page. Writer is an old role: shown, and
   kept until changed, but never offered. Capabilities (writer, teacher,
-  producer) live in Desk → Users.
+  editor) live in Desk → Users.
 
   Props:
     member   { id, firstName, role, subscriptionId, compReason, compEndsOn (YYYY-MM-DD) }
@@ -185,7 +185,7 @@
 				>
 			{/if}
 			<span class="text-[11.5px] text-fade"
-				>Writers, teachers and producers: <a href="/desk/users" class="font-semibold underline"
+				>Writers, editors and teachers: <a href="/desk/users" class="font-semibold underline"
 					>Desk → Users</a
 				></span
 			>

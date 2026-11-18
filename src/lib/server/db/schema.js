@@ -35,7 +35,7 @@ export const user = pgTable('user', {
 	// Capability roles — stackable, independent of billing tier. A user
 	// can hold any combination of these AND their primary billing role.
 	// Options: 'writer' (author library entries), 'editor', 'creator'
-	// (author courses), 'producer'. Empty array = no
+	// (author courses). Empty array = no
 	// capability roles. See src/lib/server/auth/roles.js for guards.
 	additionalRoles: text('additional_roles')
 		.array()

@@ -5,7 +5,7 @@ import { canSeeUnused } from '$lib/server/video/mux.js';
 /**
  * /studio — the media tool, apart from the Desk (articles) and the
  * Classroom (courses): bonus gameplay, podcast episodes, interviews and
- * other video. Admins, editors and producers.
+ * other video. Admins and editors.
  */
 export const load = async ({ locals, url }) => {
 	if (!locals.user) {

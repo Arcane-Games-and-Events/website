@@ -1,11 +1,13 @@
 <!--
-  /desk/users — admin-only user + role management.
+  /desk/users — admin-only: who writes, edits and teaches. Each person is a
+  card with their three Desk roles as switches: writer, editor and teacher
+  (stored as 'creator'). Editors also use the Studio. Admins have every
+  role already. Membership (free, premium, admin) is set in Admin →
+  Members, and event staff are added to each event in Admin.
 
-  Each row sets the billing tier (free / premium / admin) and toggles Desk
-  roles: writer, editor and teacher (stored as 'creator'). Event staff
-  aren't a role: they're added to an event in Admin. Every change fires a
-  PATCH to /api/desk/users/[id]; the row updates in place, shows "Saving…" /
-  "Saved", and shows the error inline if the server refuses.
+  Every switch fires a PATCH to /api/desk/users/[id]; the card updates in
+  place, shows "Saving…" / "Saved", and shows the error if the server
+  refuses.
 -->
 <script>
 	import DeskTabs from '$lib/components/age/desk/DeskTabs.svelte';
@@ -21,58 +23,70 @@
 	const me = $derived($page.data?.user?.id);
 
 	const ROLES = [
-		{ id: 'writer', label: 'Writer', note: 'Writes and edits their own entries' },
+		{
+			id: 'writer',
+			label: 'Writer',
+			note: 'Writes and edits their own pieces',
+			tone: 'var(--color-warm)'
+		},
 		{
 			id: 'editor',
 			label: 'Editor',
-			note: 'Edits every entry, sees all analytics, oversees courses, and uses the Studio'
+			note: 'Edits every piece, sees all analytics, oversees courses, runs the Studio',
+			tone: 'var(--color-gold)'
 		},
 		// stored as 'creator' (see roles.js); shown as Teacher
-		{ id: 'creator', label: 'Teacher', note: 'Builds and runs courses in the Classroom' },
 		{
-			id: 'producer',
-			label: 'Producer',
-			note: 'Makes gameplay, podcasts and interviews in the Studio'
+			id: 'creator',
+			label: 'Teacher',
+			note: 'Builds and runs courses in the Classroom',
+			tone: 'var(--color-academy)'
 		}
-	];
-	const TIERS = [
-		{ id: 'free', label: 'Free' },
-		{ id: 'premium', label: 'Premium' },
-		{ id: 'admin', label: 'Admin' }
 	];
 
 	const has = (u, r) => Array.isArray(u.additionalRoles) && u.additionalRoles.includes(r);
-	const isTeam = (u) => u.role === 'admin' || ROLES.some((r) => has(u, r.id));
+	const isAdmin = (u) => u.role === 'admin';
+	const isTeam = (u) => isAdmin(u) || ROLES.some((r) => has(u, r.id));
 	const name = (u) => `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || '—';
 	const initials = (u) =>
 		((u.firstName || '').trim().charAt(0) + (u.lastName || '').trim().charAt(0)).toUpperCase() ||
 		(u.email || '?').charAt(0).toUpperCase();
 	const joined = (d) =>
 		d ? new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '';
+	// The card's colour: admin ink, else the first role they hold.
+	const toneOf = (u) =>
+		isAdmin(u) ? 'var(--color-ink)' : ROLES.find((r) => has(u, r.id))?.tone || 'var(--color-line2)';
 
 	// ---------- filters ----------
 	let query = $state('');
-	let show = $state('all');
+	let show = $state('team');
 	const FILTERS = $derived([
-		{ id: 'all', label: 'Everyone', n: users.length },
 		{ id: 'team', label: 'Desk team', n: users.filter(isTeam).length },
-		{ id: 'admin', label: 'Admins', n: users.filter((u) => u.role === 'admin').length },
 		...ROLES.map((r) => ({
 			id: r.id,
 			label: `${r.label}s`,
-			n: users.filter((u) => has(u, r.id)).length
+			n: users.filter((u) => has(u, r.id)).length,
+			tone: r.tone
 		})),
-		{ id: 'premium', label: 'Premium', n: users.filter((u) => u.role === 'premium').length }
+		{
+			id: 'admin',
+			label: 'Admins',
+			n: users.filter(isAdmin).length,
+			tone: 'var(--color-ink)'
+		},
+		{ id: 'all', label: 'Everyone', n: users.length }
 	]);
 	const filtered = $derived.by(() => {
 		const q = query.trim().toLowerCase();
 		return users
 			.filter((u) => {
-				if (show === 'team' && !isTeam(u)) return false;
-				if (show === 'admin' && u.role !== 'admin') return false;
-				if (show === 'premium' && u.role !== 'premium') return false;
-				if (ROLES.some((r) => r.id === show) && !has(u, show)) return false;
-				if (!q) return true;
+				// A search looks through everyone, whatever the filter.
+				if (!q) {
+					if (show === 'team' && !isTeam(u)) return false;
+					if (show === 'admin' && !isAdmin(u)) return false;
+					if (ROLES.some((r) => r.id === show) && !has(u, show)) return false;
+					return true;
+				}
 				return [u.firstName, u.lastName, u.email].join(' ').toLowerCase().includes(q);
 			})
 			.sort((a, b) => Number(isTeam(b)) - Number(isTeam(a)) || name(a).localeCompare(name(b)));
@@ -120,138 +134,33 @@
 			: [...(u.additionalRoles || []), r];
 		patch(u, { additionalRoles: next });
 	}
-	function setTier(u, tier) {
-		if (tier === u.role) return;
-		if (
-			tier === 'admin' &&
-			!confirm(
-				`Make ${name(u)} an admin? Admins can publish, approve edits, manage users and see everything in the Desk.`
-			)
-		)
-			return;
-		patch(u, { role: tier });
-	}
 </script>
 
 <svelte:head>
 	<title>Users · Desk</title>
 </svelte:head>
 
-{#snippet tierControl(u, busy)}
-	<div
-		class="inline-grid grid-cols-3 gap-px border border-line2 bg-line2"
-		role="radiogroup"
-		aria-label="Tier for {name(u)}"
-	>
-		{#each TIERS as t (t.id)}
-			{@const on = u.role === t.id}
-			{@const lockSelf = u.id === me && u.role === 'admin' && t.id !== 'admin'}
-			<button
-				type="button"
-				role="radio"
-				aria-checked={on}
-				disabled={busy || lockSelf}
-				title={lockSelf ? 'You can’t remove your own admin role' : ''}
-				onclick={() => setTier(u, t.id)}
-				class="min-h-[34px] px-3 text-[9.5px] font-extrabold tracking-[0.12em] uppercase transition-colors disabled:cursor-not-allowed {on
-					? t.id === 'admin'
-						? 'bg-warm text-white'
-						: t.id === 'premium'
-							? 'bg-prem text-white'
-							: 'bg-line text-ink'
-					: 'bg-paper-bg text-fade hover:text-ink disabled:hover:text-fade'}"
-			>
-				{t.label}
-			</button>
-		{/each}
-	</div>
-{/snippet}
-
-{#snippet roleControl(u, busy)}
-	{#if u.role === 'admin'}
-		<span class="text-[12.5px] text-soft"
-			>All Desk roles <span class="text-fade">· admin</span></span
-		>
-	{:else}
-		<div class="flex flex-wrap gap-1.5" role="group" aria-label="Desk roles for {name(u)}">
-			{#each ROLES as r (r.id)}
-				{@const on = has(u, r.id)}
-				<button
-					type="button"
-					aria-pressed={on}
-					disabled={busy}
-					title={r.note}
-					onclick={() => toggle(u, r.id)}
-					class="inline-flex min-h-[32px] items-center gap-1.5 border px-2.5 text-[10px] font-extrabold tracking-[0.1em] uppercase transition-colors disabled:opacity-60 {on
-						? 'border-warm bg-warm/[0.08] text-warm'
-						: 'border-line2 text-fade hover:border-warm/50 hover:text-warm'}"
-				>
-					<span
-						class="flex h-3 w-3 items-center justify-center border {on
-							? 'border-warm bg-warm'
-							: 'border-line2'}"
-						aria-hidden="true"
-					>
-						{#if on}<svg
-								viewBox="0 0 12 12"
-								class="h-2 w-2 text-white"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2.6"><path d="M2.5 6.2l2.3 2.3 4.7-5" /></svg
-							>{/if}
-					</span>
-					{r.label}
-				</button>
-			{/each}
-		</div>
-	{/if}
-{/snippet}
-
-{#snippet rowStatus(u)}
-	{@const st = status[u.id]}
-	{#if st === 'saving'}
-		<span class="text-[11.5px] text-fade" role="status">Saving…</span>
-	{:else if st === 'saved'}
-		<span class="text-[11.5px] font-semibold text-prem" role="status">✓ Saved</span>
-	{:else if st?.error}
-		<span class="text-[11.5px] font-semibold text-hero-rb" role="alert">{st.error}</span>
-	{/if}
-{/snippet}
-
-<DeskHeader title="Users" subtitle="Billing tiers and Desk roles for everyone with an account." />
+<DeskHeader title="Users" subtitle="Who writes, edits and teaches." />
 <DeskTabs />
 
 <div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-14 font-libre md:px-8 md:pt-10">
-	<!-- ============ who's who: counts double as filters ============ -->
-	<nav
-		class="grid grid-cols-2 gap-px border border-line2 bg-line2 md:grid-cols-7 [&>*:last-child:nth-child(odd)]:col-span-2 md:[&>*:last-child:nth-child(odd)]:col-span-1"
-		aria-label="Filter users"
-	>
-		{#each FILTERS as f (f.id)}
-			<button
-				type="button"
-				onclick={() => (show = f.id)}
-				aria-pressed={show === f.id}
-				class="flex flex-col items-start px-3.5 py-3 text-left transition-colors {show === f.id
-					? 'bg-ink text-paper-bg'
-					: 'bg-paper-bg hover:bg-paper'}"
+	<!-- the three roles, explained once -->
+	<ul class="grid gap-2 sm:grid-cols-3">
+		{#each ROLES as r (r.id)}
+			<li
+				class="border border-t-[4px] border-line2 bg-white px-4 py-3"
+				style="border-top-color: {r.tone}"
 			>
-				<span class="ao-cond text-[26px] leading-none font-black tabular-nums">{f.n}</span>
-				<span
-					class="mt-1 text-[9px] font-extrabold tracking-[0.14em] uppercase {show === f.id
-						? 'text-paper-bg/70'
-						: 'text-fade'}">{f.label}</span
-				>
-			</button>
+				<p class="ao-cond text-[22px] leading-none font-black uppercase">{r.label}</p>
+				<p class="mt-1 text-[12px] leading-snug text-soft">{r.note}</p>
+			</li>
 		{/each}
-	</nav>
+	</ul>
 
-	<!-- ============ search + role key ============ -->
-	<div
-		class="mt-6 flex flex-col gap-4 border-b-[3px] border-ink pb-3 lg:flex-row lg:items-end lg:justify-between"
-	>
+	<!-- search + filters -->
+	<div class="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 		<label
-			class="flex h-[40px] items-center gap-2.5 border border-line2 bg-paper px-3 focus-within:border-ink lg:w-[320px]"
+			class="flex h-[42px] w-full items-center gap-2.5 border border-line2 bg-white px-3 focus-within:border-ink lg:max-w-[360px]"
 		>
 			<svg
 				viewBox="0 0 24 24"
@@ -261,29 +170,50 @@
 				stroke-width="2"
 				aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg
 			>
-			<span class="sr-only">Search users</span>
+			<span class="sr-only">Search everyone</span>
 			<input
 				type="search"
 				bind:value={query}
-				placeholder="Search name or email"
+				placeholder="Find anyone by name or email"
 				class="min-w-0 flex-1 border-0 bg-transparent p-0 text-[14px] placeholder:text-fade focus:ring-0 focus:outline-none"
 			/>
 		</label>
-		<ul class="flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-soft">
-			{#each ROLES as r (r.id)}
-				<li>
-					<span class="font-extrabold tracking-[0.08em] text-ink uppercase">{r.label}</span>
-					{r.note.toLowerCase()}
-				</li>
+		<div class="flex flex-wrap gap-1.5" role="group" aria-label="Show">
+			{#each FILTERS as f (f.id)}
+				<button
+					type="button"
+					onclick={() => {
+						show = f.id;
+						query = '';
+					}}
+					aria-pressed={!query && show === f.id}
+					class="inline-flex h-[36px] items-center gap-2 border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {!query &&
+					show === f.id
+						? 'border-ink bg-ink text-paper-bg'
+						: 'border-line2 bg-white text-soft hover:border-ink hover:text-ink'}"
+				>
+					{#if f.tone}<span class="h-2 w-2" style="background: {f.tone}" aria-hidden="true"
+						></span>{/if}
+					{f.label}
+					<span class="tabular-nums opacity-60">{f.n}</span>
+				</button>
 			{/each}
-		</ul>
+		</div>
 	</div>
+	<p class="mt-3 text-[11.5px] text-fade">
+		{#if query}
+			{filtered.length}
+			{filtered.length === 1 ? 'person matches' : 'people match'} across everyone. To give someone a
+			role, find them here and switch it on.
+		{:else}
+			Showing {filtered.length}. To add someone to the team, search for them.
+		{/if}
+	</p>
 
-	<!-- ============ table ============ -->
 	{#if !rows.length}
-		<div class="py-14 text-center">
+		<div class="mt-4 border border-dashed border-line2 py-12 text-center">
 			<p class="font-newsreader text-[20px] font-semibold">
-				{users.length ? 'No one matches.' : 'No users yet.'}
+				{users.length ? 'No one here.' : 'No users yet.'}
 			</p>
 			{#if users.length}
 				<button
@@ -298,60 +228,110 @@
 			{/if}
 		</div>
 	{:else}
-		<div
-			class="hidden grid-cols-[minmax(0,1fr)_236px_minmax(0,390px)_96px] gap-5 border-b border-line2 py-2 text-[9px] font-extrabold tracking-[0.18em] text-fade uppercase lg:grid"
-		>
-			<span>Person</span><span>Tier</span><span>Desk roles</span><span></span>
-		</div>
-		<ol>
+		<ul class="mt-4 flex flex-col gap-2">
 			{#each rows as u (u.id)}
 				{@const busy = status[u.id] === 'saving'}
+				{@const st = status[u.id]}
+				{@const tone = toneOf(u)}
 				<li
-					class="grid gap-x-5 gap-y-3 border-b border-line2 py-4 lg:grid-cols-[minmax(0,1fr)_236px_minmax(0,390px)_96px] lg:items-center"
+					class="grid gap-x-5 gap-y-3 border border-l-[4px] border-line2 px-3.5 py-3 md:px-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center {isTeam(
+						u
+					)
+						? 'bg-white'
+						: 'bg-paper/50'}"
+					style="border-left-color: {tone}"
 				>
-					<div class="flex min-w-0 items-center gap-3">
+					<div class="flex min-w-0 items-center gap-3.5">
 						<span
-							class="flex h-10 w-10 shrink-0 items-center justify-center text-[12px] font-extrabold uppercase {u.role ===
-							'admin'
-								? 'bg-warm text-white'
+							class="ao-cond flex h-[46px] w-[46px] shrink-0 items-center justify-center text-[20px] leading-none font-black {isAdmin(
+								u
+							)
+								? 'text-paper-bg'
 								: isTeam(u)
-									? 'bg-warm/[0.12] text-warm'
-									: 'bg-line text-soft'}"
+									? 'text-white'
+									: 'text-soft'}"
+							style="background: {isTeam(u) ? tone : 'var(--color-line)'}"
 							aria-hidden="true">{initials(u)}</span
 						>
 						<span class="min-w-0">
-							<span class="flex items-center gap-2">
-								<span class="truncate font-newsreader text-[17px] font-semibold">{name(u)}</span>
+							<span class="flex flex-wrap items-center gap-2">
+								<span class="truncate font-newsreader text-[17px] leading-tight font-semibold"
+									>{name(u)}</span
+								>
 								{#if u.id === me}<span
 										class="shrink-0 border border-line2 px-1.5 text-[8.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
 										>You</span
 									>{/if}
+								{#if isAdmin(u)}<span
+										class="bg-ink px-1.5 py-px text-[9px] font-extrabold tracking-[0.14em] text-paper-bg uppercase"
+										>Admin</span
+									>{/if}
 							</span>
-							<span class="block truncate text-[12.5px] text-fade">
+							<span class="mt-0.5 block truncate text-[12px] text-fade">
 								{u.email || '—'}{#if u.createdAt}<span class="hidden sm:inline"
 										>&nbsp;· joined {joined(u.createdAt)}</span
 									>{/if}
 							</span>
+							{#if st}
+								<span class="mt-0.5 block text-[11.5px]" role={st?.error ? 'alert' : 'status'}>
+									{#if st === 'saving'}<span class="text-fade">Saving…</span
+										>{:else if st === 'saved'}<span class="font-semibold text-prem">✓ Saved</span
+										>{:else if st?.error}<span class="font-semibold text-hero-rb">{st.error}</span
+										>{/if}
+								</span>
+							{/if}
 						</span>
 					</div>
-					<div class="flex items-center gap-3 lg:block">
-						<span
-							class="w-16 text-[9px] font-extrabold tracking-[0.16em] text-fade uppercase lg:hidden"
-							>Tier</span
+
+					<!-- the three roles, as switches -->
+					{#if isAdmin(u)}
+						<p class="text-[12.5px] text-soft lg:text-right">
+							Every Desk role, as an admin.<span class="block text-[11.5px] text-fade"
+								>Membership is set in <a href="/admin/users" class="underline hover:text-ink"
+									>Admin → Members</a
+								>.</span
+							>
+						</p>
+					{:else}
+						<div
+							class="grid grid-cols-3 gap-1.5 lg:w-[420px]"
+							role="group"
+							aria-label="Desk roles for {name(u)}"
 						>
-						{@render tierControl(u, busy)}
-					</div>
-					<div class="flex items-start gap-3 lg:block">
-						<span
-							class="w-16 shrink-0 pt-2 text-[9px] font-extrabold tracking-[0.16em] text-fade uppercase lg:hidden"
-							>Roles</span
-						>
-						{@render roleControl(u, busy)}
-					</div>
-					<div class="min-h-[1rem] lg:text-right">{@render rowStatus(u)}</div>
+							{#each ROLES as r (r.id)}
+								{@const on = has(u, r.id)}
+								<button
+									type="button"
+									aria-pressed={on}
+									disabled={busy}
+									title={r.note}
+									onclick={() => toggle(u, r.id)}
+									class="flex h-[42px] items-center justify-between gap-2 border px-3 text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors disabled:opacity-60 {on
+										? 'border-transparent text-white'
+										: 'border-line2 bg-white text-soft hover:border-ink hover:text-ink'}"
+									style={on ? `background: ${r.tone}` : ''}
+								>
+									{r.label}
+									<!-- a small switch -->
+									<span
+										class="relative h-[14px] w-[24px] shrink-0 border transition-colors {on
+											? 'border-white/70 bg-white/25'
+											: 'border-line2 bg-paper'}"
+										aria-hidden="true"
+									>
+										<span
+											class="absolute top-[1px] h-[10px] w-[10px] transition-[left] duration-150 {on
+												? 'left-[11px] bg-white'
+												: 'left-[1px] bg-line2'}"
+										></span>
+									</span>
+								</button>
+							{/each}
+						</div>
+					{/if}
 				</li>
 			{/each}
-		</ol>
+		</ul>
 
 		{#if pages > 1}
 			<nav
@@ -366,7 +346,7 @@
 						type="button"
 						onclick={() => (pageNo = current - 1)}
 						disabled={current === 1}
-						class="h-9 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:text-warm disabled:opacity-35 disabled:hover:text-ink"
+						class="h-9 border border-line2 bg-white px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:border-ink disabled:opacity-35"
 						>← Prev</button
 					>
 					<span class="px-2 text-[13px] tabular-nums">{current} / {pages}</span>
@@ -374,7 +354,7 @@
 						type="button"
 						onclick={() => (pageNo = current + 1)}
 						disabled={current === pages}
-						class="h-9 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:text-warm disabled:opacity-35 disabled:hover:text-ink"
+						class="h-9 border border-line2 bg-white px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:border-ink disabled:opacity-35"
 						>Next →</button
 					>
 				</div>
@@ -384,7 +364,7 @@
 
 	<p class="mt-6 max-w-[720px] text-[12.5px] leading-relaxed text-fade">
 		Admins have every Desk role automatically, and only admins can publish, approve edits or manage
-		users. Premium is the paid membership; set it by hand only for comps. Event staff are added to
+		users. Memberships (free, premium, admin) are set in Admin → Members. Event staff are added to
 		each event in Admin.
 	</p>
 </div>

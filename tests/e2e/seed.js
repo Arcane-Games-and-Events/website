@@ -58,7 +58,7 @@ test('seed the browser-test database', async () => {
 			price: '40.00'
 		});
 		// Someone from the Studio, with an image in the Studio's library.
-		const producer = await createUser(person('producer', { additionalRoles: ['producer'] }));
+		const producer = await createUser(person('producer', { additionalRoles: ['editor'] }));
 		const image = await createMedia(producer);
 		// An admin, for the contact inbox, and someone who writes to it (no
 		// course, so no other journey gives them a badge).
@@ -83,7 +83,7 @@ test('seed the browser-test database', async () => {
 
 /** A published project on AGE Studios, and Library pieces and a match. */
 async function seedStudios() {
-	const owner = await createUser({ additionalRoles: ['producer'] });
+	const owner = await createUser({ additionalRoles: ['editor'] });
 	const cover = await createMedia(owner);
 	await db.insert(studioProject).values({
 		slug: 'top-100-players',

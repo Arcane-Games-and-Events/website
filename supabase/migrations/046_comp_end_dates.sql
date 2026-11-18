@@ -1,5 +1,5 @@
--- 046: an end date on comps, no more writer comps, and no more
--- tournament staff role.
+-- 046: an end date on comps, no more writer comps, no more tournament
+-- staff role, and producers become editors.
 --
 -- The owner's decisions (2026-11-16): an admin can give any comp (Premium
 -- without paying) an end date, or leave it open. The hourly billing job
@@ -15,6 +15,9 @@
 -- an event's staff runs it from /staff, whatever their role. The old
 -- 'tournament staff' billing role goes back to 'free', and the capability
 -- of the same name is taken out of additional_roles.
+--
+-- The producer capability is folded into editor (2026-11-17): editors use
+-- the Studio. Anyone with 'producer' gets 'editor' instead.
 --
 --   "user".comp_ends_at   when the comp ends; null = no end date. Read
 --                         with to_jsonb(u)->>'comp_ends_at' so the code
@@ -42,3 +45,10 @@ SELECT id, 'comp_removed', 'writer', '{"migration": "046"}'::jsonb FROM ended;
 UPDATE "user" SET role = 'free' WHERE role = 'tournament staff';
 UPDATE "user" SET additional_roles = array_remove(additional_roles, 'tournament staff')
  WHERE 'tournament staff' = ANY (additional_roles);
+
+-- Producers become editors.
+UPDATE "user"
+   SET additional_roles = array_append(array_remove(additional_roles, 'producer'), 'editor')
+ WHERE 'producer' = ANY (additional_roles) AND NOT 'editor' = ANY (additional_roles);
+UPDATE "user" SET additional_roles = array_remove(additional_roles, 'producer')
+ WHERE 'producer' = ANY (additional_roles);

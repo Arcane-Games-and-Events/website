@@ -143,12 +143,11 @@
 	// These mirror `canAccessDesk`, `canUseClassroom` and `canUseStudio` in
 	// src/lib/server/auth/roles.js. The Desk (articles) is for admins,
 	// writers and editors; the Classroom (courses) for admins, editors and
-	// teachers; the Studio (gameplay, podcasts, interviews) for admins,
-	// editors and producers.
+	// teachers; the Studio (podcasts, interviews) for admins and editors.
 	const extra = $derived(Array.isArray(user?.additionalRoles) ? user.additionalRoles : []);
 	const canAccessDesk = $derived(isAdmin || ['writer', 'editor'].some((r) => extra.includes(r)));
 	const canUseClassroom = $derived(isAdmin || ['editor', 'creator'].some((r) => extra.includes(r)));
-	const canUseStudio = $derived(isAdmin || ['editor', 'producer'].some((r) => extra.includes(r)));
+	const canUseStudio = $derived(isAdmin || extra.includes('editor'));
 	// The Studio is hidden from the menu for now; set to true when it returns.
 	const STUDIO_IN_MENU = false;
 

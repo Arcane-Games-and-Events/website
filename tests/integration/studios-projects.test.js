@@ -20,7 +20,7 @@ import { callRoute } from '../support/courses.js';
 
 let producer;
 beforeEach(async () => {
-	producer = await createUser({ additionalRoles: ['producer'] });
+	producer = await createUser({ additionalRoles: ['editor'] });
 });
 
 const create = (body, user = producer) => callRoute(createRoute, { user, body });

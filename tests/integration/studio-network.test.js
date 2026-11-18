@@ -123,7 +123,7 @@ function fakeYouTube(url) {
 }
 
 beforeEach(async () => {
-	producer = await createUser({ additionalRoles: ['producer'] });
+	producer = await createUser({ additionalRoles: ['editor'] });
 	writer = await createUser({ additionalRoles: ['writer'] });
 	uploads = [
 		{ id: 'vid00000001', title: 'Episode One' },

@@ -7,7 +7,7 @@
  *      Determines paywall access on the reader side.
  *
  *   2. Capability roles — `user.additionalRoles`, zero or more of 'writer',
- *      'editor', 'creator', 'producer'. Writers see and edit only their own
+ *      'editor', 'creator'. Writers see and edit only their own
  *      entries; editors see and edit every entry. Independent of billing
  *      tier: a user can be a free-tier creator, or a premium writer, etc.
  *      Determines what Desk surfaces they can access. (Event staff aren't
@@ -29,7 +29,6 @@
 const CAPABILITY_WRITER = 'writer';
 const CAPABILITY_EDITOR = 'editor';
 const CAPABILITY_CREATOR = 'creator';
-const CAPABILITY_PRODUCER = 'producer';
 
 // -------------------- billing tier --------------------
 
@@ -175,18 +174,14 @@ export function isTeacher(user) {
 }
 
 /**
- * True if the user can use the Studio (bonus gameplay, podcasts, interviews
- * and other video): admins, editors, and producers — people who only make
- * media and get neither the Desk nor the Classroom.
+ * True if the user can use the Studio (podcasts, interviews and other
+ * video): admins and editors. (There was a producer role for people who
+ * only made media; editors do that now.)
  * @param {any} user
  * @returns {boolean}
  */
 export function canUseStudio(user) {
-	return (
-		isAdmin(user) ||
-		hasCapability(user, CAPABILITY_EDITOR) ||
-		hasCapability(user, CAPABILITY_PRODUCER)
-	);
+	return isAdmin(user) || hasCapability(user, CAPABILITY_EDITOR);
 }
 
 /**

@@ -11,7 +11,6 @@ import { deskMedia, event, vod } from '$lib/server/db/schema.js';
 import mux from '$lib/server/mux.js';
 import { load as studioLayout } from '../../src/routes/studio/+layout.server.js';
 import { load as deskLayout } from '../../src/routes/desk/+layout.server.js';
-import { load as classroomLayout } from '../../src/routes/classroom/+layout.server.js';
 import { load as deskMatches } from '../../src/routes/desk/matches/+page.server.js';
 import { load as matchAnalytics } from '../../src/routes/desk/matches/[id]/analytics/+page.server.js';
 import { load as studioItemAnalytics } from '../../src/routes/studio/media/[id]/analytics/+page.server.js';
@@ -28,12 +27,12 @@ import { archive, latest, playerItem, showPage, studiosHub } from '$lib/server/s
 import { createAdmin, createUser } from '../support/factories.js';
 import { callRoute } from '../support/courses.js';
 
-let admin, editor, producer, writer, member, visitor;
+let admin, editor, producer, writer, member, visitor; // producer: a second editor, who made the shows
 
 beforeEach(async () => {
 	admin = await createAdmin();
 	editor = await createUser({ additionalRoles: ['editor'] });
-	producer = await createUser({ additionalRoles: ['producer'] });
+	producer = await createUser({ additionalRoles: ['editor'] });
 	writer = await createUser({ additionalRoles: ['writer'] });
 	member = await createUser({ role: 'premium', subscriptionStatus: 'active' });
 	visitor = await createUser();
@@ -93,15 +92,14 @@ async function image(library = 'studio') {
 }
 
 describe('who uses the Studio', () => {
-	test('producers get the Studio only; admins and editors get it too; writers don’t', async () => {
-		expect(await landing(studioLayout, producer, '/studio')).toBe('ok');
-		expect(await landing(deskLayout, producer, '/desk')).toBe('/');
-		expect(await landing(classroomLayout, producer, '/classroom')).toBe('/');
+	test('admins and editors get the Studio; writers and old producers don’t', async () => {
 		for (const u of [admin, editor]) expect(await landing(studioLayout, u, '/studio')).toBe('ok');
 		expect(await landing(studioLayout, writer, '/studio')).toBe('/');
+		const oldProducer = await createUser({ additionalRoles: ['producer'] });
+		expect(await landing(studioLayout, oldProducer, '/studio')).toBe('/');
 	});
 
-	test('producers manage Studio media; writers can’t create it', async () => {
+	test('editors manage Studio media; writers can’t create it', async () => {
 		const row = await live({ kind: 'podcast' });
 		expect(await canManageVideoOf(producer, 'vod', row)).toBe(true);
 		expect(await canManageVideoOf(writer, 'vod', row)).toBe(false);
@@ -112,13 +110,9 @@ describe('who uses the Studio', () => {
 		const match = await live({ kind: 'gameplay' });
 		expect(await canManageVideoOf(editor, 'vod', match)).toBe(true);
 		expect(await canManageVideoOf(admin, 'vod', match)).toBe(true);
-		expect(await canManageVideoOf(producer, 'vod', match)).toBe(false);
-		expect((await create(producer, { kind: 'gameplay', title: 'Nope' })).status).toBe(403);
-		expect((await create(producer, { title: 'Nope' })).status).toBe(403);
+		expect(await canManageVideoOf(writer, 'vod', match)).toBe(false);
+		expect((await create(writer, { kind: 'gameplay', title: 'Nope' })).status).toBe(403);
 		expect((await create(editor, { kind: 'gameplay', title: 'Match' })).status).toBe(201);
-		// a producer can't turn their episode into a bonus match either
-		const ep = await create(producer, { kind: 'interview', title: 'Chat' });
-		expect((await patch(producer, ep.body.vod.id, { kind: 'gameplay' })).status).toBe(403);
 	});
 
 	test('the Desk’s Bonus matches tab lists only matches, for editors and admins', async () => {
@@ -241,13 +235,13 @@ describe('media and shows', () => {
 });
 
 describe('the Studio’s image library', () => {
-	test('is its own: producers use it; others’ libraries are closed to them', async () => {
+	test('is its own: editors use it; writers can’t', async () => {
 		const studioImg = await image('studio');
 		const deskImg = await image('content');
 		const listed = await listMedia(producer, { library: 'studio' });
 		expect(listed.items.map((i) => i.id)).toEqual([studioImg.id]);
 		expect(canManage(producer, studioImg)).toBe(true);
-		expect(canManage(producer, deskImg)).toBe(false);
+		expect(canManage(producer, deskImg)).toBe(true); // editors manage the Desk's images too
 		expect(canManage(writer, studioImg)).toBe(false);
 	});
 });

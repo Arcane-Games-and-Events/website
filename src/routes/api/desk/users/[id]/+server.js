@@ -5,23 +5,16 @@ import { user as userTable } from '$lib/server/db/schema.js';
 import { eq } from 'drizzle-orm';
 import { isAdmin } from '$lib/server/auth/roles.js';
 
-const VALID_BILLING_ROLES = new Set(['free', 'premium', 'admin']);
-const VALID_CAPABILITIES = new Set(['writer', 'editor', 'creator', 'producer']);
+const VALID_CAPABILITIES = new Set(['writer', 'editor', 'creator']);
 
 /**
  * PATCH /api/desk/users/[id]
  *
- * Admin-only user role management. Accepts:
- *   - `role`: 'free' | 'premium' | 'admin' (billing tier)
- *   - `additionalRoles`: string[] of capability roles
- *
- * Both fields are optional — anything not sent is unchanged. Unknown
- * capability roles are silently dropped so a stale UI can't inject
- * arbitrary strings into the additional_roles array.
- *
- * A user can't demote themselves — swapping your own billing role from
- * 'admin' to something else would lock you out of this very endpoint mid-
- * request. Use another admin account for that if needed.
+ * Admin-only: set someone's Desk roles. Accepts `additionalRoles`, a
+ * string[] of 'writer', 'editor' and 'creator' (shown as Teacher).
+ * Unknown roles are dropped so a stale page can't inject arbitrary strings
+ * into additional_roles. Membership tiers (free, premium, admin) are set
+ * in Admin → Members, not here.
  */
 export async function PATCH({ params, request, locals }) {
 	const actor = locals.user;
@@ -30,30 +23,16 @@ export async function PATCH({ params, request, locals }) {
 
 	const patch = await request.json().catch(() => ({}));
 
-	const updates = { updatedAt: new Date() };
-
-	if (typeof patch.role === 'string') {
-		if (!VALID_BILLING_ROLES.has(patch.role)) {
-			throw error(400, `role must be one of: ${Array.from(VALID_BILLING_ROLES).join(', ')}`);
-		}
-		if (params.id === actor.id && actor.role === 'admin' && patch.role !== 'admin') {
-			throw error(400, "You can't remove your own admin billing role — use another admin account.");
-		}
-		updates.role = patch.role;
-	}
-
-	if (Array.isArray(patch.additionalRoles)) {
-		const clean = patch.additionalRoles
-			.filter((r) => typeof r === 'string')
-			.filter((r) => VALID_CAPABILITIES.has(r));
-		// Dedup to avoid the array carrying duplicates.
-		updates.additionalRoles = Array.from(new Set(clean));
-	}
+	if (!Array.isArray(patch.additionalRoles)) throw error(400, 'Send additionalRoles');
+	// Known roles only, once each.
+	const additionalRoles = Array.from(
+		new Set(patch.additionalRoles.filter((r) => typeof r === 'string' && VALID_CAPABILITIES.has(r)))
+	);
 
 	const [row] = await db.select().from(userTable).where(eq(userTable.id, params.id)).limit(1);
 	if (!row) throw error(404, 'User not found');
 
-	await db.update(userTable).set(updates).where(eq(userTable.id, params.id));
+	await db.update(userTable).set({ additionalRoles }).where(eq(userTable.id, params.id));
 	await bump(`user:${params.id}`, 'users');
 
 	const [updated] = await db
