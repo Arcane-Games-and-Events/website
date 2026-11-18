@@ -56,7 +56,7 @@
 	}
 
 	const STATUS = {
-		on_hold: ['On hold', 'border-gold bg-gold/10 text-[#8a6116]'],
+		on_hold: ['On hold', 'border-gold bg-gold/10 text-gold-deep'],
 		this_month: ['This month', 'border-line2 text-soft'],
 		due: ['Due', 'border-ink text-ink'],
 		paid: ['Paid', 'border-prem bg-prem text-white'],
@@ -119,7 +119,7 @@
 				role="tab"
 				aria-selected={filter === k}
 				onclick={() => (filter = k)}
-				class="px-3 py-1.5 text-[9.5px] font-extrabold tracking-[0.14em] uppercase transition-colors {filter ===
+				class="px-3 py-1.5 text-xs font-extrabold tracking-widest uppercase transition-colors {filter ===
 				k
 					? 'bg-ink text-paper-bg'
 					: 'bg-paper-bg text-soft hover:text-ink'}">{l}</button
@@ -130,28 +130,28 @@
 		<select
 			bind:value={teacher}
 			aria-label="Teacher"
-			class="h-[34px] border border-line2 bg-white py-1 pr-8 pl-2.5 text-[12.5px] leading-tight focus:border-ink focus:ring-0"
+			class="h-9 border border-line2 bg-white py-1 pr-8 pl-2.5 text-xs leading-tight focus:border-ink focus:ring-0"
 		>
 			<option value="">Every teacher</option>
 			{#each teachers as [id, name] (id)}<option value={id}>{name}</option>{/each}
 		</select>
 	{/if}
-	<p class="ml-auto text-[12px] text-fade tabular-nums">
+	<p class="ml-auto text-xs text-fade tabular-nums">
 		{shown.length}
 		{shown.length === 1 ? 'entry' : 'entries'} · {admin ? 'teachers earn' : 'you earn'}
 		<span class="font-semibold text-ink">{money(total)}</span>
 	</p>
 </div>
 
-{#if refundDone}<p class="mt-3 text-[12.5px] font-semibold text-prem" role="status">
+{#if refundDone}<p class="mt-3 text-xs font-semibold text-prem" role="status">
 		{refundDone}
 	</p>{/if}
 {#if shown.length}
 	<div class="mt-3 overflow-x-auto">
-		<table class="w-full {admin ? 'min-w-[960px]' : 'min-w-[760px]'} text-left text-[13px]">
+		<table class="w-full {admin ? 'min-w-240' : 'min-w-190'} text-left text-sm">
 			<thead>
 				<tr
-					class="border-b border-line2 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+					class="border-b border-line2 text-xs font-extrabold tracking-widest text-fade uppercase"
 				>
 					<th class="py-2 pr-4 font-extrabold">Date</th>
 					<th class="py-2 pr-4 font-extrabold">What</th>
@@ -171,7 +171,7 @@
 						<td class="py-2 pr-4">
 							<span class="font-semibold">{KIND[r.entryType] || r.entryType}</span>
 							{#if r.courseTitle}· {r.courseTitle}{/if}
-							<span class="block text-[11.5px] text-fade">
+							<span class="block text-xs text-fade">
 								{#if r.entryType === 'sale'}
 									{r.buyerType === 'member' ? 'Premium member' : 'Non-member'} · {pct(
 										r.shareRate
@@ -201,16 +201,14 @@
 							>{/if}
 						<td class="py-2 pr-4">
 							<span
-								class="border px-1.5 py-0.5 text-[8.5px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase {STATUS[
+								class="border px-1.5 py-0.5 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase {STATUS[
 									r.status
 								]?.[1] || 'border-line2 text-soft'}">{STATUS[r.status]?.[0] || r.status}</span
 							>
 							{#if r.awaitingBank}
-								<span class="mt-0.5 block text-[10.5px] text-fade">waiting for Authorize.net</span>
+								<span class="mt-0.5 block text-xs text-fade">waiting for Authorize.net</span>
 							{:else if r.status === 'on_hold'}
-								<span class="mt-0.5 block text-[10.5px] text-fade"
-									>until {shortDate(r.payableAt)}</span
-								>
+								<span class="mt-0.5 block text-xs text-fade">until {shortDate(r.payableAt)}</span>
 							{/if}
 						</td>
 						<td class="py-2 whitespace-nowrap text-soft">{payLabel(r)}</td>
@@ -224,7 +222,7 @@
 											refundError = '';
 											refundDone = '';
 										}}
-										class="text-[9.5px] font-extrabold tracking-[0.14em] whitespace-nowrap text-fade uppercase hover:text-hero-rb"
+										class="text-xs font-extrabold tracking-widest whitespace-nowrap text-fade uppercase hover:text-hero-rb"
 										>Refund</button
 									>
 								{/if}
@@ -235,7 +233,7 @@
 						<tr class="bg-paper">
 							<td colspan="10" class="px-3 py-3">
 								<div class="flex flex-wrap items-center gap-2">
-									<span class="text-[12.5px]">
+									<span class="text-xs">
 										Refund <b>{r.courseTitle}</b>: {money(r.buyerPaidCents)} back to the buyer, and it
 										comes off {admin ? 'the teacher’s' : 'your'} next statement.
 									</span>
@@ -243,23 +241,23 @@
 										bind:value={refundNote}
 										maxlength="500"
 										placeholder="Why (optional, the buyer sees it)"
-										class="h-[34px] min-w-[220px] flex-1 border border-line2 bg-white px-2.5 text-[13px] focus:border-ink focus:ring-0"
+										class="h-9 min-w-55 flex-1 border border-line2 bg-white px-2.5 text-sm focus:border-ink focus:ring-0"
 									/>
 									<button
 										type="button"
 										onclick={() => refund(r)}
 										disabled={refundBusy}
-										class="h-[34px] bg-hero-rb px-4 text-[10px] font-extrabold tracking-[0.14em] text-white uppercase hover:brightness-110 disabled:opacity-60"
+										class="h-9 bg-hero-rb px-4 text-xs font-extrabold tracking-widest text-white uppercase hover:brightness-110 disabled:opacity-60"
 										>{refundBusy ? 'Refunding…' : 'Refund'}</button
 									>
 									<button
 										type="button"
 										onclick={() => (refunding = '')}
-										class="h-[34px] px-3 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+										class="h-9 px-3 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 										>Cancel</button
 									>
 								</div>
-								{#if refundError}<p class="mt-2 text-[12.5px] text-hero-rb" role="alert">
+								{#if refundError}<p class="mt-2 text-xs text-hero-rb" role="alert">
 										{refundError}
 									</p>{/if}
 							</td>
@@ -273,10 +271,10 @@
 		<button
 			type="button"
 			onclick={() => (showAll = true)}
-			class="mt-3 border border-ink px-4 py-2 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:bg-ink hover:text-paper-bg"
+			class="mt-3 border border-ink px-4 py-2 text-xs font-extrabold tracking-widest uppercase hover:bg-ink hover:text-paper-bg"
 			>Show all {shown.length}</button
 		>
 	{/if}
 {:else}
-	<p class="py-6 text-[13.5px] text-fade">Nothing here yet.</p>
+	<p class="py-6 text-sm text-fade">Nothing here yet.</p>
 {/if}

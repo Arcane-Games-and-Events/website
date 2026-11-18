@@ -29,9 +29,9 @@
 	</div>
 {:else if data.role.read}
 	<div class="hidden flex-1 items-center justify-center px-8 py-20 text-center lg:flex">
-		<div class="max-w-[380px]">
-			<p class="font-newsreader text-[26px] font-semibold">Start the first conversation</p>
-			<p class="mt-2 font-newsreader text-[16px] text-soft italic">
+		<div class="max-w-sm">
+			<p class="font-newsreader text-2xl font-semibold">Start the first conversation</p>
+			<p class="mt-2 font-newsreader text-base text-soft italic">
 				Ask a question, share a note from a lesson, or say hello to the class.
 			</p>
 		</div>

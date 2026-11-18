@@ -56,8 +56,8 @@
 </script>
 
 <section aria-labelledby="stats-h">
-	<div class="flex flex-wrap items-baseline justify-between gap-3 border-b-[3px] border-ink pb-2.5">
-		<h2 id="stats-h" class="text-[10.5px] font-extrabold tracking-[0.16em] uppercase">
+	<div class="flex flex-wrap items-baseline justify-between gap-3 border-b-3 border-ink pb-2.5">
+		<h2 id="stats-h" class="text-xs font-extrabold tracking-widest uppercase">
 			{label} · last {report.days} days
 		</h2>
 		<nav class="flex gap-px border border-line2 bg-line2" aria-label="Time range">
@@ -66,8 +66,7 @@
 					href={rangeHref(d)}
 					data-sveltekit-noscroll
 					aria-current={report.days === d ? 'true' : undefined}
-					class="px-2.5 py-1 text-[9.5px] font-extrabold tracking-[0.12em] uppercase {report.days ===
-					d
+					class="px-2.5 py-1 text-xs font-extrabold tracking-widest uppercase {report.days === d
 						? 'bg-ink text-paper-bg'
 						: 'bg-paper-bg text-soft hover:text-ink'}">{d} days</a
 				>
@@ -82,16 +81,16 @@
 	>
 		{#each FIG as f (f.label)}
 			<div class="bg-white px-4 py-4">
-				<dt class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">{f.label}</dt>
-				<dd class="mt-2 text-[26px] leading-none font-extrabold tabular-nums">{f.value}</dd>
-				<dd class="mt-1.5 text-[11px] text-soft">{f.note}</dd>
+				<dt class="text-xs font-extrabold tracking-widest text-fade uppercase">{f.label}</dt>
+				<dd class="mt-2 text-2xl leading-none font-extrabold tabular-nums">{f.value}</dd>
+				<dd class="mt-1.5 text-xs text-soft">{f.note}</dd>
 			</div>
 		{/each}
 	</dl>
 
 	<div class="mt-6 grid gap-8 lg:grid-cols-2">
 		<div>
-			<p class="mb-2 text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase">
+			<p class="mb-2 text-xs font-extrabold tracking-widest text-fade uppercase">
 				New students per day
 			</p>
 			<DailyReadsChart
@@ -103,7 +102,7 @@
 			/>
 		</div>
 		<div>
-			<p class="mb-2 text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase">
+			<p class="mb-2 text-xs font-extrabold tracking-widest text-fade uppercase">
 				Course page visits per day
 			</p>
 			<DailyReadsChart
@@ -116,10 +115,10 @@
 	</div>
 
 	{#if rows.length > 1}
-		<table class="mt-6 w-full text-left text-[13px]">
+		<table class="mt-6 w-full text-left text-sm">
 			<thead>
 				<tr
-					class="border-b border-line2 text-[9px] font-extrabold tracking-[0.14em] text-fade uppercase"
+					class="border-b border-line2 text-xs font-extrabold tracking-widest text-fade uppercase"
 				>
 					<th class="py-2 pr-3 font-extrabold">Course</th>
 					<th class="py-2 pr-3 text-right font-extrabold">Visits</th>

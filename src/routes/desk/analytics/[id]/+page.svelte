@@ -70,16 +70,16 @@
 </svelte:head>
 
 {#snippet head(text, tone = 'text-warm', note = '')}
-	<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-		<h2 class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase">
-			<span class="text-[8px] {tone}" aria-hidden="true">◆</span>{text}
+	<div class="flex items-baseline justify-between gap-4 border-b-3 border-ink pb-2">
+		<h2 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+			<span class="text-xs {tone}" aria-hidden="true">◆</span>{text}
 		</h2>
-		{#if note}<span class="text-right text-[11px] text-fade">{note}</span>{/if}
+		{#if note}<span class="text-right text-xs text-fade">{note}</span>{/if}
 	</div>
 {/snippet}
 
 {#snippet sub(text)}
-	<h3 class="text-[11px] font-extrabold tracking-[0.14em] uppercase">{text}</h3>
+	<h3 class="text-xs font-extrabold tracking-widest uppercase">{text}</h3>
 {/snippet}
 
 {#snippet backLine()}
@@ -122,8 +122,8 @@
 				data-sveltekit-noscroll
 				aria-current={data.range === n ? 'page' : undefined}
 				class="font-extrabold uppercase transition-colors {compact
-					? 'px-2.5 py-1.5 text-[9.5px] tracking-[0.1em]'
-					: 'px-3.5 py-2 text-[10px] tracking-[0.14em]'} {data.range === n
+					? 'px-2.5 py-1.5 text-xs tracking-widest'
+					: 'px-3.5 py-2 text-xs tracking-widest'} {data.range === n
 					? 'bg-paper-bg text-ink'
 					: 'bg-ink text-paper-bg/70 hover:text-paper-bg'}"
 				>{compact ? `${n}d` : `Last ${n} days`}</a
@@ -137,7 +137,7 @@
 
 {#if t}
 	<!-- ============ figures ============ -->
-	<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 font-libre md:px-8 md:pt-10">
+	<div class="mx-auto w-full max-w-page px-5 pt-8 font-libre md:px-8 md:pt-10">
 		<dl class="grid grid-cols-2 border-y border-line2 md:grid-cols-6">
 			{#each [{ k: 'Views', v: compact(t.views), n: `${fmt(r.returning.readers)} ${r.returning.readers === 1 ? 'reader' : 'readers'}` }, { k: 'Came back', v: pctLabel(r.returning.pct), n: `${fmt(r.returning.cameBack)} ${r.returning.cameBack === 1 ? 'reader' : 'readers'}` }, { k: 'Engaged / view', v: dur(t.avgEngaged), n: vs(t.avgEngaged, y?.avgEngaged, 'higher', 's') }, { k: 'Finished', v: pctLabel(t.completionRate), n: vs(t.completionRate, y?.completionRate) }, { k: 'Bounced', v: pctLabel(t.bounceRate), n: vs(t.bounceRate, y?.bounceRate, 'lower') }, { k: 'Conversions', v: fmt(t.conversions), n: t.conversions ? `${t.signups} sign-ups · ${t.upgrades} upgrades` : '' }] as s, i (s.k)}
 				<div
@@ -145,33 +145,31 @@
 						? 'border-t md:border-t-0'
 						: ''} {i > 0 ? 'md:border-l md:pl-4' : ''}"
 				>
-					<dd class="text-[26px] leading-none font-extrabold tracking-[-0.02em] tabular-nums">
+					<dd class="text-2xl leading-none font-extrabold tracking-tight tabular-nums">
 						{s.v}
 					</dd>
-					<dt class="mt-1.5 text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">
+					<dt class="mt-1.5 text-xs font-extrabold tracking-widest text-fade uppercase">
 						{s.k}
 					</dt>
-					{#if s.n}<p class="mt-0.5 text-[11px] text-fade">{s.n}</p>{/if}
+					{#if s.n}<p class="mt-0.5 text-xs text-fade">{s.n}</p>{/if}
 				</div>
 			{/each}
 		</dl>
 	</div>
 {/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 py-10 font-libre md:px-8 md:py-12">
+<div class="mx-auto w-full max-w-page px-5 py-10 font-libre md:px-8 md:py-12">
 	{#if !r}
-		<p class="font-newsreader text-[17px] text-soft italic">
-			Analytics couldn’t be loaded right now.
-		</p>
+		<p class="font-newsreader text-lg text-soft italic">Analytics couldn’t be loaded right now.</p>
 	{:else if !r.available}
-		<div class="border-l-[3px] border-gold bg-gold/10 px-5 py-4">
-			<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-[#8a6116] uppercase">
+		<div class="border-l-3 border-gold bg-gold/10 px-5 py-4">
+			<p class="text-xs font-extrabold tracking-widest text-gold-deep uppercase">
 				Analytics aren’t switched on yet
 			</p>
-			<p class="mt-1 text-[14px] text-soft">Apply migration 021 to create the analytics tables.</p>
+			<p class="mt-1 text-sm text-soft">Apply migration 021 to create the analytics tables.</p>
 		</div>
 	{:else if !t}
-		<p class="font-newsreader text-[17px] text-soft italic">
+		<p class="font-newsreader text-lg text-soft italic">
 			No views of this piece in the last {data.range} days.
 		</p>
 	{:else}
@@ -184,8 +182,8 @@
 			)}
 			<ul class="mt-4 grid gap-3 md:grid-cols-2">
 				{#each r.insights as ins (ins.text)}
-					<li class="flex gap-3 border border-line2 bg-paper px-4 py-3 text-[14px] leading-snug">
-						<span class="mt-[6px] h-2 w-2 shrink-0 {toneDot[ins.tone]}" aria-hidden="true"></span>
+					<li class="flex gap-3 border border-line2 bg-paper px-4 py-3 text-sm leading-snug">
+						<span class="mt-1.5 h-2 w-2 shrink-0 {toneDot[ins.tone]}" aria-hidden="true"></span>
 						<span
 							><span class="sr-only"
 								>{ins.tone === 'good'
@@ -221,16 +219,16 @@
 					<ol class="mt-3 space-y-2.5">
 						{#each r.funnel as f (f.label)}
 							<li>
-								<div class="flex items-baseline justify-between text-[13px]">
+								<div class="flex items-baseline justify-between text-sm">
 									<span>{f.label}</span>
 									<span class="tabular-nums"
 										><span class="font-semibold">{pctLabel(f.pct)}</span><span
-											class="ml-1.5 text-[11px] text-fade">{fmt(f.n)}</span
+											class="ml-1.5 text-xs text-fade">{fmt(f.n)}</span
 										></span
 									>
 								</div>
-								<div class="mt-1 h-[8px] bg-line" aria-hidden="true">
-									<div class="h-full bg-[#2563eb]" style="width: {f.pct ?? 0}%;"></div>
+								<div class="mt-1 h-2 bg-line" aria-hidden="true">
+									<div class="h-full bg-blue-600" style="width: {f.pct ?? 0}%;"></div>
 								</div>
 							</li>
 						{/each}
@@ -262,7 +260,7 @@
 				<div class="mt-8">
 					{@render sub('By section')}
 					<div
-						class="mt-3 hidden grid-cols-[minmax(0,1fr)_120px_120px] gap-4 border-b border-line2 pb-2 text-[9px] font-extrabold tracking-[0.16em] text-fade uppercase md:grid"
+						class="mt-3 hidden grid-cols-[minmax(0,1fr)_120px_120px] gap-4 border-b border-line2 pb-2 text-xs font-extrabold tracking-widest text-fade uppercase md:grid"
 					>
 						<span>Section</span><span class="text-right">Readers reached</span><span
 							class="text-right">Time there</span
@@ -274,18 +272,17 @@
 								class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-b border-line2 py-2.5 md:grid-cols-[minmax(0,1fr)_120px_120px]"
 							>
 								<span class="min-w-0">
-									<span class="block truncate text-[14px] font-semibold">{s.title}</span>
-									<span class="mt-1 block h-[4px] max-w-[360px] bg-line" aria-hidden="true"
-										><span class="block h-full bg-[#2563eb]" style="width: {s.reachPct ?? 0}%;"
+									<span class="block truncate text-sm font-semibold">{s.title}</span>
+									<span class="mt-1 block h-1 max-w-sm bg-line" aria-hidden="true"
+										><span class="block h-full bg-blue-600" style="width: {s.reachPct ?? 0}%;"
 										></span></span
 									>
 								</span>
-								<span
-									class="text-right text-[14px] font-bold tabular-nums md:text-[13.5px] md:font-normal"
+								<span class="text-right text-sm font-bold tabular-nums md:font-normal"
 									>{pctLabel(s.reachPct)}</span
 								>
 								<span
-									class="col-span-2 text-[12px] text-soft md:col-span-1 md:text-right md:text-[13.5px] md:text-ink"
+									class="col-span-2 text-xs text-soft md:col-span-1 md:text-right md:text-sm md:text-ink"
 									>{dur(s.avgSeconds)}<span class="md:hidden"> per reader there</span></span
 								>
 							</li>
@@ -315,8 +312,8 @@
 								? 'border-t md:border-t-0 md:border-l md:pl-4'
 								: ''} {i === 3 ? 'border-t md:border-t-0' : ''}"
 						>
-							<dd class="text-[22px] leading-none font-extrabold tabular-nums">{v}</dd>
-							<dt class="mt-1 text-[9px] font-extrabold tracking-[0.16em] text-fade uppercase">
+							<dd class="text-2xl leading-none font-extrabold tabular-nums">{v}</dd>
+							<dt class="mt-1 text-xs font-extrabold tracking-widest text-fade uppercase">
 								{k}
 							</dt>
 						</div>
@@ -418,11 +415,11 @@
 							? 'border-t md:border-t-0 md:border-l md:pl-4'
 							: ''} {i === 3 ? 'border-t md:border-t-0' : ''}"
 					>
-						<dd class="text-[22px] leading-none font-extrabold tabular-nums">{v}</dd>
-						<dt class="mt-1 text-[9px] font-extrabold tracking-[0.16em] text-fade uppercase">
+						<dd class="text-2xl leading-none font-extrabold tabular-nums">{v}</dd>
+						<dt class="mt-1 text-xs font-extrabold tracking-widest text-fade uppercase">
 							{k}
 						</dt>
-						{#if n}<p class="mt-0.5 text-[11px] text-fade">{n}</p>{/if}
+						{#if n}<p class="mt-0.5 text-xs text-fade">{n}</p>{/if}
 					</div>
 				{/each}
 			</dl>
@@ -444,14 +441,14 @@
 	{/if}
 
 	<section class="mt-16 border-t border-line2 pt-6">
-		<h2 class="text-[10px] font-extrabold tracking-[0.2em] text-fade uppercase">
+		<h2 class="text-xs font-extrabold tracking-widest text-fade uppercase">
 			How these are measured
 		</h2>
 		<dl class="mt-3 grid gap-x-10 gap-y-3 md:grid-cols-2">
 			{#each GLOSSARY as [k, v] (k)}
 				<div>
-					<dt class="text-[12.5px] font-bold">{k}</dt>
-					<dd class="text-[12.5px] leading-snug text-soft">{v}</dd>
+					<dt class="text-xs font-bold">{k}</dt>
+					<dd class="text-xs leading-snug text-soft">{v}</dd>
 				</div>
 			{/each}
 		</dl>

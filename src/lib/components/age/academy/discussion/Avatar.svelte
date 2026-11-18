@@ -13,7 +13,7 @@
 		'bg-warm text-white',
 		'bg-ink text-paper-bg',
 		'bg-prem text-white',
-		'bg-[#7a4a2a] text-white'
+		'bg-amber-900 text-white'
 	];
 	const initials = $derived(
 		String(name || '?')
@@ -24,7 +24,7 @@
 			.join('') || '?'
 	);
 	const tone = $derived.by(() => {
-		if (teacher) return 'bg-gold text-[#241b07]';
+		if (teacher) return 'bg-gold text-gold-ink';
 		let h = 0;
 		for (const ch of String(name)) h = (h * 31 + ch.charCodeAt(0)) | 0;
 		return TONES[Math.abs(h) % TONES.length];

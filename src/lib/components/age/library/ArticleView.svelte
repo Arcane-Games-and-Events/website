@@ -307,10 +307,10 @@
 
 {#if !hasCover}
 	<!-- back to the library -->
-	<div class="mx-auto w-full max-w-[1680px] px-5 pt-4 md:px-8 md:pt-5">
+	<div class="mx-auto w-full max-w-420 px-5 pt-4 md:px-8 md:pt-5">
 		<a
 			href={back.href}
-			class="inline-flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-[color,gap] hover:gap-3 hover:text-warm"
+			class="inline-flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase transition-[color,gap] hover:gap-3 hover:text-warm"
 		>
 			<span aria-hidden="true">←</span>
 			{back.label}
@@ -331,7 +331,7 @@
 		<!-- from md up, as tall as the Library's section headers and the
 		     Academy's hero (78% of the screen, at most 760px) -->
 		<div
-			class="relative mx-auto aspect-video w-full max-w-[1680px] overflow-hidden bg-ink md:aspect-auto md:h-[min(78vh,760px)]"
+			class="relative mx-auto aspect-video w-full max-w-420 overflow-hidden bg-ink md:aspect-auto md:h-[min(78vh,760px)]"
 		>
 			<Picture
 				image={heroImage}
@@ -369,9 +369,9 @@
 			></div>
 			<a
 				href={back.href}
-				class="fp-fade absolute top-6 left-6 z-[2] inline-flex {veiled
+				class="fp-fade absolute top-6 left-6 z-2 inline-flex {veiled
 					? 'invisible'
-					: ''} items-center gap-2 text-[10.5px] font-extrabold tracking-[0.18em] text-white uppercase transition-[gap] hover:gap-3 md:top-10 md:left-10"
+					: ''} items-center gap-2 text-xs font-extrabold tracking-widest text-white uppercase transition-[gap] hover:gap-3 md:top-10 md:left-10"
 				style="animation-delay: 600ms; text-shadow: 0 1px 2px rgba(23,21,15,0.6);"
 			>
 				<span aria-hidden="true">←</span>
@@ -379,9 +379,7 @@
 			</a>
 		</div>
 		{#if heroImage?.credit}
-			<p
-				class="mx-auto max-w-[1680px] px-5 pt-2 text-right font-libre text-[11.5px] text-fade md:px-7"
-			>
+			<p class="mx-auto max-w-420 px-5 pt-2 text-right font-libre text-xs text-fade md:px-7">
 				{#if heroImage.creditUrl}<a
 						href={heroImage.creditUrl}
 						target="_blank"
@@ -394,8 +392,8 @@
 	{/if}
 
 	<div
-		class="fp-rise mx-auto w-full max-w-[960px] px-5 pt-7 pb-4 text-center md:px-8 {hasCover
-			? 'md:pointer-events-none md:absolute md:inset-x-0 md:bottom-0 md:left-1/2 md:z-[1] md:-translate-x-1/2 md:pb-14 md:[text-shadow:0_1px_2px_rgba(23,21,15,0.6),0_6px_24px_rgba(23,21,15,0.45)] lg:pb-16'
+		class="fp-rise mx-auto w-full max-w-5xl px-5 pt-7 pb-4 text-center md:px-8 {hasCover
+			? 'md:pointer-events-none md:absolute md:inset-x-0 md:bottom-0 md:left-1/2 md:z-1 md:-translate-x-1/2 md:pb-14 md:[text-shadow:0_1px_2px_rgba(23,21,15,0.6),0_6px_24px_rgba(23,21,15,0.45)] lg:pb-16'
 			: 'md:pt-12 md:pb-6'}"
 	>
 		<!-- fades as one block: the outer block's entrance animation owns its opacity -->
@@ -406,7 +404,7 @@
 		>
 			<a
 				href={rubricHref}
-				class="pointer-events-auto inline-flex items-center gap-3 text-[10.5px] font-extrabold tracking-[0.24em] uppercase md:text-[11.5px] {hasCover
+				class="pointer-events-auto inline-flex items-center gap-3 text-xs font-extrabold tracking-widest uppercase {hasCover
 					? 'text-warm md:text-white/90'
 					: 'text-warm'}"
 			>
@@ -421,7 +419,7 @@
 			<h1
 				use:fitTitle={{ key: data.article.title, phoneLines: 3 }}
 				style="--tc: {Math.max(12, (data.article.title || '').length)};"
-				class="article-title mt-2 font-newsreader leading-[1.0] font-semibold tracking-[-0.02em] [text-wrap:balance] md:mt-3 md:leading-[0.96] {hasCover
+				class="article-title mt-2 font-newsreader leading-none font-semibold tracking-tight [text-wrap:balance] md:mt-3 {hasCover
 					? 'md:text-white'
 					: ''}"
 			>
@@ -429,7 +427,7 @@
 			</h1>
 			{#if data.article.excerpt}
 				<p
-					class="mx-auto mt-2.5 max-w-[640px] text-center font-newsreader text-[17px] leading-[1.45] [text-wrap:balance] italic md:mt-3 md:text-[21px] {hasCover
+					class="mx-auto mt-2.5 max-w-2xl text-center font-newsreader text-lg leading-normal [text-wrap:balance] italic md:mt-3 md:text-xl {hasCover
 						? 'text-soft md:text-white/85'
 						: 'text-soft'}"
 				>
@@ -437,7 +435,7 @@
 				</p>
 			{/if}
 			<div
-				class="mt-3.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-2 text-[11px] md:mt-4 {hasCover
+				class="mt-3.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-2 text-xs md:mt-4 {hasCover
 					? 'text-fade md:text-white/60'
 					: 'text-fade'}"
 			>
@@ -445,7 +443,7 @@
 					{#if data.article.author.slug}
 						<a
 							href="/people/{data.article.author.slug}"
-							class="pointer-events-auto font-extrabold tracking-[0.12em] uppercase {hasCover
+							class="pointer-events-auto font-extrabold tracking-widest uppercase {hasCover
 								? 'text-ink hover:text-warm md:text-white/90 md:hover:text-warm-light'
 								: 'text-ink hover:text-warm'}"
 						>
@@ -453,7 +451,7 @@
 						</a>
 					{:else}
 						<span
-							class="font-extrabold tracking-[0.12em] uppercase {hasCover
+							class="font-extrabold tracking-widest uppercase {hasCover
 								? 'text-ink md:text-white/90'
 								: 'text-ink'}">By {data.article.author.name}</span
 						>
@@ -473,7 +471,7 @@
 						<button
 							type="button"
 							onclick={() => (veiled ? heroVideo?.pause() : watch())}
-							class="pointer-events-auto inline-flex items-center gap-2.5 bg-ink px-6 py-3.5 text-[11px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors [text-shadow:none] hover:bg-warm md:bg-paper-bg md:text-ink md:hover:bg-warm md:hover:text-white"
+							class="pointer-events-auto inline-flex items-center gap-2.5 bg-ink px-6 py-3.5 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors [text-shadow:none] hover:bg-warm md:bg-paper-bg md:text-ink md:hover:bg-warm md:hover:text-white"
 						>
 							{#if veiled}
 								<span aria-hidden="true">❚❚</span> Pause
@@ -488,7 +486,7 @@
 					{:else}
 						<a
 							href="#video-gate"
-							class="pointer-events-auto inline-flex items-center gap-2.5 bg-prem px-6 py-3.5 text-[11px] font-extrabold tracking-[0.16em] text-white uppercase [text-shadow:none] hover:brightness-110"
+							class="pointer-events-auto inline-flex items-center gap-2.5 bg-prem px-6 py-3.5 text-xs font-extrabold tracking-widest text-white uppercase [text-shadow:none] hover:brightness-110"
 						>
 							<span aria-hidden="true">◆</span> Members only · Watch with Premium
 						</a>
@@ -503,37 +501,37 @@
 	<!-- Premium video, non-member: paywalled frame, no player -->
 	<figure
 		id="video-gate"
-		class="m-0 mx-auto w-full max-w-[1200px] scroll-mt-24 px-5 pt-4 md:px-8 md:pt-6"
+		class="m-0 mx-auto w-full max-w-page scroll-mt-24 px-5 pt-4 md:px-8 md:pt-6"
 	>
 		<div
-			class="relative overflow-hidden bg-[#080b15] md:aspect-video"
+			class="relative overflow-hidden bg-slate-950 md:aspect-video"
 			data-premium-cta="video-gate"
 		>
 			{#if videoPoster}
 				<img
 					src={videoPoster}
 					alt=""
-					class="absolute inset-0 h-full w-full scale-105 object-cover blur-lg brightness-[0.4]"
+					class="absolute inset-0 h-full w-full scale-105 object-cover blur-lg brightness-50"
 				/>
 			{/if}
 			<div
 				class="relative flex items-center justify-center px-5 py-8 md:absolute md:inset-0 md:px-6 md:py-0"
 			>
 				<div
-					class="max-w-[560px] border-[3px] border-double border-paper-bg/80 px-6 py-8 text-center md:px-10 md:py-10"
+					class="max-w-xl border-3 border-double border-paper-bg/80 px-6 py-8 text-center md:px-10 md:py-10"
 				>
 					<span
-						class="mb-3 flex items-center justify-center gap-3 text-[10.5px] font-extrabold tracking-[0.2em] text-prem uppercase"
+						class="mb-3 flex items-center justify-center gap-3 text-xs font-extrabold tracking-widest text-prem uppercase"
 					>
 						<span aria-hidden="true">◆</span>Premium · Members only<span aria-hidden="true">◆</span>
 					</span>
 					<h3
-						class="m-0 mb-3 font-newsreader text-[clamp(28px,4vw,42px)] leading-[1] font-semibold tracking-[-0.02em] text-white"
+						class="m-0 mb-3 font-newsreader text-[clamp(28px,4vw,42px)] leading-none font-semibold tracking-tight text-white"
 					>
 						Watch this video with a membership.
 					</h3>
 					<p
-						class="mx-auto mb-6 max-w-[440px] font-newsreader text-[16px] leading-[1.5] italic"
+						class="mx-auto mb-6 max-w-md font-newsreader text-base leading-normal italic"
 						style="color: rgba(255,255,255,0.82);"
 					>
 						This video is for AGE Premium members. Membership unlocks every video, bonus match, and
@@ -542,14 +540,14 @@
 					<div class="flex flex-wrap items-center justify-center gap-3">
 						<a
 							href="/premium"
-							class="inline-flex items-center border border-prem bg-prem px-6 py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+							class="inline-flex items-center border border-prem bg-prem px-6 py-3.5 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110"
 						>
 							Become a member
 						</a>
 						{#if !data.user}
 							<a
 								href="/login?redirect=/library/{data.article.slug}"
-								class="inline-flex items-center border border-white/60 px-6 py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-white uppercase transition-colors hover:bg-white/10"
+								class="inline-flex items-center border border-white/60 px-6 py-3.5 text-xs font-extrabold tracking-widest text-white uppercase transition-colors hover:bg-white/10"
 							>
 								Sign in
 							</a>
@@ -561,7 +559,7 @@
 	</figure>
 {:else if data.article.video && !heroImage}
 	<!-- a video with no picture of its own: the player under the title -->
-	<figure class="m-0 mx-auto w-full max-w-[1200px] px-5 pt-4 md:px-8 md:pt-6">
+	<figure class="m-0 mx-auto w-full max-w-page px-5 pt-4 md:px-8 md:pt-6">
 		<LibraryVideoBlock
 			video={data.article.video}
 			poster={videoPoster}
@@ -574,7 +572,7 @@
 
 <!-- ============ READING LAYOUT ============ -->
 <div
-	class="mx-auto grid w-full max-w-[1180px] grid-cols-1 gap-[72px] px-5 pt-[40px] pb-[30px] md:px-14 md:pt-[56px] lg:grid-cols-[232px_minmax(0,1fr)]"
+	class="mx-auto grid w-full max-w-page grid-cols-1 gap-18 px-5 pt-10 pb-8 md:px-14 md:pt-14 lg:grid-cols-[232px_minmax(0,1fr)]"
 >
 	<!-- ============ RAIL ============ -->
 	<aside class="hidden lg:block">
@@ -592,11 +590,11 @@
 			{/if}
 
 			{#if !data.isPreview && tableOfContents.length > 0}
-				<nav class="mt-5 border-t border-line pt-[15px]">
+				<nav class="mt-5 border-t border-line pt-4">
 					<div
-						class="mb-[10px] flex items-center gap-2 text-[10px] font-extrabold tracking-[0.18em] text-ink uppercase"
+						class="mb-2.5 flex items-center gap-2 text-xs font-extrabold tracking-widest text-ink uppercase"
 					>
-						<span class="text-[8px] text-warm" aria-hidden="true">◆</span>
+						<span class="text-xs text-warm" aria-hidden="true">◆</span>
 						Contents
 					</div>
 					{#key expandedSections}
@@ -611,12 +609,12 @@
 										-->
 									<a
 										href="#{heading.id}"
-										class="flex items-baseline gap-[11px] pt-[12px] pb-[6px] font-newsreader text-[18px] leading-[1.2] font-semibold tracking-[-0.01em] transition-colors {_isActive
+										class="flex items-baseline gap-3 pt-3 pb-1.5 font-newsreader text-lg leading-tight font-semibold tracking-normal transition-colors {_isActive
 											? 'text-warm'
 											: 'text-ink hover:text-warm'}"
 									>
 										<span
-											class="font-mono-system text-[10px] font-bold {_isActive
+											class="font-mono-system text-xs font-bold {_isActive
 												? 'text-warm'
 												: 'text-fade'}"
 										>
@@ -638,14 +636,11 @@
 									<a
 										href="#{heading.id}"
 										style="padding-left: {(heading.level - 3) * 16}px"
-										class="flex items-baseline gap-[11px] py-[4px] text-[12.5px] leading-[1.4] font-medium transition-colors {_isActive
+										class="flex items-baseline gap-3 py-1 text-xs leading-snug font-medium transition-colors {_isActive
 											? 'text-warm'
 											: 'text-soft hover:text-warm'}"
 									>
-										<span
-											class="invisible font-mono-system text-[10px] font-bold"
-											aria-hidden="true"
-										>
+										<span class="invisible font-mono-system text-xs font-bold" aria-hidden="true">
 											00
 										</span>
 										<span>{heading.text}</span>
@@ -658,14 +653,14 @@
 			{/if}
 
 			<!-- share -->
-			<div class="mt-[18px] flex gap-2">
+			<div class="mt-4.5 flex gap-2">
 				<button
 					type="button"
 					onclick={copyLink}
 					data-share="copy_link"
 					title="Copy link"
 					aria-label="Copy link"
-					class="flex h-8 w-8 cursor-pointer items-center justify-center border border-line2 bg-transparent text-[10.5px] font-extrabold text-soft transition-colors hover:border-accent hover:text-accent"
+					class="flex h-8 w-8 cursor-pointer items-center justify-center border border-line2 bg-transparent text-xs font-extrabold text-soft transition-colors hover:border-accent hover:text-accent"
 				>
 					⧉
 				</button>
@@ -675,7 +670,7 @@
 					data-share="x"
 					title="Share on X"
 					aria-label="Share on X"
-					class="flex h-8 w-8 cursor-pointer items-center justify-center border border-line2 bg-transparent text-[10.5px] font-extrabold text-soft transition-colors hover:border-accent hover:text-accent"
+					class="flex h-8 w-8 cursor-pointer items-center justify-center border border-line2 bg-transparent text-xs font-extrabold text-soft transition-colors hover:border-accent hover:text-accent"
 				>
 					X
 				</button>
@@ -715,22 +710,22 @@
 		{#if data.isPreview}
 			<div class="relative z-10 -mt-16 md:-mt-20" data-premium-cta="article-gate">
 				<div
-					class="border-[3px] border-double border-ink bg-paper px-6 py-9 text-center md:px-12 md:py-12"
+					class="border-3 border-double border-ink bg-paper px-6 py-9 text-center md:px-12 md:py-12"
 				>
 					<div
-						class="flex items-center justify-center gap-3 text-[10.5px] font-extrabold tracking-[0.2em] text-prem uppercase"
+						class="flex items-center justify-center gap-3 text-xs font-extrabold tracking-widest text-prem uppercase"
 					>
 						<span aria-hidden="true">◆</span>
 						Premium · Members only
 						<span aria-hidden="true">◆</span>
 					</div>
 					<h3
-						class="mx-auto mt-3 max-w-[640px] font-newsreader text-[30px] leading-[1.05] font-semibold tracking-[-0.01em] [text-wrap:balance] md:text-[40px]"
+						class="mx-auto mt-3 max-w-2xl font-newsreader text-3xl leading-none font-semibold tracking-normal [text-wrap:balance] md:text-4xl"
 					>
 						Keep reading with a membership.
 					</h3>
 					<p
-						class="mx-auto mt-4 max-w-[520px] font-newsreader text-[16px] leading-[1.5] text-soft italic md:text-[18px]"
+						class="mx-auto mt-4 max-w-lg font-newsreader text-base leading-normal text-soft italic md:text-lg"
 					>
 						This story is for AGE Premium members. Membership funds every article, broadcast,
 						course, and event we put on — and unlocks all of it.
@@ -740,37 +735,37 @@
 					>
 						<a
 							href="/premium"
-							class="inline-flex items-center border border-prem bg-prem px-6 py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+							class="inline-flex items-center border border-prem bg-prem px-6 py-3.5 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110"
 						>
 							Become a member
 						</a>
 						{#if !data.user}
 							<a
 								href="/login?redirect=/library/{data.article.slug}"
-								class="inline-flex items-center border border-ink px-6 py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+								class="inline-flex items-center border border-ink px-6 py-3.5 text-xs font-extrabold tracking-widest text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 							>
 								Sign in
 							</a>
 						{/if}
 					</div>
-					<div class="mt-4 text-[11px] text-fade italic">$10 a month · cancel anytime</div>
+					<div class="mt-4 text-xs text-fade italic">$10 a month · cancel anytime</div>
 				</div>
 			</div>
 		{/if}
 
 		<!-- ============ TOPICS ============ -->
 		{#if !data.isPreview && data.article.tags && data.article.tags.length > 0}
-			<div class="mt-[44px] flex flex-wrap items-center gap-3">
+			<div class="mt-11 flex flex-wrap items-center gap-3">
 				<span
-					class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.18em] text-ink uppercase"
+					class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-ink uppercase"
 				>
-					<span class="text-[8px] text-warm" aria-hidden="true">◆</span>
+					<span class="text-xs text-warm" aria-hidden="true">◆</span>
 					Filed under
 				</span>
 				{#each data.article.tags as tag (tag.slug)}
 					<a
 						href="/library/tag/{tag.slug}"
-						class="border border-line2 px-[12px] py-[6px] text-[10.5px] font-extrabold tracking-[0.12em] text-soft uppercase transition-colors hover:border-warm hover:text-warm"
+						class="border border-line2 px-3 py-1.5 text-xs font-extrabold tracking-widest text-soft uppercase transition-colors hover:border-warm hover:text-warm"
 					>
 						{tag.name}
 					</a>
@@ -792,7 +787,7 @@
 	<button
 		type="button"
 		onclick={() => (mobileTocOpen = true)}
-		class="fixed right-4 bottom-6 z-40 flex cursor-pointer items-center gap-2 border-none bg-ink px-4 py-[10px] text-[11px] font-extrabold tracking-[0.07em] text-paper-bg uppercase shadow-[0_18px_36px_-22px_rgba(20,16,8,0.6)] hover:brightness-110 lg:hidden"
+		class="fixed right-4 bottom-6 z-40 flex cursor-pointer items-center gap-2 border-none bg-ink px-4 py-2.5 text-xs font-extrabold tracking-wider text-paper-bg uppercase shadow-xl hover:brightness-110 lg:hidden"
 		aria-label="Table of contents"
 	>
 		<svg
@@ -823,14 +818,14 @@
 
 		<div
 			transition:fly={{ y: 300, duration: 300 }}
-			class="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-hidden border-t-[1.5px] border-ink bg-paper-bg shadow-[0_-18px_36px_-22px_rgba(20,16,8,0.5)]"
+			class="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-hidden border-t-2 border-ink bg-paper-bg shadow-up"
 		>
 			<div
 				class="sticky top-0 z-10 flex items-center justify-between border-b border-line2 bg-paper-bg px-5 py-4"
 			>
 				<div>
-					<h3 class="font-newsreader text-[18px] font-semibold">Table of Contents</h3>
-					<p class="text-[11px] font-semibold tracking-[0.04em] text-fade uppercase">
+					<h3 class="font-newsreader text-lg font-semibold">Table of Contents</h3>
+					<p class="text-xs font-semibold tracking-wider text-fade uppercase">
 						{tableOfContents.length} sections
 					</p>
 				</div>
@@ -854,12 +849,12 @@
 								<a
 									href="#{heading.id}"
 									onclick={() => (mobileTocOpen = false)}
-									class="flex items-baseline gap-3 pt-[14px] pb-[8px] font-newsreader text-[22px] leading-[1.2] font-semibold tracking-[-0.01em] transition-colors {_isActive
+									class="flex items-baseline gap-3 pt-3.5 pb-2 font-newsreader text-2xl leading-tight font-semibold tracking-normal transition-colors {_isActive
 										? 'text-warm'
 										: 'text-ink hover:text-warm'}"
 								>
 									<span
-										class="font-mono-system text-[11px] font-bold {_isActive
+										class="font-mono-system text-xs font-bold {_isActive
 											? 'text-warm'
 											: 'text-fade'}"
 									>
@@ -872,11 +867,11 @@
 									href="#{heading.id}"
 									onclick={() => (mobileTocOpen = false)}
 									style="padding-left: {(heading.level - 3) * 18}px"
-									class="flex items-baseline gap-3 py-[6px] text-[14px] leading-[1.4] font-medium transition-colors {_isActive
+									class="flex items-baseline gap-3 py-1.5 text-sm leading-snug font-medium transition-colors {_isActive
 										? 'text-warm'
 										: 'text-soft hover:text-warm'}"
 								>
-									<span class="invisible font-mono-system text-[11px] font-bold" aria-hidden="true">
+									<span class="invisible font-mono-system text-xs font-bold" aria-hidden="true">
 										00
 									</span>
 									<span>{heading.text}</span>

@@ -27,13 +27,13 @@
 		current="projects"
 	/>
 
-	<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-20 md:px-8 md:pt-10">
+	<div class="mx-auto w-full max-w-page px-5 pt-8 pb-20 md:px-8 md:pt-10">
 		{#if data.total}
 			<nav class="flex flex-wrap gap-2" aria-label="Kinds of project">
 				<a
 					href="/studios/projects"
 					aria-current={!data.type ? 'page' : undefined}
-					class="flex items-stretch border text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors {!data.type
+					class="flex items-stretch border text-xs font-extrabold tracking-widest uppercase transition-colors {!data.type
 						? 'border-ink bg-ink text-paper-bg'
 						: 'border-ink/15 hover:border-ink'}"
 				>
@@ -50,7 +50,7 @@
 					<a
 						href="/studios/projects?type={t}"
 						aria-current={on ? 'page' : undefined}
-						class="flex items-stretch border text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors {on
+						class="flex items-stretch border text-xs font-extrabold tracking-widest uppercase transition-colors {on
 							? 'border-ink bg-ink text-paper-bg'
 							: 'border-ink/15 hover:border-ink'}"
 					>
@@ -65,7 +65,7 @@
 				{/each}
 			</nav>
 			{#if data.type}
-				<p class="mt-4 font-newsreader text-[17px] text-soft italic">
+				<p class="mt-4 font-newsreader text-lg text-soft italic">
 					{PROJECT_TYPE[data.type].blurb}
 				</p>
 			{/if}
@@ -78,12 +78,10 @@
 		{:else}
 			<div class="relative overflow-hidden bg-studio px-6 py-16 text-center text-white md:py-20">
 				<span class="st-dots pointer-events-none absolute inset-0" aria-hidden="true"></span>
-				<p class="st-wide relative text-[28px] leading-none font-black uppercase md:text-[42px]">
+				<p class="st-wide relative text-3xl leading-none font-black uppercase md:text-5xl">
 					On the press
 				</p>
-				<p
-					class="relative mx-auto mt-3 max-w-[440px] font-newsreader text-[17px] italic opacity-90"
-				>
+				<p class="relative mx-auto mt-3 max-w-md font-newsreader text-lg italic opacity-90">
 					Our first projects are being printed. Check back soon.
 				</p>
 			</div>

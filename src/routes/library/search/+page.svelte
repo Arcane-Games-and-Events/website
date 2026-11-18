@@ -30,7 +30,7 @@
 		].filter((g) => g.total)
 	);
 	const chip =
-		'flex items-center gap-2 border border-line2 px-3.5 py-2 text-[13px] font-semibold transition-colors hover:border-warm';
+		'flex items-center gap-2 border border-line2 px-3.5 py-2 text-sm font-semibold transition-colors hover:border-warm';
 </script>
 
 <svelte:head>
@@ -41,10 +41,10 @@
 {#snippet groupHead(label, total, href, noun)}
 	<header class="flex items-end justify-between gap-4 border-b border-line pb-3">
 		<h2 class="flex items-baseline gap-2.5">
-			<span class="font-libre text-[22px] font-extrabold tracking-[-0.03em]">{label}</span>
-			<span class="text-[13px] text-fade tabular-nums">{total}</span>
+			<span class="font-libre text-2xl font-extrabold tracking-tight">{label}</span>
+			<span class="text-sm text-fade tabular-nums">{total}</span>
 		</h2>
-		<a {href} class="shrink-0 text-[13px] font-semibold text-soft transition-colors hover:text-warm"
+		<a {href} class="shrink-0 text-sm font-semibold text-soft transition-colors hover:text-warm"
 			>See all {total} {total === 1 ? noun[0] : noun[1]} →</a
 		>
 	</header>
@@ -54,8 +54,8 @@
 	<LibraryHeader current="search" counts={data.drawers} title="Results for “{data.q}”" q={data.q} />
 
 	<div class="bg-paper-bg text-ink">
-		<div class="mx-auto w-full max-w-[1200px] space-y-14 px-5 pt-8 pb-20 md:px-8 md:pt-10">
-			<p class="text-[15px] text-fade" aria-live="polite">
+		<div class="mx-auto w-full max-w-page space-y-14 px-5 pt-8 pb-20 md:px-8 md:pt-10">
+			<p class="text-base text-fade" aria-live="polite">
 				{data.total
 					? `${data.total} ${data.total === 1 ? 'result' : 'results'} across the Library`
 					: `Nothing in the Library for “${data.q}”.`}
@@ -63,11 +63,11 @@
 
 			{#if data.topics.length}
 				<section>
-					<p class="text-[11px] font-bold tracking-[0.16em] text-fade uppercase">Topics</p>
+					<p class="text-xs font-bold tracking-widest text-fade uppercase">Topics</p>
 					<div class="mt-3 flex flex-wrap gap-2">
 						{#each data.topics as t (t.slug)}
 							<a href="/library/tag/{t.slug}" class={chip}
-								>{t.name}<span class="text-[12px] font-normal text-fade">{t.count}</span></a
+								>{t.name}<span class="text-xs font-normal text-fade">{t.count}</span></a
 							>
 						{/each}
 					</div>
@@ -107,7 +107,7 @@
 
 			{#if !data.total}
 				<section class="border border-line2 px-6 py-12 text-center">
-					<p class="text-[20px] font-bold tracking-[-0.02em]">Try fewer words, or a topic:</p>
+					<p class="text-xl font-bold tracking-tight">Try fewer words, or a topic:</p>
 					<div class="mt-5 flex flex-wrap justify-center gap-2">
 						{#each data.suggestions as t (t.slug)}
 							<a href="/library/tag/{t.slug}" class={chip}>{t.name}</a>

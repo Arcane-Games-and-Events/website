@@ -28,7 +28,7 @@
 </script>
 
 <div>
-	<ol class="relative flex h-12 gap-[2px]" aria-label="Engaged time across the piece">
+	<ol class="relative flex h-12 gap-0.5" aria-label="Engaged time across the piece">
 		{#each cells as c, i (c.from)}
 			<li class="relative flex-1">
 				<button
@@ -43,20 +43,20 @@
 				></button>
 				{#if active === i}
 					<span
-						class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 border border-line2 bg-paper-bg px-2.5 py-1.5 whitespace-nowrap shadow-[0_6px_16px_-8px_rgba(0,0,0,0.35)]"
+						class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 border border-line2 bg-paper-bg px-2.5 py-1.5 whitespace-nowrap shadow-md"
 						role="status"
 					>
-						<span class="block text-[14px] font-bold tabular-nums">{fmt(c.avgSeconds)}</span>
-						<span class="block text-[10.5px] text-soft">{unit} at {c.from}–{c.to}%</span>
+						<span class="block text-sm font-bold tabular-nums">{fmt(c.avgSeconds)}</span>
+						<span class="block text-xs text-soft">{unit} at {c.from}–{c.to}%</span>
 					</span>
 				{/if}
 			</li>
 		{/each}
 	</ol>
-	<div class="mt-1.5 flex justify-between text-[10px] text-fade tabular-nums" aria-hidden="true">
+	<div class="mt-1.5 flex justify-between text-xs text-fade tabular-nums" aria-hidden="true">
 		<span>Start</span><span>25%</span><span>50%</span><span>75%</span><span>End</span>
 	</div>
-	<div class="mt-2 flex items-center gap-2 text-[11px] text-soft">
+	<div class="mt-2 flex items-center gap-2 text-xs text-soft">
 		<span>Less time</span>
 		<span
 			class="h-2 w-24"

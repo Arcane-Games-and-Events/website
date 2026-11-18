@@ -32,30 +32,26 @@
 
 {#snippet incidentCard(i)}
 	{@const imp = IMPACT[i.impact]}
-	<article
-		class="border border-l-[6px] border-line2 bg-white"
-		style="border-left-color: {imp.tone}"
-	>
+	<article class="border border-l-6 border-line2 bg-white" style="border-left-color: {imp.tone}">
 		<div class="px-5 pt-5 pb-4 md:px-6">
 			<p class="flex flex-wrap items-center gap-2">
 				<span
-					class="px-2 py-[3px] text-[9.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+					class="px-2 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
 					style="background: {imp.tone}"
 					>{i.kind === 'maintenance' ? 'Maintenance' : `${imp.word} incident`}</span
 				>
-				<span
-					class="border border-ink px-2 py-[2px] text-[9.5px] font-extrabold tracking-[0.16em] uppercase"
+				<span class="border border-ink px-2 py-0.5 text-xs font-extrabold tracking-widest uppercase"
 					>{STATUS_WORD[i.status] || i.status}</span
 				>
 				{#each i.components as c (c)}<span
-						class="border border-line2 px-1.5 py-px text-[10px] text-soft">{COMP[c] || c}</span
+						class="border border-line2 px-1.5 py-px text-xs text-soft">{COMP[c] || c}</span
 					>{/each}
 			</p>
-			<h3 class="mt-2.5 font-newsreader text-[22px] leading-tight font-semibold md:text-[26px]">
+			<h3 class="mt-2.5 font-newsreader text-2xl leading-tight font-semibold">
 				{i.title}
 			</h3>
 			{#if i.kind === 'maintenance' && i.endsAt}
-				<p class="mt-1 text-[12.5px] text-soft">
+				<p class="mt-1 text-xs text-soft">
 					{stampOf(i.startsAt)} to {stampOf(i.endsAt)}
 				</p>
 			{/if}
@@ -66,12 +62,12 @@
 					class="grid gap-x-5 gap-y-1 border-b border-line px-5 py-3.5 last:border-b-0 md:grid-cols-[150px_minmax(0,1fr)] md:px-6"
 				>
 					<span>
-						<span class="block text-[10px] font-extrabold tracking-[0.14em] uppercase"
+						<span class="block text-xs font-extrabold tracking-widest uppercase"
 							>{STATUS_WORD[u.status] || u.status}</span
 						>
-						<span class="block text-[11.5px] text-fade">{stampOf(u.createdAt)}</span>
+						<span class="block text-xs text-fade">{stampOf(u.createdAt)}</span>
 					</span>
-					<p class="font-newsreader text-[16px] leading-[1.55] whitespace-pre-line">{u.body}</p>
+					<p class="font-newsreader text-base leading-normal whitespace-pre-line">{u.body}</p>
 				</li>
 			{/each}
 		</ol>
@@ -79,26 +75,24 @@
 {/snippet}
 
 <AgeShell>
-	<main class="mx-auto w-full max-w-[1100px] px-5 pt-10 pb-24 md:px-8 md:pt-14">
-		<p class="text-[10px] font-extrabold tracking-[0.24em] text-fade uppercase">
+	<main class="mx-auto w-full max-w-6xl px-5 pt-10 pb-24 md:px-8 md:pt-14">
+		<p class="text-xs font-extrabold tracking-widest text-fade uppercase">
 			<span class="text-warm">◆</span> AGE status
 		</p>
 
 		{#if !s}
-			<h1 class="ao-cond mt-3 text-[48px] leading-none font-black uppercase md:text-[72px]">
-				Status
-			</h1>
-			<p class="mt-4 text-[15px] text-soft">The status page isn’t set up yet.</p>
+			<h1 class="ao-cond mt-3 text-5xl leading-none font-black uppercase md:text-7xl">Status</h1>
+			<p class="mt-4 text-base text-soft">The status page isn’t set up yet.</p>
 		{:else}
 			<!-- the whole picture -->
 			<section
 				class="mt-4 flex flex-col gap-3 p-6 text-white md:flex-row md:items-end md:justify-between md:p-8"
 				style="background: {top.tone}"
 			>
-				<h1 class="ao-cond text-[44px] leading-[0.92] font-black uppercase md:text-[68px]">
+				<h1 class="ao-cond text-5xl leading-none font-black uppercase md:text-7xl">
 					{top.word}
 				</h1>
-				<p class="text-[12.5px] opacity-85 md:text-right">
+				<p class="text-xs opacity-85 md:text-right">
 					{lastCheck ? `Checked ${stampOf(lastCheck)}` : 'Not checked yet'}<br />Every five minutes
 				</p>
 			</section>
@@ -106,7 +100,7 @@
 			{#if s.active.length}
 				<section class="mt-10">
 					<h2
-						class="ao-cond border-b-[3px] border-ink pb-2 text-[32px] leading-none font-black uppercase md:text-[40px]"
+						class="ao-cond border-b-3 border-ink pb-2 text-3xl leading-none font-black uppercase md:text-4xl"
 					>
 						Happening now
 					</h2>
@@ -119,7 +113,7 @@
 			{#if s.scheduled.length}
 				<section class="mt-10">
 					<h2
-						class="ao-cond border-b-[3px] border-ink pb-2 text-[32px] leading-none font-black uppercase md:text-[40px]"
+						class="ao-cond border-b-3 border-ink pb-2 text-3xl leading-none font-black uppercase md:text-4xl"
 					>
 						Coming up
 					</h2>
@@ -131,11 +125,11 @@
 
 			<!-- each part of the site -->
 			<section class="mt-12">
-				<div class="flex flex-wrap items-end justify-between gap-3 border-b-[3px] border-ink pb-2">
-					<h2 class="ao-cond text-[32px] leading-none font-black uppercase md:text-[40px]">
+				<div class="flex flex-wrap items-end justify-between gap-3 border-b-3 border-ink pb-2">
+					<h2 class="ao-cond text-3xl leading-none font-black uppercase md:text-4xl">
 						The site, part by part
 					</h2>
-					<span class="text-[12px] text-soft">The last {days} days</span>
+					<span class="text-xs text-soft">The last {days} days</span>
 				</div>
 				<ul class="mt-5 flex flex-col gap-3">
 					{#each s.components as c (c.id)}
@@ -147,13 +141,13 @@
 						<li class="border border-line2 bg-white px-5 py-4 md:px-6">
 							<div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
 								<p>
-									<span class="font-newsreader text-[19px] font-semibold">{c.label}</span>
-									<span class="ml-2 text-[12px] text-fade">{c.note}</span>
+									<span class="font-newsreader text-xl font-semibold">{c.label}</span>
+									<span class="ml-2 text-xs text-fade">{c.note}</span>
 								</p>
 								<p class="flex items-center gap-3">
-									<span class="text-[12px] text-soft tabular-nums">{pct(c.uptime)} up</span>
+									<span class="text-xs text-soft tabular-nums">{pct(c.uptime)} up</span>
 									<span
-										class="flex items-center gap-1.5 text-[10px] font-extrabold tracking-[0.14em] uppercase"
+										class="flex items-center gap-1.5 text-xs font-extrabold tracking-widest uppercase"
 										style="color: {state.tone}"
 										><span class="h-2.5 w-2.5" style="background: {state.tone}"
 										></span>{state.word}</span
@@ -161,13 +155,13 @@
 								</p>
 							</div>
 							<div class="mt-3"><UptimeBars bars={c.bars} {days} /></div>
-							<p class="mt-1.5 flex justify-between text-[10.5px] text-fade">
+							<p class="mt-1.5 flex justify-between text-xs text-fade">
 								<span>{days} days ago</span><span>Today</span>
 							</p>
 						</li>
 					{/each}
 				</ul>
-				<p class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-[11.5px] text-soft">
+				<p class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-soft">
 					{#each [['var(--color-prem)', 'Every check passed'], ['var(--color-gold)', 'Some failed'], ['var(--color-hero-rb)', 'Many failed'], ['var(--color-line2)', 'No checks']] as [tone, word] (word)}
 						<span class="flex items-center gap-1.5"
 							><span class="h-2.5 w-2.5" style="background: {tone}"></span>{word}</span
@@ -178,7 +172,7 @@
 
 			<section class="mt-12">
 				<h2
-					class="ao-cond border-b-[3px] border-ink pb-2 text-[32px] leading-none font-black uppercase md:text-[40px]"
+					class="ao-cond border-b-3 border-ink pb-2 text-3xl leading-none font-black uppercase md:text-4xl"
 				>
 					The last two weeks
 				</h2>
@@ -187,14 +181,14 @@
 						{#each s.past as i (i.id)}{@render incidentCard(i)}{/each}
 					</div>
 				{:else}
-					<p class="mt-5 font-newsreader text-[17px] text-soft italic">
+					<p class="mt-5 font-newsreader text-lg text-soft italic">
 						Nothing to report. No incidents in the last two weeks.
 					</p>
 				{/if}
 			</section>
 		{/if}
 
-		<p class="mt-12 text-[12.5px] text-soft">
+		<p class="mt-12 text-xs text-soft">
 			Something wrong that isn’t here? <a href="/contact" class="font-semibold text-warm underline"
 				>Tell us</a
 			>.

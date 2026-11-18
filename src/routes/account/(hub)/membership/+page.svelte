@@ -151,15 +151,15 @@
 
 {#snippet seal(text, tone)}
 	<span
-		class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[9.5px] font-extrabold tracking-[0.18em] uppercase {tone}"
+		class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-extrabold tracking-widest uppercase {tone}"
 		><span aria-hidden="true">◆</span>{text}</span
 	>
 {/snippet}
 
 {#snippet corners()}
-	{#each ['-top-[7px] -left-[7px]', '-top-[7px] -right-[7px]', '-bottom-[7px] -left-[7px]', '-bottom-[7px] -right-[7px]'] as pos (pos)}
+	{#each ['-top-2 -left-2', '-top-2 -right-2', '-bottom-2 -left-2', '-bottom-2 -right-2'] as pos (pos)}
 		<span
-			class="pointer-events-none absolute {pos} bg-paper-bg px-[2px] text-[11px] leading-none text-warm"
+			class="pointer-events-none absolute {pos} bg-paper-bg px-0.5 text-xs leading-none text-warm"
 			aria-hidden="true">◆</span
 		>
 	{/each}
@@ -167,11 +167,9 @@
 
 {#snippet perks(dim = false)}
 	<section class="mt-12">
-		<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-			<h3
-				class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-			>
-				<span class="text-[8px] text-prem">◆</span>What membership gets you
+		<div class="flex items-baseline justify-between gap-4 border-b-3 border-ink pb-2">
+			<h3 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+				<span class="text-xs text-prem">◆</span>What membership gets you
 			</h3>
 		</div>
 		<ol
@@ -183,19 +181,19 @@
 						href={p.href}
 						class="group flex h-full items-start gap-4 px-5 py-5 transition-colors hover:bg-paper"
 					>
-						<span class="ao-cond text-[34px] leading-none font-black text-prem tabular-nums"
+						<span class="ao-cond text-4xl leading-none font-black text-prem tabular-nums"
 							>{String(i + 1).padStart(2, '0')}</span
 						>
 						<span class="min-w-0">
 							<span
-								class="block font-newsreader text-[19px] leading-tight font-semibold group-hover:text-warm"
+								class="block font-newsreader text-xl leading-tight font-semibold group-hover:text-warm"
 								>{p.title}
 								<span
-									class="inline-block text-[14px] text-warm transition-transform group-hover:translate-x-1"
+									class="inline-block text-sm text-warm transition-transform group-hover:translate-x-1"
 									aria-hidden="true">→</span
 								></span
 							>
-							<span class="mt-1 block text-[13px] leading-snug text-soft">{p.text}</span>
+							<span class="mt-1 block text-sm leading-snug text-soft">{p.text}</span>
 						</span>
 					</a>
 				</li>
@@ -216,7 +214,7 @@
 
 	{#if m}
 		<!-- ============ standing ============ -->
-		<div class="relative border-[3px] border-double border-ink bg-paper-bg">
+		<div class="relative border-3 border-double border-ink bg-paper-bg">
 			{@render corners()}
 			<div class="grid gap-8 px-6 pt-6 pb-6 md:grid-cols-[minmax(0,1fr)_240px] md:px-8 md:pt-7">
 				<div class="min-w-0">
@@ -224,15 +222,14 @@
 						SEAL[m.status]?.text || m.status,
 						SEAL[m.status]?.tone || 'bg-line2 text-ink'
 					)}
-					<p class="ao-cond mt-4 text-[44px] leading-[0.9] font-black uppercase md:text-[56px]">
+					<p class="ao-cond mt-4 text-5xl leading-none font-black uppercase md:text-6xl">
 						AGE Premium
 					</p>
-					<p class="mt-1 text-[11px] font-extrabold tracking-[0.2em] text-fade uppercase">
+					<p class="mt-1 text-xs font-extrabold tracking-widest text-fade uppercase">
 						{plan?.label} member{since ? ` · since ${ui.dateShort(since)}` : ''}
 					</p>
 					<p
-						class="mt-4 max-w-[520px] font-newsreader text-[17px] leading-[1.5] {m.status ===
-						'past_due'
+						class="mt-4 max-w-lg font-newsreader text-lg leading-normal {m.status === 'past_due'
 							? 'text-hero-rb'
 							: 'text-soft'}"
 					>
@@ -241,14 +238,14 @@
 
 					{#if period}
 						<!-- where we are in this period -->
-						<div class="mt-6 max-w-[520px]">
+						<div class="mt-6 max-w-lg">
 							<div
-								class="flex items-baseline justify-between text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								class="flex items-baseline justify-between text-xs font-extrabold tracking-widest text-fade uppercase"
 							>
 								<span>{ui.dateShort(period.start)}</span>
 								<span>{ui.dateShort(period.end)}</span>
 							</div>
-							<div class="relative mt-1.5 h-[6px] bg-line" aria-hidden="true">
+							<div class="relative mt-1.5 h-1.5 bg-line" aria-hidden="true">
 								<div
 									class="absolute inset-y-0 left-0 {m.status === 'past_due'
 										? 'bg-hero-rb'
@@ -258,11 +255,11 @@
 									style="width: {period.pct}%;"
 								></div>
 								<span
-									class="absolute -top-[7px] -translate-x-1/2 text-[13px] leading-none text-ink"
+									class="absolute -top-2 -translate-x-1/2 text-sm leading-none text-ink"
 									style="left: {period.pct}%;">◆</span
 								>
 							</div>
-							<p class="mt-2 text-[12px] font-semibold text-soft">
+							<p class="mt-2 text-xs font-semibold text-soft">
 								{period.left} day{period.left === 1 ? '' : 's'}
 								{m.status === 'active' ? 'until your renewal' : 'of membership left'}
 							</p>
@@ -271,17 +268,17 @@
 				</div>
 
 				<dl
-					class="grid grid-cols-2 gap-x-6 gap-y-5 border-t border-line pt-5 text-[13.5px] md:grid-cols-1 md:border-t-0 md:border-l md:pt-0 md:pl-6"
+					class="grid grid-cols-2 gap-x-6 gap-y-5 border-t border-line pt-5 text-sm md:grid-cols-1 md:border-t-0 md:border-l md:pt-0 md:pl-6"
 				>
 					<div>
 						<dt class={ui.label}>Member for</dt>
-						<dd class="ao-cond mt-1 text-[26px] leading-none font-black">{tenure || '—'}</dd>
+						<dd class="ao-cond mt-1 text-2xl leading-none font-black">{tenure || '—'}</dd>
 					</div>
 					<div>
 						<dt class={ui.label}>Your rate</dt>
 						<dd class="mt-1 font-semibold">{price} / {plan?.noun}</dd>
 						{#if m.priceCents !== plan?.priceCents}
-							<dd class="text-[11px] text-fade">Kept from when you joined</dd>
+							<dd class="text-xs text-fade">Kept from when you joined</dd>
 						{/if}
 					</div>
 					<div class="col-span-2 md:col-span-1">
@@ -301,7 +298,7 @@
 			<!-- the one thing to do now, when there is one -->
 			{#if m.status === 'past_due'}
 				<div
-					class="flex flex-wrap items-center gap-3 border-t border-line bg-hero-rb/[0.05] px-6 py-4 md:px-8"
+					class="flex flex-wrap items-center gap-3 border-t border-line bg-hero-rb/5 px-6 py-4 md:px-8"
 				>
 					<form method="POST" action="?/retry" use:enhance={enhanceWith('retry')}>
 						<button class={ui.btnGreen} disabled={!!busy}
@@ -334,11 +331,9 @@
 
 		<!-- ============ manage ============ -->
 		<section class="mt-12">
-			<div class="border-b-[3px] border-ink pb-2">
-				<h3
-					class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-				>
-					<span class="text-[8px] text-warm">◆</span>Manage
+			<div class="border-b-3 border-ink pb-2">
+				<h3 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+					<span class="text-xs text-warm">◆</span>Manage
 				</h3>
 			</div>
 			<ul>
@@ -346,7 +341,7 @@
 				<li class="border-b border-line">
 					<div class="flex flex-wrap items-center justify-between gap-3 py-4">
 						<div>
-							<p class="font-newsreader text-[17px] font-semibold">Payment card</p>
+							<p class="font-newsreader text-lg font-semibold">Payment card</p>
 							<p class={ui.note}>
 								{data.card
 									? `${data.card.brand} ending ${data.card.lastFour} pays for your renewals.`
@@ -379,8 +374,8 @@
 								<div class="mt-3 space-y-2">
 									{#each data.cards.filter((c) => c.usable) as c (c.id)}
 										<label
-											class="flex items-center gap-3 border-[1.5px] px-4 py-3 {cardMode ===
-												'saved' && chosenCard === c.id
+											class="flex items-center gap-3 border-2 px-4 py-3 {cardMode === 'saved' &&
+											chosenCard === c.id
 												? 'border-ink bg-paper-bg'
 												: 'border-line2'}"
 										>
@@ -392,18 +387,18 @@
 												onchange={() => (cardMode = 'saved')}
 												class="h-3.5 w-3.5 border-line2 text-ink focus:ring-0"
 											/>
-											<span class="text-[13.5px] font-semibold"
+											<span class="text-sm font-semibold"
 												>{c.brand} •••• {c.lastFour}
 												<span class="text-fade">· exp {c.expiry}</span
 												>{#if c.id === data.card?.id}<span
-														class="ml-2 text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
+														class="ml-2 text-xs font-extrabold tracking-widest text-fade uppercase"
 														>current</span
 													>{/if}</span
 											>
 										</label>
 									{/each}
 									<label
-										class="flex items-center gap-3 border-[1.5px] px-4 py-3 {cardMode === 'new'
+										class="flex items-center gap-3 border-2 px-4 py-3 {cardMode === 'new'
 											? 'border-ink bg-paper-bg'
 											: 'border-line2'}"
 									>
@@ -415,7 +410,7 @@
 											onchange={() => (cardMode = 'new')}
 											class="h-3.5 w-3.5 border-line2 text-ink focus:ring-0"
 										/>
-										<span class="text-[13.5px] font-semibold">A new card</span>
+										<span class="text-sm font-semibold">A new card</span>
 									</label>
 								</div>
 							{/if}
@@ -431,7 +426,7 @@
 								</div>
 								<input type="hidden" name="makeDefault" value="1" />
 							{/if}
-							{#if cardError}<p class="mt-3 text-[12.5px] font-semibold text-hero-rb">
+							{#if cardError}<p class="mt-3 text-xs font-semibold text-hero-rb">
 									{cardError}
 								</p>{/if}
 							<div class="mt-4 flex gap-2">
@@ -455,7 +450,7 @@
 					<li class="border-b border-line">
 						<div class="flex flex-wrap items-center justify-between gap-3 py-4">
 							<div>
-								<p class="font-newsreader text-[17px] font-semibold">Plan</p>
+								<p class="font-newsreader text-lg font-semibold">Plan</p>
 								<p class={ui.note}>
 									{#if m.pendingPlan}
 										Switching to {m.pendingPlan === 'yearly' ? 'annual' : 'monthly'} at {ui.dollars(
@@ -493,7 +488,7 @@
 								class="mb-5 border border-line2 bg-paper px-5 py-5"
 							>
 								<input type="hidden" name="plan" value={otherPlan.key} />
-								<p class="font-newsreader text-[16px] leading-[1.5]">
+								<p class="font-newsreader text-base leading-normal">
 									Switch to the <strong>{otherPlan.label.toLowerCase()} plan</strong> at {ui.dollars(
 										otherPlan.priceCents
 									)} a {otherPlan.noun}. It starts {ui.date(m.currentPeriodEnd)}, when this period
@@ -520,7 +515,7 @@
 					<li class="border-b border-line">
 						<div class="flex flex-wrap items-center justify-between gap-3 py-4">
 							<div>
-								<p class="font-newsreader text-[17px] font-semibold">Cancel membership</p>
+								<p class="font-newsreader text-lg font-semibold">Cancel membership</p>
 								<p class={ui.note}>
 									{m.status === 'past_due'
 										? 'Ends your membership today and stops every charge.'
@@ -543,7 +538,7 @@
 								use:enhance={enhanceWith('cancel')}
 								class="mb-5 border border-line2 bg-paper px-5 py-5"
 							>
-								<p class="font-newsreader text-[16px] leading-[1.5]">
+								<p class="font-newsreader text-base leading-normal">
 									{#if m.status === 'past_due'}
 										Cancelling now ends your membership today.
 									{:else}
@@ -580,11 +575,9 @@
 		<!-- ============ billing history ============ -->
 		{#if data.invoices.length}
 			<section class="mt-12">
-				<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-					<h3
-						class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-					>
-						<span class="text-[8px] text-warm">◆</span>Billing history
+				<div class="flex items-baseline justify-between gap-4 border-b-3 border-ink pb-2">
+					<h3 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+						<span class="text-xs text-warm">◆</span>Billing history
 					</h3>
 					<a href="/account/purchases" class={ui.textAction}>All purchases →</a>
 				</div>
@@ -625,7 +618,7 @@
 	{:else if data.legacy}
 		<!-- ============ still on the old billing ============ -->
 		{@const lu = data.legacyUser}
-		<div class="relative border-[3px] border-double border-ink bg-paper-bg">
+		<div class="relative border-3 border-double border-ink bg-paper-bg">
 			{@render corners()}
 			<div class="px-6 pt-6 pb-6 md:px-8">
 				{@render seal(
@@ -640,15 +633,15 @@
 							? 'bg-gold text-ink'
 							: 'bg-prem text-white'
 				)}
-				<p class="ao-cond mt-4 text-[44px] leading-[0.9] font-black uppercase md:text-[56px]">
+				<p class="ao-cond mt-4 text-5xl leading-none font-black uppercase md:text-6xl">
 					AGE Premium
 				</p>
-				<p class="mt-1 text-[11px] font-extrabold tracking-[0.2em] text-fade uppercase">
+				<p class="mt-1 text-xs font-extrabold tracking-widest text-fade uppercase">
 					{lu.plan === 'yearly' ? 'Annual' : 'Monthly'} member{since
 						? ` · since ${ui.dateShort(since)}`
 						: ''}{tenure ? ` · ${tenure}` : ''}
 				</p>
-				<p class="mt-4 max-w-[560px] font-newsreader text-[17px] leading-[1.5] text-soft">
+				<p class="mt-4 max-w-xl font-newsreader text-lg leading-normal text-soft">
 					{#if lu.status === 'cancelled'}
 						Cancelled. Nothing more will be charged, and you're a member until {ui.date(
 							lu.endDate
@@ -700,14 +693,14 @@
 		{@render perks()}
 	{:else if data.comp}
 		<!-- ============ complimentary ============ -->
-		<div class="relative border-[3px] border-double border-ink bg-paper-bg">
+		<div class="relative border-3 border-double border-ink bg-paper-bg">
 			{@render corners()}
 			<div class="px-6 pt-6 pb-6 md:px-8">
 				{@render seal('Complimentary', 'bg-gold text-ink')}
-				<p class="ao-cond mt-4 text-[44px] leading-[0.9] font-black uppercase md:text-[56px]">
+				<p class="ao-cond mt-4 text-5xl leading-none font-black uppercase md:text-6xl">
 					AGE Premium
 				</p>
-				<p class="mt-4 max-w-[560px] font-newsreader text-[17px] leading-[1.5] text-soft">
+				<p class="mt-4 max-w-xl font-newsreader text-lg leading-normal text-soft">
 					Your membership is on the house{data.compReason ? ` (${data.compReason})` : ''}, with our
 					thanks. Nothing is charged and nothing needs doing.{#if data.compEndsAt}
 						It runs until <strong class="font-semibold text-ink"
@@ -724,23 +717,21 @@
 		{@render perks()}
 	{:else}
 		<!-- ============ not a member ============ -->
-		<div class="relative border-[3px] border-double border-line2 bg-paper-bg">
+		<div class="relative border-3 border-double border-line2 bg-paper-bg">
 			<div class="px-6 pt-6 pb-6 md:px-8">
 				{#if data.latest}
 					{@render seal(`Ended ${ui.dateShort(data.latest.endedAt)}`, 'bg-line2 text-ink')}
-					<p class="ao-cond mt-4 text-[40px] leading-[0.9] font-black uppercase md:text-[52px]">
+					<p class="ao-cond mt-4 text-4xl leading-none font-black uppercase md:text-5xl">
 						Come back to the club
 					</p>
-					<p class="mt-4 max-w-[560px] font-newsreader text-[17px] leading-[1.5] text-soft">
+					<p class="mt-4 max-w-xl font-newsreader text-lg leading-normal text-soft">
 						{data.latest.endReason === 'payment_failed'
 							? "We couldn't collect your last renewal, so your membership lapsed."
 							: 'Thank you for your time with us.'} Your account, tickets and history are all still here.
 					</p>
 				{:else}
-					<p class="ao-cond text-[40px] leading-[0.9] font-black uppercase md:text-[52px]">
-						AGE Premium
-					</p>
-					<p class="mt-4 max-w-[560px] font-newsreader text-[17px] leading-[1.5] text-soft">
+					<p class="ao-cond text-4xl leading-none font-black uppercase md:text-5xl">AGE Premium</p>
+					<p class="mt-4 max-w-xl font-newsreader text-lg leading-normal text-soft">
 						Membership is what pays the players who write, film and teach for AGE, and keeps the AGE
 						Open on the calendar.
 					</p>

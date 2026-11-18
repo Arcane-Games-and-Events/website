@@ -1,5 +1,5 @@
 <!-- Three dots that bounce in turn: someone is typing. Still for reduced motion. -->
-<span class="typing-dots inline-flex items-end gap-[3px]" aria-hidden="true"
+<span class="typing-dots inline-flex items-end gap-1" aria-hidden="true"
 	><span></span><span></span><span></span></span
 >
 

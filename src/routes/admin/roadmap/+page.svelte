@@ -20,9 +20,9 @@
 	let { data, form } = $props();
 
 	const motion = (ms) => ({ duration: prefersReducedMotion.current ? 0 : ms, easing: cubicOut });
-	const sectionTitle = 'ao-cond text-[36px] leading-none font-black uppercase md:text-[44px]';
+	const sectionTitle = 'ao-cond text-4xl leading-none font-black uppercase md:text-5xl';
 	const small =
-		'inline-flex h-[34px] items-center border border-line2 bg-white px-3 text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:opacity-35 disabled:hover:border-line2';
+		'inline-flex h-9 items-center border border-line2 bg-white px-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:border-ink disabled:opacity-35 disabled:hover:border-line2';
 	const shippedOn = (d) =>
 		d
 			? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -114,7 +114,7 @@
 						<label
 							class="{F.chip(
 								false
-							)} has-[:checked]:border-transparent has-[:checked]:bg-[var(--cc)] has-[:checked]:text-white"
+							)} has-[:checked]:border-transparent has-[:checked]:bg-(--cc) has-[:checked]:text-white"
 							style="--cc: {a.tone}"
 							><input
 								type="radio"
@@ -142,7 +142,7 @@
 						>
 					{/each}
 				</div>
-				<label class="flex items-center gap-2.5 text-[13.5px]">
+				<label class="flex items-center gap-2.5 text-sm">
 					<input
 						type="checkbox"
 						name="isPublic"
@@ -154,9 +154,7 @@
 			</div>
 		</div>
 		{#if notice(item?.id || 'new')?.error}
-			<p
-				class="border-l-[3px] border-hero-rb bg-hero-rb/[0.06] px-3 py-2 text-[12.5px] text-hero-rb"
-			>
+			<p class="border-l-3 border-hero-rb bg-hero-rb/5 px-3 py-2 text-xs text-hero-rb">
 				{notice(item?.id || 'new').error}
 			</p>
 		{/if}
@@ -164,11 +162,11 @@
 			<button
 				type="button"
 				onclick={() => (item ? (editing = null) : (creating = false))}
-				class="h-[42px] px-4 text-[10.5px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+				class="h-11 px-4 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 				>Cancel</button
 			>
 			<button
-				class="h-[42px] bg-ink px-5 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm"
+				class="h-11 bg-ink px-5 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm"
 				>{item ? 'Save' : 'Add to the roadmap'}</button
 			>
 		</div>
@@ -197,10 +195,10 @@
 {#if form?.saved}<AdminNotice tone="success" message={form.saved} />{/if}
 {#if form?.error && !form.section}<AdminNotice tone="error" message={form.error} />{/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-6 pb-20 md:px-8">
 	{#if creating}
 		<div
-			class="mb-8 border border-l-[6px] border-line2 border-l-ink bg-white"
+			class="mb-8 border border-l-6 border-line2 border-l-ink bg-white"
 			transition:slide={motion(220)}
 		>
 			{@render itemForm(null, 'upcoming')}
@@ -209,8 +207,8 @@
 
 	{#if data.ready && total === 0 && !creating}
 		<div class="border border-dashed border-line2 px-6 py-10 text-center">
-			<p class="font-newsreader text-[20px] font-semibold">The roadmap is empty.</p>
-			<p class="mt-1 text-[13px] text-soft">Add what’s upcoming, in development and in testing.</p>
+			<p class="font-newsreader text-xl font-semibold">The roadmap is empty.</p>
+			<p class="mt-1 text-sm text-soft">Add what’s upcoming, in development and in testing.</p>
 			<button type="button" onclick={() => (creating = true)} class="{hbtn} mt-4"
 				>+ Add the first item</button
 			>
@@ -221,9 +219,9 @@
 		{@const items = data.roadmap[stage.id]}
 		{#if items.length || (data.ready && total > 0)}
 			<section class="mt-10 first:mt-0">
-				<div class="flex items-end justify-between gap-3 border-b-[3px] border-ink pb-2">
+				<div class="flex items-end justify-between gap-3 border-b-3 border-ink pb-2">
 					<h2 class={sectionTitle}>{stage.label}</h2>
-					<span class="text-[12px] text-soft"
+					<span class="text-xs text-soft"
 						>{items.length}
 						{items.length === 1 ? 'item' : 'items'} · {stage.id === 'shipped'
 							? 'newest first'
@@ -231,13 +229,13 @@
 					>
 				</div>
 				{#if !items.length}
-					<p class="mt-4 font-newsreader text-[16px] text-fade italic">Nothing here.</p>
+					<p class="mt-4 font-newsreader text-base text-fade italic">Nothing here.</p>
 				{/if}
 				<ul class="mt-4 flex flex-col gap-3">
 					{#each items as item, i (item.id)}
 						{@const area = item.area ? AREA[item.area] : null}
 						<li
-							class="border border-l-[6px] border-line2 bg-white"
+							class="border border-l-6 border-line2 bg-white"
 							style="border-left-color: {area?.tone || 'var(--color-line2)'}"
 						>
 							{#if editing === item.id}
@@ -248,27 +246,25 @@
 										<p class="flex flex-wrap items-center gap-2">
 											{#if area}
 												<span
-													class="text-[9.5px] font-extrabold tracking-[0.16em] uppercase"
+													class="text-xs font-extrabold tracking-widest uppercase"
 													style="color: {area.tone}">{area.label}</span
 												>
 											{/if}
 											{#if !item.isPublic}
 												<span
-													class="border border-line2 px-1.5 py-px text-[9.5px] font-extrabold tracking-[0.14em] text-soft uppercase"
+													class="border border-line2 px-1.5 py-px text-xs font-extrabold tracking-widest text-soft uppercase"
 													>Hidden</span
 												>
 											{/if}
 											{#if stage.id === 'shipped' && item.shippedAt}
-												<span class="text-[11.5px] text-fade"
-													>Shipped {shippedOn(item.shippedAt)}</span
-												>
+												<span class="text-xs text-fade">Shipped {shippedOn(item.shippedAt)}</span>
 											{/if}
 										</p>
-										<p class="mt-1 font-newsreader text-[19px] leading-tight font-semibold">
+										<p class="mt-1 font-newsreader text-xl leading-tight font-semibold">
 											{item.title}
 										</p>
 										{#if item.body}
-											<p class="mt-1 line-clamp-2 text-[13px] text-soft">{item.body}</p>
+											<p class="mt-1 line-clamp-2 text-sm text-soft">{item.body}</p>
 										{/if}
 									</div>
 									<div class="flex flex-wrap items-center gap-1.5">
@@ -279,14 +275,14 @@
 													name="dir"
 													value="-1"
 													disabled={i === 0}
-													class="{small} w-[34px] justify-center px-0"
+													class="{small} w-9 justify-center px-0"
 													aria-label="Move up">↑</button
 												>
 												<button
 													name="dir"
 													value="1"
 													disabled={i === items.length - 1}
-													class="{small} w-[34px] justify-center px-0"
+													class="{small} w-9 justify-center px-0"
 													aria-label="Move down">↓</button
 												>
 											</form>
@@ -297,7 +293,7 @@
 											<select
 												id="move-{item.id}"
 												name="stage"
-												class="h-[34px] border border-line2 bg-white py-0 pr-8 pl-2.5 text-[12px] focus:border-ink focus:ring-0"
+												class="h-9 border border-line2 bg-white py-0 pr-8 pl-2.5 text-xs focus:border-ink focus:ring-0"
 												onchange={(e) => e.currentTarget.form?.requestSubmit()}
 											>
 												{#each STAGES as s (s.id)}
@@ -316,7 +312,7 @@
 											<form method="POST" action="?/remove" use:enhance class="contents">
 												<input type="hidden" name="id" value={item.id} />
 												<button
-													class="inline-flex h-[34px] items-center bg-hero-rb px-3 text-[10px] font-extrabold tracking-[0.12em] text-white uppercase"
+													class="inline-flex h-9 items-center bg-hero-rb px-3 text-xs font-extrabold tracking-widest text-white uppercase"
 													>Delete it</button
 												>
 											</form>

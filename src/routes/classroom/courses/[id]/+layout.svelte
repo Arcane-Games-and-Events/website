@@ -221,16 +221,16 @@
 		}
 	}
 	const STRIP = {
-		red: 'border-hero-rb bg-hero-rb/[0.06]',
+		red: 'border-hero-rb bg-hero-rb/5',
 		ink: 'border-ink bg-white',
 		gold: 'border-gold bg-gold/10',
-		green: 'border-prem bg-prem/[0.06]',
+		green: 'border-prem bg-prem/5',
 		grey: 'border-line2 bg-white'
 	};
 	const HEAD = {
 		red: 'text-hero-rb',
 		ink: 'text-ink',
-		gold: 'text-[#8a6116]',
+		gold: 'text-gold-deep',
 		green: 'text-prem',
 		grey: 'text-fade'
 	};
@@ -238,9 +238,7 @@
 	const button =
 		'inline-flex items-center gap-2 font-extrabold uppercase transition-colors disabled:opacity-60';
 	const size = (compact) =>
-		compact
-			? 'min-h-[30px] px-3 text-[9.5px] tracking-[0.14em]'
-			: 'min-h-[44px] px-5 text-[10.5px] tracking-[0.16em]';
+		compact ? 'min-h-8 px-3 text-xs tracking-widest' : 'min-h-11 px-5 text-xs tracking-widest';
 	const solid = 'bg-paper-bg text-ink hover:bg-warm-light';
 	const outline = 'border border-paper-bg/40 text-paper-bg hover:border-paper-bg';
 </script>
@@ -251,7 +249,7 @@
 
 {#snippet sub()}
 	<span
-		class="mr-2 inline-block border px-1.5 py-[1px] align-[1px] text-[9px] font-extrabold tracking-[0.14em] uppercase {ON_INK[
+		class="mr-2 inline-block border px-1.5 py-px align-[1px] text-xs font-extrabold tracking-widest uppercase {ON_INK[
 			course.status
 		]}">{STATUS[course.status] || course.status}</span
 	>{#if !data.ownsIt}{data.teacher || 'No teacher'} ·
@@ -307,22 +305,22 @@
 
 <!-- where the course stands, always in view at the top of every tab -->
 <div class="border-b border-line2 bg-paper-bg font-libre">
-	<div class="mx-auto max-w-[1200px] px-5 pt-5 md:px-8">
-		<section class="border-l-[3px] {STRIP[tone]} px-4 py-2.5" aria-label="Where this course stands">
+	<div class="mx-auto max-w-page px-5 pt-5 md:px-8">
+		<section class="border-l-3 {STRIP[tone]} px-4 py-2.5" aria-label="Where this course stands">
 			<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
 				<p class="flex w-full min-w-0 items-baseline gap-2.5 sm:w-auto sm:flex-1">
-					<span class="shrink-0 text-[10px] font-extrabold tracking-[0.14em] uppercase {HEAD[tone]}"
+					<span class="shrink-0 text-xs font-extrabold tracking-widest uppercase {HEAD[tone]}"
 						>{strip.head}</span
 					>
-					<span class="min-w-0 text-[13px] text-soft sm:truncate">{short}</span>
+					<span class="min-w-0 text-sm text-soft sm:truncate">{short}</span>
 				</p>
 				<div class="flex shrink-0 items-center gap-3 max-sm:w-full max-sm:justify-between">
 					{#if course.status === 'draft'}
 						<button
 							type="button"
 							onclick={() => (sending = true)}
-							class="min-h-[32px] px-3 text-[9.5px] font-extrabold tracking-[0.14em] uppercase {data
-								.problems.length
+							class="min-h-8 px-3 text-xs font-extrabold tracking-widest uppercase {data.problems
+								.length
 								? 'border border-ink hover:bg-ink hover:text-paper-bg'
 								: 'bg-ink text-paper-bg hover:bg-warm'}"
 							>{data.problems.length
@@ -334,7 +332,7 @@
 					{:else if reviewing && current !== '/review'}
 						<a
 							href="{base}/review"
-							class="inline-flex min-h-[32px] items-center bg-ink px-3 text-[9.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase hover:bg-warm"
+							class="inline-flex min-h-8 items-center bg-ink px-3 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm"
 							>Review →</a
 						>
 					{/if}
@@ -342,7 +340,7 @@
 						type="button"
 						onclick={toggleStatus}
 						aria-expanded={statusOpen}
-						class="text-[9.5px] font-extrabold tracking-[0.14em] whitespace-nowrap text-fade uppercase hover:text-ink"
+						class="text-xs font-extrabold tracking-widest whitespace-nowrap text-fade uppercase hover:text-ink"
 						>{statusOpen ? 'Hide' : 'Show status'}
 						<span aria-hidden="true">{statusOpen ? '▴' : '▾'}</span></button
 					>
@@ -353,36 +351,36 @@
 				<!-- the comprehensive view -->
 				<div class="mt-3 border-t border-ink/10 pt-4 pb-1.5">
 					<div class="flex flex-wrap items-start justify-between gap-4">
-						<div class="max-w-[720px] min-w-0">
-							<p class="font-newsreader text-[19px] leading-snug font-semibold">
+						<div class="max-w-3xl min-w-0">
+							<p class="font-newsreader text-xl leading-snug font-semibold">
 								{#if stage === 'returned'}The note: “{strip.text}”{:else}{strip.text}{/if}
 							</p>
 							{#if liveProblems.length}
-								<p class="mt-1.5 text-[13px] text-hero-rb">
+								<p class="mt-1.5 text-sm text-hero-rb">
 									Buyers see this now: {liveProblems.join(', ').toLowerCase()}. Fix it in
 									<a href="{base}/details" class="underline">Details</a> or
 									<a href="{base}/outline" class="underline">Outline</a>.
 								</p>
 							{/if}
 							{#if !data.ownsIt}
-								<p class="mt-1.5 text-[12.5px] text-soft">
+								<p class="mt-1.5 text-xs text-soft">
 									Teacher: <b class="font-semibold text-ink">{data.teacher || 'none'}</b>
 								</p>
 							{/if}
 						</div>
 						<div class="text-right">
 							<p
-								class="text-[10px] font-extrabold tracking-[0.16em] uppercase {data.standing
-									.whose === 'admin' || liveProblems.length
+								class="text-xs font-extrabold tracking-widest uppercase {data.standing.whose ===
+									'admin' || liveProblems.length
 									? 'text-hero-rb'
 									: data.standing.whose === 'teacher'
-										? 'text-[#8a6116]'
+										? 'text-gold-deep'
 										: 'text-fade'}"
 							>
 								{whose}
 							</p>
 							{#if data.standing.since}
-								<p class="mt-1 text-[12.5px] text-soft">
+								<p class="mt-1 text-xs text-soft">
 									Since {shortDate(data.standing.since)}
 									<span class="text-fade">({waited(data.standing.since)})</span>
 								</p>
@@ -396,17 +394,15 @@
 					>
 						{#each steps as step, i (step.label)}
 							<li class="bg-paper-bg px-3.5 py-2.5 {step.done ? '' : 'opacity-55'}">
-								<p
-									class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.14em] uppercase"
-								>
+								<p class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase">
 									<span
-										class="flex h-5 w-5 items-center justify-center text-[10px] {step.done
+										class="flex h-5 w-5 items-center justify-center text-xs {step.done
 											? 'bg-ink text-paper-bg'
 											: 'border border-line2 text-fade'}">{step.done ? '✓' : i + 1}</span
 									>
 									{step.label}
 								</p>
-								<p class="mt-1 text-[12px] text-soft">
+								<p class="mt-1 text-xs text-soft">
 									{step.at && step.done ? shortDate(step.at) : step.done ? 'Done' : 'Not yet'}
 								</p>
 							</li>
@@ -422,7 +418,7 @@
 			{/if}
 		</section>
 		{#if message}
-			<p class="mt-3 border-l-[3px] border-hero-rb bg-hero-rb/5 px-4 py-3 text-[13px]" role="alert">
+			<p class="mt-3 border-l-3 border-hero-rb bg-hero-rb/5 px-4 py-3 text-sm" role="alert">
 				{message}
 			</p>
 		{/if}
@@ -440,7 +436,7 @@
 					<a
 						href="{base}{t.href}"
 						aria-current={current === t.href ? 'page' : undefined}
-						class="-mb-px flex shrink-0 items-baseline gap-2 border-b-[3px] py-3 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors {current ===
+						class="-mb-px flex shrink-0 items-baseline gap-2 border-b-3 py-3 text-xs font-extrabold tracking-widest uppercase transition-colors {current ===
 						t.href
 							? 'border-ink text-ink'
 							: t.alert
@@ -449,7 +445,7 @@
 					>
 						{t.label}
 						{#if t.href === '/discussion' && data.needsReview}
-							<span class="bg-hero-rb px-1.5 text-[9.5px] tracking-normal text-white tabular-nums"
+							<span class="bg-hero-rb px-1.5 text-xs tracking-normal text-white tabular-nums"
 								>{data.needsReview}</span
 							>
 						{/if}
@@ -462,7 +458,7 @@
 					tabindex="-1"
 					aria-hidden="true"
 					onclick={() => nudgeTabs(-1)}
-					class="absolute inset-y-0 left-0 flex w-12 items-center justify-start bg-gradient-to-r from-paper-bg via-paper-bg/90 to-transparent text-[20px] leading-none font-semibold text-ink/60"
+					class="absolute inset-y-0 left-0 flex w-12 items-center justify-start bg-gradient-to-r from-paper-bg via-paper-bg/90 to-transparent text-xl leading-none font-semibold text-ink/60"
 					>‹</button
 				>
 			{/if}
@@ -472,7 +468,7 @@
 					tabindex="-1"
 					aria-hidden="true"
 					onclick={() => nudgeTabs(1)}
-					class="absolute inset-y-0 right-0 flex w-12 items-center justify-end bg-gradient-to-l from-paper-bg via-paper-bg/90 to-transparent text-[20px] leading-none font-semibold text-ink/60"
+					class="absolute inset-y-0 right-0 flex w-12 items-center justify-end bg-gradient-to-l from-paper-bg via-paper-bg/90 to-transparent text-xl leading-none font-semibold text-ink/60"
 					>›</button
 				>
 			{/if}
@@ -498,14 +494,14 @@
 	kicker="Unlist course"
 	title="Take “{course.title}” out of the Academy?"
 >
-	<p class="text-[14px] leading-relaxed text-soft">
+	<p class="text-sm leading-relaxed text-soft">
 		Unlisting hides the course; it doesn’t delete anything. Use it to pause sales, rework the course
 		or retire it.
 	</p>
 	<ul class="mt-5 space-y-3">
-		<li class="flex gap-3 text-[14px] leading-snug">
+		<li class="flex gap-3 text-sm leading-snug">
 			<span
-				class="mt-[3px] flex h-[18px] w-[18px] shrink-0 items-center justify-center bg-hero-rb text-[11px] text-white"
+				class="mt-1 flex h-4.5 w-4.5 shrink-0 items-center justify-center bg-hero-rb text-xs text-white"
 				aria-hidden="true">–</span
 			>
 			<span
@@ -513,9 +509,9 @@
 				or join it.</span
 			>
 		</li>
-		<li class="flex gap-3 text-[14px] leading-snug">
+		<li class="flex gap-3 text-sm leading-snug">
 			<span
-				class="mt-[3px] flex h-[18px] w-[18px] shrink-0 items-center justify-center bg-prem text-[10px] text-white"
+				class="mt-1 flex h-4.5 w-4.5 shrink-0 items-center justify-center bg-prem text-xs text-white"
 				aria-hidden="true">✓</span
 			>
 			<span>
@@ -529,9 +525,9 @@
 				{/if}
 			</span>
 		</li>
-		<li class="flex gap-3 text-[14px] leading-snug">
+		<li class="flex gap-3 text-sm leading-snug">
 			<span
-				class="mt-[3px] flex h-[18px] w-[18px] shrink-0 items-center justify-center bg-prem text-[10px] text-white"
+				class="mt-1 flex h-4.5 w-4.5 shrink-0 items-center justify-center bg-prem text-xs text-white"
 				aria-hidden="true">✓</span
 			>
 			<span
@@ -540,9 +536,9 @@
 			>
 		</li>
 		{#if !data.ownsIt}
-			<li class="flex gap-3 text-[14px] leading-snug">
+			<li class="flex gap-3 text-sm leading-snug">
 				<span
-					class="mt-[3px] flex h-[18px] w-[18px] shrink-0 items-center justify-center border border-ink/40 text-[10px]"
+					class="mt-1 flex h-4.5 w-4.5 shrink-0 items-center justify-center border border-ink/40 text-xs"
 					aria-hidden="true">i</span
 				>
 				<span class="text-soft">{data.teacher || 'The teacher'} is told it was unlisted.</span>
@@ -550,7 +546,7 @@
 		{/if}
 	</ul>
 	{#if message}
-		<p class="mt-4 border-l-[3px] border-hero-rb bg-hero-rb/5 px-3 py-2 text-[13px]" role="alert">
+		<p class="mt-4 border-l-3 border-hero-rb bg-hero-rb/5 px-3 py-2 text-sm" role="alert">
 			{message}
 		</p>
 	{/if}
@@ -559,14 +555,14 @@
 			type="button"
 			onclick={() => (unlisting = false)}
 			disabled={busy}
-			class="h-11 px-4 text-[10.5px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink disabled:opacity-50"
+			class="h-11 px-4 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink disabled:opacity-50"
 			>Keep it listed</button
 		>
 		<button
 			type="button"
 			onclick={unlist}
 			disabled={busy}
-			class="h-11 bg-hero-rb px-6 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-colors hover:bg-ink disabled:opacity-60"
+			class="h-11 bg-hero-rb px-6 text-xs font-extrabold tracking-widest text-white uppercase transition-colors hover:bg-ink disabled:opacity-60"
 			>{busy ? 'Unlisting…' : 'Unlist course'}</button
 		>
 	{/snippet}

@@ -16,7 +16,7 @@
 {#snippet premium(cls)}<LibraryPremiumTile class={cls} />{/snippet}
 
 {#if items.length}
-	<section class="mx-auto w-full max-w-[1200px] px-5 md:px-8">
+	<section class="mx-auto w-full max-w-page px-5 md:px-8">
 		<!-- department head: the Library page's wordmark -->
 		<div id="library" class="scroll-mt-6">
 			<div
@@ -27,18 +27,18 @@
 						><LibraryWordmark size="sm" tone="light" /></a
 					>
 				</h2>
-				<div class="text-center md:max-w-[340px] md:pb-2 md:text-right">
-					<p class="font-newsreader text-[16px] leading-[1.4] text-soft italic md:text-[18px]">
+				<div class="text-center md:max-w-xs md:pb-2 md:text-right">
+					<p class="font-newsreader text-base leading-snug text-soft italic md:text-lg">
 						Reporting, strategy and gameplay from the players who define the format.
 					</p>
 					<a
 						href="/library"
-						class="mt-2 inline-block text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:text-warm"
+						class="mt-2 inline-block text-xs font-extrabold tracking-widest uppercase transition-colors hover:text-warm"
 						>Browse the library →</a
 					>
 				</div>
 			</div>
-			<div class="mt-5 h-[5px] border-t border-b border-ink md:mt-6" aria-hidden="true"></div>
+			<div class="mt-5 h-1.5 border-t border-b border-ink md:mt-6" aria-hidden="true"></div>
 		</div>
 		<div class="mt-8 md:mt-10">
 			<LibraryMosaic stories={items} aside={premiumTile ? premium : undefined} />

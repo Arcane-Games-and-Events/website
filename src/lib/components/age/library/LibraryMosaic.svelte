@@ -74,7 +74,7 @@
 			.join(' · ') || 'Article';
 	const bylineOf = (s) => [s.date, s.kind !== 'video' ? s.length : ''].filter(Boolean).join(' · ');
 	const zoom =
-		'transition-transform duration-700 ease-out group-hover:scale-[1.05] motion-reduce:transition-none motion-reduce:group-hover:scale-100';
+		'transition-transform duration-700 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100';
 	const shade =
 		'pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgb(10_14_32/0.94)_8%,rgb(10_14_32/0.62)_50%,rgb(10_14_32/0.12)_82%,transparent)]';
 </script>
@@ -92,34 +92,33 @@
 {#snippet tags(s, play = true)}
 	{#if s.premium}
 		<span
-			class="absolute top-0 left-0 z-[1] bg-prem px-2 py-1 font-libre text-[9.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+			class="absolute top-0 left-0 z-1 bg-prem px-2 py-1 font-libre text-xs font-extrabold tracking-widest text-white uppercase"
 			>◆ Premium</span
 		>
 	{/if}
 	{#if s.fresh}
 		<span
-			class="absolute top-0 right-0 z-[1] bg-gold px-2 py-1 font-libre text-[9.5px] font-extrabold tracking-[0.16em] text-ink uppercase"
+			class="absolute top-0 right-0 z-1 bg-gold px-2 py-1 font-libre text-xs font-extrabold tracking-widest text-ink uppercase"
 			>New</span
 		>
 	{/if}
 	{#if play && s.kind === 'video'}
 		<span
-			class="absolute bottom-0 left-0 z-[1] flex items-center gap-1.5 bg-ink/85 px-2 py-1 font-libre text-[10.5px] font-bold text-white"
+			class="absolute bottom-0 left-0 z-1 flex items-center gap-1.5 bg-ink/85 px-2 py-1 font-libre text-xs font-bold text-white"
 			><span aria-hidden="true">▶</span>{s.length || 'Video'}</span
 		>
 	{/if}
 {/snippet}
 
 {#snippet kicker(s, tone)}
-	<span
-		class="block font-libre text-[9.5px] font-extrabold tracking-[0.2em] uppercase md:text-[10px] {tone}"
+	<span class="block font-libre text-xs font-extrabold tracking-widest uppercase {tone}"
 		><span aria-hidden="true">◆</span> {kickerOf(s)}</span
 	>
 {/snippet}
 
 {#snippet byline(s, dark = false)}
 	<span
-		class="block truncate font-libre text-[10.5px] font-bold tracking-[0.12em] uppercase {dark
+		class="block truncate font-libre text-xs font-bold tracking-widest uppercase {dark
 			? 'text-white/60'
 			: 'text-fade'}"
 		>By <span class={dark ? 'text-white' : 'text-ink'}>{s.author}</span> · {bylineOf(s)}</span
@@ -140,11 +139,11 @@
 					</span>
 					<span class="mt-3.5 block">{@render kicker(s, 'text-warm')}</span>
 					<span
-						class="mt-1.5 block font-newsreader text-[23px] leading-[1.12] font-semibold tracking-[-0.01em] [text-wrap:balance] decoration-warm decoration-1 underline-offset-4 group-hover:underline"
+						class="mt-1.5 block font-newsreader text-2xl leading-none font-semibold tracking-normal [text-wrap:balance] decoration-warm decoration-1 underline-offset-4 group-hover:underline"
 						>{s.title}</span
 					>
 					{#if s.dek}<span
-							class="mt-2 line-clamp-2 block font-newsreader text-[16px] leading-[1.45] text-soft italic"
+							class="mt-2 line-clamp-2 block font-newsreader text-base leading-normal text-soft italic"
 							>{s.dek}</span
 						>{/if}
 					<span class="mt-2.5 block">{@render byline(s)}</span>
@@ -174,13 +173,13 @@
 					<span class="absolute inset-x-0 bottom-0 block {big ? 'p-5 md:p-8' : 'p-4 md:p-5'}">
 						{@render kicker(s, 'text-warm-light')}
 						<span
-							class="mt-2 block font-newsreader font-semibold tracking-[-0.02em] [text-wrap:balance] text-white decoration-warm-light decoration-2 underline-offset-[5px] group-hover:underline {big
-								? 'text-[30px] leading-[1.04] md:text-[44px]'
-								: 'line-clamp-3 text-[21px] leading-[1.12] md:text-[22px]'}">{s.title}</span
+							class="mt-2 block font-newsreader font-semibold tracking-tight [text-wrap:balance] text-white decoration-warm-light decoration-2 underline-offset-5 group-hover:underline {big
+								? 'text-3xl leading-none md:text-5xl'
+								: 'line-clamp-3 text-xl leading-none md:text-2xl'}">{s.title}</span
 						>
 						{#if big && s.dek}
 							<span
-								class="mt-2.5 line-clamp-2 block max-w-[560px] font-newsreader text-[17px] leading-[1.45] text-white/75 italic"
+								class="mt-2.5 line-clamp-2 block max-w-xl font-newsreader text-lg leading-normal text-white/75 italic"
 								>{s.dek}</span
 							>
 						{/if}
@@ -203,7 +202,7 @@
 						></span>
 						{@render kicker(s, 'text-warm-light')}
 						<span
-							class="mt-2.5 line-clamp-3 block font-newsreader text-[24px] leading-[1.1] font-semibold tracking-[-0.01em] [text-wrap:balance] decoration-warm-light decoration-2 underline-offset-[5px] group-hover:underline"
+							class="mt-2.5 line-clamp-3 block font-newsreader text-2xl leading-none font-semibold tracking-normal [text-wrap:balance] decoration-warm-light decoration-2 underline-offset-5 group-hover:underline"
 							>{s.title}</span
 						>
 						<span class="mt-auto block pt-4">{@render byline(s, true)}</span>
@@ -221,11 +220,11 @@
 					<span class="flex flex-1 flex-col p-5">
 						{@render kicker(s, 'text-warm')}
 						<span
-							class="mt-2 line-clamp-3 block font-newsreader text-[23px] leading-[1.12] font-semibold tracking-[-0.01em] [text-wrap:balance] decoration-warm decoration-1 underline-offset-4 group-hover:underline"
+							class="mt-2 line-clamp-3 block font-newsreader text-2xl leading-none font-semibold tracking-normal [text-wrap:balance] decoration-warm decoration-1 underline-offset-4 group-hover:underline"
 							>{s.title}</span
 						>
 						{#if s.dek}<span
-								class="mt-2 line-clamp-3 block font-newsreader text-[15.5px] leading-[1.45] text-soft italic"
+								class="mt-2 line-clamp-3 block font-newsreader text-base leading-normal text-soft italic"
 								>{s.dek}</span
 							>{/if}
 						<span class="mt-auto block pt-3">{@render byline(s)}</span>
@@ -234,23 +233,23 @@
 			{:else if tile === 'headline'}
 				<a
 					href={s.href}
-					class="group flex h-full flex-col justify-between border-t-[3px] border-ink bg-paper p-5 md:p-6"
+					class="group flex h-full flex-col justify-between border-t-3 border-ink bg-paper p-5 md:p-6"
 				>
 					<span class="block">
 						{@render kicker(s, 'text-warm')}
 						<span
-							class="mt-2.5 line-clamp-3 block font-newsreader text-[25px] leading-[1.06] font-semibold tracking-[-0.015em] [text-wrap:balance] decoration-warm decoration-2 underline-offset-[5px] group-hover:underline"
+							class="mt-2.5 line-clamp-3 block font-newsreader text-2xl leading-none font-semibold tracking-tight [text-wrap:balance] decoration-warm decoration-2 underline-offset-5 group-hover:underline"
 							>{s.title}</span
 						>
 						{#if s.dek}<span
-								class="mt-2 line-clamp-4 block font-newsreader text-[15px] leading-[1.45] text-soft italic"
+								class="mt-2 line-clamp-4 block font-newsreader text-base leading-normal text-soft italic"
 								>{s.dek}</span
 							>{/if}
 					</span>
 					<span class="mt-3 flex items-center justify-between gap-3">
 						{@render byline(s)}
 						{#if s.premium}<span
-								class="shrink-0 font-libre text-[9.5px] font-extrabold tracking-[0.16em] text-prem uppercase"
+								class="shrink-0 font-libre text-xs font-extrabold tracking-widest text-prem uppercase"
 								>◆ Premium</span
 							>{/if}
 					</span>
@@ -267,7 +266,7 @@
 					<span class="flex min-w-0 flex-col p-4 md:p-5">
 						{@render kicker(s, 'text-warm')}
 						<span
-							class="mt-2 line-clamp-2 block font-newsreader text-[21px] leading-[1.14] font-semibold tracking-[-0.01em] [text-wrap:balance] decoration-warm decoration-1 underline-offset-4 group-hover:underline"
+							class="mt-2 line-clamp-2 block font-newsreader text-xl leading-tight font-semibold tracking-normal [text-wrap:balance] decoration-warm decoration-1 underline-offset-4 group-hover:underline"
 							>{s.title}</span
 						>
 						<span class="mt-auto block pt-3">{@render byline(s)}</span>

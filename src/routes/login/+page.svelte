@@ -80,7 +80,7 @@
 								onclick={() => (showPassword = !showPassword)}
 								aria-controls="password"
 								aria-pressed={showPassword}
-								class="text-[9.5px] font-extrabold tracking-[0.18em] text-warm uppercase hover:text-ink"
+								class="text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 								>{showPassword ? 'Hide' : 'Show'}</button
 							>
 						</div>
@@ -95,14 +95,14 @@
 						/>
 					</div>
 
-					<div class="flex flex-wrap items-center justify-between gap-3 text-[13px]">
+					<div class="flex flex-wrap items-center justify-between gap-3 text-sm">
 						<label
 							class="inline-flex cursor-pointer items-center gap-2.5 font-semibold text-soft select-none"
 						>
 							<input
 								type="checkbox"
 								name="remember-me"
-								class="h-[18px] w-[18px] cursor-pointer border-line2 bg-paper-bg text-ink checked:bg-ink focus:ring-warm"
+								class="h-4.5 w-4.5 cursor-pointer border-line2 bg-paper-bg text-ink checked:bg-ink focus:ring-warm"
 							/>
 							Keep me signed in
 						</label>
@@ -112,7 +112,7 @@
 					<button type="submit" class={BUTTON}>Sign in <span aria-hidden="true">→</span></button>
 				</form>
 
-				<p class="mt-6 border-t border-line pt-4 font-newsreader text-[14px] text-soft italic">
+				<p class="mt-6 border-t border-line pt-4 font-newsreader text-sm text-soft italic">
 					Can’t get in? <a class="{LINK} not-italic" href="/contact?topic=account">Write to us</a> and
 					we’ll sort it out.
 				</p>

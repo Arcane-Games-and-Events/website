@@ -89,7 +89,7 @@
 				disablepictureinpicture
 				poster={still}
 				onplaying={shown}
-				class="h-full w-full object-cover object-[75%_20%] transition-opacity duration-[900ms] ease-out {playing
+				class="h-full w-full object-cover object-[75%_20%] transition-opacity duration-900 ease-out {playing
 					? 'opacity-100'
 					: 'opacity-0'}"
 			>

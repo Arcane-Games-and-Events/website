@@ -42,7 +42,7 @@
 		aria-hidden="true"
 	></div>
 
-	<div class="relative mx-auto w-full max-w-[1200px] px-5 pt-8 md:px-8 md:pt-10">
+	<div class="relative mx-auto w-full max-w-page px-5 pt-8 md:px-8 md:pt-10">
 		<div class="flex flex-wrap items-center justify-between gap-4">
 			<a href="/ageopen" class="block w-fit" aria-label="AGE Open Series overview">
 				<img
@@ -50,10 +50,10 @@
 					alt="AGE Open Series"
 					width="629"
 					height="294"
-					class="h-auto w-[150px] md:w-[180px]"
+					class="h-auto w-38 md:w-45"
 				/>
 			</a>
-			<p class="text-[9.5px] font-extrabold tracking-[0.26em] text-paper-bg/60 uppercase">
+			<p class="text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase">
 				Season ’26 · {circuitLine}
 			</p>
 		</div>
@@ -61,12 +61,12 @@
 		<div
 			class="fp-rise mt-8 flex flex-col gap-5 md:mt-10 md:flex-row md:items-end md:justify-between md:gap-10"
 		>
-			<h1 class="ao-cond text-[72px] leading-[0.82] font-black uppercase md:text-[120px]">
+			<h1 class="ao-cond text-7xl leading-none font-black uppercase md:text-9xl">
 				{title}
 			</h1>
 			{#if strap}
 				<p
-					class="max-w-[420px] font-newsreader text-[17px] leading-[1.45] text-paper-bg/75 italic md:pb-2 md:text-right md:text-[19px]"
+					class="max-w-md font-newsreader text-lg leading-normal text-paper-bg/75 italic md:pb-2 md:text-right md:text-xl"
 				>
 					{strap}
 				</p>
@@ -87,7 +87,7 @@
 						<a
 							href={s.href}
 							aria-current={s.id === active ? 'page' : undefined}
-							class="block border-t-[3px] pt-3.5 pb-4 text-[10.5px] font-extrabold tracking-[0.18em] whitespace-nowrap uppercase transition-colors {s.id ===
+							class="block border-t-3 pt-3.5 pb-4 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors {s.id ===
 							active
 								? 'border-warm-light text-paper-bg'
 								: 'border-transparent text-paper-bg/55 hover:text-paper-bg'}"

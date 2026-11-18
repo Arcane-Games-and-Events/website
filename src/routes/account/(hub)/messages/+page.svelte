@@ -17,7 +17,7 @@
 	{#snippet aside()}
 		<a
 			href="/contact"
-			class="inline-flex h-[38px] items-center bg-ink px-4 text-[10px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm"
+			class="inline-flex h-10 items-center bg-ink px-4 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm"
 			>New message</a
 		>
 	{/snippet}
@@ -25,8 +25,8 @@
 		<ThreadList {threads} />
 	{:else}
 		<div class="border border-dashed border-line2 px-6 py-12 text-center">
-			<p class="font-newsreader text-[19px] font-semibold">No messages yet.</p>
-			<p class="mt-1.5 text-[14px] text-fade">
+			<p class="font-newsreader text-xl font-semibold">No messages yet.</p>
+			<p class="mt-1.5 text-sm text-fade">
 				Questions about an order, an event or your account? <a
 					href="/contact"
 					class="font-bold text-warm hover:underline">Write to us</a

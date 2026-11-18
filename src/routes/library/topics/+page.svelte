@@ -25,7 +25,7 @@
 	/>
 
 	<div class="bg-paper-bg text-ink">
-		<section class="mx-auto w-full max-w-[1200px] px-5 pt-10 pb-20 md:px-8 md:pt-12">
+		<section class="mx-auto w-full max-w-page px-5 pt-10 pb-20 md:px-8 md:pt-12">
 			{#if az.length}
 				<ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 					{#each az as t (t.slug)}
@@ -36,15 +36,15 @@
 							>
 								<span class="min-w-0">
 									<span
-										class="block truncate font-libre text-[19px] font-bold tracking-[-0.02em] transition-colors group-hover:text-warm"
+										class="block truncate font-libre text-xl font-bold tracking-tight transition-colors group-hover:text-warm"
 										>{t.name}</span
 									>
-									<span class="mt-0.5 block text-[13px] text-fade"
+									<span class="mt-0.5 block text-sm text-fade"
 										>{t.count} {t.count === 1 ? 'piece' : 'pieces'}</span
 									>
 								</span>
 								<span
-									class="text-[18px] text-fade transition-[color,transform] group-hover:translate-x-0.5 group-hover:text-warm"
+									class="text-lg text-fade transition group-hover:translate-x-0.5 group-hover:text-warm"
 									aria-hidden="true">→</span
 								>
 							</a>
@@ -52,7 +52,7 @@
 					{/each}
 				</ul>
 			{:else}
-				<p class="text-[16px] text-fade">No topics yet.</p>
+				<p class="text-base text-fade">No topics yet.</p>
 			{/if}
 		</section>
 	</div>

@@ -78,7 +78,7 @@
 	const initials = $derived(
 		`${(p.firstName || '')[0] || ''}${(p.lastName || '')[0] || ''}`.toUpperCase() || '?'
 	);
-	const sectionTitle = 'ao-cond text-[36px] leading-none font-black uppercase md:text-[44px]';
+	const sectionTitle = 'ao-cond text-4xl leading-none font-black uppercase md:text-5xl';
 </script>
 
 <svelte:head><title>{p.firstName} {p.lastName} · Partners · Admin</title></svelte:head>
@@ -103,16 +103,16 @@
 	<AdminNotice tone="success" message={form.message} />
 {/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-8 pb-20 md:px-8">
 	<!-- ============ WHO + THE CODE ============ -->
 	<section
-		class="border border-l-[6px] border-line2 {p.isActive ? 'bg-gold/[0.06]' : 'bg-white'}"
+		class="border border-l-6 border-line2 {p.isActive ? 'bg-gold/5' : 'bg-white'}"
 		style="border-left-color: {p.isActive ? 'var(--color-gold)' : 'var(--color-line2)'}"
 	>
 		<div class="flex flex-col gap-6 p-5 md:flex-row md:items-center md:justify-between md:p-6">
 			<div class="flex items-center gap-5">
 				<span
-					class="ao-cond flex h-[76px] w-[76px] shrink-0 items-center justify-center text-[34px] leading-none font-black md:h-[88px] md:w-[88px] md:text-[40px] {p.isActive
+					class="ao-cond flex h-19 w-19 shrink-0 items-center justify-center text-4xl leading-none font-black md:h-22 md:w-22 {p.isActive
 						? 'bg-gold text-ink'
 						: 'bg-line text-soft'}"
 					aria-hidden="true">{initials}</span
@@ -120,33 +120,33 @@
 				<div class="min-w-0">
 					<p class="flex flex-wrap items-center gap-2">
 						<span
-							class="bg-ink px-2 py-[3px] text-[10px] font-extrabold tracking-[0.16em] text-paper-bg uppercase"
+							class="bg-ink px-2 py-1 text-xs font-extrabold tracking-widest text-paper-bg uppercase"
 							>Partner</span
 						>
 						<span
-							class="px-2 py-[2px] text-[10px] font-extrabold tracking-[0.16em] uppercase {p.isActive
+							class="px-2 py-0.5 text-xs font-extrabold tracking-widest uppercase {p.isActive
 								? 'border border-prem text-prem'
 								: 'border border-line2 text-fade'}">{p.isActive ? 'Code works' : 'Code off'}</span
 						>
 					</p>
-					<p class="mt-2 font-newsreader text-[19px] font-semibold">
+					<p class="mt-2 font-newsreader text-xl font-semibold">
 						{`${p.firstName} ${p.lastName}`}
 						{#if p.displayName}<span class="font-normal text-soft">as “{p.displayName}”</span>{/if}
 					</p>
-					<p class="mt-0.5 text-[12px] text-fade">Partner since {fmtDate(p.createdAt)}</p>
+					<p class="mt-0.5 text-xs text-fade">Partner since {fmtDate(p.createdAt)}</p>
 				</div>
 			</div>
 			<!-- the code, as a coupon -->
 			<div class="flex flex-col items-start gap-2 md:items-end">
 				<span
-					class="ao-cond border-[3px] border-dashed px-5 py-2 text-[34px] leading-none font-black tracking-[0.06em] uppercase md:text-[40px] {p.isActive
+					class="ao-cond border-3 border-dashed px-5 py-2 text-4xl leading-none font-black tracking-wider uppercase {p.isActive
 						? 'border-gold bg-white'
 						: 'border-line2 text-fade'}">{p.code}</span
 				>
 				<button
 					type="button"
 					onclick={copyLink}
-					class="max-w-full truncate text-left font-mono text-[12px] text-warm hover:text-ink md:text-right"
+					class="max-w-full truncate text-left font-mono text-xs text-warm hover:text-ink md:text-right"
 					title="Copy">{copied ? 'Copied ✓' : link}</button
 				>
 			</div>
@@ -181,14 +181,14 @@
 
 	<!-- ============ REFERRALS ============ -->
 	<section class="mt-14">
-		<div class="flex flex-wrap items-end justify-between gap-3 border-b-[3px] border-ink pb-3">
+		<div class="flex flex-wrap items-end justify-between gap-3 border-b-3 border-ink pb-3">
 			<h2 class={sectionTitle}>Referrals</h2>
-			<span class="text-[12px] text-soft">Payable 30 days after the referral</span>
+			<span class="text-xs text-soft">Payable 30 days after the referral</span>
 		</div>
 
 		{#if referrals.length === 0}
 			<p
-				class="mt-5 border border-dashed border-line2 px-5 py-6 font-newsreader text-[16px] text-soft italic"
+				class="mt-5 border border-dashed border-line2 px-5 py-6 font-newsreader text-base text-soft italic"
 			>
 				No referrals yet. They appear here when someone joins with {p.code}.
 			</p>
@@ -200,7 +200,7 @@
 							type="button"
 							onclick={() => (show = f.id)}
 							aria-pressed={show === f.id}
-							class="inline-flex h-[36px] items-center gap-2 border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {show ===
+							class="inline-flex h-9 items-center gap-2 border px-3 text-xs font-extrabold tracking-widest uppercase transition-colors {show ===
 							f.id
 								? 'border-ink bg-ink text-paper-bg'
 								: 'border-line2 bg-white text-soft hover:border-ink hover:text-ink'}"
@@ -216,7 +216,7 @@
 						<button
 							type="button"
 							onclick={() => (selectedReferralIds = new Set(readyReferrals.map((r) => r.id)))}
-							class="text-[10px] font-extrabold tracking-[0.14em] text-hero-rb uppercase hover:underline"
+							class="text-xs font-extrabold tracking-widest text-hero-rb uppercase hover:underline"
 							>Pick the {readyReferrals.length} ready</button
 						>
 					{/if}
@@ -224,7 +224,7 @@
 						<button
 							type="button"
 							onclick={() => (selectedReferralIds = new Set(pendingReferrals.map((r) => r.id)))}
-							class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:underline"
+							class="text-xs font-extrabold tracking-widest text-warm uppercase hover:underline"
 							>Pick all unpaid</button
 						>
 					{/if}
@@ -232,7 +232,7 @@
 						<button
 							type="button"
 							onclick={() => (selectedReferralIds = new Set())}
-							class="text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:underline"
+							class="text-xs font-extrabold tracking-widest text-soft uppercase hover:underline"
 							>Clear</button
 						>
 					{/if}
@@ -263,10 +263,10 @@
 						{@const picked = selectedReferralIds.has(r.id)}
 						<li>
 							<label
-								class="grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 border border-l-[4px] px-3.5 py-3 transition-[border-color,background-color] duration-200 md:grid-cols-[28px_minmax(0,1fr)_110px_170px_120px] md:gap-x-5 md:px-4 {unpaid
+								class="grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 border border-l-4 px-3.5 py-3 transition duration-200 md:grid-cols-[28px_minmax(0,1fr)_110px_170px_120px] md:gap-x-5 md:px-4 {unpaid
 									? 'cursor-pointer'
 									: ''} {picked
-									? 'border-prem bg-prem/[0.06]'
+									? 'border-prem bg-prem/5'
 									: r.payoutStatus === 'paid'
 										? 'border-line2 bg-paper/60'
 										: 'border-line2 bg-white hover:border-ink'}"
@@ -277,27 +277,26 @@
 										type="checkbox"
 										checked={picked}
 										onchange={() => toggleSelection(r.id)}
-										class="h-[20px] w-[20px] border-2 border-ink text-prem focus:ring-0"
+										class="h-5 w-5 border-2 border-ink text-prem focus:ring-0"
 										aria-label="Pick {r.referredFirstName || r.referredEmail || 'this referral'}"
 									/>
 								{:else}
 									<span class="text-center text-prem" aria-hidden="true">✓</span>
 								{/if}
 								<span class="min-w-0">
-									<span
-										class="block truncate font-newsreader text-[17px] leading-tight font-semibold"
+									<span class="block truncate font-newsreader text-lg leading-tight font-semibold"
 										>{r.referredFirstName || 'A member'}</span
 									>
-									<span class="mt-0.5 block truncate text-[12px] text-fade"
+									<span class="mt-0.5 block truncate text-xs text-fade"
 										>{r.referredEmail || ''} · joined {fmtDate(r.createdAt)}</span
 									>
 								</span>
 								<span
-									class="ao-cond col-start-3 row-start-1 text-right text-[24px] leading-none font-black tabular-nums md:col-start-5 md:text-[28px]"
+									class="ao-cond col-start-3 row-start-1 text-right text-2xl leading-none font-black tabular-nums md:col-start-5 md:text-3xl"
 									>{fmt(r.commissionAmount)}</span
 								>
 								<span
-									class="col-start-2 row-start-2 text-[10px] font-extrabold tracking-[0.14em] uppercase md:col-start-3 md:row-start-1"
+									class="col-start-2 row-start-2 text-xs font-extrabold tracking-widest uppercase md:col-start-3 md:row-start-1"
 									>{r.subscriptionType === 'yearly'
 										? 'Annual'
 										: r.subscriptionType === 'monthly'
@@ -308,10 +307,10 @@
 									class="col-span-2 col-start-2 row-start-3 flex flex-wrap items-center gap-2 md:col-span-1 md:col-start-4 md:row-start-1"
 								>
 									<span
-										class="px-2 py-[2px] text-[9.5px] font-extrabold tracking-[0.16em] uppercase {st.badge}"
+										class="px-2 py-0.5 text-xs font-extrabold tracking-widest uppercase {st.badge}"
 										>{st.word}</span
 									>
-									<span class="text-[11.5px] text-fade"
+									<span class="text-xs text-fade"
 										>{r.payoutStatus === 'paid'
 											? fmtDate(r.paidAt)
 											: r.readyToPay
@@ -322,23 +321,23 @@
 							</label>
 						</li>
 					{:else}
-						<li class="py-6 font-newsreader text-[16px] text-soft italic">Nothing here.</li>
+						<li class="py-6 font-newsreader text-base text-soft italic">Nothing here.</li>
 					{/each}
 				</ul>
 
 				{#if selectedCount > 0}
 					<!-- the pay bar, stuck to the bottom while referrals are picked -->
 					<div
-						class="sticky bottom-3 z-30 mt-4 flex flex-col gap-3 border border-l-[6px] border-prem bg-white p-4 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.45)] md:flex-row md:items-end md:p-5"
+						class="sticky bottom-3 z-30 mt-4 flex flex-col gap-3 border border-l-6 border-prem bg-white p-4 shadow-lg md:flex-row md:items-end md:p-5"
 						style="--cc: var(--color-prem)"
 						transition:fly={{ y: prefersReducedMotion.current ? 0 : 16, duration: 200 }}
 					>
 						<div class="shrink-0">
 							<p class={F.label}>Paying</p>
-							<p class="ao-cond text-[34px] leading-none font-black text-prem tabular-nums">
+							<p class="ao-cond text-4xl leading-none font-black text-prem tabular-nums">
 								{fmt(selectedTotal)}
 							</p>
-							<p class="mt-1 text-[12px] text-soft">
+							<p class="mt-1 text-xs text-soft">
 								{selectedCount}
 								{selectedCount === 1 ? 'referral' : 'referrals'}
 							</p>
@@ -359,7 +358,7 @@
 						</label>
 						<button
 							type="submit"
-							class="inline-flex h-[46px] shrink-0 items-center justify-center bg-prem px-6 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110"
+							class="inline-flex h-12 shrink-0 items-center justify-center bg-prem px-6 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110"
 							>Mark paid</button
 						>
 					</div>
@@ -370,7 +369,7 @@
 
 	<!-- ============ SETTINGS ============ -->
 	<section class="mt-14">
-		<div class="flex flex-wrap items-end justify-between gap-3 border-b-[3px] border-ink pb-3">
+		<div class="flex flex-wrap items-end justify-between gap-3 border-b-3 border-ink pb-3">
 			<h2 class={sectionTitle}>Settings</h2>
 		</div>
 		<form
@@ -391,7 +390,7 @@
 						<p class={F.groupNote}>What people type, and whether it works.</p>
 					</div>
 					<div class="flex flex-col gap-4">
-						<label class="block max-w-[360px]">
+						<label class="block max-w-sm">
 							<span class={F.label}>Promo code</span>
 							<input
 								type="text"
@@ -399,7 +398,7 @@
 								name="code"
 								bind:value={code}
 								required
-								class="{F.field} font-mono tracking-[0.06em] uppercase"
+								class="{F.field} font-mono tracking-wider uppercase"
 							/>
 						</label>
 						<label
@@ -413,7 +412,7 @@
 								bind:checked={isActive}
 								class="h-4 w-4 border-line2 text-prem focus:ring-0"
 							/>
-							<span class="text-[13px] font-semibold"
+							<span class="text-sm font-semibold"
 								>{isActive ? 'On: the code can be used' : 'Off: the code is turned off'}</span
 							>
 						</label>
@@ -426,7 +425,7 @@
 							Shown in the referral banner. Falls back to {p.firstName} when empty.
 						</p>
 					</div>
-					<label class="block max-w-[520px]">
+					<label class="block max-w-lg">
 						<span class={F.label}
 							>Public name <span class="font-semibold tracking-normal normal-case">(optional)</span
 							></span
@@ -461,7 +460,7 @@
 			<div class="flex justify-end border-t border-line2 bg-paper/60 px-4 py-3 md:px-6">
 				<button
 					type="submit"
-					class="inline-flex h-[40px] items-center bg-ink px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm"
+					class="inline-flex h-10 items-center bg-ink px-5 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm"
 					>Save changes</button
 				>
 			</div>
@@ -469,13 +468,13 @@
 	</section>
 
 	<!-- ============ DELETE ============ -->
-	<section class="mt-14 border border-l-[4px] border-line2 border-l-hero-rb bg-white p-5 md:p-6">
+	<section class="mt-14 border border-l-4 border-line2 border-l-hero-rb bg-white p-5 md:p-6">
 		<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-			<div class="max-w-[680px]">
-				<p class="ao-cond text-[26px] leading-none font-black text-hero-rb uppercase">
+			<div class="max-w-2xl">
+				<p class="ao-cond text-2xl leading-none font-black text-hero-rb uppercase">
 					Delete this partner
 				</p>
-				<p class="mt-2 text-[13px] leading-[1.55] text-soft">
+				<p class="mt-2 text-sm leading-normal text-soft">
 					{#if hasReferrals}
 						They have {referrals.length}
 						{referrals.length === 1 ? 'referral' : 'referrals'} on record, so they can’t be deleted (the
@@ -501,7 +500,7 @@
 				<button
 					type="submit"
 					disabled={hasReferrals}
-					class="inline-flex h-[42px] shrink-0 items-center bg-hero-rb px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+					class="inline-flex h-11 shrink-0 items-center bg-hero-rb px-5 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
 					>Delete partner</button
 				>
 			</form>

@@ -108,7 +108,7 @@
 			.filter(Boolean);
 	// A tap-to-pick chip for a checkbox or radio inside it, lit in the form's colour.
 	const chip =
-		'relative flex h-[38px] cursor-pointer items-center border border-line2 bg-white px-3.5 text-[12.5px] font-semibold text-ink transition-colors hover:border-ink/50 has-[:checked]:border-transparent has-[:checked]:bg-[var(--cc)] has-[:checked]:text-white has-[:focus-visible]:shadow-[0_0_0_3px_color-mix(in_srgb,var(--cc)_25%,transparent)]';
+		'relative flex h-10 cursor-pointer items-center border border-line2 bg-white px-3.5 text-xs font-semibold text-ink transition-colors hover:border-ink/50 has-[:checked]:border-transparent has-[:checked]:bg-(--cc) has-[:checked]:text-white has-[:focus-visible]:ring-3 ring-(--cc)/25';
 	const motion = (ms) => ({ duration: prefersReducedMotion.current ? 0 : ms, easing: cubicOut });
 	// The type picked in the open form, for its colour.
 	let formType = $state('');
@@ -140,7 +140,7 @@
 	<AdminNotice tone="error" message={errorMessage} ondismiss={() => (errorMessage = '')} />
 {/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-6 pb-20 md:px-8">
 	<Figures
 		items={[
 			{ label: 'On the calendar', value: ui.fmt((data.lssEvents || []).length) },
@@ -154,13 +154,11 @@
 
 	{#if showAddSeasonForm}
 		<div
-			class="mt-8 border border-l-[6px] border-line2 bg-white"
+			class="mt-8 border border-l-6 border-line2 bg-white"
 			style="border-left-color: {toneOf(formType)}"
 		>
 			<p class="px-4 pt-5 md:px-6">
-				<span class="ao-cond text-[30px] leading-none font-black uppercase"
-					>New on the calendar</span
-				>
+				<span class="ao-cond text-3xl leading-none font-black uppercase">New on the calendar</span>
 			</p>
 			{@render eventForm(null)}
 		</div>
@@ -173,7 +171,7 @@
 					type="button"
 					onclick={() => (calendarSubTab = f.id)}
 					aria-pressed={calendarSubTab === f.id}
-					class="inline-flex h-[36px] items-center gap-2 border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {calendarSubTab ===
+					class="inline-flex h-9 items-center gap-2 border px-3 text-xs font-extrabold tracking-widest uppercase transition-colors {calendarSubTab ===
 					f.id
 						? 'border-ink bg-ink text-paper-bg'
 						: 'border-line2 bg-white text-soft hover:border-ink hover:text-ink'}"
@@ -182,7 +180,7 @@
 			{/each}
 		</div>
 		<span
-			class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-extrabold tracking-[0.12em] text-soft uppercase"
+			class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-extrabold tracking-widest text-soft uppercase"
 		>
 			{#each Object.entries(TONE).slice(0, 5) as [t, tone] (t)}
 				<span class="flex items-center gap-1.5"
@@ -201,11 +199,9 @@
 			{@const done = status.label === 'Done'}
 			{@const open = editingSeasonId === season.id}
 			<li
-				class="border border-l-[4px] transition-shadow duration-200 {season.isActive
+				class="border border-l-4 transition-shadow duration-200 {season.isActive
 					? 'border-line2 bg-white'
-					: 'border-dashed border-line2 bg-paper/60'} {open
-					? 'shadow-[0_6px_24px_-12px_rgba(0,0,0,0.35)]'
-					: ''}"
+					: 'border-dashed border-line2 bg-paper/60'} {open ? 'shadow-md' : ''}"
 				style="border-left-color: {tone}; border-left-style: solid"
 			>
 				<div
@@ -215,43 +211,41 @@
 				>
 					<!-- the dates, as a stub -->
 					<span class="flex flex-col items-center leading-none">
-						<span
-							class="text-[9.5px] font-extrabold tracking-[0.16em] uppercase"
-							style="color: {tone}">{part(start, { month: 'short' })}</span
+						<span class="text-xs font-extrabold tracking-widest uppercase" style="color: {tone}"
+							>{part(start, { month: 'short' })}</span
 						>
-						<span class="ao-cond text-[30px] font-black tabular-nums"
+						<span class="ao-cond text-3xl font-black tabular-nums"
 							>{part(start, {
 								day: 'numeric'
 							})}{#if ymd(start) !== ymd(end) && part( start, { month: 'short' } ) === part( end, { month: 'short' } )}<span
-									class="text-[18px] text-fade">–{part(end, { day: 'numeric' })}</span
+									class="text-lg text-fade">–{part(end, { day: 'numeric' })}</span
 								>{/if}</span
 						>
-						<span class="text-[9.5px] text-fade tabular-nums">{part(end, { year: 'numeric' })}</span
-						>
+						<span class="text-xs text-fade tabular-nums">{part(end, { year: 'numeric' })}</span>
 					</span>
 					<span class="min-w-0">
 						<span class="flex flex-wrap items-center gap-2">
-							<span class="truncate font-newsreader text-[18px] leading-tight font-semibold"
+							<span class="truncate font-newsreader text-lg leading-tight font-semibold"
 								>{season.name}</span
 							>
 							{#if season.link}<a
 									href={season.link}
 									target="_blank"
 									rel="noopener noreferrer"
-									class="shrink-0 text-[12px] text-warm hover:text-ink"
+									class="shrink-0 text-xs text-warm hover:text-ink"
 									aria-label="Official page for {season.name}">↗</a
 								>{/if}
 							{#if !season.isActive}<span
-									class="border border-dashed border-ink/40 px-1.5 py-px text-[9px] font-extrabold tracking-[0.14em] text-soft uppercase"
+									class="border border-dashed border-ink/40 px-1.5 py-px text-xs font-extrabold tracking-widest text-soft uppercase"
 									>Hidden</span
 								>{/if}
 						</span>
 						<span class="mt-1 flex flex-wrap gap-1">
 							{#each formatsOf(season) as f (f)}<span
-									class="border border-line2 px-1.5 py-px text-[10px] text-soft">{f}</span
-								>{:else}<span class="text-[11.5px] text-fade">No formats set</span>{/each}
+									class="border border-line2 px-1.5 py-px text-xs text-soft">{f}</span
+								>{:else}<span class="text-xs text-fade">No formats set</span>{/each}
 						</span>
-						{#if season.description}<span class="mt-1 block truncate text-[12px] text-fade"
+						{#if season.description}<span class="mt-1 block truncate text-xs text-fade"
 								>{season.description}</span
 							>{/if}
 					</span>
@@ -259,15 +253,14 @@
 						class="col-span-2 col-start-2 row-start-2 flex flex-wrap items-center gap-1.5 md:col-span-1 md:col-start-3 md:row-start-1"
 					>
 						{#if season.eventType}<span
-								class="px-2 py-[3px] text-[9.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+								class="px-2 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
 								style="background: {tone}">{season.eventType}</span
 							>{/if}
-						<span
-							class="px-2 py-[2px] text-[9.5px] font-extrabold tracking-[0.16em] uppercase {status.tone}"
+						<span class="px-2 py-0.5 text-xs font-extrabold tracking-widest uppercase {status.tone}"
 							>{status.label}</span
 						>
 					</span>
-					<span class="hidden text-[12px] text-soft tabular-nums md:block"
+					<span class="hidden text-xs text-soft tabular-nums md:block"
 						>{day(start)} – {day(end, true)}</span
 					>
 					<span class="col-start-3 row-start-1 justify-self-end md:col-start-5">
@@ -278,7 +271,7 @@
 								formType = season.eventType || '';
 							}}
 							aria-expanded={open}
-							class="inline-flex h-[34px] items-center border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {open
+							class="inline-flex h-9 items-center border px-3 text-xs font-extrabold tracking-widest uppercase transition-colors {open
 								? 'border-ink bg-ink text-paper-bg'
 								: 'border-line2 bg-white hover:border-ink'}">{open ? 'Close' : 'Edit'}</button
 						>
@@ -363,7 +356,7 @@
 					<p class={F.groupTitle}>When</p>
 					<p class={F.groupNote}>The first and last day.</p>
 				</div>
-				<div class="grid max-w-[520px] grid-cols-2 gap-3">
+				<div class="grid max-w-lg grid-cols-2 gap-3">
 					<label class="block">
 						<span class={F.label}>Starts</span>
 						<input
@@ -445,7 +438,7 @@
 		>
 			<span class="flex flex-wrap items-center gap-x-5 gap-y-2">
 				{#if season}
-					<label class="flex cursor-pointer items-center gap-2 text-[12.5px]">
+					<label class="flex cursor-pointer items-center gap-2 text-xs">
 						<input
 							type="checkbox"
 							name="isActive"
@@ -462,7 +455,7 @@
 						onclick={(e) => {
 							if (!confirm(`Delete ${season.name} from the calendar?`)) e.preventDefault();
 						}}
-						class="text-[10px] font-extrabold tracking-[0.14em] text-hero-rb uppercase hover:underline"
+						class="text-xs font-extrabold tracking-widest text-hero-rb uppercase hover:underline"
 						>Delete</button
 					>
 				{/if}
@@ -471,12 +464,12 @@
 				<button
 					type="button"
 					onclick={() => (season ? (editingSeasonId = null) : (showAddSeasonForm = false))}
-					class="inline-flex h-[40px] items-center px-3 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+					class="inline-flex h-10 items-center px-3 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 					>Cancel</button
 				>
 				<button
 					type="submit"
-					class="inline-flex h-[40px] items-center px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110"
+					class="inline-flex h-10 items-center px-5 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110"
 					style="background: var(--cc)">{season ? 'Save changes' : 'Add to calendar'}</button
 				>
 			</span>

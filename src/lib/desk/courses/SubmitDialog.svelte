@@ -40,13 +40,13 @@
 
 <DialogShell {open} {onclose} kicker="Send for approval" title={course.title}>
 	{#if ready}
-		<p class="text-[14px] leading-relaxed">
+		<p class="text-sm leading-relaxed">
 			An admin checks the course once. When they approve it, it goes live in the Academy with every
 			published topic, and from then on your changes go live without approval. If something needs
 			changing, they’ll send it back with a note.
 		</p>
 	{:else}
-		<p class="text-[14px] leading-relaxed">
+		<p class="text-sm leading-relaxed">
 			A few things are still missing. Fix them, then come back and send it.
 		</p>
 	{/if}
@@ -55,7 +55,7 @@
 	</div>
 	{#if ready}
 		<label class="mt-4 block">
-			<span class="block text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+			<span class="block text-xs font-extrabold tracking-widest text-fade uppercase"
 				>Note for the reviewer <span class="tracking-normal normal-case">(optional)</span></span
 			>
 			<textarea
@@ -65,12 +65,12 @@
 				placeholder={course.reviewNote
 					? 'What you changed since it came back'
 					: 'Anything they should know, e.g. topics still to come'}
-				class="mt-1.5 w-full border border-line2 bg-white px-2.5 py-2 text-[14px] focus:border-ink focus:ring-0"
+				class="mt-1.5 w-full border border-line2 bg-white px-2.5 py-2 text-sm focus:border-ink focus:ring-0"
 			></textarea>
 		</label>
 	{/if}
 	{#if message}
-		<p class="mt-3 border-l-[3px] border-hero-rb bg-hero-rb/5 px-3 py-2 text-[13px]" role="alert">
+		<p class="mt-3 border-l-3 border-hero-rb bg-hero-rb/5 px-3 py-2 text-sm" role="alert">
 			{message}
 		</p>
 	{/if}
@@ -78,7 +78,7 @@
 		<button
 			type="button"
 			onclick={onclose}
-			class="h-10 px-4 text-[10.5px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+			class="h-10 px-4 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 			>{ready ? 'Cancel' : 'Close'}</button
 		>
 		{#if ready}
@@ -86,7 +86,7 @@
 				type="button"
 				onclick={send}
 				disabled={busy}
-				class="h-10 bg-ink px-5 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
+				class="h-10 bg-ink px-5 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
 				>{busy ? 'Sending…' : 'Send for approval'}</button
 			>
 		{/if}

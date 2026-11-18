@@ -17,25 +17,25 @@
 </script>
 
 {#snippet head(title, note = '')}
-	<div class="flex items-baseline justify-between gap-3 border-b-[3px] border-ink pb-2.5">
-		<h2 class="text-[10.5px] font-extrabold tracking-[0.16em] uppercase">{title}</h2>
-		{#if note}<p class="text-[11.5px] text-fade">{note}</p>{/if}
+	<div class="flex items-baseline justify-between gap-3 border-b-3 border-ink pb-2.5">
+		<h2 class="text-xs font-extrabold tracking-widest uppercase">{title}</h2>
+		{#if note}<p class="text-xs text-fade">{note}</p>{/if}
 	</div>
 {/snippet}
 
 {#snippet tile(label, value, sub = '')}
 	<div class="bg-white px-5 py-4">
-		<dt class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">{label}</dt>
-		<dd class="mt-1 font-newsreader text-[28px] leading-none font-semibold tabular-nums">
+		<dt class="text-xs font-extrabold tracking-widest text-fade uppercase">{label}</dt>
+		<dd class="mt-1 font-newsreader text-3xl leading-none font-semibold tabular-nums">
 			{value}
 		</dd>
-		{#if sub}<dd class="mt-1.5 text-[11.5px] text-fade">{sub}</dd>{/if}
+		{#if sub}<dd class="mt-1.5 text-xs text-fade">{sub}</dd>{/if}
 	</div>
 {/snippet}
 
-<div class="mx-auto w-full max-w-[1200px] space-y-10 px-5 pb-16 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page space-y-10 px-5 pb-16 font-libre md:px-8">
 	<div class="flex flex-wrap items-center justify-between gap-3">
-		<p class="text-[13px] text-soft">
+		<p class="text-sm text-soft">
 			Visits from staff and bots aren’t counted. Students and progress are all-time; everything else
 			covers the last {r.days} days.
 		</p>
@@ -44,7 +44,7 @@
 				<a
 					href="?days={d}"
 					aria-current={r.days === d ? 'true' : undefined}
-					class="px-3 py-2 text-[10px] font-extrabold tracking-[0.12em] uppercase {r.days === d
+					class="px-3 py-2 text-xs font-extrabold tracking-widest uppercase {r.days === d
 						? 'bg-ink text-paper-bg'
 						: 'bg-white text-soft hover:text-ink'}">{d} days</a
 				>
@@ -105,7 +105,7 @@
 	<section>
 		{@render head('How far students get', 'Share of current students who completed each topic')}
 		{#if r.stop}
-			<p class="mt-4 border-l-[3px] border-gold bg-gold/10 px-4 py-3 text-[13.5px]">
+			<p class="mt-4 border-l-3 border-gold bg-gold/10 px-4 py-3 text-sm">
 				<b class="font-extrabold">Where students stop:</b>
 				{r.stop.lost}% fewer finish “{r.stop.at}” than “{r.stop.after}”. Worth a look: is it too
 				long, too hard, or missing a bridge?
@@ -113,12 +113,12 @@
 		{/if}
 		{#if r.funnel.length}
 			<div class="mt-4 overflow-x-auto">
-				<table class="w-full min-w-[680px] text-left text-[13.5px]">
+				<table class="w-full min-w-170 text-left text-sm">
 					<thead>
 						<tr
-							class="border-b border-line2 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							class="border-b border-line2 text-xs font-extrabold tracking-widest text-fade uppercase"
 						>
-							<th class="w-[44px] py-2 font-extrabold">#</th>
+							<th class="w-11 py-2 font-extrabold">#</th>
 							<th class="py-2 pr-4 font-extrabold">Topic</th>
 							<th class="w-[34%] py-2 pr-4 font-extrabold">Completed</th>
 							<th class="py-2 pr-4 text-right font-extrabold">Readers</th>
@@ -129,22 +129,22 @@
 					<tbody class="divide-y divide-line">
 						{#each r.funnel as f (f.id)}
 							<tr>
-								<td class="py-2.5 font-newsreader text-[15px] text-gold tabular-nums"
+								<td class="py-2.5 font-newsreader text-base text-gold tabular-nums"
 									>{String(f.no).padStart(2, '0')}</td
 								>
 								<td class="py-2.5 pr-4">
 									{f.title}
 									{#if f.free}<span
-											class="ml-1 bg-gold px-1 align-[1px] text-[8px] font-extrabold tracking-[0.14em] text-[#241b07] uppercase"
+											class="ml-1 bg-gold px-1 align-[1px] text-xs font-extrabold tracking-widest text-gold-ink uppercase"
 											>Free</span
 										>{/if}
 								</td>
 								<td class="py-2.5 pr-4">
 									<div class="flex items-center gap-2.5">
-										<div class="h-[8px] flex-1 bg-line" aria-hidden="true">
+										<div class="h-2 flex-1 bg-line" aria-hidden="true">
 											<div class="h-full bg-academy" style="width: {f.completedPct}%"></div>
 										</div>
-										<span class="w-[74px] text-right text-[12px] text-soft tabular-nums"
+										<span class="w-19 text-right text-xs text-soft tabular-nums"
 											>{f.completedPct}% · {f.completed}</span
 										>
 									</div>
@@ -160,7 +160,7 @@
 				</table>
 			</div>
 		{:else}
-			<p class="mt-4 text-[13.5px] text-soft">No published topics yet.</p>
+			<p class="mt-4 text-sm text-soft">No published topics yet.</p>
 		{/if}
 	</section>
 
@@ -170,15 +170,13 @@
 			<div class="mt-4">
 				{#if r.sources.length}
 					<BarList items={r.sources.map((s) => ({ key: label(SOURCES, s.key), n: s.n }))} />
-				{:else}<p class="text-[13px] text-fade">No visits yet.</p>{/if}
+				{:else}<p class="text-sm text-fade">No visits yet.</p>{/if}
 			</div>
 		</section>
 		<section>
 			{@render head('Other websites')}
 			<div class="mt-4">
-				{#if r.referrers.length}<BarList items={r.referrers} />{:else}<p
-						class="text-[13px] text-fade"
-					>
+				{#if r.referrers.length}<BarList items={r.referrers} />{:else}<p class="text-sm text-fade">
 						None yet.
 					</p>{/if}
 			</div>
@@ -188,7 +186,7 @@
 			<div class="mt-4">
 				{#if r.devices.length}
 					<BarList items={r.devices.map((d) => ({ key: label(DEVICES, d.key), n: d.n }))} />
-				{:else}<p class="text-[13px] text-fade">No visits yet.</p>{/if}
+				{:else}<p class="text-sm text-fade">No visits yet.</p>{/if}
 			</div>
 		</section>
 	</div>
@@ -196,7 +194,7 @@
 	{#if data.videos}
 		<section>
 			{@render head('Videos')}
-			<p class="mt-2 text-[12.5px] text-fade">
+			<p class="mt-2 text-xs text-fade">
 				The trailer and lesson videos, from Mux. Each one is managed where it lives: the trailer on
 				Details, a lesson’s video in its topic.
 			</p>

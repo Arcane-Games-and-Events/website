@@ -32,7 +32,7 @@
 			></iframe>
 		</div>
 		{#if youtubeTitle}
-			<figcaption class="mt-2 font-libre text-[12px] text-fade">
+			<figcaption class="mt-2 font-libre text-xs text-fade">
 				{youtubeTitle}
 			</figcaption>
 		{/if}

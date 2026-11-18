@@ -89,7 +89,7 @@
 	});
 
 	const chip =
-		'shrink-0 border border-current px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.14em] uppercase';
+		'shrink-0 border border-current px-1.5 py-px text-xs font-extrabold tracking-widest uppercase';
 	const STATUS_WORD = {
 		ready: 'Ready',
 		preparing: 'Processing on Mux…',
@@ -210,8 +210,8 @@
 		<div class="border border-line2 bg-paper px-3 py-2.5">
 			<p class="flex items-center gap-2.5">
 				<span class="{chip} text-warm">File</span>
-				<span class="min-w-0 flex-1 truncate text-[13px]">{up.name}</span>
-				<span class="shrink-0 text-[11.5px] text-fade tabular-nums">{Math.round(up.percent)}%</span>
+				<span class="min-w-0 flex-1 truncate text-sm">{up.name}</span>
+				<span class="shrink-0 text-xs text-fade tabular-nums">{Math.round(up.percent)}%</span>
 			</p>
 			<div class="mt-2 h-1 bg-line2" aria-hidden="true">
 				<div
@@ -221,7 +221,7 @@
 					style="width: {up.percent}%"
 				></div>
 			</div>
-			<p class="mt-1.5 flex flex-wrap justify-between gap-x-3 text-[11.5px] text-fade">
+			<p class="mt-1.5 flex flex-wrap justify-between gap-x-3 text-xs text-fade">
 				<span class={up.state === 'failed' ? 'text-hero-rb' : ''}
 					>{up.state === 'failed' && up.error ? up.error : UP_WORD[up.state]}</span
 				>
@@ -236,20 +236,20 @@
 					<button
 						type="button"
 						onclick={() => uploads.cancel(up.key)}
-						class="text-[9.5px] font-extrabold tracking-[0.12em] text-fade uppercase hover:text-hero-rb"
+						class="text-xs font-extrabold tracking-widest text-fade uppercase hover:text-hero-rb"
 						>Cancel upload</button
 					>
 				{:else if up.state === 'failed'}
 					<button
 						type="button"
 						onclick={() => uploads.retry(up.key)}
-						class="text-[9.5px] font-extrabold tracking-[0.12em] text-warm uppercase hover:text-ink"
+						class="text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 						>Try again</button
 					>
 				{/if}
 			</p>
 			{#if uploading}
-				<p class="mt-1 text-[11px] leading-snug text-fade">
+				<p class="mt-1 text-xs leading-snug text-fade">
 					You can keep working or browse the site; it uploads in the background.
 				</p>
 			{/if}
@@ -257,7 +257,7 @@
 	{:else if entry?.videoProvider === 'mux'}
 		<div class="flex items-center gap-2.5 border border-line2 bg-paper px-3 py-2.5">
 			<span class="{chip} text-warm">File</span>
-			<span class="min-w-0 flex-1 truncate text-[13px]"
+			<span class="min-w-0 flex-1 truncate text-sm"
 				>{STATUS_WORD[entry.videoStatus] ||
 					entry.videoStatus ||
 					'Pending'}{#if entry.videoDuration}<span class="text-fade"
@@ -269,13 +269,13 @@
 					type="button"
 					onclick={checkNow}
 					disabled={checking}
-					class="shrink-0 text-[9.5px] font-extrabold tracking-[0.12em] text-warm uppercase hover:text-ink disabled:opacity-60"
+					class="shrink-0 text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink disabled:opacity-60"
 					>{checking ? 'Checking…' : 'Check now'}</button
 				>
 			{/if}
 		</div>
 		{#if entry.videoStatus === 'waiting' && !up}
-			<p class="mt-1.5 text-[11.5px] leading-snug text-fade">
+			<p class="mt-1.5 text-xs leading-snug text-fade">
 				The upload was interrupted before the file finished. Choose it again to upload.
 			</p>
 		{/if}
@@ -292,17 +292,17 @@
 			<div class="min-w-0 py-0.5">
 				<p class="flex items-center gap-2">
 					<span class="{chip} text-hero-rb">YouTube</span>
-					{#if entry.youtubeDuration}<span class="text-[12px] text-fade"
+					{#if entry.youtubeDuration}<span class="text-xs text-fade"
 							>{formatDuration(entry.youtubeDuration)}</span
 						>{/if}
 				</p>
 				{#if entry.youtubeTitle}
-					<p class="mt-1 line-clamp-2 text-[12.5px] leading-snug">{entry.youtubeTitle}</p>
+					<p class="mt-1 line-clamp-2 text-xs leading-snug">{entry.youtubeTitle}</p>
 				{/if}
 			</div>
 		</div>
 	{:else}
-		<p class="text-[13px] text-fade">No video attached.</p>
+		<p class="text-sm text-fade">No video attached.</p>
 	{/if}
 
 	<!-- source -->
@@ -313,7 +313,7 @@
 				role="tab"
 				aria-selected={activeTab === v}
 				onclick={() => (activeTab = v)}
-				class="min-h-[36px] px-2 text-[9.5px] font-extrabold tracking-[0.12em] uppercase transition-colors {activeTab ===
+				class="min-h-9 px-2 text-xs font-extrabold tracking-widest uppercase transition-colors {activeTab ===
 				v
 					? 'bg-ink text-paper-bg'
 					: 'bg-white text-soft hover:text-ink'}">{l}</button
@@ -333,7 +333,7 @@
 			type="button"
 			onclick={() => fileInput?.click()}
 			disabled={uploading}
-			class="mt-2 min-h-[40px] w-full border-[1.5px] border-ink px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:cursor-wait disabled:opacity-60"
+			class="mt-2 min-h-10 w-full border-2 border-ink px-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:cursor-wait disabled:opacity-60"
 		>
 			{uploading
 				? 'Uploading…'
@@ -342,9 +342,9 @@
 					: 'Choose video file'}
 		</button>
 		{#if muxError}
-			<p class="mt-1.5 text-[11.5px] text-hero-rb">{muxError}</p>
+			<p class="mt-1.5 text-xs text-hero-rb">{muxError}</p>
 		{/if}
-		<p class="mt-1.5 text-[11.5px] leading-snug text-fade">
+		<p class="mt-1.5 text-xs leading-snug text-fade">
 			{#if held}
 				A new video waits for an editor or admin; the site keeps the current one until then.
 			{:else if entry?.videoProvider === 'mux' && entry?.videoStatus === 'ready'}
@@ -355,24 +355,24 @@
 			{/if}
 		</p>
 	{:else}
-		<div class="mt-2 flex h-[40px] border border-line2 bg-paper focus-within:border-ink">
+		<div class="mt-2 flex h-10 border border-line2 bg-paper focus-within:border-ink">
 			<input
 				type="url"
 				bind:value={youtubeInput}
 				placeholder="Paste a YouTube URL"
 				aria-label="YouTube URL"
-				class="h-full min-w-0 flex-1 border-0 bg-transparent px-2.5 text-[13px] placeholder:text-fade focus:ring-0 focus:outline-none"
+				class="h-full min-w-0 flex-1 border-0 bg-transparent px-2.5 text-sm placeholder:text-fade focus:ring-0 focus:outline-none"
 			/>
 			<button
 				type="button"
 				onclick={attachYouTube}
 				disabled={ytLoading || !youtubeInput.trim()}
-				class="shrink-0 bg-ink px-3.5 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-ink"
+				class="shrink-0 bg-ink px-3.5 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-ink"
 				>{ytLoading ? 'Fetching…' : 'Attach'}</button
 			>
 		</div>
 		{#if ytError}
-			<p class="mt-1.5 text-[11.5px] text-hero-rb">{ytError}</p>
+			<p class="mt-1.5 text-xs text-hero-rb">{ytError}</p>
 		{/if}
 	{/if}
 
@@ -381,7 +381,7 @@
 			{#if target === 'entry' && entry?.videoProvider === 'mux'}
 				<a
 					href="/desk/videos/entry/{id}"
-					class="text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:text-warm"
+					class="text-xs font-extrabold tracking-widest text-fade uppercase transition-colors hover:text-warm"
 					>Analytics</a
 				>
 			{/if}
@@ -389,7 +389,7 @@
 				type="button"
 				onclick={removeVideo}
 				disabled={removing}
-				class="text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:text-hero-rb disabled:opacity-50"
+				class="text-xs font-extrabold tracking-widest text-fade uppercase transition-colors hover:text-hero-rb disabled:opacity-50"
 				>{removing ? 'Removing…' : 'Remove video'}</button
 			>
 		</div>

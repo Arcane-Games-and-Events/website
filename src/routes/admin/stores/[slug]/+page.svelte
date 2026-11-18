@@ -149,18 +149,18 @@
 
 <!-- the section bar -->
 <nav
-	class="sticky top-[calc(var(--desk-header,0px)+var(--desk-tabs-h,46px))] z-30 border-b border-line2 bg-paper-bg/95 backdrop-blur-[2px]"
+	class="sticky top-[calc(var(--desk-header,0px)+var(--desk-tabs-h,46px))] z-30 border-b border-line2 bg-paper-bg/95 backdrop-blur-xs"
 	aria-label="Store sections"
 	style="--cc: {c.color};"
 >
 	<div
-		class="mx-auto flex h-[44px] max-w-[1200px] items-stretch gap-1 overflow-x-auto px-5 [scrollbar-width:none] md:px-8 [&::-webkit-scrollbar]:hidden"
+		class="mx-auto flex h-11 max-w-page items-stretch gap-1 overflow-x-auto px-5 [scrollbar-width:none] md:px-8 [&::-webkit-scrollbar]:hidden"
 	>
 		{#each SECTIONS as [id, label] (id)}
 			<a
 				href="#{id}"
 				aria-current={inView === id ? 'true' : undefined}
-				class="flex shrink-0 items-center border-b-[3px] px-3 text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors first:-ml-3 {inView ===
+				class="flex shrink-0 items-center border-b-3 px-3 text-xs font-extrabold tracking-widest uppercase transition-colors first:-ml-3 {inView ===
 				id
 					? 'text-ink'
 					: 'border-transparent text-soft hover:text-ink'}"
@@ -178,14 +178,14 @@
 {/if}
 
 <div style="--cc: {c.color};">
-	<div class="mx-auto w-full max-w-[1200px] px-5 pb-24 md:px-8">
+	<div class="mx-auto w-full max-w-page px-5 pb-24 md:px-8">
 		<!-- season: a framed block on the paper, not a second band under the header -->
-		<div id="season" class="mt-8 scroll-mt-[150px]">
+		<div id="season" class="mt-8 scroll-mt-38">
 			<SeasonTrack season={d} base={storeBase} color={c.color} canAdd={s.active} />
 		</div>
 
 		<!-- the numbers -->
-		<dl class="mt-10 grid grid-cols-2 border-t-[3px] border-ink md:grid-cols-4">
+		<dl class="mt-10 grid grid-cols-2 border-t-3 border-ink md:grid-cols-4">
 			{#each [{ label: 'Players, all time', value: ui.fmt(players), note: `${data.rows.length} events` }, { label: 'Ticket sales', value: ui.money(sales, 0), note: 'after refunds' }, { label: 'Card fee', value: fee, note: 'per card payment', small: true }, { label: 'Owed', value: ui.money(data.owedCents / 100), note: 'ready to pay', tone: data.owedCents ? 'text-hero-rb' : '' }] as f, i (f.label)}
 				<div
 					class="border-b border-line2 py-4 pr-4 {i % 2
@@ -195,21 +195,21 @@
 					<dt class={ui.label}>{f.label}</dt>
 					<dd
 						class="ao-cond mt-2 leading-none font-black tabular-nums {f.small
-							? 'text-[28px]'
-							: 'text-[40px]'} {f.tone || ''}"
+							? 'text-3xl'
+							: 'text-4xl'} {f.tone || ''}"
 					>
 						{f.value}
 					</dd>
-					<dd class="mt-1.5 text-[11.5px] text-soft">{f.note}</dd>
+					<dd class="mt-1.5 text-xs text-soft">{f.note}</dd>
 				</div>
 			{/each}
 		</dl>
 
 		<!-- team -->
-		<section id="team" class="mt-16 scroll-mt-[150px]">
+		<section id="team" class="mt-16 scroll-mt-38">
 			<div class="flex flex-wrap items-end justify-between gap-3">
-				<h2 class="ao-cond text-[40px] leading-none font-black uppercase md:text-[48px]">Team</h2>
-				<p class="text-[12.5px] text-soft">
+				<h2 class="ao-cond text-4xl leading-none font-black uppercase md:text-5xl">Team</h2>
+				<p class="text-xs text-soft">
 					{data.members.length}
 					{data.members.length === 1 ? 'person' : 'people'} · owners manage the team, managers run events
 				</p>
@@ -227,22 +227,22 @@
 			<ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{#each data.members as m (m.userId)}
 					<li
-						class="flex flex-col border border-t-[4px] border-line2 bg-white p-5"
+						class="flex flex-col border border-t-4 border-line2 bg-white p-5"
 						style="border-top-color: {m.role === 'owner' ? 'var(--cc)' : 'var(--color-line2)'}"
 					>
 						<div class="flex items-center gap-3.5">
 							<span
-								class="ao-cond flex h-[52px] w-[52px] shrink-0 items-center justify-center text-[24px] leading-none font-black text-white"
+								class="ao-cond flex h-13 w-13 shrink-0 items-center justify-center text-2xl leading-none font-black text-white"
 								style="background: {m.role === 'owner' ? 'var(--cc)' : 'var(--color-ink)'};"
 								aria-hidden="true">{initials(m)}</span
 							>
 							<div class="min-w-0">
 								<a
 									href="/admin/customers/{m.userId}"
-									class="block truncate font-newsreader text-[19px] leading-tight font-semibold hover:text-warm"
+									class="block truncate font-newsreader text-xl leading-tight font-semibold hover:text-warm"
 									>{nameOf(m)}</a
 								>
-								<p class="truncate text-[11.5px] text-fade">
+								<p class="truncate text-xs text-fade">
 									{m.email}{m.gemId ? ` · GEM ${m.gemId}` : ''}
 								</p>
 							</div>
@@ -260,7 +260,7 @@
 									<option value="manager" selected={m.role === 'manager'}>Manager</option>
 								</select>
 							</form>
-							<span class="text-[11px] text-fade">since {ui.dateShort(m.createdAt)}</span>
+							<span class="text-xs text-fade">since {ui.dateShort(m.createdAt)}</span>
 							<form
 								method="POST"
 								action="?/removeMember"
@@ -270,7 +270,7 @@
 							>
 								<input type="hidden" name="userId" value={m.userId} />
 								<button
-									class="text-[17px] leading-none text-fade hover:text-hero-rb"
+									class="text-lg leading-none text-fade hover:text-hero-rb"
 									aria-label="Remove {nameOf(m)}">×</button
 								>
 							</form>
@@ -279,8 +279,8 @@
 				{/each}
 
 				<li class="flex flex-col border border-dashed border-line2 bg-white/50 p-5">
-					<p class="ao-cond text-[24px] leading-none font-black uppercase">Add someone</p>
-					<p class="mt-1.5 text-[12px] text-soft">
+					<p class="ao-cond text-2xl leading-none font-black uppercase">Add someone</p>
+					<p class="mt-1.5 text-xs text-soft">
 						Search any AGE account. They’ll find the store in their account menu.
 					</p>
 					<form
@@ -307,7 +307,7 @@
 								<option value="owner" selected={owners === 0}>Owner</option>
 							</select>
 							<button
-								class="inline-flex h-[40px] items-center px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:opacity-40"
+								class="inline-flex h-10 items-center px-5 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110 disabled:opacity-40"
 								style="background: var(--cc)"
 								disabled={!newMember}>Add</button
 							>
@@ -318,14 +318,14 @@
 		</section>
 
 		<!-- events -->
-		<section id="events" class="mt-16 scroll-mt-[150px]">
+		<section id="events" class="mt-16 scroll-mt-38">
 			<div class="flex flex-wrap items-end justify-between gap-3">
-				<h2 class="ao-cond text-[40px] leading-none font-black uppercase md:text-[48px]">Events</h2>
-				<p class="flex flex-wrap items-center gap-4 text-[12.5px] text-soft">
+				<h2 class="ao-cond text-4xl leading-none font-black uppercase md:text-5xl">Events</h2>
+				<p class="flex flex-wrap items-center gap-4 text-xs text-soft">
 					{data.rows.length} linked · {ui.fmt(players)} players
 					<a
 						href="/admin/events/new?store={s.slug}"
-						class="inline-flex h-[36px] items-center px-4 text-[10px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110"
+						class="inline-flex h-9 items-center px-4 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110"
 						style="background: var(--cc)">+ Schedule an Open</a
 					>
 				</p>
@@ -353,7 +353,7 @@
 				>
 					<input type="hidden" name="eventId" value={e.id} />
 					<button
-						class="w-[44px] border border-line2 bg-white text-[17px] leading-none text-fade transition-colors hover:border-hero-rb hover:text-hero-rb"
+						class="w-11 border border-line2 bg-white text-lg leading-none text-fade transition-colors hover:border-hero-rb hover:text-hero-rb"
 						aria-label="Unlink {e.title}"
 						title="Unlink from this store">×</button
 					>
@@ -361,11 +361,11 @@
 			{/snippet}
 
 			<h3
-				class="mt-6 flex items-baseline justify-between border-b-[3px] pb-2"
+				class="mt-6 flex items-baseline justify-between border-b-3 pb-2"
 				style="border-color: var(--cc)"
 			>
-				<span class="text-[10.5px] font-extrabold tracking-[0.22em] uppercase">Coming up</span>
-				<span class="text-[11px] text-fade">{ahead.length}</span>
+				<span class="text-xs font-extrabold tracking-widest uppercase">Coming up</span>
+				<span class="text-xs text-fade">{ahead.length}</span>
 			</h3>
 			<ul class="mt-4 flex flex-col gap-2.5">
 				{#each ahead as e (e.id)}
@@ -373,16 +373,15 @@
 						{#snippet after()}{@render unlink(e)}{/snippet}
 					</EventRow>
 				{:else}
-					<li class="border border-dashed border-line2 px-5 py-5 text-[13.5px] text-soft">
+					<li class="border border-dashed border-line2 px-5 py-5 text-sm text-soft">
 						Nothing scheduled.
 					</li>
 				{/each}
 			</ul>
 			{#if before.length}
-				<h3 class="mt-10 flex items-baseline justify-between border-b-[3px] border-ink pb-2">
-					<span class="text-[10.5px] font-extrabold tracking-[0.22em] uppercase">Played & past</span
-					>
-					<span class="text-[11px] text-fade">{before.length}</span>
+				<h3 class="mt-10 flex items-baseline justify-between border-b-3 border-ink pb-2">
+					<span class="text-xs font-extrabold tracking-widest uppercase">Played & past</span>
+					<span class="text-xs text-fade">{before.length}</span>
 				</h3>
 				<ul class="mt-4 flex flex-col gap-2.5">
 					{#each before as e (e.id)}
@@ -405,16 +404,12 @@
 						class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden"
 					>
 						<span>
-							<span class="block text-[14px] font-semibold"
-								>Link {c.name} events AGE already runs</span
-							>
-							<span class="block text-[12px] text-soft"
+							<span class="block text-sm font-semibold">Link {c.name} events AGE already runs</span>
+							<span class="block text-xs text-soft"
 								>{data.unlinked.length} without a store. Linked events count toward this store’s payouts.</span
 							>
 						</span>
-						<span class="text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase"
-							>Choose</span
-						>
+						<span class="text-xs font-extrabold tracking-widest text-soft uppercase">Choose</span>
 					</summary>
 					<form
 						method="POST"
@@ -426,14 +421,14 @@
 							}}
 						class="border-t border-line2 px-5 py-4"
 					>
-						<ul class="grid max-h-[320px] gap-1.5 overflow-y-auto sm:grid-cols-2">
+						<ul class="grid max-h-80 gap-1.5 overflow-y-auto sm:grid-cols-2">
 							{#each data.unlinked as e (e.id)}
 								<li>
 									<label
-										class="flex cursor-pointer items-center gap-3 border px-3 py-2 text-[13.5px] transition-colors {pick.includes(
+										class="flex cursor-pointer items-center gap-3 border px-3 py-2 text-sm transition-colors {pick.includes(
 											e.id
 										)
-											? 'border-[var(--cc)] bg-[color-mix(in_srgb,var(--cc)_8%,white)]'
+											? 'border-(--cc) bg-[color-mix(in_srgb,var(--cc)_8%,white)]'
 											: 'border-line2 hover:border-ink/40'}"
 									>
 										<input
@@ -443,7 +438,7 @@
 											bind:group={pick}
 											class="h-4 w-4"
 										/>
-										<span class="w-[86px] shrink-0 text-[12px] text-soft tabular-nums"
+										<span class="w-22 shrink-0 text-xs text-soft tabular-nums"
 											>{ui.dateShort(e.eventDate)}</span
 										>
 										<span class="truncate">{e.title}</span>
@@ -452,7 +447,7 @@
 							{/each}
 						</ul>
 						<button
-							class="mt-4 h-[40px] px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:opacity-40"
+							class="mt-4 h-10 px-5 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110 disabled:opacity-40"
 							style="background: var(--cc)"
 							disabled={!pick.length}
 							>Link {pick.length || ''} {pick.length === 1 ? 'event' : 'events'}</button
@@ -463,22 +458,20 @@
 		</section>
 
 		<!-- payouts -->
-		<section id="payouts" class="mt-16 scroll-mt-[150px]">
+		<section id="payouts" class="mt-16 scroll-mt-38">
 			<div class="flex flex-wrap items-end justify-between gap-3">
-				<h2 class="ao-cond text-[40px] leading-none font-black uppercase md:text-[48px]">
-					Payouts
-				</h2>
-				<p class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-soft">
+				<h2 class="ao-cond text-4xl leading-none font-black uppercase md:text-5xl">Payouts</h2>
+				<p class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-soft">
 					After each event: ticket sales minus card fees
 					<a
 						href="/admin/stores/{s.slug}/payouts.csv"
-						class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
+						class="text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 						>CSV ↓</a
 					>
 					<button
 						type="button"
 						onclick={() => (adjusting = !adjusting)}
-						class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
+						class="text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 						aria-expanded={adjusting}>+ Adjustment</button
 					>
 				</p>
@@ -543,7 +536,7 @@
 							</label>
 							<div class="md:col-span-2">
 								<button
-									class="inline-flex h-[44px] items-center px-6 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110"
+									class="inline-flex h-11 items-center px-6 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110"
 									style="background: var(--cc)">Add adjustment</button
 								>
 							</div>
@@ -560,12 +553,10 @@
 		</section>
 
 		<!-- details -->
-		<section id="details" class="mt-16 scroll-mt-[150px]">
+		<section id="details" class="mt-16 scroll-mt-38">
 			<div class="flex flex-wrap items-end justify-between gap-3">
-				<h2 class="ao-cond text-[40px] leading-none font-black uppercase md:text-[48px]">
-					Details
-				</h2>
-				<p class="text-[12.5px] text-soft">Changes go live as soon as you save</p>
+				<h2 class="ao-cond text-4xl leading-none font-black uppercase md:text-5xl">Details</h2>
+				<p class="text-xs text-soft">Changes go live as soon as you save</p>
 			</div>
 			{#if notice('details')?.error}<AdminNotice
 					tone="error"
@@ -596,11 +587,11 @@
 					{/key}
 				</div>
 				<div
-					class="sticky bottom-0 z-10 flex items-center justify-between gap-4 border-t border-line2 bg-white px-5 py-3.5 shadow-[0_-12px_24px_-18px_rgb(23_21_15/0.35)] md:px-7"
+					class="sticky bottom-0 z-10 flex items-center justify-between gap-4 border-t border-line2 bg-white px-5 py-3.5 shadow-up md:px-7"
 				>
-					<span class="text-[12px] text-soft">The store sees these changes right away.</span>
+					<span class="text-xs text-soft">The store sees these changes right away.</span>
 					<button
-						class="inline-flex h-[44px] items-center px-6 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110"
+						class="inline-flex h-11 items-center px-6 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110"
 						style="background: var(--cc)">Save details</button
 					>
 				</div>
@@ -608,36 +599,31 @@
 		</section>
 
 		<!-- activity -->
-		<section id="activity" class="mt-16 scroll-mt-[150px]">
+		<section id="activity" class="mt-16 scroll-mt-38">
 			<div class="flex flex-wrap items-end justify-between gap-3">
-				<h2 class="ao-cond text-[40px] leading-none font-black uppercase md:text-[48px]">
-					Activity
-				</h2>
-				<p class="text-[12.5px] text-soft">The latest 40</p>
+				<h2 class="ao-cond text-4xl leading-none font-black uppercase md:text-5xl">Activity</h2>
+				<p class="text-xs text-soft">The latest 40</p>
 			</div>
 			<ol class="mt-6 border-l-2 border-line2 pl-5">
 				{#each data.activity as a (a.id)}
 					<li class="relative pb-5 last:pb-0">
 						<span
-							class="absolute top-[5px] -left-[27px] h-3 w-3 border-2 border-paper-bg"
+							class="absolute top-1.5 -left-7 h-3 w-3 border-2 border-paper-bg"
 							style="background: {TONE[a.kind] || 'var(--color-line2)'}"
 							aria-hidden="true"
 						></span>
 						<p class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
-							<span class="text-[13.5px] font-semibold"
-								>{KIND[a.kind] || a.kind.replace(/_/g, ' ')}</span
-							>
-							{#if a.note}<span class="min-w-0 truncate text-[13.5px] text-soft">{a.note}</span
-								>{/if}
-							{#if a.data?.role}<span class="text-[12.5px] text-soft">as {a.data.role}</span>{/if}
+							<span class="text-sm font-semibold">{KIND[a.kind] || a.kind.replace(/_/g, ' ')}</span>
+							{#if a.note}<span class="min-w-0 truncate text-sm text-soft">{a.note}</span>{/if}
+							{#if a.data?.role}<span class="text-xs text-soft">as {a.data.role}</span>{/if}
 						</p>
-						<p class="mt-0.5 text-[11.5px] text-fade">
+						<p class="mt-0.5 text-xs text-fade">
 							{ui.dateTime(a.createdAt)} · {[a.actorFirst, a.actorLast].filter(Boolean).join(' ') ||
 								'System'}
 						</p>
 					</li>
 				{:else}
-					<li class="text-[13.5px] text-soft">Nothing yet.</li>
+					<li class="text-sm text-soft">Nothing yet.</li>
 				{/each}
 			</ol>
 		</section>

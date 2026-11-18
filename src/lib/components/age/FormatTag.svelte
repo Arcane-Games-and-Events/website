@@ -27,10 +27,10 @@
 	<span
 		class="inline-flex shrink-0 items-center gap-1.5 bg-ink leading-none font-extrabold whitespace-nowrap text-paper-bg uppercase {size ===
 		'sm'
-			? 'px-1.5 py-[3px] text-[8.5px] tracking-[0.14em]'
-			: 'px-2 py-1 text-[9.5px] tracking-[0.16em]'}"
+			? 'px-1.5 py-1 text-xs tracking-widest'
+			: 'px-2 py-1 text-xs tracking-widest'}"
 		title={full}
 	>
-		<span class="h-[5px] w-[5px] bg-warm-light" aria-hidden="true"></span>{label}
+		<span class="h-1.5 w-1.5 bg-warm-light" aria-hidden="true"></span>{label}
 	</span>
 {/if}

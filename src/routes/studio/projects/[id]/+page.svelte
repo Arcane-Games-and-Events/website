@@ -52,43 +52,38 @@
 			disabled={busy}
 			onclick={() => setStatus(live ? 'draft' : 'published')}
 			class="{compact
-				? 'h-8 px-3 text-[9.5px]'
-				: 'h-10 px-5 text-[10.5px]'} bg-gold font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-paper-bg disabled:opacity-60"
+				? 'h-8 px-3 text-xs'
+				: 'h-10 px-5 text-xs'} bg-gold font-extrabold tracking-widest text-ink uppercase transition-colors hover:bg-paper-bg disabled:opacity-60"
 			>{live ? 'Unpublish' : 'Publish'}</button
 		>
 	{/snippet}
 </DeskHeader>
 <DeskTabs />
 
-<div class="mx-auto w-full max-w-[1200px] space-y-8 px-5 py-8 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page space-y-8 px-5 py-8 font-libre md:px-8">
 	<div class="flex flex-wrap items-baseline justify-between gap-3">
 		<a
 			href="/studio/projects"
-			class="text-[10.5px] font-extrabold tracking-[0.16em] text-soft uppercase hover:text-ink"
+			class="text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 			>← Projects</a
 		>
 		{#if live}
-			<a href="/studios/projects" class="text-[12.5px] text-soft underline hover:text-ink"
+			<a href="/studios/projects" class="text-xs text-soft underline hover:text-ink"
 				>View on AGE Studios ↗</a
 			>
 		{/if}
 	</div>
 	{#if error}
-		<p
-			class="border-l-[3px] border-hero-rb bg-hero-rb/5 px-3 py-2 text-[13px] text-hero-rb"
-			role="alert"
-		>
+		<p class="border-l-3 border-hero-rb bg-hero-rb/5 px-3 py-2 text-sm text-hero-rb" role="alert">
 			{error}
 		</p>
 	{:else if !live && data.problems.length}
-		<p class="border-l-[3px] border-gold bg-gold/10 px-3 py-2 text-[13px]" role="status">
+		<p class="border-l-3 border-gold bg-gold/10 px-3 py-2 text-sm" role="status">
 			Before publishing: {data.problems.join(' ')}
 		</p>
 	{/if}
 	<section>
-		<h2
-			class="border-b-[3px] border-ink pb-2.5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase"
-		>
+		<h2 class="border-b-3 border-ink pb-2.5 text-xs font-extrabold tracking-widest uppercase">
 			The card
 		</h2>
 		<div class="mt-5">
@@ -101,7 +96,7 @@
 		<button
 			type="button"
 			onclick={remove}
-			class="text-[10.5px] font-extrabold tracking-[0.14em] text-hero-rb uppercase hover:underline"
+			class="text-xs font-extrabold tracking-widest text-hero-rb uppercase hover:underline"
 			>Delete project</button
 		>
 	</section>

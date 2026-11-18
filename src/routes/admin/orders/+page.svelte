@@ -194,7 +194,7 @@
 	<AdminNotice tone="error" message={form.error} />
 {/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-6 pb-20 md:px-8">
 	<Figures
 		items={[
 			{ label: 'Orders', value: ui.fmt(data.stats?.totalOrders) },
@@ -221,7 +221,7 @@
 
 	<!-- search, filters, sort -->
 	<div class="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-		<label class="{ui.search} w-full lg:max-w-[420px]" aria-label="Search orders">
+		<label class="{ui.search} w-full lg:max-w-md" aria-label="Search orders">
 			<svg
 				viewBox="0 0 20 20"
 				class="h-4 w-4 shrink-0 text-fade"
@@ -252,7 +252,7 @@
 					type="button"
 					onclick={() => (ordersTypeFilter = f.id)}
 					aria-pressed={ordersTypeFilter === f.id}
-					class="inline-flex h-[36px] items-center gap-2 border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {ordersTypeFilter ===
+					class="inline-flex h-9 items-center gap-2 border px-3 text-xs font-extrabold tracking-widest uppercase transition-colors {ordersTypeFilter ===
 					f.id
 						? 'border-ink bg-ink text-paper-bg'
 						: 'border-line2 bg-white text-soft hover:border-ink hover:text-ink'}"
@@ -272,7 +272,7 @@
 					type="button"
 					onclick={() => (ordersDateFilter = k)}
 					aria-pressed={ordersDateFilter === k}
-					class="h-[32px] border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {ordersDateFilter ===
+					class="h-8 border px-3 text-xs font-extrabold tracking-widest uppercase transition-colors {ordersDateFilter ===
 					k
 						? 'border-warm bg-warm text-white'
 						: 'border-line2 bg-white text-soft hover:border-ink hover:text-ink'}">{l}</button
@@ -282,7 +282,7 @@
 		<div class="flex w-full items-center gap-2 sm:w-auto">
 			<span class={ui.label}>Sort</span>
 			<div
-				class="flex flex-1 gap-px border border-line2 bg-line2 sm:flex-none"
+				class="flex min-w-0 flex-1 gap-px border border-line2 bg-line2 sm:flex-none"
 				role="group"
 				aria-label="Sort"
 			>
@@ -291,7 +291,7 @@
 						type="button"
 						onclick={() => setSort(k)}
 						aria-pressed={sortKey === k}
-						class="h-[32px] flex-1 px-2 text-[10px] font-extrabold tracking-[0.12em] uppercase sm:px-3 {sortKey ===
+						class="h-8 flex-1 px-1.5 text-xs font-extrabold tracking-wide uppercase sm:px-3 sm:tracking-widest {sortKey ===
 						k
 							? 'bg-ink text-paper-bg'
 							: 'bg-white text-soft hover:text-ink'}">{l}</button
@@ -317,27 +317,25 @@
 			<li>
 				<a
 					href="/admin/orders/{order.id}"
-					class="group grid grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-x-3.5 gap-y-2 border border-l-[4px] px-3.5 py-3 transition-[border-color,background-color] duration-200 md:grid-cols-[60px_minmax(0,1fr)_200px_120px_20px] md:gap-x-5 md:px-4 {refunded
-						? 'border-hero-rb/30 bg-hero-rb/[0.04] hover:border-hero-rb/60'
+					class="group grid grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-x-3.5 gap-y-2 border border-l-4 px-3.5 py-3 transition duration-200 md:grid-cols-[60px_minmax(0,1fr)_200px_120px_20px] md:gap-x-5 md:px-4 {refunded
+						? 'border-hero-rb/30 bg-hero-rb/5 hover:border-hero-rb/60'
 						: 'border-line2 bg-white hover:border-ink'}"
 					style="border-left-color: {refunded ? 'var(--color-hero-rb)' : ty.tone}"
 				>
 					<!-- the date stub -->
 					<span class="flex flex-col items-center leading-none">
-						<span class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+						<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 							>{formatDate(order.createdAt, { month: 'short' })}</span
 						>
-						<span class="ao-cond text-[28px] font-black tabular-nums md:text-[30px]"
-							>{d.getUTCDate()}</span
-						>
-						<span class="text-[9.5px] text-fade tabular-nums">{d.getUTCFullYear()}</span>
+						<span class="ao-cond text-3xl font-black tabular-nums">{d.getUTCDate()}</span>
+						<span class="text-xs text-fade tabular-nums">{d.getUTCFullYear()}</span>
 					</span>
 					<span class="min-w-0">
 						<span
-							class="block truncate font-newsreader text-[17px] leading-tight font-semibold group-hover:text-warm"
+							class="block truncate font-newsreader text-lg leading-tight font-semibold group-hover:text-warm"
 							>{getUserName(order.userEmail)}</span
 						>
-						<span class="mt-0.5 block truncate text-[12px] text-fade"
+						<span class="mt-0.5 block truncate text-xs text-fade"
 							>{getUserName(order.userEmail) !== order.userEmail
 								? `${order.userEmail} · `
 								: ''}{orderTitle(order)}</span
@@ -348,23 +346,23 @@
 						class="col-span-2 col-start-2 row-start-2 flex flex-wrap items-center gap-1.5 md:col-span-1 md:col-start-3 md:row-start-1"
 					>
 						<span
-							class="px-2 py-[3px] text-[9.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+							class="px-2 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
 							style="background: {ty.tone}">{ty.word}</span
 						>
 						{#if refunded}
 							<span
-								class="bg-hero-rb px-2 py-[3px] text-[9.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+								class="bg-hero-rb px-2 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
 								>Refunded</span
 							>
 						{:else}
 							<span
-								class="border border-line2 px-2 py-[2px] text-[9.5px] font-extrabold tracking-[0.16em] text-soft uppercase"
+								class="border border-line2 px-2 py-0.5 text-xs font-extrabold tracking-widest text-soft uppercase"
 								>{order.status === 'active' ? 'Active' : 'Paid'}</span
 							>
 						{/if}
 					</span>
 					<span
-						class="ao-cond col-start-3 row-start-1 text-right text-[24px] leading-none font-black tabular-nums md:col-start-4 md:text-[28px] {refunded
+						class="ao-cond col-start-3 row-start-1 text-right text-2xl leading-none font-black tabular-nums md:col-start-4 md:text-3xl {refunded
 							? 'text-fade line-through'
 							: ''}">{formatCurrency(order.amount)}</span
 					>

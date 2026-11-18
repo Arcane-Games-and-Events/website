@@ -33,26 +33,26 @@
 	}
 </script>
 
-<article class="mx-auto w-full max-w-[760px]">
+<article class="mx-auto w-full max-w-3xl">
 	{#if back}
 		<a
 			href={back.href}
-			class="text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase hover:text-warm"
+			class="text-xs font-extrabold tracking-widest text-soft uppercase hover:text-warm"
 			>← {back.label}</a
 		>
 	{/if}
 
-	<header class="mt-4 border-b-[3px] border-double border-line2 pb-5">
-		<p class="text-[9.5px] font-extrabold tracking-[0.22em] text-warm uppercase">
+	<header class="mt-4 border-b-3 border-double border-line2 pb-5">
+		<p class="text-xs font-extrabold tracking-widest text-warm uppercase">
 			<span aria-hidden="true">◆</span>
 			{TOPIC_SHORT[thread.topic] || 'Question'}
 		</p>
 		<h1
-			class="mt-2 font-newsreader text-[28px] leading-[1.08] font-semibold tracking-[-0.02em] [text-wrap:balance] md:text-[36px]"
+			class="mt-2 font-newsreader text-3xl leading-none font-semibold tracking-tight [text-wrap:balance] md:text-4xl"
 		>
 			{thread.subject}
 		</h1>
-		<p class="mt-2 text-[12.5px] text-fade">
+		<p class="mt-2 text-xs text-fade">
 			Started {when(thread.createdAt)} ·
 			{#if thread.status === 'done'}<span class="font-semibold text-soft">Resolved</span
 				>{:else}<span class="font-semibold text-prem">Open</span>{/if}
@@ -62,9 +62,9 @@
 	</header>
 
 	{#if sent}
-		<div class="mt-5 border-l-[3px] border-prem bg-prem/10 px-4 py-3.5" role="status">
-			<p class="text-[13.5px] font-bold text-prem">Sent. Thanks for writing.</p>
-			<p class="mt-1 text-[13.5px] leading-snug text-soft">
+		<div class="mt-5 border-l-3 border-prem bg-prem/10 px-4 py-3.5" role="status">
+			<p class="text-sm font-bold text-prem">Sent. Thanks for writing.</p>
+			<p class="mt-1 text-sm leading-snug text-soft">
 				We answer right here, usually within a day or two.
 				{#if guest}
 					We don’t email replies, so <b class="text-ink">keep this page’s link</b>: this browser
@@ -78,19 +78,19 @@
 					<button
 						type="button"
 						onclick={copyLink}
-						class="inline-flex h-[34px] items-center border border-ink px-3.5 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+						class="inline-flex h-9 items-center border border-ink px-3.5 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 						>{copied ? 'Link copied' : 'Copy the link'}</button
 					>
 					<a
 						href="/signup?redirect={encodeURIComponent(page.url.pathname)}"
-						class="text-[12.5px] font-bold text-warm hover:underline"
+						class="text-xs font-bold text-warm hover:underline"
 						>Create an account to get a badge when we reply →</a
 					>
 				</div>
 			{/if}
 		</div>
 	{:else if guest}
-		<p class="mt-4 text-[12.5px] leading-snug text-fade">
+		<p class="mt-4 text-xs leading-snug text-fade">
 			This is your private link to the conversation; replies appear here, not by email.
 			<button type="button" onclick={copyLink} class="font-bold text-warm hover:underline"
 				>{copied ? 'Copied' : 'Copy link'}</button
@@ -103,12 +103,12 @@
 			<li class="border-b border-line py-5">
 				<div class="flex items-center gap-3">
 					<span
-						class="flex h-8 w-8 shrink-0 items-center justify-center text-[11.5px] font-bold {msg.fromStaff
+						class="flex h-8 w-8 shrink-0 items-center justify-center text-xs font-bold {msg.fromStaff
 							? 'bg-warm text-white'
 							: 'bg-ink text-paper-bg'}"
 						aria-hidden="true">{msg.fromStaff ? '◆' : initialsOf(thread.name)}</span
 					>
-					<p class="min-w-0 flex-1 truncate text-[13.5px]">
+					<p class="min-w-0 flex-1 truncate text-sm">
 						{#if msg.fromStaff}
 							<b>AGE</b>{#if msg.authorFirst}<span class="text-fade">&nbsp;· {msg.authorFirst}</span
 								>{/if}
@@ -117,13 +117,13 @@
 						{/if}
 					</p>
 					<time
-						class="shrink-0 text-[11.5px] text-fade tabular-nums"
+						class="shrink-0 text-xs text-fade tabular-nums"
 						datetime={new Date(msg.createdAt).toISOString()}>{stamp(msg.createdAt)}</time
 					>
 				</div>
 				<div
-					class="mt-3 font-newsreader text-[16.5px] leading-[1.6] break-words whitespace-pre-line {msg.fromStaff
-						? 'border-l-[3px] border-warm pl-4'
+					class="mt-3 font-newsreader text-base leading-relaxed break-words whitespace-pre-line {msg.fromStaff
+						? 'border-l-3 border-warm pl-4'
 						: 'pl-11'}"
 				>
 					{msg.body}
@@ -145,13 +145,11 @@
 	>
 		<label
 			for="reply"
-			class="mb-1.5 block text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+			class="mb-1.5 block text-xs font-extrabold tracking-widest text-fade uppercase"
 			>Write back</label
 		>
 		{#if thread.status === 'done'}
-			<p class="mb-2 text-[12.5px] text-fade">
-				We marked this resolved. Writing back opens it again.
-			</p>
+			<p class="mb-2 text-xs text-fade">We marked this resolved. Writing back opens it again.</p>
 		{/if}
 		<textarea
 			id="reply"
@@ -160,18 +158,18 @@
 			required
 			maxlength={LIMITS.body}
 			placeholder="Your reply"
-			class="block w-full border border-line2 bg-paper-bg px-3.5 py-3 font-newsreader text-[16.5px] leading-[1.55] text-ink outline-none placeholder:text-fade hover:border-ink focus:border-ink focus:ring-0"
+			class="block w-full border border-line2 bg-paper-bg px-3.5 py-3 font-newsreader text-base leading-normal text-ink outline-none placeholder:text-fade hover:border-ink focus:border-ink focus:ring-0"
 		></textarea>
 		{#if form?.error}
-			<p class="mt-2 text-[13px] font-semibold text-hero-rb" role="alert">{form.error}</p>
+			<p class="mt-2 text-sm font-semibold text-hero-rb" role="alert">{form.error}</p>
 		{:else if form?.replied}
-			<p class="mt-2 text-[13px] font-semibold text-prem" role="status">Sent.</p>
+			<p class="mt-2 text-sm font-semibold text-prem" role="status">Sent.</p>
 		{/if}
 		<div class="mt-3 flex justify-end">
 			<button
 				type="submit"
 				disabled={busy}
-				class="inline-flex h-[44px] items-center gap-2 bg-ink px-6 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:opacity-50"
+				class="inline-flex h-11 items-center gap-2 bg-ink px-6 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm disabled:opacity-50"
 				>{busy ? 'Sending…' : 'Send reply'} <span aria-hidden="true">→</span></button
 			>
 		</div>

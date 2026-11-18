@@ -161,18 +161,18 @@
 					class="flex cursor-pointer items-start justify-between gap-5 border border-line2 bg-white px-4 py-3 transition-colors hover:border-ink/40"
 				>
 					<span>
-						<span class="block text-[14px] font-semibold">Active</span>
-						<span class="mt-0.5 block text-[12px] leading-snug text-soft"
+						<span class="block text-sm font-semibold">Active</span>
+						<span class="mt-0.5 block text-xs leading-snug text-soft"
 							>An inactive store keeps its history but can’t schedule events.</span
 						>
 					</span>
 					<span class="relative mt-0.5 inline-flex shrink-0">
 						<input type="checkbox" name="active" bind:checked={active} class="peer sr-only" />
 						<span
-							class="h-[24px] w-[44px] bg-line2 transition-colors peer-checked:bg-[var(--cc,var(--color-ink))] peer-focus-visible:shadow-[0_0_0_3px_color-mix(in_srgb,var(--cc,var(--color-ink))_25%,transparent)]"
+							class="h-6 w-11 bg-line2 transition-colors peer-checked:bg-[var(--cc,var(--color-ink))] peer-focus-visible:shadow-[0_0_0_3px_color-mix(in_srgb,var(--cc,var(--color-ink))_25%,transparent)]"
 						></span>
 						<span
-							class="absolute top-[3px] left-[3px] h-[18px] w-[18px] bg-white shadow-sm transition-transform peer-checked:translate-x-[20px]"
+							class="absolute top-1 left-1 h-4.5 w-4.5 bg-white shadow-sm transition-transform peer-checked:translate-x-5"
 						></span>
 					</span>
 				</label>

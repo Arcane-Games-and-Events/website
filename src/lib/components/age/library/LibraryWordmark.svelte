@@ -16,8 +16,8 @@
 <span class="inline-flex flex-col items-start leading-none" role="img" aria-label="The AGE Library">
 	<span
 		class="flex items-center font-libre font-bold uppercase {blue} {lg
-			? 'gap-3 text-[10.5px] tracking-[0.45em] md:gap-4 md:text-[12px]'
-			: 'gap-2 text-[8.5px] tracking-[0.4em]'}"
+			? 'gap-3 text-xs tracking-[0.45em] md:gap-4'
+			: 'gap-2 text-xs tracking-[0.4em]'}"
 		aria-hidden="true"
 	>
 		The AGE
@@ -25,8 +25,8 @@
 	</span>
 	<span
 		class="block font-newsreader font-bold {ink} {lg
-			? 'mt-2 text-[60px] tracking-[-0.025em] md:text-[92px]'
-			: 'mt-1 text-[30px] tracking-[-0.02em]'}"
+			? 'mt-2 text-6xl tracking-tight md:text-8xl'
+			: 'mt-1 text-3xl tracking-tight'}"
 		style="font-variation-settings: 'opsz' 72;"
 		aria-hidden="true">Library</span
 	>

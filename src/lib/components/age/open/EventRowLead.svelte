@@ -16,16 +16,12 @@
 	class="relative row-span-2 flex flex-col items-center justify-center py-4 md:row-span-1"
 	style="background: color-mix(in srgb, {circuitVar(e.circuit)} 10%, var(--ed-paper));"
 >
-	<span class="text-[10px] font-extrabold tracking-[0.18em]" style="color: {circuitVar(e.circuit)};"
+	<span class="text-xs font-extrabold tracking-widest" style="color: {circuitVar(e.circuit)};"
 		>{e.month}</span
 	>
-	<span class="ao-cond text-[46px] leading-[0.85] font-black tabular-nums md:text-[54px]"
-		>{e.day}</span
-	>
+	<span class="ao-cond text-5xl leading-none font-black tabular-nums md:text-6xl">{e.day}</span>
 	{#if weekday}
-		<span class="mt-1 text-[8.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
-			>{weekday}</span
-		>
+		<span class="mt-1 text-xs font-extrabold tracking-widest text-fade uppercase">{weekday}</span>
 	{/if}
 	<span class="ao-perf absolute inset-y-2 right-0 w-px text-line2" aria-hidden="true"></span>
 </span>
@@ -34,7 +30,7 @@
 		src={e.image}
 		alt=""
 		loading="lazy"
-		class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.05]"
+		class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
 	/>
 	<span
 		class="absolute inset-0"

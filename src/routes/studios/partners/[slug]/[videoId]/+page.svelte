@@ -29,14 +29,14 @@
 </svelte:head>
 
 <AgeShell active="AGE Studios">
-	<div class="mx-auto w-full max-w-[1100px] px-5 pt-6 md:px-8 md:pt-8">
+	<div class="mx-auto w-full max-w-6xl px-5 pt-6 md:px-8 md:pt-8">
 		<a
 			href="/studios/partners/{c.slug}"
-			class="st-wide inline-flex items-center gap-2 text-[10px] font-black tracking-[0.14em] uppercase hover:text-cc-ne"
+			class="st-wide inline-flex items-center gap-2 text-xs font-black tracking-widest uppercase hover:text-cc-ne"
 			><span aria-hidden="true">←</span> {c.name}</a
 		>
 	</div>
-	<div class="mx-auto mt-5 w-full max-w-[1100px] md:px-8">
+	<div class="mx-auto mt-5 w-full max-w-6xl md:px-8">
 		<div class="fp-plate md:mx-0">
 			{#key item.id}
 				<YouTubePlayer videoId={item.id} title={item.title} poster={item.still} />
@@ -44,20 +44,18 @@
 		</div>
 	</div>
 
-	<div class="mx-auto w-full max-w-[1100px] px-5 pt-8 pb-12 md:px-8">
-		<p
-			class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.22em] text-cc-ne uppercase"
-		>
-			<span class="text-[8px]" aria-hidden="true">◆</span> Partner · {c.kind === 'podcast'
+	<div class="mx-auto w-full max-w-6xl px-5 pt-8 pb-12 md:px-8">
+		<p class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-cc-ne uppercase">
+			<span class="text-xs" aria-hidden="true">◆</span> Partner · {c.kind === 'podcast'
 				? 'Podcast'
 				: 'Video'}
 		</p>
 		<h1
-			class="mt-2 font-newsreader text-[30px] leading-[1.04] font-semibold tracking-[-0.02em] [text-wrap:balance] md:text-[44px]"
+			class="mt-2 font-newsreader text-3xl leading-none font-semibold tracking-tight [text-wrap:balance] md:text-5xl"
 		>
 			{item.title}
 		</h1>
-		<p class="mt-2 text-[12.5px] text-fade tabular-nums">
+		<p class="mt-2 text-xs text-fade tabular-nums">
 			{[dateOf(item.publishedAt), item.duration ? clock(item.duration) : '']
 				.filter(Boolean)
 				.join(' · ')}
@@ -69,10 +67,10 @@
 					{#if c.avatar}<img src={c.avatar} alt="" class="h-full w-full object-cover" />{/if}
 				</span>
 				<span class="min-w-0">
-					<span class="block truncate font-newsreader text-[19px] font-semibold"
+					<span class="block truncate font-newsreader text-xl font-semibold"
 						><span class="fp-ul">{c.name}</span></span
 					>
-					<span class="block text-[12px] text-fade">More from them on AGE Studios →</span>
+					<span class="block text-xs text-fade">More from them on AGE Studios →</span>
 				</span>
 			</a>
 			<span class="flex flex-wrap gap-2">
@@ -80,23 +78,23 @@
 					href={c.subscribeUrl}
 					target="_blank"
 					rel="noopener"
-					class="inline-flex items-center bg-ink px-4 py-3 text-[10px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-cc-ne"
+					class="inline-flex items-center bg-ink px-4 py-3 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-cc-ne"
 					>Subscribe ↗</a
 				>
 				<a
 					href="https://www.youtube.com/watch?v={item.id}"
 					target="_blank"
 					rel="noopener"
-					class="inline-flex items-center border-[1.5px] border-ink px-4 py-3 text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+					class="inline-flex items-center border-2 border-ink px-4 py-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 					>On YouTube ↗</a
 				>
 			</span>
 		</div>
 
 		{#if item.description}
-			<div class="mt-6 max-w-[760px]">
+			<div class="mt-6 max-w-3xl">
 				<p
-					class="text-[14.5px] leading-relaxed break-words whitespace-pre-line text-soft {more
+					class="text-sm leading-relaxed break-words whitespace-pre-line text-soft {more
 						? ''
 						: 'line-clamp-5'}"
 				>
@@ -111,7 +109,7 @@
 					<button
 						type="button"
 						onclick={() => (more = !more)}
-						class="mt-3 text-[10px] font-extrabold tracking-[0.16em] text-cc-ne uppercase hover:text-ink"
+						class="mt-3 text-xs font-extrabold tracking-widest text-cc-ne uppercase hover:text-ink"
 						>{more ? 'Show less' : 'Show more'}</button
 					>
 				{/if}
@@ -119,7 +117,7 @@
 		{/if}
 	</div>
 
-	<div class="mx-auto w-full max-w-[1200px] space-y-14 px-5 pb-20 md:px-8">
+	<div class="mx-auto w-full max-w-page space-y-14 px-5 pb-20 md:px-8">
 		{#if data.more.length}
 			<section>
 				<SectionHead

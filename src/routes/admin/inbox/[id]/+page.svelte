@@ -72,21 +72,21 @@
 	<div class="flex flex-wrap items-center gap-2">
 		<a
 			href="/admin/inbox{backSearch}"
-			class="inline-flex h-[36px] items-center border border-line2 bg-white px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:border-ink lg:hidden"
+			class="inline-flex h-9 items-center border border-line2 bg-white px-3 text-xs font-extrabold tracking-widest uppercase hover:border-ink lg:hidden"
 			>← Inbox</a
 		>
 		<span class="flex-1"></span>
 		<form method="POST" action="?/unread" use:enhance>
 			<input type="hidden" name="back" value={backSearch} />
 			<button
-				class="inline-flex h-[36px] items-center border border-line2 bg-white px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:border-ink"
+				class="inline-flex h-9 items-center border border-line2 bg-white px-3 text-xs font-extrabold tracking-widest uppercase hover:border-ink"
 				>Mark unread</button
 			>
 		</form>
 		<form method="POST" action="?/status" use:enhance>
 			<input type="hidden" name="status" value={t.status === 'done' ? 'open' : 'done'} />
 			<button
-				class="inline-flex h-[36px] items-center px-4 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-[filter] {t.status ===
+				class="inline-flex h-9 items-center px-4 text-xs font-extrabold tracking-widest uppercase transition {t.status ===
 				'done'
 					? 'border border-ink bg-white hover:bg-ink hover:text-paper-bg'
 					: 'bg-prem text-white hover:brightness-110'}"
@@ -96,26 +96,22 @@
 	</div>
 
 	<!-- the subject, and who wrote -->
-	<header
-		class="mt-4 border border-l-[6px] border-line2 bg-white"
-		style="border-left-color: {tone}"
-	>
+	<header class="mt-4 border border-l-6 border-line2 bg-white" style="border-left-color: {tone}">
 		<div class="px-5 pt-5 pb-4 md:px-6">
 			<p class="flex flex-wrap items-center gap-2">
 				<span
-					class="px-2 py-[3px] text-[9.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+					class="px-2 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
 					style="background: {tone}">{TOPIC_SHORT[t.topic] || 'Question'}</span
 				>
 				<span
-					class="px-2 py-[2px] text-[9.5px] font-extrabold tracking-[0.16em] uppercase {t.status ===
-					'done'
+					class="px-2 py-0.5 text-xs font-extrabold tracking-widest uppercase {t.status === 'done'
 						? 'bg-prem text-white'
 						: 'border border-warm text-warm'}">{t.status === 'done' ? 'Done' : 'Open'}</span
 				>
-				<span class="text-[11.5px] text-fade">Started {stamp(t.createdAt)}</span>
+				<span class="text-xs text-fade">Started {stamp(t.createdAt)}</span>
 			</p>
 			<h2
-				class="mt-2.5 font-newsreader text-[26px] leading-[1.1] font-semibold tracking-[-0.02em] [text-wrap:balance] md:text-[32px]"
+				class="mt-2.5 font-newsreader text-2xl leading-none font-semibold tracking-tight [text-wrap:balance] md:text-3xl"
 			>
 				{t.subject}
 			</h2>
@@ -125,28 +121,27 @@
 		>
 			<span class="flex min-w-0 items-center gap-3">
 				<span
-					class="ao-cond flex h-[44px] w-[44px] shrink-0 items-center justify-center text-[19px] leading-none font-black {who.ink}"
+					class="ao-cond flex h-11 w-11 shrink-0 items-center justify-center text-xl leading-none font-black {who.ink}"
 					style="background: {who.bg}"
 					aria-hidden="true">{initialsOf(t.name)}</span
 				>
 				<span class="min-w-0">
-					<span class="block truncate text-[14.5px] font-bold">
+					<span class="block truncate text-sm font-bold">
 						{#if p}<a href={p.href} class="hover:text-warm hover:underline">{t.name}</a
 							>{:else}{t.name}{/if}
 						{#if accountName && accountName !== t.name}<span class="font-normal text-fade">
 								· {accountName}</span
 							>{/if}
 					</span>
-					<span class="block truncate text-[12px] text-fade">{t.email}</span>
+					<span class="block truncate text-xs text-fade">{t.email}</span>
 				</span>
 			</span>
 			<span
-				class="px-2 py-[2px] text-[9.5px] font-extrabold tracking-[0.16em] uppercase {who.ink}"
+				class="px-2 py-0.5 text-xs font-extrabold tracking-widest uppercase {who.ink}"
 				style="background: {who.bg}">{who.label}</span
 			>
-			{#if !t.userId}<span class="text-[11.5px] text-fade">Reads replies on a private link</span
-				>{/if}
-			<span class="ml-auto text-[12px]">
+			{#if !t.userId}<span class="text-xs text-fade">Reads replies on a private link</span>{/if}
+			<span class="ml-auto text-xs">
 				{#if t.others}
 					<a
 						href="/admin/inbox?show=all&q={encodeURIComponent(t.email)}"
@@ -164,8 +159,8 @@
 			<summary
 				class="flex cursor-pointer list-none items-center gap-3 px-5 py-3 hover:bg-paper/50 md:px-6 [&::-webkit-details-marker]:hidden"
 			>
-				<span class="ao-cond text-[20px] leading-none font-black uppercase">Their profile</span>
-				<span class="min-w-0 flex-1 truncate text-[12.5px] text-soft">
+				<span class="ao-cond text-xl leading-none font-black uppercase">Their profile</span>
+				<span class="min-w-0 flex-1 truncate text-xs text-soft">
 					{#if p.account}
 						{p.membership ? `Premium ${p.membership.plan} · ` : ''}{ui.money(p.orders.spent)} spent ·
 						{p.orders.count}
@@ -175,14 +170,14 @@
 					{/if}
 				</span>
 				<span
-					class="text-[14px] leading-none text-soft transition-transform group-open:rotate-180"
+					class="text-sm leading-none text-soft transition-transform group-open:rotate-180"
 					aria-hidden="true">▾</span
 				>
 			</summary>
 
 			<div class="border-t border-line2 px-5 py-5 md:px-6">
 				{#if p.matchedByEmail}
-					<p class="mb-4 border-l-[3px] border-warm bg-warm/5 px-3 py-2 text-[12.5px] text-soft">
+					<p class="mb-4 border-l-3 border-warm bg-warm/5 px-3 py-2 text-xs text-soft">
 						Written signed out, but this email has an account. Their replies move into it when they
 						open the private link signed in.
 					</p>
@@ -192,7 +187,7 @@
 					{#if p.account}
 						<div class="bg-white px-4 py-3">
 							<dt class={F.label}>Membership</dt>
-							<dd class="text-[13px] capitalize">
+							<dd class="text-sm capitalize">
 								{#if p.membership}{plan(
 										p.membership
 									)}{:else if p.account.legacyStatus === 'active'}Old subscription{:else}<span
@@ -202,11 +197,11 @@
 						</div>
 						<div class="bg-white px-4 py-3">
 							<dt class={F.label}>Joined</dt>
-							<dd class="text-[13px]">{ui.dateShort(p.account.createdAt)}</dd>
+							<dd class="text-sm">{ui.dateShort(p.account.createdAt)}</dd>
 						</div>
 						<div class="bg-white px-4 py-3">
 							<dt class={F.label}>GEM ID</dt>
-							<dd class="font-mono text-[13px]">
+							<dd class="font-mono text-sm">
 								{#if p.account.gemId}{p.account.gemId}{:else}<span class="text-fade">None</span
 									>{/if}
 							</dd>
@@ -214,7 +209,7 @@
 					{/if}
 					<div class="bg-white px-4 py-3">
 						<dt class={F.label}>Spent</dt>
-						<dd class="ao-cond text-[22px] leading-none font-black text-prem tabular-nums">
+						<dd class="ao-cond text-2xl leading-none font-black text-prem tabular-nums">
 							{ui.money(p.orders.spent)}
 						</dd>
 					</div>
@@ -222,7 +217,7 @@
 				{#if roles.length}
 					<p class="mt-3 flex flex-wrap gap-1.5">
 						{#each roles as r (r)}<span
-								class="border border-line2 px-2 py-0.5 text-[9.5px] font-extrabold tracking-[0.12em] uppercase"
+								class="border border-line2 px-2 py-0.5 text-xs font-extrabold tracking-widest uppercase"
 								>{r}</span
 							>{/each}
 					</p>
@@ -237,7 +232,7 @@
 									<li>
 										<a
 											href="/admin/orders/{o.id}"
-											class="flex items-baseline gap-2 text-[13px] hover:text-warm"
+											class="flex items-baseline gap-2 text-sm hover:text-warm"
 										>
 											<span class="min-w-0 flex-1 truncate">{o.label}</span>
 											<span
@@ -246,19 +241,19 @@
 													: ''}">{ui.money(o.amount)}</span
 											>
 										</a>
-										<span class="block text-[11px] text-fade"
+										<span class="block text-xs text-fade"
 											>{ui.dateShort(o.createdAt)}{o.refunded ? ' · refunded' : ''}</span
 										>
 									</li>
 								{/each}
 							</ul>
-						{:else}<p class="text-[13px] text-fade">None</p>{/if}
+						{:else}<p class="text-sm text-fade">None</p>{/if}
 					</div>
 					{#if p.account}
 						<div class="min-w-0">
 							<p class={F.label}>Courses · {p.courses.length}</p>
 							{#if p.courses.length}
-								<ul class="space-y-1 text-[13px]">
+								<ul class="space-y-1 text-sm">
 									{#each p.courses.slice(0, 3) as c (c.slug)}
 										<li class="truncate">{c.title}</li>
 									{/each}
@@ -266,27 +261,27 @@
 											and {p.courses.length - 3} more
 										</li>{/if}
 								</ul>
-							{:else}<p class="text-[13px] text-fade">None</p>{/if}
+							{:else}<p class="text-sm text-fade">None</p>{/if}
 						</div>
 						<div class="min-w-0">
 							<p class={F.label}>Upcoming events · {p.events.length}</p>
 							{#if p.events.length}
-								<ul class="space-y-1 text-[13px]">
+								<ul class="space-y-1 text-sm">
 									{#each p.events.slice(0, 3) as e, i (i)}
 										<li class="flex items-baseline gap-2">
 											<span class="min-w-0 flex-1 truncate">{e.title}</span>
-											<span class="shrink-0 text-[11.5px] text-fade">{ui.dateShort(e.at)}</span>
+											<span class="shrink-0 text-xs text-fade">{ui.dateShort(e.at)}</span>
 										</li>
 									{/each}
 								</ul>
-							{:else}<p class="text-[13px] text-fade">None</p>{/if}
+							{:else}<p class="text-sm text-fade">None</p>{/if}
 						</div>
 					{/if}
 				</div>
 
 				<a
 					href={p.href}
-					class="mt-5 inline-flex text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
+					class="mt-5 inline-flex text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 					>Open their page →</a
 				>
 			</div>
@@ -297,10 +292,10 @@
 	<ol class="mt-6 flex flex-col gap-3">
 		{#each t.messages as msg (msg.id)}
 			<li
-				class="border border-l-[4px] {msg.internal
+				class="border border-l-4 {msg.internal
 					? 'border-dashed border-gold bg-gold/10 md:ml-12'
 					: msg.fromStaff
-						? 'border-line2 bg-warm/[0.04] md:ml-12'
+						? 'border-line2 bg-warm/5 md:ml-12'
 						: 'border-line2 bg-white md:mr-12'}"
 				style="border-left-style: solid; border-left-color: {msg.internal
 					? 'var(--color-gold)'
@@ -312,7 +307,7 @@
 			>
 				<div class="flex items-center gap-3 px-4 pt-3.5 md:px-5">
 					<span
-						class="ao-cond flex h-8 w-8 shrink-0 items-center justify-center text-[14px] leading-none font-black {msg.internal
+						class="ao-cond flex h-8 w-8 shrink-0 items-center justify-center text-sm leading-none font-black {msg.internal
 							? 'bg-gold text-ink'
 							: msg.fromStaff
 								? 'bg-warm text-white'
@@ -320,16 +315,16 @@
 						aria-hidden="true"
 						>{msg.fromStaff ? initialsOf(staffName(msg)) : initialsOf(t.name)}</span
 					>
-					<p class="min-w-0 flex-1 truncate text-[13.5px]">
+					<p class="min-w-0 flex-1 truncate text-sm">
 						{#if msg.internal}
 							<b>{staffName(msg)}</b>
 							<span
-								class="ml-1 bg-gold px-1.5 py-px text-[9px] font-extrabold tracking-[0.16em] text-ink uppercase"
+								class="ml-1 bg-gold px-1.5 py-px text-xs font-extrabold tracking-widest text-ink uppercase"
 								>Internal note</span
 							>
 						{:else if msg.fromStaff}
 							<b>{staffName(msg)}</b>
-							<span class="ml-1 text-[9px] font-extrabold tracking-[0.16em] text-warm uppercase"
+							<span class="ml-1 text-xs font-extrabold tracking-widest text-warm uppercase"
 								>AGE replied</span
 							>
 						{:else if p}
@@ -338,10 +333,10 @@
 							<b>{t.name}</b>
 						{/if}
 					</p>
-					<time class="shrink-0 text-[11.5px] text-fade tabular-nums">{stamp(msg.createdAt)}</time>
+					<time class="shrink-0 text-xs text-fade tabular-nums">{stamp(msg.createdAt)}</time>
 				</div>
 				<div
-					class="px-4 pt-2.5 pb-4 font-newsreader text-[16.5px] leading-[1.6] break-words whitespace-pre-line md:pr-6 md:pl-[60px]"
+					class="px-4 pt-2.5 pb-4 font-newsreader text-base leading-relaxed break-words whitespace-pre-line md:pr-6 md:pl-15"
 				>
 					{msg.body}
 				</div>
@@ -353,7 +348,7 @@
 	<form
 		method="POST"
 		action="?/reply"
-		class="mt-6 border border-l-[4px] border-line2 bg-white"
+		class="mt-6 border border-l-4 border-line2 bg-white"
 		style="--cc: {mode === 'note'
 			? 'var(--color-gold)'
 			: 'var(--color-warm)'}; border-left-color: var(--cc)"
@@ -367,7 +362,7 @@
 						role="tab"
 						aria-selected={mode === key}
 						onclick={() => (mode = key)}
-						class="inline-flex h-[34px] items-center border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {mode ===
+						class="inline-flex h-9 items-center border px-3 text-xs font-extrabold tracking-widest uppercase transition-colors {mode ===
 						key
 							? key === 'note'
 								? 'border-transparent bg-gold text-ink'
@@ -376,7 +371,7 @@
 					>
 				{/each}
 			</div>
-			<p class="text-[11.5px] text-fade">
+			<p class="text-xs text-fade">
 				{mode === 'note' ? 'Only admins see notes.' : 'They see this on the site, not by email.'}
 			</p>
 		</div>
@@ -390,14 +385,14 @@
 				maxlength={LIMITS.body}
 				placeholder={mode === 'note' ? 'A note for the team' : 'Write your reply'}
 				aria-label={mode === 'note' ? 'Internal note' : 'Reply'}
-				class="{F.field} h-auto py-3 font-newsreader text-[16.5px] leading-[1.55] {mode === 'note'
+				class="{F.field} h-auto py-3 font-newsreader text-base leading-normal {mode === 'note'
 					? 'bg-gold/5'
 					: ''}"
 			></textarea>
 			{#if f.error}
-				<p class="mt-2 text-[13px] font-semibold text-hero-rb" role="alert">{f.error}</p>
+				<p class="mt-2 text-sm font-semibold text-hero-rb" role="alert">{f.error}</p>
 			{:else if f.sent}
-				<p class="mt-2 text-[13px] font-semibold text-prem" role="status">
+				<p class="mt-2 text-sm font-semibold text-prem" role="status">
 					{f.sent === 'note' ? 'Note added.' : 'Reply sent. They’ll see a badge on their account.'}
 				</p>
 			{/if}
@@ -410,13 +405,13 @@
 					name="done"
 					value="1"
 					disabled={busy}
-					class="inline-flex h-[40px] items-center border border-prem bg-white px-4 text-[10px] font-extrabold tracking-[0.14em] text-prem uppercase hover:bg-prem hover:text-white disabled:opacity-50"
+					class="inline-flex h-10 items-center border border-prem bg-white px-4 text-xs font-extrabold tracking-widest text-prem uppercase hover:bg-prem hover:text-white disabled:opacity-50"
 					>Send & mark done</button
 				>
 			{/if}
 			<button
 				disabled={busy}
-				class="inline-flex h-[40px] items-center px-5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-[filter] hover:brightness-110 disabled:opacity-50 {mode ===
+				class="inline-flex h-10 items-center px-5 text-xs font-extrabold tracking-widest uppercase transition hover:brightness-110 disabled:opacity-50 {mode ===
 				'note'
 					? 'text-ink'
 					: 'text-white'}"

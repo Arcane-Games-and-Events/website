@@ -63,9 +63,9 @@
 			type="button"
 			tabindex="-1"
 			onclick={() => jump(col.id)}
-			class="shrink-0 border px-2.5 py-1.5 text-[9.5px] font-extrabold tracking-[0.12em] uppercase {col.id ===
+			class="shrink-0 border px-2.5 py-1.5 text-xs font-extrabold tracking-widest uppercase {col.id ===
 				'in_review' && col.list.length
-				? 'border-gold bg-gold/15 text-[#8a6116]'
+				? 'border-gold bg-gold/15 text-gold-deep'
 				: 'border-line2 text-soft'}"
 			>{col.label} <span class="tabular-nums opacity-70">{col.list.length}</span></button
 		>
@@ -80,20 +80,20 @@
 		<section
 			data-stage={col.id}
 			aria-labelledby="col-{col.id}"
-			class="relative flex w-[78vw] max-w-[320px] shrink-0 snap-start flex-col border border-t-[3px] {col.id ===
+			class="relative flex w-[78vw] max-w-xs shrink-0 snap-start flex-col border border-t-3 {col.id ===
 			'unlisted'
 				? 'border-dashed border-line2 lg:ml-3'
 				: 'border-line2'} {TOP[col.id]} {col.id === 'in_review' && col.list.length
-				? 'bg-gold/[0.07]'
+				? 'bg-gold/5'
 				: 'bg-paper-bg'} lg:w-auto lg:max-w-none"
 		>
 			<header class="relative px-3 pt-3 pb-2.5">
 				<div class="flex items-baseline justify-between gap-2">
 					<h3
 						id="col-{col.id}"
-						class="flex items-baseline gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] uppercase {col.id ===
+						class="flex items-baseline gap-1.5 text-xs font-extrabold tracking-widest uppercase {col.id ===
 						'in_review'
-							? 'text-[#8a6116]'
+							? 'text-gold-deep'
 							: ''}"
 					>
 						<span class="text-fade tabular-nums">{col.id === 'unlisted' ? '—' : i + 1}</span>
@@ -101,15 +101,15 @@
 					</h3>
 					<a
 						href="/classroom/courses?stage={col.id}"
-						class="text-[18px] leading-none font-extrabold tabular-nums hover:text-warm"
+						class="text-lg leading-none font-extrabold tabular-nums hover:text-warm"
 						aria-label="{col.list.length} {col.label}: see all">{col.list.length}</a
 					>
 				</div>
-				<p class="mt-1 text-[11px] text-soft">{col.note}</p>
+				<p class="mt-1 text-xs text-soft">{col.note}</p>
 				{#if NEXT[col.id]}
 					<!-- the way a course moves on, between this column and the next -->
 					<span
-						class="absolute top-[14px] -right-[17px] z-10 hidden h-[22px] w-[22px] items-center justify-center bg-paper-bg text-[13px] text-fade lg:flex"
+						class="absolute top-3.5 -right-4.5 z-10 hidden h-5.5 w-5.5 items-center justify-center bg-paper-bg text-sm text-fade lg:flex"
 						aria-hidden="true">→</span
 					>
 				{/if}
@@ -124,7 +124,7 @@
 								: `/classroom/courses/${c.id}`}
 							class="group flex items-center gap-2 border border-line2 bg-white px-2 py-1.5 transition-colors hover:border-ink"
 						>
-							<span class="block h-[26px] w-[40px] shrink-0 overflow-hidden bg-ink">
+							<span class="block h-7 w-10 shrink-0 overflow-hidden bg-ink">
 								{#if c.cover}<img
 										src={c.cover.thumb || c.cover.src}
 										alt=""
@@ -134,12 +134,10 @@
 							</span>
 							<span class="min-w-0 flex-1">
 								<span
-									class="block truncate text-[12.5px] leading-tight font-semibold group-hover:text-warm"
+									class="block truncate text-xs leading-tight font-semibold group-hover:text-warm"
 									title={c.title}>{c.title}</span
 								>
-								<span
-									class="mt-[2px] flex items-center gap-1 text-[10.5px] leading-tight text-fade"
-								>
+								<span class="mt-0.5 flex items-center gap-1 text-xs leading-tight text-fade">
 									<span class="truncate">{c.author || 'No teacher'}</span>
 									<span aria-hidden="true">·</span>
 									<span
@@ -157,15 +155,14 @@
 								</span>
 							</span>
 							{#if col.id === 'in_review'}
-								<span
-									class="shrink-0 text-[13px] text-fade group-hover:text-ink"
-									aria-label="Review">→</span
+								<span class="shrink-0 text-sm text-fade group-hover:text-ink" aria-label="Review"
+									>→</span
 								>
 							{/if}
 						</a>
 					</li>
 				{:else}
-					<li class="px-1 py-3 text-[12px] text-fade">
+					<li class="px-1 py-3 text-xs text-fade">
 						{col.id === 'in_review' ? 'Nothing waiting.' : 'None.'}
 					</li>
 				{/each}
@@ -173,7 +170,7 @@
 					<li class="mt-auto pt-1">
 						<a
 							href="/classroom/courses?stage={col.id}"
-							class="block border border-dashed border-line2 px-2 py-1.5 text-center text-[9.5px] font-extrabold tracking-[0.14em] text-soft uppercase hover:border-ink hover:text-ink"
+							class="block border border-dashed border-line2 px-2 py-1.5 text-center text-xs font-extrabold tracking-widest text-soft uppercase hover:border-ink hover:text-ink"
 							>+{col.list.length - max} more · all {col.list.length} →</a
 						>
 					</li>

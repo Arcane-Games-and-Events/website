@@ -29,11 +29,10 @@
 	/>
 
 	<div class="bg-paper-bg text-ink">
-		<section class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-14 md:px-8 md:pt-10">
+		<section class="mx-auto w-full max-w-page px-5 pt-8 pb-14 md:px-8 md:pt-10">
 			<a
 				href="/library/topics"
-				class="text-[13px] font-semibold text-soft transition-colors hover:text-warm"
-				>← All topics</a
+				class="text-sm font-semibold text-soft transition-colors hover:text-warm">← All topics</a
 			>
 			{#if lead}
 				<div class="mt-6"><LibraryCard story={lead} layout="feature" eager /></div>
@@ -45,7 +44,7 @@
 					{/each}
 				</ul>
 			{:else if !lead}
-				<p class="mt-6 text-[16px] text-fade">Nothing in this topic yet.</p>
+				<p class="mt-6 text-base text-fade">Nothing in this topic yet.</p>
 			{/if}
 			<LibraryPager
 				page={data.page}
@@ -55,18 +54,16 @@
 		</section>
 
 		{#if data.otherTopics.length}
-			<section class="mx-auto w-full max-w-[1200px] px-5 pb-20 md:px-8">
-				<p
-					class="border-t border-line pt-8 text-[11px] font-bold tracking-[0.16em] text-fade uppercase"
-				>
+			<section class="mx-auto w-full max-w-page px-5 pb-20 md:px-8">
+				<p class="border-t border-line pt-8 text-xs font-bold tracking-widest text-fade uppercase">
 					More topics
 				</p>
 				<div class="mt-3 flex flex-wrap gap-2">
 					{#each data.otherTopics as t (t.slug)}
 						<a
 							href="/library/tag/{t.slug}"
-							class="flex items-center gap-2 border border-line2 px-3.5 py-2 text-[13px] font-semibold transition-colors hover:border-warm"
-							>{t.name}<span class="text-[12px] font-normal text-fade">{t.count}</span></a
+							class="flex items-center gap-2 border border-line2 px-3.5 py-2 text-sm font-semibold transition-colors hover:border-warm"
+							>{t.name}<span class="text-xs font-normal text-fade">{t.count}</span></a
 						>
 					{/each}
 				</div>

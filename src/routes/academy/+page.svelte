@@ -206,16 +206,16 @@
 	<!-- ============ the promise ============ -->
 	<section class="border-b border-line">
 		<ul
-			class="mx-auto grid w-full max-w-[1200px] grid-cols-2 gap-x-6 gap-y-6 px-5 py-7 md:grid-cols-4 md:px-8 md:py-9"
+			class="mx-auto grid w-full max-w-page grid-cols-2 gap-x-6 gap-y-6 px-5 py-7 md:grid-cols-4 md:px-8 md:py-9"
 		>
 			{#each [['◆', 'Taught by the best', 'Players who have done it at the top tables.'], ['¶', 'Bite-sized lessons', 'Short lessons with drills, so every sitting counts.'], ['∞', 'Yours for life', 'Buy once and keep it. No subscription to read.'], ['▢', 'Any device', 'Read on your phone, tablet or computer.']] as [glyph, t, b] (t)}
 				<li class="flex gap-3">
-					<span class="mt-0.5 w-5 shrink-0 text-center text-[15px] text-gold" aria-hidden="true"
+					<span class="mt-0.5 w-5 shrink-0 text-center text-base text-gold" aria-hidden="true"
 						>{glyph}</span
 					>
 					<span>
-						<span class="block font-jost text-[15px] font-semibold">{t}</span>
-						<span class="mt-1 block text-[12.5px] leading-[1.45] text-soft">{b}</span>
+						<span class="block font-jost text-base font-semibold">{t}</span>
+						<span class="mt-1 block text-xs leading-normal text-soft">{b}</span>
 					</span>
 				</li>
 			{/each}
@@ -225,16 +225,15 @@
 	<!-- ============ continue learning ============ -->
 	{#if inProgress.length}
 		<section class="border-b border-line bg-paper">
-			<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-12">
+			<div class="mx-auto w-full max-w-page px-5 py-10 md:px-8 md:py-12">
 				<div class="flex items-baseline justify-between gap-4">
 					<h2
-						class="flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+						class="flex items-center gap-2.5 font-newsreader text-base font-semibold tracking-widest uppercase"
 					>
-						<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
+						<span class="text-xs text-gold" aria-hidden="true">◆</span>
 						Continue learning
 					</h2>
-					<span class="font-newsreader text-[15px] text-soft italic"
-						>Pick up where you left off.</span
+					<span class="font-newsreader text-base text-soft italic">Pick up where you left off.</span
 					>
 				</div>
 				<ul class="mt-5 grid gap-5 md:grid-cols-3">
@@ -250,18 +249,18 @@
 
 	<!-- ============ catalogue ============ -->
 	<section id="courses" bind:this={catalogueEl} class="scroll-mt-20">
-		<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-14">
+		<div class="mx-auto w-full max-w-page px-5 py-10 md:px-8 md:py-14">
 			<div class="flex items-center gap-4 md:gap-6">
 				<span class="h-px flex-1 bg-ink"></span>
 				<h2
-					class="font-newsreader text-[17px] font-semibold tracking-[0.22em] whitespace-nowrap uppercase md:text-[20px]"
+					class="font-newsreader text-lg font-semibold tracking-widest whitespace-nowrap uppercase md:text-xl"
 				>
 					All courses
 				</h2>
 				<span class="h-px flex-1 bg-ink"></span>
 			</div>
 			<div class="mt-2 flex justify-center" aria-hidden="true">
-				<span class="h-[3px] w-10 bg-gold"></span>
+				<span class="h-1 w-10 bg-gold"></span>
 			</div>
 
 			<!-- filter bar -->
@@ -269,7 +268,7 @@
 				class="mt-7 flex flex-col gap-5 border-y border-line py-5 md:mt-9 md:flex-row md:flex-wrap md:items-center md:gap-x-8 md:gap-y-3 md:py-4"
 			>
 				<label
-					class="relative flex items-center gap-2.5 border border-line2 bg-paper-bg px-3.5 py-2.5 md:w-[280px] md:border-0 md:bg-transparent md:p-0"
+					class="relative flex items-center gap-2.5 border border-line2 bg-paper-bg px-3.5 py-2.5 md:w-70 md:border-0 md:bg-transparent md:p-0"
 				>
 					<svg
 						class="h-3.5 w-3.5 shrink-0 text-gold"
@@ -289,11 +288,11 @@
 						bind:value={q}
 						placeholder="Search courses, instructors"
 						autocomplete="off"
-						class="w-full border-0 bg-transparent p-0 font-newsreader text-[16px] leading-tight text-ink placeholder:text-fade focus:outline-none md:border-b md:border-line2 md:py-1 md:focus:border-gold"
+						class="w-full border-0 bg-transparent p-0 font-newsreader text-base leading-tight text-ink placeholder:text-fade focus:outline-none md:border-b md:border-line2 md:py-1 md:focus:border-gold"
 					/>
 				</label>
 				<div
-					class="grid grid-cols-3 border border-line2 text-[10px] font-extrabold tracking-[0.16em] uppercase md:flex md:items-center md:gap-5 md:border-0 md:text-[10.5px]"
+					class="grid grid-cols-3 border border-line2 text-xs font-extrabold tracking-widest uppercase md:flex md:items-center md:gap-5 md:border-0"
 					role="group"
 					aria-label="Price"
 				>
@@ -336,14 +335,14 @@
 						<button
 							type="button"
 							onclick={clearAll}
-							class="justify-self-end pb-2 text-[10px] font-extrabold tracking-[0.16em] text-gold uppercase transition-[letter-spacing] hover:tracking-[0.22em] md:pb-0"
+							class="justify-self-end pb-2 text-xs font-extrabold tracking-wider text-gold uppercase transition-[letter-spacing] hover:tracking-widest md:pb-0"
 							>Clear ×</button
 						>
 					{/if}
 				</div>
 			</div>
 
-			<p class="mt-4 font-newsreader text-[15px] text-soft italic" aria-live="polite">
+			<p class="mt-4 font-newsreader text-base text-soft italic" aria-live="polite">
 				{resultLine}
 			</p>
 
@@ -362,15 +361,15 @@
 					{/each}
 				</ul>
 			{:else}
-				<div class="mt-8 border-[3px] border-double border-ink px-6 py-12 text-center">
-					<p class="font-newsreader text-[24px] font-semibold">Nothing matches that yet.</p>
-					<p class="mt-2 font-newsreader text-[16px] text-soft italic">
+				<div class="mt-8 border-3 border-double border-ink px-6 py-12 text-center">
+					<p class="font-newsreader text-2xl font-semibold">Nothing matches that yet.</p>
+					<p class="mt-2 font-newsreader text-base text-soft italic">
 						Try a shorter search, or clear the filters to see every course.
 					</p>
 					<button
 						type="button"
 						onclick={clearAll}
-						class="mt-5 inline-flex items-center bg-ink px-5 py-3 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-gold hover:text-[#241b07]"
+						class="mt-5 inline-flex items-center bg-ink px-5 py-3 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-gold hover:text-gold-ink"
 						>Show all courses</button
 					>
 				</div>
@@ -382,17 +381,17 @@
 	{#if previews.length || instructors.length}
 		<section class="border-y border-line bg-paper">
 			<div
-				class="mx-auto grid w-full max-w-[1200px] gap-12 px-5 py-10 md:px-8 md:py-14 lg:grid-cols-[1.4fr_1fr] lg:gap-16"
+				class="mx-auto grid w-full max-w-page gap-12 px-5 py-10 md:px-8 md:py-14 lg:grid-cols-[1.4fr_1fr] lg:gap-16"
 			>
 				{#if previews.length}
 					<div>
 						<h2
-							class="flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+							class="flex items-center gap-2.5 font-newsreader text-base font-semibold tracking-widest uppercase"
 						>
-							<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
+							<span class="text-xs text-gold" aria-hidden="true">◆</span>
 							Read free
 						</h2>
-						<p class="mt-2 font-newsreader text-[15px] text-soft italic md:text-[16px]">
+						<p class="mt-2 font-newsreader text-base text-soft italic">
 							Every course opens a lesson or two to everyone. Start here.
 						</p>
 						<ol class="mt-4 border-t border-line">
@@ -403,21 +402,20 @@
 										class="group grid grid-cols-[28px_1fr_auto] items-center gap-3 py-3.5"
 									>
 										<span
-											class="flex h-7 w-7 items-center justify-center bg-ink text-[9px] text-paper-bg transition-colors group-hover:bg-gold group-hover:text-[#241b07]"
+											class="flex h-7 w-7 items-center justify-center bg-ink text-xs text-paper-bg transition-colors group-hover:bg-gold group-hover:text-gold-ink"
 											aria-hidden="true">{l.hasVideo ? '▶' : '¶'}</span
 										>
 										<span class="min-w-0">
-											<span class="block font-newsreader text-[17px] leading-[1.2] font-semibold">
+											<span class="block font-newsreader text-lg leading-tight font-semibold">
 												<span class="fp-ul">{l.title}</span>
 											</span>
-											<span class="mt-1 block truncate text-[10.5px] text-fade">
-												<span class="font-extrabold tracking-[0.1em] text-ink uppercase"
+											<span class="mt-1 block truncate text-xs text-fade">
+												<span class="font-extrabold tracking-widest text-ink uppercase"
 													>{l.courseTitle}</span
 												>{#if l.instructor}<span class="font-semibold"> · {l.instructor}</span>{/if}
 											</span>
 										</span>
-										<span
-											class="font-newsreader text-[15px] whitespace-nowrap text-gold tabular-nums"
+										<span class="font-newsreader text-base whitespace-nowrap text-gold tabular-nums"
 											>{l.minutes} min</span
 										>
 									</a>
@@ -429,12 +427,12 @@
 				{#if instructors.length}
 					<div>
 						<h2
-							class="flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+							class="flex items-center gap-2.5 font-newsreader text-base font-semibold tracking-widest uppercase"
 						>
-							<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
+							<span class="text-xs text-gold" aria-hidden="true">◆</span>
 							Instructors
 						</h2>
-						<p class="mt-2 font-newsreader text-[15px] text-soft italic md:text-[16px]">
+						<p class="mt-2 font-newsreader text-base text-soft italic">
 							Every course is taught by a player who has done it at the top tables.
 						</p>
 						<ul class="mt-4 border-t border-line">
@@ -451,7 +449,7 @@
 									>
 										<span class="flex items-center gap-3">
 											<span
-												class="flex h-8 w-8 items-center justify-center bg-ink font-newsreader text-[13px] font-semibold text-paper-bg transition-colors group-hover:bg-gold group-hover:text-[#241b07]"
+												class="flex h-8 w-8 items-center justify-center bg-ink font-newsreader text-sm font-semibold text-paper-bg transition-colors group-hover:bg-gold group-hover:text-gold-ink"
 												aria-hidden="true"
 											>
 												{i.name
@@ -461,11 +459,11 @@
 													.join('')
 													.toUpperCase()}
 											</span>
-											<span class="font-newsreader text-[17px] font-semibold">
+											<span class="font-newsreader text-lg font-semibold">
 												<span class="fp-ul">{i.name}</span>
 											</span>
 										</span>
-										<span class="text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+										<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 											>{i.count} {i.count === 1 ? 'course' : 'courses'} →</span
 										>
 									</button>
@@ -479,27 +477,25 @@
 	{/if}
 
 	<!-- ============ how it works + premium ============ -->
-	<section class="mx-auto w-full max-w-[1200px] px-5 py-12 md:px-8 md:py-16">
+	<section class="mx-auto w-full max-w-page px-5 py-12 md:px-8 md:py-16">
 		<div class="grid gap-10 lg:grid-cols-[1fr_1fr] lg:gap-16">
 			<div>
 				<h2
-					class="flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+					class="flex items-center gap-2.5 font-newsreader text-base font-semibold tracking-widest uppercase"
 				>
-					<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
+					<span class="text-xs text-gold" aria-hidden="true">◆</span>
 					How the Academy works
 				</h2>
 				<ol class="mt-4 border-t border-line">
 					{#each HOW as [t, b], i (t)}
 						<li class="grid grid-cols-[36px_1fr] gap-3 border-b border-line py-4">
 							<span
-								class="font-newsreader text-[22px] leading-none font-semibold text-gold tabular-nums"
+								class="font-newsreader text-2xl leading-none font-semibold text-gold tabular-nums"
 								>{String(i + 1).padStart(2, '0')}</span
 							>
 							<span>
-								<span class="block font-newsreader text-[18px] leading-tight font-semibold"
-									>{t}</span
-								>
-								<span class="mt-1 block font-newsreader text-[15px] leading-[1.45] text-soft italic"
+								<span class="block font-newsreader text-lg leading-tight font-semibold">{t}</span>
+								<span class="mt-1 block font-newsreader text-base leading-normal text-soft italic"
 									>{b}</span
 								>
 							</span>
@@ -508,39 +504,39 @@
 				</ol>
 			</div>
 			{#if !member}
-				<div class="border-[3px] border-double border-ink bg-paper px-6 py-8 md:px-10 md:py-10">
-					<div class="text-[10.5px] font-extrabold tracking-[0.2em] text-prem uppercase">
+				<div class="border-3 border-double border-ink bg-paper px-6 py-8 md:px-10 md:py-10">
+					<div class="text-xs font-extrabold tracking-widest text-prem uppercase">
 						<span aria-hidden="true">◆</span> Premium
 					</div>
 					<p
-						class="mt-3 font-newsreader text-[28px] leading-[1.05] font-semibold tracking-[-0.01em] [text-wrap:balance] md:text-[34px]"
+						class="mt-3 font-newsreader text-3xl leading-none font-semibold tracking-normal [text-wrap:balance] md:text-4xl"
 					>
 						Save 10% on every guide with Premium.
 					</p>
-					<p class="mt-3 font-newsreader text-[16px] leading-[1.5] text-soft italic">
+					<p class="mt-3 font-newsreader text-base leading-normal text-soft italic">
 						Guides are a one-time purchase, and every future update to a guide you own is included.
 						AGE Premium members pay 10% less for every guide, on top of every article, all gameplay
 						and the Library.
 					</p>
 					<a
 						href="/premium"
-						class="mt-6 inline-flex items-center gap-2 border-[1.5px] border-prem bg-prem px-5 py-3 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110"
+						class="mt-6 inline-flex items-center gap-2 border-2 border-prem bg-prem px-5 py-3 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110"
 					>
-						<span class="text-[8px] opacity-80" aria-hidden="true">◆</span>
+						<span class="text-xs opacity-80" aria-hidden="true">◆</span>
 						Get Premium
 					</a>
 				</div>
 			{:else}
-				<div class="border-[3px] border-double border-ink bg-paper px-6 py-8 md:px-10 md:py-10">
-					<div class="text-[10.5px] font-extrabold tracking-[0.2em] text-prem uppercase">
+				<div class="border-3 border-double border-ink bg-paper px-6 py-8 md:px-10 md:py-10">
+					<div class="text-xs font-extrabold tracking-widest text-prem uppercase">
 						<span aria-hidden="true">◆</span> Premium member
 					</div>
 					<p
-						class="mt-3 font-newsreader text-[28px] leading-[1.05] font-semibold tracking-[-0.01em] [text-wrap:balance] md:text-[34px]"
+						class="mt-3 font-newsreader text-3xl leading-none font-semibold tracking-normal [text-wrap:balance] md:text-4xl"
 					>
 						Your Premium price: 10% off.
 					</p>
-					<p class="mt-3 font-newsreader text-[16px] leading-[1.5] text-soft italic">
+					<p class="mt-3 font-newsreader text-base leading-normal text-soft italic">
 						As a member you pay 10% less for every guide, and every update to a guide you own is
 						included.
 					</p>

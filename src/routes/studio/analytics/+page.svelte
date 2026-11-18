@@ -27,12 +27,12 @@
 <DeskTabs />
 
 <div class="border-b border-line2 bg-paper-bg font-libre">
-	<nav class="mx-auto flex max-w-[1200px] flex-wrap gap-x-6 px-5 md:px-8" aria-label="Kinds">
+	<nav class="mx-auto flex max-w-page flex-wrap gap-x-6 px-5 md:px-8" aria-label="Kinds">
 		{#each AREAS as [a, label] (a)}
 			<a
 				href={hrefFor(a)}
 				aria-current={data.area === a ? 'page' : undefined}
-				class="-mb-px border-b-[3px] py-3.5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors {data.area ===
+				class="-mb-px border-b-3 py-3.5 text-xs font-extrabold tracking-widest uppercase transition-colors {data.area ===
 				a
 					? 'border-ink text-ink'
 					: 'border-transparent text-fade hover:text-ink'}">{label}</a
@@ -41,6 +41,6 @@
 	</nav>
 </div>
 
-<div class="mx-auto w-full max-w-[1200px] px-5 py-8 font-libre md:px-8 md:py-10">
+<div class="mx-auto w-full max-w-page px-5 py-8 font-libre md:px-8 md:py-10">
 	<VideoAnalyticsPanel report={data.report} mux={data.mux} days={data.days} names={data.names} />
 </div>

@@ -176,7 +176,7 @@
 		}
 	]);
 
-	const kicker = 'text-[9.5px] font-extrabold tracking-[0.2em] uppercase';
+	const kicker = 'text-xs font-extrabold tracking-widest uppercase';
 
 	// The course they're on (else their newest) is the masthead's picture.
 	const heroImage = $derived(resume?.image ?? data.courses.find((c) => c.image)?.image ?? null);
@@ -239,7 +239,7 @@
 	<section class="relative isolate overflow-hidden bg-academy text-paper-bg">
 		{#if heroImage}
 			<div
-				class="relative aspect-[5/2] w-full overflow-hidden sm:aspect-[2/1] md:absolute md:inset-y-0 md:right-0 md:aspect-auto md:w-[58%]"
+				class="relative aspect-5/2 w-full overflow-hidden sm:aspect-2/1 md:absolute md:inset-y-0 md:right-0 md:aspect-auto md:w-[58%]"
 				aria-hidden="true"
 			>
 				<Picture
@@ -258,30 +258,30 @@
 		{/if}
 
 		<div
-			class="relative mx-auto w-full max-w-[1200px] px-5 pb-6 sm:pb-8 md:px-8 md:pt-12 md:pb-10 {heroImage
+			class="relative mx-auto w-full max-w-page px-5 pb-6 sm:pb-8 md:px-8 md:pt-12 md:pb-10 {heroImage
 				? '-mt-8 md:mt-0'
 				: 'pt-10'}"
 		>
-			<div class="fp-rise max-w-[600px]">
+			<div class="fp-rise max-w-xl">
 				<a
 					href="/academy"
-					class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.24em] text-gold uppercase hover:text-paper-bg"
+					class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-gold uppercase hover:text-paper-bg"
 				>
 					<span aria-hidden="true">◆</span> AGE Academy · My courses
 				</a>
 				<h1
-					class="mt-2 font-newsreader text-[30px] leading-[1.02] font-semibold tracking-[-0.02em] [text-wrap:balance] sm:mt-3 sm:text-[34px] md:text-[50px]"
+					class="mt-2 font-newsreader text-3xl leading-none font-semibold tracking-tight [text-wrap:balance] sm:mt-3 sm:text-4xl md:text-5xl"
 				>
 					{greeting}
 				</h1>
 				<p
-					class="mt-1.5 font-newsreader text-[15.5px] leading-[1.4] text-paper-bg/75 italic sm:mt-2 sm:text-[16.5px] md:text-[19px]"
+					class="mt-1.5 font-newsreader text-base leading-snug text-paper-bg/75 italic sm:mt-2 md:text-xl"
 				>
 					{pep}
 				</p>
 				{#if style}
 					<p
-						class="mt-3 hidden items-center gap-2 border border-gold/60 px-3 py-1.5 text-[10px] font-extrabold tracking-[0.18em] text-gold uppercase sm:inline-flex"
+						class="mt-3 hidden items-center gap-2 border border-gold/60 px-3 py-1.5 text-xs font-extrabold tracking-widest text-gold uppercase sm:inline-flex"
 						title={style.line}
 					>
 						<span aria-hidden="true">◆</span>{style.title}
@@ -296,47 +296,44 @@
 					>
 						<span class="min-w-0 flex-1">
 							<span class="{kicker} block text-gold">Pick up where you left off</span>
-							<span
-								class="mt-1 block truncate font-newsreader text-[19px] leading-tight font-semibold"
+							<span class="mt-1 block truncate font-newsreader text-xl leading-tight font-semibold"
 								>{resume.last.title}</span
 							>
-							<span class="mt-0.5 block truncate text-[12px] text-paper-bg/65"
+							<span class="mt-0.5 block truncate text-xs text-paper-bg/65"
 								>{resume.course.title}</span
 							>
 							<span class="mt-2.5 flex items-center gap-2.5">
-								<span class="h-[3px] flex-1 bg-paper-bg/20" aria-hidden="true">
+								<span class="h-1 flex-1 bg-paper-bg/20" aria-hidden="true">
 									<span class="block h-full bg-gold" style="width: {resume.percent}%"></span>
 								</span>
-								<span class="text-[10.5px] font-extrabold tabular-nums"
+								<span class="text-xs font-extrabold tabular-nums"
 									>{resume.completed}/{resume.topics}</span
 								>
 							</span>
 						</span>
 						<span
-							class="flex h-12 w-12 shrink-0 items-center justify-center bg-gold text-[14px] text-[#241b07]"
+							class="flex h-12 w-12 shrink-0 items-center justify-center bg-gold text-sm text-gold-ink"
 							aria-hidden="true">▶</span
 						>
 						<span class="sr-only">Continue reading</span>
 					</a>
-					<div class="mt-6 hidden border-l-[3px] border-gold pl-4 sm:block">
+					<div class="mt-6 hidden border-l-3 border-gold pl-4 sm:block">
 						<p class="{kicker} text-gold">Pick up where you left off</p>
-						<p
-							class="mt-1.5 font-newsreader text-[21px] leading-tight font-semibold md:text-[24px]"
-						>
+						<p class="mt-1.5 font-newsreader text-xl leading-tight font-semibold md:text-2xl">
 							{resume.last.title}
 						</p>
-						<p class="mt-0.5 text-[12.5px] text-paper-bg/65">{resume.course.title}</p>
-						<div class="mt-3 flex max-w-[360px] items-center gap-3">
-							<div class="h-[4px] flex-1 bg-paper-bg/20" aria-hidden="true">
+						<p class="mt-0.5 text-xs text-paper-bg/65">{resume.course.title}</p>
+						<div class="mt-3 flex max-w-sm items-center gap-3">
+							<div class="h-1 flex-1 bg-paper-bg/20" aria-hidden="true">
 								<div class="h-full bg-gold" style="width: {resume.percent}%"></div>
 							</div>
-							<span class="text-[11px] font-extrabold tabular-nums"
+							<span class="text-xs font-extrabold tabular-nums"
 								>{resume.completed}/{resume.topics}</span
 							>
 						</div>
 						<a
 							href="/academy/{resume.course.slug}/{resume.last.slug}"
-							class="mt-4 inline-flex items-center gap-2 bg-gold px-5 py-3 text-[11px] font-extrabold tracking-[0.14em] text-[#241b07] uppercase transition-[filter] hover:brightness-110"
+							class="mt-4 inline-flex items-center gap-2 bg-gold px-5 py-3 text-xs font-extrabold tracking-widest text-gold-ink uppercase transition hover:brightness-110"
 						>
 							<span aria-hidden="true">▶</span> Continue reading
 						</a>
@@ -350,34 +347,32 @@
 					{#each SCORE.slice(0, 3) as s (s.label)}
 						<div class="border-l border-paper-bg/15 pl-3 first:border-l-0 first:pl-0">
 							<dt
-								class="truncate text-[9px] font-extrabold tracking-[0.12em] text-paper-bg/55 uppercase"
+								class="truncate text-xs font-extrabold tracking-widest text-paper-bg/55 uppercase"
 							>
 								{s.label}
 							</dt>
-							<dd
-								class="mt-0.5 font-newsreader text-[19px] leading-tight font-semibold tabular-nums"
-							>
+							<dd class="mt-0.5 font-newsreader text-xl leading-tight font-semibold tabular-nums">
 								{s.value}
 							</dd>
 						</div>
 					{/each}
 				</dl>
 				<dl
-					class="mt-7 hidden max-w-[640px] grid-cols-5 gap-y-4 border-t border-paper-bg/15 pt-4 sm:grid md:mt-9"
+					class="mt-7 hidden max-w-2xl grid-cols-5 gap-y-4 border-t border-paper-bg/15 pt-4 sm:grid md:mt-9"
 				>
 					{#each SCORE as s (s.label)}
 						<div class="border-l border-paper-bg/15 pr-2 pl-3">
 							<dt
-								class="text-[9px] leading-tight font-extrabold tracking-[0.14em] text-paper-bg/55 uppercase"
+								class="text-xs leading-tight font-extrabold tracking-widest text-paper-bg/55 uppercase"
 							>
 								{s.label}
 							</dt>
 							<dd
-								class="mt-1 font-newsreader text-[20px] leading-tight font-semibold tabular-nums md:text-[24px]"
+								class="mt-1 font-newsreader text-xl leading-tight font-semibold tabular-nums md:text-2xl"
 							>
 								{s.value}
 							</dd>
-							{#if s.note}<p class="mt-0.5 text-[10.5px] leading-tight text-paper-bg/50">
+							{#if s.note}<p class="mt-0.5 text-xs leading-tight text-paper-bg/50">
 									{s.note}
 								</p>{/if}
 						</div>
@@ -389,23 +384,21 @@
 
 	{#if !data.courses.length}
 		<!-- ============ empty ============ -->
-		<section class="mx-auto w-full max-w-[1200px] px-5 py-14 md:px-8">
-			<div
-				class="mx-auto max-w-[620px] border-[3px] border-double border-ink px-6 py-12 text-center"
-			>
-				<p class="font-newsreader text-[26px] font-semibold">Your study hall is empty.</p>
-				<p class="mt-2 font-newsreader text-[17px] text-soft italic">
+		<section class="mx-auto w-full max-w-page px-5 py-14 md:px-8">
+			<div class="mx-auto max-w-xl border-3 border-double border-ink px-6 py-12 text-center">
+				<p class="font-newsreader text-2xl font-semibold">Your study hall is empty.</p>
+				<p class="mt-2 font-newsreader text-lg text-soft italic">
 					Courses you buy or join land here, with your progress, your streak, and everything new
 					from your teachers.
 				</p>
 				<a
 					href="/academy"
-					class="mt-6 inline-block bg-ink px-5 py-3 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase hover:bg-academy"
+					class="mt-6 inline-block bg-ink px-5 py-3 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-academy"
 					>Browse the Academy</a
 				>
 			</div>
 			{#if forYou.length}
-				<div class="mx-auto mt-10 max-w-[620px]">{@render forYouList()}</div>
+				<div class="mx-auto mt-10 max-w-xl">{@render forYouList()}</div>
 			{/if}
 		</section>
 	{:else}
@@ -415,7 +408,7 @@
 			class="sticky z-20 border-b border-line bg-paper-bg/95 backdrop-blur"
 			style="top: {headerH}px;"
 		>
-			<div class="mx-auto w-full max-w-[1200px] px-5 md:px-8">
+			<div class="mx-auto w-full max-w-page px-5 md:px-8">
 				<div
 					class="grid grid-cols-3 md:flex md:gap-8"
 					role="tablist"
@@ -432,7 +425,7 @@
 							aria-controls="panel-{id}"
 							tabindex={tab === id ? 0 : -1}
 							onclick={() => pick(id)}
-							class="relative py-4 text-center text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors md:text-left {tab ===
+							class="relative py-4 text-center text-xs font-extrabold tracking-widest uppercase transition-colors md:text-left {tab ===
 							id
 								? 'text-ink'
 								: 'text-fade hover:text-ink'}"
@@ -442,12 +435,12 @@
 								<span class="ml-1 font-semibold text-fade tabular-nums">{data.courses.length}</span>
 							{:else if id === 'new' && unread}
 								<span
-									class="ml-1 inline-flex h-[18px] min-w-[18px] items-center justify-center bg-warm px-1 text-[10px] text-white tabular-nums"
+									class="ml-1 inline-flex h-4.5 min-w-4.5 items-center justify-center bg-warm px-1 text-xs text-white tabular-nums"
 									>{unread}</span
 								>
 							{/if}
 							<span
-								class="absolute inset-x-0 bottom-[-1px] h-[3px] {tab === id
+								class="absolute inset-x-0 -bottom-px h-1 {tab === id
 									? 'bg-academy'
 									: 'bg-transparent'}"
 								aria-hidden="true"
@@ -458,7 +451,7 @@
 			</div>
 		</div>
 
-		<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-14 md:px-8 md:pt-10">
+		<div class="mx-auto w-full max-w-page px-5 pt-8 pb-14 md:px-8 md:pt-10">
 			<!-- ============ courses ============ -->
 			<div
 				id="panel-courses"
@@ -467,12 +460,12 @@
 				hidden={tab !== 'courses'}
 			>
 				<div class="flex flex-wrap items-baseline justify-between gap-3">
-					<p class="font-newsreader text-[15.5px] text-soft italic">
+					<p class="font-newsreader text-base text-soft italic">
 						{inProgress.length} in progress · {sums.coursesFinished} finished
 					</p>
 					<a
 						href="/academy"
-						class="text-[10.5px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+						class="text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 						>Find another course →</a
 					>
 				</div>
@@ -484,37 +477,35 @@
 						>
 							<a
 								href="/academy/{c.course.slug}"
-								class="relative block aspect-[4/3] self-start overflow-hidden bg-academy sm:aspect-video sm:self-stretch"
+								class="relative block aspect-4/3 self-start overflow-hidden bg-academy sm:aspect-video sm:self-stretch"
 							>
 								{#if c.image}
 									<Picture
 										image={c.image}
 										alt=""
 										sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
-										class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+										class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
 									/>
 								{/if}
 								{#if finished}
 									<span
-										class="absolute top-0 left-0 bg-gold px-1.5 py-0.5 text-[8px] font-extrabold tracking-[0.16em] text-[#241b07] uppercase sm:top-3 sm:left-3 sm:px-2.5 sm:py-1 sm:text-[9px]"
+										class="absolute top-0 left-0 bg-gold px-1.5 py-0.5 text-xs font-extrabold tracking-widest text-gold-ink uppercase sm:top-3 sm:left-3 sm:px-2.5 sm:py-1"
 										>◆ <span class="hidden sm:inline">Finished</span><span class="sm:hidden"
 											>Done</span
 										></span
 									>
 								{/if}
-								<span class="absolute inset-x-0 bottom-0 h-[4px] bg-black/30" aria-hidden="true">
+								<span class="absolute inset-x-0 bottom-0 h-1 bg-black/30" aria-hidden="true">
 									<span class="block h-full bg-gold" style="width: {c.percent}%"></span>
 								</span>
 							</a>
 							<div class="flex min-w-0 flex-1 flex-col sm:px-5 sm:pt-5 sm:pb-5">
 								<a
 									href="/academy/{c.course.slug}"
-									class="line-clamp-2 font-newsreader text-[17px] leading-tight font-semibold hover:text-academy sm:text-[20px]"
+									class="line-clamp-2 font-newsreader text-lg leading-tight font-semibold hover:text-academy sm:text-xl"
 									>{c.course.title}</a
 								>
-								<p
-									class="mt-1 flex items-baseline justify-between gap-3 text-[12px] text-soft sm:mt-2"
-								>
+								<p class="mt-1 flex items-baseline justify-between gap-3 text-xs text-soft sm:mt-2">
 									<span
 										>{c.completed} of {c.topics}
 										{c.topics === 1 ? 'topic' : 'topics'}</span
@@ -522,14 +513,12 @@
 									<span class="font-bold text-ink tabular-nums">{c.percent}%</span>
 								</p>
 								{#if !finished && c.next}
-									<p class="mt-1.5 truncate text-[12px] text-soft sm:mt-2 sm:text-[12.5px]">
+									<p class="mt-1.5 truncate text-xs text-soft sm:mt-2">
 										Next: <span class="font-semibold text-ink">{c.next.title}</span>
 									</p>
 								{/if}
 								{#if c.lockedForPremium}
-									<a
-										href="/premium"
-										class="mt-1.5 text-[11.5px] font-semibold text-prem hover:underline"
+									<a href="/premium" class="mt-1.5 text-xs font-semibold text-prem hover:underline"
 										>◆ {c.lockedForPremium} new {c.lockedForPremium === 1 ? 'topic' : 'topics'} with
 										Premium</a
 									>
@@ -540,13 +529,13 @@
 								{#if c.next || c.last}
 									<a
 										href="/academy/{c.course.slug}/{(c.next || c.last).slug}"
-										class="flex items-center justify-center bg-ink px-3 py-3 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase hover:bg-academy"
+										class="flex items-center justify-center bg-ink px-3 py-3 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-academy"
 										>{finished ? 'Read again' : c.completed ? 'Resume' : 'Start'} →</a
 									>
 								{/if}
 								<a
 									href="/academy/{c.course.slug}#discussion"
-									class="flex items-center justify-center border border-line2 px-3 py-3 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:border-ink hover:text-ink {c.next ||
+									class="flex items-center justify-center border border-line2 px-3 py-3 text-xs font-extrabold tracking-widest text-soft uppercase hover:border-ink hover:text-ink {c.next ||
 									c.last
 										? ''
 										: 'col-span-2'}">Discussion</a
@@ -563,7 +552,7 @@
 				role="tabpanel"
 				aria-labelledby="tab-new"
 				hidden={tab !== 'new'}
-				class="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_320px]"
+				class="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_320px]"
 			>
 				<section
 					aria-label="What’s new across your courses"
@@ -580,7 +569,7 @@
 									type="button"
 									aria-pressed={filter === key}
 									onclick={() => (filter = key)}
-									class="flex items-center justify-between gap-2 border px-3 py-2.5 text-[10.5px] font-extrabold tracking-[0.12em] whitespace-nowrap uppercase transition-colors sm:justify-center sm:py-2 {filter ===
+									class="flex items-center justify-between gap-2 border px-3 py-2.5 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors sm:justify-center sm:py-2 {filter ===
 									key
 										? 'border-ink bg-ink text-paper-bg'
 										: 'border-line2 text-soft hover:border-ink hover:text-ink'}"
@@ -594,7 +583,7 @@
 							<button
 								type="button"
 								onclick={readAll}
-								class="text-[10.5px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+								class="text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 								>Mark all read · {unread}</button
 							>
 						{/if}
@@ -609,23 +598,23 @@
 										<button
 											type="button"
 											onclick={() => follow(item.href, ids)}
-											class="group block w-full border border-t-[3px] border-line2 border-t-gold bg-paper p-5 text-left transition-colors hover:border-ink hover:border-t-gold"
+											class="group block w-full border border-t-3 border-line2 border-t-gold bg-paper p-5 text-left transition-colors hover:border-ink hover:border-t-gold"
 										>
 											<div class="flex items-center justify-between gap-3">
 												<p class="{kicker} text-gold">◆ Teacher update</p>
 												{@render meta(item, ids)}
 											</div>
 											<p
-												class="mt-2 font-newsreader text-[21px] leading-tight font-semibold group-hover:underline"
+												class="mt-2 font-newsreader text-xl leading-tight font-semibold group-hover:underline"
 											>
 												{item.title}
 											</p>
 											{#if item.excerpt}
-												<p class="mt-2 line-clamp-3 text-[14px] leading-[1.55] text-soft">
+												<p class="mt-2 line-clamp-3 text-sm leading-normal text-soft">
 													{item.excerpt}
 												</p>
 											{/if}
-											<p class="mt-3 text-[12px] text-fade">
+											<p class="mt-3 text-xs text-fade">
 												<span class="font-semibold text-ink">{item.author}</span> · {item.course
 													.title}
 												{#if item.replies}· {item.replies}
@@ -639,7 +628,7 @@
 											class="group flex w-full gap-4 border border-line2 bg-paper-bg p-4 text-left transition-colors hover:border-ink"
 										>
 											<span
-												class="flex h-10 w-10 shrink-0 items-center justify-center font-newsreader text-[17px] font-semibold text-paper-bg {item.byTeacher
+												class="flex h-10 w-10 shrink-0 items-center justify-center font-newsreader text-lg font-semibold text-paper-bg {item.byTeacher
 													? 'bg-academy'
 													: 'bg-ink'}"
 												aria-hidden="true">{item.author.slice(0, 1)}</span
@@ -653,15 +642,15 @@
 													{@render meta(item, ids)}
 												</span>
 												<span
-													class="mt-1 block font-newsreader text-[18px] leading-snug font-semibold group-hover:underline"
+													class="mt-1 block font-newsreader text-lg leading-snug font-semibold group-hover:underline"
 													>{item.title}</span
 												>
 												{#if item.excerpt}
-													<span class="mt-1 line-clamp-2 block text-[13px] text-soft"
+													<span class="mt-1 line-clamp-2 block text-sm text-soft"
 														>{item.excerpt}</span
 													>
 												{/if}
-												<span class="mt-2 block text-[11.5px] text-fade">
+												<span class="mt-2 block text-xs text-fade">
 													{item.course.title}{item.topic ? ` · ${item.topic}` : ''} ·
 													<span class={item.replies ? 'font-semibold text-ink' : ''}
 														>{item.replies
@@ -678,7 +667,7 @@
 											class="group flex w-full items-center gap-4 border border-line2 bg-paper-bg p-4 text-left transition-colors hover:border-ink"
 										>
 											<span
-												class="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-academy text-[15px] text-academy"
+												class="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-academy text-base text-academy"
 												aria-hidden="true">✦</span
 											>
 											<span class="min-w-0 flex-1">
@@ -687,12 +676,12 @@
 													{@render meta(item, ids)}
 												</span>
 												<span
-													class="mt-1 block font-newsreader text-[18px] leading-snug font-semibold group-hover:underline"
+													class="mt-1 block font-newsreader text-lg leading-snug font-semibold group-hover:underline"
 													>{item.title}</span
 												>
-												<span class="mt-1 block text-[11.5px] text-fade">{item.course.title}</span>
+												<span class="mt-1 block text-xs text-fade">{item.course.title}</span>
 												{#if item.premiumOnly}
-													<span class="mt-1.5 block text-[11.5px] font-semibold text-prem"
+													<span class="mt-1.5 block text-xs font-semibold text-prem"
 														>◆ Added after you enrolled · included with Premium</span
 													>
 												{/if}
@@ -704,8 +693,8 @@
 						</ol>
 					{:else}
 						<div class="mt-5 border border-dashed border-line2 px-6 py-10 text-center">
-							<p class="font-newsreader text-[19px] font-semibold">Quiet for now.</p>
-							<p class="mt-1 text-[13px] text-soft">
+							<p class="font-newsreader text-xl font-semibold">Quiet for now.</p>
+							<p class="mt-1 text-sm text-soft">
 								{filter === 'all'
 									? 'New threads, teacher updates and new topics from your courses show up here.'
 									: 'Nothing of this kind yet. Try Everything.'}
@@ -713,7 +702,7 @@
 							{#if data.courses[0]}
 								<a
 									href="/academy/{data.courses[0].course.slug}/discussion"
-									class="mt-4 inline-block text-[10.5px] font-extrabold tracking-[0.14em] text-academy uppercase hover:underline"
+									class="mt-4 inline-block text-xs font-extrabold tracking-widest text-academy uppercase hover:underline"
 									>Start a discussion →</a
 								>
 							{/if}
@@ -725,10 +714,10 @@
 					{#if forYou.length}
 						{@render forYouList()}
 					{:else}
-						<div class="flex items-baseline justify-between border-b-[3px] border-ink pb-2.5">
+						<div class="flex items-baseline justify-between border-b-3 border-ink pb-2.5">
 							<h2 class="{kicker} text-ink">For you</h2>
 						</div>
-						<p class="mt-3 font-newsreader text-[15px] text-soft italic">
+						<p class="mt-3 font-newsreader text-base text-soft italic">
 							Replies to your posts show up here.
 						</p>
 					{/if}
@@ -741,26 +730,24 @@
 				role="tabpanel"
 				aria-labelledby="tab-progress"
 				hidden={tab !== 'progress'}
-				class="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-2 lg:gap-16"
+				class="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16"
 			>
 				<!-- phones: the badge and the full scoreboard (the masthead shows three) -->
 				<div class="sm:hidden">
-					<div class="flex items-baseline justify-between border-b-[3px] border-ink pb-2.5">
+					<div class="flex items-baseline justify-between border-b-3 border-ink pb-2.5">
 						<h2 class="{kicker} text-ink">Your numbers</h2>
 						{#if style}<span class="{kicker} text-gold">◆ {style.title}</span>{/if}
 					</div>
 					<dl class="mt-3 grid grid-cols-2 gap-px border border-line bg-line">
 						{#each SCORE as s (s.label)}
 							<div class="bg-paper-bg p-3 [&:last-child:nth-child(odd)]:col-span-2">
-								<dt class="text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase">
+								<dt class="text-xs font-extrabold tracking-widest text-fade uppercase">
 									{s.label}
 								</dt>
-								<dd
-									class="mt-1 font-newsreader text-[22px] leading-tight font-semibold tabular-nums"
-								>
+								<dd class="mt-1 font-newsreader text-2xl leading-tight font-semibold tabular-nums">
 									{s.value}
 								</dd>
-								{#if s.note}<p class="mt-0.5 text-[11px] text-fade">{s.note}</p>{/if}
+								{#if s.note}<p class="mt-0.5 text-xs text-fade">{s.note}</p>{/if}
 							</div>
 						{/each}
 					</dl>
@@ -768,9 +755,9 @@
 
 				<!-- activity grid -->
 				<div>
-					<div class="flex items-baseline justify-between border-b-[3px] border-ink pb-2.5">
+					<div class="flex items-baseline justify-between border-b-3 border-ink pb-2.5">
 						<h2 class="{kicker} text-ink">Your activity</h2>
-						<span class="text-[11px] text-fade">{activeDays} active days</span>
+						<span class="text-xs text-fade">{activeDays} active days</span>
 					</div>
 					<div
 						class="mt-4"
@@ -778,21 +765,21 @@
 						aria-label="Activity over the last 18 weeks: {activeDays} days with something done. Current streak {streak.current} days, best {streak.best}."
 					>
 						<div
-							class="grid grid-flow-col gap-[3px]"
+							class="grid grid-flow-col gap-1"
 							style="grid-template-columns: repeat({grid.length}, 1fr);"
 						>
 							{#each monthMarks as m, i (i)}
-								<span class="h-3 text-[9px] leading-none text-fade">{m}</span>
+								<span class="h-3 text-xs leading-none text-fade">{m}</span>
 							{/each}
 						</div>
 						<div
-							class="mt-1 grid gap-[3px]"
+							class="mt-1 grid gap-1"
 							style="grid-template-columns: repeat({grid.length}, 1fr);"
 							onmouseleave={() => (hovered = null)}
 							role="presentation"
 						>
 							{#each grid as col, w (w)}
-								<div class="grid grid-rows-7 gap-[3px]">
+								<div class="grid grid-rows-7 gap-1">
 									{#each col as d (d.key)}
 										<span
 											class="aspect-square {d.future
@@ -809,7 +796,7 @@
 							{/each}
 						</div>
 					</div>
-					<div class="mt-2.5 flex items-center justify-between gap-3 text-[11px] text-fade">
+					<div class="mt-2.5 flex items-center justify-between gap-3 text-xs text-fade">
 						<span class="min-h-[1em]" aria-live="polite">
 							{#if hovered}
 								<b class="text-ink">{dayLabel(hovered)}</b> ·
@@ -820,9 +807,9 @@
 								Topics finished and posts written
 							{/if}
 						</span>
-						<span class="flex items-center gap-[3px]" aria-hidden="true">
+						<span class="flex items-center gap-1" aria-hidden="true">
 							Less
-							{#each LEVEL as c (c)}<span class="h-[10px] w-[10px] {c}"></span>{/each}
+							{#each LEVEL as c (c)}<span class="h-2.5 w-2.5 {c}"></span>{/each}
 							More
 						</span>
 					</div>
@@ -830,9 +817,9 @@
 
 				<!-- milestones -->
 				<div>
-					<div class="flex items-baseline justify-between border-b-[3px] border-ink pb-2.5">
+					<div class="flex items-baseline justify-between border-b-3 border-ink pb-2.5">
 						<h2 class="{kicker} text-ink">Milestones</h2>
-						<span class="text-[11px] text-fade tabular-nums">{earned} of {badges.length}</span>
+						<span class="text-xs text-fade tabular-nums">{earned} of {badges.length}</span>
 					</div>
 					<ul class="mt-4 grid grid-cols-2 gap-2">
 						{#each badges as b (b.id)}
@@ -843,18 +830,16 @@
 								title={b.line}
 							>
 								<p
-									class="flex items-center gap-1.5 text-[12.5px] font-bold {b.earned
-										? ''
-										: 'text-soft'}"
+									class="flex items-center gap-1.5 text-xs font-bold {b.earned ? '' : 'text-soft'}"
 								>
 									<span class={b.earned ? 'text-gold' : 'text-line2'} aria-hidden="true">◆</span>
 									{b.title}
 								</p>
-								<p class="mt-1 text-[11px] leading-snug {b.earned ? 'text-paper-bg/65' : ''}">
+								<p class="mt-1 text-xs leading-snug {b.earned ? 'text-paper-bg/65' : ''}">
 									{b.line}
 								</p>
 								{#if !b.earned}
-									<span class="absolute inset-x-0 bottom-0 h-[3px] bg-line" aria-hidden="true">
+									<span class="absolute inset-x-0 bottom-0 h-1 bg-line" aria-hidden="true">
 										<span class="block h-full bg-gold" style="width: {b.progress * 100}%"></span>
 									</span>
 								{/if}
@@ -871,16 +856,16 @@
 </AgeShell>
 
 {#snippet meta(item, ids)}
-	<span class="flex shrink-0 items-center gap-2 text-[11px] text-fade">
+	<span class="flex shrink-0 items-center gap-2 text-xs text-fade">
 		{#if ids.length}<span class="h-2 w-2 bg-warm" aria-label="New"></span>{/if}
 		{timeAgo(item.at)}
 	</span>
 {/snippet}
 
 {#snippet forYouList()}
-	<div class="flex items-baseline justify-between border-b-[3px] border-ink pb-2.5">
+	<div class="flex items-baseline justify-between border-b-3 border-ink pb-2.5">
 		<h2 class="{kicker} text-ink">For you</h2>
-		<span class="text-[11px] text-fade">Replies to your posts</span>
+		<span class="text-xs text-fade">Replies to your posts</span>
 	</div>
 	<ul class="divide-y divide-line">
 		{#each forYou as n (n.id)}
@@ -891,15 +876,14 @@
 					class="flex w-full items-start gap-3 py-3 text-left transition-colors hover:bg-white/60"
 				>
 					<span
-						class="mt-[7px] h-2 w-2 shrink-0 {n.unread ? 'bg-warm' : 'bg-transparent'}"
+						class="mt-2 h-2 w-2 shrink-0 {n.unread ? 'bg-warm' : 'bg-transparent'}"
 						aria-label={n.unread ? 'New' : undefined}
 					></span>
 					<span class="min-w-0">
-						<span
-							class="block text-[13.5px] leading-snug {n.unread ? 'font-semibold' : 'text-soft'}"
+						<span class="block text-sm leading-snug {n.unread ? 'font-semibold' : 'text-soft'}"
 							>{says(n)}</span
 						>
-						<span class="mt-0.5 block text-[11.5px] text-fade"
+						<span class="mt-0.5 block text-xs text-fade"
 							>{n.course?.title || ''} · {timeAgo(n.createdAt)}</span
 						>
 					</span>

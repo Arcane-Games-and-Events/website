@@ -216,21 +216,20 @@
 			class="flex min-w-0 flex-1 gap-3 py-3 text-left transition-colors hover:bg-white/70"
 		>
 			<span
-				class="mt-[6px] h-2 w-2 shrink-0 {isNew ? TONE[r.kind] || 'bg-warm' : 'bg-transparent'}"
+				class="mt-1.5 h-2 w-2 shrink-0 {isNew ? TONE[r.kind] || 'bg-warm' : 'bg-transparent'}"
 				aria-hidden="true"
 			></span>
 			<span class="min-w-0 flex-1">
-				<span class="block text-[13.5px] leading-snug {isNew ? 'font-semibold' : ''}">{s.line}</span
-				>
+				<span class="block text-sm leading-snug {isNew ? 'font-semibold' : ''}">{s.line}</span>
 				{#if s.detail}
-					<span class="mt-0.5 block truncate text-[12px] text-soft">{s.detail}</span>
+					<span class="mt-0.5 block truncate text-xs text-soft">{s.detail}</span>
 				{/if}
 				{#if r.count === 1 && r.latest.data?.note && (r.kind === 'course_returned' || r.kind === 'course_submitted')}
-					<span class="mt-1 block text-[12.5px] leading-snug text-soft italic"
+					<span class="mt-1 block text-xs leading-snug text-soft italic"
 						>“{r.latest.data.note}”</span
 					>
 				{/if}
-				<span class="mt-0.5 block text-[11px] text-fade"
+				<span class="mt-0.5 block text-xs text-fade"
 					>{r.count > 1 ? 'Latest ' : ''}{ago(r.latest.createdAt)}{#if isNew}<span class="sr-only">
 							· unread</span
 						>{/if}</span
@@ -238,7 +237,7 @@
 			</span>
 			{#if r.count > 1}
 				<span
-					class="mt-[2px] h-fit shrink-0 border border-line2 px-1.5 py-[1px] text-[10px] font-bold text-soft tabular-nums"
+					class="mt-0.5 h-fit shrink-0 border border-line2 px-1.5 py-px text-xs font-bold text-soft tabular-nums"
 					>{r.count}</span
 				>
 			{/if}
@@ -247,7 +246,7 @@
 			<button
 				type="button"
 				onclick={() => clearRow(r)}
-				class="flex w-9 shrink-0 items-start justify-center pt-3 text-[13px] text-fade transition-colors hover:text-prem"
+				class="flex w-9 shrink-0 items-start justify-center pt-3 text-sm text-fade transition-colors hover:text-prem"
 				title="Mark as read"
 				aria-label="Mark as read: {s.line}">✓</button
 			>
@@ -256,10 +255,10 @@
 {/snippet}
 
 <div>
-	<div class="flex items-baseline justify-between gap-3 border-b-[3px] border-ink pb-2.5">
-		<h2 class="text-[10.5px] font-extrabold tracking-[0.16em] uppercase">
+	<div class="flex items-baseline justify-between gap-3 border-b-3 border-ink pb-2.5">
+		<h2 class="text-xs font-extrabold tracking-widest uppercase">
 			Updates{#if unread}<span
-					class="ml-2 bg-warm px-1.5 py-[1px] text-[9.5px] tracking-normal text-white tabular-nums"
+					class="ml-2 bg-warm px-1.5 py-px text-xs tracking-normal text-white tabular-nums"
 					>{unread} new</span
 				>{/if}
 		</h2>
@@ -267,7 +266,7 @@
 			<button
 				type="button"
 				onclick={readAll}
-				class="text-[9.5px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+				class="text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 				>Mark all read</button
 			>
 		{/if}
@@ -283,12 +282,12 @@
 			<button
 				type="button"
 				onclick={() => (moreNew = !moreNew)}
-				class="mt-1 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+				class="mt-1 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 				>{moreNew ? 'Show fewer' : `Show ${fresh.length - limit} more`}</button
 			>
 		{/if}
 	{:else}
-		<p class="flex items-center gap-2 py-4 text-[13px] leading-snug text-soft">
+		<p class="flex items-center gap-2 py-4 text-sm leading-snug text-soft">
 			<span class="text-prem" aria-hidden="true">✓</span>
 			{items.length
 				? 'You’re all caught up.'
@@ -302,7 +301,7 @@
 				type="button"
 				onclick={() => (showEarlier = !showEarlier)}
 				aria-expanded={showEarlier}
-				class="flex w-full items-center justify-between py-1 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+				class="flex w-full items-center justify-between py-1 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 			>
 				Earlier <span aria-hidden="true">{showEarlier ? '−' : '+'}</span>
 			</button>

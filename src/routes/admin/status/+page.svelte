@@ -50,8 +50,8 @@
 
 	// A chip for a radio or checkbox inside it, lit in the form's colour.
 	const chip =
-		'relative flex h-[38px] cursor-pointer items-center border border-line2 bg-white px-3.5 text-[12.5px] font-semibold text-ink transition-colors hover:border-ink/50 has-[:checked]:border-transparent has-[:checked]:bg-[var(--cc)] has-[:checked]:text-white has-[:focus-visible]:shadow-[0_0_0_3px_color-mix(in_srgb,var(--cc)_25%,transparent)]';
-	const sectionTitle = 'ao-cond text-[36px] leading-none font-black uppercase md:text-[44px]';
+		'relative flex h-10 cursor-pointer items-center border border-line2 bg-white px-3.5 text-xs font-semibold text-ink transition-colors hover:border-ink/50 has-[:checked]:border-transparent has-[:checked]:bg-(--cc) has-[:checked]:text-white has-[:focus-visible]:ring-3 ring-(--cc)/25';
+	const sectionTitle = 'ao-cond text-4xl leading-none font-black uppercase md:text-5xl';
 	// datetime-local in the admin's own clock, sent to the server as ISO.
 	const local = (d) => {
 		const x = new Date(d);
@@ -91,13 +91,13 @@
 {/if}
 {#if form?.saved && !form.section}<AdminNotice tone="success" message={form.saved} />{/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-6 pb-20 md:px-8">
 	<!-- the whole picture -->
 	<section
 		class="flex flex-col gap-3 p-5 text-white md:flex-row md:items-center md:justify-between md:p-6"
 		style="background: {top.tone}"
 	>
-		<p class="ao-cond text-[34px] leading-none font-black uppercase md:text-[48px]">{top.word}</p>
+		<p class="ao-cond text-4xl leading-none font-black uppercase md:text-5xl">{top.word}</p>
 		<form
 			method="POST"
 			action="?/run"
@@ -111,7 +111,7 @@
 		>
 			<button
 				disabled={running}
-				class="inline-flex h-[40px] items-center border border-white/70 px-4 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:bg-white/15 disabled:opacity-60"
+				class="inline-flex h-10 items-center border border-white/70 px-4 text-xs font-extrabold tracking-widest uppercase hover:bg-white/15 disabled:opacity-60"
 				>{running ? 'Checking…' : 'Check everything now'}</button
 			>
 		</form>
@@ -127,7 +127,7 @@
 					await update();
 					if (result.type === 'success') creating = false;
 				}}
-			class="mt-6 border border-l-[6px] border-line2 bg-white"
+			class="mt-6 border border-l-6 border-line2 bg-white"
 			style="--cc: {tone}; border-left-color: {tone}"
 			transition:slide={motion(220)}
 		>
@@ -225,7 +225,7 @@
 							{/each}
 						</div>
 						{#if kind === 'maintenance'}
-							<div class="grid max-w-[560px] grid-cols-2 gap-3">
+							<div class="grid max-w-xl grid-cols-2 gap-3">
 								<!-- typed in this browser's clock; sent as exact moments -->
 								<input type="hidden" name="startsAt" value={iso(startsLocal)} />
 								<input type="hidden" name="endsAt" value={iso(endsLocal)} />
@@ -264,29 +264,29 @@
 			<div
 				class="flex flex-wrap items-center justify-between gap-3 border-t border-line2 bg-paper/60 px-4 py-3 md:px-6"
 			>
-				<label class="flex cursor-pointer items-center gap-2 text-[12.5px]">
+				<label class="flex cursor-pointer items-center gap-2 text-xs">
 					<input type="checkbox" name="banner" checked class="h-4 w-4 border-line2 focus:ring-0" />
 					Show a banner across the site while it’s on
 				</label>
 				<span class="flex items-center gap-2">
-					{#if notice('new')?.error}<span class="text-[12.5px] font-semibold text-hero-rb"
+					{#if notice('new')?.error}<span class="text-xs font-semibold text-hero-rb"
 							>{notice('new').error}</span
 						>{/if}
 					<button
 						type="button"
 						onclick={() => (creating = false)}
-						class="inline-flex h-[40px] items-center px-3 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+						class="inline-flex h-10 items-center px-3 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 						>Cancel</button
 					>
 					<button
-						class="inline-flex h-[40px] items-center px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110"
+						class="inline-flex h-10 items-center px-5 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110"
 						style="background: var(--cc)">Post it</button
 					>
 				</span>
 			</div>
 		</form>
 	{/if}
-	{#if form?.section === 'new' && form?.saved}<p class="mt-3 text-[13px] font-semibold text-prem">
+	{#if form?.section === 'new' && form?.saved}<p class="mt-3 text-sm font-semibold text-prem">
 			{form.saved}
 		</p>{/if}
 
@@ -294,7 +294,7 @@
 	{#each [['On now', data.active], ['Coming up', data.scheduled]] as [heading, list] (heading)}
 		{#if list.length}
 			<section class="mt-12">
-				<div class="flex flex-wrap items-end justify-between gap-3 border-b-[3px] border-ink pb-3">
+				<div class="flex flex-wrap items-end justify-between gap-3 border-b-3 border-ink pb-3">
 					<h2 class={sectionTitle}>{heading}</h2>
 				</div>
 				<div class="mt-5 flex flex-col gap-4">
@@ -308,9 +308,9 @@
 
 	<!-- ============ THE CHECKS ============ -->
 	<section class="mt-12">
-		<div class="flex flex-wrap items-end justify-between gap-3 border-b-[3px] border-ink pb-3">
+		<div class="flex flex-wrap items-end justify-between gap-3 border-b-3 border-ink pb-3">
 			<h2 class={sectionTitle}>The checks</h2>
-			<span class="text-[12px] text-soft">Last 30 days · every five minutes</span>
+			<span class="text-xs text-soft">Last 30 days · every five minutes</span>
 		</div>
 		<ul class="mt-5 grid gap-3 md:grid-cols-2">
 			{#each data.components as c (c.id)}
@@ -322,16 +322,16 @@
 							? 'var(--color-hero-rb)'
 							: 'var(--color-line2)'}
 				<li
-					class="border border-l-[4px] border-line2 bg-white px-4 py-4"
+					class="border border-l-4 border-line2 bg-white px-4 py-4"
 					style="border-left-color: {t}"
 				>
 					<div class="flex items-start justify-between gap-3">
 						<div class="min-w-0">
-							<p class="ao-cond text-[24px] leading-none font-black uppercase">{c.label}</p>
-							<p class="mt-1 text-[12px] text-fade">{c.note}</p>
+							<p class="ao-cond text-2xl leading-none font-black uppercase">{c.label}</p>
+							<p class="mt-1 text-xs text-fade">{c.note}</p>
 						</div>
 						<span
-							class="shrink-0 px-2 py-[3px] text-[9.5px] font-extrabold tracking-[0.16em] uppercase {state ===
+							class="shrink-0 px-2 py-1 text-xs font-extrabold tracking-widest uppercase {state ===
 							'none'
 								? 'border border-line2 text-fade'
 								: 'text-white'}"
@@ -340,7 +340,7 @@
 						>
 					</div>
 					<div class="mt-3"><UptimeBars bars={c.bars} days={30} /></div>
-					<p class="mt-2 flex flex-wrap justify-between gap-x-3 text-[11.5px] text-soft">
+					<p class="mt-2 flex flex-wrap justify-between gap-x-3 text-xs text-soft">
 						<span
 							>{c.current
 								? `${ago(c.current.at)}${c.current.ms != null ? ` · ${c.current.ms} ms` : ''}`
@@ -351,9 +351,7 @@
 						<span class="tabular-nums">{pct(c.uptime)} up over 90 days</span>
 					</p>
 					{#if c.current && !c.current.ok && c.current.note}
-						<p
-							class="mt-2 border-l-[3px] border-hero-rb bg-hero-rb/[0.06] px-2.5 py-1.5 font-mono text-[11.5px]"
-						>
+						<p class="mt-2 border-l-3 border-hero-rb bg-hero-rb/5 px-2.5 py-1.5 font-mono text-xs">
 							{c.current.note}
 						</p>
 					{/if}
@@ -364,7 +362,7 @@
 
 	<!-- ============ PAST ============ -->
 	<section class="mt-12">
-		<div class="flex flex-wrap items-end justify-between gap-3 border-b-[3px] border-ink pb-3">
+		<div class="flex flex-wrap items-end justify-between gap-3 border-b-3 border-ink pb-3">
 			<h2 class={sectionTitle}>The last 60 days</h2>
 		</div>
 		{#if data.past.length}
@@ -374,7 +372,7 @@
 				{/each}
 			</div>
 		{:else}
-			<p class="mt-5 font-newsreader text-[16px] text-soft italic">
+			<p class="mt-5 font-newsreader text-base text-soft italic">
 				Nothing resolved in the last 60 days.
 			</p>
 		{/if}
@@ -389,35 +387,35 @@
 			: ['investigating', 'identified', 'monitoring', 'resolved']}
 	{@const n = notice(i.id)}
 	<article
-		class="border border-l-[6px] border-line2 {open ? 'bg-white' : 'bg-paper/50'}"
+		class="border border-l-6 border-line2 {open ? 'bg-white' : 'bg-paper/50'}"
 		style="border-left-color: {imp.tone}; --cc: {imp.tone}"
 	>
 		<div class="flex flex-wrap items-start justify-between gap-3 px-4 pt-4 md:px-6 md:pt-5">
 			<div class="min-w-0">
 				<p class="flex flex-wrap items-center gap-2">
 					<span
-						class="px-2 py-[3px] text-[9.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+						class="px-2 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
 						style="background: {imp.tone}"
 						>{i.kind === 'maintenance' ? 'Maintenance' : `${imp.word} incident`}</span
 					>
 					<span
-						class="border border-ink px-2 py-[2px] text-[9.5px] font-extrabold tracking-[0.16em] uppercase"
+						class="border border-ink px-2 py-0.5 text-xs font-extrabold tracking-widest uppercase"
 						>{STATUS_WORD[i.status] || i.status}</span
 					>
 					{#each i.components as c (c)}<span
-							class="border border-line2 px-1.5 py-px text-[10px] text-soft">{COMP[c] || c}</span
+							class="border border-line2 px-1.5 py-px text-xs text-soft">{COMP[c] || c}</span
 						>{/each}
 					{#if open && i.banner}<span
-							class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase"
+							class="text-xs font-extrabold tracking-widest text-warm uppercase"
 							>◆ {i.kind === 'maintenance' && i.status === 'scheduled'
 								? 'Banner when it starts'
 								: 'Banner on'}</span
 						>{/if}
 				</p>
-				<h3 class="mt-2 font-newsreader text-[21px] leading-tight font-semibold md:text-[24px]">
+				<h3 class="mt-2 font-newsreader text-xl leading-tight font-semibold md:text-2xl">
 					{i.title}
 				</h3>
-				<p class="mt-0.5 text-[12px] text-fade">
+				<p class="mt-0.5 text-xs text-fade">
 					{i.kind === 'maintenance' && i.endsAt
 						? `${stampOf(i.startsAt)} to ${stampOf(i.endsAt)}`
 						: `Started ${stampOf(i.startsAt)}`}{i.resolvedAt
@@ -431,7 +429,7 @@
 						<input type="hidden" name="id" value={i.id} />
 						<input type="hidden" name="on" value={i.banner ? '0' : '1'} />
 						<button
-							class="text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+							class="text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 							>{i.banner ? 'Hide banner' : 'Show banner'}</button
 						>
 					</form>
@@ -446,7 +444,7 @@
 				>
 					<input type="hidden" name="id" value={i.id} />
 					<button
-						class="text-[10px] font-extrabold tracking-[0.14em] text-hero-rb uppercase hover:underline"
+						class="text-xs font-extrabold tracking-widest text-hero-rb uppercase hover:underline"
 						>Delete</button
 					>
 				</form>
@@ -459,12 +457,12 @@
 					class="grid gap-x-5 gap-y-1 border-b border-line px-4 py-3 last:border-b-0 md:grid-cols-[160px_minmax(0,1fr)] md:px-6"
 				>
 					<span>
-						<span class="block text-[10px] font-extrabold tracking-[0.14em] uppercase"
+						<span class="block text-xs font-extrabold tracking-widest uppercase"
 							>{STATUS_WORD[u.status] || u.status}</span
 						>
-						<span class="block text-[11.5px] text-fade">{stampOf(u.createdAt)}</span>
+						<span class="block text-xs text-fade">{stampOf(u.createdAt)}</span>
 					</span>
-					<p class="font-newsreader text-[15.5px] leading-[1.55] whitespace-pre-line">{u.body}</p>
+					<p class="font-newsreader text-base leading-normal whitespace-pre-line">{u.body}</p>
 				</li>
 			{/each}
 		</ol>
@@ -507,13 +505,13 @@
 						></textarea>
 					</label>
 					<button
-						class="inline-flex h-[46px] shrink-0 items-center px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110"
+						class="inline-flex h-12 shrink-0 items-center px-5 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110"
 						style="background: var(--cc)">Post update</button
 					>
 				</div>
-				{#if n?.error}<p class="mt-2 text-[12.5px] font-semibold text-hero-rb">{n.error}</p>{/if}
-				{#if n?.saved}<p class="mt-2 text-[12.5px] font-semibold text-prem">{n.saved}</p>{/if}
-				<p class="mt-2 text-[11.5px] text-fade">
+				{#if n?.error}<p class="mt-2 text-xs font-semibold text-hero-rb">{n.error}</p>{/if}
+				{#if n?.saved}<p class="mt-2 text-xs font-semibold text-prem">{n.saved}</p>{/if}
+				<p class="mt-2 text-xs text-fade">
 					Choosing {i.kind === 'maintenance' ? 'Completed' : 'Resolved'} closes it and takes the banner
 					down.
 				</p>

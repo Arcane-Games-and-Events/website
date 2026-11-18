@@ -16,7 +16,7 @@
 			else if (out[out.length - 1] !== '…') out.push('…');
 		return out;
 	});
-	const step = 'text-[13px] font-semibold';
+	const step = 'text-sm font-semibold';
 </script>
 
 {#if totalPages > 1}
@@ -28,7 +28,7 @@
 			<a href={href(page - 1)} class="{step} text-soft hover:text-warm">← Previous</a>
 		{:else}<span class="{step} text-fade">← Previous</span>{/if}
 		<ol
-			class="flex items-center gap-1 text-[13px] tabular-nums"
+			class="flex items-center gap-1 text-sm tabular-nums"
 			aria-label="Page {page} of {totalPages}"
 		>
 			{#each numbers as n, i (`${n}-${i}`)}

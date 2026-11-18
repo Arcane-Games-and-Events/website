@@ -26,7 +26,7 @@
 	(header chrome, section dividers, footer) is intended to span the
 	viewport while the *content* inside each band stays aligned with a
 	1920px-max cap. Each child section is responsible for wrapping its
-	own content in `mx-auto w-full max-w-[1600px]`; the shell
+	own content in `mx-auto w-full max-w-400`; the shell
 	just provides the page background and renders the children + footer
 	full-width.
 -->

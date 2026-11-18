@@ -24,7 +24,7 @@
 	let { data } = $props();
 
 	const abbr = (name) => CIRCUITS[name]?.abbreviation ?? name;
-	const LABEL = 'text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase';
+	const LABEL = 'text-xs font-extrabold tracking-widest text-fade uppercase';
 	const fmt = (d, opts) => new Date(d).toLocaleDateString('en-US', { timeZone: 'UTC', ...opts });
 	const finishTone = (p) =>
 		p === 1 ? 'text-gold' : p && p <= 8 ? 'text-warm' : p ? 'text-fade' : 'text-fade/50';
@@ -163,11 +163,11 @@
 />
 
 <!-- ============ filter bar ============ -->
-<div class="z-[5] border-b border-line bg-paper-bg/95 backdrop-blur-sm md:sticky md:top-[59px]">
-	<div class="mx-auto w-full max-w-[1200px] px-5 py-4 md:px-8 md:py-5">
+<div class="z-5 border-b border-line bg-paper-bg/95 backdrop-blur-sm md:sticky md:top-15">
+	<div class="mx-auto w-full max-w-page px-5 py-4 md:px-8 md:py-5">
 		<div class="flex flex-col gap-5 lg:flex-row lg:flex-wrap lg:items-end lg:gap-x-8 lg:gap-y-4">
 			<!-- find a list -->
-			<div class="min-w-0 lg:w-[260px] lg:shrink-0">
+			<div class="min-w-0 lg:w-65 lg:shrink-0">
 				<label for="decklists-search" class={LABEL}>Find a list</label>
 				<div
 					class="mt-2 flex items-center gap-2.5 border border-line2 bg-paper-bg px-3 transition-colors focus-within:border-ink hover:border-ink"
@@ -189,14 +189,14 @@
 						placeholder="Player, hero or event…"
 						autocomplete="off"
 						enterkeyhint="search"
-						class="min-h-[44px] w-full border-0 bg-transparent font-newsreader text-[17px] leading-tight text-ink placeholder:text-fade focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+						class="min-h-11 w-full border-0 bg-transparent font-newsreader text-lg leading-tight text-ink placeholder:text-fade focus:outline-none [&::-webkit-search-cancel-button]:hidden"
 					/>
 					{#if q}
 						<button
 							type="button"
 							onclick={() => (q = '')}
 							aria-label="Clear search"
-							class="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center text-[16px] leading-none text-fade hover:text-ink"
+							class="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center text-base leading-none text-fade hover:text-ink"
 							>×</button
 						>
 					{/if}
@@ -212,13 +212,13 @@
 					<div class="min-w-0">
 						<label for="decklists-{f.id}" class={LABEL}>{f.label}</label>
 						<span
-							class="relative mt-2 flex min-h-[44px] items-center justify-between gap-3 border border-line2 bg-paper-bg px-3.5 transition-colors focus-within:border-ink hover:border-ink lg:min-w-[170px]"
+							class="relative mt-2 flex min-h-11 items-center justify-between gap-3 border border-line2 bg-paper-bg px-3.5 transition-colors focus-within:border-ink hover:border-ink lg:min-w-43"
 						>
-							<span class="truncate text-[10px] font-extrabold tracking-[0.14em] text-ink uppercase"
+							<span class="truncate text-xs font-extrabold tracking-widest text-ink uppercase"
 								>{f.options.find((o) => o.v === f.get())?.l ?? f.options[0].l}</span
 							>
 							<svg
-								class="h-[6px] w-[9px] shrink-0 text-fade"
+								class="h-1.5 w-2.5 shrink-0 text-fade"
 								viewBox="0 0 10 6"
 								fill="none"
 								stroke="currentColor"
@@ -248,7 +248,7 @@
 		<div
 			class="mt-4 flex flex-col gap-3 border-t border-line pt-3 md:flex-row md:items-center md:justify-between md:gap-6"
 		>
-			<p class="font-newsreader text-[15px] text-ink" aria-live="polite">
+			<p class="font-newsreader text-base text-ink" aria-live="polite">
 				<strong class="font-semibold">{filtered.length}</strong>
 				{filtered.length === 1 ? 'list' : 'lists'}
 				<span class="text-soft">· {scope}{q ? ` · “${q}”` : ''}</span>
@@ -260,11 +260,11 @@
 						class="relative inline-flex items-center gap-2 border-b border-line2 py-1.5 transition-colors group-hover:border-ink focus-within:border-warm"
 					>
 						<span
-							class="text-[10.5px] font-extrabold tracking-[0.14em] whitespace-nowrap text-ink uppercase"
+							class="text-xs font-extrabold tracking-widest whitespace-nowrap text-ink uppercase"
 							>{SORTS.find((o) => o.v === sortKey)?.l}</span
 						>
 						<svg
-							class="h-[6px] w-[9px] shrink-0 text-fade"
+							class="h-1.5 w-2.5 shrink-0 text-fade"
 							viewBox="0 0 10 6"
 							fill="none"
 							stroke="currentColor"
@@ -289,7 +289,7 @@
 					<button
 						type="button"
 						onclick={clearAll}
-						class="text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase hover:text-ink"
+						class="text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 						>Reset</button
 					>
 				{/if}
@@ -301,15 +301,15 @@
 <!-- ============ latest winning lists ============ -->
 {#if champions.length && !activeCount && sortKey === 'newest'}
 	<section class="border-b border-line bg-paper">
-		<div class="mx-auto w-full max-w-[1200px] px-5 py-8 md:px-8 md:py-10">
+		<div class="mx-auto w-full max-w-page px-5 py-8 md:px-8 md:py-10">
 			<div class="flex flex-wrap items-end justify-between gap-4">
 				<div>
-					<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-warm uppercase">
+					<p class="text-xs font-extrabold tracking-widest text-warm uppercase">
 						Fresh off the podium
 					</p>
-					<h2 class="ao-cond mt-2 text-[36px] leading-none font-black uppercase">Winning lists</h2>
+					<h2 class="ao-cond mt-2 text-4xl leading-none font-black uppercase">Winning lists</h2>
 				</div>
-				<p class="font-newsreader text-[15px] text-soft italic">
+				<p class="font-newsreader text-base text-soft italic">
 					The lists that took the last three opens.
 				</p>
 			</div>
@@ -319,14 +319,14 @@
 					<li use:reveal={{ delay: i * 70 }}>
 						<a
 							href="/ageopen/{d.eventId}/decklist/{d.id}"
-							class="group relative flex min-h-[220px] flex-col justify-end overflow-hidden border border-ink bg-ink text-paper-bg"
+							class="group relative flex min-h-55 flex-col justify-end overflow-hidden border border-ink bg-ink text-paper-bg"
 						>
 							{#if img}
 								<img
 									src={img}
 									alt=""
 									loading="lazy"
-									class="absolute inset-0 h-full w-full object-cover object-[80%_20%] transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+									class="absolute inset-0 h-full w-full object-cover object-[80%_20%] transition-transform duration-700 ease-out group-hover:scale-105"
 								/>
 							{/if}
 							<span
@@ -335,7 +335,7 @@
 								aria-hidden="true"
 							></span>
 							<span
-								class="absolute top-0 left-0 bg-gold px-2 py-1 text-[9px] font-extrabold tracking-[0.16em] text-white uppercase"
+								class="absolute top-0 left-0 bg-gold px-2 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
 								>Champion</span
 							>
 							<span class="absolute top-3 right-3"
@@ -343,18 +343,18 @@
 							>
 							<span class="relative p-5">
 								<span
-									class="flex items-center gap-2 text-[9px] font-extrabold tracking-[0.2em] text-warm-light uppercase"
+									class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-warm-light uppercase"
 								>
 									{#if d.circuit}<span
-											class="px-1.5 py-[2px] text-[8px] text-white"
+											class="px-1.5 py-0.5 text-xs text-white"
 											style="background: {circuitVar(d.circuit)};">{abbr(d.circuit)}</span
 										>{/if}
 									{d.month || ''}{d.eventDate ? ` ${fmt(d.eventDate, { year: 'numeric' })}` : ''}
 								</span>
-								<span class="ao-cond mt-2 block text-[30px] leading-[0.9] font-black uppercase"
+								<span class="ao-cond mt-2 block text-3xl leading-none font-black uppercase"
 									>{d.hero || 'Unknown hero'}</span
 								>
-								<span class="mt-2 block font-newsreader text-[15px] text-paper-bg/80"
+								<span class="mt-2 block font-newsreader text-base text-paper-bg/80"
 									>{d.playerName}</span
 								>
 							</span>
@@ -367,24 +367,24 @@
 {/if}
 
 <!-- ============ lists ============ -->
-<section class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20">
+<section class="mx-auto w-full max-w-page px-5 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20">
 	{#if !all.length}
 		<div class="border border-line bg-paper px-6 py-14 text-center">
-			<p class="ao-cond text-[32px] leading-none font-black uppercase">No lists yet</p>
-			<p class="mx-auto mt-3 max-w-[420px] font-newsreader text-[15px] text-soft italic">
+			<p class="ao-cond text-3xl leading-none font-black uppercase">No lists yet</p>
+			<p class="mx-auto mt-3 max-w-md font-newsreader text-base text-soft italic">
 				Lists from completed opens appear here as soon as they’re published.
 			</p>
 		</div>
 	{:else if !filtered.length}
 		<div class="border border-line bg-paper px-6 py-14 text-center">
-			<p class="ao-cond text-[32px] leading-none font-black uppercase">No lists match</p>
-			<p class="mx-auto mt-3 max-w-[420px] font-newsreader text-[15px] text-soft italic">
+			<p class="ao-cond text-3xl leading-none font-black uppercase">No lists match</p>
+			<p class="mx-auto mt-3 max-w-md font-newsreader text-base text-soft italic">
 				Try another circuit, hero or search.
 			</p>
 			<button
 				type="button"
 				onclick={clearAll}
-				class="mt-6 border border-ink px-5 py-2.5 text-[10px] font-extrabold tracking-[0.18em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+				class="mt-6 border border-ink px-5 py-2.5 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 				>Clear filters</button
 			>
 		</div>
@@ -392,21 +392,19 @@
 		{#each groups as g (g.key)}
 			<div class="mb-10 last:mb-0">
 				{#if g.title}
-					<div
-						class="flex flex-wrap items-end justify-between gap-3 border-b-[3px] border-ink pb-2"
-					>
+					<div class="flex flex-wrap items-end justify-between gap-3 border-b-3 border-ink pb-2">
 						<div class="flex min-w-0 items-center gap-3">
 							{#if g.circuit}
 								<span
-									class="shrink-0 px-1.5 py-[3px] text-[8px] font-extrabold tracking-[0.16em] text-white uppercase"
+									class="shrink-0 px-1.5 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
 									style="background: {circuitVar(g.circuit)};">{abbr(g.circuit)}</span
 								>
 							{/if}
-							<h2 class="ao-cond truncate text-[26px] leading-none font-black uppercase">
+							<h2 class="ao-cond truncate text-2xl leading-none font-black uppercase">
 								<a href="/ageopen/{g.eventId}" class="hover:text-warm">{g.title}</a>
 							</h2>
 						</div>
-						<p class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
+						<p class="text-xs font-extrabold tracking-widest text-fade uppercase">
 							{g.date ? fmt(g.date, { month: 'long', day: 'numeric', year: 'numeric' }) : ''} · {g
 								.rows.length}
 							{g.rows.length === 1 ? 'list' : 'lists'}
@@ -414,7 +412,7 @@
 					</div>
 				{:else}
 					<div
-						class="hidden grid-cols-[72px_minmax(0,1fr)_160px_120px_96px] items-end gap-4 border-b-[3px] border-ink px-4 pb-2 text-[9px] font-extrabold tracking-[0.2em] text-fade uppercase md:grid"
+						class="hidden grid-cols-[72px_minmax(0,1fr)_160px_120px_96px] items-end gap-4 border-b-3 border-ink px-4 pb-2 text-xs font-extrabold tracking-widest text-fade uppercase md:grid"
 					>
 						<span class="text-center">Finish</span><span>Hero · player</span><span>Event</span><span
 							>Format</span
@@ -430,22 +428,21 @@
 								class="group grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-3 px-2 py-2.5 transition-colors hover:bg-paper md:grid-cols-[72px_minmax(0,1fr)_160px_120px_96px] md:gap-4 md:px-4"
 							>
 								<span
-									class="ao-cond text-center text-[24px] leading-none font-black tabular-nums {finishTone(
+									class="ao-cond text-center text-2xl leading-none font-black tabular-nums {finishTone(
 										d.placement
 									)}">{placementLabel(d.placement)}</span
 								>
 								<span class="flex min-w-0 items-center gap-3">
 									<span
-										class="h-[40px] w-[40px] shrink-0 border border-line2 bg-paper bg-cover bg-[right_center]"
+										class="h-10 w-10 shrink-0 border border-line2 bg-paper bg-cover bg-right"
 										style={img ? `background-image: url('${img}');` : ''}
 										aria-hidden="true"
 									></span>
 									<span class="min-w-0">
-										<span
-											class="block truncate font-newsreader text-[17px] leading-tight font-semibold"
+										<span class="block truncate font-newsreader text-lg leading-tight font-semibold"
 											><span class="fp-ul">{d.hero || 'Unknown hero'}</span></span
 										>
-										<span class="mt-[2px] block truncate text-[12px] font-bold text-soft">
+										<span class="mt-0.5 block truncate text-xs font-bold text-soft">
 											{d.playerName}<span class="md:hidden">
 												· {abbr(d.circuit)}{d.month ? ` ${d.month}` : ''}{d.eventDate
 													? ` ${fmt(d.eventDate, { year: 'numeric' })}`
@@ -454,11 +451,9 @@
 										</span>
 									</span>
 								</span>
-								<span
-									class="hidden min-w-0 items-center gap-2 text-[12px] font-bold text-soft md:flex"
-								>
+								<span class="hidden min-w-0 items-center gap-2 text-xs font-bold text-soft md:flex">
 									{#if d.circuit}<span
-											class="shrink-0 px-1.5 py-[2px] text-[8px] font-extrabold tracking-[0.16em] text-white uppercase"
+											class="shrink-0 px-1.5 py-0.5 text-xs font-extrabold tracking-widest text-white uppercase"
 											style="background: {circuitVar(d.circuit)};">{abbr(d.circuit)}</span
 										>{/if}
 									<span class="truncate"
@@ -471,7 +466,7 @@
 									><FormatTag format={d.format} size="sm" short /></span
 								>
 								<span
-									class="hidden text-right text-[9.5px] font-extrabold tracking-[0.16em] text-warm uppercase md:block"
+									class="hidden text-right text-xs font-extrabold tracking-widest text-warm uppercase md:block"
 									>View list →</span
 								>
 							</a>
@@ -483,13 +478,13 @@
 
 		{#if filtered.length > shown.length}
 			<div class="mt-10 flex flex-col items-center gap-3">
-				<p class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
+				<p class="text-xs font-extrabold tracking-widest text-fade uppercase">
 					Showing {shown.length} of {filtered.length}
 				</p>
 				<button
 					type="button"
 					onclick={() => (limit += PAGE)}
-					class="border border-ink px-6 py-3 text-[10px] font-extrabold tracking-[0.18em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+					class="border border-ink px-6 py-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 					>Show more lists</button
 				>
 			</div>

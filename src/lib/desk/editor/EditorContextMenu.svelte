@@ -83,9 +83,9 @@
 
 	const groupClass = 'border-b border-line2 last:border-b-0 py-1';
 	const itemClass =
-		'flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] text-ink transition-colors hover:bg-ink/5 disabled:opacity-40';
+		'flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-ink transition-colors hover:bg-ink/5 disabled:opacity-40';
 	const kickerClass =
-		'px-3 py-1 text-[9.5px] font-mono-system font-bold tracking-wider uppercase text-ink/50';
+		'px-3 py-1 text-xs font-mono-system font-bold tracking-wider uppercase text-ink/50';
 </script>
 
 {#if open}
@@ -94,7 +94,7 @@
 		role="menu"
 		aria-label="Editor context menu"
 		style="left: {x}px; top: {y}px;"
-		class="fixed z-[9999] w-[220px] border border-line2 bg-paper shadow-[0_18px_36px_-20px_rgba(20,16,8,0.5)]"
+		class="fixed z-100 w-55 border border-line2 bg-paper shadow-xl"
 	>
 		<div class={groupClass}>
 			<div class={kickerClass}>Format</div>

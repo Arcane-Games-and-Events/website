@@ -613,8 +613,8 @@
 	// Toolbar: square buttons in the site's sans. Every button keeps focus
 	// in the editor (mousedown preventDefault) so the selection survives.
 	const tbShape =
-		'inline-flex h-9 min-w-9 shrink-0 items-center justify-center px-2 font-libre text-[12px] font-semibold transition-colors disabled:opacity-50';
-	const tbIdle = 'text-ink/75 hover:bg-ink/[0.06] hover:text-ink';
+		'inline-flex h-9 min-w-9 shrink-0 items-center justify-center px-2 font-libre text-xs font-semibold transition-colors disabled:opacity-50';
+	const tbIdle = 'text-ink/75 hover:bg-ink/5 hover:text-ink';
 	const tbActive = 'bg-ink text-paper-bg';
 	const tbBase = `${tbShape} ${tbIdle}`;
 	const keepFocus = (e) => e.preventDefault();
@@ -687,8 +687,7 @@
 					title="Italic (⌘I)"
 					aria-pressed={!!activeFormats.italic}
 					on:mousedown={keepFocus}
-					on:click={() => formatText('italic')}
-					><em class="font-newsreader text-[14px]">I</em></button
+					on:click={() => formatText('italic')}><em class="font-newsreader text-sm">I</em></button
 				>
 				<button
 					type="button"
@@ -747,7 +746,7 @@
 						title="Quote"
 						on:mousedown={keepFocus}
 						on:click={() => setBlock('quote')}
-						><span class="font-newsreader text-[16px]">“</span></button
+						><span class="font-newsreader text-base">“</span></button
 					>
 					<button
 						type="button"
@@ -773,18 +772,18 @@
 						aria-expanded={menu === 'style'}
 						on:mousedown={keepFocus}
 						on:click={() => toggleMenu('style')}
-						>Style <span class="text-[9px]" aria-hidden="true">▾</span></button
+						>Style <span class="text-xs" aria-hidden="true">▾</span></button
 					>
 					{#if menu === 'style'}
 						<div
-							class="absolute top-full left-0 z-30 mt-1 w-48 border border-ink bg-paper-bg shadow-[0_18px_36px_-20px_rgba(20,16,8,0.6)]"
+							class="absolute top-full left-0 z-30 mt-1 w-48 border border-ink bg-paper-bg shadow-xl"
 							role="menu"
 						>
 							{#each STYLE_ITEMS as [lbl, fn] (lbl)}
 								<button
 									type="button"
 									role="menuitem"
-									class="block w-full border-b border-line px-3.5 py-2.5 text-left font-libre text-[13.5px] last:border-b-0 hover:bg-paper"
+									class="block w-full border-b border-line px-3.5 py-2.5 text-left font-libre text-sm last:border-b-0 hover:bg-paper"
 									on:mousedown={keepFocus}
 									on:click={() => pick(fn)}>{lbl}</button
 								>
@@ -858,18 +857,18 @@
 						on:mousedown={keepFocus}
 						on:click={() => toggleMenu('insert')}
 						>Insert
-						<span class="text-[9px]" aria-hidden="true">▾</span></button
+						<span class="text-xs" aria-hidden="true">▾</span></button
 					>
 					{#if menu === 'insert'}
 						<div
-							class="absolute top-full right-0 z-30 mt-1 w-48 border border-ink bg-paper-bg shadow-[0_18px_36px_-20px_rgba(20,16,8,0.6)]"
+							class="absolute top-full right-0 z-30 mt-1 w-48 border border-ink bg-paper-bg shadow-xl"
 							role="menu"
 						>
 							{#each INSERT_ITEMS as [lbl, fn] (lbl)}
 								<button
 									type="button"
 									role="menuitem"
-									class="block w-full border-b border-line px-3.5 py-2.5 text-left font-libre text-[13.5px] last:border-b-0 hover:bg-paper"
+									class="block w-full border-b border-line px-3.5 py-2.5 text-left font-libre text-sm last:border-b-0 hover:bg-paper"
 									on:mousedown={keepFocus}
 									on:click={() => pick(fn)}>{lbl}</button
 								>
@@ -892,12 +891,12 @@
 			role="textbox"
 			aria-multiline="true"
 			aria-label="Entry body"
-			class="desk-editor-content min-h-[26rem] w-full px-4 py-5 font-newsreader text-[18px] text-ink focus:outline-none md:px-7 md:py-7 md:text-[19px]"
+			class="desk-editor-content min-h-104 w-full px-4 py-5 font-newsreader text-lg text-ink focus:outline-none md:px-7 md:py-7 md:text-xl"
 			spellcheck="true"
 		></div>
 		{#if isEmpty}
 			<div
-				class="pointer-events-none absolute top-5 left-4 font-newsreader text-[18px] text-fade italic select-none md:top-7 md:left-7 md:text-[19px]"
+				class="pointer-events-none absolute top-5 left-4 font-newsreader text-lg text-fade italic select-none md:top-7 md:left-7 md:text-xl"
 			>
 				{placeholder}
 			</div>
@@ -979,30 +978,30 @@
 	   inside the editor carry the article's own typography. */
 	.desk-editor-content :global(.desk-p) {
 		margin: 0.75rem 0;
-		line-height: 1.7;
+		line-height: var(--leading-relaxed);
 	}
 	.desk-editor-content :global(.desk-h1) {
-		font-size: 1.875rem;
-		line-height: 1.2;
+		font-size: var(--text-3xl);
+		line-height: var(--leading-tight);
 		font-weight: 600;
 		margin: 1.5rem 0 0.75rem;
 	}
 	.desk-editor-content :global(.desk-h2) {
-		font-size: 1.6rem;
-		line-height: 1.2;
+		font-size: var(--text-2xl);
+		line-height: var(--leading-tight);
 		font-weight: 600;
-		letter-spacing: -0.01em;
+		letter-spacing: var(--tracking-normal);
 		margin: 2rem 0 0.75rem;
 	}
 	.desk-editor-content :global(.desk-h3) {
-		font-size: 1.25rem;
-		line-height: 1.3;
+		font-size: var(--text-xl);
+		line-height: var(--leading-tight);
 		font-weight: 600;
 		margin: 1.25rem 0 0.5rem;
 	}
 	.desk-editor-content :global(.desk-h4) {
-		font-size: 1.125rem;
-		line-height: 1.3;
+		font-size: var(--text-lg);
+		line-height: var(--leading-tight);
 		font-weight: 600;
 		margin: 1.25rem 0 0.5rem;
 	}
@@ -1064,17 +1063,17 @@
 		flex-shrink: 0;
 		line-height: 1;
 		font-family: var(--font-libre, sans-serif);
-		font-size: 10px;
+		font-size: var(--text-xs);
 		font-weight: 800;
-		letter-spacing: 0.16em;
+		letter-spacing: var(--tracking-widest);
 		text-transform: uppercase;
 		color: var(--color-warm-deep, #0d1b45);
 	}
 	.desk-editor-content :global(.desk-spoiler-title) {
 		flex: 1;
 		min-width: 0;
-		line-height: 1.3;
-		font-size: 16px;
+		line-height: var(--leading-tight);
+		font-size: var(--text-base);
 		font-weight: 600;
 	}
 	.desk-editor-content :global(.desk-spoiler-title[data-empty]) {
@@ -1086,9 +1085,9 @@
 		flex-shrink: 0;
 		line-height: 1;
 		font-family: var(--font-libre, sans-serif);
-		font-size: 10.5px;
+		font-size: var(--text-xs);
 		font-weight: 800;
-		letter-spacing: 0.12em;
+		letter-spacing: var(--tracking-widest);
 		text-transform: uppercase;
 		color: var(--color-soft, #56503f);
 		text-decoration: underline;

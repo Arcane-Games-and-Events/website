@@ -114,7 +114,7 @@
 	const STATE = {
 		draft: ['Draft', 'text-fade'],
 		published: ['Published', 'text-prem'],
-		changes: ['Changes not live', 'text-[#8a6116]']
+		changes: ['Changes not live', 'text-gold-deep']
 	};
 	const EVENT_TONE = {
 		approved: 'bg-prem',
@@ -154,15 +154,15 @@
 			hour: 'numeric',
 			minute: '2-digit'
 		});
-	const kicker = 'text-[10.5px] font-extrabold tracking-[0.16em] uppercase';
+	const kicker = 'text-xs font-extrabold tracking-widest uppercase';
 </script>
 
 <svelte:head><title>{course.title} · Classroom</title></svelte:head>
 
-<div class="mx-auto w-full max-w-[1200px] space-y-10 px-5 pb-20 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page space-y-10 px-5 pb-20 font-libre md:px-8">
 	<!-- open items -->
 	<section>
-		<h2 class="{kicker} flex items-baseline justify-between border-b-[3px] border-ink pb-2.5">
+		<h2 class="{kicker} flex items-baseline justify-between border-b-3 border-ink pb-2.5">
 			Open items <span class="tracking-normal text-fade normal-case">{open.length || 'None'}</span>
 		</h2>
 		{#if open.length}
@@ -171,20 +171,18 @@
 					<li class="flex flex-wrap items-center justify-between gap-3 py-3.5">
 						<div class="flex min-w-0 gap-3">
 							<span
-								class="mt-[6px] h-2.5 w-2.5 shrink-0 {item.tone === 'red'
-									? 'bg-hero-rb'
-									: 'bg-gold'}"
+								class="mt-1.5 h-2.5 w-2.5 shrink-0 {item.tone === 'red' ? 'bg-hero-rb' : 'bg-gold'}"
 								aria-hidden="true"
 							></span>
 							<div>
-								<p class="text-[14px] font-semibold">{item.text}</p>
-								<p class="mt-0.5 text-[12.5px] text-soft">{item.detail}</p>
+								<p class="text-sm font-semibold">{item.text}</p>
+								<p class="mt-0.5 text-xs text-soft">{item.detail}</p>
 							</div>
 						</div>
 						{#if item.href}
 							<a
 								href={item.href}
-								class="border border-ink px-3 py-1.5 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:bg-ink hover:text-paper-bg"
+								class="border border-ink px-3 py-1.5 text-xs font-extrabold tracking-widest uppercase hover:bg-ink hover:text-paper-bg"
 								>{item.action}</a
 							>
 						{/if}
@@ -192,29 +190,29 @@
 				{/each}
 			</ul>
 		{:else}
-			<p class="py-4 text-[13.5px] text-soft">Nothing is waiting on anyone for this course.</p>
+			<p class="py-4 text-sm text-soft">Nothing is waiting on anyone for this course.</p>
 		{/if}
 	</section>
 
 	<!-- money and students -->
 	<section>
-		<h2 class="{kicker} border-b-[3px] border-ink pb-2.5">
+		<h2 class="{kicker} border-b-3 border-ink pb-2.5">
 			{s.money ? 'Students and money' : 'Students'}
 		</h2>
 		<dl
 			class="mt-4 grid gap-px border border-line2 bg-line2 {s.money
 				? 'grid-cols-2 md:grid-cols-3 xl:grid-cols-6'
-				: 'max-w-[280px] grid-cols-1'}"
+				: 'max-w-2xs grid-cols-1'}"
 		>
 			{#each FIG as f (f.label)}
 				<div class="bg-paper-bg px-4 py-4">
-					<dt class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">
+					<dt class="text-xs font-extrabold tracking-widest text-fade uppercase">
 						{f.label}
 					</dt>
-					<dd class="mt-2 text-[24px] leading-none font-extrabold tabular-nums {f.tone || ''}">
+					<dd class="mt-2 text-2xl leading-none font-extrabold tabular-nums {f.tone || ''}">
 						{f.value}
 					</dd>
-					{#if f.note}<dd class="mt-1.5 text-[11px] text-soft">{f.note}</dd>{/if}
+					{#if f.note}<dd class="mt-1.5 text-xs text-soft">{f.note}</dd>{/if}
 				</div>
 			{/each}
 		</dl>
@@ -227,17 +225,17 @@
 	<div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
 		<!-- topics -->
 		<section>
-			<h2 class="{kicker} flex items-baseline justify-between border-b-[3px] border-ink pb-2.5">
+			<h2 class="{kicker} flex items-baseline justify-between border-b-3 border-ink pb-2.5">
 				Topics
 				<span class="tracking-normal text-fade normal-case"
 					>{s.topics.filter((t) => t.publishedAt).length} of {s.topics.length} published</span
 				>
 			</h2>
 			{#if s.topics.length}
-				<table class="w-full text-left text-[13px]">
+				<table class="w-full text-left text-sm">
 					<thead>
 						<tr
-							class="border-b border-line2 text-[9px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							class="border-b border-line2 text-xs font-extrabold tracking-widest text-fade uppercase"
 						>
 							<th class="py-2 pr-3 font-extrabold">Topic</th>
 							<th class="py-2 pr-3 font-extrabold">State</th>
@@ -249,19 +247,17 @@
 							<tr>
 								<td class="py-2.5 pr-3">
 									<a href="{base}/topics/{t.id}" class="font-semibold hover:text-warm">{t.title}</a>
-									<span class="block text-[11.5px] text-fade"
+									<span class="block text-xs text-fade"
 										>{t.section}{#if t.firstPublishedAt}
 											· live since {shortDate(t.firstPublishedAt)}{/if}{#if t.isPreview}
 											· <span class="font-semibold text-warm">Free to read</span>{/if}</span
 									>
 								</td>
 								<td class="py-2.5 pr-3 align-top">
-									<span
-										class="text-[11px] font-extrabold tracking-[0.1em] uppercase {STATE[
-											t.state
-										][1]}">{STATE[t.state][0]}</span
+									<span class="text-xs font-extrabold tracking-widest uppercase {STATE[t.state][1]}"
+										>{STATE[t.state][0]}</span
 									>
-									{#if t.state === 'changes'}<span class="block text-[11px] text-fade"
+									{#if t.state === 'changes'}<span class="block text-xs text-fade"
 											>edited {ago(t.draftUpdatedAt)}</span
 										>{/if}
 								</td>
@@ -271,17 +267,17 @@
 					</tbody>
 				</table>
 			{:else}
-				<p class="py-4 text-[13.5px] text-soft">No topics yet.</p>
+				<p class="py-4 text-sm text-soft">No topics yet.</p>
 			{/if}
 		</section>
 
 		<!-- history -->
 		<section>
-			<h2 class="{kicker} flex items-baseline justify-between border-b-[3px] border-ink pb-2.5">
+			<h2 class="{kicker} flex items-baseline justify-between border-b-3 border-ink pb-2.5">
 				History <span class="tracking-normal text-fade normal-case">{s.events.length} events</span>
 			</h2>
 			{#if !s.historyAvailable}
-				<p class="mt-3 border-l-[3px] border-gold bg-gold/10 px-3 py-2 text-[12px]">
+				<p class="mt-3 border-l-3 border-gold bg-gold/10 px-3 py-2 text-xs">
 					Actions like approvals, returns and topic changes are recorded once migration 033 is
 					applied. Until then this shows what other records prove: creation, launch, students and
 					payouts.
@@ -291,18 +287,17 @@
 				{#each events as e, i (i)}
 					<li class="relative border-l border-line2 py-2.5 pl-5">
 						<span
-							class="absolute top-[15px] -left-[4px] h-[7px] w-[7px] {EVENT_TONE[e.kind] ||
-								'bg-line2'}"
+							class="absolute top-4 -left-1 h-2 w-2 {EVENT_TONE[e.kind] || 'bg-line2'}"
 							aria-hidden="true"
 						></span>
-						<p class="text-[13px] leading-snug">
+						<p class="text-sm leading-snug">
 							{sentence(e)}{#if e.topic}: <span class="font-semibold">{e.topic}</span>{/if}
 						</p>
 						{#if e.kind === 'details_changed' && e.data}
-							<p class="mt-0.5 text-[12px] text-soft">{changeText(e.data)}</p>
+							<p class="mt-0.5 text-xs text-soft">{changeText(e.data)}</p>
 						{/if}
-						{#if e.note}<p class="mt-0.5 text-[12px] text-soft italic">“{e.note}”</p>{/if}
-						<p class="mt-0.5 text-[11px] text-fade">{when(e.at)}</p>
+						{#if e.note}<p class="mt-0.5 text-xs text-soft italic">“{e.note}”</p>{/if}
+						<p class="mt-0.5 text-xs text-fade">{when(e.at)}</p>
 					</li>
 				{/each}
 			</ol>
@@ -310,7 +305,7 @@
 				<button
 					type="button"
 					onclick={() => (showAll = !showAll)}
-					class="mt-2 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+					class="mt-2 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 					>{showAll ? 'Show fewer' : `Show all ${s.events.length}`}</button
 				>
 			{/if}

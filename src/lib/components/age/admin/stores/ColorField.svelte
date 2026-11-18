@@ -20,16 +20,13 @@
 		{name}
 		type="color"
 		bind:value={color}
-		class="h-[40px] w-[52px] shrink-0 cursor-pointer border border-line2 bg-paper p-1"
+		class="h-10 w-13 shrink-0 cursor-pointer border border-line2 bg-paper p-1"
 	/>
 	<div
-		class="min-w-0 flex-1 border border-t-[3px] border-line2 bg-white px-3 py-2"
+		class="min-w-0 flex-1 border border-t-3 border-line2 bg-white px-3 py-2"
 		style="border-top-color: {color}"
 	>
-		<p
-			class="truncate text-[9.5px] font-extrabold tracking-[0.18em] uppercase"
-			style="color: {color}"
-		>
+		<p class="truncate text-xs font-extrabold tracking-widest uppercase" style="color: {color}">
 			AGE Open · {label}
 		</p>
 	</div>

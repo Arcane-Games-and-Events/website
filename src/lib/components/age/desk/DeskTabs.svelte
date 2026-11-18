@@ -143,7 +143,7 @@
 >
 	<!-- phone: an evenly split tab bar, every tab visible, no scrolling -->
 	<nav
-		class="grid h-[52px] md:hidden"
+		class="grid h-13 md:hidden"
 		style="grid-template-columns: repeat({tabs.length}, minmax(0, 1fr));"
 		aria-label={studio ? 'Studio sections' : classroom ? 'Classroom sections' : 'Desk sections'}
 	>
@@ -151,7 +151,7 @@
 			<a
 				href={tab.href}
 				aria-current={current === tab.id ? 'page' : undefined}
-				class="flex min-w-0 flex-col items-center justify-center gap-1 border-b-[3px] pt-[3px] transition-colors {current ===
+				class="flex min-w-0 flex-col items-center justify-center gap-1 border-b-3 pt-1 transition-colors {current ===
 				tab.id
 					? 'border-gold text-paper-bg'
 					: 'border-transparent text-paper-bg/55 active:text-paper-bg'}"
@@ -159,7 +159,7 @@
 				<span class="relative">
 					<svg
 						viewBox="0 0 20 20"
-						class="h-[18px] w-[18px] {current === tab.id ? 'text-gold' : ''}"
+						class="h-4.5 w-4.5 {current === tab.id ? 'text-gold' : ''}"
 						fill="none"
 						stroke="currentColor"
 						stroke-width="1.6"
@@ -175,7 +175,7 @@
 						/>{/if}
 				</span>
 				<span
-					class="max-w-full truncate px-0.5 text-[8.5px] leading-none font-extrabold tracking-[0.08em] uppercase"
+					class="max-w-full truncate px-0.5 text-xs leading-none font-extrabold tracking-widest uppercase"
 					>{tab.short ?? tab.label}</span
 				>
 			</a>
@@ -183,10 +183,10 @@
 	</nav>
 
 	<!-- tablet and up: the text tab row -->
-	<div class="mx-auto hidden h-[44px] max-w-[1200px] items-stretch gap-6 px-5 md:flex md:px-8">
+	<div class="mx-auto hidden h-11 max-w-page items-stretch gap-6 px-5 md:flex md:px-8">
 		{#if label}
 			<span
-				class="flex shrink-0 items-center gap-2 text-[10px] font-extrabold tracking-[0.24em] text-gold uppercase"
+				class="flex shrink-0 items-center gap-2 text-xs font-extrabold tracking-widest text-gold uppercase"
 			>
 				<span aria-hidden="true">◆</span>
 				{classroom ? 'Classroom' : 'Desk'}
@@ -200,7 +200,7 @@
 				<a
 					href={tab.href}
 					aria-current={current === tab.id ? 'page' : undefined}
-					class="flex items-center border-b-[3px] px-3 text-[10.5px] font-extrabold tracking-[0.16em] whitespace-nowrap uppercase transition-colors {current ===
+					class="flex items-center border-b-3 px-3 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors {current ===
 					tab.id
 						? 'border-gold text-paper-bg'
 						: 'border-transparent text-paper-bg/55 hover:text-paper-bg'}"

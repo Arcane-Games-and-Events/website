@@ -68,10 +68,10 @@
 	/>
 
 	<div class="bg-paper-bg text-ink">
-		<section class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-20 md:px-8 md:pt-10">
+		<section class="mx-auto w-full max-w-page px-5 pt-8 pb-20 md:px-8 md:pt-10">
 			<!-- ============ search and filters ============ -->
 			<label
-				class="group flex max-w-[760px] items-center gap-3 border border-line2 bg-paper px-4 transition-colors focus-within:border-warm"
+				class="group flex max-w-3xl items-center gap-3 border border-line2 bg-paper px-4 transition-colors focus-within:border-warm"
 			>
 				<svg
 					class="h-4 w-4 shrink-0 text-fade group-focus-within:text-warm"
@@ -97,7 +97,7 @@
 					}}
 					placeholder="Search players, heroes, events"
 					autocomplete="off"
-					class="w-full min-w-0 border-0 bg-transparent py-3 text-[15px] text-ink placeholder:text-fade focus:ring-0 focus:outline-none"
+					class="w-full min-w-0 border-0 bg-transparent py-3 text-base text-ink placeholder:text-fade focus:ring-0 focus:outline-none"
 				/>
 			</label>
 
@@ -114,7 +114,7 @@
 								type="button"
 								onclick={() => go({ stage: o.v })}
 								aria-pressed={on}
-								class="flex-1 px-4 py-2 text-[13px] font-semibold transition-colors md:flex-none {on
+								class="flex-1 px-4 py-2 text-sm font-semibold transition-colors md:flex-none {on
 									? 'bg-ink text-paper-bg'
 									: 'text-soft hover:text-ink'}">{o.l}</button
 							>
@@ -169,14 +169,14 @@
 					{#if filtered}
 						<a
 							href={PATH}
-							class="col-span-2 justify-self-start text-[13px] font-semibold text-warm hover:text-ink md:col-span-1"
+							class="col-span-2 justify-self-start text-sm font-semibold text-warm hover:text-ink md:col-span-1"
 							>Clear filters</a
 						>
 					{/if}
 				</div>
 			</div>
 
-			<p class="mt-5 text-[14px] text-fade" aria-live="polite">{resultLine}</p>
+			<p class="mt-5 text-sm text-fade" aria-live="polite">{resultLine}</p>
 
 			{#if a.items.length}
 				<ul class="mt-8 grid gap-x-6 gap-y-11 sm:grid-cols-2 lg:grid-cols-3">
@@ -192,13 +192,13 @@
 				</ul>
 			{:else}
 				<div class="mt-8 border border-line2 px-6 py-14 text-center">
-					<p class="text-[22px] font-bold tracking-[-0.02em]">
+					<p class="text-2xl font-bold tracking-tight">
 						{filtered ? 'Nothing matches that.' : 'The first matches are on their way.'}
 					</p>
 					{#if filtered}
 						<a
 							href={PATH}
-							class="mt-6 inline-block bg-ink px-5 py-3 text-[13px] font-bold text-paper-bg hover:bg-warm"
+							class="mt-6 inline-block bg-ink px-5 py-3 text-sm font-bold text-paper-bg hover:bg-warm"
 							>Show every match</a
 						>
 					{/if}

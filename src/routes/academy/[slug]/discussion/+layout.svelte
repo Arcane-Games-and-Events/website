@@ -138,27 +138,27 @@
 			class="bg-academy text-paper-bg {inThread ? 'hidden lg:block' : ''}"
 		>
 			<div
-				class="mx-auto flex w-full max-w-[1240px] flex-wrap items-end justify-between gap-x-6 gap-y-2 px-5 pt-5 pb-5 md:px-8"
+				class="mx-auto flex w-full max-w-page flex-wrap items-end justify-between gap-x-6 gap-y-2 px-5 pt-5 pb-5 md:px-8"
 			>
 				<div class="min-w-0">
 					<a
 						href="/academy/{c.slug}"
-						class="text-[10.5px] font-extrabold tracking-[0.18em] text-paper-bg/80 uppercase hover:text-gold"
+						class="text-xs font-extrabold tracking-widest text-paper-bg/80 uppercase hover:text-gold"
 						>← {c.title}</a
 					>
-					<h1 class="mt-2 font-newsreader text-[30px] leading-none font-semibold md:text-[36px]">
+					<h1 class="mt-2 font-newsreader text-3xl leading-none font-semibold md:text-4xl">
 						Discussion
 					</h1>
 				</div>
 				{#if data.role.read}
-					<p class="font-newsreader text-[15px] text-paper-bg/75 italic">
+					<p class="font-newsreader text-base text-paper-bg/75 italic">
 						{data.threads.length}
 						{data.threads.length === 1 ? 'conversation' : 'conversations'}{data.topic
 							? ` about “${data.topic.title}”`
 							: ''}{#if live.here > 1}<span class="not-italic">
 								·
 								<span
-									class="ml-1 inline-block h-[7px] w-[7px] bg-prem-light align-middle"
+									class="ml-1 inline-block h-2 w-2 bg-prem-light align-middle"
 									aria-hidden="true"
 								></span>
 								{live.here} here now</span
@@ -169,21 +169,21 @@
 		</section>
 
 		{#if !data.role.read}
-			<div class="mx-auto w-full max-w-[720px] px-5 py-12 md:px-8">
-				<div class="border-[3px] border-double border-ink p-8 text-center">
-					<p class="font-newsreader text-[22px] font-semibold">
+			<div class="mx-auto w-full max-w-3xl px-5 py-12 md:px-8">
+				<div class="border-3 border-double border-ink p-8 text-center">
+					<p class="font-newsreader text-2xl font-semibold">
 						The discussion is for the course’s students.
 					</p>
 					<a
 						href={data.signedIn ? `/academy/${c.slug}` : loginHref}
-						class="mt-4 inline-block bg-ink px-5 py-3 text-[11px] font-extrabold tracking-[0.16em] text-paper-bg uppercase hover:bg-academy"
+						class="mt-4 inline-block bg-ink px-5 py-3 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-academy"
 						>{data.signedIn ? 'See the course →' : 'Sign in →'}</a
 					>
 				</div>
 			</div>
 		{:else}
 			<div
-				class="mx-auto grid w-full max-w-[1240px] grid-cols-[minmax(0,1fr)] lg:h-(--panel) lg:grid-cols-[380px_minmax(0,1fr)] lg:overflow-hidden lg:border-x lg:border-line"
+				class="mx-auto grid w-full max-w-page grid-cols-1 lg:h-(--panel) lg:grid-cols-[380px_minmax(0,1fr)] lg:overflow-hidden lg:border-x lg:border-line"
 			>
 				<!-- The list -->
 				<aside
@@ -201,10 +201,10 @@
 								onposted={posted}
 							/>
 						{:else if data.role.muted}
-							<p class="text-[12.5px] text-hero-rb">You’ve been muted here. You can still read.</p>
+							<p class="text-xs text-hero-rb">You’ve been muted here. You can still read.</p>
 						{/if}
 						{#if notice}
-							<p class="border-l-[3px] border-gold bg-gold/10 px-3 py-2 text-[13px]" role="status">
+							<p class="border-l-3 border-gold bg-gold/10 px-3 py-2 text-sm" role="status">
 								{notice}
 							</p>
 						{/if}
@@ -223,7 +223,7 @@
 									bind:value={q}
 									type="search"
 									placeholder="Search conversations"
-									class="h-[38px] w-full border border-line2 bg-white pr-3 pl-8 text-[13.5px] focus:border-ink focus:ring-0"
+									class="h-10 w-full border border-line2 bg-white pr-3 pl-8 text-sm focus:border-ink focus:ring-0"
 								/>
 							</label>
 						{/if}
@@ -231,17 +231,16 @@
 							<!-- Which topic's conversations: a dropdown (the phone's own picker on
 							     touch screens); picking one shows only those. -->
 							<label
-								class="group relative flex h-[38px] items-center gap-2 border border-line2 bg-white pr-9 pl-3 transition-colors focus-within:border-ink hover:border-ink"
+								class="group relative flex h-10 items-center gap-2 border border-line2 bg-white pr-9 pl-3 transition-colors focus-within:border-ink hover:border-ink"
 							>
-								<span
-									class="shrink-0 text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+								<span class="shrink-0 text-xs font-extrabold tracking-widest text-fade uppercase"
 									>Topic</span
 								>
-								<span class="truncate text-[13.5px] font-semibold text-ink"
+								<span class="truncate text-sm font-semibold text-ink"
 									>{data.topic?.title ?? 'All topics'}</span
 								>
 								<svg
-									class="pointer-events-none absolute top-1/2 right-3 h-[6px] w-[10px] -translate-y-1/2 text-fade transition-colors group-hover:text-ink"
+									class="pointer-events-none absolute top-1/2 right-3 h-1.5 w-2.5 -translate-y-1/2 text-fade transition-colors group-hover:text-ink"
 									viewBox="0 0 10 6"
 									fill="none"
 									stroke="currentColor"
@@ -252,7 +251,7 @@
 									aria-label="Topic"
 									value={data.topic?.slug ?? ''}
 									onchange={(e) => goto(topicHref(e.currentTarget.value))}
-									class="absolute inset-0 h-full w-full cursor-pointer appearance-none border-0 bg-none text-[16px] opacity-0"
+									class="absolute inset-0 h-full w-full cursor-pointer appearance-none border-0 bg-none text-base opacity-0"
 								>
 									<option value="">All topics</option>
 									{#each data.topics as t (t.id)}
@@ -266,13 +265,13 @@
 					{#if unreadCount}
 						<!-- What's new for you: show only those, or clear them all -->
 						<div
-							class="flex items-center justify-between gap-3 border-b border-line bg-prem/[0.045] px-4 py-2"
+							class="flex items-center justify-between gap-3 border-b border-line bg-prem/5 px-4 py-2"
 						>
 							<button
 								type="button"
 								onclick={() => (unreadOnly = !unreadOnly)}
 								aria-pressed={unreadOnly}
-								class="flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors {unreadOnly
+								class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase transition-colors {unreadOnly
 									? 'text-prem'
 									: 'text-ink hover:text-prem'}"
 							>
@@ -282,7 +281,7 @@
 							<button
 								type="button"
 								onclick={markAllRead}
-								class="shrink-0 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+								class="shrink-0 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 								>Mark all read</button
 							>
 						</div>
@@ -302,7 +301,7 @@
 							{/each}
 						</ul>
 					{:else}
-						<p class="px-6 py-12 text-center font-newsreader text-[17px] text-soft italic">
+						<p class="px-6 py-12 text-center font-newsreader text-lg text-soft italic">
 							{q
 								? 'Nothing matches that search.'
 								: `No conversations yet${data.topic ? ' about this topic' : ''}. Start one above.`}
@@ -313,7 +312,7 @@
 				<!-- The open conversation -->
 				<div
 					class="flex min-h-0 min-w-0 flex-col lg:h-full {inThread
-						? 'max-lg:fixed max-lg:inset-x-0 max-lg:top-0 max-lg:z-[60] max-lg:h-(--vvh) max-lg:translate-y-(--vvtop) max-lg:bg-paper-bg'
+						? 'max-lg:fixed max-lg:inset-x-0 max-lg:top-0 max-lg:z-60 max-lg:h-(--vvh) max-lg:translate-y-(--vvtop) max-lg:bg-paper-bg'
 						: ''}"
 					style="--vvh: {vvh ? `${vvh}px` : '100dvh'}; --vvtop: {vvTop}px;"
 				>

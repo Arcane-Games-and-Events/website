@@ -161,7 +161,7 @@
 {#snippet card(s, i, attrs = {})}
 	<a
 		href={s.href}
-		class="lt-card group relative flex h-full flex-col border border-t-[3px] border-line bg-white"
+		class="lt-card group relative flex h-full flex-col border border-t-3 border-line bg-white"
 		style="border-top-color: {brandOf(s).strip}"
 		draggable="false"
 		{...attrs}
@@ -170,39 +170,39 @@
 			{#if s.image}
 				<Picture
 					image={pic(s)}
-					class="pointer-events-none absolute inset-0 h-full w-full object-cover transition-transform duration-700 select-none group-hover:scale-[1.04]"
+					class="pointer-events-none absolute inset-0 h-full w-full object-cover transition-transform duration-700 select-none group-hover:scale-105"
 					sizes="(min-width: 1024px) 270px, (min-width: 768px) 45vw, 90vw"
 					alt={s.alt || ''}
 				/>
 			{/if}
 			{#if s.kind === 'video'}
 				<span
-					class="absolute right-0 bottom-0 z-[1] flex h-8 w-8 items-center justify-center bg-warm pl-[2px] text-[11px] text-white"
+					class="absolute right-0 bottom-0 z-1 flex h-8 w-8 items-center justify-center bg-warm pl-0.5 text-xs text-white"
 					aria-hidden="true">▶</span
 				>
 			{/if}
 			<!-- the numeral, on a tab cut out of the cover's corner -->
 			<span
-				class="absolute bottom-0 left-0 z-[1] bg-white px-2.5 pt-2 font-newsreader text-[30px] leading-[0.8] font-medium text-warm tabular-nums md:text-[34px]"
+				class="absolute bottom-0 left-0 z-1 bg-white px-2.5 pt-2 font-newsreader text-3xl leading-none font-medium text-warm tabular-nums md:text-4xl"
 				aria-hidden="true">{i + 1}</span
 			>
 		</span>
 		<span class="flex flex-1 flex-col px-4 pt-3.5 pb-4 md:px-5 md:pt-4">
 			<span
-				class="truncate text-[9.5px] font-extrabold tracking-[0.18em] uppercase"
+				class="truncate text-xs font-extrabold tracking-widest uppercase"
 				style="color: {brandOf(s).text}">{s.rubric}</span
 			>
 			<span
-				class="mt-1.5 line-clamp-2 min-h-[2.3em] font-newsreader text-[20px] leading-[1.15] font-semibold tracking-[-0.005em] [text-wrap:balance] transition-colors group-hover:text-warm md:text-[21px]"
+				class="mt-1.5 line-clamp-2 min-h-[2.3em] font-newsreader text-xl leading-tight font-semibold tracking-normal [text-wrap:balance] transition-colors group-hover:text-warm"
 			>
 				{s.title}
 			</span>
-			<span class="mt-2 truncate text-[12px] text-fade">{particulars(s).join(' · ')}</span>
+			<span class="mt-2 truncate text-xs text-fade">{particulars(s).join(' · ')}</span>
 			<span
-				class="mt-auto flex min-h-[26px] items-center justify-between gap-3 border-t border-line pt-3"
+				class="mt-auto flex min-h-7 items-center justify-between gap-3 border-t border-line pt-3"
 			>
 				<span
-					class="text-[10px] font-extrabold tracking-[0.16em] text-ink uppercase transition-colors group-hover:text-warm"
+					class="text-xs font-extrabold tracking-widest text-ink uppercase transition-colors group-hover:text-warm"
 					>{cta(s)}
 					<span
 						class="inline-block transition-transform group-hover:translate-x-0.5"
@@ -210,11 +210,11 @@
 					></span
 				>
 				{#if s.premium}
-					<span class="text-[12px] font-semibold text-prem"
-						><span class="text-[9px]" aria-hidden="true">◆</span> Premium</span
+					<span class="text-xs font-semibold text-prem"
+						><span class="text-xs" aria-hidden="true">◆</span> Premium</span
 					>
 				{:else if s.price}
-					<span class="text-[12px] font-bold text-ink tabular-nums">{s.price}</span>
+					<span class="text-xs font-bold text-ink tabular-nums">{s.price}</span>
 				{/if}
 			</span>
 		</span>
@@ -223,25 +223,25 @@
 
 {#if items.length}
 	<section
-		class="mx-auto w-full max-w-[1200px] overflow-x-clip px-5 pt-10 md:px-8 md:pt-14"
+		class="mx-auto w-full max-w-page overflow-x-clip px-5 pt-10 md:px-8 md:pt-14"
 		aria-labelledby="latest-h"
 	>
-		<div class="flex items-baseline gap-3 border-t-[3px] border-double border-ink pt-3">
+		<div class="flex items-baseline gap-3 border-t-3 border-double border-ink pt-3">
 			<h2
 				id="latest-h"
-				class="flex items-center gap-2 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+				class="flex items-center gap-2 font-newsreader text-base font-semibold tracking-widest uppercase"
 			>
-				<span class="text-[10px] text-warm" aria-hidden="true">◆</span>
+				<span class="text-xs text-warm" aria-hidden="true">◆</span>
 				The Latest
 			</h2>
-			<p class="hidden font-newsreader text-[15px] text-soft italic sm:block">
+			<p class="hidden font-newsreader text-base text-soft italic sm:block">
 				New across the Library, the AGE Open and the Academy.
 			</p>
 		</div>
 
 		<!-- phones: a messy stack to swipe through -->
 		<div class="md:hidden">
-			<div class="mx-auto mt-8 grid max-w-[400px] px-5" role="group" aria-roledescription="stack">
+			<div class="mx-auto mt-8 grid max-w-sm px-5" role="group" aria-roledescription="stack">
 				{#each items as s, i (s.href)}
 					{@const isTop = i === top}
 					<div
@@ -261,17 +261,17 @@
 			<div class="mt-10 flex items-center justify-center gap-4">
 				<button
 					type="button"
-					class="flex h-10 w-10 items-center justify-center border border-ink text-[15px] transition-colors hover:bg-ink hover:text-paper-bg"
+					class="flex h-10 w-10 items-center justify-center border border-ink text-base transition-colors hover:bg-ink hover:text-paper-bg"
 					aria-label="Previous card"
 					onclick={prev}>←</button
 				>
 				<span
-					class="min-w-[64px] text-center text-[10px] font-extrabold tracking-[0.18em] text-fade uppercase tabular-nums"
+					class="min-w-16 text-center text-xs font-extrabold tracking-widest text-fade uppercase tabular-nums"
 					aria-live="polite">{top + 1} / {items.length}</span
 				>
 				<button
 					type="button"
-					class="flex h-10 w-10 items-center justify-center border border-ink text-[15px] transition-colors hover:bg-ink hover:text-paper-bg"
+					class="flex h-10 w-10 items-center justify-center border border-ink text-base transition-colors hover:bg-ink hover:text-paper-bg"
 					aria-label="Next card"
 					onclick={() => next(-1)}>→</button
 				>

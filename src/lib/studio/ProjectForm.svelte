@@ -52,9 +52,9 @@
 		onsaved(body.project);
 	}
 
-	const fieldLabel = 'block text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase';
+	const fieldLabel = 'block text-xs font-extrabold tracking-widest text-fade uppercase';
 	const control =
-		'mt-1.5 h-[40px] w-full border border-line2 bg-white px-2.5 text-[14px] focus:border-ink focus:ring-0';
+		'mt-1.5 h-10 w-full border border-line2 bg-white px-2.5 text-sm focus:border-ink focus:ring-0';
 </script>
 
 <div class="grid gap-6 md:grid-cols-[240px_minmax(0,1fr)]">
@@ -67,7 +67,7 @@
 				form.coverImageId = e.detail?.id ?? null;
 			}}
 		/>
-		<p class="mt-1.5 text-[11.5px] leading-snug text-fade">
+		<p class="mt-1.5 text-xs leading-snug text-fade">
 			Wide (16:9) art works best. It sits on the kind’s colour block.
 		</p>
 	</div>
@@ -77,7 +77,7 @@
 			<input
 				bind:value={form.title}
 				maxlength="160"
-				class="{control} font-newsreader text-[18px] font-semibold"
+				class="{control} font-newsreader text-lg font-semibold"
 			/>
 		</label>
 		<label class="block">
@@ -101,12 +101,12 @@
 				/>
 			</label>
 		</div>
-		<p class="text-[12px] leading-snug text-fade">
+		<p class="text-xs leading-snug text-fade">
 			{PROJECT_TYPE[form.type].blurb} A page on this site starts with <code>/</code>; anything
 			elsewhere needs <code>https://</code> and opens in a new tab.
 		</p>
 		<div class="flex flex-wrap gap-x-6 gap-y-2">
-			<label class="flex items-center gap-2.5 text-[13.5px]">
+			<label class="flex items-center gap-2.5 text-sm">
 				<input
 					type="checkbox"
 					bind:checked={form.isFeatured}
@@ -114,7 +114,7 @@
 				/>
 				Featured (leads AGE Studios)
 			</label>
-			<label class="flex items-center gap-2.5 text-[13.5px]">
+			<label class="flex items-center gap-2.5 text-sm">
 				<input
 					type="checkbox"
 					bind:checked={form.isPremium}
@@ -128,10 +128,10 @@
 				type="button"
 				onclick={save}
 				disabled={saving || !form.title.trim()}
-				class="bg-ink px-5 py-2.5 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
+				class="bg-ink px-5 py-2.5 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
 				>{saving ? 'Saving…' : project ? 'Save project' : 'Create project'}</button
 			>
-			<span class="text-[12px] {error ? 'text-hero-rb' : 'text-fade'}" aria-live="polite"
+			<span class="text-xs {error ? 'text-hero-rb' : 'text-fade'}" aria-live="polite"
 				>{error || note}</span
 			>
 		</div>

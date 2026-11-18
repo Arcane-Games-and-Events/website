@@ -79,13 +79,13 @@
 </script>
 
 <div
-	class="fixed inset-0 z-[200] flex items-end justify-center bg-ink/70 backdrop-blur-[2px] md:items-center md:px-6"
+	class="fixed inset-0 z-100 flex items-end justify-center bg-ink/70 backdrop-blur-xs md:items-center md:px-6"
 	transition:fade={{ duration: 220 }}
 	onclick={onclose}
 	role="presentation"
 >
 	<div
-		class="relative max-h-[92vh] w-full max-w-[880px] overflow-y-auto bg-paper-bg text-ink shadow-[0_40px_80px_-30px_rgba(0,0,0,0.8)]"
+		class="relative max-h-[92vh] w-full max-w-4xl overflow-y-auto bg-paper-bg text-ink shadow-2xl"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="circuit-title"
@@ -96,7 +96,7 @@
 		out:fly={{ y: 12, duration: 180 }}
 	>
 		<!-- photo header in the circuit colour -->
-		<div class="relative aspect-[16/7] overflow-hidden bg-ink text-paper-bg md:aspect-[16/6]">
+		<div class="relative aspect-16/7 overflow-hidden bg-ink text-paper-bg md:aspect-16/6">
 			<img
 				src={circuit.image}
 				alt=""
@@ -113,12 +113,12 @@
 				aria-hidden="true"
 			></span>
 			<span
-				class="absolute inset-x-0 top-0 h-[5px]"
+				class="absolute inset-x-0 top-0 h-1.5"
 				style="background: {circuitVar(circuit.name)};"
 				aria-hidden="true"
 			></span>
 			<span
-				class="ao-cond pointer-events-none absolute -top-2 right-4 text-[120px] leading-none font-black text-white/15 md:text-[170px]"
+				class="ao-cond pointer-events-none absolute -top-2 right-4 text-9xl leading-none font-black text-white/15 md:text-[170px]"
 				aria-hidden="true">{circuit.abbreviation}</span
 			>
 			<button
@@ -138,12 +138,12 @@
 				>
 			</button>
 			<div class="absolute inset-x-0 bottom-0 px-6 pb-5 md:px-9 md:pb-7">
-				<p class="text-[9.5px] font-extrabold tracking-[0.24em] text-paper-bg/75 uppercase">
+				<p class="text-xs font-extrabold tracking-widest text-paper-bg/75 uppercase">
 					{circuit.region} · {story.est}
 				</p>
 				<h2
 					id="circuit-title"
-					class="ao-cond mt-1 text-[52px] leading-[0.85] font-black uppercase md:text-[72px]"
+					class="ao-cond mt-1 text-5xl leading-none font-black uppercase md:text-7xl"
 				>
 					{circuit.name}
 				</h2>
@@ -162,10 +162,10 @@
 					aria-hidden="true"
 				></span>
 				<div class="flex items-baseline justify-between gap-4">
-					<p class="text-[9.5px] font-extrabold tracking-[0.26em] text-gold uppercase">
+					<p class="text-xs font-extrabold tracking-widest text-gold uppercase">
 						◆ Roll of champions
 					</p>
-					<p class="text-[9px] font-extrabold tracking-[0.2em] text-paper-bg/45 uppercase">
+					<p class="text-xs font-extrabold tracking-widest text-paper-bg/45 uppercase">
 						Player’s Champion · by season
 					</p>
 				</div>
@@ -176,34 +176,34 @@
 				>
 					{#each [...champions].reverse() as ch (ch.year)}
 						<li
-							class="relative flex min-h-[132px] flex-col justify-between overflow-hidden bg-ink px-4 pt-3 pb-4"
+							class="relative flex min-h-33 flex-col justify-between overflow-hidden bg-ink px-4 pt-3 pb-4"
 							style={ch.reigning
 								? 'background: linear-gradient(160deg, color-mix(in srgb, var(--ed-gold) 24%, var(--ed-ink)) 0%, var(--ed-ink) 72%);'
 								: ''}
 						>
 							<span
-								class="ao-cond pointer-events-none absolute -right-1 -bottom-5 text-[92px] leading-none font-black text-gold/10"
+								class="ao-cond pointer-events-none absolute -right-1 -bottom-5 text-8xl leading-none font-black text-gold/10"
 								aria-hidden="true">’{String(ch.year).slice(2)}</span
 							>
 							<span class="relative flex items-center justify-between gap-2">
-								<span class="ao-cond text-[30px] leading-none font-black text-gold tabular-nums"
+								<span class="ao-cond text-3xl leading-none font-black text-gold tabular-nums"
 									>{ch.year}</span
 								>
 								{#if ch.reigning}
 									<span
-										class="border border-gold/60 px-1.5 py-[2px] text-[8px] font-extrabold tracking-[0.18em] text-gold uppercase"
+										class="border border-gold/60 px-1.5 py-0.5 text-xs font-extrabold tracking-widest text-gold uppercase"
 										>Reigning</span
 									>
 								{/if}
 							</span>
 							<span class="relative mt-4 block">
 								<span
-									class="block font-newsreader text-[19px] leading-[1.1] font-semibold [text-wrap:balance] md:text-[20px]"
+									class="block font-newsreader text-xl leading-none font-semibold [text-wrap:balance]"
 								>
 									{ch.name}
 								</span>
 								<span
-									class="mt-1.5 block text-[9px] font-extrabold tracking-[0.18em] text-paper-bg/50 uppercase"
+									class="mt-1.5 block text-xs font-extrabold tracking-widest text-paper-bg/50 uppercase"
 								>
 									{#if ch.titles > 1}{ordinal(ch.nth)} of {ch.titles} titles{:else}Champion{/if}
 								</span>
@@ -217,44 +217,36 @@
 		<div class="grid gap-8 px-6 py-7 md:grid-cols-[1.15fr_1fr] md:gap-10 md:px-9 md:py-9">
 			<!-- story + venues -->
 			<div>
-				<p
-					class="font-newsreader text-[22px] leading-[1.15] font-semibold tracking-[-0.01em] md:text-[26px]"
-				>
+				<p class="font-newsreader text-2xl leading-tight font-semibold tracking-normal">
 					{story.tagline}
 				</p>
-				<p class="mt-3 font-newsreader text-[16.5px] leading-[1.55] text-soft">
+				<p class="mt-3 font-newsreader text-base leading-normal text-soft">
 					{story.body}
 				</p>
 				<dl class="mt-6 grid grid-cols-2 border-y border-line">
 					<div class="py-3 pr-3">
-						<dt class="text-[9px] font-extrabold tracking-[0.2em] text-fade uppercase">
-							Events ahead
-						</dt>
-						<dd class="ao-cond mt-1 text-[36px] leading-none font-black tabular-nums">
+						<dt class="text-xs font-extrabold tracking-widest text-fade uppercase">Events ahead</dt>
+						<dd class="ao-cond mt-1 text-4xl leading-none font-black tabular-nums">
 							{count ?? dates.length}
 						</dd>
 					</div>
 					<div class="border-l border-line py-3 pl-4">
-						<dt class="text-[9px] font-extrabold tracking-[0.2em] text-fade uppercase">
-							Prize pool
-						</dt>
-						<dd class="ao-cond mt-1 text-[36px] leading-none font-black">$1,000</dd>
+						<dt class="text-xs font-extrabold tracking-widest text-fade uppercase">Prize pool</dt>
+						<dd class="ao-cond mt-1 text-4xl leading-none font-black">$1,000</dd>
 					</div>
 				</dl>
 				{#if venues.length}
-					<p class="mt-5 text-[9.5px] font-extrabold tracking-[0.2em] text-fade uppercase">
-						Venues
-					</p>
-					<p class="mt-1 font-newsreader text-[16px] text-ink">{venues.join(' · ')}</p>
+					<p class="mt-5 text-xs font-extrabold tracking-widest text-fade uppercase">Venues</p>
+					<p class="mt-1 font-newsreader text-base text-ink">{venues.join(' · ')}</p>
 				{/if}
 			</div>
 
 			<!-- upcoming dates -->
 			<div>
 				<p
-					class="flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+					class="flex items-center gap-2.5 font-newsreader text-base font-semibold tracking-widest uppercase"
 				>
-					<span class="text-[10px]" style="color: {circuitVar(circuit.name)};" aria-hidden="true"
+					<span class="text-xs" style="color: {circuitVar(circuit.name)};" aria-hidden="true"
 						>◆</span
 					>
 					Upcoming
@@ -274,24 +266,23 @@
 										)} 10%, var(--ed-paper));"
 									>
 										<span
-											class="text-[8.5px] font-extrabold tracking-[0.16em]"
+											class="text-xs font-extrabold tracking-widest"
 											style="color: {circuitVar(circuit.name)};">{e.month}</span
 										>
-										<span class="ao-cond text-[30px] leading-[0.9] font-black tabular-nums"
+										<span class="ao-cond text-3xl leading-none font-black tabular-nums"
 											>{e.day}</span
 										>
 									</span>
 									<span class="min-w-0">
-										<span class="block truncate text-[13px] font-bold">{e.weekday} · {e.venue}</span
-										>
+										<span class="block truncate text-sm font-bold">{e.weekday} · {e.venue}</span>
 										<span class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1"
 											>{#if e.format}<FormatTag format={e.format} size="sm" />{/if}<span
-												class="text-[10.5px] font-semibold text-fade">{e.when} · {e.price}</span
+												class="text-xs font-semibold text-fade">{e.when} · {e.price}</span
 											></span
 										>
 									</span>
 									<span
-										class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase transition-transform group-hover:translate-x-0.5"
+										class="text-xs font-extrabold tracking-widest text-warm uppercase transition-transform group-hover:translate-x-0.5"
 										>Sign up →</span
 									>
 								</a>
@@ -299,13 +290,13 @@
 						{/each}
 					</ul>
 				{:else}
-					<p class="mt-3 border-y border-line py-6 font-newsreader text-[15px] text-soft italic">
+					<p class="mt-3 border-y border-line py-6 font-newsreader text-base text-soft italic">
 						New dates for {circuit.name} are coming soon.
 					</p>
 				{/if}
 				<a
 					href="/ageopen?tab=events&region={encodeURIComponent(circuit.name)}"
-					class="mt-6 flex items-center justify-center gap-2 bg-ink px-5 py-3.5 text-[10.5px] font-extrabold tracking-[0.18em] text-paper-bg uppercase transition-colors hover:bg-warm"
+					class="mt-6 flex items-center justify-center gap-2 bg-ink px-5 py-3.5 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm"
 				>
 					All {circuit.name} events →
 				</a>
@@ -319,14 +310,12 @@
 				aria-label="Top ten on this circuit"
 			>
 				<div
-					class="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-b-[3px] border-ink pb-2"
+					class="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-b-3 border-ink pb-2"
 				>
-					<p
-						class="ao-cond text-[34px] leading-[0.85] font-black uppercase [word-spacing:0.18em] md:text-[40px]"
-					>
+					<p class="ao-cond text-4xl leading-none font-black uppercase [word-spacing:0.18em]">
 						Top 10
 					</p>
-					<p class="pb-0.5 text-[9px] font-extrabold tracking-[0.2em] text-fade uppercase">
+					<p class="pb-0.5 text-xs font-extrabold tracking-widest text-fade uppercase">
 						AGE Points earned in {circuit.name}
 					</p>
 				</div>
@@ -338,20 +327,20 @@
 								class="group grid grid-cols-[38px_1fr_auto] items-baseline gap-3 py-2.5"
 							>
 								<span
-									class="ao-cond text-[26px] leading-none font-black tabular-nums {i === 0
+									class="ao-cond text-2xl leading-none font-black tabular-nums {i === 0
 										? 'text-gold'
 										: i < 3
 											? 'text-ink'
 											: 'text-fade/60'}">{i + 1}</span
 								>
-								<span class="truncate font-newsreader text-[16.5px] font-semibold">
+								<span class="truncate font-newsreader text-base font-semibold">
 									<span class="fp-ul">{s.playerName}</span
 									>{#if champions.some((c) => c.name === s.playerName)}<span
-											class="ml-1.5 text-[11px] text-gold"
+											class="ml-1.5 text-xs text-gold"
 											title="Player’s Champion">◆</span
 										>{/if}
 								</span>
-								<span class="text-[11px] font-semibold text-fade tabular-nums"
+								<span class="text-xs font-semibold text-fade tabular-nums"
 									>{s.totalPoints || 0} pts</span
 								>
 							</a>
@@ -359,7 +348,7 @@
 					{/each}
 				</ol>
 				{#if top.some((t) => champions.some((c) => c.name === t.playerName))}
-					<p class="mt-3 text-[9.5px] font-semibold text-fade">
+					<p class="mt-3 text-xs font-semibold text-fade">
 						<span class="text-gold">◆</span> Player’s Champion
 					</p>
 				{/if}

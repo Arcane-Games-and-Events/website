@@ -9,7 +9,7 @@ export const STATUS = {
 
 export const STATUS_TONE = {
 	draft: 'border-ink/60 text-ink',
-	in_review: 'border-gold bg-gold/10 text-[#8a6116]',
+	in_review: 'border-gold bg-gold/10 text-gold-deep',
 	published: 'border-prem bg-prem text-white',
 	archived: 'border-line2 text-fade'
 };
@@ -45,7 +45,7 @@ export function waited(at, now = new Date()) {
 
 /** Where a course stands (see standing() in courses/oversight.js): chip tones. */
 export const STAGE_TONE = {
-	in_review: 'border-gold bg-gold/15 text-[#8a6116]',
+	in_review: 'border-gold bg-gold/15 text-gold-deep',
 	returned: 'border-hero-rb text-hero-rb',
 	draft: 'border-ink/60 text-ink',
 	live: 'border-prem bg-prem text-white',

@@ -12,13 +12,12 @@
 	const visible = (p) => pages <= 7 || Math.abs(p - page) <= 2 || p === 1 || p === pages;
 	const gap = (p) => Math.abs(p - page) === 3 && p !== 1 && p !== pages;
 	const btn =
-		'flex h-9 min-w-9 items-center justify-center border border-line2 px-2 text-[11px] font-bold tabular-nums transition-colors hover:border-ink disabled:opacity-40';
+		'flex h-9 min-w-9 items-center justify-center border border-line2 px-2 text-xs font-bold tabular-nums transition-colors hover:border-ink disabled:opacity-40';
 </script>
 
 {#if pages > 1}
 	<nav class="mt-4 flex flex-wrap items-center justify-between gap-3" aria-label="Pages">
-		<span class="text-[11px] text-fade">{from}–{to} of {count.toLocaleString('en-US')} {label}</span
-		>
+		<span class="text-xs text-fade">{from}–{to} of {count.toLocaleString('en-US')} {label}</span>
 		<div class="flex items-center gap-1">
 			<button
 				type="button"

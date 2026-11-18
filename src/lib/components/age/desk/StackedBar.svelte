@@ -11,25 +11,25 @@
 
 {#if shown.length}
 	<div
-		class="flex h-9 gap-[2px]"
+		class="flex h-9 gap-0.5"
 		role="img"
 		aria-label={parts.map((p) => `${p.key} ${p.pct ?? 0}%`).join(', ')}
 	>
 		{#each shown as p (p.key)}
 			<div
-				class="flex h-full min-w-[3px] items-center overflow-hidden px-2"
+				class="flex h-full min-w-1 items-center overflow-hidden px-2"
 				style="width: {p.pct}%; background: {p.color};"
 				title="{p.key}: {p.pct}%"
 			>
 				{#if (p.pct ?? 0) >= 14}
-					<span class="text-[11.5px] font-bold whitespace-nowrap" style="color: {p.ink || '#fff'};"
+					<span class="text-xs font-bold whitespace-nowrap" style="color: {p.ink || '#fff'};"
 						>{p.pct}%</span
 					>
 				{/if}
 			</div>
 		{/each}
 	</div>
-	<ul class="mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-[12.5px]">
+	<ul class="mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-xs">
 		{#each parts as p (p.key)}
 			<li class="flex items-center gap-2">
 				<span class="h-3 w-3" style="background: {p.color};" aria-hidden="true"></span>
@@ -39,5 +39,5 @@
 		{/each}
 	</ul>
 {:else}
-	<p class="font-newsreader text-[15px] text-soft italic">No data for this period yet.</p>
+	<p class="font-newsreader text-base text-soft italic">No data for this period yet.</p>
 {/if}

@@ -23,7 +23,7 @@
 	let { data } = $props();
 
 	const abbr = (name) => CIRCUITS[name]?.abbreviation ?? name;
-	const LABEL = 'text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase';
+	const LABEL = 'text-xs font-extrabold tracking-widest text-fade uppercase';
 	const fmt = (d, opts) => new Date(d).toLocaleDateString('en-US', { timeZone: 'UTC', ...opts });
 	const yearOf = (e) => (e.eventDate ? String(new Date(e.eventDate).getUTCFullYear()) : '—');
 	const ordinal = (n) => (n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`);
@@ -105,10 +105,10 @@
 />
 
 <!-- ============ filter bar ============ -->
-<div class="z-[5] border-b border-line bg-paper-bg/95 backdrop-blur-sm md:sticky md:top-[59px]">
-	<div class="mx-auto w-full max-w-[1200px] px-5 py-4 md:px-8 md:py-5">
+<div class="z-5 border-b border-line bg-paper-bg/95 backdrop-blur-sm md:sticky md:top-15">
+	<div class="mx-auto w-full max-w-page px-5 py-4 md:px-8 md:py-5">
 		<div class="flex flex-col gap-5 lg:flex-row lg:flex-wrap lg:items-end lg:gap-x-8 lg:gap-y-4">
-			<div class="min-w-0 lg:w-[260px] lg:shrink-0">
+			<div class="min-w-0 lg:w-65 lg:shrink-0">
 				<label for="archive-search" class={LABEL}>Find an event or player</label>
 				<div
 					class="mt-2 flex items-center gap-2.5 border border-line2 bg-paper-bg px-3 transition-colors focus-within:border-ink hover:border-ink"
@@ -130,14 +130,14 @@
 						placeholder="Event, city or player…"
 						autocomplete="off"
 						enterkeyhint="search"
-						class="min-h-[44px] w-full border-0 bg-transparent font-newsreader text-[17px] leading-tight text-ink placeholder:text-fade focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+						class="min-h-11 w-full border-0 bg-transparent font-newsreader text-lg leading-tight text-ink placeholder:text-fade focus:outline-none [&::-webkit-search-cancel-button]:hidden"
 					/>
 					{#if q}
 						<button
 							type="button"
 							onclick={() => (q = '')}
 							aria-label="Clear search"
-							class="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center text-[16px] leading-none text-fade hover:text-ink"
+							class="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center text-base leading-none text-fade hover:text-ink"
 							>×</button
 						>
 					{/if}
@@ -156,7 +156,7 @@
 							type="button"
 							onclick={() => (season = s)}
 							aria-pressed={season === s}
-							class="min-h-[44px] flex-1 px-2 text-[10px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase transition-colors md:flex-none md:px-3 {season ===
+							class="min-h-11 flex-1 px-2 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors md:flex-none md:px-3 {season ===
 							s
 								? 'bg-ink text-paper-bg'
 								: 'bg-paper-bg text-soft hover:bg-paper hover:text-ink'}"
@@ -172,7 +172,7 @@
 		<div
 			class="mt-4 flex flex-col gap-3 border-t border-line pt-3 md:flex-row md:items-center md:justify-between md:gap-6"
 		>
-			<p class="font-newsreader text-[15px] text-ink" aria-live="polite">
+			<p class="font-newsreader text-base text-ink" aria-live="polite">
 				<strong class="font-semibold">{filtered.length}</strong>
 				{filtered.length === 1 ? 'event' : 'events'}
 				<span class="text-soft"
@@ -187,7 +187,7 @@
 					<button
 						type="button"
 						onclick={clearAll}
-						class="text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase hover:text-ink"
+						class="text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 						>Reset</button
 					>
 				{/if}
@@ -195,7 +195,7 @@
 					type="button"
 					onclick={refresh}
 					disabled={refreshing}
-					class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase transition-colors hover:text-ink disabled:opacity-50"
+					class="text-xs font-extrabold tracking-widest text-fade uppercase transition-colors hover:text-ink disabled:opacity-50"
 					>{refreshing ? 'Refreshing…' : 'Refresh ↻'}</button
 				>
 			</div>
@@ -206,9 +206,9 @@
 <!-- ============ live now ============ -->
 {#if live.length}
 	<section class="bg-ink text-paper-bg">
-		<div class="mx-auto w-full max-w-[1200px] px-5 py-8 md:px-8">
+		<div class="mx-auto w-full max-w-page px-5 py-8 md:px-8">
 			<p
-				class="flex items-center gap-2.5 text-[9.5px] font-extrabold tracking-[0.22em] text-warm-light uppercase"
+				class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest text-warm-light uppercase"
 			>
 				<span class="h-2 w-2 animate-pulse bg-hero-rb" aria-hidden="true"></span>
 				Live now · standings refresh every minute
@@ -222,11 +222,11 @@
 							class="group flex items-center justify-between gap-4 border border-paper-bg/20 px-5 py-4 transition-colors hover:border-paper-bg"
 						>
 							<span class="min-w-0">
-								<span class="ao-cond block truncate text-[26px] leading-none font-black uppercase"
+								<span class="ao-cond block truncate text-2xl leading-none font-black uppercase"
 									>{r.event.title}</span
 								>
 								<span
-									class="mt-2 block text-[9.5px] font-extrabold tracking-[0.18em] text-paper-bg/60 uppercase"
+									class="mt-2 block text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase"
 								>
 									{r.results.length
 										? `${r.results.length} players${leader ? ` · ${leader.playerName} leads` : ''}`
@@ -234,7 +234,7 @@
 								</span>
 							</span>
 							<span
-								class="shrink-0 text-[9.5px] font-extrabold tracking-[0.18em] text-warm-light uppercase"
+								class="shrink-0 text-xs font-extrabold tracking-widest text-warm-light uppercase"
 								>Standings →</span
 							>
 						</a>
@@ -246,32 +246,32 @@
 {/if}
 
 <!-- ============ seasons ============ -->
-<section class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20">
+<section class="mx-auto w-full max-w-page px-5 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20">
 	{#if !archived.length}
 		<div class="border border-line bg-paper px-6 py-14 text-center">
-			<p class="ao-cond text-[32px] leading-none font-black uppercase">No results yet</p>
-			<p class="mx-auto mt-3 max-w-[420px] font-newsreader text-[15px] text-soft italic">
+			<p class="ao-cond text-3xl leading-none font-black uppercase">No results yet</p>
+			<p class="mx-auto mt-3 max-w-md font-newsreader text-base text-soft italic">
 				Results appear here as each open wraps up.
 			</p>
 		</div>
 	{:else if !filtered.length}
 		<div class="border border-line bg-paper px-6 py-14 text-center">
-			<p class="ao-cond text-[32px] leading-none font-black uppercase">No events match</p>
-			<p class="mx-auto mt-3 max-w-[420px] font-newsreader text-[15px] text-soft italic">
+			<p class="ao-cond text-3xl leading-none font-black uppercase">No events match</p>
+			<p class="mx-auto mt-3 max-w-md font-newsreader text-base text-soft italic">
 				Try another season, circuit or name.
 			</p>
 			<button
 				type="button"
 				onclick={clearAll}
-				class="mt-6 border border-ink px-5 py-2.5 text-[10px] font-extrabold tracking-[0.18em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+				class="mt-6 border border-ink px-5 py-2.5 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 				>Clear filters</button
 			>
 		</div>
 	{:else}
 		{#each groups as [year, rows] (year)}
 			<div class="mb-14 last:mb-0">
-				<div class="flex items-end justify-between gap-4 border-b-[3px] border-ink pb-2">
-					<h2 class="ao-cond text-[56px] leading-[0.85] font-black md:text-[72px]">{year}</h2>
+				<div class="flex items-end justify-between gap-4 border-b-3 border-ink pb-2">
+					<h2 class="ao-cond text-6xl leading-none font-black md:text-7xl">{year}</h2>
 					<p class={LABEL}>{rows.length} {rows.length === 1 ? 'open' : 'opens'}</p>
 				</div>
 
@@ -288,32 +288,32 @@
 						>
 							<!-- head -->
 							<div
-								class="border-t-[4px] px-5 pt-4 pb-3"
+								class="border-t-4 px-5 pt-4 pb-3"
 								style="border-top-color: {e.circuit ? circuitVar(e.circuit) : 'var(--ed-ink)'};"
 							>
 								<div class="flex items-start justify-between gap-3">
 									<div class="min-w-0">
 										<p
-											class="flex flex-wrap items-center gap-2 text-[9px] font-extrabold tracking-[0.18em] text-fade uppercase"
+											class="flex flex-wrap items-center gap-2 text-xs font-extrabold tracking-widest text-fade uppercase"
 										>
 											{#if e.circuit}
 												<span
-													class="px-1.5 py-[2px] text-[8px] text-white"
+													class="px-1.5 py-0.5 text-xs text-white"
 													style="background: {circuitVar(e.circuit)};">{abbr(e.circuit)}</span
 												>
 											{/if}
 											{e.eventDate ? fmt(e.eventDate, { month: 'long', day: 'numeric' }) : ''}
-											{#if e.location}<span class="truncate tracking-[0.04em] normal-case"
+											{#if e.location}<span class="truncate tracking-wider normal-case"
 													>· {e.location}</span
 												>{/if}
 										</p>
-										<h3 class="ao-cond mt-2 text-[28px] leading-[0.9] font-black uppercase">
+										<h3 class="ao-cond mt-2 text-3xl leading-none font-black uppercase">
 											<a href="/ageopen/{e.id}/results" class="hover:text-warm">{e.title}</a>
 										</h3>
 									</div>
 									<span class="shrink-0"><FormatTag format={e.format} size="sm" short /></span>
 								</div>
-								<p class="mt-2 text-[9.5px] font-extrabold tracking-[0.16em] text-soft uppercase">
+								<p class="mt-2 text-xs font-extrabold tracking-widest text-soft uppercase">
 									{r.results.length} players
 								</p>
 							</div>
@@ -328,7 +328,7 @@
 											: ''}"
 									>
 										<p
-											class="flex items-center gap-1.5 text-[8px] font-extrabold tracking-[0.18em] uppercase"
+											class="flex items-center gap-1.5 text-xs font-extrabold tracking-widest uppercase"
 											style="color: {slot.tone};"
 										>
 											<span class="h-1.5 w-1.5" style="background: {slot.tone};" aria-hidden="true"
@@ -338,23 +338,23 @@
 											{#if p.gemId}
 												<a
 													href="/player/{p.gemId}"
-													class="mt-1.5 block truncate font-newsreader text-[15px] leading-tight font-semibold {pi ===
+													class="mt-1.5 block truncate font-newsreader text-base leading-tight font-semibold {pi ===
 													0
-														? 'md:text-[17px]'
+														? 'md:text-lg'
 														: ''}"><span class="fp-ul">{p.playerName}</span></a
 												>
 											{:else}
 												<p
-													class="mt-1.5 truncate font-newsreader text-[15px] leading-tight font-semibold"
+													class="mt-1.5 truncate font-newsreader text-base leading-tight font-semibold"
 												>
 													{p.playerName}
 												</p>
 											{/if}
-											<p class="mt-1 text-[10px] font-bold text-fade tabular-nums">
+											<p class="mt-1 text-xs font-bold text-fade tabular-nums">
 												{p.wins}–{p.losses}{p.draws ? `–${p.draws}` : ''}
 											</p>
 										{:else}
-											<p class="mt-1.5 font-newsreader text-[15px] text-fade">—</p>
+											<p class="mt-1.5 font-newsreader text-base text-fade">—</p>
 										{/if}
 									</li>
 								{/each}
@@ -368,21 +368,20 @@
 											class="flex items-center gap-3 border-b border-dotted border-line2 py-1.5 last:border-b-0"
 										>
 											<span
-												class="ao-cond w-[34px] shrink-0 text-[16px] leading-none font-black text-warm tabular-nums"
+												class="ao-cond w-9 shrink-0 text-base leading-none font-black text-warm tabular-nums"
 												>{ordinal(p.placement)}</span
 											>
 											{#if p.gemId}
 												<a
 													href="/player/{p.gemId}"
-													class="min-w-0 flex-1 truncate text-[13px] font-bold"
+													class="min-w-0 flex-1 truncate text-sm font-bold"
 													><span class="fp-ul">{p.playerName}</span></a
 												>
 											{:else}
-												<span class="min-w-0 flex-1 truncate text-[13px] font-bold"
-													>{p.playerName}</span
+												<span class="min-w-0 flex-1 truncate text-sm font-bold">{p.playerName}</span
 												>
 											{/if}
-											<span class="shrink-0 text-[11px] text-fade tabular-nums"
+											<span class="shrink-0 text-xs text-fade tabular-nums"
 												>{p.wins}–{p.losses}{p.draws ? `–${p.draws}` : ''}</span
 											>
 										</li>
@@ -395,7 +394,7 @@
 								class="mt-auto flex items-center justify-between gap-3 border-t border-line px-5 py-3"
 							>
 								{#if found && found.placement > 8}
-									<p class="truncate text-[10px] font-bold text-soft">
+									<p class="truncate text-xs font-bold text-soft">
 										<span class="text-warm">{found.playerName}</span> finished {ordinal(
 											found.placement
 										)} ({found.wins}–{found.losses}{found.draws ? `–${found.draws}` : ''})
@@ -405,7 +404,7 @@
 								{/if}
 								<a
 									href="/ageopen/{e.id}/results"
-									class="shrink-0 text-[9.5px] font-extrabold tracking-[0.16em] text-warm uppercase hover:text-ink"
+									class="shrink-0 text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 									>Full results →</a
 								>
 							</div>

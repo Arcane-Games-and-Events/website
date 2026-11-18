@@ -66,36 +66,33 @@
 	{@const area = item.area ? AREA[item.area] : null}
 	<li
 		use:rise
-		class="rm-card relative border border-l-[5px] border-line2 bg-white px-4 pt-4 pb-4 md:px-5"
+		class="rm-card relative border border-l-5 border-line2 bg-white px-4 pt-4 pb-4 md:px-5"
 		style="border-left-color: {area?.tone || 'var(--color-line2)'}; --i: {n}"
 	>
 		<div class="flex items-start justify-between gap-3">
 			<div class="min-w-0">
 				{#if area}
-					<p
-						class="text-[9.5px] font-extrabold tracking-[0.16em] uppercase"
-						style="color: {area.tone}"
-					>
+					<p class="text-xs font-extrabold tracking-widest uppercase" style="color: {area.tone}">
 						{area.label}
 					</p>
 				{/if}
-				<h3 class="mt-1 font-newsreader text-[20px] leading-tight font-semibold">
+				<h3 class="mt-1 font-newsreader text-xl leading-tight font-semibold">
 					{item.title}
 				</h3>
 			</div>
 			{#if stamp}
 				<span
-					class="rm-stamp shrink-0 border-2 border-prem px-1.5 py-0.5 text-[9px] font-extrabold tracking-[0.16em] text-prem uppercase"
+					class="rm-stamp shrink-0 border-2 border-prem px-1.5 py-0.5 text-xs font-extrabold tracking-widest text-prem uppercase"
 					>Shipped ✓</span
 				>
 			{:else}
-				<span class="ao-cond shrink-0 text-[26px] leading-none font-black text-line2 tabular-nums"
+				<span class="ao-cond shrink-0 text-2xl leading-none font-black text-line2 tabular-nums"
 					>{two(n + 1)}</span
 				>
 			{/if}
 		</div>
 		{#if item.body}
-			<p class="mt-1.5 font-newsreader text-[15.5px] leading-[1.5] text-soft">{item.body}</p>
+			<p class="mt-1.5 font-newsreader text-base leading-normal text-soft">{item.body}</p>
 		{/if}
 	</li>
 {/snippet}
@@ -103,14 +100,14 @@
 <AgeShell>
 	<!-- the band: title and the track -->
 	<section class="bg-ink text-paper-bg">
-		<div class="mx-auto w-full max-w-[1200px] px-5 pt-10 pb-10 md:px-8 md:pt-14 md:pb-12">
-			<p class="text-[10px] font-extrabold tracking-[0.24em] uppercase opacity-70">
+		<div class="mx-auto w-full max-w-page px-5 pt-10 pb-10 md:px-8 md:pt-14 md:pb-12">
+			<p class="text-xs font-extrabold tracking-widest uppercase opacity-70">
 				<span class="text-warm-light">◆</span> AGE roadmap
 			</p>
-			<h1 class="ao-cond mt-3 text-[64px] leading-[0.86] font-black uppercase md:text-[128px]">
+			<h1 class="ao-cond mt-3 text-6xl leading-none font-black uppercase md:text-9xl">
 				The roadmap
 			</h1>
-			<p class="mt-4 max-w-[600px] font-newsreader text-[19px] leading-[1.5] opacity-80">
+			<p class="mt-4 max-w-xl font-newsreader text-xl leading-normal opacity-80">
 				What’s being made for AGE right now, what comes after, and what’s already out. It changes as
 				we go, and your ideas shape it.
 			</p>
@@ -119,25 +116,23 @@
 				<ol class="mt-10 grid grid-cols-2 gap-px bg-paper-bg/15 md:grid-cols-4">
 					{#each TRACK as stage, i (stage.id)}
 						<li class="relative bg-ink px-4 pt-5 pb-1 md:px-6">
-							<span class="absolute top-0 right-0 left-0 h-[5px]" style="background: {stage.tone}"
+							<span class="absolute top-0 right-0 left-0 h-1.5" style="background: {stage.tone}"
 							></span>
 							<p
-								class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.18em] uppercase opacity-75"
+								class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase opacity-75"
 							>
 								<span class="tabular-nums">{two(i + 1)}</span>
 								{stage.label}
 								{#if stage.id === 'development'}<span class="rm-live" aria-hidden="true"
 									></span>{/if}
 							</p>
-							<p
-								class="ao-cond mt-1 text-[56px] leading-none font-black tabular-nums md:text-[72px]"
-							>
+							<p class="ao-cond mt-1 text-6xl leading-none font-black tabular-nums md:text-7xl">
 								{r[stage.id].length}
 							</p>
-							<p class="pb-3 text-[12px] opacity-60">{stage.note}</p>
+							<p class="pb-3 text-xs opacity-60">{stage.note}</p>
 							{#if i < TRACK.length - 1}
 								<span
-									class="absolute top-1/2 right-3 hidden text-[22px] opacity-30 md:block"
+									class="absolute top-1/2 right-3 hidden text-2xl opacity-30 md:block"
 									aria-hidden="true">→</span
 								>
 							{/if}
@@ -148,9 +143,9 @@
 		</div>
 	</section>
 
-	<main class="mx-auto w-full max-w-[1200px] px-5 pt-12 pb-24 md:px-8 md:pt-14">
+	<main class="mx-auto w-full max-w-page px-5 pt-12 pb-24 md:px-8 md:pt-14">
 		{#if !r}
-			<p class="font-newsreader text-[17px] text-soft italic">The roadmap isn’t set up yet.</p>
+			<p class="font-newsreader text-lg text-soft italic">The roadmap isn’t set up yet.</p>
 		{:else}
 			<!-- Upcoming / In development / Testing -->
 			<div class="grid gap-10 lg:grid-cols-3 lg:gap-6">
@@ -163,7 +158,7 @@
 							<div>
 								<h2
 									id="stage-{stage.id}"
-									class="ao-cond flex items-center gap-2.5 text-[34px] leading-none font-black uppercase md:text-[40px]"
+									class="ao-cond flex items-center gap-2.5 text-4xl leading-none font-black uppercase"
 								>
 									{stage.label}
 									{#if stage.id === 'development'}<span
@@ -171,9 +166,9 @@
 											aria-hidden="true"
 										></span>{/if}
 								</h2>
-								<p class="mt-1 text-[11.5px] opacity-80">{stage.note}</p>
+								<p class="mt-1 text-xs opacity-80">{stage.note}</p>
 							</div>
-							<span class="ao-cond text-[34px] leading-none font-black tabular-nums opacity-60"
+							<span class="ao-cond text-4xl leading-none font-black tabular-nums opacity-60"
 								>{r[stage.id].length}</span
 							>
 						</div>
@@ -183,7 +178,7 @@
 							</ul>
 						{:else}
 							<p
-								class="mt-3 border border-dashed border-line2 px-4 py-6 text-center font-newsreader text-[16px] text-fade italic"
+								class="mt-3 border border-dashed border-line2 px-4 py-6 text-center font-newsreader text-base text-fade italic"
 							>
 								Nothing here yet.
 							</p>
@@ -194,14 +189,14 @@
 
 			<!-- Shipped: a timeline, newest first -->
 			<section class="mt-20" aria-labelledby="stage-shipped">
-				<div class="flex items-end justify-between gap-3 border-b-[5px] border-prem pb-2">
+				<div class="flex items-end justify-between gap-3 border-b-5 border-prem pb-2">
 					<h2
 						id="stage-shipped"
-						class="ao-cond text-[44px] leading-none font-black uppercase md:text-[64px]"
+						class="ao-cond text-5xl leading-none font-black uppercase md:text-6xl"
 					>
 						Shipped
 					</h2>
-					<span class="text-[12px] text-soft">Newest first</span>
+					<span class="text-xs text-soft">Newest first</span>
 				</div>
 				{#if shipped.length}
 					<ol class="relative mt-8 border-l-2 border-line2 pl-6 md:ml-2 md:pl-10">
@@ -210,12 +205,12 @@
 								<!-- centred on the 2px line: it sits 1px in from the list's left edge,
 								     and the month starts 2px + padding (24px, 40px from md) further on -->
 								<span
-									class="absolute top-[11px] -left-[25px] h-[11px] w-[11px] -translate-x-1/2 -translate-y-1/2 rotate-45 bg-prem md:-left-[41px]"
+									class="absolute top-3 -left-6 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-prem md:-left-10"
 									aria-hidden="true"
 								></span>
-								<h3 class="font-newsreader text-[22px] leading-none font-semibold">
+								<h3 class="font-newsreader text-2xl leading-none font-semibold">
 									{group.month}
-									<span class="ml-2 text-[12px] font-normal text-fade"
+									<span class="ml-2 text-xs font-normal text-fade"
 										>{group.items.length} shipped</span
 									>
 								</h3>
@@ -229,14 +224,12 @@
 						<button
 							type="button"
 							onclick={() => (showAll = !showAll)}
-							class="mt-4 inline-flex h-[40px] items-center border border-ink px-4 text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+							class="mt-4 inline-flex h-10 items-center border border-ink px-4 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 							>{showAll ? 'Show less' : 'Show everything shipped'}</button
 						>
 					{/if}
 				{:else}
-					<p class="mt-5 font-newsreader text-[17px] text-soft italic">
-						The first things ship soon.
-					</p>
+					<p class="mt-5 font-newsreader text-lg text-soft italic">The first things ship soon.</p>
 				{/if}
 			</section>
 		{/if}
@@ -249,17 +242,15 @@
 			>
 			<div class="relative flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
 				<div>
-					<p class="ao-cond text-[40px] leading-[0.9] font-black uppercase md:text-[64px]">
-						Got an idea?
-					</p>
-					<p class="mt-3 max-w-[520px] font-newsreader text-[18px] leading-[1.45] opacity-85">
+					<p class="ao-cond text-4xl leading-none font-black uppercase md:text-6xl">Got an idea?</p>
+					<p class="mt-3 max-w-lg font-newsreader text-lg leading-normal opacity-85">
 						Tell us what would make AGE better. We read every one, and the good ones make it onto
 						the roadmap.
 					</p>
 				</div>
 				<a
 					href="/contact?topic=idea"
-					class="inline-flex h-[48px] shrink-0 items-center self-start bg-paper-bg px-6 text-[11px] font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-white md:self-auto"
+					class="inline-flex h-12 shrink-0 items-center self-start bg-paper-bg px-6 text-xs font-extrabold tracking-widest text-ink uppercase transition-colors hover:bg-white md:self-auto"
 					>Suggest a feature →</a
 				>
 			</div>

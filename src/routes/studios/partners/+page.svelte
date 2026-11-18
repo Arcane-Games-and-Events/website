@@ -24,10 +24,10 @@
 		return `/studios/partners${q ? `?${q}` : ''}#videos`;
 	};
 	const toggle = (on) =>
-		`fp-ul pb-0.5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors ${
+		`fp-ul pb-0.5 text-xs font-extrabold tracking-widest uppercase transition-colors ${
 			on ? 'text-ink [background-size:100%_1.5px]' : 'text-fade hover:text-ink'
 		}`;
-	const tag = 'text-[10px] font-extrabold tracking-[0.16em] uppercase';
+	const tag = 'text-xs font-extrabold tracking-widest uppercase';
 </script>
 
 <svelte:head>
@@ -45,7 +45,7 @@
 		current="partners"
 	/>
 
-	<div class="mx-auto w-full max-w-[1200px] px-5 pt-10 pb-20 md:px-8 md:pt-12">
+	<div class="mx-auto w-full max-w-page px-5 pt-10 pb-20 md:px-8 md:pt-12">
 		{#if data.creators.length}
 			<ul class="grid grid-cols-3 gap-x-4 gap-y-8 md:grid-cols-4 lg:grid-cols-6">
 				{#each data.creators as c (c.id)}
@@ -86,7 +86,7 @@
 						/>
 					</div>
 				</div>
-				<p class="mt-3 font-newsreader text-[15px] text-soft italic" aria-live="polite">
+				<p class="mt-3 font-newsreader text-base text-soft italic" aria-live="polite">
 					{data.total}
 					{data.total === 1 ? 'video' : 'videos'}
 				</p>
@@ -103,7 +103,7 @@
 						{/each}
 					</ul>
 				{:else}
-					<p class="py-10 font-newsreader text-[17px] text-soft italic">Nothing here yet.</p>
+					<p class="py-10 font-newsreader text-lg text-soft italic">Nothing here yet.</p>
 				{/if}
 
 				{#if data.totalPages > 1}
@@ -114,7 +114,7 @@
 						{#if data.page > 1}
 							<a href={href({ page: data.page - 1 })} class="{tag} hover:text-cc-ne">← Newer</a>
 						{:else}<span></span>{/if}
-						<span class="font-newsreader text-[16px] text-soft"
+						<span class="font-newsreader text-base text-soft"
 							>Page {data.page} of {data.totalPages}</span
 						>
 						{#if data.page < data.totalPages}
@@ -126,12 +126,10 @@
 		{:else}
 			<div class="relative overflow-hidden bg-cc-ne px-6 py-16 text-center text-white md:py-20">
 				<span class="st-dots pointer-events-none absolute inset-0" aria-hidden="true"></span>
-				<p class="st-wide relative text-[28px] leading-none font-black uppercase md:text-[42px]">
+				<p class="st-wide relative text-3xl leading-none font-black uppercase md:text-5xl">
 					Tuning in
 				</p>
-				<p
-					class="relative mx-auto mt-3 max-w-[440px] font-newsreader text-[17px] italic opacity-90"
-				>
+				<p class="relative mx-auto mt-3 max-w-md font-newsreader text-lg italic opacity-90">
 					Creators from around the community will show up here soon.
 				</p>
 			</div>

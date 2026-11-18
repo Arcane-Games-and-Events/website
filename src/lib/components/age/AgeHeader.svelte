@@ -10,7 +10,7 @@
 	 *
 	 * The bands (rust top stripe, dark marquee, header row) are rendered
 	 * edge-to-edge — only the *content* inside each band is constrained
-	 * to the same cap as the body (`max-w-[1600px]` with responsive
+	 * to the same cap as the body (`max-w-400` with responsive
 	 * padding), so on wide monitors the visual layout stays aligned
 	 * with the rest of the page while the chrome continues to span the
 	 * viewport.
@@ -87,9 +87,15 @@
 	// ============ sticky compaction ============
 	// The header sticks; once the page has scrolled a little the row
 	// slims down and the bar goes frosted so it reads as chrome, not page.
+	// Two thresholds, so a page only a little taller than the window can't
+	// bounce: slimming shortens the page, which pulls the scroll back up.
 	let scrolled = $state(false);
 	onMount(() => {
-		const onScroll = () => (scrolled = window.scrollY > 12);
+		const onScroll = () => {
+			const y = window.scrollY;
+			if (y > 48) scrolled = true;
+			else if (y < 8) scrolled = false;
+		};
 		onScroll();
 		window.addEventListener('scroll', onScroll, { passive: true });
 		return () => window.removeEventListener('scroll', onScroll);
@@ -133,16 +139,16 @@
 
 <header class="sticky top-0 z-50" bind:this={headerEl}>
 	<!-- rust top stripe (full-bleed) -->
-	<div class="h-[5px] bg-warm"></div>
+	<div class="h-1.5 bg-warm"></div>
 
 	<!-- nav row (band full-bleed, content capped) -->
 	<div
 		class="relative bg-paper-bg/90 backdrop-blur-md transition-shadow duration-300 supports-[backdrop-filter]:bg-paper-bg/80 {scrolled
-			? 'shadow-[0_12px_30px_-24px_rgba(23,21,15,0.55)]'
+			? 'shadow-lg'
 			: ''}"
 	>
 		<div
-			class="mx-auto grid w-full max-w-[1600px] {centreLogo
+			class="mx-auto grid w-full max-w-400 {centreLogo
 				? 'grid-cols-[1fr_auto_1fr]'
 				: 'grid-cols-[auto_1fr_auto]'} items-center gap-3 px-4 transition-[padding] duration-300 sm:grid-cols-[1fr_auto_1fr] sm:px-6 md:px-8 lg:px-10 xl:px-14 {scrolled
 				? 'py-2 md:py-2.5'
@@ -156,7 +162,7 @@
 				onclick={toggleMobile}
 				aria-label="Open menu"
 				aria-expanded={mobileOpen}
-				class="col-start-1 inline-flex h-[34px] w-[34px] items-center justify-center self-center justify-self-start border-[1.5px] border-ink bg-transparent text-ink transition-colors hover:bg-ink hover:text-paper-bg lg:hidden"
+				class="col-start-1 inline-flex h-9 w-9 items-center justify-center self-center justify-self-start border-2 border-ink bg-transparent text-ink transition-colors hover:bg-ink hover:text-paper-bg lg:hidden"
 			>
 				<svg
 					viewBox="0 0 20 20"
@@ -180,15 +186,15 @@
 					? 'justify-self-center'
 					: 'justify-self-start'} sm:justify-self-center lg:col-start-1 lg:justify-self-start"
 			>
-				<img class="h-7 invert sm:h-[30px] md:h-[34px]" src="/logo.svg" alt="AGE" />
+				<img class="h-7 invert sm:h-8 md:h-9" src="/logo.svg" alt="AGE" />
 			</a>
 
 			<nav
-				class="hidden items-center gap-3.5 justify-self-center text-[10px] font-extrabold tracking-[0.16em] uppercase lg:col-start-2 lg:flex xl:gap-5 xl:text-[10.5px] xl:tracking-[0.18em]"
+				class="hidden items-center gap-3.5 justify-self-center text-xs font-extrabold tracking-widest uppercase lg:col-start-2 lg:flex xl:gap-5"
 			>
 				{#each items as item, i (item.label)}
 					{#if i > 0}
-						<span class="text-[7px] text-line2" aria-hidden="true">◆</span>
+						<span class="text-xs text-line2" aria-hidden="true">◆</span>
 					{/if}
 					{#if item.children}
 						<!--
@@ -210,7 +216,7 @@
 						before the tap's click toggled it shut again.
 					-->
 						<div
-							class="relative inline-flex items-center gap-[5px]"
+							class="relative inline-flex items-center gap-1.5"
 							bind:this={menuRoots[item.label]}
 							onpointerenter={(e) => e.pointerType === 'mouse' && (openMenu = item.label)}
 							onpointerleave={(e) => e.pointerType === 'mouse' && (openMenu = null)}
@@ -232,10 +238,10 @@
 								aria-haspopup="menu"
 								aria-expanded={openMenu === item.label}
 								aria-label="{item.label} menu"
-								class="inline-flex h-[14px] w-[14px] cursor-pointer items-center justify-center border-none bg-transparent p-0 text-current transition-colors hover:text-warm"
+								class="inline-flex h-3.5 w-3.5 cursor-pointer items-center justify-center border-none bg-transparent p-0 text-current transition-colors hover:text-warm"
 							>
 								<svg
-									class="h-[7px] w-[8px] opacity-40 transition-transform {openMenu === item.label
+									class="h-2 w-2 opacity-40 transition-transform {openMenu === item.label
 										? 'rotate-180'
 										: ''}"
 									viewBox="0 0 10 7"
@@ -261,17 +267,16 @@
 							-->
 								<div
 									role="menu"
-									class="fp-rise absolute top-[calc(100%+10px)] left-1/2 z-50 w-[260px] -translate-x-1/2 border-[3px] border-double border-ink bg-paper-bg shadow-[0_24px_44px_-24px_rgba(20,16,8,0.55)] before:absolute before:-top-[12px] before:right-0 before:left-0 before:h-[12px] before:content-['']"
+									class="fp-rise absolute top-[calc(100%+10px)] left-1/2 z-50 w-65 -translate-x-1/2 border-3 border-double border-ink bg-paper-bg shadow-xl before:absolute before:-top-3 before:right-0 before:left-0 before:h-3 before:content-['']"
 									style="animation-duration: 0.3s;"
 								>
 									<div
 										class="flex items-baseline justify-between border-b border-line px-4 pt-3 pb-2"
 									>
-										<span
-											class="font-newsreader text-[17px] font-semibold tracking-[-0.01em] normal-case"
+										<span class="font-newsreader text-lg font-semibold tracking-normal normal-case"
 											>{item.label}</span
 										>
-										<span class="h-[3px] w-6 bg-warm"></span>
+										<span class="h-1 w-6 bg-warm"></span>
 									</div>
 									<ul role="none" class="m-0 list-none p-0">
 										{#each item.children as child (child.href)}
@@ -280,11 +285,11 @@
 													role="menuitem"
 													href={child.href}
 													onclick={closeMenus}
-													class="group/mi flex items-center justify-between px-4 py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] text-soft uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+													class="group/mi flex items-center justify-between px-4 py-3 text-xs font-extrabold tracking-widest text-soft uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 												>
 													<span>{child.label}</span>
 													<span
-														class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
+														class="-translate-x-1 opacity-0 transition group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
 														aria-hidden="true">→</span
 													>
 												</a>
@@ -313,7 +318,7 @@
 					{#if !isPremiumMember}
 						<a
 							href="/premium"
-							class="inline-flex cursor-pointer items-center gap-2 border-[1.5px] border-prem bg-prem px-3 py-2 text-[10px] font-extrabold tracking-[0.12em] whitespace-nowrap text-white uppercase transition-[filter] hover:brightness-110 sm:px-[13px] sm:py-[7px] sm:text-[11px] sm:font-bold sm:tracking-[0.05em]"
+							class="inline-flex cursor-pointer items-center gap-2 border-2 border-prem bg-prem px-3 py-2 text-xs font-extrabold tracking-widest whitespace-nowrap text-white uppercase transition hover:brightness-110 sm:px-3.5 sm:py-2 sm:font-bold sm:tracking-wider"
 						>
 							<span class="sm:hidden"><span aria-hidden="true">◆</span> Premium</span>
 							<span class="hidden sm:inline">Get Premium</span>
@@ -324,15 +329,15 @@
 				{:else}
 					<a
 						href="/login?redirect={$page.url.pathname}"
-						class="inline-flex min-h-[40px] items-center px-1 text-[10px] font-extrabold tracking-[0.12em] whitespace-nowrap text-ink uppercase transition-colors hover:text-warm sm:min-h-0 sm:px-0 sm:text-[10.5px] sm:tracking-[0.16em]"
+						class="inline-flex min-h-10 items-center px-1 text-xs font-extrabold tracking-widest whitespace-nowrap text-ink uppercase transition-colors hover:text-warm sm:min-h-0 sm:px-0"
 					>
 						<span class="fp-ul">Sign in</span>
 					</a>
 					<a
 						href="/premium"
-						class="inline-flex cursor-pointer items-center gap-2 border-[1.5px] border-prem bg-prem px-3 py-2 text-[10px] font-extrabold tracking-[0.12em] whitespace-nowrap text-white uppercase transition-[filter,letter-spacing] hover:tracking-[0.16em] hover:brightness-110 sm:px-[14px] sm:py-[8px] sm:text-[10.5px]"
+						class="inline-flex cursor-pointer items-center gap-2 border-2 border-prem bg-prem px-3 py-2 text-xs font-extrabold tracking-wider whitespace-nowrap text-white uppercase transition-[filter,letter-spacing] hover:tracking-widest hover:brightness-110 sm:px-3.5 sm:py-2"
 					>
-						<span class="text-[8px] opacity-80" aria-hidden="true">◆</span>
+						<span class="text-xs opacity-80" aria-hidden="true">◆</span>
 						<span class="sm:hidden">Premium</span><span class="hidden sm:inline">Get Premium</span>
 					</a>
 				{/if}
@@ -350,27 +355,27 @@
 				in:fly={{ y: 6, duration: 200, easing: cubicOut }}
 				out:fade={{ duration: 140 }}
 				data-site-menu
-				class="absolute inset-x-4 top-[calc(100%-4px)] z-50 overflow-y-auto overscroll-contain border-[3px] border-double border-ink bg-paper-bg shadow-[0_24px_44px_-24px_rgba(20,16,8,0.55)] lg:hidden"
+				class="absolute inset-x-4 top-[calc(100%-4px)] z-50 overflow-y-auto overscroll-contain border-3 border-double border-ink bg-paper-bg shadow-xl lg:hidden"
 				style={drawerMax ? `max-height: ${drawerMax}px;` : undefined}
 			>
 				<div class="flex items-baseline justify-between gap-3 border-b border-line px-4 pt-3 pb-3">
-					<span class="font-newsreader text-[17px] leading-tight font-semibold tracking-[-0.01em]"
+					<span class="font-newsreader text-lg leading-tight font-semibold tracking-normal"
 						>Menu</span
 					>
-					<span class="h-[3px] w-6 shrink-0 bg-warm" aria-hidden="true"></span>
+					<span class="h-1 w-6 shrink-0 bg-warm" aria-hidden="true"></span>
 				</div>
 				{#if !user}
 					<div class="grid grid-cols-2 gap-2 border-b border-line p-3">
 						<a
 							href="/login?redirect={$page.url.pathname}"
 							onclick={closeMobile}
-							class="flex min-h-[44px] items-center justify-center border-[1.5px] border-ink text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+							class="flex min-h-11 items-center justify-center border-2 border-ink text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 							>Sign in</a
 						>
 						<a
 							href="/signup?redirect={$page.url.pathname}"
 							onclick={closeMobile}
-							class="flex min-h-[44px] items-center justify-center bg-ink text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm"
+							class="flex min-h-11 items-center justify-center bg-ink text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm"
 							>Create account</a
 						>
 					</div>
@@ -382,14 +387,14 @@
 								<a
 									href={item.href}
 									onclick={closeMobile}
-									class="group/mi flex items-center justify-between gap-3 px-4 py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg {item.label ===
+									class="group/mi flex items-center justify-between gap-3 px-4 py-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg {item.label ===
 									active
 										? 'text-warm'
 										: 'text-soft'}"
 								>
 									<span>{item.label}</span>
 									<span
-										class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
+										class="-translate-x-1 opacity-0 transition group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
 										aria-hidden="true">→</span
 									>
 								</a>
@@ -400,11 +405,11 @@
 										<a
 											href={child.href}
 											onclick={closeMobile}
-											class="group/mi flex items-center justify-between gap-3 py-[10px] pr-4 pl-8 text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+											class="group/mi flex items-center justify-between gap-3 py-2.5 pr-4 pl-8 text-xs font-extrabold tracking-widest text-fade uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 										>
 											<span>{child.label}</span>
 											<span
-												class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
+												class="-translate-x-1 opacity-0 transition group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
 												aria-hidden="true">→</span
 											>
 										</a>
@@ -418,17 +423,17 @@
 					<a
 						href="/premium"
 						onclick={closeMobile}
-						class="group/p block border-t-[3px] border-prem bg-prem/[0.07] px-4 pt-3 pb-4 transition-colors hover:bg-prem/[0.12]"
+						class="group/p block border-t-3 border-prem bg-prem/5 px-4 pt-3 pb-4 transition-colors hover:bg-prem/10"
 					>
 						<span
-							class="flex items-center gap-2 text-[9.5px] font-extrabold tracking-[0.18em] text-prem uppercase"
+							class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-prem uppercase"
 							><span aria-hidden="true">◆</span> AGE Premium</span
 						>
-						<span class="mt-1.5 block font-newsreader text-[15.5px] leading-snug text-ink">
+						<span class="mt-1.5 block font-newsreader text-base leading-snug text-ink">
 							Every premium article, the full gameplay library and AGE Open discounts.
 						</span>
 						<span
-							class="mt-3 flex min-h-[44px] items-center justify-center gap-2 bg-prem text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] group-hover/p:brightness-110"
+							class="mt-3 flex min-h-11 items-center justify-center gap-2 bg-prem text-xs font-extrabold tracking-widest text-white uppercase transition group-hover/p:brightness-110"
 							>Join for $10 a month <span aria-hidden="true">→</span></span
 						>
 					</a>

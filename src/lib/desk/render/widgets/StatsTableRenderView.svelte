@@ -13,7 +13,7 @@
 	<figure class="my-8 overflow-x-auto border border-line2 bg-paper">
 		<table class="w-full text-sm">
 			<thead
-				class="border-b border-line2 bg-paper-bg text-left font-libre text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+				class="border-b border-line2 bg-paper-bg text-left font-libre text-xs font-extrabold tracking-widest text-fade uppercase"
 			>
 				<tr>
 					{#each columns as col}
@@ -32,7 +32,7 @@
 			</tbody>
 		</table>
 		{#if caption}
-			<figcaption class="border-t border-line2 px-4 py-2 font-libre text-[12px] text-fade">
+			<figcaption class="border-t border-line2 px-4 py-2 font-libre text-xs text-fade">
 				{caption}
 			</figcaption>
 		{/if}

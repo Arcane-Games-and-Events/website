@@ -25,14 +25,12 @@
 <div
 	class="{stack
 		? 'flex flex-col items-center gap-y-1 md:flex-row md:flex-wrap md:items-center md:justify-center md:gap-x-2 md:gap-y-0'
-		: 'flex flex-wrap items-center gap-x-2'} {size === 'sm' ? 'text-[10px]' : 'text-[11px]'} {onDark
+		: 'flex flex-wrap items-center gap-x-2'} {size === 'sm' ? 'text-xs' : 'text-xs'} {onDark
 		? 'text-white/60'
 		: 'text-fade'} {extra}"
 >
 	{#if author}
-		<span
-			class="font-extrabold tracking-[0.12em] uppercase {onDark ? 'text-white/90' : 'text-ink'}"
-		>
+		<span class="font-extrabold tracking-widest uppercase {onDark ? 'text-white/90' : 'text-ink'}">
 			By {author}
 		</span>
 	{/if}

@@ -61,38 +61,36 @@
 		</div>
 	{:else}
 		<div
-			class="pointer-events-none absolute -top-48 -left-48 -z-10 h-[560px] w-[900px] bg-[radial-gradient(closest-side,rgb(96_165_250/0.22),transparent)]"
+			class="pointer-events-none absolute -top-48 -left-48 -z-10 h-140 w-225 bg-[radial-gradient(closest-side,rgb(96_165_250/0.22),transparent)]"
 			aria-hidden="true"
 		></div>
 	{/if}
 	<!-- as tall as the Academy's hero on every section's page: the wordmark
 	     at the top, the title, its line and any search at the bottom -->
 	<div
-		class="relative mx-auto flex min-h-[min(78vh,760px)] w-full max-w-[1200px] flex-col justify-end px-5 pt-8 pb-10 md:px-8 md:pt-10 md:pb-14"
+		class="relative mx-auto flex min-h-[min(78vh,760px)] w-full max-w-page flex-col justify-end px-5 pt-8 pb-10 md:px-8 md:pt-10 md:pb-14"
 	>
 		<a
 			href="/library"
 			class="mb-auto inline-block self-start opacity-85 transition-opacity hover:opacity-100"
 			><LibraryWordmark size="sm" tone="dark" /></a
 		>
-		<div class="flex max-w-[760px] flex-col gap-3">
+		<div class="flex max-w-3xl flex-col gap-3">
 			{#if title}
 				<h1
-					class="fp-rise line-clamp-2 font-libre text-[40px] leading-[1.02] font-extrabold tracking-[-0.03em] [text-wrap:balance] md:text-[64px]"
+					class="fp-rise line-clamp-2 font-libre text-4xl leading-none font-extrabold tracking-tight [text-wrap:balance] md:text-6xl"
 				>
 					{title}
 				</h1>
 			{/if}
 			{#if lead}
-				<p
-					class="line-clamp-3 max-w-[560px] text-[16px] leading-[1.55] text-white/75 md:text-[17px]"
-				>
+				<p class="line-clamp-3 max-w-xl text-base leading-normal text-white/75 md:text-lg">
 					{lead}
 				</p>
 			{/if}
 		</div>
 		{#if search}
-			<div class="mt-6 max-w-[760px]"><LibrarySearch {action} {q} {placeholder} {hidden} /></div>
+			<div class="mt-6 max-w-3xl"><LibrarySearch {action} {q} {placeholder} {hidden} /></div>
 		{/if}
 	</div>
 </section>

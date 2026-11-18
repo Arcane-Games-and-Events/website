@@ -41,14 +41,14 @@
 	<div
 		bind:this={row}
 		onscroll={edges}
-		class="tab-rail mx-auto flex w-full max-w-[1200px] gap-1 px-5 md:px-8"
+		class="tab-rail mx-auto flex w-full max-w-page gap-1 px-5 md:px-8"
 	>
 		{#each TABS as t (t.id)}
 			{@const on = t.id === current}
 			<a
 				href={t.href}
 				aria-current={on ? 'page' : undefined}
-				class="group flex shrink-0 items-center gap-2 border-b-[3px] px-3 py-3.5 text-[10.5px] font-extrabold tracking-[0.16em] whitespace-nowrap uppercase transition-colors first:pl-0 {on
+				class="group flex shrink-0 items-center gap-2 border-b-3 px-3 py-3.5 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors first:pl-0 {on
 					? 'border-ink text-ink'
 					: 'border-transparent text-soft hover:text-ink'}"
 			>
@@ -65,7 +65,7 @@
 			type="button"
 			onclick={() => nudge(-160)}
 			aria-label="More tabs"
-			class="absolute inset-y-0 left-0 flex w-10 items-center justify-start bg-gradient-to-r from-paper-bg via-paper-bg/90 to-transparent pl-2 text-[13px] md:hidden"
+			class="absolute inset-y-0 left-0 flex w-10 items-center justify-start bg-gradient-to-r from-paper-bg via-paper-bg/90 to-transparent pl-2 text-sm md:hidden"
 			>‹</button
 		>
 	{/if}
@@ -74,7 +74,7 @@
 			type="button"
 			onclick={() => nudge(160)}
 			aria-label="More tabs"
-			class="absolute inset-y-0 right-0 flex w-10 items-center justify-end bg-gradient-to-l from-paper-bg via-paper-bg/90 to-transparent pr-2 text-[13px] md:hidden"
+			class="absolute inset-y-0 right-0 flex w-10 items-center justify-end bg-gradient-to-l from-paper-bg via-paper-bg/90 to-transparent pr-2 text-sm md:hidden"
 			>›</button
 		>
 	{/if}

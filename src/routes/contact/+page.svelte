@@ -144,7 +144,7 @@
 							rows="5"
 							maxlength={LIMITS.body}
 							placeholder="Tell us what’s going on. Order numbers and event names help."
-							class="{INPUT} py-3 leading-[1.5]">{f.body ?? ''}</textarea
+							class="{INPUT} py-3 leading-normal">{f.body ?? ''}</textarea
 						>
 					</div>
 
@@ -160,11 +160,11 @@
 				{#if data.threads.length}
 					<section class="mt-9">
 						<div class="mb-2 flex items-baseline justify-between gap-3">
-							<h2 class="text-[9.5px] font-extrabold tracking-[0.2em] text-fade uppercase">
+							<h2 class="text-xs font-extrabold tracking-widest text-fade uppercase">
 								Your conversations
 							</h2>
 							{#if data.signedIn}
-								<a href="/account/messages" class="text-[12px] font-bold text-warm hover:underline"
+								<a href="/account/messages" class="text-xs font-bold text-warm hover:underline"
 									>{data.moreThreads ? 'See all' : 'Open Messages'} →</a
 								>
 							{/if}

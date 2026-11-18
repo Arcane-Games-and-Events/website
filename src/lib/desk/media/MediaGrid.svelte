@@ -23,9 +23,9 @@
 		<li class="border border-line2 bg-paper">
 			<div class="relative flex aspect-video items-center justify-center bg-line/60 px-4">
 				{#if u.error}
-					<p class="text-center text-[11.5px] leading-snug text-hero-rb">{u.error}</p>
+					<p class="text-center text-xs leading-snug text-hero-rb">{u.error}</p>
 				{:else}
-					<div class="h-[3px] w-full bg-ink/10" aria-hidden="true">
+					<div class="h-1 w-full bg-ink/10" aria-hidden="true">
 						<div
 							class="h-full bg-ink transition-[width] duration-200"
 							style="width: {Math.round((u.progress ?? 0) * 100)}%;"
@@ -33,8 +33,8 @@
 					</div>
 				{/if}
 			</div>
-			<p class="truncate px-2.5 pt-2 text-[12.5px] font-semibold">{u.name}</p>
-			<p class="px-2.5 pb-2.5 text-[11px] text-fade">
+			<p class="truncate px-2.5 pt-2 text-xs font-semibold">{u.name}</p>
+			<p class="px-2.5 pb-2.5 text-xs text-fade">
 				{u.error ? 'Upload failed' : u.progress >= 1 ? 'Processing…' : 'Uploading…'}
 			</p>
 		</li>
@@ -57,9 +57,9 @@
 						class="absolute inset-0 h-full w-full object-contain"
 					/>
 				</span>
-				<span class="block truncate px-2.5 pt-2 text-[12.5px] font-semibold">{item.name}</span>
+				<span class="block truncate px-2.5 pt-2 text-xs font-semibold">{item.name}</span>
 				<span
-					class="block truncate px-2.5 pb-2.5 text-[11px] {selectedId === item.id
+					class="block truncate px-2.5 pb-2.5 text-xs {selectedId === item.id
 						? 'text-paper-bg/65'
 						: 'text-fade'}"
 				>

@@ -60,7 +60,7 @@
 </script>
 
 {#if !g}
-	<p class="font-newsreader text-[17px] text-soft italic">The member report couldn't be loaded.</p>
+	<p class="font-newsreader text-lg text-soft italic">The member report couldn't be loaded.</p>
 {:else if !g.available}
 	<Migration />
 {:else}
@@ -103,7 +103,7 @@
 						format={(n) => fmt(n)}
 						height={160}
 					/>
-					<div class="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-[12px] text-soft">
+					<div class="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-xs text-soft">
 						{#each data.flow.months.slice(-6) as m (m.month)}
 							<span
 								>{m.label}: <strong class="text-ink tabular-nums">{fmt(m.payingAtEnd)}</strong> paying</span
@@ -123,10 +123,10 @@
 			>
 				{#if data.paying?.available}
 					<div class="overflow-x-auto">
-						<table class="w-full text-[12.5px] tabular-nums">
+						<table class="w-full text-xs tabular-nums">
 							<thead>
 								<tr
-									class="border-b border-line2 text-left text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+									class="border-b border-line2 text-left text-xs font-extrabold tracking-widest text-fade uppercase"
 								>
 									<th class="py-2 pr-3 font-extrabold">Member</th>
 									<th class="py-2 pr-3 font-extrabold">Plan</th>
@@ -141,11 +141,11 @@
 									<tr class="border-b border-line2">
 										<td class="py-2 pr-3"
 											><a href="/admin/customers/{m.id}" class="hover:text-warm">{m.name}</a><span
-												class="block text-[10.5px] text-fade"
+												class="block text-xs text-fade"
 												>{m.email}{m.promo ? ` · code ${m.promo}` : ''}</span
 											></td
 										>
-										<td class="py-2 pr-3 text-[10px] font-extrabold tracking-[0.12em] uppercase"
+										<td class="py-2 pr-3 text-xs font-extrabold tracking-widest uppercase"
 											>{PLAN[m.plan] || m.plan || '—'}</td
 										>
 										<td
@@ -162,7 +162,7 @@
 												: day(m.nextBilling)}</td
 										>
 										<td class="py-2 text-right font-semibold"
-											>{money(m.paid)}<span class="block text-[10.5px] font-normal text-fade"
+											>{money(m.paid)}<span class="block text-xs font-normal text-fade"
 												>{fmt(m.payments)} payment{m.payments === 1 ? '' : 's'}</span
 											></td
 										>
@@ -185,7 +185,7 @@
 						<button
 							type="button"
 							onclick={() => (reasonFilter = 'ending')}
-							class="border px-3.5 py-2 text-[10px] font-extrabold tracking-[0.14em] uppercase {reasonFilter ===
+							class="border px-3.5 py-2 text-xs font-extrabold tracking-widest uppercase {reasonFilter ===
 							'ending'
 								? 'border-hero-rb bg-hero-rb text-white'
 								: 'border-hero-rb/50 bg-paper-bg text-hero-rb hover:border-hero-rb'}"
@@ -196,7 +196,7 @@
 						<button
 							type="button"
 							onclick={() => (reasonFilter = r)}
-							class="border px-3.5 py-2 text-[10px] font-extrabold tracking-[0.14em] uppercase {reasonFilter ===
+							class="border px-3.5 py-2 text-xs font-extrabold tracking-widest uppercase {reasonFilter ===
 							r
 								? 'border-ink bg-ink text-paper-bg'
 								: 'border-line2 bg-paper-bg text-soft hover:text-ink'}"
@@ -208,19 +208,19 @@
 					<ul>
 						{#each comps as m (m.id)}
 							<li
-								class="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line2 py-2.5 text-[13px]"
+								class="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-line2 py-2.5 text-sm"
 							>
 								<span class="min-w-0 flex-1">
 									<a href="/admin/customers/{m.id}" class="font-semibold hover:text-warm"
 										>{m.name}</a
 									>
-									<span class="block text-[10.5px] text-fade"
+									<span class="block text-xs text-fade"
 										>{m.email}{m.wasSubscriber ? ' · former subscriber' : ''}{m.roles.length
 											? ` · ${m.roles.join(', ')}`
 											: ''}</span
 									>
 								</span>
-								<span class="text-[11px] text-soft"
+								<span class="text-xs text-soft"
 									>since {day(m.compedAt)}{m.compedBy ? ` by ${m.compedBy}` : ''}</span
 								>
 								<form
@@ -231,7 +231,7 @@
 								>
 									<input type="hidden" name="userId" value={m.id} />
 									<label
-										class="flex items-center gap-1.5 text-[10px] font-extrabold tracking-[0.12em] uppercase {m.endsAt &&
+										class="flex items-center gap-1.5 text-xs font-extrabold tracking-widest uppercase {m.endsAt &&
 										new Date(m.endsAt).getTime() <= SOON
 											? 'text-hero-rb'
 											: 'text-fade'}"
@@ -242,7 +242,7 @@
 											value={pacificDay(m.endsAt)}
 											min={tomorrow}
 											onchange={(e) => e.currentTarget.form?.requestSubmit()}
-											class="h-[32px] border border-line2 bg-paper px-2 text-[11px] font-normal tracking-normal text-ink normal-case focus:border-ink focus:ring-0"
+											class="h-8 border border-line2 bg-paper px-2 text-xs font-normal tracking-normal text-ink normal-case focus:border-ink focus:ring-0"
 											aria-label="Comp ends for {m.name}"
 										/>
 									</label>
@@ -258,7 +258,7 @@
 										name="reason"
 										value={m.reason === 'unknown' ? '' : m.reason}
 										onchange={(e) => e.currentTarget.form?.requestSubmit()}
-										class="h-[32px] shrink-0 border border-line2 bg-paper py-0 pr-7 pl-2 text-[11px] leading-none focus:border-ink focus:ring-0"
+										class="h-8 shrink-0 border border-line2 bg-paper py-0 pr-7 pl-2 text-xs leading-none focus:border-ink focus:ring-0"
 										aria-label="Reason"
 									>
 										<option value="">Not recorded</option>
@@ -269,7 +269,7 @@
 						{/each}
 					</ul>
 				{:else}
-					<p class="font-newsreader text-[16px] text-soft italic">
+					<p class="font-newsreader text-base text-soft italic">
 						No comped members{reasonFilter === 'all' ? '' : ' with that reason'}.
 					</p>
 				{/if}
@@ -279,7 +279,7 @@
 		<aside class="min-w-0">
 			<Section title="Paying vs comped">
 				<StackedBar parts={split} />
-				<p class="mt-3 text-[12.5px] text-soft">
+				<p class="mt-3 text-xs text-soft">
 					{fmt(g.paying.total)} of {fmt(g.paying.total + g.comped.total)} premium members pay.
 				</p>
 			</Section>

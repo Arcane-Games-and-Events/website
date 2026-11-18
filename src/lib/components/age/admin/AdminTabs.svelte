@@ -95,7 +95,7 @@
 >
 	<!-- phone: a scrolling row of icon tabs -->
 	<nav
-		class="flex h-[52px] overflow-x-auto [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden"
+		class="flex h-13 overflow-x-auto [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden"
 		aria-label="Admin sections"
 	>
 		{#each tabs as tab (tab.id)}
@@ -103,7 +103,7 @@
 				href={tab.href}
 				use:reveal={current === tab.id}
 				aria-current={current === tab.id ? 'page' : undefined}
-				class="flex min-w-[72px] shrink-0 flex-col items-center justify-center gap-1 border-b-[3px] px-2 pt-[3px] transition-colors {current ===
+				class="flex min-w-18 shrink-0 flex-col items-center justify-center gap-1 border-b-3 px-2 pt-1 transition-colors {current ===
 				tab.id
 					? 'border-gold text-paper-bg'
 					: 'border-transparent text-paper-bg/55 active:text-paper-bg'}"
@@ -111,7 +111,7 @@
 				<span class="relative">
 					<svg
 						viewBox="0 0 20 20"
-						class="h-[18px] w-[18px] {current === tab.id ? 'text-gold' : ''}"
+						class="h-4.5 w-4.5 {current === tab.id ? 'text-gold' : ''}"
 						fill="none"
 						stroke="currentColor"
 						stroke-width="1.6"
@@ -134,7 +134,7 @@
 						/>
 					{/if}
 				</span>
-				<span class="text-[8.5px] leading-none font-extrabold tracking-[0.08em] uppercase"
+				<span class="text-xs leading-none font-extrabold tracking-widest uppercase"
 					>{tab.label}</span
 				>
 			</a>
@@ -142,7 +142,7 @@
 	</nav>
 
 	<!-- tablet and up: the text tab row -->
-	<div class="mx-auto hidden h-[44px] max-w-[1200px] items-stretch gap-6 px-5 md:flex md:px-8">
+	<div class="mx-auto hidden h-11 max-w-page items-stretch gap-6 px-5 md:flex md:px-8">
 		<nav
 			class="-ml-2 flex min-w-0 items-stretch overflow-x-auto [scrollbar-width:none] lg:-ml-3 lg:gap-1 [&::-webkit-scrollbar]:hidden"
 			aria-label="Admin sections"
@@ -151,7 +151,7 @@
 				<a
 					href={tab.href}
 					aria-current={current === tab.id ? 'page' : undefined}
-					class="flex shrink-0 items-center gap-2 border-b-[3px] px-2 text-[10.5px] font-extrabold tracking-[0.1em] whitespace-nowrap uppercase transition-colors lg:px-3 lg:tracking-[0.16em] {current ===
+					class="flex shrink-0 items-center gap-2 border-b-3 px-2 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors lg:px-3 {current ===
 					tab.id
 						? 'border-gold text-paper-bg'
 						: 'border-transparent text-paper-bg/55 hover:text-paper-bg'}"
@@ -162,7 +162,7 @@
 					{/if}
 					{#if tab.id === 'partners' && payouts}
 						<span
-							class="bg-hero-rb px-1.5 py-[1px] text-[9px] leading-none text-white"
+							class="bg-hero-rb px-1.5 py-px text-xs leading-none text-white"
 							title="{payouts} payouts due within 3 days">{payouts}</span
 						>
 					{/if}

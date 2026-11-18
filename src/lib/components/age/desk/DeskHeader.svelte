@@ -34,11 +34,9 @@
 </script>
 
 <section class="bg-ink font-libre text-paper-bg">
-	<div
-		class="mx-auto flex h-[128px] max-w-[1200px] flex-col justify-center px-5 md:h-[150px] md:px-8"
-	>
-		<div class="flex min-h-[28px] items-center justify-between gap-4">
-			<p class="min-w-0 truncate text-[10px] font-extrabold tracking-[0.22em] text-gold uppercase">
+	<div class="mx-auto flex h-32 max-w-page flex-col justify-center px-5 md:h-38 md:px-8">
+		<div class="flex min-h-7 items-center justify-between gap-4">
+			<p class="min-w-0 truncate text-xs font-extrabold tracking-widest text-gold uppercase">
 				{#if lead}{@render lead()}{:else}<span aria-hidden="true">◆</span> {label}{/if}
 			</p>
 			{#if actions}<div class="flex shrink-0 items-center gap-2 md:hidden">
@@ -47,12 +45,10 @@
 		</div>
 		<div class="mt-1.5 flex items-end justify-between gap-8 md:mt-2">
 			<div class="min-w-0">
-				<h1
-					class="truncate text-[26px] leading-[1.15] font-extrabold tracking-[-0.03em] md:text-[36px]"
-				>
+				<h1 class="truncate text-2xl leading-tight font-extrabold tracking-tight md:text-4xl">
 					{title}{#if accent}<span class="text-warm-light">{accent}</span>{/if}
 				</h1>
-				<p class="mt-1 truncate text-[13.5px] leading-snug text-paper-bg/65 md:text-[14px]">
+				<p class="mt-1 truncate text-sm leading-snug text-paper-bg/65">
 					{#if sub}{@render sub()}{:else}{subtitle}{/if}
 				</p>
 			</div>

@@ -21,9 +21,9 @@
 <script module>
 	/** The header's buttons: the main one, and the outlined ones. */
 	export const btn =
-		'inline-flex h-[40px] items-center gap-2 bg-paper-bg px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-ink uppercase transition-colors hover:bg-gold disabled:opacity-50';
+		'inline-flex h-10 items-center gap-2 bg-paper-bg px-4 text-xs font-extrabold tracking-widest text-ink uppercase transition-colors hover:bg-gold disabled:opacity-50';
 	export const btnLine =
-		'inline-flex h-[40px] items-center gap-2 border border-paper-bg/35 px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:border-paper-bg disabled:opacity-50';
+		'inline-flex h-10 items-center gap-2 border border-paper-bg/35 px-4 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:border-paper-bg disabled:opacity-50';
 </script>
 
 <script>
@@ -52,12 +52,12 @@
 	class="relative overflow-hidden bg-ink font-libre text-paper-bg"
 	style="--cc: {wash}; background-image: linear-gradient(100deg, color-mix(in srgb, var(--cc) 50%, transparent) 0%, transparent 62%);"
 >
-	<div class="mx-auto max-w-[1200px] px-5 pt-7 pb-8 md:px-8 md:pt-10 md:pb-10">
+	<div class="mx-auto max-w-page px-5 pt-7 pb-8 md:px-8 md:pt-10 md:pb-10">
 		<!-- the trail (or kicker) on its own line, flush left with the badge -->
 		{#if trail}
 			<nav aria-label="Breadcrumb" class="mb-3">
 				<ol
-					class="flex flex-wrap items-center gap-x-2.5 text-[10px] font-extrabold tracking-[0.26em] text-paper-bg/55 uppercase"
+					class="flex flex-wrap items-center gap-x-2.5 text-xs font-extrabold tracking-widest text-paper-bg/55 uppercase"
 				>
 					{#each [root, ...trail] as t, i (t.href)}
 						<li class="flex items-center gap-x-2.5">
@@ -70,7 +70,7 @@
 				</ol>
 			</nav>
 		{:else}
-			<p class="mb-3 text-[10px] font-extrabold tracking-[0.26em] text-paper-bg/70 uppercase">
+			<p class="mb-3 text-xs font-extrabold tracking-widest text-paper-bg/70 uppercase">
 				{#if lead}{@render lead()}{:else}<span class="text-gold">◆</span> {kicker}{/if}
 			</p>
 		{/if}
@@ -78,19 +78,19 @@
 			<div class="flex min-w-0 items-stretch gap-4 md:gap-5">
 				{#if short}
 					<span
-						class="ao-cond flex w-[64px] shrink-0 items-center justify-center self-stretch text-[30px] leading-none font-black text-white ring-1 ring-white/25 md:w-[84px] md:text-[40px]"
+						class="ao-cond flex w-16 shrink-0 items-center justify-center self-stretch text-3xl leading-none font-black text-white ring-1 ring-white/25 md:w-21 md:text-4xl"
 						style="background: var(--cc);"
 						aria-hidden="true">{short}</span
 					>
 				{/if}
 				<div class="min-w-0">
 					<h1
-						class="ao-cond text-[40px] leading-[0.95] font-black tracking-[-0.01em] break-words uppercase md:truncate md:text-[68px]"
+						class="ao-cond text-4xl leading-none font-black tracking-normal break-words uppercase md:truncate md:text-7xl"
 						{title}
 					>
 						{title}
 					</h1>
-					{#if subtitle}<p class="mt-2 text-[13px] text-paper-bg/70">{subtitle}</p>{/if}
+					{#if subtitle}<p class="mt-2 text-sm text-paper-bg/70">{subtitle}</p>{/if}
 				</div>
 			</div>
 			{#if actions}

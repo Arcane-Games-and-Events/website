@@ -52,9 +52,7 @@
 <AgeShell active="AGE Studios">
 	<StudiosMasthead big current="all" />
 
-	<div
-		class="mx-auto w-full max-w-[1200px] space-y-16 px-5 pt-10 pb-20 md:space-y-24 md:px-8 md:pt-14"
-	>
+	<div class="mx-auto w-full max-w-page space-y-16 px-5 pt-10 pb-20 md:space-y-24 md:px-8 md:pt-14">
 		{#if lead}
 			<section aria-label="Featured" class="fp-rise">
 				<ProjectBlock project={lead} lead eager />
@@ -75,7 +73,7 @@
 						{#each chart as t (t.id)}
 							<a
 								href="/studios/projects?type={t.id}"
-								class="group flex items-stretch border border-ink/15 text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:border-ink"
+								class="group flex items-stretch border border-ink/15 text-xs font-extrabold tracking-widest uppercase transition-colors hover:border-ink"
 							>
 								<span class="st-dots relative w-6 {t.block}" aria-hidden="true"></span>
 								<span class="px-2.5 py-2">{t.plural}</span>
@@ -115,9 +113,9 @@
 				{/if}
 				{#if hub.episodes.length}
 					<h3
-						class="mt-12 flex items-center gap-2 border-t border-line pt-4 text-[10.5px] font-extrabold tracking-[0.18em] uppercase"
+						class="mt-12 flex items-center gap-2 border-t border-line pt-4 text-xs font-extrabold tracking-widest uppercase"
 					>
-						<span class="text-[8px] text-gold" aria-hidden="true">◆</span> Newest episodes
+						<span class="text-xs text-gold" aria-hidden="true">◆</span> Newest episodes
 					</h3>
 					<ul class="mt-5 grid gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3 {phoneFew(2)}">
 						{#each hub.episodes.slice(0, 3) as item (item.id)}
@@ -144,9 +142,9 @@
 				</ul>
 				{#if picks.length}
 					<h3
-						class="mt-12 flex items-center gap-2 border-t border-line pt-4 text-[10.5px] font-extrabold tracking-[0.18em] uppercase"
+						class="mt-12 flex items-center gap-2 border-t border-line pt-4 text-xs font-extrabold tracking-widest uppercase"
 					>
-						<span class="text-[8px] text-cc-ne" aria-hidden="true">◆</span> Newest picks
+						<span class="text-xs text-cc-ne" aria-hidden="true">◆</span> Newest picks
 					</h3>
 					<ul class="mt-5 grid gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3 {phoneFew(2)}">
 						{#each picks.slice(0, 3) as item (item.id)}
@@ -179,12 +177,10 @@
 		{#if empty}
 			<div class="relative overflow-hidden bg-studio px-6 py-16 text-center text-white md:py-24">
 				<span class="st-dots pointer-events-none absolute inset-0" aria-hidden="true"></span>
-				<p class="st-wide relative text-[30px] leading-none font-black uppercase md:text-[48px]">
+				<p class="st-wide relative text-3xl leading-none font-black uppercase md:text-5xl">
 					On the press
 				</p>
-				<p
-					class="relative mx-auto mt-3 max-w-[460px] font-newsreader text-[18px] italic opacity-90"
-				>
+				<p class="relative mx-auto mt-3 max-w-md font-newsreader text-lg italic opacity-90">
 					Our first projects, shows and partners are being printed. Check back soon.
 				</p>
 			</div>

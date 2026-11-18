@@ -22,7 +22,7 @@
 	{action}
 	role="search"
 	class="group flex items-center border bg-white transition-colors focus-within:border-warm focus-within:bg-white {large
-		? 'border-ink/25 shadow-[0_10px_30px_-18px_rgb(30_64_175/0.45)]'
+		? 'border-ink/25 shadow-lg'
 		: 'border-line2'}"
 >
 	{#each Object.entries(hidden) as [k, v] (k)}{#if v}<input
@@ -52,14 +52,14 @@
 			{placeholder}
 			autocomplete="off"
 			class="w-full min-w-0 border-0 bg-transparent p-0 text-ink placeholder:text-fade focus:ring-0 focus:outline-none {large
-				? 'py-[18px] text-[17px] md:text-[19px]'
-				: 'py-3 text-[15px]'}"
+				? 'py-4.5 text-lg md:text-xl'
+				: 'py-3 text-base'}"
 		/>
 	</label>
 	<button
 		type="submit"
 		class="m-1.5 shrink-0 bg-warm font-bold text-white transition-colors hover:bg-ink {large
-			? 'px-5 py-3 text-[13px] md:px-7'
-			: 'px-4 py-2 text-[12px]'}">Search</button
+			? 'px-5 py-3 text-sm md:px-7'
+			: 'px-4 py-2 text-xs'}">Search</button
 	>
 </form>

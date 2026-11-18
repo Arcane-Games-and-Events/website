@@ -113,13 +113,13 @@
 		onclick={toggle}
 		aria-haspopup="dialog"
 		aria-expanded={open}
-		class="flex h-[46px] w-full items-center gap-3 border bg-white px-3.5 text-left text-[15px] transition-[border-color,box-shadow] sm:max-w-[340px] {open
+		class="flex h-12 w-full items-center gap-3 border bg-white px-3.5 text-left text-base transition sm:max-w-xs {open
 			? 'border-[var(--cc,var(--color-ink))] shadow-[0_0_0_3px_color-mix(in_srgb,var(--cc,var(--color-ink))_18%,transparent)]'
 			: 'border-line2 hover:border-ink/40'}"
 	>
 		<svg
 			viewBox="0 0 20 20"
-			class="h-[18px] w-[18px] shrink-0"
+			class="h-4.5 w-4.5 shrink-0"
 			style="color: var(--cc, var(--color-ink))"
 			fill="none"
 			stroke="currentColor"
@@ -131,7 +131,7 @@
 		>
 		<svg
 			viewBox="0 0 10 10"
-			class="h-[10px] w-[10px] shrink-0 text-soft transition-transform {open ? 'rotate-180' : ''}"
+			class="h-2.5 w-2.5 shrink-0 text-soft transition-transform {open ? 'rotate-180' : ''}"
 			fill="none"
 			stroke="currentColor"
 			stroke-width="1.8"
@@ -145,32 +145,32 @@
 			role="dialog"
 			aria-label="Date and start time"
 			transition:fly={{ y: -6, duration: 160 }}
-			class="absolute top-[calc(100%+6px)] left-0 z-50 w-[min(100%,340px)] min-w-[300px] scroll-mt-[120px] scroll-mb-[96px] border border-line2 bg-white shadow-[0_24px_48px_-24px_rgb(23_21_15/0.45)] max-sm:fixed max-sm:inset-x-3 max-sm:top-auto max-sm:bottom-3 max-sm:w-auto"
+			class="absolute top-[calc(100%+6px)] left-0 z-50 w-[min(100%,340px)] min-w-75 scroll-mt-30 scroll-mb-24 border border-line2 bg-white shadow-xl max-sm:fixed max-sm:inset-x-3 max-sm:top-auto max-sm:bottom-3 max-sm:w-auto"
 		>
 			<!-- month -->
 			<div class="flex items-center justify-between border-b border-line2 px-2 py-2">
 				<button
 					type="button"
 					onclick={() => move(-1)}
-					class="flex h-9 w-9 items-center justify-center text-[15px] hover:bg-paper"
+					class="flex h-9 w-9 items-center justify-center text-base hover:bg-paper"
 					aria-label="Previous month">←</button
 				>
-				<p class="ao-cond text-[20px] leading-none font-black uppercase">{monthTitle}</p>
+				<p class="ao-cond text-xl leading-none font-black uppercase">{monthTitle}</p>
 				<button
 					type="button"
 					onclick={() => move(1)}
-					class="flex h-9 w-9 items-center justify-center text-[15px] hover:bg-paper"
+					class="flex h-9 w-9 items-center justify-center text-base hover:bg-paper"
 					aria-label="Next month">→</button
 				>
 			</div>
 			<div class="px-3 pt-2 pb-3">
 				<div
-					class="grid grid-cols-7 text-center text-[9px] font-extrabold tracking-[0.14em] text-fade uppercase"
+					class="grid grid-cols-7 text-center text-xs font-extrabold tracking-widest text-fade uppercase"
 				>
 					{#each ['S', 'M', 'T', 'W', 'T', 'F', 'S'] as d, i (i)}<span class="py-1">{d}</span
 						>{/each}
 				</div>
-				<div class="grid grid-cols-7 gap-[3px]">
+				<div class="grid grid-cols-7 gap-1">
 					{#each cells as c, i (c?.key ?? `x${i}`)}
 						{#if c}
 							<button
@@ -185,7 +185,7 @@
 									timeZone: 'UTC'
 								})}{c.marks.length ? `, ${c.marks.map((x) => x.label).join(', ')}` : ''}"
 								title={c.marks.map((x) => x.label).join('\n') || undefined}
-								class="relative flex h-[38px] flex-col items-center justify-center text-[13.5px] font-semibold tabular-nums transition-colors disabled:cursor-not-allowed disabled:text-line2 {date ===
+								class="relative flex h-10 flex-col items-center justify-center text-sm font-semibold tabular-nums transition-colors disabled:cursor-not-allowed disabled:text-line2 {date ===
 								c.key
 									? 'text-white'
 									: c.key === today
@@ -195,10 +195,10 @@
 							>
 								{c.day}
 								{#if c.marks.length}
-									<span class="absolute bottom-[4px] flex gap-[2px]">
+									<span class="absolute bottom-1 flex gap-0.5">
 										{#each c.marks.slice(0, 3) as m, j (j)}
 											<span
-												class="h-[4px] w-[4px] {date === c.key ? 'ring-1 ring-white' : ''}"
+												class="h-1 w-1 {date === c.key ? 'ring-1 ring-white' : ''}"
 												style="background: {m.color}"
 											></span>
 										{/each}
@@ -211,22 +211,22 @@
 					{/each}
 				</div>
 				{#if marks.length}
-					<p class="mt-2 flex items-center gap-1.5 text-[10.5px] text-fade">
-						<span class="h-[5px] w-[5px] bg-fade"></span> A dot is an AGE Open already that day
+					<p class="mt-2 flex items-center gap-1.5 text-xs text-fade">
+						<span class="h-1.5 w-1.5 bg-fade"></span> A dot is an AGE Open already that day
 					</p>
 				{/if}
 			</div>
 
 			<!-- time -->
 			<div class="border-t border-line2 px-3 pt-3 pb-3">
-				<p class="text-[9.5px] font-extrabold tracking-[0.18em] text-soft uppercase">Start time</p>
+				<p class="text-xs font-extrabold tracking-widest text-soft uppercase">Start time</p>
 				<div class="mt-2 grid grid-cols-4 gap-1.5">
 					{#each TIMES as t (t)}
 						<button
 							type="button"
 							onclick={() => (time = t)}
 							aria-pressed={time === t}
-							class="h-[34px] border text-[12.5px] font-semibold transition-colors {time === t
+							class="h-9 border text-xs font-semibold transition-colors {time === t
 								? 'border-transparent text-white'
 								: 'border-line2 hover:border-ink/50'}"
 							style={time === t ? 'background: var(--cc, var(--color-ink))' : ''}
@@ -234,13 +234,13 @@
 						>
 					{/each}
 				</div>
-				<div class="mt-2.5 flex items-center gap-2 text-[12px] text-soft">
+				<div class="mt-2.5 flex items-center gap-2 text-xs text-soft">
 					<span>Other:</span>
 					<select
 						aria-label="Hour"
 						value={String(hour)}
 						onchange={(e) => setHour(Number(e.currentTarget.value))}
-						class="h-[32px] border border-line2 bg-white py-0 pr-7 pl-2 text-[12.5px] text-ink focus:border-ink focus:ring-0"
+						class="h-8 border border-line2 bg-white py-0 pr-7 pl-2 text-xs text-ink focus:border-ink focus:ring-0"
 					>
 						{#each Array.from({ length: 24 }, (_, h) => h) as h (h)}
 							<option value={String(h)}>{((h + 11) % 12) + 1} {h < 12 ? 'AM' : 'PM'}</option>
@@ -250,7 +250,7 @@
 						aria-label="Minutes"
 						value={minute}
 						onchange={(e) => setMinute(e.currentTarget.value)}
-						class="h-[32px] border border-line2 bg-white py-0 pr-7 pl-2 text-[12.5px] text-ink focus:border-ink focus:ring-0"
+						class="h-8 border border-line2 bg-white py-0 pr-7 pl-2 text-xs text-ink focus:border-ink focus:ring-0"
 					>
 						{#each minutes as m (m)}
 							<option value={m}>:{m}</option>
@@ -262,12 +262,12 @@
 			<div
 				class="flex items-center justify-between gap-3 border-t border-line2 bg-paper px-3 py-2.5"
 			>
-				<span class="truncate text-[12px] font-semibold">{summary || 'No date yet'}</span>
+				<span class="truncate text-xs font-semibold">{summary || 'No date yet'}</span>
 				<button
 					type="button"
 					onclick={() => (open = false)}
 					disabled={!date}
-					class="h-[34px] shrink-0 px-4 text-[10px] font-extrabold tracking-[0.16em] text-white uppercase disabled:opacity-40"
+					class="h-9 shrink-0 px-4 text-xs font-extrabold tracking-widest text-white uppercase disabled:opacity-40"
 					style="background: var(--cc, var(--color-ink))">Done</button
 				>
 			</div>

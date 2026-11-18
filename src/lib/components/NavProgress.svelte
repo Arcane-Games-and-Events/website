@@ -58,7 +58,7 @@
 </script>
 
 {#if visible}
-	<div class="pointer-events-none fixed inset-x-0 top-0 z-[9999] h-[5px]" aria-hidden="true">
+	<div class="pointer-events-none fixed inset-x-0 top-0 z-100 h-1.5" aria-hidden="true">
 		<div
 			class="h-full origin-left bg-warm-light shadow-[0_0_10px_rgba(96,165,250,0.75)]"
 			style="transform: scaleX({progress}); opacity: {finishing

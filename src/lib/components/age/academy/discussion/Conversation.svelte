@@ -305,7 +305,7 @@
 	}
 
 	const item =
-		'flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-[13px] whitespace-nowrap transition-colors hover:bg-ink/[0.05] focus-visible:bg-ink/[0.05] focus-visible:outline-none';
+		'flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-sm whitespace-nowrap transition-colors hover:bg-ink/5 focus-visible:bg-ink/5 focus-visible:outline-none';
 	const canMenu = (p) =>
 		p.mine ||
 		role.moderate ||
@@ -322,16 +322,16 @@
 				aria-haspopup="menu"
 				aria-expanded={menuFor === p.id}
 				onclick={(e) => toggleMenu(p, e)}
-				class="flex h-8 w-8 cursor-pointer items-center justify-center text-[18px] leading-none transition-colors {menuFor ===
+				class="flex h-8 w-8 cursor-pointer items-center justify-center text-lg leading-none transition-colors {menuFor ===
 				p.id
-					? 'bg-ink/[0.07] text-ink'
-					: 'text-fade hover:bg-ink/[0.05] hover:text-ink'}">⋯</button
+					? 'bg-ink/5 text-ink'
+					: 'text-fade hover:bg-ink/5 hover:text-ink'}">⋯</button
 			>
 			{#if menuFor === p.id}
 				<div
 					role="menu"
 					transition:scale={{ start: 0.94, duration: 140, opacity: 0 }}
-					class="absolute right-0 z-30 min-w-[196px] border border-line2 bg-white py-1.5 shadow-[0_14px_36px_-14px_rgb(0_0_0/0.4)] {menuUp
+					class="absolute right-0 z-30 min-w-49 border border-line2 bg-white py-1.5 shadow-lg {menuUp
 						? 'bottom-full mb-1 origin-bottom-right'
 						: 'top-full mt-1 origin-top-right'}"
 				>
@@ -397,14 +397,14 @@
 
 {#snippet held(p)}
 	{#if p.status === 'held'}
-		<p class="mt-1 text-[9.5px] font-extrabold tracking-[0.16em] text-[#8a6116] uppercase">
+		<p class="mt-1 text-xs font-extrabold tracking-widest text-gold-deep uppercase">
 			{p.mine ? 'Waiting for review: only you and the teacher can see this' : 'Held for review'}
 		</p>
 		{#if role.moderate && p.flagReasons?.length}
 			<p class="mt-1.5 flex flex-wrap gap-1.5">
 				{#each p.flagReasons as r (r)}
 					{@const d = describeReason(r)}
-					<span class="border border-hero-rb px-1.5 text-[10.5px] text-hero-rb"
+					<span class="border border-hero-rb px-1.5 text-xs text-hero-rb"
 						>{d.label}{d.detail ? `: ${d.detail}` : ''}</span
 					>
 				{/each}
@@ -420,7 +420,7 @@
 				bind:value={editTitle}
 				maxlength="160"
 				aria-label="Title"
-				class="h-[42px] w-full border border-line2 bg-white px-3 font-newsreader text-[17px] font-semibold focus:border-ink focus:ring-0"
+				class="h-11 w-full border border-line2 bg-white px-3 font-newsreader text-lg font-semibold focus:border-ink focus:ring-0"
 			/>
 		{/if}
 		<textarea
@@ -428,19 +428,19 @@
 			rows="4"
 			maxlength="5000"
 			aria-label="Message"
-			class="w-full border border-line2 bg-white px-3 py-2 text-[15px] focus:border-ink focus:ring-0"
+			class="w-full border border-line2 bg-white px-3 py-2 text-base focus:border-ink focus:ring-0"
 		></textarea>
 		<div class="flex gap-2">
 			<button
 				type="button"
 				onclick={() => saveEdit(p)}
-				class="bg-academy px-4 py-2 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase hover:bg-ink"
+				class="bg-academy px-4 py-2 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-ink"
 				>Save</button
 			>
 			<button
 				type="button"
 				onclick={() => (editing = null)}
-				class="px-3 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+				class="px-3 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 				>Cancel</button
 			>
 		</div>
@@ -456,12 +456,12 @@
 			<a
 				href={backHref}
 				aria-label="All conversations"
-				class="flex h-12 w-12 shrink-0 items-center justify-center text-[20px] text-ink hover:text-academy"
+				class="flex h-12 w-12 shrink-0 items-center justify-center text-xl text-ink hover:text-academy"
 				>←</a
 			>
 			<div class="min-w-0 flex-1 py-1.5">
-				<p class="truncate font-newsreader text-[16px] leading-tight font-semibold">{t.title}</p>
-				<p class="truncate text-[11px] text-fade">
+				<p class="truncate font-newsreader text-base leading-tight font-semibold">{t.title}</p>
+				<p class="truncate text-xs text-fade">
 					{t.author} · {replies.length
 						? `${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`
 						: 'No replies yet'}{#if typingNames.length}
@@ -480,26 +480,23 @@
 		<!-- The opening post -->
 		<header
 			id="post-{t.id}"
-			class="border-b border-line px-5 pt-6 pb-6 md:px-8 {t.status === 'held'
-				? 'bg-gold/[0.06]'
-				: ''}"
+			class="border-b border-line px-5 pt-6 pb-6 md:px-8 {t.status === 'held' ? 'bg-gold/5' : ''}"
 		>
 			{#if t.kind === 'update' || t.lesson || t.locked || t.pinned}
 				<p class="mb-2 flex flex-wrap items-center gap-2">
 					{#if t.kind === 'update'}<span
-							class="bg-gold px-1.5 py-[1px] text-[8.5px] font-extrabold tracking-[0.16em] text-[#241b07] uppercase"
+							class="bg-gold px-1.5 py-px text-xs font-extrabold tracking-widest text-gold-ink uppercase"
 							>Update from the teacher</span
 						>{:else if t.pinned}<span
-							class="border border-ink px-1.5 text-[8.5px] font-extrabold tracking-[0.16em] uppercase"
+							class="border border-ink px-1.5 text-xs font-extrabold tracking-widest uppercase"
 							>Pinned</span
 						>{/if}
 					{#if t.lesson}<a
 							href="/academy/{course.slug}/{t.lesson.slug}"
-							class="text-[10px] font-extrabold tracking-[0.14em] text-academy uppercase hover:underline"
+							class="text-xs font-extrabold tracking-widest text-academy uppercase hover:underline"
 							>{t.lesson.title} →</a
 						>{/if}
-					{#if t.locked}<span
-							class="text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+					{#if t.locked}<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 							>🔒︎ Locked</span
 						>{/if}
 				</p>
@@ -509,7 +506,7 @@
 					<div class="min-w-0 flex-1">{@render editor(t, true)}</div>
 				{:else}
 					<h1
-						class="min-w-0 flex-1 font-newsreader text-[26px] leading-tight font-semibold [overflow-wrap:anywhere] md:text-[32px]"
+						class="min-w-0 flex-1 font-newsreader text-2xl leading-tight font-semibold [overflow-wrap:anywhere] md:text-3xl"
 					>
 						{t.title}
 					</h1>
@@ -518,13 +515,13 @@
 			</div>
 			<div class="mt-4 flex items-center gap-3">
 				<Avatar name={t.author} photo={t.photo} teacher={t.isTeacher} size={40} />
-				<p class="text-[13px] leading-tight">
+				<p class="text-sm leading-tight">
 					<span class="font-semibold">{who(t)}</span>
 					{#if t.isTeacher}<span
-							class="ml-1 bg-academy px-1 text-[8px] font-extrabold tracking-[0.14em] text-white uppercase"
+							class="ml-1 bg-academy px-1 text-xs font-extrabold tracking-widest text-white uppercase"
 							>Teacher</span
 						>{/if}
-					<span class="block text-[12px] text-fade" title={new Date(t.createdAt).toLocaleString()}
+					<span class="block text-xs text-fade" title={new Date(t.createdAt).toLocaleString()}
 						>{timeAgo(t.createdAt)}{#if t.editedAt}&nbsp;· edited{/if}</span
 					>
 				</p>
@@ -533,20 +530,20 @@
 			{#if editing !== t.id && t.body.trim() !== t.title.trim()}
 				<PostBody
 					body={t.body}
-					class="mt-4 font-newsreader text-[18px] leading-[1.6] [overflow-wrap:anywhere]"
+					class="mt-4 font-newsreader text-lg leading-relaxed [overflow-wrap:anywhere]"
 				/>
 			{/if}
 		</header>
 
 		<!-- Replies -->
 		<div class="flex-1 px-5 pt-2 pb-6 md:px-8">
-			<p class="py-3 text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase">
+			<p class="py-3 text-xs font-extrabold tracking-widest text-fade uppercase">
 				{replies.length
 					? `${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`
 					: 'No replies yet'}
 			</p>
 			{#if !replies.length && !outbox.length && role.post}
-				<p class="pb-4 font-newsreader text-[17px] text-soft italic">
+				<p class="pb-4 font-newsreader text-lg text-soft italic">
 					{t.mine
 						? 'Your post is up. Replies from the class and the teacher show here.'
 						: `Be the first to answer ${first(t.author)}.`}
@@ -558,23 +555,21 @@
 						id="post-{r.id}"
 						class="group grid grid-cols-[36px_minmax(0,1fr)_auto] gap-x-3 {r.joined
 							? 'pt-1'
-							: 'pt-4'} {r.status === 'held' ? 'bg-gold/[0.06]' : ''} {fresh.has(r.id)
-							? 'msg-in'
-							: ''}"
+							: 'pt-4'} {r.status === 'held' ? 'bg-gold/5' : ''} {fresh.has(r.id) ? 'msg-in' : ''}"
 					>
 						<div>
 							{#if !r.joined}<Avatar name={r.author} photo={r.photo} teacher={r.isTeacher} />{/if}
 						</div>
 						<div class="min-w-0">
 							{#if !r.joined}
-								<p class="text-[13px] leading-tight">
+								<p class="text-sm leading-tight">
 									<span class="font-semibold">{who(r)}</span>
 									{#if r.isTeacher}<span
-											class="ml-1 bg-academy px-1 text-[8px] font-extrabold tracking-[0.14em] text-white uppercase"
+											class="ml-1 bg-academy px-1 text-xs font-extrabold tracking-widest text-white uppercase"
 											>Teacher</span
 										>{/if}
 									<span
-										class="ml-1 text-[12px] text-fade"
+										class="ml-1 text-xs text-fade"
 										title={new Date(r.createdAt).toLocaleString()}
 										>{timeAgo(r.createdAt)}{#if r.editedAt}&nbsp;· edited{/if}</span
 									>
@@ -586,7 +581,7 @@
 							{:else}
 								<PostBody
 									body={r.body}
-									class="mt-0.5 text-[15.5px] leading-[1.6] [overflow-wrap:anywhere]"
+									class="mt-0.5 text-base leading-relaxed [overflow-wrap:anywhere]"
 								/>
 							{/if}
 						</div>
@@ -607,10 +602,9 @@
 					>
 						<div><Avatar name={meName} photo={mePhoto} /></div>
 						<div class="min-w-0">
-							<p class="text-[13px] leading-tight">
+							<p class="text-sm leading-tight">
 								<span class="font-semibold">You</span>
-								<span
-									class="ml-1 text-[12px] {o.status === 'failed' ? 'text-hero-rb' : 'text-fade'}"
+								<span class="ml-1 text-xs {o.status === 'failed' ? 'text-hero-rb' : 'text-fade'}"
 									>{o.status === 'sending'
 										? 'Sending…'
 										: o.status === 'failed'
@@ -620,10 +614,10 @@
 							</p>
 							<PostBody
 								body={o.body}
-								class="mt-0.5 text-[15.5px] leading-[1.6] [overflow-wrap:anywhere]"
+								class="mt-0.5 text-base leading-relaxed [overflow-wrap:anywhere]"
 							/>
 							{#if o.status === 'failed'}
-								<p class="mt-1 flex gap-3 text-[12px] font-semibold">
+								<p class="mt-1 flex gap-3 text-xs font-semibold">
 									<button type="button" class="text-ink underline" onclick={() => retry(o.key)}
 										>Retry</button
 									>
@@ -640,12 +634,10 @@
 				{/each}
 			</ol>
 			<!-- Who's typing, where the next message will appear -->
-			<div aria-live="polite" class="min-h-[40px] pt-3">
+			<div aria-live="polite" class="min-h-10 pt-3">
 				{#if typingNames.length}
-					<p class="msg-in flex items-center gap-3 text-[13px] text-fade">
-						<span class="flex h-[30px] items-center bg-ink/[0.06] px-3 text-academy"
-							><TypingDots /></span
-						>
+					<p class="msg-in flex items-center gap-3 text-sm text-fade">
+						<span class="flex h-8 items-center bg-ink/5 px-3 text-academy"><TypingDots /></span>
 						<span
 							><span class="font-semibold text-ink">{typingWho(typingNames)}</span>
 							{new Set(typingNames).size === 1 ? 'is' : 'are'} typing…</span
@@ -664,15 +656,12 @@
 			<button
 				type="button"
 				onclick={showNew}
-				class="msg-in absolute -top-12 left-1/2 -translate-x-1/2 bg-academy px-4 py-2 text-[10.5px] font-extrabold tracking-[0.14em] whitespace-nowrap text-paper-bg uppercase shadow-[0_8px_20px_-8px_rgb(0_0_0/0.45)] hover:bg-ink"
+				class="msg-in absolute -top-12 left-1/2 -translate-x-1/2 bg-academy px-4 py-2 text-xs font-extrabold tracking-widest whitespace-nowrap text-paper-bg uppercase shadow-md hover:bg-ink"
 				>↓ {unseen} new {unseen === 1 ? 'reply' : 'replies'}</button
 			>
 		{/if}
-		{#if error}<p class="mb-2 text-[13px] text-hero-rb" role="alert">{error}</p>{/if}
-		{#if notice}<p
-				class="mb-2 border-l-[3px] border-gold bg-gold/10 px-3 py-2 text-[13px]"
-				role="status"
-			>
+		{#if error}<p class="mb-2 text-sm text-hero-rb" role="alert">{error}</p>{/if}
+		{#if notice}<p class="mb-2 border-l-3 border-gold bg-gold/10 px-3 py-2 text-sm" role="status">
 				{notice}
 			</p>{/if}
 		{#if role.post && t.status === 'visible'}
@@ -687,12 +676,12 @@
 					maxlength="5000"
 					placeholder={t.mine ? 'Add to your post…' : `Reply to ${first(t.author)}…`}
 					aria-label="Your reply"
-					class="block max-h-[220px] min-h-[46px] flex-1 resize-none border border-line2 bg-white px-3.5 py-3 text-[15px] leading-snug focus:border-ink focus:ring-0"
+					class="block max-h-55 min-h-12 flex-1 resize-none border border-line2 bg-white px-3.5 py-3 text-base leading-snug focus:border-ink focus:ring-0"
 				></textarea>
 				<button
 					disabled={!replyText.trim()}
 					aria-label="Send reply"
-					class="flex h-[46px] shrink-0 items-center gap-2 bg-academy px-4 text-[10px] font-extrabold tracking-[0.16em] text-paper-bg uppercase hover:bg-ink disabled:opacity-45"
+					class="flex h-12 shrink-0 items-center gap-2 bg-academy px-4 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-ink disabled:opacity-45"
 				>
 					<span class="hidden sm:inline">Send</span>
 					<svg viewBox="0 0 16 16" class="h-4 w-4" fill="currentColor"
@@ -700,15 +689,15 @@
 					>
 				</button>
 			</form>
-			<p class="mt-1.5 hidden text-[11px] text-fade [@media(pointer:fine)]:block">
+			<p class="mt-1.5 hidden text-xs text-fade [@media(pointer:fine)]:block">
 				Enter to send · Shift + Enter for a new line
 			</p>
 		{:else if t.locked}
-			<p class="py-1 text-[13px] text-fade">🔒︎ This conversation is locked; no more replies.</p>
+			<p class="py-1 text-sm text-fade">🔒︎ This conversation is locked; no more replies.</p>
 		{:else if role.muted}
-			<p class="py-1 text-[13px] text-hero-rb">You’ve been muted here. You can still read.</p>
+			<p class="py-1 text-sm text-hero-rb">You’ve been muted here. You can still read.</p>
 		{:else if t.status !== 'visible'}
-			<p class="py-1 text-[13px] text-fade">Replies open once the teacher approves this post.</p>
+			<p class="py-1 text-sm text-fade">Replies open once the teacher approves this post.</p>
 		{/if}
 	</div>
 </div>

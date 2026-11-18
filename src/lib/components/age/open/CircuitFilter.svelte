@@ -29,7 +29,7 @@
 				type="button"
 				onclick={() => (value = v)}
 				aria-pressed={value === v}
-				class="flex min-h-[44px] items-center gap-2.5 px-3.5 text-left text-[10px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase transition-colors md:px-3 {value ===
+				class="flex min-h-11 items-center gap-2.5 px-3.5 text-left text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors md:px-3 {value ===
 				v
 					? 'bg-ink text-paper-bg'
 					: 'bg-paper-bg text-soft hover:bg-paper hover:text-ink'}"

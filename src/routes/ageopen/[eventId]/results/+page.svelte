@@ -22,9 +22,9 @@
 	let { data } = $props();
 
 	const abbr = (name) => CIRCUITS[name]?.abbreviation ?? name;
-	const LABEL = 'text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase';
-	const TH = 'text-[9px] font-extrabold tracking-[0.2em] text-fade uppercase';
-	const KICK = 'text-[9.5px] font-extrabold tracking-[0.2em] text-warm uppercase';
+	const LABEL = 'text-xs font-extrabold tracking-widest text-fade uppercase';
+	const TH = 'text-xs font-extrabold tracking-widest text-fade uppercase';
+	const KICK = 'text-xs font-extrabold tracking-widest text-warm uppercase';
 	const ordinal = (n) => (n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : n ? `${n}th` : '—');
 	const rankTone = (n) =>
 		n === 1
@@ -168,10 +168,10 @@
 			aria-hidden="true"
 		></div>
 
-		<div class="relative mx-auto w-full max-w-[1200px] px-5 pt-8 md:px-8 md:pt-10">
+		<div class="relative mx-auto w-full max-w-page px-5 pt-8 md:px-8 md:pt-10">
 			<a
 				href="/ageopen?tab=results"
-				class="text-[9.5px] font-extrabold tracking-[0.2em] text-paper-bg/60 uppercase transition-colors hover:text-paper-bg"
+				class="text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase transition-colors hover:text-paper-bg"
 				>← Archive</a
 			>
 			<a href="/ageopen" class="mt-6 block w-fit" aria-label="AGE Open Series overview">
@@ -180,16 +180,16 @@
 					alt="AGE Open Series"
 					width="629"
 					height="294"
-					class="h-auto w-[130px] md:w-[150px]"
+					class="h-auto w-33 md:w-38"
 				/>
 			</a>
 
-			<div class="fp-rise mt-8 max-w-[760px] md:mt-10">
+			<div class="fp-rise mt-8 max-w-3xl md:mt-10">
 				<p
-					class="flex flex-wrap items-center gap-x-3 gap-y-2 text-[9.5px] font-extrabold tracking-[0.26em] text-paper-bg/60 uppercase"
+					class="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase"
 				>
 					{#if isLive}
-						<span class="inline-flex items-center gap-1.5 bg-hero-rb px-2 py-[3px] text-white"
+						<span class="inline-flex items-center gap-1.5 bg-hero-rb px-2 py-1 text-white"
 							><span class="h-1.5 w-1.5 animate-pulse bg-white" aria-hidden="true"></span>Live</span
 						>
 					{:else}
@@ -197,7 +197,7 @@
 					{/if}
 					{#if event.circuit}
 						<span
-							class="px-1.5 py-[3px] text-[8px] tracking-[0.16em] text-white"
+							class="px-1.5 py-1 text-xs tracking-widest text-white"
 							style="background: {circuitVar(event.circuit)};">{abbr(event.circuit)}</span
 						>
 					{/if}
@@ -208,23 +208,23 @@
 						year: 'numeric'
 					})}
 				</p>
-				<h1 class="ao-cond mt-3 text-[52px] leading-[0.86] font-black uppercase md:text-[88px]">
+				<h1 class="ao-cond mt-3 text-5xl leading-none font-black uppercase md:text-8xl">
 					{event.circuit ? `${event.circuit} ` : ''}{event.month || ''} Open
 				</h1>
 				<p
-					class="mt-3 flex flex-wrap items-center gap-3 text-[10px] font-extrabold tracking-[0.18em] text-paper-bg/60 uppercase"
+					class="mt-3 flex flex-wrap items-center gap-3 text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase"
 				>
 					<FormatTag format={event.format} />
 					{#if event.location}<span>{event.location}</span>{/if}
 				</p>
 
 				{#if champion}
-					<div class="mt-7 flex items-center gap-4 border-l-[3px] border-gold pl-4">
+					<div class="mt-7 flex items-center gap-4 border-l-3 border-gold pl-4">
 						<div class="min-w-0">
-							<p class="text-[9px] font-extrabold tracking-[0.24em] text-gold uppercase">
+							<p class="text-xs font-extrabold tracking-widest text-gold uppercase">
 								{isLive ? 'Leading' : 'Champion'}
 							</p>
-							<p class="mt-1 font-newsreader text-[26px] leading-tight md:text-[30px]">
+							<p class="mt-1 font-newsreader text-2xl leading-tight md:text-3xl">
 								{#if champion.gemId}
 									<a href="/player/{champion.gemId}" class="fp-ul">{champion.playerName}</a>
 								{:else}
@@ -232,9 +232,7 @@
 								{/if}
 							</p>
 							{#if champion.hero}
-								<p
-									class="mt-1 text-[10px] font-extrabold tracking-[0.18em] text-paper-bg/60 uppercase"
-								>
+								<p class="mt-1 text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase">
 									on {champion.hero} · {champion.wins}–{champion.losses}{champion.draws
 										? `–${champion.draws}`
 										: ''}
@@ -253,14 +251,12 @@
 					>
 						<dd
 							class="ao-cond truncate leading-none font-black tabular-nums {t.small
-								? 'text-[24px] md:text-[28px]'
-								: 'text-[34px] md:text-[40px]'} {t.hl ? 'text-warm-light' : ''}"
+								? 'text-2xl md:text-3xl'
+								: 'text-4xl'} {t.hl ? 'text-warm-light' : ''}"
 						>
 							{t.v}
 						</dd>
-						<dt
-							class="mt-2 text-[8.5px] font-extrabold tracking-[0.2em] text-paper-bg/55 uppercase"
-						>
+						<dt class="mt-2 text-xs font-extrabold tracking-widest text-paper-bg/55 uppercase">
 							{t.l}
 						</dt>
 					</div>
@@ -270,8 +266,8 @@
 	</section>
 
 	<!-- ============ section bar ============ -->
-	<div class="z-[5] border-b border-line bg-paper-bg/95 backdrop-blur-sm md:sticky md:top-[59px]">
-		<div class="mx-auto w-full max-w-[1200px] px-5 py-3 md:px-8">
+	<div class="z-5 border-b border-line bg-paper-bg/95 backdrop-blur-sm md:sticky md:top-15">
+		<div class="mx-auto w-full max-w-page px-5 py-3 md:px-8">
 			<div
 				class="flex gap-px overflow-x-auto border border-line2 bg-line2 md:w-fit"
 				role="tablist"
@@ -283,7 +279,7 @@
 						role="tab"
 						aria-selected={tab === s.id}
 						onclick={() => (tab = s.id)}
-						class="min-h-[44px] shrink-0 px-4 text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap uppercase transition-colors {tab ===
+						class="min-h-11 shrink-0 px-4 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors {tab ===
 						s.id
 							? 'bg-ink text-paper-bg'
 							: 'bg-paper-bg text-soft hover:bg-paper hover:text-ink'}">{s.label}</button
@@ -293,19 +289,17 @@
 		</div>
 	</div>
 
-	<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20">
+	<div class="mx-auto w-full max-w-page px-5 pt-8 pb-16 md:px-8 md:pt-10 md:pb-20">
 		<!-- ============ standings ============ -->
 		{#if tab === 'standings'}
 			<div class="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<p class={KICK}>Final Swiss order</p>
-					<h2
-						class="ao-cond mt-2 text-[40px] leading-none font-black uppercase [word-spacing:0.18em]"
-					>
+					<h2 class="ao-cond mt-2 text-4xl leading-none font-black uppercase [word-spacing:0.18em]">
 						Standings
 					</h2>
 				</div>
-				<label class="w-full md:w-[280px]">
+				<label class="w-full md:w-70">
 					<span class="sr-only">Find a player</span>
 					<span
 						class="flex items-center gap-2.5 border border-line2 bg-paper-bg px-3 transition-colors focus-within:border-ink hover:border-ink"
@@ -327,7 +321,7 @@
 							bind:value={standingsQ}
 							placeholder="Find a player or hero…"
 							autocomplete="off"
-							class="min-h-[44px] w-full border-0 bg-transparent font-newsreader text-[17px] text-ink placeholder:text-fade focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+							class="min-h-11 w-full border-0 bg-transparent font-newsreader text-lg text-ink placeholder:text-fade focus:outline-none [&::-webkit-search-cancel-button]:hidden"
 						/>
 					</span>
 				</label>
@@ -335,7 +329,7 @@
 
 			{#if !results.length}
 				<p
-					class="mt-8 border border-line bg-paper px-6 py-12 text-center font-newsreader text-[16px] text-soft italic"
+					class="mt-8 border border-line bg-paper px-6 py-12 text-center font-newsreader text-base text-soft italic"
 				>
 					Standings will appear here once the first round is reported.
 				</p>
@@ -343,7 +337,7 @@
 				<!-- desktop -->
 				<div class="mt-6 hidden md:block">
 					<div
-						class="grid grid-cols-[56px_minmax(0,1fr)_88px_80px_96px_100px] items-end gap-4 border-b-[3px] border-ink px-4 pb-2 {TH}"
+						class="grid grid-cols-[56px_minmax(0,1fr)_88px_80px_96px_100px] items-end gap-4 border-b-3 border-ink px-4 pb-2 {TH}"
 					>
 						<span class="text-center">Place</span><span>Player · hero</span><span
 							class="text-center">Record</span
@@ -358,7 +352,7 @@
 							{#if !standingsQ && r.placement === 9}
 								<li class="flex items-center gap-3 px-4 py-2.5" aria-label="Top 8 cut">
 									<span class="h-px flex-1 bg-warm"></span>
-									<span class="text-[8.5px] font-extrabold tracking-[0.24em] text-warm uppercase"
+									<span class="text-xs font-extrabold tracking-widest text-warm uppercase"
 										>Top 8 cut</span
 									>
 									<span class="h-px flex-1 bg-warm"></span>
@@ -368,38 +362,38 @@
 								class="grid grid-cols-[56px_minmax(0,1fr)_88px_80px_96px_100px] items-center gap-4 border-b border-line px-4 py-2 even:bg-paper/50"
 							>
 								<span
-									class="ao-cond text-center text-[24px] leading-none font-black tabular-nums {rankTone(
+									class="ao-cond text-center text-2xl leading-none font-black tabular-nums {rankTone(
 										r.placement
 									)}">{r.placement}</span
 								>
 								<span class="flex min-w-0 items-center gap-3">
 									<span
-										class="h-[38px] w-[38px] shrink-0 border border-line2 bg-paper bg-cover bg-[right_center]"
+										class="h-10 w-10 shrink-0 border border-line2 bg-paper bg-cover bg-right"
 										style={img ? `background-image: url('${img}');` : ''}
 										aria-hidden="true"
 									></span>
 									<span class="min-w-0">
 										<span
-											class="block truncate font-newsreader text-[17px] leading-tight font-semibold"
+											class="block truncate font-newsreader text-lg leading-tight font-semibold"
 										>
 											{#if r.gemId}<a href="/player/{r.gemId}" class="fp-ul">{r.playerName}</a
 												>{:else}{r.playerName}{/if}
 										</span>
-										<span class="mt-[2px] block truncate text-[11px] font-bold text-soft"
+										<span class="mt-0.5 block truncate text-xs font-bold text-soft"
 											>{r.hero || 'Hero not logged'}</span
 										>
 									</span>
 								</span>
-								<span class="text-center text-[13px] tabular-nums"
+								<span class="text-center text-sm tabular-nums"
 									><span class="font-bold">{r.wins}</span><span class="text-fade"
 										>–{r.losses}{r.draws ? `–${r.draws}` : ''}</span
 									></span
 								>
-								<span class="ao-cond text-center text-[22px] leading-none font-black tabular-nums"
+								<span class="ao-cond text-center text-2xl leading-none font-black tabular-nums"
 									>{r.agePoints ?? '—'}</span
 								>
 								<span
-									class="text-center text-[13px] font-bold tabular-nums {Number(r.prizeAmount) > 0
+									class="text-center text-sm font-bold tabular-nums {Number(r.prizeAmount) > 0
 										? 'text-prem'
 										: 'text-fade'}">{money(r.prizeAmount)}</span
 								>
@@ -407,11 +401,11 @@
 									{#if list}
 										<a
 											href="/ageopen/{event.id}/decklist/{list.id}"
-											class="text-[9.5px] font-extrabold tracking-[0.16em] text-warm uppercase hover:text-ink"
+											class="text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 											>View list →</a
 										>
 									{:else}
-										<span class="text-[10px] text-fade/60">—</span>
+										<span class="text-xs text-fade/60">—</span>
 									{/if}
 								</span>
 							</li>
@@ -420,13 +414,13 @@
 				</div>
 
 				<!-- phone -->
-				<ol class="mt-6 border-t-[3px] border-ink md:hidden">
+				<ol class="mt-6 border-t-3 border-ink md:hidden">
 					{#each standingsShown as r, i (r.gemId || r.playerName + i)}
 						{@const list = listFor(r.gemId, r.playerName)}
 						{#if !standingsQ && r.placement === 9}
 							<li class="flex items-center gap-3 py-2" aria-label="Top 8 cut">
 								<span class="h-px flex-1 bg-warm"></span>
-								<span class="text-[8.5px] font-extrabold tracking-[0.2em] text-warm uppercase"
+								<span class="text-xs font-extrabold tracking-widest text-warm uppercase"
 									>Top 8 cut</span
 								>
 								<span class="h-px flex-1 bg-warm"></span>
@@ -436,33 +430,31 @@
 							class="grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 border-b border-line py-3"
 						>
 							<span
-								class="ao-cond text-center text-[26px] leading-none font-black tabular-nums {rankTone(
+								class="ao-cond text-center text-2xl leading-none font-black tabular-nums {rankTone(
 									r.placement
 								)}">{r.placement}</span
 							>
 							<span class="min-w-0">
-								<span
-									class="block truncate font-newsreader text-[16px] leading-tight font-semibold"
-								>
+								<span class="block truncate font-newsreader text-base leading-tight font-semibold">
 									{#if r.gemId}<a href="/player/{r.gemId}" class="fp-ul">{r.playerName}</a
 										>{:else}{r.playerName}{/if}
 								</span>
-								<span class="mt-[2px] block truncate text-[11px] font-bold text-soft"
+								<span class="mt-0.5 block truncate text-xs font-bold text-soft"
 									>{r.hero || 'Hero not logged'}</span
 								>
 								{#if list}
 									<a
 										href="/ageopen/{event.id}/decklist/{list.id}"
-										class="mt-1 inline-block text-[9px] font-extrabold tracking-[0.16em] text-warm uppercase"
+										class="mt-1 inline-block text-xs font-extrabold tracking-widest text-warm uppercase"
 										>View list →</a
 									>
 								{/if}
 							</span>
 							<span class="text-right">
-								<span class="block text-[13px] font-bold tabular-nums"
+								<span class="block text-sm font-bold tabular-nums"
 									>{r.wins}–{r.losses}{r.draws ? `–${r.draws}` : ''}</span
 								>
-								<span class="block text-[10px] font-bold text-fade tabular-nums"
+								<span class="block text-xs font-bold text-fade tabular-nums"
 									>{r.agePoints ?? 0} pts{Number(r.prizeAmount) > 0
 										? ` · ${money(r.prizeAmount)}`
 										: ''}</span
@@ -472,7 +464,7 @@
 					{/each}
 				</ol>
 				{#if standingsQ && !standingsShown.length}
-					<p class="mt-6 font-newsreader text-[15px] text-soft italic">
+					<p class="mt-6 font-newsreader text-base text-soft italic">
 						No player or hero matches “{standingsQ}”.
 					</p>
 				{/if}
@@ -483,37 +475,37 @@
 		{#if tab === 'top8' && data.top8Bracket}
 			{@const b = data.top8Bracket}
 			<p class={KICK}>Single elimination</p>
-			<h2 class="ao-cond mt-2 text-[40px] leading-none font-black uppercase [word-spacing:0.18em]">
+			<h2 class="ao-cond mt-2 text-4xl leading-none font-black uppercase [word-spacing:0.18em]">
 				Top 8
 			</h2>
 
 			{#snippet slot(p, size = 'md')}
 				<div
-					class="flex items-center gap-2.5 border-l-[3px] px-3 py-2 {p?.isWinner
+					class="flex items-center gap-2.5 border-l-3 px-3 py-2 {p?.isWinner
 						? 'border-l-warm bg-paper-bg'
 						: 'border-l-transparent bg-paper text-soft'}"
 				>
 					<span
-						class="ao-cond w-[18px] shrink-0 text-[15px] leading-none font-black text-fade tabular-nums"
+						class="ao-cond w-4.5 shrink-0 text-base leading-none font-black text-fade tabular-nums"
 						>{p?.seed ?? ''}</span
 					>
 					<span
-						class="h-[28px] w-[28px] shrink-0 border border-line2 bg-cover bg-[right_center]"
+						class="h-7 w-7 shrink-0 border border-line2 bg-cover bg-right"
 						style={p?.hero ? `background-image: url('${heroImageUrl(p.hero)}');` : ''}
 						aria-hidden="true"
 					></span>
 					<span class="min-w-0 flex-1">
 						<span
 							class="block truncate {size === 'lg'
-								? 'text-[15px]'
-								: 'text-[13px]'} leading-tight {p?.isWinner
+								? 'text-base'
+								: 'text-sm'} leading-tight {p?.isWinner
 								? 'font-extrabold text-ink'
 								: 'font-semibold'}"
 						>
 							{#if p?.gemId}<a href="/player/{p.gemId}" class="fp-ul">{p.name}</a>{:else}{p?.name ??
 									'TBD'}{/if}
 						</span>
-						{#if p?.hero}<span class="block truncate text-[10px] font-bold text-fade"
+						{#if p?.hero}<span class="block truncate text-xs font-bold text-fade"
 								>{heroName(p.hero)}</span
 							>{/if}
 					</span>
@@ -521,10 +513,10 @@
 			{/snippet}
 
 			<div class="mt-8 overflow-x-auto pb-2">
-				<div class="grid min-w-[860px] grid-cols-[1fr_1fr_1fr_0.9fr] gap-6">
+				<div class="grid min-w-215 grid-cols-[1fr_1fr_1fr_0.9fr] gap-6">
 					{#each [{ label: 'Quarterfinals', matches: b.quarterfinals }, { label: 'Semifinals', matches: b.semifinals }, { label: 'Final', matches: [b.finals] }] as col (col.label)}
 						<div class="flex flex-col">
-							<p class="border-b-[3px] border-ink pb-2 {TH}">{col.label}</p>
+							<p class="border-b-3 border-ink pb-2 {TH}">{col.label}</p>
 							<div class="flex flex-1 flex-col justify-around gap-4 pt-4">
 								{#each col.matches as m, mi (mi)}
 									<div class="border border-line2">
@@ -538,7 +530,7 @@
 					{/each}
 					<div class="flex flex-col">
 						<p
-							class="border-b-[3px] border-gold pb-2 text-[9px] font-extrabold tracking-[0.2em] text-gold uppercase"
+							class="border-b-3 border-gold pb-2 text-xs font-extrabold tracking-widest text-gold uppercase"
 						>
 							Champion
 						</p>
@@ -556,19 +548,19 @@
 										style="background: linear-gradient(0deg, rgba(23,21,15,0.95) 25%, rgba(23,21,15,0.2) 100%);"
 										aria-hidden="true"
 									></span>
-									<div class="relative flex min-h-[200px] flex-col justify-end p-4">
+									<div class="relative flex min-h-50 flex-col justify-end p-4">
 										<span
-											class="absolute top-0 left-0 bg-gold px-2 py-1 text-[8.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+											class="absolute top-0 left-0 bg-gold px-2 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
 											>Champion</span
 										>
-										<p class="ao-cond text-[28px] leading-[0.9] font-black uppercase">
+										<p class="ao-cond text-3xl leading-none font-black uppercase">
 											{#if b.champion.gemId}<a
 													href="/player/{b.champion.gemId}"
 													class="hover:text-warm-light">{b.champion.name}</a
 												>{:else}{b.champion.name}{/if}
 										</p>
 										{#if b.champion.hero}<p
-												class="mt-1.5 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg/65 uppercase"
+												class="mt-1.5 text-xs font-extrabold tracking-widest text-paper-bg/65 uppercase"
 											>
 												{b.champion.hero}
 											</p>{/if}
@@ -579,7 +571,7 @@
 					</div>
 				</div>
 			</div>
-			<p class="mt-4 font-newsreader text-[14px] text-fade italic">
+			<p class="mt-4 font-newsreader text-sm text-fade italic">
 				Seeded by Swiss finish: 1 v 8, 4 v 5, 3 v 6, 2 v 7.
 			</p>
 		{/if}
@@ -589,13 +581,11 @@
 			<div class="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<p class={KICK}>What the field brought</p>
-					<h2
-						class="ao-cond mt-2 text-[40px] leading-none font-black uppercase [word-spacing:0.18em]"
-					>
+					<h2 class="ao-cond mt-2 text-4xl leading-none font-black uppercase [word-spacing:0.18em]">
 						Metagame
 					</h2>
 				</div>
-				<p class="font-newsreader text-[15px] text-soft italic">
+				<p class="font-newsreader text-base text-soft italic">
 					{data.totalPlayers} heroes logged. Tap a hero to see who played it.
 				</p>
 			</div>
@@ -612,14 +602,14 @@
 									style="-webkit-mask-image: linear-gradient(to right, transparent, #000 60%); mask-image: linear-gradient(to right, transparent, #000 60%);"
 								/>{/if}
 							<div class="relative p-5">
-								<p class="text-[9px] font-extrabold tracking-[0.22em] text-warm-light uppercase">
+								<p class="text-xs font-extrabold tracking-widest text-warm-light uppercase">
 									{card.k}
 								</p>
-								<p class="ao-cond mt-2 text-[56px] leading-[0.85] font-black tabular-nums">
+								<p class="ao-cond mt-2 text-6xl leading-none font-black tabular-nums">
 									{card.v}
 								</p>
-								<p class="mt-2 font-newsreader text-[19px] leading-tight">{card.h.hero}</p>
-								<p class="mt-1 text-[10px] font-bold text-paper-bg/60">{card.s}</p>
+								<p class="mt-2 font-newsreader text-xl leading-tight">{card.h.hero}</p>
+								<p class="mt-1 text-xs font-bold text-paper-bg/60">{card.s}</p>
 							</div>
 						</div>
 					{/if}
@@ -628,13 +618,13 @@
 
 			<div class="mt-8">
 				<div
-					class="hidden grid-cols-[minmax(0,1fr)_200px_72px_80px_72px] items-end gap-4 border-b-[3px] border-ink px-4 pb-2 md:grid {TH}"
+					class="hidden grid-cols-[minmax(0,1fr)_200px_72px_80px_72px] items-end gap-4 border-b-3 border-ink px-4 pb-2 md:grid {TH}"
 				>
 					<span>Hero</span><span>Share of field</span><span class="text-center">Pilots</span><span
 						class="text-center">Record</span
 					><span class="text-center">Win %</span>
 				</div>
-				<ol class="border-t-[3px] border-ink md:border-t-0">
+				<ol class="border-t-3 border-ink md:border-t-0">
 					{#each meta as h (h.hero)}
 						{@const open = openHero === h.hero}
 						{@const img = h.imageUrl || heroImageUrl(h.hero)}
@@ -647,50 +637,47 @@
 							>
 								<span class="flex min-w-0 items-center gap-3">
 									<span
-										class="h-[38px] w-[38px] shrink-0 border border-line2 bg-paper bg-cover bg-[right_center]"
+										class="h-10 w-10 shrink-0 border border-line2 bg-paper bg-cover bg-right"
 										style={img ? `background-image: url('${img}');` : ''}
 										aria-hidden="true"
 									></span>
 									<span class="min-w-0">
-										<span
-											class="block truncate font-newsreader text-[17px] leading-tight font-semibold"
+										<span class="block truncate font-newsreader text-lg leading-tight font-semibold"
 											>{h.hero}</span
 										>
-										<span class="mt-[2px] block text-[11px] font-bold text-soft md:hidden"
+										<span class="mt-0.5 block text-xs font-bold text-soft md:hidden"
 											>{h.count} pilots · {h.percentage}% · {h.wins}–{h.losses}</span
 										>
 									</span>
 								</span>
 								<span class="hidden items-center gap-3 md:flex">
-									<span class="relative block h-[6px] flex-1 bg-line"
+									<span class="relative block h-1.5 flex-1 bg-line"
 										><span
 											class="absolute inset-y-0 left-0 bg-warm"
 											style="width: {(h.count / maxShare) * 100}%;"
 										></span></span
 									>
-									<span class="w-[42px] text-right text-[12px] font-bold tabular-nums"
-										>{h.percentage}%</span
+									<span class="w-11 text-right text-xs font-bold tabular-nums">{h.percentage}%</span
 									>
 								</span>
 								<span
-									class="ao-cond hidden text-center text-[22px] leading-none font-black tabular-nums md:block"
+									class="ao-cond hidden text-center text-2xl leading-none font-black tabular-nums md:block"
 									>{h.count}</span
 								>
-								<span class="hidden text-center text-[13px] tabular-nums md:block"
+								<span class="hidden text-center text-sm tabular-nums md:block"
 									><span class="font-bold">{h.wins}</span><span class="text-fade">–{h.losses}</span
 									></span
 								>
-								<span
-									class="text-right text-[13px] font-bold tabular-nums md:text-center {wrTone(h)}"
+								<span class="text-right text-sm font-bold tabular-nums md:text-center {wrTone(h)}"
 									>{h.totalMatches ? `${h.winRate}%` : '—'}</span
 								>
 							</button>
 							{#if open && h.players?.length}
-								<ul class="flex flex-wrap gap-x-5 gap-y-1.5 px-4 pb-3 pl-[66px]">
+								<ul class="flex flex-wrap gap-x-5 gap-y-1.5 px-4 pb-3 pl-17">
 									{#each h.players as pl, pi (pi)}
 										{@const name = pl.playerName ?? pl.name ?? pl}
 										{@const gem = pl.gemId}
-										<li class="text-[12px] font-bold text-soft">
+										<li class="text-xs font-bold text-soft">
 											{#if gem}<a href="/player/{gem}" class="fp-ul text-ink">{name}</a
 												>{:else}{name}{/if}{#if pl.wins != null}<span
 													class="ml-1.5 text-fade tabular-nums"
@@ -704,7 +691,7 @@
 						</li>
 					{/each}
 				</ol>
-				<p class="mt-4 font-newsreader text-[14px] text-fade italic">
+				<p class="mt-4 font-newsreader text-sm text-fade italic">
 					Win rate is coloured from three matches up: green 60%+, gold 50%+, red under 40%.
 				</p>
 			</div>
@@ -715,13 +702,11 @@
 			<div class="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<p class={KICK}>Every pairing</p>
-					<h2
-						class="ao-cond mt-2 text-[40px] leading-none font-black uppercase [word-spacing:0.18em]"
-					>
+					<h2 class="ao-cond mt-2 text-4xl leading-none font-black uppercase [word-spacing:0.18em]">
 						Matches
 					</h2>
 				</div>
-				<label class="w-full md:w-[280px]">
+				<label class="w-full md:w-70">
 					<span class="sr-only">Find a player or hero</span>
 					<span
 						class="flex items-center gap-2.5 border border-line2 bg-paper-bg px-3 transition-colors focus-within:border-ink hover:border-ink"
@@ -743,7 +728,7 @@
 							bind:value={matchQ}
 							placeholder="Find a player or hero…"
 							autocomplete="off"
-							class="min-h-[44px] w-full border-0 bg-transparent font-newsreader text-[17px] text-ink placeholder:text-fade focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+							class="min-h-11 w-full border-0 bg-transparent font-newsreader text-lg text-ink placeholder:text-fade focus:outline-none [&::-webkit-search-cancel-button]:hidden"
 						/>
 					</span>
 				</label>
@@ -761,7 +746,7 @@
 							type="button"
 							onclick={() => (round = r)}
 							aria-pressed={round === r}
-							class="min-h-[40px] min-w-[44px] flex-1 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors md:flex-none {round ===
+							class="min-h-10 min-w-11 flex-1 px-3 text-xs font-extrabold tracking-widest uppercase transition-colors md:flex-none {round ===
 							r
 								? 'bg-ink text-paper-bg'
 								: 'bg-paper-bg text-soft hover:bg-paper hover:text-ink'}"
@@ -769,7 +754,7 @@
 						>
 					{/each}
 				</div>
-				<p class="mt-3 font-newsreader text-[15px] text-ink" aria-live="polite">
+				<p class="mt-3 font-newsreader text-base text-ink" aria-live="polite">
 					<strong class="font-semibold">{matchCount}</strong>
 					{matchCount === 1 ? 'match' : 'matches'}{matchQ ? ` · “${matchQ}”` : ''}
 				</p>
@@ -777,8 +762,8 @@
 
 			{#each matchRounds as r (r.round)}
 				<section class="mt-8">
-					<div class="flex items-end justify-between gap-3 border-b-[3px] border-ink pb-2">
-						<h3 class="ao-cond text-[26px] leading-none font-black uppercase [word-spacing:0.18em]">
+					<div class="flex items-end justify-between gap-3 border-b-3 border-ink pb-2">
+						<h3 class="ao-cond text-2xl leading-none font-black uppercase [word-spacing:0.18em]">
 							{roundName(r.round)}
 						</h3>
 						<p class={LABEL}>{r.matches.length} {r.matches.length === 1 ? 'table' : 'tables'}</p>
@@ -790,8 +775,7 @@
 							<li
 								class="grid grid-cols-[40px_minmax(0,1fr)] items-center gap-3 border-b border-line px-2 py-2.5 even:bg-paper/50 md:grid-cols-[56px_minmax(0,1fr)_64px_minmax(0,1fr)] md:gap-4 md:px-4"
 							>
-								<span
-									class="text-center text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
+								<span class="text-center text-xs font-extrabold tracking-widest text-fade uppercase"
 									>{m.table ? `T${m.table}` : ''}</span
 								>
 								{#each [{ p: m.player1, w: w1, l: w2 }, { p: m.player2, w: w2, l: w1 }] as side, si (si)}
@@ -799,17 +783,15 @@
 										<span class="hidden text-center md:block">
 											{#if m.isDraw}
 												<span
-													class="bg-fade px-2 py-1 text-[9px] font-extrabold tracking-[0.16em] text-white uppercase"
+													class="bg-fade px-2 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
 													>Draw</span
 												>
 											{:else if !m.winner}
-												<span
-													class="text-[9px] font-extrabold tracking-[0.16em] text-fade uppercase"
+												<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 													>vs</span
 												>
 											{:else}
-												<span
-													class="text-[9px] font-extrabold tracking-[0.16em] text-fade uppercase"
+												<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 													>def.</span
 												>
 											{/if}
@@ -821,7 +803,7 @@
 											: ''}"
 									>
 										<span
-											class="ao-cond flex h-[22px] w-[22px] shrink-0 items-center justify-center text-[12px] font-black text-white"
+											class="ao-cond flex h-5.5 w-5.5 shrink-0 items-center justify-center text-xs font-black text-white"
 											style="background: {side.w
 												? 'var(--ed-prem)'
 												: side.l
@@ -831,7 +813,7 @@
 										>
 										<span class="min-w-0">
 											<span
-												class="block truncate text-[14px] leading-tight {side.w
+												class="block truncate text-sm leading-tight {side.w
 													? 'font-extrabold text-ink'
 													: 'font-semibold text-soft'}"
 											>
@@ -839,8 +821,7 @@
 														>{side.p.name}</a
 													>{:else}{side.p?.name ?? 'Bye'}{/if}
 											</span>
-											{#if side.p?.hero}<span
-													class="block truncate text-[10.5px] font-bold text-fade"
+											{#if side.p?.hero}<span class="block truncate text-xs font-bold text-fade"
 													>{side.p.hero}</span
 												>{/if}
 										</span>
@@ -851,7 +832,7 @@
 					</ol>
 				</section>
 			{:else}
-				<p class="mt-8 font-newsreader text-[15px] text-soft italic">
+				<p class="mt-8 font-newsreader text-base text-soft italic">
 					No matches match “{matchQ}”.
 				</p>
 			{/each}
@@ -860,10 +841,10 @@
 		<!-- ============ decklists ============ -->
 		{#if tab === 'decklists' && data.decklists?.length}
 			<p class={KICK}>Registered lists</p>
-			<h2 class="ao-cond mt-2 text-[40px] leading-none font-black uppercase [word-spacing:0.18em]">
+			<h2 class="ao-cond mt-2 text-4xl leading-none font-black uppercase [word-spacing:0.18em]">
 				Decklists
 			</h2>
-			<ol class="mt-6 border-t-[3px] border-ink">
+			<ol class="mt-6 border-t-3 border-ink">
 				{#each data.decklists as d (d.id)}
 					{@const img = d.heroImageUrl || heroImageUrl(d.hero)}
 					<li class="border-b border-line even:bg-paper/50">
@@ -872,22 +853,21 @@
 							class="grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-3 px-2 py-2.5 transition-colors hover:bg-paper md:grid-cols-[64px_minmax(0,1fr)_120px_110px] md:gap-4 md:px-4"
 						>
 							<span
-								class="ao-cond text-center text-[24px] leading-none font-black tabular-nums {d.placement
+								class="ao-cond text-center text-2xl leading-none font-black tabular-nums {d.placement
 									? rankTone(d.placement)
 									: 'text-fade/50'}">{d.placement ? ordinal(d.placement) : '—'}</span
 							>
 							<span class="flex min-w-0 items-center gap-3">
 								<span
-									class="h-[40px] w-[40px] shrink-0 border border-line2 bg-paper bg-cover bg-[right_center]"
+									class="h-10 w-10 shrink-0 border border-line2 bg-paper bg-cover bg-right"
 									style={img ? `background-image: url('${img}');` : ''}
 									aria-hidden="true"
 								></span>
 								<span class="min-w-0">
-									<span
-										class="block truncate font-newsreader text-[17px] leading-tight font-semibold"
+									<span class="block truncate font-newsreader text-lg leading-tight font-semibold"
 										><span class="fp-ul">{d.hero || 'Unknown hero'}</span></span
 									>
-									<span class="mt-[2px] block truncate text-[12px] font-bold text-soft"
+									<span class="mt-0.5 block truncate text-xs font-bold text-soft"
 										>{d.playerName}</span
 									>
 								</span>
@@ -896,7 +876,7 @@
 								><FormatTag format={d.format || event.format} size="sm" short /></span
 							>
 							<span
-								class="hidden text-right text-[9.5px] font-extrabold tracking-[0.16em] text-warm uppercase md:block"
+								class="hidden text-right text-xs font-extrabold tracking-widest text-warm uppercase md:block"
 								>View list →</span
 							>
 						</a>

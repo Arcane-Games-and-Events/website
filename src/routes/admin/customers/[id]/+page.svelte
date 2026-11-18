@@ -172,9 +172,9 @@
 			(data.ordersByType.subscription.total || 0)
 	);
 
-	const sectionTitle = 'ao-cond text-[36px] leading-none font-black uppercase md:text-[44px]';
+	const sectionTitle = 'ao-cond text-4xl leading-none font-black uppercase md:text-5xl';
 	const smallBtn =
-		'inline-flex h-[38px] items-center border border-line2 bg-white px-3.5 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:border-ink disabled:opacity-40';
+		'inline-flex h-10 items-center border border-line2 bg-white px-3.5 text-xs font-extrabold tracking-widest uppercase transition-colors hover:border-ink disabled:opacity-40';
 </script>
 
 <svelte:head>
@@ -201,31 +201,31 @@
 	<AdminNotice tone="error" message={form.error} />
 {/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-8 pb-20 md:px-8">
 	<!-- ============ WHO ============ -->
 	<section
-		class="border border-l-[6px] {kind === 'comp'
-			? 'border-gold/40 bg-gold/[0.06]'
+		class="border border-l-6 {kind === 'comp'
+			? 'border-gold/40 bg-gold/5'
 			: 'border-line2 bg-white'}"
 		style="border-left-color: {K.tone}"
 	>
 		<div class="flex flex-col gap-5 p-5 md:flex-row md:items-center md:gap-7 md:p-6">
 			<span
-				class="ao-cond flex h-[76px] w-[76px] shrink-0 items-center justify-center text-[34px] leading-none font-black md:h-[92px] md:w-[92px] md:text-[42px] {K.ink}"
+				class="ao-cond flex h-19 w-19 shrink-0 items-center justify-center text-4xl leading-none font-black md:h-23 md:w-23 md:text-5xl {K.ink}"
 				style="background: {K.tone}"
 				aria-hidden="true">{initials}</span
 			>
 			<div class="min-w-0 flex-1">
 				<p class="flex flex-wrap items-center gap-2.5">
 					<span
-						class="px-2 py-[3px] text-[10px] font-extrabold tracking-[0.16em] uppercase {K.ink}"
+						class="px-2 py-1 text-xs font-extrabold tracking-widest uppercase {K.ink}"
 						style="background: {K.tone}">{K.label}</span
 					>
-					<span class="font-newsreader text-[19px] font-semibold">{kindLine}</span>
+					<span class="font-newsreader text-xl font-semibold">{kindLine}</span>
 				</p>
 				{#if kind === 'comp'}
 					<p
-						class="mt-1.5 text-[13px] {compLeft !== null && compLeft <= 14
+						class="mt-1.5 text-sm {compLeft !== null && compLeft <= 14
 							? 'font-semibold text-hero-rb'
 							: 'text-soft'}"
 					>
@@ -234,12 +234,12 @@
 							: 'no end date'}
 					</p>
 				{/if}
-				<p class="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-soft">
-					{#if c?.gemId}<span class="border border-line2 bg-white px-2 py-0.5 font-mono text-[11px]"
+				<p class="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs text-soft">
+					{#if c?.gemId}<span class="border border-line2 bg-white px-2 py-0.5 font-mono text-xs"
 							>GEM {c.gemId}</span
 						>{/if}
 					{#each c?.additionalRoles || [] as r (r)}<span
-							class="border border-line2 bg-white px-2 py-0.5 text-[9.5px] font-extrabold tracking-[0.12em] uppercase"
+							class="border border-line2 bg-white px-2 py-0.5 text-xs font-extrabold tracking-widest uppercase"
 							>{r}</span
 						>{/each}
 					<span class="ml-1"
@@ -256,7 +256,7 @@
 					type="button"
 					onclick={() => (editing = !editing)}
 					aria-expanded={editing}
-					class="inline-flex h-[44px] shrink-0 items-center gap-2 px-5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors {editing
+					class="inline-flex h-11 shrink-0 items-center gap-2 px-5 text-xs font-extrabold tracking-widest uppercase transition-colors {editing
 						? 'bg-ink text-paper-bg'
 						: 'border border-ink bg-white hover:bg-ink hover:text-paper-bg'}"
 					>{editing ? 'Close' : 'Change access'}</button
@@ -296,9 +296,9 @@
 	{#if c && (sub || m?.legacy || m?.comp || c.subscriptionId || c.subscriptionStatus)}
 		{@const st = statusOf(sub ? sub.status : c.subscriptionStatus)}
 		<section class="mt-14">
-			<div class="flex flex-wrap items-end justify-between gap-3 border-b-[3px] border-ink pb-3">
+			<div class="flex flex-wrap items-end justify-between gap-3 border-b-3 border-ink pb-3">
 				<h2 class={sectionTitle}>Membership</h2>
-				{#if sub?.legacyArbId}<span class="text-[11px] text-fade"
+				{#if sub?.legacyArbId}<span class="text-xs text-fade"
 						>migrated from ARB {sub.legacyArbId}{sub.legacyArbCancelledAt
 							? ''
 							: ' · ARB not yet cancelled'}</span
@@ -306,18 +306,18 @@
 			</div>
 
 			<div
-				class="mt-5 border border-l-[4px] border-line2 bg-white"
+				class="mt-5 border border-l-4 border-line2 bg-white"
 				style="border-left-color: {sub || m?.legacy ? st.tone : K.tone}"
 			>
 				<div class="flex flex-wrap items-start justify-between gap-4 px-5 pt-5 md:px-6">
 					<div>
-						<p class="ao-cond text-[30px] leading-none font-black uppercase md:text-[36px]">
+						<p class="ao-cond text-3xl leading-none font-black uppercase md:text-4xl">
 							{#if sub}{sub.plan === 'yearly' ? 'Annual' : 'Monthly'} · {money(
 									sub.priceCents / 100
 								)}{:else if m?.legacy}Old Authorize.net subscription{:else if m?.comp}Complimentary{:else}Membership{/if}
 						</p>
 						{#if !sub && m?.comp}
-							<p class="mt-1.5 text-[13px] text-soft">
+							<p class="mt-1.5 text-sm text-soft">
 								{REASON[c.compReason] || 'Reason not recorded'} comp · {compEnd
 									? `ends ${day(compEnd, { timeZone: 'UTC', month: 'long' })}`
 									: 'no end date'}.
@@ -331,7 +331,7 @@
 					</div>
 					{#if sub || m?.legacy || c.subscriptionStatus}
 						<span
-							class="px-2 py-[3px] text-[10px] font-extrabold tracking-[0.16em] text-white uppercase"
+							class="px-2 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
 							style="background: {st.tone}">{st.word}{sub?.hold ? ' · held' : ''}</span
 						>
 					{/if}
@@ -346,22 +346,20 @@
 									: ''} {i ? 'sm:border-l' : ''}"
 							>
 								<dt class={F.label}>{f.label}</dt>
-								<dd class="font-newsreader text-[17px] font-semibold">{f.value}</dd>
+								<dd class="font-newsreader text-lg font-semibold">{f.value}</dd>
 							</div>
 						{/each}
 					</dl>
 				{:else}
 					<div class="h-5"></div>
 				{/if}
-				{#if sub?.pendingPlan}<p
-						class="border-t border-line2 px-5 py-3 text-[12.5px] text-soft md:px-6"
-					>
+				{#if sub?.pendingPlan}<p class="border-t border-line2 px-5 py-3 text-xs text-soft md:px-6">
 						Switching to {sub.pendingPlan} at {money(sub.pendingPriceCents / 100)} on {day(
 							sub.currentPeriodEnd
 						)}.
 					</p>{/if}
 				{#if sub?.flags?.length}<p
-						class="border-t border-line2 bg-gold/10 px-5 py-3 text-[12.5px] md:px-6"
+						class="border-t border-line2 bg-gold/10 px-5 py-3 text-xs md:px-6"
 					>
 						Flags: {sub.flags.join(', ')}
 					</p>{/if}
@@ -373,7 +371,7 @@
 						{#if sub.status === 'past_due' || (sub.status === 'active' && sub.nextChargeAt && new Date(sub.nextChargeAt) <= new Date())}
 							<form method="POST" action="?/chargeNow" use:enhance={adminEnhance}>
 								<input type="hidden" name="subscriptionId" value={sub.id} /><button
-									class="inline-flex h-[38px] items-center bg-ink px-4 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
+									class="inline-flex h-10 items-center bg-ink px-4 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
 									disabled={busy}>Charge now</button
 								>
 							</form>
@@ -388,7 +386,7 @@
 								min="1"
 								max="366"
 								value="30"
-								class="h-[38px] w-[68px] border border-r-0 border-line2 bg-white px-2 text-[13px] tabular-nums"
+								class="h-10 w-17 border border-r-0 border-line2 bg-white px-2 text-sm tabular-nums"
 							/><button class={smallBtn} disabled={busy}>Add days</button>
 						</form>
 						<form method="POST" action="?/hold" use:enhance={adminEnhance}>
@@ -432,7 +430,7 @@
 							}}
 						>
 							<input type="hidden" name="subscriptionId" value={sub.id} /><button
-								class="inline-flex h-[38px] items-center px-2 text-[10px] font-extrabold tracking-[0.14em] text-hero-rb uppercase hover:underline disabled:opacity-40"
+								class="inline-flex h-10 items-center px-2 text-xs font-extrabold tracking-widest text-hero-rb uppercase hover:underline disabled:opacity-40"
 								disabled={busy}>End now</button
 							>
 						</form>
@@ -457,7 +455,7 @@
 							}}
 						>
 							<button
-								class="inline-flex h-[38px] items-center bg-hero-rb px-4 text-[10px] font-extrabold tracking-[0.14em] text-white uppercase hover:brightness-110 disabled:opacity-40"
+								class="inline-flex h-10 items-center bg-hero-rb px-4 text-xs font-extrabold tracking-widest text-white uppercase hover:brightness-110 disabled:opacity-40"
 								disabled={busy}>{busy ? 'Cancelling…' : 'Cancel ARB subscription'}</button
 							>
 						</form>
@@ -470,19 +468,19 @@
 				<ul class="border-t border-line2">
 					{#each m.invoices as inv (inv.id)}
 						<li
-							class="grid gap-x-4 gap-y-0.5 border-b border-line2 py-3 text-[13px] md:grid-cols-[240px_150px_minmax(0,1fr)_140px] md:items-center"
+							class="grid gap-x-4 gap-y-0.5 border-b border-line2 py-3 text-sm md:grid-cols-[240px_150px_minmax(0,1fr)_140px] md:items-center"
 						>
 							<span class="font-semibold tabular-nums"
 								>{day(inv.periodStart)} – {day(inv.periodEnd)}</span
 							>
 							<span
-								class="text-[11px] font-extrabold tracking-[0.12em] uppercase {inv.status === 'paid'
+								class="text-xs font-extrabold tracking-widest uppercase {inv.status === 'paid'
 									? 'text-prem'
 									: inv.status === 'failed'
 										? 'text-hero-rb'
 										: 'text-soft'}">{inv.kind} · {inv.status}</span
 							>
-							<span class="truncate text-[12px] text-fade"
+							<span class="truncate text-xs text-fade"
 								>{inv.invoiceNumber || ''}{inv.transId ? ` · txn ${inv.transId}` : ''}{inv.lastError
 									? ` · ${inv.lastError}`
 									: ''}</span
@@ -502,9 +500,9 @@
 	<!-- ============ PAYMENTS ============ -->
 	{#if data.ledger?.length}
 		<section class="mt-14">
-			<div class="flex flex-wrap items-end justify-between gap-3 border-b-[3px] border-ink pb-3">
+			<div class="flex flex-wrap items-end justify-between gap-3 border-b-3 border-ink pb-3">
 				<h2 class={sectionTitle}>Payments</h2>
-				<span class="text-[12px] text-soft">Every charge, with refunds</span>
+				<span class="text-xs text-soft">Every charge, with refunds</span>
 			</div>
 			<ul class="mt-4 flex flex-col gap-2">
 				{#each data.ledger as p (p.id)}
@@ -512,7 +510,7 @@
 					{@const refunded = Number(p.refundedAmount) > 0}
 					{@const canRefund = left > 0.001 && /^\d+$/.test(p.transId)}
 					<li
-						class="border border-l-[4px] border-line2 bg-white"
+						class="border border-l-4 border-line2 bg-white"
 						style="border-left-color: {refunded
 							? 'var(--color-hero-rb)'
 							: p.kind.startsWith('sub')
@@ -523,29 +521,29 @@
 							class="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-3 md:grid-cols-[64px_minmax(0,1fr)_auto_auto] md:gap-x-5"
 						>
 							<span class="flex flex-col items-center leading-none">
-								<span class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+								<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 									>{day(p.occurredAt, { month: 'short', day: undefined, year: undefined })}</span
 								>
-								<span class="ao-cond text-[28px] font-black tabular-nums"
+								<span class="ao-cond text-3xl font-black tabular-nums"
 									>{new Date(p.occurredAt).getDate()}</span
 								>
-								<span class="text-[9.5px] text-fade">{new Date(p.occurredAt).getFullYear()}</span>
+								<span class="text-xs text-fade">{new Date(p.occurredAt).getFullYear()}</span>
 							</span>
 							<span class="min-w-0">
-								<span class="block text-[11px] font-extrabold tracking-[0.12em] uppercase"
+								<span class="block text-xs font-extrabold tracking-widest uppercase"
 									>{p.kind.replace(/_/g, ' ')}</span
 								>
-								<span class="mt-0.5 block truncate text-[12px] text-fade"
+								<span class="mt-0.5 block truncate text-xs text-fade"
 									>txn {p.transId}{p.subscriptionId
 										? ` · sub ${p.subscriptionId}`
 										: ''}{p.discountAmount > 0 ? ` · ${money(p.discountAmount)} off` : ''}</span
 								>
-								{#if refunded}<span class="mt-0.5 block text-[12px] font-semibold text-hero-rb"
+								{#if refunded}<span class="mt-0.5 block text-xs font-semibold text-hero-rb"
 										>{money(p.refundedAmount)} refunded {day(p.refundedAt)}</span
 									>{/if}
 							</span>
 							<span
-								class="ao-cond text-right text-[28px] leading-none font-black tabular-nums {refunded &&
+								class="ao-cond text-right text-3xl leading-none font-black tabular-nums {refunded &&
 								left <= 0.001
 									? 'text-fade line-through'
 									: ''}">{money(p.amount)}</span
@@ -555,7 +553,7 @@
 									type="button"
 									onclick={() => (refunding = refunding === p.id ? null : p.id)}
 									aria-expanded={refunding === p.id}
-									class="col-span-3 justify-self-start text-[10px] font-extrabold tracking-[0.14em] text-hero-rb uppercase hover:underline md:col-span-1 md:justify-self-end"
+									class="col-span-3 justify-self-start text-xs font-extrabold tracking-widest text-hero-rb uppercase hover:underline md:col-span-1 md:justify-self-end"
 									>{refunding === p.id ? 'Close' : 'Refund…'}</button
 								>
 							{:else}
@@ -567,7 +565,7 @@
 								method="POST"
 								action="?/refundTransaction"
 								use:enhance={adminEnhance}
-								class="flex flex-wrap items-end gap-3 border-t border-line2 bg-hero-rb/[0.04] px-4 py-4 md:pl-[100px]"
+								class="flex flex-wrap items-end gap-3 border-t border-line2 bg-hero-rb/5 px-4 py-4 md:pl-25"
 								style="--cc: var(--color-hero-rb)"
 								transition:slide={motion(200)}
 								onsubmit={(e) => {
@@ -580,7 +578,7 @@
 								}}
 							>
 								<input type="hidden" name="transId" value={p.transId} />
-								<label class="block w-[150px]">
+								<label class="block w-38">
 									<span class={F.label}>Amount</span>
 									<input
 										type="number"
@@ -593,7 +591,7 @@
 									/>
 								</label>
 								{#if p.kind.startsWith('sub')}
-									<label class="block w-[220px]">
+									<label class="block w-55">
 										<span class={F.label}>The membership</span>
 										<select name="subscriptionEffect" class={F.select}>
 											<option value="keep">Keep it</option>
@@ -603,10 +601,10 @@
 									</label>
 								{/if}
 								<button
-									class="inline-flex h-[46px] items-center bg-hero-rb px-5 text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase hover:brightness-110 disabled:opacity-40"
+									class="inline-flex h-12 items-center bg-hero-rb px-5 text-xs font-extrabold tracking-widest text-white uppercase hover:brightness-110 disabled:opacity-40"
 									disabled={busy}>{busy ? 'Refunding…' : 'Refund'}</button
 								>
-								<span class="w-full text-[11.5px] text-fade"
+								<span class="w-full text-xs text-fade"
 									>Up to {money(left)} left on this charge. It goes back to the card it came from.</span
 								>
 							</form>
@@ -620,11 +618,11 @@
 	<!-- ============ TIMELINE ============ -->
 	{#if data.history?.length}
 		<section class="mt-14">
-			<div class="flex flex-wrap items-end justify-between gap-3 border-b-[3px] border-ink pb-3">
+			<div class="flex flex-wrap items-end justify-between gap-3 border-b-3 border-ink pb-3">
 				<h2 class={sectionTitle}>Timeline</h2>
-				<span class="text-[12px] text-soft">Their membership, newest first</span>
+				<span class="text-xs text-soft">Their membership, newest first</span>
 			</div>
-			<ol class="relative mt-5 ml-[7px] border-l-2 border-line2">
+			<ol class="relative mt-5 ml-2 border-l-2 border-line2">
 				{#each data.history as h (h.id)}
 					{@const ev = eventOf(h)}
 					{@const extra = [h.reason ? REASON[h.reason] || h.reason : '', metaLine(h.meta)]
@@ -632,20 +630,19 @@
 						.join(' · ')}
 					<li class="relative pb-5 pl-6 last:pb-0">
 						<span
-							class="absolute top-[5px] -left-[8px] h-3.5 w-3.5 border-2 border-paper-bg"
+							class="absolute top-1.5 -left-2 h-3.5 w-3.5 border-2 border-paper-bg"
 							style="background: {ev.tone}"
 							aria-hidden="true"
 						></span>
 						<p class="flex flex-wrap items-baseline gap-x-3">
-							<span
-								class="ao-cond text-[20px] leading-none font-black uppercase [word-spacing:0.12em]"
+							<span class="ao-cond text-xl leading-none font-black uppercase [word-spacing:0.12em]"
 								>{ev.word}</span
 							>
-							<span class="text-[12px] text-fade tabular-nums"
+							<span class="text-xs text-fade tabular-nums"
 								>{day(h.at, { hour: 'numeric', minute: '2-digit' })}</span
 							>
 						</p>
-						{#if extra}<p class="mt-1 text-[12.5px] text-soft">{extra}</p>{/if}
+						{#if extra}<p class="mt-1 text-xs text-soft">{extra}</p>{/if}
 					</li>
 				{/each}
 			</ol>
@@ -654,14 +651,14 @@
 
 	<!-- ============ WHERE IT WENT ============ -->
 	<section class="mt-14">
-		<div class="flex flex-wrap items-end justify-between gap-3 border-b-[3px] border-ink pb-3">
+		<div class="flex flex-wrap items-end justify-between gap-3 border-b-3 border-ink pb-3">
 			<h2 class={sectionTitle}>Where it went</h2>
-			<span class="text-[12px] text-soft"
+			<span class="text-xs text-soft"
 				>{money(spentTotal)} across {data.stats.totalOrders} orders</span
 			>
 		</div>
 		{#if spentTotal > 0}
-			<div class="mt-5 flex h-3 gap-[2px]" aria-hidden="true">
+			<div class="mt-5 flex h-3 gap-0.5" aria-hidden="true">
 				{#each ['ticket', 'course', 'subscription'] as t (t)}
 					{#if data.ordersByType[t].total > 0}
 						<span style="flex: {data.ordersByType[t].total}; background: {typeOf(t).tone}"></span>
@@ -673,12 +670,12 @@
 			{#each [['ticket', 'Tickets'], ['course', 'Courses'], ['subscription', 'Membership']] as [t, label] (t)}
 				{@const o = data.ordersByType[t]}
 				<div
-					class="border border-t-[4px] border-line2 bg-white p-5"
+					class="border border-t-4 border-line2 bg-white p-5"
 					style="border-top-color: {typeOf(t).tone}"
 				>
 					<p class={F.label}>{label}</p>
-					<p class="ao-cond text-[34px] leading-none font-black tabular-nums">{money(o.total)}</p>
-					<p class="mt-1.5 text-[12px] text-soft">{o.count} {o.count === 1 ? 'order' : 'orders'}</p>
+					<p class="ao-cond text-4xl leading-none font-black tabular-nums">{money(o.total)}</p>
+					<p class="mt-1.5 text-xs text-soft">{o.count} {o.count === 1 ? 'order' : 'orders'}</p>
 				</div>
 			{/each}
 		</div>
@@ -686,18 +683,18 @@
 
 	<!-- ============ ORDERS, TICKETS, COURSES ============ -->
 	<section class="mt-14">
-		<div class="flex gap-1 overflow-x-auto border-b-[3px] border-ink" role="tablist">
+		<div class="flex gap-1 overflow-x-auto border-b-3 border-ink" role="tablist">
 			{#each [{ id: 'orders', label: 'Orders', n: data.orders.length }, { id: 'tickets', label: 'Tickets', n: data.tickets.length }, ...(c ? [{ id: 'courses', label: 'Courses', n: data.entitlements.length }] : [])] as t (t.id)}
 				<button
 					type="button"
 					role="tab"
 					aria-selected={activeTab === t.id}
 					onclick={() => (activeTab = t.id)}
-					class="ao-cond -mb-[3px] shrink-0 border-b-[3px] px-1 pr-4 pb-2 text-[26px] leading-none font-black uppercase transition-colors md:text-[30px] {activeTab ===
+					class="ao-cond -mb-1 shrink-0 border-b-3 px-1 pr-4 pb-2 text-2xl leading-none font-black uppercase transition-colors md:text-3xl {activeTab ===
 					t.id
 						? 'border-warm text-ink'
 						: 'border-transparent text-fade hover:text-ink'}"
-					>{t.label} <span class="text-[16px] tabular-nums opacity-60">{t.n}</span></button
+					>{t.label} <span class="text-base tabular-nums opacity-60">{t.n}</span></button
 				>
 			{/each}
 		</div>
@@ -705,7 +702,7 @@
 		{#if activeTab === 'orders'}
 			{#if data.orders.length === 0}
 				<p
-					class="mt-5 border border-dashed border-line2 px-5 py-6 font-newsreader text-[16px] text-soft italic"
+					class="mt-5 border border-dashed border-line2 px-5 py-6 font-newsreader text-base text-soft italic"
 				>
 					No orders yet.
 				</p>
@@ -716,19 +713,19 @@
 						<li>
 							<a
 								href="/admin/orders/{order.id}"
-								class="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border border-l-[4px] border-line2 bg-white px-4 py-3 transition-colors hover:border-ink md:grid-cols-[120px_120px_minmax(0,1fr)_auto_24px]"
+								class="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border border-l-4 border-line2 bg-white px-4 py-3 transition-colors hover:border-ink md:grid-cols-[120px_120px_minmax(0,1fr)_auto_24px]"
 								style="border-left-color: {ty.tone}"
 							>
-								<span class="text-[12px] text-soft tabular-nums">{day(order.createdAt)}</span>
+								<span class="text-xs text-soft tabular-nums">{day(order.createdAt)}</span>
 								<span
-									class="order-first col-span-2 text-[10px] font-extrabold tracking-[0.14em] uppercase md:order-none md:col-span-1"
+									class="order-first col-span-2 text-xs font-extrabold tracking-widest uppercase md:order-none md:col-span-1"
 									style="color: {ty.tone}">{ty.word}</span
 								>
 								<span
-									class="col-span-2 truncate font-newsreader text-[16px] font-semibold md:col-span-1"
+									class="col-span-2 truncate font-newsreader text-base font-semibold md:col-span-1"
 									>{orderTitle(order)}</span
 								>
-								<span class="ao-cond text-[22px] leading-none font-black tabular-nums"
+								<span class="ao-cond text-2xl leading-none font-black tabular-nums"
 									>{money(order.amount)}</span
 								>
 								<span
@@ -745,7 +742,7 @@
 		{#if activeTab === 'tickets'}
 			{#if data.tickets.length === 0}
 				<p
-					class="mt-5 border border-dashed border-line2 px-5 py-6 font-newsreader text-[16px] text-soft italic"
+					class="mt-5 border border-dashed border-line2 px-5 py-6 font-newsreader text-base text-soft italic"
 				>
 					No tickets yet.
 				</p>
@@ -755,7 +752,7 @@
 						{@const past = event?.eventDate && new Date(event.eventDate) < new Date()}
 						{@const state = ticket.refunded ? 'Refunded' : past ? 'Played' : 'Upcoming'}
 						<li
-							class="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border border-l-[4px] border-line2 bg-white px-4 py-3 md:grid-cols-[64px_minmax(0,1fr)_160px_110px]"
+							class="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border border-l-4 border-line2 bg-white px-4 py-3 md:grid-cols-[64px_minmax(0,1fr)_160px_110px]"
 							style="border-left-color: {ticket.refunded
 								? 'var(--color-hero-rb)'
 								: past
@@ -763,7 +760,7 @@
 									: 'var(--color-prem)'}"
 						>
 							<span class="flex flex-col items-center leading-none">
-								<span class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+								<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 									>{event?.eventDate
 										? new Date(event.eventDate).toLocaleDateString('en-US', {
 												timeZone: 'UTC',
@@ -771,25 +768,25 @@
 											})
 										: 'TBD'}</span
 								>
-								<span class="ao-cond text-[28px] font-black tabular-nums"
+								<span class="ao-cond text-3xl font-black tabular-nums"
 									>{event?.eventDate ? new Date(event.eventDate).getUTCDate() : ''}</span
 								>
 							</span>
 							<span class="min-w-0">
-								<span class="block truncate font-newsreader text-[16px] font-semibold"
+								<span class="block truncate font-newsreader text-base font-semibold"
 									>{event?.title || 'Unknown event'}</span
 								>
-								<span class="mt-0.5 block truncate text-[12px] text-soft"
+								<span class="mt-0.5 block truncate text-xs text-soft"
 									>{ticket.firstName}
 									{ticket.lastName}{ticket.gemId ? ` · GEM ${ticket.gemId}` : ''}</span
 								>
 							</span>
 							<code
-								class="col-start-2 row-start-2 w-fit border border-line2 bg-paper px-2 py-0.5 text-[12px] text-warm md:col-start-3 md:row-start-1"
+								class="col-start-2 row-start-2 w-fit border border-line2 bg-paper px-2 py-0.5 text-xs text-warm md:col-start-3 md:row-start-1"
 								>{ticket.code}</code
 							>
 							<span
-								class="col-start-3 row-start-1 text-right text-[10px] font-extrabold tracking-[0.14em] uppercase md:col-start-4 {ticket.refunded
+								class="col-start-3 row-start-1 text-right text-xs font-extrabold tracking-widest uppercase md:col-start-4 {ticket.refunded
 									? 'text-hero-rb'
 									: past
 										? 'text-fade'
@@ -804,7 +801,7 @@
 		{#if activeTab === 'courses' && c}
 			{#if data.entitlements.length === 0}
 				<p
-					class="mt-5 border border-dashed border-line2 px-5 py-6 font-newsreader text-[16px] text-soft italic"
+					class="mt-5 border border-dashed border-line2 px-5 py-6 font-newsreader text-base text-soft italic"
 				>
 					No courses yet.
 				</p>
@@ -812,19 +809,19 @@
 				<ul class="mt-4 grid gap-2 sm:grid-cols-2">
 					{#each data.entitlements as ent (ent.id || ent.product + ent.createdAt)}
 						<li
-							class="flex items-center justify-between gap-4 border border-l-[4px] border-line2 bg-white px-4 py-3.5"
+							class="flex items-center justify-between gap-4 border border-l-4 border-line2 bg-white px-4 py-3.5"
 							style="border-left-color: {ent.active ? 'var(--color-gold)' : 'var(--color-line2)'}"
 						>
 							<span class="min-w-0">
-								<span class="block truncate font-newsreader text-[16px] font-semibold"
+								<span class="block truncate font-newsreader text-base font-semibold"
 									>{ent.product}</span
 								>
-								<span class="mt-0.5 block text-[12px] text-fade"
+								<span class="mt-0.5 block text-xs text-fade"
 									>{ent.source === 'comp' ? 'Added free' : 'Bought'} {day(ent.createdAt)}</span
 								>
 							</span>
 							<span
-								class="shrink-0 text-[10px] font-extrabold tracking-[0.14em] uppercase {ent.active
+								class="shrink-0 text-xs font-extrabold tracking-widest uppercase {ent.active
 									? 'text-prem'
 									: 'text-hero-rb'}">{ent.active ? 'Active' : 'Revoked'}</span
 							>

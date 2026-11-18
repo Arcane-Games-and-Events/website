@@ -28,7 +28,7 @@
 	{#snippet actions()}
 		{#if view === 'site'}
 			<div
-				class="flex h-[40px] gap-px border border-paper-bg/25 bg-paper-bg/25"
+				class="flex h-10 gap-px border border-paper-bg/25 bg-paper-bg/25"
 				role="group"
 				aria-label="Date range"
 			>
@@ -36,7 +36,7 @@
 					<a
 						href={rangeHref(d)}
 						aria-current={data.range === d ? 'page' : undefined}
-						class="flex items-center px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase {data.range ===
+						class="flex items-center px-3 text-xs font-extrabold tracking-widest uppercase {data.range ===
 						d
 							? 'bg-paper-bg text-ink'
 							: 'bg-ink text-paper-bg/70 hover:text-paper-bg'}">{d}d</a
@@ -61,7 +61,7 @@
 	]}
 />
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-8 pb-20 md:px-8">
 	{#if view === 'revenue'}
 		<RevenueView {data} />
 	{:else if view === 'members'}

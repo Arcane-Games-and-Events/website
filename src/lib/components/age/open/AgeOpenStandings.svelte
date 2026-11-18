@@ -83,7 +83,7 @@
 	let sortDir = $state('asc');
 	let pageNo = $state(1);
 	const PER_PAGE = 25;
-	const LABEL = 'text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase';
+	const LABEL = 'text-xs font-extrabold tracking-widest text-fade uppercase';
 	const SORT_OPTIONS = [
 		{ v: 'rank', l: 'Rank' },
 		{ v: 'points', l: 'Most points' },
@@ -248,11 +248,11 @@
 />
 
 <!-- ============ filter bar ============ -->
-<div class="z-[5] border-b border-line bg-paper-bg/95 backdrop-blur-sm md:sticky md:top-[59px]">
-	<div class="mx-auto w-full max-w-[1200px] px-5 py-4 md:px-8 md:py-5">
+<div class="z-5 border-b border-line bg-paper-bg/95 backdrop-blur-sm md:sticky md:top-15">
+	<div class="mx-auto w-full max-w-page px-5 py-4 md:px-8 md:py-5">
 		<div class="flex flex-col gap-5 lg:flex-row lg:flex-wrap lg:items-end lg:gap-x-8 lg:gap-y-4">
 			<!-- find a player -->
-			<div class="min-w-0 lg:w-[240px] lg:shrink-0">
+			<div class="min-w-0 lg:w-60 lg:shrink-0">
 				<label for="standings-search" class={LABEL}>Find a player</label>
 				<div
 					class="mt-2 flex items-center gap-2.5 border border-line2 bg-paper-bg px-3 transition-colors focus-within:border-ink hover:border-ink"
@@ -274,14 +274,14 @@
 						placeholder="Type a name…"
 						autocomplete="off"
 						enterkeyhint="search"
-						class="min-h-[44px] w-full border-0 bg-transparent font-newsreader text-[17px] leading-tight text-ink placeholder:text-fade focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+						class="min-h-11 w-full border-0 bg-transparent font-newsreader text-lg leading-tight text-ink placeholder:text-fade focus:outline-none [&::-webkit-search-cancel-button]:hidden"
 					/>
 					{#if q}
 						<button
 							type="button"
 							onclick={() => (q = '')}
 							aria-label="Clear search"
-							class="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center text-[16px] leading-none text-fade hover:text-ink"
+							class="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center text-base leading-none text-fade hover:text-ink"
 							>×</button
 						>
 					{/if}
@@ -301,7 +301,7 @@
 							type="button"
 							onclick={() => changeSeason(s)}
 							aria-pressed={season === s}
-							class="min-h-[44px] flex-1 px-2 text-[10px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase transition-colors md:flex-none md:px-3 {season ===
+							class="min-h-11 flex-1 px-2 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors md:flex-none md:px-3 {season ===
 							s
 								? 'bg-ink text-paper-bg'
 								: 'bg-paper-bg text-soft hover:bg-paper hover:text-ink'}"
@@ -324,7 +324,7 @@
 							type="button"
 							onclick={() => (circuit = v)}
 							aria-pressed={circuit === v}
-							class="flex min-h-[44px] items-center gap-2.5 px-3.5 text-left text-[10px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase transition-colors md:px-3 {circuit ===
+							class="flex min-h-11 items-center gap-2.5 px-3.5 text-left text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors md:px-3 {circuit ===
 							v
 								? 'bg-ink text-paper-bg'
 								: 'bg-paper-bg text-soft hover:bg-paper hover:text-ink'}"
@@ -346,7 +346,7 @@
 			class="mt-4 flex flex-col gap-3 border-t border-line pt-3 md:flex-row md:items-center md:justify-between md:gap-6"
 		>
 			<p class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1" aria-live="polite">
-				<span class="font-newsreader text-[15px] text-ink">
+				<span class="font-newsreader text-base text-ink">
 					<strong class="font-semibold">{filtered.length}</strong>
 					{filtered.length === 1 ? 'player' : 'players'}
 					<span class="text-soft"
@@ -357,12 +357,12 @@
 				</span>
 				{#if showCut}
 					<span
-						class="inline-flex items-center gap-1.5 text-[9px] font-extrabold tracking-[0.18em] text-warm uppercase"
-						><span class="h-[7px] w-[7px] bg-warm" aria-hidden="true"></span>Top 16 qualify for the
-						Player’s Championship</span
+						class="inline-flex items-center gap-1.5 text-xs font-extrabold tracking-widest text-warm uppercase"
+						><span class="h-2 w-2 bg-warm" aria-hidden="true"></span>Top 16 qualify for the Player’s
+						Championship</span
 					>
 				{:else if season !== 'all' && circuit === 'all' && !q}
-					<span class="font-newsreader text-[14px] text-fade italic"
+					<span class="font-newsreader text-sm text-fade italic"
 						>Pick a circuit to see who’s inside the championship cut.</span
 					>
 				{/if}
@@ -376,11 +376,11 @@
 						class="relative inline-flex items-center gap-2 border-b border-line2 py-1.5 transition-colors group-hover:border-ink focus-within:border-warm"
 					>
 						<span
-							class="text-[10.5px] font-extrabold tracking-[0.14em] whitespace-nowrap text-ink uppercase"
+							class="text-xs font-extrabold tracking-widest whitespace-nowrap text-ink uppercase"
 							>{SORT_OPTIONS.find((o) => o.v === sortKey)?.l}</span
 						>
 						<svg
-							class="h-[6px] w-[9px] shrink-0 text-fade"
+							class="h-1.5 w-2.5 shrink-0 text-fade"
 							viewBox="0 0 10 6"
 							fill="none"
 							stroke="currentColor"
@@ -406,7 +406,7 @@
 					<button
 						type="button"
 						onclick={clearAll}
-						class="text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase hover:text-ink"
+						class="text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 						>Reset</button
 					>
 				{/if}
@@ -414,7 +414,7 @@
 					type="button"
 					onclick={refresh}
 					disabled={refreshing}
-					class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase transition-colors hover:text-ink disabled:opacity-50"
+					class="text-xs font-extrabold tracking-widest text-fade uppercase transition-colors hover:text-ink disabled:opacity-50"
 					title="Reload the latest standings">{refreshing ? 'Refreshing…' : 'Refresh ↻'}</button
 				>
 			</div>
@@ -425,15 +425,15 @@
 <!-- ============ table ============ -->
 <section
 	bind:this={tableEl}
-	class="mx-auto w-full max-w-[1200px] scroll-mt-28 px-5 pt-8 md:px-8 md:pt-10"
+	class="mx-auto w-full max-w-page scroll-mt-28 px-5 pt-8 md:px-8 md:pt-10"
 >
-	<p class="font-newsreader text-[15px] text-soft italic">{resultLine}</p>
+	<p class="font-newsreader text-base text-soft italic">{resultLine}</p>
 
 	{#if shown.length}
 		<!-- desktop table -->
 		<div class="mt-5 hidden md:block">
 			<div
-				class="grid grid-cols-[44px_minmax(0,1fr)_84px_88px_112px_64px_64px] items-end gap-4 border-b-[3px] border-ink px-4 pb-2 text-[9px] font-extrabold tracking-[0.2em] text-fade uppercase"
+				class="grid grid-cols-[44px_minmax(0,1fr)_84px_88px_112px_64px_64px] items-end gap-4 border-b-3 border-ink px-4 pb-2 text-xs font-extrabold tracking-widest text-fade uppercase"
 			>
 				<button
 					type="button"
@@ -447,7 +447,7 @@
 					<button
 						type="button"
 						onclick={() => toggleSort('ageRating')}
-						class="text-left tracking-[0.16em] hover:text-ink {sortKey === 'ageRating'
+						class="text-left tracking-widest hover:text-ink {sortKey === 'ageRating'
 							? 'text-ink'
 							: 'text-fade/80'}"
 						>Rating{sortKey === 'ageRating' ? (sortDir === 'desc' ? ' ▼' : ' ▲') : ''}</button
@@ -468,7 +468,7 @@
 					{#if showCut && r === 17}
 						<li class="flex items-center gap-3 px-4 py-2.5" aria-label="Championship cut">
 							<span class="h-px flex-1 bg-warm"></span>
-							<span class="text-[8.5px] font-extrabold tracking-[0.24em] text-warm uppercase"
+							<span class="text-xs font-extrabold tracking-widest text-warm uppercase"
 								>Championship cut · top 16 qualify</span
 							>
 							<span class="h-px flex-1 bg-warm"></span>
@@ -480,7 +480,7 @@
 							class="group grid grid-cols-[44px_minmax(0,1fr)_84px_88px_112px_64px_64px] items-center gap-4 px-4 py-2 transition-colors hover:bg-paper"
 						>
 							<span
-								class="ao-cond text-center text-[24px] leading-none font-black tabular-nums {rankTone(
+								class="ao-cond text-center text-2xl leading-none font-black tabular-nums {rankTone(
 									r
 								)}">{r}</span
 							>
@@ -494,45 +494,43 @@
 									/>
 								{:else}
 									<span
-										class="flex aspect-square w-[36px] shrink-0 items-center justify-center border border-dashed border-line2 text-[10px] font-bold text-fade"
+										class="flex aspect-square w-9 shrink-0 items-center justify-center border border-dashed border-line2 text-xs font-bold text-fade"
 										title="No AGE Rating yet">—</span
 									>
 								{/if}
 								<span class="min-w-0">
-									<span
-										class="block truncate font-newsreader text-[17px] leading-tight font-semibold"
-									>
+									<span class="block truncate font-newsreader text-lg leading-tight font-semibold">
 										<span class="fp-ul">{p.playerName}</span>
 									</span>
-									<span class="mt-[3px] flex items-center gap-2">
+									<span class="mt-1 flex items-center gap-2">
 										{#if p.ageRating != null}
 											<span
-												class="text-[8.5px] font-extrabold tracking-[0.16em] uppercase"
+												class="text-xs font-extrabold tracking-widest uppercase"
 												style="color: {tierHex(p)};">{tierLabel(p)}</span
 											>
 										{/if}
 										{#each circuitLabel(p) as c (c)}
 											<span
-												class="shrink-0 px-1.5 py-[2px] text-[7.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+												class="shrink-0 px-1.5 py-0.5 text-xs font-extrabold tracking-widest text-white uppercase"
 												style="background: {circuitVar(c)};">{abbr(c)}</span
 											>
 										{/each}
 									</span>
 								</span>
 							</span>
-							<span class="ao-cond text-center text-[24px] leading-none font-black tabular-nums"
+							<span class="ao-cond text-center text-2xl leading-none font-black tabular-nums"
 								>{p.totalPoints || 0}</span
 							>
-							<span class="text-center text-[13px] tabular-nums"
+							<span class="text-center text-sm tabular-nums"
 								><span class="font-bold">{p.matchesWon || 0}</span><span class="text-fade"
 									>–{(p.matchesPlayed || 0) - (p.matchesWon || 0)}</span
 								></span
 							>
 							<span class="flex flex-col items-center gap-1.5">
-								<span class="text-[13px] leading-none font-bold tabular-nums {winTone(p)}"
+								<span class="text-sm leading-none font-bold tabular-nums {winTone(p)}"
 									>{pct(p)}</span
 								>
-								<span class="block h-[3px] w-[56px] bg-line" aria-hidden="true"
+								<span class="block h-1 w-14 bg-line" aria-hidden="true"
 									><span
 										class="block h-full"
 										style="width: {Math.max(
@@ -542,10 +540,10 @@
 									></span></span
 								>
 							</span>
-							<span class="text-center text-[13px] font-semibold text-soft tabular-nums"
+							<span class="text-center text-sm font-semibold text-soft tabular-nums"
 								>{p.eventsPlayed || 0}</span
 							>
-							<span class="text-center text-[13px] font-semibold text-soft tabular-nums"
+							<span class="text-center text-sm font-semibold text-soft tabular-nums"
 								>{p.top8Finishes || 0}</span
 							>
 						</a>
@@ -557,7 +555,7 @@
 		<!-- phone table -->
 		<div class="mt-5 md:hidden">
 			<div
-				class="grid grid-cols-[28px_minmax(0,1fr)_auto] items-end gap-3 border-b-[3px] border-ink pb-2 text-[9px] font-extrabold tracking-[0.2em] text-fade uppercase"
+				class="grid grid-cols-[28px_minmax(0,1fr)_auto] items-end gap-3 border-b-3 border-ink pb-2 text-xs font-extrabold tracking-widest text-fade uppercase"
 			>
 				<span class="text-center">#</span>
 				<span>Player</span>
@@ -569,7 +567,7 @@
 					{#if showCut && r === 17}
 						<li class="flex items-center gap-3 py-2.5" aria-label="Championship cut">
 							<span class="h-px flex-1 bg-warm"></span>
-							<span class="text-[8.5px] font-extrabold tracking-[0.2em] text-warm uppercase"
+							<span class="text-xs font-extrabold tracking-widest text-warm uppercase"
 								>Championship cut · top 16</span
 							>
 							<span class="h-px flex-1 bg-warm"></span>
@@ -581,7 +579,7 @@
 							class="grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-3 py-3 active:bg-paper"
 						>
 							<span
-								class="ao-cond text-center text-[24px] leading-none font-black tabular-nums {rankTone(
+								class="ao-cond text-center text-2xl leading-none font-black tabular-nums {rankTone(
 									r
 								)}">{r}</span
 							>
@@ -595,31 +593,30 @@
 									/>
 								{:else}
 									<span
-										class="flex aspect-square w-[36px] shrink-0 items-center justify-center border border-dashed border-line2 text-[10px] font-bold text-fade"
+										class="flex aspect-square w-9 shrink-0 items-center justify-center border border-dashed border-line2 text-xs font-bold text-fade"
 										title="No AGE Rating yet">—</span
 									>
 								{/if}
 								<span class="min-w-0">
-									<span
-										class="block truncate font-newsreader text-[16px] leading-tight font-semibold"
+									<span class="block truncate font-newsreader text-base leading-tight font-semibold"
 										>{p.playerName}</span
 									>
-									<span class="mt-[3px] flex items-center gap-2">
+									<span class="mt-1 flex items-center gap-2">
 										{#if p.ageRating != null}
 											<span
-												class="truncate text-[8.5px] font-extrabold tracking-[0.16em] uppercase"
+												class="truncate text-xs font-extrabold tracking-widest uppercase"
 												style="color: {tierHex(p)};">{tierLabel(p)}</span
 											>
 										{/if}
 										{#each circuitLabel(p) as c (c)}
 											<span
-												class="shrink-0 px-1.5 py-[2px] text-[7.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+												class="shrink-0 px-1.5 py-0.5 text-xs font-extrabold tracking-widest text-white uppercase"
 												style="background: {circuitVar(c)};">{abbr(c)}</span
 											>
 										{/each}
 									</span>
 									<span
-										class="mt-1.5 flex flex-wrap items-baseline gap-x-2 text-[11.5px] leading-snug text-soft tabular-nums"
+										class="mt-1.5 flex flex-wrap items-baseline gap-x-2 text-xs leading-snug text-soft tabular-nums"
 									>
 										<span class="font-bold text-ink">{record(p)}</span>
 										<span class="text-line2" aria-hidden="true">·</span>
@@ -632,14 +629,14 @@
 								</span>
 							</span>
 							<span
-								class="ao-cond min-w-[40px] text-right text-[26px] leading-none font-black tabular-nums"
+								class="ao-cond min-w-10 text-right text-2xl leading-none font-black tabular-nums"
 								>{p.totalPoints || 0}</span
 							>
 						</a>
 					</li>
 				{/each}
 			</ol>
-			<p class="mt-3 text-[10.5px] leading-snug text-fade">
+			<p class="mt-3 text-xs leading-snug text-fade">
 				Record · win rate · events played (ev) · Top 8 finishes (T8)
 			</p>
 		</div>
@@ -653,11 +650,11 @@
 				type="button"
 				onclick={() => gotoPage(curPage - 1)}
 				disabled={curPage <= 1}
-				class="text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors enabled:hover:text-warm disabled:text-line2"
+				class="text-xs font-extrabold tracking-widest uppercase transition-colors enabled:hover:text-warm disabled:text-line2"
 				>← Previous</button
 			>
 			<ol
-				class="flex items-baseline gap-4 font-newsreader text-[17px] tabular-nums"
+				class="flex items-baseline gap-4 font-newsreader text-lg tabular-nums"
 				aria-label="Page {curPage} of {pageCount}"
 			>
 				{#each pageNumbers as n, i (`${n}-${i}`)}
@@ -679,20 +676,20 @@
 				type="button"
 				onclick={() => gotoPage(curPage + 1)}
 				disabled={curPage >= pageCount}
-				class="text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors enabled:hover:text-warm disabled:text-line2"
+				class="text-xs font-extrabold tracking-widest uppercase transition-colors enabled:hover:text-warm disabled:text-line2"
 				>Next →</button
 			>
 		</nav>
 	{:else}
 		<div class="mt-6 border-y border-line py-14 text-center">
-			<p class="ao-cond text-[40px] leading-none font-black uppercase">No players match</p>
-			<p class="mt-2 font-newsreader text-[16px] text-soft italic">
+			<p class="ao-cond text-4xl leading-none font-black uppercase">No players match</p>
+			<p class="mt-2 font-newsreader text-base text-soft italic">
 				Try another season, circuit or name.
 			</p>
 			<button
 				type="button"
 				onclick={clearAll}
-				class="mt-5 border-b-2 border-warm pb-1 text-[10.5px] font-extrabold tracking-[0.16em] text-warm uppercase"
+				class="mt-5 border-b-2 border-warm pb-1 text-xs font-extrabold tracking-widest text-warm uppercase"
 				>Clear filters</button
 			>
 		</div>
@@ -700,18 +697,15 @@
 </section>
 
 <!-- ============ glossary ============ -->
-<section class="mx-auto w-full max-w-[1200px] px-5 py-14 md:px-8 md:py-20" use:reveal>
-	<div class="border-b-[3px] border-ink pb-3">
-		<h2 class="ao-cond text-[44px] leading-[0.85] font-black uppercase md:text-[64px]">
-			How to read this
-		</h2>
+<section class="mx-auto w-full max-w-page px-5 py-14 md:px-8 md:py-20" use:reveal>
+	<div class="border-b-3 border-ink pb-3">
+		<h2 class="ao-cond text-5xl leading-none font-black uppercase md:text-6xl">How to read this</h2>
 	</div>
 	<ul class="mt-6 grid gap-x-10 gap-y-6 md:grid-cols-2 lg:grid-cols-3">
 		{#each GLOSSARY as [t, b] (t)}
-			<li class="border-l-[3px] border-warm pl-4">
-				<span class="block text-[10px] font-extrabold tracking-[0.2em] uppercase">{t}</span>
-				<span class="mt-1 block font-newsreader text-[15px] leading-[1.5] text-soft italic"
-					>{b}</span
+			<li class="border-l-3 border-warm pl-4">
+				<span class="block text-xs font-extrabold tracking-widest uppercase">{t}</span>
+				<span class="mt-1 block font-newsreader text-base leading-normal text-soft italic">{b}</span
 				>
 			</li>
 		{/each}

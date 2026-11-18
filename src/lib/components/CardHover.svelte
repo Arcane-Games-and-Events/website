@@ -141,7 +141,7 @@
 		src={tipSrc}
 		alt=""
 		aria-hidden="true"
-		class="pointer-events-none fixed z-50 aspect-[488/680] object-contain transition-opacity duration-200 {tipLoaded
+		class="pointer-events-none fixed z-50 aspect-488/680 object-contain transition-opacity duration-200 {tipLoaded
 			? 'opacity-100'
 			: 'opacity-0'}"
 		style="left: {tipX}px; top: {tipY}px; width: {TIP_WIDTH}px;"
@@ -170,7 +170,7 @@
 				href={current.href}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="flex min-h-[40px] shrink-0 items-center border border-paper-bg/30 px-3 text-[9.5px] font-extrabold tracking-[0.18em] whitespace-nowrap uppercase transition-colors hover:bg-paper-bg hover:text-ink"
+				class="flex min-h-10 shrink-0 items-center border border-paper-bg/30 px-3 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors hover:bg-paper-bg hover:text-ink"
 				>{current.custom ? 'Open link' : 'View card'} <span aria-hidden="true">&nbsp;↗</span></a
 			>
 		{/snippet}

@@ -83,10 +83,10 @@
 		/>{/if}
 
 	<div class={ui.panel}>
-		<dl class="grid gap-x-8 gap-y-4 px-6 pt-5 pb-6 text-[13.5px] sm:grid-cols-2 md:px-7">
+		<dl class="grid gap-x-8 gap-y-4 px-6 pt-5 pb-6 text-sm sm:grid-cols-2 md:px-7">
 			<div>
 				<dt class={ui.label}>Total</dt>
-				<dd class="mt-1 font-newsreader text-[28px] leading-none font-semibold tabular-nums">
+				<dd class="mt-1 font-newsreader text-3xl leading-none font-semibold tabular-nums">
 					{ui.money(o.amount)}
 				</dd>
 			</div>
@@ -146,12 +146,12 @@
 			{#each data.tickets as t (t.id)}
 				<li class="flex flex-wrap items-center gap-4 border-b border-line py-4">
 					<div class="min-w-0 flex-1">
-						<p class="font-newsreader text-[18px] font-semibold">
+						<p class="font-newsreader text-lg font-semibold">
 							{[t.firstName, t.lastName].filter(Boolean).join(' ') || 'Player'}{t.gemId
 								? ` · GEM ${t.gemId}`
 								: ''}
 						</p>
-						<p class="mt-0.5 text-[12.5px] text-soft">
+						<p class="mt-0.5 text-xs text-soft">
 							<span class="font-mono tracking-wider">{t.code}</span> · {Number(t.amountPaid) > 0
 								? ui.money(t.amountPaid)
 								: 'Free'}{t.refunded
@@ -180,17 +180,17 @@
 				<li class="border-b border-line py-4">
 					<div class="flex flex-wrap items-center gap-4">
 						<div class="min-w-0 flex-1">
-							<p class="font-newsreader text-[18px] font-semibold">
+							<p class="font-newsreader text-lg font-semibold">
 								{#if g.slug}<a href="/academy/{g.slug}" class="hover:text-warm">{g.title}</a
 									>{:else}{g.title}{/if}
 							</p>
-							<p class="mt-0.5 text-[12.5px] text-soft">
+							<p class="mt-0.5 text-xs text-soft">
 								{ui.dollars(g.paidCents)} · {g.opened ? 'opened' : 'not opened yet'}{g.request
 									? ` · ${g.request.refundStatus === 'refunded' ? 'refunded' : REQUEST[g.request.status]}`
 									: ''}
 							</p>
 							{#if g.request?.note}
-								<p class="mt-1 text-[12.5px] text-soft italic">“{g.request.note}”</p>
+								<p class="mt-1 text-xs text-soft italic">“{g.request.note}”</p>
 							{/if}
 						</div>
 						{#if g.canRequest && asking !== g.itemId}
@@ -206,12 +206,12 @@
 						{/if}
 					</div>
 					{#if asking === g.itemId}
-						<form onsubmit={(e) => sendRequest(e, g)} class="mt-4 max-w-[520px] space-y-3">
+						<form onsubmit={(e) => sendRequest(e, g)} class="mt-4 max-w-lg space-y-3">
 							<fieldset>
 								<legend class={ui.label}>Why are you asking?</legend>
 								<div class="mt-2 space-y-1.5">
 									{#each REFUND_REASONS as r (r.key)}
-										<label class="flex items-center gap-2 text-[13.5px]">
+										<label class="flex items-center gap-2 text-sm">
 											<input
 												type="radio"
 												name="reason"
@@ -230,10 +230,10 @@
 									bind:value={message}
 									rows="3"
 									maxlength="2000"
-									class="mt-1.5 w-full border border-line2 bg-white px-3 py-2 text-[14px] focus:border-ink focus:ring-0"
+									class="mt-1.5 w-full border border-line2 bg-white px-3 py-2 text-sm focus:border-ink focus:ring-0"
 								></textarea>
 							</label>
-							{#if askError}<p class="text-[12.5px] font-semibold text-hero-rb" role="alert">
+							{#if askError}<p class="text-xs font-semibold text-hero-rb" role="alert">
 									{askError}
 								</p>{/if}
 							<div class="flex items-center gap-3">
@@ -243,7 +243,7 @@
 								<button type="button" class={ui.ghostSm} onclick={() => (asking = null)}
 									>Cancel</button
 								>
-								<a href="/refund-policy" class="text-[12px] text-soft underline underline-offset-2"
+								<a href="/refund-policy" class="text-xs text-soft underline underline-offset-2"
 									>Refund policy</a
 								>
 							</div>

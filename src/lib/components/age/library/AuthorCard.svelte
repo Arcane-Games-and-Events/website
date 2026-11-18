@@ -30,30 +30,28 @@
 {#snippet portrait()}
 	{#if author.profilePicture}
 		<span
-			class="fp-plate my-[7px] ml-[7px] block shrink-0 bg-panel bg-cover bg-center {rail
-				? 'h-[52px] w-[52px]'
-				: 'h-[64px] w-[64px] md:h-[76px] md:w-[76px]'}"
+			class="fp-plate my-2 ml-2 block shrink-0 bg-panel bg-cover bg-center {rail
+				? 'h-13 w-13'
+				: 'h-16 w-16 md:h-19 md:w-19'}"
 			style="background-image: url('{author.profilePicture}');"
 			aria-hidden="true"
 		></span>
 	{:else}
 		<span
-			class="fp-plate my-[7px] ml-[7px] flex shrink-0 items-center justify-center bg-ink font-newsreader leading-none font-semibold tracking-[-0.02em] text-paper-bg {rail
-				? 'h-[52px] w-[52px] text-[20px]'
-				: 'h-[64px] w-[64px] text-[24px] md:h-[76px] md:w-[76px] md:text-[28px]'}"
+			class="fp-plate my-2 ml-2 flex shrink-0 items-center justify-center bg-ink font-newsreader leading-none font-semibold tracking-tight text-paper-bg {rail
+				? 'h-13 w-13 text-xl'
+				: 'h-16 w-16 text-2xl md:h-19 md:w-19 md:text-3xl'}"
 			aria-hidden="true">{initials}</span
 		>
 	{/if}
 {/snippet}
 
 <aside
-	class="border-t-[3px] border-ink {rail ? 'pt-4 pb-1' : 'mt-12 border-b border-b-line pt-5 pb-6'}"
+	class="border-t-3 border-ink {rail ? 'pt-4 pb-1' : 'mt-12 border-b border-b-line pt-5 pb-6'}"
 	aria-label="About the author"
 >
-	<p
-		class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.22em] text-warm uppercase"
-	>
-		<span class="text-[8px]" aria-hidden="true">◆</span>Written by
+	<p class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-warm uppercase">
+		<span class="text-xs" aria-hidden="true">◆</span>Written by
 	</p>
 
 	<div class="mt-3 flex items-center {rail ? 'gap-4' : 'gap-5 md:gap-6'}">
@@ -62,26 +60,26 @@
 			{#if href}
 				<a
 					{href}
-					class="block font-newsreader leading-[1.05] font-semibold tracking-[-0.01em] text-ink transition-colors hover:text-warm {rail
-						? 'text-[21px]'
-						: 'text-[26px] md:text-[30px]'}"><span class="fp-ul">{author.name}</span></a
+					class="block font-newsreader leading-none font-semibold tracking-normal text-ink transition-colors hover:text-warm {rail
+						? 'text-xl'
+						: 'text-2xl md:text-3xl'}"><span class="fp-ul">{author.name}</span></a
 				>
 			{:else}
 				<p
-					class="font-newsreader leading-[1.05] font-semibold tracking-[-0.01em] text-ink {rail
-						? 'text-[21px]'
-						: 'text-[26px] md:text-[30px]'}"
+					class="font-newsreader leading-none font-semibold tracking-normal text-ink {rail
+						? 'text-xl'
+						: 'text-2xl md:text-3xl'}"
 				>
 					{author.name}
 				</p>
 			{/if}
 			{#if author.role}
-				<p class="mt-1 font-newsreader text-[14.5px] leading-snug text-soft italic">
+				<p class="mt-1 font-newsreader text-sm leading-snug text-soft italic">
 					{author.role}
 				</p>
 			{/if}
 			{#if piecesLabel}
-				<p class="mt-1.5 text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
+				<p class="mt-1.5 text-xs font-extrabold tracking-widest text-fade uppercase">
 					{piecesLabel}
 				</p>
 			{/if}
@@ -91,8 +89,8 @@
 	{#if bioHtml}
 		<div
 			class="mt-4 font-newsreader text-soft [&_a]:text-warm [&_a]:underline [&_p+p]:mt-2 {rail
-				? 'text-[14px] leading-[1.55]'
-				: 'max-w-[620px] text-[16px] leading-[1.6] md:text-[17px]'}"
+				? 'text-sm leading-normal'
+				: 'max-w-xl text-base leading-relaxed md:text-lg'}"
 		>
 			{@html bioHtml}
 		</div>
@@ -110,11 +108,11 @@
 						href={l.href}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="group inline-flex items-center gap-1.5 text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase transition-colors hover:text-warm"
+						class="group inline-flex items-center gap-1.5 text-xs font-extrabold tracking-widest text-soft uppercase transition-colors hover:text-warm"
 					>
 						{l.label}
 						<span
-							class="opacity-50 transition-[opacity,transform] group-hover:translate-x-0.5 group-hover:opacity-100"
+							class="opacity-50 transition group-hover:translate-x-0.5 group-hover:opacity-100"
 							aria-hidden="true">↗</span
 						>
 					</a>
@@ -124,7 +122,7 @@
 				<li>
 					<a
 						{href}
-						class="group inline-flex items-center gap-1.5 text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
+						class="group inline-flex items-center gap-1.5 text-xs font-extrabold tracking-widest text-warm uppercase"
 					>
 						All their work
 						<span class="transition-transform group-hover:translate-x-0.5" aria-hidden="true"

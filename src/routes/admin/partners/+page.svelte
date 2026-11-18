@@ -65,7 +65,7 @@
 	/>
 {/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-6 pb-20 md:px-8">
 	<Figures
 		items={[
 			{
@@ -92,7 +92,7 @@
 					type="button"
 					onclick={() => (show = f.id)}
 					aria-pressed={show === f.id}
-					class="inline-flex h-[36px] items-center gap-2 border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {show ===
+					class="inline-flex h-9 items-center gap-2 border px-3 text-xs font-extrabold tracking-widest uppercase transition-colors {show ===
 					f.id
 						? 'border-ink bg-ink text-paper-bg'
 						: 'border-line2 bg-white text-soft hover:border-ink hover:text-ink'}"
@@ -117,15 +117,15 @@
 			<li>
 				<a
 					href="/admin/partners/{p.id}"
-					class="group grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2.5 border border-l-[4px] px-3.5 py-3.5 transition-[border-color,background-color] duration-200 md:grid-cols-[52px_minmax(0,1fr)_150px_260px_20px] md:gap-x-5 md:px-4 {ready
-						? 'border-hero-rb/30 bg-hero-rb/[0.04] hover:border-hero-rb/60'
+					class="group grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2.5 border border-l-4 px-3.5 py-3.5 transition duration-200 md:grid-cols-[52px_minmax(0,1fr)_150px_260px_20px] md:gap-x-5 md:px-4 {ready
+						? 'border-hero-rb/30 bg-hero-rb/5 hover:border-hero-rb/60'
 						: p.isActive
 							? 'border-line2 bg-white hover:border-ink'
 							: 'border-line2 bg-paper/60 hover:border-ink'}"
 					style="border-left-color: {tone}"
 				>
 					<span
-						class="ao-cond flex h-[48px] w-[48px] items-center justify-center text-[21px] leading-none font-black md:h-[52px] md:w-[52px] {p.isActive
+						class="ao-cond flex h-12 w-12 items-center justify-center text-xl leading-none font-black md:h-13 md:w-13 {p.isActive
 							? 'bg-gold text-ink'
 							: 'bg-line text-soft'}"
 						aria-hidden="true"
@@ -135,15 +135,15 @@
 					<span class="min-w-0">
 						<span class="flex flex-wrap items-center gap-2">
 							<span
-								class="truncate font-newsreader text-[18px] leading-tight font-semibold group-hover:text-warm"
+								class="truncate font-newsreader text-lg leading-tight font-semibold group-hover:text-warm"
 								>{p.displayName || `${p.firstName} ${p.lastName}`}</span
 							>
 							{#if !p.isActive}<span
-									class="border border-line2 px-1.5 py-px text-[9px] font-extrabold tracking-[0.14em] text-soft uppercase"
+									class="border border-line2 px-1.5 py-px text-xs font-extrabold tracking-widest text-soft uppercase"
 									>Inactive</span
 								>{/if}
 						</span>
-						<span class="mt-0.5 block truncate text-[12px] text-fade"
+						<span class="mt-0.5 block truncate text-xs text-fade"
 							>{p.displayName ? `${p.firstName} ${p.lastName} · ` : ''}{p.email} · since {fmtDate(
 								p.createdAt
 							)}</span
@@ -152,7 +152,7 @@
 					<!-- the code: what they hand out -->
 					<span class="col-start-3 row-start-1 md:col-start-3">
 						<code
-							class="inline-block border-2 border-dashed px-2.5 py-1 font-mono text-[14px] font-semibold tracking-[0.06em] {p.isActive
+							class="inline-block border-2 border-dashed px-2.5 py-1 font-mono text-sm font-semibold tracking-wider {p.isActive
 								? 'border-gold text-ink'
 								: 'border-line2 text-fade'}">{p.code}</code
 						>
@@ -162,21 +162,21 @@
 					>
 						<span>
 							<span class="{ui.label} block">Referrals</span>
-							<span class="ao-cond text-[22px] leading-none font-black tabular-nums"
+							<span class="ao-cond text-2xl leading-none font-black tabular-nums"
 								>{ui.fmt(p.referralCount)}</span
 							>
 						</span>
 						<span>
 							<span class="{ui.label} block">{ready ? 'Ready' : 'Pending'}</span>
 							<span
-								class="ao-cond text-[22px] leading-none font-black tabular-nums {ready
+								class="ao-cond text-2xl leading-none font-black tabular-nums {ready
 									? 'text-hero-rb'
 									: ''}">{fmt(ready ? p.readyToPayAmount : p.pendingCommission)}</span
 							>
 						</span>
 						<span>
 							<span class="{ui.label} block">Paid</span>
-							<span class="ao-cond text-[22px] leading-none font-black text-prem tabular-nums"
+							<span class="ao-cond text-2xl leading-none font-black text-prem tabular-nums"
 								>{fmt(p.paidCommission)}</span
 							>
 						</span>

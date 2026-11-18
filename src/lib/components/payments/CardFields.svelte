@@ -110,36 +110,34 @@
 		fieldError = '';
 	}
 
-	const labelCls = 'mb-[7px] block text-[11px] font-bold tracking-[0.01em] text-soft';
+	const labelCls = 'mb-2 block text-xs font-bold tracking-normal text-soft';
 	const inputCls =
-		'h-[50px] w-full border-[1.5px] border-line2 bg-paper-bg px-[15px] text-[14.5px] font-medium text-ink transition-colors outline-none placeholder:text-fade hover:border-ink focus:border-ink disabled:opacity-60';
+		'h-13 w-full border-2 border-line2 bg-paper-bg px-4 text-sm font-medium text-ink transition-colors outline-none placeholder:text-fade hover:border-ink focus:border-ink disabled:opacity-60';
 </script>
 
 <div class={compact ? 'space-y-4' : 'space-y-5'}>
 	{#if !accept?.ready}
 		<div
-			class="border-[1.5px] border-warm bg-warm/10 px-4 py-3 text-[12px] font-semibold tracking-[0.04em] text-warm uppercase"
+			class="border-2 border-warm bg-warm/10 px-4 py-3 text-xs font-semibold tracking-wider text-warm uppercase"
 		>
 			Card payments aren't configured on this site yet.
 		</div>
 	{/if}
 
 	{#if accept?.sandbox}
-		<div class="border-[1.5px] border-line2 bg-paper px-4 py-3 text-[11.5px] text-soft">
+		<div class="border-2 border-line2 bg-paper px-4 py-3 text-xs text-soft">
 			<div class="flex items-center justify-between gap-3">
-				<div class="text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase">
-					Test mode
-				</div>
+				<div class="text-xs font-extrabold tracking-widest text-fade uppercase">Test mode</div>
 				<button
 					type="button"
-					class="text-[10.5px] font-extrabold tracking-[0.14em] text-warm uppercase hover:underline"
+					class="text-xs font-extrabold tracking-widest text-warm uppercase hover:underline"
 					onclick={() => useTestCard(0)}
 					{disabled}
 				>
 					Fill test card
 				</button>
 			</div>
-			<div class="mt-1 grid grid-cols-2 gap-x-4 gap-y-[2px] tabular-nums">
+			<div class="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 tabular-nums">
 				<div><span class="text-fade">Card</span> 4007 0000 0002 7</div>
 				<div><span class="text-fade">Exp</span> 12 / 2028</div>
 				<div><span class="text-fade">CVV</span> 123</div>
@@ -149,7 +147,7 @@
 	{/if}
 
 	<div>
-		<div class="mb-[14px] text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase">
+		<div class="mb-3.5 text-xs font-extrabold tracking-widest text-fade uppercase">
 			Card information
 		</div>
 		<label for="cf-number" class={labelCls}>
@@ -165,11 +163,11 @@
 			value={number}
 			oninput={onNumberInput}
 			maxlength="23"
-			class="{inputCls} mb-[15px] tabular-nums"
+			class="{inputCls} mb-4 tabular-nums"
 			{disabled}
 			required
 		/>
-		<div class="grid grid-cols-3 gap-[11px]">
+		<div class="grid grid-cols-3 gap-3">
 			<div>
 				<label for="cf-month" class={labelCls}>Month <span class="text-prem">*</span></label>
 				<select
@@ -222,11 +220,9 @@
 
 	{#if showName || showZip}
 		<div>
-			<div class="mb-[14px] text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase">
-				Billing
-			</div>
+			<div class="mb-3.5 text-xs font-extrabold tracking-widest text-fade uppercase">Billing</div>
 			<div
-				class="grid gap-[11px] {showName && showZip
+				class="grid gap-3 {showName && showZip
 					? 'grid-cols-[1fr_1fr_98px]'
 					: showName
 						? 'grid-cols-2'
@@ -281,9 +277,9 @@
 	{/if}
 
 	{#if fieldError}
-		<p class="m-0 text-[12.5px] font-semibold text-hero-rb">{fieldError}</p>
+		<p class="m-0 text-xs font-semibold text-hero-rb">{fieldError}</p>
 	{/if}
-	<p class="m-0 text-[11px] leading-snug text-fade">
+	<p class="m-0 text-xs leading-snug text-fade">
 		Card details go straight to Authorize.net and never touch our servers.
 	</p>
 </div>

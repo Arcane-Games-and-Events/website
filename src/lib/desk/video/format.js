@@ -21,7 +21,7 @@ export const shortDate = (d) =>
 /** Status words and their chip tone, same everywhere. */
 export const STATUS = {
 	ready: { word: 'Ready', tone: 'text-prem border-prem/50' },
-	preparing: { word: 'Processing', tone: 'text-[#8a6116] border-[#8a6116]/50' },
+	preparing: { word: 'Processing', tone: 'text-gold-deep border-gold-deep/50' },
 	waiting: { word: 'Waiting for file', tone: 'text-fade border-line2' },
 	errored: { word: 'Failed', tone: 'text-hero-rb border-hero-rb/50' }
 };

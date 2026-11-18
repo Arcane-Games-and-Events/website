@@ -86,13 +86,13 @@
 </script>
 
 {#snippet head(title, note = '')}
-	<div class="flex items-baseline justify-between gap-3 border-b-[3px] border-ink pb-2.5">
-		<h2 class="text-[10.5px] font-extrabold tracking-[0.16em] uppercase">{title}</h2>
-		{#if note}<p class="text-[11.5px] text-fade">{note}</p>{/if}
+	<div class="flex items-baseline justify-between gap-3 border-b-3 border-ink pb-2.5">
+		<h2 class="text-xs font-extrabold tracking-widest uppercase">{title}</h2>
+		{#if note}<p class="text-xs text-fade">{note}</p>{/if}
 	</div>
 {/snippet}
 
-<div class="mx-auto w-full max-w-[1200px] space-y-10 px-5 pb-16 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page space-y-10 px-5 pb-16 font-libre md:px-8">
 	<section>
 		{@render head(
 			`Needs review · ${data.queue.length}`,
@@ -102,23 +102,21 @@
 			{#if data.queue.length}
 				<ReviewQueue items={data.queue} onchange={refresh} />
 			{:else}
-				<p class="text-[13.5px] text-soft">Nothing waiting. Posts that need you show up here.</p>
+				<p class="text-sm text-soft">Nothing waiting. Posts that need you show up here.</p>
 			{/if}
 		</div>
 	</section>
 
 	<div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">
 		<section>
-			<div class="flex items-baseline justify-between gap-3 border-b-[3px] border-ink pb-2.5">
-				<h2 class="text-[10.5px] font-extrabold tracking-[0.16em] uppercase">Threads</h2>
-				<p class="hidden text-[11.5px] text-fade sm:block">
-					Unread, then ones you haven’t answered
-				</p>
+			<div class="flex items-baseline justify-between gap-3 border-b-3 border-ink pb-2.5">
+				<h2 class="text-xs font-extrabold tracking-widest uppercase">Threads</h2>
+				<p class="hidden text-xs text-fade sm:block">Unread, then ones you haven’t answered</p>
 			</div>
 			<!-- The discussion itself, as students see it, where you reply -->
 			<a
 				href="/academy/{course.slug}/discussion"
-				class="mt-3 mb-3 flex min-h-[44px] items-center justify-between gap-3 bg-academy px-4 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-ink"
+				class="mt-3 mb-3 flex min-h-11 items-center justify-between gap-3 bg-academy px-4 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-ink"
 			>
 				<span>Open the discussion</span>
 				<span aria-hidden="true">→</span>
@@ -126,7 +124,7 @@
 			{#if unreadCount}
 				<!-- What's new for you: show only those, or clear them all -->
 				<div
-					class="flex items-center justify-between gap-3 border-b border-line bg-prem/[0.045] px-3 py-2"
+					class="flex items-center justify-between gap-3 border-b border-line bg-prem/5 px-3 py-2"
 				>
 					<button
 						type="button"
@@ -135,7 +133,7 @@
 							threadPage = 1;
 						}}
 						aria-pressed={unreadOnly}
-						class="flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors {unreadOnly
+						class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase transition-colors {unreadOnly
 							? 'text-prem'
 							: 'text-ink hover:text-prem'}"
 					>
@@ -145,7 +143,7 @@
 					<button
 						type="button"
 						onclick={markAllRead}
-						class="shrink-0 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+						class="shrink-0 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 						>Mark all read</button
 					>
 				</div>
@@ -154,14 +152,14 @@
 				<ul class="divide-y divide-line">
 					{#each shown as t (t.id)}
 						<li
-							class="flex items-start justify-between gap-4 border-l-[3px] py-3 pl-3 {t.unread
-								? 'border-prem/60 bg-prem/[0.045]'
+							class="flex items-start justify-between gap-4 border-l-3 py-3 pl-3 {t.unread
+								? 'border-prem/60 bg-prem/5'
 								: 'border-transparent'}"
 						>
 							<div class="min-w-0">
 								<a
 									href="/academy/{course.slug}/discussion/{t.id}"
-									class="inline-flex max-w-full items-center gap-2 font-newsreader text-[17px] hover:text-warm {t.unread
+									class="inline-flex max-w-full items-center gap-2 font-newsreader text-lg hover:text-warm {t.unread
 										? 'font-bold text-ink'
 										: 'font-semibold'}"
 									><span class="truncate">{t.title}</span>{#if t.unread}<NotificationBadge
@@ -172,7 +170,7 @@
 											label="{t.unread} new"
 										/>{/if}</a
 								>
-								<p class="text-[12px] text-fade">
+								<p class="text-xs text-fade">
 									{t.author} · {t.replies}
 									{t.replies === 1 ? 'reply' : 'replies'} · {shortDate(
 										t.lastReplyAt || t.createdAt
@@ -182,7 +180,7 @@
 							</div>
 							{#if !t.teacherReplied && t.kind !== 'update'}
 								<span
-									class="shrink-0 border border-gold px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.12em] text-[#8a6116] uppercase"
+									class="shrink-0 border border-gold px-1.5 py-px text-xs font-extrabold tracking-widest text-gold-deep uppercase"
 									>Unanswered</span
 								>
 							{/if}
@@ -197,7 +195,7 @@
 					onchange={(p) => (threadPage = p)}
 				/>
 			{:else}
-				<p class="mt-4 text-[13.5px] text-soft">No threads yet.</p>
+				<p class="mt-4 text-sm text-soft">No threads yet.</p>
 			{/if}
 		</section>
 
@@ -210,7 +208,7 @@
 						required
 						maxlength="160"
 						placeholder="Title"
-						class="h-[42px] w-full border border-line2 bg-white px-3 text-[14px] focus:border-ink focus:ring-0"
+						class="h-11 w-full border border-line2 bg-white px-3 text-sm focus:border-ink focus:ring-0"
 					/>
 					<textarea
 						bind:value={body}
@@ -218,17 +216,17 @@
 						rows="5"
 						maxlength="5000"
 						placeholder="New topic, a correction, office hours…"
-						class="w-full border border-line2 bg-white px-3 py-2 text-[14px] focus:border-ink focus:ring-0"
+						class="w-full border border-line2 bg-white px-3 py-2 text-sm focus:border-ink focus:ring-0"
 					></textarea>
 					<button
 						disabled={sending}
-						class="w-full bg-ink py-3 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
+						class="w-full bg-ink py-3 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
 						>{sending ? 'Posting…' : 'Post to every student'}</button
 					>
-					{#if error}<p class="text-[12.5px] text-hero-rb" role="alert">{error}</p>{/if}
-					{#if message}<p class="text-[12.5px] text-prem" role="status">{message}</p>{/if}
+					{#if error}<p class="text-xs text-hero-rb" role="alert">{error}</p>{/if}
+					{#if message}<p class="text-xs text-prem" role="status">{message}</p>{/if}
 				</form>
-				<p class="mt-2 text-[11.5px] text-fade">
+				<p class="mt-2 text-xs text-fade">
 					It’s pinned at the top of the discussion, and each student gets a notification.
 				</p>
 			</section>
@@ -238,18 +236,18 @@
 					<ul class="divide-y divide-line">
 						{#each data.muted as s (s.userId)}
 							<li class="flex items-center justify-between gap-3 py-2.5">
-								<span class="min-w-0 truncate text-[13.5px]">{s.name}</span>
+								<span class="min-w-0 truncate text-sm">{s.name}</span>
 								<button
 									type="button"
 									onclick={() => unmute(s)}
-									class="text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase hover:text-ink"
+									class="text-xs font-extrabold tracking-widest text-fade uppercase hover:text-ink"
 									>Unmute</button
 								>
 							</li>
 						{/each}
 					</ul>
 				{:else}
-					<p class="mt-4 text-[13.5px] text-soft">Nobody is muted.</p>
+					<p class="mt-4 text-sm text-soft">Nobody is muted.</p>
 				{/if}
 			</section>
 		</aside>

@@ -19,7 +19,7 @@
 		else error = (await res.json().catch(() => ({}))).message || 'Couldn’t delete';
 	}
 	const chip =
-		'inline-flex items-center border px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.14em] uppercase';
+		'inline-flex items-center border px-1.5 py-px text-xs font-extrabold tracking-widest uppercase';
 </script>
 
 <svelte:head><title>{data.show.name} · Studio</title></svelte:head>
@@ -33,24 +33,22 @@
 		<a
 			href="/studio/media/new?kind={data.show.kind}&show={data.show.id}"
 			class="{compact
-				? 'h-8 px-3 text-[9.5px]'
-				: 'h-10 px-5 text-[10.5px]'} inline-flex items-center bg-gold font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-paper-bg"
+				? 'h-8 px-3 text-xs'
+				: 'h-10 px-5 text-xs'} inline-flex items-center bg-gold font-extrabold tracking-widest text-ink uppercase transition-colors hover:bg-paper-bg"
 			>New episode</a
 		>
 	{/snippet}
 </DeskHeader>
 <DeskTabs />
 
-<div class="mx-auto w-full max-w-[1200px] space-y-10 px-5 py-8 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page space-y-10 px-5 py-8 font-libre md:px-8">
 	<a
 		href="/studio/shows"
-		class="block text-[10.5px] font-extrabold tracking-[0.16em] text-soft uppercase hover:text-ink"
+		class="block text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 		>← Shows</a
 	>
 	<section>
-		<h2
-			class="border-b-[3px] border-ink pb-2.5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase"
-		>
+		<h2 class="border-b-3 border-ink pb-2.5 text-xs font-extrabold tracking-widest uppercase">
 			About the show
 		</h2>
 		<div class="mt-5">
@@ -62,7 +60,7 @@
 
 	<section>
 		<h2
-			class="flex items-baseline justify-between border-b-[3px] border-ink pb-2.5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase"
+			class="flex items-baseline justify-between border-b-3 border-ink pb-2.5 text-xs font-extrabold tracking-widest uppercase"
 		>
 			Episodes <span class="tracking-normal text-fade normal-case">{data.episodes.length}</span>
 		</h2>
@@ -82,10 +80,10 @@
 										>{/if}
 									<span class="{chip} {STAGE[e.stage].tone}">{STAGE[e.stage].word}</span>
 								</span>
-								<span class="mt-1.5 block truncate font-newsreader text-[17px] font-semibold"
+								<span class="mt-1.5 block truncate font-newsreader text-lg font-semibold"
 									>{e.title}</span
 								>
-								<span class="block text-[12px] text-fade"
+								<span class="block text-xs text-fade"
 									>{[e.guests && `with ${e.guests}`, shortDate(e.publishedAt || e.createdAt)]
 										.filter(Boolean)
 										.join(' · ')}</span
@@ -96,7 +94,7 @@
 				{/each}
 			</ul>
 		{:else}
-			<p class="py-4 text-[13.5px] text-soft">No episodes yet.</p>
+			<p class="py-4 text-sm text-soft">No episodes yet.</p>
 		{/if}
 	</section>
 
@@ -104,9 +102,9 @@
 		<button
 			type="button"
 			onclick={remove}
-			class="text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase hover:text-hero-rb"
+			class="text-xs font-extrabold tracking-widest text-fade uppercase hover:text-hero-rb"
 			>Delete show</button
 		>
-		{#if error}<p class="mt-2 text-[12.5px] text-hero-rb">{error}</p>{/if}
+		{#if error}<p class="mt-2 text-xs text-hero-rb">{error}</p>{/if}
 	</div>
 </div>

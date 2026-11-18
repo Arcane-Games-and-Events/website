@@ -110,7 +110,7 @@
 <form onsubmit={handleSubmit} onfocusin={noteCheckout} class="space-y-5">
 	{#if error}
 		<div
-			class="border-[1.5px] border-hero-rb bg-hero-rb/[0.06] px-4 py-3 text-[12.5px] font-semibold text-hero-rb"
+			class="border-2 border-hero-rb bg-hero-rb/5 px-4 py-3 text-xs font-semibold text-hero-rb"
 			role="alert"
 		>
 			{error}
@@ -121,7 +121,7 @@
 	{/if}
 	{#if notice && notice !== 'resume'}
 		<div
-			class="border-[1.5px] border-line2 bg-paper px-4 py-3 text-[12.5px] font-semibold text-ink"
+			class="border-2 border-line2 bg-paper px-4 py-3 text-xs font-semibold text-ink"
 			role="status"
 		>
 			{notice}
@@ -138,12 +138,12 @@
 		disabled={loading || !!pendingId}
 	/>
 
-	<label class="flex items-start gap-3 text-[12.5px] leading-snug text-soft">
+	<label class="flex items-start gap-3 text-xs leading-snug text-soft">
 		<input
 			type="checkbox"
 			bind:checked={consent}
 			disabled={loading}
-			class="mt-[2px] h-4 w-4 shrink-0 border-[1.5px] border-line2 text-ink focus:ring-0"
+			class="mt-0.5 h-4 w-4 shrink-0 border-2 border-line2 text-ink focus:ring-0"
 			required
 		/>
 		<span>
@@ -159,7 +159,7 @@
 	<button
 		type="submit"
 		disabled={loading || !!pendingId || !accept?.ready}
-		class="inline-flex h-[54px] w-full items-center justify-center gap-2 border-[1.5px] border-prem bg-prem text-[13px] font-bold tracking-[0.07em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+		class="inline-flex h-14 w-full items-center justify-center gap-2 border-2 border-prem bg-prem text-sm font-bold tracking-wider text-white uppercase transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
 	>
 		{loading || pendingId ? 'Processing…' : `${submitText} →`}
 	</button>

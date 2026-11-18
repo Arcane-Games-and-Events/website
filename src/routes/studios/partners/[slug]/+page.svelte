@@ -16,10 +16,10 @@
 
 <AgeShell active="AGE Studios">
 	<section class="border-b border-line">
-		<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-10 md:px-8 md:pt-8 md:pb-12">
+		<div class="mx-auto w-full max-w-page px-5 pt-6 pb-10 md:px-8 md:pt-8 md:pb-12">
 			<a
 				href="/studios/partners"
-				class="st-wide inline-flex items-center gap-2 text-[10px] font-black tracking-[0.14em] uppercase hover:text-cc-ne"
+				class="st-wide inline-flex items-center gap-2 text-xs font-black tracking-widest uppercase hover:text-cc-ne"
 				><span aria-hidden="true">←</span> Partners</a
 			>
 			<div class="mt-7 flex flex-col gap-6 sm:flex-row sm:items-end">
@@ -31,29 +31,29 @@
 				</span>
 				<div class="min-w-0 flex-1">
 					<p
-						class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.22em] text-cc-ne uppercase"
+						class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-cc-ne uppercase"
 					>
-						<span class="text-[8px]" aria-hidden="true">◆</span>
+						<span class="text-xs" aria-hidden="true">◆</span>
 						{c.kind === 'podcast' ? 'Podcast' : 'Video'} · Partner
 					</p>
 					<h1
-						class="fp-rise mt-2 font-newsreader text-[40px] leading-[0.98] font-semibold tracking-[-0.02em] md:text-[60px]"
+						class="fp-rise mt-2 font-newsreader text-4xl leading-none font-semibold tracking-tight md:text-6xl"
 					>
 						{c.name}
 					</h1>
-					{#if c.handle}<p class="mt-1 text-[13px] text-fade">@{c.handle}</p>{/if}
+					{#if c.handle}<p class="mt-1 text-sm text-fade">@{c.handle}</p>{/if}
 				</div>
 				<a
 					href={c.subscribeUrl}
 					target="_blank"
 					rel="noopener"
-					class="inline-flex w-fit items-center gap-2 bg-ink px-5 py-3.5 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-cc-ne"
+					class="inline-flex w-fit items-center gap-2 bg-ink px-5 py-3.5 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-cc-ne"
 					>Subscribe on YouTube ↗</a
 				>
 			</div>
 			{#if c.description}
 				<p
-					class="mt-6 line-clamp-6 max-w-[720px] text-[14.5px] leading-relaxed whitespace-pre-line text-soft"
+					class="mt-6 line-clamp-6 max-w-3xl text-sm leading-relaxed whitespace-pre-line text-soft"
 				>
 					{#each linkify(c.description) as part, i (i)}{#if part.href}<a
 								href={part.href}
@@ -67,9 +67,9 @@
 		<StudiosTabs current="partners" />
 	</section>
 
-	<div class="mx-auto w-full max-w-[1200px] px-5 pt-10 pb-20 md:px-8 md:pt-12">
+	<div class="mx-auto w-full max-w-page px-5 pt-10 pb-20 md:px-8 md:pt-12">
 		<h2
-			class="flex items-baseline justify-between border-b-[3px] border-ink pb-3 text-[10.5px] font-extrabold tracking-[0.18em] uppercase"
+			class="flex items-baseline justify-between border-b-3 border-ink pb-3 text-xs font-extrabold tracking-widest uppercase"
 		>
 			On AGE Studios <span class="tracking-normal text-fade tabular-nums"
 				>{data.videos.length} {data.videos.length === 1 ? 'video' : 'videos'}</span

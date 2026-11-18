@@ -31,20 +31,20 @@
 
 <div class="border-b border-line2 bg-paper-bg font-libre">
 	<div
-		class="mx-auto flex max-w-[1200px] flex-wrap items-end justify-between gap-x-6 gap-y-2 px-5 md:px-8"
+		class="mx-auto flex max-w-page flex-wrap items-end justify-between gap-x-6 gap-y-2 px-5 md:px-8"
 	>
 		<nav class="flex gap-6" aria-label="Video areas">
 			{#each shown as a (a.id)}
 				<a
 					href={a.href}
 					aria-current={current === a.id ? 'page' : undefined}
-					class="-mb-px flex items-baseline gap-2 border-b-[3px] py-3.5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors {current ===
+					class="-mb-px flex items-baseline gap-2 border-b-3 py-3.5 text-xs font-extrabold tracking-widest uppercase transition-colors {current ===
 					a.id
 						? 'border-ink text-ink'
 						: 'border-transparent text-fade hover:text-ink'}"
 				>
 					{a.label}
-					{#if counts[a.id] != null}<span class="text-[10px] tracking-normal text-fade tabular-nums"
+					{#if counts[a.id] != null}<span class="text-xs tracking-normal text-fade tabular-nums"
 							>{counts[a.id]}</span
 						>{/if}
 				</a>
@@ -60,7 +60,7 @@
 					<a
 						href={viewHref(v)}
 						aria-current={view === v ? 'page' : undefined}
-						class="px-3 py-1.5 text-[9.5px] font-extrabold tracking-[0.14em] uppercase transition-colors {view ===
+						class="px-3 py-1.5 text-xs font-extrabold tracking-widest uppercase transition-colors {view ===
 						v
 							? 'bg-ink text-paper-bg'
 							: 'bg-white text-soft hover:text-ink'}">{l}</a

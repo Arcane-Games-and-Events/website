@@ -246,7 +246,7 @@
 </AdminHeader>
 <AdminTabs />
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pb-20 md:px-8">
 	<!-- the month at a glance -->
 	<div
 		class="mt-10 grid gap-px border border-line2 bg-line2 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]"
@@ -254,23 +254,21 @@
 		<!-- revenue -->
 		<section class="min-w-0 bg-paper-bg px-5 py-6 md:px-7 md:py-7">
 			<div class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-				<h2
-					class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-				>
-					<span class="text-[8px] text-prem">◆</span>Revenue so far this month
+				<h2 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+					<span class="text-xs text-prem">◆</span>Revenue so far this month
 				</h2>
 				<a
 					href="/admin/analytics"
-					class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
+					class="text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 					>Analytics →</a
 				>
 			</div>
 			<div class="mt-3 flex flex-wrap items-end gap-x-5 gap-y-2">
-				<p class="ao-cond text-[72px] leading-[0.85] font-black tabular-nums md:text-[96px]">
+				<p class="ao-cond text-7xl leading-none font-black tabular-nums md:text-8xl">
 					{money(thisMonth)}
 				</p>
 				{#if lastMonth !== null}
-					<p class="pb-1.5 text-[12px] text-soft">
+					<p class="pb-1.5 text-xs text-soft">
 						{money(lastMonth)} in all of last month
 					</p>
 				{/if}
@@ -280,7 +278,7 @@
 				<!-- twelve months, the current one in orange -->
 				<div class="mt-7">
 					<ol
-						class="flex h-[132px] items-end gap-[3px] border-b border-ink"
+						class="flex h-33 items-end gap-1 border-b border-ink"
 						aria-label="Net revenue by month"
 					>
 						{#each months as m, i (m.month)}
@@ -296,16 +294,16 @@
 									style="height: {Math.max(2, (Math.max(0, m.net) / peak) * 100)}%"
 								></span>
 								<span
-									class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 bg-ink px-2 py-1 text-[11px] whitespace-nowrap text-paper-bg tabular-nums opacity-0 transition-opacity group-hover:opacity-100"
+									class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 bg-ink px-2 py-1 text-xs whitespace-nowrap text-paper-bg tabular-nums opacity-0 transition-opacity group-hover:opacity-100"
 									>{m.label} · {money(m.net)}</span
 								>
 							</li>
 						{/each}
 					</ol>
-					<ol class="mt-1.5 flex gap-[3px]" aria-hidden="true">
+					<ol class="mt-1.5 flex gap-1" aria-hidden="true">
 						{#each months as m, i (m.month)}
 							<li
-								class="flex-1 text-center text-[9px] font-extrabold tracking-[0.08em] uppercase {i ===
+								class="flex-1 text-center text-xs font-extrabold tracking-widest uppercase {i ===
 								months.length - 1
 									? 'text-warm'
 									: 'text-fade'}"
@@ -316,19 +314,19 @@
 					</ol>
 				</div>
 				<div class="mt-5 grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-8">
-					<p class="text-[12px] text-soft">
-						<span class="ao-cond mr-1.5 text-[24px] leading-none font-black text-ink tabular-nums"
+					<p class="text-xs text-soft">
+						<span class="ao-cond mr-1.5 text-2xl leading-none font-black text-ink tabular-nums"
 							>{money(year)}</span
 						>in the last 12 months
 					</p>
 					{#if split}
 						<div class="min-w-0">
-							<div class="flex h-2 gap-[2px]" aria-hidden="true">
+							<div class="flex h-2 gap-0.5" aria-hidden="true">
 								<span class="bg-prem" style="width: {split.subsPct}%"></span>
 								<span class="flex-1 bg-warm"></span>
 							</div>
 							<div
-								class="mt-1.5 flex justify-between gap-3 text-[10px] font-extrabold tracking-[0.12em] uppercase"
+								class="mt-1.5 flex justify-between gap-3 text-xs font-extrabold tracking-widest uppercase"
 							>
 								<span class="text-prem">Memberships {money(split.subs)}</span>
 								<span class="text-warm">Tickets {money(split.tix)}</span>
@@ -341,10 +339,8 @@
 
 		<!-- briefing -->
 		<section class="min-w-0 bg-ink px-5 py-6 text-paper-bg md:px-7 md:py-7">
-			<h2
-				class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-			>
-				<span class="text-[8px] text-warm">◆</span>Your briefing
+			<h2 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+				<span class="text-xs text-warm">◆</span>Your briefing
 			</h2>
 			{#if needs.length}
 				<ul class="mt-4">
@@ -352,23 +348,22 @@
 						<li class="border-b border-paper-bg/15 last:border-b-0">
 							<a href={item.href} class="group flex items-baseline gap-4 py-2.5">
 								<span
-									class="ao-cond w-10 shrink-0 text-[28px] leading-none font-black tabular-nums {item.tone ===
+									class="ao-cond w-10 shrink-0 text-3xl leading-none font-black tabular-nums {item.tone ===
 									'text-hero-rb'
 										? 'text-warm-light'
 										: 'text-paper-bg/60'}">{item.count}</span
 								>
-								<span class="font-newsreader text-[16px] leading-snug group-hover:underline"
+								<span class="font-newsreader text-base leading-snug group-hover:underline"
 									>{item.text}</span
 								>
-								<span class="ml-auto text-[12px] text-paper-bg/40 group-hover:text-paper-bg">→</span
-								>
+								<span class="ml-auto text-xs text-paper-bg/40 group-hover:text-paper-bg">→</span>
 							</a>
 						</li>
 					{/each}
 				</ul>
 			{:else}
-				<p class="ao-cond mt-6 text-[56px] leading-none font-black uppercase">All clear.</p>
-				<p class="mt-3 font-newsreader text-[17px] text-paper-bg/70 italic">
+				<p class="ao-cond mt-6 text-6xl leading-none font-black uppercase">All clear.</p>
+				<p class="mt-3 font-newsreader text-lg text-paper-bg/70 italic">
 					Nothing is waiting on you.
 				</p>
 			{/if}
@@ -378,26 +373,23 @@
 	<!-- figures -->
 	<dl class="mt-10 grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-3 lg:grid-cols-5">
 		{#each figures as f (f.label)}
-			<div class="border-t-[3px] pt-3 {f.tone}">
-				<dt class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">{f.label}</dt>
-				<dd class="ao-cond mt-2 text-[40px] leading-none font-black tabular-nums">{f.value}</dd>
-				<dd class="mt-1.5 text-[11px] text-soft">{f.note}</dd>
+			<div class="border-t-3 pt-3 {f.tone}">
+				<dt class="text-xs font-extrabold tracking-widest text-fade uppercase">{f.label}</dt>
+				<dd class="ao-cond mt-2 text-4xl leading-none font-black tabular-nums">{f.value}</dd>
+				<dd class="mt-1.5 text-xs text-soft">{f.note}</dd>
 			</div>
 		{/each}
 	</dl>
 
 	<!-- next events -->
 	<section class="mt-14">
-		<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-			<h2
-				class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-			>
-				<span class="text-[8px] text-warm">◆</span>Next events
+		<div class="flex items-baseline justify-between gap-4 border-b-3 border-ink pb-2">
+			<h2 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+				<span class="text-xs text-warm">◆</span>Next events
 			</h2>
 			<a
 				href="/admin/events"
-				class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
-				>All →</a
+				class="text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink">All →</a
 			>
 		</div>
 		{#if data.events.length}
@@ -407,25 +399,23 @@
 				{/each}
 			</ul>
 		{:else}
-			<p class="py-5 font-newsreader text-[16px] text-soft italic">No upcoming events.</p>
+			<p class="py-5 font-newsreader text-base text-soft italic">No upcoming events.</p>
 		{/if}
 	</section>
 
 	{#if data.storeEvents.length}
 		<!-- events stores scheduled themselves (live without approval) -->
 		<section class="mt-14">
-			<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-				<h2
-					class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-				>
-					<span class="text-[8px] text-hero-rb">◆</span>New store events
+			<div class="flex items-baseline justify-between gap-4 border-b-3 border-ink pb-2">
+				<h2 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+					<span class="text-xs text-hero-rb">◆</span>New store events
 				</h2>
-				<span class="text-[11px] text-fade">Scheduled by stores in the last two weeks</span>
+				<span class="text-xs text-fade">Scheduled by stores in the last two weeks</span>
 			</div>
 			<ul class="mt-4 flex flex-col gap-5">
 				{#each data.storeEvents as e (e.id)}
 					<li>
-						<p class="mb-1.5 text-[11.5px] text-soft">
+						<p class="mb-1.5 text-xs text-soft">
 							<a href="/admin/stores/{e.storeSlug}" class="font-semibold text-ink hover:underline"
 								>{e.storeName}</a
 							>
@@ -447,16 +437,13 @@
 
 	<!-- recent orders -->
 	<section class="mt-14">
-		<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-			<h2
-				class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-			>
-				<span class="text-[8px] text-prem">◆</span>Recent orders
+		<div class="flex items-baseline justify-between gap-4 border-b-3 border-ink pb-2">
+			<h2 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+				<span class="text-xs text-prem">◆</span>Recent orders
 			</h2>
 			<a
 				href="/admin/orders"
-				class="text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
-				>All →</a
+				class="text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink">All →</a
 			>
 		</div>
 		{#if data.orders.length}
@@ -466,30 +453,27 @@
 						<a href="/admin/orders/{o.id}" class="flex items-center gap-3 py-3 hover:bg-paper">
 							<span class="h-2 w-2 shrink-0 {orderTone(o.meta)}" aria-hidden="true"></span>
 							<span class="min-w-0 flex-1">
-								<span class="block truncate text-[13px]">{o.userEmail || 'Guest'}</span>
-								<span class="block text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
+								<span class="block truncate text-sm">{o.userEmail || 'Guest'}</span>
+								<span class="block text-xs font-extrabold tracking-widest text-fade uppercase"
 									>{orderKind(o.meta)} · {ago(o.createdAt)}</span
 								>
 							</span>
-							<span class="ao-cond shrink-0 text-[20px] font-black tabular-nums"
-								>{money(o.amount)}</span
+							<span class="ao-cond shrink-0 text-xl font-black tabular-nums">{money(o.amount)}</span
 							>
 						</a>
 					</li>
 				{/each}
 			</ul>
 		{:else}
-			<p class="py-5 font-newsreader text-[16px] text-soft italic">No orders yet.</p>
+			<p class="py-5 font-newsreader text-base text-soft italic">No orders yet.</p>
 		{/if}
 	</section>
 
 	<!-- sections -->
 	<section class="mt-14">
-		<div class="border-b-[3px] border-ink pb-2">
-			<h2
-				class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-			>
-				<span class="text-[8px] text-warm">◆</span>Sections
+		<div class="border-b-3 border-ink pb-2">
+			<h2 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+				<span class="text-xs text-warm">◆</span>Sections
 			</h2>
 		</div>
 		<ul class="mt-4 grid grid-cols-2 gap-px border border-line2 bg-line2 md:grid-cols-4">
@@ -497,15 +481,15 @@
 				<li class="bg-paper-bg">
 					<a href={s.href} class="group relative block h-full px-5 pt-6 pb-5 hover:bg-paper">
 						<span
-							class="absolute inset-x-0 top-0 h-[4px] transition-[height] group-hover:h-[7px] {s.tone}"
+							class="absolute inset-x-0 top-0 h-1 transition-[height] group-hover:h-2 {s.tone}"
 							aria-hidden="true"
 						></span>
-						<span class="ao-cond block text-[26px] leading-none font-black uppercase md:text-[30px]"
+						<span class="ao-cond block text-2xl leading-none font-black uppercase md:text-3xl"
 							>{s.label}</span
 						>
-						<span class="mt-2 block text-[12px] text-soft">{s.note}</span>
+						<span class="mt-2 block text-xs text-soft">{s.note}</span>
 						<span
-							class="mt-4 block text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase group-hover:text-warm"
+							class="mt-4 block text-xs font-extrabold tracking-widest text-fade uppercase group-hover:text-warm"
 							>Open →</span
 						>
 					</a>

@@ -36,13 +36,13 @@
 			alt=""
 			{sizes}
 			loading={eager ? 'eager' : 'lazy'}
-			class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+			class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
 		/>
 		{#if s.kind === 'video' && !feature}
 			<span
-				class="absolute bottom-2 left-2 flex items-center justify-center bg-warm pl-[2px] text-white {row
-					? 'h-6 w-6 text-[8px]'
-					: 'h-8 w-8 text-[10px]'}"
+				class="absolute bottom-2 left-2 flex items-center justify-center bg-warm pl-0.5 text-white {row
+					? 'h-6 w-6 text-xs'
+					: 'h-8 w-8 text-xs'}"
 				aria-hidden="true">▶</span
 			>
 		{/if}
@@ -54,25 +54,23 @@
 	<a href={s.href} class="group grid gap-5 md:grid-cols-[1.45fr_1fr] md:items-center md:gap-10">
 		{@render frame('(min-width: 1024px) 680px, 100vw', 'aspect-video')}
 		<span class="block min-w-0">
-			<span
-				class="flex items-center gap-2 text-[11px] font-bold tracking-[0.14em] text-warm uppercase"
-			>
+			<span class="flex items-center gap-2 text-xs font-bold tracking-widest text-warm uppercase">
 				{#if s.kind === 'video'}<span
-						class="flex h-6 w-6 items-center justify-center bg-warm pl-[2px] text-[8px] text-white"
+						class="flex h-6 w-6 items-center justify-center bg-warm pl-0.5 text-xs text-white"
 						aria-hidden="true">▶</span
 					>{/if}
 				{kicker}{#if s.fresh}<span class="text-fade">· New</span>{/if}
 			</span>
 			<span
-				class="mt-3 block font-libre text-[30px] leading-[1.06] font-extrabold tracking-[-0.03em] [text-wrap:balance] text-ink transition-colors group-hover:text-warm md:text-[40px]"
+				class="mt-3 block font-libre text-3xl leading-none font-extrabold tracking-tight [text-wrap:balance] text-ink transition-colors group-hover:text-warm md:text-4xl"
 				>{s.title}</span
 			>
 			{#if s.dek}
-				<span class="mt-3 line-clamp-3 block text-[15px] leading-[1.55] text-soft md:text-[17px]"
+				<span class="mt-3 line-clamp-3 block text-base leading-normal text-soft md:text-lg"
 					>{s.dek}</span
 				>
 			{/if}
-			<span class="mt-4 block text-[12.5px] text-fade">{meta}</span>
+			<span class="mt-4 block text-xs text-fade">{meta}</span>
 		</span>
 	</a>
 {:else}
@@ -87,7 +85,7 @@
 			'aspect-video'
 		)}
 		<span class="block min-w-0 {row ? '' : 'mt-3.5'}">
-			<span class="block truncate text-[10.5px] font-bold tracking-[0.14em] text-warm uppercase"
+			<span class="block truncate text-xs font-bold tracking-widest text-warm uppercase"
 				>{kicker}{#if s.fresh}<span class="text-fade"> · New</span>{/if}{#if s.premium && row}<span
 						class="text-prem"
 					>
@@ -95,14 +93,14 @@
 					>{/if}</span
 			>
 			<span
-				class="mt-1.5 block font-libre font-bold tracking-[-0.02em] [text-wrap:balance] text-ink transition-colors group-hover:text-warm {row
-					? 'line-clamp-2 text-[16px] leading-[1.25]'
-					: 'text-[19px] leading-[1.2]'}">{s.title}</span
+				class="mt-1.5 block font-libre font-bold tracking-tight [text-wrap:balance] text-ink transition-colors group-hover:text-warm {row
+					? 'line-clamp-2 text-base leading-tight'
+					: 'text-xl leading-tight'}">{s.title}</span
 			>
 			{#if s.dek && !row}
-				<span class="mt-1.5 line-clamp-2 block text-[14px] leading-[1.5] text-fade">{s.dek}</span>
+				<span class="mt-1.5 line-clamp-2 block text-sm leading-normal text-fade">{s.dek}</span>
 			{/if}
-			<span class="mt-2 block truncate text-[12px] text-fade">{meta}</span>
+			<span class="mt-2 block truncate text-xs text-fade">{meta}</span>
 		</span>
 	</a>
 {/if}

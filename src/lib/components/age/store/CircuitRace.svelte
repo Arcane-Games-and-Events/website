@@ -16,25 +16,24 @@
 	{#each circuits as c (c.name)}
 		<li class="flex items-center gap-3.5">
 			<span
-				class="ao-cond flex h-[38px] w-[44px] shrink-0 items-center justify-center text-[19px] leading-none font-black text-white"
+				class="ao-cond flex h-10 w-11 shrink-0 items-center justify-center text-xl leading-none font-black text-white"
 				style="background: {c.color};">{c.short}</span
 			>
 			<div class="min-w-0 flex-1">
 				<p class="flex items-baseline justify-between gap-3">
-					<span class="truncate text-[13px] font-bold"
+					<span class="truncate text-sm font-bold"
 						>{c.name}{#if c.mine}<span
-								class="ml-2 text-[8.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
-								>You</span
+								class="ml-2 text-xs font-extrabold tracking-widest text-fade uppercase">You</span
 							>{/if}</span
 					>
-					<span class="shrink-0 text-[11px] text-soft tabular-nums"
+					<span class="shrink-0 text-xs text-soft tabular-nums"
 						><b class="text-ink">{c.played}</b> played · {c.scheduled} ahead</span
 					>
 				</p>
-				<span class="mt-1.5 grid grid-cols-8 gap-[3px]" aria-hidden="true">
+				<span class="mt-1.5 grid grid-cols-8 gap-1" aria-hidden="true">
 					{#each Array.from({ length: target }) as _, i (i)}
 						<span
-							class="h-[8px] {i < c.played
+							class="h-2 {i < c.played
 								? ''
 								: i < c.played + c.scheduled
 									? 'border'

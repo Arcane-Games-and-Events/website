@@ -238,11 +238,11 @@
 		aria-expanded={open}
 		aria-label="My account — {fullName}{badgeLabel ? `, ${badgeLabel}` : ''}"
 		title="My account"
-		class="group/trig relative inline-flex h-10 cursor-pointer items-center gap-2 pr-1 text-ink lg:h-[34px]"
+		class="group/trig relative inline-flex h-10 cursor-pointer items-center gap-2 pr-1 text-ink lg:h-9"
 	>
 		<span class="relative">
 			<span
-				class="flex h-[34px] w-[34px] items-center justify-center font-newsreader text-[14px] leading-none font-semibold tracking-[0.02em] text-white normal-case ring-offset-2 ring-offset-paper-bg transition-shadow lg:h-[30px] lg:w-[30px] lg:text-[13px] {isPremium
+				class="flex h-9 w-9 items-center justify-center font-newsreader text-sm leading-none font-semibold tracking-wide text-white normal-case ring-offset-2 ring-offset-paper-bg transition-shadow lg:h-8 lg:w-8 {isPremium
 					? 'bg-prem'
 					: 'bg-ink'} {open
 					? 'ring-2 ring-ink'
@@ -253,14 +253,12 @@
 			</span>
 			<NotificationBadge
 				count={badgeCount}
-				class="absolute -top-[7px] left-[calc(100%-11px)]"
+				class="absolute -top-2 left-[calc(100%-11px)]"
 				label={badgeLabel}
 			/>
 		</span>
 		<svg
-			class="h-[10px] w-[10px] shrink-0 transition-transform duration-200 {open
-				? 'rotate-180'
-				: ''}"
+			class="h-2.5 w-2.5 shrink-0 transition-transform duration-200 {open ? 'rotate-180' : ''}"
 			viewBox="0 0 10 10"
 			fill="none"
 			stroke="currentColor"
@@ -278,29 +276,29 @@
 			role="menu"
 			in:fly={{ y: 6, duration: 200, easing: cubicOut }}
 			out:fade={{ duration: 140 }}
-			class="fixed inset-x-4 top-[var(--panel-top)] z-50 overflow-y-auto overscroll-contain border-[3px] border-double border-ink bg-paper-bg shadow-[0_24px_44px_-24px_rgba(20,16,8,0.55)] before:absolute before:inset-x-0 before:-top-[12px] before:h-[12px] before:content-[''] lg:absolute lg:inset-x-auto lg:top-[calc(100%+8px)] lg:right-0 lg:w-[288px]"
+			class="fixed inset-x-4 top-[var(--panel-top)] z-50 overflow-y-auto overscroll-contain border-3 border-double border-ink bg-paper-bg shadow-xl before:absolute before:inset-x-0 before:-top-3 before:h-3 before:content-[''] lg:absolute lg:inset-x-auto lg:top-[calc(100%+8px)] lg:right-0 lg:w-72"
 			style="--panel-top: {panelTop}px; {panelMax ? `max-height: ${panelMax}px;` : ''}"
 		>
 			<!-- heading: name, email, membership -->
 			<div class="border-b border-line px-4 pt-3 pb-3">
 				<div class="flex items-baseline justify-between gap-3">
 					<span
-						class="truncate font-newsreader text-[17px] leading-tight font-semibold tracking-[-0.01em] text-ink"
+						class="truncate font-newsreader text-lg leading-tight font-semibold tracking-normal text-ink"
 						>{fullName}</span
 					>
-					<span class="h-[3px] w-6 shrink-0 bg-warm" aria-hidden="true"></span>
+					<span class="h-1 w-6 shrink-0 bg-warm" aria-hidden="true"></span>
 				</div>
-				<div class="mt-1 truncate text-[10.5px] font-semibold text-fade">
+				<div class="mt-1 truncate text-xs font-semibold text-fade">
 					{user?.email ?? ''}
 				</div>
-				<div class="mt-2 text-[9.5px] font-extrabold tracking-[0.16em] uppercase">
+				<div class="mt-2 text-xs font-extrabold tracking-widest uppercase">
 					{#if isPremium}
 						<span class="text-prem"><span aria-hidden="true">◆</span> Premium member</span>
 					{:else}
 						<a
 							href="/premium"
 							onclick={close}
-							class="text-warm transition-[letter-spacing] hover:tracking-[0.22em]">Get Premium →</a
+							class="text-warm transition-[letter-spacing] hover:tracking-widest">Get Premium →</a
 						>
 					{/if}
 				</div>
@@ -309,9 +307,7 @@
 			<!-- work tools: a paper band; rows match the personal rows below -->
 			{#if TOOLS.length}
 				<div class="border-b border-line2 bg-paper">
-					<p
-						class="px-4 pt-2.5 pb-1.5 text-[9px] font-extrabold tracking-[0.22em] text-fade uppercase"
-					>
+					<p class="px-4 pt-2.5 pb-1.5 text-xs font-extrabold tracking-widest text-fade uppercase">
 						<span class="text-warm" aria-hidden="true">◆</span> Your tools
 					</p>
 					<ul role="none" class="m-0 list-none p-0">
@@ -321,12 +317,12 @@
 									role="menuitem"
 									href={tool.href}
 									onclick={close}
-									class="group/mi flex items-center justify-between gap-3 px-4 py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+									class="group/mi flex items-center justify-between gap-3 px-4 py-3 text-xs font-extrabold tracking-widest text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 								>
 									<span class="flex items-center gap-2.5">
 										<!-- negative margin: the tile never makes the row taller -->
 										<span
-											class="-my-[3px] flex h-5 w-5 shrink-0 items-center justify-center {tool.tone}"
+											class="-my-1 flex h-5 w-5 shrink-0 items-center justify-center {tool.tone}"
 											aria-hidden="true">{@render toolIcon(tool.key)}</span
 										>
 										{tool.label}
@@ -339,14 +335,14 @@
 										{:else if tool.badge}
 											<!-- a count, not something new: assigned events -->
 											<span
-												class="inline-flex min-w-[18px] items-center justify-center border border-line2 px-[5px] py-[1px] text-[10px] leading-none font-bold text-soft normal-case tabular-nums group-hover/mi:border-paper-bg/40 group-hover/mi:text-paper-bg"
+												class="inline-flex min-w-4.5 items-center justify-center border border-line2 px-1.5 py-px text-xs leading-none font-bold text-soft normal-case tabular-nums group-hover/mi:border-paper-bg/40 group-hover/mi:text-paper-bg"
 												aria-label="{tool.badge} assigned {tool.badge === 1 ? 'event' : 'events'}"
 												>{tool.badge}</span
 											>
 										{/if}
 									</span>
 									<span
-										class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
+										class="-translate-x-1 opacity-0 transition group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
 										aria-hidden="true">→</span
 									>
 								</a>
@@ -364,7 +360,7 @@
 							role="menuitem"
 							href={item.href}
 							onclick={close}
-							class="group/mi flex items-center justify-between gap-3 px-4 py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] text-soft uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+							class="group/mi flex items-center justify-between gap-3 px-4 py-3 text-xs font-extrabold tracking-widest text-soft uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 						>
 							<span class="flex items-center gap-2"
 								>{item.label}<NotificationBadge
@@ -374,7 +370,7 @@
 								/></span
 							>
 							<span
-								class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
+								class="-translate-x-1 opacity-0 transition group-hover/mi:translate-x-0 group-hover/mi:opacity-100"
 								aria-hidden="true">→</span
 							>
 						</a>
@@ -388,11 +384,11 @@
 			<form method="POST" action="/logout">
 				<button
 					type="submit"
-					class="group/so flex w-full cursor-pointer items-center justify-between px-4 py-[11px] text-[10.5px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:bg-warm hover:text-white"
+					class="group/so flex w-full cursor-pointer items-center justify-between px-4 py-3 text-xs font-extrabold tracking-widest text-fade uppercase transition-colors hover:bg-warm hover:text-white"
 				>
 					<span>Sign out</span>
 					<span
-						class="-translate-x-1 opacity-0 transition-[opacity,transform] group-hover/so:translate-x-0 group-hover/so:opacity-100"
+						class="-translate-x-1 opacity-0 transition group-hover/so:translate-x-0 group-hover/so:opacity-100"
 						aria-hidden="true">→</span
 					>
 				</button>

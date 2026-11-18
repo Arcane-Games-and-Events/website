@@ -42,7 +42,7 @@
 </script>
 
 {#if carriedCents}
-	<p class="mt-6 border-l-[3px] border-gold bg-gold/10 px-4 py-3 text-[13px]">
+	<p class="mt-6 border-l-3 border-gold bg-gold/10 px-4 py-3 text-sm">
 		<strong class="tabular-nums">{money(carriedCents)}</strong> carried into the next payout: refunds
 		or adjustments that came after an event was already paid.
 	</p>
@@ -52,33 +52,32 @@
 	<ul class="mt-6 flex flex-col gap-3">
 		{#each shown as p (p.eventId)}
 			{@const st = STATE[p.state]}
-			<li class="border border-l-[4px] border-line2 bg-white" style="border-left-color: {st.bar}">
+			<li class="border border-l-4 border-line2 bg-white" style="border-left-color: {st.bar}">
 				<div
 					class="grid gap-4 px-5 py-4 md:grid-cols-[64px_minmax(0,1fr)_auto] md:items-center md:gap-6"
 				>
 					<span class="flex items-baseline gap-2 leading-none md:flex-col md:items-center md:gap-1">
-						<span class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+						<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 							>{p.eventDate ? day(p.eventDate, { month: 'short' }) : 'TBD'}</span
 						>
-						<span class="ao-cond text-[34px] font-black tabular-nums"
+						<span class="ao-cond text-4xl font-black tabular-nums"
 							>{p.eventDate ? day(p.eventDate, { day: 'numeric' }) : ''}</span
 						>
 					</span>
 					<span class="min-w-0">
 						<span class="flex flex-wrap items-center gap-2">
 							<span
-								class="border px-1.5 py-[2px] text-[9px] font-extrabold tracking-[0.14em] uppercase {st.tone}"
+								class="border px-1.5 py-0.5 text-xs font-extrabold tracking-widest uppercase {st.tone}"
 								>{st.word}</span
 							>
-							{#if p.state === 'running'}<span class="text-[11.5px] text-fade"
+							{#if p.state === 'running'}<span class="text-xs text-fade"
 									>Ready once the event is closed out</span
 								>{/if}
 						</span>
-						<span
-							class="ao-cond mt-1.5 block truncate text-[24px] leading-tight font-black uppercase"
+						<span class="ao-cond mt-1.5 block truncate text-2xl leading-tight font-black uppercase"
 							>{p.title}</span
 						>
-						<span class="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-soft tabular-nums">
+						<span class="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-soft tabular-nums">
 							<span>{p.players} {p.players === 1 ? 'player' : 'players'}</span>
 							<span>Sales {money(p.gross)}</span>
 							{#if p.refunds}<span>Refunds {money(p.refunds)}</span>{/if}
@@ -88,11 +87,11 @@
 						</span>
 					</span>
 					<span class="md:text-right">
-						<span class="block text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+						<span class="block text-xs font-extrabold tracking-widest text-fade uppercase"
 							>{p.state === 'paid' ? 'Paid' : p.state === 'running' ? 'So far' : 'Owed'}</span
 						>
 						<span
-							class="ao-cond block text-[36px] leading-none font-black tabular-nums {p.state ===
+							class="ao-cond block text-4xl leading-none font-black tabular-nums {p.state ===
 							'ready'
 								? 'text-hero-rb'
 								: p.state === 'paid'
@@ -100,7 +99,7 @@
 									: ''}">{money(p.owed)}</span
 						>
 						{#if p.state === 'paid'}
-							<span class="mt-1 block text-[11.5px] text-soft"
+							<span class="mt-1 block text-xs text-soft"
 								>{day(p.paidAt, { month: 'short', day: 'numeric', year: 'numeric' })} · {p.method}{p.reference
 									? ` · ${p.reference}`
 									: ''}</span
@@ -109,7 +108,7 @@
 							<button
 								type="button"
 								onclick={() => (open = open === p.eventId ? null : p.eventId)}
-								class="mt-2 inline-flex h-[38px] items-center bg-hero-rb px-4 text-[10px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110"
+								class="mt-2 inline-flex h-10 items-center bg-hero-rb px-4 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110"
 								aria-expanded={open === p.eventId}>Mark paid</button
 							>
 						{/if}
@@ -157,11 +156,11 @@
 						</label>
 						<button
 							disabled={saving}
-							class="inline-flex h-[46px] items-center bg-prem px-5 text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110 disabled:opacity-50"
+							class="inline-flex h-12 items-center bg-prem px-5 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110 disabled:opacity-50"
 							>{saving ? 'Saving…' : `Paid ${money(p.owed + carriedCents)}`}</button
 						>
 						{#if carriedCents}
-							<p class="text-[11.5px] text-soft md:col-span-4">
+							<p class="text-xs text-soft md:col-span-4">
 								Includes {money(carriedCents)} carried in from earlier payouts.
 							</p>
 						{/if}
@@ -178,7 +177,7 @@
 		<option value="Venmo"></option>
 	</datalist>
 {:else}
-	<p class="mt-6 border border-dashed border-line2 px-5 py-5 text-[13.5px] text-soft">
+	<p class="mt-6 border border-dashed border-line2 px-5 py-5 text-sm text-soft">
 		No payouts yet. Each event’s payout starts with its first ticket sale.
 	</p>
 {/if}

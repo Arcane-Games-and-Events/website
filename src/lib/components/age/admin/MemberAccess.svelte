@@ -100,7 +100,7 @@
 				{#each cards as r (r.id)}
 					{@const on = role === r.id}
 					<label
-						class="relative flex cursor-pointer gap-3 border px-3.5 py-3 transition-colors has-[:focus-visible]:shadow-[0_0_0_3px_color-mix(in_srgb,var(--cc)_25%,transparent)] {on
+						class="relative flex cursor-pointer gap-3 border px-3.5 py-3 ring-(--cc)/25 transition-colors has-[:focus-visible]:ring-3 {on
 							? 'border-transparent'
 							: 'border-line2 hover:border-ink/50'}"
 						style={on
@@ -114,10 +114,9 @@
 							aria-hidden="true"
 						></span>
 						<span class="min-w-0">
-							<span class="ao-cond block text-[22px] leading-none font-black uppercase"
-								>{r.label}</span
+							<span class="ao-cond block text-2xl leading-none font-black uppercase">{r.label}</span
 							>
-							<span class="mt-1 block text-[11.5px] leading-snug text-soft">{r.note}</span>
+							<span class="mt-1 block text-xs leading-snug text-soft">{r.note}</span>
 						</span>
 					</label>
 				{/each}
@@ -148,7 +147,7 @@
 							{/each}
 						</div>
 					</div>
-					<label class="block max-w-[260px]">
+					<label class="block max-w-3xs">
 						<span class={F.label}
 							>Last day <span class="font-semibold tracking-normal normal-case">(optional)</span
 							></span
@@ -165,7 +164,7 @@
 				</div>
 			</div>
 		{:else if paying && role === 'premium'}
-			<p class="border-l-[3px] border-prem bg-prem/10 px-3 py-2.5 text-[12.5px]">
+			<p class="border-l-3 border-prem bg-prem/10 px-3 py-2.5 text-xs">
 				They pay for Premium, so their membership is managed under Membership on
 				<a href="/admin/customers/{member.id}" class="font-semibold underline">their page</a>.
 			</p>
@@ -180,11 +179,11 @@
 				<button
 					type="button"
 					onclick={ondelete}
-					class="text-[10px] font-extrabold tracking-[0.14em] text-hero-rb uppercase hover:underline"
+					class="text-xs font-extrabold tracking-widest text-hero-rb uppercase hover:underline"
 					>Delete account</button
 				>
 			{/if}
-			<span class="text-[11.5px] text-fade"
+			<span class="text-xs text-fade"
 				>Writers, editors and teachers: <a href="/desk/users" class="font-semibold underline"
 					>Desk → Users</a
 				></span
@@ -195,14 +194,14 @@
 				<button
 					type="button"
 					onclick={onclose}
-					class="inline-flex h-[40px] items-center px-3 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+					class="inline-flex h-10 items-center px-3 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 					>Cancel</button
 				>
 			{/if}
 			<button
 				type="submit"
 				disabled={saving || (comp && !reason)}
-				class="inline-flex h-[40px] items-center px-5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-[filter] hover:brightness-110 disabled:opacity-50 {comp
+				class="inline-flex h-10 items-center px-5 text-xs font-extrabold tracking-widest uppercase transition hover:brightness-110 disabled:opacity-50 {comp
 					? 'text-ink'
 					: 'text-white'}"
 				style="background: var(--cc)">{saving ? 'Saving…' : 'Save changes'}</button

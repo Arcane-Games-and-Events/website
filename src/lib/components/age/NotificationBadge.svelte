@@ -73,7 +73,7 @@
 	<span
 		in:fade={{ duration: fadeMs() }}
 		out:fade={{ duration: fadeMs() }}
-		class="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full {tone} px-[5px] font-libre text-[10.5px] leading-none font-bold tracking-normal text-white tabular-nums ring-2 {ring} {cls}"
+		class="inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full {tone} px-1.5 font-libre text-xs leading-none font-bold tracking-normal text-white tabular-nums ring-2 {ring} {cls}"
 		role="status"
 		aria-label={label || `${count} new`}
 	>

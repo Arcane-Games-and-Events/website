@@ -19,10 +19,10 @@
 
 {#if form?.error}<AdminNotice tone="error" message={form.error} />{/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-6 pb-20 md:px-8">
 	<form
 		method="POST"
-		class="mt-6 max-w-[860px] {ui.panel} p-5 md:p-7"
+		class="mt-6 max-w-4xl {ui.panel} p-5 md:p-7"
 		use:enhance={() => {
 			busy = true;
 			return async ({ update }) => {

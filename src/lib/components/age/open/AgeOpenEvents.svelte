@@ -210,9 +210,9 @@
 />
 
 <!-- ============ filter bar ============ -->
-<div class="z-[5] border-b border-line bg-paper-bg/95 backdrop-blur-sm md:sticky md:top-[59px]">
+<div class="z-5 border-b border-line bg-paper-bg/95 backdrop-blur-sm md:sticky md:top-15">
 	<div
-		class="mx-auto flex w-full max-w-[1200px] flex-col gap-3 px-5 py-3 md:flex-row md:items-center md:justify-between md:px-8"
+		class="mx-auto flex w-full max-w-page flex-col gap-3 px-5 py-3 md:flex-row md:items-center md:justify-between md:px-8"
 	>
 		<!-- circuit filter: a 2×2 grid of large buttons on phones, a row from md -->
 		<div class="grid grid-cols-2 gap-2 md:flex md:gap-2" role="group" aria-label="Circuit">
@@ -221,19 +221,19 @@
 					type="button"
 					onclick={() => (region = v)}
 					aria-pressed={region === v}
-					class="relative flex min-h-[48px] items-center justify-between gap-2 overflow-hidden border py-2.5 pr-3 pl-4 text-left text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors md:min-h-0 md:justify-start md:py-2 md:pr-3.5 md:pl-4 md:text-[10px] md:tracking-[0.16em] md:whitespace-nowrap {region ===
+					class="relative flex min-h-12 items-center justify-between gap-2 overflow-hidden border py-2.5 pr-3 pl-4 text-left text-xs font-extrabold tracking-widest uppercase transition-colors md:min-h-0 md:justify-start md:py-2 md:pr-3.5 md:pl-4 md:whitespace-nowrap {region ===
 					v
 						? 'border-ink bg-ink text-paper-bg'
 						: 'border-line2 bg-paper-bg text-soft hover:border-ink hover:text-ink'}"
 				>
 					<span
-						class="absolute inset-y-0 left-0 w-[4px]"
+						class="absolute inset-y-0 left-0 w-1"
 						style="background: {v === 'all' ? 'var(--ed-warm)' : circuitVar(v)};"
 						aria-hidden="true"
 					></span>
 					<span class="leading-tight">{l}</span>
 					<span
-						class="ao-cond shrink-0 text-[20px] leading-none font-black tabular-nums md:text-[16px] {region ===
+						class="ao-cond shrink-0 text-xl leading-none font-black tabular-nums md:text-base {region ===
 						v
 							? 'text-paper-bg/80'
 							: 'text-fade'}">{v === 'all' ? upcoming.length : counts[v]}</span
@@ -247,7 +247,7 @@
 					type="button"
 					onclick={() => (view = v)}
 					aria-pressed={view === v}
-					class="min-h-[44px] px-4 py-2 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors md:min-h-0 md:text-[10px] {view ===
+					class="min-h-11 px-4 py-2 text-xs font-extrabold tracking-widest uppercase transition-colors md:min-h-0 {view ===
 					v
 						? 'bg-warm text-white'
 						: 'text-soft hover:text-ink'}">{l}</button
@@ -258,17 +258,17 @@
 </div>
 
 <!-- ============ list / calendar ============ -->
-<section class="mx-auto w-full max-w-[1200px] px-5 pt-10 md:px-8 md:pt-14">
+<section class="mx-auto w-full max-w-page px-5 pt-10 md:px-8 md:pt-14">
 	{#if view === 'list'}
 		{#if byMonth.length}
 			{#each byMonth as g (g.key)}
 				<div class="mb-10 last:mb-0">
-					<div class="flex items-end justify-between gap-4 border-b-[3px] border-ink pb-2">
-						<h2 class="ao-cond text-[40px] leading-[0.85] font-black uppercase md:text-[52px]">
+					<div class="flex items-end justify-between gap-4 border-b-3 border-ink pb-2">
+						<h2 class="ao-cond text-4xl leading-none font-black uppercase md:text-5xl">
 							{g.key.split(' ')[0]}
 							<span class="text-fade/50">{g.key.split(' ')[1]}</span>
 						</h2>
-						<span class="pb-1 text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+						<span class="pb-1 text-xs font-extrabold tracking-widest text-fade uppercase"
 							>{g.events.length} {g.events.length === 1 ? 'event' : 'events'}</span
 						>
 					</div>
@@ -283,16 +283,16 @@
 									<span class="min-w-0 px-4 pt-4 pb-2 md:px-6 md:py-5">
 										<span class="flex flex-wrap items-center gap-x-3 gap-y-1">
 											<span
-												class="text-[9.5px] font-extrabold tracking-[0.2em] uppercase"
+												class="text-xs font-extrabold tracking-widest uppercase"
 												style="color: {circuitVar(e.circuit)};">{e.circuit}</span
 											>
 											<span
-												class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] uppercase {e.live
+												class="inline-flex items-center gap-1.5 text-xs font-extrabold tracking-widest uppercase {e.live
 													? 'text-hero-rb'
 													: 'text-fade'}"
 											>
 												<span
-													class="h-[6px] w-[6px] animate-pulse-dot rounded-full"
+													class="h-1.5 w-1.5 animate-pulse-dot rounded-full"
 													style="background: {e.live
 														? 'var(--ed-hero-rb)'
 														: circuitVar(e.circuit)};"
@@ -302,19 +302,19 @@
 											</span>
 										</span>
 										<span
-											class="ao-cond mt-1 block text-[26px] leading-[0.95] font-black uppercase md:text-[30px]"
+											class="ao-cond mt-1 block text-2xl leading-none font-black uppercase md:text-3xl"
 										>
 											{e.title}
 										</span>
 										<span class="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5"
 											>{#if e.format}<FormatTag format={e.format} />{/if}<span
-												class="min-w-0 truncate text-[11px] font-semibold text-fade"
+												class="min-w-0 truncate text-xs font-semibold text-fade"
 												>{e.weekday} · {e.venue}</span
 											></span
 										>
-										<span class="mt-3 flex h-[14px] items-center gap-3">
+										<span class="mt-3 flex h-3.5 items-center gap-3">
 											{#if e.cap}
-												<span class="block h-[3px] w-full max-w-[200px] bg-line">
+												<span class="block h-1 w-full max-w-50 bg-line">
 													<span
 														class="block h-full"
 														style="width: {Math.min(
@@ -324,12 +324,11 @@
 													></span>
 												</span>
 												<span
-													class="shrink-0 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase tabular-nums"
+													class="shrink-0 text-xs font-extrabold tracking-widest text-fade uppercase tabular-nums"
 													>{e.registered}/{e.cap} seats</span
 												>
 											{:else}
-												<span
-													class="text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+												<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 													>Open entry · no cap</span
 												>
 											{/if}
@@ -339,16 +338,14 @@
 										class="flex items-center justify-between gap-4 px-4 pb-4 md:flex-col md:items-end md:justify-center md:px-6 md:pb-0"
 									>
 										<span class="md:text-right">
-											<span class="ao-cond block text-[30px] leading-none font-black"
-												>{e.price}</span
-											>
+											<span class="ao-cond block text-3xl leading-none font-black">{e.price}</span>
 											{#if e.discount}<span
-													class="text-[8.5px] font-extrabold tracking-[0.14em] text-prem uppercase"
+													class="text-xs font-extrabold tracking-widest text-prem uppercase"
 													>Members save $5</span
 												>{/if}
 										</span>
 										<span
-											class="inline-flex items-center px-4 py-2.5 text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap text-white uppercase transition-colors group-hover:bg-ink {e.live
+											class="inline-flex items-center px-4 py-2.5 text-xs font-extrabold tracking-widest whitespace-nowrap text-white uppercase transition-colors group-hover:bg-ink {e.live
 												? 'bg-hero-rb'
 												: 'bg-warm'}">{e.live ? 'Standings →' : 'Sign up →'}</span
 										>
@@ -361,8 +358,8 @@
 			{/each}
 		{:else}
 			<div class="border-y border-line py-14 text-center">
-				<p class="ao-cond text-[40px] leading-none font-black uppercase">No events yet</p>
-				<p class="mt-2 font-newsreader text-[16px] text-soft italic">
+				<p class="ao-cond text-4xl leading-none font-black uppercase">No events yet</p>
+				<p class="mt-2 font-newsreader text-base text-soft italic">
 					{region === 'all'
 						? 'New opens are announced through the season. Check back soon.'
 						: `New ${region} dates are coming soon.`}
@@ -371,7 +368,7 @@
 					<button
 						type="button"
 						onclick={() => (region = 'all')}
-						class="mt-5 border-b-2 border-warm pb-1 text-[10.5px] font-extrabold tracking-[0.16em] text-warm uppercase"
+						class="mt-5 border-b-2 border-warm pb-1 text-xs font-extrabold tracking-widest text-warm uppercase"
 						>See every circuit</button
 					>
 				{/if}
@@ -379,8 +376,8 @@
 		{/if}
 	{:else}
 		<!-- calendar -->
-		<div class="flex flex-wrap items-end justify-between gap-4 border-b-[3px] border-ink pb-2">
-			<h2 class="ao-cond text-[40px] leading-[0.85] font-black uppercase md:text-[52px]">
+		<div class="flex flex-wrap items-end justify-between gap-4 border-b-3 border-ink pb-2">
+			<h2 class="ao-cond text-4xl leading-none font-black uppercase md:text-5xl">
 				{calTitle}
 			</h2>
 			<div class="flex items-center gap-2 pb-1">
@@ -394,7 +391,7 @@
 				<button
 					type="button"
 					onclick={today}
-					class="h-8 border border-line2 px-3 text-[9.5px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:border-ink"
+					class="h-8 border border-line2 px-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:border-ink"
 					>Today</button
 				>
 				<button
@@ -409,7 +406,7 @@
 		<div class="mt-4 grid grid-cols-7 border-t border-l border-line">
 			{#each ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as d (d)}
 				<div
-					class="border-r border-b border-line bg-paper py-2 text-center text-[9px] font-extrabold tracking-[0.18em] text-fade uppercase"
+					class="border-r border-b border-line bg-paper py-2 text-center text-xs font-extrabold tracking-widest text-fade uppercase"
 				>
 					<span class="md:hidden">{d.charAt(0)}</span><span class="hidden md:inline">{d}</span>
 				</div>
@@ -417,12 +414,12 @@
 			{#each calWeeks as week, w (w)}
 				{#each week as day, i (w * 7 + i)}
 					<div
-						class="min-h-[64px] border-r border-b border-line p-1.5 md:min-h-[110px] md:p-2 {day.inMonth
+						class="min-h-16 border-r border-b border-line p-1.5 md:min-h-28 md:p-2 {day.inMonth
 							? 'bg-paper-bg'
 							: 'bg-paper/60'}"
 					>
 						<span
-							class="ao-cond block text-[18px] leading-none font-black tabular-nums md:text-[22px] {day.today
+							class="ao-cond block text-lg leading-none font-black tabular-nums md:text-2xl {day.today
 								? 'text-warm'
 								: day.inMonth
 									? 'text-ink'
@@ -432,7 +429,7 @@
 							<a
 								href="/ageopen/{e.id}"
 								title="{e.title || 'AGE Open'} · {e.circuit || ''}"
-								class="mt-1 block truncate border-l-[3px] px-1 py-[2px] text-[9.5px] font-bold transition-[filter] hover:brightness-95 md:px-1.5 md:text-[10px]"
+								class="mt-1 block truncate border-l-3 px-1 py-0.5 text-xs font-bold transition hover:brightness-95 md:px-1.5"
 								style="border-left-color: {circuitVar(
 									e.circuit
 								)}; background: color-mix(in srgb, {circuitVar(
@@ -443,13 +440,13 @@
 							</a>
 						{/each}
 						{#if day.events.length > 3}
-							<span class="mt-0.5 block text-[9px] font-bold text-fade"
+							<span class="mt-0.5 block text-xs font-bold text-fade"
 								>+{day.events.length - 3} more</span
 							>
 						{/if}
 						{#each day.seasons.slice(0, 1) as s, si (si)}
 							<span
-								class="mt-1 hidden truncate border-l-[3px] border-gold/70 px-1.5 text-[9px] font-semibold text-fade md:block"
+								class="mt-1 hidden truncate border-l-3 border-gold/70 px-1.5 text-xs font-semibold text-fade md:block"
 								>{s.name}</span
 							>
 						{/each}
@@ -458,7 +455,7 @@
 			{/each}
 		</div>
 		<p
-			class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+			class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs font-extrabold tracking-widest text-fade uppercase"
 		>
 			{#each CIRCUIT_NAMES as c (c)}
 				<span class="inline-flex items-center gap-1.5"
@@ -467,7 +464,7 @@
 				>
 			{/each}
 			<span class="inline-flex items-center gap-1.5"
-				><span class="h-2 w-[3px] bg-gold/70" aria-hidden="true"></span>LSS season</span
+				><span class="h-2 w-1 bg-gold/70" aria-hidden="true"></span>LSS season</span
 			>
 		</p>
 	{/if}
@@ -475,16 +472,12 @@
 
 <!-- ============ season tracker ============ -->
 <section class="mt-16 bg-ink text-paper-bg md:mt-20" use:reveal>
-	<div class="mx-auto w-full max-w-[1200px] px-5 py-14 md:px-8 md:py-20">
+	<div class="mx-auto w-full max-w-page px-5 py-14 md:px-8 md:py-20">
 		<div
-			class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b-[3px] border-warm-light pb-3"
+			class="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b-3 border-warm-light pb-3"
 		>
-			<h2 class="ao-cond text-[44px] leading-[0.85] font-black uppercase md:text-[64px]">
-				Season tracker
-			</h2>
-			<p
-				class="max-w-[360px] pb-1 font-newsreader text-[15px] text-paper-bg/65 italic md:text-right"
-			>
+			<h2 class="ao-cond text-5xl leading-none font-black uppercase md:text-6xl">Season tracker</h2>
+			<p class="max-w-sm pb-1 font-newsreader text-base text-paper-bg/65 italic md:text-right">
 				Eight guaranteed opens per circuit, filled as the {data.currentYear || '2026'} season unfolds.
 			</p>
 		</div>
@@ -493,21 +486,21 @@
 				<div>
 					<div class="flex flex-wrap items-center gap-x-5 gap-y-2">
 						<span
-							class="ao-cond flex h-12 w-14 items-center justify-center text-[28px] leading-none font-black text-white"
+							class="ao-cond flex h-12 w-14 items-center justify-center text-3xl leading-none font-black text-white"
 							style="background: {circuitVar(t.name)};">{t.code}</span
 						>
-						<span class="ao-cond text-[34px] leading-none font-black uppercase">{t.name}</span>
+						<span class="ao-cond text-4xl leading-none font-black uppercase">{t.name}</span>
 						<span
-							class="ml-auto flex items-center gap-4 text-[9.5px] font-extrabold tracking-[0.16em] uppercase"
+							class="ml-auto flex items-center gap-4 text-xs font-extrabold tracking-widest uppercase"
 						>
 							<span class="text-paper-bg"
-								><span class="ao-cond mr-1 text-[22px] tabular-nums">{t.done}</span>Played</span
+								><span class="ao-cond mr-1 text-2xl tabular-nums">{t.done}</span>Played</span
 							>
 							<span class="text-warm-light"
-								><span class="ao-cond mr-1 text-[22px] tabular-nums">{t.ahead}</span>Upcoming</span
+								><span class="ao-cond mr-1 text-2xl tabular-nums">{t.ahead}</span>Upcoming</span
 							>
 							<span class="text-paper-bg/45"
-								><span class="ao-cond mr-1 text-[22px] tabular-nums">{t.open}</span>To announce</span
+								><span class="ao-cond mr-1 text-2xl tabular-nums">{t.open}</span>To announce</span
 							>
 						</span>
 					</div>
@@ -522,16 +515,16 @@
 											: 'bg-paper-bg text-ink'}"
 									>
 										<span
-											class="absolute inset-x-0 top-0 h-[4px]"
+											class="absolute inset-x-0 top-0 h-1"
 											style="background: {s.done ? 'var(--ed-line2)' : circuitVar(t.name)};"
 											aria-hidden="true"
 										></span>
-										<span class="ao-cond text-[30px] leading-none font-black tabular-nums"
+										<span class="ao-cond text-3xl leading-none font-black tabular-nums"
 											>{String(i + 1).padStart(2, '0')}</span
 										>
-										<span class="mt-1.5 text-[10px] font-bold tabular-nums">{s.date}</span>
+										<span class="mt-1.5 text-xs font-bold tabular-nums">{s.date}</span>
 										<span
-											class="mt-1.5 text-[8.5px] font-extrabold tracking-[0.16em] uppercase {s.done
+											class="mt-1.5 text-xs font-extrabold tracking-widest uppercase {s.done
 												? 'text-paper-bg/55'
 												: 'text-warm'}">{s.done ? 'Results →' : 'Sign up →'}</span
 										>
@@ -541,12 +534,11 @@
 										class="flex h-full flex-col items-center border border-dashed border-paper-bg/25 px-1 pt-3 pb-2.5 text-center text-paper-bg/40"
 										aria-label="Open {i + 1}, date to be announced"
 									>
-										<span class="ao-cond text-[30px] leading-none font-black tabular-nums"
+										<span class="ao-cond text-3xl leading-none font-black tabular-nums"
 											>{String(i + 1).padStart(2, '0')}</span
 										>
-										<span class="mt-1.5 text-[10px] font-bold">TBA</span>
-										<span class="mt-1.5 text-[8.5px] font-extrabold tracking-[0.16em] uppercase"
-											>Soon</span
+										<span class="mt-1.5 text-xs font-bold">TBA</span>
+										<span class="mt-1.5 text-xs font-extrabold tracking-widest uppercase">Soon</span
 										>
 									</div>
 								{/if}
@@ -561,14 +553,14 @@
 
 <!-- ============ LSS seasons ============ -->
 {#if lss.length}
-	<section class="mx-auto w-full max-w-[1200px] px-5 pt-14 md:px-8 md:pt-20" use:reveal>
+	<section class="mx-auto w-full max-w-page px-5 pt-14 md:px-8 md:pt-20" use:reveal>
 		<div
-			class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-[3px] border-ink pb-3"
+			class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-3 border-ink pb-3"
 		>
-			<h2 class="ao-cond text-[44px] leading-[0.85] font-black uppercase md:text-[64px]">
+			<h2 class="ao-cond text-5xl leading-none font-black uppercase md:text-6xl">
 				Also on the calendar
 			</h2>
-			<p class="pb-1 font-newsreader text-[15px] text-soft italic">
+			<p class="pb-1 font-newsreader text-base text-soft italic">
 				Official Legend Story Studios seasons running alongside the circuit.
 			</p>
 		</div>
@@ -578,30 +570,28 @@
 					class="grid gap-3 border-b border-line py-4 md:grid-cols-[1fr_auto_auto] md:items-center md:gap-6"
 				>
 					<span class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-						<span class="font-newsreader text-[19px] font-semibold">{s.name}</span>
+						<span class="font-newsreader text-xl font-semibold">{s.name}</span>
 						{#if s.eventType}<span
-								class="border border-gold/60 px-1.5 py-[2px] text-[8.5px] font-extrabold tracking-[0.16em] text-gold uppercase"
+								class="border border-gold/60 px-1.5 py-0.5 text-xs font-extrabold tracking-widest text-gold uppercase"
 								>{s.eventType}</span
 							>{/if}
 						{#if s.format}<span
-								class="border border-line2 px-1.5 py-[2px] text-[8.5px] font-extrabold tracking-[0.16em] text-soft uppercase"
+								class="border border-line2 px-1.5 py-0.5 text-xs font-extrabold tracking-widest text-soft uppercase"
 								>{s.format}</span
 							>{/if}
 						{#if s.live}<span
-								class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] text-prem uppercase"
-								><span
-									class="h-[6px] w-[6px] animate-pulse-dot rounded-full bg-prem"
-									aria-hidden="true"
+								class="inline-flex items-center gap-1.5 text-xs font-extrabold tracking-widest text-prem uppercase"
+								><span class="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-prem" aria-hidden="true"
 								></span>Live now</span
 							>{/if}
 					</span>
-					<span class="text-[11px] font-semibold text-fade tabular-nums">{s.range}</span>
+					<span class="text-xs font-semibold text-fade tabular-nums">{s.range}</span>
 					{#if s.link}
 						<a
 							href={s.link}
 							target="_blank"
 							rel="noopener noreferrer"
-							class="text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase hover:text-ink"
+							class="text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 							>Details →</a
 						>
 					{:else}
@@ -614,18 +604,16 @@
 {/if}
 
 <!-- ============ at every open ============ -->
-<section class="mx-auto w-full max-w-[1200px] px-5 py-14 md:px-8 md:py-20" use:reveal>
-	<div class="border-b-[3px] border-ink pb-3">
-		<h2 class="ao-cond text-[44px] leading-[0.85] font-black uppercase md:text-[64px]">
-			At every open
-		</h2>
+<section class="mx-auto w-full max-w-page px-5 py-14 md:px-8 md:py-20" use:reveal>
+	<div class="border-b-3 border-ink pb-3">
+		<h2 class="ao-cond text-5xl leading-none font-black uppercase md:text-6xl">At every open</h2>
 	</div>
 	<ul class="mt-6 grid gap-5 md:grid-cols-3 md:gap-6">
 		{#each PERKS as [mark, t, b, tone] (t)}
 			<li class="border border-line bg-paper-bg p-6 md:p-7">
-				<span class="ao-cond block text-[56px] leading-none font-black {tone}">{mark}</span>
-				<span class="mt-4 block font-newsreader text-[21px] font-semibold">{t}</span>
-				<span class="mt-1.5 block font-newsreader text-[15.5px] leading-[1.45] text-soft italic"
+				<span class="ao-cond block text-6xl leading-none font-black {tone}">{mark}</span>
+				<span class="mt-4 block font-newsreader text-xl font-semibold">{t}</span>
+				<span class="mt-1.5 block font-newsreader text-base leading-normal text-soft italic"
 					>{b}</span
 				>
 			</li>

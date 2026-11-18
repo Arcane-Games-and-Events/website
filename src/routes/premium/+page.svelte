@@ -198,30 +198,27 @@
 	<div class="pm">
 		{#if isPremium}
 			<!-- ============ member: thank you ============ -->
-			<section class="pm-deep relative overflow-hidden text-[var(--pm-cream)]">
+			<section class="pm-deep relative overflow-hidden text-(--pm-cream)">
 				<div class="pm-lines absolute inset-0" aria-hidden="true"></div>
 				<div
-					class="relative mx-auto grid w-full max-w-[1200px] items-center gap-10 px-5 py-14 md:grid-cols-[minmax(0,1fr)_auto] md:px-8 md:py-20"
+					class="relative mx-auto grid w-full max-w-page items-center gap-10 px-5 py-14 md:grid-cols-[minmax(0,1fr)_auto] md:px-8 md:py-20"
 				>
 					<div>
-						<p class="text-[10px] font-extrabold tracking-[0.26em] text-[var(--pm-mint)] uppercase">
+						<p class="text-xs font-extrabold tracking-widest text-(--pm-mint) uppercase">
 							<span aria-hidden="true">◆</span> AGE Premium · member
 						</p>
-						<h1 class="fp-rise pm-title mt-5 text-[52px] leading-[0.95] md:text-[84px]">
+						<h1 class="fp-rise pm-title mt-5 text-5xl leading-none md:text-8xl">
 							Thank you for <em>keeping AGE going</em>.
 						</h1>
-						<p
-							class="mt-6 max-w-[560px] font-newsreader text-[19px] leading-[1.55] text-[var(--pm-cream)]/75"
-						>
+						<p class="mt-6 max-w-xl font-newsreader text-xl leading-normal text-(--pm-cream)/75">
 							Your membership pays our writers, runs our tournaments and keeps the AGE Open Series
 							on the calendar. Here is everything it unlocks for you.
 						</p>
 						{#if isCancelled}
 							<p
-								class="mt-8 max-w-[560px] border-l-[3px] border-hero-rb bg-hero-rb/15 px-4 py-3 text-[14px] text-[var(--pm-cream)]/85"
+								class="mt-8 max-w-xl border-l-3 border-hero-rb bg-hero-rb/15 px-4 py-3 text-sm text-(--pm-cream)/85"
 							>
-								<span
-									class="block text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase"
+								<span class="block text-xs font-extrabold tracking-widest text-hero-rb uppercase"
 									>Subscription cancelled</span
 								>
 								Your access runs to the end of this billing period{data.membership?.currentPeriodEnd
@@ -235,29 +232,29 @@
 					</div>
 				</div>
 			</section>
-			<section class="border-b border-[var(--pm-rule)] bg-[var(--pm-cream)]">
-				<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-14">
+			<section class="border-b border-(--pm-rule) bg-(--pm-cream)">
+				<div class="mx-auto w-full max-w-page px-5 py-10 md:px-8 md:py-14">
 					<ol
-						class="grid gap-px border-y border-[var(--pm-rule)] bg-[var(--pm-rule)] sm:grid-cols-2 lg:grid-cols-4"
+						class="grid gap-px border-y border-(--pm-rule) bg-(--pm-rule) sm:grid-cols-2 lg:grid-cols-4"
 					>
 						{#each [{ href: '/library', label: 'Library', desc: 'Every premium article and the full gameplay library.' }, { href: '/academy', label: 'Academy', desc: 'Your guides, 10% off for members.' }, { href: '/ageopen', label: 'AGE Open', desc: 'Standings, results and member event discounts.' }, { href: '/account', label: 'Account', desc: 'Your membership, saved cards and billing.' }] as link, i (link.href)}
-							<li class="bg-[var(--pm-cream)]">
+							<li class="bg-(--pm-cream)">
 								<a
 									href={link.href}
-									class="group flex h-full flex-col px-6 py-6 transition-colors hover:bg-[var(--pm-cream-2)]"
+									class="group flex h-full flex-col px-6 py-6 transition-colors hover:bg-(--pm-cream-2)"
 								>
 									<span
-										class="ao-cond text-[34px] leading-none font-black text-[var(--pm-green)] tabular-nums"
+										class="ao-cond text-4xl leading-none font-black text-(--pm-green) tabular-nums"
 										>{String(i + 1).padStart(2, '0')}</span
 									>
-									<span class="mt-4 text-[11px] font-extrabold tracking-[0.18em] uppercase"
+									<span class="mt-4 text-xs font-extrabold tracking-widest uppercase"
 										>{link.label}
 										<span
 											aria-hidden="true"
 											class="inline-block transition-transform group-hover:translate-x-1">→</span
 										></span
 									>
-									<span class="mt-2 font-newsreader text-[15px] leading-[1.5] text-soft"
+									<span class="mt-2 font-newsreader text-base leading-normal text-soft"
 										>{link.desc}</span
 									>
 								</a>
@@ -268,43 +265,37 @@
 			</section>
 		{:else}
 			<!-- ============ masthead + join box ============ -->
-			<section class="pm-deep relative overflow-hidden text-[var(--pm-cream)]">
+			<section class="pm-deep relative overflow-hidden text-(--pm-cream)">
 				<div class="pm-lines absolute inset-0" aria-hidden="true"></div>
 				<div
-					class="relative mx-auto grid w-full max-w-[1200px] items-start gap-10 px-5 pt-12 pb-14 md:px-8 md:pt-16 md:pb-20 lg:gap-14 {data.user
+					class="relative mx-auto grid w-full max-w-page items-start gap-10 px-5 pt-12 pb-14 md:px-8 md:pt-16 md:pb-20 lg:gap-14 {data.user
 						? 'lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]'
 						: 'lg:grid-cols-[minmax(0,1fr)_440px]'}"
 				>
 					<div class="fp-rise min-w-0 lg:pt-6">
-						<p class="text-[10px] font-extrabold tracking-[0.24em] text-[var(--pm-mint)] uppercase">
+						<p class="text-xs font-extrabold tracking-widest text-(--pm-mint) uppercase">
 							<span aria-hidden="true">◆</span> AGE Premium · Member supported
 						</p>
 						<h1
-							class="pm-title mt-5 text-[44px] leading-[0.95] [text-wrap:balance] {data.user
-								? 'md:text-[52px]'
-								: 'md:text-[60px]'}"
+							class="pm-title mt-5 text-5xl leading-none [text-wrap:balance] {data.user
+								? 'md:text-5xl'
+								: 'md:text-6xl'}"
 						>
 							Join the players <em>who keep AGE going.</em>
 						</h1>
-						<p
-							class="mt-6 max-w-[520px] font-newsreader text-[19px] leading-[1.55] text-[var(--pm-cream)]/80"
-						>
+						<p class="mt-6 max-w-lg font-newsreader text-xl leading-normal text-(--pm-cream)/80">
 							AGE is an independent circuit, run by players for players. When you join, you support
 							that community: your membership pays our writers, runs our tournaments and keeps the
 							AGE Open Series on the calendar.
 						</p>
-						<ul
-							class="mt-8 grid max-w-[520px] grid-cols-3 border-y border-[var(--pm-cream)]/20 text-center"
-						>
+						<ul class="mt-8 grid max-w-lg grid-cols-3 border-y border-(--pm-cream)/20 text-center">
 							{#each ['Writers', 'Tournaments', 'AGE Open'] as p, i (p)}
 								<li
 									class="px-2 py-3.5 {i
-										? 'border-l border-[var(--pm-cream)]/20'
-										: ''} text-[10px] font-extrabold tracking-[0.18em] uppercase"
+										? 'border-l border-(--pm-cream)/20'
+										: ''} text-xs font-extrabold tracking-widest uppercase"
 								>
-									<span class="ao-cond block text-[22px] leading-none text-[var(--pm-gold)]"
-										>0{i + 1}</span
-									>
+									<span class="ao-cond block text-2xl leading-none text-(--pm-gold)">0{i + 1}</span>
 									<span class="mt-1.5 block">{p}</span>
 								</li>
 							{/each}
@@ -319,21 +310,19 @@
 						style="animation-delay: 140ms;"
 					>
 						<div
-							class="pm-card relative w-full bg-[var(--pm-cream)] text-ink {data.user
-								? 'max-w-[600px]'
-								: 'max-w-[440px]'}"
+							class="pm-card relative w-full bg-(--pm-cream) text-ink {data.user
+								? 'max-w-xl'
+								: 'max-w-md'}"
 						>
 							<!-- header strip -->
-							<div
-								class="relative border-b-[3px] border-[var(--pm-gold)] bg-[#17150f] px-6 py-4 md:px-7"
-							>
+							<div class="relative border-b-3 border-(--pm-gold) bg-ink px-6 py-4 md:px-7">
 								<p
-									class="relative text-[9px] font-extrabold tracking-[0.24em] text-[var(--pm-gold)] uppercase"
+									class="relative text-xs font-extrabold tracking-widest text-(--pm-gold) uppercase"
 								>
 									◆ AGE Premium
 								</p>
 								<p
-									class="pm-title relative mt-1 text-[26px] leading-[1.02]"
+									class="pm-title relative mt-1 text-2xl leading-none"
 									style="color: var(--pm-cream);"
 								>
 									Become a member
@@ -355,39 +344,37 @@
 											aria-checked={on}
 											onclick={() => selectPlan(opt.v)}
 											class="relative flex flex-col border-2 px-3.5 pt-3 pb-2.5 text-left transition-colors {on
-												? 'border-[var(--pm-deep)] bg-white/55'
-												: 'border-[var(--pm-rule)] hover:border-[var(--pm-deep)]/50'}"
+												? 'border-(--pm-deep) bg-white/55'
+												: 'border-(--pm-rule) hover:border-(--pm-deep)/50'}"
 										>
 											{#if opt.tag}
 												<span
-													class="absolute -top-2.5 right-2.5 bg-[var(--pm-gold)] px-1.5 py-[2px] text-[8px] font-extrabold tracking-[0.12em] text-[var(--pm-deep)] uppercase"
+													class="absolute -top-2.5 right-2.5 bg-(--pm-gold) px-1.5 py-0.5 text-xs font-extrabold tracking-widest text-(--pm-deep) uppercase"
 													>{opt.tag}</span
 												>
 											{/if}
 											<span class="flex items-center gap-2">
 												<span
 													class="flex h-4 w-4 shrink-0 items-center justify-center border-2 {on
-														? 'border-[var(--pm-deep)] bg-[var(--pm-deep)]'
-														: 'border-[var(--pm-rule)] bg-white/60'}"
+														? 'border-(--pm-deep) bg-(--pm-deep)'
+														: 'border-(--pm-rule) bg-white/60'}"
 													aria-hidden="true"
 												></span>
-												<span class="text-[10.5px] font-extrabold tracking-[0.14em] uppercase"
-													>{opt.l}</span
+												<span class="text-xs font-extrabold tracking-widest uppercase">{opt.l}</span
 												>
 											</span>
 											<span class="mt-2 flex items-baseline gap-1">
 												<span
-													class="ao-cond text-[34px] leading-none font-black text-[var(--pm-deep)] tabular-nums"
+													class="ao-cond text-4xl leading-none font-black text-(--pm-deep) tabular-nums"
 													>{opt.price}</span
 												>
-												<span
-													class="text-[9px] font-extrabold tracking-[0.12em] text-fade uppercase"
+												<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 													>{opt.per}</span
 												>
 											</span>
 											<span
-												class="mt-1 font-newsreader text-[13px] {on && opt.v
-													? 'font-semibold text-[var(--pm-green)]'
+												class="mt-1 font-newsreader text-sm {on && opt.v
+													? 'font-semibold text-(--pm-green)'
 													: 'text-soft'}">{opt.sub}</span
 											>
 										</button>
@@ -397,9 +384,9 @@
 								<!-- what's included -->
 								<ul class="mt-4 grid gap-x-3 gap-y-2 sm:grid-cols-2">
 									{#each thanks as item (item.t)}
-										<li class="flex items-start gap-2 text-[12.5px] leading-snug">
+										<li class="flex items-start gap-2 text-xs leading-snug">
 											<span
-												class="mt-[1px] flex h-[15px] w-[15px] shrink-0 items-center justify-center bg-[var(--pm-green)] text-white"
+												class="mt-px flex h-4 w-4 shrink-0 items-center justify-center bg-(--pm-green) text-white"
 												aria-hidden="true"
 											>
 												<svg
@@ -419,35 +406,33 @@
 									{#if !data.user}
 										<a
 											href="/login?redirect=/premium"
-											class="inline-flex min-h-[54px] w-full items-center justify-center gap-2 bg-[var(--pm-green)] px-6 text-[12px] font-extrabold tracking-[0.16em] text-white uppercase shadow-[0_10px_20px_-12px_rgba(14,58,38,0.9)] transition-colors hover:bg-[var(--pm-deep)]"
+											class="inline-flex min-h-14 w-full items-center justify-center gap-2 bg-(--pm-green) px-6 text-xs font-extrabold tracking-widest text-white uppercase shadow-lg transition-colors hover:bg-(--pm-deep)"
 											>Join for {annual ? '$110 a year' : '$10 a month'}
 											<span aria-hidden="true">→</span></a
 										>
-										<p class="mt-3 text-center font-newsreader text-[14px] text-soft">
+										<p class="mt-3 text-center font-newsreader text-sm text-soft">
 											New to AGE?
 											<a
-												class="font-bold text-[var(--pm-green)] underline-offset-4 hover:underline"
+												class="font-bold text-(--pm-green) underline-offset-4 hover:underline"
 												href="/signup?redirect=/premium">Create a free account</a
 											> first.
 										</p>
 									{:else}
 										<!-- signed in as -->
 										<div
-											class="mb-5 flex items-center gap-3 border border-[var(--pm-rule)] bg-[var(--pm-cream-2)] px-4 py-3"
+											class="mb-5 flex items-center gap-3 border border-(--pm-rule) bg-(--pm-cream-2) px-4 py-3"
 										>
-											<span class="h-2 w-2 shrink-0 bg-[var(--pm-green)]" aria-hidden="true"></span>
+											<span class="h-2 w-2 shrink-0 bg-(--pm-green)" aria-hidden="true"></span>
 											<span class="min-w-0 flex-1">
 												<span
-													class="block text-[8.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+													class="block text-xs font-extrabold tracking-widest text-fade uppercase"
 													>Signed in as</span
 												>
-												<span class="block truncate text-[14px] font-semibold"
-													>{data.user.email}</span
-												>
+												<span class="block truncate text-sm font-semibold">{data.user.email}</span>
 											</span>
 											<a
 												href="/account"
-												class="shrink-0 text-[9.5px] font-extrabold tracking-[0.16em] text-[var(--pm-green)] uppercase hover:text-ink"
+												class="shrink-0 text-xs font-extrabold tracking-widest text-(--pm-green) uppercase hover:text-ink"
 												>Edit</a
 											>
 										</div>
@@ -458,13 +443,13 @@
 												<button
 													type="button"
 													onclick={() => (promoOpen = true)}
-													class="text-[10px] font-extrabold tracking-[0.16em] text-[var(--pm-green)] uppercase hover:text-ink"
+													class="text-xs font-extrabold tracking-widest text-(--pm-green) uppercase hover:text-ink"
 													>+ Have a promo or referral code?</button
 												>
 											{:else}
 												<label
 													for="promoCode"
-													class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+													class="text-xs font-extrabold tracking-widest text-fade uppercase"
 													>Promo or referral code</label
 												>
 												<div class="mt-2 flex">
@@ -477,40 +462,40 @@
 															e.key === 'Enter' && (e.preventDefault(), verifyPromoCode())}
 														placeholder="Enter code"
 														autocomplete="off"
-														class="min-h-[48px] min-w-0 flex-1 border border-r-0 border-[var(--pm-rule)] bg-white/60 px-3.5 text-[14px] font-bold tracking-[0.08em] text-ink uppercase outline-none placeholder:text-fade placeholder:normal-case hover:border-ink focus:border-ink focus:ring-0"
+														class="min-h-12 min-w-0 flex-1 border border-r-0 border-(--pm-rule) bg-white/60 px-3.5 text-sm font-bold tracking-widest text-ink uppercase outline-none placeholder:text-fade placeholder:normal-case hover:border-ink focus:border-ink focus:ring-0"
 													/>
 													<button
 														type="button"
 														onclick={verifyPromoCode}
 														disabled={verifying || !hasPromoCode}
-														class="min-h-[48px] shrink-0 border border-[var(--pm-deep)] bg-[var(--pm-deep)] px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-[var(--pm-cream)] uppercase transition-colors hover:bg-[var(--pm-green)] disabled:cursor-not-allowed disabled:opacity-50"
+														class="min-h-12 shrink-0 border border-(--pm-deep) bg-(--pm-deep) px-5 text-xs font-extrabold tracking-widest text-(--pm-cream) uppercase transition-colors hover:bg-(--pm-green) disabled:cursor-not-allowed disabled:opacity-50"
 														>{verifying ? '…' : 'Apply'}</button
 													>
 												</div>
 												{#if promoError}
-													<p class="mt-2 text-[12px] font-semibold text-hero-rb">{promoError}</p>
+													<p class="mt-2 text-xs font-semibold text-hero-rb">{promoError}</p>
 												{/if}
 											{/if}
 										</div>
 
 										{#if verifiedPartnerName}
 											<div
-												class="mb-5 flex items-center justify-between gap-3 border-l-[3px] border-[var(--pm-green)] bg-[var(--pm-green)]/10 px-4 py-3"
+												class="mb-5 flex items-center justify-between gap-3 border-l-3 border-(--pm-green) bg-(--pm-green)/10 px-4 py-3"
 											>
 												<div>
 													<p
-														class="text-[9px] font-extrabold tracking-[0.18em] text-[var(--pm-green)] uppercase"
+														class="text-xs font-extrabold tracking-widest text-(--pm-green) uppercase"
 													>
 														{verifiedType === 'member' ? 'Friend referral' : 'Partner code'} applied
 													</p>
-													<p class="mt-1 text-[13px] font-semibold">
+													<p class="mt-1 text-sm font-semibold">
 														{verifiedPartnerName} · ${discountAmount} off your first {annual
 															? 'year'
 															: 'month'}
 													</p>
 												</div>
 												<p
-													class="ao-cond text-[30px] leading-none font-black text-[var(--pm-green)] tabular-nums"
+													class="ao-cond text-3xl leading-none font-black text-(--pm-green) tabular-nums"
 												>
 													${planFirstCharge}
 												</p>
@@ -532,16 +517,16 @@
 								</div>
 
 								<p
-									class="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 border-t border-[var(--pm-rule)] pt-3.5 text-[8.5px] font-extrabold tracking-[0.1em] whitespace-nowrap text-soft uppercase sm:gap-x-2"
+									class="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 border-t border-(--pm-rule) pt-3.5 text-xs font-extrabold tracking-widest whitespace-nowrap text-soft uppercase sm:gap-x-2"
 								>
 									<span>Cancel any time</span>
-									<span class="hidden text-[var(--pm-gold)] sm:inline" aria-hidden="true">◆</span>
+									<span class="hidden text-(--pm-gold) sm:inline" aria-hidden="true">◆</span>
 									<span>Instant access</span>
-									<span class="hidden text-[var(--pm-gold)] sm:inline" aria-hidden="true">◆</span>
+									<span class="hidden text-(--pm-gold) sm:inline" aria-hidden="true">◆</span>
 									<span class="inline-flex items-center gap-1"
 										><svg
 											viewBox="0 0 20 20"
-											class="h-3 w-3 text-[var(--pm-green)]"
+											class="h-3 w-3 text-(--pm-green)"
 											fill="none"
 											stroke="currentColor"
 											stroke-width="2"
@@ -556,33 +541,30 @@
 			</section>
 
 			<!-- ============ underwriting credit ============ -->
-			<section class="border-b border-[var(--pm-rule)] bg-[var(--pm-cream)]">
+			<section class="border-b border-(--pm-rule) bg-(--pm-cream)">
 				<p
-					class="mx-auto flex w-full max-w-[1200px] flex-wrap items-center justify-center gap-x-4 gap-y-1 px-5 py-5 text-center md:px-8"
+					class="mx-auto flex w-full max-w-page flex-wrap items-center justify-center gap-x-4 gap-y-1 px-5 py-5 text-center md:px-8"
 				>
-					<span
-						class="text-[9.5px] font-extrabold tracking-[0.24em] text-[var(--pm-green)] uppercase"
+					<span class="text-xs font-extrabold tracking-widest text-(--pm-green) uppercase"
 						>◆ A note from AGE</span
 					>
-					<span class="font-newsreader text-[17px] text-ink italic md:text-[19px]"
+					<span class="font-newsreader text-lg text-ink italic md:text-xl"
 						>Support for AGE comes from members like you.</span
 					>
 				</p>
 			</section>
 
 			<!-- ============ where your membership goes ============ -->
-			<section class="bg-[var(--pm-cream)]">
-				<div class="mx-auto w-full max-w-[1200px] px-5 py-14 md:px-8 md:py-20">
-					<div class="max-w-[760px]">
-						<p
-							class="text-[10px] font-extrabold tracking-[0.22em] text-[var(--pm-green)] uppercase"
-						>
+			<section class="bg-(--pm-cream)">
+				<div class="mx-auto w-full max-w-page px-5 py-14 md:px-8 md:py-20">
+					<div class="max-w-3xl">
+						<p class="text-xs font-extrabold tracking-widest text-(--pm-green) uppercase">
 							Where your membership goes
 						</p>
-						<h2 class="pm-title mt-3 text-[38px] leading-[1.02] [text-wrap:balance] md:text-[56px]">
+						<h2 class="pm-title mt-3 text-4xl leading-none [text-wrap:balance] md:text-6xl">
 							Every dollar goes back into <em>the game</em>.
 						</h2>
-						<p class="mt-4 font-newsreader text-[18px] leading-[1.55] text-soft">
+						<p class="mt-4 font-newsreader text-lg leading-normal text-soft">
 							AGE answers to its members. Here is what your membership pays for.
 						</p>
 					</div>
@@ -590,7 +572,7 @@
 						{#each pillars as p, i (p.n)}
 							<li class="flex flex-col" use:reveal={{ delay: i * 90 }}>
 								<div
-									class="pm-duo relative aspect-video overflow-hidden bg-[var(--pm-deep)] md:aspect-[4/3]"
+									class="pm-duo relative aspect-video overflow-hidden bg-(--pm-deep) md:aspect-4/3"
 								>
 									<img
 										src={p.img}
@@ -599,17 +581,17 @@
 										class="absolute inset-0 h-full w-full object-cover grayscale"
 									/>
 									<span
-										class="ao-cond absolute bottom-3 left-4 z-[1] text-[64px] leading-none font-black text-[var(--pm-cream)]"
+										class="ao-cond absolute bottom-3 left-4 z-1 text-6xl leading-none font-black text-(--pm-cream)"
 										>{p.n}</span
 									>
 								</div>
-								<h3 class="pm-title mt-5 text-[26px] leading-[1.1]">
+								<h3 class="pm-title mt-5 text-2xl leading-none">
 									{p.title}
 								</h3>
-								<p class="mt-2 font-newsreader text-[16px] leading-[1.6] text-soft">{p.body}</p>
+								<p class="mt-2 font-newsreader text-base leading-relaxed text-soft">{p.body}</p>
 								{#if p.stat}
 									<p
-										class="mt-5 border-t-[3px] border-[var(--pm-deep)] pt-3 text-[10.5px] font-extrabold tracking-[0.14em] text-[var(--pm-deep)] uppercase"
+										class="mt-5 border-t-3 border-(--pm-deep) pt-3 text-xs font-extrabold tracking-widest text-(--pm-deep) uppercase"
 									>
 										{p.stat}
 									</p>
@@ -621,27 +603,23 @@
 			</section>
 
 			<!-- ============ pledge statement ============ -->
-			<section class="pm-deep relative overflow-hidden text-[var(--pm-cream)]">
+			<section class="pm-deep relative overflow-hidden text-(--pm-cream)">
 				<div class="pm-lines absolute inset-0" aria-hidden="true"></div>
 				<div
-					class="relative mx-auto grid w-full max-w-[1200px] items-center gap-10 px-5 py-16 md:px-8 md:py-24"
+					class="relative mx-auto grid w-full max-w-page items-center gap-10 px-5 py-16 md:px-8 md:py-24"
 				>
 					<div>
-						<blockquote
-							class="pm-title text-[32px] leading-[1.2] [text-wrap:balance] md:text-[48px]"
-						>
+						<blockquote class="pm-title text-3xl leading-tight [text-wrap:balance] md:text-5xl">
 							If AGE matters to you, <em>help us keep it going</em>.
 						</blockquote>
-						<p
-							class="mt-6 max-w-[600px] font-newsreader text-[18px] leading-[1.6] text-[var(--pm-cream)]/75"
-						>
+						<p class="mt-6 max-w-xl font-newsreader text-lg leading-relaxed text-(--pm-cream)/75">
 							The people writing, filming, casting and teaching are the same people across the table
 							from you at an AGE Open. Members are the reason the work exists.
 						</p>
 						<button
 							type="button"
 							onclick={() => toJoin()}
-							class="mt-8 inline-flex min-h-[52px] items-center gap-2 bg-[var(--pm-gold)] px-7 text-[11px] font-extrabold tracking-[0.18em] text-[var(--pm-deep)] uppercase transition-[filter] hover:brightness-110"
+							class="mt-8 inline-flex min-h-13 items-center gap-2 bg-(--pm-gold) px-7 text-xs font-extrabold tracking-widest text-(--pm-deep) uppercase transition hover:brightness-110"
 							>Become a member <span aria-hidden="true">→</span></button
 						>
 					</div>
@@ -649,39 +627,32 @@
 			</section>
 
 			<!-- ============ with our thanks ============ -->
-			<section class="border-b border-[var(--pm-rule)] bg-[var(--pm-cream)]">
-				<div class="mx-auto w-full max-w-[1200px] px-5 py-14 md:px-8 md:py-20">
+			<section class="border-b border-(--pm-rule) bg-(--pm-cream)">
+				<div class="mx-auto w-full max-w-page px-5 py-14 md:px-8 md:py-20">
 					<div class="flex flex-wrap items-end justify-between gap-4">
 						<div>
-							<p
-								class="text-[10px] font-extrabold tracking-[0.22em] text-[var(--pm-green)] uppercase"
-							>
+							<p class="text-xs font-extrabold tracking-widest text-(--pm-green) uppercase">
 								With our thanks
 							</p>
-							<h2 class="pm-title mt-3 text-[38px] leading-[1.02] md:text-[52px]">
-								What members get.
-							</h2>
+							<h2 class="pm-title mt-3 text-4xl leading-none md:text-5xl">What members get.</h2>
 						</div>
-						<p class="max-w-[360px] font-newsreader text-[16px] text-soft italic">
+						<p class="max-w-sm font-newsreader text-base text-soft italic">
 							Your membership keeps AGE going. Here is what comes with it.
 						</p>
 					</div>
 					<ol
-						class="mt-10 grid gap-px border-t-[3px] border-[var(--pm-deep)] bg-[var(--pm-rule)] sm:grid-cols-2 lg:grid-cols-4"
+						class="mt-10 grid gap-px border-t-3 border-(--pm-deep) bg-(--pm-rule) sm:grid-cols-2 lg:grid-cols-4"
 					>
 						{#each thanks as row, i (row.t)}
-							<li
-								class="bg-[var(--pm-cream)] px-1 pt-6 pb-8 sm:px-6"
-								use:reveal={{ delay: i * 70 }}
-							>
+							<li class="bg-(--pm-cream) px-1 pt-6 pb-8 sm:px-6" use:reveal={{ delay: i * 70 }}>
 								<span
-									class="ao-cond text-[48px] leading-none font-black text-[var(--pm-green)] tabular-nums"
+									class="ao-cond text-5xl leading-none font-black text-(--pm-green) tabular-nums"
 									>{String(i + 1).padStart(2, '0')}</span
 								>
-								<h3 class="pm-title mt-4 text-[21px] leading-[1.15]">
+								<h3 class="pm-title mt-4 text-xl leading-tight">
 									{row.t}
 								</h3>
-								<p class="mt-2 font-newsreader text-[15px] leading-[1.55] text-soft">{row.d}</p>
+								<p class="mt-2 font-newsreader text-base leading-normal text-soft">{row.d}</p>
 							</li>
 						{/each}
 					</ol>
@@ -689,44 +660,44 @@
 			</section>
 
 			<!-- ============ two ways to join ============ -->
-			<section class="border-b border-[var(--pm-rule)] bg-[var(--pm-cream-2)]">
-				<div class="mx-auto w-full max-w-[1200px] px-5 py-14 md:px-8 md:py-20">
-					<p class="text-[10px] font-extrabold tracking-[0.22em] text-[var(--pm-green)] uppercase">
+			<section class="border-b border-(--pm-rule) bg-(--pm-cream-2)">
+				<div class="mx-auto w-full max-w-page px-5 py-14 md:px-8 md:py-20">
+					<p class="text-xs font-extrabold tracking-widest text-(--pm-green) uppercase">
 						Two ways to join
 					</p>
-					<h2 class="pm-title mt-3 text-[38px] leading-[1.02] md:text-[52px]">
+					<h2 class="pm-title mt-3 text-4xl leading-none md:text-5xl">
 						Same membership, your pace.
 					</h2>
 					<div class="mt-8 grid gap-5 md:grid-cols-2">
 						{#each [{ v: false, l: 'Monthly member', price: '$10', per: 'month', note: 'Billed every month. Cancel whenever you like.' }, { v: true, l: 'Annual member', price: '$110', per: 'year', note: 'Billed once a year: twelve months for the price of eleven.', tag: 'Best value' }] as plan (plan.l)}
 							<div
-								class="relative flex flex-col border bg-[var(--pm-cream)] p-6 md:p-8 {plan.v
-									? 'border-t-[5px] border-[var(--pm-deep)] border-t-[var(--pm-gold)]'
-									: 'border-t-[5px] border-[var(--pm-rule)] border-t-[var(--pm-green)]'}"
+								class="relative flex flex-col border bg-(--pm-cream) p-6 md:p-8 {plan.v
+									? 'border-t-5 border-(--pm-deep) border-t-(--pm-gold)'
+									: 'border-t-5 border-(--pm-rule) border-t-(--pm-green)'}"
 							>
 								{#if plan.tag}
 									<span
-										class="absolute top-0 right-0 bg-[var(--pm-deep)] px-2.5 py-1 text-[9px] font-extrabold tracking-[0.16em] text-[var(--pm-cream)] uppercase"
+										class="absolute top-0 right-0 bg-(--pm-deep) px-2.5 py-1 text-xs font-extrabold tracking-widest text-(--pm-cream) uppercase"
 										>{plan.tag}</span
 									>
 								{/if}
-								<p class="text-[10.5px] font-extrabold tracking-[0.18em] uppercase">{plan.l}</p>
+								<p class="text-xs font-extrabold tracking-widest uppercase">{plan.l}</p>
 								<p class="mt-4 flex items-baseline gap-2">
 									<span
-										class="ao-cond text-[64px] leading-[0.8] font-black text-[var(--pm-deep)] tabular-nums"
+										class="ao-cond text-6xl leading-none font-black text-(--pm-deep) tabular-nums"
 										>{plan.price}</span
 									>
-									<span class="text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+									<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 										>/ {plan.per}</span
 									>
 								</p>
-								<p class="mt-4 font-newsreader text-[16px] leading-[1.5] text-soft">{plan.note}</p>
-								<ul class="mt-5 border-t border-[var(--pm-rule)]">
+								<p class="mt-4 font-newsreader text-base leading-normal text-soft">{plan.note}</p>
+								<ul class="mt-5 border-t border-(--pm-rule)">
 									{#each thanks as item (item.t)}
 										<li
-											class="flex items-center gap-3 border-b border-[var(--pm-rule)] py-2.5 text-[13px] font-semibold"
+											class="flex items-center gap-3 border-b border-(--pm-rule) py-2.5 text-sm font-semibold"
 										>
-											<span class="h-[6px] w-[6px] shrink-0 bg-[var(--pm-green)]" aria-hidden="true"
+											<span class="h-1.5 w-1.5 shrink-0 bg-(--pm-green)" aria-hidden="true"
 											></span>{item.t}
 										</li>
 									{/each}
@@ -734,9 +705,9 @@
 								<button
 									type="button"
 									onclick={() => toJoin(plan.v)}
-									class="mt-6 inline-flex min-h-[50px] items-center justify-center gap-2 px-6 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-colors {plan.v
-										? 'bg-[var(--pm-deep)] text-[var(--pm-cream)] hover:bg-[var(--pm-green)]'
-										: 'border border-[var(--pm-deep)] text-[var(--pm-deep)] hover:bg-[var(--pm-deep)] hover:text-[var(--pm-cream)]'}"
+									class="mt-6 inline-flex min-h-13 items-center justify-center gap-2 px-6 text-xs font-extrabold tracking-widest uppercase transition-colors {plan.v
+										? 'bg-(--pm-deep) text-(--pm-cream) hover:bg-(--pm-green)'
+										: 'border border-(--pm-deep) text-(--pm-deep) hover:bg-(--pm-deep) hover:text-(--pm-cream)'}"
 									>Join {plan.v ? 'yearly' : 'monthly'} <span aria-hidden="true">→</span></button
 								>
 							</div>
@@ -746,52 +717,48 @@
 			</section>
 
 			<!-- ============ voice ============ -->
-			<section class="border-b border-[var(--pm-rule)] bg-[var(--pm-cream)]">
-				<figure class="mx-auto w-full max-w-[880px] px-5 py-16 text-center md:px-8 md:py-20">
+			<section class="border-b border-(--pm-rule) bg-(--pm-cream)">
+				<figure class="mx-auto w-full max-w-4xl px-5 py-16 text-center md:px-8 md:py-20">
 					<span
-						class="ao-cond block text-[72px] leading-[0.6] font-black text-[var(--pm-gold)]"
+						class="ao-cond block text-7xl leading-none font-black text-(--pm-gold)"
 						aria-hidden="true">“</span
 					>
 					<blockquote
-						class="mt-4 font-newsreader text-[26px] leading-[1.35] tracking-[-0.01em] md:text-[32px]"
+						class="mt-4 font-newsreader text-2xl leading-snug tracking-normal md:text-3xl"
 					>
 						Ten dollars a month to keep the coverage, the tournaments and the series going is the
 						easiest yes in my whole collection.
 					</blockquote>
-					<figcaption class="mt-6 text-[10px] font-extrabold tracking-[0.2em] uppercase">
+					<figcaption class="mt-6 text-xs font-extrabold tracking-widest uppercase">
 						Sam K. <span class="ml-2 text-fade">AGE member</span>
 					</figcaption>
 				</figure>
 			</section>
 
 			<!-- ============ questions ============ -->
-			<section class="border-b border-[var(--pm-rule)] bg-[var(--pm-cream)]">
+			<section class="border-b border-(--pm-rule) bg-(--pm-cream)">
 				<div
-					class="mx-auto grid w-full max-w-[1200px] gap-8 px-5 py-14 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:gap-16 md:px-8 md:py-20"
+					class="mx-auto grid w-full max-w-page gap-8 px-5 py-14 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:gap-16 md:px-8 md:py-20"
 				>
 					<div>
-						<p
-							class="text-[10px] font-extrabold tracking-[0.22em] text-[var(--pm-green)] uppercase"
-						>
+						<p class="text-xs font-extrabold tracking-widest text-(--pm-green) uppercase">
 							Questions
 						</p>
-						<h2 class="pm-title mt-3 text-[36px] leading-[1.04] md:text-[44px]">
-							Before you join.
-						</h2>
+						<h2 class="pm-title mt-3 text-4xl leading-none md:text-5xl">Before you join.</h2>
 					</div>
-					<div class="border-t-[3px] border-[var(--pm-deep)]">
+					<div class="border-t-3 border-(--pm-deep)">
 						{#each faqs as f (f.q)}
-							<details class="group border-b border-[var(--pm-rule)]">
+							<details class="group border-b border-(--pm-rule)">
 								<summary
-									class="flex min-h-[60px] cursor-pointer list-none items-center justify-between gap-4 py-4 font-newsreader text-[19px] font-semibold [&::-webkit-details-marker]:hidden"
+									class="flex min-h-15 cursor-pointer list-none items-center justify-between gap-4 py-4 font-newsreader text-xl font-semibold [&::-webkit-details-marker]:hidden"
 								>
 									{f.q}
 									<span
-										class="ao-cond shrink-0 text-[26px] leading-none text-[var(--pm-green)] transition-transform group-open:rotate-45"
+										class="ao-cond shrink-0 text-2xl leading-none text-(--pm-green) transition-transform group-open:rotate-45"
 										aria-hidden="true">+</span
 									>
 								</summary>
-								<p class="max-w-[640px] pb-5 font-newsreader text-[16.5px] leading-[1.6] text-soft">
+								<p class="max-w-2xl pb-5 font-newsreader text-base leading-relaxed text-soft">
 									{f.a}
 								</p>
 							</details>
@@ -801,26 +768,24 @@
 			</section>
 
 			<!-- ============ closing ============ -->
-			<section class="pm-deep relative overflow-hidden text-[var(--pm-cream)]">
+			<section class="pm-deep relative overflow-hidden text-(--pm-cream)">
 				<div class="pm-lines absolute inset-0" aria-hidden="true"></div>
 				<div
-					class="relative mx-auto flex w-full max-w-[1200px] flex-col items-center px-5 py-16 text-center md:px-8 md:py-24"
+					class="relative mx-auto flex w-full max-w-page flex-col items-center px-5 py-16 text-center md:px-8 md:py-24"
 				>
 					<h2
-						class="pm-title mx-auto max-w-[760px] text-[40px] leading-[1.02] [text-wrap:balance] md:text-[60px]"
+						class="pm-title mx-auto max-w-3xl text-4xl leading-none [text-wrap:balance] md:text-6xl"
 					>
 						Support for AGE comes from <em>you</em>.
 					</h2>
 					<button
 						type="button"
 						onclick={() => toJoin()}
-						class="mt-9 inline-flex min-h-[54px] items-center gap-2 bg-[var(--pm-gold)] px-8 text-[11px] font-extrabold tracking-[0.18em] text-[var(--pm-deep)] uppercase transition-[filter] hover:brightness-110"
+						class="mt-9 inline-flex min-h-14 items-center gap-2 bg-(--pm-gold) px-8 text-xs font-extrabold tracking-widest text-(--pm-deep) uppercase transition hover:brightness-110"
 						>Become a member · ${annual ? 110 : 10} / {annual ? 'yr' : 'mo'}
 						<span aria-hidden="true">→</span></button
 					>
-					<p
-						class="mt-4 text-[9.5px] font-extrabold tracking-[0.18em] text-[var(--pm-cream)]/55 uppercase"
-					>
+					<p class="mt-4 text-xs font-extrabold tracking-widest text-(--pm-cream)/55 uppercase">
 						Cancel any time · instant access
 					</p>
 				</div>
@@ -859,7 +824,7 @@
 	.pm-title {
 		font-family: var(--font-libre);
 		font-weight: 800;
-		letter-spacing: -0.035em;
+		letter-spacing: var(--tracking-tight);
 		color: var(--pm-deep);
 	}
 	.pm-title em {

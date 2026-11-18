@@ -185,18 +185,18 @@
 
 <svelte:head><title>{title || 'Topic'} · {course.title} · Classroom</title></svelte:head>
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pb-20 font-libre md:px-8">
-	<div class="flex flex-wrap items-center justify-between gap-3 border-b-[3px] border-ink pb-3">
+<div class="mx-auto w-full max-w-page px-5 pb-20 font-libre md:px-8">
+	<div class="flex flex-wrap items-center justify-between gap-3 border-b-3 border-ink pb-3">
 		<a
 			href="/classroom/courses/{course.id}/outline"
-			class="text-[10.5px] font-extrabold tracking-[0.16em] text-soft uppercase hover:text-ink"
+			class="text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 			>← Outline{#if data.section}<span class="tracking-normal text-fade normal-case">
 					&nbsp;· {data.section}</span
 				>{/if}</a
 		>
 		<div class="flex flex-wrap items-center gap-2">
 			<span
-				class="text-[12px] {auto.state === 'error' ? 'text-hero-rb' : 'text-fade'}"
+				class="text-xs {auto.state === 'error' ? 'text-hero-rb' : 'text-fade'}"
 				aria-live="polite">{savedText}</span
 			>
 			{#if live}
@@ -204,7 +204,7 @@
 					href="/academy/{course.slug}/{topic.slug}"
 					target="_blank"
 					rel="noopener"
-					class="border border-line2 px-3 py-2 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:border-ink"
+					class="border border-line2 px-3 py-2 text-xs font-extrabold tracking-widest uppercase hover:border-ink"
 					>{pending ? 'Preview changes' : 'View'}</a
 				>
 			{/if}
@@ -214,7 +214,7 @@
 						type="button"
 						onclick={() => changes('discard')}
 						disabled={busy}
-						class="px-3 py-2 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-hero-rb disabled:opacity-50"
+						class="px-3 py-2 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-hero-rb disabled:opacity-50"
 						>Discard changes</button
 					>
 				{/if}
@@ -222,7 +222,7 @@
 					type="button"
 					onclick={() => changes('apply')}
 					disabled={busy || !pending}
-					class="bg-ink px-4 py-2 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-default disabled:bg-line2 disabled:text-fade"
+					class="bg-ink px-4 py-2 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-default disabled:bg-line2 disabled:text-fade"
 					>Update topic</button
 				>
 			{:else}
@@ -230,7 +230,7 @@
 					type="button"
 					onclick={() => publish(!live)}
 					disabled={busy}
-					class="px-4 py-2 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors disabled:opacity-50 {live
+					class="px-4 py-2 text-xs font-extrabold tracking-widest uppercase transition-colors disabled:opacity-50 {live
 						? 'border border-ink hover:bg-ink hover:text-paper-bg'
 						: 'bg-ink text-paper-bg hover:bg-warm'}">{live ? 'Unpublish' : 'Publish topic'}</button
 				>
@@ -240,7 +240,7 @@
 
 	{#if pending}
 		<p
-			class="mt-4 flex flex-wrap items-center justify-between gap-2 border-l-[3px] border-gold bg-gold/10 px-4 py-3 text-[13px]"
+			class="mt-4 flex flex-wrap items-center justify-between gap-2 border-l-3 border-gold bg-gold/10 px-4 py-3 text-sm"
 		>
 			<span
 				><b class="font-bold">Students still see the published version.</b> Your edits are saved privately
@@ -248,13 +248,13 @@
 			>
 		</p>
 	{:else if flash}
-		<p class="mt-4 border-l-[3px] border-prem bg-prem/10 px-4 py-3 text-[13px]" role="status">
+		<p class="mt-4 border-l-3 border-prem bg-prem/10 px-4 py-3 text-sm" role="status">
 			{flash}
 		</p>
 	{/if}
 
 	{#if message}
-		<p class="mt-4 border-l-[3px] border-hero-rb bg-hero-rb/5 px-4 py-3 text-[13px]" role="alert">
+		<p class="mt-4 border-l-3 border-hero-rb bg-hero-rb/5 px-4 py-3 text-sm" role="alert">
 			{message}
 		</p>
 	{/if}
@@ -266,7 +266,7 @@
 				maxlength="200"
 				aria-label="Topic title"
 				placeholder="Topic title"
-				class="w-full border-0 border-b border-transparent bg-transparent px-0 py-1 font-newsreader text-[32px] leading-tight font-semibold focus:border-ink focus:ring-0 md:text-[38px]"
+				class="w-full border-0 border-b border-transparent bg-transparent px-0 py-1 font-newsreader text-3xl leading-tight font-semibold focus:border-ink focus:ring-0 md:text-4xl"
 			/>
 			<div class="mt-5">
 				{#key editorKey}
@@ -283,11 +283,11 @@
 
 		<aside class="space-y-6 lg:sticky lg:top-[calc(var(--desk-top)+16px)] lg:self-start">
 			<div>
-				<p class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">Status</p>
-				<p class="mt-1 text-[14px] font-semibold {pending ? 'text-gold' : live ? 'text-prem' : ''}">
+				<p class="text-xs font-extrabold tracking-widest text-fade uppercase">Status</p>
+				<p class="mt-1 text-sm font-semibold {pending ? 'text-gold' : live ? 'text-prem' : ''}">
 					{pending ? 'Published · changes not live' : live ? 'Published' : 'Draft'}
 				</p>
-				<p class="mt-1 text-[12px] leading-snug text-fade">
+				<p class="mt-1 text-xs leading-snug text-fade">
 					{#if !live}
 						Students can’t see drafts.
 					{:else if !courseLive}
@@ -304,27 +304,27 @@
 						type="button"
 						onclick={() => publish(false)}
 						disabled={busy}
-						class="mt-3 text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase hover:text-ink disabled:opacity-50"
+						class="mt-3 text-xs font-extrabold tracking-widest text-fade uppercase hover:text-ink disabled:opacity-50"
 						>Unpublish topic</button
 					>
 				{/if}
 				{#if !live && courseLive && !topic.firstPublishedAt}
-					<p class="mt-2 border-l-[3px] border-gold bg-gold/10 px-3 py-2 text-[12px] leading-snug">
+					<p class="mt-2 border-l-3 border-gold bg-gold/10 px-3 py-2 text-xs leading-snug">
 						Publishing tells your students. Every student who owns the course gets this new topic.
 					</p>
 				{/if}
 				{#if courseLive && ((staged && pending) || (!live && !topic.firstPublishedAt))}
 					<label class="mt-3 block">
-						<span class="block text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+						<span class="block text-xs font-extrabold tracking-widest text-fade uppercase"
 							>What changed (optional)</span
 						>
 						<input
 							bind:value={updateNote}
 							maxlength="280"
 							placeholder="e.g. Updated for the new set"
-							class="mt-1.5 h-[36px] w-full border border-line2 bg-white px-2.5 text-[13px] focus:border-ink focus:ring-0"
+							class="mt-1.5 h-9 w-full border border-line2 bg-white px-2.5 text-sm focus:border-ink focus:ring-0"
 						/>
-						<span class="mt-1 block text-[11px] text-fade"
+						<span class="mt-1 block text-xs text-fade"
 							>Shown in the course’s changelog, with the date.</span
 						>
 					</label>
@@ -338,27 +338,27 @@
 					class="mt-1 h-4 w-4 border-ink text-warm focus:ring-0"
 				/>
 				<span>
-					<span class="block text-[13.5px] font-semibold">Free to read</span>
-					<span class="block text-[12px] leading-snug text-fade"
+					<span class="block text-sm font-semibold">Free to read</span>
+					<span class="block text-xs leading-snug text-fade"
 						>Anyone can read this topic, even without buying the course or signing in. Good for a
 						first taste.</span
 					>
 				</span>
 			</label>
 			<label class="block">
-				<span class="block text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+				<span class="block text-xs font-extrabold tracking-widest text-fade uppercase"
 					>Web address</span
 				>
-				<span class="mt-1 block truncate text-[11.5px] text-fade">/academy/{course.slug}/</span>
+				<span class="mt-1 block truncate text-xs text-fade">/academy/{course.slug}/</span>
 				<input
 					bind:value={slug}
 					oninput={() => (slug = cleanTypedSlug(slug))}
-					class="mt-1 h-[38px] w-full border border-line2 bg-white px-2.5 text-[13.5px] focus:border-ink focus:ring-0"
+					class="mt-1 h-10 w-full border border-line2 bg-white px-2.5 text-sm focus:border-ink focus:ring-0"
 				/>
 			</label>
 			<div class="border-t border-line pt-5">
-				<p class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">Video</p>
-				<p class="mt-1 text-[12px] leading-snug text-fade">
+				<p class="text-xs font-extrabold tracking-widest text-fade uppercase">Video</p>
+				<p class="mt-1 text-xs leading-snug text-fade">
 					Optional. Plays at the top of the topic; it belongs to this topic only.
 				</p>
 				<div class="-mt-1">
@@ -372,14 +372,14 @@
 						onchange={refreshVideo}
 					/>
 				</div>
-				<p class="mt-2 text-[12px] leading-snug text-fade">
+				<p class="mt-2 text-xs leading-snug text-fade">
 					Images go in the text: use the image button in the editor. They’re kept with this course.
 				</p>
 			</div>
 			<button
 				type="button"
 				onclick={remove}
-				class="text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase hover:text-hero-rb"
+				class="text-xs font-extrabold tracking-widest text-fade uppercase hover:text-hero-rb"
 				>Delete topic</button
 			>
 		</aside>

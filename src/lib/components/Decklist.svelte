@@ -193,25 +193,23 @@
 	with an underline). Card names stay black with no underline, which
 	matches the handoff screenshot.
 -->
-<div class="not-prose my-8 border border-[#17150F] bg-[#FBFAF6]">
+<div class="not-prose my-8 border border-ink bg-paper-bg">
 	<!-- ============ HEADER ============ -->
 	{#if isNewFormat}
 		{#if deckName || hero || format}
-			<div
-				class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 bg-[#17150F] px-7 py-6"
-			>
+			<div class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 bg-ink px-7 py-6">
 				<div>
 					{#if deckName}
 						<h3
-							class="m-0 font-newsreader text-[26px] leading-[1.05] font-semibold tracking-[-0.01em] text-white"
+							class="m-0 font-newsreader text-2xl leading-none font-semibold tracking-normal text-white"
 						>
 							{deckName}
 						</h3>
 					{/if}
 					{#if hero || format || creator}
-						<div class="mt-2 flex flex-wrap items-center gap-3 text-[13px] font-semibold">
+						<div class="mt-2 flex flex-wrap items-center gap-3 text-sm font-semibold">
 							{#if hero}
-								<span class="font-bold tracking-[0.02em] text-[#F4C66A]">
+								<span class="font-bold tracking-wide text-amber-300">
 									{hero}
 								</span>
 							{/if}
@@ -231,7 +229,7 @@
 					{/if}
 				</div>
 				{#if totalCards > 0}
-					<div class="font-mono-system text-[13px] font-bold text-white">
+					<div class="font-mono-system text-sm font-bold text-white">
 						<span>{totalCards}</span>
 						<span class="ml-1 text-white/60">cards</span>
 					</div>
@@ -239,14 +237,14 @@
 			</div>
 		{/if}
 	{:else if decklist.title}
-		<div class="flex items-baseline justify-between gap-x-6 bg-[#17150F] px-7 py-6">
+		<div class="flex items-baseline justify-between gap-x-6 bg-ink px-7 py-6">
 			<h3
-				class="m-0 font-newsreader text-[26px] leading-[1.05] font-semibold tracking-[-0.01em] text-white"
+				class="m-0 font-newsreader text-2xl leading-none font-semibold tracking-normal text-white"
 			>
 				{decklist.title}
 			</h3>
 			{#if totalCards > 0}
-				<div class="font-mono-system text-[13px] font-bold text-white">
+				<div class="font-mono-system text-sm font-bold text-white">
 					<span>{totalCards}</span>
 					<span class="ml-1 text-white/60">cards</span>
 				</div>
@@ -259,12 +257,12 @@
 		<!-- Arena · Equipment — full-width strip with 2-col list -->
 		{#if processedCards.arena && processedCards.arena.length > 0}
 			{@const _arenaCount = processedCards.arena.reduce((s, c) => s + (c.quantity || 1), 0)}
-			<div class="border-b border-[#C7BFA9] px-6 pt-4 pb-3">
+			<div class="border-b border-line2 px-6 pt-4 pb-3">
 				<div class="mb-2 flex items-baseline justify-between gap-3">
-					<span class="text-[11px] font-extrabold tracking-[0.16em] text-[#17150F] uppercase">
+					<span class="text-xs font-extrabold tracking-widest text-ink uppercase">
 						Arena · Equipment
 					</span>
-					<span class="font-mono-system text-[12px] font-bold text-[#928B79]">
+					<span class="font-mono-system text-xs font-bold text-fade">
 						{_arenaCount}
 						{_arenaCount === 1 ? 'piece' : 'pieces'}
 					</span>
@@ -273,10 +271,10 @@
 					{#each processedCards.arena as card (card.name)}
 						{@const arenaCardImg = getCardImage(card.name, null)}
 						<div
-							class="flex break-inside-avoid items-baseline gap-3 border-b border-[#E4DECF] py-[3px] last:border-b-0"
+							class="flex break-inside-avoid items-baseline gap-3 border-b border-line py-1 last:border-b-0"
 						>
 							<span
-								class="w-[26px] flex-shrink-0 font-mono-system text-[12px] font-bold text-[#928B79] tabular-nums"
+								class="w-7 flex-shrink-0 font-mono-system text-xs font-bold text-fade tabular-nums"
 							>
 								{card.quantity}×
 							</span>
@@ -287,7 +285,7 @@
 								data-card-name={card.name}
 								data-card-image={arenaCardImg?.imageUrl || null}
 								data-card-fallback={arenaCardImg?.fallbackUrl || null}
-								class="card-link truncate text-[14.5px] font-bold !text-[#17150F] !no-underline transition-colors hover:!text-[#1E40AF]"
+								class="card-link truncate text-sm font-bold !text-ink !no-underline transition-colors hover:!text-warm"
 								title={card.name}
 							>
 								{card.name}
@@ -314,28 +312,23 @@
 					{@const _count = processedCards.deck[color].reduce((s, c) => s + c.quantity, 0)}
 					{@const _hex = _colourColors[color]}
 					<div
-						class="border-t border-[#C7BFA9] {i < _activeColors.length - 1
+						class="border-t border-line2 {i < _activeColors.length - 1
 							? 'md:border-r'
 							: ''} px-6 pt-4 pb-4 md:border-t-0 md:first:border-t-0"
 					>
 						<div class="mb-2 flex items-baseline justify-between gap-3">
-							<span
-								class="text-[12px] font-extrabold tracking-[0.16em] uppercase"
-								style="color: {_hex};"
-							>
+							<span class="text-xs font-extrabold tracking-widest uppercase" style="color: {_hex};">
 								{colorLabels[color]}
 							</span>
-							<span class="font-mono-system text-[12px] font-bold text-[#928B79]">
+							<span class="font-mono-system text-xs font-bold text-fade">
 								{_count} cards
 							</span>
 						</div>
 						{#each processedCards.deck[color] as card (card.name)}
 							{@const deckCardImg = getCardImage(card.name, colorToPitchLetter(color))}
-							<div
-								class="flex items-baseline gap-3 border-t border-[#E4DECF] py-[3px] first:border-t-0"
-							>
+							<div class="flex items-baseline gap-3 border-t border-line py-1 first:border-t-0">
 								<span
-									class="w-[24px] flex-shrink-0 font-mono-system text-[12px] font-bold text-[#928B79] tabular-nums"
+									class="w-6 flex-shrink-0 font-mono-system text-xs font-bold text-fade tabular-nums"
 								>
 									{card.quantity}×
 								</span>
@@ -347,7 +340,7 @@
 									data-card-pitch={colorToPitch(color)}
 									data-card-image={deckCardImg?.imageUrl || null}
 									data-card-fallback={deckCardImg?.fallbackUrl || null}
-									class="card-link truncate text-[13.5px] font-bold !text-[#17150F] !no-underline transition-colors hover:!text-[#1E40AF]"
+									class="card-link truncate text-sm font-bold !text-ink !no-underline transition-colors hover:!text-warm"
 									title={card.name}
 								>
 									{card.name}
@@ -364,20 +357,18 @@
 			{#each sortedTypes as type, i (type)}
 				{#if groupedCards[type] && groupedCards[type].length > 0}
 					<div
-						class="border-t border-[#C7BFA9] {i % 3 !== 2 ? 'lg:border-r' : ''} {i % 2 !== 1
+						class="border-t border-line2 {i % 3 !== 2 ? 'lg:border-r' : ''} {i % 2 !== 1
 							? 'md:border-r'
 							: ''} px-6 pt-4 pb-4 md:first:border-t-0"
 					>
-						<div class="mb-2 text-[12px] font-extrabold tracking-[0.16em] text-[#17150F] uppercase">
+						<div class="mb-2 text-xs font-extrabold tracking-widest text-ink uppercase">
 							{typeLabels[type] || type}
 						</div>
 						{#each groupedCards[type] as card (card.name)}
 							{@const legacyCardImg = getCardImage(card.name, null)}
-							<div
-								class="flex items-baseline gap-3 border-t border-[#E4DECF] py-[3px] first:border-t-0"
-							>
+							<div class="flex items-baseline gap-3 border-t border-line py-1 first:border-t-0">
 								<span
-									class="w-[24px] flex-shrink-0 font-mono-system text-[12px] font-bold text-[#928B79] tabular-nums"
+									class="w-6 flex-shrink-0 font-mono-system text-xs font-bold text-fade tabular-nums"
 								>
 									{card.quantity}×
 								</span>
@@ -389,7 +380,7 @@
 									data-card-name={card.name}
 									data-card-image={legacyCardImg?.imageUrl || null}
 									data-card-fallback={legacyCardImg?.fallbackUrl || null}
-									class="card-link truncate text-[13.5px] font-bold !text-[#17150F] !no-underline transition-colors hover:!text-[#1E40AF]"
+									class="card-link truncate text-sm font-bold !text-ink !no-underline transition-colors hover:!text-warm"
 									title={card.name}
 								>
 									{card.name}
@@ -405,10 +396,10 @@
 	<!-- ============ FOOTER ============ -->
 	{#if fabraryUrl || (isNewFormat && creator)}
 		<div
-			class="flex flex-wrap items-center justify-between gap-3 border-t-2 border-[#17150F] bg-[#F4F0E6] px-6 py-[14px]"
+			class="flex flex-wrap items-center justify-between gap-3 border-t-2 border-ink bg-paper px-6 py-3.5"
 		>
 			{#if isNewFormat && creator}
-				<span class="font-newsreader text-[13px] text-[#56503F] italic">
+				<span class="font-newsreader text-sm text-soft italic">
 					Based on {creator}'s list
 				</span>
 			{:else}
@@ -419,7 +410,7 @@
 					href={fabraryUrl}
 					target="_blank"
 					rel="noopener noreferrer"
-					class="text-[11px] font-extrabold tracking-[0.06em] text-[#1C7A4B] uppercase no-underline transition-[filter] hover:brightness-110"
+					class="text-xs font-extrabold tracking-wider text-prem uppercase no-underline transition hover:brightness-110"
 				>
 					Open in Fabrary →
 				</a>

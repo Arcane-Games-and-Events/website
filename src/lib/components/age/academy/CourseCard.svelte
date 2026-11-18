@@ -36,63 +36,61 @@
 
 <a href={course.href} class="group relative block h-full">
 	<span
-		class="absolute inset-0 translate-x-1.5 translate-y-1.5 border border-gold/50 opacity-0 transition-opacity duration-700 ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:opacity-100"
+		class="absolute inset-0 translate-x-1.5 translate-y-1.5 border border-gold/50 opacity-0 transition-opacity duration-700 ease-out group-hover:opacity-100"
 		aria-hidden="true"
 	></span>
 	<span
-		class="relative z-[1] flex h-full flex-col border border-line bg-paper-bg text-ink transition-transform duration-700 ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:-translate-x-px group-hover:-translate-y-px"
+		class="relative z-1 flex h-full flex-col border border-line bg-paper-bg text-ink transition-transform duration-700 ease-out group-hover:-translate-x-px group-hover:-translate-y-px"
 	>
 		<CourseCover image={course.image} slug={course.slug || course.href}>
 			{#if !(course.price > 0)}
 				<span
-					class="absolute top-0 left-0 bg-gold px-2.5 py-1 text-[9px] font-extrabold tracking-[0.18em] text-[#241b07] uppercase"
+					class="absolute top-0 left-0 bg-gold px-2.5 py-1 text-xs font-extrabold tracking-widest text-gold-ink uppercase"
 					>Free</span
 				>
 			{:else if course.previews > 0}
 				<span
-					class="absolute top-0 left-0 bg-paper-bg px-2.5 py-1 text-[9px] font-extrabold tracking-[0.18em] text-ink uppercase"
+					class="absolute top-0 left-0 bg-paper-bg px-2.5 py-1 text-xs font-extrabold tracking-widest text-ink uppercase"
 					>{course.previews} free {course.previews === 1 ? 'lesson' : 'lessons'}</span
 				>
 			{/if}
 		</CourseCover>
 		<span class="flex flex-1 flex-col {compact ? 'p-4' : 'p-5'}">
-			<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-gold uppercase">
+			<span class="text-xs font-extrabold tracking-widest text-gold uppercase">
 				With {course.instructor}
 			</span>
 			<span
-				class="mt-2 block font-newsreader leading-[1.14] font-semibold [text-wrap:balance] {compact
-					? 'text-[18px]'
-					: 'text-[20px]'}"
+				class="mt-2 block font-newsreader leading-tight font-semibold [text-wrap:balance] {compact
+					? 'text-lg'
+					: 'text-xl'}"
 			>
 				<span class="fp-ul">{course.title}</span>
 			</span>
 			{#if showDek && course.dek}
-				<span
-					class="mt-2.5 line-clamp-3 font-newsreader text-[14.5px] leading-[1.45] text-soft italic"
-				>
+				<span class="mt-2.5 line-clamp-3 font-newsreader text-sm leading-normal text-soft italic">
 					{course.dek}
 				</span>
 			{/if}
 			<span class="mt-auto block pt-5">
 				{#if progress}
 					<span class="block" aria-label="{pct}% complete">
-						<span class="flex items-baseline justify-between text-[10px] font-semibold text-fade">
-							<span class="font-extrabold tracking-[0.12em] text-ink uppercase"
+						<span class="flex items-baseline justify-between text-xs font-semibold text-fade">
+							<span class="font-extrabold tracking-widest text-ink uppercase"
 								>{progress.completed} of {progress.total} lessons</span
 							>
-							<span class="font-newsreader text-[13px] text-gold tabular-nums">{pct}%</span>
+							<span class="font-newsreader text-sm text-gold tabular-nums">{pct}%</span>
 						</span>
-						<span class="mt-1.5 block h-[3px] w-full bg-line">
+						<span class="mt-1.5 block h-1 w-full bg-line">
 							<span class="block h-full bg-gold" style="width: {pct}%"></span>
 						</span>
 					</span>
 				{:else}
-					<span class="flex items-center gap-2.5 text-[10px] font-semibold text-fade">
+					<span class="flex items-center gap-2.5 text-xs font-semibold text-fade">
 						{#if ticks.length}
-							<span class="flex items-end gap-[3px]" aria-hidden="true">
+							<span class="flex items-end gap-1" aria-hidden="true">
 								{#each ticks as _, i (i)}
 									<span
-										class="block h-[7px] w-[3px] bg-gold/60 transition-colors duration-700 ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:bg-gold/90"
+										class="block h-2 w-1 bg-gold/60 transition-colors duration-700 ease-out group-hover:bg-gold/90"
 									></span>
 								{/each}
 							</span>
@@ -102,23 +100,21 @@
 				{/if}
 				<span class="mt-3.5 flex items-center justify-between gap-3 border-t border-line pt-3.5">
 					<span class="flex items-baseline gap-2">
-						<span class="font-newsreader text-[20px] leading-none font-semibold tabular-nums"
+						<span class="font-newsreader text-xl leading-none font-semibold tabular-nums"
 							>{prices ? prices.you : formatPrice(course.price)}</span
 						>
 						{#if prices}
-							<span class="text-[10.5px] leading-tight text-fade tabular-nums"
+							<span class="text-xs leading-tight text-fade tabular-nums"
 								>{member ? 'Premium price' : `or ${prices.member} with Premium`}</span
 							>
 						{:else if course.price > 0}
-							<span class="text-[9.5px] font-extrabold tracking-[0.12em] text-fade uppercase"
-								>Once</span
-							>
+							<span class="text-xs font-extrabold tracking-widest text-fade uppercase">Once</span>
 						{/if}
 					</span>
 					<span
-						class="flex items-center gap-1.5 text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap text-gold uppercase"
+						class="flex items-center gap-1.5 text-xs font-extrabold tracking-widest whitespace-nowrap text-gold uppercase"
 						>{cta}<span
-							class="inline-block transition-transform duration-700 ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:translate-x-0.5"
+							class="inline-block transition-transform duration-700 ease-out group-hover:translate-x-0.5"
 							aria-hidden="true">→</span
 						></span
 					>

@@ -92,31 +92,31 @@
 	<input type="hidden" {name} value={picked?.id || ''} />
 	{#if picked}
 		<div
-			class="flex h-[46px] items-center gap-3 border bg-white pr-2 pl-1.5"
+			class="flex h-12 items-center gap-3 border bg-white pr-2 pl-1.5"
 			style="border-color: var(--cc, var(--color-ink))"
 		>
 			<span
-				class="flex h-[34px] w-[34px] shrink-0 items-center justify-center font-newsreader text-[13px] font-semibold text-white"
+				class="flex h-9 w-9 shrink-0 items-center justify-center font-newsreader text-sm font-semibold text-white"
 				style="background: var(--cc, var(--color-ink))"
 				aria-hidden="true">{picked.initials}</span
 			>
 			<span class="min-w-0 flex-1 leading-tight">
-				<span class="block truncate text-[14px] font-semibold">{picked.name}</span>
-				<span class="block truncate text-[11px] text-fade"
+				<span class="block truncate text-sm font-semibold">{picked.name}</span>
+				<span class="block truncate text-xs text-fade"
 					>{picked.email}{picked.gemId ? ` · GEM ${picked.gemId}` : ''}</span
 				>
 			</span>
 			<button
 				type="button"
 				onclick={() => (picked = null)}
-				class="flex h-8 w-8 shrink-0 items-center justify-center text-[18px] leading-none text-fade hover:text-ink"
+				class="flex h-8 w-8 shrink-0 items-center justify-center text-lg leading-none text-fade hover:text-ink"
 				aria-label="Choose someone else">×</button
 			>
 		</div>
 	{:else}
 		<label for={uid} class="sr-only">{label}</label>
 		<div
-			class="flex h-[46px] items-center gap-2.5 border border-line2 bg-white px-3.5 transition-[border-color,box-shadow] focus-within:border-[var(--cc,var(--color-ink))] focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--cc,var(--color-ink))_18%,transparent)] hover:border-ink/40"
+			class="flex h-12 items-center gap-2.5 border border-line2 bg-white px-3.5 transition focus-within:border-[var(--cc,var(--color-ink))] focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--cc,var(--color-ink))_18%,transparent)] hover:border-ink/40"
 		>
 			<svg
 				viewBox="0 0 20 20"
@@ -143,7 +143,7 @@
 				onblur={() => setTimeout(() => (open = false), 150)}
 				onkeydown={onkey}
 				{placeholder}
-				class="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-[14.5px] placeholder:text-fade focus:ring-0 focus:outline-none"
+				class="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm placeholder:text-fade focus:ring-0 focus:outline-none"
 			/>
 			{#if loading}<span
 					class="h-3.5 w-3.5 shrink-0 animate-spin border-2 border-line2 border-t-ink"
@@ -155,7 +155,7 @@
 			<ul
 				id="{uid}-list"
 				role="listbox"
-				class="absolute top-[calc(100%+4px)] right-0 left-0 z-50 max-h-[320px] overflow-y-auto border border-line2 bg-white shadow-[0_20px_40px_-24px_rgb(23_21_15/0.5)]"
+				class="absolute top-[calc(100%+4px)] right-0 left-0 z-50 max-h-80 overflow-y-auto border border-line2 bg-white shadow-xl"
 			>
 				{#each results as p, i (p.id)}
 					{@const taken = exclude.includes(p.id)}
@@ -174,22 +174,22 @@
 							: 'cursor-pointer'} {i === active && !taken ? 'bg-paper' : ''}"
 					>
 						<span
-							class="flex h-[34px] w-[34px] shrink-0 items-center justify-center bg-ink font-newsreader text-[13px] font-semibold text-white"
+							class="flex h-9 w-9 shrink-0 items-center justify-center bg-ink font-newsreader text-sm font-semibold text-white"
 							aria-hidden="true">{p.initials}</span
 						>
 						<span class="min-w-0 flex-1 leading-tight">
-							<span class="block truncate text-[14px] font-semibold">{p.name}</span>
-							<span class="block truncate text-[11px] text-fade"
+							<span class="block truncate text-sm font-semibold">{p.name}</span>
+							<span class="block truncate text-xs text-fade"
 								>{p.email}{p.gemId ? ` · GEM ${p.gemId}` : ''}</span
 							>
 						</span>
 						{#if taken}<span
-								class="shrink-0 text-[9px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								class="shrink-0 text-xs font-extrabold tracking-widest text-fade uppercase"
 								>{excludeNote}</span
 							>{/if}
 					</li>
 				{:else}
-					<li class="px-3.5 py-3 text-[13px] leading-snug text-soft">
+					<li class="px-3.5 py-3 text-sm leading-snug text-soft">
 						No AGE account matches “{searched}”. They need to
 						<a href="/signup" target="_blank" class="font-semibold text-warm hover:underline"
 							>sign up</a

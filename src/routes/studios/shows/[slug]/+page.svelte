@@ -28,10 +28,10 @@
 
 <AgeShell active="AGE Studios">
 	<section class="border-b border-line">
-		<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-10 md:px-8 md:pt-8 md:pb-14">
+		<div class="mx-auto w-full max-w-page px-5 pt-6 pb-10 md:px-8 md:pt-8 md:pb-14">
 			<a
 				href="/studios/shows"
-				class="st-wide inline-flex items-center gap-2 text-[10px] font-black tracking-[0.14em] uppercase hover:text-studio"
+				class="st-wide inline-flex items-center gap-2 text-xs font-black tracking-widest uppercase hover:text-studio"
 				><span aria-hidden="true">←</span> Shows</a
 			>
 			<div class="mt-7 grid gap-8 md:grid-cols-[300px_minmax(0,1fr)] md:items-end md:gap-12">
@@ -48,7 +48,7 @@
 							/>
 						{:else}
 							<span
-								class="absolute inset-0 flex items-center justify-center p-6 text-center font-newsreader text-[28px] font-semibold"
+								class="absolute inset-0 flex items-center justify-center p-6 text-center font-newsreader text-3xl font-semibold"
 								>{s.name}</span
 							>
 						{/if}
@@ -56,9 +56,9 @@
 				</span>
 				<div>
 					<p
-						class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.22em] text-[#8a6116] uppercase"
+						class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-gold-deep uppercase"
 					>
-						<span class="text-[8px]" aria-hidden="true">◆</span>
+						<span class="text-xs" aria-hidden="true">◆</span>
 						{s.kind === 'podcast'
 							? 'Podcast'
 							: s.kind === 'interview'
@@ -66,15 +66,15 @@
 								: 'Series'}
 					</p>
 					<h1
-						class="fp-rise mt-2 font-newsreader text-[42px] leading-[0.98] font-semibold tracking-[-0.02em] [text-wrap:balance] md:text-[64px]"
+						class="fp-rise mt-2 font-newsreader text-5xl leading-none font-semibold tracking-tight [text-wrap:balance] md:text-6xl"
 					>
 						{s.name}
 					</h1>
-					{#if s.host}<p class="mt-2 font-newsreader text-[19px] text-soft italic">
+					{#if s.host}<p class="mt-2 font-newsreader text-xl text-soft italic">
 							Hosted by {s.host}
 						</p>{/if}
 					{#if s.description}
-						<p class="mt-4 max-w-[640px] text-[15px] leading-relaxed whitespace-pre-line text-soft">
+						<p class="mt-4 max-w-2xl text-base leading-relaxed whitespace-pre-line text-soft">
 							{s.description}
 						</p>
 					{/if}
@@ -82,13 +82,13 @@
 						<div class="mt-6 flex flex-wrap gap-3">
 							<a
 								href={eps[0].href}
-								class="bg-ink px-5 py-3.5 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-gold hover:text-[#241b07]"
+								class="bg-ink px-5 py-3.5 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-gold hover:text-gold-ink"
 								>{eps[0].audio ? '♪' : '▶'} Latest episode</a
 							>
 							{#if first && first.id !== eps[0].id}
 								<a
 									href={first.href}
-									class="border-[1.5px] border-ink px-5 py-3.5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+									class="border-2 border-ink px-5 py-3.5 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 									>Start from episode one</a
 								>
 							{/if}
@@ -100,9 +100,9 @@
 		<StudiosTabs current="shows" />
 	</section>
 
-	<section class="mx-auto w-full max-w-[1200px] px-5 pt-10 pb-20 md:px-8 md:pt-12">
+	<section class="mx-auto w-full max-w-page px-5 pt-10 pb-20 md:px-8 md:pt-12">
 		<h2
-			class="flex items-baseline justify-between border-b-[3px] border-ink pb-3 text-[10.5px] font-extrabold tracking-[0.18em] uppercase"
+			class="flex items-baseline justify-between border-b-3 border-ink pb-3 text-xs font-extrabold tracking-widest uppercase"
 		>
 			Episodes <span class="tracking-normal text-fade tabular-nums">{eps.length}</span>
 		</h2>
@@ -116,27 +116,26 @@
 						>
 							<MediaFrame item={e} sizes="180px" />
 							<span class="min-w-0">
-								<span
-									class="block text-[9.5px] font-extrabold tracking-[0.18em] text-[#8a6116] uppercase"
+								<span class="block text-xs font-extrabold tracking-widest text-gold-deep uppercase"
 									>{[episodeLabel(e), dateOf(e.publishedAt)].filter(Boolean).join(' · ')}</span
 								>
 								<span
-									class="mt-1 block font-newsreader text-[21px] leading-tight font-semibold [text-wrap:balance]"
+									class="mt-1 block font-newsreader text-xl leading-tight font-semibold [text-wrap:balance]"
 									><span class="fp-ul">{e.title}</span></span
 								>
-								{#if e.guests}<span class="mt-0.5 block text-[13px] text-soft italic"
+								{#if e.guests}<span class="mt-0.5 block text-sm text-soft italic"
 										>with {e.guests}</span
 									>{/if}
 								{#if e.description}
-									<span class="mt-1.5 line-clamp-2 block text-[13.5px] text-soft"
+									<span class="mt-1.5 line-clamp-2 block text-sm text-soft"
 										>{stripSpoilers(e.description)}</span
 									>
 								{/if}
 							</span>
-							<span class="hidden items-center gap-3 text-[12px] text-fade tabular-nums sm:flex">
+							<span class="hidden items-center gap-3 text-xs text-fade tabular-nums sm:flex">
 								{e.duration ? clock(e.duration) : ''}
 								<span
-									class="flex h-11 w-11 items-center justify-center border-[1.5px] border-ink text-[13px] transition-colors group-hover:bg-gold"
+									class="flex h-11 w-11 items-center justify-center border-2 border-ink text-sm transition-colors group-hover:bg-gold"
 									aria-hidden="true">{e.audio ? '♪' : '▶'}</span
 								>
 							</span>
@@ -145,9 +144,7 @@
 				{/each}
 			</ol>
 		{:else}
-			<p class="py-6 font-newsreader text-[17px] text-soft italic">
-				The first episode is on its way.
-			</p>
+			<p class="py-6 font-newsreader text-lg text-soft italic">The first episode is on its way.</p>
 		{/if}
 	</section>
 </AgeShell>

@@ -36,9 +36,9 @@
 		if (m >= 11 && m <= 13) return 'th';
 		return r % 10 === 1 ? 'st' : r % 10 === 2 ? 'nd' : r % 10 === 3 ? 'rd' : 'th';
 	};
-	const KICK = 'text-[9.5px] font-extrabold tracking-[0.2em] text-warm uppercase';
-	const TH = 'text-[9px] font-extrabold tracking-[0.2em] text-fade uppercase';
-	const LBL = 'text-[8.5px] font-extrabold tracking-[0.18em] text-fade uppercase';
+	const KICK = 'text-xs font-extrabold tracking-widest text-warm uppercase';
+	const TH = 'text-xs font-extrabold tracking-widest text-fade uppercase';
+	const LBL = 'text-xs font-extrabold tracking-widest text-fade uppercase';
 	const MONTHS = [
 		{ k: 'january', n: 'Jan' },
 		{ k: 'february', n: 'Feb' },
@@ -460,16 +460,16 @@
 	<!-- ============ masthead ============ -->
 	<section class="relative overflow-hidden bg-ink text-paper-bg">
 		<span
-			class="ao-cond pointer-events-none absolute -right-4 -bottom-10 text-[260px] leading-none font-black text-paper-bg/[0.035] uppercase select-none md:-bottom-16 md:text-[420px]"
+			class="ao-cond pointer-events-none absolute -right-4 -bottom-10 text-[260px] leading-none font-black text-paper-bg/5 uppercase select-none md:-bottom-16 md:text-[420px]"
 			aria-hidden="true">{initials}</span
 		>
 		<div
-			class="relative mx-auto grid w-full max-w-[1200px] gap-10 px-5 pt-8 pb-12 md:px-8 md:pt-10 md:pb-16 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center lg:gap-16"
+			class="relative mx-auto grid w-full max-w-page gap-10 px-5 pt-8 pb-12 md:px-8 md:pt-10 md:pb-16 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center lg:gap-16"
 		>
 			<div class="fp-rise min-w-0">
 				<a
 					href="/ageopen?tab=standings"
-					class="inline-block text-[9.5px] font-extrabold tracking-[0.2em] text-paper-bg/60 uppercase transition-colors hover:text-paper-bg"
+					class="inline-block text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase transition-colors hover:text-paper-bg"
 					>← Standings</a
 				>
 				<a href="/ageopen" class="mt-6 block w-fit" aria-label="AGE Open Series overview">
@@ -478,43 +478,38 @@
 						alt="AGE Open Series"
 						width="629"
 						height="294"
-						class="h-auto w-[130px] md:w-[150px]"
+						class="h-auto w-33 md:w-38"
 					/>
 				</a>
-				<p
-					class="mt-8 text-[9.5px] font-extrabold tracking-[0.26em] text-paper-bg/60 uppercase md:mt-10"
-				>
+				<p class="mt-8 text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase md:mt-10">
 					Player profile · GEM {data.gemId}{seasonSpan ? ` · ${seasonSpan}` : ''}
 				</p>
-				<h1
-					class="ao-cond mt-3 text-[56px] leading-[0.86] font-black break-words uppercase md:text-[96px]"
-				>
+				<h1 class="ao-cond mt-3 text-6xl leading-none font-black break-words uppercase md:text-8xl">
 					{data.displayName}
 				</h1>
 				<div class="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
-					<span
-						class="text-[10.5px] font-extrabold tracking-[0.18em] uppercase"
-						style="color: {tierColor};">{tier.label}</span
+					<span class="text-xs font-extrabold tracking-widest uppercase" style="color: {tierColor};"
+						>{tier.label}</span
 					>
-					<span class="text-[10.5px] font-bold tracking-[0.12em] text-paper-bg/60 uppercase"
+					<span class="text-xs font-bold tracking-widest text-paper-bg/60 uppercase"
 						>AGE Rating {rating.total} · vs {rating.totalPlayers} rated players</span
 					>
 					{#each circuitsPlayed as c (c)}
 						<span
-							class="px-1.5 py-[3px] text-[8px] font-extrabold tracking-[0.16em] text-white uppercase"
+							class="px-1.5 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
 							style="background: {circuitVar(c)};">{c}</span
 						>
 					{/each}
 				</div>
 				{#if qualified.length}
 					<div class="mt-4 flex flex-wrap items-center gap-2">
-						<span class="text-[9px] font-extrabold tracking-[0.18em] text-paper-bg/55 uppercase"
+						<span class="text-xs font-extrabold tracking-widest text-paper-bg/55 uppercase"
 							>Championship qualifier</span
 						>
 						{#each qualified as q (q.id)}
 							<span
-								class="inline-flex items-center gap-1.5 border border-gold/50 px-2 py-[3px] text-[10px] font-extrabold tracking-[0.1em] text-gold"
-								><span class="text-[9px] leading-none">★</span>{q.season}</span
+								class="inline-flex items-center gap-1.5 border border-gold/50 px-2 py-1 text-xs font-extrabold tracking-widest text-gold"
+								><span class="text-xs leading-none">★</span>{q.season}</span
 							>
 						{/each}
 					</div>
@@ -524,21 +519,21 @@
 						type="button"
 						onclick={refreshData}
 						disabled={isRefreshing}
-						class="text-[9.5px] font-extrabold tracking-[0.16em] text-paper-bg/60 uppercase transition-colors hover:text-paper-bg disabled:opacity-50"
+						class="text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase transition-colors hover:text-paper-bg disabled:opacity-50"
 						>{isRefreshing ? 'Refreshing…' : 'Refresh ↻'}</button
 					>
 					<a
 						href={xShareUrl}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="text-[9.5px] font-extrabold tracking-[0.16em] text-paper-bg/60 uppercase transition-colors hover:text-paper-bg"
+						class="text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase transition-colors hover:text-paper-bg"
 						>Share on X</a
 					>
 					<a
 						href={blueskyShareUrl}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="text-[9.5px] font-extrabold tracking-[0.16em] text-paper-bg/60 uppercase transition-colors hover:text-paper-bg"
+						class="text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase transition-colors hover:text-paper-bg"
 						>Bluesky</a
 					>
 				</div>
@@ -551,13 +546,13 @@
 			     like the back of a baseball card -->
 			<div class="fp-rise flex justify-center lg:justify-end" style="animation-delay: 160ms;">
 				<div
-					class="group relative aspect-[5/7] w-full max-w-[320px] rotate-[1.5deg] text-ink transition-transform duration-700 ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:rotate-0"
+					class="group relative aspect-5/7 w-full max-w-xs rotate-2 text-ink transition-transform duration-700 ease-out hover:rotate-0"
 					style="background: {tierColor}; box-shadow: 0 2px 3px rgba(0,0,0,0.25), 0 18px 30px -12px rgba(0,0,0,0.55), 0 40px 60px -30px rgba(0,0,0,0.7);"
 				>
 					<!-- card stock inside the coloured border -->
-					<div class="absolute inset-[8px] overflow-hidden bg-paper-bg">
+					<div class="absolute inset-2 overflow-hidden bg-paper-bg">
 						<svg
-							class="absolute inset-0 h-full w-full opacity-[0.12] mix-blend-multiply"
+							class="absolute inset-0 h-full w-full opacity-10 mix-blend-multiply"
 							aria-hidden="true"
 						>
 							<filter id="player-card-grain">
@@ -572,7 +567,7 @@
 							<rect width="100%" height="100%" filter="url(#player-card-grain)" />
 						</svg>
 						<span
-							class="pointer-events-none absolute inset-[4px] border border-ink/70"
+							class="pointer-events-none absolute inset-1 border border-ink/70"
 							aria-hidden="true"
 						></span>
 						<!-- faded watermark of the series logo, centred on the card -->
@@ -580,18 +575,18 @@
 							src="/age_open_logo.svg"
 							alt=""
 							aria-hidden="true"
-							class="pointer-events-none absolute top-1/2 left-1/2 w-[78%] -translate-x-1/2 -translate-y-1/2 opacity-[0.045] invert select-none"
+							class="pointer-events-none absolute top-1/2 left-1/2 w-[78%] -translate-x-1/2 -translate-y-1/2 opacity-5 invert select-none"
 						/>
 					</div>
 
-					<div class="relative flex h-full flex-col p-[18px]">
+					<div class="relative flex h-full flex-col p-4.5">
 						<!-- header band -->
 						<div class="flex items-center justify-between gap-3">
-							<p class="text-[7px] font-extrabold tracking-[0.26em] text-warm uppercase">
+							<p class="text-xs font-extrabold tracking-widest text-warm uppercase">
 								<span aria-hidden="true">◆</span> AGE Open Series · Player card
 							</p>
 							<p
-								class="text-[7px] font-extrabold tracking-[0.22em] whitespace-nowrap text-fade uppercase"
+								class="text-xs font-extrabold tracking-widest whitespace-nowrap text-fade uppercase"
 							>
 								No. {data.gemId}
 							</p>
@@ -610,10 +605,10 @@
 								provisional={tier.label === 'Provisional'}
 							/>
 							<div class="min-w-0">
-								<p class="ao-cond truncate text-[24px] leading-none font-black uppercase">
+								<p class="ao-cond truncate text-2xl leading-none font-black uppercase">
 									{data.displayName}
 								</p>
-								<p class="mt-1.5 truncate text-[7px] font-extrabold tracking-[0.22em] uppercase">
+								<p class="mt-1.5 truncate text-xs font-extrabold tracking-widest uppercase">
 									<span style="color: {tierColor};">{tier.label}</span>
 									<span class="text-paper-bg/55">
 										· {circuitsPlayed.map(abbr).join(' · ') || 'AGE Open'}{seasonSpan
@@ -628,8 +623,8 @@
 						<dl class="mt-2.5 grid grid-cols-6 divide-x divide-ink/20 border border-ink/70">
 							{#each [['Pts', data.totalStats.totalPoints], ['Top 8', data.totalStats.top8Finishes], ['Win', `${winRate}%`], ['W–L', `${data.totalStats.matchesWon}–${losses}`], ['Events', data.totalStats.eventsPlayed], ['Seasons', seasonsPlayed.length]] as [k, v] (k)}
 								<div class="px-1 py-1.5 text-center">
-									<dd class="ao-cond text-[17px] leading-none font-black tabular-nums">{v}</dd>
-									<dt class="mt-1 text-[6px] font-extrabold tracking-[0.16em] text-fade uppercase">
+									<dd class="ao-cond text-lg leading-none font-black tabular-nums">{v}</dd>
+									<dt class="mt-1 text-xs font-extrabold tracking-widest text-fade uppercase">
 										{k}
 									</dt>
 								</div>
@@ -639,7 +634,7 @@
 						<!-- heroes -->
 						<div class="mt-2.5">
 							<p
-								class="flex items-center gap-2 text-[7px] font-extrabold tracking-[0.26em] text-warm uppercase"
+								class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-warm uppercase"
 							>
 								Heroes played <span class="h-px flex-1 bg-ink/20" aria-hidden="true"></span>
 							</p>
@@ -647,38 +642,34 @@
 								<ol class="mt-1.5">
 									{#each data.heroUsage.slice(0, 3) as h (h.hero)}
 										<li
-											class="flex items-baseline justify-between gap-2 border-b border-dotted border-ink/25 py-[3px]"
+											class="flex items-baseline justify-between gap-2 border-b border-dotted border-ink/25 py-1"
 										>
-											<span class="truncate font-newsreader text-[12px] font-semibold"
-												>{h.hero}</span
-											>
-											<span class="shrink-0 text-[9px] font-bold text-soft tabular-nums"
+											<span class="truncate font-newsreader text-xs font-semibold">{h.hero}</span>
+											<span class="shrink-0 text-xs font-bold text-soft tabular-nums"
 												>{h.count}×</span
 											>
 										</li>
 									{/each}
 									{#if data.heroUsage.length > 3}
-										<li class="pt-1 text-[8px] font-bold text-fade">
+										<li class="pt-1 text-xs font-bold text-fade">
 											+{data.heroUsage.length - 3} more
 										</li>
 									{/if}
 								</ol>
 							{:else}
-								<p class="mt-1.5 font-newsreader text-[12px] text-fade italic">
-									No heroes logged yet.
-								</p>
+								<p class="mt-1.5 font-newsreader text-xs text-fade italic">No heroes logged yet.</p>
 							{/if}
 						</div>
 
 						<!-- season table -->
 						<div class="mt-2.5">
 							<p
-								class="flex items-center gap-2 text-[7px] font-extrabold tracking-[0.26em] text-warm uppercase"
+								class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-warm uppercase"
 							>
 								Career record <span class="h-px flex-1 bg-ink/20" aria-hidden="true"></span>
 							</p>
 							<div
-								class="mt-1.5 grid grid-cols-[40px_32px_28px_44px_36px_1fr] gap-x-1 border-b border-ink text-[6.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								class="mt-1.5 grid grid-cols-[40px_32px_28px_44px_36px_1fr] gap-x-1 border-b border-ink text-xs font-extrabold tracking-widest text-fade uppercase"
 							>
 								<span>Year</span><span>Ckt</span><span class="text-center">Ev</span><span
 									class="text-center">W–L</span
@@ -686,11 +677,11 @@
 							</div>
 							{#each data.standings.slice(0, 5) as s (s.id)}
 								<div
-									class="grid grid-cols-[40px_32px_28px_44px_36px_1fr] gap-x-1 border-b border-dotted border-ink/25 py-[3px] text-[10px] tabular-nums"
+									class="grid grid-cols-[40px_32px_28px_44px_36px_1fr] gap-x-1 border-b border-dotted border-ink/25 py-1 text-xs tabular-nums"
 								>
 									<span class="font-extrabold">{s.season}</span>
 									<span
-										class="text-[8px] font-extrabold tracking-[0.1em] uppercase"
+										class="text-xs font-extrabold tracking-widest uppercase"
 										style="color: {circuitVar(s.circuit)};">{abbr(s.circuit)}</span
 									>
 									<span class="text-center text-soft">{calculateDerivedStats(s).eventsPlayed}</span>
@@ -713,11 +704,11 @@
 						<div
 							class="mt-auto flex items-center justify-between gap-3 border-t border-ink/70 pt-2"
 						>
-							<p class="text-[6.5px] font-extrabold tracking-[0.22em] text-fade uppercase">
+							<p class="text-xs font-extrabold tracking-widest text-fade uppercase">
 								AGE Open Series
 							</p>
 							{#if qualified.length}
-								<p class="text-[7px] font-extrabold tracking-[0.14em] text-gold uppercase">
+								<p class="text-xs font-extrabold tracking-widest text-gold uppercase">
 									★ Championship qualifier ×{qualified.length}
 								</p>
 							{/if}
@@ -731,15 +722,15 @@
 	<!-- ============ season standings ============ -->
 	{#if data.standings?.length}
 		<section class="border-b border-line">
-			<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-12">
+			<div class="mx-auto w-full max-w-page px-5 py-10 md:px-8 md:py-12">
 				<div class="flex flex-wrap items-end justify-between gap-4">
 					<div>
 						<p class={KICK}>Career</p>
-						<h2 class="ao-cond mt-2 text-[40px] leading-none font-black uppercase">
+						<h2 class="ao-cond mt-2 text-4xl leading-none font-black uppercase">
 							Season standings
 						</h2>
 					</div>
-					<p class="font-newsreader text-[15px] text-soft italic">
+					<p class="font-newsreader text-base text-soft italic">
 						Tap a season with results to see every month and every round.
 					</p>
 				</div>
@@ -747,7 +738,7 @@
 				<div class="mt-6">
 					<div>
 						<div
-							class="hidden grid-cols-[88px_minmax(0,1fr)_64px_64px_64px_80px_80px_120px] items-end gap-3 border-b-[3px] border-ink px-4 pb-2 md:grid {TH}"
+							class="hidden grid-cols-[88px_minmax(0,1fr)_64px_64px_64px_80px_80px_120px] items-end gap-3 border-b-3 border-ink px-4 pb-2 md:grid {TH}"
 						>
 							<span>Season</span><span>Circuit</span><span class="text-center">Events</span><span
 								class="text-center">W</span
@@ -755,7 +746,7 @@
 								class="text-center">Points</span
 							><span class="text-center">Finish</span>
 						</div>
-						<ol class="border-t-[3px] border-ink md:border-t-0">
+						<ol class="border-t-3 border-ink md:border-t-0">
 							{#each data.standings as s (s.id)}
 								{@const sLosses = (s.matchesPlayed || 0) - (s.matchesWon || 0)}
 								{@const winPct =
@@ -778,22 +769,22 @@
 									>
 										<span class="flex items-center justify-between gap-3">
 											<span class="flex items-center gap-3">
-												<span class="ao-cond text-[28px] leading-none font-black tabular-nums"
+												<span class="ao-cond text-3xl leading-none font-black tabular-nums"
 													>{s.season}</span
 												>
 												<span
-													class="px-1.5 py-[2px] text-[8px] font-extrabold tracking-[0.16em] text-white uppercase"
+													class="px-1.5 py-0.5 text-xs font-extrabold tracking-widest text-white uppercase"
 													style="background: {circuitVar(s.circuit)};">{s.circuit}</span
 												>
 											</span>
 											<span class="flex items-center gap-2">
 												<span
-													class="px-2 py-[3px] text-[9px] font-extrabold tracking-[0.12em] uppercase"
+													class="px-2 py-1 text-xs font-extrabold tracking-widest uppercase"
 													style={finishStyle(s.calculatedRank)}>{ordinal(s.calculatedRank)}</span
 												>
 												{#if months.length}
 													<span
-														class="text-[11px] text-fade transition-transform {open
+														class="text-xs text-fade transition-transform {open
 															? 'rotate-180 text-ink'
 															: ''}"
 														aria-hidden="true">⌄</span
@@ -805,8 +796,8 @@
 											{#each [{ v: s.totalPoints || 0, l: 'Points', big: true }, { v: `${s.matchesWon || 0}–${sLosses}`, l: 'Record' }, { v: winPct, l: 'Win %' }, { v: calculateDerivedStats(s).eventsPlayed, l: 'Events' }] as st (st.l)}
 												<span>
 													<span
-														class="block text-[13px] font-bold tabular-nums {st.big
-															? 'ao-cond text-[22px] leading-none font-black'
+														class="block text-sm font-bold tabular-nums {st.big
+															? 'ao-cond text-2xl leading-none font-black'
 															: ''}">{st.v}</span
 													>
 													<span class="mt-1 block {LBL}">{st.l}</span>
@@ -822,36 +813,35 @@
 										aria-expanded={open}
 										class="hidden w-full grid-cols-[88px_minmax(0,1fr)_64px_64px_64px_80px_80px_120px] items-center gap-3 px-4 py-3 text-left transition-colors enabled:hover:bg-paper md:grid"
 									>
-										<span class="ao-cond text-[24px] leading-none font-black tabular-nums"
+										<span class="ao-cond text-2xl leading-none font-black tabular-nums"
 											>{s.season}</span
 										>
-										<span class="flex items-center gap-2 text-[13px] font-bold">
+										<span class="flex items-center gap-2 text-sm font-bold">
 											<span
-												class="px-1.5 py-[2px] text-[8px] font-extrabold tracking-[0.16em] text-white uppercase"
+												class="px-1.5 py-0.5 text-xs font-extrabold tracking-widest text-white uppercase"
 												style="background: {circuitVar(s.circuit)};">{abbr(s.circuit)}</span
 											>
 											{s.circuit}
 										</span>
-										<span class="text-center text-[13px] font-semibold text-soft tabular-nums"
+										<span class="text-center text-sm font-semibold text-soft tabular-nums"
 											>{calculateDerivedStats(s).eventsPlayed}</span
 										>
-										<span class="text-center text-[13px] font-bold tabular-nums"
+										<span class="text-center text-sm font-bold tabular-nums"
 											>{s.matchesWon || 0}</span
 										>
-										<span class="text-center text-[13px] text-fade tabular-nums">{sLosses}</span>
-										<span class="text-center text-[13px] font-bold tabular-nums">{winPct}</span>
-										<span
-											class="ao-cond text-center text-[24px] leading-none font-black tabular-nums"
+										<span class="text-center text-sm text-fade tabular-nums">{sLosses}</span>
+										<span class="text-center text-sm font-bold tabular-nums">{winPct}</span>
+										<span class="ao-cond text-center text-2xl leading-none font-black tabular-nums"
 											>{s.totalPoints || 0}</span
 										>
 										<span class="flex items-center justify-center gap-2">
 											<span
-												class="px-2 py-[3px] text-[9px] font-extrabold tracking-[0.12em] uppercase"
+												class="px-2 py-1 text-xs font-extrabold tracking-widest uppercase"
 												style={finishStyle(s.calculatedRank)}>{ordinal(s.calculatedRank)}</span
 											>
 											{#if months.length}
 												<span
-													class="text-[11px] text-fade transition-transform {open
+													class="text-xs text-fade transition-transform {open
 														? 'rotate-180 text-ink'
 														: ''}"
 													aria-hidden="true">⌄</span
@@ -864,7 +854,7 @@
 										<div class="border-t border-line px-4 py-5">
 											<div class="flex flex-wrap items-baseline justify-between gap-3">
 												<p class={LBL}>Monthly results</p>
-												<p class="font-newsreader text-[13px] text-fade italic">
+												<p class="font-newsreader text-sm text-fade italic">
 													Tap a month for the rounds
 												</p>
 											</div>
@@ -880,49 +870,47 @@
 															type="button"
 															onclick={() => toggleMonthExpand(s.id, m.k)}
 															aria-pressed={sel}
-															class="relative flex min-h-[112px] flex-col items-center justify-end border bg-paper-bg px-1.5 pt-3 pb-2 transition-colors {sel
+															class="relative flex min-h-28 flex-col items-center justify-end border bg-paper-bg px-1.5 pt-3 pb-2 transition-colors {sel
 																? 'border-ink'
 																: 'border-line2 hover:border-ink'}"
 														>
 															<span
-																class="absolute top-0 right-0 px-1.5 py-[2px] text-[9px] font-extrabold text-paper-bg tabular-nums {sel
+																class="absolute top-0 right-0 px-1.5 py-0.5 text-xs font-extrabold text-paper-bg tabular-nums {sel
 																	? 'bg-ink'
 																	: 'bg-warm'}">{mp}</span
 															>
 															{#if hero?.imageUrl}
 																<span
-																	class="h-[36px] w-[36px] border border-line2 bg-cover bg-[right_center]"
+																	class="h-9 w-9 border border-line2 bg-cover bg-right"
 																	style="background-image: url('{hero.imageUrl}');"
 																></span>
 															{/if}
 															<span
-																class="mt-2 text-[9.5px] font-extrabold tracking-[0.12em] text-warm uppercase"
+																class="mt-2 text-xs font-extrabold tracking-widest text-warm uppercase"
 																>{m.n}</span
 															>
 															<span
-																class="ao-cond mt-[2px] text-[24px] leading-none font-black tabular-nums"
+																class="ao-cond mt-0.5 text-2xl leading-none font-black tabular-nums"
 																>{pts}</span
 															>
 															<span
-																class="mt-1 line-clamp-1 max-w-full text-[8px] font-extrabold tracking-[0.08em] text-soft uppercase"
+																class="mt-1 line-clamp-1 max-w-full text-xs font-extrabold tracking-widest text-soft uppercase"
 																>{hero?.hero ? hero.hero.split(',')[0] : '—'}</span
 															>
 														</button>
 													{:else}
 														<div
-															class="flex min-h-[112px] flex-col items-center justify-end border border-line px-1.5 pt-3 pb-2 opacity-50"
+															class="flex min-h-28 flex-col items-center justify-end border border-line px-1.5 pt-3 pb-2 opacity-50"
 														>
 															<span
-																class="text-[9.5px] font-extrabold tracking-[0.12em] text-fade uppercase"
+																class="text-xs font-extrabold tracking-widest text-fade uppercase"
 																>{m.n}</span
 															>
 															<span
-																class="ao-cond mt-[2px] text-[24px] leading-none font-black text-fade tabular-nums"
+																class="ao-cond mt-0.5 text-2xl leading-none font-black text-fade tabular-nums"
 																>0</span
 															>
-															<span class="mt-1 text-[8px] font-bold text-fade tabular-nums"
-																>0–0</span
-															>
+															<span class="mt-1 text-xs font-bold text-fade tabular-nums">0–0</span>
 														</div>
 													{/if}
 												{/each}
@@ -936,12 +924,12 @@
 													<div
 														class="flex flex-wrap items-center justify-between gap-3 bg-ink px-5 py-3 text-paper-bg"
 													>
-														<span class="ao-cond text-[26px] leading-none font-black uppercase"
+														<span class="ao-cond text-2xl leading-none font-black uppercase"
 															>{meta?.n} {s.season} · {s.circuit}</span
 														>
 														{#if selHero?.hero}
 															<span
-																class="text-[10px] font-extrabold tracking-[0.16em] text-warm-light uppercase"
+																class="text-xs font-extrabold tracking-widest text-warm-light uppercase"
 																>{selHero.hero}</span
 															>
 														{/if}
@@ -966,17 +954,17 @@
 																	class="grid grid-cols-[48px_28px_minmax(0,1fr)_56px] items-center gap-3 border-b border-line px-5 py-2.5 last:border-b-0 even:bg-paper/50"
 																>
 																	<span
-																		class="text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
+																		class="text-xs font-extrabold tracking-widest text-fade uppercase"
 																		>R{match.round}</span
 																	>
 																	<span
-																		class="ao-cond flex h-[26px] w-[26px] items-center justify-center text-[14px] font-black text-white"
+																		class="ao-cond flex h-7 w-7 items-center justify-center text-sm font-black text-white"
 																		style="background: {resultBg(r)};">{r}</span
 																	>
 																	<span class="flex min-w-0 items-center gap-3">
 																		{#if oppHero?.imageUrl}
 																			<span
-																				class="h-[32px] w-[32px] shrink-0 border border-line2 bg-cover bg-[right_center]"
+																				class="h-8 w-8 shrink-0 border border-line2 bg-cover bg-right"
 																				style="background-image: url('{oppHero.imageUrl}');"
 																			></span>
 																		{/if}
@@ -984,24 +972,24 @@
 																			{#if oppGem}
 																				<a
 																					href="/player/{oppGem}"
-																					class="block truncate font-newsreader text-[16px] font-semibold"
+																					class="block truncate font-newsreader text-base font-semibold"
 																					><span class="fp-ul">{oppName}</span></a
 																				>
 																			{:else}
 																				<span
-																					class="block truncate font-newsreader text-[16px] font-semibold"
+																					class="block truncate font-newsreader text-base font-semibold"
 																					>{oppName}</span
 																				>
 																			{/if}
 																			{#if oppHero?.hero}
-																				<span class="block truncate text-[11px] font-bold text-soft"
+																				<span class="block truncate text-xs font-bold text-soft"
 																					>{oppHero.hero}</span
 																				>
 																			{/if}
 																		</span>
 																	</span>
 																	<span
-																		class="text-right text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
+																		class="text-right text-xs font-extrabold tracking-widest text-fade uppercase"
 																		>{oppRank ? `T${oppRank}` : ''}</span
 																	>
 																</li>
@@ -1009,7 +997,7 @@
 														</ol>
 													{:else}
 														<p
-															class="px-5 py-6 text-center font-newsreader text-[14px] text-fade italic"
+															class="px-5 py-6 text-center font-newsreader text-sm text-fade italic"
 														>
 															No round-by-round data for {meta?.n}
 															{s.season}.
@@ -1022,21 +1010,19 @@
 								</li>
 							{/each}
 							<li
-								class="hidden grid-cols-[88px_minmax(0,1fr)_64px_64px_64px_80px_80px_120px] items-center gap-3 border-t-[3px] border-double border-ink px-4 py-3 md:grid"
+								class="hidden grid-cols-[88px_minmax(0,1fr)_64px_64px_64px_80px_80px_120px] items-center gap-3 border-t-3 border-double border-ink px-4 py-3 md:grid"
 							>
-								<span class="text-[10px] font-extrabold tracking-[0.18em] uppercase">Career</span>
-								<span class="text-[12px] font-semibold text-fade"
-									>{seasonsPlayed.length} seasons</span
-								>
-								<span class="text-center text-[13px] font-bold tabular-nums"
+								<span class="text-xs font-extrabold tracking-widest uppercase">Career</span>
+								<span class="text-xs font-semibold text-fade">{seasonsPlayed.length} seasons</span>
+								<span class="text-center text-sm font-bold tabular-nums"
 									>{data.totalStats.eventsPlayed}</span
 								>
-								<span class="text-center text-[13px] font-bold tabular-nums"
+								<span class="text-center text-sm font-bold tabular-nums"
 									>{data.totalStats.matchesWon}</span
 								>
-								<span class="text-center text-[13px] text-fade tabular-nums">{losses}</span>
-								<span class="text-center text-[13px] font-bold tabular-nums">{careerWinPct}%</span>
-								<span class="ao-cond text-center text-[24px] leading-none font-black tabular-nums"
+								<span class="text-center text-sm text-fade tabular-nums">{losses}</span>
+								<span class="text-center text-sm font-bold tabular-nums">{careerWinPct}%</span>
+								<span class="ao-cond text-center text-2xl leading-none font-black tabular-nums"
 									>{data.totalStats.totalPoints}</span
 								>
 								<span></span>
@@ -1050,13 +1036,13 @@
 
 	<!-- ============ box score ============ -->
 	<section class="border-b border-line bg-paper">
-		<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-12">
+		<div class="mx-auto w-full max-w-page px-5 py-10 md:px-8 md:py-12">
 			<div class="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<p class={KICK}>Box score</p>
-					<h2 class="ao-cond mt-2 text-[40px] leading-none font-black uppercase">By the numbers</h2>
+					<h2 class="ao-cond mt-2 text-4xl leading-none font-black uppercase">By the numbers</h2>
 				</div>
-				<p class="font-newsreader text-[15px] text-soft italic">
+				<p class="font-newsreader text-base text-soft italic">
 					Career performance across every open.
 				</p>
 			</div>
@@ -1066,20 +1052,20 @@
 				<div class="flex flex-col justify-between border border-ink bg-paper-bg p-6">
 					<p class={LBL}>Featured · conversion</p>
 					<div class="mt-4 flex items-baseline gap-1">
-						<span class="ao-cond text-[96px] leading-[0.8] font-black text-warm tabular-nums"
+						<span class="ao-cond text-8xl leading-none font-black text-warm tabular-nums"
 							>{top8ConversionRate}</span
 						>
-						<span class="ao-cond text-[40px] leading-none font-black text-warm/60">%</span>
+						<span class="ao-cond text-4xl leading-none font-black text-warm/60">%</span>
 					</div>
-					<p class="mt-3 text-[11px] font-extrabold tracking-[0.16em] uppercase">Top 8 rate</p>
-					<p class="mt-1 font-newsreader text-[14px] text-soft">
+					<p class="mt-3 text-xs font-extrabold tracking-widest uppercase">Top 8 rate</p>
+					<p class="mt-1 font-newsreader text-sm text-soft">
 						{data.totalStats.top8Finishes} Top 8 finish{data.totalStats.top8Finishes === 1
 							? ''
 							: 'es'} across
 						{data.totalStats.eventsPlayed} events.
 					</p>
 					<div class="mt-5">
-						<div class="relative h-[6px] bg-line">
+						<div class="relative h-1.5 bg-line">
 							<span class="absolute inset-y-0 left-0 bg-warm" style="width: {top8ConversionRate}%;"
 							></span>
 							{#each [25, 50, 75] as t (t)}
@@ -1090,9 +1076,7 @@
 								></span>
 							{/each}
 						</div>
-						<div
-							class="mt-1.5 flex justify-between text-[8.5px] font-extrabold text-fade tabular-nums"
-						>
+						<div class="mt-1.5 flex justify-between text-xs font-extrabold text-fade tabular-nums">
 							<span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
 						</div>
 					</div>
@@ -1104,26 +1088,24 @@
 						<div class="flex flex-col border border-line2 bg-paper-bg">
 							<div class="flex items-baseline justify-between border-b border-line2 px-4 py-2.5">
 								<span
-									class="inline-flex items-center gap-2 text-[9.5px] font-extrabold tracking-[0.18em] uppercase"
+									class="inline-flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase"
 								>
 									<span class="h-2 w-2" style="background: {g.hex};" aria-hidden="true"></span>{g.k}
 								</span>
-								<span class="text-[9px] font-bold tracking-[0.08em] text-fade uppercase"
-									>{g.sub}</span
-								>
+								<span class="text-xs font-bold tracking-widest text-fade uppercase">{g.sub}</span>
 							</div>
 							<div class="grid flex-1 divide-y divide-line">
 								{#each g.stats as st (st.l)}
 									<div class="flex items-center justify-between gap-3 px-4 py-3">
 										<span>
-											<span class="block text-[10px] font-extrabold tracking-[0.14em] uppercase"
+											<span class="block text-xs font-extrabold tracking-widest uppercase"
 												>{st.l}</span
 											>
-											{#if st.s}<span class="block text-[11px] text-fade">{st.s}</span>{/if}
+											{#if st.s}<span class="block text-xs text-fade">{st.s}</span>{/if}
 										</span>
 										<span
-											class="ao-cond text-[30px] leading-none font-black tabular-nums {st.tone ??
-												''}">{st.v}</span
+											class="ao-cond text-3xl leading-none font-black tabular-nums {st.tone ?? ''}"
+											>{st.v}</span
 										>
 									</div>
 								{/each}
@@ -1137,24 +1119,24 @@
 
 	<!-- ============ rating breakdown ============ -->
 	<section class="border-b border-line">
-		<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-12">
+		<div class="mx-auto w-full max-w-page px-5 py-10 md:px-8 md:py-12">
 			<div class="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<p class={KICK}>AGE Rating</p>
-					<h2 class="ao-cond mt-2 text-[40px] leading-none font-black uppercase">
+					<h2 class="ao-cond mt-2 text-4xl leading-none font-black uppercase">
 						How the rating is built
 					</h2>
 				</div>
-				<p class="font-newsreader text-[15px] text-soft italic">
+				<p class="font-newsreader text-base text-soft italic">
 					Percentiles against {rating.totalPlayers} rated players.
 				</p>
 			</div>
 
 			<div class="mt-6 grid gap-6 lg:grid-cols-[1.7fr_1fr]">
 				<div class="overflow-x-auto">
-					<div class="min-w-[560px]">
+					<div class="min-w-140">
 						<div
-							class="grid grid-cols-[minmax(0,1fr)_56px_96px_72px_140px] items-end gap-3 border-b-[3px] border-ink px-4 pb-2 {TH}"
+							class="grid grid-cols-[minmax(0,1fr)_56px_96px_72px_140px] items-end gap-3 border-b-3 border-ink px-4 pb-2 {TH}"
 						>
 							<span>Component</span><span class="text-center">Weight</span><span class="text-center"
 								>Score</span
@@ -1165,42 +1147,39 @@
 								<li
 									class="grid grid-cols-[minmax(0,1fr)_48px_80px_56px] items-center gap-3 border-b border-line px-4 py-3 even:bg-paper/50 md:grid-cols-[minmax(0,1fr)_56px_96px_72px_140px]"
 								>
-									<span class="font-newsreader text-[16px] font-semibold">{r.nm}</span>
-									<span class="text-center text-[13px] text-fade tabular-nums">{r.wt}</span>
-									<span class="text-center text-[13px] font-bold tabular-nums"
+									<span class="font-newsreader text-base font-semibold">{r.nm}</span>
+									<span class="text-center text-sm text-fade tabular-nums">{r.wt}</span>
+									<span class="text-center text-sm font-bold tabular-nums"
 										>{r.sc.toFixed(1)} <span class="font-normal text-fade">/ {r.wt}</span></span
 									>
 									<span
-										class="text-center text-[13px] font-bold tabular-nums {r.pc >= 90
+										class="text-center text-sm font-bold tabular-nums {r.pc >= 90
 											? 'text-gold'
-											: 'text-warm'}"
-										>{Math.round(r.pc)}<sup class="text-[8px]">{nth(r.pc)}</sup></span
+											: 'text-warm'}">{Math.round(r.pc)}<sup class="text-xs">{nth(r.pc)}</sup></span
 									>
-									<span class="relative hidden h-[5px] bg-line md:block">
+									<span class="relative hidden h-1.5 bg-line md:block">
 										<span class="absolute inset-y-0 left-0 bg-warm" style="width: {r.pc}%;"></span>
 										<span
-											class="absolute -top-[3px] -bottom-[3px] left-1/2 w-[2px] bg-ink/50"
+											class="absolute -top-1 -bottom-1 left-1/2 w-0.5 bg-ink/50"
 											aria-hidden="true"
 										></span>
 									</span>
 								</li>
 							{/each}
 							<li
-								class="grid grid-cols-[minmax(0,1fr)_48px_80px_56px] items-center gap-3 border-t-[3px] border-double border-ink px-4 py-3 md:grid-cols-[minmax(0,1fr)_56px_96px_72px_140px]"
+								class="grid grid-cols-[minmax(0,1fr)_48px_80px_56px] items-center gap-3 border-t-3 border-double border-ink px-4 py-3 md:grid-cols-[minmax(0,1fr)_56px_96px_72px_140px]"
 							>
-								<span class="text-[10px] font-extrabold tracking-[0.18em] uppercase"
-									>AGE Rating</span
-								>
-								<span class="text-center text-[13px] font-bold tabular-nums">100</span>
+								<span class="text-xs font-extrabold tracking-widest uppercase">AGE Rating</span>
+								<span class="text-center text-sm font-bold tabular-nums">100</span>
 								<span
-									class="ao-cond text-center text-[24px] leading-none font-black tabular-nums"
+									class="ao-cond text-center text-2xl leading-none font-black tabular-nums"
 									style="color: {tierColor};">{rating.total}</span
 								>
 								<span
-									class="text-center text-[9.5px] font-extrabold tracking-[0.14em] uppercase"
+									class="text-center text-xs font-extrabold tracking-widest uppercase"
 									style="color: {tierColor};">{tier.label}</span
 								>
-								<span class="hidden text-[11px] text-fade md:block">{tier.description}</span>
+								<span class="hidden text-xs text-fade md:block">{tier.description}</span>
 							</li>
 						</ol>
 					</div>
@@ -1217,22 +1196,22 @@
 						/>
 						<div>
 							<p
-								class="text-[11px] font-extrabold tracking-[0.18em] uppercase"
+								class="text-xs font-extrabold tracking-widest uppercase"
 								style="color: {tierColor};"
 							>
 								{tier.label}
 							</p>
-							<p class="mt-1 text-[11px] font-bold tracking-[0.1em] text-fade uppercase">
+							<p class="mt-1 text-xs font-bold tracking-widest text-fade uppercase">
 								{tier.description}
 							</p>
 						</div>
 					</div>
-					<p class="mt-5 font-newsreader text-[15px] leading-[1.55] text-soft">
+					<p class="mt-5 font-newsreader text-base leading-normal text-soft">
 						Weighted across six components. A harsh power curve makes high scores hard to reach, so
 						the median player sits near 35. The dark tick on each bar marks the league median.
 					</p>
 					<p
-						class="mt-auto border-t border-line2 pt-4 text-[10.5px] font-bold tracking-[0.08em] text-fade uppercase"
+						class="mt-auto border-t border-line2 pt-4 text-xs font-bold tracking-widest text-fade uppercase"
 					>
 						Elite 90+ · Premier 80+ · Distinguished 70+ · Competitive 60+ · Provisional under 3
 						events
@@ -1246,15 +1225,13 @@
 	{#if data.heroUsage?.length}
 		{@const maxUse = Math.max(...data.heroUsage.map((h) => h.count))}
 		<section class="border-b border-line bg-paper">
-			<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-12">
+			<div class="mx-auto w-full max-w-page px-5 py-10 md:px-8 md:py-12">
 				<div class="flex flex-wrap items-end justify-between gap-4">
 					<div>
 						<p class={KICK}>Arsenal</p>
-						<h2 class="ao-cond mt-2 text-[40px] leading-none font-black uppercase">
-							Heroes played
-						</h2>
+						<h2 class="ao-cond mt-2 text-4xl leading-none font-black uppercase">Heroes played</h2>
 					</div>
-					<p class="font-newsreader text-[15px] text-soft italic">
+					<p class="font-newsreader text-base text-soft italic">
 						{data.heroUsage.reduce((n, h) => n + h.count, 0)} logged events.
 					</p>
 				</div>
@@ -1262,7 +1239,7 @@
 				<div class="mt-6 grid gap-6 lg:grid-cols-[1.55fr_1fr]">
 					<div>
 						<div
-							class="grid grid-cols-[minmax(0,1fr)_48px_72px] items-end gap-3 border-b-[3px] border-ink px-4 pb-2 md:grid-cols-[minmax(0,1fr)_72px_140px] {TH}"
+							class="grid grid-cols-[minmax(0,1fr)_48px_72px] items-end gap-3 border-b-3 border-ink px-4 pb-2 md:grid-cols-[minmax(0,1fr)_72px_140px] {TH}"
 						>
 							<span>Hero</span><span class="text-center">Events</span><span>Usage</span>
 						</div>
@@ -1273,15 +1250,15 @@
 								>
 									<span class="flex min-w-0 items-center gap-3">
 										<span
-											class="h-[34px] w-[34px] shrink-0 border border-line2 bg-cover bg-[right_center]"
+											class="h-9 w-9 shrink-0 border border-line2 bg-cover bg-right"
 											style={h.imageUrl ? `background-image: url('${h.imageUrl}');` : ''}
 										></span>
-										<span class="truncate font-newsreader text-[16px] font-semibold">{h.hero}</span>
+										<span class="truncate font-newsreader text-base font-semibold">{h.hero}</span>
 									</span>
-									<span class="ao-cond text-center text-[24px] leading-none font-black tabular-nums"
+									<span class="ao-cond text-center text-2xl leading-none font-black tabular-nums"
 										>{h.count}</span
 									>
-									<span class="relative block h-[5px] bg-line">
+									<span class="relative block h-1.5 bg-line">
 										<span
 											class="absolute inset-y-0 left-0 bg-warm"
 											style="width: {(h.count / maxUse) * 100}%;"
@@ -1295,7 +1272,7 @@
 					<div class="flex flex-col gap-4">
 						{#if sig}
 							<div
-								class="relative flex min-h-[170px] flex-1 items-end overflow-hidden border border-ink bg-ink bg-cover bg-top"
+								class="relative flex min-h-43 flex-1 items-end overflow-hidden border border-ink bg-ink bg-cover bg-top"
 								style={sigBackdrop ? `background-image: url('${sigBackdrop}');` : ''}
 							>
 								<HeroMotion hero={sig.hero} class="absolute inset-0 hidden md:block" />
@@ -1305,13 +1282,13 @@
 									aria-hidden="true"
 								></span>
 								<div class="relative p-5 text-paper-bg">
-									<p class="text-[9px] font-extrabold tracking-[0.2em] text-warm-light uppercase">
+									<p class="text-xs font-extrabold tracking-widest text-warm-light uppercase">
 										Signature hero · most played
 									</p>
-									<p class="ao-cond mt-2 text-[30px] leading-[0.9] font-black uppercase">
+									<p class="ao-cond mt-2 text-3xl leading-none font-black uppercase">
 										{sig.hero}
 									</p>
-									<p class="mt-2 text-[11px] font-bold text-paper-bg/60">
+									<p class="mt-2 text-xs font-bold text-paper-bg/60">
 										{sig.count} event{sig.count === 1 ? '' : 's'}
 									</p>
 								</div>
@@ -1321,7 +1298,7 @@
 							{@const bb = heroImageUrl(bestList.decklist.hero)}
 							<a
 								href="/ageopen/{bestList.event?.id}/decklist/{bestList.decklist.id}"
-								class="group relative flex min-h-[170px] flex-1 items-end overflow-hidden border border-ink bg-ink bg-cover bg-top"
+								class="group relative flex min-h-43 flex-1 items-end overflow-hidden border border-ink bg-ink bg-cover bg-top"
 								style={bb ? `background-image: url('${bb}');` : ''}
 							>
 								<span
@@ -1331,18 +1308,18 @@
 								></span>
 								{#if bestList.decklist.placement && bestList.decklist.placement <= 3}
 									<span
-										class="absolute top-0 left-0 bg-gold px-2 py-1 text-[9px] font-extrabold tracking-[0.14em] text-white uppercase"
+										class="absolute top-0 left-0 bg-gold px-2 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
 										>{ordinal(bestList.decklist.placement)}</span
 									>
 								{/if}
 								<div class="relative p-5 text-paper-bg">
-									<p class="text-[9px] font-extrabold tracking-[0.2em] text-warm-light uppercase">
+									<p class="text-xs font-extrabold tracking-widest text-warm-light uppercase">
 										Latest decklist
 									</p>
-									<p class="ao-cond mt-2 text-[30px] leading-[0.9] font-black uppercase">
+									<p class="ao-cond mt-2 text-3xl leading-none font-black uppercase">
 										{bestList.decklist.hero || 'Decklist'}
 									</p>
-									<p class="mt-2 text-[11px] font-bold text-paper-bg/60">
+									<p class="mt-2 text-xs font-bold text-paper-bg/60">
 										{bestList.event?.circuit || ''}{bestList.decklist.format
 											? ` · ${bestList.decklist.format}`
 											: ''} · View →
@@ -1361,19 +1338,19 @@
 		{@const nem = data.matchHistory.nemesis}
 		{@const best = data.matchHistory.bestMatchup}
 		<section class="border-b border-line">
-			<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-12">
+			<div class="mx-auto w-full max-w-page px-5 py-10 md:px-8 md:py-12">
 				<div class="flex flex-wrap items-end justify-between gap-4">
 					<div>
 						<p class={KICK}>Head to head</p>
-						<h2 class="ao-cond mt-2 text-[40px] leading-none font-black uppercase">
+						<h2 class="ao-cond mt-2 text-4xl leading-none font-black uppercase">
 							Player vs player
 						</h2>
 					</div>
-					<p class="font-newsreader text-[15px] text-soft italic">{h2h.length} opponents faced.</p>
+					<p class="font-newsreader text-base text-soft italic">{h2h.length} opponents faced.</p>
 				</div>
 
 				<!-- lookup -->
-				<div class="mt-6 max-w-[560px]">
+				<div class="mt-6 max-w-xl">
 					<label for="h2h-search" class={LBL}>Find an opponent</label>
 					<div class="relative mt-2">
 						<div
@@ -1401,7 +1378,7 @@
 								oninput={() => (showOpponentDropdown = true)}
 								onfocus={() => (showOpponentDropdown = true)}
 								onblur={() => setTimeout(() => (showOpponentDropdown = false), 140)}
-								class="min-h-[44px] w-full border-0 bg-transparent font-newsreader text-[17px] leading-tight text-ink placeholder:text-fade focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+								class="min-h-11 w-full border-0 bg-transparent font-newsreader text-lg leading-tight text-ink placeholder:text-fade focus:outline-none [&::-webkit-search-cancel-button]:hidden"
 							/>
 							{#if opponentSearchQuery}
 								<button
@@ -1411,7 +1388,7 @@
 										clearOpponentSelection();
 									}}
 									aria-label="Clear search"
-									class="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center text-[16px] leading-none text-fade hover:text-ink"
+									class="-mr-1 flex h-8 w-8 shrink-0 items-center justify-center text-base leading-none text-fade hover:text-ink"
 									>×</button
 								>
 							{/if}
@@ -1419,10 +1396,10 @@
 						{#if showOpponentDropdown}
 							{@const found = filteredHeadToHead().slice(0, 30)}
 							<div
-								class="absolute inset-x-0 top-full z-30 max-h-[300px] overflow-auto border border-ink bg-paper-bg shadow-[0_18px_40px_rgba(23,21,15,0.16)]"
+								class="absolute inset-x-0 top-full z-30 max-h-75 overflow-auto border border-ink bg-paper-bg shadow-xl"
 							>
 								{#if !found.length}
-									<p class="px-4 py-4 font-newsreader text-[14px] text-fade italic">
+									<p class="px-4 py-4 font-newsreader text-sm text-fade italic">
 										No faced opponent matches “{opponentSearchQuery}”.
 									</p>
 								{:else}
@@ -1440,14 +1417,14 @@
 												: ''}"
 										>
 											<span>
-												<span class="block font-newsreader text-[16px] font-semibold"
+												<span class="block font-newsreader text-base font-semibold"
 													>{m.opponentName}</span
 												>
-												<span class="block text-[11px] text-fade"
+												<span class="block text-xs text-fade"
 													>{games} game{games === 1 ? '' : 's'}</span
 												>
 											</span>
-											<span class="text-[13px] font-bold tabular-nums"
+											<span class="text-sm font-bold tabular-nums"
 												><span class="text-prem">{m.wins}</span><span class="text-fade">–</span
 												><span class="text-hero-rb">{m.losses}</span></span
 											>
@@ -1472,9 +1449,9 @@
 						>
 							<div>
 								<p class={LBL}>Head-to-head record</p>
-								<p class="ao-cond mt-2 text-[34px] leading-[0.9] font-black uppercase">
+								<p class="ao-cond mt-2 text-4xl leading-none font-black uppercase">
 									{data.displayName}
-									<span class="font-newsreader text-[22px] font-normal text-fade normal-case italic"
+									<span class="font-newsreader text-2xl font-normal text-fade normal-case italic"
 										>vs</span
 									>
 									{#if o.opponentGemId}
@@ -1483,7 +1460,7 @@
 										{o.opponentName}
 									{/if}
 								</p>
-								<p class="mt-2 text-[10.5px] font-bold tracking-[0.1em] text-fade uppercase">
+								<p class="mt-2 text-xs font-bold tracking-widest text-fade uppercase">
 									{o.wins > o.losses
 										? `${data.displayName} leads the series`
 										: o.wins < o.losses
@@ -1491,7 +1468,7 @@
 											: 'Series even'}
 								</p>
 							</div>
-							<p class="ao-cond text-[56px] leading-none font-black tabular-nums">
+							<p class="ao-cond text-6xl leading-none font-black tabular-nums">
 								<span class="text-prem">{o.wins}</span><span class="mx-1 text-line2">–</span><span
 									class="text-hero-rb">{o.losses}</span
 								>
@@ -1500,9 +1477,7 @@
 						<div class="grid grid-cols-2 border-b border-line sm:grid-cols-4">
 							{#each [{ v: games, l: 'Matches' }, { v: `${wr}%`, l: 'Win rate', cls: wr >= 50 ? 'text-prem' : 'text-hero-rb' }, { v: last === 'W' ? 'Won' : last === 'L' ? 'Lost' : '—', l: 'Last meeting', cls: last === 'W' ? 'text-prem' : last === 'L' ? 'text-hero-rb' : '' }, { v: meetings.length, l: 'On record' }] as st (st.l)}
 								<div class="border-r border-line px-5 py-3 last:border-r-0">
-									<p
-										class="ao-cond text-[26px] leading-none font-black tabular-nums {st.cls ?? ''}"
-									>
+									<p class="ao-cond text-2xl leading-none font-black tabular-nums {st.cls ?? ''}">
 										{st.v}
 									</p>
 									<p class="mt-1.5 {LBL}">{st.l}</p>
@@ -1525,18 +1500,17 @@
 										class="grid grid-cols-[64px_64px_minmax(0,1fr)_minmax(0,1fr)_40px] items-center gap-3 border-b border-line px-6 py-3 last:border-b-0 even:bg-paper/50"
 									>
 										<span>
-											<span class="block text-[13px] font-extrabold tabular-nums">{event.year}</span
-											>
-											<span class="block text-[9px] font-bold tracking-[0.1em] text-fade uppercase"
+											<span class="block text-sm font-extrabold tabular-nums">{event.year}</span>
+											<span class="block text-xs font-bold tracking-widest text-fade uppercase"
 												>{event.month?.slice(0, 3) || ''}</span
 											>
 										</span>
 										<span>
-											<span class="block text-[11px] font-extrabold tracking-[0.1em] uppercase"
+											<span class="block text-xs font-extrabold tracking-widest uppercase"
 												>R{match.round}</span
 											>
 											{#if match.table}<span
-													class="block text-[9px] font-bold tracking-[0.1em] text-fade uppercase"
+													class="block text-xs font-bold tracking-widest text-fade uppercase"
 													>Table {match.table}</span
 												>{/if}
 										</span>
@@ -1544,7 +1518,7 @@
 											<span class="flex min-w-0 items-center gap-2.5">
 												{#if side.hero?.imageUrl}
 													<span
-														class="h-[30px] w-[30px] shrink-0 border border-line2 bg-cover bg-[right_center]"
+														class="h-8 w-8 shrink-0 border border-line2 bg-cover bg-right"
 														style="background-image: url('{side.hero.imageUrl}');"
 													></span>
 												{/if}
@@ -1552,23 +1526,21 @@
 													{#if side.gem}
 														<a
 															href="/player/{side.gem}"
-															class="block truncate text-[13px] font-extrabold"
+															class="block truncate text-sm font-extrabold"
 															><span class="fp-ul">{side.name}</span></a
 														>
 													{:else}
-														<span class="block truncate text-[13px] font-extrabold"
-															>{side.name}</span
-														>
+														<span class="block truncate text-sm font-extrabold">{side.name}</span>
 													{/if}
 													{#if side.hero?.hero}<span
-															class="block truncate text-[11px] font-bold text-soft"
+															class="block truncate text-xs font-bold text-soft"
 															>{side.hero.hero}</span
 														>{/if}
 												</span>
 											</span>
 										{/each}
 										<span
-											class="ao-cond ml-auto flex h-[26px] w-[26px] items-center justify-center text-[14px] font-black text-white"
+											class="ao-cond ml-auto flex h-7 w-7 items-center justify-center text-sm font-black text-white"
 											style="background: {resultBg(r)};">{r}</span
 										>
 									</li>
@@ -1583,24 +1555,24 @@
 					{#each [{ k: 'Nemesis', o: nem, tone: 'border-hero-rb', first: 'losses', second: 'wins', c1: 'text-hero-rb', c2: 'text-prem' }, { k: 'Best matchup', o: best, tone: 'border-prem', first: 'wins', second: 'losses', c1: 'text-prem', c2: 'text-hero-rb' }] as card (card.k)}
 						{#if card.o}
 							<div
-								class="flex items-center justify-between gap-4 border border-l-[4px] border-line2 bg-paper-bg px-5 py-4 {card.tone}"
+								class="flex items-center justify-between gap-4 border border-l-4 border-line2 bg-paper-bg px-5 py-4 {card.tone}"
 							>
 								<div class="min-w-0">
 									<p class={LBL}>{card.k}</p>
 									{#if card.o.opponentGemId}
 										<a
 											href="/player/{card.o.opponentGemId}"
-											class="mt-1.5 block truncate font-newsreader text-[22px] font-semibold"
+											class="mt-1.5 block truncate font-newsreader text-2xl font-semibold"
 											><span class="fp-ul">{card.o.opponentName}</span></a
 										>
 									{:else}
-										<p class="mt-1.5 truncate font-newsreader text-[22px] font-semibold">
+										<p class="mt-1.5 truncate font-newsreader text-2xl font-semibold">
 											{card.o.opponentName}
 										</p>
 									{/if}
 								</div>
 								<div class="shrink-0 text-right">
-									<p class="ao-cond text-[30px] leading-none font-black tabular-nums">
+									<p class="ao-cond text-3xl leading-none font-black tabular-nums">
 										<span class={card.c1}>{card.o[card.first]}</span><span class="text-fade">–</span
 										><span class={card.c2}>{card.o[card.second]}</span>
 									</p>
@@ -1616,7 +1588,7 @@
 					{#each [{ title: 'Most wins against', col: 'W–L', rows: topWins, fmt: (r) => `${r.wins}–${r.losses}` }, { title: 'Most losses against', col: 'W–L', rows: topLoss, fmt: (r) => `${r.wins}–${r.losses}` }, { title: 'Most played', col: 'Games', rows: topPlayed, fmt: (r) => r.wins + r.losses + r.draws }] as t (t.title)}
 						<div>
 							<div
-								class="grid grid-cols-[28px_minmax(0,1fr)_56px] items-end gap-3 border-b-[3px] border-ink px-3 pb-2 {TH}"
+								class="grid grid-cols-[28px_minmax(0,1fr)_56px] items-end gap-3 border-b-3 border-ink px-3 pb-2 {TH}"
 							>
 								<span>#</span><span>{t.title}</span><span class="text-center">{t.col}</span>
 							</div>
@@ -1625,21 +1597,21 @@
 									<li
 										class="grid grid-cols-[28px_minmax(0,1fr)_56px] items-center gap-3 border-b border-line px-3 py-2.5 even:bg-paper/50"
 									>
-										<span class="ao-cond text-[18px] leading-none font-black text-fade tabular-nums"
+										<span class="ao-cond text-lg leading-none font-black text-fade tabular-nums"
 											>{ri + 1}</span
 										>
 										{#if r.opponentGemId}
 											<a
 												href="/player/{r.opponentGemId}"
-												class="truncate font-newsreader text-[15px] font-semibold"
+												class="truncate font-newsreader text-base font-semibold"
 												><span class="fp-ul">{r.opponentName}</span></a
 											>
 										{:else}
-											<span class="truncate font-newsreader text-[15px] font-semibold"
+											<span class="truncate font-newsreader text-base font-semibold"
 												>{r.opponentName}</span
 											>
 										{/if}
-										<span class="text-center text-[13px] font-bold tabular-nums">{t.fmt(r)}</span>
+										<span class="text-center text-sm font-bold tabular-nums">{t.fmt(r)}</span>
 									</li>
 								{/each}
 							</ol>
@@ -1653,21 +1625,21 @@
 	<!-- ============ decklists ============ -->
 	{#if data.decklists?.length}
 		<section class="border-b border-line bg-paper">
-			<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-12">
+			<div class="mx-auto w-full max-w-page px-5 py-10 md:px-8 md:py-12">
 				<div class="flex flex-wrap items-end justify-between gap-4">
 					<div>
 						<p class={KICK}>Tournament lists</p>
-						<h2 class="ao-cond mt-2 text-[40px] leading-none font-black uppercase">Decklists</h2>
+						<h2 class="ao-cond mt-2 text-4xl leading-none font-black uppercase">Decklists</h2>
 					</div>
-					<p class="font-newsreader text-[15px] text-soft italic">
+					<p class="font-newsreader text-base text-soft italic">
 						{data.decklists.length}
 						{data.decklists.length === 1 ? 'list' : 'lists'} on record.
 					</p>
 				</div>
 				<div class="mt-6 overflow-x-auto">
-					<div class="min-w-[640px]">
+					<div class="min-w-160">
 						<div
-							class="grid grid-cols-[minmax(0,1fr)_150px_130px_100px_72px] items-end gap-3 border-b-[3px] border-ink px-4 pb-2 {TH}"
+							class="grid grid-cols-[minmax(0,1fr)_150px_130px_100px_72px] items-end gap-3 border-b-3 border-ink px-4 pb-2 {TH}"
 						>
 							<span>Hero</span><span>Event</span><span>Date</span><span class="text-center"
 								>Finish</span
@@ -1683,17 +1655,17 @@
 									>
 										<span class="flex min-w-0 items-center gap-3">
 											<span
-												class="h-[34px] w-[34px] shrink-0 border border-line2 bg-cover bg-[right_center]"
+												class="h-9 w-9 shrink-0 border border-line2 bg-cover bg-right"
 												style={hb ? `background-image: url('${hb}');` : ''}
 											></span>
-											<span class="truncate font-newsreader text-[16px] font-semibold"
+											<span class="truncate font-newsreader text-base font-semibold"
 												><span class="fp-ul">{decklist.hero || '—'}</span></span
 											>
 										</span>
-										<span class="flex items-center gap-2 text-[12px] font-bold">
+										<span class="flex items-center gap-2 text-xs font-bold">
 											{#if event?.circuit}
 												<span
-													class="px-1.5 py-[2px] text-[8px] font-extrabold tracking-[0.16em] text-white uppercase"
+													class="px-1.5 py-0.5 text-xs font-extrabold tracking-widest text-white uppercase"
 													style="background: {circuitVar(event.circuit)};"
 													>{abbr(event.circuit)}</span
 												>{event.circuit}
@@ -1701,7 +1673,7 @@
 												<span class="text-fade">—</span>
 											{/if}
 										</span>
-										<span class="text-[12px] font-semibold text-soft tabular-nums"
+										<span class="text-xs font-semibold text-soft tabular-nums"
 											>{event?.eventDate
 												? new Date(event.eventDate).toLocaleDateString('en-US', {
 														month: 'short',
@@ -1712,13 +1684,13 @@
 										>
 										<span class="text-center">
 											<span
-												class="px-2 py-[3px] text-[9px] font-extrabold tracking-[0.12em] uppercase"
+												class="px-2 py-1 text-xs font-extrabold tracking-widest uppercase"
 												style={finishStyle(decklist.placement)}
 												>{decklist.placement === 1 ? 'Champion' : ordinal(decklist.placement)}</span
 											>
 										</span>
 										<span
-											class="text-right text-[9.5px] font-extrabold tracking-[0.16em] text-warm uppercase"
+											class="text-right text-xs font-extrabold tracking-widest text-warm uppercase"
 											>View →</span
 										>
 									</a>

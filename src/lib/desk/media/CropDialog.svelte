@@ -219,7 +219,7 @@
 	}
 
 	const seg = (on) =>
-		`h-9 px-3 text-[10px] font-extrabold tracking-[0.1em] uppercase transition-colors ${on ? 'bg-ink text-paper-bg' : 'bg-paper-bg text-soft hover:text-ink'}`;
+		`h-9 px-3 text-xs font-extrabold tracking-widest uppercase transition-colors ${on ? 'bg-ink text-paper-bg' : 'bg-paper-bg text-soft hover:text-ink'}`;
 </script>
 
 <DialogShell {open} kicker="Edit image" title="Crop and rotate" wide onclose={close}>
@@ -246,12 +246,12 @@
 
 	<div
 		bind:this={stage}
-		class="mt-4 flex min-h-[200px] items-center justify-center bg-line/60 p-3 select-none"
+		class="mt-4 flex min-h-50 items-center justify-center bg-line/60 p-3 select-none"
 	>
 		{#if loadError}
-			<p class="text-[13px] text-hero-rb">{loadError}</p>
+			<p class="text-sm text-hero-rb">{loadError}</p>
 		{:else if !source}
-			<p class="text-[13px] text-fade">Loading…</p>
+			<p class="text-sm text-fade">Loading…</p>
 		{:else}
 			<div
 				class="relative touch-none"
@@ -264,7 +264,7 @@
 				<canvas bind:this={canvas} class="block"></canvas>
 				<div class="pointer-events-none absolute inset-0 overflow-hidden">
 					<div
-						class="pointer-events-auto absolute cursor-move border-[1.5px] border-white"
+						class="pointer-events-auto absolute cursor-move border-2 border-white"
 						style="left: {crop.x * 100}%; top: {crop.y * 100}%; width: {crop.w *
 							100}%; height: {crop.h * 100}%; box-shadow: 0 0 0 9999px rgba(23, 21, 15, 0.55);"
 						onpointerdown={(e) => begin(e, 'move')}
@@ -278,10 +278,10 @@
 						{#each ['nw', 'ne', 'sw', 'se'] as corner (corner)}
 							<span
 								class="absolute h-6 w-6 border-white bg-transparent {corner.includes('n')
-									? '-top-[3px] border-t-[3px]'
-									: '-bottom-[3px] border-b-[3px]'} {corner.includes('w')
-									? '-left-[3px] border-l-[3px]'
-									: '-right-[3px] border-r-[3px]'} {CURSOR[corner]}"
+									? '-top-1 border-t-3'
+									: '-bottom-1 border-b-3'} {corner.includes('w')
+									? '-left-1 border-l-3'
+									: '-right-1 border-r-3'} {CURSOR[corner]}"
 								onpointerdown={(e) => begin(e, corner)}
 								role="presentation"
 							></span>

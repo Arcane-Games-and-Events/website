@@ -47,30 +47,29 @@
 	});
 
 	const btn =
-		'min-h-[36px] flex-1 px-2 text-[9.5px] font-extrabold tracking-[0.14em] uppercase transition-colors';
+		'min-h-9 flex-1 px-2 text-xs font-extrabold tracking-widest uppercase transition-colors';
 </script>
 
 <div
-	class="absolute z-30 w-[240px] border border-ink bg-paper-bg font-libre shadow-[0_18px_36px_-20px_rgba(20,16,8,0.6)]"
+	class="absolute z-30 w-60 border border-ink bg-paper-bg font-libre shadow-xl"
 	style="top: {link.top}px; left: {link.left}px"
 	role="dialog"
 	aria-label="Card link: {link.name}"
 	data-card-popover
 >
 	<div class="flex items-center justify-between gap-2 border-b border-line2 py-1 pr-1 pl-3">
-		<span class="text-[9.5px] font-extrabold tracking-[0.18em] uppercase"
-			><span class="text-[8px] text-warm" aria-hidden="true">◆</span> Card link</span
+		<span class="text-xs font-extrabold tracking-widest uppercase"
+			><span class="text-xs text-warm" aria-hidden="true">◆</span> Card link</span
 		>
 		<button
 			type="button"
 			onclick={onclose}
 			aria-label="Close"
-			class="flex h-7 w-7 items-center justify-center text-[16px] text-fade hover:text-ink"
-			>×</button
+			class="flex h-7 w-7 items-center justify-center text-base text-fade hover:text-ink">×</button
 		>
 	</div>
 	<div class="px-3 pt-3">
-		<div class="mx-auto aspect-[546/762] w-[150px] bg-line/60">
+		<div class="mx-auto aspect-546/762 w-38 bg-line/60">
 			{#if image && image !== 'missing'}
 				<img
 					src={useFallback ? image.fallbackUrl : image.imageUrl}
@@ -81,18 +80,17 @@
 					}}
 				/>
 			{:else}
-				<span
-					class="flex h-full items-center justify-center px-3 text-center text-[11.5px] text-fade"
+				<span class="flex h-full items-center justify-center px-3 text-center text-xs text-fade"
 					>{image === 'missing' ? 'No image found for this card.' : 'Loading…'}</span
 				>
 			{/if}
 		</div>
-		<p class="mt-2.5 text-center font-newsreader text-[15px] leading-tight font-semibold">
-			{link.name}{#if link.pitch}<span class="font-libre text-[12px] font-normal text-fade"
+		<p class="mt-2.5 text-center font-newsreader text-base leading-tight font-semibold">
+			{link.name}{#if link.pitch}<span class="font-libre text-xs font-normal text-fade"
 					>&nbsp;· {PITCH_NAME[link.pitch]}</span
 				>{/if}
 		</p>
-		<p class="mt-1 text-center text-[11.5px] leading-snug text-fade">
+		<p class="mt-1 text-center text-xs leading-snug text-fade">
 			Readers see this card when they hover or tap the link.
 		</p>
 	</div>

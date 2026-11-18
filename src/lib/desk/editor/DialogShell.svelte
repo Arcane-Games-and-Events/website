@@ -42,7 +42,7 @@
 {#if open}
 	<div
 		use:toBody
-		class="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-ink/70 p-3 pt-[6vh] font-libre md:p-6 md:pt-[10vh]"
+		class="fixed inset-0 z-70 flex items-start justify-center overflow-y-auto bg-ink/70 p-3 pt-[6vh] font-libre md:p-6 md:pt-[10vh]"
 		role="presentation"
 		onclick={onclose}
 	>
@@ -51,7 +51,7 @@
 				? 'max-w-5xl'
 				: wide
 					? 'max-w-2xl'
-					: 'max-w-lg'} border-t-[5px] border-ink bg-paper-bg text-ink shadow-2xl"
+					: 'max-w-lg'} border-t-5 border-ink bg-paper-bg text-ink shadow-2xl"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby={id}
@@ -66,17 +66,17 @@
 				class="flex items-start justify-between gap-4 border-b border-line2 px-5 pt-4 pb-3.5 md:px-6"
 			>
 				<div class="min-w-0">
-					<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-fade uppercase">
-						<span class="text-[8px] text-warm" aria-hidden="true">◆</span>
+					<p class="text-xs font-extrabold tracking-widest text-fade uppercase">
+						<span class="text-xs text-warm" aria-hidden="true">◆</span>
 						{kicker}
 					</p>
-					<h2 {id} class="mt-1 font-newsreader text-[22px] leading-tight font-semibold">{title}</h2>
+					<h2 {id} class="mt-1 font-newsreader text-2xl leading-tight font-semibold">{title}</h2>
 				</div>
 				<button
 					type="button"
 					onclick={onclose}
 					aria-label="Close"
-					class="-mr-2 flex h-9 w-9 shrink-0 items-center justify-center text-[20px] text-fade transition-colors hover:text-ink"
+					class="-mr-2 flex h-9 w-9 shrink-0 items-center justify-center text-xl text-fade transition-colors hover:text-ink"
 					>×</button
 				>
 			</header>

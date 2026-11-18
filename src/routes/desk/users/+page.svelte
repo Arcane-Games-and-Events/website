@@ -143,16 +143,16 @@
 <DeskHeader title="Users" subtitle="Who writes, edits and teaches." />
 <DeskTabs />
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-14 font-libre md:px-8 md:pt-10">
+<div class="mx-auto w-full max-w-page px-5 pt-8 pb-14 font-libre md:px-8 md:pt-10">
 	<!-- the three roles, explained once -->
 	<ul class="grid gap-2 sm:grid-cols-3">
 		{#each ROLES as r (r.id)}
 			<li
-				class="border border-t-[4px] border-line2 bg-white px-4 py-3"
+				class="border border-t-4 border-line2 bg-white px-4 py-3"
 				style="border-top-color: {r.tone}"
 			>
-				<p class="ao-cond text-[22px] leading-none font-black uppercase">{r.label}</p>
-				<p class="mt-1 text-[12px] leading-snug text-soft">{r.note}</p>
+				<p class="ao-cond text-2xl leading-none font-black uppercase">{r.label}</p>
+				<p class="mt-1 text-xs leading-snug text-soft">{r.note}</p>
 			</li>
 		{/each}
 	</ul>
@@ -160,7 +160,7 @@
 	<!-- search + filters -->
 	<div class="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 		<label
-			class="flex h-[42px] w-full items-center gap-2.5 border border-line2 bg-white px-3 focus-within:border-ink lg:max-w-[360px]"
+			class="flex h-11 w-full items-center gap-2.5 border border-line2 bg-white px-3 focus-within:border-ink lg:max-w-sm"
 		>
 			<svg
 				viewBox="0 0 24 24"
@@ -175,7 +175,7 @@
 				type="search"
 				bind:value={query}
 				placeholder="Find anyone by name or email"
-				class="min-w-0 flex-1 border-0 bg-transparent p-0 text-[14px] placeholder:text-fade focus:ring-0 focus:outline-none"
+				class="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm placeholder:text-fade focus:ring-0 focus:outline-none"
 			/>
 		</label>
 		<div class="flex flex-wrap gap-1.5" role="group" aria-label="Show">
@@ -187,7 +187,7 @@
 						query = '';
 					}}
 					aria-pressed={!query && show === f.id}
-					class="inline-flex h-[36px] items-center gap-2 border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {!query &&
+					class="inline-flex h-9 items-center gap-2 border px-3 text-xs font-extrabold tracking-widest uppercase transition-colors {!query &&
 					show === f.id
 						? 'border-ink bg-ink text-paper-bg'
 						: 'border-line2 bg-white text-soft hover:border-ink hover:text-ink'}"
@@ -200,7 +200,7 @@
 			{/each}
 		</div>
 	</div>
-	<p class="mt-3 text-[11.5px] text-fade">
+	<p class="mt-3 text-xs text-fade">
 		{#if query}
 			{filtered.length}
 			{filtered.length === 1 ? 'person matches' : 'people match'} across everyone. To give someone a
@@ -212,7 +212,7 @@
 
 	{#if !rows.length}
 		<div class="mt-4 border border-dashed border-line2 py-12 text-center">
-			<p class="font-newsreader text-[20px] font-semibold">
+			<p class="font-newsreader text-xl font-semibold">
 				{users.length ? 'No one here.' : 'No users yet.'}
 			</p>
 			{#if users.length}
@@ -222,7 +222,7 @@
 						query = '';
 						show = 'all';
 					}}
-					class="mt-3 text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
+					class="mt-3 text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 					>↺ Show everyone</button
 				>
 			{/if}
@@ -234,7 +234,7 @@
 				{@const st = status[u.id]}
 				{@const tone = toneOf(u)}
 				<li
-					class="grid gap-x-5 gap-y-3 border border-l-[4px] border-line2 px-3.5 py-3 md:px-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center {isTeam(
+					class="grid gap-x-5 gap-y-3 border border-l-4 border-line2 px-3.5 py-3 md:px-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center {isTeam(
 						u
 					)
 						? 'bg-white'
@@ -243,7 +243,7 @@
 				>
 					<div class="flex min-w-0 items-center gap-3.5">
 						<span
-							class="ao-cond flex h-[46px] w-[46px] shrink-0 items-center justify-center text-[20px] leading-none font-black {isAdmin(
+							class="ao-cond flex h-12 w-12 shrink-0 items-center justify-center text-xl leading-none font-black {isAdmin(
 								u
 							)
 								? 'text-paper-bg'
@@ -255,25 +255,25 @@
 						>
 						<span class="min-w-0">
 							<span class="flex flex-wrap items-center gap-2">
-								<span class="truncate font-newsreader text-[17px] leading-tight font-semibold"
+								<span class="truncate font-newsreader text-lg leading-tight font-semibold"
 									>{name(u)}</span
 								>
 								{#if u.id === me}<span
-										class="shrink-0 border border-line2 px-1.5 text-[8.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+										class="shrink-0 border border-line2 px-1.5 text-xs font-extrabold tracking-widest text-fade uppercase"
 										>You</span
 									>{/if}
 								{#if isAdmin(u)}<span
-										class="bg-ink px-1.5 py-px text-[9px] font-extrabold tracking-[0.14em] text-paper-bg uppercase"
+										class="bg-ink px-1.5 py-px text-xs font-extrabold tracking-widest text-paper-bg uppercase"
 										>Admin</span
 									>{/if}
 							</span>
-							<span class="mt-0.5 block truncate text-[12px] text-fade">
+							<span class="mt-0.5 block truncate text-xs text-fade">
 								{u.email || '—'}{#if u.createdAt}<span class="hidden sm:inline"
 										>&nbsp;· joined {joined(u.createdAt)}</span
 									>{/if}
 							</span>
 							{#if st}
-								<span class="mt-0.5 block text-[11.5px]" role={st?.error ? 'alert' : 'status'}>
+								<span class="mt-0.5 block text-xs" role={st?.error ? 'alert' : 'status'}>
 									{#if st === 'saving'}<span class="text-fade">Saving…</span
 										>{:else if st === 'saved'}<span class="font-semibold text-prem">✓ Saved</span
 										>{:else if st?.error}<span class="font-semibold text-hero-rb">{st.error}</span
@@ -285,8 +285,8 @@
 
 					<!-- the three roles, as switches -->
 					{#if isAdmin(u)}
-						<p class="text-[12.5px] text-soft lg:text-right">
-							Every Desk role, as an admin.<span class="block text-[11.5px] text-fade"
+						<p class="text-xs text-soft lg:text-right">
+							Every Desk role, as an admin.<span class="block text-xs text-fade"
 								>Membership is set in <a href="/admin/users" class="underline hover:text-ink"
 									>Admin → Members</a
 								>.</span
@@ -294,7 +294,7 @@
 						</p>
 					{:else}
 						<div
-							class="grid grid-cols-3 gap-1.5 lg:w-[420px]"
+							class="grid grid-cols-3 gap-1.5 lg:w-105"
 							role="group"
 							aria-label="Desk roles for {name(u)}"
 						>
@@ -306,7 +306,7 @@
 									disabled={busy}
 									title={r.note}
 									onclick={() => toggle(u, r.id)}
-									class="flex h-[42px] items-center justify-between gap-2 border px-3 text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors disabled:opacity-60 {on
+									class="flex h-11 items-center justify-between gap-2 border px-3 text-xs font-extrabold tracking-widest uppercase transition-colors disabled:opacity-60 {on
 										? 'border-transparent text-white'
 										: 'border-line2 bg-white text-soft hover:border-ink hover:text-ink'}"
 									style={on ? `background: ${r.tone}` : ''}
@@ -314,15 +314,15 @@
 									{r.label}
 									<!-- a small switch -->
 									<span
-										class="relative h-[14px] w-[24px] shrink-0 border transition-colors {on
+										class="relative h-3.5 w-6 shrink-0 border transition-colors {on
 											? 'border-white/70 bg-white/25'
 											: 'border-line2 bg-paper'}"
 										aria-hidden="true"
 									>
 										<span
-											class="absolute top-[1px] h-[10px] w-[10px] transition-[left] duration-150 {on
-												? 'left-[11px] bg-white'
-												: 'left-[1px] bg-line2'}"
+											class="absolute top-px h-2.5 w-2.5 transition-[left] duration-150 {on
+												? 'left-3 bg-white'
+												: 'left-px bg-line2'}"
 										></span>
 									</span>
 								</button>
@@ -338,7 +338,7 @@
 				class="mt-4 flex flex-wrap items-center justify-between gap-3"
 				aria-label="Pages of users"
 			>
-				<span class="text-[12px] text-fade tabular-nums"
+				<span class="text-xs text-fade tabular-nums"
 					>{(current - 1) * PAGE + 1}–{Math.min(current * PAGE, filtered.length)} of {filtered.length}</span
 				>
 				<div class="flex items-center gap-1">
@@ -346,15 +346,15 @@
 						type="button"
 						onclick={() => (pageNo = current - 1)}
 						disabled={current === 1}
-						class="h-9 border border-line2 bg-white px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:border-ink disabled:opacity-35"
+						class="h-9 border border-line2 bg-white px-3 text-xs font-extrabold tracking-widest uppercase hover:border-ink disabled:opacity-35"
 						>← Prev</button
 					>
-					<span class="px-2 text-[13px] tabular-nums">{current} / {pages}</span>
+					<span class="px-2 text-sm tabular-nums">{current} / {pages}</span>
 					<button
 						type="button"
 						onclick={() => (pageNo = current + 1)}
 						disabled={current === pages}
-						class="h-9 border border-line2 bg-white px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:border-ink disabled:opacity-35"
+						class="h-9 border border-line2 bg-white px-3 text-xs font-extrabold tracking-widest uppercase hover:border-ink disabled:opacity-35"
 						>Next →</button
 					>
 				</div>
@@ -362,7 +362,7 @@
 		{/if}
 	{/if}
 
-	<p class="mt-6 max-w-[720px] text-[12.5px] leading-relaxed text-fade">
+	<p class="mt-6 max-w-3xl text-xs leading-relaxed text-fade">
 		Admins have every Desk role automatically, and only admins can publish, approve edits or manage
 		users. Memberships (free, premium, admin) are set in Admin → Members. Event staff are added to
 		each event in Admin.

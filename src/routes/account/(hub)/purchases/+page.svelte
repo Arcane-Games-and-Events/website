@@ -111,8 +111,8 @@
 >
 	{#if data.orders.length === 0}
 		<div class="border border-dashed border-line2 px-6 py-12 text-center">
-			<p class="ao-cond text-[34px] leading-none font-black uppercase">Nothing here yet.</p>
-			<p class="mx-auto mt-3 max-w-[420px] font-newsreader text-[16px] text-soft italic">
+			<p class="ao-cond text-4xl leading-none font-black uppercase">Nothing here yet.</p>
+			<p class="mx-auto mt-3 max-w-md font-newsreader text-base text-soft italic">
 				Tickets, Academy guides and membership charges show up here, each with its receipt.
 			</p>
 			<div class="mt-6 flex flex-wrap justify-center gap-2">
@@ -131,7 +131,7 @@
 						role="tab"
 						aria-selected={filter === f.key}
 						onclick={() => (filter = f.key)}
-						class="px-3.5 py-2 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {filter ===
+						class="px-3.5 py-2 text-xs font-extrabold tracking-widest uppercase transition-colors {filter ===
 						f.key
 							? 'bg-ink text-paper-bg'
 							: 'bg-paper-bg text-soft hover:text-ink'}"
@@ -145,7 +145,7 @@
 
 		<!-- ============ the ledger ============ -->
 		{#if months.length === 0}
-			<p class="mt-6 border-t border-line py-8 font-newsreader text-[17px] text-soft italic">
+			<p class="mt-6 border-t border-line py-8 font-newsreader text-lg text-soft italic">
 				No {filter === 'tickets'
 					? 'ticket purchases'
 					: filter === 'guides'
@@ -155,9 +155,9 @@
 		{/if}
 		{#each months as m (m.key)}
 			<section class="mt-8">
-				<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-					<h3 class="text-[10.5px] font-extrabold tracking-[0.22em] uppercase">{m.label}</h3>
-					<span class="text-[11px] font-semibold text-fade tabular-nums">
+				<div class="flex items-baseline justify-between gap-4 border-b-3 border-ink pb-2">
+					<h3 class="text-xs font-extrabold tracking-widest uppercase">{m.label}</h3>
+					<span class="text-xs font-semibold text-fade tabular-nums">
 						{m.orders.length} purchase{m.orders.length === 1 ? '' : 's'}
 					</span>
 				</div>
@@ -171,32 +171,32 @@
 							>
 								<!-- the day it was bought, edged in the colour of what it was -->
 								<span
-									class="row-span-2 flex flex-col items-center justify-center self-start border-l-[3px] bg-paper py-2 text-center md:row-span-1 md:self-center"
+									class="row-span-2 flex flex-col items-center justify-center self-start border-l-3 bg-paper py-2 text-center md:row-span-1 md:self-center"
 									style="border-color: {accent(o)};"
 								>
-									<span class="text-[9px] font-extrabold tracking-[0.16em] text-fade uppercase">
+									<span class="text-xs font-extrabold tracking-widest text-fade uppercase">
 										{local(o.createdAt, { month: 'short' })}
 									</span>
-									<span class="ao-cond text-[28px] leading-[0.9] font-black tabular-nums">
+									<span class="ao-cond text-3xl leading-none font-black tabular-nums">
 										{local(o.createdAt, { day: 'numeric' })}
 									</span>
 								</span>
 
 								<span class="min-w-0">
 									<span
-										class="block text-[9.5px] font-extrabold tracking-[0.18em] uppercase"
+										class="block text-xs font-extrabold tracking-widest uppercase"
 										style="color: {accent(o)};">{kicker(o)}</span
 									>
 									<span
-										class="mt-0.5 block truncate font-newsreader text-[19px] leading-tight font-semibold group-hover:text-warm {o.status ===
+										class="mt-0.5 block truncate font-newsreader text-xl leading-tight font-semibold group-hover:text-warm {o.status ===
 										'refunded'
 											? 'text-soft'
 											: ''}">{o.title}</span
 									>
-									<span class="mt-0.5 block text-[12.5px] leading-snug text-soft">{detail(o)}</span>
+									<span class="mt-0.5 block text-xs leading-snug text-soft">{detail(o)}</span>
 									{#if o.type !== 'guides' && (o.discount > 0 || o.promoCode)}
 										<span
-											class="mt-1 inline-block text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
+											class="mt-1 inline-block text-xs font-extrabold tracking-widest text-fade uppercase"
 										>
 											{o.promoCode ? `${o.promoCode} · ` : 'Member discount · '}{money(o.discount)} off
 										</span>
@@ -207,14 +207,14 @@
 									class="col-start-2 mt-2 flex items-baseline justify-between gap-3 md:col-start-auto md:mt-0 md:block md:text-right"
 								>
 									<span
-										class="ao-cond block text-[26px] leading-none font-black tabular-nums {o.status ===
+										class="ao-cond block text-2xl leading-none font-black tabular-nums {o.status ===
 										'refunded'
 											? 'text-fade line-through decoration-[2px]'
 											: ''}">{money(o.amount)}</span
 									>
-									<span class="block text-[11px] font-semibold {s.tone} md:mt-1">{s.text}</span>
+									<span class="block text-xs font-semibold {s.tone} md:mt-1">{s.text}</span>
 									<span
-										class="hidden text-[9.5px] font-extrabold tracking-[0.16em] text-warm uppercase opacity-0 transition-opacity group-hover:opacity-100 md:mt-1.5 md:block"
+										class="hidden text-xs font-extrabold tracking-widest text-warm uppercase opacity-0 transition-opacity group-hover:opacity-100 md:mt-1.5 md:block"
 										>Receipt →</span
 									>
 								</span>

@@ -69,7 +69,7 @@
 		const days = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
 		return days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`;
 	};
-	const kicker = 'text-[10.5px] font-extrabold tracking-[0.16em] uppercase';
+	const kicker = 'text-xs font-extrabold tracking-widest uppercase';
 </script>
 
 <svelte:head><title>Refunds · Classroom</title></svelte:head>
@@ -82,15 +82,15 @@
 />
 <DeskTabs />
 
-<div class="mx-auto w-full max-w-[1200px] space-y-12 px-5 pt-8 pb-20 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page space-y-12 px-5 pt-8 pb-20 font-libre md:px-8">
 	{#if message}<p
-			class="border-l-[3px] border-prem bg-prem/10 px-4 py-3 text-[13.5px] font-semibold"
+			class="border-l-3 border-prem bg-prem/10 px-4 py-3 text-sm font-semibold"
 			role="status"
 		>
 			{message}
 		</p>{/if}
 	{#if error}<p
-			class="border-l-[3px] border-hero-rb bg-hero-rb/[0.06] px-4 py-3 text-[13.5px] font-semibold text-hero-rb"
+			class="border-l-3 border-hero-rb bg-hero-rb/5 px-4 py-3 text-sm font-semibold text-hero-rb"
 			role="alert"
 		>
 			{error}
@@ -100,7 +100,7 @@
 	<section aria-labelledby="pending-h">
 		<h2
 			id="pending-h"
-			class="{kicker} flex items-baseline justify-between border-b-[3px] border-ink pb-2.5"
+			class="{kicker} flex items-baseline justify-between border-b-3 border-ink pb-2.5"
 		>
 			<span><span class="text-hero-rb" aria-hidden="true">◆</span> Waiting for a decision</span>
 			<span class="tracking-normal text-fade normal-case">{data.pending.length || 'None'}</span>
@@ -110,20 +110,20 @@
 				{#each data.pending as r (r.id)}
 					<li class="grid gap-4 py-5 md:grid-cols-[minmax(0,1fr)_320px]">
 						<div class="min-w-0">
-							<p class="font-newsreader text-[19px] leading-snug font-semibold">
+							<p class="font-newsreader text-xl leading-snug font-semibold">
 								{r.title} · {money(r.amountCents)}
 							</p>
-							<p class="mt-1 text-[13px] text-soft">
+							<p class="mt-1 text-sm text-soft">
 								{r.buyer}{r.buyerEmail ? ` · ${r.buyerEmail}` : ''} · bought {shortDate(r.orderAt)}
 								({ageOf(r.orderAt)})
 							</p>
-							<p class="mt-2 text-[13.5px]">
+							<p class="mt-2 text-sm">
 								<span class="font-semibold">{r.reasonLabel}</span>
-								{#if r.message}<span class="font-newsreader text-[15px] text-soft">
+								{#if r.message}<span class="font-newsreader text-base text-soft">
 										“{r.message}”</span
 									>{/if}
 							</p>
-							<p class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-soft">
+							<p class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-soft">
 								<span>
 									<span class="font-semibold text-ink">Opened:</span>
 									{r.firstOpenedAt ? shortDate(r.firstOpenedAt) : 'never'}
@@ -147,14 +147,14 @@
 								placeholder="Note to the buyer (optional)"
 								bind:value={notes[r.id]}
 								maxlength="300"
-								class="h-[38px] w-full border border-line2 bg-white px-2.5 text-[13.5px] focus:border-ink focus:ring-0"
+								class="h-10 w-full border border-line2 bg-white px-2.5 text-sm focus:border-ink focus:ring-0"
 							/>
 							<div class="flex gap-2">
 								<button
 									type="button"
 									onclick={() => act(r, 'approve')}
 									disabled={!!busy}
-									class="h-[38px] flex-1 bg-ink px-4 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
+									class="h-10 flex-1 bg-ink px-4 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
 									>{busy === r.id ? 'Refunding…' : `Refund ${money(r.amountCents)}`}</button
 								>
 								{#if data.admin}
@@ -162,13 +162,13 @@
 										type="button"
 										onclick={() => act(r, 'deny')}
 										disabled={!!busy}
-										class="h-[38px] border border-hero-rb px-4 text-[10px] font-extrabold tracking-[0.14em] text-hero-rb uppercase hover:bg-hero-rb hover:text-white disabled:opacity-50"
+										class="h-10 border border-hero-rb px-4 text-xs font-extrabold tracking-widest text-hero-rb uppercase hover:bg-hero-rb hover:text-white disabled:opacity-50"
 										>Decline</button
 									>
 								{/if}
 							</div>
 							{#if !data.admin}
-								<p class="text-[11.5px] leading-snug text-fade">
+								<p class="text-xs leading-snug text-fade">
 									You can approve. If you’d rather not, leave it; AGE decides under the refund
 									policy.
 								</p>
@@ -178,7 +178,7 @@
 				{/each}
 			</ul>
 		{:else}
-			<p class="py-4 text-[13.5px] text-soft">
+			<p class="py-4 text-sm text-soft">
 				<span class="mr-1 text-prem" aria-hidden="true">✓</span> No refund requests waiting.
 			</p>
 		{/if}
@@ -186,13 +186,13 @@
 
 	{#if data.admin && data.failed.length}
 		<section aria-labelledby="failed-h">
-			<h2 id="failed-h" class="{kicker} border-b-[3px] border-ink pb-2.5">Refunds to check</h2>
+			<h2 id="failed-h" class="{kicker} border-b-3 border-ink pb-2.5">Refunds to check</h2>
 			<ul class="divide-y divide-line">
 				{#each data.failed as r (r.id)}
 					<li class="flex flex-wrap items-start justify-between gap-3 py-4">
-						<div class="min-w-0 text-[13.5px]">
+						<div class="min-w-0 text-sm">
 							<p class="font-semibold">{r.title} · {money(r.amountCents)} · {r.buyer}</p>
-							<p class="text-[12px] text-soft">
+							<p class="text-xs text-soft">
 								{REFUND[r.refundStatus]}{r.gatewayError ? ` · ${r.gatewayError}` : ''}
 							</p>
 						</div>
@@ -201,7 +201,7 @@
 								type="button"
 								onclick={() => act(r, 'retry')}
 								disabled={!!busy}
-								class="h-[34px] bg-ink px-4 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
+								class="h-9 bg-ink px-4 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
 								>{busy === r.id ? 'Trying…' : 'Retry the refund'}</button
 							>
 						{/if}
@@ -215,7 +215,7 @@
 	<section aria-labelledby="sales-h">
 		<h2
 			id="sales-h"
-			class="{kicker} flex items-baseline justify-between border-b-[3px] border-ink pb-2.5"
+			class="{kicker} flex items-baseline justify-between border-b-3 border-ink pb-2.5"
 		>
 			Refund a sale
 			<span class="tracking-normal text-fade normal-case"
@@ -231,13 +231,13 @@
 
 	<!-- what was decided -->
 	<section aria-labelledby="decided-h">
-		<h2 id="decided-h" class="{kicker} border-b-[3px] border-ink pb-2.5">Decided</h2>
+		<h2 id="decided-h" class="{kicker} border-b-3 border-ink pb-2.5">Decided</h2>
 		{#if data.decided.length}
 			<div class="overflow-x-auto">
-				<table class="w-full min-w-[720px] text-left text-[13px]">
+				<table class="w-full min-w-180 text-left text-sm">
 					<thead>
 						<tr
-							class="border-b border-line2 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							class="border-b border-line2 text-xs font-extrabold tracking-widest text-fade uppercase"
 						>
 							<th class="py-2 pr-4 font-extrabold">Asked</th>
 							<th class="py-2 pr-4 font-extrabold">Guide</th>
@@ -252,7 +252,7 @@
 								<td class="py-2 pr-4 whitespace-nowrap text-fade">{shortDate(r.createdAt)}</td>
 								<td class="py-2 pr-4">
 									<span class="font-semibold">{r.title}</span>
-									<span class="block text-[11.5px] text-fade">{r.reasonLabel}</span>
+									<span class="block text-xs text-fade">{r.reasonLabel}</span>
 								</td>
 								<td class="py-2 pr-4">{r.buyer}</td>
 								<td class="py-2 pr-4 text-right tabular-nums">{money(r.amountCents)}</td>
@@ -261,7 +261,7 @@
 										? ` by ${r.decidedBy === 'admin' ? 'AGE' : 'the teacher'}`
 										: ''}{REFUND[r.refundStatus] ? ` · ${REFUND[r.refundStatus]}` : ''}
 									{#if r.decisionNote && r.decidedBy !== 'system'}<span
-											class="block text-[11.5px] text-fade italic">“{r.decisionNote}”</span
+											class="block text-xs text-fade italic">“{r.decisionNote}”</span
 										>{/if}
 								</td>
 							</tr>
@@ -270,9 +270,9 @@
 				</table>
 			</div>
 		{:else}
-			<p class="py-4 text-[13.5px] text-soft">Nothing yet.</p>
+			<p class="py-4 text-sm text-soft">Nothing yet.</p>
 		{/if}
-		<p class="mt-4 text-[12px] text-fade">
+		<p class="mt-4 text-xs text-fade">
 			Refunds follow the <a href="/refund-policy" class="underline">guide refund policy</a>.
 			Duplicate charges and unopened guides are refunded automatically. A refund comes off the
 			teacher’s next statement and their lifetime copies.

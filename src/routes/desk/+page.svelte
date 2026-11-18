@@ -127,19 +127,19 @@
 	<title>Desk · Arcane Games</title>
 </svelte:head>
 
-{#snippet thumb(a, cls = 'w-[88px]')}
+{#snippet thumb(a, cls = 'w-22')}
 	<span class="relative block aspect-video shrink-0 overflow-hidden bg-line {cls}">
 		{#if img(a)}
 			<img src={img(a)} alt="" loading="lazy" class="absolute inset-0 h-full w-full object-cover" />
 		{:else}
 			<span
-				class="absolute inset-0 flex items-center justify-center font-newsreader text-[20px] text-fade italic"
+				class="absolute inset-0 flex items-center justify-center font-newsreader text-xl text-fade italic"
 				aria-hidden="true">{(a.title || '?').charAt(0)}</span
 			>
 		{/if}
 		{#if a.videoProvider}
 			<span
-				class="absolute right-0 bottom-0 flex h-[18px] w-[18px] items-center justify-center bg-warm pl-[1px] text-[7px] text-white"
+				class="absolute right-0 bottom-0 flex h-4.5 w-4.5 items-center justify-center bg-warm pl-px text-xs text-white"
 				aria-label="Video">▶</span
 			>
 		{/if}
@@ -147,15 +147,15 @@
 {/snippet}
 
 {#snippet head(label, tone = 'text-warm', count = null, href = null)}
-	<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-		<h2 class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase">
-			<span class="text-[8px] {tone}" aria-hidden="true">◆</span>{label}
+	<div class="flex items-baseline justify-between gap-4 border-b-3 border-ink pb-2">
+		<h2 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+			<span class="text-xs {tone}" aria-hidden="true">◆</span>{label}
 			{#if count !== null}<span class="text-fade">{count}</span>{/if}
 		</h2>
 		{#if href}
 			<a
 				{href}
-				class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase transition-colors hover:text-warm"
+				class="text-xs font-extrabold tracking-widest text-fade uppercase transition-colors hover:text-warm"
 				>See all →</a
 			>
 		{/if}
@@ -174,16 +174,16 @@
 		onclick={createNew}
 		disabled={creating}
 		class="inline-flex items-center gap-2 bg-paper-bg font-extrabold text-ink uppercase transition-colors hover:bg-warm-light disabled:opacity-60 {compact
-			? 'min-h-[30px] px-3 text-[9.5px] tracking-[0.14em]'
-			: 'min-h-[44px] px-5 text-[10.5px] tracking-[0.16em]'}"
+			? 'min-h-8 px-3 text-xs tracking-widest'
+			: 'min-h-11 px-5 text-xs tracking-widest'}"
 	>
-		<span class="text-[15px] leading-none" aria-hidden="true">+</span>
+		<span class="text-base leading-none" aria-hidden="true">+</span>
 		{creating ? 'Creating…' : compact ? 'New' : 'New entry'}
 	</button>
 	{#if !compact}
 		<a
 			href="/desk/entries"
-			class="inline-flex min-h-[44px] items-center gap-2 border border-paper-bg/30 px-5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:border-paper-bg hover:bg-paper-bg/10"
+			class="inline-flex min-h-11 items-center gap-2 border border-paper-bg/30 px-5 text-xs font-extrabold tracking-widest uppercase transition-colors hover:border-paper-bg hover:bg-paper-bg/10"
 			>All entries <span aria-hidden="true">→</span></a
 		>
 	{/if}
@@ -200,29 +200,28 @@
 
 <!-- ============ needs your review (admins) ============ -->
 {#if reviewFirst}
-	<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 md:px-8 md:pt-8">
+	<div class="mx-auto w-full max-w-page px-5 pt-6 md:px-8 md:pt-8">
 		<section
-			class="border border-t-[3px] border-line2 border-t-hero-rb bg-white"
+			class="border border-t-3 border-line2 border-t-hero-rb bg-white"
 			aria-labelledby="review-title"
 		>
-			<div class="flex min-h-[42px] items-center gap-3 border-b border-line2 px-4">
+			<div class="flex min-h-11 items-center gap-3 border-b border-line2 px-4">
 				<h2
 					id="review-title"
-					class="flex shrink-0 items-center gap-2 text-[10px] font-extrabold tracking-[0.2em] text-hero-rb uppercase"
+					class="flex shrink-0 items-center gap-2 text-xs font-extrabold tracking-widest text-hero-rb uppercase"
 				>
-					<span class="text-[8px]" aria-hidden="true">◆</span> Needs your review
-					<span
-						class="bg-hero-rb px-1.5 py-[1px] text-[10px] tracking-normal text-white tabular-nums"
+					<span class="text-xs" aria-hidden="true">◆</span> Needs your review
+					<span class="bg-hero-rb px-1.5 py-px text-xs tracking-normal text-white tabular-nums"
 						>{pendingCount}</span
 					>
 				</h2>
-				<p class="hidden min-w-0 truncate text-[12.5px] text-fade md:block">
+				<p class="hidden min-w-0 truncate text-xs text-fade md:block">
 					Nothing changes on the site until you approve.
 				</p>
 				{#if pendingCount > 3}
 					<a
 						href="/desk/entries?status=pending"
-						class="ml-auto shrink-0 text-[9.5px] font-extrabold tracking-[0.16em] text-hero-rb uppercase transition-colors hover:text-ink"
+						class="ml-auto shrink-0 text-xs font-extrabold tracking-widest text-hero-rb uppercase transition-colors hover:text-ink"
 						>See all →</a
 					>
 				{/if}
@@ -232,14 +231,14 @@
 					<li>
 						<a
 							href="/desk/entries/{a.id}?review"
-							class="group flex items-center gap-3 px-4 py-2 transition-colors hover:bg-hero-rb/[0.04]"
+							class="group flex items-center gap-3 px-4 py-2 transition-colors hover:bg-hero-rb/5"
 						>
 							<span class="min-w-0 flex-1 md:flex md:items-baseline md:gap-3">
 								<span
-									class="block truncate font-newsreader text-[16px] leading-snug font-semibold md:min-w-0 md:flex-1"
+									class="block truncate font-newsreader text-base leading-snug font-semibold md:min-w-0 md:flex-1"
 									>{a.title}</span
 								>
-								<span class="block shrink-0 truncate text-[11.5px] text-fade">
+								<span class="block shrink-0 truncate text-xs text-fade">
 									{[
 										data.seeAll && author(a),
 										`Edited ${ago(a.draftUpdatedAt)}`,
@@ -250,7 +249,7 @@
 								</span>
 							</span>
 							<span
-								class="inline-flex min-h-[32px] shrink-0 items-center gap-1.5 bg-hero-rb px-3 text-[9.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] group-hover:brightness-110"
+								class="inline-flex min-h-8 shrink-0 items-center gap-1.5 bg-hero-rb px-3 text-xs font-extrabold tracking-widest text-white uppercase transition group-hover:brightness-110"
 								>Review <span aria-hidden="true">→</span></span
 							>
 						</a>
@@ -262,7 +261,7 @@
 {/if}
 
 <!-- ============ figures ============ -->
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 md:px-8 md:pt-10">
+<div class="mx-auto w-full max-w-page px-5 pt-8 md:px-8 md:pt-10">
 	<dl class="grid grid-cols-2 border-y border-line2 md:grid-cols-4">
 		{#each [{ k: 'On your desk', v: draftCount, href: '/desk/entries?status=draft' }, { k: 'Scheduled', v: scheduledCount, href: '/desk/entries?status=scheduled' }, { k: 'Published this month', v: data.publishedThisMonth, href: '/desk/entries?status=published' }] as s, i (s.k)}
 			<a
@@ -273,27 +272,27 @@
 					? 'border-t !border-l-0 !pl-0 md:border-t-0 md:!border-l md:!pl-4'
 					: ''}"
 			>
-				<dd class="ao-cond text-[32px] leading-none font-black tabular-nums">{s.v}</dd>
+				<dd class="ao-cond text-3xl leading-none font-black tabular-nums">{s.v}</dd>
 				<dt
-					class="text-[9px] leading-tight font-extrabold tracking-[0.16em] text-fade uppercase transition-colors group-hover:text-ink"
+					class="text-xs leading-tight font-extrabold tracking-widest text-fade uppercase transition-colors group-hover:text-ink"
 				>
 					{s.k}
 				</dt>
 			</a>
 		{/each}
 		<div class="flex items-center gap-3 border-t border-l border-line2 py-3.5 pl-4 md:border-t-0">
-			<dd class="ao-cond text-[32px] leading-none font-black text-[#2563eb] tabular-nums">
+			<dd class="ao-cond text-3xl leading-none font-black text-blue-600 tabular-nums">
 				{fmt(data.reads.total)}
 			</dd>
 			<dt
-				class="text-[9px] leading-tight font-extrabold tracking-[0.16em] whitespace-nowrap text-fade uppercase"
+				class="text-xs leading-tight font-extrabold tracking-widest whitespace-nowrap text-fade uppercase"
 			>
 				Views<br />30 days
 			</dt>
 			{#if spark && data.reads.total}
 				<svg
 					viewBox="0 0 {spark.W} {spark.H}"
-					class="ml-auto h-6 w-[72px] md:w-[88px]"
+					class="ml-auto h-6 w-18 md:w-22"
 					preserveAspectRatio="none"
 					aria-hidden="true"
 				>
@@ -305,7 +304,7 @@
 	</dl>
 </div>
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-10 pb-12 md:px-8 md:pt-12">
+<div class="mx-auto w-full max-w-page px-5 pt-10 pb-12 md:px-8 md:pt-12">
 	<div class="grid gap-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
 		<!-- ============ main column ============ -->
 		<div class="min-w-0 space-y-12">
@@ -315,56 +314,56 @@
 				{#if lead}
 					<a
 						href="/desk/entries/{lead.id}"
-						class="group mt-5 grid gap-5 border-[3px] border-double border-ink bg-paper p-4 transition-colors hover:bg-paper-bg sm:grid-cols-[240px_minmax(0,1fr)] md:p-5"
+						class="group mt-5 grid gap-5 border-3 border-double border-ink bg-paper p-4 transition-colors hover:bg-paper-bg sm:grid-cols-[240px_minmax(0,1fr)] md:p-5"
 					>
 						{@render thumb(lead, 'w-full')}
 						<span class="flex min-w-0 flex-col">
 							<span class="flex flex-wrap items-center gap-1.5">
 								<span
-									class="border border-ink/60 px-1.5 py-[1px] text-[8.5px] font-extrabold tracking-[0.14em] uppercase"
+									class="border border-ink/60 px-1.5 py-px text-xs font-extrabold tracking-widest uppercase"
 									>Draft</span
 								>
 								{#if lead.accessMode === 'premium'}
 									<span
-										class="border border-prem px-1.5 py-[1px] text-[8.5px] font-extrabold tracking-[0.14em] text-prem uppercase"
+										class="border border-prem px-1.5 py-px text-xs font-extrabold tracking-widest text-prem uppercase"
 										>◆ Premium</span
 									>
 								{/if}
-								<span class="text-[11.5px] text-fade">Edited {ago(lead.updatedAt)}</span>
+								<span class="text-xs text-fade">Edited {ago(lead.updatedAt)}</span>
 							</span>
 							<span
-								class="mt-2 line-clamp-2 font-newsreader text-[26px] leading-[1.08] font-semibold tracking-[-0.01em] md:text-[30px]"
+								class="mt-2 line-clamp-2 font-newsreader text-2xl leading-none font-semibold tracking-normal md:text-3xl"
 								>{lead.title || 'Untitled'}</span
 							>
 							{#if lead.excerpt}
 								<span
-									class="mt-2 line-clamp-2 font-newsreader text-[15.5px] leading-[1.5] text-soft italic"
+									class="mt-2 line-clamp-2 font-newsreader text-base leading-normal text-soft italic"
 									>{lead.excerpt}</span
 								>
 							{/if}
 							<span class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
-								<span class="text-[12px] text-soft">
+								<span class="text-xs text-soft">
 									{[data.seeAll && author(lead), lead.readTime ? `${lead.readTime} min read` : null]
 										.filter(Boolean)
 										.join(' · ')}
 								</span>
 								<span
-									class="inline-flex min-h-[42px] items-center gap-2 bg-ink px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors group-hover:bg-warm"
+									class="inline-flex min-h-11 items-center gap-2 bg-ink px-5 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors group-hover:bg-warm"
 									>Continue writing <span aria-hidden="true">→</span></span
 								>
 							</span>
 						</span>
 					</a>
 				{:else}
-					<div class="mt-5 border-[3px] border-double border-ink bg-paper px-6 py-10 text-center">
-						<p class="font-newsreader text-[26px] font-semibold">Your desk is clear.</p>
-						<p class="mx-auto mt-2 max-w-[380px] font-newsreader text-[16px] text-soft">
+					<div class="mt-5 border-3 border-double border-ink bg-paper px-6 py-10 text-center">
+						<p class="font-newsreader text-2xl font-semibold">Your desk is clear.</p>
+						<p class="mx-auto mt-2 max-w-sm font-newsreader text-base text-soft">
 							No drafts in progress. Start something new and it will wait for you here.
 						</p>
 						<button
 							type="button"
 							onclick={createNew}
-							class="mt-5 inline-flex min-h-[46px] items-center gap-2 bg-ink px-6 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm"
+							class="mt-5 inline-flex min-h-12 items-center gap-2 bg-ink px-6 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm"
 							>+ New entry</button
 						>
 					</div>
@@ -385,20 +384,20 @@
 							<li class="border-b border-line2">
 								<a
 									href="/desk/entries/{a.id}"
-									class="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-l-[3px] border-hero-rb py-3 pl-4 transition-colors hover:bg-paper"
+									class="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-l-3 border-hero-rb py-3 pl-4 transition-colors hover:bg-paper"
 								>
 									<span class="min-w-0">
-										<span class="block truncate font-newsreader text-[17.5px] font-semibold"
+										<span class="block truncate font-newsreader text-lg font-semibold"
 											>{a.title}</span
 										>
-										<span class="block text-[12px] text-soft">
+										<span class="block text-xs text-soft">
 											{[data.seeAll && author(a), `Edits ${ago(a.draftUpdatedAt)}`]
 												.filter(Boolean)
 												.join(' · ')}
 										</span>
 									</span>
 									<span
-										class="text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap text-fade uppercase"
+										class="text-xs font-extrabold tracking-widest whitespace-nowrap text-fade uppercase"
 										>Pending</span
 									>
 								</a>
@@ -412,7 +411,7 @@
 			{#if data.longSummaries.length}
 				<section>
 					{@render head('Summaries to shorten', 'text-gold', data.longSummaries.length)}
-					<p class="mt-2 text-[12.5px] text-soft">
+					<p class="mt-2 text-xs text-soft">
 						Summaries now fit on one line of a card ({EXCERPT_MAX} characters). These run over.
 					</p>
 					<ol class="mt-2">
@@ -420,13 +419,12 @@
 							<li class="border-b border-line2">
 								<a
 									href="/desk/entries/{a.id}"
-									class="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-l-[3px] border-gold py-3 pl-4 transition-colors hover:bg-paper"
+									class="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-l-3 border-gold py-3 pl-4 transition-colors hover:bg-paper"
 								>
-									<span class="block truncate font-newsreader text-[17.5px] font-semibold"
-										>{a.title}</span
+									<span class="block truncate font-newsreader text-lg font-semibold">{a.title}</span
 									>
 									<span
-										class="text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap text-fade uppercase tabular-nums"
+										class="text-xs font-extrabold tracking-widest whitespace-nowrap text-fade uppercase tabular-nums"
 										>{a.over} over</span
 									>
 								</a>
@@ -437,7 +435,7 @@
 						<button
 							type="button"
 							onclick={() => (showAllLong = !showAllLong)}
-							class="mt-3 text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase hover:text-ink"
+							class="mt-3 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 							>{showAllLong ? 'Show fewer' : `Show all ${data.longSummaries.length}`}</button
 						>
 					{/if}
@@ -460,19 +458,19 @@
 									href="/desk/entries/{a.id}"
 									class="group flex items-center gap-4 py-3 transition-colors hover:bg-paper"
 								>
-									{@render thumb(a, 'w-[80px]')}
+									{@render thumb(a, 'w-20')}
 									<span class="min-w-0 flex-1">
-										<span class="block truncate font-newsreader text-[17.5px] font-semibold">
+										<span class="block truncate font-newsreader text-lg font-semibold">
 											<span class="fp-ul">{a.title || 'Untitled'}</span>
 										</span>
-										<span class="block text-[12px] text-soft">
+										<span class="block text-xs text-soft">
 											{[data.seeAll && author(a), `Edited ${ago(a.updatedAt)}`]
 												.filter(Boolean)
 												.join(' · ')}
 										</span>
 									</span>
 									<span
-										class="text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase transition-transform group-hover:translate-x-0.5"
+										class="text-xs font-extrabold tracking-widest text-warm uppercase transition-transform group-hover:translate-x-0.5"
 										>Edit →</span
 									>
 								</a>
@@ -494,12 +492,12 @@
 						{#each data.published as a (a.id)}
 							<li class="flex items-center gap-4 border-b border-line2 py-3">
 								<a href="/desk/entries/{a.id}" class="group flex min-w-0 flex-1 items-center gap-4">
-									{@render thumb(a, 'w-[80px]')}
+									{@render thumb(a, 'w-20')}
 									<span class="min-w-0 flex-1">
-										<span class="block truncate font-newsreader text-[17.5px] font-semibold">
+										<span class="block truncate font-newsreader text-lg font-semibold">
 											<span class="fp-ul">{a.title}</span>
 										</span>
-										<span class="block text-[12px] text-soft">
+										<span class="block text-xs text-soft">
 											{[
 												data.seeAll && author(a),
 												`Published ${ago(a.publishedAt || a.scheduledFor)}`,
@@ -514,14 +512,14 @@
 									href="/library/{a.slug}"
 									target="_blank"
 									rel="noopener"
-									class="shrink-0 text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase transition-colors hover:text-warm"
+									class="shrink-0 text-xs font-extrabold tracking-widest text-fade uppercase transition-colors hover:text-warm"
 									title="View on the site">Live ↗</a
 								>
 							</li>
 						{/each}
 					</ol>
 				{:else}
-					<p class="py-5 font-newsreader text-[15.5px] text-soft italic">Nothing published yet.</p>
+					<p class="py-5 font-newsreader text-base text-soft italic">Nothing published yet.</p>
 				{/if}
 			</section>
 		</div>
@@ -545,22 +543,20 @@
 									href="/desk/entries/{a.id}"
 									class="group grid grid-cols-[52px_minmax(0,1fr)] items-center gap-3.5 py-3 transition-colors hover:bg-paper"
 								>
-									<span
-										class="flex flex-col items-center border-t-[3px] border-gold bg-paper py-1.5"
-									>
-										<span class="text-[8.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+									<span class="flex flex-col items-center border-t-3 border-gold bg-paper py-1.5">
+										<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 											>{d.mon}</span
 										>
-										<span class="ao-cond text-[26px] leading-[0.95] font-black tabular-nums"
+										<span class="ao-cond text-2xl leading-none font-black tabular-nums"
 											>{d.day}</span
 										>
 									</span>
 									<span class="min-w-0">
-										<span class="block truncate font-newsreader text-[16.5px] font-semibold"
+										<span class="block truncate font-newsreader text-base font-semibold"
 											>{a.title}</span
 										>
-										<span class="block text-[11.5px] text-soft">
-											<span class="font-semibold text-[#8a6116]">{until(a.scheduledFor)}</span> · {d.time}
+										<span class="block text-xs text-soft">
+											<span class="font-semibold text-gold-deep">{until(a.scheduledFor)}</span> · {d.time}
 										</span>
 									</span>
 								</a>
@@ -568,7 +564,7 @@
 						{/each}
 					</ol>
 				{:else}
-					<p class="py-5 font-newsreader text-[15.5px] text-soft italic">
+					<p class="py-5 font-newsreader text-base text-soft italic">
 						Nothing scheduled. Pieces you schedule will count down here.
 					</p>
 				{/if}
@@ -585,19 +581,19 @@
 									href="/desk/analytics/{t.id}"
 									class="group grid grid-cols-[28px_minmax(0,1fr)] gap-3"
 								>
-									<span class="ao-cond text-[26px] leading-none font-black text-warm tabular-nums"
+									<span class="ao-cond text-2xl leading-none font-black text-warm tabular-nums"
 										>{i + 1}</span
 									>
 									<span class="min-w-0">
 										<span
-											class="block truncate font-newsreader text-[16px] font-semibold group-hover:text-warm"
+											class="block truncate font-newsreader text-base font-semibold group-hover:text-warm"
 											>{t.title}</span
 										>
-										<span class="mt-1.5 block h-[4px] bg-line" aria-hidden="true">
+										<span class="mt-1.5 block h-1 bg-line" aria-hidden="true">
 											<span class="block h-full bg-warm" style="width: {(t.views / topMax) * 100}%;"
 											></span>
 										</span>
-										<span class="mt-1 flex justify-between text-[11px] text-soft tabular-nums">
+										<span class="mt-1 flex justify-between text-xs text-soft tabular-nums">
 											<span><span class="font-semibold text-ink">{fmt(t.views)}</span> views</span>
 											{#if t.finishRate !== null}<span>{t.finishRate}% finish</span>{/if}
 										</span>
@@ -607,7 +603,7 @@
 						{/each}
 					</ol>
 				{:else}
-					<p class="py-5 font-newsreader text-[15.5px] text-soft italic">
+					<p class="py-5 font-newsreader text-base text-soft italic">
 						No views recorded in the last 30 days yet.
 					</p>
 				{/if}

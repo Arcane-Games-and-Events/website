@@ -90,11 +90,11 @@
 			aria-hidden="true"
 		></div>
 		<div
-			class="relative mx-auto grid w-full max-w-[1200px] grid-cols-[minmax(0,1fr)] gap-10 px-5 py-12 md:px-8 md:py-16 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end lg:gap-14"
+			class="relative mx-auto grid w-full max-w-page grid-cols-1 gap-10 px-5 py-12 md:px-8 md:py-16 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end lg:gap-14"
 		>
 			<div class="min-w-0">
 				<p
-					class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-extrabold tracking-[0.3em] uppercase"
+					class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-extrabold tracking-widest uppercase"
 				>
 					<span class="bg-warm px-2 py-1 text-white">Season ’26</span>
 					<span class="text-paper-bg/70">{circuitLine}</span>
@@ -106,11 +106,11 @@
 						width="629"
 						height="294"
 						loading="lazy"
-						class="h-auto w-[260px] md:w-[380px]"
+						class="h-auto w-65 md:w-95"
 					/>
 				</a>
 				<p
-					class="mt-5 max-w-[500px] font-newsreader text-[17px] leading-[1.5] text-paper-bg/75 italic md:text-[19px]"
+					class="mt-5 max-w-lg font-newsreader text-lg leading-normal text-paper-bg/75 italic md:text-xl"
 				>
 					The premier independent Flesh and Blood circuit. Step up against the best players in your
 					region, climb the leaderboard, and claim your seat at the AGE Player’s Championship. The
@@ -124,12 +124,10 @@
 								: ''} {i === 2 ? 'sm:border-l sm:border-paper-bg/15 sm:pl-4' : ''}"
 						>
 							<dt class="sr-only">{s.l}</dt>
-							<dd class="ao-cond text-[40px] leading-none font-black tabular-nums md:text-[46px]">
+							<dd class="ao-cond text-4xl leading-none font-black tabular-nums md:text-5xl">
 								{s.n}
 							</dd>
-							<dd
-								class="mt-2 text-[9px] font-extrabold tracking-[0.2em] text-paper-bg/55 uppercase"
-							>
+							<dd class="mt-2 text-xs font-extrabold tracking-widest text-paper-bg/55 uppercase">
 								{s.l}
 							</dd>
 						</div>
@@ -138,12 +136,12 @@
 				<div class="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
 					<a
 						href="/ageopen?tab=events"
-						class="inline-flex items-center bg-warm px-5 py-3 text-[10.5px] font-extrabold tracking-[0.18em] text-white uppercase transition-colors hover:bg-white hover:text-ink"
+						class="inline-flex items-center bg-warm px-5 py-3 text-xs font-extrabold tracking-widest text-white uppercase transition-colors hover:bg-white hover:text-ink"
 						>Find an event</a
 					>
 					<a
 						href="/ageopen"
-						class="border-b-2 border-warm-light pb-1 text-[10.5px] font-extrabold tracking-[0.18em] uppercase transition-[letter-spacing] hover:tracking-[0.26em]"
+						class="border-b-2 border-warm-light pb-1 text-xs font-extrabold tracking-wider uppercase transition-[letter-spacing] hover:tracking-widest"
 						>The series →</a
 					>
 				</div>
@@ -153,17 +151,17 @@
 			{#if next}
 				<a
 					href={next.href}
-					class="group relative block rotate-[1.5deg] transition-transform duration-700 ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:rotate-0"
+					class="group relative block rotate-2 transition-transform duration-700 ease-out hover:rotate-0"
 					style="filter: drop-shadow(0 24px 30px rgba(0,0,0,0.55));"
 				>
 					<span class="grid grid-cols-[1fr_84px] bg-paper-bg text-ink">
 						<span class="block min-w-0">
-							<span class="relative block aspect-[16/7] overflow-hidden bg-ink">
+							<span class="relative block aspect-16/7 overflow-hidden bg-ink">
 								<img
 									src={next.image}
 									alt=""
 									loading="lazy"
-									class="absolute inset-0 h-full w-full object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.04]"
+									class="absolute inset-0 h-full w-full object-cover transition-transform duration-1400 ease-out group-hover:scale-105"
 								/>
 								<span
 									class="absolute inset-0"
@@ -173,31 +171,31 @@
 									aria-hidden="true"
 								></span>
 								<span
-									class="absolute bottom-3 left-4 text-[9.5px] font-extrabold tracking-[0.22em] text-white uppercase"
+									class="absolute bottom-3 left-4 text-xs font-extrabold tracking-widest text-white uppercase"
 									>◆ Next up · {next.circuitName}</span
 								>
 							</span>
 							<span class="block px-5 pt-4 pb-5">
-								<span class="ao-cond block text-[30px] leading-[0.95] font-black uppercase"
+								<span class="ao-cond block text-3xl leading-none font-black uppercase"
 									>{next.title}</span
 								>
 								<span class="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5"
 									>{#if next.format}<FormatTag format={next.format} />{/if}<span
-										class="text-[11px] font-semibold text-fade">{next.weekday} · {next.venue}</span
+										class="text-xs font-semibold text-fade">{next.weekday} · {next.venue}</span
 									></span
 								>
 								<span
 									class="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4"
 								>
 									<span class="flex items-baseline gap-2">
-										<span class="ao-cond text-[28px] leading-none font-black">{next.price}</span>
+										<span class="ao-cond text-3xl leading-none font-black">{next.price}</span>
 										{#if next.premiumDiscount}<span
-												class="text-[9px] font-extrabold tracking-[0.14em] text-prem uppercase"
+												class="text-xs font-extrabold tracking-widest text-prem uppercase"
 												>Members save $5</span
 											>{/if}
 									</span>
 									<span
-										class="inline-flex items-center bg-warm px-4 py-2.5 text-[10px] font-extrabold tracking-[0.16em] text-white uppercase transition-colors group-hover:bg-ink"
+										class="inline-flex items-center bg-warm px-4 py-2.5 text-xs font-extrabold tracking-widest text-white uppercase transition-colors group-hover:bg-ink"
 										>Sign up →</span
 									>
 								</span>
@@ -209,19 +207,19 @@
 							<span class="ao-perf absolute inset-y-2 left-0 w-px text-line2" aria-hidden="true"
 							></span>
 							<span
-								class="text-[8px] font-extrabold tracking-[0.24em] text-fade uppercase [writing-mode:vertical-rl]"
+								class="text-xs font-extrabold tracking-widest text-fade uppercase [writing-mode:vertical-rl]"
 								>Admit one</span
 							>
 							<span>
 								<span
-									class="block text-[10px] font-extrabold tracking-[0.18em] uppercase"
+									class="block text-xs font-extrabold tracking-widest uppercase"
 									style="color: {cc(next.color)};">{next.month}</span
 								>
-								<span class="ao-cond block text-[44px] leading-[0.85] font-black tabular-nums"
+								<span class="ao-cond block text-5xl leading-none font-black tabular-nums"
 									>{next.day}</span
 								>
 							</span>
-							<span class="text-[8.5px] font-extrabold tracking-[0.12em] text-warm uppercase"
+							<span class="text-xs font-extrabold tracking-widest text-warm uppercase"
 								>{countdown(next.daysUntil)}</span
 							>
 						</span>
@@ -231,7 +229,7 @@
 		</div>
 	</div>
 
-	<div class="mx-auto w-full max-w-[1200px] px-5 md:px-8">
+	<div class="mx-auto w-full max-w-page px-5 md:px-8">
 		<!-- ============ the next events as tickets ============ -->
 		{#if later.length}
 			<ul class="mt-8 grid gap-4 md:mt-10 md:grid-cols-2 md:gap-5">
@@ -246,27 +244,25 @@
 								style="background: color-mix(in srgb, {cc(e.color)} 10%, var(--ed-paper));"
 							>
 								<span
-									class="text-[10px] font-extrabold tracking-[0.18em] uppercase"
+									class="text-xs font-extrabold tracking-widest uppercase"
 									style="color: {cc(e.color)};">{e.month}</span
 								>
-								<span class="ao-cond text-[46px] leading-[0.85] font-black tabular-nums"
-									>{e.day}</span
-								>
+								<span class="ao-cond text-5xl leading-none font-black tabular-nums">{e.day}</span>
 								<span class="ao-perf absolute inset-y-2 right-0 w-px text-line2" aria-hidden="true"
 								></span>
 							</span>
 							<span class="flex min-w-0 flex-col justify-center px-4 py-4 md:px-5">
 								<span class="flex flex-wrap items-center gap-x-3 gap-y-1">
 									<span
-										class="text-[9.5px] font-extrabold tracking-[0.2em] uppercase"
+										class="text-xs font-extrabold tracking-widest uppercase"
 										style="color: {cc(e.color)};">{e.circuitName}</span
 									>
 									{#if e.daysUntil != null}
 										<span
-											class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+											class="inline-flex items-center gap-1.5 text-xs font-extrabold tracking-widest text-fade uppercase"
 										>
 											<span
-												class="h-[6px] w-[6px] animate-pulse-dot rounded-full"
+												class="h-1.5 w-1.5 animate-pulse-dot rounded-full"
 												style="background: {cc(e.color)};"
 												aria-hidden="true"
 											></span>
@@ -274,18 +270,16 @@
 										</span>
 									{/if}
 								</span>
-								<span class="ao-cond mt-1 block text-[26px] leading-[0.95] font-black uppercase"
+								<span class="ao-cond mt-1 block text-2xl leading-none font-black uppercase"
 									>{e.title}</span
 								>
 								<span class="mt-1.5 flex items-center justify-between gap-3">
 									<span class="flex min-w-0 items-center gap-2"
 										>{#if e.format}<FormatTag format={e.format} size="sm" short />{/if}<span
-											class="truncate text-[11px] font-semibold text-fade"
-											>{e.weekday} · {e.venue}</span
+											class="truncate text-xs font-semibold text-fade">{e.weekday} · {e.venue}</span
 										></span
 									>
-									<span
-										class="shrink-0 text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase"
+									<span class="shrink-0 text-xs font-extrabold tracking-widest text-warm uppercase"
 										>{e.price} · Sign up →</span
 									>
 								</span>
@@ -305,13 +299,13 @@
 							type="button"
 							onclick={(e) => openModal(c.name, e)}
 							aria-haspopup="dialog"
-							class="group relative block aspect-[3/4] w-full overflow-hidden bg-ink text-left text-paper-bg"
+							class="group relative block aspect-3/4 w-full overflow-hidden bg-ink text-left text-paper-bg"
 						>
 							<img
 								src={c.image}
 								alt=""
 								loading="lazy"
-								class="absolute inset-0 h-full w-full object-cover grayscale transition-[filter,scale] duration-[1400ms] ease-out group-hover:scale-[1.04] group-hover:grayscale-0"
+								class="absolute inset-0 h-full w-full object-cover grayscale transition duration-1400 ease-out group-hover:scale-105 group-hover:grayscale-0"
 							/>
 							<span
 								class="absolute inset-0 mix-blend-multiply"
@@ -324,21 +318,19 @@
 								aria-hidden="true"
 							></span>
 							<span
-								class="ao-cond absolute top-2 left-3 text-[56px] leading-none font-black text-white/20 md:text-[76px]"
+								class="ao-cond absolute top-2 left-3 text-6xl leading-none font-black text-white/20 md:text-7xl"
 								aria-hidden="true">{c.abbreviation}</span
 							>
 							<span class="absolute inset-x-0 bottom-0 p-3 md:p-4">
 								<span
-									class="hidden text-[8.5px] font-extrabold tracking-[0.2em] text-paper-bg/75 uppercase md:block"
+									class="hidden text-xs font-extrabold tracking-widest text-paper-bg/75 uppercase md:block"
 									>{c.region}</span
 								>
-								<span
-									class="ao-cond block text-[24px] leading-[0.85] font-black uppercase md:text-[32px]"
+								<span class="ao-cond block text-2xl leading-none font-black uppercase md:text-3xl"
 									>{c.name}</span
 								>
 								{#if c.next}
-									<span
-										class="mt-2 block text-[9.5px] font-semibold text-paper-bg/80 md:text-[10.5px]"
+									<span class="mt-2 block text-xs font-semibold text-paper-bg/80"
 										>Next: {c.next.month} {c.next.day}</span
 									>
 								{/if}
@@ -349,11 +341,11 @@
 			</ul>
 
 			<div>
-				<div class="flex items-end justify-between gap-4 border-b-[3px] border-ink pb-2">
-					<p class="ao-cond text-[34px] leading-[0.85] font-black uppercase">Leaders</p>
+				<div class="flex items-end justify-between gap-4 border-b-3 border-ink pb-2">
+					<p class="ao-cond text-4xl leading-none font-black uppercase">Leaders</p>
 					<a
 						href="/ageopen?tab=standings"
-						class="pb-0.5 text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap uppercase transition-colors hover:text-warm"
+						class="pb-0.5 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors hover:text-warm"
 						>Standings →</a
 					>
 				</div>
@@ -362,19 +354,18 @@
 						<li class="border-b border-line">
 							<a href={l.href} class="group grid grid-cols-[40px_1fr_auto] items-center gap-3 py-3">
 								<span
-									class="ao-cond text-[36px] leading-none font-black tabular-nums {i === 0
+									class="ao-cond text-4xl leading-none font-black tabular-nums {i === 0
 										? 'text-gold'
 										: 'text-fade/60'}">{i + 1}</span
 								>
-								<span class="truncate font-newsreader text-[18px] font-semibold"
+								<span class="truncate font-newsreader text-lg font-semibold"
 									><span class="fp-ul">{l.name}</span></span
 								>
 								<span class="text-right">
-									<span class="ao-cond block text-[28px] leading-none font-black tabular-nums"
+									<span class="ao-cond block text-3xl leading-none font-black tabular-nums"
 										>{l.points}</span
 									>
-									<span class="text-[8px] font-extrabold tracking-[0.2em] text-fade uppercase"
-										>pts</span
+									<span class="text-xs font-extrabold tracking-widest text-fade uppercase">pts</span
 									>
 								</span>
 							</a>
@@ -383,7 +374,7 @@
 					<li>
 						<a
 							href="/ageopen?tab=events"
-							class="flex items-center justify-between py-3 text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase transition-colors hover:text-ink"
+							class="flex items-center justify-between py-3 text-xs font-extrabold tracking-widest text-warm uppercase transition-colors hover:text-ink"
 						>
 							<span>Your name here</span><span aria-hidden="true">→</span>
 						</a>

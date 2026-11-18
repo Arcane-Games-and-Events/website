@@ -60,7 +60,7 @@
 {#if form?.success}<AdminNotice tone="success" message={form.message} />{/if}
 {#if form?.error}<AdminNotice tone="error" message={form.error} />{/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-6 pb-20 md:px-8">
 	<Figures
 		items={[
 			{ label: 'Active', value: ui.fmt(data.byStatus.active || 0), tone: 'text-prem' },
@@ -113,7 +113,7 @@
 						min="1"
 						max="366"
 						value="30"
-						class="{ui.selectSm} w-[70px]"
+						class="{ui.selectSm} w-18"
 					/><button class={ui.ghostSm} disabled={!!busy}>Extend</button>
 				</form>
 				<form method="POST" action="?/hold" use:enhance={enh(m.id)}>
@@ -156,7 +156,7 @@
 		>
 			<ul class="border-t border-line2">
 				{#each data.stuck as inv (inv.id)}
-					<li class="border-b border-line2 py-3 text-[13px]">
+					<li class="border-b border-line2 py-3 text-sm">
 						<span class="font-semibold">{inv.email}</span> · {inv.invoiceNumber} · {cents(
 							inv.amountCents
 						)} · {inv.status} since {ui.dateTime(inv.lastAttemptAt || inv.updatedAt)}{inv.lastError
@@ -225,7 +225,7 @@
 
 	<Section title="Billing runs" class="mt-10" note="hourly at :15">
 		{#if data.runs.length === 0}<p class={ui.empty}>No runs yet.</p>{:else}
-			<ul class="border-t border-line2 text-[12.5px]">
+			<ul class="border-t border-line2 text-xs">
 				{#each data.runs as r (r.id)}
 					<li class="grid gap-1 border-b border-line2 py-2 md:grid-cols-[160px_80px_minmax(0,1fr)]">
 						<span class="tabular-nums">{ui.dateTime(r.startedAt)}</span>

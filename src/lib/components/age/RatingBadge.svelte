@@ -10,7 +10,7 @@
 	/** @type {{ rating: number | null | undefined, label: string, hex: string, provisional?: boolean, size?: 'sm' | 'md' | 'lg' }} */
 	let { rating, label, hex, provisional = false, size = 'sm' } = $props();
 
-	const W = { sm: 'w-[36px]', md: 'w-[42px]', lg: 'w-[64px]' };
+	const W = { sm: 'w-9', md: 'w-11', lg: 'w-16' };
 </script>
 
 {#if rating != null}

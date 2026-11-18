@@ -51,7 +51,7 @@
 </script>
 
 {#if !p}
-	<p class="font-newsreader text-[17px] text-soft italic">The projection couldn't be loaded.</p>
+	<p class="font-newsreader text-lg text-soft italic">The projection couldn't be loaded.</p>
 {:else if !p.available}
 	<Migration />
 {:else}
@@ -116,19 +116,19 @@
 						{/if}
 					{/each}
 				</svg>
-				<ul class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-soft">
+				<ul class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-soft">
 					{#each lines as l (l.key)}
 						<li class="flex items-center gap-1.5">
-							<span class="inline-block h-[3px] w-4" style="background: {l.color};"></span>{l.key}
+							<span class="inline-block h-1 w-4" style="background: {l.color};"></span>{l.key}
 						</li>
 					{/each}
 				</ul>
 
 				<div class="mt-6 overflow-x-auto">
-					<table class="w-full text-[12.5px] tabular-nums">
+					<table class="w-full text-xs tabular-nums">
 						<thead>
 							<tr
-								class="border-b border-line2 text-left text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+								class="border-b border-line2 text-left text-xs font-extrabold tracking-widest text-fade uppercase"
 							>
 								<th class="py-2 pr-3 font-extrabold">Scenario</th>
 								<th class="py-2 pr-3 text-right font-extrabold">3 months</th>
@@ -175,7 +175,7 @@
 			<Section title="What if" tone="text-gold" class="mt-14">
 				<div class="grid gap-4 sm:grid-cols-2">
 					<label class="block">
-						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+						<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 							>Churn per month, %</span
 						>
 						<input
@@ -185,11 +185,11 @@
 							step="0.1"
 							value={churn.toFixed(1)}
 							oninput={(e) => (churnInput = e.currentTarget.value)}
-							class="mt-1.5 h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] tabular-nums focus:border-ink focus:ring-0"
+							class="mt-1.5 h-10 w-full border border-line2 bg-paper px-3 text-sm tabular-nums focus:border-ink focus:ring-0"
 						/>
 					</label>
 					<label class="block">
-						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+						<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 							>New paying members per month</span
 						>
 						<input
@@ -198,11 +198,11 @@
 							step="0.5"
 							value={adds}
 							oninput={(e) => (addsInput = e.currentTarget.value)}
-							class="mt-1.5 h-[40px] w-full border border-line2 bg-paper px-3 text-[14px] tabular-nums focus:border-ink focus:ring-0"
+							class="mt-1.5 h-10 w-full border border-line2 bg-paper px-3 text-sm tabular-nums focus:border-ink focus:ring-0"
 						/>
 					</label>
 				</div>
-				<p class="mt-3 text-[12.5px] text-soft">
+				<p class="mt-3 text-xs text-soft">
 					Each month: paying × (1 − churn) + new members. The dashed gold line and the “Your inputs”
 					row follow these numbers.
 				</p>
@@ -220,13 +220,13 @@
 						format={(n) => money(n)}
 					/>
 				{:else}
-					<p class="font-newsreader text-[16px] text-soft italic">
+					<p class="font-newsreader text-base text-soft italic">
 						No yearly renewals in the next 12 months.
 					</p>
 				{/if}
 			</Section>
 			<Section title="Assumptions" tone="text-soft" class="mt-10">
-				<ul class="space-y-2 text-[12.5px] text-soft">
+				<ul class="space-y-2 text-xs text-soft">
 					<li>Prices: $10 a month, $110 a year; a yearly plan counts as $9.17 of MRR.</li>
 					<li>
 						Churn and new members are averages of the last three full months ({p.window.from}–{p

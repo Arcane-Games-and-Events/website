@@ -171,7 +171,7 @@
 	<AdminNotice tone={notice.tone} message={notice.message} ondismiss={() => (notice = null)} />
 {/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-6 pb-20 md:px-8">
 	{#if rep}
 		<Figures
 			items={[
@@ -262,13 +262,13 @@
 								<span class="{ui.pill} {CLASS_TONE[r.classification] || ''}"
 									>{r.classification?.replaceAll('_', ' ')}</span
 								>
-								<span class="font-mono text-[12px] text-fade">ARB {r.arbId}</span>
+								<span class="font-mono text-xs text-fade">ARB {r.arbId}</span>
 								<span class={ui.note}>{r.arbStatus} · {plan(r)} · {cents(r.amountCents)}</span>
 								{#if r.decision}<span class={ui.note}
 										>· decision: <strong>{r.decision}</strong></span
 									>{/if}
 							</div>
-							<p class="mt-1 text-[13.5px]">
+							<p class="mt-1 text-sm">
 								{#if r.userId}
 									<a
 										href="/admin/customers/{r.userId}"
@@ -295,17 +295,17 @@
 									'—'}
 							</p>
 							{#if r.flags?.length}
-								<p class="mt-1 text-[12px] text-[#8a6116]">Flags: {r.flags.join(', ')}</p>
+								<p class="mt-1 text-xs text-gold-deep">Flags: {r.flags.join(', ')}</p>
 							{/if}
 							{#if r.chargesAfterCancel?.length}
-								<p class="mt-1 text-[12px] text-hero-rb">
+								<p class="mt-1 text-xs text-hero-rb">
 									{r.chargesAfterCancel.length} charge{r.chargesAfterCancel.length === 1 ? '' : 's'}
 									after the member stopped: {r.chargesAfterCancel
 										.map((c) => `${cents(c.amountCents)} on ${ui.dateShort(c.at)}`)
 										.join('; ')}
 								</p>
 							{/if}
-							{#if r.error}<p class="mt-1 text-[12px] font-semibold text-hero-rb">{r.error}</p>{/if}
+							{#if r.error}<p class="mt-1 text-xs font-semibold text-hero-rb">{r.error}</p>{/if}
 							{#if r.migratedAt}<p class="mt-1 {ui.note}">
 									Migrated {ui.dateTime(r.migratedAt)}{r.cancelledAt
 										? ` · ARB cancelled ${ui.dateTime(r.cancelledAt)}`
@@ -382,7 +382,7 @@
 										<input
 											type="text"
 											placeholder="user id to assign"
-											class="{ui.selectSm} w-[180px]"
+											class="{ui.selectSm} w-45"
 											bind:value={assignTo[r.arbId]}
 										/>
 										<button
@@ -431,12 +431,12 @@
 					<div class="bg-paper-bg px-4 py-3">
 						<p class={ui.label}>{k.replaceAll('_', ' ')}</p>
 						<p
-							class="mt-1 font-newsreader text-[18px] font-semibold tabular-nums {ok
+							class="mt-1 font-newsreader text-lg font-semibold tabular-nums {ok
 								? ''
 								: 'text-hero-rb'}"
 						>
 							{k === 'payment_sum' ? ui.money(v) : ui.fmt(v)}
-							<span class="text-[12px] text-fade"
+							<span class="text-xs text-fade"
 								>was {k === 'payment_sum' ? ui.money(before) : ui.fmt(before)}</span
 							>
 						</p>
@@ -449,7 +449,7 @@
 	{#if log.length}
 		<Section title="Log" class="mt-12">
 			<pre
-				class="max-h-[360px] overflow-auto border border-line2 bg-paper p-4 text-[12px] leading-relaxed">{log.join(
+				class="max-h-90 overflow-auto border border-line2 bg-paper p-4 text-xs leading-relaxed">{log.join(
 					'\n'
 				)}</pre>
 		</Section>

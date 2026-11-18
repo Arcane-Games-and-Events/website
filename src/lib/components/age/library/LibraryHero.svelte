@@ -44,7 +44,7 @@
 				alt=""
 				sizes={big ? '(min-width: 1024px) 700px, 100vw' : '(min-width: 1024px) 400px, 100vw'}
 				loading="eager"
-				class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+				class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
 			/>
 		{/if}
 		<span
@@ -53,29 +53,29 @@
 		></span>
 		{#if t.premium}
 			<span
-				class="absolute top-0 right-0 bg-prem px-2 py-1 font-libre text-[9.5px] font-extrabold tracking-[0.16em] text-white uppercase"
+				class="absolute top-0 right-0 bg-prem px-2 py-1 font-libre text-xs font-extrabold tracking-widest text-white uppercase"
 				>◆ Premium</span
 			>
 		{/if}
 		<span class="absolute inset-x-0 bottom-0 block text-white {big ? 'p-6 md:p-8' : 'p-4 md:p-5'}">
 			<span
-				class="flex items-center gap-2 font-libre text-[10px] font-extrabold tracking-[0.2em] uppercase"
+				class="flex items-center gap-2 font-libre text-xs font-extrabold tracking-widest uppercase"
 				><span class="bg-paper-bg px-2 py-1 text-warm">{t.verb}</span><span class="text-white/75"
 					>{t.what}</span
 				></span
 			>
 			<span
-				class="mt-2.5 block font-newsreader font-semibold tracking-[-0.02em] [text-wrap:balance] decoration-warm-light decoration-2 underline-offset-[5px] group-hover:underline {big
-					? 'text-[30px] leading-[1.04] md:text-[44px]'
-					: 'line-clamp-2 text-[20px] leading-[1.12]'}">{t.title}</span
+				class="mt-2.5 block font-newsreader font-semibold tracking-tight [text-wrap:balance] decoration-warm-light decoration-2 underline-offset-5 group-hover:underline {big
+					? 'text-3xl leading-none md:text-5xl'
+					: 'line-clamp-2 text-xl leading-none'}">{t.title}</span
 			>
 			{#if big && t.dek}
 				<span
-					class="mt-2 line-clamp-2 block max-w-[52ch] font-newsreader text-[17px] text-white/75 italic"
+					class="mt-2 line-clamp-2 block max-w-[52ch] font-newsreader text-lg text-white/75 italic"
 					>{t.dek}</span
 				>
 			{/if}
-			{#if t.note}<span class="mt-2 block font-libre text-[11px] font-semibold text-white/60"
+			{#if t.note}<span class="mt-2 block font-libre text-xs font-semibold text-white/60"
 					>{t.note}</span
 				>{/if}
 		</span>
@@ -84,30 +84,30 @@
 
 <section class="bg-paper-bg text-ink">
 	<div
-		class="mx-auto grid w-full max-w-[1200px] gap-4 px-5 pt-6 pb-10 md:px-8 md:pt-8 md:pb-14 lg:auto-rows-[200px] lg:grid-cols-12 lg:gap-5"
+		class="mx-auto grid w-full max-w-page gap-4 px-5 pt-6 pb-10 md:px-8 md:pt-8 md:pb-14 lg:auto-rows-[200px] lg:grid-cols-12 lg:gap-5"
 	>
 		<!-- the masthead tile -->
 		<div
 			class="fp-rise relative flex flex-col justify-between overflow-hidden bg-warm-deep p-6 text-white md:p-8 lg:col-span-5 lg:row-span-2"
 		>
 			<div
-				class="pointer-events-none absolute -top-40 -left-40 h-[420px] w-[520px] bg-[radial-gradient(closest-side,rgb(96_165_250/0.25),transparent)]"
+				class="pointer-events-none absolute -top-40 -left-40 h-105 w-130 bg-[radial-gradient(closest-side,rgb(96_165_250/0.25),transparent)]"
 				aria-hidden="true"
 			></div>
 			<div class="relative">
 				<h1><LibraryWordmark size="lg" tone="dark" /></h1>
-				<p class="mt-3 font-newsreader text-[17px] leading-[1.45] text-white/70 italic">
+				<p class="mt-3 font-newsreader text-lg leading-normal text-white/70 italic">
 					Strategy, reporting and gameplay from the players who define the format.
 				</p>
 			</div>
 			<div class="relative mt-6">
 				<LibrarySearch placeholder="Search the Library" />
 				{#if topics.length}
-					<div class="mt-3 flex flex-wrap gap-2 text-[12px]" aria-label="Popular topics">
+					<div class="mt-3 flex flex-wrap gap-2 text-xs" aria-label="Popular topics">
 						{#each topics.slice(0, 4) as t (t.slug)}
 							<a
 								href="/library/tag/{t.slug}"
-								class="border border-white/20 bg-white/[0.07] px-2.5 py-1 font-semibold text-white/85 transition-colors hover:border-warm-light hover:text-white"
+								class="border border-white/20 bg-white/5 px-2.5 py-1 font-semibold text-white/85 transition-colors hover:border-warm-light hover:text-white"
 								>{t.name}</a
 							>
 						{/each}
@@ -118,7 +118,7 @@
 
 		{#if lead}
 			<div
-				class="fp-rise aspect-[16/10] lg:col-span-7 lg:row-span-2 lg:aspect-auto"
+				class="fp-rise aspect-16/10 lg:col-span-7 lg:row-span-2 lg:aspect-auto"
 				style="animation-delay: 100ms;"
 			>
 				{@render tile(lead, true)}

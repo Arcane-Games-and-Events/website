@@ -29,24 +29,23 @@
 				<span class="min-w-0">
 					<span class="flex items-baseline gap-2">
 						<span
-							class="truncate {compact ? 'text-[14px]' : 'text-[15px]'} {t.unread
+							class="truncate {compact ? 'text-sm' : 'text-base'} {t.unread
 								? 'font-bold text-ink'
 								: 'font-semibold text-ink/85'} group-hover:text-warm">{t.subject}</span
 						>
 						{#if t.status === 'done'}
-							<span
-								class="shrink-0 text-[8.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+							<span class="shrink-0 text-xs font-extrabold tracking-widest text-fade uppercase"
 								>Resolved</span
 							>
 						{/if}
 					</span>
-					<span class="mt-0.5 block truncate text-[12.5px] text-fade">
+					<span class="mt-0.5 block truncate text-xs text-fade">
 						<span class="font-semibold text-soft">{TOPIC_SHORT[t.topic] || 'Question'}</span>
 						· {t.last?.fromStaff ? 'AGE: ' : 'You: '}{t.last?.body || ''}
 					</span>
 				</span>
 				<span
-					class="text-[11.5px] whitespace-nowrap tabular-nums {t.unread
+					class="text-xs whitespace-nowrap tabular-nums {t.unread
 						? 'font-bold text-warm'
 						: 'text-fade'}">{when(t.lastMessageAt)}</span
 				>

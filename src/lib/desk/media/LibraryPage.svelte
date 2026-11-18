@@ -64,7 +64,7 @@
 		['name', 'Name']
 	];
 	const control =
-		'h-[42px] border border-line2 bg-white px-3 text-[13.5px] text-ink focus:border-ink focus:ring-0 focus:outline-none';
+		'h-11 border border-line2 bg-white px-3 text-sm text-ink focus:border-ink focus:ring-0 focus:outline-none';
 </script>
 
 <svelte:head
@@ -96,8 +96,8 @@
 			type="button"
 			onclick={() => fileEl?.click()}
 			class="{compact
-				? 'h-8 px-3 text-[9.5px]'
-				: 'h-10 px-5 text-[10.5px]'} bg-gold font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-paper-bg"
+				? 'h-8 px-3 text-xs'
+				: 'h-10 px-5 text-xs'} bg-gold font-extrabold tracking-widest text-ink uppercase transition-colors hover:bg-paper-bg"
 			>Upload</button
 		>
 	{/snippet}
@@ -116,7 +116,7 @@
 	}}
 />
 
-<div class="mx-auto w-full max-w-[1200px] px-5 py-8 font-libre md:px-8 md:py-10">
+<div class="mx-auto w-full max-w-page px-5 py-8 font-libre md:px-8 md:py-10">
 	<!-- toolbar -->
 	<div class="flex flex-wrap items-center gap-2">
 		<input
@@ -124,7 +124,7 @@
 			bind:value={lib.q}
 			oninput={onSearch}
 			placeholder="Search by name, alt text or credit"
-			class="{control} min-w-0 flex-1 basis-[240px]"
+			class="{control} min-w-0 flex-1 basis-60"
 			aria-label="Search images"
 		/>
 		<select bind:value={lib.sort} onchange={load} class="{control} pr-8" aria-label="Sort images">
@@ -139,7 +139,7 @@
 					lib.uploader = v === '__mine' ? '' : v;
 					load();
 				}}
-				class="{control} max-w-[220px] pr-8"
+				class="{control} max-w-55 pr-8"
 				aria-label="Whose images"
 			>
 				<option value="">Everyone’s images</option>
@@ -150,7 +150,7 @@
 			</select>
 		{/if}
 	</div>
-	<p class="mt-2 text-[12px] text-fade">
+	<p class="mt-2 text-xs text-fade">
 		Drop images anywhere on this page to upload them. Big photos are scaled down and every image is
 		converted to fast-loading formats automatically.
 	</p>
@@ -158,20 +158,18 @@
 	<div class="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
 		<div class="min-w-0">
 			{#if lib.error}
-				<p
-					class="border-l-[3px] border-hero-rb bg-hero-rb/[0.06] px-3 py-2 text-[13px] text-hero-rb"
-				>
+				<p class="border-l-3 border-hero-rb bg-hero-rb/5 px-3 py-2 text-sm text-hero-rb">
 					{lib.error}
 				</p>
 			{/if}
 			{#if !lib.loaded && lib.loading}
-				<p class="py-10 text-[13px] text-fade">Loading images…</p>
+				<p class="py-10 text-sm text-fade">Loading images…</p>
 			{:else if lib.loaded && !lib.items.length && !lib.uploads.length}
 				<div class="border border-dashed border-line2 px-6 py-16 text-center">
-					<p class="font-newsreader text-[22px] font-semibold">
+					<p class="font-newsreader text-2xl font-semibold">
 						{lib.q ? 'No images match that search.' : 'No images yet.'}
 					</p>
-					<p class="mt-1 text-[13.5px] text-fade">
+					<p class="mt-1 text-sm text-fade">
 						Upload one with the button above, or drag files onto the page.
 					</p>
 				</div>
@@ -189,7 +187,7 @@
 							type="button"
 							onclick={more}
 							disabled={lib.loading}
-							class="h-10 border border-line2 px-6 text-[10px] font-extrabold tracking-[0.12em] uppercase hover:border-ink disabled:opacity-60"
+							class="h-10 border border-line2 px-6 text-xs font-extrabold tracking-widest uppercase hover:border-ink disabled:opacity-60"
 							>{lib.loading ? 'Loading…' : 'Show more'}</button
 						>
 					</div>
@@ -200,18 +198,18 @@
 		<!-- details: a side panel on wide screens, a sheet over the page on phones -->
 		{#if selected}
 			<aside
-				class="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto border-t-[5px] border-ink bg-paper-bg px-5 pt-4 pb-8 shadow-[0_-18px_36px_-22px_rgba(20,16,8,0.5)] lg:sticky lg:top-[calc(var(--desk-header,0px)+60px)] lg:z-auto lg:max-h-[calc(100vh-var(--desk-header,0px)-80px)] lg:self-start lg:border lg:border-t-[5px] lg:border-line2 lg:border-t-ink lg:p-5 lg:shadow-none"
+				class="fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto border-t-5 border-ink bg-paper-bg px-5 pt-4 pb-8 shadow-up lg:sticky lg:top-[calc(var(--desk-header,0px)+60px)] lg:z-auto lg:max-h-[calc(100vh-var(--desk-header,0px)-80px)] lg:self-start lg:border lg:border-t-5 lg:border-line2 lg:border-t-ink lg:p-5 lg:shadow-none"
 				aria-label="Image details"
 			>
 				<div class="mb-3 flex items-center justify-between gap-3">
-					<p class="truncate text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">
+					<p class="truncate text-xs font-extrabold tracking-widest text-fade uppercase">
 						Image details
 					</p>
 					<button
 						type="button"
 						onclick={() => (selected = null)}
 						aria-label="Close details"
-						class="-mr-2 flex h-9 w-9 items-center justify-center text-[20px] text-fade hover:text-ink"
+						class="-mr-2 flex h-9 w-9 items-center justify-center text-xl text-fade hover:text-ink"
 						>×</button
 					>
 				</div>
@@ -233,7 +231,7 @@
 			</aside>
 		{:else}
 			<aside class="hidden lg:block">
-				<div class="border border-dashed border-line2 px-5 py-8 text-[13px] leading-snug text-fade">
+				<div class="border border-dashed border-line2 px-5 py-8 text-sm leading-snug text-fade">
 					Choose an image to edit its name, alt text and credit, crop it, see where it’s used, or
 					delete it.
 				</div>
@@ -244,8 +242,8 @@
 
 {#if dragging}
 	<div
-		class="pointer-events-none fixed inset-0 z-[80] flex items-center justify-center border-[4px] border-dashed border-ink bg-paper-bg/90"
+		class="pointer-events-none fixed inset-0 z-80 flex items-center justify-center border-4 border-dashed border-ink bg-paper-bg/90"
 	>
-		<p class="font-newsreader text-[28px] font-semibold">Drop to upload</p>
+		<p class="font-newsreader text-3xl font-semibold">Drop to upload</p>
 	</div>
 {/if}

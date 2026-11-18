@@ -247,15 +247,13 @@
 		}, 200);
 	}
 
-	const sectionTitle = 'ao-cond text-[40px] leading-none font-black uppercase md:text-[48px]';
+	const sectionTitle = 'ao-cond text-4xl leading-none font-black uppercase md:text-5xl';
 </script>
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-24 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-6 pb-24 font-libre md:px-8">
 	<!-- back, and the ways out -->
 	<div class="flex flex-wrap items-center justify-between gap-3">
-		<a
-			href={base}
-			class="text-[10.5px] font-extrabold tracking-[0.16em] text-soft uppercase hover:text-ink"
+		<a href={base} class="text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 			>← {backLabel}</a
 		>
 		{#if id}
@@ -265,13 +263,13 @@
 						href={watchHref({ id, kind: form.kind })}
 						target="_blank"
 						rel="noopener"
-						class="inline-flex h-[40px] items-center border border-line2 bg-white px-4 text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:border-ink"
+						class="inline-flex h-10 items-center border border-line2 bg-white px-4 text-xs font-extrabold tracking-widest uppercase transition-colors hover:border-ink"
 						>View on site ↗</a
 					>
 				{/if}
 				<a
 					href="{base}/{id}/analytics"
-					class="inline-flex h-[40px] items-center gap-2 bg-ink px-4 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm"
+					class="inline-flex h-10 items-center gap-2 bg-ink px-4 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm"
 				>
 					<svg
 						viewBox="0 0 20 20"
@@ -290,7 +288,7 @@
 
 	<!-- how it's doing -->
 	{#if id}
-		<div class="mt-6 grid border-t-[3px] border-ink md:grid-cols-[minmax(0,1fr)_260px]">
+		<div class="mt-6 grid border-t-3 border-ink md:grid-cols-[minmax(0,1fr)_260px]">
 			<dl class="grid grid-cols-2 md:grid-cols-4">
 				{#each [{ label: 'Status', value: STAGE[stage].word, small: true }, { label: 'Plays', value: (item?.plays ?? 0).toLocaleString('en-US') }, { label: 'Live since', value: item?.publishedAt ? new Date(item.publishedAt).toLocaleDateString( 'en-US', { month: 'short', day: 'numeric', year: 'numeric' } ) : '—', small: true }, { label: 'Who can watch', value: form.isPremium ? 'Premium' : 'Everyone', small: true }] as f, i (f.label)}
 					<div
@@ -301,8 +299,8 @@
 						<dt class={F.label}>{f.label}</dt>
 						<dd
 							class="ao-cond leading-none font-black uppercase tabular-nums {f.small
-								? 'text-[24px]'
-								: 'text-[40px]'}"
+								? 'text-2xl'
+								: 'text-4xl'}"
 						>
 							{f.value}
 						</dd>
@@ -313,11 +311,11 @@
 				href="{base}/{id}/analytics"
 				class="group flex flex-col justify-between gap-3 border-b border-line2 bg-ink px-5 py-4 text-paper-bg transition-colors hover:bg-warm"
 			>
-				<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-paper-bg/60 uppercase"
+				<span class="text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase"
 					>Views, watch time, retention</span
 				>
 				<span
-					class="ao-cond flex items-center justify-between text-[28px] leading-none font-black uppercase"
+					class="ao-cond flex items-center justify-between text-3xl leading-none font-black uppercase"
 					>See the analytics <span class="transition-transform group-hover:translate-x-1">→</span
 					></span
 				>
@@ -329,7 +327,7 @@
 	<section class="mt-12">
 		<div class="flex flex-wrap items-end justify-between gap-3">
 			<h2 class={sectionTitle}>Details</h2>
-			<p class="text-[12.5px] text-soft">
+			<p class="text-xs text-soft">
 				{id ? 'Changes show on the site as soon as you save' : 'Choose the file to start'}
 			</p>
 		</div>
@@ -384,8 +382,7 @@
 								<VideoThumb video={item.video} cover={cover?.image} width={640} />
 							{:else}
 								<span class="flex aspect-video items-center justify-center bg-ink">
-									<span
-										class="text-[9px] font-extrabold tracking-[0.16em] text-paper-bg/50 uppercase"
+									<span class="text-xs font-extrabold tracking-widest text-paper-bg/50 uppercase"
 										>{up ? 'Uploading' : 'No file yet'}</span
 									>
 								</span>
@@ -401,7 +398,7 @@
 								type="button"
 								onclick={() => fileEl?.click()}
 								disabled={uploading}
-								class="mt-2 h-[44px] w-full border-[1.5px] border-ink px-3 text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:opacity-50"
+								class="mt-2 h-11 w-full border-2 border-ink px-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:opacity-50"
 							>
 								{item?.video?.provider
 									? 'Replace file'
@@ -411,7 +408,7 @@
 							</button>
 							{#if up && up.state !== 'ready'}
 								<div class="mt-2">
-									<div class="h-[3px] bg-line2">
+									<div class="h-1 bg-line2">
 										<div
 											class="h-full {up.state === 'failed'
 												? 'bg-hero-rb'
@@ -419,7 +416,7 @@
 											style="width: {up.percent}%"
 										></div>
 									</div>
-									<p class="mt-1 truncate text-[11.5px] text-fade">
+									<p class="mt-1 truncate text-xs text-fade">
 										{up.state === 'failed'
 											? up.error || 'Upload failed'
 											: `${up.name} · ${Math.round(up.percent)}%`}
@@ -617,16 +614,16 @@
 
 			<!-- save -->
 			<div
-				class="sticky bottom-0 z-10 flex items-center justify-between gap-4 border-t border-line2 bg-white px-5 py-3.5 shadow-[0_-12px_24px_-18px_rgb(23_21_15/0.35)] md:px-7"
+				class="sticky bottom-0 z-10 flex items-center justify-between gap-4 border-t border-line2 bg-white px-5 py-3.5 shadow-up md:px-7"
 			>
-				<span class="text-[12px] {error ? 'text-hero-rb' : 'text-soft'}" aria-live="polite"
+				<span class="text-xs {error ? 'text-hero-rb' : 'text-soft'}" aria-live="polite"
 					>{error || (dirty ? 'Unsaved changes' : note || (id ? 'All saved' : ''))}</span
 				>
 				<button
 					type="button"
 					onclick={save}
 					disabled={saving || !form.title.trim() || (!dirty && !!id)}
-					class="inline-flex h-[44px] shrink-0 items-center bg-ink px-6 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-colors hover:bg-warm disabled:cursor-default disabled:bg-line2 disabled:text-fade"
+					class="inline-flex h-11 shrink-0 items-center bg-ink px-6 text-xs font-extrabold tracking-widest text-white uppercase transition-colors hover:bg-warm disabled:cursor-default disabled:bg-line2 disabled:text-fade"
 					>{saving ? 'Saving…' : id ? 'Save details' : 'Create'}</button
 				>
 			</div>
@@ -649,12 +646,12 @@
 					</div>
 					<div class="flex flex-col items-start gap-3">
 						<span
-							class="inline-block border px-2 py-[2px] text-[9.5px] font-extrabold tracking-[0.14em] uppercase {STAGE[
+							class="inline-block border px-2 py-0.5 text-xs font-extrabold tracking-widest uppercase {STAGE[
 								stage
 							].tone}">{STAGE[stage].word}</span
 						>
 						{#if !item?.isPublished && problems.length}
-							<ul class="space-y-1 text-[12.5px] text-soft">
+							<ul class="space-y-1 text-xs text-soft">
 								{#each problems as p (p)}<li>· {p}</li>{/each}
 							</ul>
 						{/if}
@@ -663,7 +660,7 @@
 								type="button"
 								onclick={() => setPublished(false)}
 								disabled={busy}
-								class="inline-flex h-[44px] items-center border-[1.5px] border-ink px-6 text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:opacity-50"
+								class="inline-flex h-11 items-center border-2 border-ink px-6 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:opacity-50"
 								>Take down</button
 							>
 						{:else}
@@ -671,7 +668,7 @@
 								type="button"
 								onclick={() => setPublished(true)}
 								disabled={busy || problems.length > 0}
-								class="inline-flex h-[44px] items-center bg-prem px-6 text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110 disabled:cursor-default disabled:bg-line2 disabled:text-fade"
+								class="inline-flex h-11 items-center bg-prem px-6 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110 disabled:cursor-default disabled:bg-line2 disabled:text-fade"
 								>Publish</button
 							>
 						{/if}
@@ -686,7 +683,7 @@
 						<button
 							type="button"
 							onclick={() => (deleting = true)}
-							class="inline-flex h-[44px] items-center border border-hero-rb/50 px-5 text-[10.5px] font-extrabold tracking-[0.14em] text-hero-rb uppercase transition-colors hover:bg-hero-rb hover:text-white"
+							class="inline-flex h-11 items-center border border-hero-rb/50 px-5 text-xs font-extrabold tracking-widest text-hero-rb uppercase transition-colors hover:bg-hero-rb hover:text-white"
 							>Delete</button
 						>
 					</div>
@@ -702,7 +699,7 @@
 	kicker="Delete"
 	title="Delete this?"
 >
-	<p class="text-[14px] leading-relaxed">
+	<p class="text-sm leading-relaxed">
 		<strong>{form.title}</strong> will be removed from the site and its file deleted from Mux. This can’t
 		be undone.
 	</p>
@@ -710,14 +707,14 @@
 		<button
 			type="button"
 			onclick={() => (deleting = false)}
-			class="h-10 px-4 text-[10.5px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+			class="h-10 px-4 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 			>Keep it</button
 		>
 		<button
 			type="button"
 			onclick={remove}
 			disabled={busy}
-			class="h-10 bg-hero-rb px-5 text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase hover:brightness-110 disabled:opacity-50"
+			class="h-10 bg-hero-rb px-5 text-xs font-extrabold tracking-widest text-white uppercase hover:brightness-110 disabled:opacity-50"
 			>{busy ? 'Deleting…' : 'Delete'}</button
 		>
 	{/snippet}

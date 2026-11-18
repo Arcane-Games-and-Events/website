@@ -63,7 +63,7 @@ export function byline(v) {
 export const STAGE = {
 	live: { word: 'Live', tone: 'border-ink bg-ink text-paper-bg' },
 	draft: { word: 'Ready, not published', tone: 'border-prem/50 text-prem' },
-	processing: { word: 'Processing', tone: 'border-[#8a6116]/50 text-[#8a6116]' },
+	processing: { word: 'Processing', tone: 'border-gold-deep/50 text-gold-deep' },
 	'no-file': { word: 'No file yet', tone: 'border-line2 text-fade' },
 	failed: { word: 'Failed', tone: 'border-hero-rb/50 text-hero-rb' }
 };

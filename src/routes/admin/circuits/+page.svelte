@@ -80,7 +80,7 @@
 	{#if form?.error}<AdminNotice tone="error" message={form.error} />{/if}
 	{#if form?.saved}<AdminNotice tone="success" message={form.saved} />{/if}
 
-	<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+	<div class="mx-auto w-full max-w-page px-5 pt-6 pb-20 md:px-8">
 		<Figures
 			items={[
 				{ label: 'Circuits', value: ui.fmt(t.circuits) },
@@ -100,12 +100,12 @@
 		{#if playersAll}
 			<section class="mt-10">
 				<div class="flex items-baseline justify-between gap-4">
-					<h2 class="text-[10.5px] font-extrabold tracking-[0.22em] uppercase">
-						<span class="mr-2 text-[8px] text-warm">◆</span>Players in {month}, by circuit
+					<h2 class="text-xs font-extrabold tracking-widest uppercase">
+						<span class="mr-2 text-xs text-warm">◆</span>Players in {month}, by circuit
 					</h2>
-					<span class="text-[11px] text-fade tabular-nums">{ui.fmt(playersAll)} in all</span>
+					<span class="text-xs text-fade tabular-nums">{ui.fmt(playersAll)} in all</span>
 				</div>
-				<div class="mt-3 flex h-3 gap-[2px]">
+				<div class="mt-3 flex h-3 gap-0.5">
 					{#each playing as c (c.id)}
 						<button
 							type="button"
@@ -122,7 +122,7 @@
 				</div>
 				<div class="mt-2 flex flex-wrap gap-x-5 gap-y-1">
 					{#each playing as c (c.id)}
-						<span class="text-[10px] font-extrabold tracking-[0.12em] uppercase tabular-nums">
+						<span class="text-xs font-extrabold tracking-widest uppercase tabular-nums">
 							<span class="mr-1.5 inline-block h-2 w-2" style="background: {c.color}"
 							></span>{c.name}
 							<span class="text-fade">{Math.round((c.players / playersAll) * 100)}%</span>
@@ -139,7 +139,7 @@
 					type="button"
 					onclick={() => (only = 'all')}
 					aria-pressed={only === 'all'}
-					class="border px-4 py-2.5 text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors {only ===
+					class="border px-4 py-2.5 text-xs font-extrabold tracking-widest uppercase transition-colors {only ===
 					'all'
 						? 'border-ink bg-ink text-paper-bg'
 						: 'border-line2 bg-white hover:border-ink'}">All circuits</button
@@ -149,7 +149,7 @@
 						type="button"
 						onclick={() => (only = c.slug)}
 						aria-pressed={only === c.slug}
-						class="inline-flex items-center gap-2 border px-4 py-2.5 text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors {only ===
+						class="inline-flex items-center gap-2 border px-4 py-2.5 text-xs font-extrabold tracking-widest uppercase transition-colors {only ===
 						c.slug
 							? 'text-white'
 							: 'border-line2 bg-white hover:border-ink'}"
@@ -181,23 +181,21 @@
 						class="relative flex flex-col gap-6 px-5 py-6 md:flex-row md:items-end md:justify-between md:px-8 md:py-8"
 					>
 						<div class="min-w-0">
-							<p class="text-[10px] font-extrabold tracking-[0.22em] text-white/75 uppercase">
+							<p class="text-xs font-extrabold tracking-widest text-white/75 uppercase">
 								{c.short}{c.region ? ` · ${c.region}` : ''}{c.active ? '' : ' · Inactive'}
 							</p>
-							<h2
-								class="ao-cond mt-1 text-[48px] leading-[0.85] font-black uppercase md:text-[64px]"
-							>
+							<h2 class="ao-cond mt-1 text-5xl leading-none font-black uppercase md:text-6xl">
 								{c.name}
 							</h2>
 							<div class="mt-4 flex flex-wrap gap-2">
 								<a
 									href="/admin/stores/new?circuit={c.slug}"
-									class="bg-white px-3.5 py-2 text-[10px] font-extrabold tracking-[0.16em] text-ink uppercase transition-colors hover:bg-ink hover:text-white"
+									class="bg-white px-3.5 py-2 text-xs font-extrabold tracking-widest text-ink uppercase transition-colors hover:bg-ink hover:text-white"
 									>+ Store</a
 								>
 								<a
 									href="/admin/circuits/{c.slug}"
-									class="border border-white/60 px-3.5 py-2 text-[10px] font-extrabold tracking-[0.16em] text-white uppercase transition-colors hover:border-white hover:bg-white/10"
+									class="border border-white/60 px-3.5 py-2 text-xs font-extrabold tracking-widest text-white uppercase transition-colors hover:border-white hover:bg-white/10"
 									>Edit circuit →</a
 								>
 							</div>
@@ -205,10 +203,10 @@
 						<dl class="grid grid-cols-3 gap-x-6 gap-y-3 md:flex md:gap-8">
 							{#each [{ label: 'Stores', value: ui.fmt(c.live) }, { label: 'Members', value: ui.fmt(c.members) }, { label: 'Upcoming', value: ui.fmt(c.upcoming) }, { label: `Players · ${month.slice(0, 3)}`, value: ui.fmt(c.players) }, { label: `Tickets · ${month.slice(0, 3)}`, value: ui.money(c.revenue, 0) }, { label: 'Owed', value: ui.money(c.owedCents / 100, 0) }] as f (f.label)}
 								<div>
-									<dt class="text-[9px] font-extrabold tracking-[0.16em] text-white/70 uppercase">
+									<dt class="text-xs font-extrabold tracking-widest text-white/70 uppercase">
 										{f.label}
 									</dt>
-									<dd class="ao-cond mt-1 text-[28px] leading-none font-black tabular-nums">
+									<dd class="ao-cond mt-1 text-3xl leading-none font-black tabular-nums">
 										{f.value}
 									</dd>
 								</div>
@@ -224,22 +222,22 @@
 						<li>
 							<a
 								href="/admin/stores/{s.slug}"
-								class="group relative flex h-full flex-col border border-line bg-paper-bg transition-[transform,border-color,box-shadow] duration-300 hover:-translate-y-0.5 hover:border-ink hover:shadow-[0_16px_30px_-24px_rgb(23_21_15/0.55)] {s.active
+								class="group relative flex h-full flex-col border border-line bg-paper-bg transition duration-300 hover:-translate-y-0.5 hover:border-ink hover:shadow-xl {s.active
 									? ''
 									: 'opacity-60'}"
 							>
 								<span
-									class="absolute inset-x-0 top-0 h-[4px] transition-[height] duration-300 group-hover:h-[7px]"
+									class="absolute inset-x-0 top-0 h-1 transition-[height] duration-300 group-hover:h-2"
 									style="background: {s.active ? 'var(--cc)' : 'var(--color-fade)'}"
 									aria-hidden="true"
 								></span>
 								<span class="flex items-start justify-between gap-3 px-5 pt-6">
 									<span class="min-w-0">
 										<span
-											class="ao-cond block truncate text-[28px] leading-[0.95] font-black uppercase group-hover:text-warm"
+											class="ao-cond block truncate text-3xl leading-none font-black uppercase group-hover:text-warm"
 											>{s.name}</span
 										>
-										<span class="mt-1 block truncate text-[11.5px] text-fade"
+										<span class="mt-1 block truncate text-xs text-fade"
 											>{[s.city, s.state].filter(Boolean).join(', ') || 'No city yet'}{s.active
 												? ''
 												: ' · inactive'}</span
@@ -253,14 +251,14 @@
 										<span class="flex -space-x-1.5">
 											{#each owners.slice(0, 3) as o (o)}
 												<span
-													class="grid h-7 w-7 place-items-center border-2 border-paper-bg text-[10px] font-extrabold text-white"
+													class="grid h-7 w-7 place-items-center border-2 border-paper-bg text-xs font-extrabold text-white"
 													style="background: var(--cc)">{initials(o)}</span
 												>
 											{/each}
 										</span>
-										<span class="min-w-0 truncate text-[12px] text-soft">{owners.join(', ')}</span>
+										<span class="min-w-0 truncate text-xs text-soft">{owners.join(', ')}</span>
 									{:else}
-										<span class="text-[12px] text-hero-rb">No owner yet</span>
+										<span class="text-xs text-hero-rb">No owner yet</span>
 									{/if}
 								</span>
 
@@ -270,11 +268,11 @@
 								>
 									{#each [[s.members, 'Team'], [s.upcoming, 'Ahead'], [s.playersMonth, 'Players'], [ui.money(s.revenueMonth, 0), 'Tickets']] as [v, l] (l)}
 										<span class="py-3">
-											<span class="ao-cond block text-[22px] leading-none font-black tabular-nums"
+											<span class="ao-cond block text-2xl leading-none font-black tabular-nums"
 												>{v}</span
 											>
 											<span
-												class="mt-1 block text-[8.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+												class="mt-1 block text-xs font-extrabold tracking-widest text-fade uppercase"
 												>{l}</span
 											>
 										</span>
@@ -285,16 +283,16 @@
 								>
 									{#if s.owedCents}
 										<span
-											class="text-[10px] font-extrabold tracking-[0.14em] text-hero-rb uppercase tabular-nums"
+											class="text-xs font-extrabold tracking-widest text-hero-rb uppercase tabular-nums"
 											>{ui.money(s.owedCents / 100)} owed</span
 										>
 									{:else}
-										<span class="text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase"
+										<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 											>Nothing owed</span
 										>
 									{/if}
 									<span
-										class="text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase group-hover:text-warm"
+										class="text-xs font-extrabold tracking-widest text-fade uppercase group-hover:text-warm"
 										>Open →</span
 									>
 								</span>
@@ -304,13 +302,13 @@
 					<li>
 						<a
 							href="/admin/stores/new?circuit={c.slug}"
-							class="group flex h-full min-h-[120px] flex-col justify-center border border-dashed border-line2 px-5 py-6 transition-colors hover:border-(--cc) sm:min-h-[200px]"
+							class="group flex h-full min-h-30 flex-col justify-center border border-dashed border-line2 px-5 py-6 transition-colors hover:border-(--cc) sm:min-h-50"
 						>
 							<span
-								class="ao-cond text-[28px] leading-none font-black uppercase group-hover:text-(--cc)"
+								class="ao-cond text-3xl leading-none font-black uppercase group-hover:text-(--cc)"
 								>+ New store</span
 							>
-							<span class="mt-2 text-[12px] text-soft"
+							<span class="mt-2 text-xs text-soft"
 								>{c.stores.length
 									? `Add another ${c.name} store.`
 									: `No store runs ${c.name} yet. Add the first.`}</span
@@ -326,15 +324,12 @@
 			class="group mt-8 flex items-center justify-between gap-4 border border-dashed border-line2 px-5 py-6 transition-colors hover:border-ink md:px-8"
 		>
 			<span>
-				<span class="ao-cond block text-[32px] leading-none font-black uppercase"
-					>+ New circuit</span
-				>
-				<span class="mt-1 block text-[12px] text-soft"
+				<span class="ao-cond block text-3xl leading-none font-black uppercase">+ New circuit</span>
+				<span class="mt-1 block text-xs text-soft"
 					>A new region, with its colour, picture and stores.</span
 				>
 			</span>
-			<span
-				class="text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase group-hover:text-warm"
+			<span class="text-xs font-extrabold tracking-widest text-fade uppercase group-hover:text-warm"
 				>Start →</span
 			>
 		</a>
@@ -344,7 +339,7 @@
 				method="POST"
 				action="?/program"
 				use:enhance
-				class="grid max-w-[640px] gap-5 md:grid-cols-[150px_150px_minmax(0,1fr)] md:items-end"
+				class="grid max-w-2xl gap-5 md:grid-cols-[150px_150px_minmax(0,1fr)] md:items-end"
 			>
 				<div>
 					<label for="p-pct" class="{ui.label} mb-2 block">Percent</label>
@@ -355,22 +350,22 @@
 							inputmode="decimal"
 							maxlength="6"
 							value={pct(data.program?.feePct)}
-							class="{ui.input} w-[100px]"
+							class="{ui.input} w-25"
 						/>
-						<span class="text-[14px] text-soft">%</span>
+						<span class="text-sm text-soft">%</span>
 					</div>
 				</div>
 				<div>
 					<label for="p-fixed" class="{ui.label} mb-2 block">Plus, per payment</label>
 					<div class="flex items-center gap-2">
-						<span class="text-[14px] text-soft">$</span>
+						<span class="text-sm text-soft">$</span>
 						<input
 							id="p-fixed"
 							name="feeFixed"
 							inputmode="decimal"
 							maxlength="6"
 							value={((data.program?.feeFixedCents ?? 30) / 100).toFixed(2)}
-							class="{ui.input} w-[100px]"
+							class="{ui.input} w-25"
 						/>
 					</div>
 				</div>

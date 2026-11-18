@@ -23,7 +23,7 @@
 		current="shows"
 	/>
 
-	<div class="mx-auto w-full max-w-[1200px] space-y-16 px-5 pt-10 pb-20 md:px-8 md:pt-12">
+	<div class="mx-auto w-full max-w-page space-y-16 px-5 pt-10 pb-20 md:px-8 md:pt-12">
 		{#if data.shows.length}
 			<ul class="grid grid-cols-2 gap-x-5 gap-y-9 md:grid-cols-3 lg:grid-cols-4">
 				{#each data.shows as s (s.id)}
@@ -48,12 +48,12 @@
 				</ul>
 			</section>
 		{:else if !data.shows.length}
-			<div class="relative overflow-hidden bg-gold px-6 py-16 text-center text-[#241b07] md:py-20">
+			<div class="relative overflow-hidden bg-gold px-6 py-16 text-center text-gold-ink md:py-20">
 				<span class="st-dots pointer-events-none absolute inset-0" aria-hidden="true"></span>
-				<p class="st-wide relative text-[28px] leading-none font-black uppercase md:text-[42px]">
+				<p class="st-wide relative text-3xl leading-none font-black uppercase md:text-5xl">
 					Rolling soon
 				</p>
-				<p class="relative mx-auto mt-3 max-w-[440px] font-newsreader text-[17px] italic">
+				<p class="relative mx-auto mt-3 max-w-md font-newsreader text-lg italic">
 					The first episodes are on their way.
 				</p>
 			</div>

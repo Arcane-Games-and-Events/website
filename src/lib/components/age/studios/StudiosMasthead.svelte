@@ -16,18 +16,18 @@
 
 <section class="relative overflow-hidden border-b border-line bg-paper-bg">
 	<div
-		class="mx-auto w-full max-w-[1200px] px-5 md:px-8 {big
+		class="mx-auto w-full max-w-page px-5 md:px-8 {big
 			? 'pt-8 pb-7 md:pt-12 md:pb-10'
 			: 'pt-6 pb-6 md:pt-8 md:pb-8'}"
 	>
 		{#if big}
 			<p
-				class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.24em] text-studio uppercase"
+				class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-studio uppercase"
 			>
-				<span class="text-[8px]" aria-hidden="true">◆</span> Everything we make
+				<span class="text-xs" aria-hidden="true">◆</span> Everything we make
 			</p>
 			<h1
-				class="st-wide fp-rise mt-3 text-[clamp(54px,14vw,176px)] leading-[0.84] font-black tracking-[-0.045em] text-ink uppercase"
+				class="st-wide fp-rise mt-3 text-[clamp(54px,14vw,176px)] leading-none font-black tracking-tighter text-ink uppercase"
 			>
 				<span class="st-offset block">AGE</span>
 				<span
@@ -36,7 +36,7 @@
 				>
 			</h1>
 			<p
-				class="fp-rise mt-5 max-w-[620px] font-newsreader text-[18px] leading-[1.4] text-soft italic md:mt-7 md:text-[22px]"
+				class="fp-rise mt-5 max-w-xl font-newsreader text-lg leading-snug text-soft italic md:mt-7 md:text-2xl"
 				style="animation-delay: 120ms;"
 			>
 				{lead ||
@@ -45,7 +45,7 @@
 		{:else}
 			<a
 				href={crumb?.href || '/studios'}
-				class="st-wide inline-flex items-center gap-2 text-[10px] font-black tracking-[0.14em] uppercase hover:text-studio"
+				class="st-wide inline-flex items-center gap-2 text-xs font-black tracking-widest uppercase hover:text-studio"
 			>
 				<span aria-hidden="true">←</span>
 				{#if crumb}{crumb.label}{:else}<span>AGE <span class="text-studio">Studios</span></span
@@ -53,15 +53,13 @@
 			</a>
 			{#if title}
 				<h1
-					class="fp-rise mt-4 font-newsreader text-[40px] leading-[0.98] font-semibold tracking-[-0.02em] [text-wrap:balance] md:text-[60px]"
+					class="fp-rise mt-4 font-newsreader text-4xl leading-none font-semibold tracking-tight [text-wrap:balance] md:text-6xl"
 				>
 					{title}
 				</h1>
 			{/if}
 			{#if lead}
-				<p
-					class="mt-2 max-w-[660px] font-newsreader text-[17px] leading-snug text-soft italic md:text-[20px]"
-				>
+				<p class="mt-2 max-w-2xl font-newsreader text-lg leading-snug text-soft italic md:text-xl">
 					{lead}
 				</p>
 			{/if}

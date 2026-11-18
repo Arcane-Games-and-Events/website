@@ -110,13 +110,11 @@
 		refunds: ['Refunds', 'bg-hero-rb text-white'],
 		'payout-missed': ['Missed payout', 'bg-hero-rb text-white']
 	};
-	const kicker = 'text-[10.5px] font-extrabold tracking-[0.16em] uppercase';
+	const kicker = 'text-xs font-extrabold tracking-widest uppercase';
 	const button =
 		'inline-flex items-center gap-2 font-extrabold uppercase transition-colors disabled:opacity-60';
 	const size = (compact) =>
-		compact
-			? 'min-h-[30px] px-3 text-[9.5px] tracking-[0.14em]'
-			: 'min-h-[44px] px-5 text-[10.5px] tracking-[0.16em]';
+		compact ? 'min-h-8 px-3 text-xs tracking-widest' : 'min-h-11 px-5 text-xs tracking-widest';
 </script>
 
 <svelte:head><title>Classroom</title></svelte:head>
@@ -135,7 +133,7 @@
 		disabled={creating}
 		class="{button} {size(compact)} bg-paper-bg text-ink hover:bg-warm-light"
 	>
-		<span class="text-[15px] leading-none" aria-hidden="true">+</span>
+		<span class="text-base leading-none" aria-hidden="true">+</span>
 		{creating ? 'Creating…' : compact ? 'New' : 'New course'}
 	</button>
 {/snippet}
@@ -153,22 +151,21 @@
 />
 <DeskTabs />
 
-<div class="mx-auto w-full max-w-[1200px] space-y-12 px-5 pt-8 pb-20 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page space-y-12 px-5 pt-8 pb-20 font-libre md:px-8">
 	{#if !h.oversee && data.refundsPending}
 		<!-- refund requests on the teacher's guides (admins see them under "Needs an admin") -->
 		<a
 			href="/classroom/refunds"
-			class="flex flex-wrap items-center justify-between gap-3 border-l-[3px] border-hero-rb bg-hero-rb/[0.06] px-4 py-3.5 transition-colors hover:bg-hero-rb/[0.1]"
+			class="flex flex-wrap items-center justify-between gap-3 border-l-3 border-hero-rb bg-hero-rb/5 px-4 py-3.5 transition-colors hover:bg-hero-rb/10"
 		>
-			<span class="text-[14px] font-semibold">
+			<span class="text-sm font-semibold">
 				{data.refundsPending}
 				{data.refundsPending === 1 ? 'refund request is' : 'refund requests are'} waiting on your guides
-				<span class="block text-[12px] font-normal text-soft"
+				<span class="block text-xs font-normal text-soft"
 					>You can approve them; AGE decides the rest under the refund policy.</span
 				>
 			</span>
-			<span
-				class="bg-ink px-3 py-2 text-[9.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase"
+			<span class="bg-ink px-3 py-2 text-xs font-extrabold tracking-widest text-paper-bg uppercase"
 				>Review refunds</span
 			>
 		</a>
@@ -178,15 +175,15 @@
 		<dl class="grid grid-cols-2 gap-px border border-line2 bg-line2 md:grid-cols-3 xl:grid-cols-6">
 			{#each FIG as f (f.label)}
 				<div class="relative bg-white px-4 py-4">
-					<dt class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">
+					<dt class="text-xs font-extrabold tracking-widest text-fade uppercase">
 						{#if f.href}<a href={f.href} class="after:absolute after:inset-0 hover:text-ink"
 								>{f.label}</a
 							>{:else}{f.label}{/if}
 					</dt>
-					<dd class="mt-2 text-[26px] leading-none font-extrabold tabular-nums {f.tone || ''}">
+					<dd class="mt-2 text-2xl leading-none font-extrabold tabular-nums {f.tone || ''}">
 						{f.value}
 					</dd>
-					{#if f.note}<dd class="mt-1.5 text-[11px] text-soft">{f.note}</dd>{/if}
+					{#if f.note}<dd class="mt-1.5 text-xs text-soft">{f.note}</dd>{/if}
 				</div>
 			{/each}
 		</dl>
@@ -196,7 +193,7 @@
 			<section aria-labelledby="needs-h">
 				<h2
 					id="needs-h"
-					class="{kicker} flex items-baseline justify-between border-b-[3px] border-ink pb-2.5"
+					class="{kicker} flex items-baseline justify-between border-b-3 border-ink pb-2.5"
 				>
 					<span><span class="text-hero-rb" aria-hidden="true">◆</span> Needs an admin</span>
 					<span class="tracking-normal text-fade normal-case">{h.needsYou.length || 'Nothing'}</span
@@ -208,16 +205,16 @@
 							<li class="flex items-start justify-between gap-3 py-3.5">
 								<div class="min-w-0">
 									<span
-										class="inline-block px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.12em] uppercase {KIND[
+										class="inline-block px-1.5 py-px text-xs font-extrabold tracking-widest uppercase {KIND[
 											item.kind
 										]?.[1]}">{KIND[item.kind]?.[0] || item.kind}</span
 									>
-									<p class="mt-1.5 text-[14px] leading-snug font-semibold">
+									<p class="mt-1.5 text-sm leading-snug font-semibold">
 										{item.text}{#if item.cents}<span class="font-normal text-soft">
 												· {money(item.cents)}</span
 											>{/if}
 									</p>
-									<p class="mt-0.5 text-[12px] text-soft">
+									<p class="mt-0.5 text-xs text-soft">
 										{#if item.since}Waiting {waited(item.since)} · since {shortDate(
 												item.since
 											)}.{/if}
@@ -226,14 +223,14 @@
 								</div>
 								<a
 									href={item.href}
-									class="shrink-0 bg-ink px-3 py-2 text-[9.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase hover:bg-warm"
+									class="shrink-0 bg-ink px-3 py-2 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm"
 									>{item.action}</a
 								>
 							</li>
 						{/each}
 					</ul>
 				{:else}
-					<p class="py-4 text-[13.5px] text-soft">
+					<p class="py-4 text-sm text-soft">
 						<span class="mr-1 text-prem" aria-hidden="true">✓</span> Nothing is waiting on an admin right
 						now.
 					</p>
@@ -245,11 +242,11 @@
 
 		<!-- the approval pipeline -->
 		<section aria-labelledby="pipe-h">
-			<div class="mb-4 flex items-baseline justify-between gap-3 border-b-[3px] border-ink pb-2.5">
+			<div class="mb-4 flex items-baseline justify-between gap-3 border-b-3 border-ink pb-2.5">
 				<h2 id="pipe-h" class={kicker}>Approval pipeline</h2>
 				<a
 					href="/classroom/courses"
-					class="text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+					class="text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 					>Every course ({h.all.length}) →</a
 				>
 			</div>
@@ -258,7 +255,7 @@
 
 		{#if h.queue.length}
 			<section>
-				<h2 class="{kicker} mb-3 border-b-[3px] border-ink pb-2.5">
+				<h2 class="{kicker} mb-3 border-b-3 border-ink pb-2.5">
 					<span class="text-hero-rb" aria-hidden="true">◆</span> Flagged discussion posts · {h.queue
 						.length}
 				</h2>
@@ -271,33 +268,30 @@
 		<!-- the teacher's own -->
 		<div class="grid gap-10 {h.oversee ? '' : 'lg:grid-cols-[minmax(0,1fr)_340px]'}">
 			<section aria-labelledby="steps-h">
-				<h2 id="steps-h" class="{kicker} mb-4 border-b-[3px] border-ink pb-2.5">
+				<h2 id="steps-h" class="{kicker} mb-4 border-b-3 border-ink pb-2.5">
 					<span class="text-warm" aria-hidden="true">◆</span>
 					{h.oversee ? 'Your next steps as a teacher' : 'Your next steps'}
 				</h2>
 				{#if h.mine.length}
 					<NextSteps steps={h.steps} />
 				{:else}
-					<div class="border-[3px] border-double border-ink bg-white px-6 py-8">
-						<p class="font-newsreader text-[24px] leading-tight font-semibold">
+					<div class="border-3 border-double border-ink bg-white px-6 py-8">
+						<p class="font-newsreader text-2xl leading-tight font-semibold">
 							Build your first course
 						</p>
-						<ol class="mt-4 grid gap-4 text-[13.5px] leading-snug sm:grid-cols-3">
+						<ol class="mt-4 grid gap-4 text-sm leading-snug sm:grid-cols-3">
 							<li>
-								<b class="block text-[10px] font-extrabold tracking-[0.14em] uppercase">1 · Build</b
-								>
+								<b class="block text-xs font-extrabold tracking-widest uppercase">1 · Build</b>
 								Give it a title, description and cover, then write topics in sections.
 							</li>
 							<li>
-								<b class="block text-[10px] font-extrabold tracking-[0.14em] uppercase"
+								<b class="block text-xs font-extrabold tracking-widest uppercase"
 									>2 · Send for approval</b
 								>
 								An admin checks it once. If something needs changing, they send a note.
 							</li>
 							<li>
-								<b class="block text-[10px] font-extrabold tracking-[0.14em] uppercase"
-									>3 · Go live</b
-								>
+								<b class="block text-xs font-extrabold tracking-widest uppercase">3 · Go live</b>
 								It’s in the Academy and on sale. Keep 90% of every sale (up to 95% as you reach Senior
 								and Elite levels), no monthly fee, $10 for every Premium member you refer, free updates
 								for all your buyers, and promotion across AGE.
@@ -307,7 +301,7 @@
 							type="button"
 							onclick={create}
 							disabled={creating}
-							class="mt-6 inline-flex min-h-[44px] items-center bg-ink px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase hover:bg-warm disabled:opacity-60"
+							class="mt-6 inline-flex min-h-11 items-center bg-ink px-5 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm disabled:opacity-60"
 							>{creating ? 'Creating…' : '+ New course'}</button
 						>
 					</div>
@@ -320,21 +314,21 @@
 					{#if h.earnings}
 						<a
 							href="/classroom/earnings"
-							class="group block bg-ink px-5 py-5 text-paper-bg transition-colors hover:bg-[#2a2620]"
+							class="group block bg-ink px-5 py-5 text-paper-bg transition-colors hover:bg-stone-800"
 						>
-							<p class="text-[9.5px] font-extrabold tracking-[0.16em] text-gold uppercase">
+							<p class="text-xs font-extrabold tracking-widest text-gold uppercase">
 								Next payout · {longDate(h.earnings.next.payDate)}
 							</p>
-							<p class="mt-2 text-[30px] leading-none font-extrabold tabular-nums">
+							<p class="mt-2 text-3xl leading-none font-extrabold tabular-nums">
 								{money(h.earnings.next.cents)}
 							</p>
-							<p class="mt-2 text-[12px] text-paper-bg/65">
+							<p class="mt-2 text-xs text-paper-bg/65">
 								{money(h.earnings.totals.onHoldCents)} still on hold · {money(
 									h.earnings.totals.earnedCents
 								)} earned in all
 							</p>
 							<p
-								class="mt-3 text-[9.5px] font-extrabold tracking-[0.14em] text-paper-bg/70 uppercase group-hover:text-paper-bg"
+								class="mt-3 text-xs font-extrabold tracking-widest text-paper-bg/70 uppercase group-hover:text-paper-bg"
 							>
 								Earnings →
 							</p>
@@ -348,7 +342,7 @@
 			<section aria-labelledby="mine-h">
 				<h2
 					id="mine-h"
-					class="{kicker} mb-4 flex items-baseline justify-between border-b-[3px] border-ink pb-2.5"
+					class="{kicker} mb-4 flex items-baseline justify-between border-b-3 border-ink pb-2.5"
 				>
 					<span>Your courses</span>
 					<span class="tracking-normal text-fade normal-case">{h.mine.length}</span>

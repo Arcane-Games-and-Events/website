@@ -97,13 +97,13 @@
 <DialogShell {open} kicker="Edit" title="Image" onclose={close}>
 	{#if image?.url}
 		<div class="flex justify-center border border-line2 bg-line/50 p-2">
-			<img src={image.url} alt="" class="block max-h-[240px] w-auto max-w-full" />
+			<img src={image.url} alt="" class="block max-h-60 w-auto max-w-full" />
 		</div>
 	{/if}
 	<button
 		type="button"
 		onclick={() => (pickerOpen = true)}
-		class="mt-2 min-h-[40px] w-full border-[1.5px] border-ink px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+		class="mt-2 min-h-10 w-full border-2 border-ink px-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 		>Swap image</button
 	>
 

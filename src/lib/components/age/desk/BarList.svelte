@@ -14,20 +14,20 @@
 	<ol class="space-y-2.5">
 		{#each items as it (it.key)}
 			<li>
-				<div class="flex items-baseline justify-between gap-3 text-[13px]">
+				<div class="flex items-baseline justify-between gap-3 text-sm">
 					<span class="min-w-0 truncate">{it.key}</span>
 					<span class="shrink-0 tabular-nums"
 						><span class="font-semibold">{format(it.n)}</span>{#if sum}<span
-								class="ml-1.5 text-[11px] text-fade">{Math.round((it.n / sum) * 100)}%</span
+								class="ml-1.5 text-xs text-fade">{Math.round((it.n / sum) * 100)}%</span
 							>{/if}</span
 					>
 				</div>
-				<div class="mt-1 h-[6px] bg-line" aria-hidden="true">
+				<div class="mt-1 h-1.5 bg-line" aria-hidden="true">
 					<div class="h-full" style="width: {(it.n / max) * 100}%; background: {color};"></div>
 				</div>
 			</li>
 		{/each}
 	</ol>
 {:else}
-	<p class="font-newsreader text-[15px] text-soft italic">No data for this period yet.</p>
+	<p class="font-newsreader text-base text-soft italic">No data for this period yet.</p>
 {/if}

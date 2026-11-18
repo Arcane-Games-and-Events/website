@@ -46,24 +46,24 @@
 			)
 			.join(' ');
 	}
-	const kpi = 'border-t-[3px] border-ink pt-2.5';
-	const kLabel = 'text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase';
-	const kValue = 'mt-1 font-newsreader text-[30px] leading-none font-semibold tabular-nums';
+	const kpi = 'border-t-3 border-ink pt-2.5';
+	const kLabel = 'text-xs font-extrabold tracking-widest text-fade uppercase';
+	const kValue = 'mt-1 font-newsreader text-3xl leading-none font-semibold tabular-nums';
 </script>
 
 {#snippet head(text, note = '')}
-	<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-		<h2 class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase">
-			<span class="text-[8px] text-warm" aria-hidden="true">◆</span>{text}
+	<div class="flex items-baseline justify-between gap-4 border-b-3 border-ink pb-2">
+		<h2 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+			<span class="text-xs text-warm" aria-hidden="true">◆</span>{text}
 		</h2>
-		{#if note}<span class="text-right text-[11px] text-fade">{note}</span>{/if}
+		{#if note}<span class="text-right text-xs text-fade">{note}</span>{/if}
 	</div>
 {/snippet}
 
 <div class="font-libre">
 	<!-- range -->
 	<div class="flex flex-wrap items-center justify-between gap-3">
-		<p class="text-[12.5px] text-soft">
+		<p class="text-xs text-soft">
 			Last {days} days · staff views aren’t counted
 		</p>
 		<div class="flex gap-px border border-line2 bg-line2" role="group" aria-label="Range">
@@ -71,7 +71,7 @@
 				<a
 					href={rangeHref(d)}
 					aria-current={d === days ? 'page' : undefined}
-					class="px-3 py-1.5 text-[10px] font-extrabold tracking-[0.12em] uppercase {d === days
+					class="px-3 py-1.5 text-xs font-extrabold tracking-widest uppercase {d === days
 						? 'bg-ink text-paper-bg'
 						: 'bg-white text-soft hover:text-ink'}">{d} days</a
 				>
@@ -80,7 +80,7 @@
 	</div>
 
 	{#if report?.needsMigration}
-		<p class="mt-6 border-l-[3px] border-warm bg-paper px-4 py-3 text-[13px]">
+		<p class="mt-6 border-l-3 border-warm bg-paper px-4 py-3 text-sm">
 			Gameplay analytics start once migration 028 is applied in Supabase.
 		</p>
 	{/if}
@@ -91,12 +91,12 @@
 			<div class={kpi}>
 				<p class={kLabel}>Views</p>
 				<p class={kValue}>{fmt(t.views)}</p>
-				<p class="mt-1 text-[11.5px] text-fade">{fmt(t.visits)} page visits</p>
+				<p class="mt-1 text-xs text-fade">{fmt(t.visits)} page visits</p>
 			</div>
 			<div class={kpi}>
 				<p class={kLabel}>Watch time</p>
 				<p class={kValue}>{hours(t.watchSeconds)}</p>
-				<p class="mt-1 text-[11.5px] text-fade">{fmt(t.viewers)} viewers</p>
+				<p class="mt-1 text-xs text-fade">{fmt(t.viewers)} viewers</p>
 			</div>
 			<div class={kpi}>
 				<p class={kLabel}>Avg view duration</p>
@@ -105,17 +105,17 @@
 			<div class={kpi}>
 				<p class={kLabel}>Avg % viewed</p>
 				<p class={kValue}>{pctLabel(t.avgPct)}</p>
-				<p class="mt-1 text-[11.5px] text-fade">{pctLabel(t.completionRate)} watched to the end</p>
+				<p class="mt-1 text-xs text-fade">{pctLabel(t.completionRate)} watched to the end</p>
 			</div>
 			<div class={kpi}>
 				<p class={kLabel}>Play rate</p>
 				<p class={kValue}>{pctLabel(t.playRate)}</p>
-				<p class="mt-1 text-[11.5px] text-fade">of visits pressed play</p>
+				<p class="mt-1 text-xs text-fade">of visits pressed play</p>
 			</div>
 			<div class={kpi}>
 				<p class={kLabel}>Led to</p>
 				<p class={kValue}>{fmt(t.signups + t.premium)}</p>
-				<p class="mt-1 text-[11.5px] text-fade">
+				<p class="mt-1 text-xs text-fade">
 					{fmt(t.signups)} sign-ups · {fmt(t.premium)} Premium
 				</p>
 			</div>
@@ -125,16 +125,13 @@
 		<div class="mt-10 grid gap-8 lg:grid-cols-[1fr_2fr]">
 			<section>
 				{@render head('Realtime', 'last 48 hours')}
-				<p class="mt-4 font-newsreader text-[34px] leading-none font-semibold tabular-nums">
+				<p class="mt-4 font-newsreader text-4xl leading-none font-semibold tabular-nums">
 					{fmt(report.realtime.last48)}
 				</p>
-				<p class="mt-1 text-[12px] text-fade">
+				<p class="mt-1 text-xs text-fade">
 					views · {fmt(report.realtime.lastHour)} in the last hour
 				</p>
-				<div
-					class="mt-4 flex h-[64px] items-end gap-[2px]"
-					aria-label="Views per hour, last 48 hours"
-				>
+				<div class="mt-4 flex h-16 items-end gap-0.5" aria-label="Views per hour, last 48 hours">
 					{#each report.realtime.hours as n, i (i)}
 						<span
 							class="flex-1 {n ? 'bg-warm' : 'bg-line'}"
@@ -143,7 +140,7 @@
 						></span>
 					{/each}
 				</div>
-				<p class="mt-1 flex justify-between text-[10.5px] text-fade">
+				<p class="mt-1 flex justify-between text-xs text-fade">
 					<span>48h ago</span><span>Now</span>
 				</p>
 			</section>
@@ -165,10 +162,10 @@
 			{@render head('Videos', 'sorted by views')}
 			{#if report.videos.length}
 				<div class="mt-2 overflow-x-auto">
-					<table class="w-full min-w-[760px] text-left text-[13px]">
+					<table class="w-full min-w-190 text-left text-sm">
 						<thead>
 							<tr
-								class="border-b border-line2 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								class="border-b border-line2 text-xs font-extrabold tracking-widest text-fade uppercase"
 							>
 								<th class="py-2 pr-3 font-extrabold">Video</th>
 								<th class="px-3 text-right">Views</th>
@@ -185,7 +182,7 @@
 							{#each report.videos as v (v.key)}
 								{@const n = names[v.key]}
 								<tr class="border-b border-line">
-									<td class="max-w-[280px] py-2.5 pr-3">
+									<td class="max-w-2xs py-2.5 pr-3">
 										{#if n?.href}<a href={n.href} class="line-clamp-1 font-semibold hover:text-warm"
 												>{n.title}</a
 											>{:else}<span class="line-clamp-1 text-fade"
@@ -204,7 +201,7 @@
 										>
 									{/if}
 									<td class="pl-3">
-										<svg viewBox="0 0 60 20" class="h-5 w-[60px]" aria-hidden="true">
+										<svg viewBox="0 0 60 20" class="h-5 w-15" aria-hidden="true">
 											<path
 												d={sparkPath(v.spark)}
 												fill="none"
@@ -219,7 +216,7 @@
 					</table>
 				</div>
 			{:else}
-				<p class="mt-4 font-newsreader text-[16px] text-soft italic">No views in this period.</p>
+				<p class="mt-4 font-newsreader text-base text-soft italic">No views in this period.</p>
 			{/if}
 		</section>
 
@@ -231,7 +228,7 @@
 					<BarList items={report.sources.map((s) => ({ key: label(SOURCES, s.key), n: s.n }))} />
 				</div>
 				{#if report.referrers.length}
-					<p class="mt-5 text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">
+					<p class="mt-5 text-xs font-extrabold tracking-widest text-fade uppercase">
 						Other websites
 					</p>
 					<div class="mt-2"><BarList items={report.referrers} /></div>
@@ -255,7 +252,7 @@
 			</section>
 		</div>
 	{:else if report && !report.available && !report.needsMigration}
-		<p class="mt-6 font-newsreader text-[16px] text-soft italic">
+		<p class="mt-6 font-newsreader text-base text-soft italic">
 			Analytics aren’t set up on this database yet.
 		</p>
 	{/if}
@@ -264,16 +261,16 @@
 	<section class="mt-10">
 		{@render head('From Mux', 'Mux’s own player data')}
 		{#if !mux || mux.connected === false}
-			<p class="mt-4 max-w-[640px] text-[13px] leading-relaxed text-soft">
+			<p class="mt-4 max-w-2xl text-sm leading-relaxed text-soft">
 				Connect Mux Data to see Mux’s view counts (including from before AGE tracked them) and
 				playback quality. Create a Mux access token with <strong>Video</strong> (read and write) and
 				<strong>Data</strong> (read), then replace <code>MUX_TOKEN_ID</code> and
 				<code>MUX_TOKEN_SECRET</code>.
 			</p>
 		{:else if mux.error}
-			<p class="mt-4 text-[13px] text-hero-rb">{mux.error}</p>
+			<p class="mt-4 text-sm text-hero-rb">{mux.error}</p>
 		{:else if mux.empty}
-			<p class="mt-4 font-newsreader text-[16px] text-soft italic">No uploaded videos here yet.</p>
+			<p class="mt-4 font-newsreader text-base text-soft italic">No uploaded videos here yet.</p>
 		{:else}
 			<div class="mt-4 grid grid-cols-2 gap-6 md:grid-cols-4">
 				<div class={kpi}>
@@ -287,10 +284,10 @@
 			</div>
 			{#if !report && rows.length}
 				<div class="mt-6 overflow-x-auto">
-					<table class="w-full min-w-[520px] text-left text-[13px]">
+					<table class="w-full min-w-130 text-left text-sm">
 						<thead>
 							<tr
-								class="border-b border-line2 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+								class="border-b border-line2 text-xs font-extrabold tracking-widest text-fade uppercase"
 							>
 								<th class="py-2 pr-3">Video</th>
 								<th class="px-3 text-right">Views</th>

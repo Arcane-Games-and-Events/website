@@ -24,15 +24,15 @@
 	const TEXT = {
 		ink: '',
 		red: 'text-hero-rb',
-		gold: 'text-[#8a6116]',
+		gold: 'text-gold-deep',
 		green: 'text-prem',
 		grey: 'text-fade'
 	};
 	const DARK_TEXT = {
 		ink: 'text-paper-bg',
-		red: 'text-[#f08a6a]',
+		red: 'text-red-400',
 		gold: 'text-gold',
-		green: 'text-[#7fd1a4]',
+		green: 'text-prem-light',
 		grey: 'text-paper-bg/60'
 	};
 	const DARK_TONE = { ...TONE, ink: 'bg-paper-bg' };
@@ -44,7 +44,7 @@
 		{@const done = i < t.at}
 		<li aria-current={current ? 'step' : undefined}>
 			<span
-				class="block h-[4px] {current
+				class="block h-1 {current
 					? (dark ? DARK_TONE : TONE)[t.tone]
 					: done
 						? dark
@@ -56,7 +56,7 @@
 			></span>
 			{#if !compact}
 				<span
-					class="mt-1.5 block truncate text-[9px] font-extrabold tracking-[0.12em] uppercase {current
+					class="mt-1.5 block truncate text-xs font-extrabold tracking-widest uppercase {current
 						? (dark ? DARK_TEXT : TEXT)[t.tone] || ''
 						: dark
 							? 'text-paper-bg/45'

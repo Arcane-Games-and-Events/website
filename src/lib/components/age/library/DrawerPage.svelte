@@ -41,7 +41,7 @@
 	/>
 
 	<div class="bg-paper-bg text-ink">
-		<section class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-20 md:px-8 md:pt-10">
+		<section class="mx-auto w-full max-w-page px-5 pt-8 pb-20 md:px-8 md:pt-10">
 			<LibraryFilters filters={f} topics={data.topics} total={data.total} {noun} {path} />
 
 			{#if data.stories.length}
@@ -52,18 +52,16 @@
 				</ul>
 			{:else}
 				<div class="mt-8 border border-line2 px-6 py-14 text-center">
-					<p class="text-[22px] font-bold tracking-[-0.02em]">Nothing here for that.</p>
-					<p class="mt-2 text-[15px] text-fade">Try fewer words, or search the whole Library.</p>
+					<p class="text-2xl font-bold tracking-tight">Nothing here for that.</p>
+					<p class="mt-2 text-base text-fade">Try fewer words, or search the whole Library.</p>
 					<div class="mt-6 flex flex-wrap justify-center gap-3">
-						<a
-							href={path}
-							class="bg-ink px-5 py-3 text-[13px] font-bold text-paper-bg hover:bg-warm"
+						<a href={path} class="bg-ink px-5 py-3 text-sm font-bold text-paper-bg hover:bg-warm"
 							>Show every {noun[0]}</a
 						>
 						{#if f.q}
 							<a
 								href="/library/search?q={encodeURIComponent(f.q)}"
-								class="border border-line2 px-5 py-3 text-[13px] font-bold hover:border-ink"
+								class="border border-line2 px-5 py-3 text-sm font-bold hover:border-ink"
 								>Search everything</a
 							>
 						{/if}

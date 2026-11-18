@@ -104,14 +104,13 @@
 </script>
 
 <figure class="m-0">
-	<figcaption class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[12px] text-soft">
+	<figcaption class="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-soft">
 		<span class="font-semibold text-ink">Yearly earnings by copies sold a year</span>
 		<span class="flex items-center gap-2"
-			><span class="h-[2px] w-5" style="background: {AGE_COLOR}" aria-hidden="true"></span>AGE
-			Partner</span
+			><span class="h-0.5 w-5" style="background: {AGE_COLOR}" aria-hidden="true"></span>AGE Partner</span
 		>
 		<span class="flex items-center gap-2"
-			><span class="h-[2px] w-5" style="background: {METAFY_COLOR}" aria-hidden="true"
+			><span class="h-0.5 w-5" style="background: {METAFY_COLOR}" aria-hidden="true"
 			></span>{metafyLabel}</span
 		>
 	</figcaption>
@@ -135,7 +134,7 @@
 							y={sy(y)}
 							dy="0.32em"
 							text-anchor="end"
-							class="fill-fade text-[11px] tabular-nums">{short(y)}</text
+							class="fill-fade text-xs tabular-nums">{short(y)}</text
 						>
 					</g>
 				{/each}
@@ -147,7 +146,7 @@
 						x={sx(x)}
 						y={h + 20}
 						text-anchor={x === 0 ? 'start' : 'middle'}
-						class="fill-fade text-[11px] tabular-nums"
+						class="fill-fade text-xs tabular-nums"
 						in:fade={{ duration: prefersReducedMotion.current ? 0 : 250 }}>{count(x)}</text
 					>
 				{/each}
@@ -162,7 +161,7 @@
 						stroke-width="1"
 						stroke-dasharray="2 3"
 					/>
-					<text x={sx(crossover.copies) + 6} y="10" class="fill-fade text-[11px]">Break-even</text>
+					<text x={sx(crossover.copies) + 6} y="10" class="fill-fade text-xs">Break-even</text>
 				{/if}
 
 				<path d={path('metafy')} fill="none" stroke={METAFY_COLOR} stroke-width="2" />
@@ -174,7 +173,7 @@
 						x={sx(here.x) + (sx(here.x) > w - 90 ? -6 : 6)}
 						y={h - 8}
 						text-anchor={sx(here.x) > w - 90 ? 'end' : 'start'}
-						class="fill-ink text-[11px] font-semibold">You: {count(here.x)}/yr</text
+						class="fill-ink text-xs font-semibold">You: {count(here.x)}/yr</text
 					>
 					{#each [['metafy', METAFY_COLOR], ['age', AGE_COLOR]] as [k, c] (k)}
 						<circle
@@ -213,16 +212,16 @@
 
 		{#if read}
 			<div
-				class="pointer-events-none absolute top-0 -translate-x-1/2 border border-line2 bg-paper-bg px-3 py-2 text-[12px] whitespace-nowrap shadow-[0_6px_16px_-8px_rgb(0_0_0/0.35)]"
+				class="pointer-events-none absolute top-0 -translate-x-1/2 border border-line2 bg-paper-bg px-3 py-2 text-xs whitespace-nowrap shadow-md"
 				style="left: {tipLeft}px"
 			>
 				<p class="font-semibold text-ink">{count(read.x)} copies a year</p>
 				<p class="mt-1 flex items-center gap-2 text-soft">
-					<span class="h-[2px] w-3" style="background: {AGE_COLOR}"></span>AGE
+					<span class="h-0.5 w-3" style="background: {AGE_COLOR}"></span>AGE
 					<span class="ml-auto pl-3 font-semibold text-ink tabular-nums">{whole(read.age)}</span>
 				</p>
 				<p class="flex items-center gap-2 text-soft">
-					<span class="h-[2px] w-3" style="background: {METAFY_COLOR}"></span>Metafy
+					<span class="h-0.5 w-3" style="background: {METAFY_COLOR}"></span>Metafy
 					<span class="ml-auto pl-3 font-semibold text-ink tabular-nums">{whole(read.metafy)}</span>
 				</p>
 			</div>

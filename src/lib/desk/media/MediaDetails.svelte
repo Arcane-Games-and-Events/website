@@ -111,14 +111,14 @@
 	const inUse = $derived(!!usage?.length);
 	const canEdit = $derived(/^image\/(jpeg|png|webp|avif|tiff)$/.test(item?.mimeType || ''));
 	const action =
-		'min-h-[38px] border border-line2 px-3 text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-line2';
+		'min-h-10 border border-line2 px-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-line2';
 </script>
 
 {#if item}
 	<div class="font-libre">
 		<div
 			class="relative flex items-center justify-center bg-line/60 {compact
-				? 'h-[180px]'
+				? 'h-45'
 				: 'aspect-video'}"
 		>
 			<Picture
@@ -129,7 +129,7 @@
 				class="absolute inset-0 h-full w-full object-contain"
 			/>
 		</div>
-		<p class="mt-2 flex flex-wrap gap-x-2 text-[11.5px] text-fade">
+		<p class="mt-2 flex flex-wrap gap-x-2 text-xs text-fade">
 			{#if item.width && item.height}<span>{item.width} × {item.height}</span>{/if}
 			{#if item.fileSize}<span>· {formatBytes(item.fileSize)}</span>{/if}
 			{#if item.uploaderName}<span>· {item.uploaderName}</span>{/if}
@@ -183,7 +183,7 @@
 				/>
 			</label>
 		</div>
-		<p class="mt-2 h-4 text-[11.5px] text-fade" aria-live="polite">
+		<p class="mt-2 h-4 text-xs text-fade" aria-live="polite">
 			{saving ? 'Saving…' : saved ? 'Saved' : ''}
 		</p>
 		{#if errorMsg}<p class={ui.error}>{errorMsg}</p>{/if}
@@ -200,19 +200,19 @@
 
 		{#if !compact}
 			<section class="mt-6 border-t border-line2 pt-4">
-				<h3 class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">Used in</h3>
+				<h3 class="text-xs font-extrabold tracking-widest text-fade uppercase">Used in</h3>
 				{#if usage === null}
-					<p class="mt-2 text-[12.5px] text-fade">Checking…</p>
+					<p class="mt-2 text-xs text-fade">Checking…</p>
 				{:else if !usage.length}
-					<p class="mt-2 text-[12.5px] text-fade">Not used anywhere yet.</p>
+					<p class="mt-2 text-xs text-fade">Not used anywhere yet.</p>
 				{:else}
 					<ul class="mt-2 divide-y divide-line">
 						{#each usage as u, i (i)}
-							<li class="flex items-baseline justify-between gap-3 py-2 text-[13px]">
+							<li class="flex items-baseline justify-between gap-3 py-2 text-sm">
 								{#if u.href}<a href={u.href} class="min-w-0 truncate font-semibold hover:text-warm"
 										>{u.title}</a
 									>{:else}<span class="min-w-0 truncate font-semibold">{u.title}</span>{/if}
-								<span class="shrink-0 text-[11px] text-fade">{u.label}</span>
+								<span class="shrink-0 text-xs text-fade">{u.label}</span>
 							</li>
 						{/each}
 					</ul>
@@ -221,17 +221,17 @@
 
 			<section class="mt-6 border-t border-line2 pt-4">
 				{#if inUse}
-					<p class="text-[12.5px] leading-snug text-fade">
+					<p class="text-xs leading-snug text-fade">
 						This image can’t be deleted while it’s in use. Remove it from the places above first.
 					</p>
 				{:else if confirmDelete}
-					<p class="text-[13px] font-semibold">Delete this image for good?</p>
+					<p class="text-sm font-semibold">Delete this image for good?</p>
 					<div class="mt-2 flex gap-2">
 						<button
 							type="button"
 							onclick={remove}
 							disabled={deleting}
-							class="min-h-[38px] bg-hero-rb px-4 text-[10px] font-extrabold tracking-[0.12em] text-white uppercase disabled:opacity-60"
+							class="min-h-10 bg-hero-rb px-4 text-xs font-extrabold tracking-widest text-white uppercase disabled:opacity-60"
 							>{deleting ? 'Deleting…' : 'Delete'}</button
 						>
 						<button type="button" class={action} onclick={() => (confirmDelete = false)}
@@ -243,7 +243,7 @@
 						type="button"
 						disabled={usage === null}
 						onclick={() => (confirmDelete = true)}
-						class="text-[10px] font-extrabold tracking-[0.12em] text-hero-rb uppercase hover:underline disabled:opacity-45"
+						class="text-xs font-extrabold tracking-widest text-hero-rb uppercase hover:underline disabled:opacity-45"
 						>Delete image</button
 					>
 				{/if}

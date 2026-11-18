@@ -38,8 +38,8 @@ export const PROJECT_TYPE = {
 		label: 'Film',
 		plural: 'Films',
 		blurb: 'Documentaries and short films.',
-		block: 'bg-gold text-[#241b07]',
-		text: 'text-[#8a6116]',
+		block: 'bg-gold text-gold-ink',
+		text: 'text-gold-deep',
 		plate: 'var(--color-ink)'
 	},
 	feature: {
@@ -54,7 +54,7 @@ export const PROJECT_TYPE = {
 
 /** Shows and partners print in their own colours too. */
 export const SECTION_TONE = {
-	shows: { block: 'bg-gold text-[#241b07]', text: 'text-[#8a6116]', plate: 'var(--color-ink)' },
+	shows: { block: 'bg-gold text-gold-ink', text: 'text-gold-deep', plate: 'var(--color-ink)' },
 	partners: { block: 'bg-cc-ne text-white', text: 'text-cc-ne', plate: 'var(--color-ink)' },
 	matches: { block: 'bg-warm text-white', text: 'text-warm', plate: 'var(--color-ink)' }
 };

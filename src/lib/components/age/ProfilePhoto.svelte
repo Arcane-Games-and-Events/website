@@ -107,19 +107,19 @@
 		{/if}
 		{#if busy}
 			<span
-				class="absolute inset-0 flex items-center justify-center bg-ink/60 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase"
+				class="absolute inset-0 flex items-center justify-center bg-ink/60 text-xs font-extrabold tracking-widest text-paper-bg uppercase"
 				>Saving…</span
 			>
 		{/if}
 	</span>
 	<div class="min-w-0">
-		<p class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">Profile photo</p>
+		<p class="text-xs font-extrabold tracking-widest text-fade uppercase">Profile photo</p>
 		<div class="mt-2 flex flex-wrap gap-2">
 			<button
 				type="button"
 				disabled={busy}
 				onclick={() => fileEl?.click()}
-				class="min-h-[40px] border-[1.5px] border-ink px-4 text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:opacity-50"
+				class="min-h-10 border-2 border-ink px-4 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:opacity-50"
 				>{current ? 'Change photo' : 'Upload photo'}</button
 			>
 			{#if current}
@@ -127,15 +127,15 @@
 					type="button"
 					disabled={busy}
 					onclick={remove}
-					class="min-h-[40px] px-3 text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase transition-colors hover:text-hero-rb disabled:opacity-50"
+					class="min-h-10 px-3 text-xs font-extrabold tracking-widest text-fade uppercase transition-colors hover:text-hero-rb disabled:opacity-50"
 					>Remove</button
 				>
 			{/if}
 		</div>
-		<p class="mt-1.5 text-[12px] text-fade">
+		<p class="mt-1.5 text-xs text-fade">
 			A square headshot works best. It’s the same photo on your account, courses and bylines.
 		</p>
-		{#if error}<p class="mt-1.5 text-[12px] text-hero-rb" role="alert">{error}</p>{/if}
+		{#if error}<p class="mt-1.5 text-xs text-hero-rb" role="alert">{error}</p>{/if}
 		<input
 			bind:this={fileEl}
 			type="file"

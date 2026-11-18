@@ -70,7 +70,7 @@
 				<div class="flex flex-wrap gap-2">
 					{#each formatList as f (f)}
 						<label
-							class="relative flex h-[38px] cursor-pointer items-center border px-3.5 text-[12.5px] font-semibold transition-colors has-[:focus-visible]:shadow-[0_0_0_3px_color-mix(in_srgb,var(--cc,var(--color-ink))_25%,transparent)] {format ===
+							class="relative flex h-10 cursor-pointer items-center border px-3.5 text-xs font-semibold transition-colors has-[:focus-visible]:shadow-[0_0_0_3px_color-mix(in_srgb,var(--cc,var(--color-ink))_25%,transparent)] {format ===
 							f
 								? 'border-transparent text-white'
 								: 'border-line2 bg-white text-ink hover:border-ink/50'}"
@@ -148,7 +148,7 @@
 				<label for="e-price" class={label}>Entry fee</label>
 				<div class="relative">
 					<span
-						class="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[15px] font-semibold text-soft"
+						class="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-base font-semibold text-soft"
 						>$</span
 					>
 					<input
@@ -166,7 +166,7 @@
 							: ''}"
 					/>
 				</div>
-				<p class="mt-1.5 text-[11.5px] text-fade">
+				<p class="mt-1.5 text-xs text-fade">
 					{priceLocked ? 'Tickets have sold, so the fee stays as it is.' : 'Per player.'}
 				</p>
 			</div>
@@ -178,7 +178,7 @@
 							type="button"
 							onclick={() => (capped = false)}
 							aria-pressed={!capped}
-							class="h-[44px] px-3.5 text-[11px] font-extrabold tracking-[0.12em] uppercase transition-colors {capped
+							class="h-11 px-3.5 text-xs font-extrabold tracking-widest uppercase transition-colors {capped
 								? 'text-soft hover:text-ink'
 								: 'bg-ink text-paper-bg'}">No cap</button
 						>
@@ -186,7 +186,7 @@
 							type="button"
 							onclick={() => (capped = true)}
 							aria-pressed={capped}
-							class="h-[44px] px-3.5 text-[11px] font-extrabold tracking-[0.12em] uppercase transition-colors {capped
+							class="h-11 px-3.5 text-xs font-extrabold tracking-widest uppercase transition-colors {capped
 								? 'bg-ink text-paper-bg'
 								: 'text-soft hover:text-ink'}">Cap at</button
 						>
@@ -201,11 +201,11 @@
 							max="2000"
 							required
 							value={v.playerCap ?? 64}
-							class="{field} w-[100px] font-semibold tabular-nums"
+							class="{field} w-25 font-semibold tabular-nums"
 						/>
 					{/if}
 				</div>
-				<p class="mt-1.5 text-[11.5px] text-fade">
+				<p class="mt-1.5 text-xs text-fade">
 					{capped ? 'Sign-ups close when it’s full.' : 'Anyone can sign up.'}
 				</p>
 			</div>
@@ -236,16 +236,16 @@
 						class="flex cursor-pointer items-start justify-between gap-5 border border-line2 bg-white px-4 py-3 transition-colors hover:border-ink/40"
 					>
 						<span>
-							<span class="block text-[14px] font-semibold">{t.title}</span>
-							<span class="mt-0.5 block text-[12px] leading-snug text-soft">{t.note}</span>
+							<span class="block text-sm font-semibold">{t.title}</span>
+							<span class="mt-0.5 block text-xs leading-snug text-soft">{t.note}</span>
 						</span>
 						<span class="relative mt-0.5 inline-flex shrink-0">
 							<input type="checkbox" name={t.name} checked={t.on} class="peer sr-only" />
 							<span
-								class="h-[24px] w-[44px] bg-line2 transition-colors peer-checked:bg-[var(--cc,var(--color-ink))] peer-focus-visible:shadow-[0_0_0_3px_color-mix(in_srgb,var(--cc,var(--color-ink))_25%,transparent)]"
+								class="h-6 w-11 bg-line2 transition-colors peer-checked:bg-[var(--cc,var(--color-ink))] peer-focus-visible:shadow-[0_0_0_3px_color-mix(in_srgb,var(--cc,var(--color-ink))_25%,transparent)]"
 							></span>
 							<span
-								class="absolute top-[3px] left-[3px] h-[18px] w-[18px] bg-white shadow-sm transition-transform peer-checked:translate-x-[20px]"
+								class="absolute top-1 left-1 h-4.5 w-4.5 bg-white shadow-sm transition-transform peer-checked:translate-x-5"
 							></span>
 						</span>
 					</label>

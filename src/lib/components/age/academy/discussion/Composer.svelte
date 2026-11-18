@@ -81,10 +81,10 @@
 	<button
 		type="button"
 		onclick={focus}
-		class="flex w-full items-center gap-3 border border-line2 bg-white px-4 py-3.5 text-left text-[14.5px] text-fade transition-colors hover:border-ink"
+		class="flex w-full items-center gap-3 border border-line2 bg-white px-4 py-3.5 text-left text-sm text-fade transition-colors hover:border-ink"
 	>
 		<span
-			class="flex h-7 w-7 shrink-0 items-center justify-center bg-academy text-[16px] text-paper-bg"
+			class="flex h-7 w-7 shrink-0 items-center justify-center bg-academy text-base text-paper-bg"
 			>+</span
 		>
 		<span class="min-w-0 truncate">{prompt}</span>
@@ -97,7 +97,7 @@
 			placeholder="Title (optional)"
 			aria-label="Title (optional)"
 			onkeydown={keys}
-			class="block w-full border-0 border-b border-line bg-transparent px-4 pt-3.5 pb-2.5 font-newsreader text-[19px] font-semibold placeholder:font-normal placeholder:text-fade focus:ring-0"
+			class="block w-full border-0 border-b border-line bg-transparent px-4 pt-3.5 pb-2.5 font-newsreader text-xl font-semibold placeholder:font-normal placeholder:text-fade focus:ring-0"
 		/>
 		<textarea
 			bind:this={box}
@@ -108,36 +108,36 @@
 			maxlength="5000"
 			placeholder={prompt}
 			aria-label="Your message"
-			class="block min-h-[96px] w-full resize-none border-0 bg-transparent px-4 py-3 text-[15px] leading-relaxed placeholder:text-fade focus:ring-0"
+			class="block min-h-24 w-full resize-none border-0 bg-transparent px-4 py-3 text-base leading-relaxed placeholder:text-fade focus:ring-0"
 		></textarea>
-		{#if error}<p class="px-4 pb-2 text-[13px] text-hero-rb" role="alert">{error}</p>{/if}
+		{#if error}<p class="px-4 pb-2 text-sm text-hero-rb" role="alert">{error}</p>{/if}
 		<div class="flex flex-wrap items-center gap-2 border-t border-line px-3 py-2.5">
 			{#if topics.length}
 				<select
 					bind:value={topic}
 					aria-label="Topic"
-					class="h-[34px] max-w-full min-w-0 flex-1 border border-line2 bg-white px-2 pr-7 text-[12.5px] focus:border-ink focus:ring-0 sm:max-w-[240px] sm:flex-none"
+					class="h-9 max-w-full min-w-0 flex-1 border border-line2 bg-white px-2 pr-7 text-xs focus:border-ink focus:ring-0 sm:max-w-3xs sm:flex-none"
 				>
 					<option value="">The whole course</option>
 					{#each topics as t (t.id)}<option value={t.id}>{t.title}</option>{/each}
 				</select>
 			{/if}
-			<span class="hidden text-[11px] text-fade md:inline">Ctrl/⌘ + Enter to post</span>
+			<span class="hidden text-xs text-fade md:inline">Ctrl/⌘ + Enter to post</span>
 			<span class="ml-auto flex items-center gap-1">
 				<button
 					type="button"
 					onclick={() => (open = false)}
-					class="px-3 py-2 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+					class="px-3 py-2 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 					>Cancel</button
 				>
 				<button
 					disabled={busy || !body.trim()}
-					class="bg-academy px-4 py-2.5 text-[10px] font-extrabold tracking-[0.16em] text-paper-bg uppercase hover:bg-ink disabled:opacity-50"
+					class="bg-academy px-4 py-2.5 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-ink disabled:opacity-50"
 					>{busy ? 'Posting…' : 'Post'}</button
 				>
 			</span>
 		</div>
-		<p class="border-t border-line bg-paper-bg/60 px-4 py-2 text-[11px] leading-snug text-fade">
+		<p class="border-t border-line bg-paper-bg/60 px-4 py-2 text-xs leading-snug text-fade">
 			Be kind and stay on topic. Posts with bad language, personal details or outside links wait for
 			the teacher’s review.
 		</p>

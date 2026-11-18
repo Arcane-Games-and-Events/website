@@ -197,35 +197,27 @@
 	<div
 		class="flex h-full w-full flex-col items-center justify-center bg-white px-6 py-8 text-center text-ink"
 	>
-		<span class="h-[8px] w-[120px]" style="background: {cc};" aria-hidden="true"></span>
-		<p
-			class="mt-5 text-[11px] font-extrabold tracking-[0.28em] uppercase {big
-				? 'md:text-[14px]'
-				: ''}"
-		>
+		<span class="h-2 w-30" style="background: {cc};" aria-hidden="true"></span>
+		<p class="mt-5 text-xs font-extrabold tracking-widest uppercase {big ? 'md:text-sm' : ''}">
 			<span style="color: {cc};" aria-hidden="true">◆</span> AGE Open
 		</p>
 		<p
-			class="mt-2 max-w-[18ch] font-newsreader leading-[1.02] font-semibold tracking-[-0.02em] [text-wrap:balance] {big
-				? 'text-[34px] md:text-[56px]'
-				: 'text-[40px]'}"
+			class="mt-2 max-w-[18ch] font-newsreader leading-none font-semibold tracking-tight [text-wrap:balance] {big
+				? 'text-4xl md:text-6xl'
+				: 'text-4xl'}"
 		>
 			{data.event.title}
 		</p>
-		<p class="mt-2 font-newsreader text-[17px] text-soft italic {big ? 'md:text-[22px]' : ''}">
+		<p class="mt-2 font-newsreader text-lg text-soft italic {big ? 'md:text-2xl' : ''}">
 			{[formatDate(data.event.eventDate), data.event.location].filter(Boolean).join(' · ')}
 		</p>
-		<div class="door-qr mt-6 w-full {big ? 'max-w-[min(48vh,82vw)]' : 'max-w-[420px]'}">
+		<div class="door-qr mt-6 w-full {big ? 'max-w-[min(48vh,82vw)]' : 'max-w-md'}">
 			{@html data.door.svg}
 		</div>
-		<p
-			class="ao-cond mt-6 text-[34px] leading-none font-black uppercase {big
-				? 'md:text-[52px]'
-				: ''}"
-		>
+		<p class="ao-cond mt-6 text-4xl leading-none font-black uppercase {big ? 'md:text-5xl' : ''}">
 			Scan to sign up
 		</p>
-		<p class="mt-2 text-[13px] text-soft {big ? 'md:text-[16px]' : ''}">
+		<p class="mt-2 text-sm text-soft {big ? 'md:text-base' : ''}">
 			Register, and follow the event on AGE
 		</p>
 	</div>
@@ -234,7 +226,7 @@
 {#if signOpen}
 	<div
 		bind:this={signEl}
-		class="fixed inset-0 z-[90] flex flex-col bg-white text-ink print:hidden"
+		class="fixed inset-0 z-90 flex flex-col bg-white text-ink print:hidden"
 		role="dialog"
 		aria-modal="true"
 		aria-label="Door sign"
@@ -244,13 +236,13 @@
 			<button
 				type="button"
 				onclick={() => window.print()}
-				class="h-[40px] border border-ink px-4 text-[10.5px] font-extrabold tracking-[0.14em] uppercase hover:bg-ink hover:text-paper-bg"
+				class="h-10 border border-ink px-4 text-xs font-extrabold tracking-widest uppercase hover:bg-ink hover:text-paper-bg"
 				>Print</button
 			>
 			<button
 				type="button"
 				onclick={closeSign}
-				class="h-[40px] bg-ink px-4 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase"
+				class="h-10 bg-ink px-4 text-xs font-extrabold tracking-widest text-paper-bg uppercase"
 				>Close</button
 			>
 		</div>
@@ -264,34 +256,33 @@
 <AgeShell active="">
 	<!-- ============ masthead ============ -->
 	<section class="bg-ink text-paper-bg">
-		<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-10 md:px-8 md:pt-10 md:pb-12">
+		<div class="mx-auto w-full max-w-page px-5 pt-8 pb-10 md:px-8 md:pt-10 md:pb-12">
 			<a
 				href="/staff"
-				class="inline-flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.18em] text-paper-bg/60 uppercase transition-[color,gap] hover:gap-3 hover:text-paper-bg"
+				class="inline-flex items-center gap-2 text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase transition-[color,gap] hover:gap-3 hover:text-paper-bg"
 			>
 				<span aria-hidden="true">←</span> My events
 			</a>
 			<div class="fp-rise mt-7 flex flex-wrap items-center gap-2">
-				<p class="mr-1 text-[10px] font-extrabold tracking-[0.24em] text-gold uppercase">
+				<p class="mr-1 text-xs font-extrabold tracking-widest text-gold uppercase">
 					<span aria-hidden="true">◆</span> Staff console
 				</p>
-				<span
-					class="border px-2 py-[3px] text-[9px] font-extrabold tracking-[0.16em] uppercase {st.tone}"
+				<span class="border px-2 py-1 text-xs font-extrabold tracking-widest uppercase {st.tone}"
 					>{st.label}</span
 				>
 				{#if data.event.circuit}
 					<span
-						class="px-2 py-[3px] text-[9px] font-extrabold tracking-[0.16em] text-white uppercase"
+						class="px-2 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
 						style="background: {cc};">{abbr}</span
 					>
 				{/if}
 			</div>
 			<h1
-				class="fp-rise mt-3 font-newsreader text-[36px] leading-[1.02] font-semibold tracking-[-0.02em] [text-wrap:balance] md:text-[54px]"
+				class="fp-rise mt-3 font-newsreader text-4xl leading-none font-semibold tracking-tight [text-wrap:balance] md:text-6xl"
 			>
 				{data.event.title}
 			</h1>
-			<p class="mt-3 font-newsreader text-[16.5px] text-paper-bg/70 italic md:text-[18px]">
+			<p class="mt-3 font-newsreader text-base text-paper-bg/70 italic md:text-lg">
 				{[formatDate(data.event.eventDate), data.event.location, data.event.format]
 					.filter(Boolean)
 					.join(' · ')}
@@ -299,14 +290,14 @@
 
 			{#if realtime.on}
 				<p
-					class="mt-5 flex items-center gap-2 text-[10px] font-extrabold tracking-[0.18em] uppercase {liveStatus ===
+					class="mt-5 flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase {liveStatus ===
 					'down'
 						? 'text-gold'
 						: 'text-paper-bg/60'}"
 					role="status"
 				>
 					<span
-						class="inline-block h-[7px] w-[7px] {liveStatus === 'live'
+						class="inline-block h-2 w-2 {liveStatus === 'live'
 							? 'bg-prem-light'
 							: liveStatus === 'down'
 								? 'bg-gold'
@@ -328,14 +319,10 @@
 				<dl class="grid grid-cols-4">
 					{#each [['Registered', activeTickets.length, 'text-paper-bg'], ['In GEM', checkedInCount, 'text-prem-light'], ['To enter', toGo, 'text-gold'], ['Refunded', data.stats.totalRefunded, 'text-paper-bg/50']] as [label, n, tone], i (label)}
 						<div class="py-4 text-center {i ? 'border-l border-paper-bg/20' : ''}">
-							<dd
-								class="ao-cond text-[40px] leading-none font-black tabular-nums md:text-[60px] {tone}"
-							>
+							<dd class="ao-cond text-4xl leading-none font-black tabular-nums md:text-6xl {tone}">
 								{n}
 							</dd>
-							<dt
-								class="mt-1.5 text-[8.5px] font-extrabold tracking-[0.18em] text-paper-bg/55 uppercase md:text-[9.5px]"
-							>
+							<dt class="mt-1.5 text-xs font-extrabold tracking-widest text-paper-bg/55 uppercase">
 								{label}
 							</dt>
 						</div>
@@ -343,14 +330,14 @@
 				</dl>
 				{#if activeTickets.length}
 					<div class="flex items-center gap-3 border-t border-paper-bg/20 py-3">
-						<div class="h-[6px] flex-1 bg-paper-bg/15">
+						<div class="h-1.5 flex-1 bg-paper-bg/15">
 							<div
 								class="h-full bg-prem-light transition-[width] duration-500"
 								style="width: {pct}%;"
 							></div>
 						</div>
 						<span
-							class="text-[10px] font-extrabold tracking-[0.16em] text-paper-bg/70 uppercase tabular-nums"
+							class="text-xs font-extrabold tracking-widest text-paper-bg/70 uppercase tabular-nums"
 							>{pct}% entered</span
 						>
 					</div>
@@ -359,10 +346,10 @@
 		</div>
 	</section>
 
-	<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-12">
+	<div class="mx-auto w-full max-w-page px-5 py-10 md:px-8 md:py-12">
 		{#if form?.error}
 			<div
-				class="mb-6 border-l-[3px] border-hero-rb bg-hero-rb/[0.07] px-4 py-3 text-[14px] font-semibold text-hero-rb"
+				class="mb-6 border-l-3 border-hero-rb bg-hero-rb/5 px-4 py-3 text-sm font-semibold text-hero-rb"
 			>
 				{form.error}
 			</div>
@@ -371,13 +358,11 @@
 		<div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-12">
 			<!-- ============ registrations ============ -->
 			<section class="min-w-0">
-				<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-					<h2
-						class="flex items-center gap-3 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-					>
-						<span class="text-[8px]" style="color: {cc};" aria-hidden="true">◆</span> Check-in
+				<div class="flex items-baseline justify-between gap-4 border-b-3 border-ink pb-2">
+					<h2 class="flex items-center gap-3 text-xs font-extrabold tracking-widest uppercase">
+						<span class="text-xs" style="color: {cc};" aria-hidden="true">◆</span> Check-in
 					</h2>
-					<span class="text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+					<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 						>{filtered.length} of {activeTickets.length}</span
 					>
 				</div>
@@ -386,7 +371,7 @@
 					<!-- search + filter -->
 					<div class="mt-4 flex flex-col gap-3 sm:flex-row">
 						<label
-							class="flex min-h-[48px] flex-1 items-center gap-3 border border-line2 bg-paper px-3.5 focus-within:border-ink"
+							class="flex min-h-12 flex-1 items-center gap-3 border border-line2 bg-paper px-3.5 focus-within:border-ink"
 						>
 							<svg
 								viewBox="0 0 24 24"
@@ -402,13 +387,13 @@
 								type="search"
 								bind:value={query}
 								placeholder="Name, GEM ID or ticket code"
-								class="min-w-0 flex-1 border-0 bg-transparent p-0 font-newsreader text-[17px] placeholder:text-fade focus:ring-0 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+								class="min-w-0 flex-1 border-0 bg-transparent p-0 font-newsreader text-lg placeholder:text-fade focus:ring-0 focus:outline-none [&::-webkit-search-cancel-button]:hidden"
 							/>
 							{#if query}
 								<button
 									type="button"
 									onclick={() => (query = '')}
-									class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase hover:text-ink"
+									class="text-xs font-extrabold tracking-widest text-fade uppercase hover:text-ink"
 									>Clear</button
 								>
 							{/if}
@@ -423,7 +408,7 @@
 									type="button"
 									onclick={() => (show = v)}
 									aria-pressed={show === v}
-									class="min-h-[46px] px-3 text-[10px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase transition-colors {show ===
+									class="min-h-12 px-3 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors {show ===
 									v
 										? 'bg-ink text-paper-bg'
 										: 'bg-paper-bg text-soft hover:text-ink'}">{l}</button
@@ -437,15 +422,15 @@
 							{@const done = gemEntryStatus[t.ticketId]}
 							<li
 								class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-b border-line2 py-3.5 md:grid-cols-[minmax(0,1.5fr)_130px_130px_132px] {done
-									? 'bg-prem/[0.04]'
+									? 'bg-prem/5'
 									: ''}"
 							>
 								<span class="min-w-0">
-									<span class="block truncate font-newsreader text-[18px] font-semibold"
+									<span class="block truncate font-newsreader text-lg font-semibold"
 										>{`${t.firstName || ''} ${t.lastName || ''}`.trim() || 'Unnamed player'}</span
 									>
 									{#if t.userEmail}
-										<span class="block truncate text-[12px] text-fade">{t.userEmail}</span>
+										<span class="block truncate text-xs text-fade">{t.userEmail}</span>
 									{/if}
 								</span>
 								<span
@@ -455,35 +440,35 @@
 										<button
 											type="button"
 											onclick={() => copyGemId(t.gemId)}
-											class="inline-flex items-center gap-1.5 text-[13px] font-semibold tabular-nums transition-colors hover:text-warm"
+											class="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums transition-colors hover:text-warm"
 											title="Copy GEM ID"
 										>
 											<span
-												class="text-[9px] font-extrabold tracking-[0.16em] text-fade uppercase md:hidden"
+												class="text-xs font-extrabold tracking-widest text-fade uppercase md:hidden"
 												>GEM</span
 											>
 											{t.gemId}
 											{@render copyIcon(copiedGemId === t.gemId)}
 										</button>
 									{:else}
-										<span class="text-[12px] text-fade">No GEM ID</span>
+										<span class="text-xs text-fade">No GEM ID</span>
 									{/if}
-									<span class="text-[11.5px] text-soft tabular-nums md:hidden"
+									<span class="text-xs text-soft tabular-nums md:hidden"
 										>{t.ticketCode} · {formatDateTime(t.createdAt)}</span
 									>
 								</span>
 								<span class="hidden md:block">
-									<span class="block text-[12.5px] font-semibold tracking-[0.04em] tabular-nums"
+									<span class="block text-xs font-semibold tracking-wider tabular-nums"
 										>{t.ticketCode}</span
 									>
-									<span class="block text-[11px] text-fade">{formatDateTime(t.createdAt)}</span>
+									<span class="block text-xs text-fade">{formatDateTime(t.createdAt)}</span>
 								</span>
 								<button
 									type="button"
 									onclick={() => toggleGemEntry(t.ticketId, done)}
 									disabled={gemEntryLoading[t.ticketId]}
 									aria-pressed={!!done}
-									class="inline-flex min-h-[42px] min-w-[112px] items-center justify-center gap-1.5 border-[1.5px] px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors disabled:opacity-60 md:w-full {done
+									class="inline-flex min-h-11 min-w-28 items-center justify-center gap-1.5 border-2 px-3 text-xs font-extrabold tracking-widest uppercase transition-colors disabled:opacity-60 md:w-full {done
 										? 'border-prem bg-prem text-white hover:bg-prem/85'
 										: 'border-ink text-ink hover:bg-ink hover:text-paper-bg'}"
 								>
@@ -503,15 +488,15 @@
 								</button>
 							</li>
 						{:else}
-							<li class="py-10 text-center font-newsreader text-[17px] text-soft">
+							<li class="py-10 text-center font-newsreader text-lg text-soft">
 								No players match{q ? ` “${query.trim()}”` : ''}.
 							</li>
 						{/each}
 					</ol>
 				{:else}
 					<div class="py-12 text-center">
-						<p class="font-newsreader text-[24px] font-semibold">No registrations yet.</p>
-						<p class="mt-2 font-newsreader text-[16px] text-soft">
+						<p class="font-newsreader text-2xl font-semibold">No registrations yet.</p>
+						<p class="mt-2 font-newsreader text-base text-soft">
 							Players will appear here as they sign up.
 						</p>
 					</div>
@@ -520,16 +505,16 @@
 
 			<!-- ============ event details ============ -->
 			<aside class="lg:sticky lg:top-24 lg:self-start">
-				<div class="border-t-[5px] bg-paper px-5 pt-4 pb-5" style="border-color: {cc};">
-					<p class="font-newsreader text-[20px] font-semibold">Event details</p>
+				<div class="border-t-5 bg-paper px-5 pt-4 pb-5" style="border-color: {cc};">
+					<p class="font-newsreader text-xl font-semibold">Event details</p>
 					<dl class="mt-2">
 						{#each [['Date', formatDate(data.event.eventDate)], ['Venue', data.event.location || 'TBD'], ['Address', data.event.address], ['Format', data.event.format || 'TBD'], ['Circuit', data.event.circuit], ['GEM ID', data.event.gemIdRequired ? 'Required' : 'Not required']] as [k, v] (k)}
 							{#if v}
 								<div class="border-b border-dashed border-line2 py-2.5 last:border-b-0">
-									<dt class="text-[9px] font-extrabold tracking-[0.18em] text-fade uppercase">
+									<dt class="text-xs font-extrabold tracking-widest text-fade uppercase">
 										{k}
 									</dt>
-									<dd class="mt-0.5 font-newsreader text-[15.5px] leading-snug">{v}</dd>
+									<dd class="mt-0.5 font-newsreader text-base leading-snug">{v}</dd>
 								</div>
 							{/if}
 						{/each}
@@ -537,12 +522,12 @@
 				</div>
 				<!-- door sign -->
 				<div class="mt-5 border border-line2 bg-white px-5 pt-4 pb-5">
-					<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-fade uppercase">
+					<p class="text-xs font-extrabold tracking-widest text-fade uppercase">
 						<span style="color: {cc};" aria-hidden="true">◆</span> Door sign
 					</p>
 					<div class="mt-3 flex items-center gap-4">
-						<div class="door-qr w-[96px] shrink-0">{@html data.door.svg}</div>
-						<p class="font-newsreader text-[15px] leading-snug text-soft">
+						<div class="door-qr w-24 shrink-0">{@html data.door.svg}</div>
+						<p class="font-newsreader text-base leading-snug text-soft">
 							Players scan it to open the event page and sign up. Visits from it show in analytics
 							as the door.
 						</p>
@@ -551,23 +536,23 @@
 						<button
 							type="button"
 							onclick={openSign}
-							class="h-[42px] bg-ink text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm"
+							class="h-11 bg-ink text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm"
 							>Full screen</button
 						>
 						<button
 							type="button"
 							onclick={() => window.print()}
-							class="h-[42px] border border-ink text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+							class="h-11 border border-ink text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 							>Print sign</button
 						>
 					</div>
 				</div>
 				{#if data.event.description}
 					<div class="mt-5 border-t border-line2 pt-4">
-						<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-fade uppercase">
+						<p class="text-xs font-extrabold tracking-widest text-fade uppercase">
 							About the event
 						</p>
-						<p class="mt-2 font-newsreader text-[15px] leading-[1.6] whitespace-pre-wrap text-soft">
+						<p class="mt-2 font-newsreader text-base leading-relaxed whitespace-pre-wrap text-soft">
 							{data.event.description}
 						</p>
 					</div>

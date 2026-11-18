@@ -38,7 +38,7 @@
 		media: data.media
 	});
 	const action =
-		'inline-flex h-8 items-center border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors';
+		'inline-flex h-8 items-center border px-3 text-xs font-extrabold tracking-widest uppercase transition-colors';
 </script>
 
 <svelte:head>
@@ -50,13 +50,13 @@
 <!-- preview banner: sticks under the Desk bar so it's never mistaken for the live page -->
 <div class="sticky top-[var(--desk-top)] z-30 border-b border-ink bg-paper-bg/95 backdrop-blur-sm">
 	<div
-		class="mx-auto flex min-h-[52px] max-w-[1680px] items-center justify-between gap-3 px-4 py-2.5 md:gap-4 md:px-8"
+		class="mx-auto flex min-h-13 max-w-420 items-center justify-between gap-3 px-4 py-2.5 md:gap-4 md:px-8"
 	>
-		<p class="flex min-w-0 items-center gap-3 text-[12.5px] text-soft">
+		<p class="flex min-w-0 items-center gap-3 text-xs text-soft">
 			<span
-				class="inline-flex shrink-0 items-center gap-2 bg-warm px-2.5 py-1 text-[10px] font-extrabold tracking-[0.16em] text-white uppercase"
+				class="inline-flex shrink-0 items-center gap-2 bg-warm px-2.5 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
 			>
-				<span class="text-[7px]" aria-hidden="true">◆</span> Preview · {state.label}
+				<span class="text-xs" aria-hidden="true">◆</span> Preview · {state.label}
 			</span>
 			<span class="hidden truncate sm:inline">{state.note}</span>
 		</p>

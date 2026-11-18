@@ -64,7 +64,7 @@
 
 	const newHref = $derived(`/studio/media/new${kind !== 'all' ? `?kind=${kind}` : ''}`);
 	const chip =
-		'inline-flex items-center border px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.14em] uppercase';
+		'inline-flex items-center border px-1.5 py-px text-xs font-extrabold tracking-widest uppercase';
 </script>
 
 <svelte:head><title>Media · Studio</title></svelte:head>
@@ -77,27 +77,27 @@
 		<a
 			href={newHref}
 			class="{compact
-				? 'h-8 px-3 text-[9.5px]'
-				: 'h-10 px-5 text-[10.5px]'} inline-flex items-center bg-gold font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-paper-bg"
+				? 'h-8 px-3 text-xs'
+				: 'h-10 px-5 text-xs'} inline-flex items-center bg-gold font-extrabold tracking-widest text-ink uppercase transition-colors hover:bg-paper-bg"
 			>{kind !== 'all' ? KIND[kind].newLabel : 'New'}</a
 		>
 	{/snippet}
 </DeskHeader>
 <DeskTabs />
 
-<div class="mx-auto w-full max-w-[1200px] px-5 py-8 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page px-5 py-8 font-libre md:px-8">
 	<nav class="flex flex-wrap gap-x-6 border-b border-line2" aria-label="Kinds">
 		{#each [['all', 'All'], ...KINDS.map((k) => [k.id, k.label])] as [id, label] (id)}
 			<button
 				type="button"
 				onclick={() => (kind = id)}
 				aria-current={kind === id ? 'page' : undefined}
-				class="-mb-px flex items-baseline gap-2 border-b-[3px] py-3 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors {kind ===
+				class="-mb-px flex items-baseline gap-2 border-b-3 py-3 text-xs font-extrabold tracking-widest uppercase transition-colors {kind ===
 				id
 					? 'border-ink text-ink'
 					: 'border-transparent text-fade hover:text-ink'}"
 			>
-				{label}<span class="text-[10px] tracking-normal text-fade tabular-nums">{countOf(id)}</span>
+				{label}<span class="text-xs tracking-normal text-fade tabular-nums">{countOf(id)}</span>
 			</button>
 		{/each}
 	</nav>
@@ -108,12 +108,12 @@
 			bind:value={q}
 			placeholder="Search titles, players, heroes, shows, guests"
 			aria-label="Search media"
-			class="h-[42px] min-w-0 flex-1 basis-[240px] border border-line2 bg-white px-3 text-[13.5px] focus:border-ink focus:ring-0 focus:outline-none"
+			class="h-11 min-w-0 flex-1 basis-60 border border-line2 bg-white px-3 text-sm focus:border-ink focus:ring-0 focus:outline-none"
 		/>
 		<select
 			bind:value={stage}
 			aria-label="Status"
-			class="h-[42px] border border-line2 bg-white px-3 pr-8 text-[13px] focus:border-ink focus:ring-0"
+			class="h-11 border border-line2 bg-white px-3 pr-8 text-sm focus:border-ink focus:ring-0"
 		>
 			{#each STAGES as [id, label] (id)}<option value={id}>{label}</option>{/each}
 		</select>
@@ -137,22 +137,22 @@
 								<span class="{chip} {STAGE[i.stage].tone}">{STAGE[i.stage].word}</span>
 								{#if i.isPremium}<span class="{chip} border-prem/50 text-prem">Premium</span>{/if}
 							</div>
-							<p class="mt-2 font-newsreader text-[20px] leading-tight font-semibold">{i.title}</p>
-							{#if byline(i)}<p class="mt-0.5 text-[13px] text-soft">{byline(i)}</p>{/if}
-							<p class="mt-0.5 text-[12px] text-fade">
+							<p class="mt-2 font-newsreader text-xl leading-tight font-semibold">{i.title}</p>
+							{#if byline(i)}<p class="mt-0.5 text-sm text-soft">{byline(i)}</p>{/if}
+							<p class="mt-0.5 text-xs text-fade">
 								{[i.event?.title, shortDate(i.publishedAt || i.createdAt)]
 									.filter(Boolean)
 									.join(' · ')}
 							</p>
 							{#if up && up.state !== 'ready'}
-								<div class="mt-2 max-w-[360px]">
-									<div class="h-[3px] bg-line2">
+								<div class="mt-2 max-w-sm">
+									<div class="h-1 bg-line2">
 										<div
 											class="h-full {up.state === 'failed' ? 'bg-hero-rb' : 'bg-warm'}"
 											style="width: {up.percent}%"
 										></div>
 									</div>
-									<p class="mt-1 text-[11.5px] text-fade">
+									<p class="mt-1 text-xs text-fade">
 										{up.state === 'failed'
 											? up.error || 'Upload failed'
 											: `Uploading ${Math.round(up.percent)}%`}
@@ -161,16 +161,16 @@
 							{/if}
 						</div>
 						<div class="text-right max-sm:text-left">
-							<p class="text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase">Plays</p>
-							<p class="text-[18px] font-extrabold tabular-nums">{i.plays}</p>
+							<p class="text-xs font-extrabold tracking-widest text-fade uppercase">Plays</p>
+							<p class="text-lg font-extrabold tabular-nums">{i.plays}</p>
 						</div>
 					</a>
 				</li>
 			{/each}
 		</ul>
 	{:else}
-		<div class="mt-8 border-[3px] border-double border-ink px-6 py-12 text-center">
-			<p class="font-newsreader text-[22px] font-semibold">
+		<div class="mt-8 border-3 border-double border-ink px-6 py-12 text-center">
+			<p class="font-newsreader text-2xl font-semibold">
 				{ofKind.length
 					? 'Nothing matches.'
 					: `No ${kind === 'all' ? 'media' : KIND[kind].label.toLowerCase()} yet.`}
@@ -178,7 +178,7 @@
 			{#if !ofKind.length}
 				<a
 					href={newHref}
-					class="mt-5 inline-block bg-ink px-5 py-3 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase hover:bg-warm"
+					class="mt-5 inline-block bg-ink px-5 py-3 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm"
 					>Add the first one</a
 				>
 			{/if}
@@ -186,7 +186,7 @@
 	{/if}
 
 	{#if data.canSeeUnused}
-		<p class="mt-12 border-t border-line pt-4 text-[12px] text-fade">
+		<p class="mt-12 border-t border-line pt-4 text-xs text-fade">
 			Looking for files on Mux that nothing uses? <a
 				href="/desk/videos/unused"
 				class="underline underline-offset-2 hover:text-ink">Unused on Mux →</a

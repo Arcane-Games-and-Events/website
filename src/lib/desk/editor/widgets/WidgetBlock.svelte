@@ -42,9 +42,9 @@
 	let kind = $derived(KINDS[type] || { label: 'Widget', tone: 'text-fade' });
 
 	const PITCHES = [
-		['red', 'bg-[#A8392C]'],
-		['yellow', 'bg-[#E5703E]'],
-		['blue', 'bg-[#2C5BA8]']
+		['red', 'bg-pitch-red'],
+		['yellow', 'bg-pitch-yellow'],
+		['blue', 'bg-hero-wz']
 	];
 
 	function formatDuration(sec) {
@@ -105,7 +105,7 @@
 	};
 
 	const btn =
-		'inline-flex h-8 shrink-0 items-center gap-1 px-2.5 text-[9.5px] font-extrabold tracking-[0.14em] uppercase transition-colors';
+		'inline-flex h-8 shrink-0 items-center gap-1 px-2.5 text-xs font-extrabold tracking-widest uppercase transition-colors';
 </script>
 
 <!-- these listeners only fence events off from the editor around the card -->
@@ -123,28 +123,26 @@
 	<!-- header: what it is, then preview / edit / remove. On phones the
 	     title drops to its own line under the buttons. -->
 	<div
-		class="flex min-h-[44px] flex-wrap items-center gap-x-2.5 border-b border-line2 pr-1 pl-3 sm:flex-nowrap"
+		class="flex min-h-11 flex-wrap items-center gap-x-2.5 border-b border-line2 pr-1 pl-3 sm:flex-nowrap"
 	>
 		<span
-			class="flex h-[42px] shrink-0 items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.18em] uppercase"
-			><span class="text-[8px] {kind.tone}" aria-hidden="true">◆</span>{kind.label}</span
+			class="flex h-11 shrink-0 items-center gap-1.5 text-xs font-extrabold tracking-widest uppercase"
+			><span class="text-xs {kind.tone}" aria-hidden="true">◆</span>{kind.label}</span
 		>
 		<span
-			class="order-last min-w-0 basis-full truncate pr-2 pb-2.5 font-newsreader text-[15px] leading-tight font-semibold sm:order-none sm:flex-1 sm:basis-auto sm:pb-0"
+			class="order-last min-w-0 basis-full truncate pr-2 pb-2.5 font-newsreader text-base leading-tight font-semibold sm:order-none sm:flex-1 sm:basis-auto sm:pb-0"
 			>{title}</span
 		>
-		{#if meta}<span class="hidden shrink-0 text-[11.5px] text-fade sm:inline">{meta}</span>{/if}
+		{#if meta}<span class="hidden shrink-0 text-xs text-fade sm:inline">{meta}</span>{/if}
 		<span class="ml-auto flex shrink-0 items-center sm:ml-0">
 			<button
 				type="button"
 				onmousedown={hold}
 				onclick={() => (open = !open)}
 				aria-expanded={open}
-				class="{btn} {open
-					? 'bg-ink text-paper-bg'
-					: 'text-soft hover:bg-ink/[0.06] hover:text-ink'}"
+				class="{btn} {open ? 'bg-ink text-paper-bg' : 'text-soft hover:bg-ink/5 hover:text-ink'}"
 				>Preview<span
-					class="text-[9px] transition-transform duration-200 {open ? 'rotate-180' : ''}"
+					class="text-xs transition-transform duration-200 {open ? 'rotate-180' : ''}"
 					aria-hidden="true">▾</span
 				></button
 			>
@@ -152,7 +150,7 @@
 				type="button"
 				onmousedown={hold}
 				onclick={onedit}
-				class="{btn} text-soft hover:bg-ink/[0.06] hover:text-ink">Edit</button
+				class="{btn} text-soft hover:bg-ink/5 hover:text-ink">Edit</button
 			>
 			<button
 				type="button"
@@ -160,7 +158,7 @@
 				onclick={onremove}
 				aria-label="Remove {kind.label.toLowerCase()}"
 				title="Remove"
-				class="{btn} w-8 justify-center px-0 text-[16px] font-normal text-fade hover:bg-hero-rb/10 hover:text-hero-rb"
+				class="{btn} w-8 justify-center px-0 text-base font-normal text-fade hover:bg-hero-rb/10 hover:text-hero-rb"
 				>×</button
 			>
 		</span>
@@ -170,7 +168,7 @@
 		<!-- preview: the public rendering in the article's typography -->
 		<div class="bg-paper-bg">
 			<p
-				class="flex items-baseline justify-between gap-3 px-3 pt-2.5 text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase md:px-5"
+				class="flex items-baseline justify-between gap-3 px-3 pt-2.5 text-xs font-extrabold tracking-widest text-fade uppercase md:px-5"
 			>
 				On the page<span class="font-semibold tracking-normal normal-case">As readers see it</span>
 			</p>
@@ -185,7 +183,7 @@
 			role="group"
 			aria-label="How the image sits on the page"
 		>
-			<span class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">Size</span>
+			<span class="text-xs font-extrabold tracking-widest text-fade uppercase">Size</span>
 			<span class="inline-flex flex-wrap gap-px border border-line2 bg-line2">
 				{#each SIZE_KEYS as key (key)}
 					<button
@@ -193,7 +191,7 @@
 						onmousedown={hold}
 						onclick={() => onchange?.({ size: key })}
 						aria-pressed={size === key}
-						class="h-8 px-2.5 text-[10px] font-extrabold tracking-[0.1em] uppercase transition-colors {size ===
+						class="h-8 px-2.5 text-xs font-extrabold tracking-widest uppercase transition-colors {size ===
 						key
 							? 'bg-ink text-paper-bg'
 							: 'bg-paper-bg text-soft hover:text-ink'}">{IMAGE_SIZES[key].label}</button
@@ -201,8 +199,7 @@
 				{/each}
 			</span>
 			{#if alignable}
-				<span class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase md:ml-2"
-					>Place</span
+				<span class="text-xs font-extrabold tracking-widest text-fade uppercase md:ml-2">Place</span
 				>
 				<span
 					class="inline-flex gap-px border border-line2 bg-line2"
@@ -215,7 +212,7 @@
 							onmousedown={hold}
 							onclick={() => onchange?.({ align: key })}
 							aria-pressed={align === key}
-							class="h-8 px-2.5 text-[10px] font-extrabold tracking-[0.1em] uppercase transition-colors {align ===
+							class="h-8 px-2.5 text-xs font-extrabold tracking-widest uppercase transition-colors {align ===
 							key
 								? 'bg-ink text-paper-bg'
 								: 'bg-paper-bg text-soft hover:text-ink'}">{IMAGE_ALIGNS[key].label}</button
@@ -224,13 +221,13 @@
 				</span>
 			{/if}
 			{#if size === 'wide' || size === 'full'}
-				<span class="text-[11.5px] text-fade"
+				<span class="text-xs text-fade"
 					>{size === 'wide'
 						? 'Breaks out past the text column on the page (never over a sidebar).'
 						: 'Runs edge to edge across the screen on the page.'}</span
 				>
 			{:else if alignable && align !== 'center'}
-				<span class="text-[11.5px] text-fade"
+				<span class="text-xs text-fade"
 					>The text wraps around it on the page. On phones it sits on its own line.</span
 				>
 			{/if}
@@ -247,7 +244,7 @@
 				<img
 					src={data.url}
 					alt={data.alt || ''}
-					class="block max-h-[300px] min-w-0 object-contain {size === 'small'
+					class="block max-h-75 min-w-0 object-contain {size === 'small'
 						? 'w-auto max-w-[50%]'
 						: size === 'medium'
 							? 'w-auto max-w-[70%]'
@@ -261,10 +258,10 @@
 					</span>
 				{/if}
 			{:else}
-				<p class="py-6 text-[13px] text-fade">This image is missing its file.</p>
+				<p class="py-6 text-sm text-fade">This image is missing its file.</p>
 			{/if}
 		</div>
-		<p class="border-t border-line2 px-3 py-2 text-[12px]">
+		<p class="border-t border-line2 px-3 py-2 text-xs">
 			{#if data?.alt}<span class="text-fade">Alt text</span>&nbsp; {data.alt}{:else}<span
 					class="text-hero-rb">No alt text.</span
 				> <span class="text-fade">Add a short description in Edit.</span>{/if}
@@ -273,12 +270,12 @@
 		{@const cols = data?.columns || []}
 		{@const rows = data?.rows || []}
 		<div class="overflow-x-auto px-3 py-2.5">
-			<table class="w-full text-[12.5px]">
+			<table class="w-full text-xs">
 				<thead>
 					<tr class="border-b border-line2">
 						{#each cols as c, i (i)}
 							<th
-								class="px-2 py-1.5 text-left text-[9.5px] font-extrabold tracking-[0.12em] text-fade uppercase"
+								class="px-2 py-1.5 text-left text-xs font-extrabold tracking-widest text-fade uppercase"
 								>{c}</th
 							>
 						{/each}
@@ -295,20 +292,20 @@
 				</tbody>
 			</table>
 			{#if rows.length > 4}
-				<p class="px-2 pt-1.5 text-[11.5px] text-fade">
+				<p class="px-2 pt-1.5 text-xs text-fade">
 					And {rows.length - 4} more {rows.length - 4 === 1 ? 'row' : 'rows'}
 				</p>
 			{/if}
 		</div>
 	{:else if type === 'decklist'}
 		<div class="px-3 py-3">
-			<p class="text-[13px]">
+			<p class="text-sm">
 				{[data?.hero, data?.format].filter(Boolean).join(' · ') ||
 					'No hero or format'}{#if data?.creator}<span class="text-fade"
 						>&nbsp;· by {data.creator}</span
 					>{/if}
 			</p>
-			<p class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-soft">
+			<p class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-soft">
 				<span><b class="font-semibold text-ink tabular-nums">{deck.arena}</b> arena</span>
 				{#each PITCHES as [p, swatch] (p)}
 					{#if deck.byPitch[p]}
@@ -325,7 +322,7 @@
 					>{/if}
 			</p>
 			{#if data?.fabraryUrl}
-				<p class="mt-2 truncate text-[11.5px] text-fade">
+				<p class="mt-2 truncate text-xs text-fade">
 					Links to {data.fabraryUrl.replace(/^https?:\/\//, '')}
 				</p>
 			{/if}
@@ -340,13 +337,13 @@
 				/>
 			{/if}
 			<div class="min-w-0">
-				<p class="flex items-center gap-2 text-[11.5px] text-fade">
+				<p class="flex items-center gap-2 text-xs text-fade">
 					<span
-						class="border border-current px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.14em] text-hero-rb uppercase"
+						class="border border-current px-1.5 py-px text-xs font-extrabold tracking-widest text-hero-rb uppercase"
 						>YouTube</span
 					>{formatDuration(data?.youtubeDuration)}
 				</p>
-				<p class="mt-1 line-clamp-2 text-[13px] leading-snug">
+				<p class="mt-1 line-clamp-2 text-sm leading-snug">
 					{data?.youtubeTitle || data?.youtubeUrl || 'Untitled video'}
 				</p>
 			</div>

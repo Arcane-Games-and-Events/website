@@ -69,15 +69,13 @@
 	}
 
 	const optionCls =
-		'flex w-full items-center gap-3 border-[1.5px] px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60';
+		'flex w-full items-center gap-3 border-2 px-4 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60';
 </script>
 
 <div class="space-y-4">
 	{#if cards.length > 0}
 		<div>
-			<div class="mb-[10px] text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase">
-				Pay with
-			</div>
+			<div class="mb-2.5 text-xs font-extrabold tracking-widest text-fade uppercase">Pay with</div>
 			<div class="space-y-2">
 				{#each cards as card (card.id)}
 					<button
@@ -93,20 +91,19 @@
 						aria-pressed={mode === 'saved' && selectedId === card.id}
 					>
 						<span
-							class="block h-3 w-3 shrink-0 border-[1.5px] {mode === 'saved' &&
-							selectedId === card.id
+							class="block h-3 w-3 shrink-0 border-2 {mode === 'saved' && selectedId === card.id
 								? 'border-ink bg-ink'
 								: 'border-line2'}"
 						></span>
 						<span class="min-w-0 flex-1">
-							<span class="block text-[13.5px] font-semibold text-ink">
+							<span class="block text-sm font-semibold text-ink">
 								{card.brand} •••• {card.lastFour}
 								{#if card.isDefault}<span
-										class="ml-2 text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
+										class="ml-2 text-xs font-extrabold tracking-widest text-fade uppercase"
 										>Default</span
 									>{/if}
 							</span>
-							<span class="block text-[11.5px] {card.usable ? 'text-fade' : 'text-hero-rb'}">
+							<span class="block text-xs {card.usable ? 'text-fade' : 'text-hero-rb'}">
 								{#if card.status === 'expired'}
 									Expired {card.expiry}.
 									<a href="/account/payment-methods" class="underline">Update it</a> to use it again.
@@ -129,11 +126,11 @@
 					aria-pressed={mode === 'new'}
 				>
 					<span
-						class="block h-3 w-3 shrink-0 border-[1.5px] {mode === 'new'
+						class="block h-3 w-3 shrink-0 border-2 {mode === 'new'
 							? 'border-ink bg-ink'
 							: 'border-line2'}"
 					></span>
-					<span class="text-[13.5px] font-semibold text-ink">Use a new card</span>
+					<span class="text-sm font-semibold text-ink">Use a new card</span>
 				</button>
 			</div>
 		</div>
@@ -149,10 +146,10 @@
 			compact={cards.length > 0}
 		/>
 		{#if showSaveOption}
-			<label class="flex items-start gap-3 text-[12.5px] text-soft">
+			<label class="flex items-start gap-3 text-xs text-soft">
 				<input
 					type="checkbox"
-					class="mt-[2px] h-4 w-4 shrink-0 border-[1.5px] border-line2 text-ink focus:ring-0"
+					class="mt-0.5 h-4 w-4 shrink-0 border-2 border-line2 text-ink focus:ring-0"
 					bind:checked={saveCard}
 					disabled={disabled || forceSave}
 				/>

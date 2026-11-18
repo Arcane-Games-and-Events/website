@@ -51,20 +51,18 @@
 {#if form?.error}<AdminNotice tone="error" message={form.error} />{/if}
 
 <div
-	class="mx-auto w-full max-w-[1200px] px-5 pt-7 pb-20 md:px-8"
+	class="mx-auto w-full max-w-page px-5 pt-7 pb-20 md:px-8"
 	style={circuit ? `--cc: ${circuit.color}` : ''}
 >
-	<h2 class="ao-cond text-[44px] leading-none font-black uppercase md:text-[56px]">
-		Schedule an Open
-	</h2>
-	<p class="mt-1.5 text-[13px] text-soft">
+	<h2 class="ao-cond text-5xl leading-none font-black uppercase md:text-6xl">Schedule an Open</h2>
+	<p class="mt-1.5 text-sm text-soft">
 		It goes live on the AGE Open as soon as you create it.
 		{#if runBy}It’ll show in {runBy.name}’s store area too.{/if}
 	</p>
 
 	<form
 		method="POST"
-		class="mt-7 max-w-[980px] border border-t-[4px] border-line2 bg-white"
+		class="mt-7 max-w-5xl border border-t-4 border-line2 bg-white"
 		style="border-top-color: {circuit ? circuit.color : 'var(--color-ink)'}"
 		use:enhance={() => {
 			busy = true;
@@ -160,11 +158,11 @@
 			</div>
 		</div>
 		<div
-			class="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 border-t border-line2 bg-white px-5 py-3.5 shadow-[0_-12px_24px_-18px_rgb(23_21_15/0.35)] md:px-7"
+			class="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 border-t border-line2 bg-white px-5 py-3.5 shadow-up md:px-7"
 		>
 			<a href="/admin/events" class={ui.ghost}>Cancel</a>
 			<button
-				class="inline-flex h-[44px] items-center gap-2 px-6 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:opacity-50"
+				class="inline-flex h-11 items-center gap-2 px-6 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110 disabled:opacity-50"
 				style="background: {circuit ? circuit.color : 'var(--color-ink)'}"
 				disabled={busy || !circuit}
 				>{busy ? 'Creating…' : 'Create the event'} <span aria-hidden="true">→</span></button

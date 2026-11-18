@@ -19,11 +19,11 @@
 
 <svelte:head><title>Events · {w.store.name}</title></svelte:head>
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-8 pb-20 md:px-8">
 	<div class="flex flex-wrap items-end justify-between gap-4">
 		<div>
-			<h2 class="ao-cond text-[44px] leading-none font-black uppercase md:text-[56px]">Events</h2>
-			<p class="mt-1.5 text-[13px] text-soft">
+			<h2 class="ao-cond text-5xl leading-none font-black uppercase md:text-6xl">Events</h2>
+			<p class="mt-1.5 text-sm text-soft">
 				{data.events.length}
 				{data.events.length === 1 ? 'event' : 'events'} · {ui.fmt(players)} players all time
 			</p>
@@ -31,25 +31,22 @@
 		{#if w.store.active}
 			<a
 				href="{base}/events/new"
-				class="inline-flex h-[44px] items-center gap-2 bg-ink px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm"
+				class="inline-flex h-11 items-center gap-2 bg-ink px-5 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm"
 				>+ Schedule an Open</a
 			>
 		{/if}
 	</div>
 
 	<section class="mt-9">
-		<h3
-			class="flex items-baseline justify-between border-b-[3px] pb-2"
-			style="border-color: {color}"
-		>
-			<span class="text-[10.5px] font-extrabold tracking-[0.22em] uppercase">Coming up</span>
-			<span class="text-[11px] text-fade">{ahead.length}</span>
+		<h3 class="flex items-baseline justify-between border-b-3 pb-2" style="border-color: {color}">
+			<span class="text-xs font-extrabold tracking-widest uppercase">Coming up</span>
+			<span class="text-xs text-fade">{ahead.length}</span>
 		</h3>
 		<ul class="mt-4 flex flex-col gap-2.5">
 			{#each ahead as e (e.id)}
 				<EventRow {e} href="{base}/events/{e.id}" {color} circuit={w.circuit.name} now={data.now} />
 			{:else}
-				<li class="border border-dashed border-line2 px-5 py-6 text-[13.5px] text-soft">
+				<li class="border border-dashed border-line2 px-5 py-6 text-sm text-soft">
 					Nothing scheduled.
 					{#if w.store.active}<a
 							href="{base}/events/new"
@@ -62,9 +59,9 @@
 
 	{#if before.length}
 		<section class="mt-12">
-			<h3 class="flex items-baseline justify-between border-b-[3px] border-ink pb-2">
-				<span class="text-[10.5px] font-extrabold tracking-[0.22em] uppercase">Played & past</span>
-				<span class="text-[11px] text-fade">{before.length}</span>
+			<h3 class="flex items-baseline justify-between border-b-3 border-ink pb-2">
+				<span class="text-xs font-extrabold tracking-widest uppercase">Played & past</span>
+				<span class="text-xs text-fade">{before.length}</span>
 			</h3>
 			<ul class="mt-4 flex flex-col gap-2.5">
 				{#each before as e (e.id)}

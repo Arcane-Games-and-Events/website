@@ -57,9 +57,9 @@
 		}
 	}
 
-	const label = 'text-[10.5px] font-extrabold tracking-[0.16em] uppercase';
+	const label = 'text-xs font-extrabold tracking-widest uppercase';
 	const chip =
-		'inline-flex items-center border px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.14em] uppercase';
+		'inline-flex items-center border px-1.5 py-px text-xs font-extrabold tracking-widest uppercase';
 </script>
 
 <svelte:head><title>Network · Studio</title></svelte:head>
@@ -70,7 +70,7 @@
 />
 <DeskTabs />
 
-<div class="mx-auto w-full max-w-[1200px] space-y-10 px-5 py-8 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page space-y-10 px-5 py-8 font-libre md:px-8">
 	<section class="border border-line2 bg-white p-5 md:p-6">
 		<h2 class={label}>Add a creator</h2>
 		<form class="mt-3 flex flex-col gap-3 md:flex-row" onsubmit={lookUp}>
@@ -82,20 +82,20 @@
 					bind:value={url}
 					oninput={() => (preview = null)}
 					placeholder="https://www.youtube.com/@channel"
-					class="h-11 w-full border border-line2 bg-paper-bg px-3 text-[14px] outline-none focus:border-ink"
+					class="h-11 w-full border border-line2 bg-paper-bg px-3 text-sm outline-none focus:border-ink"
 				/>
 			</label>
 			<button
 				type="submit"
 				disabled={busy || !url.trim()}
-				class="h-11 bg-ink px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
+				class="h-11 bg-ink px-5 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
 				>{busy && !preview ? 'Looking…' : 'Look up'}</button
 			>
 		</form>
-		<p class="mt-2 text-[12px] text-fade">
+		<p class="mt-2 text-xs text-fade">
 			Any link to the channel works: youtube.com/@name, /channel/UC…, /c/… or /user/…
 		</p>
-		{#if error}<p class="mt-3 text-[13px] text-hero-rb" role="alert">{error}</p>{/if}
+		{#if error}<p class="mt-3 text-sm text-hero-rb" role="alert">{error}</p>{/if}
 
 		{#if preview}
 			<div class="mt-5 grid gap-4 border-t border-line pt-5 sm:grid-cols-[96px_minmax(0,1fr)]">
@@ -105,15 +105,15 @@
 					<span class="h-24 w-24 bg-ink"></span>
 				{/if}
 				<div class="min-w-0">
-					<p class="font-newsreader text-[22px] font-semibold">{preview.name}</p>
-					<p class="text-[12.5px] text-soft">
+					<p class="font-newsreader text-2xl font-semibold">{preview.name}</p>
+					<p class="text-xs text-soft">
 						{preview.handle ? `@${preview.handle}` : preview.channelId}
 					</p>
 					{#if preview.description}
-						<p class="mt-2 line-clamp-3 text-[13px] text-soft">{preview.description}</p>
+						<p class="mt-2 line-clamp-3 text-sm text-soft">{preview.description}</p>
 					{/if}
 					{#if preview.existing}
-						<p class="mt-3 text-[13px]">
+						<p class="mt-3 text-sm">
 							Already in the network:
 							<a href="/studio/network/{preview.existing.id}" class="underline hover:text-warm"
 								>{preview.existing.name}</a
@@ -125,7 +125,7 @@
 								<legend class="sr-only">Kind of creator</legend>
 								{#each [['video', 'Video'], ['podcast', 'Podcast']] as [k, word] (k)}
 									<label
-										class="cursor-pointer px-3 py-2 text-[10px] font-extrabold tracking-[0.14em] uppercase {kind ===
+										class="cursor-pointer px-3 py-2 text-xs font-extrabold tracking-widest uppercase {kind ===
 										k
 											? 'bg-ink text-paper-bg'
 											: 'text-soft'}"
@@ -138,7 +138,7 @@
 								type="button"
 								onclick={add}
 								disabled={busy}
-								class="bg-gold px-5 py-2.5 text-[10.5px] font-extrabold tracking-[0.16em] text-ink uppercase hover:bg-ink hover:text-paper-bg disabled:opacity-50"
+								class="bg-gold px-5 py-2.5 text-xs font-extrabold tracking-widest text-ink uppercase hover:bg-ink hover:text-paper-bg disabled:opacity-50"
 								>{busy ? 'Adding…' : 'Add to the network'}</button
 							>
 						</div>
@@ -149,7 +149,7 @@
 	</section>
 
 	<section>
-		<h2 class="flex items-baseline justify-between border-b-[3px] border-ink pb-2.5 {label}">
+		<h2 class="flex items-baseline justify-between border-b-3 border-ink pb-2.5 {label}">
 			Creators <span class="tracking-normal text-fade normal-case">{data.channels.length}</span>
 		</h2>
 		{#if data.channels.length}
@@ -181,16 +181,16 @@
 											>{c.unavailable} gone from YouTube</span
 										>{/if}
 								</span>
-								<span class="mt-1 block truncate font-newsreader text-[18px] font-semibold"
+								<span class="mt-1 block truncate font-newsreader text-lg font-semibold"
 									>{c.name}</span
 								>
-								<span class="block text-[12px] text-soft"
+								<span class="block text-xs text-soft"
 									>{c.featured} featured · {c.videos} pulled in{c.handle
 										? ` · @${c.handle}`
 										: ''}</span
 								>
 							</span>
-							<span class="hidden text-right text-[11.5px] text-fade md:block">
+							<span class="hidden text-right text-xs text-fade md:block">
 								{c.lastSyncedAt ? `Synced ${shortDate(c.lastSyncedAt)}` : 'Not synced yet'}
 								{#if c.newestAt}<br />Newest upload {shortDate(c.newestAt)}{/if}
 							</span>
@@ -199,7 +199,7 @@
 				{/each}
 			</ul>
 		{:else}
-			<p class="py-8 text-[14px] text-soft">
+			<p class="py-8 text-sm text-soft">
 				No creators yet. Paste a YouTube channel link above to add the first.
 			</p>
 		{/if}

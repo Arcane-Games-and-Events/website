@@ -19,23 +19,23 @@
 					src={c.avatar}
 					alt=""
 					loading="lazy"
-					class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+					class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
 				/>
 			{:else}
 				<span
-					class="st-wide absolute inset-0 flex items-center justify-center p-3 text-center text-[15px] font-black uppercase"
+					class="st-wide absolute inset-0 flex items-center justify-center p-3 text-center text-base font-black uppercase"
 					>{c.name}</span
 				>
 			{/if}
 		</span>
-		<span class="relative mt-2 block px-0.5 text-[9px] font-extrabold tracking-[0.2em] uppercase"
+		<span class="relative mt-2 block px-0.5 text-xs font-extrabold tracking-widest uppercase"
 			>◆ {c.kind === 'podcast' ? 'Podcast' : 'Video'}</span
 		>
 	</span>
-	<span class="mt-2.5 block truncate font-newsreader text-[18px] font-semibold"
+	<span class="mt-2.5 block truncate font-newsreader text-lg font-semibold"
 		><span class="fp-ul">{c.name}</span></span
 	>
-	<span class="block text-[11.5px] text-fade"
+	<span class="block text-xs text-fade"
 		>{c.videos} {c.videos === 1 ? 'video' : 'videos'} on AGE Studios</span
 	>
 </a>

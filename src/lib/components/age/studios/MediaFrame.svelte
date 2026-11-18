@@ -28,29 +28,29 @@
 			{sizes}
 			alt=""
 			loading={eager ? 'eager' : 'lazy'}
-			class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+			class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
 		/>
 	{:else if item.still}
 		<img
 			src={item.still}
 			alt=""
 			loading={eager ? 'eager' : 'lazy'}
-			class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+			class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
 		/>
 	{:else}
 		<span
-			class="absolute inset-0 flex items-center justify-center bg-ink px-4 text-center font-newsreader text-[18px] text-paper-bg/75 italic"
+			class="absolute inset-0 flex items-center justify-center bg-ink px-4 text-center font-newsreader text-lg text-paper-bg/75 italic"
 			>{item.audio ? '♪' : item.title}</span
 		>
 	{/if}
 	{#if item.isPremium}<PremiumTag variant="corner" size="sm" />{/if}
 	<span
-		class="absolute right-0 bottom-0 flex h-8 w-8 translate-y-1 items-center justify-center bg-studio pl-[2px] text-[11px] text-white opacity-0 transition-[opacity,transform] group-hover:translate-y-0 group-hover:opacity-100"
+		class="absolute right-0 bottom-0 flex h-8 w-8 translate-y-1 items-center justify-center bg-studio pl-0.5 text-xs text-white opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100"
 		aria-hidden="true">{item.audio ? '♪' : '▶'}</span
 	>
 	{#if item.duration}
 		<span
-			class="absolute bottom-0 left-0 bg-ink/85 px-2 py-0.5 font-newsreader text-[12px] text-paper-bg tabular-nums"
+			class="absolute bottom-0 left-0 bg-ink/85 px-2 py-0.5 font-newsreader text-xs text-paper-bg tabular-nums"
 			>{clock(item.duration)}</span
 		>
 	{/if}

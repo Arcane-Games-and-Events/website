@@ -47,7 +47,7 @@
 </script>
 
 {#if error}
-	<p class="mb-3 border-l-[3px] border-hero-rb bg-hero-rb/5 px-4 py-2.5 text-[13px]" role="alert">
+	<p class="mb-3 border-l-3 border-hero-rb bg-hero-rb/5 px-4 py-2.5 text-sm" role="alert">
 		{error}
 	</p>
 {/if}
@@ -55,21 +55,21 @@
 	{#each items as item (item.id)}
 		<li class="border border-line2 bg-white p-5">
 			<div class="flex flex-wrap items-baseline justify-between gap-2">
-				<p class="text-[12.5px] text-fade">
+				<p class="text-xs text-fade">
 					<span class="font-semibold text-ink">{item.author}</span>
 					{#if item.muted}<span class="ml-1 text-hero-rb">(muted)</span>{/if}
 					· {shortDate(item.createdAt)}
 					{#if showCourse}· {item.courseTitle}{/if}
 				</p>
 				<span
-					class="px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.14em] uppercase {item.status ===
+					class="px-1.5 py-px text-xs font-extrabold tracking-widest uppercase {item.status ===
 					'held'
 						? 'border border-hero-rb text-hero-rb'
-						: 'border border-gold text-[#8a6116]'}"
+						: 'border border-gold text-gold-deep'}"
 					>{item.status === 'held' ? 'Hidden until reviewed' : 'Reported, still visible'}</span
 				>
 			</div>
-			<p class="mt-1 text-[12px] text-soft">
+			<p class="mt-1 text-xs text-soft">
 				{item.parentId ? 'Reply in' : 'Thread'}
 				<a
 					href="/academy/{item.courseSlug}/discussion/{item.thread?.id}#post-{item.id}"
@@ -79,25 +79,25 @@
 			<p class="mt-3 flex flex-wrap gap-1.5">
 				{#each item.flagReasons as r (r)}
 					{@const d = describeReason(r)}
-					<span class="border border-hero-rb px-1.5 text-[11px] text-hero-rb"
+					<span class="border border-hero-rb px-1.5 text-xs text-hero-rb"
 						>{d.label}{d.detail ? `: ${d.detail}` : ''}</span
 					>
 				{/each}
 			</p>
 			{#if item.title && !item.parentId}
-				<p class="mt-3 font-newsreader text-[18px] font-semibold">
+				<p class="mt-3 font-newsreader text-lg font-semibold">
 					{#each marked(item.title, item.flagReasons) as part, i (i)}{#if part.hit}<mark
 								class="bg-hero-rb/15 text-hero-rb">{part.text}</mark
 							>{:else}{part.text}{/if}{/each}
 				</p>
 			{/if}
-			<p class="mt-2 font-newsreader text-[16px] leading-relaxed whitespace-pre-line">
+			<p class="mt-2 font-newsreader text-base leading-relaxed whitespace-pre-line">
 				{#each marked(item.body, item.flagReasons) as part, i (i)}{#if part.hit}<mark
 							class="bg-hero-rb/15 text-hero-rb">{part.text}</mark
 						>{:else}{part.text}{/if}{/each}
 			</p>
 			{#if item.reports.length}
-				<div class="mt-3 border-l-[3px] border-gold bg-gold/10 px-3 py-2 text-[12.5px]">
+				<div class="mt-3 border-l-3 border-gold bg-gold/10 px-3 py-2 text-xs">
 					<b class="font-extrabold"
 						>{item.reports.length}
 						{item.reports.length === 1 ? 'report' : 'reports'}:</b
@@ -113,27 +113,27 @@
 					bind:value={notes[item.id]}
 					placeholder="Note to the student if removed (optional)"
 					maxlength="1000"
-					class="h-[38px] min-w-[220px] flex-1 border border-line2 px-2.5 text-[13px] focus:border-ink focus:ring-0"
+					class="h-10 min-w-55 flex-1 border border-line2 px-2.5 text-sm focus:border-ink focus:ring-0"
 				/>
 				<button
 					type="button"
 					onclick={() => act(item, 'approve')}
 					disabled={busy === item.id}
-					class="bg-prem px-4 py-2.5 text-[10px] font-extrabold tracking-[0.14em] text-white uppercase hover:brightness-110 disabled:opacity-50"
+					class="bg-prem px-4 py-2.5 text-xs font-extrabold tracking-widest text-white uppercase hover:brightness-110 disabled:opacity-50"
 					>Approve</button
 				>
 				<button
 					type="button"
 					onclick={() => act(item, 'remove')}
 					disabled={busy === item.id}
-					class="border-[1.5px] border-hero-rb px-4 py-2 text-[10px] font-extrabold tracking-[0.14em] text-hero-rb uppercase hover:bg-hero-rb hover:text-white disabled:opacity-50"
+					class="border-2 border-hero-rb px-4 py-2 text-xs font-extrabold tracking-widest text-hero-rb uppercase hover:bg-hero-rb hover:text-white disabled:opacity-50"
 					>Remove</button
 				>
 				<button
 					type="button"
 					onclick={() => act(item, 'remove_mute')}
 					disabled={busy === item.id}
-					class="px-2 py-2 text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase hover:text-hero-rb disabled:opacity-50"
+					class="px-2 py-2 text-xs font-extrabold tracking-widest text-fade uppercase hover:text-hero-rb disabled:opacity-50"
 					>Remove & mute</button
 				>
 			</div>

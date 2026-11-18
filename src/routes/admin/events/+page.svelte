@@ -81,7 +81,7 @@
 	<AdminNotice tone="error" message={form.error} />
 {/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-6 pb-20 md:px-8">
 	<Figures
 		items={[
 			{
@@ -103,7 +103,7 @@
 
 	<!-- search + filters -->
 	<div class="mt-8 flex flex-wrap items-center gap-3">
-		<label class="{ui.search} min-w-[240px] flex-1" aria-label="Search events">
+		<label class="{ui.search} min-w-60 flex-1" aria-label="Search events">
 			<svg
 				viewBox="0 0 20 20"
 				class="h-4 w-4 shrink-0 text-fade"
@@ -133,7 +133,7 @@
 			<button
 				type="button"
 				onclick={() => (eventsCircuitFilter = 'all')}
-				class="h-[38px] border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase {eventsCircuitFilter ===
+				class="h-10 border px-3 text-xs font-extrabold tracking-widest uppercase {eventsCircuitFilter ===
 				'all'
 					? 'border-ink bg-ink text-paper-bg'
 					: 'border-line2 bg-paper-bg text-soft hover:text-ink'}">All circuits</button
@@ -142,7 +142,7 @@
 				<button
 					type="button"
 					onclick={() => (eventsCircuitFilter = c.name)}
-					class="flex h-[38px] items-center gap-2 border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase {eventsCircuitFilter ===
+					class="flex h-10 items-center gap-2 border px-3 text-xs font-extrabold tracking-widest uppercase {eventsCircuitFilter ===
 					c.name
 						? 'border-ink bg-ink text-paper-bg'
 						: 'border-line2 bg-paper-bg text-soft hover:text-ink'}"
@@ -165,7 +165,7 @@
 					now={data.now}
 				/>
 			{:else}
-				<li class="border border-dashed border-line2 px-5 py-6 text-[13.5px] text-soft">
+				<li class="border border-dashed border-line2 px-5 py-6 text-sm text-soft">
 					{filtering ? 'No events match these filters.' : 'No events yet.'}
 					{#if !filtering}<a href="/admin/events/new" class="{ui.textAction} ml-2 not-italic"
 							>Create the first one →</a

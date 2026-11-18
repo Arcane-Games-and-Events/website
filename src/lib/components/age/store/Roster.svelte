@@ -90,21 +90,21 @@
 	{#if showCount}
 		<div class="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
 			<p class="ao-cond flex items-baseline gap-3 leading-none font-black uppercase">
-				<span class="text-[64px] tabular-nums md:text-[80px]">{seats}</span>
-				<span class="text-[24px] text-fade md:text-[28px]">signed up</span>
+				<span class="text-6xl tabular-nums md:text-7xl">{seats}</span>
+				<span class="text-2xl text-fade md:text-3xl">signed up</span>
 			</p>
 			{#if active.length}
-				<div class="w-full max-w-[340px]">
+				<div class="w-full max-w-xs">
 					<p
-						class="flex items-baseline justify-between text-[10px] font-extrabold tracking-[0.18em] uppercase"
+						class="flex items-baseline justify-between text-xs font-extrabold tracking-widest uppercase"
 					>
 						<span>Entered in GEM</span>
 						<span class="tabular-nums"
-							><span class="ao-cond text-[22px]">{entered}</span> / {active.length}</span
+							><span class="ao-cond text-2xl">{entered}</span> / {active.length}</span
 						>
 					</p>
 					<span
-						class="mt-1.5 block h-[6px] bg-line"
+						class="mt-1.5 block h-1.5 bg-line"
 						role="progressbar"
 						aria-valuenow={pct}
 						aria-valuemin="0"
@@ -125,7 +125,7 @@
 		<!-- search, filter, copy -->
 		<div class="{showCount ? 'mt-6' : ''} flex flex-wrap items-center gap-2.5">
 			<label
-				class="flex h-[40px] min-w-[200px] flex-1 items-center gap-2 border border-line2 bg-white px-3 focus-within:border-ink"
+				class="flex h-10 min-w-50 flex-1 items-center gap-2 border border-line2 bg-white px-3 focus-within:border-ink"
 			>
 				<svg
 					viewBox="0 0 20 20"
@@ -140,7 +140,7 @@
 					bind:value={q}
 					type="search"
 					placeholder="Find a player or GEM ID"
-					class="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-[14px] focus:ring-0"
+					class="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm focus:ring-0"
 				/>
 			</label>
 			<div class="flex border border-line2 bg-white" role="group" aria-label="Show">
@@ -149,7 +149,7 @@
 						type="button"
 						onclick={() => (show = /** @type {any} */ (v))}
 						aria-pressed={show === v}
-						class="h-[38px] px-3.5 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {show ===
+						class="h-10 px-3.5 text-xs font-extrabold tracking-widest uppercase transition-colors {show ===
 						v
 							? 'bg-ink text-paper-bg'
 							: 'hover:bg-paper'}">{l}</button
@@ -166,11 +166,11 @@
 							.join('\n'),
 						'all'
 					)}
-				class="inline-flex h-[40px] items-center border border-line2 bg-white px-3.5 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:border-ink"
+				class="inline-flex h-10 items-center border border-line2 bg-white px-3.5 text-xs font-extrabold tracking-widest uppercase transition-colors hover:border-ink"
 				>{copied === 'all' ? 'Copied ✓' : 'Copy all GEM IDs'}</button
 			>
 		</div>
-		{#if error}<p class="mt-3 text-[13px] font-semibold text-hero-rb" role="alert">{error}</p>{/if}
+		{#if error}<p class="mt-3 text-sm font-semibold text-hero-rb" role="alert">{error}</p>{/if}
 
 		<ol class="mt-4 border-t border-line2">
 			{#each shown as p (p.ticketId)}
@@ -181,32 +181,31 @@
 						: ''}"
 				>
 					<span
-						class="ao-cond hidden w-[30px] shrink-0 text-right text-[20px] leading-none font-black text-fade tabular-nums sm:block"
+						class="ao-cond hidden w-8 shrink-0 text-right text-xl leading-none font-black text-fade tabular-nums sm:block"
 						>{n}</span
 					>
 					<span
-						class="flex h-[38px] w-[38px] shrink-0 items-center justify-center font-newsreader text-[14px] font-semibold text-white"
+						class="flex h-10 w-10 shrink-0 items-center justify-center font-newsreader text-sm font-semibold text-white"
 						style="background: {p.premium ? 'var(--color-prem)' : 'var(--color-ink)'};"
 						aria-hidden="true">{p.initials}</span
 					>
 					<span class="min-w-0 flex-1">
 						<span class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
 							<span
-								class="truncate font-newsreader text-[16.5px] font-semibold {p.out
+								class="truncate font-newsreader text-base font-semibold {p.out
 									? 'line-through'
 									: ''}">{p.name}</span
 							>
 							{#if p.premium}<span
-									class="text-[8.5px] font-extrabold tracking-[0.16em] text-prem uppercase"
-									>◆ Premium</span
+									class="text-xs font-extrabold tracking-widest text-prem uppercase">◆ Premium</span
 								>{/if}
 							{#if p.firstOpen && !p.out}<span
-									class="bg-gold/25 px-1.5 py-[1px] text-[8.5px] font-extrabold tracking-[0.14em] text-[#8a6116] uppercase"
+									class="bg-gold/25 px-1.5 py-px text-xs font-extrabold tracking-widest text-gold-deep uppercase"
 									>First Open</span
 								>{/if}
-							{#if p.seats > 1}<span class="text-[11px] text-soft">× {p.seats}</span>{/if}
+							{#if p.seats > 1}<span class="text-xs text-soft">× {p.seats}</span>{/if}
 						</span>
-						<span class="mt-0.5 flex flex-wrap items-center gap-x-3 text-[11.5px] text-fade">
+						<span class="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-fade">
 							{#if p.gemId}
 								<button
 									type="button"
@@ -214,7 +213,7 @@
 									class="inline-flex items-center gap-1 font-mono-system text-ink hover:text-warm"
 									title="Copy GEM ID"
 								>
-									GEM {p.gemId}<span class="text-[10px] text-fade"
+									GEM {p.gemId}<span class="text-xs text-fade"
 										>{copied === p.ticketId ? '✓' : '⧉'}</span
 									>
 								</button>
@@ -232,7 +231,7 @@
 							disabled={!canEnter || p.busy}
 							aria-pressed={p.entered}
 							aria-label="{p.name}: {p.entered ? 'entered in GEM' : 'not entered in GEM yet'}"
-							class="inline-flex h-[38px] w-[118px] shrink-0 items-center justify-center gap-1.5 border text-[9.5px] font-extrabold tracking-[0.14em] uppercase transition-colors disabled:cursor-default {p.entered
+							class="inline-flex h-10 w-30 shrink-0 items-center justify-center gap-1.5 border text-xs font-extrabold tracking-widest uppercase transition-colors disabled:cursor-default {p.entered
 								? 'border-transparent text-white'
 								: 'border-line2 bg-white text-ink hover:border-ink'}"
 							style={p.entered ? 'background: var(--cc)' : ''}
@@ -241,11 +240,11 @@
 					{/if}
 				</li>
 			{:else}
-				<li class="py-6 text-[13.5px] text-soft">No one matches.</li>
+				<li class="py-6 text-sm text-soft">No one matches.</li>
 			{/each}
 		</ol>
 	{:else}
-		<p class="mt-6 border border-dashed border-line2 px-5 py-6 text-[13.5px] text-soft">
+		<p class="mt-6 border border-dashed border-line2 px-5 py-6 text-sm text-soft">
 			No sign-ups yet. Share the public page to get players in.
 		</p>
 	{/if}

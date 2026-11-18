@@ -18,18 +18,18 @@
 	style="background-color: {tint.base};"
 >
 	<img
-		class="absolute inset-0 h-full w-full object-cover contrast-[1.08] grayscale transition-[filter,scale] duration-[1400ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.015] group-hover:grayscale-[0.35]"
+		class="absolute inset-0 h-full w-full object-cover contrast-[1.08] grayscale transition duration-1400 ease-out group-hover:scale-102 group-hover:grayscale-[0.35]"
 		src={image}
 		{alt}
 		loading="lazy"
 	/>
 	<span
-		class="absolute inset-0 opacity-[0.92] transition-opacity duration-[1400ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:opacity-50"
+		class="absolute inset-0 opacity-90 transition-opacity duration-1400 ease-out group-hover:opacity-50"
 		style="background-color: {tint.base}; mix-blend-mode: multiply;"
 		aria-hidden="true"
 	></span>
 	<span
-		class="absolute inset-0 opacity-50 transition-opacity duration-[1400ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:opacity-25"
+		class="absolute inset-0 opacity-50 transition-opacity duration-1400 ease-out group-hover:opacity-25"
 		style="background: linear-gradient(135deg, {tint.light} 0%, transparent 65%); mix-blend-mode: screen;"
 		aria-hidden="true"
 	></span>

@@ -20,7 +20,7 @@
 	};
 </script>
 
-<nav class="mx-auto w-full max-w-[1200px] px-5 pt-5 md:px-8 md:pt-6" aria-label="{label} pages">
+<nav class="mx-auto w-full max-w-page px-5 pt-5 md:px-8 md:pt-6" aria-label="{label} pages">
 	<div
 		class="inline-flex max-w-full gap-px overflow-x-auto border border-line2 bg-line2 [scrollbar-width:none]"
 	>
@@ -28,7 +28,7 @@
 			<a
 				href={item.href}
 				aria-current={isActive(item, i) ? 'page' : undefined}
-				class="shrink-0 px-3.5 py-2 text-[10px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase transition-colors {isActive(
+				class="shrink-0 px-3 py-2 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors sm:px-3.5 {isActive(
 					item,
 					i
 				)

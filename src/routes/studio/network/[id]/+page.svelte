@@ -141,11 +141,11 @@
 		goto(`?${p}`, { keepFocus: true, noScroll: true, replaceState: true });
 	}
 
-	const label = 'text-[10.5px] font-extrabold tracking-[0.16em] uppercase';
+	const label = 'text-xs font-extrabold tracking-widest uppercase';
 	const field =
-		'h-10 w-full border border-line2 bg-white px-3 text-[14px] outline-none focus:border-ink';
+		'h-10 w-full border border-line2 bg-white px-3 text-sm outline-none focus:border-ink';
 	const chip =
-		'inline-flex items-center border px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.14em] uppercase';
+		'inline-flex items-center border px-1.5 py-px text-xs font-extrabold tracking-widest uppercase';
 </script>
 
 <svelte:head><title>{c.name} · Network · Studio</title></svelte:head>
@@ -163,18 +163,18 @@
 			onclick={sync}
 			disabled={syncing}
 			class="{compact
-				? 'h-8 px-3 text-[9.5px]'
-				: 'h-10 px-5 text-[10.5px]'} bg-gold font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-paper-bg disabled:opacity-60"
+				? 'h-8 px-3 text-xs'
+				: 'h-10 px-5 text-xs'} bg-gold font-extrabold tracking-widest text-ink uppercase transition-colors hover:bg-paper-bg disabled:opacity-60"
 			>{syncing ? 'Syncing…' : 'Sync now'}</button
 		>
 	{/snippet}
 </DeskHeader>
 <DeskTabs />
 
-<div class="mx-auto w-full max-w-[1200px] space-y-10 px-5 py-8 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page space-y-10 px-5 py-8 font-libre md:px-8">
 	<div class="flex flex-wrap items-center justify-between gap-3">
 		<a href="/studio/network" class="{label} text-soft hover:text-ink">← Network</a>
-		<span class="flex flex-wrap gap-4 text-[11.5px] text-fade">
+		<span class="flex flex-wrap gap-4 text-xs text-fade">
 			<span>{c.lastSyncedAt ? `Last synced ${shortDate(c.lastSyncedAt)}` : 'Not synced yet'}</span>
 			<a href={c.youtubeUrl} target="_blank" rel="noopener" class="underline hover:text-ink"
 				>Channel on YouTube ↗</a
@@ -186,16 +186,16 @@
 	</div>
 
 	{#if c.syncError}
-		<p class="border border-hero-rb/40 bg-hero-rb/5 px-4 py-3 text-[13px] text-hero-rb">
+		<p class="border border-hero-rb/40 bg-hero-rb/5 px-4 py-3 text-sm text-hero-rb">
 			The last sync failed: {c.syncError}
 		</p>
 	{/if}
-	{#if note}<p class="text-[13px] text-prem" role="status">{note}</p>{/if}
-	{#if error}<p class="text-[13px] text-hero-rb" role="alert">{error}</p>{/if}
+	{#if note}<p class="text-sm text-prem" role="status">{note}</p>{/if}
+	{#if error}<p class="text-sm text-hero-rb" role="alert">{error}</p>{/if}
 
 	<!-- ============ featured, in order ============ -->
 	<section>
-		<h2 class="flex items-baseline justify-between border-b-[3px] border-ink pb-2.5 {label}">
+		<h2 class="flex items-baseline justify-between border-b-3 border-ink pb-2.5 {label}">
 			On AGE Studios <span class="tracking-normal text-fade normal-case"
 				>{data.featured.length} featured, in this order</span
 			>
@@ -210,14 +210,13 @@
 							class="aspect-video w-24 object-cover {v.isAvailable ? '' : 'opacity-40'}"
 						/>
 						<span class="min-w-0">
-							<span class="block truncate font-newsreader text-[16px] font-semibold">{v.title}</span
-							>
+							<span class="block truncate font-newsreader text-base font-semibold">{v.title}</span>
 							{#if !v.isAvailable}
 								<span class="{chip} mt-0.5 border-hero-rb/50 text-hero-rb"
 									>Gone from YouTube · hidden</span
 								>
 							{:else}
-								<span class="block text-[11.5px] text-fade"
+								<span class="block text-xs text-fade"
 									>{v.publishedAt ? shortDate(v.publishedAt) : ''}{v.duration
 										? ` · ${clock(v.duration)}`
 										: ''}</span
@@ -230,7 +229,7 @@
 								onclick={() => move(i, -1)}
 								disabled={i === 0}
 								aria-label="Move up"
-								class="h-9 w-9 border border-line2 text-[13px] hover:border-ink disabled:opacity-30"
+								class="h-9 w-9 border border-line2 text-sm hover:border-ink disabled:opacity-30"
 								>↑</button
 							>
 							<button
@@ -238,14 +237,14 @@
 								onclick={() => move(i, 1)}
 								disabled={i === data.featured.length - 1}
 								aria-label="Move down"
-								class="h-9 w-9 border border-line2 text-[13px] hover:border-ink disabled:opacity-30"
+								class="h-9 w-9 border border-line2 text-sm hover:border-ink disabled:opacity-30"
 								>↓</button
 							>
 							<button
 								type="button"
 								onclick={() => toggle(v)}
 								disabled={busyIds.includes(v.id)}
-								class="h-9 border border-line2 px-3 text-[9.5px] font-extrabold tracking-[0.14em] uppercase hover:border-hero-rb hover:text-hero-rb"
+								class="h-9 border border-line2 px-3 text-xs font-extrabold tracking-widest uppercase hover:border-hero-rb hover:text-hero-rb"
 								>Remove</button
 							>
 						</span>
@@ -253,7 +252,7 @@
 				{/each}
 			</ol>
 		{:else}
-			<p class="py-5 text-[14px] text-soft">
+			<p class="py-5 text-sm text-soft">
 				Nothing featured yet, so {c.name} isn’t on AGE Studios. Pick videos below.
 			</p>
 		{/if}
@@ -261,7 +260,7 @@
 
 	<!-- ============ pick videos ============ -->
 	<section>
-		<h2 class="border-b-[3px] border-ink pb-2.5 {label}">Pick videos to feature</h2>
+		<h2 class="border-b-3 border-ink pb-2.5 {label}">Pick videos to feature</h2>
 		<div class="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 			<nav class="flex border border-line2" aria-label="Show">
 				{#each [['all', 'All'], ['new', 'Not featured'], ['featured', 'Featured']] as [k, word] (k)}
@@ -269,7 +268,7 @@
 						type="button"
 						onclick={() => filter(k)}
 						aria-pressed={data.show === k}
-						class="flex-1 px-3 py-2 text-[10px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase {data.show ===
+						class="flex-1 px-3 py-2 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase {data.show ===
 						k
 							? 'bg-ink text-paper-bg'
 							: 'text-soft hover:text-ink'}">{word}</button
@@ -277,7 +276,7 @@
 				{/each}
 			</nav>
 			<form
-				class="flex gap-2 md:w-[320px]"
+				class="flex gap-2 md:w-80"
 				onsubmit={(e) => {
 					e.preventDefault();
 					filter(data.show);
@@ -300,13 +299,13 @@
 							<img src={v.thumbnailUrl} alt="" loading="lazy" class="h-full w-full object-cover" />
 							{#if v.duration}
 								<span
-									class="absolute right-0 bottom-0 bg-ink/85 px-1.5 py-0.5 text-[11px] text-paper-bg tabular-nums"
+									class="absolute right-0 bottom-0 bg-ink/85 px-1.5 py-0.5 text-xs text-paper-bg tabular-nums"
 									>{clock(v.duration)}</span
 								>
 							{/if}
 						</a>
-						<p class="mt-2 font-newsreader text-[16px] leading-snug font-semibold">{v.title}</p>
-						<p class="mt-0.5 text-[11.5px] text-fade">
+						<p class="mt-2 font-newsreader text-base leading-snug font-semibold">{v.title}</p>
+						<p class="mt-0.5 text-xs text-fade">
 							{v.publishedAt ? shortDate(v.publishedAt) : ''}
 						</p>
 						<button
@@ -314,7 +313,7 @@
 							onclick={() => toggle(v)}
 							disabled={busyIds.includes(v.id) || (!v.isFeatured && !v.isAvailable)}
 							aria-pressed={v.isFeatured}
-							class="mt-2.5 h-10 border text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors disabled:opacity-50 {v.isFeatured
+							class="mt-2.5 h-10 border text-xs font-extrabold tracking-widest uppercase transition-colors disabled:opacity-50 {v.isFeatured
 								? 'border-ink bg-ink text-paper-bg hover:bg-hero-rb'
 								: 'border-ink/60 hover:bg-gold'}"
 						>
@@ -324,7 +323,7 @@
 				{/each}
 			</ul>
 		{:else}
-			<p class="py-6 text-[14px] text-soft">
+			<p class="py-6 text-sm text-soft">
 				{data.q || data.show !== 'all'
 					? 'No videos match.'
 					: 'No videos pulled in yet. Try Sync now.'}
@@ -333,7 +332,7 @@
 
 		<form class="mt-8 border-t border-line pt-5" onsubmit={addByLink}>
 			<label for="by-link" class={label}>Add an older video by its link</label>
-			<p class="mt-1 text-[12px] text-fade">
+			<p class="mt-1 text-xs text-fade">
 				The sync pulls in their newest uploads. For anything older, paste its link: it’s added and
 				featured.
 			</p>
@@ -349,7 +348,7 @@
 				<button
 					type="submit"
 					disabled={adding || !link.trim()}
-					class="h-10 bg-ink px-5 text-[10.5px] font-extrabold tracking-[0.16em] whitespace-nowrap text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
+					class="h-10 bg-ink px-5 text-xs font-extrabold tracking-widest whitespace-nowrap text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
 					>{adding ? 'Adding…' : 'Add video'}</button
 				>
 			</div>
@@ -358,7 +357,7 @@
 
 	<!-- ============ about ============ -->
 	<section>
-		<h2 class="border-b-[3px] border-ink pb-2.5 {label}">About the creator</h2>
+		<h2 class="border-b-3 border-ink pb-2.5 {label}">About the creator</h2>
 		<form class="mt-5 grid gap-5 md:grid-cols-[200px_minmax(0,1fr)]" onsubmit={save}>
 			<div>
 				<CoverImagePicker
@@ -369,7 +368,7 @@
 						form.coverImageId = e.detail?.id ?? null;
 					}}
 				/>
-				<p class="mt-1.5 text-[11.5px] leading-snug text-fade">
+				<p class="mt-1.5 text-xs leading-snug text-fade">
 					Leave empty to use their YouTube picture.
 				</p>
 			</div>
@@ -381,11 +380,11 @@
 				<label class="block">
 					<span class={label}>Web address</span>
 					<span class="mt-1.5 flex border border-line2 bg-white focus-within:border-ink">
-						<span class="pl-2.5 text-[13.5px] leading-10 text-fade">/studios/partners/</span>
+						<span class="pl-2.5 text-sm leading-10 text-fade">/studios/partners/</span>
 						<input
 							value={form.slug}
 							oninput={(e) => (form.slug = cleanTypedSlug(e.currentTarget.value))}
-							class="h-10 min-w-0 flex-1 bg-transparent pr-3 text-[14px] outline-none"
+							class="h-10 min-w-0 flex-1 bg-transparent pr-3 text-sm outline-none"
 						/>
 					</span>
 				</label>
@@ -394,7 +393,7 @@
 					<div class="mt-1.5 flex w-fit border border-line2">
 						{#each [['video', 'Video'], ['podcast', 'Podcast']] as [k, word] (k)}
 							<label
-								class="cursor-pointer px-4 py-2 text-[10px] font-extrabold tracking-[0.14em] uppercase {form.kind ===
+								class="cursor-pointer px-4 py-2 text-xs font-extrabold tracking-widest uppercase {form.kind ===
 								k
 									? 'bg-ink text-paper-bg'
 									: 'text-soft'}"
@@ -410,10 +409,10 @@
 						bind:value={form.description}
 						rows="4"
 						maxlength="4000"
-						class="mt-1.5 w-full border border-line2 bg-white px-3 py-2 text-[14px] outline-none focus:border-ink"
+						class="mt-1.5 w-full border border-line2 bg-white px-3 py-2 text-sm outline-none focus:border-ink"
 					></textarea>
 				</label>
-				<label class="flex items-center gap-2.5 text-[13.5px]">
+				<label class="flex items-center gap-2.5 text-sm">
 					<input type="checkbox" bind:checked={form.isActive} class="h-4 w-4" />
 					Show this creator on AGE Studios
 				</label>
@@ -421,13 +420,13 @@
 					<button
 						type="submit"
 						disabled={saving}
-						class="h-10 bg-ink px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
+						class="h-10 bg-ink px-5 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
 						>{saving ? 'Saving…' : saved ? 'Saved' : 'Save'}</button
 					>
 					<button
 						type="button"
 						onclick={remove}
-						class="h-10 border border-line2 px-4 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:border-hero-rb hover:text-hero-rb"
+						class="h-10 border border-line2 px-4 text-xs font-extrabold tracking-widest text-soft uppercase hover:border-hero-rb hover:text-hero-rb"
 						>Remove creator</button
 					>
 				</div>

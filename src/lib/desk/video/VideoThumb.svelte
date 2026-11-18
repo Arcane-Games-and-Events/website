@@ -25,7 +25,7 @@
 		<img {src} alt="" loading="lazy" class="absolute inset-0 h-full w-full object-cover" />
 	{:else}
 		<span
-			class="absolute inset-0 flex items-center justify-center text-[9px] font-extrabold tracking-[0.16em] text-paper-bg/50 uppercase"
+			class="absolute inset-0 flex items-center justify-center text-xs font-extrabold tracking-widest text-paper-bg/50 uppercase"
 		>
 			{video?.status === 'errored'
 				? 'Failed'
@@ -38,7 +38,7 @@
 	{/if}
 	{#if video?.duration}
 		<span
-			class="absolute right-0 bottom-0 bg-ink/85 px-1.5 py-0.5 text-[10.5px] text-paper-bg tabular-nums"
+			class="absolute right-0 bottom-0 bg-ink/85 px-1.5 py-0.5 text-xs text-paper-bg tabular-nums"
 			>{clock(video.duration)}</span
 		>
 	{/if}

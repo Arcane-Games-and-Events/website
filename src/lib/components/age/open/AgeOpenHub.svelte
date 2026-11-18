@@ -211,11 +211,11 @@
 	></div>
 
 	<div
-		class="relative mx-auto grid w-full max-w-[1200px] gap-12 px-5 pt-12 pb-14 md:px-8 md:pt-16 md:pb-20 lg:grid-cols-[1fr_440px] lg:items-end lg:gap-14"
+		class="relative mx-auto grid w-full max-w-page gap-12 px-5 pt-12 pb-14 md:px-8 md:pt-16 md:pb-20 lg:grid-cols-[1fr_440px] lg:items-end lg:gap-14"
 	>
 		<div class="fp-rise min-w-0">
 			<p
-				class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-extrabold tracking-[0.3em] uppercase md:text-[10.5px]"
+				class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-extrabold tracking-widest uppercase"
 			>
 				<span class="bg-warm px-2 py-1 text-white">Season ’26</span>
 				<span class="text-paper-bg/70">{circuitLine}</span>
@@ -224,13 +224,13 @@
 				<img
 					src="/age_open_logo.svg"
 					alt="AGE Open Series"
-					class="h-auto w-[300px] md:w-[460px]"
+					class="h-auto w-75 md:w-115"
 					width="629"
 					height="294"
 				/>
 			</h1>
 			<p
-				class="mt-6 max-w-[520px] font-newsreader text-[17px] leading-[1.5] text-paper-bg/75 italic md:text-[20px]"
+				class="mt-6 max-w-lg font-newsreader text-lg leading-normal text-paper-bg/75 italic md:text-xl"
 			>
 				The premier independent Flesh and Blood circuit. Step up against the best players in your
 				region, climb the leaderboard, and claim your seat at the AGE Player’s Championship. The
@@ -254,7 +254,7 @@
 							{s.n}
 						</dd>
 						<dd
-							class="mt-2 text-[8.5px] leading-[1.3] font-extrabold tracking-[0.16em] text-paper-bg/55 uppercase md:text-[9px]"
+							class="mt-2 text-xs leading-tight font-extrabold tracking-widest text-paper-bg/55 uppercase"
 						>
 							{s.l}
 						</dd>
@@ -267,17 +267,17 @@
 		{#if next}
 			<a
 				href={next.href}
-				class="fp-rise group relative block rotate-[1.5deg] transition-transform duration-700 ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:rotate-0"
+				class="fp-rise group relative block rotate-2 transition-transform duration-700 ease-out hover:rotate-0"
 				style="animation-delay: 160ms; filter: drop-shadow(0 24px 30px rgba(0,0,0,0.55));"
 			>
 				<span class="grid grid-cols-[1fr_92px] bg-paper-bg text-ink">
 					<!-- body -->
 					<span class="block min-w-0">
-						<span class="relative block aspect-[16/7] overflow-hidden bg-ink">
+						<span class="relative block aspect-16/7 overflow-hidden bg-ink">
 							<img
 								src={next.image}
 								alt=""
-								class="absolute inset-0 h-full w-full object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.04]"
+								class="absolute inset-0 h-full w-full object-cover transition-transform duration-1400 ease-out group-hover:scale-105"
 							/>
 							<span
 								class="absolute inset-0"
@@ -287,29 +287,29 @@
 								aria-hidden="true"
 							></span>
 							<span
-								class="absolute bottom-3 left-4 text-[9.5px] font-extrabold tracking-[0.22em] text-white uppercase"
+								class="absolute bottom-3 left-4 text-xs font-extrabold tracking-widest text-white uppercase"
 								>◆ Next up · {next.circuit}</span
 							>
 						</span>
 						<span class="block px-5 pt-4 pb-5">
-							<span class="ao-cond block text-[32px] leading-[0.95] font-black uppercase"
+							<span class="ao-cond block text-3xl leading-none font-black uppercase"
 								>{next.title}</span
 							>
 							<span class="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5"
 								>{#if next.format}<FormatTag format={next.format} />{/if}<span
-									class="text-[11px] font-semibold text-fade">{next.long} · {next.venue}</span
+									class="text-xs font-semibold text-fade">{next.long} · {next.venue}</span
 								></span
 							>
 							<span class="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4">
 								<span class="flex items-baseline gap-2">
-									<span class="ao-cond text-[30px] leading-none font-black">{next.price}</span>
+									<span class="ao-cond text-3xl leading-none font-black">{next.price}</span>
 									{#if next.discount}<span
-											class="text-[9px] font-extrabold tracking-[0.14em] text-prem uppercase"
+											class="text-xs font-extrabold tracking-widest text-prem uppercase"
 											>Members save $5</span
 										>{/if}
 								</span>
 								<span
-									class="inline-flex items-center bg-warm px-4 py-2.5 text-[10px] font-extrabold tracking-[0.16em] text-white uppercase transition-colors group-hover:bg-ink"
+									class="inline-flex items-center bg-warm px-4 py-2.5 text-xs font-extrabold tracking-widest text-white uppercase transition-colors group-hover:bg-ink"
 									>Sign up →</span
 								>
 							</span>
@@ -322,24 +322,22 @@
 						<span class="ao-perf absolute inset-y-2 left-0 w-px text-line2" aria-hidden="true"
 						></span>
 						<span
-							class="text-[8px] font-extrabold tracking-[0.24em] text-fade uppercase [writing-mode:vertical-rl]"
+							class="text-xs font-extrabold tracking-widest text-fade uppercase [writing-mode:vertical-rl]"
 							>Admit one</span
 						>
 						<span>
 							<span
-								class="block text-[10px] font-extrabold tracking-[0.18em]"
+								class="block text-xs font-extrabold tracking-widest"
 								style="color: {circuitVar(next.circuit)};">{next.month}</span
 							>
-							<span class="ao-cond block text-[46px] leading-[0.85] font-black tabular-nums"
+							<span class="ao-cond block text-5xl leading-none font-black tabular-nums"
 								>{next.day}</span
 							>
 						</span>
 						<span
-							class="inline-flex items-center gap-1.5 text-[8.5px] font-extrabold tracking-[0.12em] text-warm uppercase"
+							class="inline-flex items-center gap-1.5 text-xs font-extrabold tracking-widest text-warm uppercase"
 						>
-							<span
-								class="h-[5px] w-[5px] animate-pulse-dot rounded-full bg-warm"
-								aria-hidden="true"
+							<span class="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-warm" aria-hidden="true"
 							></span>
 							{countdown(next.days)}
 						</span>
@@ -351,16 +349,10 @@
 </section>
 
 <!-- ============ the series: numbered like bracket rounds ============ -->
-<section class="mx-auto w-full max-w-[1200px] px-5 pt-14 md:px-8 md:pt-20" use:reveal>
-	<div
-		class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-[3px] border-ink pb-3"
-	>
-		<h2 class="ao-cond text-[44px] leading-[0.85] font-black uppercase md:text-[64px]">
-			The series
-		</h2>
-		<p
-			class="hidden max-w-[300px] text-right font-newsreader text-[16px] text-soft italic md:block"
-		>
+<section class="mx-auto w-full max-w-page px-5 pt-14 md:px-8 md:pt-20" use:reveal>
+	<div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-3 border-ink pb-3">
+		<h2 class="ao-cond text-5xl leading-none font-black uppercase md:text-6xl">The series</h2>
+		<p class="hidden max-w-2xs text-right font-newsreader text-base text-soft italic md:block">
 			Everything in the AGE Open, one click away.
 		</p>
 	</div>
@@ -372,29 +364,29 @@
 					href={tab(d.id)}
 					class="group relative flex h-full flex-col overflow-hidden border border-line bg-paper-bg p-6 transition-colors duration-500 hover:border-ink md:p-7 {i <
 					2
-						? 'lg:min-h-[230px]'
+						? 'lg:min-h-58'
 						: ''}"
 				>
 					<!-- the round number, set huge in the corner -->
 					<span
-						class="ao-cond pointer-events-none absolute -top-3 -right-1 text-[120px] leading-none font-black text-ink/[0.05] transition-colors duration-500 group-hover:text-warm/15"
+						class="ao-cond pointer-events-none absolute -top-3 -right-1 text-9xl leading-none font-black text-ink/5 transition-colors duration-500 group-hover:text-warm/15"
 						aria-hidden="true">{String(i + 1).padStart(2, '0')}</span
 					>
 					<span
-						class="relative flex items-center gap-2 text-[9.5px] font-extrabold tracking-[0.22em] text-warm uppercase"
+						class="relative flex items-center gap-2 text-xs font-extrabold tracking-widest text-warm uppercase"
 					>
-						<span class="h-[2px] w-5 bg-warm" aria-hidden="true"></span>
+						<span class="h-0.5 w-5 bg-warm" aria-hidden="true"></span>
 						Round {String(i + 1).padStart(2, '0')}
 					</span>
 					<span
-						class="ao-cond relative mt-3 block leading-[0.9] font-black uppercase {i < 2
-							? 'text-[44px] md:text-[54px]'
-							: 'text-[36px]'}"
+						class="ao-cond relative mt-3 block leading-none font-black uppercase {i < 2
+							? 'text-5xl md:text-6xl'
+							: 'text-4xl'}"
 					>
 						{d.title}
 					</span>
 					<span
-						class="relative mt-2 block font-newsreader text-[15.5px] leading-[1.45] text-soft italic"
+						class="relative mt-2 block font-newsreader text-base leading-normal text-soft italic"
 					>
 						{d.blurb}
 					</span>
@@ -403,16 +395,15 @@
 					>
 						<span class="flex items-baseline gap-2.5">
 							{#if d.figure != null}
-								<span class="ao-cond text-[30px] leading-none font-black tabular-nums"
-									>{d.figure}</span
+								<span class="ao-cond text-3xl leading-none font-black tabular-nums">{d.figure}</span
 								>
 							{/if}
-							<span class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+							<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 								>{d.unit}</span
 							>
 						</span>
 						<span
-							class="text-[15px] text-warm transition-transform duration-500 group-hover:translate-x-1"
+							class="text-base text-warm transition-transform duration-500 group-hover:translate-x-1"
 							aria-hidden="true">→</span
 						>
 					</span>
@@ -424,16 +415,14 @@
 
 <!-- ============ coming up: a strip of tickets ============ -->
 {#if later.length}
-	<section class="mx-auto w-full max-w-[1200px] px-5 pt-14 md:px-8 md:pt-20" use:reveal>
+	<section class="mx-auto w-full max-w-page px-5 pt-14 md:px-8 md:pt-20" use:reveal>
 		<div
-			class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-[3px] border-ink pb-3"
+			class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-3 border-ink pb-3"
 		>
-			<h2 class="ao-cond text-[44px] leading-[0.85] font-black uppercase md:text-[64px]">
-				Coming up
-			</h2>
+			<h2 class="ao-cond text-5xl leading-none font-black uppercase md:text-6xl">Coming up</h2>
 			<a
 				href={tab('events')}
-				class="pb-1 text-[10.5px] font-extrabold tracking-[0.16em] whitespace-nowrap uppercase transition-colors hover:text-warm"
+				class="pb-1 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors hover:text-warm"
 				>All events →</a
 			>
 		</div>
@@ -448,14 +437,14 @@
 						<span class="min-w-0 px-4 pt-4 pb-2 md:px-6 md:py-5">
 							<span class="flex flex-wrap items-center gap-x-3 gap-y-1">
 								<span
-									class="text-[9.5px] font-extrabold tracking-[0.2em] uppercase"
+									class="text-xs font-extrabold tracking-widest uppercase"
 									style="color: {circuitVar(e.circuit)};">{e.circuit}</span
 								>
 								<span
-									class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									class="inline-flex items-center gap-1.5 text-xs font-extrabold tracking-widest text-fade uppercase"
 								>
 									<span
-										class="h-[6px] w-[6px] animate-pulse-dot rounded-full"
+										class="h-1.5 w-1.5 animate-pulse-dot rounded-full"
 										style="background: {circuitVar(e.circuit)};"
 										aria-hidden="true"
 									></span>
@@ -463,13 +452,13 @@
 								</span>
 							</span>
 							<span
-								class="ao-cond mt-1 block text-[26px] leading-[0.95] font-black uppercase md:text-[30px]"
+								class="ao-cond mt-1 block text-2xl leading-none font-black uppercase md:text-3xl"
 							>
 								{e.title}
 							</span>
 							<span class="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5"
 								>{#if e.format}<FormatTag format={e.format} />{/if}<span
-									class="min-w-0 truncate text-[11px] font-semibold text-fade"
+									class="min-w-0 truncate text-xs font-semibold text-fade"
 									>{e.weekday} · {e.venue}{#if e.cap}
 										· {e.registered}/{e.cap} seats{/if}</span
 								></span
@@ -478,9 +467,9 @@
 						<span
 							class="flex items-center justify-between gap-4 px-4 pb-4 md:justify-end md:px-6 md:pb-0"
 						>
-							<span class="ao-cond text-[28px] leading-none font-black">{e.price}</span>
+							<span class="ao-cond text-3xl leading-none font-black">{e.price}</span>
 							<span
-								class="inline-flex items-center bg-warm px-4 py-2.5 text-[10px] font-extrabold tracking-[0.16em] text-white uppercase transition-colors group-hover:bg-ink"
+								class="inline-flex items-center bg-warm px-4 py-2.5 text-xs font-extrabold tracking-widest text-white uppercase transition-colors group-hover:bg-ink"
 								>Sign up</span
 							>
 						</span>
@@ -492,13 +481,9 @@
 {/if}
 
 <!-- ============ circuits ============ -->
-<section class="mx-auto w-full max-w-[1200px] px-5 pt-14 md:px-8 md:pt-20" use:reveal>
-	<div
-		class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-[3px] border-ink pb-3"
-	>
-		<h2 class="ao-cond text-[44px] leading-[0.85] font-black uppercase md:text-[64px]">
-			The circuits
-		</h2>
+<section class="mx-auto w-full max-w-page px-5 pt-14 md:px-8 md:pt-20" use:reveal>
+	<div class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-3 border-ink pb-3">
+		<h2 class="ao-cond text-5xl leading-none font-black uppercase md:text-6xl">The circuits</h2>
 	</div>
 	<ul class="mt-6 grid gap-5 md:grid-cols-3 md:gap-6">
 		{#each circuits as c (c.name)}
@@ -507,13 +492,13 @@
 					type="button"
 					onclick={(e) => openModal(c.name, e)}
 					aria-haspopup="dialog"
-					class="group relative block aspect-[4/5] w-full overflow-hidden bg-ink text-left text-paper-bg md:aspect-[3/4]"
+					class="group relative block aspect-4/5 w-full overflow-hidden bg-ink text-left text-paper-bg md:aspect-3/4"
 				>
 					<img
 						src={c.image}
 						alt=""
 						loading="lazy"
-						class="absolute inset-0 h-full w-full object-cover grayscale transition-[filter,scale] duration-[1400ms] ease-out group-hover:scale-[1.04] group-hover:grayscale-0"
+						class="absolute inset-0 h-full w-full object-cover grayscale transition duration-1400 ease-out group-hover:scale-105 group-hover:grayscale-0"
 					/>
 					<span
 						class="absolute inset-0 mix-blend-multiply"
@@ -526,23 +511,23 @@
 						aria-hidden="true"
 					></span>
 					<span
-						class="ao-cond absolute top-3 left-4 text-[88px] leading-none font-black text-white/20 md:text-[110px]"
+						class="ao-cond absolute top-3 left-4 text-8xl leading-none font-black text-white/20"
 						aria-hidden="true">{c.abbreviation}</span
 					>
 					<span class="absolute inset-x-0 bottom-0 p-5 md:p-6">
-						<span class="text-[9.5px] font-extrabold tracking-[0.22em] text-paper-bg/75 uppercase"
+						<span class="text-xs font-extrabold tracking-widest text-paper-bg/75 uppercase"
 							>{c.region}</span
 						>
-						<span class="ao-cond mt-1 block text-[46px] leading-[0.85] font-black uppercase"
+						<span class="ao-cond mt-1 block text-5xl leading-none font-black uppercase"
 							>{c.name}</span
 						>
 						<span
-							class="mt-4 flex items-center justify-between gap-3 border-t border-paper-bg/30 pt-3 text-[10.5px] font-semibold text-paper-bg/85"
+							class="mt-4 flex items-center justify-between gap-3 border-t border-paper-bg/30 pt-3 text-xs font-semibold text-paper-bg/85"
 						>
 							<span
 								>{#if c.next}Next: {c.next.long}{:else}Dates to come{/if}</span
 							>
-							<span class="text-[9.5px] font-extrabold tracking-[0.14em] uppercase"
+							<span class="text-xs font-extrabold tracking-widest uppercase"
 								>About the circuit →</span
 							>
 						</span>
@@ -556,18 +541,16 @@
 <!-- ============ the leaderboard + how a season works ============ -->
 <section class="mt-14 bg-ink text-paper-bg md:mt-20" use:reveal>
 	<div
-		class="mx-auto grid w-full max-w-[1200px] grid-cols-[minmax(0,1fr)] gap-12 px-5 py-14 md:px-8 md:py-20 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:gap-16"
+		class="mx-auto grid w-full max-w-page grid-cols-1 gap-12 px-5 py-14 md:px-8 md:py-20 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:gap-16"
 	>
 		<div>
 			<div
-				class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-[3px] border-warm-light pb-3"
+				class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-3 border-warm-light pb-3"
 			>
-				<h2 class="ao-cond text-[44px] leading-[0.85] font-black uppercase md:text-[64px]">
-					Leaderboard
-				</h2>
+				<h2 class="ao-cond text-5xl leading-none font-black uppercase md:text-6xl">Leaderboard</h2>
 				<a
 					href={tab('standings')}
-					class="pb-1 text-[10.5px] font-extrabold tracking-[0.16em] whitespace-nowrap uppercase transition-colors hover:text-warm-light"
+					class="pb-1 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors hover:text-warm-light"
 					>Full standings →</a
 				>
 			</div>
@@ -580,26 +563,25 @@
 								class="group grid grid-cols-[52px_1fr_auto] items-center gap-4 py-4"
 							>
 								<span
-									class="ao-cond text-[44px] leading-none font-black tabular-nums {i === 0
+									class="ao-cond text-5xl leading-none font-black tabular-nums {i === 0
 										? 'text-gold'
 										: 'text-paper-bg/30'}">{i + 1}</span
 								>
 								<span class="min-w-0">
-									<span class="block truncate font-newsreader text-[21px] font-semibold">
+									<span class="block truncate font-newsreader text-xl font-semibold">
 										<span class="fp-ul">{s.playerName || 'Unknown player'}</span>
 									</span>
-									<span class="mt-0.5 block text-[10.5px] font-semibold text-paper-bg/50">
+									<span class="mt-0.5 block text-xs font-semibold text-paper-bg/50">
 										{s.eventsPlayed || 0}
 										{s.eventsPlayed === 1 ? 'event' : 'events'}{#if s.circuitsPlayed?.length}
 											· {s.circuitsPlayed.join(', ')}{/if}
 									</span>
 								</span>
 								<span class="text-right">
-									<span class="ao-cond block text-[36px] leading-none font-black tabular-nums"
+									<span class="ao-cond block text-4xl leading-none font-black tabular-nums"
 										>{s.totalPoints || 0}</span
 									>
-									<span
-										class="text-[8.5px] font-extrabold tracking-[0.2em] text-paper-bg/45 uppercase"
+									<span class="text-xs font-extrabold tracking-widest text-paper-bg/45 uppercase"
 										>points</span
 									>
 								</span>
@@ -608,28 +590,26 @@
 					{/each}
 				</ol>
 			{:else}
-				<p class="mt-6 font-newsreader text-[16px] text-paper-bg/60 italic">
+				<p class="mt-6 font-newsreader text-base text-paper-bg/60 italic">
 					The leaderboard opens after the season’s first event.
 				</p>
 			{/if}
 		</div>
 
 		<div>
-			<div class="border-b-[3px] border-warm-light pb-3">
-				<h2 class="ao-cond text-[44px] leading-[0.85] font-black uppercase md:text-[64px]">
-					How it works
-				</h2>
+			<div class="border-b-3 border-warm-light pb-3">
+				<h2 class="ao-cond text-5xl leading-none font-black uppercase md:text-6xl">How it works</h2>
 			</div>
 			<ol class="mt-2">
 				{#each STEPS as [t, b], i (t)}
 					<li class="grid grid-cols-[52px_1fr] gap-4 border-b border-paper-bg/15 py-4">
-						<span class="ao-cond text-[44px] leading-none font-black text-warm-light tabular-nums"
+						<span class="ao-cond text-5xl leading-none font-black text-warm-light tabular-nums"
 							>{String(i + 1).padStart(2, '0')}</span
 						>
 						<span>
-							<span class="block font-newsreader text-[20px] leading-tight font-semibold">{t}</span>
+							<span class="block font-newsreader text-xl leading-tight font-semibold">{t}</span>
 							<span
-								class="mt-1 block font-newsreader text-[15px] leading-[1.45] text-paper-bg/60 italic"
+								class="mt-1 block font-newsreader text-base leading-normal text-paper-bg/60 italic"
 								>{b}</span
 							>
 						</span>
@@ -642,16 +622,14 @@
 
 <!-- ============ latest results ============ -->
 {#if past.length}
-	<section class="mx-auto w-full max-w-[1200px] px-5 pt-14 md:px-8 md:pt-20" use:reveal>
+	<section class="mx-auto w-full max-w-page px-5 pt-14 md:px-8 md:pt-20" use:reveal>
 		<div
-			class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-[3px] border-ink pb-3"
+			class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-3 border-ink pb-3"
 		>
-			<h2 class="ao-cond text-[44px] leading-[0.85] font-black uppercase md:text-[64px]">
-				Results
-			</h2>
+			<h2 class="ao-cond text-5xl leading-none font-black uppercase md:text-6xl">Results</h2>
 			<a
 				href={tab('results')}
-				class="pb-1 text-[10.5px] font-extrabold tracking-[0.16em] whitespace-nowrap uppercase transition-colors hover:text-warm"
+				class="pb-1 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors hover:text-warm"
 				>The archive →</a
 			>
 		</div>
@@ -662,36 +640,33 @@
 						href="/ageopen/{r.id}/results"
 						class="group flex h-full flex-col border border-line bg-paper-bg transition-colors duration-500 hover:border-ink"
 					>
-						<span class="h-[4px]" style="background: {circuitVar(r.circuit)};" aria-hidden="true"
+						<span class="h-1" style="background: {circuitVar(r.circuit)};" aria-hidden="true"
 						></span>
 						<span class="flex flex-1 flex-col p-5">
 							<span class="flex items-center justify-between gap-3">
 								<span
-									class="text-[9.5px] font-extrabold tracking-[0.2em] uppercase"
+									class="text-xs font-extrabold tracking-widest uppercase"
 									style="color: {circuitVar(r.circuit)};">{r.circuit || 'AGE Open'}</span
 								>
 								{#if r.live}
 									<span
-										class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] text-warm uppercase"
+										class="inline-flex items-center gap-1.5 text-xs font-extrabold tracking-widest text-warm uppercase"
 										><span
-											class="h-[6px] w-[6px] animate-pulse-dot rounded-full bg-warm"
+											class="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-warm"
 											aria-hidden="true"
 										></span>Live</span
 									>
 								{:else}
-									<span class="text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+									<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 										>Final</span
 									>
 								{/if}
 							</span>
-							<span class="ao-cond mt-2 block text-[28px] leading-[0.95] font-black uppercase"
+							<span class="ao-cond mt-2 block text-3xl leading-none font-black uppercase"
 								>{r.title}</span
 							>
-							<span class="mt-1.5 block text-[11px] font-semibold text-fade"
-								>{r.date} · {r.venue}</span
-							>
-							<span
-								class="mt-auto pt-5 text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase"
+							<span class="mt-1.5 block text-xs font-semibold text-fade">{r.date} · {r.venue}</span>
+							<span class="mt-auto pt-5 text-xs font-extrabold tracking-widest text-warm uppercase"
 								>Final standings →</span
 							>
 						</span>
@@ -703,18 +678,16 @@
 {/if}
 
 <!-- ============ rules band ============ -->
-<section class="mx-auto w-full max-w-[1200px] px-5 py-14 md:px-8 md:py-20" use:reveal>
+<section class="mx-auto w-full max-w-page px-5 py-14 md:px-8 md:py-20" use:reveal>
 	<div
-		class="grid gap-8 border-t-[6px] border-warm bg-paper px-6 py-8 md:grid-cols-[1.1fr_1fr] md:items-center md:px-10 md:py-10"
+		class="grid gap-8 border-t-6 border-warm bg-paper px-6 py-8 md:grid-cols-[1.1fr_1fr] md:items-center md:px-10 md:py-10"
 	>
 		<div>
-			<p class="text-[10px] font-extrabold tracking-[0.22em] text-warm uppercase">
-				◆ Before round one
-			</p>
-			<p class="ao-cond mt-3 text-[40px] leading-[0.9] font-black uppercase md:text-[52px]">
+			<p class="text-xs font-extrabold tracking-widest text-warm uppercase">◆ Before round one</p>
+			<p class="ao-cond mt-3 text-4xl leading-none font-black uppercase md:text-5xl">
 				Know the rules. Know the stakes.
 			</p>
-			<p class="mt-3 font-newsreader text-[16px] text-soft italic">
+			<p class="mt-3 font-newsreader text-base text-soft italic">
 				The rulebook, the prize payout and the road to the Player’s Championship.
 			</p>
 		</div>
@@ -723,13 +696,13 @@
 				<li class="border-b border-line">
 					<a href={tab('rules')} class="group flex items-baseline justify-between gap-4 py-3">
 						<span>
-							<span class="block font-newsreader text-[17px] font-semibold"
+							<span class="block font-newsreader text-lg font-semibold"
 								><span class="fp-ul">{t}</span></span
 							>
-							<span class="block text-[11px] font-semibold text-fade">{b}</span>
+							<span class="block text-xs font-semibold text-fade">{b}</span>
 						</span>
 						<span
-							class="text-[13px] text-warm transition-transform group-hover:translate-x-0.5"
+							class="text-sm text-warm transition-transform group-hover:translate-x-0.5"
 							aria-hidden="true">→</span
 						>
 					</a>

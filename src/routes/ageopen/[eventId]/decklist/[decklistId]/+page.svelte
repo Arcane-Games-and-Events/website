@@ -297,17 +297,17 @@
 			aria-hidden="true"
 		></div>
 
-		<div class="relative mx-auto w-full max-w-[1200px] px-5 pt-8 md:px-8 md:pt-10">
+		<div class="relative mx-auto w-full max-w-page px-5 pt-8 md:px-8 md:pt-10">
 			<div class="flex flex-wrap items-center justify-between gap-4">
 				<a
 					href="/ageopen?tab=decklists"
-					class="text-[9.5px] font-extrabold tracking-[0.2em] text-paper-bg/60 uppercase transition-colors hover:text-paper-bg"
+					class="text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase transition-colors hover:text-paper-bg"
 					>← Decklists</a
 				>
 				<button
 					type="button"
 					onclick={copyLink}
-					class="text-[9.5px] font-extrabold tracking-[0.2em] uppercase transition-colors {linkCopied
+					class="text-xs font-extrabold tracking-widest uppercase transition-colors {linkCopied
 						? 'text-prem'
 						: 'text-paper-bg/60 hover:text-paper-bg'}"
 					>{linkCopied ? 'Link copied ✓' : 'Copy link'}</button
@@ -319,18 +319,18 @@
 					alt="AGE Open Series"
 					width="629"
 					height="294"
-					class="h-auto w-[130px] md:w-[150px]"
+					class="h-auto w-33 md:w-38"
 				/>
 			</a>
 
-			<div class="fp-rise mt-8 max-w-[760px] md:mt-10">
+			<div class="fp-rise mt-8 max-w-3xl md:mt-10">
 				<p
-					class="flex flex-wrap items-center gap-x-3 gap-y-2 text-[9.5px] font-extrabold tracking-[0.26em] text-paper-bg/60 uppercase"
+					class="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase"
 				>
 					Decklist
 					{#if decklist.circuit}
 						<span
-							class="px-1.5 py-[3px] text-[8px] tracking-[0.16em] text-white"
+							class="px-1.5 py-1 text-xs tracking-widest text-white"
 							style="background: {circuitVar(decklist.circuit)};">{abbr(decklist.circuit)}</span
 						>
 					{/if}
@@ -339,12 +339,10 @@
 					>
 					{#if decklist.eventDate}· {formatDate(decklist.eventDate)}{/if}
 				</p>
-				<h1
-					class="ao-cond mt-3 text-[52px] leading-[0.86] font-black break-words uppercase md:text-[88px]"
-				>
+				<h1 class="ao-cond mt-3 text-5xl leading-none font-black break-words uppercase md:text-8xl">
 					{decklist.hero || 'Decklist'}
 				</h1>
-				<p class="mt-4 font-newsreader text-[22px] leading-tight text-paper-bg/85 md:text-[26px]">
+				<p class="mt-4 font-newsreader text-2xl leading-tight text-paper-bg/85">
 					{#if decklist.gemId}
 						<a href="/player/{decklist.gemId}" class="fp-ul">{decklist.playerName}</a>
 					{:else}
@@ -354,7 +352,7 @@
 				<div class="mt-5 flex flex-wrap items-center gap-3">
 					{#if decklist.placement}
 						<span
-							class="px-2.5 py-1.5 text-[10px] font-extrabold tracking-[0.18em] uppercase"
+							class="px-2.5 py-1.5 text-xs font-extrabold tracking-widest uppercase"
 							style={finishStyle(decklist.placement)}
 						>
 							{decklist.placement === 1 ? 'Champion' : `${getOrdinal(decklist.placement)} place`}
@@ -362,7 +360,7 @@
 					{/if}
 					<FormatTag format={decklist.format} />
 					{#if decklist.month}
-						<span class="text-[10px] font-extrabold tracking-[0.18em] text-paper-bg/60 uppercase"
+						<span class="text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase"
 							>{formatMonth(decklist.month)} Open</span
 						>
 					{/if}
@@ -376,14 +374,12 @@
 						class="border-r border-paper-bg/15 px-3 pt-4 pb-5 text-center md:px-4 md:pt-5 md:pb-6 md:last:border-r-0 [&:nth-child(3n)]:border-r-0 md:[&:nth-child(3n)]:border-r"
 					>
 						<dd
-							class="ao-cond text-[34px] leading-none font-black tabular-nums md:text-[40px]"
+							class="ao-cond text-4xl leading-none font-black tabular-nums"
 							style={t.hex ? `color: ${t.hex};` : ''}
 						>
 							{t.v}
 						</dd>
-						<dt
-							class="mt-2 text-[8.5px] font-extrabold tracking-[0.2em] text-paper-bg/55 uppercase"
-						>
+						<dt class="mt-2 text-xs font-extrabold tracking-widest text-paper-bg/55 uppercase">
 							{t.l}
 						</dt>
 					</div>
@@ -394,25 +390,23 @@
 
 	<!-- ============ body ============ -->
 	{#if cardsList.length === 0}
-		<section class="mx-auto w-full max-w-[1200px] px-5 py-16 md:px-8">
+		<section class="mx-auto w-full max-w-page px-5 py-16 md:px-8">
 			<div class="border border-line bg-paper px-6 py-14 text-center">
-				<p class="ao-cond text-[32px] leading-none font-black uppercase">No cards yet</p>
-				<p class="mx-auto mt-3 max-w-[420px] font-newsreader text-[15px] text-soft italic">
+				<p class="ao-cond text-3xl leading-none font-black uppercase">No cards yet</p>
+				<p class="mx-auto mt-3 max-w-md font-newsreader text-base text-soft italic">
 					This list hasn’t been filled in. Check back later or ask the tournament organiser.
 				</p>
 			</div>
 		</section>
 	{:else}
 		<div
-			class="mx-auto grid w-full max-w-[1200px] gap-10 px-5 py-10 md:px-8 md:py-12 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-14"
+			class="mx-auto grid w-full max-w-page gap-10 px-5 py-10 md:px-8 md:py-12 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-14"
 		>
 			<!-- preview -->
 			<aside class="hidden lg:block">
-				<div class="sticky top-[84px]">
-					<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-warm uppercase">
-						Card preview
-					</p>
-					<div class="relative mt-3 aspect-[488/680]">
+				<div class="sticky top-21">
+					<p class="text-xs font-extrabold tracking-widest text-warm uppercase">Card preview</p>
+					<div class="relative mt-3 aspect-488/680">
 						{#if selectedCard && selectedCardImage}
 							{#if !previewImageLoaded && !previewImageError}
 								<div class="absolute inset-0 flex items-center justify-center">
@@ -421,7 +415,7 @@
 							{/if}
 							{#if previewImageError}
 								<p
-									class="absolute inset-0 flex items-center justify-center px-6 text-center text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+									class="absolute inset-0 flex items-center justify-center px-6 text-center text-xs font-extrabold tracking-widest text-fade uppercase"
 								>
 									Image unavailable
 								</p>
@@ -443,7 +437,7 @@
 							{/if}
 						{:else}
 							<p
-								class="absolute inset-0 flex items-center justify-center px-6 text-center text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+								class="absolute inset-0 flex items-center justify-center px-6 text-center text-xs font-extrabold tracking-widest text-fade uppercase"
 							>
 								Select a card to preview
 							</p>
@@ -451,11 +445,11 @@
 					</div>
 					{#if selectedCard}
 						<div class="mt-4 border-t border-line pt-3">
-							<p class="font-newsreader text-[17px] leading-tight font-semibold">
+							<p class="font-newsreader text-lg leading-tight font-semibold">
 								{selectedCard.name}
 							</p>
 							<p
-								class="mt-1 flex items-center gap-2 text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+								class="mt-1 flex items-center gap-2 text-xs font-extrabold tracking-widest text-fade uppercase"
 							>
 								{#if selectedCard.isHero}
 									Hero
@@ -482,23 +476,23 @@
 							type="button"
 							onclick={() => pick(card)}
 							aria-pressed={sel}
-							class="group flex w-full items-center gap-3 border-l-[3px] py-2 pr-2 pl-3 text-left transition-colors {sel
+							class="group flex w-full items-center gap-3 border-l-3 py-2 pr-2 pl-3 text-left transition-colors {sel
 								? 'bg-paper'
 								: 'hover:bg-paper'}"
 							style="border-left-color: {sel ? hex : 'transparent'};"
 						>
 							<span
-								class="ao-cond w-[30px] shrink-0 text-[20px] leading-none font-black tabular-nums"
+								class="ao-cond w-8 shrink-0 text-xl leading-none font-black tabular-nums"
 								style="color: {sel ? hex : 'var(--ed-fade)'};"
 							>
 								{isHero ? 'H' : `${card.quantity || 1}×`}
 							</span>
 							<span
-								class="min-w-0 flex-1 truncate font-newsreader text-[16px] leading-tight font-semibold"
+								class="min-w-0 flex-1 truncate font-newsreader text-base leading-tight font-semibold"
 								>{card.name}</span
 							>
 							<span
-								class="shrink-0 text-[9px] font-extrabold tracking-[0.16em] text-fade uppercase opacity-0 transition-opacity group-hover:opacity-100 {sel
+								class="shrink-0 text-xs font-extrabold tracking-widest text-fade uppercase opacity-0 transition-opacity group-hover:opacity-100 {sel
 									? 'opacity-100'
 									: ''}">View</span
 							>
@@ -508,13 +502,11 @@
 
 				<!-- hero & equipment -->
 				<section>
-					<div class="flex items-end justify-between gap-3 border-b-[3px] border-ink pb-2">
-						<h2
-							class="flex items-center gap-2.5 text-[10px] font-extrabold tracking-[0.2em] uppercase"
-						>
+					<div class="flex items-end justify-between gap-3 border-b-3 border-ink pb-2">
+						<h2 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
 							<span class="h-2.5 w-2.5 bg-warm" aria-hidden="true"></span>{PITCH.equipment.label}
 						</h2>
-						<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+						<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 							>{(decklist.hero ? 1 : 0) + groupedCards().equipment.length} pieces</span
 						>
 					</div>
@@ -536,11 +528,9 @@
 							<div class="space-y-10">
 								{#each column as g (g.key)}
 									<section>
-										<div
-											class="flex items-end justify-between gap-3 border-b-[3px] border-ink pb-2"
-										>
+										<div class="flex items-end justify-between gap-3 border-b-3 border-ink pb-2">
 											<h2
-												class="flex items-center gap-2.5 text-[10px] font-extrabold tracking-[0.2em] uppercase"
+												class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase"
 											>
 												<span
 													class="h-2.5 w-2.5"
@@ -548,8 +538,7 @@
 													aria-hidden="true"
 												></span>{PITCH[g.key].label}
 											</h2>
-											<span
-												class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase"
+											<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 												>{count(g.cards)} cards</span
 											>
 										</div>
@@ -565,7 +554,7 @@
 					</div>
 				{/if}
 
-				<p class="mt-10 font-newsreader text-[14px] text-fade italic">
+				<p class="mt-10 font-newsreader text-sm text-fade italic">
 					Tap any card to see it. Quantities are as submitted at registration.
 				</p>
 			</div>
@@ -591,10 +580,10 @@
 		{#snippet aside()}
 			{#if !modalCard.isHero}
 				<p class="shrink-0 text-right">
-					<span class="ao-cond block text-[36px] leading-none font-black tabular-nums"
+					<span class="ao-cond block text-4xl leading-none font-black tabular-nums"
 						>{modalCard.quantity || 1}×</span
 					>
-					<span class="text-[8px] font-extrabold tracking-[0.2em] text-paper-bg/55 uppercase"
+					<span class="text-xs font-extrabold tracking-widest text-paper-bg/55 uppercase"
 						>in deck</span
 					>
 				</p>

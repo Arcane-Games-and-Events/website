@@ -54,7 +54,7 @@
 
 <!-- the filters, as figures -->
 <nav
-	class="mx-auto grid w-full max-w-[1200px] grid-cols-4 gap-2 px-5 pt-6 md:gap-3 md:px-8 {current
+	class="mx-auto grid w-full max-w-page grid-cols-4 gap-2 px-5 pt-6 md:gap-3 md:px-8 {current
 		? 'hidden lg:grid'
 		: ''}"
 	aria-label="Show"
@@ -64,22 +64,22 @@
 		<a
 			href={filterHref(key)}
 			aria-current={on ? 'page' : undefined}
-			class="group block border border-t-[4px] px-3 py-2.5 transition-colors md:px-4 md:py-3 {on
+			class="group block border border-t-4 px-3 py-2.5 transition-colors md:px-4 md:py-3 {on
 				? 'border-ink bg-ink text-paper-bg'
 				: 'border-line2 bg-white hover:border-ink'}"
 			style="border-top-color: {tone}"
 		>
 			<span
-				class="block text-[9px] font-extrabold tracking-[0.16em] uppercase md:text-[9.5px] {on
+				class="block text-xs font-extrabold tracking-widest uppercase {on
 					? 'text-paper-bg/75'
 					: 'text-fade'}">{label}</span
 			>
 			<span
-				class="ao-cond mt-1 block text-[28px] leading-none font-black tabular-nums md:text-[36px]"
+				class="ao-cond mt-1 block text-3xl leading-none font-black tabular-nums md:text-4xl"
 				style={!on && key === 'unread' && data.counts.unread ? `color: ${tone}` : ''}
 				>{data.counts[key] ?? 0}</span
 			>
-			<span class="mt-1 hidden text-[11px] md:block {on ? 'text-paper-bg/65' : 'text-soft'}"
+			<span class="mt-1 hidden text-xs md:block {on ? 'text-paper-bg/65' : 'text-soft'}"
 				>{note}</span
 			>
 		</a>
@@ -87,7 +87,7 @@
 </nav>
 
 <div
-	class="mx-auto mt-5 grid w-full max-w-[1200px] grid-cols-[minmax(0,1fr)] lg:grid-cols-[400px_minmax(0,1fr)] lg:px-8"
+	class="mx-auto mt-5 grid w-full max-w-page grid-cols-1 lg:grid-cols-[400px_minmax(0,1fr)] lg:px-8"
 >
 	<!-- the conversation list -->
 	<aside
@@ -127,8 +127,8 @@
 						<a
 							href="/admin/inbox/{t.id}{search}"
 							aria-current={on ? 'true' : undefined}
-							class="grid grid-cols-[40px_minmax(0,1fr)] gap-x-3 border border-l-[4px] px-3 py-3 transition-[border-color,background-color] duration-150 {on
-								? 'border-ink bg-white shadow-[0_6px_20px_-12px_rgba(0,0,0,0.4)]'
+							class="grid grid-cols-[40px_minmax(0,1fr)] gap-x-3 border border-l-4 px-3 py-3 transition duration-150 {on
+								? 'border-ink bg-white shadow-md'
 								: unread
 									? 'border-line2 bg-white hover:border-ink'
 									: 'border-line2 bg-paper/50 hover:border-ink hover:bg-white'} {t.status ===
@@ -142,42 +142,42 @@
 									: tone}"
 						>
 							<span
-								class="ao-cond flex h-[40px] w-[40px] items-center justify-center text-[17px] leading-none font-black text-white"
+								class="ao-cond flex h-10 w-10 items-center justify-center text-lg leading-none font-black text-white"
 								style="background: {tone}"
 								aria-hidden="true">{initialsOf(t.name)}</span
 							>
 							<span class="min-w-0">
 								<span class="flex items-baseline gap-2">
 									<span
-										class="min-w-0 flex-1 truncate text-[14px] {unread
+										class="min-w-0 flex-1 truncate text-sm {unread
 											? 'font-extrabold'
 											: 'font-semibold text-ink/80'}">{t.name}</span
 									>
 									<span
-										class="shrink-0 text-[11px] tabular-nums {unread
+										class="shrink-0 text-xs tabular-nums {unread
 											? 'font-bold text-hero-rb'
 											: 'text-fade'}">{when(t.lastMessageAt)}</span
 									>
 								</span>
 								<span
-									class="mt-0.5 block truncate font-newsreader text-[15px] leading-snug {unread
+									class="mt-0.5 block truncate font-newsreader text-base leading-snug {unread
 										? 'font-semibold text-ink'
 										: 'text-ink/85'}">{t.subject}</span
 								>
-								<span class="mt-1 flex items-center gap-2 text-[12px] text-fade">
+								<span class="mt-1 flex items-center gap-2 text-xs text-fade">
 									<span
-										class="shrink-0 text-[8.5px] font-extrabold tracking-[0.14em] uppercase"
+										class="shrink-0 text-xs font-extrabold tracking-widest uppercase"
 										style="color: {tone}">{TOPIC_SHORT[t.topic] || 'Question'}</span
 									>
 									<span class="min-w-0 truncate"
 										>{t.last?.fromStaff ? 'You: ' : ''}{t.last?.body || ''}</span
 									>
 									{#if t.messages > 1}<span
-											class="ml-auto shrink-0 border border-line2 px-1 text-[10px] tabular-nums"
+											class="ml-auto shrink-0 border border-line2 px-1 text-xs tabular-nums"
 											>{t.messages}</span
 										>{/if}
 									{#if t.status === 'done'}<span
-											class="shrink-0 bg-prem px-1.5 text-[8.5px] font-extrabold tracking-[0.14em] text-white uppercase {t.messages >
+											class="shrink-0 bg-prem px-1.5 text-xs font-extrabold tracking-widest text-white uppercase {t.messages >
 											1
 												? ''
 												: 'ml-auto'}">Done</span
@@ -190,7 +190,7 @@
 			</ul>
 		{:else}
 			<p
-				class="mx-5 border border-dashed border-line2 px-5 py-8 font-newsreader text-[16px] text-soft italic lg:mx-0 lg:mr-5"
+				class="mx-5 border border-dashed border-line2 px-5 py-8 font-newsreader text-base text-soft italic lg:mx-0 lg:mr-5"
 			>
 				{data.q ? `Nothing matches “${data.q}”.` : EMPTY[data.filter]}
 			</p>

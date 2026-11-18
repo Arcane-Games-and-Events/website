@@ -10,29 +10,29 @@
 	const TONE = {
 		success: { box: 'border-prem bg-prem/10', label: 'text-prem', text: 'Done' },
 		error: {
-			box: 'border-hero-rb bg-hero-rb/[0.06]',
+			box: 'border-hero-rb bg-hero-rb/5',
 			label: 'text-hero-rb',
 			text: 'Something went wrong'
 		},
-		info: { box: 'border-gold bg-gold/10', label: 'text-[#8a6116]', text: 'Note' }
+		info: { box: 'border-gold bg-gold/10', label: 'text-gold-deep', text: 'Note' }
 	};
 	const t = $derived(TONE[tone] || TONE.info);
 </script>
 
-<section class="mx-auto w-full max-w-[1200px] px-5 {pad} md:px-8">
+<section class="mx-auto w-full max-w-page px-5 {pad} md:px-8">
 	<div
-		class="flex items-start justify-between gap-4 border-l-[3px] px-4 py-3 {t.box}"
+		class="flex items-start justify-between gap-4 border-l-3 px-4 py-3 {t.box}"
 		role={tone === 'error' ? 'alert' : 'status'}
 	>
 		<div>
-			<p class="text-[9.5px] font-extrabold tracking-[0.2em] uppercase {t.label}">{t.text}</p>
-			<p class="mt-0.5 text-[13.5px] text-ink">{message}</p>
+			<p class="text-xs font-extrabold tracking-widest uppercase {t.label}">{t.text}</p>
+			<p class="mt-0.5 text-sm text-ink">{message}</p>
 		</div>
 		{#if ondismiss}
 			<button
 				type="button"
 				onclick={ondismiss}
-				class="shrink-0 text-[18px] leading-none text-fade hover:text-ink"
+				class="shrink-0 text-lg leading-none text-fade hover:text-ink"
 				aria-label="Dismiss">×</button
 			>
 		{/if}

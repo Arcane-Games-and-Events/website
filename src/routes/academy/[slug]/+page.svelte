@@ -392,7 +392,7 @@
 	<section class="relative isolate overflow-hidden bg-academy text-paper-bg">
 		{#if c.coverImage?.src}
 			<div
-				class="relative aspect-[2/1] w-full overflow-hidden md:absolute md:inset-y-0 md:right-0 md:aspect-auto md:w-[62%]"
+				class="relative aspect-2/1 w-full overflow-hidden md:absolute md:inset-y-0 md:right-0 md:aspect-auto md:w-[62%]"
 				aria-hidden="true"
 			>
 				<Picture
@@ -414,10 +414,10 @@
 		{/if}
 
 		<div class="absolute inset-x-0 top-0 z-10">
-			<div class="mx-auto w-full max-w-[1200px] px-5 pt-5 md:px-8 md:pt-7">
+			<div class="mx-auto w-full max-w-page px-5 pt-5 md:px-8 md:pt-7">
 				<a
 					href="/academy"
-					class="inline-flex items-center gap-2 text-[10px] font-extrabold tracking-[0.18em] text-paper-bg/85 uppercase transition-colors [text-shadow:0_1px_8px_rgba(0,0,0,0.5)] hover:text-gold"
+					class="inline-flex items-center gap-2 text-xs font-extrabold tracking-widest text-paper-bg/85 uppercase transition-colors [text-shadow:0_1px_8px_rgba(0,0,0,0.5)] hover:text-gold"
 				>
 					← Academy
 				</a>
@@ -425,19 +425,19 @@
 		</div>
 
 		<div
-			class="relative mx-auto flex w-full max-w-[1200px] flex-col justify-end px-5 pb-8 md:min-h-[340px] md:px-8 md:pt-20 md:pb-12 {c
+			class="relative mx-auto flex w-full max-w-page flex-col justify-end px-5 pb-8 md:min-h-85 md:px-8 md:pt-20 md:pb-12 {c
 				.coverImage?.src
 				? '-mt-8 md:mt-0'
 				: 'pt-16'}"
 		>
-			<div class="fp-rise max-w-[600px]">
+			<div class="fp-rise max-w-xl">
 				<p
-					class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.24em] text-gold uppercase"
+					class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-gold uppercase"
 				>
 					<span aria-hidden="true">◆</span> AGE Academy course
 				</p>
 				<h1
-					class="mt-3 font-newsreader text-[34px] leading-[1.02] font-semibold tracking-[-0.02em] [text-wrap:balance] md:text-[50px]"
+					class="mt-3 font-newsreader text-4xl leading-none font-semibold tracking-tight [text-wrap:balance] md:text-5xl"
 				>
 					{c.title}
 				</h1>
@@ -452,16 +452,16 @@
 						/>
 					{:else}
 						<span
-							class="flex h-9 w-9 shrink-0 items-center justify-center bg-gold font-newsreader text-[14px] font-semibold text-[#241b07]"
+							class="flex h-9 w-9 shrink-0 items-center justify-center bg-gold font-newsreader text-sm font-semibold text-gold-ink"
 							aria-hidden="true">{initials}</span
 						>
 					{/if}
-					<span class="text-[14px] leading-tight">
+					<span class="text-sm leading-tight">
 						<span class="block text-paper-bg/60">With</span>
 						{#if c.author?.handle}
 							<a
 								href="/people/{c.author.handle}"
-								class="block font-semibold underline decoration-paper-bg/30 underline-offset-[3px] transition-colors hover:text-gold hover:decoration-gold"
+								class="block font-semibold underline decoration-paper-bg/30 underline-offset-3 transition-colors hover:text-gold hover:decoration-gold"
 								>{instructor}</a
 							>
 						{:else}
@@ -470,14 +470,14 @@
 					</span>
 				</p>
 			</div>
-			<dl class="mt-6 grid max-w-[600px] grid-cols-4 border-t border-paper-bg/15 pt-4 md:mt-8">
+			<dl class="mt-6 grid max-w-xl grid-cols-4 border-t border-paper-bg/15 pt-4 md:mt-8">
 				{#each [[c.modules, c.modules === 1 ? 'Section' : 'Sections'], [c.lessons, c.lessons === 1 ? 'Topic' : 'Topics'], [shortRuntime || '—', 'Reading'], [c.previewLessons, 'Free']] as [v, l] (l)}
 					<div class="border-l border-paper-bg/15 pl-3 first:border-l-0 first:pl-0">
-						<dt class="text-[9.5px] font-extrabold tracking-[0.16em] text-paper-bg/55 uppercase">
+						<dt class="text-xs font-extrabold tracking-widest text-paper-bg/55 uppercase">
 							{l}
 						</dt>
 						<dd
-							class="mt-1 font-newsreader text-[18px] leading-tight font-semibold tabular-nums md:text-[22px]"
+							class="mt-1 font-newsreader text-lg leading-tight font-semibold tabular-nums md:text-2xl"
 						>
 							{v}
 						</dd>
@@ -488,32 +488,32 @@
 			<!-- phones: how to get in, right under the course facts -->
 			<div
 				bind:this={heroCta}
-				class="mt-6 max-w-[600px] border border-paper-bg/20 bg-paper-bg/[0.06] p-4 lg:hidden"
+				class="mt-6 max-w-xl border border-paper-bg/20 bg-paper-bg/5 p-4 lg:hidden"
 			>
 				{#if data.owner}
-					<p class="text-[12.5px] text-paper-bg/70">You teach this course.</p>
+					<p class="text-xs text-paper-bg/70">You teach this course.</p>
 				{:else if data.enrolled}
-					<p class="text-[10px] font-extrabold tracking-[0.16em] text-gold uppercase">
+					<p class="text-xs font-extrabold tracking-widest text-gold uppercase">
 						You’re enrolled · {data.progress?.done ?? 0} of {data.progress?.total ?? 0} done
 					</p>
 					{#if data.resume}
-						<p class="mt-1 truncate font-newsreader text-[15px] text-paper-bg/80 italic">
+						<p class="mt-1 truncate font-newsreader text-base text-paper-bg/80 italic">
 							Next: {data.resume.title}
 						</p>
 					{/if}
 				{:else}
 					<p class="flex items-baseline justify-between gap-3">
-						<span class="font-newsreader text-[30px] leading-none font-semibold tabular-nums"
+						<span class="font-newsreader text-3xl leading-none font-semibold tabular-nums"
 							>{priceText}</span
 						>
 						<span
-							class="text-right text-[10px] font-extrabold tracking-[0.14em] text-paper-bg/60 uppercase"
+							class="text-right text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase"
 							>{c.price > 0 ? 'One-time purchase · Lifetime access' : 'Free course'}</span
 						>
 					</p>
 				{/if}
 				{#if prices && !data.owner && !data.enrolled}
-					<p class="mt-1.5 text-[11.5px] text-paper-bg/60 tabular-nums">
+					<p class="mt-1.5 text-xs text-paper-bg/60 tabular-nums">
 						{member
 							? `Premium price · ${prices.nonMember} without`
 							: `or ${prices.member} with Premium`} · card fees included
@@ -523,7 +523,7 @@
 					<div class="mt-3">{@render goButton(true)}</div>
 				{/if}
 				{#if !data.owner && !data.enrolled && c.previewLessons}
-					<p class="mt-2.5 text-center text-[11.5px] text-paper-bg/60">
+					<p class="mt-2.5 text-center text-xs text-paper-bg/60">
 						Or read {c.previewLessons === 1
 							? 'the free topic'
 							: `the ${c.previewLessons} free topics`} first.
@@ -539,7 +539,7 @@
 		class="sticky z-20 border-b border-line bg-paper-bg/95 backdrop-blur"
 		style="top: {headerH}px;"
 	>
-		<div class="mx-auto w-full max-w-[1200px] px-5 md:px-8">
+		<div class="mx-auto w-full max-w-page px-5 md:px-8">
 			<div
 				class="grid grid-cols-3 md:flex md:gap-8"
 				role="tablist"
@@ -556,7 +556,7 @@
 						aria-controls="panel-{id}"
 						tabindex={tab === id ? 0 : -1}
 						onclick={() => pick(id)}
-						class="relative py-4 text-center text-[11px] font-extrabold tracking-[0.14em] uppercase transition-colors md:text-left {tab ===
+						class="relative py-4 text-center text-xs font-extrabold tracking-widest uppercase transition-colors md:text-left {tab ===
 						id
 							? 'text-ink'
 							: 'text-fade hover:text-ink'}"
@@ -568,7 +568,7 @@
 							<span class="ml-1 font-semibold text-fade tabular-nums">{data.discussion.total}</span>
 						{/if}
 						<span
-							class="absolute inset-x-0 bottom-[-1px] h-[3px] {tab === id
+							class="absolute inset-x-0 -bottom-px h-1 {tab === id
 								? 'bg-academy'
 								: 'bg-transparent'}"
 							aria-hidden="true"
@@ -580,10 +580,10 @@
 	</div>
 
 	<!-- ============ body ============ -->
-	<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-28 md:px-8 md:pt-10 lg:pb-14">
+	<div class="mx-auto w-full max-w-page px-5 pt-8 pb-28 md:px-8 md:pt-10 lg:pb-14">
 		{#if justEnrolled && data.enrolled}
 			<p
-				class="mb-6 border-l-[3px] border-prem bg-prem/[0.07] px-4 py-3 text-[13px] font-semibold"
+				class="mb-6 border-l-3 border-prem bg-prem/5 px-4 py-3 text-sm font-semibold"
 				role="status"
 			>
 				You’re enrolled. It’s yours to keep, and it’s waiting in
@@ -599,7 +599,7 @@
 					aria-labelledby="tab-syllabus"
 					hidden={tab !== 'syllabus'}
 				>
-					<p class="font-newsreader text-[15.5px] text-soft italic">
+					<p class="font-newsreader text-base text-soft italic">
 						{#if data.enrolled && data.progress}
 							You’ve done {done} of {data.progress.total}
 							{data.progress.total === 1 ? 'topic' : 'topics'}.
@@ -611,7 +611,7 @@
 						{/if}
 					</p>
 					{#if data.enrolled && data.progress?.total}
-						<div class="mt-3 h-[4px] bg-line" aria-hidden="true">
+						<div class="mt-3 h-1 bg-line" aria-hidden="true">
 							<div
 								class="h-full bg-academy"
 								style="width: {Math.round((done / data.progress.total) * 100)}%"
@@ -626,17 +626,15 @@
 									class="flex cursor-pointer list-none items-center gap-3 bg-paper px-4 py-3.5 md:px-5 [&::-webkit-details-marker]:hidden"
 								>
 									<span class="min-w-0 flex-1">
-										<span
-											class="block text-[9.5px] font-extrabold tracking-[0.18em] text-gold uppercase"
+										<span class="block text-xs font-extrabold tracking-widest text-gold uppercase"
 											>Section {mi + 1}</span
 										>
-										<span
-											class="mt-0.5 block font-newsreader text-[19px] leading-tight font-semibold md:text-[21px]"
+										<span class="mt-0.5 block font-newsreader text-xl leading-tight font-semibold"
 											>{m.title}</span
 										>
 									</span>
 									<span
-										class="shrink-0 text-right text-[10px] font-bold tracking-[0.1em] text-fade uppercase"
+										class="shrink-0 text-right text-xs font-bold tracking-widest text-fade uppercase"
 									>
 										{m.lessons.length}
 										{m.lessons.length === 1 ? 'topic' : 'topics'}
@@ -661,48 +659,48 @@
 											<svelte:element
 												this={open ? 'a' : 'div'}
 												href={open ? `/academy/${c.slug}/${l.slug}` : undefined}
-												class="group/row grid min-h-[60px] grid-cols-[30px_1fr_auto] items-center gap-3 px-4 py-3 md:px-5 {open
+												class="group/row grid min-h-15 grid-cols-[30px_1fr_auto] items-center gap-3 px-4 py-3 md:px-5 {open
 													? 'hover:bg-paper'
 													: ''}"
 											>
 												<span
-													class="flex h-[26px] w-[26px] items-center justify-center text-[11px] {l.done
+													class="flex h-7 w-7 items-center justify-center text-xs {l.done
 														? 'bg-prem text-white'
 														: open
-															? 'border border-ink/70 font-newsreader text-[13px] tabular-nums'
+															? 'border border-ink/70 font-newsreader text-sm tabular-nums'
 															: 'border border-line2 text-fade'}"
 													aria-label={l.done ? 'Done' : open ? `Topic ${l.no}` : 'Locked'}
 													>{#if l.done}✓{:else if open}{Number(l.no)}{:else}🔒︎{/if}</span
 												>
 												<span class="min-w-0">
 													<span
-														class="block font-newsreader text-[16.5px] leading-[1.25] font-semibold {open
+														class="block font-newsreader text-base leading-tight font-semibold {open
 															? 'group-hover/row:text-academy'
 															: 'text-ink/55'}"
 													>
 														{l.title}
 													</span>
 													<span
-														class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-fade"
+														class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fade"
 													>
 														<span>{l.kind === 'video' ? 'Video' : 'Reading'} · {l.minutes} min</span
 														>
 														{#if l.isPreview}
 															<span
-																class="bg-gold px-1.5 py-[1px] text-[8px] font-extrabold tracking-[0.16em] text-[#241b07] uppercase"
+																class="bg-gold px-1.5 py-px text-xs font-extrabold tracking-widest text-gold-ink uppercase"
 																>Free</span
 															>
 														{/if}
 														{#if data.owner && !l.publishedAt}
 															<span
-																class="border border-line2 px-1.5 py-[1px] text-[8px] font-extrabold tracking-[0.16em] uppercase"
+																class="border border-line2 px-1.5 py-px text-xs font-extrabold tracking-widest uppercase"
 																>Draft</span
 															>
 														{/if}
 													</span>
 												</span>
 												<span
-													class="text-[14px] {open
+													class="text-sm {open
 														? 'text-ink/60 group-hover/row:text-academy'
 														: 'text-transparent'}"
 													aria-hidden="true">→</span
@@ -724,17 +722,17 @@
 					hidden={tab !== 'discussion'}
 				>
 					{#if !data.discussion.read}
-						<div class="border-[3px] border-double border-ink px-6 py-10 text-center">
-							<p class="font-newsreader text-[22px] font-semibold">
+						<div class="border-3 border-double border-ink px-6 py-10 text-center">
+							<p class="font-newsreader text-2xl font-semibold">
 								The discussion is for the course’s students.
 							</p>
-							<p class="mx-auto mt-2 max-w-[440px] font-newsreader text-[15.5px] text-soft italic">
+							<p class="mx-auto mt-2 max-w-md font-newsreader text-base text-soft italic">
 								Enroll to ask questions, share notes and get updates from {instructor}.
 							</p>
 							{#if !data.signedIn}
 								<a
 									href={loginHref}
-									class="mt-5 inline-block bg-ink px-5 py-3 text-[11px] font-extrabold tracking-[0.16em] text-paper-bg uppercase hover:bg-academy"
+									class="mt-5 inline-block bg-ink px-5 py-3 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-academy"
 									>Sign in →</a
 								>
 							{/if}
@@ -748,26 +746,23 @@
 								onposted={posted}
 							/>
 						{:else if data.discussion.muted}
-							<p class="text-[12.5px] text-hero-rb">You’ve been muted here. You can still read.</p>
+							<p class="text-xs text-hero-rb">You’ve been muted here. You can still read.</p>
 						{/if}
 						{#if postNotice}
-							<p
-								class="mt-3 border-l-[3px] border-gold bg-gold/10 px-3 py-2 text-[13px]"
-								role="status"
-							>
+							<p class="mt-3 border-l-3 border-gold bg-gold/10 px-3 py-2 text-sm" role="status">
 								{postNotice}
 							</p>
 						{/if}
 						<div
-							class="mt-6 flex items-baseline justify-between gap-3 border-b-[3px] border-ink pb-2.5"
+							class="mt-6 flex items-baseline justify-between gap-3 border-b-3 border-ink pb-2.5"
 						>
-							<h2 class="font-newsreader text-[20px] font-semibold">
+							<h2 class="font-newsreader text-xl font-semibold">
 								{data.discussion.total ? 'Latest conversations' : 'No conversations yet'}
 							</h2>
 							{#if data.discussion.total}
 								<a
 									href="/academy/{c.slug}/discussion"
-									class="text-[10.5px] font-extrabold tracking-[0.16em] text-academy uppercase hover:text-ink"
+									class="text-xs font-extrabold tracking-widest text-academy uppercase hover:text-ink"
 									>{data.discussion.total > THREADS_PER_PAGE
 										? `All ${data.discussion.total} →`
 										: 'Open →'}</a
@@ -794,7 +789,7 @@
 								onchange={(p) => (threadPage = p)}
 							/>
 						{:else}
-							<p class="mt-6 font-newsreader text-[17px] text-soft italic">
+							<p class="mt-6 font-newsreader text-lg text-soft italic">
 								Ask a question or share a note to start the conversation.
 							</p>
 						{/if}
@@ -820,25 +815,23 @@
 					{/if}
 					{#if c.description}
 						<h2
-							class="mt-8 flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+							class="mt-8 flex items-center gap-2.5 font-newsreader text-base font-semibold tracking-widest uppercase"
 						>
-							<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
+							<span class="text-xs text-gold" aria-hidden="true">◆</span>
 							About this course
 						</h2>
 						<!-- One paragraph per blank-line break; a single line break stays a line break.
 						     ||Spoilers|| (which may run over several paragraphs) are spoiler blocks. -->
 						{#each descriptionBlocks(c.description) as block, i (i)}
 							{#if block.spoiler}
-								<div
-									class="font-newsreader text-[18px] leading-[1.55] whitespace-pre-line md:text-[19px]"
-								>
+								<div class="font-newsreader text-lg leading-normal whitespace-pre-line md:text-xl">
 									<SpoilerText text={`||${block.text}||`} />
 								</div>
 							{:else}
 								<p
-									class="font-newsreader text-[18px] leading-[1.55] whitespace-pre-line md:text-[19px] {i ===
+									class="font-newsreader text-lg leading-normal whitespace-pre-line md:text-xl {i ===
 									0
-										? 'mt-3 first-letter:float-left first-letter:mt-[6px] first-letter:mr-2 first-letter:text-[52px] first-letter:leading-[0.72] first-letter:font-semibold first-letter:text-gold'
+										? 'mt-3 first-letter:float-left first-letter:mt-1.5 first-letter:mr-2 first-letter:text-5xl first-letter:leading-none first-letter:font-semibold first-letter:text-gold'
 										: 'mt-4'}"
 								>
 									{block.text}
@@ -848,24 +841,24 @@
 					{/if}
 
 					<h2
-						class="mt-10 flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+						class="mt-10 flex items-center gap-2.5 font-newsreader text-base font-semibold tracking-widest uppercase"
 					>
-						<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
+						<span class="text-xs text-gold" aria-hidden="true">◆</span>
 						What’s included
 					</h2>
 					<ul class="mt-3 grid gap-x-8 sm:grid-cols-2">
 						{#each includes as item (item)}
-							<li class="flex items-start gap-2.5 border-b border-line py-3 text-[13.5px]">
-								<span class="mt-[4px] text-[8px] text-gold" aria-hidden="true">◆</span>
+							<li class="flex items-start gap-2.5 border-b border-line py-3 text-sm">
+								<span class="mt-1 text-xs text-gold" aria-hidden="true">◆</span>
 								{item}
 							</li>
 						{/each}
 					</ul>
 
 					<h2
-						class="mt-10 flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+						class="mt-10 flex items-center gap-2.5 font-newsreader text-base font-semibold tracking-widest uppercase"
 					>
-						<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
+						<span class="text-xs text-gold" aria-hidden="true">◆</span>
 						Your instructor
 					</h2>
 					<div class="mt-4 border border-line bg-paper p-5 md:p-6">
@@ -881,7 +874,7 @@
 								/>
 							{:else}
 								<span
-									class="flex h-16 w-16 shrink-0 items-center justify-center bg-ink font-newsreader text-[22px] font-semibold text-paper-bg md:h-20 md:w-20"
+									class="flex h-16 w-16 shrink-0 items-center justify-center bg-ink font-newsreader text-2xl font-semibold text-paper-bg md:h-20 md:w-20"
 									aria-hidden="true">{initials}</span
 								>
 							{/if}
@@ -889,19 +882,19 @@
 								{#if c.author?.handle}
 									<a
 										href="/people/{c.author.handle}"
-										class="block font-newsreader text-[22px] leading-tight font-semibold transition-colors hover:text-warm"
+										class="block font-newsreader text-2xl leading-tight font-semibold transition-colors hover:text-warm"
 										><span class="fp-ul">{instructor}</span></a
 									>
 								{:else}
-									<div class="font-newsreader text-[22px] leading-tight font-semibold">
+									<div class="font-newsreader text-2xl leading-tight font-semibold">
 										{instructor}
 									</div>
 								{/if}
-								<div class="mt-1 text-[10px] font-extrabold tracking-[0.16em] text-gold uppercase">
+								<div class="mt-1 text-xs font-extrabold tracking-widest text-gold uppercase">
 									{c.author?.title || 'AGE Academy instructor'}
 								</div>
 								{#if !c.author?.bio}
-									<p class="mt-3 font-newsreader text-[15.5px] leading-[1.5] text-soft italic">
+									<p class="mt-3 font-newsreader text-base leading-normal text-soft italic">
 										Teaches {c.lessons}
 										{c.lessons === 1 ? 'topic' : 'topics'} in this course{#if published}, published
 											{published}{/if}.
@@ -916,7 +909,7 @@
 								.map((p) => p.trim())
 								.filter(Boolean) as para, i (i)}
 								<p
-									class="mt-4 font-newsreader text-[16px] leading-[1.6] whitespace-pre-line text-soft"
+									class="mt-4 font-newsreader text-base leading-relaxed whitespace-pre-line text-soft"
 								>
 									{para}
 								</p>
@@ -925,7 +918,7 @@
 						{#if c.author?.handle}
 							<a
 								href="/people/{c.author.handle}"
-								class="mt-5 inline-flex items-center gap-2 border-t border-line pt-3 text-[10px] font-extrabold tracking-[0.16em] text-ink uppercase transition-colors hover:text-warm"
+								class="mt-5 inline-flex items-center gap-2 border-t border-line pt-3 text-xs font-extrabold tracking-widest text-ink uppercase transition-colors hover:text-warm"
 								>Everything by {instructor} <span aria-hidden="true">→</span></a
 							>
 						{/if}
@@ -942,37 +935,37 @@
 					: 'hidden'}"
 				style="top: {headerH + 72}px;"
 			>
-				<div class="border-[3px] border-double border-ink bg-paper-bg">
+				<div class="border-3 border-double border-ink bg-paper-bg">
 					<div class="px-6 pt-5 pb-5">
 						{#if data.owner}
-							<div class="text-[10px] font-extrabold tracking-[0.2em] text-gold uppercase">
+							<div class="text-xs font-extrabold tracking-widest text-gold uppercase">
 								You teach this course
 							</div>
-							<p class="mt-2 font-newsreader text-[15px] leading-[1.45] text-soft italic">
+							<p class="mt-2 font-newsreader text-base leading-normal text-soft italic">
 								{c.status === 'published'
 									? 'This is what students see. Draft topics are marked and only visible to you.'
 									: 'A preview: students can’t see this course until it’s approved.'}
 							</p>
 							<a
 								href="/classroom/courses/{c.id}"
-								class="mt-4 flex w-full items-center justify-center bg-ink px-5 py-3.5 text-[11px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-gold hover:text-[#241b07]"
+								class="mt-4 flex w-full items-center justify-center bg-ink px-5 py-3.5 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-gold hover:text-gold-ink"
 								>Edit in the Classroom →</a
 							>
 						{:else if data.enrolled}
-							<div class="text-[10px] font-extrabold tracking-[0.2em] text-gold uppercase">
+							<div class="text-xs font-extrabold tracking-widest text-gold uppercase">
 								Your course
 							</div>
 							<div class="mt-3 flex items-baseline justify-between gap-3">
-								<span class="font-newsreader text-[30px] leading-none font-semibold tabular-nums"
-									>{data.progress.done}<span class="text-[18px] text-fade">
+								<span class="font-newsreader text-3xl leading-none font-semibold tabular-nums"
+									>{data.progress.done}<span class="text-lg text-fade">
 										/ {data.progress.total}</span
 									></span
 								>
-								<span class="text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
+								<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 									>Topics done</span
 								>
 							</div>
-							<div class="mt-3 h-[5px] bg-line" aria-hidden="true">
+							<div class="mt-3 h-1.5 bg-line" aria-hidden="true">
 								<div
 									class="h-full bg-academy"
 									style="width: {data.progress.total
@@ -983,13 +976,12 @@
 							{#if data.resume}
 								<a
 									href="/academy/{c.slug}/{data.resume.slug}"
-									class="mt-5 flex w-full flex-col items-center justify-center bg-ink px-5 py-3 text-center text-paper-bg transition-colors hover:bg-gold hover:text-[#241b07]"
+									class="mt-5 flex w-full flex-col items-center justify-center bg-ink px-5 py-3 text-center text-paper-bg transition-colors hover:bg-gold hover:text-gold-ink"
 								>
-									<span class="text-[11px] font-extrabold tracking-[0.16em] uppercase"
+									<span class="text-xs font-extrabold tracking-widest uppercase"
 										>{data.progress.done ? 'Continue' : 'Start the course'} →</span
 									>
-									<span
-										class="mt-0.5 max-w-full truncate font-newsreader text-[13.5px] italic opacity-80"
+									<span class="mt-0.5 max-w-full truncate font-newsreader text-sm italic opacity-80"
 										>{data.resume.title}</span
 									>
 								</a>
@@ -997,38 +989,38 @@
 							{#if data.refund}
 								<a
 									href={data.refund.href}
-									class="mt-3 block text-center text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase hover:text-ink"
+									class="mt-3 block text-center text-xs font-extrabold tracking-widest text-fade uppercase hover:text-ink"
 									>Request a refund</a
 								>
 							{/if}
 						{:else}
-							<div class="text-[10px] font-extrabold tracking-[0.2em] text-gold uppercase">
+							<div class="text-xs font-extrabold tracking-widest text-gold uppercase">
 								{c.price > 0 ? 'Lifetime access' : 'Free course'}
 							</div>
 							<div class="mt-2 flex items-baseline gap-3">
-								<span class="font-newsreader text-[44px] leading-none font-semibold tabular-nums">
+								<span class="font-newsreader text-5xl leading-none font-semibold tabular-nums">
 									{priceText}
 								</span>
 								{#if c.price > 0}
-									<span class="text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
+									<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 										>One-time purchase</span
 									>
 								{/if}
 							</div>
 							{#if prices}
-								<p class="mt-2 text-[12.5px] leading-snug text-soft tabular-nums">
+								<p class="mt-2 text-xs leading-snug text-soft tabular-nums">
 									{#if member}
 										Your Premium price: 10% off. {prices.nonMember} without Premium.
 									{:else}
 										or <span class="font-semibold text-prem">{prices.member} with Premium</span>
 									{/if}
-									<span class="block text-[11.5px] text-fade">Card processing included.</span>
+									<span class="block text-xs text-fade">Card processing included.</span>
 								</p>
 							{/if}
 							{#if !data.signedIn}
 								<a
 									href={loginHref}
-									class="mt-5 flex w-full items-center justify-center bg-ink px-5 py-3.5 text-[11px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-gold hover:text-[#241b07]"
+									class="mt-5 flex w-full items-center justify-center bg-ink px-5 py-3.5 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-gold hover:text-gold-ink"
 									>Sign in to {c.price > 0 ? 'enroll' : 'start free'} →</a
 								>
 								{#if c.price > 0}
@@ -1039,14 +1031,14 @@
 									type="button"
 									onclick={enroll}
 									disabled={paying}
-									class="mt-5 flex w-full items-center justify-center bg-ink px-5 py-3.5 text-[11px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-gold hover:text-[#241b07] disabled:opacity-60"
+									class="mt-5 flex w-full items-center justify-center bg-ink px-5 py-3.5 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-gold hover:text-gold-ink disabled:opacity-60"
 									>{paying ? 'Enrolling…' : 'Start free →'}</button
 								>
 							{:else if !checkoutOpen}
 								<button
 									type="button"
 									onclick={() => (checkoutOpen = true)}
-									class="mt-5 flex w-full items-center justify-center bg-ink px-5 py-3.5 text-[11px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-gold hover:text-[#241b07]"
+									class="mt-5 flex w-full items-center justify-center bg-ink px-5 py-3.5 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-gold hover:text-gold-ink"
 									>Enroll →</button
 								>
 								{@render cartButton()}
@@ -1068,7 +1060,7 @@
 									<button
 										type="submit"
 										disabled={paying || pending || !data.accept?.ready || !consent}
-										class="flex h-[50px] w-full items-center justify-center bg-prem text-[11.5px] font-extrabold tracking-[0.1em] text-white uppercase transition-[filter] hover:brightness-110 disabled:opacity-60"
+										class="flex h-13 w-full items-center justify-center bg-prem text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110 disabled:opacity-60"
 									>
 										{paying || pending ? 'Processing…' : `Pay ${priceText}`}
 									</button>
@@ -1077,45 +1069,42 @@
 							{/if}
 							{#if payError}
 								<p
-									class="mt-3 border-[1.5px] border-hero-rb bg-hero-rb/[0.06] px-3 py-2 text-[12.5px] font-semibold text-hero-rb"
+									class="mt-3 border-2 border-hero-rb bg-hero-rb/5 px-3 py-2 text-xs font-semibold text-hero-rb"
 									role="alert"
 								>
 									{payError}
 								</p>
 							{/if}
 							{#if payNotice}
-								<p
-									class="mt-3 border border-line2 px-3 py-2 text-[12.5px] font-semibold"
-									role="status"
-								>
+								<p class="mt-3 border border-line2 px-3 py-2 text-xs font-semibold" role="status">
 									{payNotice}
 								</p>
 							{/if}
 							{#if data.firstFree}
 								<a
 									href="/academy/{c.slug}/{data.firstFree.slug}"
-									class="mt-3 block text-center text-[10px] font-extrabold tracking-[0.14em] uppercase hover:text-academy"
+									class="mt-3 block text-center text-xs font-extrabold tracking-widest uppercase hover:text-academy"
 									>Read a free topic first →</a
 								>
 							{/if}
 							<p
-								class="mt-3 text-center text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+								class="mt-3 text-center text-xs font-extrabold tracking-widest text-fade uppercase"
 							>
 								Every future update included
 							</p>
 							{#if !member && c.price > 0}
 								<a
 									href="/premium"
-									class="mt-1.5 block text-center text-[9.5px] font-extrabold tracking-[0.16em] text-prem uppercase hover:underline"
+									class="mt-1.5 block text-center text-xs font-extrabold tracking-widest text-prem uppercase hover:underline"
 									>◆ Premium members save 10% · Learn more</a
 								>
 							{/if}
 						{/if}
-						<div class="mt-5 border-t border-line pt-3.5 text-[12px] text-soft">
+						<div class="mt-5 border-t border-line pt-3.5 text-xs text-soft">
 							<p class="flex items-baseline justify-between gap-3">
 								<span>
 									{#if data.updates?.lastUpdated}
-										<span class="text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+										<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 											>Last updated</span
 										>
 										{updatedOn(data.updates.lastUpdated)}
@@ -1123,14 +1112,14 @@
 								</span>
 								<a
 									href="/refund-policy"
-									class="text-[11px] font-semibold underline underline-offset-2 hover:text-ink"
+									class="text-xs font-semibold underline underline-offset-2 hover:text-ink"
 									>Refund policy</a
 								>
 							</p>
 							{#if data.updates?.changelog.length}
 								<details class="mt-2">
 									<summary
-										class="cursor-pointer text-[9.5px] font-extrabold tracking-[0.14em] uppercase hover:text-academy"
+										class="cursor-pointer text-xs font-extrabold tracking-widest uppercase hover:text-academy"
 										>What’s changed</summary
 									>
 									<ul class="mt-2 space-y-2">
@@ -1156,17 +1145,17 @@
 	<!-- ============ related ============ -->
 	{#if related.length}
 		<section class="border-t border-line bg-paper">
-			<div class="mx-auto w-full max-w-[1200px] px-5 py-10 md:px-8 md:py-14">
+			<div class="mx-auto w-full max-w-page px-5 py-10 md:px-8 md:py-14">
 				<div class="flex items-baseline justify-between gap-4">
 					<h2
-						class="flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+						class="flex items-center gap-2.5 font-newsreader text-base font-semibold tracking-widest uppercase"
 					>
-						<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
+						<span class="text-xs text-gold" aria-hidden="true">◆</span>
 						More from the Academy
 					</h2>
 					<a
 						href="/academy"
-						class="text-[10.5px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase transition-colors hover:text-gold"
+						class="text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors hover:text-gold"
 						>All courses →</a
 					>
 				</div>
@@ -1184,7 +1173,7 @@
 		{#if inCart}
 			<a
 				href="/academy/cart"
-				class="mt-2.5 flex w-full items-center justify-center border border-ink px-5 py-3 text-[11px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+				class="mt-2.5 flex w-full items-center justify-center border border-ink px-5 py-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 				>In your cart · Check out →</a
 			>
 		{:else}
@@ -1192,7 +1181,7 @@
 				type="button"
 				onclick={addToCart}
 				disabled={adding}
-				class="mt-2.5 flex w-full items-center justify-center border border-ink px-5 py-3 text-[11px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:opacity-60"
+				class="mt-2.5 flex w-full items-center justify-center border border-ink px-5 py-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:opacity-60"
 				>{adding ? 'Adding…' : 'Add to cart'}</button
 			>
 		{/if}
@@ -1201,8 +1190,8 @@
 	<!-- The way in, for the header box (big) and the bar at the foot. -->
 	{#snippet goButton(big)}
 		{@const cls = big
-			? 'flex min-h-[52px] w-full items-center justify-center bg-gold px-5 text-[11.5px] font-extrabold tracking-[0.16em] text-[#241b07] uppercase disabled:opacity-60'
-			: 'flex min-h-[46px] shrink-0 items-center justify-center bg-gold px-5 text-[11.5px] font-extrabold tracking-[0.16em] text-[#241b07] uppercase disabled:opacity-60'}
+			? 'flex min-h-13 w-full items-center justify-center bg-gold px-5 text-xs font-extrabold tracking-widest text-gold-ink uppercase disabled:opacity-60'
+			: 'flex min-h-12 shrink-0 items-center justify-center bg-gold px-5 text-xs font-extrabold tracking-widest text-gold-ink uppercase disabled:opacity-60'}
 		{#if data.owner}
 			<a href="/classroom/courses/{c.id}" class={cls}>Edit course →</a>
 		{:else if data.enrolled}
@@ -1226,32 +1215,30 @@
 
 	<!-- ============ phones: price and the way in, once the header box is out of view ============ -->
 	<div
-		class="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-4 bg-prem px-5 py-3 text-white shadow-[0_-6px_20px_rgba(0,0,0,0.12)] transition-transform duration-300 ease-out motion-reduce:transition-none lg:hidden {heroCtaInView
+		class="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-4 bg-prem px-5 py-3 text-white shadow-up transition-transform duration-300 ease-out motion-reduce:transition-none lg:hidden {heroCtaInView
 			? 'pointer-events-none translate-y-full'
 			: 'translate-y-0'}"
 		aria-hidden={heroCtaInView ? 'true' : undefined}
 		inert={heroCtaInView}
 	>
 		{#if data.owner}
-			<span class="min-w-0 truncate text-[12px] font-semibold text-white/80"
-				>You teach this course</span
+			<span class="min-w-0 truncate text-xs font-semibold text-white/80">You teach this course</span
 			>
 		{:else if data.enrolled}
 			<span class="min-w-0">
-				<span class="block text-[10px] font-extrabold tracking-[0.16em] text-white/70 uppercase"
+				<span class="block text-xs font-extrabold tracking-widest text-white/70 uppercase"
 					>{data.progress?.done ?? 0} of {data.progress?.total ?? 0} done</span
 				>
-				<span class="mt-0.5 block truncate font-newsreader text-[14px] italic"
+				<span class="mt-0.5 block truncate font-newsreader text-sm italic"
 					>{data.resume?.title ?? c.title}</span
 				>
 			</span>
 		{:else}
 			<span class="min-w-0">
-				<span class="block font-newsreader text-[24px] leading-none font-semibold tabular-nums"
+				<span class="block font-newsreader text-2xl leading-none font-semibold tabular-nums"
 					>{priceText}</span
 				>
-				<span
-					class="mt-1 block text-[10px] font-extrabold tracking-[0.14em] text-white/70 uppercase"
+				<span class="mt-1 block text-xs font-extrabold tracking-widest text-white/70 uppercase"
 					>{c.price > 0 ? 'One-time purchase' : 'Free course'}</span
 				>
 			</span>

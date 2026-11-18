@@ -19,7 +19,7 @@
 
 <label class="group flex min-w-0 flex-col gap-1.5 md:flex-row md:items-baseline md:gap-2.5">
 	<span
-		class="text-[9.5px] font-extrabold tracking-[0.16em] whitespace-nowrap uppercase {dark
+		class="text-xs font-extrabold tracking-widest whitespace-nowrap uppercase {dark
 			? 'text-paper-bg/50'
 			: 'text-fade'}">{label}</span
 	>
@@ -29,12 +29,12 @@
 			: 'border-line2 group-hover:border-ink'} {accent}"
 	>
 		<span
-			class="truncate text-[10.5px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase md:overflow-visible {dark
+			class="truncate text-xs font-extrabold tracking-widest whitespace-nowrap uppercase md:overflow-visible {dark
 				? 'text-paper-bg'
 				: 'text-ink'}">{current}</span
 		>
 		<svg
-			class="h-[6px] w-[9px] shrink-0 transition-colors {dark
+			class="h-1.5 w-2.5 shrink-0 transition-colors {dark
 				? 'text-paper-bg/50 group-hover:text-paper-bg'
 				: 'text-fade group-hover:text-ink'}"
 			viewBox="0 0 10 6"

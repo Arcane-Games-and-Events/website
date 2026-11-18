@@ -49,9 +49,9 @@
 		onsaved(body.show);
 	}
 
-	const fieldLabel = 'block text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase';
+	const fieldLabel = 'block text-xs font-extrabold tracking-widest text-fade uppercase';
 	const control =
-		'mt-1.5 h-[40px] w-full border border-line2 bg-white px-2.5 text-[14px] focus:border-ink focus:ring-0';
+		'mt-1.5 h-10 w-full border border-line2 bg-white px-2.5 text-sm focus:border-ink focus:ring-0';
 </script>
 
 <div class="grid gap-6 md:grid-cols-[200px_minmax(0,1fr)]">
@@ -64,7 +64,7 @@
 				form.coverImageId = e.detail?.id ?? null;
 			}}
 		/>
-		<p class="mt-1.5 text-[11.5px] leading-snug text-fade">Square art works best.</p>
+		<p class="mt-1.5 text-xs leading-snug text-fade">Square art works best.</p>
 	</div>
 	<div class="space-y-4">
 		<label class="block">
@@ -72,7 +72,7 @@
 			<input
 				bind:value={form.name}
 				maxlength="120"
-				class="{control} font-newsreader text-[18px] font-semibold"
+				class="{control} font-newsreader text-lg font-semibold"
 			/>
 		</label>
 		<div class="grid gap-3 sm:grid-cols-2">
@@ -95,23 +95,23 @@
 				bind:value={form.description}
 				rows="4"
 				maxlength="4000"
-				class="mt-1.5 w-full border border-line2 bg-white px-2.5 py-2 text-[14px] focus:border-ink focus:ring-0"
+				class="mt-1.5 w-full border border-line2 bg-white px-2.5 py-2 text-sm focus:border-ink focus:ring-0"
 			></textarea>
 		</label>
 		{#if show}
 			<label class="block">
 				<span class={fieldLabel}>Web address</span>
 				<div class="mt-1.5 flex items-center border border-line2 bg-white focus-within:border-ink">
-					<span class="pl-2.5 text-[13.5px] text-fade">/studios/shows/</span>
+					<span class="pl-2.5 text-sm text-fade">/studios/shows/</span>
 					<input
 						bind:value={form.slug}
 						oninput={() => (form.slug = cleanTypedSlug(form.slug))}
-						class="h-[38px] min-w-0 flex-1 border-0 bg-transparent px-1 text-[14px] focus:ring-0"
+						class="h-10 min-w-0 flex-1 border-0 bg-transparent px-1 text-sm focus:ring-0"
 					/>
 				</div>
 			</label>
 		{/if}
-		<label class="flex items-center gap-2.5 text-[13.5px]">
+		<label class="flex items-center gap-2.5 text-sm">
 			<input
 				type="checkbox"
 				bind:checked={form.isActive}
@@ -124,10 +124,10 @@
 				type="button"
 				onclick={save}
 				disabled={saving || !form.name.trim()}
-				class="bg-ink px-5 py-2.5 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
+				class="bg-ink px-5 py-2.5 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
 				>{saving ? 'Saving…' : show ? 'Save show' : 'Create show'}</button
 			>
-			<span class="text-[12px] {error ? 'text-hero-rb' : 'text-fade'}" aria-live="polite"
+			<span class="text-xs {error ? 'text-hero-rb' : 'text-fade'}" aria-live="polite"
 				>{error || note}</span
 			>
 		</div>

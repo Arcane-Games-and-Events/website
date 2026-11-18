@@ -153,20 +153,20 @@
 	<!-- ============ masthead ============ -->
 	<section class="relative overflow-hidden bg-academy text-paper-bg">
 		<span
-			class="pointer-events-none absolute -top-40 -right-40 h-[420px] w-[620px] bg-[radial-gradient(closest-side,rgb(201_160_70/0.22),transparent)]"
+			class="pointer-events-none absolute -top-40 -right-40 h-105 w-155 bg-[radial-gradient(closest-side,rgb(201_160_70/0.22),transparent)]"
 			aria-hidden="true"
 		></span>
-		<div class="relative mx-auto w-full max-w-[1200px] px-5 pt-8 pb-9 md:px-8 md:pt-11 md:pb-12">
+		<div class="relative mx-auto w-full max-w-page px-5 pt-8 pb-9 md:px-8 md:pt-11 md:pb-12">
 			<a
 				href="/academy"
-				class="text-[10px] font-extrabold tracking-[0.18em] text-paper-bg/80 uppercase transition-colors hover:text-gold"
+				class="text-xs font-extrabold tracking-widest text-paper-bg/80 uppercase transition-colors hover:text-gold"
 				>← The Academy</a
 			>
-			<p class="mt-5 text-[10.5px] font-extrabold tracking-[0.2em] text-gold uppercase">
+			<p class="mt-5 text-xs font-extrabold tracking-widest text-gold uppercase">
 				<span aria-hidden="true">◆</span> Your cart
 			</p>
 			<h1
-				class="mt-2 max-w-[760px] font-newsreader text-[34px] leading-[1.05] font-semibold tracking-[-0.015em] [text-wrap:balance] md:text-[48px]"
+				class="mt-2 max-w-3xl font-newsreader text-4xl leading-none font-semibold tracking-tight [text-wrap:balance] md:text-5xl"
 			>
 				{#if count}
 					{count === 1 ? 'One guide' : `${count} guides`} ready to read, yours for life.
@@ -174,16 +174,14 @@
 					Your cart is empty. Let’s fix that.
 				{/if}
 			</h1>
-			<p
-				class="mt-3 max-w-[620px] font-newsreader text-[17px] leading-[1.5] text-paper-bg/75 italic"
-			>
+			<p class="mt-3 max-w-xl font-newsreader text-lg leading-normal text-paper-bg/75 italic">
 				Written by the players who define the format, with every future update included.
 			</p>
 		</div>
 	</section>
 
 	<div class="bg-paper-bg text-ink">
-		<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-16 md:px-8 md:pt-12">
+		<div class="mx-auto w-full max-w-page px-5 pt-8 pb-16 md:px-8 md:pt-12">
 			{#if count || data.have.length}
 				<div
 					class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px] lg:grid-rows-[auto_1fr] lg:gap-x-14 lg:gap-y-10"
@@ -207,33 +205,32 @@
 									</a>
 									<div class="flex min-w-0 flex-col py-0.5 pr-1">
 										{#if it.instructor}
-											<span
-												class="text-[9.5px] font-extrabold tracking-[0.18em] text-gold uppercase"
+											<span class="text-xs font-extrabold tracking-widest text-gold uppercase"
 												>With {it.instructor}</span
 											>
 										{/if}
 										<a
 											href="/academy/{it.slug}"
-											class="mt-1 font-newsreader text-[19px] leading-[1.15] font-semibold [text-wrap:balance] transition-colors hover:text-academy sm:text-[21px]"
+											class="mt-1 font-newsreader text-xl leading-tight font-semibold [text-wrap:balance] transition-colors hover:text-academy"
 											>{it.title}</a
 										>
-										<span class="mt-1 text-[11.5px] text-fade">{@render guideMeta(it)}</span>
+										<span class="mt-1 text-xs text-fade">{@render guideMeta(it)}</span>
 										<div class="mt-auto flex items-end justify-between gap-3 pt-3">
 											<button
 												type="button"
 												onclick={() => change(it.courseId, 'remove')}
 												disabled={!!busyId}
-												class="text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase transition-colors hover:text-hero-rb disabled:opacity-50"
+												class="text-xs font-extrabold tracking-widest text-fade uppercase transition-colors hover:text-hero-rb disabled:opacity-50"
 												>Remove</button
 											>
 											<span class="text-right">
 												{#if it.aloneCents > it.paidCents}
-													<span class="block text-[11px] text-fade tabular-nums line-through"
+													<span class="block text-xs text-fade tabular-nums line-through"
 														>{usd(it.aloneCents)}</span
 													>
 												{/if}
 												<span
-													class="font-newsreader text-[22px] leading-none font-semibold tabular-nums"
+													class="font-newsreader text-2xl leading-none font-semibold tabular-nums"
 													>{usd(it.paidCents)}</span
 												>
 											</span>
@@ -244,7 +241,7 @@
 						</ul>
 
 						{#if data.have.length}
-							<div class="mt-5 border border-line2 px-4 py-3 text-[13px] text-soft">
+							<div class="mt-5 border border-line2 px-4 py-3 text-sm text-soft">
 								<p class="font-semibold text-ink">Already yours, so not charged:</p>
 								<ul class="mt-1.5 space-y-1">
 									{#each data.have as g (g.id)}
@@ -253,7 +250,7 @@
 											<button
 												type="button"
 												onclick={() => change(g.id, 'remove')}
-												class="text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase hover:text-hero-rb"
+												class="text-xs font-extrabold tracking-widest text-fade uppercase hover:text-hero-rb"
 												>Remove</button
 											>
 										</li>
@@ -265,11 +262,11 @@
 
 					{#if count}
 						<aside class="h-fit lg:sticky lg:top-24 lg:row-span-2">
-							<div class="border-[3px] border-double border-ink bg-paper-bg p-6">
-								<p class="text-[10px] font-extrabold tracking-[0.2em] text-gold uppercase">
+							<div class="border-3 border-double border-ink bg-paper-bg p-6">
+								<p class="text-xs font-extrabold tracking-widest text-gold uppercase">
 									Order summary
 								</p>
-								<dl class="mt-4 space-y-2 text-[13.5px]">
+								<dl class="mt-4 space-y-2 text-sm">
 									<div class="flex justify-between gap-3">
 										<dt class="text-soft">{count === 1 ? '1 guide' : `${count} guides`}</dt>
 										<dd class="tabular-nums">{usd(data.aloneCents)}</dd>
@@ -293,29 +290,27 @@
 								<div
 									class="mt-4 flex items-baseline justify-between gap-3 border-t border-ink pt-4"
 								>
-									<span class="text-[10.5px] font-extrabold tracking-[0.16em] uppercase">Total</span
-									>
-									<span class="font-newsreader text-[40px] leading-none font-semibold tabular-nums"
+									<span class="text-xs font-extrabold tracking-widest uppercase">Total</span>
+									<span class="font-newsreader text-4xl leading-none font-semibold tabular-nums"
 										><CountUp
 											value={dollars(q.totalCents)}
 											format={(v) => usd(Math.round(v * 100))}
 										/></span
 									>
 								</div>
-								<p class="mt-1 text-right text-[11.5px] text-fade">
+								<p class="mt-1 text-right text-xs text-fade">
 									Card processing included. One payment.
 								</p>
 
 								{#if premiumSaves > 0}
 									<a
 										href="/premium"
-										class="mt-4 block border border-prem/60 bg-prem/[0.06] px-4 py-3 transition-colors hover:bg-prem/[0.12]"
+										class="mt-4 block border border-prem/60 bg-prem/5 px-4 py-3 transition-colors hover:bg-prem/10"
 									>
-										<span
-											class="block text-[10px] font-extrabold tracking-[0.16em] text-prem uppercase"
+										<span class="block text-xs font-extrabold tracking-widest text-prem uppercase"
 											>◆ With Premium: {usd(data.premiumTotalCents)}</span
 										>
-										<span class="mt-0.5 block text-[12.5px] text-soft"
+										<span class="mt-0.5 block text-xs text-soft"
 											>Members save {usd(premiumSaves)} here, and 10% on every guide. →</span
 										>
 									</a>
@@ -324,7 +319,7 @@
 								{#if !data.signedIn}
 									<a
 										href={loginHref}
-										class="mt-5 flex w-full items-center justify-center bg-ink px-5 py-3.5 text-[11px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-gold hover:text-[#241b07]"
+										class="mt-5 flex w-full items-center justify-center bg-ink px-5 py-3.5 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-gold hover:text-gold-ink"
 										>Sign in to check out →</a
 									>
 								{:else}
@@ -345,7 +340,7 @@
 											disabled={paying ||
 												pending ||
 												(q.totalCents > 0 && (!data.accept?.ready || !consent))}
-											class="flex h-[52px] w-full items-center justify-center bg-prem text-[11.5px] font-extrabold tracking-[0.1em] text-white uppercase transition-[filter] hover:brightness-110 disabled:opacity-60"
+											class="flex h-13 w-full items-center justify-center bg-prem text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110 disabled:opacity-60"
 										>
 											{paying || pending
 												? 'Processing…'
@@ -357,21 +352,18 @@
 								{/if}
 								{#if payError}
 									<p
-										class="mt-3 border-[1.5px] border-hero-rb bg-hero-rb/[0.06] px-3 py-2 text-[12.5px] font-semibold text-hero-rb"
+										class="mt-3 border-2 border-hero-rb bg-hero-rb/5 px-3 py-2 text-xs font-semibold text-hero-rb"
 										role="alert"
 									>
 										{payError}
 									</p>
 								{/if}
 								{#if payNotice}
-									<p
-										class="mt-3 border border-line2 px-3 py-2 text-[12.5px] font-semibold"
-										role="status"
-									>
+									<p class="mt-3 border border-line2 px-3 py-2 text-xs font-semibold" role="status">
 										{payNotice}
 									</p>
 								{/if}
-								<p class="mt-4 text-center text-[11.5px] leading-snug text-fade">
+								<p class="mt-4 text-center text-xs leading-snug text-fade">
 									Read straight away after paying. Every guide opens with a free topic, so you can
 									preview before you buy.
 								</p>
@@ -382,21 +374,21 @@
 					<!-- what every guide comes with -->
 					<div class="self-start lg:col-start-1">
 						<h2
-							class="flex items-center gap-2.5 font-newsreader text-[14px] font-semibold tracking-[0.2em] uppercase"
+							class="flex items-center gap-2.5 font-newsreader text-sm font-semibold tracking-widest uppercase"
 						>
-							<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
+							<span class="text-xs text-gold" aria-hidden="true">◆</span>
 							With every guide
 						</h2>
 						<ul class="mt-4 grid gap-px border border-line bg-line sm:grid-cols-2">
 							{#each INCLUDED as [mark, title, body] (title)}
 								<li class="flex gap-3.5 bg-paper-bg px-4 py-4">
 									<span
-										class="flex h-8 w-8 shrink-0 items-center justify-center bg-academy font-newsreader text-[16px] text-gold"
+										class="flex h-8 w-8 shrink-0 items-center justify-center bg-academy font-newsreader text-base text-gold"
 										aria-hidden="true">{mark}</span
 									>
 									<span>
-										<span class="block text-[13.5px] font-semibold">{title}</span>
-										<span class="mt-0.5 block text-[12.5px] leading-snug text-soft">{body}</span>
+										<span class="block text-sm font-semibold">{title}</span>
+										<span class="mt-0.5 block text-xs leading-snug text-soft">{body}</span>
 									</span>
 								</li>
 							{/each}
@@ -410,19 +402,19 @@
 				<section class="{count || data.have.length ? 'mt-16' : ''} border-t border-line pt-10">
 					<div class="flex items-baseline justify-between gap-4">
 						<h2
-							class="flex items-center gap-2.5 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+							class="flex items-center gap-2.5 font-newsreader text-base font-semibold tracking-widest uppercase"
 						>
-							<span class="text-[10px] text-gold" aria-hidden="true">◆</span>
+							<span class="text-xs text-gold" aria-hidden="true">◆</span>
 							{count ? 'Complete your set' : 'Start with one of these'}
 						</h2>
 						<a
 							href="/academy"
-							class="text-[10.5px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase transition-colors hover:text-gold"
+							class="text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors hover:text-gold"
 							>All guides →</a
 						>
 					</div>
 					{#if count}
-						<p class="mt-1.5 text-[13px] text-fade">
+						<p class="mt-1.5 text-sm text-fade">
 							Add another and it shares this cart’s one card fee.
 						</p>
 					{/if}
@@ -433,21 +425,21 @@
 									<CourseCover image={s.image} slug={s.slug} />
 								</a>
 								<div class="flex flex-1 flex-col p-4">
-									<span class="text-[9.5px] font-extrabold tracking-[0.18em] text-gold uppercase"
+									<span class="text-xs font-extrabold tracking-widest text-gold uppercase"
 										>With {s.instructor}</span
 									>
 									<a
 										href={s.href}
-										class="mt-1.5 font-newsreader text-[19px] leading-[1.15] font-semibold [text-wrap:balance] hover:text-academy"
+										class="mt-1.5 font-newsreader text-xl leading-tight font-semibold [text-wrap:balance] hover:text-academy"
 										>{s.title}</a
 									>
-									<span class="mt-1 text-[11.5px] text-fade">{@render guideMeta(s)}</span>
+									<span class="mt-1 text-xs text-fade">{@render guideMeta(s)}</span>
 									<div class="mt-auto pt-4">
 										<button
 											type="button"
 											onclick={() => change(s.id, 'add')}
 											disabled={!!busyId}
-											class="flex w-full items-center justify-center border border-ink px-4 py-2.5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:opacity-60"
+											class="flex w-full items-center justify-center border border-ink px-4 py-2.5 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg disabled:opacity-60"
 											>{busyId === s.id ? 'Adding…' : 'Add to cart +'}</button
 										>
 									</div>
@@ -460,7 +452,7 @@
 				<div class="border border-line2 px-6 py-14 text-center">
 					<a
 						href="/academy"
-						class="inline-flex bg-ink px-5 py-3 text-[11px] font-extrabold tracking-[0.16em] text-paper-bg uppercase hover:bg-gold hover:text-[#241b07]"
+						class="inline-flex bg-ink px-5 py-3 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-gold hover:text-gold-ink"
 						>Browse guides →</a
 					>
 				</div>

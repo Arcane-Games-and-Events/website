@@ -99,13 +99,13 @@
 
 	<!-- top bar -->
 	<div class="relative flex items-center justify-between px-5 pt-5 text-paper-bg">
-		<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-paper-bg/60 uppercase tabular-nums">
+		<p class="text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase tabular-nums">
 			{#if many}Card {index + 1} <span class="text-paper-bg/35">/ {total}</span>{/if}
 		</p>
 		<button
 			type="button"
 			onclick={onclose}
-			class="flex h-10 w-10 items-center justify-center border border-paper-bg/30 text-[18px] leading-none transition-colors hover:bg-paper-bg hover:text-ink"
+			class="flex h-10 w-10 items-center justify-center border border-paper-bg/30 text-lg leading-none transition-colors hover:bg-paper-bg hover:text-ink"
 			aria-label="Close">×</button
 		>
 	</div>
@@ -116,7 +116,7 @@
 	>
 		{#key cardKey}
 			<div
-				class="pointer-events-auto relative aspect-[488/680] h-full max-h-[62vh] max-w-full"
+				class="pointer-events-auto relative aspect-488/680 h-full max-h-[62vh] max-w-full"
 				in:fly={{ y: 14, duration: 260, easing: cubicOut }}
 			>
 				{#if !loaded && !failed}
@@ -127,7 +127,7 @@
 				{/if}
 				{#if failed}
 					<p
-						class="absolute inset-0 flex items-center justify-center border border-paper-bg/20 px-6 text-center text-[10px] font-extrabold tracking-[0.16em] text-paper-bg/60 uppercase"
+						class="absolute inset-0 flex items-center justify-center border border-paper-bg/20 px-6 text-center text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase"
 					>
 						Image unavailable
 					</p>
@@ -154,18 +154,18 @@
 	<!-- caption + controls -->
 	<div class="relative px-5 pb-[max(20px,env(safe-area-inset-bottom))] text-paper-bg">
 		<div
-			class="flex items-end justify-between gap-4 border-t-[3px] pt-3"
+			class="flex items-end justify-between gap-4 border-t-3 pt-3"
 			style="border-color: {card.hex};"
 		>
 			<div class="min-w-0">
 				<p
-					class="flex items-center gap-2 text-[9px] font-extrabold tracking-[0.2em] uppercase"
+					class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase"
 					style="color: {card.hex};"
 				>
 					<span class="h-2 w-2 bg-current" aria-hidden="true"></span>
 					{card.label}
 				</p>
-				<p class="mt-1.5 truncate font-newsreader text-[22px] leading-tight font-semibold">
+				<p class="mt-1.5 truncate font-newsreader text-2xl leading-tight font-semibold">
 					{card.name}
 				</p>
 			</div>
@@ -176,17 +176,17 @@
 				<button
 					type="button"
 					onclick={() => onstep(-1)}
-					class="flex min-h-[48px] items-center justify-center gap-2 bg-ink text-[10px] font-extrabold tracking-[0.18em] uppercase transition-colors hover:bg-paper-bg hover:text-ink"
+					class="flex min-h-12 items-center justify-center gap-2 bg-ink text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-paper-bg hover:text-ink"
 					><span aria-hidden="true">←</span> Previous</button
 				>
 				<button
 					type="button"
 					onclick={() => onstep(1)}
-					class="flex min-h-[48px] items-center justify-center gap-2 bg-ink text-[10px] font-extrabold tracking-[0.18em] uppercase transition-colors hover:bg-paper-bg hover:text-ink"
+					class="flex min-h-12 items-center justify-center gap-2 bg-ink text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-paper-bg hover:text-ink"
 					>Next <span aria-hidden="true">→</span></button
 				>
 			</div>
-			<p class="mt-3 text-center font-newsreader text-[12px] text-paper-bg/45 italic">{hint}</p>
+			<p class="mt-3 text-center font-newsreader text-xs text-paper-bg/45 italic">{hint}</p>
 		{/if}
 	</div>
 </div>

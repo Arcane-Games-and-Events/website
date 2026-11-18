@@ -43,27 +43,25 @@
 	style="--cc: {c.color}; background-image: linear-gradient(100deg, color-mix(in srgb, var(--cc) 55%, transparent) 0%, transparent 62%);"
 >
 	<div
-		class="mx-auto flex max-w-[1200px] flex-col gap-6 px-5 pt-7 pb-6 md:flex-row md:items-end md:justify-between md:px-8 md:pt-10 md:pb-8"
+		class="mx-auto flex max-w-page flex-col gap-6 px-5 pt-7 pb-6 md:flex-row md:items-end md:justify-between md:px-8 md:pt-10 md:pb-8"
 	>
 		<div class="flex min-w-0 items-end gap-4 md:gap-5">
 			<span
-				class="ao-cond flex h-[58px] w-[64px] shrink-0 items-center justify-center text-[30px] leading-none font-black text-white ring-1 ring-white/25 md:h-[76px] md:w-[84px] md:text-[40px]"
+				class="ao-cond flex h-15 w-16 shrink-0 items-center justify-center text-3xl leading-none font-black text-white ring-1 ring-white/25 md:h-19 md:w-21 md:text-4xl"
 				style="background: var(--cc);"
 				aria-hidden="true">{c.short}</span
 			>
 			<div class="min-w-0">
-				<p
-					class="text-[9.5px] font-extrabold tracking-[0.26em] text-paper-bg/70 uppercase md:text-[10.5px]"
-				>
+				<p class="text-xs font-extrabold tracking-widest text-paper-bg/70 uppercase">
 					<span class="text-gold">◆</span>
 					{kicker || `AGE Open · ${c.name} circuit`}
 				</p>
 				<h1
-					class="ao-cond mt-1.5 truncate text-[40px] leading-[0.9] font-black tracking-[-0.01em] uppercase md:text-[64px]"
+					class="ao-cond mt-1.5 truncate text-4xl leading-none font-black tracking-normal uppercase md:text-6xl"
 				>
 					{s.name}
 				</h1>
-				<p class="mt-2 text-[12.5px] text-paper-bg/70">
+				<p class="mt-2 text-xs text-paper-bg/70">
 					{#if sub}{sub}{:else}{place ? `${place} · ` : ''}<span class="font-semibold text-paper-bg"
 							>{role}</span
 						>{/if}{s.active ? '' : ' · inactive'}
@@ -74,23 +72,23 @@
 
 		<a
 			href={base}
-			class="group block w-full shrink-0 md:w-[280px]"
+			class="group block w-full shrink-0 md:w-70"
 			aria-label="Season {season.year}: {season.played} of {season.target} Opens played, {season.scheduled} scheduled"
 		>
 			<span
-				class="flex items-baseline justify-between text-[9.5px] font-extrabold tracking-[0.2em] text-paper-bg/70 uppercase"
+				class="flex items-baseline justify-between text-xs font-extrabold tracking-widest text-paper-bg/70 uppercase"
 			>
 				<span>Season {season.year}</span>
 				<span
-					><span class="ao-cond text-[26px] leading-none text-paper-bg tabular-nums"
+					><span class="ao-cond text-2xl leading-none text-paper-bg tabular-nums"
 						>{season.played}</span
 					><span class="text-paper-bg/60"> / {season.target} played</span></span
 				>
 			</span>
-			<span class="mt-2 grid grid-cols-8 gap-[3px]" aria-hidden="true">
+			<span class="mt-2 grid grid-cols-8 gap-1" aria-hidden="true">
 				{#each Array.from({ length: season.target }) as _, i (i)}
 					<span
-						class="h-[10px] {i < season.played
+						class="h-2.5 {i < season.played
 							? ''
 							: i < season.played + season.scheduled
 								? 'border border-paper-bg/70'
@@ -99,7 +97,7 @@
 					></span>
 				{/each}
 			</span>
-			<span class="mt-1.5 block text-[10.5px] text-paper-bg/55"
+			<span class="mt-1.5 block text-xs text-paper-bg/55"
 				>{season.scheduled} scheduled · {Math.max(
 					0,
 					season.target - season.played - season.scheduled
@@ -116,13 +114,13 @@
 		aria-label="Store sections"
 	>
 		<div
-			class="mx-auto flex h-[48px] max-w-[1200px] items-stretch overflow-x-auto px-5 [scrollbar-width:none] md:px-8 [&::-webkit-scrollbar]:hidden"
+			class="mx-auto flex h-12 max-w-page items-stretch overflow-x-auto px-5 [scrollbar-width:none] md:px-8 [&::-webkit-scrollbar]:hidden"
 		>
 			{#each tabs as tab (tab.id)}
 				<a
 					href={tab.href}
 					aria-current={current === tab.id ? 'page' : undefined}
-					class="flex shrink-0 items-center border-b-[3px] px-3 text-[10.5px] font-extrabold tracking-[0.16em] whitespace-nowrap uppercase transition-colors first:-ml-3 {current ===
+					class="flex shrink-0 items-center border-b-3 px-3 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors first:-ml-3 {current ===
 					tab.id
 						? 'text-paper-bg'
 						: 'border-transparent text-paper-bg/55 hover:text-paper-bg'}"

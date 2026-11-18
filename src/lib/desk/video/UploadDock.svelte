@@ -51,7 +51,7 @@
 {#if uploads.items.length}
 	<section
 		transition:fly={{ y: 16, duration: 220 }}
-		class="fixed right-3 bottom-3 left-3 z-[60] border border-ink bg-paper-bg font-libre text-ink shadow-[0_18px_40px_-24px_rgba(20,16,8,0.55)] sm:left-auto sm:w-[360px] md:right-6 md:bottom-6"
+		class="fixed right-3 bottom-3 left-3 z-60 border border-ink bg-paper-bg font-libre text-ink shadow-xl sm:left-auto sm:w-90 md:right-6 md:bottom-6"
 		aria-label="Video uploads"
 	>
 		<button
@@ -61,17 +61,15 @@
 			class="flex w-full items-center justify-between gap-3 bg-ink px-3.5 py-2.5 text-left text-paper-bg"
 		>
 			<span class="flex min-w-0 items-center gap-2.5">
-				<span class="text-[8px] text-warm-light" aria-hidden="true">◆</span>
-				<span class="truncate text-[10.5px] font-extrabold tracking-[0.16em] uppercase"
-					>{summary}</span
-				>
+				<span class="text-xs text-warm-light" aria-hidden="true">◆</span>
+				<span class="truncate text-xs font-extrabold tracking-widest uppercase">{summary}</span>
 			</span>
-			<span class="text-[10px] font-extrabold tracking-[0.14em] uppercase opacity-70"
+			<span class="text-xs font-extrabold tracking-widest uppercase opacity-70"
 				>{open ? 'Hide' : 'Show'}</span
 			>
 		</button>
 		{#if running.length && !open}
-			<div class="h-[3px] bg-line2" aria-hidden="true">
+			<div class="h-1 bg-line2" aria-hidden="true">
 				<div class="h-full bg-warm transition-[width] duration-300" style="width: {overall}%"></div>
 			</div>
 		{/if}
@@ -82,16 +80,14 @@
 					<li class="px-3.5 py-3">
 						<div class="flex items-baseline justify-between gap-3">
 							<p class="min-w-0">
-								<span class="block truncate text-[13px] font-semibold">{u.label}</span>
-								<span class="block truncate text-[11px] text-fade"
+								<span class="block truncate text-sm font-semibold">{u.label}</span>
+								<span class="block truncate text-xs text-fade"
 									>{u.name} · {formatBytes(u.size)}</span
 								>
 							</p>
-							<span class="shrink-0 text-[11.5px] text-soft tabular-nums"
-								>{Math.round(u.percent)}%</span
-							>
+							<span class="shrink-0 text-xs text-soft tabular-nums">{Math.round(u.percent)}%</span>
 						</div>
-						<div class="mt-2 h-[3px] bg-line2" aria-hidden="true">
+						<div class="mt-2 h-1 bg-line2" aria-hidden="true">
 							<div
 								class="h-full transition-[width] duration-300 {u.state === 'failed'
 									? 'bg-hero-rb'
@@ -103,7 +99,7 @@
 						</div>
 						<div class="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
 							<span
-								class="text-[11.5px] {u.state === 'failed'
+								class="text-xs {u.state === 'failed'
 									? 'text-hero-rb'
 									: u.state === 'ready'
 										? 'text-prem'
@@ -116,7 +112,7 @@
 									>
 								{/if}
 							</span>
-							<span class="flex gap-3 text-[9.5px] font-extrabold tracking-[0.12em] uppercase">
+							<span class="flex gap-3 text-xs font-extrabold tracking-widest uppercase">
 								{#if LIVE.includes(u.state)}
 									<button
 										type="button"
@@ -147,7 +143,7 @@
 				{/each}
 			</ul>
 			{#if running.length}
-				<p class="border-t border-line px-3.5 py-2 text-[11px] leading-snug text-fade">
+				<p class="border-t border-line px-3.5 py-2 text-xs leading-snug text-fade">
 					Keeps uploading while you browse the site. Don’t reload or close this tab.
 				</p>
 			{/if}

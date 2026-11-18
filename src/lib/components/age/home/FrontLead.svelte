@@ -80,9 +80,9 @@
 	// first guess before JS runs.
 	const titleSize = $derived.by(() => {
 		const n = (lead?.title || '').length;
-		if (n <= 34) return 'text-[38px] md:text-[52px] lg:text-[40px] xl:text-[46px]';
-		if (n <= 60) return 'text-[30px] md:text-[40px] lg:text-[34px] xl:text-[38px]';
-		return 'text-[26px] md:text-[34px] lg:text-[30px] xl:text-[33px]';
+		if (n <= 34) return 'text-4xl md:text-5xl lg:text-4xl xl:text-5xl';
+		if (n <= 60) return 'text-3xl md:text-4xl';
+		return 'text-2xl md:text-4xl lg:text-3xl xl:text-4xl';
 	});
 	const TITLE_SIZES = [
 		// [min screen width, largest size, smallest size]
@@ -174,7 +174,7 @@
 
 		{#if leadPic?.credit}
 			<p
-				class="absolute right-5 bottom-3 z-10 hidden max-w-[40%] truncate text-right text-[10px] leading-none text-white/55 md:right-8 md:block"
+				class="absolute right-5 bottom-3 z-10 hidden max-w-[40%] truncate text-right text-xs leading-none text-white/55 md:right-8 md:block"
 			>
 				{#if leadPic.creditUrl}<a
 						href={leadPic.creditUrl}
@@ -186,31 +186,31 @@
 		{/if}
 
 		<div
-			class="relative mx-auto -mt-12 w-full max-w-[1200px] px-5 pb-10 md:mt-0 md:flex md:min-h-[min(78vh,760px)] md:flex-col md:justify-end md:px-8 md:pt-28 md:pb-14"
+			class="relative mx-auto -mt-12 w-full max-w-page px-5 pb-10 md:mt-0 md:flex md:min-h-[min(78vh,760px)] md:flex-col md:justify-end md:px-8 md:pt-28 md:pb-14"
 		>
 			<!-- the outgoing copy fades away in the same spot as the new copy rises in -->
 			<div class="grid">
 				{#key activeIdx}
 					<div
-						class="max-w-[680px] [grid-area:1/1] {switched ? 'hero-switched' : ''}"
+						class="max-w-2xl [grid-area:1/1] {switched ? 'hero-switched' : ''}"
 						in:fly={{ y: 10, duration: 750, delay: 180, easing: cubicOut }}
 						out:fade={{ duration: 400 }}
 					>
 						<p
-							class="fp-rise flex items-center gap-2 text-[10px] font-extrabold tracking-[0.24em] text-warm-light uppercase"
+							class="fp-rise flex items-center gap-2 text-xs font-extrabold tracking-widest text-warm-light uppercase"
 						>
 							<span aria-hidden="true">◆</span> Latest release · {lead.rubric}
 						</p>
 						<h1
 							use:fitTwoLines
-							class="fp-rise mt-3 line-clamp-2 font-newsreader leading-[1.04] font-semibold tracking-[-0.025em] [text-wrap:balance] {titleSize}"
+							class="fp-rise mt-3 line-clamp-2 font-newsreader leading-none font-semibold tracking-tight [text-wrap:balance] {titleSize}"
 							style="animation-delay: 120ms;"
 						>
 							<a href={lead.href} class="hover:text-white/90">{lead.title}</a>
 						</h1>
 						{#if lead.dek}
 							<p
-								class="fp-rise mt-3 line-clamp-3 max-w-[560px] font-newsreader text-[18px] leading-[1.35] text-white/80 italic md:text-[21px] lg:text-[19px]"
+								class="fp-rise mt-3 line-clamp-3 max-w-xl font-newsreader text-lg leading-snug text-white/80 italic md:text-xl"
 								style="animation-delay: 240ms;"
 							>
 								{lead.dek}
@@ -222,7 +222,7 @@
 						>
 							<a
 								href={lead.href}
-								class="inline-flex items-center gap-2 bg-paper-bg px-5 py-3.5 text-[11px] font-extrabold tracking-[0.14em] whitespace-nowrap text-ink uppercase transition-colors hover:bg-warm hover:text-white"
+								class="inline-flex items-center gap-2 bg-paper-bg px-5 py-3.5 text-xs font-extrabold tracking-widest whitespace-nowrap text-ink uppercase transition-colors hover:bg-warm hover:text-white"
 							>
 								{cta(lead)} <span aria-hidden="true">→</span>
 							</a>
@@ -235,7 +235,7 @@
 							/>
 						</div>
 						{#if leadPic?.credit}
-							<p class="mt-5 text-[11px] text-white/55 md:hidden">
+							<p class="mt-5 text-xs text-white/55 md:hidden">
 								Cover: {#if leadPic.creditUrl}<a
 										href={leadPic.creditUrl}
 										target="_blank"
@@ -261,10 +261,10 @@
 							role="tab"
 							aria-selected={i === activeIdx}
 							onclick={() => show(i)}
-							class="group relative w-[44%] shrink-0 pt-3 text-left sm:w-[30%] md:w-[260px]"
+							class="group relative w-[44%] shrink-0 pt-3 text-left sm:w-[30%] md:w-65"
 						>
 							<span
-								class="absolute inset-x-0 top-0 h-[2px] transition-colors {i === activeIdx
+								class="absolute inset-x-0 top-0 h-0.5 transition-colors {i === activeIdx
 									? 'bg-white/25'
 									: 'bg-white/20 group-hover:bg-white/60'}"
 								aria-hidden="true"
@@ -282,13 +282,13 @@
 								{/if}
 							</span>
 							<span
-								class="block truncate font-jost text-[12px] font-bold tracking-[0.06em] uppercase {i ===
+								class="block truncate font-jost text-xs font-bold tracking-wider uppercase {i ===
 								activeIdx
 									? 'text-white'
 									: 'text-white/55 group-hover:text-white'}">{item.rubric}</span
 							>
 							<span
-								class="mt-0.5 line-clamp-2 block font-newsreader text-[14px] leading-[1.25] {i ===
+								class="mt-0.5 line-clamp-2 block font-newsreader text-sm leading-tight {i ===
 								activeIdx
 									? 'text-white/80'
 									: 'text-white/45 group-hover:text-white/75'}">{item.title}</span

@@ -79,25 +79,24 @@
 			style="background: color-mix(in srgb, {tone} 10%, var(--ed-paper));"
 		>
 			{#if d}
-				<span class="text-[10px] font-extrabold tracking-[0.18em] uppercase" style="color: {tone};"
+				<span class="text-xs font-extrabold tracking-widest uppercase" style="color: {tone};"
 					>{fmt({ month: 'short' })}</span
 				>
 				<span
-					class="ao-cond mt-1 text-[46px] leading-[0.85] font-black tabular-nums md:text-[54px] {ahead
+					class="ao-cond mt-1 text-5xl leading-none font-black tabular-nums md:text-6xl {ahead
 						? ''
 						: 'text-soft'}">{fmt({ day: 'numeric' })}</span
 				>
-				<span class="mt-1 text-[8.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+				<span class="mt-1 text-xs font-extrabold tracking-widest text-fade uppercase"
 					>{fmt({ weekday: 'short' })}</span
 				>
 			{:else}
-				<span class="text-[9.5px] font-extrabold tracking-[0.14em] text-hero-rb uppercase">TBD</span
-				>
+				<span class="text-xs font-extrabold tracking-widest text-hero-rb uppercase">TBD</span>
 			{/if}
 			{#if !ahead}
 				<!-- on phones, where the photo is hidden, the stamp sits on the stub -->
 				<span
-					class="mt-2 max-w-full px-1 py-0.5 text-[8px] font-extrabold tracking-[0.06em] uppercase md:hidden {off
+					class="mt-2 max-w-full px-1 py-0.5 text-xs font-extrabold tracking-wider uppercase md:hidden {off
 						? 'bg-hero-rb text-white'
 						: 'bg-ink text-paper-bg'}"
 					aria-hidden="true">{label}</span
@@ -112,7 +111,7 @@
 				src={image}
 				alt=""
 				loading="lazy"
-				class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.05] {ahead
+				class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105 {ahead
 					? ''
 					: 'grayscale'}"
 			/>
@@ -125,7 +124,7 @@
 				<!-- a stamp over the photo once it's played or called off -->
 				<span class="absolute inset-0 grid place-items-center" aria-hidden="true">
 					<span
-						class="ao-cond -rotate-3 border-2 px-3 pt-1 pb-0.5 text-[24px] leading-none font-black tracking-[0.04em] uppercase {off
+						class="ao-cond -rotate-3 border-2 px-3 pt-1 pb-0.5 text-2xl leading-none font-black tracking-wider uppercase {off
 							? 'border-hero-rb bg-hero-rb/90 text-white'
 							: 'border-paper-bg/80 bg-ink/75 text-paper-bg'}">{label}</span
 					>
@@ -137,13 +136,12 @@
 		<span class="min-w-0 px-4 pt-4 pb-2 md:px-6 md:py-5">
 			<span class="flex flex-wrap items-center gap-x-3 gap-y-1">
 				{#if name}
-					<span
-						class="text-[9.5px] font-extrabold tracking-[0.2em] uppercase"
-						style="color: {tone};">{name}</span
+					<span class="text-xs font-extrabold tracking-widest uppercase" style="color: {tone};"
+						>{name}</span
 					>
 				{/if}
 				<span
-					class="inline-flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] uppercase {live
+					class="inline-flex items-center gap-1.5 text-xs font-extrabold tracking-widest uppercase {live
 						? 'text-hero-rb'
 						: full && ahead
 							? 'text-hero-rb'
@@ -151,7 +149,7 @@
 				>
 					{#if ahead}
 						<span
-							class="h-[6px] w-[6px] rounded-full {live ? 'animate-pulse-dot' : ''}"
+							class="h-1.5 w-1.5 rounded-full {live ? 'animate-pulse-dot' : ''}"
 							style="background: {live ? 'var(--ed-hero-rb)' : tone};"
 							aria-hidden="true"
 						></span>
@@ -160,20 +158,20 @@
 				</span>
 			</span>
 			<span
-				class="ao-cond mt-1 block text-[26px] leading-[0.95] font-black uppercase group-hover:text-warm md:text-[30px] {off
+				class="ao-cond mt-1 block text-2xl leading-none font-black uppercase group-hover:text-warm md:text-3xl {off
 					? 'line-through'
 					: ''}">{e.title}</span
 			>
 			{#if e.format || where}
 				<span class="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5"
 					>{#if e.format}<FormatTag format={e.format} short />{/if}<span
-						class="min-w-0 truncate text-[11px] font-semibold text-fade">{where}</span
+						class="min-w-0 truncate text-xs font-semibold text-fade">{where}</span
 					></span
 				>
 			{/if}
-			<span class="mt-3 flex h-[14px] items-center gap-3">
+			<span class="mt-3 flex h-3.5 items-center gap-3">
 				{#if e.playerCap}
-					<span class="block h-[3px] w-full max-w-[200px] bg-line">
+					<span class="block h-1 w-full max-w-50 bg-line">
 						<span
 							class="block h-full"
 							style="width: {Math.min(
@@ -183,12 +181,11 @@
 						></span>
 					</span>
 					<span
-						class="shrink-0 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase tabular-nums"
+						class="shrink-0 text-xs font-extrabold tracking-widest text-fade uppercase tabular-nums"
 						>{e.players || 0}/{e.playerCap} seats</span
 					>
 				{:else}
-					<span
-						class="text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase tabular-nums"
+					<span class="text-xs font-extrabold tracking-widest text-fade uppercase tabular-nums"
 						>{e.players || 0} {e.players === 1 ? 'player' : 'players'} · no cap</span
 					>
 				{/if}
@@ -201,27 +198,25 @@
 		>
 			{#if takings !== null}
 				<span class="md:text-right">
-					<span class="ao-cond block text-[30px] leading-none font-black tabular-nums"
+					<span class="ao-cond block text-3xl leading-none font-black tabular-nums"
 						>{money(takings)}</span
 					>
-					<span class="text-[8.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+					<span class="text-xs font-extrabold tracking-widest whitespace-nowrap text-fade uppercase"
 						>in ticket sales</span
 					>
 				</span>
 			{:else if e.price != null}
 				<span class="md:text-right">
-					<span class="ao-cond block text-[30px] leading-none font-black tabular-nums"
+					<span class="ao-cond block text-3xl leading-none font-black tabular-nums"
 						>{Number(e.price) > 0 ? money(e.price) : 'Free'}</span
 					>
-					<span class="text-[8.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
-						>entry</span
-					>
+					<span class="text-xs font-extrabold tracking-widest text-fade uppercase">entry</span>
 				</span>
 			{:else}
 				<span></span>
 			{/if}
 			<span
-				class="inline-flex items-center px-4 py-2.5 text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap text-white uppercase transition-colors group-hover:bg-ink {live
+				class="inline-flex items-center px-4 py-2.5 text-xs font-extrabold tracking-widest whitespace-nowrap text-white uppercase transition-colors group-hover:bg-ink {live
 					? 'bg-hero-rb'
 					: 'bg-warm'}">Manage →</span
 			>

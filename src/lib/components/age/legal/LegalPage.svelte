@@ -39,50 +39,50 @@
 </script>
 
 <AgeShell>
-	<header class="mx-auto w-full max-w-[1200px] px-5 pt-10 md:px-8 md:pt-16">
+	<header class="mx-auto w-full max-w-page px-5 pt-10 md:px-8 md:pt-16">
 		<p
-			class="fp-rise flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.24em] text-warm uppercase"
+			class="fp-rise flex items-center gap-2.5 text-xs font-extrabold tracking-widest text-warm uppercase"
 		>
-			<span class="text-[8px]" aria-hidden="true">◆</span> The fine print
+			<span class="text-xs" aria-hidden="true">◆</span> The fine print
 		</p>
 		<h1
-			class="fp-rise mt-3 font-newsreader text-[44px] leading-[0.95] font-semibold tracking-[-0.02em] md:text-[72px]"
+			class="fp-rise mt-3 font-newsreader text-5xl leading-none font-semibold tracking-tight md:text-7xl"
 			style="animation-delay: 80ms;"
 		>
 			{title}
 		</h1>
 		<p
-			class="fp-rise mt-4 max-w-[640px] font-newsreader text-[18px] leading-[1.45] text-soft italic md:text-[21px]"
+			class="fp-rise mt-4 max-w-2xl font-newsreader text-lg leading-normal text-soft italic md:text-xl"
 			style="animation-delay: 140ms;"
 		>
 			{dek}
 		</p>
 		<p
-			class="fp-rise mt-5 text-[10px] font-extrabold tracking-[0.18em] text-fade uppercase"
+			class="fp-rise mt-5 text-xs font-extrabold tracking-widest text-fade uppercase"
 			style="animation-delay: 180ms;"
 		>
 			Last updated {updated} · Arcane Games and Events LLC
 		</p>
 		<div
-			class="fp-rise mt-6 h-[5px] border-t border-b border-ink md:mt-8"
+			class="fp-rise mt-6 h-1.5 border-t border-b border-ink md:mt-8"
 			style="animation-delay: 220ms;"
 			aria-hidden="true"
 		></div>
 	</header>
 
 	<div
-		class="mx-auto grid w-full max-w-[1200px] gap-10 px-5 pt-10 pb-16 md:px-8 md:pt-12 md:pb-24 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-16"
+		class="mx-auto grid w-full max-w-page gap-10 px-5 pt-10 pb-16 md:px-8 md:pt-12 md:pb-24 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-16"
 	>
 		<!-- contents -->
 		<nav class="lg:sticky lg:top-24 lg:self-start" aria-label="Contents">
-			<p class="text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase">Contents</p>
+			<p class="text-xs font-extrabold tracking-widest text-fade uppercase">Contents</p>
 			<ol class="legal-toc mt-3 border-t border-line">
 				{#each toc as t (t.id)}
 					<li class="border-b border-line">
 						<a
 							href="#{t.id}"
 							aria-current={current === t.id ? 'location' : undefined}
-							class="flex gap-3 py-2 text-[13px] leading-snug transition-colors hover:text-warm {current ===
+							class="flex gap-3 py-2 text-sm leading-snug transition-colors hover:text-warm {current ===
 							t.id
 								? 'text-warm'
 								: 'text-soft'}"
@@ -95,34 +95,34 @@
 			</ol>
 			<a
 				href={sibling.href}
-				class="mt-5 inline-block border-b-2 border-warm pb-0.5 text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:text-warm"
+				class="mt-5 inline-block border-b-2 border-warm pb-0.5 text-xs font-extrabold tracking-widest uppercase transition-colors hover:text-warm"
 				>{sibling.label} →</a
 			>
 		</nav>
 
-		<div class="max-w-[700px] min-w-0">
-			<aside class="border-[3px] border-double border-ink bg-paper px-6 py-6 md:px-8 md:py-7">
+		<div class="max-w-2xl min-w-0">
+			<aside class="border-3 border-double border-ink bg-paper px-6 py-6 md:px-8 md:py-7">
 				<p
-					class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.2em] text-warm uppercase"
+					class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest text-warm uppercase"
 				>
-					<span class="text-[8px]" aria-hidden="true">◆</span> In short
+					<span class="text-xs" aria-hidden="true">◆</span> In short
 				</p>
 				<div class="legal-summary mt-3">{@render summary()}</div>
 			</aside>
 
 			<div class="legal-body">{@render children()}</div>
 
-			<section class="mt-14 border-t-[3px] border-ink pt-6">
-				<h2 class="font-newsreader text-[26px] leading-tight font-semibold">Questions</h2>
-				<p class="mt-2 font-newsreader text-[17px] leading-[1.6] text-soft">
+			<section class="mt-14 border-t-3 border-ink pt-6">
+				<h2 class="font-newsreader text-2xl leading-tight font-semibold">Questions</h2>
+				<p class="mt-2 font-newsreader text-lg leading-relaxed text-soft">
 					Write to us and a person will answer. Arcane Games and Events LLC runs AGE.
 				</p>
 				<a
 					href="/contact"
-					class="mt-4 inline-flex items-center bg-ink px-5 py-3 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm"
+					class="mt-4 inline-flex items-center bg-ink px-5 py-3 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm"
 					>Send us a message</a
 				>
-				<p class="mt-3 text-[12.5px] text-fade">Or by email: info@arcanegamesandevents.com</p>
+				<p class="mt-3 text-xs text-fade">Or by email: info@arcanegamesandevents.com</p>
 			</section>
 		</div>
 	</div>
@@ -147,15 +147,15 @@
 		position: relative;
 		padding-left: 1.1rem;
 		font-family: 'Newsreader Variable', 'Newsreader', Georgia, serif;
-		font-size: 16.5px;
-		line-height: 1.5;
+		font-size: var(--text-base);
+		line-height: var(--leading-normal);
 	}
 	.legal-summary :global(li)::before {
 		content: '◆';
 		position: absolute;
 		left: 0;
 		top: 0.45em;
-		font-size: 7px;
+		font-size: var(--text-xs);
 		color: var(--ed-warm);
 	}
 
@@ -174,14 +174,14 @@
 		border-bottom: 1px solid var(--ed-line);
 		padding-bottom: 0.7rem;
 		font-family: 'Newsreader Variable', 'Newsreader', Georgia, serif;
-		font-size: 27px;
+		font-size: var(--text-3xl);
 		font-weight: 600;
-		line-height: 1.15;
-		letter-spacing: -0.01em;
+		line-height: var(--leading-tight);
+		letter-spacing: var(--tracking-normal);
 	}
 	.legal-body :global(h2)::before {
 		content: counter(section, decimal-leading-zero);
-		font-size: 15px;
+		font-size: var(--text-base);
 		font-weight: 500;
 		color: var(--ed-warm);
 		font-variant-numeric: tabular-nums;
@@ -189,16 +189,16 @@
 	.legal-body :global(h3) {
 		margin-top: 1.6rem;
 		font-family: 'Libre Franklin Variable', 'Libre Franklin', system-ui, sans-serif;
-		font-size: 10.5px;
+		font-size: var(--text-xs);
 		font-weight: 800;
-		letter-spacing: 0.16em;
+		letter-spacing: var(--tracking-widest);
 		text-transform: uppercase;
 	}
 	.legal-body :global(p),
 	.legal-body :global(li) {
 		font-family: 'Newsreader Variable', 'Newsreader', Georgia, serif;
-		font-size: 17.5px;
-		line-height: 1.62;
+		font-size: var(--text-lg);
+		line-height: var(--leading-relaxed);
 		color: var(--ed-ink);
 	}
 	.legal-body :global(p) {
@@ -244,7 +244,7 @@
 		border-left: 3px solid var(--ed-warm);
 		background: var(--ed-paper);
 		padding: 0.9rem 1.1rem;
-		font-size: 16px;
+		font-size: var(--text-base);
 	}
 	.legal-body :global(dl) {
 		margin-top: 1rem;
@@ -263,13 +263,13 @@
 	}
 	.legal-body :global(dt) {
 		font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-		font-size: 12.5px;
+		font-size: var(--text-xs);
 		font-weight: 700;
 	}
 	.legal-body :global(dd) {
 		font-family: 'Newsreader Variable', 'Newsreader', Georgia, serif;
-		font-size: 16.5px;
-		line-height: 1.5;
+		font-size: var(--text-base);
+		line-height: var(--leading-normal);
 		color: var(--ed-soft);
 	}
 </style>

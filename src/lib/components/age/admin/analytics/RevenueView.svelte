@@ -71,7 +71,7 @@
 </script>
 
 {#if !ledger}
-	<p class="font-newsreader text-[17px] text-soft italic">The revenue report couldn't be loaded.</p>
+	<p class="font-newsreader text-lg text-soft italic">The revenue report couldn't be loaded.</p>
 {:else if !ledger.available}
 	<Migration />
 {:else}
@@ -95,10 +95,8 @@
 	/>
 
 	{#if data.health?.available && (data.health.unverified || data.health.subsWithoutPayments)}
-		<div class="mt-6 border-l-[3px] border-gold bg-gold/10 px-5 py-4 text-[13.5px]">
-			<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-[#8a6116] uppercase">
-				Ledger notes
-			</p>
+		<div class="mt-6 border-l-3 border-gold bg-gold/10 px-5 py-4 text-sm">
+			<p class="text-xs font-extrabold tracking-widest text-gold-deep uppercase">Ledger notes</p>
 			{#if data.health.unverified}
 				<p class="mt-1 text-soft">
 					{fmt(data.health.unverified)} renewal{data.health.unverified === 1 ? '' : 's'} came in through
@@ -128,10 +126,10 @@
 					format={(n) => money(n)}
 				/>
 				<div class="mt-6 overflow-x-auto">
-					<table class="w-full text-[12.5px] tabular-nums">
+					<table class="w-full text-xs tabular-nums">
 						<thead>
 							<tr
-								class="border-b border-line2 text-left text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+								class="border-b border-line2 text-left text-xs font-extrabold tracking-widest text-fade uppercase"
 							>
 								<th class="py-2 pr-3 font-extrabold">Month</th>
 								<th class="py-2 pr-3 text-right font-extrabold">Memberships</th>
@@ -169,7 +167,7 @@
 			>
 				{#if data.members?.available}
 					{@const t = data.members.totals}
-					<p class="font-newsreader text-[16px] text-soft">
+					<p class="font-newsreader text-base text-soft">
 						{fmt(t.members)} paying {t.members === 1 ? 'member' : 'members'} brought in {money(
 							t.subPaid
 						)} in memberships and
@@ -180,10 +178,10 @@
 						)} per member.
 					</p>
 					<div class="mt-5 overflow-x-auto">
-						<table class="w-full text-[12.5px] tabular-nums">
+						<table class="w-full text-xs tabular-nums">
 							<thead>
 								<tr
-									class="border-b border-line2 text-left text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+									class="border-b border-line2 text-left text-xs font-extrabold tracking-widest text-fade uppercase"
 								>
 									<th class="py-2 pr-3 font-extrabold">Member</th>
 									<th class="py-2 pr-3 font-extrabold">Plan</th>
@@ -198,10 +196,10 @@
 									<tr class="border-b border-line2">
 										<td class="py-2 pr-3"
 											><a href="/admin/customers/{m.id}" class="hover:text-warm">{m.name}</a><span
-												class="block text-[10.5px] text-fade">{m.email}</span
+												class="block text-xs text-fade">{m.email}</span
 											></td
 										>
-										<td class="py-2 pr-3 text-[10px] font-extrabold tracking-[0.12em] uppercase"
+										<td class="py-2 pr-3 text-xs font-extrabold tracking-widest uppercase"
 											>{m.plan || '—'}</td
 										>
 										<td class="py-2 pr-3 text-right">{money(m.subPaid)}</td>
@@ -226,10 +224,10 @@
 			{#if data.events?.available && data.events.list.length}
 				<Section title="Premium discounts by event" tone="text-gold" class="mt-14">
 					<div class="overflow-x-auto">
-						<table class="w-full text-[12.5px] tabular-nums">
+						<table class="w-full text-xs tabular-nums">
 							<thead>
 								<tr
-									class="border-b border-line2 text-left text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+									class="border-b border-line2 text-left text-xs font-extrabold tracking-widest text-fade uppercase"
 								>
 									<th class="py-2 pr-3 font-extrabold">Event</th>
 									<th class="py-2 pr-3 text-right font-extrabold">Tickets</th>
@@ -243,7 +241,7 @@
 									<tr class="border-b border-line2">
 										<td class="py-2 pr-3"
 											><a href="/admin/events/{e.id}" class="hover:text-warm">{e.title}</a><span
-												class="block text-[10.5px] text-fade">{e.circuit} · {day(e.eventDate)}</span
+												class="block text-xs text-fade">{e.circuit} · {day(e.eventDate)}</span
 											></td
 										>
 										<td class="py-2 pr-3 text-right">{fmt(e.tickets)}</td>
@@ -283,12 +281,12 @@
 			{/if}
 
 			<Section title="Sync payment history" tone="text-soft" class="mt-10">
-				<p class="text-[13px] text-soft">
+				<p class="text-sm text-soft">
 					Pulls every charge Authorize.net has for each subscription into the ledger. Safe to run
 					again; existing rows are skipped. Preview first to see what would be added.
 				</p>
 				{#if data.sandbox}
-					<p class="mt-2 border-l-[3px] border-gold bg-gold/10 px-3 py-2 text-[12px] text-soft">
+					<p class="mt-2 border-l-3 border-gold bg-gold/10 px-3 py-2 text-xs text-soft">
 						This server is pointed at the Authorize.net <strong>sandbox</strong>, so the sync reads
 						test transactions. Fine for the dev database; production reads real ones.
 					</p>
@@ -298,26 +296,26 @@
 						type="button"
 						disabled={sync.running}
 						onclick={() => runBackfill(true)}
-						class="inline-flex h-[36px] items-center border border-ink px-4 text-[10px] font-extrabold tracking-[0.14em] uppercase hover:bg-paper disabled:opacity-50"
+						class="inline-flex h-9 items-center border border-ink px-4 text-xs font-extrabold tracking-widest uppercase hover:bg-paper disabled:opacity-50"
 						>Preview</button
 					>
 					<button
 						type="button"
 						disabled={sync.running}
 						onclick={() => runBackfill(false)}
-						class="inline-flex h-[36px] items-center bg-ink px-4 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
+						class="inline-flex h-9 items-center bg-ink px-4 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
 						>{sync.running ? 'Running…' : data.sandbox ? 'Run sync (sandbox)' : 'Run sync'}</button
 					>
 				</div>
 				{#if sync.log.length || sync.error}
-					<ul class="mt-3 space-y-1 text-[12px] text-soft">
+					<ul class="mt-3 space-y-1 text-xs text-soft">
 						{#each sync.log as line, i (i)}<li>{line}</li>{/each}
 						{#if sync.error}<li class="text-hero-rb" role="alert">{sync.error}</li>{/if}
 						{#if sync.done}<li class="text-prem">Done.</li>{/if}
 					</ul>
 				{/if}
 				{#if data.health?.available}
-					<p class="mt-3 text-[11px] text-fade">
+					<p class="mt-3 text-xs text-fade">
 						{fmt(data.health.total)} payments on record{data.health.firstPayment
 							? ` since ${day(data.health.firstPayment)}`
 							: ''}; {fmt(data.health.backfilled)} from history.
@@ -327,7 +325,7 @@
 		</aside>
 	</div>
 
-	<p class="mt-14 border-t border-line2 pt-5 text-[12px] text-fade">
+	<p class="mt-14 border-t border-line2 pt-5 text-xs text-fade">
 		Cash basis: a charge counts in the month it was collected and a refund in the month it was
 		returned. A yearly membership is one {cents(110)} line when paid. Discounts are money not collected;
 		they never reduce the collected figures.

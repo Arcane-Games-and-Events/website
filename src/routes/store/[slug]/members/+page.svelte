@@ -20,13 +20,11 @@
 
 <svelte:head><title>Members · {w.store.name}</title></svelte:head>
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-20 md:px-8" style="--cc: {color};">
+<div class="mx-auto w-full max-w-page px-5 pt-8 pb-20 md:px-8" style="--cc: {color};">
 	<div class="flex flex-wrap items-end justify-between gap-4">
 		<div>
-			<h2 class="ao-cond text-[44px] leading-none font-black uppercase md:text-[56px]">
-				Your team
-			</h2>
-			<p class="mt-1.5 text-[13px] text-soft">
+			<h2 class="ao-cond text-5xl leading-none font-black uppercase md:text-6xl">Your team</h2>
+			<p class="mt-1.5 text-sm text-soft">
 				{data.members.length}
 				{data.members.length === 1 ? 'person runs' : 'people run'}
 				{w.store.name}. Owners manage the team; managers run events.
@@ -44,32 +42,32 @@
 	<ul class="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each data.members as m (m.userId)}
 			<li
-				class="flex flex-col border border-t-[4px] border-line2 bg-white p-5"
+				class="flex flex-col border border-t-4 border-line2 bg-white p-5"
 				style="border-top-color: {m.role === 'owner' ? 'var(--cc)' : 'var(--color-line2)'}"
 			>
 				<div class="flex items-center gap-3.5">
 					<span
-						class="ao-cond flex h-[52px] w-[52px] shrink-0 items-center justify-center text-[24px] leading-none font-black text-white"
+						class="ao-cond flex h-13 w-13 shrink-0 items-center justify-center text-2xl leading-none font-black text-white"
 						style="background: {m.role === 'owner' ? 'var(--cc)' : 'var(--color-ink)'};"
 						aria-hidden="true">{initials(m)}</span
 					>
 					<div class="min-w-0">
-						<p class="truncate font-newsreader text-[19px] leading-tight font-semibold">
+						<p class="truncate font-newsreader text-xl leading-tight font-semibold">
 							{nameOf(m)}{#if m.userId === me}<span
-									class="font-libre text-[11px] font-normal text-fade"
+									class="font-libre text-xs font-normal text-fade"
 								>
 									· you</span
 								>{/if}
 						</p>
-						<p class="truncate text-[11.5px] text-fade">{m.email}</p>
+						<p class="truncate text-xs text-fade">{m.email}</p>
 					</div>
 				</div>
 				<p class="mt-4 flex items-center justify-between gap-3 border-t border-line2 pt-3">
 					<span
-						class="text-[9.5px] font-extrabold tracking-[0.18em] uppercase"
+						class="text-xs font-extrabold tracking-widest uppercase"
 						style={m.role === 'owner' ? 'color: var(--cc)' : ''}>{m.role}</span
 					>
-					<span class="text-[11px] text-fade">since {ui.dateShort(m.createdAt)}</span>
+					<span class="text-xs text-fade">since {ui.dateShort(m.createdAt)}</span>
 				</p>
 				{#if isOwner}
 					<div class="mt-3 flex items-center justify-between gap-2">
@@ -98,7 +96,7 @@
 								<button class={ui.danger}>Remove</button>
 							</form>
 						{:else}
-							<span class="text-[10.5px] text-fade">The store’s only owner</span>
+							<span class="text-xs text-fade">The store’s only owner</span>
 						{/if}
 					</div>
 				{/if}
@@ -107,8 +105,8 @@
 
 		{#if isOwner}
 			<li class="flex flex-col border border-dashed border-line2 bg-white/50 p-5">
-				<p class="ao-cond text-[24px] leading-none font-black uppercase">Add someone</p>
-				<p class="mt-1.5 text-[12px] text-soft">
+				<p class="ao-cond text-2xl leading-none font-black uppercase">Add someone</p>
+				<p class="mt-1.5 text-xs text-soft">
 					Search any AGE account. They’ll find the store in their account menu.
 				</p>
 				<form
@@ -135,7 +133,7 @@
 							<option value="owner">Owner</option>
 						</select>
 						<button
-							class="inline-flex h-[40px] items-center px-5 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110"
+							class="inline-flex h-10 items-center px-5 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110"
 							style="background: var(--cc)"
 							disabled={!newMember}>Add</button
 						>

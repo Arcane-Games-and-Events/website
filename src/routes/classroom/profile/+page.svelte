@@ -39,9 +39,9 @@
 			.map((w) => w[0].toUpperCase())
 			.join('')
 	);
-	const label = 'text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase';
+	const label = 'text-xs font-extrabold tracking-widest text-fade uppercase';
 	const field =
-		'mt-1.5 w-full border border-line2 bg-white px-3.5 py-2.5 text-[15px] text-ink placeholder:text-fade focus:border-ink focus:ring-0 focus:outline-none';
+		'mt-1.5 w-full border border-line2 bg-white px-3.5 py-2.5 text-base text-ink placeholder:text-fade focus:border-ink focus:ring-0 focus:outline-none';
 </script>
 
 <svelte:head><title>Profile · Classroom</title></svelte:head>
@@ -52,18 +52,16 @@
 />
 <DeskTabs />
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-20 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-8 pb-20 font-libre md:px-8">
 	{#if !data.available}
-		<p class="mb-6 border-l-[3px] border-gold bg-gold/10 px-4 py-3 text-[13px]">
+		<p class="mb-6 border-l-3 border-gold bg-gold/10 px-4 py-3 text-sm">
 			Profiles aren’t switched on yet. An admin needs to apply migration 020.
 		</p>
 	{/if}
 
 	<div class="grid gap-12 lg:grid-cols-[minmax(0,1fr)_440px]">
 		<div class="min-w-0">
-			<h2
-				class="border-b-[3px] border-ink pb-2.5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase"
-			>
+			<h2 class="border-b-3 border-ink pb-2.5 text-xs font-extrabold tracking-widest uppercase">
 				Photo
 			</h2>
 			<div class="mt-5">
@@ -87,9 +85,7 @@
 				}}
 				class="mt-10"
 			>
-				<h2
-					class="border-b-[3px] border-ink pb-2.5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase"
-				>
+				<h2 class="border-b-3 border-ink pb-2.5 text-xs font-extrabold tracking-widest uppercase">
 					About you
 				</h2>
 				<label class="mt-5 block">
@@ -101,7 +97,7 @@
 						placeholder="e.g. Two-time national finalist, Guardian specialist"
 						class={field}
 					/>
-					<span class="mt-1 block text-[12px] text-fade"
+					<span class="mt-1 block text-xs text-fade"
 						>One line under your name. Leave it empty to show “AGE Academy instructor”.</span
 					>
 				</label>
@@ -109,9 +105,8 @@
 					<span class="flex items-baseline justify-between">
 						<span class={label}>Bio</span>
 						<span
-							class="text-[11px] tabular-nums {bio.length > LIMITS.bio
-								? 'text-hero-rb'
-								: 'text-fade'}">{bio.length} / {LIMITS.bio}</span
+							class="text-xs tabular-nums {bio.length > LIMITS.bio ? 'text-hero-rb' : 'text-fade'}"
+							>{bio.length} / {LIMITS.bio}</span
 						>
 					</span>
 					<textarea
@@ -121,14 +116,11 @@
 						placeholder="Who you are as a player and teacher: what you've played, what you're known for, and what students will get from learning with you."
 						class={field}
 					></textarea>
-					<span class="mt-1 block text-[12px] text-fade">A blank line starts a new paragraph.</span>
+					<span class="mt-1 block text-xs text-fade">A blank line starts a new paragraph.</span>
 				</label>
 
 				{#if form?.error}
-					<p
-						class="mt-4 border-l-[3px] border-hero-rb bg-hero-rb/5 px-4 py-3 text-[13px]"
-						role="alert"
-					>
+					<p class="mt-4 border-l-3 border-hero-rb bg-hero-rb/5 px-4 py-3 text-sm" role="alert">
 						{form.error}
 					</p>
 				{/if}
@@ -136,13 +128,13 @@
 					<button
 						type="submit"
 						disabled={saving || !dirty || bio.length > LIMITS.bio}
-						class="min-h-[44px] bg-ink px-6 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:opacity-50"
+						class="min-h-11 bg-ink px-6 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm disabled:opacity-50"
 						>{saving ? 'Saving…' : 'Save profile'}</button
 					>
-					{#if justSaved}<span class="text-[13px] text-prem" role="status">Saved.</span>
-					{:else if dirty}<span class="text-[13px] text-fade">Unsaved changes</span>{/if}
+					{#if justSaved}<span class="text-sm text-prem" role="status">Saved.</span>
+					{:else if dirty}<span class="text-sm text-fade">Unsaved changes</span>{/if}
 				</div>
-				<p class="mt-6 text-[12.5px] leading-snug text-fade">
+				<p class="mt-6 text-xs leading-snug text-fade">
 					Your name comes from your account. If you also write for the Desk, this is the same
 					profile as your byline there.
 				</p>
@@ -159,14 +151,14 @@
 							<img src={photo.url} alt="" class="absolute inset-0 h-full w-full object-cover" />
 						{:else}
 							<span
-								class="absolute inset-0 flex items-center justify-center font-newsreader text-[22px] font-semibold text-paper-bg"
+								class="absolute inset-0 flex items-center justify-center font-newsreader text-2xl font-semibold text-paper-bg"
 								aria-hidden="true">{initials}</span
 							>
 						{/if}
 					</span>
 					<div class="min-w-0">
-						<div class="font-newsreader text-[22px] leading-tight font-semibold">{name}</div>
-						<div class="mt-1 text-[10px] font-extrabold tracking-[0.16em] text-gold uppercase">
+						<div class="font-newsreader text-2xl leading-tight font-semibold">{name}</div>
+						<div class="mt-1 text-xs font-extrabold tracking-widest text-gold uppercase">
 							{title.trim() || 'AGE Academy instructor'}
 						</div>
 					</div>
@@ -176,14 +168,12 @@
 						.trim()
 						.split(/\n\s*\n/)
 						.filter((p) => p.trim()) as para, i (i)}
-						<p
-							class="mt-3 font-newsreader text-[15.5px] leading-[1.55] whitespace-pre-line text-soft"
-						>
+						<p class="mt-3 font-newsreader text-base leading-normal whitespace-pre-line text-soft">
 							{para.trim()}
 						</p>
 					{/each}
 				{:else}
-					<p class="mt-3 font-newsreader text-[15.5px] leading-[1.5] text-fade italic">
+					<p class="mt-3 font-newsreader text-base leading-normal text-fade italic">
 						Your bio shows here.
 					</p>
 				{/if}

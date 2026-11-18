@@ -12,7 +12,7 @@
 	let { data } = $props();
 	let creating = $state(false);
 	const chip =
-		'inline-flex items-center border px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.14em] uppercase';
+		'inline-flex items-center border px-1.5 py-px text-xs font-extrabold tracking-widest uppercase';
 </script>
 
 <svelte:head><title>Projects · Studio</title></svelte:head>
@@ -26,15 +26,15 @@
 			type="button"
 			onclick={() => (creating = true)}
 			class="{compact
-				? 'h-8 px-3 text-[9.5px]'
-				: 'h-10 px-5 text-[10.5px]'} bg-gold font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-paper-bg"
+				? 'h-8 px-3 text-xs'
+				: 'h-10 px-5 text-xs'} bg-gold font-extrabold tracking-widest text-ink uppercase transition-colors hover:bg-paper-bg"
 			>New project</button
 		>
 	{/snippet}
 </DeskHeader>
 <DeskTabs />
 
-<div class="mx-auto w-full max-w-[1200px] px-5 py-8 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page px-5 py-8 font-libre md:px-8">
 	{#if data.projects.length}
 		<ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 			{#each data.projects as p (p.id)}
@@ -51,7 +51,7 @@
 								/>
 							{:else}
 								<span
-									class="absolute inset-0 flex items-center justify-center p-4 text-center font-newsreader text-[22px] font-semibold"
+									class="absolute inset-0 flex items-center justify-center p-4 text-center font-newsreader text-2xl font-semibold"
 									>{p.title}</span
 								>
 							{/if}
@@ -68,26 +68,25 @@
 									>{/if}
 								{#if p.isPremium}<span class="{chip} border-prem/50 text-prem">Premium</span>{/if}
 							</span>
-							<span
-								class="mt-2 block font-newsreader text-[18px] font-semibold group-hover:text-warm"
+							<span class="mt-2 block font-newsreader text-lg font-semibold group-hover:text-warm"
 								>{p.title}</span
 							>
-							{#if p.dek}<span class="mt-0.5 block text-[12.5px] text-soft">{p.dek}</span>{/if}
+							{#if p.dek}<span class="mt-0.5 block text-xs text-soft">{p.dek}</span>{/if}
 						</span>
 					</a>
 				</li>
 			{/each}
 		</ul>
 	{:else}
-		<div class="border-[3px] border-double border-ink px-6 py-12 text-center">
-			<p class="font-newsreader text-[22px] font-semibold">No projects yet.</p>
-			<p class="mt-2 text-[13.5px] text-soft">
+		<div class="border-3 border-double border-ink px-6 py-12 text-center">
+			<p class="font-newsreader text-2xl font-semibold">No projects yet.</p>
+			<p class="mt-2 text-sm text-soft">
 				Add a card for an interactive page, a stats page, a piece of software or a film.
 			</p>
 			<button
 				type="button"
 				onclick={() => (creating = true)}
-				class="mt-5 bg-ink px-5 py-3 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase hover:bg-warm"
+				class="mt-5 bg-ink px-5 py-3 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm"
 				>Add the first project</button
 			>
 		</div>

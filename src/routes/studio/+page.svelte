@@ -33,9 +33,9 @@
 		{ label: 'Hours live', value: h.figures.hours },
 		{ label: 'Plays, 30 days', value: h.figures.views30 ?? '—' }
 	]);
-	const kicker = 'text-[10.5px] font-extrabold tracking-[0.16em] uppercase';
+	const kicker = 'text-xs font-extrabold tracking-widest uppercase';
 	const chip =
-		'inline-flex items-center border px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.14em] uppercase';
+		'inline-flex items-center border px-1.5 py-px text-xs font-extrabold tracking-widest uppercase';
 	const ago = (d) => {
 		const days = Math.floor((Date.now() - new Date(d).getTime()) / 864e5);
 		return days < 1 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`;
@@ -51,8 +51,8 @@
 			<a
 				href="/studio/media/new?kind={k.id}"
 				class="{compact
-					? 'h-8 px-2.5 text-[9px]'
-					: 'h-10 px-4 text-[10px]'} inline-flex items-center font-extrabold tracking-[0.14em] uppercase transition-colors {k.id ===
+					? 'h-8 px-2.5 text-xs'
+					: 'h-10 px-4 text-xs'} inline-flex items-center font-extrabold tracking-widest uppercase transition-colors {k.id ===
 				'podcast'
 					? 'bg-gold text-ink hover:bg-paper-bg'
 					: 'border border-paper-bg/40 text-paper-bg hover:border-paper-bg'} {compact &&
@@ -65,12 +65,12 @@
 </DeskHeader>
 <DeskTabs />
 
-<div class="mx-auto w-full max-w-[1200px] space-y-12 px-5 py-8 font-libre md:px-8 md:py-10">
+<div class="mx-auto w-full max-w-page space-y-12 px-5 py-8 font-libre md:px-8 md:py-10">
 	<dl class="grid grid-cols-2 gap-px border border-line2 bg-line2 md:grid-cols-3 xl:grid-cols-6">
 		{#each FIG as f (f.label)}
 			<div class="bg-paper-bg px-4 py-4">
-				<dt class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">{f.label}</dt>
-				<dd class="mt-2 text-[28px] leading-none font-extrabold tabular-nums">
+				<dt class="text-xs font-extrabold tracking-widest text-fade uppercase">{f.label}</dt>
+				<dd class="mt-2 text-3xl leading-none font-extrabold tabular-nums">
 					{#if f.href}<a href={f.href} class="hover:text-warm">{f.value}</a>{:else}{f.value}{/if}
 				</dd>
 			</div>
@@ -80,7 +80,7 @@
 	<div class="grid gap-12 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
 		<!-- in production -->
 		<section>
-			<h2 class="{kicker} flex items-baseline justify-between border-b-[3px] border-ink pb-2.5">
+			<h2 class="{kicker} flex items-baseline justify-between border-b-3 border-ink pb-2.5">
 				<span><span class="text-gold" aria-hidden="true">◆</span> In production</span>
 				<span class="tracking-normal text-fade normal-case"
 					>{h.inProduction.length || 'Nothing'}</span
@@ -100,10 +100,10 @@
 										<span class="{chip} border-ink/60 text-ink">{KIND[i.kind].short}</span>
 										<span class="{chip} {STAGE[i.stage].tone}">{STAGE[i.stage].word}</span>
 									</span>
-									<span class="mt-1.5 block truncate font-newsreader text-[17px] font-semibold"
+									<span class="mt-1.5 block truncate font-newsreader text-lg font-semibold"
 										>{i.title}</span
 									>
-									<span class="block truncate text-[12px] text-fade"
+									<span class="block truncate text-xs text-fade"
 										>{byline(i) || 'Started'} · {ago(i.createdAt)}</span
 									>
 								</span>
@@ -112,13 +112,13 @@
 					{/each}
 				</ul>
 			{:else}
-				<p class="py-4 text-[13.5px] text-soft">Everything is out. Start something new above.</p>
+				<p class="py-4 text-sm text-soft">Everything is out. Start something new above.</p>
 			{/if}
 		</section>
 
 		<!-- top this month -->
 		<section>
-			<h2 class="{kicker} flex items-baseline justify-between border-b-[3px] border-ink pb-2.5">
+			<h2 class="{kicker} flex items-baseline justify-between border-b-3 border-ink pb-2.5">
 				Most played, 30 days
 				<a href="/studio/analytics" class="tracking-normal text-fade normal-case hover:text-ink"
 					>Analytics →</a
@@ -132,53 +132,51 @@
 								href="/studio/media/{t.item.id}/analytics"
 								class="flex items-baseline gap-3 py-3 hover:text-warm"
 							>
-								<span class="w-5 font-newsreader text-[20px] text-fade tabular-nums">{n + 1}</span>
+								<span class="w-5 font-newsreader text-xl text-fade tabular-nums">{n + 1}</span>
 								<span class="min-w-0 flex-1">
-									<span class="block truncate text-[14px] font-semibold">{t.item.title}</span>
-									<span class="block text-[11.5px] text-fade">{KIND[t.item.kind].short}</span>
+									<span class="block truncate text-sm font-semibold">{t.item.title}</span>
+									<span class="block text-xs text-fade">{KIND[t.item.kind].short}</span>
 								</span>
-								<span class="text-[14px] font-extrabold tabular-nums">{t.views}</span>
+								<span class="text-sm font-extrabold tabular-nums">{t.views}</span>
 							</a>
 						</li>
 					{/each}
 				</ol>
 			{:else}
-				<p class="py-4 text-[13.5px] text-soft">No plays counted in the last 30 days yet.</p>
+				<p class="py-4 text-sm text-soft">No plays counted in the last 30 days yet.</p>
 			{/if}
 		</section>
 	</div>
 
 	<!-- recently published -->
 	<section>
-		<h2 class="{kicker} border-b-[3px] border-ink pb-2.5">Recently published</h2>
+		<h2 class="{kicker} border-b-3 border-ink pb-2.5">Recently published</h2>
 		{#if h.recent.length}
 			<ul class="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 				{#each h.recent as i (i.id)}
 					<li>
 						<a href="/studio/media/{i.id}" class="group block">
 							<VideoThumb video={i.video} cover={i.cover} width={480} />
-							<span
-								class="mt-2 block text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+							<span class="mt-2 block text-xs font-extrabold tracking-widest text-fade uppercase"
 								>{KIND[i.kind].short} · {shortDate(i.publishedAt)}</span
 							>
 							<span
-								class="mt-1 block font-newsreader text-[18px] leading-tight font-semibold group-hover:text-warm"
+								class="mt-1 block font-newsreader text-lg leading-tight font-semibold group-hover:text-warm"
 								>{i.title}</span
 							>
-							{#if byline(i)}<span class="mt-0.5 block text-[12.5px] text-soft">{byline(i)}</span
-								>{/if}
+							{#if byline(i)}<span class="mt-0.5 block text-xs text-soft">{byline(i)}</span>{/if}
 						</a>
 					</li>
 				{/each}
 			</ul>
 		{:else}
-			<p class="py-4 text-[13.5px] text-soft">Nothing published yet.</p>
+			<p class="py-4 text-sm text-soft">Nothing published yet.</p>
 		{/if}
 	</section>
 
 	<!-- shows -->
 	<section>
-		<h2 class="{kicker} flex items-baseline justify-between border-b-[3px] border-ink pb-2.5">
+		<h2 class="{kicker} flex items-baseline justify-between border-b-3 border-ink pb-2.5">
 			Shows
 			<a href="/studio/shows" class="tracking-normal text-fade normal-case hover:text-ink"
 				>Manage shows →</a
@@ -199,20 +197,20 @@
 									/>
 								{:else}
 									<span
-										class="absolute inset-0 flex items-center justify-center p-4 text-center font-newsreader text-[22px] font-semibold text-paper-bg"
+										class="absolute inset-0 flex items-center justify-center p-4 text-center font-newsreader text-2xl font-semibold text-paper-bg"
 										>{s.name}</span
 									>
 								{/if}
 							</span>
 							<span class="block p-3">
-								<span class="block font-newsreader text-[17px] font-semibold group-hover:text-warm"
+								<span class="block font-newsreader text-lg font-semibold group-hover:text-warm"
 									>{s.name}</span
 								>
-								<span class="block text-[11.5px] text-fade"
+								<span class="block text-xs text-fade"
 									>{KIND[s.kind].short} · {s.episodes}
 									{s.episodes === 1 ? 'episode' : 'episodes'}{s.isActive ? '' : ' · inactive'}</span
 								>
-								{#if s.latest}<span class="mt-1 block truncate text-[12px] text-soft"
+								{#if s.latest}<span class="mt-1 block truncate text-xs text-soft"
 										>Latest: {s.latest.title}</span
 									>{/if}
 							</span>
@@ -221,7 +219,7 @@
 				{/each}
 			</ul>
 		{:else}
-			<p class="py-4 text-[13.5px] text-soft">
+			<p class="py-4 text-sm text-soft">
 				No shows yet. A podcast or an interview series is a show; <a
 					href="/studio/shows"
 					class="underline underline-offset-2 hover:text-ink">create one</a
@@ -232,7 +230,7 @@
 
 	<!-- the AGE Network -->
 	<section>
-		<h2 class="{kicker} flex items-baseline justify-between border-b-[3px] border-ink pb-2.5">
+		<h2 class="{kicker} flex items-baseline justify-between border-b-3 border-ink pb-2.5">
 			The AGE Network
 			<a href="/studio/network" class="tracking-normal text-fade normal-case hover:text-ink"
 				>Manage creators →</a
@@ -242,34 +240,34 @@
 			<dl class="mt-4 grid grid-cols-3 gap-4 border-b border-line pb-4">
 				{#each [['Creators', data.network.creators], ['Featured videos', data.network.featured], ['New this week', data.network.fresh]] as [word, n] (word)}
 					<div>
-						<dt class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">
+						<dt class="text-xs font-extrabold tracking-widest text-fade uppercase">
 							{word}
 						</dt>
-						<dd class="mt-1 font-newsreader text-[28px] leading-none font-semibold tabular-nums">
+						<dd class="mt-1 font-newsreader text-3xl leading-none font-semibold tabular-nums">
 							{n}
 						</dd>
 					</div>
 				{/each}
 			</dl>
 			{#if data.network.fresh}
-				<p class="mt-3 text-[13.5px] text-soft">
+				<p class="mt-3 text-sm text-soft">
 					{data.network.fresh} new {data.network.fresh === 1 ? 'upload' : 'uploads'} from the network
 					this week, waiting to be picked or skipped.
 				</p>
 			{/if}
 			{#if data.network.gone}
-				<p class="mt-2 text-[13.5px] text-hero-rb">
+				<p class="mt-2 text-sm text-hero-rb">
 					{data.network.gone} featured {data.network.gone === 1 ? 'video has' : 'videos have'} gone from
 					YouTube and {data.network.gone === 1 ? 'is' : 'are'} hidden.
 				</p>
 			{/if}
 			{#each data.network.failing as f (f.id)}
-				<p class="mt-2 text-[13.5px] text-hero-rb">
+				<p class="mt-2 text-sm text-hero-rb">
 					Sync failed for <a href="/studio/network/{f.id}" class="underline">{f.name}</a>: {f.error}
 				</p>
 			{/each}
 		{:else}
-			<p class="py-4 text-[13.5px] text-soft">
+			<p class="py-4 text-sm text-soft">
 				No creators yet. <a
 					href="/studio/network"
 					class="underline underline-offset-2 hover:text-ink">Add a YouTube channel</a

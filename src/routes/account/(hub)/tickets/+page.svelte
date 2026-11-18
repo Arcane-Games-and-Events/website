@@ -83,10 +83,10 @@
 		{#each [['Next up', next ? countdown(next.eventDate) : '—', next ? next.eventTitle : 'Nothing booked'], ['Events played', String(played), played === 1 ? 'AGE Open' : 'AGE Opens'], ['Top 8 finishes', String(tops), tops === 1 ? 'cut made' : 'cuts made']] as [k, n, sub] (k)}
 			<div class="bg-paper-bg px-4 py-4 md:px-5">
 				<dt class={ui.label}>{k}</dt>
-				<dd class="ao-cond mt-1 text-[24px] leading-none font-black md:text-[36px]">
+				<dd class="ao-cond mt-1 text-2xl leading-none font-black md:text-4xl">
 					{n}
 				</dd>
-				<dd class="mt-1 truncate text-[11px] font-semibold text-fade">{sub}</dd>
+				<dd class="mt-1 truncate text-xs font-semibold text-fade">{sub}</dd>
 			</div>
 		{/each}
 	</dl>
@@ -97,7 +97,7 @@
 		{@const accent = circuitVar(t.circuit)}
 		{@const live = t.eventStatus === 'in_progress'}
 		<li
-			class="group relative transition-transform duration-500 ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:-translate-y-1 {t.refunded
+			class="group relative transition-transform duration-500 ease-out hover:-translate-y-1 {t.refunded
 				? 'opacity-60 grayscale'
 				: ''}"
 			style="filter: drop-shadow(0 14px 22px rgba(23,21,15,0.28)); animation-delay: {i * 70}ms;"
@@ -105,15 +105,12 @@
 			<div class="grid grid-cols-[1fr_84px] bg-paper-bg text-ink md:grid-cols-[1fr_92px]">
 				<!-- body -->
 				<div class="min-w-0">
-					<a
-						href="/ageopen/{t.eventId}"
-						class="relative block aspect-[16/6] overflow-hidden bg-ink"
-					>
+					<a href="/ageopen/{t.eventId}" class="relative block aspect-16/6 overflow-hidden bg-ink">
 						<img
 							src={c.image}
 							alt=""
 							loading="lazy"
-							class="absolute inset-0 h-full w-full object-cover transition-transform duration-[1400ms] ease-out group-hover:scale-[1.04]"
+							class="absolute inset-0 h-full w-full object-cover transition-transform duration-1400 ease-out group-hover:scale-105"
 						/>
 						<span
 							class="absolute inset-0"
@@ -121,23 +118,23 @@
 							aria-hidden="true"
 						></span>
 						<span
-							class="absolute bottom-3 left-4 text-[9.5px] font-extrabold tracking-[0.22em] text-white uppercase"
+							class="absolute bottom-3 left-4 text-xs font-extrabold tracking-widest text-white uppercase"
 							>◆ AGE Open{t.circuit ? ` · ${t.circuit}` : ''}</span
 						>
 						{#if live}
 							<span
-								class="absolute top-3 right-3 inline-flex items-center gap-1.5 bg-hero-rb px-2 py-1 text-[8.5px] font-extrabold tracking-[0.16em] text-white uppercase"
-								><span class="h-[5px] w-[5px] animate-pulse-dot bg-white" aria-hidden="true"
-								></span>Live now</span
+								class="absolute top-3 right-3 inline-flex items-center gap-1.5 bg-hero-rb px-2 py-1 text-xs font-extrabold tracking-widest text-white uppercase"
+								><span class="h-1.5 w-1.5 animate-pulse-dot bg-white" aria-hidden="true"></span>Live
+								now</span
 							>
 						{:else if t.refunded}
 							<span
-								class="absolute top-3 right-3 bg-ink px-2 py-1 text-[8.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase"
+								class="absolute top-3 right-3 bg-ink px-2 py-1 text-xs font-extrabold tracking-widest text-paper-bg uppercase"
 								>Refunded</span
 							>
 						{:else if t.request?.status === 'pending'}
 							<span
-								class="absolute top-3 right-3 bg-paper-bg px-2 py-1 text-[8.5px] font-extrabold tracking-[0.16em] text-ink uppercase"
+								class="absolute top-3 right-3 bg-paper-bg px-2 py-1 text-xs font-extrabold tracking-widest text-ink uppercase"
 								>Refund requested</span
 							>
 						{/if}
@@ -145,12 +142,12 @@
 					<div class="px-4 pt-3 pb-4 md:px-5">
 						<a
 							href="/ageopen/{t.eventId}"
-							class="ao-cond block text-[26px] leading-[0.95] font-black [text-wrap:balance] uppercase hover:text-warm md:text-[28px]"
+							class="ao-cond block text-2xl leading-none font-black [text-wrap:balance] uppercase hover:text-warm md:text-3xl"
 							>{t.eventTitle}</a
 						>
 						<p class="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
 							{#if t.format}<FormatTag format={t.format} />{/if}
-							<span class="text-[11px] font-semibold text-fade"
+							<span class="text-xs font-semibold text-fade"
 								>{longDate(t.eventDate)}{time(t.eventDate)
 									? ` · ${time(t.eventDate)}`
 									: ''}{t.location ? ` · ${t.location}` : ''}</span
@@ -158,19 +155,17 @@
 						</p>
 						<dl class="mt-3 grid grid-cols-[1fr_auto] items-end gap-3 border-t border-line pt-3">
 							<div class="min-w-0">
-								<dt class="text-[8px] font-extrabold tracking-[0.22em] text-fade uppercase">
-									Player
-								</dt>
-								<dd class="mt-0.5 truncate font-newsreader text-[16px] leading-tight font-semibold">
+								<dt class="text-xs font-extrabold tracking-widest text-fade uppercase">Player</dt>
+								<dd class="mt-0.5 truncate font-newsreader text-base leading-tight font-semibold">
 									{player(t)}
 								</dd>
-								{#if t.gemId}<dd class="text-[10px] font-semibold text-fade">GEM {t.gemId}</dd>{/if}
+								{#if t.gemId}<dd class="text-xs font-semibold text-fade">GEM {t.gemId}</dd>{/if}
 							</div>
 							<div class="text-right">
-								<dt class="text-[8px] font-extrabold tracking-[0.22em] text-fade uppercase">
+								<dt class="text-xs font-extrabold tracking-widest text-fade uppercase">
 									{t.refunded ? 'Refunded' : 'Paid'}
 								</dt>
-								<dd class="ao-cond mt-0.5 text-[22px] leading-none font-black tabular-nums">
+								<dd class="ao-cond mt-0.5 text-2xl leading-none font-black tabular-nums">
 									{paid(t)}
 								</dd>
 							</div>
@@ -179,12 +174,12 @@
 							class="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line pt-3"
 						>
 							<span
-								class="inline-flex items-center gap-1.5 text-[9px] font-extrabold tracking-[0.14em] uppercase {t.enteredIntoGem
+								class="inline-flex items-center gap-1.5 text-xs font-extrabold tracking-widest uppercase {t.enteredIntoGem
 									? 'text-prem'
 									: 'text-fade'}"
 							>
 								<span
-									class="h-[5px] w-[5px] {t.enteredIntoGem ? 'bg-prem' : 'bg-line2'}"
+									class="h-1.5 w-1.5 {t.enteredIntoGem ? 'bg-prem' : 'bg-line2'}"
 									aria-hidden="true"
 								></span>
 								{t.enteredIntoGem ? 'Entered into GEM' : 'GEM entry pending'}
@@ -216,7 +211,7 @@
 										>
 									</form>
 								{:else if !t.refunded && t.can.reason}
-									<span class="text-[10px] font-semibold text-fade" title={t.can.reason}
+									<span class="text-xs font-semibold text-fade" title={t.can.reason}
 										>{t.can.reason === 'The event has started.'
 											? 'No refunds once the event has started'
 											: t.can.reason === 'This ticket was free.'
@@ -232,24 +227,21 @@
 				<div class="relative flex flex-col items-center justify-between bg-paper py-4 text-center">
 					<span class="ao-perf absolute inset-y-2 left-0 w-px text-line2" aria-hidden="true"></span>
 					<span
-						class="text-[7.5px] font-extrabold tracking-[0.24em] text-fade uppercase [writing-mode:vertical-rl]"
+						class="text-xs font-extrabold tracking-widest text-fade uppercase [writing-mode:vertical-rl]"
 						>Admit one</span
 					>
 					<span>
-						<span
-							class="block text-[9.5px] font-extrabold tracking-[0.18em]"
-							style="color: {accent};">{month(t.eventDate) || 'TBA'}</span
+						<span class="block text-xs font-extrabold tracking-widest" style="color: {accent};"
+							>{month(t.eventDate) || 'TBA'}</span
 						>
-						<span class="ao-cond block text-[40px] leading-[0.85] font-black tabular-nums"
+						<span class="ao-cond block text-4xl leading-none font-black tabular-nums"
 							>{day(t.eventDate) || '—'}</span
 						>
 					</span>
 					<span
-						class="inline-flex items-center gap-1.5 px-1 text-center text-[8px] font-extrabold tracking-[0.12em] text-warm uppercase"
+						class="inline-flex items-center gap-1.5 px-1 text-center text-xs font-extrabold tracking-widest text-warm uppercase"
 					>
-						{#if !t.refunded}<span
-								class="h-[5px] w-[5px] animate-pulse-dot bg-warm"
-								aria-hidden="true"
+						{#if !t.refunded}<span class="h-1.5 w-1.5 animate-pulse-dot bg-warm" aria-hidden="true"
 							></span>{countdown(t.eventDate)}{/if}
 					</span>
 				</div>
@@ -262,7 +254,7 @@
 					class="border border-t-0 border-line2 bg-paper px-5 py-4"
 				>
 					<input type="hidden" name="ticketId" value={t.id} />
-					<p class="font-newsreader text-[15px] leading-[1.5]">
+					<p class="font-newsreader text-base leading-normal">
 						{#if t.can.action === 'refund'}
 							Refund <strong>{paid(t)}</strong> to the card you paid with? The seat goes back on sale
 							right away. Banks take three to ten business days to show a refund.
@@ -281,14 +273,14 @@
 						required={t.can.action === 'request'}
 					/>
 					<div class="mt-3 flex gap-2">
-						<button class="{ui.btn} h-[40px]" disabled={busy === t.id}
+						<button class="{ui.btn} h-10" disabled={busy === t.id}
 							>{busy === t.id
 								? 'Sending…'
 								: t.can.action === 'refund'
 									? 'Refund this ticket'
 									: 'Send request'}</button
 						>
-						<button type="button" class="{ui.ghost} h-[40px]" onclick={() => (asking = '')}
+						<button type="button" class="{ui.ghost} h-10" onclick={() => (asking = '')}
 							>Never mind</button
 						>
 					</div>
@@ -306,13 +298,13 @@
 				<div
 					class="relative flex flex-col items-center justify-center border-r border-dashed border-line2 py-4 text-center"
 				>
-					<span class="block text-[9px] font-extrabold tracking-[0.18em]" style="color: {accent};"
+					<span class="block text-xs font-extrabold tracking-widest" style="color: {accent};"
 						>{month(t.eventDate)}</span
 					>
-					<span class="ao-cond block text-[34px] leading-[0.85] font-black tabular-nums"
+					<span class="ao-cond block text-4xl leading-none font-black tabular-nums"
 						>{day(t.eventDate)}</span
 					>
-					<span class="mt-1 text-[8px] font-extrabold tracking-[0.14em] text-fade uppercase"
+					<span class="mt-1 text-xs font-extrabold tracking-widest text-fade uppercase"
 						>{utc(t.eventDate, { year: 'numeric' })}</span
 					>
 				</div>
@@ -320,10 +312,10 @@
 					<div class="min-w-0 flex-1">
 						<a
 							href="/ageopen/{t.eventId}/results"
-							class="ao-cond block truncate text-[22px] leading-none font-black uppercase hover:text-warm"
+							class="ao-cond block truncate text-2xl leading-none font-black uppercase hover:text-warm"
 							>{t.eventTitle}</a
 						>
-						<p class="mt-1 text-[11px] font-semibold text-fade">
+						<p class="mt-1 text-xs font-semibold text-fade">
 							{t.circuit || 'AGE Open'}{t.location ? ` · ${t.location}` : ''} · {player(
 								t
 							)}{t.refunded ? ' · refunded' : ''}
@@ -331,13 +323,11 @@
 					</div>
 					{#if f && f.rank}
 						<div class="text-right">
-							<p class="text-[8px] font-extrabold tracking-[0.22em] text-fade uppercase">Finish</p>
-							<p
-								class="ao-cond text-[30px] leading-none font-black {f.rank <= 8 ? 'text-prem' : ''}"
-							>
-								{ordinal(f.rank)}<span class="text-[14px] text-fade"> / {f.of}</span>
+							<p class="text-xs font-extrabold tracking-widest text-fade uppercase">Finish</p>
+							<p class="ao-cond text-3xl leading-none font-black {f.rank <= 8 ? 'text-prem' : ''}">
+								{ordinal(f.rank)}<span class="text-sm text-fade"> / {f.of}</span>
 							</p>
-							{#if f.wins != null}<p class="text-[10px] font-semibold text-fade tabular-nums">
+							{#if f.wins != null}<p class="text-xs font-semibold text-fade tabular-nums">
 									{f.wins}–{f.losses ?? 0}{f.draws ? `–${f.draws}` : ''}
 								</p>{/if}
 						</div>
@@ -357,8 +347,8 @@
 		</ul>
 	{:else}
 		<div class="mt-4 border border-dashed border-line2 px-6 py-10 text-center">
-			<p class="ao-cond text-[34px] leading-none font-black uppercase">No seat booked yet.</p>
-			<p class="mx-auto mt-3 max-w-[420px] font-newsreader text-[16px] text-soft italic">
+			<p class="ao-cond text-4xl leading-none font-black uppercase">No seat booked yet.</p>
+			<p class="mx-auto mt-3 max-w-md font-newsreader text-base text-soft italic">
 				The next AGE Open is waiting for you. Members save on every ticket.
 			</p>
 			<a href="/ageopen?tab=events" class="{ui.btn} mt-6">Find your next open →</a>

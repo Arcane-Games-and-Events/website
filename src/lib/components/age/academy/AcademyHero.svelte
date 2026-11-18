@@ -27,8 +27,8 @@
 			: ''
 	);
 	const pill =
-		'inline-flex items-center justify-center gap-2 px-5 py-3.5 text-[11px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase transition-[color,border-color,filter]';
-	const solid = `${pill} bg-gold text-[#241b07] hover:brightness-110`;
+		'inline-flex items-center justify-center gap-2 px-5 py-3.5 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition';
+	const solid = `${pill} bg-gold text-gold-ink hover:brightness-110`;
 	const outline = `${pill} border border-paper-bg/40 text-paper-bg hover:border-gold hover:text-gold`;
 </script>
 
@@ -36,7 +36,7 @@
 	<section class="relative isolate overflow-hidden bg-academy text-paper-bg">
 		{#key hero.slug}
 			<div
-				class="ah-fade relative aspect-[4/3] w-full overflow-hidden sm:aspect-[16/9] md:absolute md:inset-0 md:aspect-auto"
+				class="ah-fade relative aspect-4/3 w-full overflow-hidden sm:aspect-video md:absolute md:inset-0 md:aspect-auto"
 			>
 				{#if hero.cover}
 					<!-- Every size of the cover, so wide and sharp screens get the biggest. -->
@@ -67,34 +67,30 @@
 			</div>
 		{/key}
 		<div
-			class="relative mx-auto -mt-16 w-full max-w-[1200px] px-5 pb-10 md:mt-0 md:flex md:min-h-[min(78vh,760px)] md:flex-col md:justify-end md:px-8 md:pt-28 md:pb-14"
+			class="relative mx-auto -mt-16 w-full max-w-page px-5 pb-10 md:mt-0 md:flex md:min-h-[min(78vh,760px)] md:flex-col md:justify-end md:px-8 md:pt-28 md:pb-14"
 		>
 			{#key hero.slug}
-				<div class="ah-rise max-w-[620px]">
+				<div class="ah-rise max-w-xl">
 					<p
-						class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.24em] text-gold uppercase"
+						class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-gold uppercase"
 					>
 						<span aria-hidden="true">◆</span> AGE Academy · New course
 					</p>
 					<h1
-						class="mt-3 font-jost text-[48px] leading-[0.9] font-bold tracking-[0.01em] [text-wrap:balance] uppercase md:text-[88px]"
+						class="mt-3 font-jost text-5xl leading-none font-bold tracking-normal [text-wrap:balance] uppercase md:text-8xl"
 					>
 						{hero.instructor}
 					</h1>
-					<p
-						class="mt-3 font-newsreader text-[20px] leading-[1.2] text-paper-bg/85 italic md:text-[26px]"
-					>
+					<p class="mt-3 font-newsreader text-xl leading-tight text-paper-bg/85 italic md:text-2xl">
 						Teaches {hero.title}
 					</p>
 					{#if hero.dek}
-						<p
-							class="mt-4 line-clamp-3 max-w-[540px] text-[14.5px] leading-[1.55] text-paper-bg/65"
-						>
+						<p class="mt-4 line-clamp-3 max-w-lg text-sm leading-normal text-paper-bg/65">
 							{hero.dek}
 						</p>
 					{/if}
 					{#if meta}
-						<p class="mt-4 text-[10.5px] font-bold tracking-[0.16em] text-paper-bg/55 uppercase">
+						<p class="mt-4 text-xs font-bold tracking-widest text-paper-bg/55 uppercase">
 							{meta}
 						</p>
 					{/if}
@@ -129,18 +125,17 @@
 							role="tab"
 							aria-selected={i === at}
 							onclick={() => (at = i)}
-							class="group w-[44%] shrink-0 border-t-2 pt-3 text-left transition-colors sm:w-[30%] md:w-[220px] {i ===
+							class="group w-[44%] shrink-0 border-t-2 pt-3 text-left transition-colors sm:w-[30%] md:w-55 {i ===
 							at
 								? 'border-gold'
 								: 'border-paper-bg/20 hover:border-paper-bg/60'}"
 						>
 							<span
-								class="block truncate font-jost text-[13px] font-bold tracking-[0.04em] uppercase {i ===
-								at
+								class="block truncate font-jost text-sm font-bold tracking-wider uppercase {i === at
 									? 'text-paper-bg'
 									: 'text-paper-bg/55 group-hover:text-paper-bg'}">{h.instructor}</span
 							>
-							<span class="mt-0.5 block truncate text-[12px] text-paper-bg/45">{h.title}</span>
+							<span class="mt-0.5 block truncate text-xs text-paper-bg/45">{h.title}</span>
 						</button>
 					{/each}
 				</div>

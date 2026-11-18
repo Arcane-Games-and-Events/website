@@ -133,17 +133,17 @@
 	}
 
 	const textAction =
-		'text-[10px] font-extrabold tracking-[0.12em] uppercase transition-colors disabled:opacity-45';
+		'text-xs font-extrabold tracking-widest uppercase transition-colors disabled:opacity-45';
 </script>
 
 <div>
 	{#if !open}
-		<div class="mt-1.5 flex min-h-[40px] items-center justify-between gap-3">
+		<div class="mt-1.5 flex min-h-10 items-center justify-between gap-3">
 			{#if value}
 				<span
-					class="inline-flex min-w-0 items-center gap-2 border border-ink px-2.5 py-1.5 text-[11px] font-extrabold tracking-[0.12em] uppercase"
+					class="inline-flex min-w-0 items-center gap-2 border border-ink px-2.5 py-1.5 text-xs font-extrabold tracking-widest uppercase"
 				>
-					<span class="text-[7px] text-warm" aria-hidden="true">◆</span>
+					<span class="text-xs text-warm" aria-hidden="true">◆</span>
 					<span class="truncate">{value.name}</span>
 				</span>
 				<span class="flex shrink-0 items-center gap-4">
@@ -161,12 +161,10 @@
 				<button
 					type="button"
 					onclick={start}
-					class="flex h-[40px] w-full items-center justify-between border border-dashed border-line2 px-2.5 text-left text-[13.5px] text-fade transition-colors hover:border-ink hover:text-ink"
+					class="flex h-10 w-full items-center justify-between border border-dashed border-line2 px-2.5 text-left text-sm text-fade transition-colors hover:border-ink hover:text-ink"
 				>
 					No tag yet
-					<span class="text-[10px] font-extrabold tracking-[0.12em] text-ink uppercase"
-						>Add tag</span
-					>
+					<span class="text-xs font-extrabold tracking-widest text-ink uppercase">Add tag</span>
 				</button>
 			{/if}
 		</div>
@@ -185,9 +183,9 @@
 				aria-controls="{uid}-options"
 				aria-activedescendant={options.length ? `${uid}-opt-${active}` : undefined}
 				aria-label="Tag"
-				class="h-[40px] w-full border-0 border-b border-line2 bg-transparent px-2.5 text-[14px] focus:ring-0 focus:outline-none"
+				class="h-10 w-full border-0 border-b border-line2 bg-transparent px-2.5 text-sm focus:ring-0 focus:outline-none"
 			/>
-			<ul id="{uid}-options" role="listbox" class="max-h-[232px] overflow-y-auto bg-white">
+			<ul id="{uid}-options" role="listbox" class="max-h-58 overflow-y-auto bg-white">
 				{#each options as opt, i (opt.kind === 'tag' ? opt.tag.id : 'new')}
 					<li
 						id="{uid}-opt-{i}"
@@ -201,46 +199,45 @@
 							disabled={busy}
 							onpointerenter={() => (active = i)}
 							onclick={() => choose(opt)}
-							class="flex w-full items-baseline justify-between gap-3 px-2.5 py-2.5 text-left text-[13.5px] transition-colors {i ===
+							class="flex w-full items-baseline justify-between gap-3 px-2.5 py-2.5 text-left text-sm transition-colors {i ===
 							active
 								? 'bg-paper'
 								: ''}"
 						>
 							{#if opt.kind === 'tag'}
 								<span class="min-w-0 truncate">{opt.tag.name}</span>
-								<span class="shrink-0 text-[11px] text-fade tabular-nums"
+								<span class="shrink-0 text-xs text-fade tabular-nums"
 									>{opt.tag.count} {opt.tag.count === 1 ? 'piece' : 'pieces'}</span
 								>
 							{:else}
 								<span class="min-w-0 truncate"
 									>Add <strong class="font-semibold">“{opt.name}”</strong></span
 								>
-								<span
-									class="shrink-0 text-[10px] font-extrabold tracking-[0.12em] text-warm uppercase"
+								<span class="shrink-0 text-xs font-extrabold tracking-widest text-warm uppercase"
 									>New tag</span
 								>
 							{/if}
 						</button>
 					</li>
 				{:else}
-					<li class="px-2.5 py-3 text-[12.5px] text-fade">
+					<li class="px-2.5 py-3 text-xs text-fade">
 						{all.length ? 'No other tags match.' : 'No tags yet. Type a name to add the first.'}
 					</li>
 				{/each}
 			</ul>
 			<div class="flex items-center justify-between gap-3 border-t border-line2 px-2.5 py-2">
-				<span class="text-[11px] text-fade">↑ ↓ to move · Enter to pick</span>
+				<span class="text-xs text-fade">↑ ↓ to move · Enter to pick</span>
 				<button type="button" onclick={cancel} class="{textAction} hover:text-warm">Cancel</button>
 			</div>
 		</div>
 	{/if}
 
 	{#if error}
-		<p class="mt-1.5 text-[11.5px] leading-snug text-hero-rb" role="alert">{error}</p>
+		<p class="mt-1.5 text-xs leading-snug text-hero-rb" role="alert">{error}</p>
 	{:else if saved}
-		<p class="mt-1.5 text-[11.5px] leading-snug text-prem" role="status">✓ {saved}</p>
+		<p class="mt-1.5 text-xs leading-snug text-prem" role="status">✓ {saved}</p>
 	{:else}
-		<p class="mt-1.5 text-[11.5px] leading-snug text-fade">
+		<p class="mt-1.5 text-xs leading-snug text-fade">
 			One per piece. It's the label above the title, and the piece is listed on that tag's page.
 		</p>
 	{/if}

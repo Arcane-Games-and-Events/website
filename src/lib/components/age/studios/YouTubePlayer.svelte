@@ -18,7 +18,7 @@
 			allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
 			allowfullscreen
 			referrerpolicy="strict-origin-when-cross-origin"
-			class="absolute inset-0 z-[2] h-full w-full"
+			class="absolute inset-0 z-2 h-full w-full"
 		></iframe>
 	{:else}
 		<button
@@ -35,7 +35,7 @@
 			/>
 			<span class="absolute inset-0 bg-black/25 transition-colors group-hover:bg-black/10"></span>
 			<span
-				class="st-wide relative z-[1] flex items-center gap-2.5 bg-studio px-5 py-3.5 text-[12px] font-extrabold tracking-[0.16em] text-white uppercase transition-transform group-hover:scale-105"
+				class="st-wide relative z-1 flex items-center gap-2.5 bg-studio px-5 py-3.5 text-xs font-extrabold tracking-widest text-white uppercase transition-transform group-hover:scale-105"
 				><span aria-hidden="true">▶</span> Play</span
 			>
 		</button>

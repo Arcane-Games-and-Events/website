@@ -91,8 +91,8 @@
 	const topReads = $derived(Math.max(1, ...(s?.rows || []).map((r) => r.views)));
 
 	const field =
-		'w-full border border-line2 bg-paper px-3.5 py-2.5 text-[15px] text-ink placeholder:text-fade focus:border-ink focus:ring-0 focus:outline-none';
-	const label = 'text-[9.5px] font-extrabold tracking-[0.18em] text-fade uppercase';
+		'w-full border border-line2 bg-paper px-3.5 py-2.5 text-base text-ink placeholder:text-fade focus:border-ink focus:ring-0 focus:outline-none';
+	const label = 'text-xs font-extrabold tracking-widest text-fade uppercase';
 </script>
 
 <svelte:head>
@@ -106,13 +106,13 @@
 />
 <DeskTabs />
 
-<div class="mx-auto w-full max-w-[1200px] px-5 py-10 font-libre md:px-8 md:py-12">
+<div class="mx-auto w-full max-w-page px-5 py-10 font-libre md:px-8 md:py-12">
 	{#if !data.available}
-		<div class="mb-8 border-l-[3px] border-gold bg-gold/10 px-5 py-4">
-			<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-[#8a6116] uppercase">
+		<div class="mb-8 border-l-3 border-gold bg-gold/10 px-5 py-4">
+			<p class="text-xs font-extrabold tracking-widest text-gold-deep uppercase">
 				Profiles aren’t switched on yet
 			</p>
-			<p class="mt-1 text-[14px] text-soft">
+			<p class="mt-1 text-sm text-soft">
 				An admin needs to apply migration 020 before profiles can be saved. You can fill this in
 				now; saving will work once it’s applied.
 			</p>
@@ -140,9 +140,9 @@
 			class="min-w-0"
 		>
 			<h2
-				class="flex items-center gap-2.5 border-b-[3px] border-ink pb-2 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
+				class="flex items-center gap-2.5 border-b-3 border-ink pb-2 text-xs font-extrabold tracking-widest uppercase"
 			>
-				<span class="text-[8px] text-warm" aria-hidden="true">◆</span>Byline
+				<span class="text-xs text-warm" aria-hidden="true">◆</span>Byline
 			</h2>
 
 			<!-- photo: the same one as on your account page and your courses -->
@@ -165,8 +165,7 @@
 						placeholder={fallbackName}
 						class="mt-1.5 {field}"
 					/>
-					<span class="mt-1 block text-[12px] text-fade">Leave blank to use your account name.</span
-					>
+					<span class="mt-1 block text-xs text-fade">Leave blank to use your account name.</span>
 				</label>
 				<label class="block">
 					<span class={label}>Title</span>
@@ -177,7 +176,7 @@
 						placeholder="e.g. Pro player · LA circuit"
 						class="mt-1.5 {field}"
 					/>
-					<span class="mt-1 block text-[12px] text-fade">Shown under your name.</span>
+					<span class="mt-1 block text-xs text-fade">Shown under your name.</span>
 				</label>
 			</div>
 
@@ -185,7 +184,7 @@
 				<span class="flex items-baseline justify-between">
 					<span class={label}>Bio</span>
 					<span
-						class="text-[11px] tabular-nums {bio.length > LIMITS.bio
+						class="text-xs tabular-nums {bio.length > LIMITS.bio
 							? 'font-bold text-hero-rb'
 							: 'text-fade'}">{bio.length} / {LIMITS.bio}</span
 					>
@@ -195,7 +194,7 @@
 					bind:value={bio}
 					rows="5"
 					placeholder="A few lines about you and how you play. Readers see this under every piece you write."
-					class="mt-1.5 resize-y font-newsreader text-[16px] leading-[1.55] {field}"
+					class="mt-1.5 resize-y font-newsreader text-base leading-normal {field}"
 				></textarea>
 			</label>
 
@@ -203,7 +202,7 @@
 			<div class="mt-6">
 				<div class="flex items-baseline justify-between">
 					<span class={label}>Links</span>
-					<span class="text-[11px] text-fade">{links.length} / {LIMITS.links}</span>
+					<span class="text-xs text-fade">{links.length} / {LIMITS.links}</span>
 				</div>
 				<ol class="mt-2 space-y-2">
 					{#each links as l, i (i)}
@@ -212,7 +211,7 @@
 								bind:value={l.platform}
 								onchange={() => (l.auto = false)}
 								aria-label="Platform"
-								class="border border-line2 bg-paper px-2.5 py-2.5 text-[14px] focus:border-ink focus:ring-0"
+								class="border border-line2 bg-paper px-2.5 py-2.5 text-sm focus:border-ink focus:ring-0"
 							>
 								{#each LINK_PLATFORMS as [id, name] (id)}
 									<option value={id}>{name}</option>
@@ -225,7 +224,7 @@
 										maxlength="30"
 										placeholder="Label"
 										aria-label="Link label"
-										class="w-[110px] shrink-0 {field}"
+										class="w-28 shrink-0 {field}"
 									/>
 								{/if}
 								<input
@@ -248,7 +247,7 @@
 							<button
 								type="button"
 								onclick={() => removeLink(i)}
-								class="px-2 text-[18px] leading-none text-fade transition-colors hover:text-hero-rb"
+								class="px-2 text-lg leading-none text-fade transition-colors hover:text-hero-rb"
 								aria-label="Remove link">×</button
 							>
 						</li>
@@ -258,7 +257,7 @@
 					<button
 						type="button"
 						onclick={addLink}
-						class="mt-2.5 text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase transition-colors hover:text-ink"
+						class="mt-2.5 text-xs font-extrabold tracking-widest text-warm uppercase transition-colors hover:text-ink"
 						>+ Add a link</button
 					>
 				{/if}
@@ -267,22 +266,22 @@
 
 			<!-- save bar -->
 			<div
-				class="sticky bottom-0 z-10 mt-8 flex flex-wrap items-center gap-4 border-t-[3px] border-ink bg-paper-bg py-4"
+				class="sticky bottom-0 z-10 mt-8 flex flex-wrap items-center gap-4 border-t-3 border-ink bg-paper-bg py-4"
 			>
 				<button
 					type="submit"
 					disabled={saving || !dirty || bio.length > LIMITS.bio}
-					class="min-h-[46px] bg-ink px-7 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-ink"
+					class="min-h-12 bg-ink px-7 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-ink"
 				>
 					{saving ? 'Saving…' : 'Save profile'}
 				</button>
 				{#if justSaved}
-					<span class="text-[12.5px] font-semibold text-prem" role="status">✓ Saved</span>
+					<span class="text-xs font-semibold text-prem" role="status">✓ Saved</span>
 				{:else if dirty}
-					<span class="text-[12.5px] text-soft">Unsaved changes</span>
+					<span class="text-xs text-soft">Unsaved changes</span>
 				{/if}
 				{#if error}
-					<span class="text-[12.5px] font-semibold text-hero-rb" role="alert">{error}</span>
+					<span class="text-xs font-semibold text-hero-rb" role="alert">{error}</span>
 				{/if}
 			</div>
 		</form>
@@ -293,19 +292,15 @@
 			<div class="mt-2 border border-line2 bg-paper-bg px-5 pb-1">
 				<AuthorCard author={previewAuthor} bioHtml={bioToHtml(bio)} links={previewLinks} />
 			</div>
-			<p class="mt-2 text-[12px] text-fade">
-				This card appears at the end of every article you write.
-			</p>
+			<p class="mt-2 text-xs text-fade">This card appears at the end of every article you write.</p>
 		</aside>
 	</div>
 
 	<!-- ============ your numbers ============ -->
 	<section class="mt-16">
-		<div class="flex flex-wrap items-end justify-between gap-4 border-b-[3px] border-ink pb-2">
-			<h2
-				class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-			>
-				<span class="text-[8px] text-warm" aria-hidden="true">◆</span>Your articles, by the numbers
+		<div class="flex flex-wrap items-end justify-between gap-4 border-b-3 border-ink pb-2">
+			<h2 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+				<span class="text-xs text-warm" aria-hidden="true">◆</span>Your articles, by the numbers
 			</h2>
 			<nav class="flex gap-px border border-line2 bg-line2" aria-label="Date range">
 				{#each [7, 30, 90] as r (r)}
@@ -313,7 +308,7 @@
 						href="?range={r}"
 						data-sveltekit-noscroll
 						aria-current={data.range === r ? 'page' : undefined}
-						class="px-3 py-1.5 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {data.range ===
+						class="px-3 py-1.5 text-xs font-extrabold tracking-widest uppercase transition-colors {data.range ===
 						r
 							? 'bg-ink text-paper-bg'
 							: 'bg-paper-bg text-soft hover:text-ink'}">{r} days</a
@@ -321,18 +316,18 @@
 				{/each}
 			</nav>
 		</div>
-		<p class="mt-2 text-[12.5px] text-fade">Only your own published pieces are counted here.</p>
+		<p class="mt-2 text-xs text-fade">Only your own published pieces are counted here.</p>
 
 		{#if s && s.available === false}
-			<p class="mt-6 font-newsreader text-[16px] text-soft italic">
+			<p class="mt-6 font-newsreader text-base text-soft italic">
 				Reader numbers start once analytics are switched on (migration 021).
 			</p>
 		{:else if !s}
-			<p class="mt-6 font-newsreader text-[16px] text-soft italic">
+			<p class="mt-6 font-newsreader text-base text-soft italic">
 				Reader numbers couldn’t be loaded right now.
 			</p>
 		{:else if !s.published}
-			<p class="mt-6 font-newsreader text-[16px] text-soft italic">
+			<p class="mt-6 font-newsreader text-base text-soft italic">
 				Once your first piece is published, its reader numbers will show up here.
 			</p>
 		{:else}
@@ -343,10 +338,10 @@
 							? 'border-t border-line2 md:border-t-0 md:border-l md:pl-4'
 							: ''} {i === 3 ? 'border-t md:border-t-0' : ''}"
 					>
-						<dd class="text-[30px] leading-none font-extrabold tracking-[-0.02em] tabular-nums">
+						<dd class="text-3xl leading-none font-extrabold tracking-tight tabular-nums">
 							{v}
 						</dd>
-						<dt class="mt-1.5 text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">
+						<dt class="mt-1.5 text-xs font-extrabold tracking-widest text-fade uppercase">
 							{k}
 						</dt>
 					</div>
@@ -359,7 +354,7 @@
 
 			<div class="mt-10">
 				<div
-					class="hidden grid-cols-[minmax(0,1fr)_110px_90px_90px_100px] gap-4 border-b border-line2 pb-2 text-[9px] font-extrabold tracking-[0.18em] text-fade uppercase md:grid"
+					class="hidden grid-cols-[minmax(0,1fr)_110px_90px_90px_100px] gap-4 border-b border-line2 pb-2 text-xs font-extrabold tracking-widest text-fade uppercase md:grid"
 				>
 					<span>Article</span><span class="text-right">Views</span><span class="text-right"
 						>Readers</span
@@ -373,35 +368,33 @@
 								class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 py-3 transition-colors hover:bg-paper md:grid-cols-[minmax(0,1fr)_110px_90px_90px_100px]"
 							>
 								<span class="min-w-0">
-									<span class="block truncate font-newsreader text-[17px] font-semibold"
-										>{r.title}</span
+									<span class="block truncate font-newsreader text-lg font-semibold">{r.title}</span
 									>
-									<span class="mt-1 block h-[4px] max-w-[320px] bg-line" aria-hidden="true">
+									<span class="mt-1 block h-1 max-w-xs bg-line" aria-hidden="true">
 										<span
-											class="block h-full bg-[#2563eb]"
+											class="block h-full bg-blue-600"
 											style="width: {(r.views / topReads) * 100}%;"
 										></span>
 									</span>
-									<span class="mt-1 block text-[11.5px] text-fade">
+									<span class="mt-1 block text-xs text-fade">
 										Published {fmtDate(r.publishedAt)}{r.accessMode === 'premium'
 											? ' · Premium'
 											: ''}
 									</span>
 								</span>
-								<span class="text-right text-[15px] font-bold tabular-nums">{fmt(r.views)}</span>
-								<span class="col-span-2 text-[12px] text-soft tabular-nums md:hidden">
+								<span class="text-right text-base font-bold tabular-nums">{fmt(r.views)}</span>
+								<span class="col-span-2 text-xs text-soft tabular-nums md:hidden">
 									{fmt(r.readers)} readers · {mins(r.avgEngaged)} engaged · {r.completionRate ==
 									null
 										? '—'
 										: `${Math.round(r.completionRate)}%`} finished
 								</span>
-								<span class="hidden text-right text-[13.5px] tabular-nums md:block"
-									>{fmt(r.readers)}</span
+								<span class="hidden text-right text-sm tabular-nums md:block">{fmt(r.readers)}</span
 								>
-								<span class="hidden text-right text-[13.5px] tabular-nums md:block"
+								<span class="hidden text-right text-sm tabular-nums md:block"
 									>{mins(r.avgEngaged)}</span
 								>
-								<span class="hidden text-right text-[13.5px] tabular-nums md:block"
+								<span class="hidden text-right text-sm tabular-nums md:block"
 									>{r.completionRate == null ? '—' : `${Math.round(r.completionRate)}%`}</span
 								>
 							</a>

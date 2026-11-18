@@ -102,18 +102,18 @@
 				/>
 			</div>
 			{#if !updating}
-				<label class="mt-4 flex items-center gap-3 text-[13px] text-soft">
+				<label class="mt-4 flex items-center gap-3 text-sm text-soft">
 					<input
 						type="checkbox"
 						name="makeDefault"
 						value="1"
 						bind:checked={makeDefault}
-						class="h-4 w-4 border-[1.5px] border-line2 text-ink focus:ring-0"
+						class="h-4 w-4 border-2 border-line2 text-ink focus:ring-0"
 					/>
 					Make this my default card
 				</label>
 			{/if}
-			{#if cardError}<p class="mt-3 text-[12.5px] font-semibold text-hero-rb">{cardError}</p>{/if}
+			{#if cardError}<p class="mt-3 text-xs font-semibold text-hero-rb">{cardError}</p>{/if}
 			<div class="mt-5 flex gap-2">
 				<button class={ui.btn} disabled={busy === 'form'}
 					>{busy === 'form' ? 'Saving…' : updating ? 'Update card' : 'Save card'}</button
@@ -132,7 +132,7 @@
 	{/if}
 
 	{#if data.cards.length === 0}
-		<p class="border-t border-line py-8 font-newsreader text-[17px] text-soft italic">
+		<p class="border-t border-line py-8 font-newsreader text-lg text-soft italic">
 			No cards saved yet. You can save one at checkout, or add one here.
 		</p>
 	{:else}
@@ -140,14 +140,14 @@
 			{#each data.cards as c (c.id)}
 				<li class="flex flex-wrap items-center gap-4 border-b border-line py-4">
 					<div class="min-w-0 flex-1">
-						<p class="font-newsreader text-[19px] font-semibold">
+						<p class="font-newsreader text-xl font-semibold">
 							{c.brand} •••• {c.lastFour}
 							{#if c.isDefault}<span
-									class="ml-2 align-middle text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+									class="ml-2 align-middle text-xs font-extrabold tracking-widest text-fade uppercase"
 									>Default</span
 								>{/if}
 						</p>
-						<p class="mt-0.5 text-[12.5px] {c.usable ? 'text-soft' : 'text-hero-rb'}">
+						<p class="mt-0.5 text-xs {c.usable ? 'text-soft' : 'text-hero-rb'}">
 							{#if c.status === 'expired'}Expired {c.expiry}{:else if !c.usable}Can no longer be
 								charged{:else}Expires {c.expiry}{/if}{c.nickname ? ` · ${c.nickname}` : ''}
 						</p>

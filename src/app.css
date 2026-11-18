@@ -34,12 +34,19 @@
 	/* the Library's header background: a deep navy of its blue */
 	--ed-warm-deep: #0d1b45;
 	--ed-gold: #c8922e;
+	/* gold as text on light paper (5:1), and the ink set on a gold fill */
+	--ed-gold-deep: #8a6116;
+	--ed-gold-ink: #241b07;
 	--ed-prem: #1c7a4b;
 	--ed-prem-light: #7fd6a6; /* Premium green on dark surfaces */
 	/* Academy sub-brand: the board-green band behind the course cards */
 	--ed-academy: #13261c;
 	/* Notification badges: the one red everyone reads as "new for you" */
 	--ed-alert: #e11d2a;
+
+	/* card pitch colours (the yellow is a fill; its text uses studio) */
+	--ed-pitch-red: #a8392c;
+	--ed-pitch-yellow: #e5703e;
 
 	/* circuit accents */
 	--ed-cc-la: #1b4f9c;
@@ -69,6 +76,10 @@
 	--color-warm-light: var(--ed-warm-light);
 	--color-warm-deep: var(--ed-warm-deep);
 	--color-gold: var(--ed-gold);
+	--color-gold-deep: var(--ed-gold-deep);
+	--color-gold-ink: var(--ed-gold-ink);
+	--color-pitch-red: var(--ed-pitch-red);
+	--color-pitch-yellow: var(--ed-pitch-yellow);
 	--color-prem: var(--ed-prem);
 	--color-prem-light: var(--ed-prem-light);
 	--color-academy: var(--ed-academy);
@@ -95,6 +106,12 @@
 }
 
 @theme {
+	/* Everything else is Tailwind's stock scale (type, spacing, tracking,
+	 * leading, shadows, z-index); these are the only additions:
+	 * max-w-page — the site's 1200px frame;
+	 * shadow-up — the lift above bars pinned to the bottom of the screen. */
+	--container-page: 75rem;
+	--shadow-up: 0 -12px 24px -18px rgb(23 21 15 / 0.35);
 	--radius: 0.5rem;
 	--font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
@@ -481,8 +498,8 @@ a.fp-ul:focus-visible {
 .lex-credit {
 	margin-top: 0.5rem;
 	font-family: var(--font-libre, inherit);
-	font-size: 12px;
-	line-height: 1.4;
+	font-size: var(--text-xs);
+	line-height: var(--leading-snug);
 	color: var(--color-fade);
 }
 .lex-credit a {
@@ -556,7 +573,7 @@ a.fp-ul:focus-visible {
 	font-family: var(--font-libre, sans-serif);
 	font-size: 0.5em;
 	font-weight: 800;
-	letter-spacing: 0.16em;
+	letter-spacing: var(--tracking-widest);
 	text-transform: uppercase;
 	color: var(--color-paper-bg);
 	opacity: 1;
@@ -612,16 +629,16 @@ a.fp-ul:focus-visible {
 }
 .spoiler-block-label {
 	display: block;
-	font-size: 11px;
+	font-size: var(--text-xs);
 	font-weight: 800;
-	letter-spacing: 0.18em;
+	letter-spacing: var(--tracking-widest);
 	text-transform: uppercase;
 	color: var(--color-ink);
 }
 .spoiler-block-label::before {
 	content: '◆';
 	margin-right: 0.55rem;
-	font-size: 8px;
+	font-size: var(--text-xs);
 	vertical-align: 2px;
 	color: var(--color-warm);
 }
@@ -631,16 +648,16 @@ a.fp-ul:focus-visible {
 	display: block;
 	margin-top: 0.3rem;
 	font-family: var(--font-newsreader, serif);
-	line-height: 1.3;
+	line-height: var(--leading-tight);
 }
 .spoiler-block-title {
-	font-size: 20px;
+	font-size: var(--text-xl);
 	font-weight: 600;
 	color: var(--color-ink);
 	white-space: normal;
 }
 .spoiler-block-note {
-	font-size: 17px;
+	font-size: var(--text-lg);
 	font-style: italic;
 	color: var(--color-soft);
 	white-space: normal;
@@ -653,9 +670,9 @@ a.fp-ul:focus-visible {
 	flex-shrink: 0;
 	border: 1px solid var(--color-ink);
 	padding: 0.55rem 1rem;
-	font-size: 11px;
+	font-size: var(--text-xs);
 	font-weight: 800;
-	letter-spacing: 0.14em;
+	letter-spacing: var(--tracking-widest);
 	text-transform: uppercase;
 	transition:
 		background-color 150ms ease-out,

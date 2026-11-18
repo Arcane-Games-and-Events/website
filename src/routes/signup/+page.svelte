@@ -105,7 +105,7 @@
 								onclick={() => (showPassword = !showPassword)}
 								aria-controls="password"
 								aria-pressed={showPassword}
-								class="text-[9.5px] font-extrabold tracking-[0.18em] text-warm uppercase hover:text-ink"
+								class="text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 								>{showPassword ? 'Hide' : 'Show'}</button
 							>
 						</div>
@@ -125,7 +125,7 @@
 						<div>
 							<label for="gemId" class={LABEL}>
 								<span>GEM ID</span>
-								<span class="tracking-[0.12em] normal-case">Optional</span>
+								<span class="tracking-widest normal-case">Optional</span>
 							</label>
 							<!-- svelte-ignore a11y_autofocus -->
 							<input
@@ -138,13 +138,13 @@
 								placeholder="e.g. 95989628"
 								class={INPUT}
 							/>
-							<p class="mt-1.5 text-[12px] text-fade">Links your AGE Open results and rating.</p>
+							<p class="mt-1.5 text-xs text-fade">Links your AGE Open results and rating.</p>
 						</div>
 					{:else}
 						<button
 							type="button"
 							onclick={() => (showGem = true)}
-							class="block text-left text-[13px] font-semibold text-soft hover:text-ink"
+							class="block text-left text-sm font-semibold text-soft hover:text-ink"
 						>
 							<span class="font-bold text-warm">+ Add your GEM ID</span> (optional)
 						</button>
@@ -158,7 +158,7 @@
 						>Create my account <span aria-hidden="true">→</span></button
 					>
 
-					<p class="text-[11.5px] leading-[1.55] text-fade">
+					<p class="text-xs leading-normal text-fade">
 						By creating an account you agree to AGE’s
 						<a class="underline underline-offset-2 hover:text-ink" href="/terms">Terms of Service</a
 						>

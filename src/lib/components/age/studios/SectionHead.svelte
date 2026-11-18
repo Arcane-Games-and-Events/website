@@ -10,10 +10,10 @@
 	let { title, strap = '', href = '', label = 'See all', block = 'bg-ink', id } = $props();
 </script>
 
-<header {id} class="scroll-mt-24 border-b-[3px] border-ink pb-3">
+<header {id} class="scroll-mt-24 border-b-3 border-ink pb-3">
 	<div class="flex items-end justify-between gap-4">
 		<h2
-			class="st-wide flex items-center gap-3 text-[22px] leading-none font-black tracking-[-0.02em] uppercase md:text-[30px]"
+			class="st-wide flex items-center gap-3 text-2xl leading-none font-black tracking-tight uppercase md:text-3xl"
 		>
 			<span class="h-4 w-4 shrink-0 md:h-5 md:w-5 {block}" aria-hidden="true"></span>
 			{title}
@@ -21,13 +21,13 @@
 		{#if href}
 			<a
 				{href}
-				class="shrink-0 pb-0.5 text-[10px] font-extrabold tracking-[0.16em] uppercase transition-[letter-spacing] hover:tracking-[0.2em]"
+				class="pb-0.5 text-right text-xs font-extrabold tracking-wider uppercase transition-[letter-spacing] hover:tracking-widest"
 				>{label} →</a
 			>
 		{/if}
 	</div>
 	{#if strap}
-		<p class="mt-2 font-newsreader text-[16px] leading-snug text-soft italic md:text-[17px]">
+		<p class="mt-2 font-newsreader text-base leading-snug text-soft italic md:text-lg">
 			{strap}
 		</p>
 	{/if}

@@ -51,29 +51,29 @@
 		}
 	}
 	const action =
-		'text-[9.5px] font-extrabold tracking-[0.14em] uppercase transition-colors disabled:opacity-40';
+		'text-xs font-extrabold tracking-widest uppercase transition-colors disabled:opacity-40';
 	const chip =
-		'inline-flex items-center border px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.14em] uppercase';
+		'inline-flex items-center border px-1.5 py-px text-xs font-extrabold tracking-widest uppercase';
 </script>
 
 <div class="grid grid-cols-[112px_minmax(0,1fr)] items-center gap-4 py-3">
 	<VideoThumb video={hasMux ? video : null} width={240} />
 	<div class="min-w-0">
 		<p class="flex flex-wrap items-center gap-2">
-			<span class="truncate text-[14px] font-semibold">{title}</span>
+			<span class="truncate text-sm font-semibold">{title}</span>
 			{#if hasMux}<span class="{chip} {st.tone}">{st.word}</span>{/if}
 			{#if youtube}<span class="{chip} border-hero-rb/50 text-hero-rb">YouTube</span>{/if}
 		</p>
-		{#if youtube}<p class="truncate text-[12px] text-fade">{youtube}</p>{/if}
+		{#if youtube}<p class="truncate text-xs text-fade">{youtube}</p>{/if}
 		{#if up && up.state !== 'ready'}
-			<div class="mt-1.5 max-w-[320px]">
-				<div class="h-[3px] bg-line2">
+			<div class="mt-1.5 max-w-xs">
+				<div class="h-1 bg-line2">
 					<div
 						class="h-full {up.state === 'failed' ? 'bg-hero-rb' : 'bg-warm'}"
 						style="width: {up.percent}%"
 					></div>
 				</div>
-				<p class="mt-1 text-[11.5px] text-fade">
+				<p class="mt-1 text-xs text-fade">
 					{up.state === 'failed'
 						? up.error || 'Upload failed'
 						: up.state === 'processing'
@@ -104,6 +104,6 @@
 				>
 			{/if}
 		</p>
-		{#if error}<p class="mt-1 text-[11.5px] text-hero-rb">{error}</p>{/if}
+		{#if error}<p class="mt-1 text-xs text-hero-rb">{error}</p>{/if}
 	</div>
 </div>

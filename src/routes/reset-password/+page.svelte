@@ -35,11 +35,9 @@
 
 		{#snippet formContent()}
 			{#if data.error}
-				<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase">
-					Link expired
-				</p>
+				<p class="text-xs font-extrabold tracking-widest text-hero-rb uppercase">Link expired</p>
 				<h1 class="mt-3 {TITLE}">This link no longer works</h1>
-				<p class="mt-4 max-w-[420px] font-newsreader text-[17px] leading-[1.6] text-soft">
+				<p class="mt-4 max-w-md font-newsreader text-lg leading-relaxed text-soft">
 					{data.error}. Reset links last 30 minutes and work once. Request a new one and use it
 					straight away.
 				</p>
@@ -47,7 +45,7 @@
 					>Request a new link <span aria-hidden="true">→</span></a
 				>
 			{:else}
-				<p class={KICKER}><span class="text-[8px]" aria-hidden="true">◆</span> Reset password</p>
+				<p class={KICKER}><span class="text-xs" aria-hidden="true">◆</span> Reset password</p>
 				<h1 class="mt-3 {TITLE}">Set a new password</h1>
 				<p class={STRAP}>Choose a new password for your AGE account.</p>
 
@@ -64,7 +62,7 @@
 									type="button"
 									onclick={() => (showPassword = !showPassword)}
 									aria-pressed={showPassword}
-									class="text-[9.5px] font-extrabold tracking-[0.18em] text-warm uppercase hover:text-ink"
+									class="text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 									>{showPassword ? 'Hide' : 'Show'}</button
 								>
 							</div>
@@ -96,7 +94,7 @@
 							>Save new password <span aria-hidden="true">→</span></button
 						>
 					</form>
-					<p class="mt-8 border-t border-line pt-5 font-newsreader text-[14px] text-soft italic">
+					<p class="mt-8 border-t border-line pt-5 font-newsreader text-sm text-soft italic">
 						Changed your mind? <a class="{LINK} not-italic" href="/login">Back to sign in</a>.
 					</p>
 				</div>

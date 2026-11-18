@@ -784,17 +784,16 @@
 	}
 
 	// writing fields: a white sheet with a hairline that darkens on focus
-	const fieldLabel =
-		'mb-1.5 block text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase';
+	const fieldLabel = 'mb-1.5 block text-xs font-extrabold tracking-widest text-fade uppercase';
 	const fieldBox = 'block border border-line2 bg-white transition-colors focus-within:border-ink';
 
 	// settings panels: white sheets with an ink top rule, rows split by hairlines
-	const panel = 'border border-line2 border-t-[3px] border-t-ink bg-white';
-	const rowLabel = 'block text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase';
+	const panel = 'border border-line2 border-t-3 border-t-ink bg-white';
+	const rowLabel = 'block text-xs font-extrabold tracking-widest text-fade uppercase';
 	const control =
-		'h-[40px] w-full border border-line2 bg-paper px-2.5 text-[14px] focus:border-ink focus:ring-0';
+		'h-10 w-full border border-line2 bg-paper px-2.5 text-sm focus:border-ink focus:ring-0';
 	const textAction =
-		'text-[9.5px] font-extrabold tracking-[0.14em] uppercase transition-colors disabled:opacity-45';
+		'text-xs font-extrabold tracking-widest uppercase transition-colors disabled:opacity-45';
 
 	$: statusLine =
 		displayStatus === 'published'
@@ -819,7 +818,7 @@
 
 	const STATUS_TONE = {
 		draft: 'border-ink/60 text-ink',
-		scheduled: 'border-gold bg-gold/10 text-[#8a6116]',
+		scheduled: 'border-gold bg-gold/10 text-gold-deep',
 		published: 'border-prem bg-prem text-white',
 		archived: 'border-line2 text-fade'
 	};
@@ -889,11 +888,11 @@
 {/snippet}
 
 {#snippet toolbarEnd()}
-	<span class="px-1 text-[11px] lg:hidden">{@render saveBadge(true)}</span>
+	<span class="px-1 text-xs lg:hidden">{@render saveBadge(true)}</span>
 	<button
 		type="button"
 		on:click={() => (sheetOpen = true)}
-		class="inline-flex h-9 min-w-9 items-center justify-center gap-1.5 bg-ink font-libre text-[10px] font-extrabold tracking-[0.12em] text-paper-bg uppercase sm:px-3 lg:hidden"
+		class="inline-flex h-9 min-w-9 items-center justify-center gap-1.5 bg-ink font-libre text-xs font-extrabold tracking-widest text-paper-bg uppercase sm:px-3 lg:hidden"
 		aria-haspopup="dialog"
 		aria-label="Settings"
 		title="Settings"
@@ -917,23 +916,23 @@
 
 <!-- under a field whose change is waiting for an editor or admin -->
 {#snippet waiting(note)}
-	<div class="mt-2.5 border-l-[3px] border-hero-rb bg-hero-rb/[0.05] px-3 py-2">
+	<div class="mt-2.5 border-l-3 border-hero-rb bg-hero-rb/5 px-3 py-2">
 		<p
-			class="flex items-center gap-1.5 text-[9.5px] font-extrabold tracking-[0.14em] text-hero-rb uppercase"
+			class="flex items-center gap-1.5 text-xs font-extrabold tracking-widest text-hero-rb uppercase"
 		>
-			<span class="text-[7px]" aria-hidden="true">◆</span> Waiting for approval
+			<span class="text-xs" aria-hidden="true">◆</span> Waiting for approval
 		</p>
-		<p class="mt-1 text-[12.5px] leading-snug text-soft">{note}</p>
+		<p class="mt-1 text-xs leading-snug text-soft">{note}</p>
 	</div>
 {/snippet}
 
 {#snippet head(label, tone = 'text-warm', meta = '', metaClass = '')}
-	<div class="flex min-h-[44px] items-center justify-between gap-3 border-b border-line px-4">
-		<h3 class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.2em] uppercase">
-			<span class="text-[8px] {tone}" aria-hidden="true">◆</span>{label}
+	<div class="flex min-h-11 items-center justify-between gap-3 border-b border-line px-4">
+		<h3 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+			<span class="text-xs {tone}" aria-hidden="true">◆</span>{label}
 		</h3>
 		{#if meta}
-			<span class="min-w-0 truncate {metaClass || 'text-[12px] text-fade'}">{meta}</span>
+			<span class="min-w-0 truncate {metaClass || 'text-xs text-fade'}">{meta}</span>
 		{/if}
 	</div>
 {/snippet}
@@ -942,7 +941,7 @@
 	<div class="space-y-5 font-libre">
 		{#if hasPendingChanges}
 			<section
-				class="border border-t-[3px] border-line2 border-t-hero-rb bg-white"
+				class="border border-t-3 border-line2 border-t-hero-rb bg-white"
 				in:settle
 				out:settle={{ duration: 340 }}
 			>
@@ -955,11 +954,11 @@
 					{#if pendingList.length}
 						<ul class="mb-3 divide-y divide-line border-y border-line">
 							{#each pendingList as change (change)}
-								<li class="py-2 text-[13px] leading-snug">{change}</li>
+								<li class="py-2 text-sm leading-snug">{change}</li>
 							{/each}
 						</ul>
 					{/if}
-					<p class="text-[13.5px] leading-snug text-soft">
+					<p class="text-sm leading-snug text-soft">
 						{#if canApprove}
 							None of this is on the site yet. Another editor or admin can review it, or you can
 							approve it yourself. <b class="text-ink">Review changes</b> above the editor compares the
@@ -973,14 +972,14 @@
 							<button
 								type="button"
 								on:click={() => approveDraft()}
-								class="min-h-[42px] bg-prem px-3 text-[10.5px] font-extrabold tracking-[0.14em] text-white uppercase transition-[filter] hover:brightness-110"
+								class="min-h-11 bg-prem px-3 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110"
 								>Approve · keep {displayStatus}</button
 							>
 							{#if isAdmin && (status === 'published' || status === 'scheduled')}
 								<button
 									type="button"
 									on:click={() => approveDraft({ asStatus: 'draft' })}
-									class="min-h-[42px] border-[1.5px] border-ink px-3 text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+									class="min-h-11 border-2 border-ink px-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 									>Approve and unpublish</button
 								>
 							{/if}
@@ -1002,29 +1001,29 @@
 				'Publishing',
 				'text-prem',
 				displayStatus,
-				`border px-1.5 py-[2px] text-[9px] font-extrabold tracking-[0.14em] uppercase ${STATUS_TONE[displayStatus] || STATUS_TONE.draft}`
+				`border px-1.5 py-0.5 text-xs font-extrabold tracking-widest uppercase ${STATUS_TONE[displayStatus] || STATUS_TONE.draft}`
 			)}
 			<div class="divide-y divide-line">
 				<div class="px-4 py-4">
-					<p class="text-[15px] font-semibold">{statusLine}</p>
+					<p class="text-base font-semibold">{statusLine}</p>
 					{#if isAdmin}
 						{#if displayStatus !== 'published'}
 							<button
 								type="button"
 								on:click={publish}
-								class="mt-3 min-h-[44px] w-full bg-ink px-3 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase transition-colors hover:bg-prem"
+								class="mt-3 min-h-11 w-full bg-ink px-3 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-prem"
 								>Publish now</button
 							>
 						{:else}
 							<button
 								type="button"
 								on:click={unpublish}
-								class="mt-3 min-h-[44px] w-full border-[1.5px] border-ink px-3 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+								class="mt-3 min-h-11 w-full border-2 border-ink px-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 								>Unpublish to draft</button
 							>
 						{/if}
 					{:else}
-						<p class="mt-1 text-[13px] leading-snug text-soft">
+						<p class="mt-1 text-sm leading-snug text-soft">
 							{#if editsAreBuffered && !canApprove}
 								Changes to a live piece are saved as pending edits. An editor or admin approves them
 								before they go live.
@@ -1048,7 +1047,7 @@
 							type="button"
 							on:click={scheduleEntry}
 							disabled={!scheduleInput}
-							class="mt-2 min-h-[40px] w-full border-[1.5px] border-gold bg-gold/15 px-3 text-[10px] font-extrabold tracking-[0.14em] text-[#6d4c10] uppercase transition-colors hover:bg-gold hover:text-ink disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-gold/15"
+							class="mt-2 min-h-10 w-full border-2 border-gold bg-gold/15 px-3 text-xs font-extrabold tracking-widest text-gold-deep uppercase transition-colors hover:bg-gold hover:text-ink disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-gold/15"
 							>{displayStatus === 'scheduled' ? 'Reschedule' : 'Schedule'}</button
 						>
 					</div>
@@ -1069,7 +1068,7 @@
 									type="button"
 									on:click={savePublishDate}
 									disabled={publishDateSaving}
-									class="min-h-[38px] flex-1 bg-ink px-3 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm disabled:opacity-60"
+									class="min-h-10 flex-1 bg-ink px-3 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-warm disabled:opacity-60"
 									>{publishDateSaving
 										? 'Updating…'
 										: publishDateInput
@@ -1080,20 +1079,20 @@
 									type="button"
 									on:click={cancelPublishDate}
 									disabled={publishDateSaving}
-									class="min-h-[38px] px-3 text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase transition-colors hover:text-ink"
+									class="min-h-10 px-3 text-xs font-extrabold tracking-widest text-soft uppercase transition-colors hover:text-ink"
 									>Cancel</button
 								>
 							</div>
 						{:else if publishDateSaved}
 							<p
-								class="mt-2 flex items-start gap-2 border-l-[3px] border-prem bg-prem/[0.08] px-3 py-2 text-[12px] leading-snug text-ink"
+								class="mt-2 flex items-start gap-2 border-l-3 border-prem bg-prem/10 px-3 py-2 text-xs leading-snug text-ink"
 								role="status"
 							>
 								<span class="font-extrabold text-prem" aria-hidden="true">✓</span>
 								<span>{publishDateSaved}</span>
 							</p>
 						{/if}
-						<span class="mt-1.5 block text-[11.5px] leading-snug text-fade"
+						<span class="mt-1.5 block text-xs leading-snug text-fade"
 							>Sets the order in the Library, newest first. Backdate to file a piece in the archive.</span
 						>
 					</div>
@@ -1177,8 +1176,8 @@
 										: 'bg-ink text-paper-bg'
 									: 'bg-white text-soft hover:text-ink'}"
 							>
-								<span class="text-[10.5px] font-extrabold tracking-[0.14em] uppercase">{l}</span>
-								<span class="mt-0.5 text-[11.5px] opacity-75">{note}</span>
+								<span class="text-xs font-extrabold tracking-widest uppercase">{l}</span>
+								<span class="mt-0.5 text-xs opacity-75">{note}</span>
 							</button>
 						{/each}
 					</div>
@@ -1190,12 +1189,12 @@
 				<div class="block px-4 py-4">
 					<div class="flex items-baseline justify-between gap-3">
 						<label for="entry-slug" class={rowLabel}>Web address</label>
-						<span class="text-[10.5px] text-fade tabular-nums">{slug.length}/{SLUG_MAX}</span>
+						<span class="text-xs text-fade tabular-nums">{slug.length}/{SLUG_MAX}</span>
 					</div>
 					<span
-						class="mt-1.5 flex h-[40px] items-center border border-line2 bg-paper focus-within:border-ink"
+						class="mt-1.5 flex h-10 items-center border border-line2 bg-paper focus-within:border-ink"
 					>
-						<span class="shrink-0 pl-2.5 text-[13px] text-fade">/library/</span>
+						<span class="shrink-0 pl-2.5 text-sm text-fade">/library/</span>
 						<input
 							id="entry-slug"
 							type="text"
@@ -1205,11 +1204,11 @@
 							autocapitalize="off"
 							autocorrect="off"
 							spellcheck="false"
-							class="h-full min-w-0 flex-1 border-0 bg-transparent px-0.5 text-[14px] focus:ring-0 focus:outline-none"
+							class="h-full min-w-0 flex-1 border-0 bg-transparent px-0.5 text-sm focus:ring-0 focus:outline-none"
 						/>
 					</span>
 					<p
-						class="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-[11.5px] leading-snug text-fade"
+						class="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs leading-snug text-fade"
 					>
 						<span>
 							{#if slugFollowsTitle}
@@ -1226,7 +1225,7 @@
 							<button
 								type="button"
 								on:click={matchTitle}
-								class="text-[10px] font-extrabold tracking-[0.12em] text-ink uppercase hover:text-warm"
+								class="text-xs font-extrabold tracking-widest text-ink uppercase hover:text-warm"
 								>Match title</button
 							>
 						{/if}
@@ -1250,7 +1249,7 @@
 						on:change={handleThumbnailChange}
 					/>
 				</div>
-				<p class="mt-2.5 text-[11.5px] leading-snug text-fade">
+				<p class="mt-2.5 text-xs leading-snug text-fade">
 					The thumbnail falls back to the cover when empty.
 				</p>
 				{#if 'coverImageId' in pendingMeta || 'thumbnailImageId' in pendingMeta}{@render waiting(
@@ -1286,10 +1285,10 @@
 
 {#if !entry}
 	<div class="mx-auto max-w-2xl px-5 py-16 text-center">
-		<p class="font-newsreader text-[24px] font-semibold">Couldn’t load this entry.</p>
+		<p class="font-newsreader text-2xl font-semibold">Couldn’t load this entry.</p>
 		<a
 			href="/desk/entries"
-			class="mt-4 inline-block text-[10.5px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
+			class="mt-4 inline-block text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 			>← Back to entries</a
 		>
 	</div>
@@ -1301,43 +1300,43 @@
 		<div
 			class="z-30 border-b border-line2 bg-paper-bg/95 backdrop-blur-sm lg:sticky lg:top-[var(--desk-header)]"
 		>
-			<div class="mx-auto flex h-[52px] max-w-[1200px] items-center gap-3 px-5 md:px-8">
+			<div class="mx-auto flex h-13 max-w-page items-center gap-3 px-5 md:px-8">
 				<a
 					href="/desk/entries"
-					class="inline-flex shrink-0 items-center gap-1.5 text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase transition-[color,gap] hover:gap-2.5 hover:text-ink"
+					class="inline-flex shrink-0 items-center gap-1.5 text-xs font-extrabold tracking-widest text-soft uppercase transition-[color,gap] hover:gap-2.5 hover:text-ink"
 					><span aria-hidden="true">←</span> Entries</a
 				>
 				<span class="h-4 w-px bg-line2" aria-hidden="true"></span>
 				<span
-					class="shrink-0 border px-1.5 py-[2px] text-[9px] font-extrabold tracking-[0.14em] uppercase {STATUS_TONE[
+					class="shrink-0 border px-1.5 py-0.5 text-xs font-extrabold tracking-widest uppercase {STATUS_TONE[
 						displayStatus
 					] || STATUS_TONE.draft}">{displayStatus}</span
 				>
 				{#if hasPendingChanges}
 					<span
-						class="hidden shrink-0 bg-hero-rb px-1.5 py-[2px] text-[9px] font-extrabold tracking-[0.14em] text-white uppercase sm:inline"
+						class="hidden shrink-0 bg-hero-rb px-1.5 py-0.5 text-xs font-extrabold tracking-widest text-white uppercase sm:inline"
 						transition:fade={gentle(500)}>Pending edits</span
 					>
 				{/if}
 				{#if entry.accessMode === 'premium'}
 					<span
-						class="hidden shrink-0 border border-prem px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.14em] text-prem uppercase sm:inline"
+						class="hidden shrink-0 border border-prem px-1.5 py-px text-xs font-extrabold tracking-widest text-prem uppercase sm:inline"
 						>◆ Premium</span
 					>
 				{/if}
-				<span class="ml-auto hidden text-[12px] lg:inline">{@render saveBadge(false)}</span>
+				<span class="ml-auto hidden text-xs lg:inline">{@render saveBadge(false)}</span>
 				<a
 					href="/desk/entries/{entry.id}/preview"
 					target="_blank"
 					rel="noopener"
-					class="ml-auto inline-flex min-h-[36px] shrink-0 items-center gap-1.5 border border-line2 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:border-ink lg:ml-0"
+					class="ml-auto inline-flex min-h-9 shrink-0 items-center gap-1.5 border border-line2 px-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:border-ink lg:ml-0"
 					>Preview <span aria-hidden="true">↗</span></a
 				>
 				{#if isAdmin && displayStatus !== 'published'}
 					<button
 						type="button"
 						on:click={publish}
-						class="hidden min-h-[36px] shrink-0 items-center bg-ink px-4 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-prem lg:inline-flex"
+						class="hidden min-h-9 shrink-0 items-center bg-ink px-4 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors hover:bg-prem lg:inline-flex"
 						>Publish</button
 					>
 				{/if}
@@ -1345,15 +1344,15 @@
 		</div>
 
 		<div
-			class="mx-auto grid max-w-[1200px] gap-12 px-5 pt-6 pb-16 md:px-8 md:pt-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-14"
+			class="mx-auto grid max-w-page gap-12 px-5 pt-6 pb-16 md:px-8 md:pt-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-14"
 		>
 			<!-- ============ writing column ============ -->
 			<div class="min-w-0">
-				<div class="mx-auto max-w-[760px]">
+				<div class="mx-auto max-w-3xl">
 					{#if reviewMode && titleDiffParts.length > 0}
 						<span class={fieldLabel}>Title</span>
 						<p
-							class="{fieldBox} px-4 py-3 font-newsreader text-[30px] leading-[1.08] font-semibold tracking-[-0.02em] md:px-7 md:py-5 md:text-[40px]"
+							class="{fieldBox} px-4 py-3 font-newsreader text-3xl leading-none font-semibold tracking-tight md:px-7 md:py-5 md:text-4xl"
 						>
 							{#each titleDiffParts as part, i (i)}
 								{#if part.added}
@@ -1376,7 +1375,7 @@
 									placeholder="Title"
 									aria-label="Title"
 									on:keydown={(e) => e.key === 'Enter' && e.preventDefault()}
-									class="block w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-newsreader text-[30px] leading-[1.08] font-semibold tracking-[-0.02em] text-ink placeholder:text-fade/60 focus:ring-0 focus:outline-none md:text-[40px]"
+									class="block w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-newsreader text-3xl leading-none font-semibold tracking-tight text-ink placeholder:text-fade/60 focus:ring-0 focus:outline-none md:text-4xl"
 								></textarea>
 							</span>
 						</label>
@@ -1385,7 +1384,7 @@
 						<div class="mt-5">
 							<span class={fieldLabel}>Summary</span>
 							<p
-								class="{fieldBox} px-4 py-2.5 font-newsreader text-[17px] leading-[1.5] text-soft italic md:px-7 md:py-3.5 md:text-[19px]"
+								class="{fieldBox} px-4 py-2.5 font-newsreader text-lg leading-normal text-soft italic md:px-7 md:py-3.5 md:text-xl"
 							>
 								{#each excerptDiffParts as part, i (i)}
 									{#if part.added}
@@ -1421,7 +1420,7 @@
 									rows="1"
 									placeholder="Add a one-line summary…"
 									aria-label="Summary"
-									class="block w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-newsreader text-[17px] leading-[1.5] text-soft italic placeholder:text-fade/70 focus:ring-0 focus:outline-none md:text-[19px]"
+									class="block w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-newsreader text-lg leading-normal text-soft italic placeholder:text-fade/70 focus:ring-0 focus:outline-none md:text-xl"
 								></textarea>
 							</span>
 						</label>
@@ -1429,11 +1428,11 @@
 
 					{#if hasPendingChanges}
 						<div
-							class="mt-5 flex flex-wrap items-center gap-3 border-l-[3px] border-hero-rb bg-hero-rb/[0.06] px-3.5 py-2.5"
+							class="mt-5 flex flex-wrap items-center gap-3 border-l-3 border-hero-rb bg-hero-rb/5 px-3.5 py-2.5"
 							in:settle
 							out:settle={{ duration: 340 }}
 						>
-							<span class="text-[12.5px] text-soft"
+							<span class="text-xs text-soft"
 								><b class="text-ink">Edits waiting for approval.</b>
 								{#if entry.draftUpdatedAt}Last edited {fmtWhen(entry.draftUpdatedAt)}.{/if}</span
 							>
@@ -1443,7 +1442,7 @@
 										type="button"
 										on:click={() => (reviewMode = v)}
 										aria-pressed={reviewMode === v}
-										class="min-h-[32px] px-3 text-[9.5px] font-extrabold tracking-[0.12em] uppercase transition-colors {reviewMode ===
+										class="min-h-8 px-3 text-xs font-extrabold tracking-widest uppercase transition-colors {reviewMode ===
 										v
 											? 'bg-ink text-paper-bg'
 											: 'bg-paper-bg text-soft hover:text-ink'}">{l}</button
@@ -1453,12 +1452,12 @@
 						</div>
 						{#if reviewMode && otherChanges.length}
 							<div class="mt-3 border border-line2 bg-white px-4 py-3" transition:settle>
-								<p class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">
+								<p class="text-xs font-extrabold tracking-widest text-fade uppercase">
 									Also changed
 								</p>
 								<ul class="mt-1.5 divide-y divide-line">
 									{#each otherChanges as change (change)}
-										<li class="py-1.5 text-[13.5px] leading-snug">{change}</li>
+										<li class="py-1.5 text-sm leading-snug">{change}</li>
 									{/each}
 								</ul>
 							</div>
@@ -1468,13 +1467,13 @@
 					<div class="mt-6">
 						<span class={fieldLabel}>Body</span>
 						{#if reviewMode}
-							<div class="desk-diff-view border-t-[3px] border-ink">
-								<p class="border-b border-line2 py-2 text-[11.5px] text-fade">
+							<div class="desk-diff-view border-t-3 border-ink">
+								<p class="border-b border-line2 py-2 text-xs text-fade">
 									Compared with the live version ·
 									<span class="diff-word-added">added</span> ·
 									<span class="diff-word-removed">removed</span>
 								</p>
-								<div class="py-4 font-newsreader text-[18px] text-ink">
+								<div class="py-4 font-newsreader text-lg text-ink">
 									{#if !richDiffItems || richDiffItems.length === 0}
 										<p class="text-fade italic">The text hasn’t changed.</p>
 									{:else}
@@ -1601,23 +1600,21 @@
 	<!-- ============ settings sheet on phones and tablets ============ -->
 	{#if sheetOpen && !isWide}
 		<div
-			class="fixed inset-0 z-[60] flex flex-col bg-paper-bg"
+			class="fixed inset-0 z-60 flex flex-col bg-paper-bg"
 			role="dialog"
 			aria-modal="true"
 			aria-label="Entry settings"
 			transition:fly={{ y: 24, duration: 200 }}
 		>
-			<div
-				class="flex h-[56px] shrink-0 items-center justify-between gap-3 border-b-[3px] border-ink px-5"
-			>
+			<div class="flex h-14 shrink-0 items-center justify-between gap-3 border-b-3 border-ink px-5">
 				<span class="flex items-center gap-3">
-					<span class="font-newsreader text-[19px] font-semibold">Settings</span>
-					<span class="text-[11px]">{@render saveBadge(false)}</span>
+					<span class="font-newsreader text-xl font-semibold">Settings</span>
+					<span class="text-xs">{@render saveBadge(false)}</span>
 				</span>
 				<button
 					type="button"
 					on:click={() => (sheetOpen = false)}
-					class="min-h-[40px] bg-ink px-4 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase"
+					class="min-h-10 bg-ink px-4 text-xs font-extrabold tracking-widest text-paper-bg uppercase"
 					>Done</button
 				>
 			</div>
@@ -1633,22 +1630,22 @@
 	   long swaps don't blow the block heights. */
 	.desk-diff-view :global(.diff-block) {
 		margin: 0.75rem 0;
-		line-height: 1.7;
+		line-height: var(--leading-relaxed);
 	}
 	.desk-diff-view :global(h2.diff-block) {
-		font-size: 1.75rem;
+		font-size: var(--text-3xl);
 		font-weight: 600;
-		line-height: 1.2;
+		line-height: var(--leading-tight);
 		margin: 1.5rem 0 0.5rem;
 		color: var(--color-warm, #1e40af);
 	}
 	.desk-diff-view :global(h3.diff-block) {
-		font-size: 1.25rem;
+		font-size: var(--text-xl);
 		font-weight: 600;
 		margin: 1.25rem 0 0.5rem;
 	}
 	.desk-diff-view :global(h4.diff-block) {
-		font-size: 1.125rem;
+		font-size: var(--text-lg);
 		font-weight: 600;
 		margin: 1rem 0 0.5rem;
 	}
@@ -1693,10 +1690,10 @@
 		content: 'Spoiler';
 		display: block;
 		font-family: var(--font-libre);
-		font-size: 9.5px;
+		font-size: var(--text-xs);
 		font-weight: 800;
 		font-style: normal;
-		letter-spacing: 0.16em;
+		letter-spacing: var(--tracking-widest);
 		text-transform: uppercase;
 		text-decoration: none;
 		color: var(--color-warm-deep);
@@ -1704,9 +1701,9 @@
 	.desk-diff-view :global(.diff-spoiler-note) {
 		margin: 1rem 0 -0.5rem;
 		font-family: var(--font-libre);
-		font-size: 10.5px;
+		font-size: var(--text-xs);
 		font-weight: 800;
-		letter-spacing: 0.14em;
+		letter-spacing: var(--tracking-widest);
 		text-transform: uppercase;
 		color: rgb(20 83 45);
 	}
@@ -1735,16 +1732,16 @@
 		justify-content: space-between;
 		gap: 1rem;
 		padding: 0.5rem 0.75rem;
-		font-size: 0.8125rem;
+		font-size: var(--text-sm);
 		font-family: var(--font-libre);
 	}
 	.desk-diff-view :global(.diff-widget-label) {
 		font-weight: 500;
 	}
 	.desk-diff-view :global(.diff-widget-status) {
-		font-size: 0.625rem;
+		font-size: var(--text-xs);
 		text-transform: uppercase;
-		letter-spacing: 0.08em;
+		letter-spacing: var(--tracking-widest);
 		font-weight: 700;
 	}
 	.desk-diff-view :global(.diff-widget-unchanged) {

@@ -19,7 +19,7 @@
 				? 'text-warm'
 				: item.kind === 'network'
 					? 'text-cc-ne'
-					: 'text-[#8a6116]'
+					: 'text-gold-deep'
 	);
 	const what = $derived(
 		item.kind === 'gameplay'
@@ -35,7 +35,7 @@
 <a href={item.href} class="group block">
 	<MediaFrame {item} {sizes} />
 	{#if label}
-		<span class="mt-3 block text-[9.5px] font-extrabold tracking-[0.2em] uppercase {tone}"
+		<span class="mt-3 block text-xs font-extrabold tracking-widest uppercase {tone}"
 			>{what}{item.event?.circuit ? ` · ${item.event.circuit}` : ''}{item.round
 				? ` · ${item.round}`
 				: ''}</span
@@ -43,20 +43,16 @@
 	{/if}
 	<!-- `sans`: set like the Library's own cards. -->
 	<span
-		class="mt-1.5 block text-[19px] [text-wrap:balance] {sans
-			? 'font-libre leading-[1.2] font-bold tracking-[-0.02em] transition-colors'
-			: 'font-newsreader leading-[1.15] font-semibold tracking-[-0.01em]'} {dark
+		class="mt-1.5 block text-xl [text-wrap:balance] {sans
+			? 'font-libre leading-tight font-bold tracking-tight transition-colors'
+			: 'font-newsreader leading-tight font-semibold tracking-normal'} {dark
 			? 'text-paper-bg'
 			: ''} {sans ? (dark ? 'group-hover:text-warm-light' : 'group-hover:text-warm') : ''}"
 		>{#if sans}{item.title}{:else}<span class="fp-ul">{item.title}</span>{/if}</span
 	>
 	{#if byline(item)}
-		<span
-			class="mt-1 block text-[12.5px] {dark
-				? 'text-paper-bg/45'
-				: sans
-					? 'text-fade'
-					: 'text-soft'}">{byline(item)}</span
+		<span class="mt-1 block text-xs {dark ? 'text-paper-bg/45' : sans ? 'text-fade' : 'text-soft'}"
+			>{byline(item)}</span
 		>
 	{/if}
 </a>

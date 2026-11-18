@@ -103,13 +103,13 @@
 		<!-- axis labels in HTML so they don't stretch -->
 		{#each [0, 50, 100] as g (g)}
 			<span
-				class="pointer-events-none absolute left-0 w-7 -translate-y-1/2 text-right text-[10px] text-fade tabular-nums"
+				class="pointer-events-none absolute left-0 w-7 -translate-y-1/2 text-right text-xs text-fade tabular-nums"
 				style="top: {(y(g) / H) * 100}%;">{g}%</span
 			>
 		{/each}
 		{#each [0, 25, 50, 75, 100] as g (g)}
 			<span
-				class="pointer-events-none absolute bottom-0 -translate-x-1/2 text-[10px] text-fade tabular-nums"
+				class="pointer-events-none absolute bottom-0 -translate-x-1/2 text-xs text-fade tabular-nums"
 				style="left: {(x(g) / W) * 100}%;">{g}%</span
 			>
 		{/each}
@@ -120,30 +120,29 @@
 				aria-hidden="true"
 			></span>
 			<span
-				class="pointer-events-none absolute z-10 -translate-x-1/2 border border-line2 bg-paper-bg px-2.5 py-1.5 whitespace-nowrap shadow-[0_6px_16px_-8px_rgba(0,0,0,0.35)]"
+				class="pointer-events-none absolute z-10 -translate-x-1/2 border border-line2 bg-paper-bg px-2.5 py-1.5 whitespace-nowrap shadow-md"
 				style="left: clamp(60px, {(x(ap.at) / W) * 100}%, calc(100% - 60px)); top: 0;"
 				role="status"
 			>
-				<span class="block text-[14px] font-bold tabular-nums">{ap.pct ?? 0}%</span>
-				<span class="block text-[10.5px] text-soft">still reading at {ap.at}%</span>
+				<span class="block text-sm font-bold tabular-nums">{ap.pct ?? 0}%</span>
+				<span class="block text-xs text-soft">still reading at {ap.at}%</span>
 			</span>
 		{/if}
 	</div>
-	<div class="mt-2 flex items-center justify-between text-[11px] text-soft">
+	<div class="mt-2 flex items-center justify-between text-xs text-soft">
 		<span>{xLabel}</span>
 		<button
 			type="button"
 			onclick={() => (showTable = !showTable)}
 			aria-expanded={showTable}
-			class="text-[9.5px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:text-warm"
+			class="text-xs font-extrabold tracking-widest uppercase transition-colors hover:text-warm"
 			>{showTable ? 'Hide table' : 'Show as table'}</button
 		>
 	</div>
 	{#if showTable}
-		<table class="mt-2 w-full text-[12.5px] tabular-nums">
+		<table class="mt-2 w-full text-xs tabular-nums">
 			<thead
-				><tr
-					class="border-b border-line2 text-left text-[9px] tracking-[0.16em] text-fade uppercase"
+				><tr class="border-b border-line2 text-left text-xs tracking-widest text-fade uppercase"
 					><th class="py-1.5 font-extrabold">Point</th><th class="py-1.5 text-right font-extrabold"
 						>Readers</th
 					></tr

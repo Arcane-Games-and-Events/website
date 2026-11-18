@@ -41,7 +41,7 @@
 </script>
 
 <nav class="border-b border-line2 bg-paper-bg text-ink" aria-label="The Library">
-	<div class="mx-auto w-full max-w-[1200px] px-5 py-5 md:px-8 md:py-6">
+	<div class="mx-auto w-full max-w-page px-5 py-5 md:px-8 md:py-6">
 		<ul class="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5 lg:gap-3">
 			{#each TABS as t (t.id)}
 				{@const on = t.id === current}
@@ -51,13 +51,13 @@
 						aria-current={on ? 'page' : undefined}
 						aria-label={t.n == null ? t.label : `${t.label}: ${t.n}`}
 						style="--tone: {TONE[t.id]}"
-						class="lib-tile group flex h-[56px] items-center gap-2.5 border px-3 sm:gap-3 sm:px-3.5 md:h-[60px] {on
+						class="lib-tile group flex h-14 items-center gap-2.5 border px-3 sm:gap-3 sm:px-3.5 md:h-15 {on
 							? 'is-on border-warm-deep bg-warm-deep text-white'
 							: 'border-line2 bg-white text-ink'}"
 					>
 						<svg
 							viewBox="0 0 20 20"
-							class="h-[19px] w-[19px] shrink-0 transition-transform duration-300 group-hover:-rotate-6 {on
+							class="h-5 w-5 shrink-0 transition-transform duration-300 group-hover:-rotate-6 {on
 								? 'text-warm-light'
 								: ''}"
 							style={on ? '' : 'color: var(--tone)'}
@@ -68,17 +68,16 @@
 							stroke-linecap="round"
 							aria-hidden="true"><path d={ICON[t.id]} /></svg
 						>
-						<span
-							class="min-w-0 flex-1 truncate font-newsreader text-[19px] leading-none font-semibold"
+						<span class="min-w-0 flex-1 truncate font-newsreader text-xl leading-none font-semibold"
 							>{t.label}</span
 						>
 						{#if t.n != null}<span
-								class="px-1.5 py-[3px] font-libre text-[10.5px] font-bold tabular-nums {on
+								class="px-1.5 py-1 font-libre text-xs font-bold tabular-nums {on
 									? 'bg-white/15 text-white'
 									: 'bg-panel text-soft'}">{t.n}</span
 							>{/if}
 						<span
-							class="hidden text-[15px] opacity-40 transition-[transform,opacity] duration-300 group-hover:translate-x-0.5 group-hover:opacity-100 sm:inline"
+							class="hidden text-base opacity-40 transition duration-300 group-hover:translate-x-0.5 group-hover:opacity-100 sm:inline"
 							aria-hidden="true">→</span
 						>
 					</a>

@@ -68,7 +68,7 @@
 </script>
 
 {#if video?.provider === 'mux' && video.muxPlaybackId}
-	<div class="bg-black {bare ? '' : 'border-y-[3px] border-double border-ink'}">
+	<div class="bg-black {bare ? '' : 'border-y-3 border-double border-ink'}">
 		<mux-player
 			playback-id={video.muxPlaybackId}
 			playback-token={video.playbackToken || ''}
@@ -83,7 +83,7 @@
 		></mux-player>
 	</div>
 {:else if video?.provider === 'youtube' && video.youtubeVideoId}
-	<div class="bg-black {bare ? '' : 'border-y-[3px] border-double border-ink'}">
+	<div class="bg-black {bare ? '' : 'border-y-3 border-double border-ink'}">
 		<div class="relative w-full overflow-hidden" style="padding-top: 56.25%;">
 			{#if youtubeLoaded}
 				<iframe
@@ -116,11 +116,11 @@
 						/>
 					{/if}
 					<span
-						class="pointer-events-none absolute inset-0 z-[1] bg-black/25 transition-opacity group-hover:bg-black/15"
+						class="pointer-events-none absolute inset-0 z-1 bg-black/25 transition-opacity group-hover:bg-black/15"
 						aria-hidden="true"
 					></span>
 					<span
-						class="relative z-[2] flex h-[76px] w-[76px] items-center justify-center rounded-full bg-white/95 pl-[6px] text-[26px] text-ink transition-transform group-hover:scale-110"
+						class="relative z-2 flex h-19 w-19 items-center justify-center rounded-full bg-white/95 pl-1.5 text-2xl text-ink transition-transform group-hover:scale-110"
 						aria-hidden="true"
 					>
 						▶

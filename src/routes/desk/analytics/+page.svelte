@@ -157,11 +157,11 @@
 </svelte:head>
 
 {#snippet head(text, tone = 'text-warm', note = '')}
-	<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-		<h2 class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase">
-			<span class="text-[8px] {tone}" aria-hidden="true">◆</span>{text}
+	<div class="flex items-baseline justify-between gap-4 border-b-3 border-ink pb-2">
+		<h2 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+			<span class="text-xs {tone}" aria-hidden="true">◆</span>{text}
 		</h2>
-		{#if note}<span class="text-[11px] text-fade">{note}</span>{/if}
+		{#if note}<span class="text-xs text-fade">{note}</span>{/if}
 	</div>
 {/snippet}
 
@@ -176,8 +176,8 @@
 				data-sveltekit-noscroll
 				aria-current={data.range === n ? 'page' : undefined}
 				class="font-extrabold uppercase transition-colors {compact
-					? 'px-2.5 py-1.5 text-[9.5px] tracking-[0.1em]'
-					: 'px-3.5 py-2 text-[10px] tracking-[0.14em]'} {data.range === n
+					? 'px-2.5 py-1.5 text-xs tracking-widest'
+					: 'px-3.5 py-2 text-xs tracking-widest'} {data.range === n
 					? 'bg-paper-bg text-ink'
 					: 'bg-ink text-paper-bg/70 hover:text-paper-bg'}"
 				>{compact ? `${n}d` : `Last ${n} days`}</a
@@ -196,17 +196,13 @@
 
 {#if site}
 	<!-- ============ figures ============ -->
-	<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 font-libre md:px-8 md:pt-10">
+	<div class="mx-auto w-full max-w-page px-5 pt-8 font-libre md:px-8 md:pt-10">
 		<dl class="grid grid-cols-2 border-t border-b border-line2 md:grid-cols-[1.3fr_repeat(5,1fr)]">
 			<div class="col-span-2 py-4 pr-4 md:col-span-1">
-				<dd
-					class="text-[48px] leading-none font-extrabold tracking-[-0.03em] text-[#2563eb] tabular-nums"
-				>
+				<dd class="text-5xl leading-none font-extrabold tracking-tight text-blue-600 tabular-nums">
 					{compact(site.views)}
 				</dd>
-				<dt class="mt-1.5 text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">
-					Views
-				</dt>
+				<dt class="mt-1.5 text-xs font-extrabold tracking-widest text-fade uppercase">Views</dt>
 			</div>
 			{#each [['Readers', compact(site.readers)], ['Attention', hours(site.engaged)], ['Engaged / view', dur(site.avgEngaged)], ['Finished', pctLabel(site.completionRate)], ['Conversions', fmt(site.conversions)]] as [k, v], i (k)}
 				<div
@@ -214,10 +210,10 @@
 						? 'border-t pr-4 md:border-t-0 md:border-l md:pl-4'
 						: 'border-t border-l pl-4 md:border-t-0'}"
 				>
-					<dd class="text-[26px] leading-none font-extrabold tracking-[-0.02em] tabular-nums">
+					<dd class="text-2xl leading-none font-extrabold tracking-tight tabular-nums">
 						{v}
 					</dd>
-					<dt class="mt-1.5 text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">
+					<dt class="mt-1.5 text-xs font-extrabold tracking-widest text-fade uppercase">
 						{k}
 					</dt>
 				</div>
@@ -226,22 +222,22 @@
 	</div>
 {/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 py-10 font-libre md:px-8 md:py-12">
+<div class="mx-auto w-full max-w-page px-5 py-10 font-libre md:px-8 md:py-12">
 	{#if !r}
-		<p class="font-newsreader text-[17px] text-soft italic">
+		<p class="font-newsreader text-lg text-soft italic">
 			Analytics couldn’t be loaded right now. Try again in a moment.
 		</p>
 	{:else if !r.available}
-		<div class="border-l-[3px] border-gold bg-gold/10 px-5 py-4">
-			<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-[#8a6116] uppercase">
+		<div class="border-l-3 border-gold bg-gold/10 px-5 py-4">
+			<p class="text-xs font-extrabold tracking-widest text-gold-deep uppercase">
 				Analytics aren’t switched on yet
 			</p>
-			<p class="mt-1 text-[14px] text-soft">
+			<p class="mt-1 text-sm text-soft">
 				Apply migration 021 to create the analytics tables. Tracking starts the moment they exist.
 			</p>
 		</div>
 	{:else if !site.views}
-		<p class="font-newsreader text-[17px] text-soft italic">
+		<p class="font-newsreader text-lg text-soft italic">
 			No views recorded in the last {data.range} days yet. Numbers appear here as readers open articles
 			and videos.
 		</p>
@@ -260,15 +256,15 @@
 							<li class="border-b border-line2 py-3.5">
 								<a href="/desk/analytics/{p.id}?range={data.range}" class="group block">
 									<span
-										class="block font-newsreader text-[17px] leading-snug font-semibold group-hover:text-warm"
+										class="block font-newsreader text-lg leading-snug font-semibold group-hover:text-warm"
 										>{p.title}</span
 									>
-									<span class="mt-0.5 block text-[11.5px] text-fade"
+									<span class="mt-0.5 block text-xs text-fade"
 										>{fmt(p.views)} views · {dur(p.avgEngaged)} engaged</span
 									>
 									{#each p.insights.filter((i) => i.tone === 'good').slice(0, 2) as ins (ins.text)}
-										<span class="mt-1.5 flex gap-2 text-[12.5px] leading-snug text-soft">
-											<span class="mt-[6px] h-1.5 w-1.5 shrink-0 bg-prem" aria-hidden="true"
+										<span class="mt-1.5 flex gap-2 text-xs leading-snug text-soft">
+											<span class="mt-1.5 h-1.5 w-1.5 shrink-0 bg-prem" aria-hidden="true"
 											></span>{ins.text}
 										</span>
 									{/each}
@@ -277,7 +273,7 @@
 						{/each}
 					</ol>
 				{:else}
-					<p class="py-4 font-newsreader text-[15px] text-soft italic">
+					<p class="py-4 font-newsreader text-base text-soft italic">
 						Standouts appear once pieces have at least 20 views to compare.
 					</p>
 				{/if}
@@ -286,13 +282,11 @@
 
 		<!-- ============ every piece ============ -->
 		<section class="mt-14 scroll-mt-24" bind:this={tableEl}>
-			<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-				<h2
-					class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase"
-				>
-					<span class="text-[8px] text-warm" aria-hidden="true">◆</span>Every piece
+			<div class="flex items-baseline justify-between gap-4 border-b-3 border-ink pb-2">
+				<h2 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+					<span class="text-xs text-warm" aria-hidden="true">◆</span>Every piece
 				</h2>
-				<span class="text-[11px] text-fade"
+				<span class="text-xs text-fade"
 					>{filtered.length === allPieces.length
 						? `${allPieces.length} pieces`
 						: `${filtered.length} of ${allPieces.length} pieces`}</span
@@ -302,7 +296,7 @@
 			<!-- filters -->
 			<div class="mt-4 flex flex-wrap items-center gap-2">
 				<label
-					class="flex h-[38px] min-w-[200px] flex-1 items-center gap-2 border border-line2 bg-paper px-3 focus-within:border-ink md:max-w-[280px]"
+					class="flex h-10 min-w-50 flex-1 items-center gap-2 border border-line2 bg-paper px-3 focus-within:border-ink md:max-w-2xs"
 				>
 					<svg
 						viewBox="0 0 24 24"
@@ -317,13 +311,13 @@
 						type="search"
 						bind:value={query}
 						placeholder="Search title, writer or tag"
-						class="min-w-0 flex-1 border-0 bg-transparent p-0 text-[13.5px] placeholder:text-fade focus:ring-0 focus:outline-none"
+						class="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm placeholder:text-fade focus:ring-0 focus:outline-none"
 					/>
 				</label>
 				<select
 					bind:value={fFormat}
 					aria-label="Format"
-					class="h-[38px] border border-line2 bg-paper px-2.5 pr-8 text-[13px] focus:border-ink focus:ring-0"
+					class="h-10 border border-line2 bg-paper px-2.5 pr-8 text-sm focus:border-ink focus:ring-0"
 				>
 					<option value="">All formats</option>
 					{#each formats as f (f)}<option value={f}>{f}</option>{/each}
@@ -331,7 +325,7 @@
 				<select
 					bind:value={fAccess}
 					aria-label="Access"
-					class="h-[38px] border border-line2 bg-paper px-2.5 pr-8 text-[13px] focus:border-ink focus:ring-0"
+					class="h-10 border border-line2 bg-paper px-2.5 pr-8 text-sm focus:border-ink focus:ring-0"
 				>
 					<option value="">Free &amp; Premium</option>
 					<option value="free">Free</option>
@@ -341,7 +335,7 @@
 					<select
 						bind:value={fWriter}
 						aria-label="Writer"
-						class="h-[38px] border border-line2 bg-paper px-2.5 pr-8 text-[13px] focus:border-ink focus:ring-0"
+						class="h-10 border border-line2 bg-paper px-2.5 pr-8 text-sm focus:border-ink focus:ring-0"
 					>
 						<option value="">All writers</option>
 						{#each writers as w (w)}<option value={w}>{w}</option>{/each}
@@ -351,14 +345,14 @@
 					<select
 						bind:value={fTag}
 						aria-label="Tag"
-						class="h-[38px] border border-line2 bg-paper px-2.5 pr-8 text-[13px] focus:border-ink focus:ring-0"
+						class="h-10 border border-line2 bg-paper px-2.5 pr-8 text-sm focus:border-ink focus:ring-0"
 					>
 						<option value="">All tags</option>
 						{#each tagNames as t (t)}<option value={t}>{t}</option>{/each}
 					</select>
 				{/if}
 				<label
-					class="flex h-[38px] cursor-pointer items-center gap-2 border border-line2 bg-paper px-3 text-[13px] select-none"
+					class="flex h-10 cursor-pointer items-center gap-2 border border-line2 bg-paper px-3 text-sm select-none"
 					title="Hide pieces with too few views to judge fairly"
 				>
 					<input
@@ -378,7 +372,7 @@
 						page = 1;
 					}}
 					aria-label="Sort by"
-					class="h-[38px] border border-line2 bg-paper px-2.5 pr-8 text-[13px] focus:border-ink focus:ring-0 md:hidden"
+					class="h-10 border border-line2 bg-paper px-2.5 pr-8 text-sm focus:border-ink focus:ring-0 md:hidden"
 				>
 					{#each COLS as c (c.k)}
 						<option value={`${c.k}:${firstDir(c.k)}`}
@@ -390,12 +384,12 @@
 					<button
 						type="button"
 						onclick={resetAll}
-						class="h-[38px] px-3 text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase transition-colors hover:text-ink"
+						class="h-10 px-3 text-xs font-extrabold tracking-widest text-warm uppercase transition-colors hover:text-ink"
 						>↺ Reset</button
 					>
 				{/if}
 			</div>
-			<p class="mt-2 text-[12px] text-fade">
+			<p class="mt-2 text-xs text-fade">
 				Typical piece (median): {dur(y?.avgEngaged)} engaged per view · {pctLabel(
 					y?.completionRate
 				)} finish · {pctLabel(y?.bounceRate)} bounce. Attention is total engaged time: how many came
@@ -406,12 +400,12 @@
 			<div
 				class="mt-3 hidden grid-cols-[minmax(0,1fr)_repeat(6,84px)] gap-3 border-b border-line2 pb-2 md:grid"
 			>
-				<span class="text-[9px] font-extrabold tracking-[0.18em] text-fade uppercase">Piece</span>
+				<span class="text-xs font-extrabold tracking-widest text-fade uppercase">Piece</span>
 				{#each COLS as c (c.k)}
 					<button
 						type="button"
 						onclick={() => sortBy(c.k)}
-						class="text-right text-[9px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:text-ink {sortKey ===
+						class="text-right text-xs font-extrabold tracking-widest uppercase transition-colors hover:text-ink {sortKey ===
 						c.k
 							? 'text-ink'
 							: 'text-fade'}"
@@ -431,10 +425,10 @@
 						>
 							<span class="min-w-0">
 								<span
-									class="block truncate font-newsreader text-[17px] font-semibold group-hover:text-warm"
+									class="block truncate font-newsreader text-lg font-semibold group-hover:text-warm"
 									>{p.title}</span
 								>
-								<span class="mt-0.5 block truncate text-[11.5px] text-fade">
+								<span class="mt-0.5 block truncate text-xs text-fade">
 									{[
 										p.author,
 										p.kind,
@@ -445,43 +439,39 @@
 										.join(' · ')}
 								</span>
 								{#if weak}
-									<span class="mt-1 flex gap-2 text-[12px] leading-snug text-soft">
-										<span class="mt-[5px] h-1.5 w-1.5 shrink-0 bg-hero-rb" aria-hidden="true"
+									<span class="mt-1 flex gap-2 text-xs leading-snug text-soft">
+										<span class="mt-1.5 h-1.5 w-1.5 shrink-0 bg-hero-rb" aria-hidden="true"
 										></span><span class="line-clamp-1">{weak.text}</span>
 									</span>
 								{/if}
 							</span>
-							<span class="text-right text-[15px] font-bold tabular-nums md:text-[14px]"
+							<span class="text-right text-base font-bold tabular-nums md:text-sm"
 								>{hours(p.engaged)}</span
 							>
-							<span class="col-span-2 text-[12px] text-soft tabular-nums md:hidden">
+							<span class="col-span-2 text-xs text-soft tabular-nums md:hidden">
 								{fmt(p.views)} views · {dur(p.avgEngaged)} engaged · {pctLabel(p.completionRate)} finish
 								· {pctLabel(p.bounceRate)} bounce · {p.conversions} conv.
 							</span>
-							<span class="hidden text-right text-[13.5px] tabular-nums md:block"
-								>{fmt(p.views)}</span
-							>
-							<span class="hidden text-right text-[13.5px] tabular-nums md:block"
+							<span class="hidden text-right text-sm tabular-nums md:block">{fmt(p.views)}</span>
+							<span class="hidden text-right text-sm tabular-nums md:block"
 								>{dur(p.avgEngaged)}</span
 							>
-							<span class="hidden text-right text-[13.5px] tabular-nums md:block"
+							<span class="hidden text-right text-sm tabular-nums md:block"
 								>{pctLabel(p.completionRate)}</span
 							>
-							<span class="hidden text-right text-[13.5px] tabular-nums md:block"
+							<span class="hidden text-right text-sm tabular-nums md:block"
 								>{pctLabel(p.bounceRate)}</span
 							>
-							<span class="hidden text-right text-[13.5px] tabular-nums md:block"
-								>{p.conversions}</span
-							>
+							<span class="hidden text-right text-sm tabular-nums md:block">{p.conversions}</span>
 						</a>
 					</li>
 				{:else}
 					<li class="py-10 text-center">
-						<p class="font-newsreader text-[16px] text-soft">No pieces match these filters.</p>
+						<p class="font-newsreader text-base text-soft">No pieces match these filters.</p>
 						<button
 							type="button"
 							onclick={resetAll}
-							class="mt-3 text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
+							class="mt-3 text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 							>↺ Reset filters</button
 						>
 					</li>
@@ -494,7 +484,7 @@
 					class="mt-4 flex flex-wrap items-center justify-between gap-3"
 					aria-label="Pages of pieces"
 				>
-					<span class="text-[12px] text-fade tabular-nums"
+					<span class="text-xs text-fade tabular-nums"
 						>{(current - 1) * PAGE_SIZE + 1}–{Math.min(current * PAGE_SIZE, sorted.length)} of {sorted.length}</span
 					>
 					<div class="flex items-center gap-1">
@@ -502,7 +492,7 @@
 							type="button"
 							onclick={() => goTo(current - 1)}
 							disabled={current === 1}
-							class="h-9 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:text-warm disabled:opacity-35 disabled:hover:text-ink"
+							class="h-9 px-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:text-warm disabled:opacity-35 disabled:hover:text-ink"
 							>← Prev</button
 						>
 						{#each pageNums as n (n)}
@@ -514,7 +504,7 @@
 									onclick={() => goTo(n)}
 									aria-current={n === current ? 'page' : undefined}
 									aria-label="Page {n}"
-									class="h-9 min-w-9 px-2 text-[13px] font-semibold tabular-nums transition-colors {n ===
+									class="h-9 min-w-9 px-2 text-sm font-semibold tabular-nums transition-colors {n ===
 									current
 										? 'bg-ink text-paper-bg'
 										: 'hover:bg-paper'}">{n}</button
@@ -525,7 +515,7 @@
 							type="button"
 							onclick={() => goTo(current + 1)}
 							disabled={current === pageCount}
-							class="h-9 px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:text-warm disabled:opacity-35 disabled:hover:text-ink"
+							class="h-9 px-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:text-warm disabled:opacity-35 disabled:hover:text-ink"
 							>Next →</button
 						>
 					</div>
@@ -545,7 +535,7 @@
 						type="button"
 						onclick={() => (ww = k)}
 						aria-pressed={ww === k}
-						class="flex-1 px-3.5 py-2 text-[10px] font-extrabold tracking-[0.14em] whitespace-nowrap uppercase transition-colors {ww ===
+						class="flex-1 px-3.5 py-2 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors {ww ===
 						k
 							? 'bg-ink text-paper-bg'
 							: 'bg-paper-bg text-soft hover:text-ink'}">{l}</button
@@ -553,7 +543,7 @@
 				{/each}
 			</nav>
 			<div
-				class="mt-4 hidden grid-cols-[minmax(0,180px)_minmax(0,1fr)_80px_90px_80px_70px] gap-4 border-b border-line2 pb-2 text-[9px] font-extrabold tracking-[0.16em] text-fade uppercase md:grid"
+				class="mt-4 hidden grid-cols-[minmax(0,180px)_minmax(0,1fr)_80px_90px_80px_70px] gap-4 border-b border-line2 pb-2 text-xs font-extrabold tracking-widest text-fade uppercase md:grid"
 			>
 				<span>Group</span><span>Engaged / view</span><span class="text-right">Pieces</span><span
 					class="text-right">Views / piece</span
@@ -564,35 +554,32 @@
 					<li
 						class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 border-b border-line2 py-3 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)_80px_90px_80px_70px]"
 					>
-						<span class="truncate text-[14px] font-semibold">{g.key}</span>
+						<span class="truncate text-sm font-semibold">{g.key}</span>
 						<span class="flex items-center gap-3">
-							<span class="hidden h-[8px] flex-1 bg-line md:block" aria-hidden="true">
+							<span class="hidden h-2 flex-1 bg-line md:block" aria-hidden="true">
 								<span
-									class="block h-full bg-[#2563eb]"
+									class="block h-full bg-blue-600"
 									style="width: {((g.avgEngaged || 0) / wwMax) * 100}%;"
 								></span>
 							</span>
-							<span class="w-[64px] text-right text-[14px] font-bold tabular-nums"
-								>{dur(g.avgEngaged)}</span
+							<span class="w-16 text-right text-sm font-bold tabular-nums">{dur(g.avgEngaged)}</span
 							>
 						</span>
-						<span class="col-span-2 text-[12px] text-soft tabular-nums md:hidden"
+						<span class="col-span-2 text-xs text-soft tabular-nums md:hidden"
 							>{g.pieces} pieces · {fmt(g.viewsPerPiece)} views each · {pctLabel(g.completionRate)} finish
 							· {g.conversions} conv.</span
 						>
-						<span class="hidden text-right text-[13.5px] tabular-nums md:block">{g.pieces}</span>
-						<span class="hidden text-right text-[13.5px] tabular-nums md:block"
+						<span class="hidden text-right text-sm tabular-nums md:block">{g.pieces}</span>
+						<span class="hidden text-right text-sm tabular-nums md:block"
 							>{fmt(g.viewsPerPiece)}</span
 						>
-						<span class="hidden text-right text-[13.5px] tabular-nums md:block"
+						<span class="hidden text-right text-sm tabular-nums md:block"
 							>{pctLabel(g.completionRate)}</span
 						>
-						<span class="hidden text-right text-[13.5px] tabular-nums md:block"
-							>{g.conversions}</span
-						>
+						<span class="hidden text-right text-sm tabular-nums md:block">{g.conversions}</span>
 					</li>
 				{:else}
-					<li class="py-6 font-newsreader text-[15px] text-soft italic">Nothing to compare yet.</li>
+					<li class="py-6 font-newsreader text-base text-soft italic">Nothing to compare yet.</li>
 				{/each}
 			</ol>
 		</section>
@@ -606,28 +593,28 @@
 			)}
 			<div class="mt-6 grid gap-10 md:grid-cols-2">
 				<div>
-					<h3 class="text-[11px] font-extrabold tracking-[0.14em] uppercase">Source</h3>
+					<h3 class="text-xs font-extrabold tracking-widest uppercase">Source</h3>
 					<ol class="mt-3 space-y-2.5">
 						{#each r.sources as s (s.key)}
 							<li>
-								<div class="flex items-baseline justify-between gap-3 text-[13px]">
+								<div class="flex items-baseline justify-between gap-3 text-sm">
 									<span class="truncate">{label(SOURCES, s.key)}</span>
 									<span class="shrink-0 tabular-nums"
 										><span class="font-semibold">{compact(s.n)}</span><span
-											class="ml-1.5 text-[11px] text-fade"
+											class="ml-1.5 text-xs text-fade"
 											>{pctLabel((s.n / site.views) * 100)} · {pctLabel(s.completionRate)} finish</span
 										></span
 									>
 								</div>
-								<div class="mt-1 h-[6px] bg-line" aria-hidden="true">
-									<div class="h-full bg-[#2563eb]" style="width: {(s.n / sourceMax) * 100}%;"></div>
+								<div class="mt-1 h-1.5 bg-line" aria-hidden="true">
+									<div class="h-full bg-blue-600" style="width: {(s.n / sourceMax) * 100}%;"></div>
 								</div>
 							</li>
 						{/each}
 					</ol>
 				</div>
 				<div>
-					<h3 class="text-[11px] font-extrabold tracking-[0.14em] uppercase">Referring sites</h3>
+					<h3 class="text-xs font-extrabold tracking-widest uppercase">Referring sites</h3>
 					<div class="mt-3">
 						<BarList
 							items={r.referrers.map((x) => ({ key: x.key, n: x.n }))}
@@ -639,7 +626,7 @@
 			</div>
 			<div class="mt-10 grid gap-10 md:grid-cols-3">
 				<div>
-					<h3 class="text-[11px] font-extrabold tracking-[0.14em] uppercase">Devices</h3>
+					<h3 class="text-xs font-extrabold tracking-widest uppercase">Devices</h3>
 					<div class="mt-3">
 						<BarList
 							items={r.devices.map((x) => ({
@@ -652,7 +639,7 @@
 					</div>
 				</div>
 				<div>
-					<h3 class="text-[11px] font-extrabold tracking-[0.14em] uppercase">Who</h3>
+					<h3 class="text-xs font-extrabold tracking-widest uppercase">Who</h3>
 					<div class="mt-3">
 						<BarList
 							items={r.audiences.map((x) => ({ key: label(AUDIENCES, x.key), n: x.n }))}
@@ -662,7 +649,7 @@
 					</div>
 				</div>
 				<div>
-					<h3 class="text-[11px] font-extrabold tracking-[0.14em] uppercase">Countries</h3>
+					<h3 class="text-xs font-extrabold tracking-widest uppercase">Countries</h3>
 					<div class="mt-3">
 						<BarList
 							items={r.countries.map((x) => ({
@@ -680,14 +667,14 @@
 
 	<!-- ============ definitions ============ -->
 	<section class="mt-16 border-t border-line2 pt-6">
-		<h2 class="text-[10px] font-extrabold tracking-[0.2em] text-fade uppercase">
+		<h2 class="text-xs font-extrabold tracking-widest text-fade uppercase">
 			How these are measured
 		</h2>
 		<dl class="mt-3 grid gap-x-10 gap-y-3 md:grid-cols-2">
 			{#each GLOSSARY as [k, v] (k)}
 				<div>
-					<dt class="text-[12.5px] font-bold">{k}</dt>
-					<dd class="text-[12.5px] leading-snug text-soft">{v}</dd>
+					<dt class="text-xs font-bold">{k}</dt>
+					<dd class="text-xs leading-snug text-soft">{v}</dd>
 				</div>
 			{/each}
 		</dl>

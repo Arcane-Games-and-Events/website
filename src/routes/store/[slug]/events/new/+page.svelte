@@ -57,12 +57,12 @@
 
 {#if form?.error}<AdminNotice tone="error" message={form.error} />{/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-7 pb-20 md:px-8" style="--cc: {color};">
+<div class="mx-auto w-full max-w-page px-5 pt-7 pb-20 md:px-8" style="--cc: {color};">
 	<a href="{base}/events" class="{ui.label} hover:text-ink">← Events</a>
-	<h2 class="ao-cond mt-3 text-[44px] leading-none font-black uppercase md:text-[56px]">
+	<h2 class="ao-cond mt-3 text-5xl leading-none font-black uppercase md:text-6xl">
 		Schedule an Open
 	</h2>
-	<p class="mt-1.5 text-[13px] text-soft">
+	<p class="mt-1.5 text-sm text-soft">
 		It goes live on the {w.circuit.name} AGE Open as soon as you publish, and players can sign up straight
 		away.
 	</p>
@@ -70,7 +70,7 @@
 	<div class="mt-7 grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
 		<form
 			method="POST"
-			class="border border-t-[4px] border-line2 bg-white p-5 md:p-7"
+			class="border border-t-4 border-line2 bg-white p-5 md:p-7"
 			style="border-top-color: var(--cc)"
 			use:enhance={() => {
 				busy = true;
@@ -108,7 +108,7 @@
 			/>
 			<div class="mt-7 flex flex-wrap gap-3 border-t border-line2 pt-5">
 				<button
-					class="inline-flex h-[44px] items-center gap-2 px-6 text-[10.5px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 disabled:opacity-50"
+					class="inline-flex h-11 items-center gap-2 px-6 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110 disabled:opacity-50"
 					style="background: var(--cc)"
 					disabled={busy}
 					>{busy ? 'Publishing…' : 'Publish the Open'} <span aria-hidden="true">→</span></button
@@ -122,11 +122,11 @@
 			<div class="border border-line2 bg-paper px-5 py-5">
 				<p class={ui.label}>Around that date</p>
 				{#if !day}
-					<p class="mt-3 text-[13.5px] text-soft">
+					<p class="mt-3 text-sm text-soft">
 						Pick a date and you’ll see every AGE Open within a few days of it, across all circuits.
 					</p>
 				{:else}
-					<p class="ao-cond mt-2 text-[28px] leading-none font-black uppercase">
+					<p class="ao-cond mt-2 text-3xl leading-none font-black uppercase">
 						{day.toLocaleDateString('en-US', {
 							weekday: 'short',
 							month: 'short',
@@ -135,12 +135,10 @@
 						})}
 					</p>
 					{#if past}
-						<p class="mt-3 text-[13px] font-semibold text-hero-rb">That date has already passed.</p>
+						<p class="mt-3 text-sm font-semibold text-hero-rb">That date has already passed.</p>
 					{/if}
 					{#if sameMonth.length}
-						<p
-							class="mt-3 border-l-[3px] border-gold bg-gold/10 px-3 py-2 text-[12.5px] leading-snug"
-						>
+						<p class="mt-3 border-l-3 border-gold bg-gold/10 px-3 py-2 text-xs leading-snug">
 							You already have {sameMonth.length === 1 ? 'an Open' : `${sameMonth.length} Opens`} in
 							{monthName}. The season asks for one a month.
 						</p>
@@ -153,7 +151,7 @@
 										class="mt-1 h-2.5 w-2.5 shrink-0"
 										style="background: {circuitVar(e.circuit)}"
 									></span>
-									<span class="min-w-0 text-[12.5px] leading-snug">
+									<span class="min-w-0 text-xs leading-snug">
 										<b>{e.circuit}</b>{e.storeId === w.store.id ? ' (you)' : ''} · {when(e)}
 										<span class="block truncate text-soft"
 											>{e.storeName || e.location || e.title}</span
@@ -163,7 +161,7 @@
 							{/each}
 						</ul>
 					{:else if !past}
-						<p class="mt-3 text-[13px] text-prem">
+						<p class="mt-3 text-sm text-prem">
 							<b>✓ Clear.</b> No other AGE Open within three days.
 						</p>
 					{/if}

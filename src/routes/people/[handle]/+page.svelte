@@ -71,16 +71,16 @@
 
 {#snippet sectionHead(label, count)}
 	<h2
-		class="flex items-center gap-2.5 border-b-[3px] border-ink pb-3 font-newsreader text-[15px] font-semibold tracking-[0.2em] uppercase"
+		class="flex items-center gap-2.5 border-b-3 border-ink pb-3 font-newsreader text-base font-semibold tracking-widest uppercase"
 	>
-		<span class="text-[10px] text-warm" aria-hidden="true">◆</span>
+		<span class="text-xs text-warm" aria-hidden="true">◆</span>
 		{label}
 		<span class="text-fade tabular-nums">{count}</span>
 	</h2>
 {/snippet}
 
 <AgeShell>
-	<div class="mx-auto w-full max-w-[1200px] px-5 pt-10 pb-16 md:px-8 md:pt-14 md:pb-24">
+	<div class="mx-auto w-full max-w-page px-5 pt-10 pb-16 md:px-8 md:pt-14 md:pb-24">
 		<!-- ============ who they are ============ -->
 		<header class="flex flex-col gap-6 border-b border-line pb-8 sm:flex-row sm:items-center">
 			{#if p.photo}
@@ -93,21 +93,21 @@
 				/>
 			{:else}
 				<span
-					class="flex h-24 w-24 shrink-0 items-center justify-center bg-ink font-newsreader text-[34px] font-semibold text-paper-bg md:h-28 md:w-28"
+					class="flex h-24 w-24 shrink-0 items-center justify-center bg-ink font-newsreader text-4xl font-semibold text-paper-bg md:h-28 md:w-28"
 					aria-hidden="true">{initials}</span
 				>
 			{/if}
 			<div class="min-w-0">
-				<p class="text-[10px] font-extrabold tracking-[0.2em] text-warm uppercase">
+				<p class="text-xs font-extrabold tracking-widest text-warm uppercase">
 					{roles.join(' · ')}
 				</p>
 				<h1
-					class="mt-1.5 font-newsreader text-[38px] leading-[1.02] font-semibold tracking-[-0.02em] md:text-[52px]"
+					class="mt-1.5 font-newsreader text-4xl leading-none font-semibold tracking-tight md:text-5xl"
 				>
 					{p.name}
 				</h1>
 				{#if p.title}
-					<p class="mt-2 font-newsreader text-[18px] leading-snug text-soft italic">{p.title}</p>
+					<p class="mt-2 font-newsreader text-lg leading-snug text-soft italic">{p.title}</p>
 				{/if}
 				{#if p.links.length}
 					<ul class="mt-3 flex flex-wrap gap-x-5 gap-y-1">
@@ -117,7 +117,7 @@
 									href={l.href}
 									target="_blank"
 									rel="noopener noreferrer"
-									class="text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase transition-colors hover:text-warm"
+									class="text-xs font-extrabold tracking-widest text-soft uppercase transition-colors hover:text-warm"
 									>{l.label} <span aria-hidden="true">↗</span></a
 								>
 							</li>
@@ -128,10 +128,10 @@
 		</header>
 
 		{#if paragraphs.length}
-			<div class="max-w-[680px] pt-8">
+			<div class="max-w-2xl pt-8">
 				{#each paragraphs as para, i (i)}
 					<p
-						class="font-newsreader text-[18px] leading-[1.6] whitespace-pre-line text-ink {i
+						class="font-newsreader text-lg leading-relaxed whitespace-pre-line text-ink {i
 							? 'mt-4'
 							: ''}"
 					>
@@ -169,7 +169,7 @@
 						<button
 							type="button"
 							onclick={() => (shownCount += PER_PAGE)}
-							class="border-[1.5px] border-ink px-5 py-3 text-[10.5px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+							class="border-2 border-ink px-5 py-3 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 						>
 							Show more · {stories.length - shownCount} left
 						</button>

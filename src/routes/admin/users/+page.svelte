@@ -247,7 +247,7 @@
 	<AdminNotice tone="error" message={errorMessage} ondismiss={() => (errorMessage = '')} />
 {/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-6 pb-20 md:px-8">
 	<Figures
 		items={[
 			{ label: 'Accounts', value: ui.fmt(data.stats.totalUsers) },
@@ -266,7 +266,7 @@
 
 	<!-- search and filters -->
 	<div class="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-		<label class="{ui.search} w-full lg:max-w-[420px]" aria-label="Search members">
+		<label class="{ui.search} w-full lg:max-w-md" aria-label="Search members">
 			<svg
 				viewBox="0 0 20 20"
 				class="h-4 w-4 shrink-0 text-fade"
@@ -302,7 +302,7 @@
 						usersPage = 1;
 					}}
 					aria-pressed={show === f.id}
-					class="inline-flex h-[36px] items-center gap-2 border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {show ===
+					class="inline-flex h-9 items-center gap-2 border px-3 text-xs font-extrabold tracking-widest uppercase transition-colors {show ===
 					f.id
 						? 'border-ink bg-ink text-paper-bg'
 						: 'border-line2 bg-white text-soft hover:border-ink hover:text-ink'}"
@@ -318,7 +318,7 @@
 		</div>
 	</div>
 	{#if counts.ending}
-		<p class="mt-3 text-[12px] text-hero-rb">
+		<p class="mt-3 text-xs text-hero-rb">
 			{counts.ending}
 			{counts.ending === 1 ? 'comp ends' : 'comps end'} in the next two weeks.
 			<button
@@ -348,42 +348,39 @@
 			{@const left = k === 'comp' && user.compEndsAt ? daysLeft(user.compEndsAt) : null}
 			{@const me = user.id === data.user.id}
 			<li
-				class="border border-l-[4px] transition-[background-color,border-color,box-shadow] duration-200 motion-reduce:transition-none {k ===
-				'comp'
-					? 'border-gold/40 border-l-gold bg-gold/[0.07]'
+				class="border border-l-4 transition duration-200 motion-reduce:transition-none {k === 'comp'
+					? 'border-gold/40 border-l-gold bg-gold/5'
 					: k === 'paying'
 						? 'border-line2 border-l-prem bg-white'
 						: k === 'admin' || k === 'team'
 							? 'border-line2 border-l-ink bg-white'
-							: 'border-line2 border-l-line2 bg-white'} {editing === user.id
-					? 'shadow-[0_6px_24px_-12px_rgba(0,0,0,0.35)]'
-					: ''}"
+							: 'border-line2 border-l-line2 bg-white'} {editing === user.id ? 'shadow-md' : ''}"
 			>
 				<div
 					class="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-x-3.5 gap-y-2 px-3.5 py-3 md:grid-cols-[48px_minmax(0,1fr)_230px_96px_148px] md:gap-x-5 md:px-4"
 				>
 					<a
 						href="/admin/customers/{user.id}"
-						class="ao-cond flex h-[44px] w-[44px] items-center justify-center text-[19px] leading-none font-black md:h-[48px] md:w-[48px] md:text-[21px] {K.tile}"
+						class="ao-cond flex h-11 w-11 items-center justify-center text-xl leading-none font-black md:h-12 md:w-12 {K.tile}"
 						aria-hidden="true"
 						tabindex="-1">{initials(user)}</a
 					>
 					<a href="/admin/customers/{user.id}" class="group min-w-0">
 						<span
-							class="block truncate font-newsreader text-[17px] leading-tight font-semibold group-hover:text-warm"
-							>{name(user)}{#if me}<span class="font-libre text-[11px] font-normal text-fade">
+							class="block truncate font-newsreader text-lg leading-tight font-semibold group-hover:text-warm"
+							>{name(user)}{#if me}<span class="font-libre text-xs font-normal text-fade">
 									· you</span
 								>{/if}</span
 						>
-						<span class="mt-0.5 block truncate text-[12px] text-fade">{user.email}</span>
+						<span class="mt-0.5 block truncate text-xs text-fade">{user.email}</span>
 						{#if user.gemId || user.extraRoles?.length}
 							<span class="mt-1 flex flex-wrap gap-1">
 								{#if user.gemId}<span
-										class="border border-line2 px-1.5 py-px font-mono text-[10px] text-soft"
+										class="border border-line2 px-1.5 py-px font-mono text-xs text-soft"
 										>GEM {user.gemId}</span
 									>{/if}
 								{#each user.extraRoles || [] as r (r)}<span
-										class="border border-line2 px-1.5 py-px text-[9.5px] font-extrabold tracking-[0.1em] text-soft uppercase"
+										class="border border-line2 px-1.5 py-px text-xs font-extrabold tracking-widest text-soft uppercase"
 										>{r}</span
 									>{/each}
 							</span>
@@ -394,15 +391,14 @@
 						class="col-span-3 col-start-2 row-start-2 min-w-0 md:col-span-1 md:col-start-3 md:row-start-1"
 					>
 						<span class="flex items-center gap-2">
-							<span
-								class="px-2 py-[3px] text-[9.5px] font-extrabold tracking-[0.16em] uppercase {K.badge}"
+							<span class="px-2 py-1 text-xs font-extrabold tracking-widest uppercase {K.badge}"
 								>{K.label}</span
 							>
-							<span class="truncate text-[12.5px] text-soft">{detail(user, k)}</span>
+							<span class="truncate text-xs text-soft">{detail(user, k)}</span>
 						</span>
 						{#if k === 'comp'}
 							<span
-								class="mt-1 block text-[11.5px] {left !== null && left <= 14
+								class="mt-1 block text-xs {left !== null && left <= 14
 									? 'font-semibold text-hero-rb'
 									: 'text-fade'}"
 								>{left === null
@@ -413,7 +409,7 @@
 							>
 						{/if}
 					</span>
-					<span class="hidden text-[12px] text-soft tabular-nums md:block"
+					<span class="hidden text-xs text-soft tabular-nums md:block"
 						><span class="{ui.label} block">Joined</span>{ui.dateShort(user.createdAt)}</span
 					>
 					<span
@@ -424,7 +420,7 @@
 								type="button"
 								onclick={() => startEdit(user)}
 								aria-expanded={editing === user.id}
-								class="inline-flex h-[34px] items-center gap-1.5 border px-3 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors {editing ===
+								class="inline-flex h-9 items-center gap-1.5 border px-3 text-xs font-extrabold tracking-widest uppercase transition-colors {editing ===
 								user.id
 									? 'border-ink bg-ink text-paper-bg'
 									: 'border-line2 bg-white hover:border-ink'}"
@@ -433,7 +429,7 @@
 						{/if}
 						<a
 							href="/admin/customers/{user.id}"
-							class="hidden h-[34px] items-center px-2 text-[10px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink sm:inline-flex"
+							class="hidden h-9 items-center px-2 text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink sm:inline-flex"
 							>Open →</a
 						>
 					</span>
@@ -484,17 +480,17 @@
 		<div class={ui.modal} role="dialog" aria-modal="true" aria-labelledby="delete-title">
 			<div class="p-6">
 				{#if deleteStep === 1}
-					<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase">
+					<p class="text-xs font-extrabold tracking-widest text-hero-rb uppercase">
 						Delete account
 					</p>
-					<h3 id="delete-title" class="mt-1.5 font-newsreader text-[24px] font-semibold">
+					<h3 id="delete-title" class="mt-1.5 font-newsreader text-2xl font-semibold">
 						Delete this member?
 					</h3>
-					<div class="mt-4 border-l-[3px] border-line2 pl-3">
+					<div class="mt-4 border-l-3 border-line2 pl-3">
 						<p class={ui.titleText}>{name(deleteTarget)}</p>
-						<p class="text-[12.5px] text-fade">{deleteTarget.email}</p>
+						<p class="text-xs text-fade">{deleteTarget.email}</p>
 					</div>
-					<p class="mt-4 text-[13.5px] leading-[1.55] text-soft">
+					<p class="mt-4 text-sm leading-normal text-soft">
 						This permanently deletes the account, its sessions, saved cards and course access.
 						Tickets and orders are kept for the records.
 					</p>
@@ -505,14 +501,14 @@
 						>
 					</div>
 				{:else}
-					<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-hero-rb uppercase">
+					<p class="text-xs font-extrabold tracking-widest text-hero-rb uppercase">
 						Confirm deletion
 					</p>
-					<h3 id="delete-title" class="mt-1.5 font-newsreader text-[24px] font-semibold">
+					<h3 id="delete-title" class="mt-1.5 font-newsreader text-2xl font-semibold">
 						Type the email to confirm.
 					</h3>
 					<code
-						class="mt-3 block border border-line2 bg-paper px-3 py-2 text-[13px] text-ink select-all"
+						class="mt-3 block border border-line2 bg-paper px-3 py-2 text-sm text-ink select-all"
 						>{deleteTarget.email}</code
 					>
 					<input

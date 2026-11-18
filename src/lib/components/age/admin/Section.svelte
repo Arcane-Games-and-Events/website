@@ -9,11 +9,11 @@
 </script>
 
 <section class={cls}>
-	<div class="flex items-baseline justify-between gap-4 border-b-[3px] border-ink pb-2">
-		<h2 class="flex items-center gap-2.5 text-[10.5px] font-extrabold tracking-[0.22em] uppercase">
-			<span class="text-[8px] {tone}">◆</span>{title}
+	<div class="flex items-baseline justify-between gap-4 border-b-3 border-ink pb-2">
+		<h2 class="flex items-center gap-2.5 text-xs font-extrabold tracking-widest uppercase">
+			<span class="text-xs {tone}">◆</span>{title}
 		</h2>
-		{#if note}<span class="text-[11px] text-fade">{note}</span>{/if}
+		{#if note}<span class="text-xs text-fade">{note}</span>{/if}
 	</div>
 	<div class="mt-5">{@render children()}</div>
 </section>

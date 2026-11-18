@@ -25,17 +25,15 @@
 />
 <DeskTabs />
 
-<div class="mx-auto w-full max-w-[1200px] space-y-10 px-5 pt-8 pb-16 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page space-y-10 px-5 pt-8 pb-16 font-libre md:px-8">
 	<a
 		href="/classroom"
-		class="block text-[10.5px] font-extrabold tracking-[0.16em] text-soft uppercase hover:text-ink"
+		class="block text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 		>← Courses</a
 	>
 
 	<section>
-		<h2
-			class="border-b-[3px] border-ink pb-2.5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase"
-		>
+		<h2 class="border-b-3 border-ink pb-2.5 text-xs font-extrabold tracking-widest uppercase">
 			Expected payouts
 		</h2>
 		<div class="mt-4"><ExpectedPayouts rows={data.expected} admin /></div>
@@ -45,10 +43,10 @@
 
 	<section>
 		<h2
-			class="flex items-baseline justify-between border-b-[3px] border-ink pb-2.5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase"
+			class="flex items-baseline justify-between border-b-3 border-ink pb-2.5 text-xs font-extrabold tracking-widest uppercase"
 		>
 			Every sale
-			<span class="text-[11px] font-normal tracking-normal text-fade normal-case"
+			<span class="text-xs font-normal tracking-normal text-fade normal-case"
 				>Newest first, pending ones included</span
 			>
 		</h2>
@@ -56,16 +54,14 @@
 	</section>
 
 	<section>
-		<h2
-			class="border-b-[3px] border-ink pb-2.5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase"
-		>
+		<h2 class="border-b-3 border-ink pb-2.5 text-xs font-extrabold tracking-widest uppercase">
 			Paid
 		</h2>
 		{#if data.history.length}
-			<table class="w-full text-left text-[13.5px]">
+			<table class="w-full text-left text-sm">
 				<thead>
 					<tr
-						class="border-b border-line2 text-[9.5px] font-extrabold tracking-[0.14em] text-fade uppercase"
+						class="border-b border-line2 text-xs font-extrabold tracking-widest text-fade uppercase"
 					>
 						<th class="py-2 pr-4 font-extrabold">Pay date</th>
 						<th class="py-2 pr-4 font-extrabold">Teacher</th>
@@ -82,14 +78,14 @@
 							<td class="py-2.5 pr-4 text-right font-semibold tabular-nums"
 								>{money(p.amountCents)}</td
 							>
-							<td class="max-w-[240px] truncate py-2.5 pr-4 text-soft">{p.reference || '—'}</td>
+							<td class="max-w-3xs truncate py-2.5 pr-4 text-soft">{p.reference || '—'}</td>
 							<td class="py-2.5 whitespace-nowrap text-soft">{shortDate(p.paidAt)}</td>
 						</tr>
 					{/each}
 				</tbody>
 			</table>
 		{:else}
-			<p class="mt-4 text-[13.5px] text-soft">No payouts recorded yet.</p>
+			<p class="mt-4 text-sm text-soft">No payouts recorded yet.</p>
 		{/if}
 	</section>
 </div>

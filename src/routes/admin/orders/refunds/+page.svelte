@@ -39,7 +39,7 @@
 	<AdminNotice tone="error" message={form.error} />
 {/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-6 pb-20 md:px-8">
 	<Section
 		title={data.view === 'all' ? 'All requests' : 'Waiting for a decision'}
 		note="{data.requests.length} shown"
@@ -73,13 +73,13 @@
 									]}">{r.status}</span
 								>
 							</div>
-							<p class="mt-1 text-[13px] text-soft">
+							<p class="mt-1 text-sm text-soft">
 								<a href="/admin/customers/{r.userId}" class="font-semibold text-ink hover:text-warm"
 									>{name(r)}</a
 								>
 								· {r.email} · ticket {r.ticketCode} · {ui.money(r.amountPaid)}
 							</p>
-							<p class="mt-2 font-newsreader text-[15px] text-ink">
+							<p class="mt-2 font-newsreader text-base text-ink">
 								{#if r.reason}“{r.reason}”{:else}<span class="text-fade italic"
 										>No reason given.</span
 									>{/if}

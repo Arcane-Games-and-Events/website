@@ -168,18 +168,18 @@
 	</span>
 {/snippet}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pb-16 font-libre md:px-8">
-	<div class="flex flex-wrap items-end justify-between gap-3 border-b-[3px] border-ink pb-3">
-		<p class="text-[10.5px] font-extrabold tracking-[0.16em] uppercase">
+<div class="mx-auto w-full max-w-page px-5 pb-16 font-libre md:px-8">
+	<div class="flex flex-wrap items-end justify-between gap-3 border-b-3 border-ink pb-3">
+		<p class="text-xs font-extrabold tracking-widest uppercase">
 			{sections.length}
 			{sections.length === 1 ? 'section' : 'sections'} · {live} of {total} topics published
 		</p>
-		<p class="text-[12px] text-fade" aria-live="polite">
+		<p class="text-xs text-fade" aria-live="polite">
 			{saving ? 'Saving order…' : 'Drag the grips to reorder. Topics can move between sections.'}
 		</p>
 	</div>
 	{#if error}
-		<p class="mt-4 border-l-[3px] border-hero-rb bg-hero-rb/5 px-4 py-3 text-[13px]" role="alert">
+		<p class="mt-4 border-l-3 border-hero-rb bg-hero-rb/5 px-4 py-3 text-sm" role="alert">
 			{error}
 		</p>
 	{/if}
@@ -199,7 +199,7 @@
 			>
 				<div class="flex items-center gap-2 border-b border-line2 bg-paper-bg/60 px-3 py-2">
 					{@render grip(`Move section ${section.title}`)}
-					<span class="text-[10px] font-extrabold tracking-[0.16em] text-fade uppercase"
+					<span class="text-xs font-extrabold tracking-widest text-fade uppercase"
 						>Section {i + 1}</span
 					>
 					<input
@@ -208,19 +208,19 @@
 						onkeydown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
 						aria-label="Section name"
 						maxlength="200"
-						class="min-w-0 flex-1 border-0 border-b border-transparent bg-transparent px-1 py-1 font-newsreader text-[19px] font-semibold focus:border-ink focus:ring-0"
+						class="min-w-0 flex-1 border-0 border-b border-transparent bg-transparent px-1 py-1 font-newsreader text-xl font-semibold focus:border-ink focus:ring-0"
 					/>
 					<button
 						type="button"
 						onclick={() => removeSection(section)}
 						disabled={sections.length <= 1}
-						class="px-2 text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase hover:text-hero-rb disabled:opacity-30"
+						class="px-2 text-xs font-extrabold tracking-widest text-fade uppercase hover:text-hero-rb disabled:opacity-30"
 						>Delete</button
 					>
 				</div>
 
 				<ul
-					class="min-h-[52px] divide-y divide-line"
+					class="min-h-13 divide-y divide-line"
 					use:dragHandleZone={{ items: section.items, type: 'topic', flipDurationMs: FLIP }}
 					onconsider={(e) => topicsConsider(i, e)}
 					onfinalize={(e) => topicsFinalize(i, e)}
@@ -237,10 +237,10 @@
 							{@render grip(`Move topic ${topic.title}`)}
 							<a
 								href="/classroom/courses/{courseId}/topics/{topic.id}"
-								class="min-w-0 flex-1 truncate text-[15px] font-semibold hover:text-warm"
+								class="min-w-0 flex-1 truncate text-base font-semibold hover:text-warm"
 								>{topic.title}</a
 							>
-							{#if topic.readTime}<span class="hidden text-[12px] text-fade sm:inline"
+							{#if topic.readTime}<span class="hidden text-xs text-fade sm:inline"
 									>{topic.readTime} min</span
 								>{/if}
 							<button
@@ -248,12 +248,12 @@
 								onclick={() => toggleFree(topic)}
 								aria-pressed={topic.isPreview}
 								title="Free to read: anyone can read this topic without buying the course"
-								class="border px-1.5 py-[1px] text-[9px] font-extrabold tracking-[0.14em] uppercase transition-colors {topic.isPreview
+								class="border px-1.5 py-px text-xs font-extrabold tracking-widest uppercase transition-colors {topic.isPreview
 									? 'border-warm bg-warm text-white'
 									: 'border-line2 text-fade hover:border-ink hover:text-ink'}">Free</button
 							>
 							<span
-								class="w-[74px] text-right text-[9px] leading-tight font-extrabold tracking-[0.14em] uppercase {topic.pendingChanges
+								class="w-19 text-right text-xs leading-tight font-extrabold tracking-widest uppercase {topic.pendingChanges
 									? 'text-gold'
 									: topic.publishedAt
 										? 'text-prem'
@@ -286,16 +286,16 @@
 								autofocus
 								placeholder="Topic title"
 								maxlength="200"
-								class="h-[38px] min-w-0 flex-1 border border-line2 px-2.5 text-[14px] focus:border-ink focus:ring-0"
+								class="h-10 min-w-0 flex-1 border border-line2 px-2.5 text-sm focus:border-ink focus:ring-0"
 							/>
 							<button
-								class="bg-ink px-4 text-[10px] font-extrabold tracking-[0.14em] text-paper-bg uppercase hover:bg-warm"
+								class="bg-ink px-4 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm"
 								>Add</button
 							>
 							<button
 								type="button"
 								onclick={() => (adding = null)}
-								class="px-2 text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase hover:text-ink"
+								class="px-2 text-xs font-extrabold tracking-widest text-fade uppercase hover:text-ink"
 								>Cancel</button
 							>
 						</form>
@@ -303,7 +303,7 @@
 						<button
 							type="button"
 							onclick={() => (adding = section.id)}
-							class="py-1 text-[10.5px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+							class="py-1 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 							>+ Add topic</button
 						>
 					{/if}
@@ -315,7 +315,7 @@
 	<button
 		type="button"
 		onclick={addSection}
-		class="mt-5 min-h-[44px] w-full border-[1.5px] border-dashed border-ink/50 text-[10.5px] font-extrabold tracking-[0.16em] uppercase hover:border-ink hover:bg-white"
+		class="mt-5 min-h-11 w-full border-2 border-dashed border-ink/50 text-xs font-extrabold tracking-widest uppercase hover:border-ink hover:bg-white"
 		>+ Add section</button
 	>
 </div>

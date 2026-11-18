@@ -34,21 +34,19 @@
 
 		{#snippet formContent()}
 			{#if form?.success}
-				<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-prem uppercase">
-					Check your email
-				</p>
+				<p class="text-xs font-extrabold tracking-widest text-prem uppercase">Check your email</p>
 				<h1 class="mt-3 {TITLE}">On its way</h1>
-				<p class="mt-4 max-w-[420px] font-newsreader text-[17px] leading-[1.6] text-soft">
+				<p class="mt-4 max-w-md font-newsreader text-lg leading-relaxed text-soft">
 					If an account exists for that email, a reset link is in your inbox. It expires in 30
 					minutes. Nothing after a few minutes? Check your spam folder.
 				</p>
 				<a
 					href="/login"
-					class="mt-8 inline-flex min-h-[48px] items-center gap-2 border border-ink px-6 text-[11px] font-extrabold tracking-[0.18em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+					class="mt-8 inline-flex min-h-12 items-center gap-2 border border-ink px-6 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 					><span aria-hidden="true">←</span> Back to sign in</a
 				>
 			{:else}
-				<p class={KICKER}><span class="text-[8px]" aria-hidden="true">◆</span> Password reset</p>
+				<p class={KICKER}><span class="text-xs" aria-hidden="true">◆</span> Password reset</p>
 				<h1 class="mt-3 {TITLE}">Forgot your password?</h1>
 				<p class={STRAP}>Enter the email on your AGE account and we’ll send a reset link.</p>
 
@@ -73,7 +71,7 @@
 							>Send reset link <span aria-hidden="true">→</span></button
 						>
 					</form>
-					<p class="mt-8 border-t border-line pt-5 font-newsreader text-[14px] text-soft italic">
+					<p class="mt-8 border-t border-line pt-5 font-newsreader text-sm text-soft italic">
 						Remembered it? <a class="{LINK} not-italic" href="/login">Sign in</a>.
 					</p>
 				</div>

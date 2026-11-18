@@ -14,15 +14,15 @@
 
 <div>
 	{#if !compact}
-		<p class="text-[10px] font-extrabold tracking-[0.14em] text-fade uppercase">
+		<p class="text-xs font-extrabold tracking-widest text-fade uppercase">
 			Checklist · {done} of {items.length} done
 		</p>
 	{/if}
 	<ul class="{compact ? '' : 'mt-2'} space-y-1.5">
 		{#each items as item (item.key)}
-			<li class="flex items-start gap-2.5 text-[13px] leading-snug">
+			<li class="flex items-start gap-2.5 text-sm leading-snug">
 				<span
-					class="mt-[1px] flex h-[16px] w-[16px] shrink-0 items-center justify-center text-[10px] font-extrabold {item.done
+					class="mt-px flex h-4 w-4 shrink-0 items-center justify-center text-xs font-extrabold {item.done
 						? 'bg-prem text-white'
 						: 'border border-ink/40'}"
 					aria-hidden="true">{item.done ? '✓' : ''}</span
@@ -37,7 +37,7 @@
 					<a
 						href="{base}/{item.fix}"
 						onclick={() => onfix?.()}
-						class="shrink-0 text-[9.5px] font-extrabold tracking-[0.14em] text-warm uppercase hover:text-ink"
+						class="shrink-0 text-xs font-extrabold tracking-widest text-warm uppercase hover:text-ink"
 						>Fix →</a
 					>
 				{/if}

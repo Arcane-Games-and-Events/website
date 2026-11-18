@@ -31,7 +31,7 @@
 	const audio = $derived(item.audio);
 	const match = $derived(home === 'matches');
 	const verb = $derived(audio ? 'Listen' : 'Watch');
-	const tone = $derived(match ? 'text-warm' : 'text-[#8a6116]');
+	const tone = $derived(match ? 'text-warm' : 'text-gold-deep');
 	const accent = $derived(match ? '#1e40af' : '#c0461f');
 	const kicker = $derived(
 		match
@@ -192,10 +192,10 @@
 	{/if}
 </svelte:head>
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 md:px-8 md:pt-8">
+<div class="mx-auto w-full max-w-page px-5 pt-6 md:px-8 md:pt-8">
 	<a
 		href={back.href}
-		class="st-wide inline-flex items-center gap-2 text-[10px] font-black tracking-[0.14em] uppercase transition-[gap] hover:gap-3 {match
+		class="st-wide inline-flex items-center gap-2 text-xs font-black tracking-widest uppercase transition-[gap] hover:gap-3 {match
 			? 'hover:text-warm'
 			: 'hover:text-studio'}"
 	>
@@ -205,22 +205,20 @@
 </div>
 
 <!-- ============ header ============ -->
-<header
-	class="fp-rise mx-auto w-full max-w-[960px] px-5 pt-7 pb-6 text-center md:px-8 md:pt-9 md:pb-8"
->
+<header class="fp-rise mx-auto w-full max-w-5xl px-5 pt-7 pb-6 text-center md:px-8 md:pt-9 md:pb-8">
 	<p
-		class="flex items-center justify-center gap-2 text-[10px] font-extrabold tracking-[0.22em] uppercase md:text-[10.5px] {tone}"
+		class="flex items-center justify-center gap-2 text-xs font-extrabold tracking-widest uppercase {tone}"
 	>
-		<span class="text-[8px]" aria-hidden="true">◆</span>{kicker}
+		<span class="text-xs" aria-hidden="true">◆</span>{kicker}
 	</p>
 	<h1
-		class="mt-2 font-newsreader text-[36px] leading-[1.0] font-semibold tracking-[-0.02em] [text-wrap:balance] md:mt-3 md:text-[clamp(44px,5.2vw,72px)] md:leading-[0.96]"
+		class="mt-2 font-newsreader text-4xl leading-none font-semibold tracking-tight [text-wrap:balance] md:mt-3 md:text-[clamp(44px,5.2vw,72px)]"
 	>
 		{item.title}
 	</h1>
 	{#if match ? item.player1Name || item.player2Name : item.guests}
 		<p
-			class="mx-auto mt-2.5 max-w-[640px] font-newsreader text-[18px] leading-[1.45] [text-wrap:balance] text-soft italic md:text-[21px]"
+			class="mx-auto mt-2.5 max-w-2xl font-newsreader text-lg leading-normal [text-wrap:balance] text-soft italic md:text-xl"
 		>
 			{match
 				? [item.player1Name, item.player2Name].filter(Boolean).join(' vs ')
@@ -228,9 +226,9 @@
 		</p>
 	{/if}
 	<div
-		class="mt-3.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-2 text-[11px] text-fade md:mt-4"
+		class="mt-3.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-2 text-xs text-fade md:mt-4"
 	>
-		<span class="font-extrabold tracking-[0.12em] text-ink uppercase"
+		<span class="font-extrabold tracking-widest text-ink uppercase"
 			>{match ? 'AGE Library' : 'AGE Studios'}</span
 		>
 		<span aria-hidden="true">·</span>
@@ -244,11 +242,11 @@
 </header>
 
 <!-- ============ player ============ -->
-<figure class="m-0 mx-auto w-full max-w-[1200px] px-5 md:px-8">
+<figure class="m-0 mx-auto w-full max-w-page px-5 md:px-8">
 	{#if data.canWatch && data.playbackId && audio}
 		<div
 			bind:this={audioBox}
-			class="vod-player-wrapper relative grid gap-0 bg-gold text-[#241b07] md:grid-cols-[320px_minmax(0,1fr)]"
+			class="vod-player-wrapper relative grid gap-0 bg-gold text-gold-ink md:grid-cols-[320px_minmax(0,1fr)]"
 		>
 			<span class="st-dots pointer-events-none absolute inset-0" aria-hidden="true"></span>
 			<span class="relative m-3 block aspect-square overflow-hidden bg-ink/15 md:mr-0">
@@ -261,14 +259,14 @@
 						class="absolute inset-0 h-full w-full object-cover"
 					/>
 				{:else}
-					<span class="absolute inset-0 flex items-center justify-center text-[56px] opacity-50"
+					<span class="absolute inset-0 flex items-center justify-center text-6xl opacity-50"
 						>♪</span
 					>
 				{/if}
 			</span>
 			<div class="relative flex flex-col justify-center gap-4 p-6 md:p-8">
-				<p class="text-[10px] font-extrabold tracking-[0.2em] uppercase">◆ Now playing</p>
-				<p class="font-newsreader text-[24px] leading-tight font-semibold md:text-[30px]">
+				<p class="text-xs font-extrabold tracking-widest uppercase">◆ Now playing</p>
+				<p class="font-newsreader text-2xl leading-tight font-semibold md:text-3xl">
 					{item.title}
 				</p>
 				<mux-player
@@ -311,27 +309,27 @@
 				<img
 					src={item.cover?.src || item.still}
 					alt=""
-					class="absolute inset-0 h-full w-full scale-105 object-cover blur-lg brightness-[0.4]"
+					class="absolute inset-0 h-full w-full scale-105 object-cover blur-lg brightness-50"
 				/>
 			{/if}
 			<div
 				class="relative flex items-center justify-center px-5 py-8 md:absolute md:inset-0 md:px-6 md:py-0"
 			>
 				<div
-					class="max-w-[560px] border-[3px] border-double border-paper-bg/80 px-6 py-8 text-center md:px-10 md:py-10"
+					class="max-w-xl border-3 border-double border-paper-bg/80 px-6 py-8 text-center md:px-10 md:py-10"
 				>
 					<span
-						class="mb-3 flex items-center justify-center gap-3 text-[10.5px] font-extrabold tracking-[0.2em] text-prem-light uppercase"
+						class="mb-3 flex items-center justify-center gap-3 text-xs font-extrabold tracking-widest text-prem-light uppercase"
 					>
 						<span aria-hidden="true">◆</span>Premium · Members only<span aria-hidden="true">◆</span>
 					</span>
 					<h3
-						class="m-0 mb-3 font-newsreader text-[clamp(28px,4vw,42px)] leading-[1] font-semibold tracking-[-0.02em] text-white"
+						class="m-0 mb-3 font-newsreader text-[clamp(28px,4vw,42px)] leading-none font-semibold tracking-tight text-white"
 					>
 						{verb} with a membership.
 					</h3>
 					<p
-						class="mx-auto mb-6 max-w-[440px] font-newsreader text-[16px] leading-[1.5] text-white/80 italic"
+						class="mx-auto mb-6 max-w-md font-newsreader text-base leading-normal text-white/80 italic"
 					>
 						{match
 							? 'Every match in the Library is part of AGE Premium, along with the full archive of articles.'
@@ -340,13 +338,13 @@
 					<div class="flex flex-wrap items-center justify-center gap-3">
 						<a
 							href="/premium"
-							class="inline-flex items-center border border-prem bg-prem px-6 py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+							class="inline-flex items-center border border-prem bg-prem px-6 py-3.5 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110"
 							>Become a member</a
 						>
 						{#if !data.user}
 							<a
 								href="/login"
-								class="inline-flex items-center border border-white/60 px-6 py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-white uppercase transition-colors hover:bg-white/10"
+								class="inline-flex items-center border border-white/60 px-6 py-3.5 text-xs font-extrabold tracking-widest text-white uppercase transition-colors hover:bg-white/10"
 								>Sign in</a
 							>
 						{/if}
@@ -359,32 +357,32 @@
 
 <!-- ============ content ============ -->
 <div
-	class="mx-auto grid w-full max-w-[1200px] grid-cols-1 gap-12 px-5 pt-10 pb-16 md:px-8 md:pt-14 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-16"
+	class="mx-auto grid w-full max-w-page grid-cols-1 gap-12 px-5 pt-10 pb-16 md:px-8 md:pt-14 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-16"
 >
 	<section class="min-w-0">
 		{#if match && (item.player1Name || item.player2Name || item.player1Hero || item.player2Hero)}
 			<div class="relative bg-warm p-6 text-white md:p-7">
 				<span class="st-dots pointer-events-none absolute inset-0" aria-hidden="true"></span>
 				<span
-					class="relative flex items-center gap-2 text-[10px] font-extrabold tracking-[0.18em] uppercase"
+					class="relative flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase"
 				>
-					<span class="text-[8px]" aria-hidden="true">◆</span> The matchup
-					{#if item.event?.format}<span class="ml-auto tracking-[0.14em] opacity-80"
+					<span class="text-xs" aria-hidden="true">◆</span> The matchup
+					{#if item.event?.format}<span class="ml-auto tracking-widest opacity-80"
 							>{item.event.format}</span
 						>{/if}
 				</span>
 				<div class="relative mt-3.5 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
 					{#each [[item.player1Name, item.player1Hero, ''], [item.player2Name, item.player2Hero, 'text-right']] as [name, hero, align], n (n)}
-						{#if n === 1}<span class="st-wide text-[20px] font-black uppercase opacity-80">vs</span
+						{#if n === 1}<span class="st-wide text-xl font-black uppercase opacity-80">vs</span
 							>{/if}
 						<div class="min-w-0 {align}">
 							<div
-								class="truncate font-newsreader text-[clamp(20px,2.4vw,28px)] leading-[1.1] font-semibold"
+								class="truncate font-newsreader text-[clamp(20px,2.4vw,28px)] leading-none font-semibold"
 							>
 								{name || '—'}
 							</div>
 							{#if hero}<div
-									class="mt-1.5 text-[10px] font-extrabold tracking-[0.14em] uppercase opacity-85"
+									class="mt-1.5 text-xs font-extrabold tracking-widest uppercase opacity-85"
 								>
 									{hero}
 								</div>{/if}
@@ -396,14 +394,12 @@
 
 		{#if item.description}
 			<div class={match ? 'mt-9 border-t border-line pt-6' : ''}>
-				<span
-					class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.18em] uppercase"
-				>
-					<span class="text-[8px] {tone}" aria-hidden="true">◆</span>
+				<span class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase">
+					<span class="text-xs {tone}" aria-hidden="true">◆</span>
 					{match ? 'About this match' : 'Show notes'}
 				</span>
 				<div
-					class="mt-3.5 font-newsreader text-[19px] leading-[1.55] whitespace-pre-line first-letter:float-left first-letter:mt-[8px] first-letter:mr-3 first-letter:text-[64px] first-letter:leading-[0.7] first-letter:font-semibold {match
+					class="mt-3.5 font-newsreader text-xl leading-normal whitespace-pre-line first-letter:float-left first-letter:mt-2 first-letter:mr-3 first-letter:text-6xl first-letter:leading-none first-letter:font-semibold {match
 						? 'first-letter:text-warm'
 						: 'first-letter:text-studio'}"
 				>
@@ -420,10 +416,9 @@
 				{#each [[data.prev, '← Previous episode', ''], [data.next, 'Next episode →', 'sm:text-right']] as [ep, label, align], n (n)}
 					{#if ep}
 						<a href={ep.href} class="group block bg-paper-bg p-5 {align} hover:bg-paper">
-							<span class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
-								>{label}</span
+							<span class="text-xs font-extrabold tracking-widest text-fade uppercase">{label}</span
 							>
-							<span class="mt-1.5 block font-newsreader text-[18px] leading-tight font-semibold"
+							<span class="mt-1.5 block font-newsreader text-lg leading-tight font-semibold"
 								><span class="fp-ul">{ep.title}</span></span
 							>
 						</a>
@@ -437,23 +432,21 @@
 
 	<aside class="min-w-0 space-y-9">
 		{#if !data.member}
-			<div class="border-[3px] border-double border-ink bg-paper px-6 py-7 text-center">
+			<div class="border-3 border-double border-ink bg-paper px-6 py-7 text-center">
 				<span
-					class="flex items-center justify-center gap-2 text-[10px] font-extrabold tracking-[0.2em] text-prem uppercase"
+					class="flex items-center justify-center gap-2 text-xs font-extrabold tracking-widest text-prem uppercase"
 				>
 					<span aria-hidden="true">◆</span>Powered by members<span aria-hidden="true">◆</span>
 				</span>
-				<h3
-					class="mt-3 font-newsreader text-[26px] leading-[1.08] font-semibold [text-wrap:balance]"
-				>
+				<h3 class="mt-3 font-newsreader text-2xl leading-none font-semibold [text-wrap:balance]">
 					Every match and episode, unlocked.
 				</h3>
-				<p class="mt-2.5 font-newsreader text-[15px] leading-[1.5] text-soft italic">
+				<p class="mt-2.5 font-newsreader text-base leading-normal text-soft italic">
 					Members get every match and episode, Premium articles and 10% off every Academy guide.
 				</p>
 				<a
 					href="/premium"
-					class="mt-5 inline-flex w-full items-center justify-center border border-prem bg-prem py-3.5 text-[11px] font-extrabold tracking-[0.12em] text-white uppercase transition-[filter] hover:brightness-110"
+					class="mt-5 inline-flex w-full items-center justify-center border border-prem bg-prem py-3.5 text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110"
 					>Become a member</a
 				>
 			</div>
@@ -461,17 +454,14 @@
 
 		{#if data.related.length}
 			<div>
-				<div class="mb-1 flex items-baseline justify-between border-b-[3px] border-ink pb-2.5">
-					<span
-						class="flex items-center gap-2 text-[10.5px] font-extrabold tracking-[0.18em] uppercase"
-					>
-						<span class="text-[8px] {tone}" aria-hidden="true">◆</span>
+				<div class="mb-1 flex items-baseline justify-between border-b-3 border-ink pb-2.5">
+					<span class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase">
+						<span class="text-xs {tone}" aria-hidden="true">◆</span>
 						{item.show ? `More from ${item.show.name}` : match ? 'More matches' : 'Watch next'}
 					</span>
 					<a
 						href={archive.href}
-						class="text-[10px] font-extrabold tracking-[0.14em] uppercase hover:tracking-[0.18em]"
-						>All →</a
+						class="text-xs font-extrabold tracking-wider uppercase hover:tracking-widest">All →</a
 					>
 				</div>
 				<div class="divide-y divide-line">
@@ -483,11 +473,11 @@
 							<MediaFrame item={r} sizes="112px" />
 							<span class="min-w-0">
 								<span
-									class="line-clamp-2 block font-newsreader text-[16px] leading-[1.2] font-semibold"
+									class="line-clamp-2 block font-newsreader text-base leading-tight font-semibold"
 									><span class="fp-ul">{r.title}</span></span
 								>
 								{#if byline(r)}<span
-										class="mt-1 block truncate text-[10px] font-extrabold tracking-[0.12em] text-fade uppercase"
+										class="mt-1 block truncate text-xs font-extrabold tracking-widest text-fade uppercase"
 										>{byline(r)}</span
 									>{/if}
 							</span>
@@ -499,15 +489,15 @@
 
 		<a
 			href={archive.href}
-			class="group flex items-center justify-between border-[1.5px] border-ink p-4 transition-colors hover:bg-ink hover:text-paper-bg"
+			class="group flex items-center justify-between border-2 border-ink p-4 transition-colors hover:bg-ink hover:text-paper-bg"
 		>
 			<span>
-				<span class="block font-newsreader text-[17px] font-semibold">{archive.label}</span>
-				<span class="mt-0.5 block text-[10px] font-extrabold tracking-[0.14em] uppercase opacity-60"
+				<span class="block font-newsreader text-lg font-semibold">{archive.label}</span>
+				<span class="mt-0.5 block text-xs font-extrabold tracking-widest uppercase opacity-60"
 					>{archive.note}</span
 				>
 			</span>
-			<span class="text-[16px] transition-transform group-hover:translate-x-0.5">→</span>
+			<span class="text-base transition-transform group-hover:translate-x-0.5">→</span>
 		</a>
 	</aside>
 </div>
@@ -529,28 +519,28 @@
 					/>{/if}
 			</span>
 			<span class="min-w-0 flex-1">
-				<span class="block text-[8.5px] font-extrabold tracking-[0.16em] text-[#8a6116] uppercase"
+				<span class="block text-xs font-extrabold tracking-widest text-gold-deep uppercase"
 					>Now playing</span
 				>
-				<span class="block truncate font-newsreader text-[15px] font-semibold">{item.title}</span>
+				<span class="block truncate font-newsreader text-base font-semibold">{item.title}</span>
 			</span>
 			<button
 				type="button"
 				onclick={() => skip(-15)}
 				aria-label="Back 15 seconds"
-				class="h-11 w-11 border border-ink/30 text-[11px] font-bold tabular-nums">−15</button
+				class="h-11 w-11 border border-ink/30 text-xs font-bold tabular-nums">−15</button
 			>
 			<button
 				type="button"
 				onclick={toggle}
 				aria-label={paused ? 'Play' : 'Pause'}
-				class="h-11 w-11 bg-ink text-[14px] text-paper-bg">{paused ? '▶' : '❚❚'}</button
+				class="h-11 w-11 bg-ink text-sm text-paper-bg">{paused ? '▶' : '❚❚'}</button
 			>
 			<button
 				type="button"
 				onclick={() => skip(30)}
 				aria-label="Forward 30 seconds"
-				class="h-11 w-11 border border-ink/30 text-[11px] font-bold tabular-nums">+30</button
+				class="h-11 w-11 border border-ink/30 text-xs font-bold tabular-nums">+30</button
 			>
 		</div>
 	</div>

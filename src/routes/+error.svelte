@@ -70,14 +70,12 @@
 		rest of the site's display type; status colors stay subtle so
 		the page reads as a quiet correction notice, not a panic page.
 	-->
-	<section class="relative overflow-hidden bg-paper px-14 py-[80px]">
+	<section class="relative overflow-hidden bg-paper px-14 py-20">
 		<!-- thin top rule, cap-aligned -->
-		<div class="mx-auto w-full max-w-[820px]">
+		<div class="mx-auto w-full max-w-3xl">
 			<div class="flex items-center justify-center gap-4">
 				<span class="h-px flex-1 bg-line2"></span>
-				<span
-					class="font-mono-system text-[10.5px] font-extrabold tracking-[0.22em] text-accent uppercase"
-				>
+				<span class="font-mono-system text-xs font-extrabold tracking-widest text-accent uppercase">
 					Status {status} · {copy.eyebrow}
 				</span>
 				<span class="h-px flex-1 bg-line2"></span>
@@ -85,30 +83,28 @@
 		</div>
 
 		<!-- Main centered block -->
-		<div
-			class="relative mx-auto mt-[42px] flex w-full max-w-[820px] flex-col items-center text-center"
-		>
+		<div class="relative mx-auto mt-11 flex w-full max-w-3xl flex-col items-center text-center">
 			<!-- Lead numeral. Subtle accent overlay rule beneath it gives
 				 the masthead a printed-page feel. -->
 			<div class="relative">
 				<div
-					class="font-newsreader text-[clamp(140px,18vw,232px)] leading-[0.86] font-semibold tracking-[-0.03em] text-ink tabular-nums"
+					class="font-newsreader text-[clamp(140px,18vw,232px)] leading-none font-semibold tracking-tight text-ink tabular-nums"
 				>
 					{status}
 				</div>
 				<div
-					class="absolute right-0 -bottom-2 left-0 mx-auto h-[3px] w-[64%] bg-accent"
+					class="absolute right-0 -bottom-2 left-0 mx-auto h-1 w-[64%] bg-accent"
 					aria-hidden="true"
 				></div>
 			</div>
 
 			<h1
-				class="mt-[34px] font-newsreader text-[clamp(30px,4vw,46px)] leading-[1.04] font-semibold tracking-[-0.015em]"
+				class="mt-9 font-newsreader text-[clamp(30px,4vw,46px)] leading-none font-semibold tracking-tight"
 			>
 				{copy.headline}
 			</h1>
 
-			<p class="mt-5 max-w-[540px] text-[16.5px] leading-[1.55] text-soft">
+			<p class="mt-5 max-w-lg text-base leading-normal text-soft">
 				{copy.lede || detail || 'An unexpected error occurred.'}
 			</p>
 
@@ -117,14 +113,14 @@
 			<div class="mt-9 flex flex-wrap items-center justify-center gap-3">
 				<a
 					href="/"
-					class="inline-flex items-center gap-2 border-[1.5px] border-ink bg-ink px-6 py-[14px] text-[12px] font-bold tracking-[0.06em] text-paper-bg uppercase transition-[filter] hover:brightness-110"
+					class="inline-flex items-center gap-2 border-2 border-ink bg-ink px-6 py-3.5 text-xs font-bold tracking-wider text-paper-bg uppercase transition hover:brightness-110"
 				>
 					← Return to the front page
 				</a>
 				<button
 					type="button"
 					onclick={goBack}
-					class="inline-flex items-center gap-2 border-[1.5px] border-ink bg-transparent px-6 py-[14px] text-[12px] font-bold tracking-[0.06em] text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+					class="inline-flex items-center gap-2 border-2 border-ink bg-transparent px-6 py-3.5 text-xs font-bold tracking-wider text-ink uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 				>
 					Go back
 				</button>
@@ -134,7 +130,7 @@
 				 default copy is intentionally vague; the framework message
 				 is the only useful pointer for an unknown status. -->
 			{#if status !== 404 && status !== 403 && status !== 500 && detail && detail !== copy.lede}
-				<p class="mt-6 max-w-[540px] font-mono-system text-[11px] tracking-[0.04em] text-fade">
+				<p class="mt-6 max-w-lg font-mono-system text-xs tracking-wider text-fade">
 					{detail}
 				</p>
 			{/if}
@@ -143,15 +139,15 @@
 		<!-- Quick-link palette — paper-bg card with serif "Try elsewhere"
 			 label and a row of accent-on-hover destinations. -->
 		<div
-			class="mx-auto mt-[60px] flex w-full max-w-[820px] flex-col items-center border border-line2 bg-paper-bg px-7 py-7"
+			class="mx-auto mt-15 flex w-full max-w-3xl flex-col items-center border border-line2 bg-paper-bg px-7 py-7"
 		>
 			<span
-				class="mb-4 font-mono-system text-[10px] font-extrabold tracking-[0.18em] text-fade uppercase"
+				class="mb-4 font-mono-system text-xs font-extrabold tracking-widest text-fade uppercase"
 			>
 				Or try one of these
 			</span>
 			<nav
-				class="flex flex-wrap items-center justify-center gap-x-2 gap-y-2 text-[14px] font-semibold"
+				class="flex flex-wrap items-center justify-center gap-x-2 gap-y-2 text-sm font-semibold"
 				aria-label="Quick links"
 			>
 				{#each QUICK_LINKS as link, i (link.href)}

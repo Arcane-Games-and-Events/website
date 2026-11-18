@@ -23,7 +23,7 @@
 </script>
 
 {#if !s}
-	<p class="font-newsreader text-[17px] text-soft italic">The site report couldn't be loaded.</p>
+	<p class="font-newsreader text-lg text-soft italic">The site report couldn't be loaded.</p>
 {:else if !s.available}
 	<Migration />
 {:else}
@@ -56,7 +56,7 @@
 	/>
 
 	{#if !s.figures.pageviews}
-		<p class="mt-8 font-newsreader text-[17px] text-soft italic">
+		<p class="mt-8 font-newsreader text-lg text-soft italic">
 			No page views recorded in the last {data.range} days yet. Numbers appear as people use the site.
 		</p>
 	{:else}
@@ -76,15 +76,15 @@
 						<ol class="space-y-3">
 							{#each steps as st (st.key)}
 								<li>
-									<div class="flex items-baseline justify-between gap-3 text-[13px]">
+									<div class="flex items-baseline justify-between gap-3 text-sm">
 										<span>{st.label}</span>
 										<span class="tabular-nums"
 											><strong>{fmt(st.n)}</strong>{#if st.rate != null}<span
-													class="ml-2 text-[11px] text-fade">{pct(st.rate, 1)} of previous</span
+													class="ml-2 text-xs text-fade">{pct(st.rate, 1)} of previous</span
 												>{/if}</span
 										>
 									</div>
-									<div class="mt-1 h-[10px] bg-line" aria-hidden="true">
+									<div class="mt-1 h-2.5 bg-line" aria-hidden="true">
 										<div class="h-full" style="width: {st.w}%; background: {PREM};"></div>
 									</div>
 								</li>
@@ -93,10 +93,10 @@
 					{/if}
 					{#if fn?.bySource?.length}
 						<div class="mt-6 overflow-x-auto">
-							<table class="w-full text-[12.5px] tabular-nums">
+							<table class="w-full text-xs tabular-nums">
 								<thead>
 									<tr
-										class="border-b border-line2 text-left text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase"
+										class="border-b border-line2 text-left text-xs font-extrabold tracking-widest text-fade uppercase"
 									>
 										<th class="py-2 pr-3 font-extrabold">Source</th>
 										<th class="py-2 pr-3 text-right font-extrabold">Visits</th>
@@ -117,7 +117,7 @@
 											<td
 												class="py-2 pr-3 text-right font-semibold {r.subscribed ? 'text-prem' : ''}"
 												>{fmt(r.subscribed)}{#if r.sessions}<span
-														class="ml-1 text-[10.5px] font-normal text-fade"
+														class="ml-1 text-xs font-normal text-fade"
 														>{pct(r.subscribed / r.sessions, 1)}</span
 													>{/if}</td
 											>
@@ -172,7 +172,7 @@
 		</div>
 	{/if}
 
-	<p class="mt-14 border-t border-line2 pt-5 text-[12px] text-fade">
+	<p class="mt-14 border-t border-line2 pt-5 text-xs text-fade">
 		Staff visits (anyone with Desk access) are left out. A visit is a browser session that ends
 		after 30 minutes of inactivity. “Joined” counts sessions that ended in a paid membership.
 	</p>

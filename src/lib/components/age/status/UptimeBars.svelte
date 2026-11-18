@@ -26,18 +26,14 @@
 	};
 </script>
 
-<div
-	class="flex h-[30px] items-stretch gap-[2px]"
-	role="list"
-	aria-label="Last {shown.length} days"
->
+<div class="flex h-8 items-stretch gap-0.5" role="list" aria-label="Last {shown.length} days">
 	{#each shown as b (b.day)}
 		<span
 			role="listitem"
 			tabindex="-1"
 			title={label(b)}
 			aria-label={label(b)}
-			class="min-w-[2px] flex-1 transition-opacity hover:opacity-70"
+			class="min-w-0.5 flex-1 transition-opacity hover:opacity-70"
 			style="background: {barTone(b)}"
 		></span>
 	{/each}

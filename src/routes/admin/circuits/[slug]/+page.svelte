@@ -66,7 +66,7 @@
 	/>{/if}
 {#if form?.saved}<AdminNotice tone="success" message={form.saved} />{/if}
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-6 pb-20 md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-6 pb-20 md:px-8">
 	<div class="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
 		<div class="flex min-w-0 flex-col gap-8">
 			<!-- the circuit's picture -->
@@ -84,14 +84,14 @@
 						></div>
 						<div class="absolute bottom-0 left-0 p-4 text-white">
 							<span
-								class="ao-cond inline-flex h-[34px] min-w-[40px] items-center justify-center px-1.5 text-[18px] leading-none font-black"
+								class="ao-cond inline-flex h-9 min-w-10 items-center justify-center px-1.5 text-lg leading-none font-black"
 								style="background: {c.color}">{c.short}</span
 							>
-							<p class="ao-cond mt-2 text-[30px] leading-none font-black uppercase">{c.name}</p>
+							<p class="ao-cond mt-2 text-3xl leading-none font-black uppercase">{c.name}</p>
 						</div>
 						{#if preview}
 							<span
-								class="absolute top-3 left-3 bg-gold px-2 py-1 text-[9px] font-extrabold tracking-[0.18em] text-ink uppercase"
+								class="absolute top-3 left-3 bg-gold px-2 py-1 text-xs font-extrabold tracking-widest text-ink uppercase"
 								>Preview · not saved</span
 							>
 						{/if}
@@ -99,11 +99,11 @@
 					<div class="flex flex-col justify-between gap-4 p-5">
 						<div>
 							<p class={ui.label}>Circuit picture</p>
-							<p class="mt-2 text-[13px] leading-relaxed text-soft">
+							<p class="mt-2 text-sm leading-relaxed text-soft">
 								Shown on this circuit’s event cards, the AGE Open pages and the homepage. Wide
 								pictures work best; it’s cropped to 16:9 around the most interesting part.
 							</p>
-							<p class="mt-2 text-[11.5px] text-fade">
+							<p class="mt-2 text-xs text-fade">
 								{c.imageUrl
 									? 'Uploaded picture'
 									: 'No upload yet: the built-in picture is showing.'}
@@ -198,19 +198,18 @@
 					class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden"
 				>
 					<span>
-						<span class="block text-[10px] font-extrabold tracking-[0.2em] text-hero-rb uppercase"
+						<span class="block text-xs font-extrabold tracking-widest text-hero-rb uppercase"
 							>Danger zone</span
 						>
-						<span class="mt-0.5 block text-[13px] text-soft"
+						<span class="mt-0.5 block text-sm text-soft"
 							>Take this circuit off the site, or delete it</span
 						>
 					</span>
-					<span
-						class="text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase group-open:hidden"
+					<span class="text-xs font-extrabold tracking-widest text-soft uppercase group-open:hidden"
 						>Show</span
 					>
 					<span
-						class="hidden text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase group-open:inline"
+						class="hidden text-xs font-extrabold tracking-widest text-soft uppercase group-open:inline"
 						>Hide</span
 					>
 				</summary>
@@ -223,12 +222,12 @@
 					<div class="flex flex-wrap items-start justify-between gap-4">
 						<div class="min-w-0 flex-1">
 							<p class="flex items-center gap-2.5">
-								<span class="text-[10px] font-extrabold tracking-[0.2em] uppercase">Status</span>
+								<span class="text-xs font-extrabold tracking-widest uppercase">Status</span>
 								<span class="{ui.pill} {c.active ? ui.pillTone.active : ui.pillTone.inactive}"
 									>{c.active ? 'Active' : 'Inactive'}</span
 								>
 							</p>
-							<p class="mt-1.5 text-[13px] leading-relaxed text-soft">
+							<p class="mt-1.5 text-sm leading-relaxed text-soft">
 								{c.active
 									? 'On the AGE Open’s circuit lists, filters and the homepage.'
 									: 'Hidden from the AGE Open’s circuit lists, filters and the homepage. Its events, standings and stores are kept.'}
@@ -238,7 +237,7 @@
 							<button
 								type="button"
 								onclick={() => (toggling = true)}
-								class="h-[38px] shrink-0 border px-4 text-[10px] font-extrabold tracking-[0.16em] uppercase transition-colors {c.active
+								class="h-10 shrink-0 border px-4 text-xs font-extrabold tracking-widest uppercase transition-colors {c.active
 									? 'border-hero-rb/40 text-hero-rb hover:bg-hero-rb hover:text-white'
 									: 'border-line2 hover:border-ink'}"
 								>{c.active ? 'Make inactive…' : 'Make active again…'}</button
@@ -249,9 +248,9 @@
 						<form
 							method="POST"
 							action="?/active"
-							class="mt-4 border-l-[3px] px-4 py-3.5 {c.active
-								? 'border-hero-rb bg-hero-rb/[0.05]'
-								: 'border-prem bg-prem/[0.06]'}"
+							class="mt-4 border-l-3 px-4 py-3.5 {c.active
+								? 'border-hero-rb bg-hero-rb/5'
+								: 'border-prem bg-prem/5'}"
 							use:enhance={({ cancel }) => {
 								const ask = c.active
 									? `Last check: take ${c.name} off the AGE Open?`
@@ -268,7 +267,7 @@
 						>
 							<input type="hidden" name="active" value={c.active ? 'false' : 'true'} />
 							<input type="hidden" name="confirmed" value="yes" />
-							<p class="text-[13.5px] leading-relaxed">
+							<p class="text-sm leading-relaxed">
 								{#if c.active}
 									<b>Make {c.name} inactive?</b> It disappears from the AGE Open’s circuit lists, filters
 									and the homepage straight away. Its events, standings and stores stay as they are,
@@ -293,25 +292,25 @@
 
 					<div class="my-5 border-t border-hero-rb/20"></div>
 
-					<p class="mb-2 text-[10px] font-extrabold tracking-[0.2em] uppercase">Delete</p>
+					<p class="mb-2 text-xs font-extrabold tracking-widest uppercase">Delete</p>
 					{#if blockers.length}
-						<p class="text-[13.5px] leading-relaxed">
+						<p class="text-sm leading-relaxed">
 							<b>{c.name} can’t be deleted.</b>
 							It still has {blockers.map(([n, w]) => `${n} ${w}${n === 1 ? '' : 's'}`).join(', ')},
 							which would be left pointing at a circuit that no longer exists.
 						</p>
-						<p class="mt-2 text-[13px] leading-relaxed text-soft">
+						<p class="mt-2 text-sm leading-relaxed text-soft">
 							To take it off the site, make it inactive above. It disappears from public pages and
 							its history stays.{#if data.stores.length}
 								Stores have to be moved to another circuit or removed before it could ever be
 								deleted.{/if}
 						</p>
 					{:else}
-						<p class="text-[13.5px] leading-relaxed">
+						<p class="text-sm leading-relaxed">
 							This removes <b>{c.name}</b> and its picture for good. It has no stores, events or
 							standings, so nothing else is affected. <b>This can’t be undone.</b>
 						</p>
-						<p class="mt-1.5 text-[12.5px] text-soft">
+						<p class="mt-1.5 text-xs text-soft">
 							Only want it off the site for now? Make it inactive above instead.
 						</p>
 						<form
@@ -341,10 +340,10 @@
 									autocomplete="off"
 									spellcheck="false"
 									placeholder={c.name}
-									class="{ui.input} max-w-[360px] bg-white"
+									class="{ui.input} max-w-sm bg-white"
 								/>
 							</div>
-							<label class="flex items-start gap-2.5 text-[13px]">
+							<label class="flex items-start gap-2.5 text-sm">
 								<input
 									type="checkbox"
 									name="understood"
@@ -371,12 +370,12 @@
 							href="/admin/stores/{s.slug}"
 							class="flex items-baseline justify-between gap-3 py-2.5 hover:text-warm"
 						>
-							<span class="truncate font-newsreader text-[15.5px] font-semibold">{s.name}</span>
+							<span class="truncate font-newsreader text-base font-semibold">{s.name}</span>
 							{#if !s.active}<span class={ui.note}>inactive</span>{/if}
 						</a>
 					</li>
 				{:else}
-					<li class="py-3 text-[13px] text-soft italic">None yet.</li>
+					<li class="py-3 text-sm text-soft italic">None yet.</li>
 				{/each}
 			</ul>
 			<a href="/admin/stores/new?circuit={c.slug}" class="mt-4 inline-block {ui.textAction}"

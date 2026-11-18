@@ -146,7 +146,7 @@
 						heroError = '';
 						if (key === 'library' && lib.q) load();
 					}}
-					class="h-[40px] flex-1 text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors {source ===
+					class="h-10 flex-1 text-xs font-extrabold tracking-widest uppercase transition-colors {source ===
 					key
 						? 'bg-ink text-paper-bg'
 						: 'bg-paper-bg text-soft hover:text-ink'}">{label}</button
@@ -159,10 +159,10 @@
 				bind:value={lib.q}
 				oninput={onSearch}
 				placeholder={source === 'heroes' ? 'Search heroes' : 'Search by name, alt text or credit'}
-				class="h-[42px] min-w-0 flex-1 basis-[220px] border border-line2 bg-white px-3 text-[14px] text-ink placeholder:text-fade/70 focus:border-ink focus:ring-0 focus:outline-none"
+				class="h-11 min-w-0 flex-1 basis-55 border border-line2 bg-white px-3 text-sm text-ink placeholder:text-fade/70 focus:border-ink focus:ring-0 focus:outline-none"
 			/>
 			{#if source === 'heroes'}
-				<span class="text-[12px] text-fade"
+				<span class="text-xs text-fade"
 					>{heroes.length}
 					{heroes.length === 1 ? 'hero' : 'heroes'} · art © Legend Story Studios</span
 				>
@@ -176,8 +176,7 @@
 								lib.older = key;
 								load();
 							}}
-							class="h-[42px] px-3 text-[10px] font-extrabold tracking-[0.12em] uppercase {lib.older ===
-							key
+							class="h-11 px-3 text-xs font-extrabold tracking-widest uppercase {lib.older === key
 								? 'bg-ink text-paper-bg'
 								: 'bg-paper-bg text-soft hover:text-ink'}">{label}</button
 						>
@@ -193,8 +192,7 @@
 								lib.scope = /** @type {any} */ (key);
 								load();
 							}}
-							class="h-[42px] px-3 text-[10px] font-extrabold tracking-[0.12em] uppercase {lib.scope ===
-							key
+							class="h-11 px-3 text-xs font-extrabold tracking-widest uppercase {lib.scope === key
 								? 'bg-ink text-paper-bg'
 								: 'bg-paper-bg text-soft hover:text-ink'}">{label}</button
 						>
@@ -205,7 +203,7 @@
 				type="button"
 				hidden={source === 'heroes'}
 				onclick={() => fileEl?.click()}
-				class="h-[42px] border-[1.5px] border-ink px-4 text-[10px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+				class="h-11 border-2 border-ink px-4 text-xs font-extrabold tracking-widest uppercase transition-colors hover:bg-ink hover:text-paper-bg"
 				>Upload</button
 			>
 			<input
@@ -222,7 +220,7 @@
 		</div>
 
 		<div class="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-			<div class="max-h-[58vh] min-h-[240px] overflow-y-auto pr-1">
+			<div class="max-h-[58vh] min-h-60 overflow-y-auto pr-1">
 				{#if source === 'heroes'}
 					{#if heroes.length}
 						<ul class="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
@@ -241,20 +239,16 @@
 												src={h.src}
 												alt=""
 												loading="lazy"
-												class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+												class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
 											/>
 										</span>
-										<span class="block truncate px-1.5 py-1 text-[12px] font-semibold"
-											>{h.name}</span
-										>
+										<span class="block truncate px-1.5 py-1 text-xs font-semibold">{h.name}</span>
 									</button>
 								</li>
 							{/each}
 						</ul>
 					{:else}
-						<p
-							class="border border-dashed border-line2 px-6 py-12 text-center text-[14px] text-soft"
-						>
+						<p class="border border-dashed border-line2 px-6 py-12 text-center text-sm text-soft">
 							No hero matches that search.
 						</p>
 					{/if}
@@ -262,7 +256,7 @@
 					{#if lib.error}<p class={ui.error}>{lib.error}</p>{/if}
 					{#if lib.loaded && !lib.items.length && !lib.uploads.length}
 						<div class="border border-dashed border-line2 px-6 py-12 text-center">
-							<p class="font-newsreader text-[18px] font-semibold">
+							<p class="font-newsreader text-lg font-semibold">
 								{lib.q
 									? 'No images match that search.'
 									: lib.older
@@ -271,7 +265,7 @@
 											? `No images in this ${place} yet.`
 											: 'No images yet.'}
 							</p>
-							<p class="mt-1 text-[13px] text-fade">Upload one, or drag files here.</p>
+							<p class="mt-1 text-sm text-fade">Upload one, or drag files here.</p>
 						</div>
 					{:else}
 						<MediaGrid
@@ -287,7 +281,7 @@
 									type="button"
 									onclick={more}
 									disabled={lib.loading}
-									class="h-10 border border-line2 px-5 text-[10px] font-extrabold tracking-[0.12em] uppercase hover:border-ink"
+									class="h-10 border border-line2 px-5 text-xs font-extrabold tracking-widest uppercase hover:border-ink"
 									>{lib.loading ? 'Loading…' : 'Show more'}</button
 								>
 							</div>
@@ -300,14 +294,14 @@
 				{#if source === 'heroes'}
 					{#if pickedHero}
 						<img src={pickedHero.src} alt="" class="block aspect-video w-full object-cover" />
-						<p class="mt-3 font-newsreader text-[18px] font-semibold">{pickedHero.name}</p>
-						<p class="mt-1 text-[12.5px] leading-snug text-soft">
+						<p class="mt-3 font-newsreader text-lg font-semibold">{pickedHero.name}</p>
+						<p class="mt-1 text-xs leading-snug text-soft">
 							A copy goes into your images{place ? ` for this ${place}` : ''}, with “{pickedHero.name}”
 							as its alt text and the credit “Art © Legend Story Studios”. You can change both
 							after.
 						</p>
 					{:else}
-						<p class="py-6 text-[13px] leading-snug text-fade">
+						<p class="py-6 text-sm leading-snug text-fade">
 							Choose a hero to use their art. It’s added to your images, ready to use.
 						</p>
 					{/if}
@@ -330,7 +324,7 @@
 						}}
 					/>
 				{:else}
-					<p class="py-6 text-[13px] leading-snug text-fade">
+					<p class="py-6 text-sm leading-snug text-fade">
 						Choose an image to see its details, or upload a new one. You can add alt text and a
 						credit before using it.
 					</p>
@@ -340,9 +334,9 @@
 
 		{#if dragging}
 			<div
-				class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center border-[3px] border-dashed border-ink bg-paper-bg/90"
+				class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center border-3 border-dashed border-ink bg-paper-bg/90"
 			>
-				<p class="font-newsreader text-[22px] font-semibold">Drop to upload</p>
+				<p class="font-newsreader text-2xl font-semibold">Drop to upload</p>
 			</div>
 		{/if}
 	</div>

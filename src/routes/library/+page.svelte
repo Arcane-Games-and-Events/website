@@ -41,14 +41,14 @@
 {#snippet premiumTile(cls)}<LibraryPremiumTile class={cls} />{/snippet}
 
 {#snippet sectionHead(kicker, title, href, label)}
-	<header class="flex items-end justify-between gap-4 border-b-[3px] border-ink pb-3">
+	<header class="flex items-end justify-between gap-4 border-b-3 border-ink pb-3">
 		<div>
-			<p class="font-libre text-[10.5px] font-extrabold tracking-[0.22em] text-warm uppercase">
+			<p class="font-libre text-xs font-extrabold tracking-widest text-warm uppercase">
 				<span aria-hidden="true">◆</span>
 				{kicker}
 			</p>
 			<h2
-				class="mt-1.5 font-newsreader text-[32px] leading-none font-semibold tracking-[-0.02em] md:text-[42px]"
+				class="mt-1.5 font-newsreader text-3xl leading-none font-semibold tracking-tight md:text-5xl"
 			>
 				{title}
 			</h2>
@@ -56,7 +56,7 @@
 		{#if href}
 			<a
 				{href}
-				class="group shrink-0 font-libre text-[11px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:text-warm"
+				class="group shrink-0 font-libre text-xs font-extrabold tracking-widest uppercase transition-colors hover:text-warm"
 				>{label}
 				<span class="inline-block transition-transform group-hover:translate-x-1">→</span></a
 			>
@@ -73,7 +73,7 @@
 
 	<div class="bg-paper-bg text-ink">
 		<div
-			class="mx-auto w-full max-w-[1200px] space-y-20 px-5 pt-12 pb-20 md:space-y-28 md:px-8 md:pt-16"
+			class="mx-auto w-full max-w-page space-y-20 px-5 pt-12 pb-20 md:space-y-28 md:px-8 md:pt-16"
 		>
 			<!-- ============ the latest, as a mosaic ============ -->
 			{#if latest.length}
@@ -94,7 +94,7 @@
 		<!-- ============ the filmstrip of matches ============ -->
 		{#if data.matches.length}
 			<section use:reveal class="border-y border-line2 bg-paper py-14 md:py-16">
-				<div class="mx-auto w-full max-w-[1200px] px-5 md:px-8">
+				<div class="mx-auto w-full max-w-page px-5 md:px-8">
 					{@render sectionHead(
 						'From AGE Open',
 						'Matches to watch',
@@ -103,7 +103,7 @@
 					)}
 				</div>
 				<ul
-					class="st-rail mx-auto mt-8 flex w-full max-w-[1200px] snap-x snap-mandatory scroll-px-5 gap-5 overflow-x-auto px-5 pb-2 md:scroll-px-8 md:gap-6 md:px-8"
+					class="st-rail mx-auto mt-8 flex w-full max-w-page snap-x snap-mandatory scroll-px-5 gap-5 overflow-x-auto px-5 pb-2 md:scroll-px-8 md:gap-6 md:px-8"
 					aria-label="Matches"
 				>
 					{#each data.matches as item (item.id)}
@@ -115,7 +115,7 @@
 			</section>
 		{/if}
 
-		<div class="mx-auto w-full max-w-[1200px] space-y-20 px-5 py-20 md:space-y-24 md:px-8">
+		<div class="mx-auto w-full max-w-page space-y-20 px-5 py-20 md:space-y-24 md:px-8">
 			<!-- ============ topics as picture tiles ============ -->
 			{#if data.topics.length}
 				<section use:reveal>
@@ -132,7 +132,7 @@
 											image={t.cover}
 											alt=""
 											sizes="(min-width: 1024px) 290px, 50vw"
-											class="absolute inset-0 h-full w-full object-cover opacity-80 transition-[transform,opacity] duration-700 group-hover:scale-[1.06] group-hover:opacity-95"
+											class="absolute inset-0 h-full w-full object-cover opacity-80 transition duration-700 group-hover:scale-105 group-hover:opacity-95"
 										/>
 									{/if}
 									<span
@@ -143,16 +143,15 @@
 										class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3.5 md:p-4"
 									>
 										<span
-											class="font-newsreader text-[19px] leading-[1.05] font-semibold text-white md:text-[23px]"
+											class="font-newsreader text-xl leading-none font-semibold text-white md:text-2xl"
 											>{t.name}</span
 										>
-										<span
-											class="shrink-0 font-libre text-[11px] font-bold text-white/70 tabular-nums"
+										<span class="shrink-0 font-libre text-xs font-bold text-white/70 tabular-nums"
 											>{t.count}</span
 										>
 									</span>
 									<span
-										class="absolute inset-x-0 bottom-0 h-[3px] origin-left scale-x-0 bg-warm-light transition-transform duration-500 group-hover:scale-x-100"
+										class="absolute inset-x-0 bottom-0 h-1 origin-left scale-x-0 bg-warm-light transition-transform duration-500 group-hover:scale-x-100"
 										aria-hidden="true"
 									></span>
 								</a>
@@ -166,26 +165,24 @@
 			{#if !member}
 				<section
 					use:reveal
-					class="grid items-center gap-6 border-y-[3px] border-double border-prem px-1 py-8 md:grid-cols-[minmax(0,1fr)_auto] md:px-2"
+					class="grid items-center gap-6 border-y-3 border-double border-prem px-1 py-8 md:grid-cols-[minmax(0,1fr)_auto] md:px-2"
 				>
 					<div>
-						<p
-							class="font-libre text-[10.5px] font-extrabold tracking-[0.22em] text-prem uppercase"
-						>
+						<p class="font-libre text-xs font-extrabold tracking-widest text-prem uppercase">
 							◆ AGE Premium
 						</p>
 						<p
-							class="mt-2 font-newsreader text-[28px] leading-[1.1] font-semibold tracking-[-0.02em] md:text-[34px]"
+							class="mt-2 font-newsreader text-3xl leading-none font-semibold tracking-tight md:text-4xl"
 						>
 							Unlock the whole Library.
 						</p>
-						<p class="mt-2 font-newsreader text-[17px] text-soft italic">
+						<p class="mt-2 font-newsreader text-lg text-soft italic">
 							Every article, every video and every match, and the courses you own kept current.
 						</p>
 					</div>
 					<a
 						href="/premium"
-						class="inline-flex h-[48px] items-center justify-self-start bg-prem px-6 font-libre text-[11px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 md:justify-self-end"
+						class="inline-flex h-12 items-center justify-self-start bg-prem px-6 font-libre text-xs font-extrabold tracking-widest text-white uppercase transition hover:brightness-110 md:justify-self-end"
 						>Become a member →</a
 					>
 				</section>
@@ -193,8 +190,8 @@
 
 			{#if !data.newest.length && !data.matches.length}
 				<div class="border border-line2 px-6 py-16 text-center">
-					<p class="font-newsreader text-[24px] font-semibold">The Library is filling up.</p>
-					<p class="mt-2 text-[15px] text-fade">The first pieces arrive soon.</p>
+					<p class="font-newsreader text-2xl font-semibold">The Library is filling up.</p>
+					<p class="mt-2 text-base text-fade">The first pieces arrive soon.</p>
 				</div>
 			{/if}
 		</div>

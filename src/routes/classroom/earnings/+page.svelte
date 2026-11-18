@@ -13,6 +13,6 @@
 <DeskHeader title="Earnings" subtitle="What your courses have made, and when you’ll be paid." />
 <DeskTabs />
 
-<div class="mx-auto w-full max-w-[1200px] px-5 pt-8 pb-16 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page px-5 pt-8 pb-16 font-libre md:px-8">
 	<PartnerEarnings partner={data.partner} />
 </div>

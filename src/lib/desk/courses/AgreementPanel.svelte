@@ -54,30 +54,30 @@
 		await invalidate('desk:course');
 	}
 	const field =
-		'mt-1.5 h-[38px] w-full border border-line2 bg-white px-2.5 text-[13.5px] focus:border-ink focus:ring-0';
-	const label = 'block text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase';
+		'mt-1.5 h-10 w-full border border-line2 bg-white px-2.5 text-sm focus:border-ink focus:ring-0';
+	const label = 'block text-xs font-extrabold tracking-widest text-fade uppercase';
 </script>
 
 <section>
 	<h2
-		class="flex items-baseline justify-between border-b-[3px] border-ink pb-2.5 text-[10.5px] font-extrabold tracking-[0.16em] uppercase"
+		class="flex items-baseline justify-between border-b-3 border-ink pb-2.5 text-xs font-extrabold tracking-widest uppercase"
 	>
 		Partner agreement
 		{#if admin && !editing}
 			<button
 				type="button"
 				onclick={edit}
-				class="text-[10px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+				class="text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 				>Edit</button
 			>
 		{/if}
 	</h2>
 	{#if editing}
-		<form onsubmit={save} class="mt-4 grid max-w-[720px] gap-4 sm:grid-cols-2">
-			<label class="flex items-center gap-2 text-[13.5px]">
+		<form onsubmit={save} class="mt-4 grid max-w-3xl gap-4 sm:grid-cols-2">
+			<label class="flex items-center gap-2 text-sm">
 				<input type="checkbox" bind:checked={form.exclusive} /> Exclusive to AGE
 			</label>
-			<label class="flex items-center gap-2 text-[13.5px]">
+			<label class="flex items-center gap-2 text-sm">
 				<input type="checkbox" bind:checked={form.autoRenew} /> Renews automatically
 			</label>
 			<label>
@@ -99,24 +99,24 @@
 				<button
 					type="submit"
 					disabled={busy}
-					class="h-[38px] bg-ink px-5 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
+					class="h-10 bg-ink px-5 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm disabled:opacity-50"
 					>{busy ? 'Saving…' : 'Save'}</button
 				>
 				<button
 					type="button"
 					onclick={() => (editing = false)}
-					class="h-[38px] px-3 text-[10.5px] font-extrabold tracking-[0.14em] text-soft uppercase hover:text-ink"
+					class="h-10 px-3 text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink"
 					>Cancel</button
 				>
 			</div>
-			{#if error}<p class="text-[12.5px] text-hero-rb sm:col-span-2" role="alert">{error}</p>{/if}
+			{#if error}<p class="text-xs text-hero-rb sm:col-span-2" role="alert">{error}</p>{/if}
 		</form>
 	{:else}
 		<dl class="mt-4 grid gap-px border border-line2 bg-line2 sm:grid-cols-2 lg:grid-cols-4">
 			{#each [['Exclusive', course.exclusive ? 'Yes' : 'No'], ['Runs', `${day(course.exclusivityStart)} – ${day(course.exclusivityEnd)}`], ['Renews', course.autoRenew ? 'Automatically' : 'No'], ['Status', course.agreementStatus === 'ended' ? 'Ended' : 'Active']] as [k, v] (k)}
 				<div class="bg-paper-bg px-4 py-3.5">
-					<dt class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">{k}</dt>
-					<dd class="mt-1.5 text-[14px] font-semibold">{v}</dd>
+					<dt class="text-xs font-extrabold tracking-widest text-fade uppercase">{k}</dt>
+					<dd class="mt-1.5 text-sm font-semibold">{v}</dd>
 				</div>
 			{/each}
 		</dl>

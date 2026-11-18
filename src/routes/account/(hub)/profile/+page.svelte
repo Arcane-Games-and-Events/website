@@ -73,9 +73,7 @@
 			>
 			<div class="sm:col-span-2">
 				<span class={ui.fieldLabel}>Email</span>
-				<p
-					class="h-[50px] border-[1.5px] border-line bg-paper px-[15px] text-[14.5px] leading-[48px] text-soft"
-				>
+				<p class="h-13 border-2 border-line bg-paper px-4 text-sm leading-12 text-soft">
 					{data.user.email}
 				</p>
 				<p class="mt-1 {ui.note}">To change your email, write to info@arcanegamesandevents.com.</p>

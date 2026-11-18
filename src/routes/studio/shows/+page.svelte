@@ -21,15 +21,15 @@
 			type="button"
 			onclick={() => (creating = true)}
 			class="{compact
-				? 'h-8 px-3 text-[9.5px]'
-				: 'h-10 px-5 text-[10.5px]'} bg-gold font-extrabold tracking-[0.14em] text-ink uppercase transition-colors hover:bg-paper-bg"
+				? 'h-8 px-3 text-xs'
+				: 'h-10 px-5 text-xs'} bg-gold font-extrabold tracking-widest text-ink uppercase transition-colors hover:bg-paper-bg"
 			>New show</button
 		>
 	{/snippet}
 </DeskHeader>
 <DeskTabs />
 
-<div class="mx-auto w-full max-w-[1200px] px-5 py-8 font-libre md:px-8">
+<div class="mx-auto w-full max-w-page px-5 py-8 font-libre md:px-8">
 	{#if data.shows.length}
 		<ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
 			{#each data.shows as s (s.id)}
@@ -45,19 +45,19 @@
 								/>
 							{:else}
 								<span
-									class="absolute inset-0 flex items-center justify-center p-4 text-center font-newsreader text-[22px] font-semibold text-paper-bg"
+									class="absolute inset-0 flex items-center justify-center p-4 text-center font-newsreader text-2xl font-semibold text-paper-bg"
 									>{s.name}</span
 								>
 							{/if}
 						</span>
 						<span class="block p-3">
-							<span class="block font-newsreader text-[18px] font-semibold group-hover:text-warm"
+							<span class="block font-newsreader text-lg font-semibold group-hover:text-warm"
 								>{s.name}</span
 							>
-							<span class="block text-[11.5px] text-fade"
+							<span class="block text-xs text-fade"
 								>{KIND[s.kind].short}{s.host ? ` · ${s.host}` : ''}</span
 							>
-							<span class="mt-1 block text-[12px] text-soft"
+							<span class="mt-1 block text-xs text-soft"
 								>{s.episodes}
 								{s.episodes === 1 ? 'episode' : 'episodes'}{s.isActive ? '' : ' · inactive'}</span
 							>
@@ -67,15 +67,15 @@
 			{/each}
 		</ul>
 	{:else}
-		<div class="border-[3px] border-double border-ink px-6 py-12 text-center">
-			<p class="font-newsreader text-[22px] font-semibold">No shows yet.</p>
-			<p class="mt-2 text-[13.5px] text-soft">
+		<div class="border-3 border-double border-ink px-6 py-12 text-center">
+			<p class="font-newsreader text-2xl font-semibold">No shows yet.</p>
+			<p class="mt-2 text-sm text-soft">
 				Create a podcast or an interview series, then add its episodes from Media.
 			</p>
 			<button
 				type="button"
 				onclick={() => (creating = true)}
-				class="mt-5 bg-ink px-5 py-3 text-[10.5px] font-extrabold tracking-[0.16em] text-paper-bg uppercase hover:bg-warm"
+				class="mt-5 bg-ink px-5 py-3 text-xs font-extrabold tracking-widest text-paper-bg uppercase hover:bg-warm"
 				>Create the first show</button
 			>
 		</div>

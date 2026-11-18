@@ -14,32 +14,32 @@
 
 <div class="flex flex-col bg-prem p-6 text-white md:p-7 {cls}">
 	<span
-		class="flex items-center gap-2 text-[9.5px] font-extrabold tracking-[0.18em] text-prem-light uppercase"
+		class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-prem-light uppercase"
 	>
-		<span class="text-[7px]" aria-hidden="true">◆</span>AGE Premium
+		<span class="text-xs" aria-hidden="true">◆</span>AGE Premium
 	</span>
 	<h3
-		class="mt-4 font-newsreader text-[26px] leading-[1.05] font-semibold tracking-[-0.015em] [text-wrap:balance] md:text-[28px]"
+		class="mt-4 font-newsreader text-2xl leading-none font-semibold tracking-tight [text-wrap:balance] md:text-3xl"
 	>
 		The best of the Library is for members.
 	</h3>
-	<p class="mt-3 font-newsreader text-[15px] leading-[1.5] text-white/75 italic">
+	<p class="mt-3 font-newsreader text-base leading-normal text-white/75 italic">
 		Every premium article, the full gameplay archive and course updates for life.
 	</p>
 	<div class="mt-auto pt-6">
 		<a
 			href="/premium"
-			class="flex min-h-[48px] items-center justify-center bg-paper-bg px-5 text-[10.5px] font-extrabold tracking-[0.14em] text-prem uppercase transition-colors hover:bg-white"
+			class="flex min-h-12 items-center justify-center bg-paper-bg px-5 text-xs font-extrabold tracking-widest text-prem uppercase transition-colors hover:bg-white"
 			>{signedIn ? 'Upgrade to Premium' : 'Become a member'}</a
 		>
-		<p class="mt-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-[11px]">
+		<p class="mt-2.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs">
 			<span class="text-white/70"
 				><span class="font-semibold text-white">$10 a month</span> · cancel anytime</span
 			>
 			{#if !signedIn}
 				<a
 					href="/login"
-					class="text-[9.5px] font-extrabold tracking-[0.14em] text-white/80 uppercase transition-colors hover:text-white"
+					class="text-xs font-extrabold tracking-widest text-white/80 uppercase transition-colors hover:text-white"
 					>Sign in</a
 				>
 			{/if}

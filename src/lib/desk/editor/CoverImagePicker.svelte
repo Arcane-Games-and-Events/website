@@ -29,12 +29,12 @@
 <!-- A 16:9 tile: tap it to choose or replace from the library. -->
 <div>
 	<div class="mb-1.5 flex items-baseline justify-between gap-2">
-		<span class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">{label}</span>
+		<span class="text-xs font-extrabold tracking-widest text-fade uppercase">{label}</span>
 		{#if value}
 			<button
 				type="button"
 				on:click={() => dispatch('change', null)}
-				class="text-[9.5px] font-extrabold tracking-[0.12em] text-fade uppercase transition-colors hover:text-hero-rb"
+				class="text-xs font-extrabold tracking-widest text-fade uppercase transition-colors hover:text-hero-rb"
 				>Remove</button
 			>
 		{/if}
@@ -56,15 +56,15 @@
 				class="absolute inset-0 h-full w-full object-cover"
 			/>
 			<span
-				class="absolute right-0 bottom-0 bg-ink/85 px-2 py-1 text-[9px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors group-hover:bg-ink"
+				class="absolute right-0 bottom-0 bg-ink/85 px-2 py-1 text-xs font-extrabold tracking-widest text-paper-bg uppercase transition-colors group-hover:bg-ink"
 				>Replace</span
 			>
 		{:else}
 			<span
 				class="absolute inset-0 flex flex-col items-center justify-center gap-1 text-fade transition-colors group-hover:text-ink"
 			>
-				<span class="text-[20px] leading-none font-light" aria-hidden="true">+</span>
-				<span class="text-[9.5px] font-extrabold tracking-[0.14em] uppercase">Choose image</span>
+				<span class="text-xl leading-none font-light" aria-hidden="true">+</span>
+				<span class="text-xs font-extrabold tracking-widest uppercase">Choose image</span>
 			</span>
 		{/if}
 	</button>

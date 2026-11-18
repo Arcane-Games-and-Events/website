@@ -52,7 +52,7 @@
 		<div class="relative flex gap-2" style="height: {height}px;">
 			<!-- y axis -->
 			<div
-				class="relative w-8 shrink-0 text-right text-[10px] text-fade tabular-nums"
+				class="relative w-8 shrink-0 text-right text-xs text-fade tabular-nums"
 				aria-hidden="true"
 			>
 				{#each ticks as t (t)}
@@ -70,7 +70,7 @@
 						aria-hidden="true"
 					></span>
 				{/each}
-				<ol class="absolute inset-0 flex items-end gap-[2px]" aria-label={label}>
+				<ol class="absolute inset-0 flex items-end gap-0.5" aria-label={label}>
 					{#each daily as d, i (d.day)}
 						<li class="relative flex h-full flex-1 items-end justify-center">
 							<button
@@ -83,7 +83,7 @@
 								onblur={() => (active = -1)}
 							>
 								<span
-									class="block w-full max-w-[24px] transition-opacity {active === -1 || active === i
+									class="block w-full max-w-6 transition-opacity {active === -1 || active === i
 										? 'opacity-100'
 										: 'opacity-55'}"
 									style="height: {d.n ? Math.max(2, (d.n / top) * 100) : 0}%; background: {color};"
@@ -91,14 +91,12 @@
 							</button>
 							{#if active === i}
 								<span
-									class="pointer-events-none absolute z-10 -translate-x-1/2 border border-line2 bg-paper-bg px-2.5 py-1.5 whitespace-nowrap shadow-[0_6px_16px_-8px_rgba(0,0,0,0.35)]"
+									class="pointer-events-none absolute z-10 -translate-x-1/2 border border-line2 bg-paper-bg px-2.5 py-1.5 whitespace-nowrap shadow-md"
 									style="left: 50%; bottom: calc({(d.n / top) * 100}% + 8px);"
 									role="tooltip"
 								>
-									<span class="block text-[14px] font-bold tabular-nums"
-										>{d.n.toLocaleString()}</span
-									>
-									<span class="block text-[10.5px] text-soft">{fmtDay(d.day, true)}</span>
+									<span class="block text-sm font-bold tabular-nums">{d.n.toLocaleString()}</span>
+									<span class="block text-xs text-soft">{fmtDay(d.day, true)}</span>
 								</span>
 							{/if}
 						</li>
@@ -107,29 +105,27 @@
 			</div>
 		</div>
 		<!-- x axis -->
-		<div class="mt-1.5 ml-10 flex gap-[2px] text-[10px] text-fade" aria-hidden="true">
+		<div class="mt-1.5 ml-10 flex gap-0.5 text-xs text-fade" aria-hidden="true">
 			{#each daily as d, i (d.day)}
 				<span class="flex-1 text-center whitespace-nowrap">
 					{i % every === 0 || i === daily.length - 1 ? fmtDay(d.day) : ''}
 				</span>
 			{/each}
 		</div>
-		<figcaption class="mt-3 flex items-center justify-between gap-3 text-[11px] text-soft">
+		<figcaption class="mt-3 flex items-center justify-between gap-3 text-xs text-soft">
 			<span>{total.toLocaleString()} {unit} over {daily.length} days</span>
 			<button
 				type="button"
 				onclick={() => (showTable = !showTable)}
-				class="text-[9.5px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:text-warm"
+				class="text-xs font-extrabold tracking-widest uppercase transition-colors hover:text-warm"
 				aria-expanded={showTable}>{showTable ? 'Hide table' : 'Show as table'}</button
 			>
 		</figcaption>
 	</figure>
 	{#if showTable}
-		<table class="mt-2 w-full text-[12.5px] tabular-nums">
+		<table class="mt-2 w-full text-xs tabular-nums">
 			<thead>
-				<tr
-					class="border-b border-line2 text-left text-[9px] tracking-[0.16em] text-fade uppercase"
-				>
+				<tr class="border-b border-line2 text-left text-xs tracking-widest text-fade uppercase">
 					<th class="py-1.5 font-extrabold">Day</th>
 					<th class="py-1.5 text-right font-extrabold capitalize">{unit}</th>
 				</tr>

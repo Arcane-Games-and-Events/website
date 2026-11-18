@@ -110,7 +110,7 @@
 					sign: '+'
 				}
 			: {
-					tone: 'text-[#f0a58f]',
+					tone: 'text-red-300',
 					after: h.withPool ? 'less per year on AGE' : 'less per year in direct sales on AGE',
 					sign: '−'
 				}
@@ -194,15 +194,15 @@
 	});
 
 	// ============ styles ============
-	const LABEL = 'block text-[10px] font-extrabold tracking-[0.18em] text-soft uppercase';
+	const LABEL = 'block text-xs font-extrabold tracking-widest text-soft uppercase';
 	const INPUT =
-		'block min-h-[48px] w-full border border-line2 bg-paper-bg px-3.5 font-newsreader text-[17px] text-ink tabular-nums transition-colors outline-none hover:border-ink focus:border-ink aria-[invalid=true]:border-hero-rb';
-	const ERR = 'mt-1.5 text-[12.5px] font-semibold text-hero-rb';
-	const HINT = 'mt-1.5 text-[12.5px] leading-snug text-fade';
+		'block min-h-12 w-full border border-line2 bg-paper-bg px-3.5 font-newsreader text-lg text-ink tabular-nums transition-colors outline-none hover:border-ink focus:border-ink aria-[invalid=true]:border-hero-rb';
+	const ERR = 'mt-1.5 text-xs font-semibold text-hero-rb';
+	const HINT = 'mt-1.5 text-xs leading-snug text-fade';
 	// Options sit on a sliding ink block (the `slider` snippet), so they're
 	// see-through; the checked one only changes its text and border.
 	const OPTION =
-		'relative flex min-h-[48px] cursor-pointer items-center justify-center border border-line2 px-3 text-center text-[13px] font-semibold text-ink transition-colors duration-300 peer-checked:border-ink peer-checked:text-paper-bg peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-warm hover:border-ink active:scale-[0.98] motion-reduce:transition-none';
+		'relative flex min-h-12 cursor-pointer items-center justify-center border border-line2 px-3 text-center text-sm font-semibold text-ink transition-colors duration-300 peer-checked:border-ink peer-checked:text-paper-bg peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-warm hover:border-ink active:scale-98 motion-reduce:transition-none';
 
 	// ============ how the plan works ============
 	const share = (x) => `${Math.round(x * 100)}%`;
@@ -425,7 +425,7 @@
 <!-- the ink block behind a row of options, sliding to the chosen one (gap-2 = 8px) -->
 {#snippet slider(index, n)}
 	<span
-		class="pointer-events-none absolute inset-y-0 left-0 bg-ink transition-transform duration-300 ease-[cubic-bezier(0.2,0.7,0.2,1)] motion-reduce:transition-none"
+		class="pointer-events-none absolute inset-y-0 left-0 bg-ink transition-transform duration-300 ease-out motion-reduce:transition-none"
 		style="width: calc((100% - {(n - 1) *
 			8}px) / {n}); transform: translateX(calc({index} * (100% + 8px)));"
 		aria-hidden="true"
@@ -437,7 +437,7 @@
 		<label for="calc-{key}" class={LABEL}>{label}</label>
 		<div class="relative mt-2">
 			{#if opts.prefix}<span
-					class="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 font-newsreader text-[17px] text-fade"
+					class="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 font-newsreader text-lg text-fade"
 					aria-hidden="true">{opts.prefix}</span
 				>{/if}
 			<input
@@ -456,7 +456,7 @@
 						: undefined}
 			/>
 			{#if opts.suffix}<span
-					class="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 font-newsreader text-[17px] text-fade"
+					class="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 font-newsreader text-lg text-fade"
 					aria-hidden="true">{opts.suffix}</span
 				>{/if}
 		</div>
@@ -473,24 +473,24 @@
 	<section class="relative isolate overflow-hidden bg-academy text-paper-bg">
 		<!-- a soft gold glow from the top right, so the green isn't flat -->
 		<div
-			class="pointer-events-none absolute -top-48 -right-40 -z-10 h-[520px] w-[760px] bg-[radial-gradient(closest-side,rgb(200_146_46/0.14),transparent)]"
+			class="pointer-events-none absolute -top-48 -right-40 -z-10 h-130 w-190 bg-[radial-gradient(closest-side,rgb(200_146_46/0.14),transparent)]"
 			aria-hidden="true"
 		></div>
-		<div class="mx-auto w-full max-w-[1200px] px-5 pt-10 md:px-8 md:pt-16">
+		<div class="mx-auto w-full max-w-page px-5 pt-10 md:px-8 md:pt-16">
 			<p
-				class="fp-rise flex items-center gap-2 text-[10px] font-extrabold tracking-[0.24em] text-gold uppercase"
+				class="fp-rise flex items-center gap-2 text-xs font-extrabold tracking-widest text-gold uppercase"
 			>
 				<span aria-hidden="true">◆</span> For guide creators · Earnings calculator
 			</p>
 			<h1
-				class="fp-rise mt-4 font-libre text-[42px] leading-[1] font-extrabold tracking-[-0.04em] [text-wrap:balance] md:text-[66px]"
+				class="fp-rise mt-4 font-libre text-5xl leading-none font-extrabold tracking-tighter [text-wrap:balance] md:text-7xl"
 				style="animation-delay: 60ms;"
 			>
 				<span class="text-gold">AGE Academy</span>
-				<span class="font-medium tracking-[-0.02em] text-paper-bg/45">vs.</span> Metafy
+				<span class="font-medium tracking-tight text-paper-bg/45">vs.</span> Metafy
 			</h1>
 			<p
-				class="fp-rise mt-4 max-w-[620px] font-newsreader text-[17px] leading-[1.5] text-paper-bg/75 md:text-[19px]"
+				class="fp-rise mt-4 max-w-xl font-newsreader text-lg leading-normal text-paper-bg/75 md:text-xl"
 				style="animation-delay: 120ms;"
 			>
 				Enter what you sell on Metafy today. See what the same guides would earn on AGE, and what
@@ -505,12 +505,12 @@
 			>
 				{#each BENEFITS as [glyph, t, b] (t)}
 					<li class="flex gap-3">
-						<span class="mt-0.5 w-5 shrink-0 text-center text-[15px] text-gold" aria-hidden="true"
+						<span class="mt-0.5 w-5 shrink-0 text-center text-base text-gold" aria-hidden="true"
 							>{glyph}</span
 						>
 						<span>
-							<span class="block text-[15px] font-bold">{t}</span>
-							<span class="mt-1 block text-[13px] leading-[1.5] text-paper-bg/65">{b}</span>
+							<span class="block text-base font-bold">{t}</span>
+							<span class="mt-1 block text-sm leading-normal text-paper-bg/65">{b}</span>
 						</span>
 					</li>
 				{/each}
@@ -520,7 +520,7 @@
 
 	<div class="bg-paper-bg text-ink">
 		<div
-			class="mx-auto grid w-full max-w-[1200px] grid-cols-[minmax(0,1fr)] gap-10 px-5 py-10 md:px-8 md:py-14 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-14"
+			class="mx-auto grid w-full max-w-page grid-cols-1 gap-10 px-5 py-10 md:px-8 md:py-14 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-14"
 		>
 			<!-- ============ inputs ============ -->
 			<form class="space-y-8" onsubmit={(e) => e.preventDefault()} aria-label="Your numbers">
@@ -541,7 +541,7 @@
 									bind:group={f.plan}
 								/>
 								<span class="{OPTION} h-full flex-col py-2.5 leading-tight">
-									{p.l}<span class="mt-0.5 text-[11px] font-normal opacity-75">{p.note}</span>
+									{p.l}<span class="mt-0.5 text-xs font-normal opacity-75">{p.note}</span>
 								</span>
 							</label>
 						{/each}
@@ -563,7 +563,7 @@
 					{@render field('copies', 'Copies sold', { whole: true })}
 					<fieldset class="mt-2.5">
 						<legend class="sr-only">Copies sold per</legend>
-						<div class="relative grid max-w-[260px] grid-cols-2 gap-2">
+						<div class="relative grid max-w-3xs grid-cols-2 gap-2">
 							{@render slider(f.period === 'month' ? 0 : 1, 2)}
 							{#each [['month', 'Per month'], ['year', 'Per year']] as [v, l] (v)}
 								<label class="block">
@@ -587,10 +587,10 @@
 				})}
 
 				<fieldset>
-					<legend class="text-[14px] leading-snug font-semibold text-ink">
+					<legend class="text-sm leading-snug font-semibold text-ink">
 						Do you cover Metafy’s buyer fees for your customers?
 					</legend>
-					<div class="relative mt-2.5 grid max-w-[260px] grid-cols-2 gap-2">
+					<div class="relative mt-2.5 grid max-w-3xs grid-cols-2 gap-2">
 						{@render slider(f.coverBuyerFees ? 0 : 1, 2)}
 						{#each [[true, 'Yes'], [false, 'No']] as [v, l] (l)}
 							<label class="block">
@@ -611,17 +611,17 @@
 					<label class="flex cursor-pointer items-start gap-3">
 						<input
 							type="checkbox"
-							class="mt-[2px] h-[18px] w-[18px] shrink-0 cursor-pointer border-line2 text-ink focus:ring-warm"
+							class="mt-0.5 h-4.5 w-4.5 shrink-0 cursor-pointer border-line2 text-ink focus:ring-warm"
 							bind:checked={f.includePool}
 							onchange={() => (autoPool = false)}
 						/>
-						<span class="text-[14px] leading-snug font-semibold"
+						<span class="text-sm leading-snug font-semibold"
 							>Include your teacher profit share (estimate)</span
 						>
 					</label>
 					{#if f.includePool && (autoPool || !qualifies)}
 						<p
-							class="mt-3 border-l-2 pl-3 text-[13px] leading-snug font-semibold {qualifies
+							class="mt-3 border-l-2 pl-3 text-sm leading-snug font-semibold {qualifies
 								? 'border-gold text-ink'
 								: 'border-line2 text-soft'}"
 							transition:slide={{ duration: ms(240) }}
@@ -657,10 +657,10 @@
 
 				<details class="group border-t border-line pt-5">
 					<summary
-						class="flex cursor-pointer list-none items-center justify-between text-[10px] font-extrabold tracking-[0.18em] text-soft uppercase hover:text-ink [&::-webkit-details-marker]:hidden"
+						class="flex cursor-pointer list-none items-center justify-between text-xs font-extrabold tracking-widest text-soft uppercase hover:text-ink [&::-webkit-details-marker]:hidden"
 					>
 						Advanced
-						<span class="text-[14px] transition-transform group-open:rotate-45" aria-hidden="true"
+						<span class="text-sm transition-transform group-open:rotate-45" aria-hidden="true"
 							>+</span
 						>
 					</summary>
@@ -679,11 +679,11 @@
 			<!-- ============ results ============ -->
 			<section class="min-w-0 lg:sticky lg:top-24" aria-label="Results">
 				<div class="bg-academy px-6 py-6 text-paper-bg md:px-8 md:py-7" aria-live="polite">
-					<p class="text-[10px] font-extrabold tracking-[0.22em] text-paper-bg/60 uppercase">
+					<p class="text-xs font-extrabold tracking-widest text-paper-bg/60 uppercase">
 						Your estimate{valid ? '' : ' · fix the highlighted fields'}
 					</p>
 					<p
-						class="mt-2 font-newsreader text-[30px] leading-[1.08] font-semibold tracking-[-0.015em] [text-wrap:balance] transition-colors duration-500 md:text-[38px] {verdict.tone}"
+						class="mt-2 font-newsreader text-3xl leading-none font-semibold tracking-tight [text-wrap:balance] transition-colors duration-500 md:text-4xl {verdict.tone}"
 					>
 						You’d earn <CountUp value={h.amount} format={usd0} />
 						{verdict.after}{#if h.pct !== null}<span class="text-[0.7em] text-paper-bg/70"
@@ -695,7 +695,7 @@
 					</p>
 					{#if h.kind === 'less'}
 						<p
-							class="pt-2 text-[15px] leading-[1.45] font-semibold text-paper-bg/90"
+							class="pt-2 text-base leading-normal font-semibold text-paper-bg/90"
 							transition:slide={{ duration: ms(240) }}
 						>
 							{extras}
@@ -703,7 +703,7 @@
 					{/if}
 					{#if referralNudge}
 						<div
-							class="mt-4 border-l-2 border-gold pl-3 text-[13.5px] leading-[1.5] text-paper-bg/85"
+							class="mt-4 border-l-2 border-gold pl-3 text-sm leading-normal text-paper-bg/85"
 							transition:slide={{ duration: ms(240) }}
 						>
 							<p>
@@ -713,13 +713,13 @@
 							</p>
 							{#if referralsToLead}<button
 									type="button"
-									class="mt-2 text-[12px] font-extrabold tracking-[0.12em] text-gold uppercase underline-offset-4 hover:underline"
+									class="mt-2 text-xs font-extrabold tracking-widest text-gold uppercase underline-offset-4 hover:underline"
 									onclick={() => (f.signupsPerMonth = String(referralsToLead))}
 									>Try {referralsToLead} a month →</button
 								>{/if}
 						</div>
 					{/if}
-					<p class="mt-3 text-[14px] leading-[1.5] text-paper-bg/75">
+					<p class="mt-3 text-sm leading-normal text-paper-bg/75">
 						{#if h.withPool}<CountUp value={r.age.yearlyWithPool} format={usd0} /> a year on AGE (<CountUp
 								value={r.age.yearly}
 								format={usd0}
@@ -736,19 +736,19 @@
 				</div>
 
 				<div class="mt-px overflow-x-auto border border-line bg-white">
-					<table class="w-full text-[14px]">
+					<table class="w-full text-sm">
 						<caption class="sr-only">Metafy and AGE side by side</caption>
 						<thead>
 							<tr class="border-b border-line text-left">
 								<th scope="col" class="px-4 py-3 md:px-5"><span class="sr-only">Measure</span></th>
 								<th
 									scope="col"
-									class="px-3 py-3 text-right text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase"
+									class="px-3 py-3 text-right text-xs font-extrabold tracking-widest text-soft uppercase"
 									>{plan.v === 'core' ? 'Metafy Core' : 'Metafy Pro'}</th
 								>
 								<th
 									scope="col"
-									class="px-4 py-3 text-right text-[10px] font-extrabold tracking-[0.16em] text-warm uppercase md:px-5"
+									class="px-4 py-3 text-right text-xs font-extrabold tracking-widest text-warm uppercase md:px-5"
 									>AGE Partner</th
 								>
 							</tr>
@@ -765,7 +765,7 @@
 									<td class="px-4 py-3 text-right font-semibold md:px-5">
 										{@render num(row.a)}
 										{#if row.note}<span
-												class="mt-0.5 block text-[11.5px] leading-snug font-normal text-fade"
+												class="mt-0.5 block text-xs leading-snug font-normal text-fade"
 												>{row.note}</span
 											>{/if}
 									</td>
@@ -777,29 +777,25 @@
 
 				<!-- what fans pay -->
 				<div class="mt-8">
-					<h2 class="font-libre text-[20px] font-extrabold tracking-[-0.02em]">
-						What your fans pay
-					</h2>
+					<h2 class="font-libre text-xl font-extrabold tracking-tight">What your fans pay</h2>
 					<ul class="mt-4 grid gap-px border border-line bg-line min-[440px]:grid-cols-3">
 						{#each [['On Metafy', r.metafy.fanPays, null, r.metafy.buyerFees.total && !last.coverBuyerFees ? `List price plus ${usd(r.metafy.buyerFees.total)} in buyer fees` : 'List price; you cover the fees'], ['On AGE', r.age.fanPays, r.fanSaving.nonMember, 'Card fee included'], ['AGE Premium', r.age.memberPays, r.fanSaving.member, `${pct(AGE.MEMBER_DISCOUNT)} off; you’re paid on full price`]] as [label, v, save, note] (label)}
 							<li class="flex flex-col bg-paper-bg p-3.5 md:p-4">
-								<span class="text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase"
+								<span class="text-xs font-extrabold tracking-widest text-soft uppercase"
 									>{label}</span
 								>
 								<span
-									class="mt-1.5 font-newsreader text-[24px] leading-none font-semibold tabular-nums md:text-[28px]"
+									class="mt-1.5 font-newsreader text-2xl leading-none font-semibold tabular-nums md:text-3xl"
 									><CountUp value={v} format={usd} /></span
 								>
 								{#if save !== null}
 									<span
-										class="mt-1.5 text-[12px] font-semibold {save > 0
-											? 'text-prem'
-											: 'text-hero-rb'}"
+										class="mt-1.5 text-xs font-semibold {save > 0 ? 'text-prem' : 'text-hero-rb'}"
 										><CountUp value={save} format={pct} />
 										{save > 0 ? 'less' : 'more'} than Metafy</span
 									>
 								{/if}
-								<span class="mt-1.5 text-[11.5px] leading-snug text-fade">{note}</span>
+								<span class="mt-1.5 text-xs leading-snug text-fade">{note}</span>
 							</li>
 						{/each}
 					</ul>
@@ -814,22 +810,22 @@
 						crossover={r.crossover}
 						{metafyLabel}
 					/>
-					<p class="mt-3 text-[13.5px] leading-snug text-soft">{crossoverLine}</p>
+					<p class="mt-3 text-sm leading-snug text-soft">{crossoverLine}</p>
 				</div>
 			</section>
 		</div>
 
 		<!-- ============ how AGE Partner works ============ -->
 		<section class="border-t border-line" aria-labelledby="how-heading">
-			<div class="mx-auto w-full max-w-[1200px] px-5 py-12 md:px-8 md:py-16">
+			<div class="mx-auto w-full max-w-page px-5 py-12 md:px-8 md:py-16">
 				<p
-					class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.22em] text-gold uppercase"
+					class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-gold uppercase"
 				>
 					<span aria-hidden="true">◆</span> The plan
 				</p>
 				<h2
 					id="how-heading"
-					class="mt-2 font-libre text-[28px] leading-none font-extrabold tracking-[-0.03em] md:text-[36px]"
+					class="mt-2 font-libre text-3xl leading-none font-extrabold tracking-tight md:text-4xl"
 				>
 					How AGE Partner works
 				</h2>
@@ -839,20 +835,20 @@
 						{#each STEPS as [t, d], i (t)}
 							<li class="flex gap-4">
 								<span
-									class="w-7 shrink-0 font-jost text-[26px] leading-none font-bold text-gold tabular-nums"
+									class="w-7 shrink-0 font-jost text-2xl leading-none font-bold text-gold tabular-nums"
 									aria-hidden="true">{i + 1}</span
 								>
 								<span>
-									<span class="block text-[16px] font-bold">{t}</span>
-									<span class="mt-1 block text-[14.5px] leading-[1.55] text-soft">{d}</span>
+									<span class="block text-base font-bold">{t}</span>
+									<span class="mt-1 block text-sm leading-normal text-soft">{d}</span>
 								</span>
 							</li>
 						{/each}
 					</ol>
 
 					<div>
-						<h3 class="text-[15px] font-bold">Where one {usd(last.price)} sale goes</h3>
-						<p class="mt-1 text-[13px] text-fade">
+						<h3 class="text-base font-bold">Where one {usd(last.price)} sale goes</h3>
+						<p class="mt-1 text-sm text-fade">
 							At your price, on your first {count(SENIOR.from)} copies.
 						</p>
 						<div class="mt-6 space-y-8">
@@ -862,26 +858,25 @@
 								<div>
 									<p class="flex items-baseline justify-between gap-3">
 										<span
-											class="text-[10px] font-extrabold tracking-[0.18em] uppercase {platform ===
-											'AGE'
+											class="text-xs font-extrabold tracking-widest uppercase {platform === 'AGE'
 												? 'text-warm'
 												: 'text-soft'}">{name}</span
 										>
-										<span class="text-[13px] text-soft"
+										<span class="text-sm text-soft"
 											>Fan pays <span class="font-semibold text-ink tabular-nums"
 												><CountUp value={b.fanPays} format={usd} /></span
 											></span
 										>
 									</p>
-									<div class="mt-2 flex h-9 gap-[2px]" aria-hidden="true">
+									<div class="mt-2 flex h-9 gap-0.5" aria-hidden="true">
 										{#each segs.filter((x) => x.v > 0.0049) as x (x.k)}
 											<span
-												class="block {x.c} transition-[width] duration-500 ease-[cubic-bezier(0.2,0.7,0.2,1)] motion-reduce:transition-none"
+												class="block {x.c} transition-[width] duration-500 ease-out motion-reduce:transition-none"
 												style="width: {(x.v / total) * 100}%"
 											></span>
 										{/each}
 									</div>
-									<dl class="mt-3 grid grid-cols-3 gap-3 text-[12.5px]">
+									<dl class="mt-3 grid grid-cols-3 gap-3 text-xs">
 										{#each segs as x (x.k)}
 											<div>
 												<dt class="flex items-center gap-1.5 text-fade">
@@ -894,12 +889,12 @@
 										{/each}
 									</dl>
 									{#if platform === 'Metafy' && last.coverBuyerFees}
-										<p class="mt-2 text-[12px] text-fade">
+										<p class="mt-2 text-xs text-fade">
 											You cover the buyer fees, so they come out of your share.
 										</p>
 									{/if}
 									{#if monthly}
-										<p class="mt-2 text-[12px] text-fade">
+										<p class="mt-2 text-xs text-fade">
 											Plus ${monthly} a month for Pro, whatever you sell.
 										</p>
 									{/if}
@@ -910,17 +905,15 @@
 				</div>
 
 				<div class="mt-12 border border-line bg-white md:hidden">
-					<p class="border-b border-line px-4 py-3 text-[15px] font-bold">The terms side by side</p>
+					<p class="border-b border-line px-4 py-3 text-base font-bold">The terms side by side</p>
 					<ul>
 						{#each TERMS as [label, a, c, p] (label)}
 							<li class="border-b border-line px-4 py-4 last:border-0">
-								<p class="text-[14px] font-semibold">{label}</p>
-								<dl class="mt-2 space-y-1.5 text-[13.5px] leading-snug">
+								<p class="text-sm font-semibold">{label}</p>
+								<dl class="mt-2 space-y-1.5 text-sm leading-snug">
 									{#each [['AGE Partner', a, 'text-warm', 'font-semibold text-ink'], ['Metafy Core', c, 'text-soft', 'text-soft'], ['Metafy Pro', p, 'text-soft', 'text-soft']] as [who, v, tone, val] (who)}
 										<div class="grid grid-cols-[96px_minmax(0,1fr)] gap-3">
-											<dt
-												class="pt-[3px] text-[9.5px] font-extrabold tracking-[0.14em] uppercase {tone}"
-											>
+											<dt class="pt-1 text-xs font-extrabold tracking-widest uppercase {tone}">
 												{who}
 											</dt>
 											<dd class={val}>{v}</dd>
@@ -933,13 +926,13 @@
 				</div>
 
 				<div class="mt-12 hidden overflow-x-auto border border-line bg-white md:block">
-					<table class="w-full min-w-[640px] text-[14px]">
-						<caption class="border-b border-line px-4 py-3 text-left text-[15px] font-bold md:px-5">
+					<table class="w-full min-w-160 text-sm">
+						<caption class="border-b border-line px-4 py-3 text-left text-base font-bold md:px-5">
 							The terms side by side
 						</caption>
 						<thead>
 							<tr
-								class="border-b border-line text-left text-[10px] font-extrabold tracking-[0.16em] uppercase"
+								class="border-b border-line text-left text-xs font-extrabold tracking-widest uppercase"
 							>
 								<th scope="col" class="w-[22%] px-4 py-3 md:px-5"
 									><span class="sr-only">Term</span></th
@@ -966,19 +959,19 @@
 
 		<!-- ============ the course builder ============ -->
 		<section class="border-t border-line bg-white" aria-labelledby="builder-heading">
-			<div class="mx-auto w-full max-w-[1200px] px-5 py-12 md:px-8 md:py-20">
+			<div class="mx-auto w-full max-w-page px-5 py-12 md:px-8 md:py-20">
 				<p
-					class="flex items-center gap-2 text-[10px] font-extrabold tracking-[0.22em] text-gold uppercase"
+					class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-gold uppercase"
 				>
 					<span aria-hidden="true">◆</span> The course builder
 				</p>
 				<h2
 					id="builder-heading"
-					class="mt-2 font-libre text-[28px] leading-none font-extrabold tracking-[-0.03em] md:text-[36px]"
+					class="mt-2 font-libre text-3xl leading-none font-extrabold tracking-tight md:text-4xl"
 				>
 					Made for Flesh and Blood
 				</h2>
-				<p class="mt-3 max-w-[640px] font-newsreader text-[18px] leading-[1.5] text-soft">
+				<p class="mt-3 max-w-2xl font-newsreader text-lg leading-normal text-soft">
 					Every AGE Partner gets the tools we built to write about this game: cards, decklists and
 					stats work the way players expect, with nothing to set up.
 				</p>
@@ -986,25 +979,24 @@
 				<div class="mt-12 space-y-16 md:mt-14 md:space-y-24">
 					{#each FEATURES as feature, i (feature.title)}
 						<article
-							class="grid grid-cols-[minmax(0,1fr)] items-start gap-8 lg:gap-14 {i % 2
+							class="grid grid-cols-1 items-start gap-8 lg:gap-14 {i % 2
 								? 'lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)]'
 								: 'lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)]'}"
 						>
 							<div class={i % 2 ? 'lg:order-2' : ''}>
-								<p class="text-[10px] font-extrabold tracking-[0.2em] text-warm uppercase">
+								<p class="text-xs font-extrabold tracking-widest text-warm uppercase">
 									{feature.kicker}
 								</p>
 								<h3
-									class="mt-2 font-newsreader text-[26px] leading-[1.12] font-semibold tracking-[-0.015em] [text-wrap:balance] md:text-[30px]"
+									class="mt-2 font-newsreader text-2xl leading-none font-semibold tracking-tight [text-wrap:balance] md:text-3xl"
 								>
 									{feature.title}
 								</h3>
-								<p class="mt-3 text-[15px] leading-[1.6] text-soft">{feature.body}</p>
-								<ul class="mt-4 space-y-2 text-[14px]">
+								<p class="mt-3 text-base leading-relaxed text-soft">{feature.body}</p>
+								<ul class="mt-4 space-y-2 text-sm">
 									{#each feature.points as point (point)}
 										<li class="flex gap-2.5">
-											<span class="mt-[1px] text-[11px] text-gold" aria-hidden="true">◆</span
-											>{point}
+											<span class="mt-px text-xs text-gold" aria-hidden="true">◆</span>{point}
 										</li>
 									{/each}
 								</ul>
@@ -1030,7 +1022,7 @@
 											alt={shot.alt}
 											loading="lazy"
 											decoding="async"
-											class="block h-auto w-full border border-line2 bg-paper-bg shadow-[0_18px_40px_-24px_rgb(23_21_15/0.45)] transition-[border-color] group-hover:border-ink"
+											class="block h-auto w-full border border-line2 bg-paper-bg shadow-xl transition group-hover:border-ink"
 										/>
 									</a>
 								{/each}
@@ -1039,13 +1031,13 @@
 					{/each}
 				</div>
 
-				<div class="mt-16 border-t-[3px] border-ink pt-6 md:mt-24">
-					<h3 class="text-[15px] font-bold">And everything else you need to run a course</h3>
+				<div class="mt-16 border-t-3 border-ink pt-6 md:mt-24">
+					<h3 class="text-base font-bold">And everything else you need to run a course</h3>
 					<ul class="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
 						{#each TOOLS as [t, d] (t)}
 							<li>
-								<span class="block text-[15px] font-bold">{t}</span>
-								<span class="mt-1 block text-[14px] leading-[1.5] text-soft">{d}</span>
+								<span class="block text-base font-bold">{t}</span>
+								<span class="mt-1 block text-sm leading-normal text-soft">{d}</span>
 							</li>
 						{/each}
 					</ul>
@@ -1053,14 +1045,14 @@
 
 				<!-- built together -->
 				<div
-					class="mt-12 grid gap-6 border-l-[3px] border-gold bg-paper-bg px-6 py-7 md:mt-16 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-10 md:px-8"
+					class="mt-12 grid gap-6 border-l-3 border-gold bg-paper-bg px-6 py-7 md:mt-16 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-10 md:px-8"
 				>
 					<p
-						class="font-newsreader text-[24px] leading-[1.15] font-semibold tracking-[-0.01em] [text-wrap:balance] md:text-[28px]"
+						class="font-newsreader text-2xl leading-tight font-semibold tracking-normal [text-wrap:balance] md:text-3xl"
 					>
 						Built with you, not just for you.
 					</p>
-					<p class="text-[15px] leading-[1.6] text-soft">
+					<p class="text-base leading-relaxed text-soft">
 						We keep adding features that help teachers make more compelling courses. As an AGE
 						Partner, you build the site with us: tell us what your course needs, try new tools
 						first, and help decide what we make next.
@@ -1072,22 +1064,20 @@
 		<!-- ============ beyond the math ============ -->
 		<div class="border-t border-line bg-paper">
 			<div
-				class="mx-auto grid w-full max-w-[1200px] gap-10 px-5 py-12 md:px-8 md:py-16 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-14"
+				class="mx-auto grid w-full max-w-page gap-10 px-5 py-12 md:px-8 md:py-16 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-14"
 			>
 				<section>
-					<h2
-						class="font-libre text-[24px] leading-none font-extrabold tracking-[-0.03em] md:text-[30px]"
-					>
+					<h2 class="font-libre text-2xl leading-none font-extrabold tracking-tight md:text-3xl">
 						What you also get with AGE
 					</h2>
-					<p class="mt-2 text-[14px] text-fade">Not counted in the numbers above.</p>
+					<p class="mt-2 text-sm text-fade">Not counted in the numbers above.</p>
 					<ul class="mt-6 grid gap-x-8 gap-y-5 sm:grid-cols-2">
 						{#each PERKS as [t, d] (t)}
 							<li class="flex gap-3">
-								<span class="mt-0.5 shrink-0 text-[13px] text-gold" aria-hidden="true">◆</span>
+								<span class="mt-0.5 shrink-0 text-sm text-gold" aria-hidden="true">◆</span>
 								<span>
-									<span class="block text-[15px] font-bold">{t}</span>
-									<span class="mt-1 block text-[14px] leading-[1.5] text-soft">{d}</span>
+									<span class="block text-base font-bold">{t}</span>
+									<span class="mt-1 block text-sm leading-normal text-soft">{d}</span>
 								</span>
 							</li>
 						{/each}
@@ -1095,11 +1085,9 @@
 				</section>
 
 				<div class="space-y-6">
-					<section class="border-l-[3px] border-gold bg-paper-bg px-5 py-5 md:px-6">
-						<h2 class="text-[10px] font-extrabold tracking-[0.2em] text-soft uppercase">
-							Exclusivity
-						</h2>
-						<p class="mt-2 text-[14.5px] leading-[1.55]">
+					<section class="border-l-3 border-gold bg-paper-bg px-5 py-5 md:px-6">
+						<h2 class="text-xs font-extrabold tracking-widest text-soft uppercase">Exclusivity</h2>
+						<p class="mt-2 text-sm leading-normal">
 							Guides published as AGE Partner guides are exclusive to AGE for 12 months, renewing
 							automatically, with a 30-day opt-out. You can still coach and make other content
 							anywhere.
@@ -1107,20 +1095,20 @@
 					</section>
 
 					<div class="bg-academy px-6 py-7 text-paper-bg md:px-7">
-						<p class="font-newsreader text-[24px] leading-[1.15] font-semibold">
+						<p class="font-newsreader text-2xl leading-tight font-semibold">
 							Ready to bring your guides to AGE?
 						</p>
 						<a
 							href={APPLY_HREF}
-							class="mt-5 inline-flex min-h-[50px] items-center justify-center bg-gold px-6 text-[11px] font-extrabold tracking-[0.16em] text-[#241b07] uppercase transition-[filter] hover:brightness-110"
+							class="mt-5 inline-flex min-h-13 items-center justify-center bg-gold px-6 text-xs font-extrabold tracking-widest text-gold-ink uppercase transition hover:brightness-110"
 							>Apply to become an AGE Partner</a
 						>
 					</div>
 				</div>
 			</div>
 
-			<div class="mx-auto w-full max-w-[1200px] px-5 pb-12 md:px-8">
-				<p class="max-w-[820px] border-t border-line pt-5 text-[12px] leading-[1.6] text-fade">
+			<div class="mx-auto w-full max-w-page px-5 pb-12 md:px-8">
+				<p class="max-w-3xl border-t border-line pt-5 text-xs leading-relaxed text-fade">
 					Estimates only. Metafy pricing as published on their help center as of {METAFY_LAST_VERIFIED};
 					check metafy.gg for current terms. AGE is not affiliated with Metafy. Actual earnings
 					depend on sales. Sources:

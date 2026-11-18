@@ -36,11 +36,11 @@
 </script>
 
 {#if show && banner}
-	<div class="relative z-[60] text-white" style="background: {tone}" role="status">
+	<div class="relative z-60 text-white" style="background: {tone}" role="status">
 		<div
-			class="mx-auto flex w-full max-w-[1600px] items-center gap-3 px-4 py-2 text-[12.5px] md:px-10 lg:px-14"
+			class="mx-auto flex w-full max-w-400 items-center gap-3 px-4 py-2 text-xs md:px-10 lg:px-14"
 		>
-			<span class="shrink-0 text-[9.5px] font-extrabold tracking-[0.18em] uppercase opacity-85"
+			<span class="shrink-0 text-xs font-extrabold tracking-widest uppercase opacity-85"
 				>{banner.kind === 'maintenance' ? 'Maintenance' : 'Heads up'}</span
 			>
 			<a href="/status" class="min-w-0 flex-1 truncate font-semibold hover:underline"
@@ -49,7 +49,7 @@
 			<button
 				type="button"
 				onclick={close}
-				class="-mr-1 flex h-7 w-7 shrink-0 items-center justify-center text-[16px] leading-none opacity-80 hover:opacity-100"
+				class="-mr-1 flex h-7 w-7 shrink-0 items-center justify-center text-base leading-none opacity-80 hover:opacity-100"
 				aria-label="Hide this notice">×</button
 			>
 		</div>

@@ -42,7 +42,7 @@
 				type="button"
 				onclick={() => go({ access: o.v })}
 				aria-pressed={on}
-				class="flex-1 px-4 py-2 text-[13px] font-semibold transition-colors md:flex-none {on
+				class="flex-1 px-4 py-2 text-sm font-semibold transition-colors md:flex-none {on
 					? o.v === 'premium'
 						? 'bg-prem text-white'
 						: 'bg-ink text-paper-bg'
@@ -76,10 +76,10 @@
 		{#if filtered}
 			<a
 				href={path}
-				class="col-span-2 justify-self-start text-[13px] font-semibold text-warm hover:text-ink md:col-span-1"
+				class="col-span-2 justify-self-start text-sm font-semibold text-warm hover:text-ink md:col-span-1"
 				>Clear filters</a
 			>
 		{/if}
 	</div>
 </div>
-<p class="mt-5 text-[14px] text-fade" aria-live="polite">{line}</p>
+<p class="mt-5 text-sm text-fade" aria-live="polite">{line}</p>
