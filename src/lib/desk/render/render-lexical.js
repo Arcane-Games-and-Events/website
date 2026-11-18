@@ -173,8 +173,9 @@ function renderLink(node, ctx) {
  * pick a file for it. Images saved before sizes existed draw at text width.
  */
 export const IMAGE_SIZES = {
-	small: { label: 'Small', sizes: '(min-width: 768px) 360px, 85vw' },
-	text: { label: 'Text width', sizes: '(min-width: 768px) 760px, 100vw' },
+	small: { label: 'Small', sizes: '(min-width: 768px) 360px, 100vw' },
+	medium: { label: 'Medium', sizes: '(min-width: 768px) 520px, 100vw' },
+	text: { label: 'Column', sizes: '(min-width: 768px) 760px, 100vw' },
 	wide: { label: 'Wide', sizes: '(min-width: 1180px) 1100px, 100vw' },
 	full: { label: 'Full width', sizes: '100vw' }
 };
@@ -182,6 +183,25 @@ export const IMAGE_SIZES = {
 /** The size key for an inline image's stored value. */
 export function imageSize(value) {
 	return value?.size && IMAGE_SIZES[value.size] ? value.size : 'text';
+}
+
+/**
+ * Where a Small or Medium image sits in the column: centred on its own, or
+ * to the left or right with the text wrapping around it (from md; on
+ * phones it stacks full width). Larger sizes are always centred.
+ */
+export const IMAGE_ALIGNS = {
+	left: { label: 'Left' },
+	center: { label: 'Centre' },
+	right: { label: 'Right' }
+};
+export const ALIGNABLE = ['small', 'medium'];
+
+/** The alignment key for an inline image's stored value. */
+export function imageAlign(value) {
+	return ALIGNABLE.includes(imageSize(value)) && IMAGE_ALIGNS[value?.align]
+		? value.align
+		: 'center';
 }
 
 /**
@@ -219,7 +239,9 @@ function renderImage(value, ctx) {
 		picture = `<img src="${escapeHtml(url)}"${responsive} alt="${escapeHtml(alt)}"${dims} loading="lazy" decoding="async" />`;
 	}
 
-	return `<figure class="lex-fig lex-fig--${size}">${picture}${creditHtml(lib)}</figure>`;
+	const align = imageAlign(value);
+	const side = align === 'center' ? '' : ` lex-fig--${align}`;
+	return `<figure class="lex-fig lex-fig--${size}${side}">${picture}${creditHtml(lib)}</figure>`;
 }
 
 /** The credit under an image, linked when it has a link; nothing when empty. */

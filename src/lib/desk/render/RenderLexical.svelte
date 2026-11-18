@@ -18,8 +18,12 @@
   Wide and Full width images are positioned against the window. The reading
   column isn't centred on the page (the contents sidebar sits to its left),
   so the column's position is measured and handed to the CSS as variables
-  on the column itself (see .lex-fig in app.css). Before that runs, and
-  without JavaScript, they simply fill the column.
+  on the column itself (see .lex-fig in app.css). A Wide image beside a
+  sidebar grows to the right only, so it never covers the sidebar. Before
+  that runs, and without JavaScript, they simply fill the column.
+
+  Small and Medium images can sit left or right with the text wrapping
+  around them; the closing .lex-end keeps them inside the body.
 -->
 <script>
 	import { onMount } from 'svelte';
@@ -45,8 +49,14 @@
 		const place = () => {
 			const page = document.documentElement.clientWidth;
 			const left = column.getBoundingClientRect().left;
-			const wide = page < 768 ? page : Math.min(1100, page - 64);
-			const wideLeft = page < 768 ? -left : Math.min(0, (page - wide) / 2 - left);
+			let wide = page < 768 ? page : Math.min(1100, page - 64);
+			let wideLeft = page < 768 ? -left : Math.min(0, (page - wide) / 2 - left);
+			// With a sidebar beside the column (from lg), a Wide image starts at
+			// the column's left edge and grows to the right, so it never covers it.
+			if (page >= 1024 && left > (page - column.offsetWidth) / 2 + 40) {
+				wideLeft = 0;
+				wide = Math.max(column.offsetWidth, Math.min(1100, page - left - 32));
+			}
 			column.style.setProperty('--lex-full-w', `${page}px`);
 			column.style.setProperty('--lex-full-ml', `${-left}px`);
 			column.style.setProperty('--lex-wide-w', `${wide}px`);
@@ -82,5 +92,6 @@
 			{/if}
 		{/if}
 	{/each}
+	<span class="lex-end" aria-hidden="true"></span>
 	<span bind:this={probe} hidden></span>
 {/if}

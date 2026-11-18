@@ -12,6 +12,7 @@ import {
 import {
 	IMAGE_SIZES,
 	creditHtml,
+	imageAlign,
 	imageSize,
 	renderLexicalToSegments
 } from '../../src/lib/desk/render/render-lexical.js';
@@ -141,7 +142,7 @@ describe('inline images', () => {
 	});
 
 	test('each size gets its own class and sizes', () => {
-		for (const size of ['small', 'text', 'wide', 'full']) {
+		for (const size of ['small', 'medium', 'text', 'wide', 'full']) {
 			const out = html(doc(upload({ url: 'x', mediaId: 'm1', size })), { media });
 			expect(out).toContain(`lex-fig--${size}`);
 			expect(out).toContain(`sizes="${IMAGE_SIZES[size].sizes}"`);
@@ -152,6 +153,18 @@ describe('inline images', () => {
 		expect(imageSize({})).toBe('text');
 		expect(imageSize({ size: 'huge' })).toBe('text');
 		expect(html(doc(upload({ url: 'x', mediaId: 'm1' })), { media })).toContain('lex-fig--text');
+	});
+
+	test('a Small or Medium image can sit left or right; bigger ones stay centred', () => {
+		const at = (v) => html(doc(upload({ url: 'x', mediaId: 'm1', ...v })), { media });
+		expect(at({ size: 'small', align: 'left' })).toContain(
+			'class="lex-fig lex-fig--small lex-fig--left"'
+		);
+		expect(at({ size: 'medium', align: 'right' })).toContain('lex-fig--medium lex-fig--right');
+		expect(at({ size: 'small', align: 'center' })).toContain('class="lex-fig lex-fig--small"');
+		expect(at({ size: 'wide', align: 'left' })).toContain('class="lex-fig lex-fig--wide"');
+		expect(at({ size: 'small', align: 'sideways' })).toContain('class="lex-fig lex-fig--small"');
+		expect(imageAlign({ size: 'text', align: 'right' })).toBe('center');
 	});
 
 	test('the credit is a linked figcaption', () => {

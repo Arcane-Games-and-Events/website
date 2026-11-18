@@ -414,15 +414,51 @@ a.fp-ul:focus-visible {
 	height: auto;
 	margin: 0;
 }
-.lex-fig--small {
-	width: 85%;
+.lex-fig--small,
+.lex-fig--medium {
 	margin-left: auto;
 	margin-right: auto;
+}
+/* Anything that isn't wrapped starts below a wrapped image. */
+.lex-fig:not(.lex-fig--left, .lex-fig--right) {
+	clear: both;
 }
 @media (min-width: 768px) {
 	.lex-fig--small {
 		width: 50%;
 	}
+	.lex-fig--medium {
+		width: 70%;
+	}
+	/* Left or right: the text wraps around it. On phones it stacks. */
+	.lex-fig--left,
+	.lex-fig--right {
+		margin-top: 0.4rem;
+		margin-bottom: 1.25rem;
+	}
+	.lex-fig--left {
+		float: left;
+		margin-left: 0;
+		margin-right: 1.75rem;
+	}
+	.lex-fig--right {
+		float: right;
+		margin-right: 0;
+		margin-left: 1.75rem;
+	}
+	.lex-fig--small.lex-fig--left,
+	.lex-fig--small.lex-fig--right {
+		width: 42%;
+	}
+	.lex-fig--medium.lex-fig--left,
+	.lex-fig--medium.lex-fig--right {
+		width: 55%;
+	}
+}
+/* The end of the body: wrapped images never hang out below it. */
+.lex-end {
+	display: block;
+	clear: both;
 }
 .lex-fig--wide,
 .lex-fig--full {
