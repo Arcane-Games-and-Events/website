@@ -129,14 +129,17 @@ describe('what’s waiting on whom', () => {
 		const { course } = await liveCourse(teacher, { title: 'Sold' });
 		const student = await createUser();
 		const en = await enrol(course, student, { source: 'purchase' });
+		// Payable mid last month, so its statement has closed whatever today's date.
+		const now = new Date();
+		const payableAt = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 15, 12));
 		await legacySale({
 			courseId: course.id,
 			teacherId: teacher.id,
 			enrollmentId: en.id,
 			grossCents: 5000,
 			sharePct: 90,
-			soldAt: new Date(Date.now() - 30 * 864e5),
-			payableAt: new Date(Date.now() - 16 * 864e5)
+			soldAt: new Date(payableAt.getTime() - 14 * 864e5),
+			payableAt
 		});
 		const o = await courseOversight(admin);
 		expect(byTitle(o, 'Sold').owedCents).toBe(4500);
