@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	/**
 	 * AGE Studios: everything AGE makes, printed on paper in flat colour.
 	 * The featured project leads; then the projects (with a colour chart
@@ -42,13 +43,11 @@
 		n === 2 ? 'max-sm:[&>li:nth-child(n+3)]:hidden' : 'max-sm:[&>li:nth-child(n+5)]:hidden';
 </script>
 
-<svelte:head>
-	<title>AGE Studios</title>
-	<meta
-		name="description"
-		content="The creative side of AGE: interactive pages, stats, software, shows and films, and the creators we partner with."
-	/>
-</svelte:head>
+<Seo
+	title="AGE Studios"
+	description="The creative side of AGE: interactive pages, stats, software, shows and films, and the creators we partner with."
+	image="/banner/studios-banner.webp"
+/>
 
 <AgeShell active="AGE Studios">
 	<StudiosMasthead big current="all" />

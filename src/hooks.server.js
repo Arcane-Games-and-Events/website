@@ -3,6 +3,7 @@ import { auth, sessionCacheKey } from '$lib/server/lucia';
 import { error, redirect } from '@sveltejs/kit';
 import { cached, CACHE_TTL } from '$lib/server/cache/index.js';
 import { rememberReferral } from '$lib/server/partner/referrals.js';
+import { env } from '$env/dynamic/private';
 
 // Paths exempt from CSRF protection (external webhooks)
 const CSRF_EXEMPT_PATHS = ['/api/webhooks/'];
@@ -175,6 +176,10 @@ export const handle = async ({ event, resolve }) => {
 	// per cookie fingerprint for authed traffic. Anonymous is the big
 	// win; authed users benefit on their second navigation.
 	response.headers.set('vary', 'Cookie');
+
+	// Preview deployments are copies of the site at another address: keep
+	// search engines and AI crawlers off them so only production is indexed.
+	if (env.VERCEL_ENV === 'preview') response.headers.set('x-robots-tag', 'noindex, nofollow');
 
 	// Sensitive routes are always uncached, regardless of auth state
 	// (an unauthed hit still gets `no-store` on `/account` — the redirect

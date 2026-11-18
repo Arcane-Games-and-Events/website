@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	/** A show on AGE Studios: its art on a gold block, host and description, then every episode. */
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import Picture from '$lib/components/media/Picture.svelte';
@@ -19,10 +20,11 @@
 			: '';
 </script>
 
-<svelte:head>
-	<title>{s.name} · AGE Studios</title>
-	{#if s.description}<meta name="description" content={s.description.slice(0, 160)} />{/if}
-</svelte:head>
+<Seo
+	title="{s.name} · AGE Studios"
+	description={s.description}
+	image="/banner/studios-banner.webp"
+/>
 
 <AgeShell active="AGE Studios">
 	<section class="border-b border-line">

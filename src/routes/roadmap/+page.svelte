@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	/**
 	 * /roadmap — what AGE is building, in the AGE Open poster register: an ink
 	 * band with the four stops of the track (Upcoming → In development →
@@ -56,13 +57,10 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Roadmap · AGE</title>
-	<meta
-		name="description"
-		content="What we’re building for AGE now, next and later, and what’s shipped."
-	/>
-</svelte:head>
+<Seo
+	title="Roadmap · AGE"
+	description="What we’re building for AGE: upcoming, in development, testing and shipped."
+/>
 
 {#snippet card(item, n, stamp = false)}
 	{@const area = item.area ? AREA[item.area] : null}

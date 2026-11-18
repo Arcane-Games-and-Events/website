@@ -5,6 +5,9 @@
 	 * their Library pieces, newest first.
 	 */
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
+	import Seo from '$lib/components/seo/Seo.svelte';
+	import { page } from '$app/stores';
+	import { breadcrumbs } from '$lib/seo.js';
 	import StoryCard from '$lib/components/age/library/StoryCard.svelte';
 	import CourseCard from '$lib/components/age/academy/CourseCard.svelte';
 	import { storyCardSheet, toStories } from '$lib/components/age/library/stories.js';
@@ -42,10 +45,29 @@
 	);
 </script>
 
-<svelte:head>
-	<title>{p.name} — AGE</title>
-	<meta name="description" content={description} />
-</svelte:head>
+<Seo
+	title="{p.name} — AGE"
+	{description}
+	image={p.photo}
+	imageAlt={p.name}
+	type="profile"
+	jsonld={[
+		{
+			'@type': 'ProfilePage',
+			'@id': `${$page.url.origin}/people/${$page.params.handle}#page`,
+			url: `${$page.url.origin}/people/${$page.params.handle}`,
+			mainEntity: {
+				'@type': 'Person',
+				name: p.name,
+				jobTitle: p.title || undefined,
+				image: p.photo || undefined,
+				sameAs: p.links?.length ? p.links.map((l) => l.href) : undefined,
+				worksFor: { '@id': `${$page.url.origin}/#organization` }
+			}
+		},
+		breadcrumbs($page.url.origin, [[p.name, `/people/${$page.params.handle}`]])
+	]}
+/>
 
 {#snippet sectionHead(label, count)}
 	<h2

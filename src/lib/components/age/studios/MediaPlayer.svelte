@@ -20,6 +20,9 @@
 	import { clock } from '$lib/desk/video/format.js';
 	import SpoilerText from '$lib/components/age/SpoilerText.svelte';
 	import { stripSpoilers } from '$lib/spoilers.js';
+	import Seo from '$lib/components/seo/Seo.svelte';
+	import { page } from '$app/stores';
+	import { breadcrumbs, isoDuration } from '$lib/seo.js';
 
 	/** @type {{ data: any, home: 'matches' | 'studios' }} */
 	let { data, home } = $props();
@@ -155,12 +158,32 @@
 	});
 </script>
 
+<Seo
+	title="{item.title} · {match ? 'Matches · Library' : 'AGE Studios'}"
+	description={stripSpoilers(item.description) || `${verb} ${item.title} on AGE`}
+	image={item.cover?.src || item.still}
+	imageAlt={item.cover?.alt || item.title}
+	type="video.other"
+	jsonld={[
+		{
+			'@type': 'VideoObject',
+			'@id': `${$page.url.href.split('?')[0]}#video`,
+			name: item.title,
+			description: stripSpoilers(item.description) || `${verb} ${item.title} on AGE`,
+			thumbnailUrl: item.cover?.src || item.still || undefined,
+			uploadDate: item.publishedAt || undefined,
+			duration: isoDuration(item.duration),
+			isAccessibleForFree: !item.isPremium,
+			publisher: { '@id': `${$page.url.origin}/#organization` }
+		},
+		breadcrumbs($page.url.origin, [
+			[match ? 'Matches' : 'AGE Studios', match ? '/library/matches' : '/studios'],
+			[item.title, $page.url.pathname]
+		])
+	]}
+/>
+
 <svelte:head>
-	<title>{item.title} · {match ? 'Matches · Library' : 'AGE Studios'}</title>
-	<meta
-		name="description"
-		content={stripSpoilers(item.description)?.slice(0, 160) || `${verb} ${item.title} on AGE`}
-	/>
 	{#if data.canWatch}
 		<link
 			rel="modulepreload"

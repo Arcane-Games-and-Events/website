@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { calculateAgeRating } from '$lib/age-rating.js';
@@ -440,14 +441,12 @@
 				: 'border: 1px solid var(--ed-line2); color: var(--ed-soft);';
 </script>
 
-<svelte:head>
-	<title>{data.displayName} ({rating.total} AGE) — Player Profile</title>
-	<meta
-		name="description"
-		content="{data.displayName}'s competitive profile. AGE Rating: {rating.total}/100. {data
-			.totalStats.totalPoints} total points across {data.totalStats.eventsPlayed} events."
-	/>
-</svelte:head>
+<Seo
+	title="{data.displayName} ({rating.total} AGE) — Player Profile"
+	description="{data.displayName}'s competitive profile. AGE Rating: {rating.total}/100. {data
+		.totalStats.totalPoints} total points across {data.totalStats.eventsPlayed} events."
+	image="/banner/age-open-banner.webp"
+/>
 
 <!--
 	AGE Open player profile, in the series' "tournament day" register:

@@ -29,6 +29,8 @@
 	import { formatMinutes, formatPrice, toCard } from '$lib/academy/format.js';
 	import { guidePrices } from '$lib/academy/partner/pricing.js';
 	import SpoilerText from '$lib/components/age/SpoilerText.svelte';
+	import Seo from '$lib/components/seo/Seo.svelte';
+	import { breadcrumbs, describe } from '$lib/seo.js';
 	import { splitSpoilers, stripSpoilers } from '$lib/spoilers.js';
 
 	/**
@@ -94,6 +96,51 @@
 	const related = $derived((data.related ?? []).map(toCard));
 
 	const instructor = $derived(c.author?.name || 'AGE Academy');
+
+	// For search engines and AI assistants: the course, who teaches it, and
+	// what it costs (bought once, kept for life).
+	const seoOrigin = $derived($page.url.origin);
+	const seoDescription = $derived(
+		describe(stripSpoilers(c.description)) || `${c.title}, a course from AGE Academy.`
+	);
+	const seoLd = $derived([
+		{
+			'@type': 'Course',
+			'@id': `${seoOrigin}/academy/${c.slug}#course`,
+			name: c.title,
+			description: seoDescription,
+			url: `${seoOrigin}/academy/${c.slug}`,
+			image: c.coverImage?.src || undefined,
+			inLanguage: 'en',
+			datePublished: c.publishedAt || undefined,
+			provider: { '@id': `${seoOrigin}/#organization` },
+			...(c.author?.name
+				? {
+						instructor: {
+							'@type': 'Person',
+							name: c.author.name,
+							...(c.author.handle ? { url: `${seoOrigin}/people/${c.author.handle}` } : {})
+						}
+					}
+				: {}),
+			offers: {
+				'@type': 'Offer',
+				category: Number(c.price) > 0 ? 'Paid' : 'Free',
+				price: Number(c.price || 0).toFixed(2),
+				priceCurrency: 'USD',
+				url: `${seoOrigin}/academy/${c.slug}`
+			},
+			hasCourseInstance: {
+				'@type': 'CourseInstance',
+				courseMode: 'Online',
+				courseWorkload: c.minutes ? `PT${Math.round(c.minutes)}M` : undefined
+			}
+		},
+		breadcrumbs(seoOrigin, [
+			['Academy', '/academy'],
+			[c.title, `/academy/${c.slug}`]
+		])
+	]);
 	const runtime = $derived(formatMinutes(c.minutes));
 	// "4h 12m": fits a quarter of a phone's width in the header.
 	const shortRuntime = $derived(
@@ -329,13 +376,13 @@
 	}
 </script>
 
-<svelte:head>
-	<title>{c.title} — Academy — AGE</title>
-	<meta
-		name="description"
-		content={stripSpoilers(c.description) || `${c.title}, a course from AGE Academy.`}
-	/>
-</svelte:head>
+<Seo
+	title="{c.title} — Academy — AGE"
+	description={seoDescription}
+	image={c.coverImage?.src}
+	imageAlt={c.coverImage?.alt || c.title}
+	jsonld={seoLd}
+/>
 
 <svelte:window onhashchange={() => fromHash(window.location.hash)} />
 

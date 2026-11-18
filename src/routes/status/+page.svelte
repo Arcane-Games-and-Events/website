@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	/**
 	 * /status — how AGE is running: one line for the whole site, anything
 	 * happening now or planned, each part of the site with its last 90 days
@@ -24,13 +25,10 @@
 </script>
 
 <svelte:window bind:innerWidth={width} />
-<svelte:head>
-	<title>Status · AGE</title>
-	<meta
-		name="description"
-		content="How the AGE site is running, and any incidents or maintenance."
-	/>
-</svelte:head>
+<Seo
+	title="Status · AGE"
+	description="How the AGE site is running, and any incidents or maintenance."
+/>
 
 {#snippet incidentCard(i)}
 	{@const imp = IMPACT[i.impact]}

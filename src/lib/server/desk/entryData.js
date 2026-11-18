@@ -160,6 +160,7 @@ export async function buildArticleShape({ entry, cover, thumbnail, author, tags 
 		excerpt: entry.excerpt,
 		content: entry.body,
 		publishedAt: entry.publishedAt,
+		updatedAt: entry.updatedAt,
 		accessMode: entry.accessMode,
 		// `{ src, srcset, width, height, alt }` — the hero markup reads these.
 		coverImage: mediaImage(cover),

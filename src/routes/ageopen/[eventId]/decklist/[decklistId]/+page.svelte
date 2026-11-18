@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	// Card images are now resolved server-side - no 12MB JSON import needed!
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import FormatTag from '$lib/components/age/FormatTag.svelte';
@@ -246,15 +247,16 @@
 	}
 </script>
 
+<Seo
+	title="{decklist.hero || 'Deck'} · {decklist.playerName} — AGE Open decklist"
+	description="{decklist.playerName}'s {decklist.hero || 'deck'} from the {decklist.circuit ||
+		'AGE'} Open{decklist.placement
+		? `, ${getOrdinal(decklist.placement)} place`
+		: ''}. Every card, with previews."
+	image={heroImage?.imageUrl || '/banner/age-open-banner.webp'}
+/>
+
 <svelte:head>
-	<title>{decklist.hero || 'Deck'} · {decklist.playerName} — AGE Open decklist</title>
-	<meta
-		name="description"
-		content="{decklist.playerName}'s {decklist.hero || 'deck'} from the {decklist.circuit ||
-			'AGE'} Open{decklist.placement
-			? `, ${getOrdinal(decklist.placement)} place`
-			: ''}. Every card, with previews."
-	/>
 	{#if heroBackdrop}
 		<link rel="preload" as="image" href={heroBackdrop} />
 	{/if}

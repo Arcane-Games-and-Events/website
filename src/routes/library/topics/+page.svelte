@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	/** The Library → Topics: every topic, A to Z, with how many pieces each holds. */
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import LibraryHeader from '$lib/components/age/library/LibraryHeader.svelte';
@@ -7,10 +8,11 @@
 	const az = $derived([...data.topics].sort((a, b) => a.name.localeCompare(b.name)));
 </script>
 
-<svelte:head>
-	<title>Topics · Library · AGE</title>
-	<meta name="description" content="Every topic in the AGE Library, A to Z." />
-</svelte:head>
+<Seo
+	title="Topics · Library · AGE"
+	description="Every topic in the AGE Library, A to Z."
+	image="/banner/articles-banner.webp"
+/>
 
 <AgeShell active="Library">
 	<LibraryHeader

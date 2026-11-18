@@ -27,6 +27,19 @@
 	import AgeFooter from '$lib/components/age/AgeFooter.svelte';
 	import { circuitSlug } from '$lib/data/circuits.js';
 	import StatusBanner from '$lib/components/age/status/StatusBanner.svelte';
+	import { SITE, isPrivatePath } from '$lib/seo.js';
+
+	// Search engines and AI assistants: the page's one address (query strings
+	// dropped, except the page number of a list), and noindex on private pages
+	// and errors. Each page's own title, description and structured data come
+	// from <Seo>.
+	$: canonical = (() => {
+		const u = new URL($page.url.pathname, $page.url.origin);
+		const n = Number($page.url.searchParams.get('page'));
+		if (n > 1) u.searchParams.set('page', String(n));
+		return u.href;
+	})();
+	$: noindex = !!$page.error || isPrivatePath($page.url.pathname);
 
 	// Auth pages that should not show the sidebar
 	const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
@@ -138,6 +151,14 @@
 <StatusBanner banner={$page.data?.statusBanner ?? null} />
 
 <svelte:head>
+	<link rel="canonical" href={canonical} />
+	<meta property="og:url" content={canonical} />
+	<meta property="og:site_name" content={SITE.name} />
+	<meta property="og:locale" content="en_US" />
+	<meta name="twitter:card" content="summary_large_image" />
+	{#if noindex}<meta name="robots" content="noindex, nofollow" />{/if}
+	<link rel="alternate" type="text/plain" href="/llms.txt" title="AGE for AI assistants" />
+	<link rel="sitemap" type="application/xml" href="/sitemap.xml" />
 	{#if circuitCss}
 		<!-- eslint-disable-next-line svelte/no-at-html-tags -- checked colours and slugs only -->
 		{@html `<style>:root{${circuitCss}}</style>`}

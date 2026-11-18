@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	/**
 	 * AGE Open Series. One route, six sections chosen by `?tab=`; each
 	 * section is its own component in $lib/components/age/open/. The
@@ -41,13 +42,11 @@
 	});
 </script>
 
-<svelte:head>
-	<title>AGE Open Series</title>
-	<meta
-		name="description"
-		content="Join the AGE Open Series - premier competitive Flesh and Blood tournaments in Los Angeles, St. Louis, and New England"
-	/>
-</svelte:head>
+<Seo
+	title="AGE Open Series"
+	description="Join the AGE Open Series - premier competitive Flesh and Blood tournaments in Los Angeles, St. Louis, and New England"
+	image="/banner/age-open-banner.webp"
+/>
 
 <AgeShell active="AGE Open">
 	{#if activeTab === 'overview'}

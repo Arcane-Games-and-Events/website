@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	/**
 	 * The Library's front page, on paper: the hero (the masthead, one
 	 * search, popular topics, and the newest thing to read, watch and
@@ -18,13 +19,11 @@
 	const latest = $derived(data.newest);
 </script>
 
-<svelte:head>
-	<title>Library — AGE</title>
-	<meta
-		name="description"
-		content="Every article, video and match from AGE, all searchable: strategy, reporting and gameplay from AGE Open."
-	/>
-</svelte:head>
+<Seo
+	title="Library — AGE"
+	description="Every article, video and match from AGE, all searchable: strategy, reporting and gameplay from AGE Open."
+	image="/banner/articles-banner.webp"
+/>
 
 {#snippet premium(cls)}<LibraryPremiumTile class={cls} />{/snippet}
 

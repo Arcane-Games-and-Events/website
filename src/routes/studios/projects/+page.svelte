@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	/**
 	 * AGE Studios → Projects: every project as a colour block, newest and
 	 * featured first. The colour chart above narrows to one kind; each
@@ -13,13 +14,11 @@
 	const kinds = $derived(PROJECT_TYPES.filter((t) => data.counts[t]));
 </script>
 
-<svelte:head>
-	<title>{data.type ? `${PROJECT_TYPE[data.type].plural} · ` : ''}Projects · AGE Studios</title>
-	<meta
-		name="description"
-		content="Interactive pages, stats, software and films from AGE Studios."
-	/>
-</svelte:head>
+<Seo
+	title="{data.type ? `${PROJECT_TYPE[data.type].plural} · ` : ''}Projects · AGE Studios"
+	description="Interactive pages, stats, software and films from AGE Studios."
+	image="/banner/studios-banner.webp"
+/>
 
 <AgeShell active="AGE Studios">
 	<StudiosMasthead

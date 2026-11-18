@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	/** One topic in the Library: its pieces, the newest big, then the other topics. */
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import LibraryHeader from '$lib/components/age/library/LibraryHeader.svelte';
@@ -11,10 +12,11 @@
 	const rest = $derived(lead ? data.stories.slice(1) : data.stories);
 </script>
 
-<svelte:head>
-	<title>{data.tag.name} · Library · AGE</title>
-	<meta name="description" content={`Every AGE Library piece on ${data.tag.name}.`} />
-</svelte:head>
+<Seo
+	title="{data.tag.name} · Library · AGE"
+	description={`Every AGE Library piece on ${data.tag.name}.`}
+	image="/banner/articles-banner.webp"
+/>
 
 <AgeShell active="Library">
 	<LibraryHeader

@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	/**
 	 * One AGE Open's results, in the series' "tournament day" register.
 	 *
@@ -131,16 +132,15 @@
 	};
 </script>
 
-<svelte:head>
-	<title
-		>{event.title} · {fmtDate(event.eventDate, { month: 'long', year: 'numeric' })} results — AGE Open</title
-	>
-	<meta
-		name="description"
-		content="Final standings, Top 8 bracket, metagame and decklists from the {event.circuit ||
-			'AGE'} {event.title}{champion ? `, won by ${champion.playerName}` : ''}."
-	/>
-</svelte:head>
+<Seo
+	title="{event.title} · {fmtDate(event.eventDate, {
+		month: 'long',
+		year: 'numeric'
+	})} results — AGE Open"
+	description="Final standings, Top 8 bracket, metagame and decklists from the {event.circuit ||
+		'AGE'} {event.title}{champion ? `, won by ${champion.playerName}` : ''}."
+	image="/banner/age-open-banner.webp"
+/>
 
 <AgeShell active="AGE Open">
 	<!-- ============ masthead ============ -->

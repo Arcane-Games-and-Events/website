@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import EditorialPaymentForm from '$lib/components/age/premium/EditorialPaymentForm.svelte';
 	import { reveal } from '$lib/actions/reveal.js';
@@ -188,13 +189,10 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Premium Membership — AGE</title>
-	<meta
-		name="description"
-		content="AGE is member-supported. Your membership pays our writers, runs our tournaments and keeps the AGE Open Series going."
-	/>
-</svelte:head>
+<Seo
+	title="Premium Membership — AGE"
+	description="AGE is member-supported. Your membership pays our writers, runs our tournaments and keeps the AGE Open Series going."
+/>
 
 <AgeShell>
 	<div class="pm">

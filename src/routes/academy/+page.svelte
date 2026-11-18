@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	/**
 	 * Academy index — the course catalogue in the Academy's own register
 	 * (board-green masthead, gold accents, paper cards). Search and the
@@ -192,13 +193,11 @@
 	}
 </script>
 
-<svelte:head>
-	<title>Academy — AGE</title>
-	<meta
-		name="description"
-		content="Full written guides from the players who define the format. Buy once, keep for life, with every future update included. Premium members save 10% on every guide."
-	/>
-</svelte:head>
+<Seo
+	title="Academy — AGE"
+	description="Full written guides from the players who define the format. Buy once, keep for life, with every future update included. Premium members save 10% on every guide."
+	image="/banner/academy-banner.webp"
+/>
 
 <AgeShell active="Academy">
 	<!-- ============ hero: the newest courses ============ -->

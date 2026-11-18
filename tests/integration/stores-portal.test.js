@@ -237,10 +237,23 @@ describe('event day', () => {
 		expect(await canWorkEvent(owner, e.id)).toBe(true);
 		expect(await canWorkEvent(outsider, e.id)).toBe(false);
 
-		const day = await staffEventLoad({ locals: { user: owner }, params: { eventId: e.id } });
+		const day = await staffEventLoad({
+			locals: { user: owner },
+			params: { eventId: e.id },
+			url: new URL('https://www.age.events/staff')
+		});
 		expect(day.event.id).toBe(e.id);
+		// the door sign goes to the event page, tagged as the door
+		expect(day.door.link).toBe(
+			`https://www.age.events/ageopen/${e.id}?utm_source=door&utm_medium=qr&utm_campaign=${e.id}`
+		);
+		expect(day.door.svg).toContain('<svg');
 		await expect(
-			staffEventLoad({ locals: { user: outsider }, params: { eventId: e.id } })
+			staffEventLoad({
+				locals: { user: outsider },
+				params: { eventId: e.id },
+				url: new URL('https://www.age.events/staff')
+			})
 		).rejects.toMatchObject({ status: 403 });
 
 		await callAction(eventActions, 'removeStaff', {

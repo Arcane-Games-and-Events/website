@@ -2,10 +2,65 @@
 	import PaymentMethodPicker from '$lib/components/payments/PaymentMethodPicker.svelte';
 	import { trackConversion } from '$lib/analytics/siteTracker.js';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
-	import { getCircuit, DEFAULT_CIRCUIT } from '$lib/data/circuits.js';
+	import { getCircuit, DEFAULT_CIRCUIT, circuitImage } from '$lib/data/circuits.js';
+	import Seo from '$lib/components/seo/Seo.svelte';
+	import { page } from '$app/stores';
+	import { abs, breadcrumbs, describe } from '$lib/seo.js';
+	import { stripSpoilers } from '$lib/spoilers.js';
 	import FormatTag from '$lib/components/age/FormatTag.svelte';
 
 	export let data;
+
+	// For search engines and AI assistants: the event itself (date, venue,
+	// entry fee, whether there's room) and where it sits on the site.
+	$: seoOrigin = $page.url.origin;
+	$: seoPath = `/ageopen/${encodeURIComponent(data.event.id)}`;
+	$: seoImage = circuitImage(data.event.circuit, $page.data?.circuits);
+	$: seoDescription =
+		describe(stripSpoilers(data.event.description)) ||
+		[
+			`${data.event.title}, an AGE Open Series event`,
+			data.event.format,
+			data.event.location,
+			data.event.circuit
+		]
+			.filter(Boolean)
+			.join(' · ');
+	$: seoFull = data.event.playerCap != null && data.registeredCount >= Number(data.event.playerCap);
+	$: seoLd = [
+		{
+			'@type': 'Event',
+			'@id': `${seoOrigin}${seoPath}#event`,
+			name: data.event.title,
+			description: seoDescription,
+			startDate: data.event.eventDate || undefined,
+			eventStatus:
+				data.event.status === 'cancelled'
+					? 'https://schema.org/EventCancelled'
+					: 'https://schema.org/EventScheduled',
+			eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+			location: {
+				'@type': 'Place',
+				name: data.event.location || 'To be announced',
+				...(data.event.address
+					? { address: { '@type': 'PostalAddress', streetAddress: data.event.address } }
+					: {})
+			},
+			image: [abs(seoOrigin, seoImage)],
+			organizer: { '@id': `${seoOrigin}/#organization` },
+			offers: {
+				'@type': 'Offer',
+				url: `${seoOrigin}${seoPath}`,
+				price: Number(data.event.price || 0).toFixed(2),
+				priceCurrency: 'USD',
+				availability: seoFull ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock'
+			}
+		},
+		breadcrumbs(seoOrigin, [
+			['AGE Open', '/ageopen'],
+			[data.event.title, seoPath]
+		])
+	];
 
 	// Editorial circuit token (CSS variable) lookup. Maps the circuit
 	// names used by `circuits.js` onto the editorial `--ed-cc-*` palette
@@ -257,13 +312,13 @@
 		: 0;
 </script>
 
-<svelte:head>
-	<title>{data.event.title} — AGE Open</title>
-	<meta
-		name="description"
-		content={data.event.description || `Register for ${data.event.title} — AGE Open Series event`}
-	/>
-</svelte:head>
+<Seo
+	title="{data.event.title} — AGE Open"
+	description={seoDescription}
+	image={seoImage}
+	imageAlt={data.event.title}
+	jsonld={seoLd}
+/>
 
 <AgeShell active="AGE Open">
 	<!-- ============ hero: the AGE Open poster band ============ -->

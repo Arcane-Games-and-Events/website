@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	/**
 	 * The Library → Matches: every bonus match from AGE Open, made to be
 	 * searched. Search players, heroes and events; narrow by hero, event,
@@ -45,13 +46,11 @@
 	);
 </script>
 
-<svelte:head>
-	<title>Matches · Library · AGE</title>
-	<meta
-		name="description"
-		content="Every bonus match from AGE Open: search by player, hero, event and format."
-	/>
-</svelte:head>
+<Seo
+	title="Matches · Library · AGE"
+	description="Every bonus match from AGE Open: search by player, hero, event and format."
+	image="/banner/articles-banner.webp"
+/>
 
 <AgeShell active="Library">
 	<LibraryHeader

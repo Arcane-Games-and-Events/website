@@ -1,5 +1,8 @@
 <script>
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
+	import Seo from '$lib/components/seo/Seo.svelte';
+	import { page } from '$app/stores';
+	import { organization, website } from '$lib/seo.js';
 	import FrontLead from '$lib/components/age/home/FrontLead.svelte';
 	import FrontLatest from '$lib/components/age/home/FrontLatest.svelte';
 	import FrontLibrary from '$lib/components/age/home/FrontLibrary.svelte';
@@ -25,13 +28,11 @@
 	const nudge = $derived(!data?.isPremiumMember);
 </script>
 
-<svelte:head>
-	<title>AGE — Arcane Games and Events</title>
-	<meta
-		name="description"
-		content="Independent coverage, gameplay, and courses for competitive Flesh and Blood — plus the AGE Open tournament series."
-	/>
-</svelte:head>
+<Seo
+	title="AGE — Arcane Games and Events"
+	description="Independent coverage, gameplay, and courses for competitive Flesh and Blood — plus the AGE Open tournament series."
+	jsonld={[organization($page.url.origin), website($page.url.origin)]}
+/>
 
 <AgeShell>
 	<FrontLead leads={F.leads} />

@@ -4,6 +4,9 @@
 	import { createContentTracker } from '$lib/analytics/contentTracker.js';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import ArticleView from '$lib/components/age/library/ArticleView.svelte';
+	import Seo from '$lib/components/seo/Seo.svelte';
+	import { page } from '$app/stores';
+	import { breadcrumbs, isoDuration } from '$lib/seo.js';
 
 	export let data;
 
@@ -34,10 +37,68 @@
 			? data.article.thumbnailImage
 			: null;
 	$: hasCover = !!heroImage;
+
+	// For search engines and AI assistants: an article (or a video), who
+	// wrote it, and whether it's free. Premium pieces reach them as the same
+	// short preview a non-member sees.
+	$: origin = $page.url.origin;
+	$: a = data.article;
+	$: shareImage = heroImage?.src || a.thumbnailImage?.src || null;
+	$: author = a.author
+		? {
+				'@type': 'Person',
+				name: a.author.name,
+				...(a.author.slug ? { url: `${origin}/people/${a.author.slug}` } : {})
+			}
+		: { '@id': `${origin}/#organization` };
+	$: ld = [
+		{
+			'@type': isVideoEntry ? 'VideoObject' : 'Article',
+			'@id': `${origin}/library/${a.slug}#main`,
+			[isVideoEntry ? 'name' : 'headline']: a.title,
+			description: a.excerpt || undefined,
+			image: shareImage ? [shareImage] : undefined,
+			...(isVideoEntry
+				? {
+						thumbnailUrl: shareImage || undefined,
+						uploadDate: a.publishedAt || undefined,
+						duration: isoDuration(a.video?.duration)
+					}
+				: { datePublished: a.publishedAt || undefined }),
+			dateModified: a.updatedAt || a.publishedAt || undefined,
+			author,
+			publisher: { '@id': `${origin}/#organization` },
+			mainEntityOfPage: `${origin}/library/${a.slug}`,
+			keywords: a.tags?.length ? a.tags.map((t) => t.name).join(', ') : undefined,
+			isAccessibleForFree: !data.isPremium,
+			...(data.isPremium
+				? {
+						hasPart: {
+							'@type': 'WebPageElement',
+							isAccessibleForFree: false,
+							cssSelector: '[data-article-body]'
+						}
+					}
+				: {})
+		},
+		breadcrumbs(origin, [
+			['Library', '/library'],
+			...(a.tags?.[0] ? [[a.tags[0].name, `/library/tag/${a.tags[0].slug}`]] : []),
+			[a.title, `/library/${a.slug}`]
+		])
+	];
 </script>
 
+<Seo
+	title="{a.title} — AGE"
+	description={a.excerpt}
+	image={shareImage}
+	imageAlt={heroImage?.alt || a.title}
+	type="article"
+	jsonld={ld}
+/>
+
 <svelte:head>
-	<title>{data.article.title} — AGE</title>
 	{#if hasCover && heroImage?.avifSrcset}
 		<link
 			rel="preload"
@@ -56,9 +117,6 @@
 			imagesizes="(min-width: 1680px) 1680px, 100vw"
 			fetchpriority="high"
 		/>
-	{/if}
-	{#if data.article.excerpt}
-		<meta name="description" content={data.article.excerpt} />
 	{/if}
 </svelte:head>
 

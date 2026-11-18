@@ -1,4 +1,5 @@
 <script>
+	import Seo from '$lib/components/seo/Seo.svelte';
 	/** AGE Studios → Shows: every show as a gold tile, then the newest episodes, interviews and films. */
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
 	import StudiosMasthead from '$lib/components/age/studios/StudiosMasthead.svelte';
@@ -9,10 +10,11 @@
 	let { data } = $props();
 </script>
 
-<svelte:head>
-	<title>Shows · AGE Studios</title>
-	<meta name="description" content="Podcasts, interviews and films from AGE Studios." />
-</svelte:head>
+<Seo
+	title="Shows · AGE Studios"
+	description="Podcasts, interviews and films from AGE Studios."
+	image="/banner/studios-banner.webp"
+/>
 
 <AgeShell active="AGE Studios">
 	<StudiosMasthead
