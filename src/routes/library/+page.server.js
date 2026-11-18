@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { libraryTopics, searchEntries } from '$lib/server/desk/list.js';
+import { libraryTopics, searchEntries, topicCovers } from '$lib/server/desk/list.js';
 import { getTagBySlug } from '$lib/server/desk/tags.js';
 import { titleToSlug } from '$lib/desk/slug.js';
 import { latest } from '$lib/server/studio/public.js';
@@ -32,31 +32,36 @@ async function oldAddress(url) {
 	return `${drawer}${s ? `?${s}` : ''}`;
 }
 
-/** /library — the reading room: one search, the drawers, what's new, the topics. */
+/**
+ * /library — the Library's front page: the newest article, video and match
+ * at the top, the rest of the newest as the mosaic, the newest matches as a
+ * filmstrip, and the topics as picture tiles.
+ */
 export async function load({ url, setHeaders }) {
 	const moved = await oldAddress(url);
 	if (moved) throw redirect(301, moved);
 	cacheFor(setHeaders);
 	const none = { items: [] };
-	const [newest, article, video, matches, topics, drawers] = await Promise.all([
-		searchEntries({ perPage: 9 }).catch(() => none),
-		searchEntries({ kind: 'article', perPage: 1 }).catch(() => none),
-		searchEntries({ kind: 'video', perPage: 1 }).catch(() => none),
-		latest({ kind: 'gameplay', limit: 3 }).catch(() => []),
-		libraryTopics().catch(() => []),
-		counts()
-	]);
-	const stories = newest.items.map(toStory);
+	// one after another: the pooler dislikes bursts of fresh connections
+	const perPage = 13;
+	const newest = await searchEntries({ perPage }).catch(() => none);
+	const matches = await latest({ kind: 'gameplay', limit: 8 }).catch(() => []);
+	const topics = await libraryTopics().catch(() => []);
+	const covers = await topicCovers().catch(() => ({}));
+	const drawers = await counts();
+	// the top: the newest article, video and match
+	const article = await searchEntries({ kind: 'article', perPage: 1 }).catch(() => none);
+	const video = await searchEntries({ kind: 'video', perPage: 1 }).catch(() => none);
 	return {
-		newest: stories,
-		// The top of the page: the newest of each kind.
+		newest: newest.items.map(toStory),
 		spotlight: {
 			read: article.items[0] ? toStory(article.items[0]) : null,
 			watch: video.items[0] ? toStory(video.items[0]) : null,
 			replay: matches[0] ?? null
 		},
 		matches,
-		topics: topics.slice(0, 12),
+		topics: topics.slice(0, 8).map((t) => ({ ...t, cover: covers[t.slug] ?? null })),
+		allTopics: topics.slice(0, 12),
 		drawers
 	};
 }

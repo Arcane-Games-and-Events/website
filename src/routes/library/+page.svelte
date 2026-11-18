@@ -1,129 +1,199 @@
 <script>
-	import Seo from '$lib/components/seo/Seo.svelte';
 	/**
-	 * The Library's front page, on paper: the hero (the masthead, one
-	 * search, popular topics, and the newest thing to read, watch and
-	 * replay on a blue panel), then the latest as a bento mosaic, the
-	 * newest matches, the topics, and Premium for anyone without it.
+	 * The Library's front page, with the pictures doing the work: the top as
+	 * one bento grid (a navy masthead tile with the wordmark, search and
+	 * popular topics, the newest article big, then the newest video, match
+	 * and one more piece); then the sections as colour buttons. On paper below: the rest of the newest as the
+	 * mosaic (with the Premium tile in it for non-members), the newest
+	 * matches as a filmstrip, the topics as picture tiles, and Premium for
+	 * anyone without it.
 	 */
+	import Seo from '$lib/components/seo/Seo.svelte';
 	import AgeShell from '$lib/components/age/AgeShell.svelte';
-	import LibraryHero from '$lib/components/age/library/LibraryHero.svelte';
-	import LibraryMosaic from '$lib/components/age/library/LibraryMosaic.svelte';
+	import Picture from '$lib/components/media/Picture.svelte';
+	import LibraryTabs from '$lib/components/age/library/LibraryTabs.svelte';
 	import MediaCard from '$lib/components/age/studios/MediaCard.svelte';
+	import LibraryMosaic from '$lib/components/age/library/LibraryMosaic.svelte';
+	import LibraryHero from '$lib/components/age/library/LibraryHero.svelte';
 	import LibraryPremiumTile from '$lib/components/age/home/LibraryPremiumTile.svelte';
 	import { page } from '$app/state';
 	import { reveal } from '$lib/actions/reveal.js';
 
 	let { data } = $props();
 	const member = $derived(!!page.data?.isPremiumMember);
-	const latest = $derived(data.newest);
+
+	// The top shows the newest article, video and match and one more piece;
+	// the mosaic takes the rest.
+	const latest = $derived.by(() => {
+		const shown = new Set([data.spotlight?.read?.href, data.spotlight?.watch?.href]);
+		const extra = data.newest.find((s) => !shown.has(s.href));
+		return data.newest.filter((s) => !shown.has(s.href) && s.href !== extra?.href);
+	});
 </script>
 
+<!-- the cover story's words: over the picture from md up, under it on phones -->
 <Seo
 	title="Library — AGE"
 	description="Every article, video and match from AGE, all searchable: strategy, reporting and gameplay from AGE Open."
-	image="/banner/articles-banner.webp"
+	image={data.newest[0]?.image || '/banner/articles-banner.webp'}
 />
 
-{#snippet premium(cls)}<LibraryPremiumTile class={cls} />{/snippet}
+{#snippet premiumTile(cls)}<LibraryPremiumTile class={cls} />{/snippet}
 
-{#snippet head(title, href, label)}
-	<header class="flex items-end justify-between gap-4">
-		<h2
-			class="font-libre text-[24px] leading-none font-extrabold tracking-[-0.03em] md:text-[30px]"
-		>
-			{title}
-		</h2>
+{#snippet sectionHead(kicker, title, href, label)}
+	<header class="flex items-end justify-between gap-4 border-b-[3px] border-ink pb-3">
+		<div>
+			<p class="font-libre text-[10.5px] font-extrabold tracking-[0.22em] text-warm uppercase">
+				<span aria-hidden="true">◆</span>
+				{kicker}
+			</p>
+			<h2
+				class="mt-1.5 font-newsreader text-[32px] leading-none font-semibold tracking-[-0.02em] md:text-[42px]"
+			>
+				{title}
+			</h2>
+		</div>
 		{#if href}
 			<a
 				{href}
-				class="shrink-0 text-[13px] font-semibold text-soft transition-colors hover:text-warm"
-				>{label} →</a
+				class="group shrink-0 font-libre text-[11px] font-extrabold tracking-[0.16em] uppercase transition-colors hover:text-warm"
+				>{label}
+				<span class="inline-block transition-transform group-hover:translate-x-1">→</span></a
 			>
 		{/if}
 	</header>
 {/snippet}
 
 <AgeShell active="Library">
-	<LibraryHero counts={data.drawers} spotlight={data.spotlight} topics={data.topics} />
+	<!-- ============ the top: one bento grid ============ -->
+	<LibraryHero spotlight={data.spotlight} topics={data.allTopics} stories={data.newest} />
+
+	<!-- ============ the sections, as buttons ============ -->
+	<LibraryTabs current="all" counts={data.drawers} />
 
 	<div class="bg-paper-bg text-ink">
 		<div
-			class="mx-auto w-full max-w-[1200px] space-y-20 px-5 pt-8 pb-20 md:space-y-24 md:px-8 md:pt-12"
+			class="mx-auto w-full max-w-[1200px] space-y-20 px-5 pt-12 pb-20 md:space-y-28 md:px-8 md:pt-16"
 		>
+			<!-- ============ the latest, as a mosaic ============ -->
 			{#if latest.length}
 				<section use:reveal>
-					{@render head('Latest', '/library/articles', 'All articles')}
-					<div class="mt-6">
-						<LibraryMosaic stories={latest} aside={member ? undefined : premium} />
+					{@render sectionHead(
+						'The latest',
+						'More to read and watch',
+						'/library/articles',
+						'Everything'
+					)}
+					<div class="mt-8">
+						<LibraryMosaic stories={latest} aside={member ? undefined : premiumTile} />
 					</div>
 				</section>
 			{/if}
+		</div>
 
-			{#if data.matches.length}
+		<!-- ============ the filmstrip of matches ============ -->
+		{#if data.matches.length}
+			<section use:reveal class="border-y border-line2 bg-paper py-14 md:py-16">
+				<div class="mx-auto w-full max-w-[1200px] px-5 md:px-8">
+					{@render sectionHead(
+						'From AGE Open',
+						'Matches to watch',
+						'/library/matches',
+						'All matches'
+					)}
+				</div>
+				<ul
+					class="st-rail mx-auto mt-8 flex w-full max-w-[1200px] snap-x snap-mandatory scroll-px-5 gap-5 overflow-x-auto px-5 pb-2 md:scroll-px-8 md:gap-6 md:px-8"
+					aria-label="Matches"
+				>
+					{#each data.matches as item (item.id)}
+						<li class="w-[78%] shrink-0 snap-start sm:w-[44%] lg:w-[31.5%]">
+							<MediaCard {item} sans sizes="(min-width: 1024px) 380px, 80vw" />
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
+
+		<div class="mx-auto w-full max-w-[1200px] space-y-20 px-5 py-20 md:space-y-24 md:px-8">
+			<!-- ============ topics as picture tiles ============ -->
+			{#if data.topics.length}
 				<section use:reveal>
-					{@render head('From AGE Open', '/library/matches', 'All matches')}
-					<ul class="mt-6 grid gap-x-6 gap-y-11 sm:grid-cols-2 lg:grid-cols-3">
-						{#each data.matches as item (item.id)}
-							<li>
-								<MediaCard
-									{item}
-									sans
-									sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
-								/>
+					{@render sectionHead('Browse', 'Topics', '/library/topics', 'All topics')}
+					<ul class="mt-8 grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
+						{#each data.topics as t, i (t.slug)}
+							<li use:reveal={{ delay: (i % 4) * 70 }}>
+								<a
+									href="/library/tag/{t.slug}"
+									class="group relative block aspect-video overflow-hidden bg-warm-deep"
+								>
+									{#if t.cover}
+										<Picture
+											image={t.cover}
+											alt=""
+											sizes="(min-width: 1024px) 290px, 50vw"
+											class="absolute inset-0 h-full w-full object-cover opacity-80 transition-[transform,opacity] duration-700 group-hover:scale-[1.06] group-hover:opacity-95"
+										/>
+									{/if}
+									<span
+										class="absolute inset-0 bg-[linear-gradient(to_top,rgb(10_14_32/0.88),rgb(10_14_32/0.15)_70%)]"
+										aria-hidden="true"
+									></span>
+									<span
+										class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3.5 md:p-4"
+									>
+										<span
+											class="font-newsreader text-[19px] leading-[1.05] font-semibold text-white md:text-[23px]"
+											>{t.name}</span
+										>
+										<span
+											class="shrink-0 font-libre text-[11px] font-bold text-white/70 tabular-nums"
+											>{t.count}</span
+										>
+									</span>
+									<span
+										class="absolute inset-x-0 bottom-0 h-[3px] origin-left scale-x-0 bg-warm-light transition-transform duration-500 group-hover:scale-x-100"
+										aria-hidden="true"
+									></span>
+								</a>
 							</li>
 						{/each}
 					</ul>
 				</section>
 			{/if}
 
-			<section
-				use:reveal
-				class="grid gap-12 {member ? '' : 'lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-14'}"
-			>
-				{#if data.topics.length}
+			<!-- ============ Premium ============ -->
+			{#if !member}
+				<section
+					use:reveal
+					class="grid items-center gap-6 border-y-[3px] border-double border-prem px-1 py-8 md:grid-cols-[minmax(0,1fr)_auto] md:px-2"
+				>
 					<div>
-						{@render head('Topics', '/library/topics', 'All topics')}
-						<ul class="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-							{#each data.topics as t (t.slug)}
-								<li>
-									<a
-										href="/library/tag/{t.slug}"
-										class="flex h-full items-center justify-between gap-3 border border-line bg-paper px-4 py-3.5 transition-colors hover:border-warm hover:bg-paper"
-									>
-										<span class="min-w-0 truncate text-[14px] font-semibold">{t.name}</span>
-										<span class="shrink-0 text-[12px] text-fade tabular-nums">{t.count}</span>
-									</a>
-								</li>
-							{/each}
-						</ul>
-					</div>
-				{/if}
-				{#if !member}
-					<aside
-						class="relative h-fit overflow-hidden border border-prem/60 bg-[linear-gradient(140deg,rgb(28_122_75/0.12),rgb(28_122_75/0.03))] px-6 py-8 md:px-8"
-					>
-						<p class="text-[11px] font-bold tracking-[0.16em] text-prem uppercase">AGE Premium</p>
 						<p
-							class="mt-3 font-libre text-[26px] leading-[1.08] font-extrabold tracking-[-0.03em] [text-wrap:balance]"
+							class="font-libre text-[10.5px] font-extrabold tracking-[0.22em] text-prem uppercase"
+						>
+							◆ AGE Premium
+						</p>
+						<p
+							class="mt-2 font-newsreader text-[28px] leading-[1.1] font-semibold tracking-[-0.02em] md:text-[34px]"
 						>
 							Unlock the whole Library.
 						</p>
-						<p class="mt-3 text-[15px] leading-[1.55] text-soft">
+						<p class="mt-2 font-newsreader text-[17px] text-soft italic">
 							Every article, every video and every match, and the courses you own kept current.
 						</p>
-						<a
-							href="/premium"
-							class="mt-6 inline-flex items-center bg-prem px-5 py-3 text-[13px] font-bold text-white transition-[filter] hover:brightness-110"
-							>Get Premium</a
-						>
-					</aside>
-				{/if}
-			</section>
+					</div>
+					<a
+						href="/premium"
+						class="inline-flex h-[48px] items-center justify-self-start bg-prem px-6 font-libre text-[11px] font-extrabold tracking-[0.16em] text-white uppercase transition-[filter] hover:brightness-110 md:justify-self-end"
+						>Become a member →</a
+					>
+				</section>
+			{/if}
 
-			{#if !latest.length && !data.matches.length}
+			{#if !data.newest.length && !data.matches.length}
 				<div class="border border-line2 px-6 py-16 text-center">
-					<p class="text-[22px] font-bold tracking-[-0.02em]">The Library is filling up.</p>
+					<p class="font-newsreader text-[24px] font-semibold">The Library is filling up.</p>
 					<p class="mt-2 text-[15px] text-fade">The first pieces arrive soon.</p>
 				</div>
 			{/if}

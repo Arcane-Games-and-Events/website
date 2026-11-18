@@ -259,3 +259,32 @@ export async function loadTagsForEntries(ids) {
 	}
 	return map;
 }
+
+/**
+ * Each topic's picture: the cover (or thumbnail) of its newest live piece,
+ * for the Library's topic tiles. `{ [slug]: image | null }`.
+ */
+export function topicCovers() {
+	return cached(
+		'articles:desk:topic-covers',
+		async () => {
+			const r = await db.execute(sql`
+				SELECT DISTINCT ON (t.slug) t.slug,
+					coalesce(e.cover_image_id, e.thumbnail_image_id) AS media_id
+				FROM ${deskTag} t
+				JOIN ${deskEntryTag} et ON et.tag_id = t.id
+				JOIN ${deskEntry} e ON e.id = et.entry_id
+				WHERE (e.status = 'published' OR (e.status = 'scheduled' AND e.scheduled_for <= now()))
+					AND coalesce(e.cover_image_id, e.thumbnail_image_id) IS NOT NULL
+				ORDER BY t.slug, e.published_at DESC NULLS LAST`);
+			const rows = /** @type {{ slug: string, media_id: string }[]} */ (r?.rows ?? r ?? []);
+			const ids = rows.map((x) => x.media_id);
+			const media = ids.length
+				? await db.select().from(deskMedia).where(inArray(deskMedia.id, ids))
+				: [];
+			const byId = Object.fromEntries(media.map((m) => [m.id, mediaImage(m)]));
+			return Object.fromEntries(rows.map((x) => [x.slug, byId[x.media_id] || null]));
+		},
+		{ tags: ['entries', 'media'], ttl: CACHE_TTL.FIVE_MINUTES }
+	);
+}
