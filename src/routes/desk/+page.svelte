@@ -2,6 +2,7 @@
 	import DeskTabs from '$lib/components/age/desk/DeskTabs.svelte';
 	import DeskHeader from '$lib/components/age/desk/DeskHeader.svelte';
 	import { onMount } from 'svelte';
+	import { EXCERPT_MAX } from '$lib/desk/limits.js';
 
 	/** @type {{ data: any }} */
 	let { data } = $props();
@@ -20,6 +21,8 @@
 			year: 'numeric'
 		});
 	});
+
+	let showAllLong = $state(false);
 
 	const name = $derived(data.firstName || 'writer');
 	const lead = $derived(data.drafts[0]);
@@ -402,6 +405,42 @@
 							</li>
 						{/each}
 					</ol>
+				</section>
+			{/if}
+
+			<!-- summaries written before the 150-character limit -->
+			{#if data.longSummaries.length}
+				<section>
+					{@render head('Summaries to shorten', 'text-gold', data.longSummaries.length)}
+					<p class="mt-2 text-[12.5px] text-soft">
+						Summaries now fit on one line of a card ({EXCERPT_MAX} characters). These run over.
+					</p>
+					<ol class="mt-2">
+						{#each data.longSummaries.slice(0, showAllLong ? undefined : 5) as a (a.id)}
+							<li class="border-b border-line2">
+								<a
+									href="/desk/entries/{a.id}"
+									class="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-l-[3px] border-gold py-3 pl-4 transition-colors hover:bg-paper"
+								>
+									<span class="block truncate font-newsreader text-[17.5px] font-semibold"
+										>{a.title}</span
+									>
+									<span
+										class="text-[10px] font-extrabold tracking-[0.16em] whitespace-nowrap text-fade uppercase tabular-nums"
+										>{a.over} over</span
+									>
+								</a>
+							</li>
+						{/each}
+					</ol>
+					{#if data.longSummaries.length > 5}
+						<button
+							type="button"
+							onclick={() => (showAllLong = !showAllLong)}
+							class="mt-3 text-[10px] font-extrabold tracking-[0.16em] text-soft uppercase hover:text-ink"
+							>{showAllLong ? 'Show fewer' : `Show all ${data.longSummaries.length}`}</button
+						>
+					{/if}
 				</section>
 			{/if}
 

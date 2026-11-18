@@ -5,6 +5,7 @@ import { alias } from 'drizzle-orm/pg-core';
 import { desc, eq, sql } from 'drizzle-orm';
 import { canEditEntries, canEditAllEntries, canPublish } from '$lib/server/auth/roles.js';
 import { deskReads } from '$lib/server/contentAnalytics/query.js';
+import { EXCERPT_MAX } from '$lib/desk/limits.js';
 
 /**
  * /desk — the writers' and editors' desk.
@@ -86,6 +87,10 @@ export const load = async ({ locals }) => {
 		published: liveRows.length,
 		pending: rows.filter((r) => r.draftUpdatedAt).length
 	};
+	// Summaries written before the limit that no longer fit on a card.
+	const longSummaries = rows
+		.filter((r) => r.status !== 'archived' && (r.excerpt || '').length > EXCERPT_MAX)
+		.map((r) => ({ id: r.id, title: r.title, over: r.excerpt.length - EXCERPT_MAX }));
 	const publishedThisMonth = liveRows.filter(
 		(r) => t(r.publishedAt || r.scheduledFor) >= monthStart
 	).length;
@@ -112,6 +117,7 @@ export const load = async ({ locals }) => {
 		published,
 		counts,
 		publishedThisMonth,
+		longSummaries,
 		reads
 	};
 };

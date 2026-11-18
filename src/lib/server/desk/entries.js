@@ -15,6 +15,7 @@ import { db } from '$lib/server/db/index.js';
 import { deskEntry, deskEntryTag, deskRevision } from '$lib/server/db/schema.js';
 import { eq, sql } from 'drizzle-orm';
 import { calculateReadTime, lexicalToText } from '$lib/desk/render/lexical-utils.js';
+import { EXCERPT_MAX } from '$lib/desk/limits.js';
 import { bump } from '$lib/server/cache/index.js';
 import { titleToSlug, withSuffix } from '$lib/desk/slug.js';
 import { setEntryTag } from '$lib/server/desk/tags.js';
@@ -54,11 +55,16 @@ async function isSlugTaken(slug, excludeId) {
 	return rows.length > 0;
 }
 
-export function deriveExcerpt(body, maxWords = 30) {
-	const text = lexicalToText(body, '[spoiler]');
-	const words = text.split(/\s+/).filter(Boolean);
-	if (words.length <= maxWords) return text.trim();
-	return words.slice(0, maxWords).join(' ').trim() + '…';
+/** A summary from the body when the writer hasn't written one: the start,
+ *  cut at a word to fit EXCERPT_MAX with its "…". */
+export function deriveExcerpt(body, max = EXCERPT_MAX) {
+	const text = lexicalToText(body, '[spoiler]').replace(/\s+/g, ' ').trim();
+	if (text.length <= max) return text;
+	const cut = text
+		.slice(0, max - 1)
+		.replace(/\s+\S*$/, '')
+		.replace(/[,;:.\s]+$/, '');
+	return `${cut || text.slice(0, max - 1)}…`;
 }
 
 // --- create -----------------------------------------------------------------

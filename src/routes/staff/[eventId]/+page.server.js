@@ -5,8 +5,30 @@ import { publish, staffTopic } from '$lib/server/realtime.js';
 import { event, ticket, user } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { canWorkEvent } from '$lib/server/stores/portal.js';
+import QRCode from 'qrcode';
 
-export async function load({ params, locals }) {
+/**
+ * The door sign: a QR code to the event's public page, tagged so visits
+ * from it show in analytics as the door (utm_source=door, utm_medium=qr).
+ *
+ * @param {URL} url - this request's address, for the site's origin
+ * @param {string} eventId
+ */
+async function doorCode(url, eventId) {
+	const link = new URL(`/ageopen/${encodeURIComponent(eventId)}`, url.origin);
+	link.searchParams.set('utm_source', 'door');
+	link.searchParams.set('utm_medium', 'qr');
+	link.searchParams.set('utm_campaign', eventId);
+	const svg = await QRCode.toString(link.href, {
+		type: 'svg',
+		margin: 0,
+		errorCorrectionLevel: 'M',
+		color: { dark: '#17150f', light: '#ffffff' }
+	});
+	return { link: link.href, svg };
+}
+
+export async function load({ params, locals, url }) {
 	// Require authentication
 	if (!locals.user) {
 		throw redirect(302, '/login');
@@ -53,6 +75,7 @@ export async function load({ params, locals }) {
 		return {
 			user: locals.user,
 			event: eventData,
+			door: await doorCode(url, eventData.id),
 			tickets,
 			stats: {
 				totalTickets,

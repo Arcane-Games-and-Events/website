@@ -48,6 +48,22 @@
 	});
 	let copiedGemId = $state(null);
 
+	// The door sign: the QR code full screen on a phone or tablet held up at
+	// the door, or printed (only the sign prints).
+	let signOpen = $state(false);
+	/** @type {HTMLElement | undefined} */
+	let signEl = $state();
+	async function openSign() {
+		signOpen = true;
+		await Promise.resolve();
+		signEl?.focus();
+		signEl?.requestFullscreen?.().catch(() => {});
+	}
+	function closeSign() {
+		signOpen = false;
+		if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+	}
+
 	async function copyGemId(gemId) {
 		if (!gemId) return;
 		try {
@@ -171,6 +187,79 @@
 		>
 	{/if}
 {/snippet}
+
+<svelte:window onkeydown={(e) => signOpen && e.key === 'Escape' && closeSign()} />
+<svelte:document
+	onfullscreenchange={() => !document.fullscreenElement && signOpen && (signOpen = false)}
+/>
+
+{#snippet doorSign(big)}
+	<div
+		class="flex h-full w-full flex-col items-center justify-center bg-white px-6 py-8 text-center text-ink"
+	>
+		<span class="h-[8px] w-[120px]" style="background: {cc};" aria-hidden="true"></span>
+		<p
+			class="mt-5 text-[11px] font-extrabold tracking-[0.28em] uppercase {big
+				? 'md:text-[14px]'
+				: ''}"
+		>
+			<span style="color: {cc};" aria-hidden="true">◆</span> AGE Open
+		</p>
+		<p
+			class="mt-2 max-w-[18ch] font-newsreader leading-[1.02] font-semibold tracking-[-0.02em] [text-wrap:balance] {big
+				? 'text-[34px] md:text-[56px]'
+				: 'text-[40px]'}"
+		>
+			{data.event.title}
+		</p>
+		<p class="mt-2 font-newsreader text-[17px] text-soft italic {big ? 'md:text-[22px]' : ''}">
+			{[formatDate(data.event.eventDate), data.event.location].filter(Boolean).join(' · ')}
+		</p>
+		<div class="door-qr mt-6 w-full {big ? 'max-w-[min(48vh,82vw)]' : 'max-w-[420px]'}">
+			{@html data.door.svg}
+		</div>
+		<p
+			class="ao-cond mt-6 text-[34px] leading-none font-black uppercase {big
+				? 'md:text-[52px]'
+				: ''}"
+		>
+			Scan to sign up
+		</p>
+		<p class="mt-2 text-[13px] text-soft {big ? 'md:text-[16px]' : ''}">
+			Register, and follow the event on AGE
+		</p>
+	</div>
+{/snippet}
+
+{#if signOpen}
+	<div
+		bind:this={signEl}
+		class="fixed inset-0 z-[90] flex flex-col bg-white text-ink print:hidden"
+		role="dialog"
+		aria-modal="true"
+		aria-label="Door sign"
+		tabindex="-1"
+	>
+		<div class="flex justify-end gap-2 p-3">
+			<button
+				type="button"
+				onclick={() => window.print()}
+				class="h-[40px] border border-ink px-4 text-[10.5px] font-extrabold tracking-[0.14em] uppercase hover:bg-ink hover:text-paper-bg"
+				>Print</button
+			>
+			<button
+				type="button"
+				onclick={closeSign}
+				class="h-[40px] bg-ink px-4 text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase"
+				>Close</button
+			>
+		</div>
+		<div class="min-h-0 flex-1">{@render doorSign(true)}</div>
+	</div>
+{/if}
+
+<!-- what prints: the sign alone, on its own page -->
+<div class="door-print hidden" aria-hidden="true">{@render doorSign(false)}</div>
 
 <AgeShell active="">
 	<!-- ============ masthead ============ -->
@@ -446,6 +535,33 @@
 						{/each}
 					</dl>
 				</div>
+				<!-- door sign -->
+				<div class="mt-5 border border-line2 bg-white px-5 pt-4 pb-5">
+					<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-fade uppercase">
+						<span style="color: {cc};" aria-hidden="true">◆</span> Door sign
+					</p>
+					<div class="mt-3 flex items-center gap-4">
+						<div class="door-qr w-[96px] shrink-0">{@html data.door.svg}</div>
+						<p class="font-newsreader text-[15px] leading-snug text-soft">
+							Players scan it to open the event page and sign up. Visits from it show in analytics
+							as the door.
+						</p>
+					</div>
+					<div class="mt-4 grid grid-cols-2 gap-2">
+						<button
+							type="button"
+							onclick={openSign}
+							class="h-[42px] bg-ink text-[10.5px] font-extrabold tracking-[0.14em] text-paper-bg uppercase transition-colors hover:bg-warm"
+							>Full screen</button
+						>
+						<button
+							type="button"
+							onclick={() => window.print()}
+							class="h-[42px] border border-ink text-[10.5px] font-extrabold tracking-[0.14em] uppercase transition-colors hover:bg-ink hover:text-paper-bg"
+							>Print sign</button
+						>
+					</div>
+				</div>
 				{#if data.event.description}
 					<div class="mt-5 border-t border-line2 pt-4">
 						<p class="text-[9.5px] font-extrabold tracking-[0.2em] text-fade uppercase">
@@ -460,3 +576,29 @@
 		</div>
 	</div>
 </AgeShell>
+
+<style>
+	.door-qr :global(svg) {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+	/* printing prints the door sign alone, filling the page */
+	@media print {
+		@page {
+			margin: 12mm;
+		}
+		:global(body *) {
+			visibility: hidden;
+		}
+		.door-print,
+		.door-print :global(*) {
+			visibility: visible;
+		}
+		.door-print {
+			display: block;
+			position: fixed;
+			inset: 0;
+		}
+	}
+</style>

@@ -7,6 +7,7 @@ import { updateEntry } from '$lib/server/desk/entries.js';
 import { bump } from '$lib/server/cache/index.js';
 import { canManage, getMediaRow } from '$lib/server/media/library.js';
 import { getTag } from '$lib/server/desk/tags.js';
+import { EXCERPT_MAX } from '$lib/desk/limits.js';
 
 async function loadEntry(id) {
 	const [row] = await db.select().from(deskEntry).where(eq(deskEntry.id, id)).limit(1);
@@ -44,6 +45,15 @@ export async function PATCH({ params, request, locals }) {
 
 	const patch = await request.json().catch(() => ({}));
 	const admin = isAdmin(user);
+
+	// The summary fits on one line of a card. An older one that's already
+	// too long can still be saved while it's being shortened, never grown.
+	if (typeof patch.excerpt === 'string' && patch.excerpt.length > EXCERPT_MAX) {
+		const current = entry.draftExcerpt ?? entry.excerpt ?? '';
+		if (patch.excerpt.length > Math.max(current.length, EXCERPT_MAX)) {
+			throw error(400, `Keep the summary to ${EXCERPT_MAX} characters.`);
+		}
+	}
 
 	if (patch.status === 'published' && !admin) {
 		throw error(403, 'Only an admin can publish');

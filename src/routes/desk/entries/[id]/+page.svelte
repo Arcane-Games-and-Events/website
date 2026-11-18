@@ -15,7 +15,9 @@
 	import DeskTabs from '$lib/components/age/desk/DeskTabs.svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
-	import { fly } from 'svelte/transition';
+	import { fade, fly, slide } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
+	import { prefersReducedMotion } from 'svelte/motion';
 	import Editor from '$lib/desk/editor/Editor.svelte';
 	import CoverImagePicker from '$lib/desk/editor/CoverImagePicker.svelte';
 	import VideoSlotPicker from '$lib/desk/editor/VideoSlotPicker.svelte';
@@ -23,6 +25,7 @@
 	import { coerceLexicalDoc } from '$lib/desk/editor/utils.js';
 	import { SLUG_MAX, cleanTypedSlug, slugMatchesTitle, titleToSlug } from '$lib/desk/slug.js';
 	import { diffWords, diffArrays } from 'diff';
+	import { EXCERPT_MAX } from '$lib/desk/limits.js';
 
 	export let data;
 
@@ -44,6 +47,9 @@
 	let title = liveOrDraft(data?.entry, 'title') || 'Untitled';
 	let slug = data?.entry?.draftMeta?.slug ?? data?.entry?.slug ?? '';
 	let excerpt = liveOrDraft(data?.entry, 'excerpt') || '';
+	// One line on a card. An older, longer summary is flagged until it's cut.
+	$: excerptLeft = EXCERPT_MAX - excerpt.length;
+	$: excerptOver = excerptLeft < 0;
 	let accessMode = data?.entry?.draftMeta?.accessMode ?? data?.entry?.accessMode ?? 'free';
 	let status = data?.entry?.status || 'draft';
 	let body = coerceLexicalDoc(liveOrDraft(data?.entry, 'body'));
@@ -261,6 +267,23 @@
 			: status;
 
 	$: hasPendingChanges = !!entry?.draftUpdatedAt;
+
+	// The approval panel, bar and tag ease in when an edit makes them (and
+	// out when it's approved or discarded): the space opens as they fade.
+	const gentle = (ms) => ({
+		duration: prefersReducedMotion.current ? 0 : ms,
+		easing: cubicOut
+	});
+
+	/** @param {Element} node */
+	function settle(node, { duration = 600 } = {}) {
+		const open = slide(node, gentle(duration));
+		return {
+			...open,
+			css: (/** @type {number} */ k, /** @type {number} */ u) =>
+				`${open.css?.(k, u) ?? ''};opacity:${k}`
+		};
+	}
 
 	// Toggle between editing the draft and reviewing the diff against live.
 	// When there are no pending changes, the toggle is hidden and the
@@ -918,7 +941,11 @@
 {#snippet panels()}
 	<div class="space-y-5 font-libre">
 		{#if hasPendingChanges}
-			<section class="border border-t-[3px] border-line2 border-t-hero-rb bg-white">
+			<section
+				class="border border-t-[3px] border-line2 border-t-hero-rb bg-white"
+				in:settle
+				out:settle={{ duration: 340 }}
+			>
 				{@render head(
 					'Pending edits',
 					'text-hero-rb',
@@ -1289,7 +1316,7 @@
 				{#if hasPendingChanges}
 					<span
 						class="hidden shrink-0 bg-hero-rb px-1.5 py-[2px] text-[9px] font-extrabold tracking-[0.14em] text-white uppercase sm:inline"
-						>Pending edits</span
+						transition:fade={gentle(500)}>Pending edits</span
 					>
 				{/if}
 				{#if entry.accessMode === 'premium'}
@@ -1374,14 +1401,23 @@
 					{:else}
 						<label class="mt-5 block">
 							<span class="{fieldLabel} flex items-baseline justify-between gap-3"
-								>Summary<span class="font-semibold tracking-normal normal-case"
-									>Shown on cards and in listings</span
+								>Summary<span
+									class="font-semibold tracking-normal normal-case tabular-nums {excerptOver
+										? 'text-hero-rb'
+										: excerptLeft <= 20
+											? 'text-ink'
+											: ''}"
+									aria-live="polite"
+									>{excerptOver
+										? `${-excerptLeft} over: shorten it to ${EXCERPT_MAX}`
+										: `Shown on cards · ${excerpt.length}/${EXCERPT_MAX}`}</span
 								></span
 							>
 							<span class="{fieldBox} px-4 py-2.5 md:px-7 md:py-3.5">
 								<textarea
 									bind:value={excerpt}
 									use:autogrow={excerpt}
+									maxlength={EXCERPT_MAX}
 									rows="1"
 									placeholder="Add a one-line summary…"
 									aria-label="Summary"
@@ -1394,6 +1430,8 @@
 					{#if hasPendingChanges}
 						<div
 							class="mt-5 flex flex-wrap items-center gap-3 border-l-[3px] border-hero-rb bg-hero-rb/[0.06] px-3.5 py-2.5"
+							in:settle
+							out:settle={{ duration: 340 }}
 						>
 							<span class="text-[12.5px] text-soft"
 								><b class="text-ink">Edits waiting for approval.</b>
@@ -1414,7 +1452,7 @@
 							</span>
 						</div>
 						{#if reviewMode && otherChanges.length}
-							<div class="mt-3 border border-line2 bg-white px-4 py-3">
+							<div class="mt-3 border border-line2 bg-white px-4 py-3" transition:settle>
 								<p class="text-[9.5px] font-extrabold tracking-[0.16em] text-fade uppercase">
 									Also changed
 								</p>
