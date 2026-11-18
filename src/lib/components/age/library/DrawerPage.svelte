@@ -16,6 +16,10 @@
 	/** @type {{ data: any, title: string, lead: string, noun: [string, string], path: string, current: string }} */
 	let { data, title, lead, noun, path, current } = $props();
 	const f = $derived(data.filters);
+	// the newest piece's picture behind the header
+	const cover = $derived(
+		data.stories[0] ? (data.stories[0].picture ?? { src: data.stories[0].image }) : null
+	);
 </script>
 
 <svelte:head>
@@ -33,6 +37,7 @@
 		action={path}
 		placeholder="Search {noun[1]} by title, writer or topic"
 		hidden={{ access: f.access, tag: f.tag, sort: f.sort === 'oldest' ? 'oldest' : '' }}
+		image={cover}
 	/>
 
 	<div class="bg-paper-bg text-ink">

@@ -21,6 +21,7 @@
 		title="Topics"
 		lead="Every piece is filed under a topic. Pick one to see everything in it."
 		search={false}
+		image={data.cover}
 	/>
 
 	<div class="bg-paper-bg text-ink">

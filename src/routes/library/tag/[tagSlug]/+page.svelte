@@ -25,6 +25,7 @@
 		title={data.tag.name}
 		lead="{data.total} {data.total === 1 ? 'piece' : 'pieces'} in this topic."
 		search={false}
+		image={data.stories[0] ? (data.stories[0].picture ?? { src: data.stories[0].image }) : null}
 	/>
 
 	<div class="bg-paper-bg text-ink">

@@ -319,15 +319,20 @@
 {/if}
 
 <!-- ============ COVER ============
-	     The 16:9 cover runs full width with the copy overlaid on its lower
-	     third at md+ (white on an ink scrim) and set beneath it on phones.
+	     The cover runs full width with the copy overlaid on its lower third
+	     at md+ (white on an ink scrim), as tall as the Library's section
+	     headers; on phones it's the whole 16:9 picture with the copy beneath.
 	     Videos use the same masthead with their picture and play in that
 	     frame: the copy fades away while the video plays and comes back
 	     when it's paused or over; its Watch button becomes Pause / Resume. Pieces
 	     with no picture use the paper variant with the copy centred. -->
 <section class="relative">
 	{#if hasCover}
-		<div class="relative mx-auto aspect-video w-full max-w-[1680px] overflow-hidden bg-ink">
+		<!-- from md up, as tall as the Library's section headers and the
+		     Academy's hero (78% of the screen, at most 760px) -->
+		<div
+			class="relative mx-auto aspect-video w-full max-w-[1680px] overflow-hidden bg-ink md:aspect-auto md:h-[min(78vh,760px)]"
+		>
 			<Picture
 				image={heroImage}
 				sizes="(min-width: 1680px) 1680px, 100vw"

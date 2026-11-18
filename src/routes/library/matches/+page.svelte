@@ -44,6 +44,11 @@
 				: 'No matches yet.'
 			: `${a.total} ${a.total === 1 ? 'match' : 'matches'}${filtered ? ` of ${a.totalAll}` : ''}${f.q ? ` for “${f.q}”` : ''}`
 	);
+	// the newest match's picture behind the header
+	const headImage = $derived.by(() => {
+		const m = data.archive?.items?.[0];
+		return m ? (m.cover ?? (m.still ? { src: m.still } : null)) : null;
+	});
 </script>
 
 <Seo
@@ -59,6 +64,7 @@
 		title="Matches"
 		lead="Bonus gameplay from AGE Open: find a hero, a player, an event or a top cut."
 		search={false}
+		image={headImage}
 	/>
 
 	<div class="bg-paper-bg text-ink">
