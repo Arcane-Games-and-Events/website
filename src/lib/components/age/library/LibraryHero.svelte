@@ -57,21 +57,25 @@
 				>◆ Premium</span
 			>
 		{/if}
-		<span class="absolute inset-x-0 bottom-0 block text-white {big ? 'p-6 md:p-8' : 'p-4 md:p-5'}">
+		<span
+			class="absolute inset-x-0 bottom-0 block text-white {big
+				? 'p-4 sm:p-6 md:p-8'
+				: 'p-4 md:p-5'}"
+		>
 			<span
-				class="flex items-center gap-2 font-libre text-xs font-extrabold tracking-widest uppercase"
-				><span class="bg-paper-bg px-2 py-1 text-warm">{t.verb}</span><span class="text-white/75"
-					>{t.what}</span
+				class="flex min-w-0 items-center gap-2 font-libre text-xs font-extrabold tracking-widest uppercase"
+				><span class="shrink-0 bg-paper-bg px-2 py-1 text-warm">{t.verb}</span><span
+					class="min-w-0 truncate text-white/75">{t.what}</span
 				></span
 			>
 			<span
 				class="mt-2.5 block font-newsreader font-semibold tracking-tight [text-wrap:balance] decoration-warm-light decoration-2 underline-offset-5 group-hover:underline {big
-					? 'text-3xl leading-none md:text-5xl'
+					? 'line-clamp-2 text-2xl leading-none sm:line-clamp-3 sm:text-3xl md:text-5xl'
 					: 'line-clamp-2 text-xl leading-none'}">{t.title}</span
 			>
 			{#if big && t.dek}
 				<span
-					class="mt-2 line-clamp-2 block max-w-[52ch] font-newsreader text-lg text-white/75 italic"
+					class="mt-2 line-clamp-2 hidden max-w-[52ch] font-newsreader text-lg text-white/75 italic sm:block"
 					>{t.dek}</span
 				>
 			{/if}
@@ -118,7 +122,7 @@
 
 		{#if lead}
 			<div
-				class="fp-rise aspect-16/10 lg:col-span-7 lg:row-span-2 lg:aspect-auto"
+				class="fp-rise aspect-video lg:col-span-7 lg:row-span-2 lg:aspect-auto"
 				style="animation-delay: 100ms;"
 			>
 				{@render tile(lead, true)}
