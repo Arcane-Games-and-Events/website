@@ -133,6 +133,19 @@
 	function closeMobile() {
 		mobileOpen = false;
 	}
+	/** The header's height as --age-header, so pinned things sit below it. */
+	$effect(() => {
+		if (!headerEl) return;
+		const root = document.documentElement;
+		const ro = new ResizeObserver(() =>
+			root.style.setProperty('--age-header', `${headerEl?.offsetHeight ?? 0}px`)
+		);
+		ro.observe(headerEl);
+		return () => {
+			ro.disconnect();
+			root.style.removeProperty('--age-header');
+		};
+	});
 </script>
 
 <svelte:window onresize={() => mobileOpen && measureDrawer()} />

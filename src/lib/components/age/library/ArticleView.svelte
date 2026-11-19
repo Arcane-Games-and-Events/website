@@ -26,10 +26,19 @@
 	 * `media`, and `user` for the gate's sign-in button.
 	 */
 	export let data;
-	/** Where the rail's contents stick, below whatever is pinned above it. */
-	export let railTop = '24px';
+	/** Where the rail's contents stick, below whatever is pinned above it (the site header). */
+	export let railTop = 'calc(var(--age-header, 0px) + 24px)';
 	/** The "← Library" link over the cover (the Desk preview points back to the editor). */
 	export let back = { href: '/library', label: 'Library' };
+
+	// The author card scrolls away; the contents below it stay pinned beside
+	// the article, but only while they fit on screen. A very long contents
+	// list scrolls with the page instead of in a box of its own.
+	let rail;
+	let railHeight = 0;
+	let viewHeight = 0;
+	$: railOffset = rail && viewHeight ? parseFloat(getComputedStyle(rail).top) || 0 : 0;
+	$: railFits = railHeight + railOffset + 24 <= viewHeight;
 
 	// Card images map from server for hover tooltips
 	$: cardImages = data.cardImages || {};
@@ -570,27 +579,39 @@
 	</figure>
 {/if}
 
+<svelte:window bind:innerHeight={viewHeight} />
+
 <!-- ============ READING LAYOUT ============ -->
 <div
 	class="mx-auto grid w-full max-w-page grid-cols-1 gap-18 px-5 pt-10 pb-8 md:px-14 md:pt-14 lg:grid-cols-[232px_minmax(0,1fr)]"
 >
 	<!-- ============ RAIL ============ -->
 	<aside class="hidden lg:block">
-		<div
-			class="sticky max-h-[calc(100vh-var(--rail-top)-24px)] overflow-y-auto pr-1"
-			style="--rail-top: {railTop}; top: var(--rail-top);"
-		>
-			{#if data.article.author}
+		{#if data.article.author}
+			<!-- the rule above the contents scrolls away with the card -->
+			<div
+				class="pr-1 {!data.isPreview && tableOfContents.length > 0
+					? 'mb-4 border-b border-line pb-5'
+					: ''}"
+			>
 				<AuthorCard
 					variant="rail"
 					author={data.article.author}
 					bioHtml={authorBioHtml}
 					links={authorLinks}
 				/>
-			{/if}
+			</div>
+		{/if}
 
+		<!-- the contents and share buttons follow the article down the page -->
+		<div
+			bind:this={rail}
+			bind:offsetHeight={railHeight}
+			class="pr-1 {railFits ? 'sticky' : ''}"
+			style="top: {railTop};"
+		>
 			{#if !data.isPreview && tableOfContents.length > 0}
-				<nav class="mt-5 border-t border-line pt-4">
+				<nav>
 					<div
 						class="mb-2.5 flex items-center gap-2 text-xs font-extrabold tracking-widest text-ink uppercase"
 					>
