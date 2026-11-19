@@ -378,9 +378,11 @@ describe('refunding tickets', () => {
 	});
 
 	test('once the event has started, members can’t refund', async () => {
-		const started = await createEvent({
-			eventDate: new Date(venueNow('Los Angeles').getTime() - 3600000)
-		});
+		// Started at midnight on the venue's clock: already under way, and
+		// still today there, so registration is open whatever the hour.
+		const today = venueNow('Los Angeles');
+		today.setUTCHours(0, 0, 0, 0);
+		const started = await createEvent({ eventDate: today });
 		// Bought earlier in the day, while registration was open.
 		const { tickets } = await bought({ event: started });
 		const r = await memberRefundTicket({ user: buyer, ticketId: tickets[0].id });

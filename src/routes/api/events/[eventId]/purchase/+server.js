@@ -14,6 +14,7 @@ import {
 	markCheckout,
 	validatePlayers
 } from '$lib/server/payments/checkout.js';
+import { venueNow, withVenueZone } from '$lib/server/payments/refunds.js';
 
 /**
  * POST /api/events/[eventId]/purchase
@@ -62,10 +63,13 @@ export async function POST({ params, request, locals, cookies, url, getClientAdd
 		return json({ error: 'Event not found' }, { status: 404 });
 	if (ev.status === 'cancelled')
 		return json({ error: 'This event has been cancelled.' }, { status: 400 });
+	// Registration stays open to the end of the event's day on the venue's
+	// clock (event times are stored as venue wall-clock time, read as UTC).
 	if (ev.eventDate) {
 		const end = new Date(ev.eventDate);
 		end.setUTCHours(23, 59, 59, 999);
-		if (end < new Date())
+		const venue = await withVenueZone(ev);
+		if (end < venueNow(ev.circuit, new Date(), venue?.timezone))
 			return json({ error: 'Registration for this event has closed.' }, { status: 400 });
 	}
 
