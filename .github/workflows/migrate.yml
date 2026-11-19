@@ -1,0 +1,52 @@
+# Database migrations, run by hand: Actions → Database migrations → Run
+# workflow, pick the database and whether to only preview (dry-run) or push.
+#
+# Each target is a GitHub Environment (Settings → Environments) holding the
+# secret DATABASE_URL_DIRECT for that Supabase project (the session-mode
+# connection, port 5432). Give `production` required reviewers so a push
+# waits for approval. Same commands as `pnpm db:dry-run` / `pnpm db:push`
+# locally (scripts/db.mjs).
+name: Database migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Database
+        type: choice
+        options: [staging, production]
+        required: true
+      action:
+        description: Preview only, or run the new migrations
+        type: choice
+        options: [dry-run, push]
+        default: dry-run
+        required: true
+
+concurrency:
+  group: migrate-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: ${{ inputs.action }} → ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install
+      - name: What the database has
+        run: pnpm db:status
+        env:
+          DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
+      - name: ${{ inputs.action == 'push' && 'Run the new migrations' || 'Preview the new migrations' }}
+        run: pnpm db:${{ inputs.action }}
+        env:
+          DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}

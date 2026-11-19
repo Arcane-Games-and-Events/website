@@ -383,18 +383,6 @@ export const fabCardLookup = pgTable('fab_card_lookup', {
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow()
 });
 
-// FAB CARD UPLOAD HISTORY (track card database updates)
-export const fabCardUploadHistory = pgTable('fab_card_upload_history', {
-	id: uuid('id').defaultRandom().primaryKey(),
-	uploadedBy: text('uploaded_by'), // User email who uploaded
-	filename: text('filename'),
-	totalCards: integer('total_cards').notNull(),
-	lookupEntries: integer('lookup_entries').notNull(),
-	setsIncluded: jsonb('sets_included'), // Array of set IDs
-
-	uploadedAt: timestamp('uploaded_at', { withTimezone: true, mode: 'date' }).defaultNow()
-});
-
 // LSS EVENTS (official Legend Story Studios competitive events/seasons)
 export const lssEvent = pgTable('lss_events', {
 	id: uuid('id').defaultRandom().primaryKey(),
@@ -1896,31 +1884,6 @@ export const storePayout = pgTable('store_payout', {
 	note: text('note'),
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
 });
-
-export const storeStatement = pgTable(
-	'store_statement',
-	{
-		storeId: uuid('store_id')
-			.notNull()
-			.references(() => store.id, { onDelete: 'restrict' }),
-		month: text('month').notNull(), // DATE, read as text
-		status: text('status').notNull().default('open'), // open | locked | paid
-		grossCents: integer('gross_cents'),
-		refundCents: integer('refund_cents'),
-		feeCents: integer('fee_cents'),
-		adjustCents: integer('adjust_cents'),
-		amountCents: integer('amount_cents'),
-		lockedAt: timestamp('locked_at', { withTimezone: true, mode: 'date' }),
-		lockedBy: text('locked_by').references(() => user.id, { onDelete: 'set null' }),
-		paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
-		paidBy: text('paid_by').references(() => user.id, { onDelete: 'set null' }),
-		method: text('method'),
-		reference: text('reference'),
-		note: text('note'),
-		createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
-	},
-	(t) => [primaryKey({ columns: [t.storeId, t.month] })]
-);
 
 export const storeActivity = pgTable('store_activity', {
 	id: uuid('id').defaultRandom().primaryKey(),

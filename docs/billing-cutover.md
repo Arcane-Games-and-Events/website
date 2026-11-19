@@ -33,7 +33,7 @@ How members move from Authorize.net ARB subscriptions to AGE's own billing
 
 ## T0 (17:00–22:00 UTC, after the overnight ARB batch)
 
-1. Run `024a_pre_cutover_snapshot.sql`; `pg_dump --data-only` of `"user"`,
+1. Run `supabase/runbook/024a_pre_cutover_snapshot.sql` (in the SQL editor — it is a runbook step, not a migration); `pg_dump --data-only` of `"user"`,
    `"order"`, `ticket`, `payment`, `member_event`, `saved_card`.
 2. `/admin/orders/migration` → **Scan Authorize.net**. Review:
    - "Needs a decision": approve, skip or assign each one. Flags explain

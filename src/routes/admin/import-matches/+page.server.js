@@ -21,12 +21,7 @@ const MONTHS = [
 	'december'
 ];
 
-/**
- * Import matches page - uses RPC for load, standard queries for action
- *
- * The load function uses get_import_matches_data() RPC if available,
- * falls back to direct queries otherwise.
- */
+/** Import matches page: hero counts and standings per circuit and season. */
 export async function load({ locals }) {
 	if (!locals.user || locals.user.role !== 'admin') {
 		throw redirect(302, '/login');

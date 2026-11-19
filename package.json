@@ -20,7 +20,11 @@
 		"test:watch": "vitest --project unit",
 		"test:db:up": "docker compose -f tests/docker-compose.yml up -d --wait",
 		"test:db:down": "docker compose -f tests/docker-compose.yml down",
-		"test:db:schema": "node scripts/refresh-test-schema.mjs"
+		"test:db:schema": "node scripts/refresh-test-schema.mjs",
+		"db:status": "node scripts/db.mjs status",
+		"db:dry-run": "node scripts/db.mjs dry-run",
+		"db:push": "node scripts/db.mjs push",
+		"db:mark-applied": "node scripts/db.mjs mark-applied"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
@@ -42,6 +46,7 @@
 		"prettier": "3.4.2",
 		"prettier-plugin-svelte": "3.3.3",
 		"prettier-plugin-tailwindcss": "^0.6.11",
+		"supabase": "^3.2.0",
 		"svelte": "^5.0.0",
 		"svelte-check": "^4.7.7",
 		"tailwindcss": "^4.0.0",

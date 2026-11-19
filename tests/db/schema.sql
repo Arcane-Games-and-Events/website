@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 4nf9jZiE0VKpaxci9LYdPYUS7K1O92AyDYFkx0eoJvOES4ZDuY5U7o0AqsEqBRp
+\restrict mn8nXEmncgm5N7WZNJuWhe6fPbmUbttQT1fg5k6Gn88FzZL4un2IO1nrmnoud0e
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.7 (Homebrew)
@@ -24,1214 +24,6 @@ SET row_security = off;
 --
 
 CREATE SCHEMA public;
-
-
---
--- Name: finalize_event(text, text); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.finalize_event(p_event_id text, p_user_id text) RETURNS json
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    v_event RECORD;
-    v_result_count INT;
-BEGIN
-    -- Get event data
-    SELECT * INTO v_event FROM events WHERE id = p_event_id;
-
-    IF v_event IS NULL THEN
-        RETURN json_build_object('success', false, 'error', 'Event not found');
-    END IF;
-
-    -- Check if there are results
-    SELECT COUNT(*) INTO v_result_count FROM results WHERE event_id = p_event_id;
-    IF v_result_count = 0 THEN
-        RETURN json_build_object('success', false, 'error', 'No results to finalize. Please upload results first.');
-    END IF;
-
-    -- Just update event status - standings are already synced from CSV upload
-    UPDATE events SET
-        status = 'completed',
-        closed_at = NOW(),
-        closed_by = p_user_id
-    WHERE id = p_event_id;
-
-    RETURN json_build_object(
-        'success', true,
-        'message', 'Event marked as completed',
-        'resultCount', v_result_count
-    );
-END;
-$$;
-
-
---
--- Name: get_admin_dashboard_stats(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.get_admin_dashboard_stats() RETURNS json
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    result JSON;
-    now_ts TIMESTAMP := NOW();
-    today_start TIMESTAMP := date_trunc('day', NOW());
-    week_start TIMESTAMP := NOW() - INTERVAL '7 days';
-    month_start TIMESTAMP := date_trunc('month', NOW());
-    thirty_days_ago TIMESTAMP := NOW() - INTERVAL '30 days';
-    thirty_days_future TIMESTAMP := NOW() + INTERVAL '30 days';
-BEGIN
-    SELECT json_build_object(
-        'stats', json_build_object(
-            'totalEvents', (SELECT COUNT(*) FROM events),
-            'totalOrders', (SELECT COUNT(*) FROM "order"),
-            'premiumUsers', (SELECT COUNT(*) FROM "user" WHERE role = 'premium'),
-            'totalUsers', (SELECT COUNT(*) FROM "user"),
-            'totalPlayers', (SELECT COUNT(DISTINCT gem_id) FROM standings WHERE gem_id IS NOT NULL),
-            'totalTicketsSold', (SELECT COUNT(*) FROM ticket WHERE refunded IS NOT TRUE),
-            'totalRefunded', (SELECT COUNT(*) FROM ticket WHERE refunded = true),
-            'upcomingEvents', (SELECT COUNT(*) FROM events WHERE event_date >= now_ts),
-            'pastEvents', (SELECT COUNT(*) FROM events WHERE event_date < now_ts)
-        ),
-        'analytics', json_build_object(
-            'todayRevenue', COALESCE((SELECT SUM(CAST(amount AS DECIMAL)) FROM "order" WHERE created_at >= today_start), 0),
-            'weekRevenue', COALESCE((SELECT SUM(CAST(amount AS DECIMAL)) FROM "order" WHERE created_at >= week_start), 0),
-            'monthRevenue', COALESCE((SELECT SUM(CAST(amount AS DECIMAL)) FROM "order" WHERE created_at >= month_start), 0),
-            'totalRevenue', COALESCE((SELECT SUM(CAST(amount AS DECIMAL)) FROM "order"), 0),
-            'revenueByType', (
-                SELECT COALESCE(json_agg(json_build_object('type', type, 'total', total, 'count', cnt)), '[]'::json)
-                FROM (
-                    SELECT COALESCE(meta->>'type', 'unknown') as type,
-                           COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total,
-                           COUNT(*) as cnt
-                    FROM "order" GROUP BY meta->>'type'
-                ) t
-            ),
-            'dailyTrend', (
-                SELECT COALESCE(json_agg(json_build_object('date', dt, 'total', total, 'count', cnt) ORDER BY dt), '[]'::json)
-                FROM (
-                    SELECT DATE(created_at) as dt,
-                           COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total,
-                           COUNT(*) as cnt
-                    FROM "order" WHERE created_at >= thirty_days_ago
-                    GROUP BY DATE(created_at)
-                ) d
-            ),
-            'topEvents', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'eventId', event_id, 'eventTitle', event_title, 'totalRevenue', total_rev, 'ticketCount', cnt
-                )), '[]'::json)
-                FROM (
-                    SELECT meta->>'eventId' as event_id,
-                           meta->>'eventTitle' as event_title,
-                           COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total_rev,
-                           COUNT(*) as cnt
-                    FROM "order"
-                    WHERE meta->>'type' = 'ticket'
-                    GROUP BY meta->>'eventId', meta->>'eventTitle'
-                    ORDER BY total_rev DESC LIMIT 5
-                ) e
-            ),
-            'customerStats', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'email', email, 'orderCount', order_count, 'totalSpent', total_spent,
-                    'firstOrder', first_order, 'lastOrder', last_order
-                )), '[]'::json)
-                FROM (
-                    SELECT user_email as email, COUNT(*) as order_count,
-                           COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total_spent,
-                           MIN(created_at) as first_order, MAX(created_at) as last_order
-                    FROM "order" GROUP BY user_email
-                    ORDER BY total_spent DESC LIMIT 100
-                ) c
-            )
-        ),
-        'eventAnalytics', json_build_object(
-            'byCircuit', (
-                SELECT COALESCE(json_object_agg(circuit, cnt), '{}'::json)
-                FROM (SELECT COALESCE(circuit, 'Unassigned') as circuit, COUNT(*) as cnt FROM events GROUP BY circuit) c
-            ),
-            'byFormat', (
-                SELECT COALESCE(json_object_agg(format, cnt), '{}'::json)
-                FROM (SELECT COALESCE(format, 'Unknown') as format, COUNT(*) as cnt FROM events GROUP BY format) f
-            ),
-            'byStatus', json_build_object(
-                'upcoming', (SELECT COUNT(*) FROM events WHERE status = 'upcoming' OR (status IS NULL AND event_date >= now_ts)),
-                'in_progress', (SELECT COUNT(*) FROM events WHERE status = 'in_progress'),
-                'completed', (SELECT COUNT(*) FROM events WHERE status = 'completed'),
-                'cancelled', (SELECT COUNT(*) FROM events WHERE status = 'cancelled')
-            ),
-            'upcoming', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'id', id, 'title', title, 'eventDate', event_date, 'circuit', circuit, 'location', location
-                ) ORDER BY event_date), '[]'::json)
-                FROM (
-                    SELECT id, title, event_date, circuit, location
-                    FROM events
-                    WHERE event_date >= now_ts AND event_date <= thirty_days_future
-                    ORDER BY event_date LIMIT 10
-                ) e
-            )
-        ),
-        'events', (
-            SELECT COALESCE(json_agg(row_to_json(e) ORDER BY created_at DESC), '[]'::json)
-            FROM (SELECT * FROM events ORDER BY created_at DESC LIMIT 50) e
-        ),
-        'standings', (
-            SELECT COALESCE(json_agg(row_to_json(s) ORDER BY total_points DESC NULLS LAST), '[]'::json)
-            FROM (SELECT * FROM standings ORDER BY total_points DESC NULLS LAST LIMIT 100) s
-        ),
-        'orders', (
-            SELECT COALESCE(json_agg(row_to_json(o) ORDER BY created_at DESC), '[]'::json)
-            FROM (SELECT * FROM "order" ORDER BY created_at DESC) o
-        ),
-        'users', (
-            SELECT COALESCE(json_agg(json_build_object(
-                'id', id, 'email', email, 'role', role, 'createdAt', created_at,
-                'first_name', first_name, 'last_name', last_name
-            ) ORDER BY created_at DESC), '[]'::json)
-            FROM (SELECT id, email, role, created_at, first_name, last_name FROM "user" ORDER BY created_at DESC) u
-        ),
-        'lssEvents', (
-            SELECT COALESCE(json_agg(row_to_json(s) ORDER BY start_date DESC), '[]'::json)
-            FROM lss_events s
-        ),
-        'ticketStats', (
-            SELECT COALESCE(json_agg(json_build_object(
-                'eventId', event_id, 'sold', sold, 'refunded', refunded, 'revenue', revenue
-            )), '[]'::json)
-            FROM (
-                SELECT event_id, COUNT(*) as sold,
-                       SUM(CASE WHEN refunded = true THEN 1 ELSE 0 END) as refunded,
-                       COALESCE(SUM(CAST(amount_paid AS DECIMAL)), 0) as revenue
-                FROM ticket GROUP BY event_id
-            ) t
-        )
-    ) INTO result;
-
-    RETURN result;
-END;
-$$;
-
-
---
--- Name: get_analytics_data(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.get_analytics_data() RETURNS json
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    result JSON;
-    today_start TIMESTAMP := date_trunc('day', NOW());
-    week_start TIMESTAMP := NOW() - INTERVAL '7 days';
-    month_start TIMESTAMP := date_trunc('month', NOW());
-    last_month_start TIMESTAMP := date_trunc('month', NOW() - INTERVAL '1 month');
-    year_start TIMESTAMP := date_trunc('year', NOW());
-    thirty_days_ago TIMESTAMP := NOW() - INTERVAL '30 days';
-BEGIN
-    SELECT json_build_object(
-        'revenue', json_build_object(
-            'today', COALESCE((SELECT SUM(CAST(amount AS DECIMAL)) FROM "order" WHERE created_at >= today_start), 0),
-            'todayOrders', (SELECT COUNT(*) FROM "order" WHERE created_at >= today_start),
-            'week', COALESCE((SELECT SUM(CAST(amount AS DECIMAL)) FROM "order" WHERE created_at >= week_start), 0),
-            'weekOrders', (SELECT COUNT(*) FROM "order" WHERE created_at >= week_start),
-            'month', COALESCE((SELECT SUM(CAST(amount AS DECIMAL)) FROM "order" WHERE created_at >= month_start), 0),
-            'monthOrders', (SELECT COUNT(*) FROM "order" WHERE created_at >= month_start),
-            'lastMonth', COALESCE((SELECT SUM(CAST(amount AS DECIMAL)) FROM "order" WHERE created_at >= last_month_start AND created_at < month_start), 0),
-            'ytd', COALESCE((SELECT SUM(CAST(amount AS DECIMAL)) FROM "order" WHERE created_at >= year_start), 0),
-            'allTime', COALESCE((SELECT SUM(CAST(amount AS DECIMAL)) FROM "order"), 0),
-            'allTimeOrders', (SELECT COUNT(*) FROM "order"),
-            'byType', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'type', COALESCE(type, 'unknown'),
-                    'total', total,
-                    'count', cnt
-                )), '[]'::json)
-                FROM (
-                    SELECT meta->>'type' as type, COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total, COUNT(*) as cnt
-                    FROM "order" GROUP BY meta->>'type' ORDER BY total DESC
-                ) t
-            ),
-            'dailyTrend', (
-                SELECT COALESCE(json_agg(json_build_object('date', dt, 'total', total, 'count', cnt) ORDER BY dt), '[]'::json)
-                FROM (
-                    SELECT DATE(created_at) as dt, COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total, COUNT(*) as cnt
-                    FROM "order" WHERE created_at >= thirty_days_ago
-                    GROUP BY DATE(created_at)
-                ) d
-            ),
-            'monthlyTrend', (
-                SELECT COALESCE(json_agg(json_build_object('month', m, 'monthName', mn, 'total', total, 'count', cnt) ORDER BY m), '[]'::json)
-                FROM (
-                    SELECT TO_CHAR(created_at, 'YYYY-MM') as m, TO_CHAR(created_at, 'Mon YYYY') as mn,
-                           COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total, COUNT(*) as cnt
-                    FROM "order" GROUP BY m, mn ORDER BY m DESC LIMIT 12
-                ) mo
-            )
-        ),
-        'users', json_build_object(
-            'total', (SELECT COUNT(*) FROM "user"),
-            'newThisMonth', (SELECT COUNT(*) FROM "user" WHERE created_at >= month_start),
-            'newLastMonth', (SELECT COUNT(*) FROM "user" WHERE created_at >= last_month_start AND created_at < month_start),
-            'activeSubscribers', (SELECT COUNT(*) FROM "user" WHERE subscription_status = 'active'),
-            'byRole', (
-                SELECT COALESCE(json_agg(json_build_object('role', COALESCE(role, 'unknown'), 'count', cnt)), '[]'::json)
-                FROM (SELECT role, COUNT(*) as cnt FROM "user" GROUP BY role ORDER BY cnt DESC) r
-            ),
-            'subscriptionBreakdown', (
-                SELECT COALESCE(json_agg(json_build_object('type', type, 'status', status, 'count', cnt)), '[]'::json)
-                FROM (
-                    SELECT subscription_type as type, subscription_status as status, COUNT(*) as cnt
-                    FROM "user" WHERE subscription_type IS NOT NULL
-                    GROUP BY subscription_type, subscription_status
-                ) s
-            ),
-            'dailySignups', (
-                SELECT COALESCE(json_agg(json_build_object('date', dt, 'count', cnt) ORDER BY dt), '[]'::json)
-                FROM (
-                    SELECT DATE(created_at) as dt, COUNT(*) as cnt
-                    FROM "user" WHERE created_at >= thirty_days_ago
-                    GROUP BY DATE(created_at)
-                ) d
-            )
-        ),
-        'events', json_build_object(
-            'total', (SELECT COUNT(*) FROM events),
-            'upcoming', (SELECT COUNT(*) FROM events WHERE event_date >= NOW()),
-            'byStatus', (
-                SELECT COALESCE(json_agg(json_build_object('status', COALESCE(status, 'unknown'), 'count', cnt)), '[]'::json)
-                FROM (SELECT status, COUNT(*) as cnt FROM events GROUP BY status) s
-            ),
-            'byCircuit', (
-                SELECT COALESCE(json_agg(json_build_object('circuit', circuit, 'count', cnt)), '[]'::json)
-                FROM (SELECT COALESCE(circuit, 'Unassigned') as circuit, COUNT(*) as cnt FROM events GROUP BY circuit ORDER BY cnt DESC) c
-            ),
-            'byFormat', (
-                SELECT COALESCE(json_agg(json_build_object('format', format, 'count', cnt)), '[]'::json)
-                FROM (SELECT COALESCE(format, 'Unknown') as format, COUNT(*) as cnt FROM events GROUP BY format ORDER BY cnt DESC) f
-            )
-        ),
-        'tickets', json_build_object(
-            'total', (SELECT COUNT(*) FROM ticket),
-            'thisMonth', (SELECT COUNT(*) FROM ticket WHERE created_at >= month_start),
-            'thisMonthRevenue', COALESCE((SELECT SUM(CAST(amount_paid AS DECIMAL)) FROM ticket WHERE created_at >= month_start), 0),
-            'lastMonth', (SELECT COUNT(*) FROM ticket WHERE created_at >= last_month_start AND created_at < month_start),
-            'refunded', (SELECT COUNT(*) FROM ticket WHERE refunded = true),
-            'totalRevenue', COALESCE((SELECT SUM(CAST(amount_paid AS DECIMAL)) FROM ticket WHERE refunded IS NOT TRUE), 0),
-            'byCircuit', (
-                SELECT COALESCE(json_agg(json_build_object('circuit', circuit, 'count', cnt, 'revenue', rev)), '[]'::json)
-                FROM (
-                    SELECT COALESCE(e.circuit, 'Unassigned') as circuit, COUNT(*) as cnt,
-                           COALESCE(SUM(CAST(t.amount_paid AS DECIMAL)), 0) as rev
-                    FROM ticket t LEFT JOIN events e ON t.event_id = e.id
-                    GROUP BY e.circuit ORDER BY cnt DESC
-                ) c
-            ),
-            'topEvents', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'eventId', event_id, 'title', title, 'circuit', circuit, 'count', cnt, 'revenue', rev
-                )), '[]'::json)
-                FROM (
-                    SELECT t.event_id, e.title, e.circuit, COUNT(*) as cnt,
-                           COALESCE(SUM(CAST(t.amount_paid AS DECIMAL)), 0) as rev
-                    FROM ticket t LEFT JOIN events e ON t.event_id = e.id
-                    WHERE t.refunded IS NOT TRUE
-                    GROUP BY t.event_id, e.title, e.circuit
-                    ORDER BY cnt DESC LIMIT 10
-                ) te
-            )
-        ),
-        'courses', json_build_object(
-            'total', (SELECT COUNT(*) FROM entitlement),
-            'byProduct', (
-                SELECT COALESCE(json_agg(json_build_object('product', product, 'count', cnt)), '[]'::json)
-                FROM (SELECT product, COUNT(*) as cnt FROM entitlement GROUP BY product ORDER BY cnt DESC) p
-            )
-        ),
-        'players', json_build_object(
-            'total', (SELECT COUNT(DISTINCT gem_id) FROM standings WHERE gem_id IS NOT NULL),
-            'byCircuit', (
-                SELECT COALESCE(json_agg(json_build_object('circuit', circuit, 'count', cnt)), '[]'::json)
-                FROM (SELECT circuit, COUNT(DISTINCT gem_id) as cnt FROM standings GROUP BY circuit ORDER BY cnt DESC) c
-            ),
-            'topPlayers', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'name', player_name, 'gemId', gem_id, 'circuit', circuit,
-                    'points', total_points, 'matchesWon', matches_won, 'matchesPlayed', matches_played
-                )), '[]'::json)
-                FROM (
-                    SELECT player_name, gem_id, circuit, total_points, matches_won, matches_played
-                    FROM standings ORDER BY total_points DESC NULLS LAST LIMIT 10
-                ) tp
-            )
-        ),
-        'customers', (
-            SELECT json_build_object(
-                'total', COUNT(DISTINCT user_email),
-                'topCustomers', (
-                    SELECT COALESCE(json_agg(json_build_object(
-                        'email', email, 'orderCount', order_count, 'totalSpent', total_spent
-                    )), '[]'::json)
-                    FROM (
-                        SELECT user_email as email, COUNT(*) as order_count,
-                               COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total_spent
-                        FROM "order"
-                        GROUP BY user_email
-                        ORDER BY total_spent DESC
-                        LIMIT 10
-                    ) tc
-                )
-            )
-            FROM "order"
-        ),
-        'premium', json_build_object(
-            'totalPremium', (SELECT COUNT(*) FROM "user" WHERE role = 'premium'),
-            'paidPremium', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_id IS NOT NULL),
-            'assignedPremium', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_id IS NULL),
-            'paidActive', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_status = 'active'),
-            'paidCancelled', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_status = 'cancelled'),
-            'paidExpired', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_status = 'expired'),
-            'paidPaymentFailed', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_status = 'payment_failed'),
-            'paidMonthlyActive', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_type = 'monthly' AND subscription_status = 'active'),
-            'paidYearlyActive', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_type = 'yearly' AND subscription_status = 'active'),
-            'paidMonthlyCancelled', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_type = 'monthly' AND subscription_status = 'cancelled'),
-            'paidYearlyCancelled', (SELECT COUNT(*) FROM "user" WHERE role = 'premium' AND subscription_type = 'yearly' AND subscription_status = 'cancelled'),
-            'recentSignups', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'email', email, 'firstName', first_name, 'lastName', last_name,
-                    'type', 'paid', 'subscriptionType', subscription_type,
-                    'subscriptionStatus', subscription_status, 'createdAt', subscription_start_date
-                ) ORDER BY subscription_start_date DESC NULLS LAST), '[]'::json)
-                FROM (
-                    SELECT email, first_name, last_name, subscription_type, subscription_status, subscription_start_date
-                    FROM "user"
-                    WHERE role = 'premium' AND subscription_id IS NOT NULL
-                    ORDER BY subscription_start_date DESC NULLS LAST
-                    LIMIT 10
-                ) rs
-            ),
-            'monthlyTrend', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'month', m, 'monthName', mn,
-                    'paid', paid, 'assigned', assigned, 'total', paid + assigned
-                ) ORDER BY m), '[]'::json)
-                FROM (
-                    SELECT TO_CHAR(subscription_start_date, 'YYYY-MM') as m,
-                           TO_CHAR(subscription_start_date, 'Mon YYYY') as mn,
-                           COUNT(*) FILTER (WHERE subscription_id IS NOT NULL) as paid,
-                           COUNT(*) FILTER (WHERE subscription_id IS NULL) as assigned
-                    FROM "user"
-                    WHERE role = 'premium' AND subscription_start_date IS NOT NULL
-                    GROUP BY m, mn
-                    ORDER BY m DESC LIMIT 12
-                ) mt
-            )
-        )
-    ) INTO result;
-
-    -- Calculate growth percentages
-    DECLARE
-        month_rev DECIMAL;
-        last_month_rev DECIMAL;
-        growth_pct DECIMAL;
-    BEGIN
-        month_rev := (result->'revenue'->>'month')::DECIMAL;
-        last_month_rev := (result->'revenue'->>'lastMonth')::DECIMAL;
-
-        IF last_month_rev > 0 THEN
-            growth_pct := ROUND((month_rev - last_month_rev) / last_month_rev * 100, 1);
-            result := jsonb_set(result::jsonb, '{revenue,growth}', to_jsonb(growth_pct))::json;
-        ELSE
-            result := jsonb_set(result::jsonb, '{revenue,growth}', 'null'::jsonb)::json;
-        END IF;
-    END;
-
-    RETURN result;
-END;
-$$;
-
-
---
--- Name: get_content_analytics_data(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.get_content_analytics_data() RETURNS json
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    result JSON;
-    today_start TIMESTAMP := date_trunc('day', NOW());
-    week_start TIMESTAMP := NOW() - INTERVAL '7 days';
-    month_start TIMESTAMP := date_trunc('month', NOW());
-    thirty_days_ago TIMESTAMP := NOW() - INTERVAL '30 days';
-    seven_days_ago TIMESTAMP := NOW() - INTERVAL '7 days';
-BEGIN
-    SELECT json_build_object(
-        -- ============================
-        -- PAGE VIEWS (site-wide)
-        -- ============================
-        'pageViews', json_build_object(
-            'today', (SELECT COUNT(*) FROM page_view WHERE created_at >= today_start),
-            'todayUnique', (SELECT COUNT(DISTINCT session_id) FROM page_view WHERE created_at >= today_start),
-            'week', (SELECT COUNT(*) FROM page_view WHERE created_at >= week_start),
-            'weekUnique', (SELECT COUNT(DISTINCT session_id) FROM page_view WHERE created_at >= week_start),
-            'month', (SELECT COUNT(*) FROM page_view WHERE created_at >= month_start),
-            'monthUnique', (SELECT COUNT(DISTINCT session_id) FROM page_view WHERE created_at >= month_start),
-            'allTime', (SELECT COUNT(*) FROM page_view),
-            'allTimeUnique', (SELECT COUNT(DISTINCT session_id) FROM page_view),
-            -- Daily trend (last 30 days)
-            'dailyTrend', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'date', dt,
-                    'views', views,
-                    'uniqueVisitors', uniques
-                ) ORDER BY dt), '[]'::json)
-                FROM (
-                    SELECT DATE(created_at) as dt,
-                           COUNT(*) as views,
-                           COUNT(DISTINCT session_id) as uniques
-                    FROM page_view WHERE created_at >= thirty_days_ago
-                    GROUP BY DATE(created_at)
-                ) d
-            ),
-            -- Top 20 pages
-            'topPages', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'path', path,
-                    'views', views,
-                    'uniqueVisitors', uniques
-                )), '[]'::json)
-                FROM (
-                    SELECT path,
-                           COUNT(*) as views,
-                           COUNT(DISTINCT session_id) as uniques
-                    FROM page_view WHERE created_at >= thirty_days_ago
-                    GROUP BY path
-                    ORDER BY views DESC
-                    LIMIT 20
-                ) p
-            ),
-            -- Device breakdown
-            'deviceBreakdown', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'device', COALESCE(device_type, 'unknown'),
-                    'count', cnt
-                )), '[]'::json)
-                FROM (
-                    SELECT device_type, COUNT(*) as cnt
-                    FROM page_view WHERE created_at >= thirty_days_ago
-                    GROUP BY device_type ORDER BY cnt DESC
-                ) dv
-            ),
-            -- Browser breakdown
-            'browserBreakdown', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'browser', COALESCE(browser, 'unknown'),
-                    'count', cnt
-                )), '[]'::json)
-                FROM (
-                    SELECT browser, COUNT(*) as cnt
-                    FROM page_view WHERE created_at >= thirty_days_ago
-                    GROUP BY browser ORDER BY cnt DESC
-                    LIMIT 10
-                ) br
-            ),
-            -- Top countries
-            'topCountries', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'country', country,
-                    'count', cnt
-                )), '[]'::json)
-                FROM (
-                    SELECT country, COUNT(*) as cnt
-                    FROM page_view WHERE created_at >= thirty_days_ago AND country IS NOT NULL
-                    GROUP BY country ORDER BY cnt DESC
-                    LIMIT 20
-                ) co
-            ),
-            -- New vs returning ratio
-            'newVsReturning', json_build_object(
-                'new', (SELECT COUNT(*) FROM page_view WHERE created_at >= thirty_days_ago AND is_new_visitor = TRUE),
-                'returning', (SELECT COUNT(*) FROM page_view WHERE created_at >= thirty_days_ago AND is_new_visitor = FALSE)
-            )
-        ),
-
-        -- ============================
-        -- ARTICLES
-        -- ============================
-        'articles', json_build_object(
-            -- Top articles by views (last 30 days)
-            'topByViews', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'slug', slug,
-                    'title', title,
-                    'author', author,
-                    'tags', tags,
-                    'accessMode', access_mode,
-                    'views', views,
-                    'uniqueReaders', unique_readers
-                ) ORDER BY views DESC), '[]'::json)
-                FROM (
-                    SELECT article_slug as slug,
-                           MAX(article_title) as title,
-                           MAX(article_author) as author,
-                           MAX(article_tags) as tags,
-                           MAX(article_access_mode) as access_mode,
-                           COUNT(*) as views,
-                           COUNT(DISTINCT session_id) as unique_readers
-                    FROM page_view
-                    WHERE article_slug IS NOT NULL AND created_at >= thirty_days_ago
-                    GROUP BY article_slug
-                    ORDER BY views DESC
-                    LIMIT 30
-                ) sub
-            ),
-            -- Engagement metrics per article
-            'engagement', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'slug', slug,
-                    'avgTime', avg_time,
-                    'avgScrollDepth', avg_scroll,
-                    'completionRate', completion_rate,
-                    'engagementRate', engagement_rate,
-                    'shareCount', share_count,
-                    'totalReads', total_reads
-                )), '[]'::json)
-                FROM (
-                    SELECT article_slug as slug,
-                           ROUND(AVG(time_on_page_seconds)) as avg_time,
-                           ROUND(AVG(max_scroll_depth)) as avg_scroll,
-                           ROUND(
-                               CASE WHEN COUNT(*) > 0
-                               THEN (SUM(CASE WHEN read_completed THEN 1 ELSE 0 END)::DECIMAL / COUNT(*)) * 100
-                               ELSE 0 END, 1
-                           ) as completion_rate,
-                           ROUND(
-                               CASE WHEN COUNT(*) > 0
-                               THEN (SUM(CASE WHEN content_engaged THEN 1 ELSE 0 END)::DECIMAL / COUNT(*)) * 100
-                               ELSE 0 END, 1
-                           ) as engagement_rate,
-                           SUM(CASE WHEN share_clicked IS NOT NULL THEN 1 ELSE 0 END) as share_count,
-                           COUNT(*) as total_reads
-                    FROM article_engagement
-                    WHERE created_at >= thirty_days_ago
-                    GROUP BY article_slug
-                    ORDER BY total_reads DESC
-                    LIMIT 30
-                ) sub
-            ),
-            -- Performance by tag
-            'byTag', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'tag', tag,
-                    'articleCount', article_count,
-                    'totalViews', total_views,
-                    'avgEngagementRate', avg_engagement
-                )), '[]'::json)
-                FROM (
-                    SELECT unnest(string_to_array(article_tags, ',')) as tag,
-                           COUNT(DISTINCT pv.article_slug) as article_count,
-                           COUNT(*) as total_views,
-                           ROUND(AVG(CASE WHEN ae.content_engaged THEN 100 ELSE 0 END), 1) as avg_engagement
-                    FROM page_view pv
-                    LEFT JOIN article_engagement ae ON ae.page_view_id = pv.id
-                    WHERE pv.article_slug IS NOT NULL
-                      AND pv.article_tags IS NOT NULL
-                      AND pv.created_at >= thirty_days_ago
-                    GROUP BY tag
-                    ORDER BY total_views DESC
-                    LIMIT 20
-                ) t
-            ),
-            -- Performance by author
-            'byAuthor', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'author', author,
-                    'articleCount', article_count,
-                    'totalViews', total_views,
-                    'avgViewsPerArticle', avg_views_per,
-                    'avgCompletionRate', avg_completion
-                )), '[]'::json)
-                FROM (
-                    SELECT pv.article_author as author,
-                           COUNT(DISTINCT pv.article_slug) as article_count,
-                           COUNT(*) as total_views,
-                           ROUND(COUNT(*)::DECIMAL / GREATEST(COUNT(DISTINCT pv.article_slug), 1), 1) as avg_views_per,
-                           ROUND(AVG(CASE WHEN ae.read_completed THEN 100 ELSE 0 END), 1) as avg_completion
-                    FROM page_view pv
-                    LEFT JOIN article_engagement ae ON ae.page_view_id = pv.id
-                    WHERE pv.article_author IS NOT NULL AND pv.created_at >= thirty_days_ago
-                    GROUP BY pv.article_author
-                    ORDER BY total_views DESC
-                ) sub
-            ),
-            -- Free vs Premium comparison
-            'byAccessMode', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'accessMode', article_access_mode,
-                    'views', views,
-                    'avgTime', avg_time,
-                    'engagementRate', engagement_rate,
-                    'completionRate', completion_rate
-                )), '[]'::json)
-                FROM (
-                    SELECT pv.article_access_mode,
-                           COUNT(*) as views,
-                           ROUND(AVG(ae.time_on_page_seconds)) as avg_time,
-                           ROUND(AVG(CASE WHEN ae.content_engaged THEN 100 ELSE 0 END), 1) as engagement_rate,
-                           ROUND(AVG(CASE WHEN ae.read_completed THEN 100 ELSE 0 END), 1) as completion_rate
-                    FROM page_view pv
-                    LEFT JOIN article_engagement ae ON ae.page_view_id = pv.id
-                    WHERE pv.article_access_mode IS NOT NULL AND pv.created_at >= thirty_days_ago
-                    GROUP BY pv.article_access_mode
-                ) am
-            ),
-            -- Top entry points (articles with most external referrer traffic)
-            'topEntryPoints', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'slug', slug,
-                    'title', title,
-                    'externalViews', external_views,
-                    'topReferrer', top_referrer
-                )), '[]'::json)
-                FROM (
-                    SELECT article_slug as slug,
-                           MAX(article_title) as title,
-                           COUNT(*) as external_views,
-                           MODE() WITHIN GROUP (ORDER BY referrer_domain) as top_referrer
-                    FROM page_view
-                    WHERE article_slug IS NOT NULL
-                      AND referrer_domain IS NOT NULL
-                      AND created_at >= thirty_days_ago
-                    GROUP BY article_slug
-                    ORDER BY external_views DESC
-                    LIMIT 15
-                ) sub
-            ),
-            -- Engagement by device type
-            'byDevice', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'device', device,
-                    'reads', reads,
-                    'avgTime', avg_time,
-                    'avgScrollDepth', avg_scroll,
-                    'completionRate', completion_rate
-                )), '[]'::json)
-                FROM (
-                    SELECT COALESCE(pv.device_type, 'unknown') as device,
-                           COUNT(*) as reads,
-                           ROUND(AVG(ae.time_on_page_seconds)) as avg_time,
-                           ROUND(AVG(ae.max_scroll_depth)) as avg_scroll,
-                           ROUND(AVG(CASE WHEN ae.read_completed THEN 100 ELSE 0 END), 1) as completion_rate
-                    FROM article_engagement ae
-                    JOIN page_view pv ON pv.id = ae.page_view_id
-                    WHERE ae.created_at >= thirty_days_ago
-                    GROUP BY pv.device_type
-                ) sub
-            )
-        ),
-
-        -- ============================
-        -- TRAFFIC
-        -- ============================
-        'traffic', json_build_object(
-            -- Top referrers
-            'topReferrers', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'domain', COALESCE(referrer_domain, 'direct'),
-                    'views', cnt
-                )), '[]'::json)
-                FROM (
-                    SELECT referrer_domain, COUNT(*) as cnt
-                    FROM page_view WHERE created_at >= thirty_days_ago
-                    GROUP BY referrer_domain
-                    ORDER BY cnt DESC
-                    LIMIT 15
-                ) r
-            ),
-            -- UTM campaign performance
-            'utmCampaigns', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'campaign', utm_campaign,
-                    'source', utm_source,
-                    'medium', utm_medium,
-                    'views', views,
-                    'uniqueVisitors', uniques
-                )), '[]'::json)
-                FROM (
-                    SELECT utm_campaign, utm_source, utm_medium,
-                           COUNT(*) as views,
-                           COUNT(DISTINCT session_id) as uniques
-                    FROM page_view
-                    WHERE utm_campaign IS NOT NULL AND created_at >= thirty_days_ago
-                    GROUP BY utm_campaign, utm_source, utm_medium
-                    ORDER BY views DESC
-                    LIMIT 20
-                ) u
-            ),
-            -- Source breakdown (Search / Social / Direct / Other)
-            'sourceBreakdown', json_build_object(
-                'direct', (SELECT COUNT(*) FROM page_view WHERE referrer_domain IS NULL AND created_at >= thirty_days_ago),
-                'search', (SELECT COUNT(*) FROM page_view WHERE referrer_domain IN ('google.com', 'bing.com', 'duckduckgo.com', 'yahoo.com', 'baidu.com', 'yandex.com') AND created_at >= thirty_days_ago),
-                'social', (SELECT COUNT(*) FROM page_view WHERE referrer_domain IN ('twitter.com', 'x.com', 'facebook.com', 'instagram.com', 'reddit.com', 'discord.com', 'youtube.com', 'tiktok.com', 'linkedin.com', 'threads.net') AND created_at >= thirty_days_ago),
-                'other', (SELECT COUNT(*) FROM page_view WHERE referrer_domain IS NOT NULL AND referrer_domain NOT IN ('google.com', 'bing.com', 'duckduckgo.com', 'yahoo.com', 'baidu.com', 'yandex.com', 'twitter.com', 'x.com', 'facebook.com', 'instagram.com', 'reddit.com', 'discord.com', 'youtube.com', 'tiktok.com', 'linkedin.com', 'threads.net') AND created_at >= thirty_days_ago)
-            )
-        ),
-
-        -- ============================
-        -- CONVERSIONS
-        -- ============================
-        'conversions', json_build_object(
-            'signupsFromArticles', (
-                SELECT COUNT(*) FROM article_engagement WHERE signed_up_after = TRUE
-            ),
-            'upgradesFromArticles', (
-                SELECT COUNT(*) FROM article_engagement WHERE upgraded_after = TRUE
-            ),
-            -- Top converting articles
-            'topConverting', (
-                SELECT COALESCE(json_agg(json_build_object(
-                    'slug', slug,
-                    'title', title,
-                    'signups', signups,
-                    'upgrades', upgrades,
-                    'totalConversions', total_conversions
-                ) ORDER BY total_conversions DESC), '[]'::json)
-                FROM (
-                    SELECT ae.article_slug as slug,
-                           MAX(pv.article_title) as title,
-                           SUM(CASE WHEN ae.signed_up_after THEN 1 ELSE 0 END) as signups,
-                           SUM(CASE WHEN ae.upgraded_after THEN 1 ELSE 0 END) as upgrades,
-                           SUM(CASE WHEN ae.signed_up_after OR ae.upgraded_after THEN 1 ELSE 0 END) as total_conversions
-                    FROM article_engagement ae
-                    LEFT JOIN page_view pv ON pv.id = ae.page_view_id
-                    WHERE ae.signed_up_after = TRUE OR ae.upgraded_after = TRUE
-                    GROUP BY ae.article_slug
-                    ORDER BY total_conversions DESC
-                    LIMIT 15
-                ) sub
-            ),
-            -- Premium CTA effectiveness
-            'premiumCta', json_build_object(
-                'totalViewed', (SELECT COUNT(*) FROM article_engagement WHERE premium_cta_viewed = TRUE),
-                'totalClicked', (SELECT COUNT(*) FROM article_engagement WHERE premium_cta_clicked = TRUE),
-                'clickRate', (
-                    SELECT CASE
-                        WHEN (SELECT COUNT(*) FROM article_engagement WHERE premium_cta_viewed = TRUE) > 0
-                        THEN ROUND(
-                            (SELECT COUNT(*) FROM article_engagement WHERE premium_cta_clicked = TRUE)::DECIMAL /
-                            (SELECT COUNT(*) FROM article_engagement WHERE premium_cta_viewed = TRUE) * 100, 1
-                        )
-                        ELSE 0
-                    END
-                )
-            )
-        ),
-
-        -- ============================
-        -- USER SPLIT
-        -- ============================
-        'userSplit', json_build_object(
-            'loggedIn', (SELECT COUNT(*) FROM page_view WHERE user_id IS NOT NULL AND created_at >= thirty_days_ago),
-            'anonymous', (SELECT COUNT(*) FROM page_view WHERE user_id IS NULL AND created_at >= thirty_days_ago),
-            'premiumReaders', (
-                SELECT COUNT(DISTINCT ae.user_id) FROM article_engagement ae
-                WHERE ae.user_role_at_read = 'premium' AND ae.created_at >= thirty_days_ago
-            ),
-            'newVisitors', (SELECT COUNT(*) FROM page_view WHERE is_new_visitor = TRUE AND created_at >= thirty_days_ago),
-            'returningVisitors', (SELECT COUNT(*) FROM page_view WHERE is_new_visitor = FALSE AND created_at >= thirty_days_ago)
-        )
-    ) INTO result;
-
-    RETURN result;
-END;
-$$;
-
-
---
--- Name: get_event_details(text); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.get_event_details(p_event_id text) RETURNS json
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    result JSON;
-BEGIN
-    SELECT json_build_object(
-        'event', (SELECT row_to_json(e) FROM events e WHERE id = p_event_id),
-        'results', (
-            SELECT COALESCE(json_agg(row_to_json(r) ORDER BY standing), '[]'::json)
-            FROM results r WHERE event_id = p_event_id
-        ),
-        'matches', (
-            SELECT COALESCE(json_agg(row_to_json(m) ORDER BY round, "table"), '[]'::json)
-            FROM matches m WHERE event_id = p_event_id
-        ),
-        'decklists', (
-            SELECT COALESCE(json_agg(row_to_json(d)), '[]'::json)
-            FROM decklists d WHERE event_id = p_event_id
-        ),
-        'staff', (
-            SELECT COALESCE(json_agg(json_build_object(
-                'id', s.id, 'role', s.role, 'userId', s.user_id,
-                'user', (SELECT json_build_object('id', u.id, 'name', u.name, 'email', u.email)
-                         FROM "user" u WHERE u.id = s.user_id)
-            )), '[]'::json)
-            FROM staff_assignments s WHERE s.event_id = p_event_id
-        ),
-        'tickets', (
-            SELECT COALESCE(json_agg(json_build_object(
-                'id', t.id, 'status', t.status, 'amountPaid', t.amount_paid,
-                'createdAt', t.created_at, 'refunded', t.refunded,
-                'user', (SELECT json_build_object('id', u.id, 'name', u.name, 'email', u.email)
-                         FROM "user" u WHERE u.id = t.user_id)
-            )), '[]'::json)
-            FROM ticket t WHERE t.event_id = p_event_id
-        ),
-        'stats', json_build_object(
-            'ticketCount', (SELECT COUNT(*) FROM ticket WHERE event_id = p_event_id AND refunded IS NOT TRUE),
-            'ticketRevenue', COALESCE((SELECT SUM(CAST(amount_paid AS DECIMAL)) FROM ticket WHERE event_id = p_event_id AND refunded IS NOT TRUE), 0),
-            'resultCount', (SELECT COUNT(*) FROM results WHERE event_id = p_event_id),
-            'matchCount', (SELECT COUNT(*) FROM matches WHERE event_id = p_event_id),
-            'decklistCount', (SELECT COUNT(*) FROM decklists WHERE event_id = p_event_id)
-        )
-    ) INTO result;
-
-    RETURN result;
-END;
-$$;
-
-
---
--- Name: get_import_matches_data(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.get_import_matches_data() RETURNS json
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    RETURN json_build_object(
-        'standings', (
-            SELECT COALESCE(json_agg(row_to_json(s)), '[]'::json)
-            FROM standings s
-        ),
-        'matchCounts', (
-            SELECT COALESCE(json_agg(json_build_object(
-                'year', year, 'circuit', circuit, 'month', month, 'count', cnt
-            )), '[]'::json)
-            FROM (
-                SELECT year, circuit, month, COUNT(*) as cnt
-                FROM matches
-                GROUP BY year, circuit, month
-            ) m
-        )
-    );
-END;
-$$;
-
-
---
--- Name: import_event_matches(text, text, text, jsonb); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.import_event_matches(p_year text, p_circuit text, p_month text, p_matches jsonb) RETURNS json
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    v_match JSONB;
-    v_count INT := 0;
-BEGIN
-    -- Delete existing matches for this event
-    DELETE FROM matches
-    WHERE year = p_year AND circuit = p_circuit AND month = p_month;
-
-    -- Insert new matches
-    FOR v_match IN SELECT * FROM jsonb_array_elements(p_matches)
-    LOOP
-        INSERT INTO matches (
-            id, month, year, circuit, round, "table",
-            player1_gem_id, player1_name, player2_gem_id, player2_name, winner
-        ) VALUES (
-            gen_random_uuid(),
-            p_month, p_year, p_circuit,
-            (v_match->>'round')::INT,
-            v_match->>'table',
-            v_match->>'player1GemId',
-            v_match->>'player1Name',
-            v_match->>'player2GemId',
-            v_match->>'player2Name',
-            v_match->>'winner'
-        );
-        v_count := v_count + 1;
-    END LOOP;
-
-    RETURN json_build_object('success', true, 'imported', v_count);
-END;
-$$;
-
-
---
--- Name: process_event_results(text, jsonb); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.process_event_results(p_event_id text, p_results jsonb) RETURNS json
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    v_event RECORD;
-    v_old_result RECORD;
-    v_new_result JSONB;
-    v_affected_players JSONB := '[]'::jsonb;
-    v_player RECORD;
-    v_season TEXT;
-    v_result_count INT := 0;
-    v_sync_result JSON;
-BEGIN
-    -- Get event data
-    SELECT * INTO v_event FROM events WHERE id = p_event_id;
-    IF v_event IS NULL THEN
-        RETURN json_build_object('success', false, 'error', 'Event not found');
-    END IF;
-
-    IF v_event.circuit IS NULL THEN
-        RETURN json_build_object('success', false, 'error', 'Event has no circuit assigned');
-    END IF;
-
-    v_season := EXTRACT(YEAR FROM COALESCE(v_event.event_date, NOW()))::TEXT;
-
-    -- Collect affected players from OLD results (before deletion)
-    FOR v_old_result IN SELECT gem_id, player_name FROM results WHERE event_id = p_event_id
-    LOOP
-        v_affected_players := v_affected_players || jsonb_build_object(
-            'gemId', v_old_result.gem_id,
-            'playerName', v_old_result.player_name
-        );
-    END LOOP;
-
-    -- Delete old results
-    DELETE FROM results WHERE event_id = p_event_id;
-
-    -- Insert new results and collect new affected players
-    FOR v_new_result IN SELECT * FROM jsonb_array_elements(p_results)
-    LOOP
-        INSERT INTO results (
-            id, event_id, player_name, gem_id, placement,
-            wins, losses, draws, age_points, prize_amount
-        ) VALUES (
-            gen_random_uuid(),
-            p_event_id,
-            v_new_result->>'playerName',
-            NULLIF(v_new_result->>'gemId', ''),
-            (v_new_result->>'placement')::INT,
-            COALESCE((v_new_result->>'wins')::INT, 0),
-            COALESCE((v_new_result->>'losses')::INT, 0),
-            COALESCE((v_new_result->>'draws')::INT, 0),
-            COALESCE((v_new_result->>'agePoints')::INT, 0),
-            NULLIF(v_new_result->>'prizeAmount', '')::NUMERIC
-        );
-
-        v_affected_players := v_affected_players || jsonb_build_object(
-            'gemId', v_new_result->>'gemId',
-            'playerName', v_new_result->>'playerName'
-        );
-
-        v_result_count := v_result_count + 1;
-    END LOOP;
-
-    -- Deduplicate and sync standings for each affected player
-    FOR v_player IN
-        SELECT DISTINCT ON (COALESCE(p->>'gemId', p->>'playerName'))
-            p->>'gemId' as gem_id,
-            p->>'playerName' as player_name
-        FROM jsonb_array_elements(v_affected_players) p
-    LOOP
-        v_sync_result := sync_player_standings(
-            v_season,
-            v_event.circuit,
-            NULLIF(v_player.gem_id, ''),
-            v_player.player_name
-        );
-    END LOOP;
-
-    RETURN json_build_object(
-        'success', true,
-        'resultsProcessed', v_result_count,
-        'playersUpdated', jsonb_array_length(v_affected_players)
-    );
-END;
-$$;
-
-
---
--- Name: reopen_event(text); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.reopen_event(p_event_id text) RETURNS json
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    v_event RECORD;
-BEGIN
-    -- Get event data
-    SELECT * INTO v_event FROM events WHERE id = p_event_id;
-
-    IF v_event IS NULL THEN
-        RETURN json_build_object('success', false, 'error', 'Event not found');
-    END IF;
-
-    -- Just update event status back to in_progress
-    UPDATE events SET
-        status = 'in_progress',
-        closed_at = NULL,
-        closed_by = NULL
-    WHERE id = p_event_id;
-
-    RETURN json_build_object(
-        'success', true,
-        'message', 'Event reopened. You can now update results.'
-    );
-END;
-$$;
-
-
---
--- Name: sync_player_standings(text, text, text, text); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.sync_player_standings(p_season text, p_circuit text, p_gem_id text DEFAULT NULL::text, p_player_name text DEFAULT NULL::text) RETURNS json
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $_$
-DECLARE
-    v_totals RECORD;
-    v_monthly RECORD;
-    v_standing_id UUID;
-    v_month_names TEXT[] := ARRAY['january', 'february', 'march', 'april', 'may', 'june',
-                                   'july', 'august', 'september', 'october', 'november', 'december'];
-    v_month TEXT;
-    v_update_sql TEXT;
-BEGIN
-    -- Aggregate all results for this player in this season/circuit
-    SELECT
-        COALESCE(SUM(er.age_points), 0) as total_points,
-        COALESCE(SUM(er.wins), 0) as matches_won,
-        COALESCE(SUM(er.wins + er.losses + COALESCE(er.draws, 0)), 0) as matches_played,
-        MAX(er.gem_id) as gem_id,
-        MAX(er.player_name) as player_name
-    INTO v_totals
-    FROM results er
-    JOIN events e ON er.event_id = e.id
-    WHERE e.circuit = p_circuit
-      AND EXTRACT(YEAR FROM e.event_date)::TEXT = p_season
-      AND (
-          (p_gem_id IS NOT NULL AND er.gem_id = p_gem_id)
-          OR (p_gem_id IS NULL AND er.player_name = p_player_name)
-      );
-
-    -- If no results found, delete standing if it exists and return
-    IF v_totals.total_points = 0 AND v_totals.matches_played = 0 THEN
-        DELETE FROM standings
-        WHERE season = p_season
-          AND circuit = p_circuit
-          AND (
-              (p_gem_id IS NOT NULL AND gem_id = p_gem_id)
-              OR (p_gem_id IS NULL AND player_name = p_player_name)
-          );
-        RETURN json_build_object('success', true, 'action', 'deleted', 'reason', 'no results');
-    END IF;
-
-    -- Find existing standing
-    SELECT id INTO v_standing_id
-    FROM standings
-    WHERE season = p_season
-      AND circuit = p_circuit
-      AND (
-          (p_gem_id IS NOT NULL AND gem_id = p_gem_id)
-          OR (p_gem_id IS NULL AND player_name = p_player_name)
-      )
-    LIMIT 1;
-
-    -- Build base update/insert with totals
-    IF v_standing_id IS NOT NULL THEN
-        -- Update existing standing - reset all monthly columns first
-        UPDATE standings SET
-            total_points = v_totals.total_points,
-            matches_won = v_totals.matches_won,
-            matches_played = v_totals.matches_played,
-            win_percentage = CASE WHEN v_totals.matches_played > 0
-                THEN ROUND((v_totals.matches_won::DECIMAL / v_totals.matches_played) * 100, 2)
-                ELSE NULL END,
-            gem_id = COALESCE(v_totals.gem_id, gem_id),
-            player_name = COALESCE(v_totals.player_name, player_name),
-            -- Reset all monthly columns to 0
-            january_points = 0, january_matches_won = 0, january_matches = 0,
-            february_points = 0, february_matches_won = 0, february_matches = 0,
-            march_points = 0, march_matches_won = 0, march_matches = 0,
-            april_points = 0, april_matches_won = 0, april_matches = 0,
-            may_points = 0, may_matches_won = 0, may_matches = 0,
-            june_points = 0, june_matches_won = 0, june_matches = 0,
-            july_points = 0, july_matches_won = 0, july_matches = 0,
-            august_points = 0, august_matches_won = 0, august_matches = 0,
-            september_points = 0, september_matches_won = 0, september_matches = 0,
-            october_points = 0, october_matches_won = 0, october_matches = 0,
-            november_points = 0, november_matches_won = 0, november_matches = 0,
-            december_points = 0, december_matches_won = 0, december_matches = 0,
-            updated_at = NOW()
-        WHERE id = v_standing_id;
-    ELSE
-        -- Insert new standing
-        INSERT INTO standings (
-            id, season, circuit, gem_id, player_name,
-            total_points, matches_won, matches_played, win_percentage,
-            created_at, updated_at
-        ) VALUES (
-            gen_random_uuid(), p_season, p_circuit,
-            COALESCE(p_gem_id, v_totals.gem_id),
-            COALESCE(p_player_name, v_totals.player_name),
-            v_totals.total_points, v_totals.matches_won, v_totals.matches_played,
-            CASE WHEN v_totals.matches_played > 0
-                THEN ROUND((v_totals.matches_won::DECIMAL / v_totals.matches_played) * 100, 2)
-                ELSE NULL END,
-            NOW(), NOW()
-        )
-        RETURNING id INTO v_standing_id;
-    END IF;
-
-    -- Now aggregate and update monthly columns
-    FOR v_monthly IN
-        SELECT
-            v_month_names[EXTRACT(MONTH FROM e.event_date)::INT] as month_name,
-            COALESCE(SUM(er.age_points), 0) as points,
-            COALESCE(SUM(er.wins), 0) as wins,
-            COALESCE(SUM(er.wins + er.losses + COALESCE(er.draws, 0)), 0) as matches
-        FROM results er
-        JOIN events e ON er.event_id = e.id
-        WHERE e.circuit = p_circuit
-          AND EXTRACT(YEAR FROM e.event_date)::TEXT = p_season
-          AND (
-              (p_gem_id IS NOT NULL AND er.gem_id = p_gem_id)
-              OR (p_gem_id IS NULL AND er.player_name = p_player_name)
-          )
-        GROUP BY EXTRACT(MONTH FROM e.event_date)
-    LOOP
-        EXECUTE format(
-            'UPDATE standings SET %I = $1, %I = $2, %I = $3 WHERE id = $4',
-            v_monthly.month_name || '_points',
-            v_monthly.month_name || '_matches_won',
-            v_monthly.month_name || '_matches'
-        ) USING v_monthly.points, v_monthly.wins, v_monthly.matches, v_standing_id;
-    END LOOP;
-
-    RETURN json_build_object(
-        'success', true,
-        'action', CASE WHEN v_standing_id IS NOT NULL THEN 'updated' ELSE 'created' END,
-        'totalPoints', v_totals.total_points,
-        'matchesPlayed', v_totals.matches_played
-    );
-END;
-$_$;
 
 
 SET default_tablespace = '';
@@ -1458,50 +250,6 @@ CREATE TABLE public._bak_024_user (
     comped_at timestamp with time zone,
     comped_by text,
     last_subscription_id text
-);
-
-
---
--- Name: analytics_event; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.analytics_event (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    page_view_id uuid,
-    user_id text,
-    session_id text,
-    event_type text NOT NULL,
-    event_data jsonb,
-    path text,
-    created_at timestamp with time zone DEFAULT now()
-);
-
-
---
--- Name: article_engagement; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.article_engagement (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    page_view_id uuid,
-    user_id text,
-    session_id text,
-    article_slug text NOT NULL,
-    time_on_page_seconds integer,
-    max_scroll_depth integer,
-    read_completed boolean DEFAULT false,
-    content_engaged boolean DEFAULT false,
-    exited_to text,
-    share_clicked text,
-    premium_cta_viewed boolean DEFAULT false,
-    premium_cta_clicked boolean DEFAULT false,
-    decklist_interactions integer DEFAULT 0,
-    card_hovers integer DEFAULT 0,
-    user_role_at_read text,
-    signed_up_after boolean DEFAULT false,
-    upgraded_after boolean DEFAULT false,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
 );
 
 
@@ -1994,6 +742,7 @@ CREATE TABLE public.cms_media (
     updated_at timestamp with time zone DEFAULT now(),
     library text DEFAULT 'content'::text NOT NULL,
     course_id uuid,
+    entry_id uuid,
     CONSTRAINT cms_media_library_check CHECK ((library = ANY (ARRAY['content'::text, 'classroom'::text, 'studio'::text, 'profile'::text]))),
     CONSTRAINT cms_media_status_check CHECK ((status = ANY (ARRAY['uploading'::text, 'processing'::text, 'ready'::text, 'failed'::text])))
 );
@@ -2215,18 +964,6 @@ CREATE TABLE public.decklists (
 
 
 --
--- Name: entitlement; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.entitlement (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    user_id text,
-    product text NOT NULL,
-    created_at timestamp with time zone DEFAULT now()
-);
-
-
---
 -- Name: event_player_heroes; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2283,21 +1020,6 @@ CREATE TABLE public.fab_card_lookup (
     fallback_url text,
     pitch integer,
     created_at timestamp with time zone DEFAULT now()
-);
-
-
---
--- Name: fab_card_upload_history; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.fab_card_upload_history (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    uploaded_by text,
-    filename text,
-    total_cards integer NOT NULL,
-    lookup_entries integer NOT NULL,
-    sets_included jsonb,
-    uploaded_at timestamp with time zone DEFAULT now()
 );
 
 
@@ -2511,21 +1233,6 @@ CREATE TABLE public.member_referral_code (
 
 
 --
--- Name: newsletter_subscriber; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.newsletter_subscriber (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    email text NOT NULL,
-    resend_contact_id text,
-    status text DEFAULT 'active'::text NOT NULL,
-    source text DEFAULT 'website'::text,
-    subscribed_at timestamp with time zone DEFAULT now(),
-    unsubscribed_at timestamp with time zone
-);
-
-
---
 -- Name: notification; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2561,33 +1268,6 @@ CREATE TABLE public."order" (
     kind text,
     refunded_amount numeric(10,2) DEFAULT 0 NOT NULL,
     checkout_id uuid
-);
-
-
---
--- Name: page_view; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.page_view (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    user_id text,
-    session_id text,
-    path text NOT NULL,
-    referrer text,
-    referrer_domain text,
-    utm_source text,
-    utm_medium text,
-    utm_campaign text,
-    device_type text,
-    browser text,
-    country text,
-    is_new_visitor boolean DEFAULT false,
-    article_slug text,
-    article_title text,
-    article_author text,
-    article_tags text,
-    article_access_mode text,
-    created_at timestamp with time zone DEFAULT now()
 );
 
 
@@ -2785,48 +1465,6 @@ ALTER SEQUENCE public.payment_id_seq OWNED BY public.payment.id;
 
 
 --
--- Name: podcast_episodes; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.podcast_episodes (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    podcast_id uuid NOT NULL,
-    youtube_url text NOT NULL,
-    youtube_video_id text,
-    title text NOT NULL,
-    thumbnail_url text,
-    published_at timestamp with time zone,
-    description text,
-    guest text,
-    season integer,
-    episode integer,
-    duration text,
-    is_published boolean DEFAULT true,
-    created_by text,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
-);
-
-
---
--- Name: podcasts; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.podcasts (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    name text NOT NULL,
-    description text,
-    cover_image text,
-    youtube_playlist_url text,
-    is_active boolean DEFAULT true,
-    sort_order integer DEFAULT 0,
-    created_by text,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
-);
-
-
---
 -- Name: pool_run; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2884,6 +1522,26 @@ CREATE TABLE public.refund_request (
     decision_note text,
     refund_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: roadmap_item; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.roadmap_item (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    title text NOT NULL,
+    body text,
+    stage text DEFAULT 'upcoming'::text NOT NULL,
+    area text,
+    "position" integer DEFAULT 0 NOT NULL,
+    is_public boolean DEFAULT true NOT NULL,
+    shipped_at timestamp with time zone,
+    created_by text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT roadmap_item_stage_check CHECK ((stage = ANY (ARRAY['upcoming'::text, 'development'::text, 'testing'::text, 'shipped'::text])))
 );
 
 
@@ -2995,6 +1653,75 @@ CREATE TABLE public.standings (
 
 
 --
+-- Name: status_check; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.status_check (
+    id bigint NOT NULL,
+    component text NOT NULL,
+    ok boolean NOT NULL,
+    ms integer,
+    note text,
+    at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: status_check_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.status_check_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: status_check_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.status_check_id_seq OWNED BY public.status_check.id;
+
+
+--
+-- Name: status_incident; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.status_incident (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    kind text DEFAULT 'incident'::text NOT NULL,
+    title text NOT NULL,
+    impact text DEFAULT 'minor'::text NOT NULL,
+    components text[] DEFAULT ARRAY[]::text[] NOT NULL,
+    status text DEFAULT 'investigating'::text NOT NULL,
+    starts_at timestamp with time zone DEFAULT now() NOT NULL,
+    ends_at timestamp with time zone,
+    resolved_at timestamp with time zone,
+    banner boolean DEFAULT true NOT NULL,
+    created_by text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT status_incident_impact_check CHECK ((impact = ANY (ARRAY['minor'::text, 'major'::text, 'maintenance'::text]))),
+    CONSTRAINT status_incident_kind_check CHECK ((kind = ANY (ARRAY['incident'::text, 'maintenance'::text])))
+);
+
+
+--
+-- Name: status_update; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.status_update (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    incident_id uuid NOT NULL,
+    status text NOT NULL,
+    body text NOT NULL,
+    created_by text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: store; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3053,6 +1780,7 @@ CREATE TABLE public.store_ledger (
     note text,
     created_by text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    payout_id uuid,
     CONSTRAINT store_ledger_entry_type_check CHECK ((entry_type = ANY (ARRAY['sale'::text, 'refund'::text, 'adjustment'::text])))
 );
 
@@ -3072,6 +1800,31 @@ CREATE TABLE public.store_member (
 
 
 --
+-- Name: store_payout; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.store_payout (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    store_id uuid NOT NULL,
+    event_id text,
+    status text DEFAULT 'open'::text NOT NULL,
+    gross_cents integer,
+    refund_cents integer,
+    fee_cents integer,
+    adjust_cents integer,
+    carried_cents integer,
+    amount_cents integer,
+    paid_at timestamp with time zone,
+    paid_by text,
+    method text,
+    reference text,
+    note text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT store_payout_status_check CHECK ((status = ANY (ARRAY['open'::text, 'paid'::text])))
+);
+
+
+--
 -- Name: store_program; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3081,34 +1834,13 @@ CREATE TABLE public.store_program (
     fee_payer text DEFAULT 'age'::text NOT NULL,
     updated_by text,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    fee_pct numeric(6,4) DEFAULT 0.0290 NOT NULL,
+    fee_fixed_cents integer DEFAULT 30 NOT NULL,
     CONSTRAINT store_program_default_share_check CHECK (((default_share IS NULL) OR ((default_share >= (0)::numeric) AND (default_share <= (1)::numeric)))),
+    CONSTRAINT store_program_fee_fixed_cents_check CHECK ((fee_fixed_cents >= 0)),
     CONSTRAINT store_program_fee_payer_check CHECK ((fee_payer = ANY (ARRAY['age'::text, 'store'::text]))),
+    CONSTRAINT store_program_fee_pct_check CHECK (((fee_pct >= (0)::numeric) AND (fee_pct < (1)::numeric))),
     CONSTRAINT store_program_id_check CHECK ((id = 1))
-);
-
-
---
--- Name: store_statement; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.store_statement (
-    store_id uuid NOT NULL,
-    month date NOT NULL,
-    status text DEFAULT 'open'::text NOT NULL,
-    gross_cents integer,
-    refund_cents integer,
-    fee_cents integer,
-    adjust_cents integer,
-    amount_cents integer,
-    locked_at timestamp with time zone,
-    locked_by text,
-    paid_at timestamp with time zone,
-    paid_by text,
-    method text,
-    reference text,
-    note text,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT store_statement_status_check CHECK ((status = ANY (ARRAY['open'::text, 'locked'::text, 'paid'::text])))
 );
 
 
@@ -3352,7 +2084,8 @@ CREATE TABLE public."user" (
     comp_reason text,
     comped_at timestamp with time zone,
     comped_by text,
-    last_subscription_id text
+    last_subscription_id text,
+    comp_ends_at timestamp with time zone
 );
 
 
@@ -3449,19 +2182,10 @@ ALTER TABLE ONLY public.payment ALTER COLUMN id SET DEFAULT nextval('public.paym
 
 
 --
--- Name: analytics_event analytics_event_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: status_check id; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.analytics_event
-    ADD CONSTRAINT analytics_event_pkey PRIMARY KEY (id);
-
-
---
--- Name: article_engagement article_engagement_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.article_engagement
-    ADD CONSTRAINT article_engagement_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.status_check ALTER COLUMN id SET DEFAULT nextval('public.status_check_id_seq'::regclass);
 
 
 --
@@ -3793,14 +2517,6 @@ ALTER TABLE ONLY public.decklists
 
 
 --
--- Name: entitlement entitlement_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.entitlement
-    ADD CONSTRAINT entitlement_pkey PRIMARY KEY (id);
-
-
---
 -- Name: event_player_heroes event_player_heroes_event_id_gem_id_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3830,14 +2546,6 @@ ALTER TABLE ONLY public.events
 
 ALTER TABLE ONLY public.fab_card_lookup
     ADD CONSTRAINT fab_card_lookup_pkey PRIMARY KEY (lookup_key);
-
-
---
--- Name: fab_card_upload_history fab_card_upload_history_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.fab_card_upload_history
-    ADD CONSTRAINT fab_card_upload_history_pkey PRIMARY KEY (id);
 
 
 --
@@ -3921,22 +2629,6 @@ ALTER TABLE ONLY public.member_referral
 
 
 --
--- Name: newsletter_subscriber newsletter_subscriber_email_unique; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.newsletter_subscriber
-    ADD CONSTRAINT newsletter_subscriber_email_unique UNIQUE (email);
-
-
---
--- Name: newsletter_subscriber newsletter_subscriber_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.newsletter_subscriber
-    ADD CONSTRAINT newsletter_subscriber_pkey PRIMARY KEY (id);
-
-
---
 -- Name: notification notification_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3950,14 +2642,6 @@ ALTER TABLE ONLY public.notification
 
 ALTER TABLE ONLY public."order"
     ADD CONSTRAINT order_pkey PRIMARY KEY (id);
-
-
---
--- Name: page_view page_view_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.page_view
-    ADD CONSTRAINT page_view_pkey PRIMARY KEY (id);
 
 
 --
@@ -4049,22 +2733,6 @@ ALTER TABLE ONLY public.payment
 
 
 --
--- Name: podcast_episodes podcast_episodes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.podcast_episodes
-    ADD CONSTRAINT podcast_episodes_pkey PRIMARY KEY (id);
-
-
---
--- Name: podcasts podcasts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.podcasts
-    ADD CONSTRAINT podcasts_pkey PRIMARY KEY (id);
-
-
---
 -- Name: pool_run pool_run_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4086,6 +2754,14 @@ ALTER TABLE ONLY public.refund
 
 ALTER TABLE ONLY public.refund_request
     ADD CONSTRAINT refund_request_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: roadmap_item roadmap_item_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.roadmap_item
+    ADD CONSTRAINT roadmap_item_pkey PRIMARY KEY (id);
 
 
 --
@@ -4121,6 +2797,30 @@ ALTER TABLE ONLY public.standings
 
 
 --
+-- Name: status_check status_check_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.status_check
+    ADD CONSTRAINT status_check_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: status_incident status_incident_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.status_incident
+    ADD CONSTRAINT status_incident_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: status_update status_update_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.status_update
+    ADD CONSTRAINT status_update_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: store_activity store_activity_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4145,6 +2845,14 @@ ALTER TABLE ONLY public.store_member
 
 
 --
+-- Name: store_payout store_payout_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_payout
+    ADD CONSTRAINT store_payout_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: store store_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4166,14 +2874,6 @@ ALTER TABLE ONLY public.store_program
 
 ALTER TABLE ONLY public.store
     ADD CONSTRAINT store_slug_key UNIQUE (slug);
-
-
---
--- Name: store_statement store_statement_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.store_statement
-    ADD CONSTRAINT store_statement_pkey PRIMARY KEY (store_id, month);
 
 
 --
@@ -4606,6 +3306,13 @@ CREATE INDEX cms_media_created_idx ON public.cms_media USING btree (created_at D
 
 
 --
+-- Name: cms_media_entry_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX cms_media_entry_idx ON public.cms_media USING btree (entry_id, created_at DESC);
+
+
+--
 -- Name: cms_media_library_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4795,69 +3502,6 @@ CREATE INDEX guide_refund_request_teacher_idx ON public.guide_refund_request USI
 
 
 --
--- Name: idx_analytics_event_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_analytics_event_created_at ON public.analytics_event USING btree (created_at);
-
-
---
--- Name: idx_analytics_event_event_type; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_analytics_event_event_type ON public.analytics_event USING btree (event_type);
-
-
---
--- Name: idx_analytics_event_page_view_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_analytics_event_page_view_id ON public.analytics_event USING btree (page_view_id);
-
-
---
--- Name: idx_analytics_event_session_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_analytics_event_session_id ON public.analytics_event USING btree (session_id);
-
-
---
--- Name: idx_article_engagement_article_slug; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_article_engagement_article_slug ON public.article_engagement USING btree (article_slug);
-
-
---
--- Name: idx_article_engagement_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_article_engagement_created_at ON public.article_engagement USING btree (created_at);
-
-
---
--- Name: idx_article_engagement_page_view_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_article_engagement_page_view_id ON public.article_engagement USING btree (page_view_id);
-
-
---
--- Name: idx_article_engagement_session_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_article_engagement_session_id ON public.article_engagement USING btree (session_id);
-
-
---
--- Name: idx_article_engagement_user_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_article_engagement_user_id ON public.article_engagement USING btree (user_id);
-
-
---
 -- Name: idx_decklist_event; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4935,62 +3579,6 @@ CREATE INDEX idx_member_referral_status ON public.member_referral USING btree (s
 
 
 --
--- Name: idx_page_view_article_slug; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_page_view_article_slug ON public.page_view USING btree (article_slug);
-
-
---
--- Name: idx_page_view_country; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_page_view_country ON public.page_view USING btree (country);
-
-
---
--- Name: idx_page_view_created_at; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_page_view_created_at ON public.page_view USING btree (created_at);
-
-
---
--- Name: idx_page_view_device_type; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_page_view_device_type ON public.page_view USING btree (device_type);
-
-
---
--- Name: idx_page_view_path; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_page_view_path ON public.page_view USING btree (path);
-
-
---
--- Name: idx_page_view_referrer_domain; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_page_view_referrer_domain ON public.page_view USING btree (referrer_domain);
-
-
---
--- Name: idx_page_view_session_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_page_view_session_id ON public.page_view USING btree (session_id);
-
-
---
--- Name: idx_page_view_user_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_page_view_user_id ON public.page_view USING btree (user_id);
-
-
---
 -- Name: idx_partner_code; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5023,27 +3611,6 @@ CREATE INDEX idx_partner_referral_referred_user_id ON public.partner_referral US
 --
 
 CREATE INDEX idx_partner_user_id ON public.partner USING btree (user_id);
-
-
---
--- Name: idx_podcast_episodes_podcast_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_podcast_episodes_podcast_id ON public.podcast_episodes USING btree (podcast_id);
-
-
---
--- Name: idx_podcast_episodes_published; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_podcast_episodes_published ON public.podcast_episodes USING btree (is_published, published_at DESC);
-
-
---
--- Name: idx_podcasts_active; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_podcasts_active ON public.podcasts USING btree (is_active, sort_order);
 
 
 --
@@ -5278,6 +3845,13 @@ CREATE INDEX refund_trans_idx ON public.refund USING btree (trans_id);
 
 
 --
+-- Name: roadmap_item_stage_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX roadmap_item_stage_idx ON public.roadmap_item USING btree (stage, "position");
+
+
+--
 -- Name: saved_card_user_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5320,6 +3894,34 @@ CREATE INDEX standings_total_points_idx ON public.standings USING btree (total_p
 
 
 --
+-- Name: status_check_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX status_check_at_idx ON public.status_check USING btree (at);
+
+
+--
+-- Name: status_check_component_at_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX status_check_component_at_idx ON public.status_check USING btree (component, at DESC);
+
+
+--
+-- Name: status_incident_open_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX status_incident_open_idx ON public.status_incident USING btree (resolved_at, starts_at DESC);
+
+
+--
+-- Name: status_update_incident_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX status_update_incident_idx ON public.status_update USING btree (incident_id, created_at);
+
+
+--
 -- Name: store_activity_store_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5341,6 +3943,13 @@ CREATE INDEX store_ledger_event_idx ON public.store_ledger USING btree (event_id
 
 
 --
+-- Name: store_ledger_payout_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX store_ledger_payout_idx ON public.store_ledger USING btree (store_id, payout_id);
+
+
+--
 -- Name: store_ledger_statement_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5359,6 +3968,13 @@ CREATE UNIQUE INDEX store_ledger_ticket_entry_key ON public.store_ledger USING b
 --
 
 CREATE INDEX store_member_user_idx ON public.store_member USING btree (user_id);
+
+
+--
+-- Name: store_payout_event_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX store_payout_event_key ON public.store_payout USING btree (store_id, event_id) WHERE (event_id IS NOT NULL);
 
 
 --
@@ -5439,6 +4055,13 @@ CREATE INDEX ticket_user_event_idx ON public.ticket USING btree (user_id, event_
 
 
 --
+-- Name: user_comp_ends_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX user_comp_ends_idx ON public."user" USING btree (comp_ends_at) WHERE (comp_ends_at IS NOT NULL);
+
+
+--
 -- Name: vods_kind_published_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5450,38 +4073,6 @@ CREATE INDEX vods_kind_published_idx ON public.vods USING btree (kind, is_publis
 --
 
 CREATE INDEX vods_show_idx ON public.vods USING btree (show_id);
-
-
---
--- Name: analytics_event analytics_event_page_view_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.analytics_event
-    ADD CONSTRAINT analytics_event_page_view_id_fkey FOREIGN KEY (page_view_id) REFERENCES public.page_view(id) ON DELETE SET NULL;
-
-
---
--- Name: analytics_event analytics_event_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.analytics_event
-    ADD CONSTRAINT analytics_event_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE SET NULL;
-
-
---
--- Name: article_engagement article_engagement_page_view_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.article_engagement
-    ADD CONSTRAINT article_engagement_page_view_id_fkey FOREIGN KEY (page_view_id) REFERENCES public.page_view(id) ON DELETE SET NULL;
-
-
---
--- Name: article_engagement article_engagement_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.article_engagement
-    ADD CONSTRAINT article_engagement_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE SET NULL;
 
 
 --
@@ -5834,6 +4425,14 @@ ALTER TABLE ONLY public.cms_media
 
 ALTER TABLE ONLY public.cms_media
     ADD CONSTRAINT cms_media_derived_from_fkey FOREIGN KEY (derived_from) REFERENCES public.cms_media(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cms_media cms_media_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cms_media
+    ADD CONSTRAINT cms_media_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES public.cms_entry(id) ON DELETE SET NULL;
 
 
 --
@@ -6341,14 +4940,6 @@ ALTER TABLE ONLY public."order"
 
 
 --
--- Name: page_view page_view_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.page_view
-    ADD CONSTRAINT page_view_user_id_fkey FOREIGN KEY (user_id) REFERENCES public."user"(id) ON DELETE SET NULL;
-
-
---
 -- Name: partner_account partner_account_teacher_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6565,30 +5156,6 @@ ALTER TABLE ONLY public.payment
 
 
 --
--- Name: podcast_episodes podcast_episodes_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.podcast_episodes
-    ADD CONSTRAINT podcast_episodes_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."user"(id);
-
-
---
--- Name: podcast_episodes podcast_episodes_podcast_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.podcast_episodes
-    ADD CONSTRAINT podcast_episodes_podcast_id_fkey FOREIGN KEY (podcast_id) REFERENCES public.podcasts(id) ON DELETE CASCADE;
-
-
---
--- Name: podcasts podcasts_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.podcasts
-    ADD CONSTRAINT podcasts_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."user"(id);
-
-
---
 -- Name: refund refund_guide_refund_request_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6653,6 +5220,14 @@ ALTER TABLE ONLY public.refund
 
 
 --
+-- Name: roadmap_item roadmap_item_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.roadmap_item
+    ADD CONSTRAINT roadmap_item_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
 -- Name: saved_card saved_card_user_id_user_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6690,6 +5265,30 @@ ALTER TABLE ONLY public.staff_assignments
 
 ALTER TABLE ONLY public.staff_assignments
     ADD CONSTRAINT staff_assignments_user_id_user_id_fk FOREIGN KEY (user_id) REFERENCES public."user"(id);
+
+
+--
+-- Name: status_incident status_incident_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.status_incident
+    ADD CONSTRAINT status_incident_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: status_update status_update_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.status_update
+    ADD CONSTRAINT status_update_created_by_fkey FOREIGN KEY (created_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: status_update status_update_incident_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.status_update
+    ADD CONSTRAINT status_update_incident_id_fkey FOREIGN KEY (incident_id) REFERENCES public.status_incident(id) ON DELETE CASCADE;
 
 
 --
@@ -6749,6 +5348,14 @@ ALTER TABLE ONLY public.store_ledger
 
 
 --
+-- Name: store_ledger store_ledger_payout_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_ledger
+    ADD CONSTRAINT store_ledger_payout_id_fkey FOREIGN KEY (payout_id) REFERENCES public.store_payout(id) ON DELETE SET NULL;
+
+
+--
 -- Name: store_ledger store_ledger_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6789,35 +5396,35 @@ ALTER TABLE ONLY public.store_member
 
 
 --
+-- Name: store_payout store_payout_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_payout
+    ADD CONSTRAINT store_payout_event_id_fkey FOREIGN KEY (event_id) REFERENCES public.events(id) ON DELETE SET NULL;
+
+
+--
+-- Name: store_payout store_payout_paid_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_payout
+    ADD CONSTRAINT store_payout_paid_by_fkey FOREIGN KEY (paid_by) REFERENCES public."user"(id) ON DELETE SET NULL;
+
+
+--
+-- Name: store_payout store_payout_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_payout
+    ADD CONSTRAINT store_payout_store_id_fkey FOREIGN KEY (store_id) REFERENCES public.store(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: store_program store_program_updated_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.store_program
     ADD CONSTRAINT store_program_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public."user"(id) ON DELETE SET NULL;
-
-
---
--- Name: store_statement store_statement_locked_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.store_statement
-    ADD CONSTRAINT store_statement_locked_by_fkey FOREIGN KEY (locked_by) REFERENCES public."user"(id) ON DELETE SET NULL;
-
-
---
--- Name: store_statement store_statement_paid_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.store_statement
-    ADD CONSTRAINT store_statement_paid_by_fkey FOREIGN KEY (paid_by) REFERENCES public."user"(id) ON DELETE SET NULL;
-
-
---
--- Name: store_statement store_statement_store_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.store_statement
-    ADD CONSTRAINT store_statement_store_id_fkey FOREIGN KEY (store_id) REFERENCES public.store(id) ON DELETE RESTRICT;
 
 
 --
@@ -7057,18 +5664,6 @@ ALTER TABLE public._bak_024_ticket ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public._bak_024_user ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: analytics_event; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE public.analytics_event ENABLE ROW LEVEL SECURITY;
-
---
--- Name: article_engagement; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE public.article_engagement ENABLE ROW LEVEL SECURITY;
-
---
 -- Name: billing_notice; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -7237,12 +5832,6 @@ ALTER TABLE public.course_sale ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.decklists ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: entitlement; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE public.entitlement ENABLE ROW LEVEL SECURITY;
-
---
 -- Name: event_player_heroes; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -7259,12 +5848,6 @@ ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.fab_card_lookup ENABLE ROW LEVEL SECURITY;
-
---
--- Name: fab_card_upload_history; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE public.fab_card_upload_history ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: guide_read; Type: ROW SECURITY; Schema: public; Owner: -
@@ -7315,12 +5898,6 @@ ALTER TABLE public.member_referral ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.member_referral_code ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: newsletter_subscriber; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE public.newsletter_subscriber ENABLE ROW LEVEL SECURITY;
-
---
 -- Name: notification; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -7331,12 +5908,6 @@ ALTER TABLE public.notification ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public."order" ENABLE ROW LEVEL SECURITY;
-
---
--- Name: page_view; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE public.page_view ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: partner; Type: ROW SECURITY; Schema: public; Owner: -
@@ -7387,18 +5958,6 @@ ALTER TABLE public.password_reset_token ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payment ENABLE ROW LEVEL SECURITY;
 
 --
--- Name: podcast_episodes; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE public.podcast_episodes ENABLE ROW LEVEL SECURITY;
-
---
--- Name: podcasts; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE public.podcasts ENABLE ROW LEVEL SECURITY;
-
---
 -- Name: pool_run; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -7415,6 +5974,12 @@ ALTER TABLE public.refund ENABLE ROW LEVEL SECURITY;
 --
 
 ALTER TABLE public.refund_request ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: roadmap_item; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.roadmap_item ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: saved_card; Type: ROW SECURITY; Schema: public; Owner: -
@@ -7441,6 +6006,24 @@ ALTER TABLE public.staff_assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.standings ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: status_check; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.status_check ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: status_incident; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.status_incident ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: status_update; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.status_update ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: store; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
@@ -7465,16 +6048,16 @@ ALTER TABLE public.store_ledger ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.store_member ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: store_payout; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.store_payout ENABLE ROW LEVEL SECURITY;
+
+--
 -- Name: store_program; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
 ALTER TABLE public.store_program ENABLE ROW LEVEL SECURITY;
-
---
--- Name: store_statement; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE public.store_statement ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: studio_channel; Type: ROW SECURITY; Schema: public; Owner: -
@@ -7546,102 +6129,5 @@ ALTER TABLE public.webhook_event ENABLE ROW LEVEL SECURITY;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 4nf9jZiE0VKpaxci9LYdPYUS7K1O92AyDYFkx0eoJvOES4ZDuY5U7o0AqsEqBRp
+\unrestrict mn8nXEmncgm5N7WZNJuWhe6fPbmUbttQT1fg5k6Gn88FzZL4un2IO1nrmnoud0e
 
-
--- Migration 049 (entry images), appended until the next refresh.
-ALTER TABLE public.cms_media ADD COLUMN IF NOT EXISTS entry_id uuid REFERENCES public.cms_entry (id) ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS cms_media_entry_idx ON public.cms_media USING btree (entry_id, created_at DESC);
-
--- Migration 050 (store payouts), appended until the next refresh.
-ALTER TABLE public.store_program
-  ADD COLUMN IF NOT EXISTS fee_pct numeric(6,4) NOT NULL DEFAULT 0.0290 CHECK (fee_pct >= 0 AND fee_pct < 1),
-  ADD COLUMN IF NOT EXISTS fee_fixed_cents integer NOT NULL DEFAULT 30 CHECK (fee_fixed_cents >= 0);
-CREATE TABLE IF NOT EXISTS public.store_payout (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id uuid NOT NULL REFERENCES public.store(id) ON DELETE RESTRICT,
-  event_id text REFERENCES public.events(id) ON DELETE SET NULL,
-  status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'paid')),
-  gross_cents integer, refund_cents integer, fee_cents integer, adjust_cents integer,
-  carried_cents integer, amount_cents integer,
-  paid_at timestamptz, paid_by text REFERENCES public."user"(id) ON DELETE SET NULL,
-  method text, reference text, note text,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE UNIQUE INDEX IF NOT EXISTS store_payout_event_key ON public.store_payout (store_id, event_id) WHERE event_id IS NOT NULL;
-ALTER TABLE public.store_ledger ADD COLUMN IF NOT EXISTS payout_id uuid REFERENCES public.store_payout(id) ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS store_ledger_payout_idx ON public.store_ledger (store_id, payout_id);
-
--- 046_comp_end_dates.sql
-ALTER TABLE public."user" ADD COLUMN IF NOT EXISTS comp_ends_at timestamptz;
-CREATE INDEX IF NOT EXISTS user_comp_ends_idx ON public."user" (comp_ends_at) WHERE comp_ends_at IS NOT NULL;
-
--- 047_status_roadmap.sql
-
-CREATE TABLE IF NOT EXISTS public.status_check (
-  id         bigserial PRIMARY KEY,
-  component  text NOT NULL,
-  ok         boolean NOT NULL,
-  ms         integer,
-  note       text,
-  at         timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS status_check_component_at_idx ON public.status_check (component, at DESC);
-CREATE INDEX IF NOT EXISTS status_check_at_idx ON public.status_check (at);
-ALTER TABLE public.status_check ENABLE ROW LEVEL SECURITY;
-
-CREATE TABLE IF NOT EXISTS public.status_incident (
-  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  kind         text NOT NULL DEFAULT 'incident' CHECK (kind IN ('incident', 'maintenance')),
-  title        text NOT NULL,
-  -- incident: minor | major; maintenance: maintenance
-  impact       text NOT NULL DEFAULT 'minor' CHECK (impact IN ('minor', 'major', 'maintenance')),
-  components   text[] NOT NULL DEFAULT ARRAY[]::text[],
-  -- incident: investigating | identified | monitoring | resolved
-  -- maintenance: scheduled | in_progress | completed
-  status       text NOT NULL DEFAULT 'investigating',
-  starts_at    timestamptz NOT NULL DEFAULT now(),
-  ends_at      timestamptz,
-  resolved_at  timestamptz,
-  banner       boolean NOT NULL DEFAULT true,
-  created_by   text REFERENCES public."user"(id) ON DELETE SET NULL,
-  created_at   timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS status_incident_open_idx ON public.status_incident (resolved_at, starts_at DESC);
-ALTER TABLE public.status_incident ENABLE ROW LEVEL SECURITY;
-
-CREATE TABLE IF NOT EXISTS public.status_update (
-  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  incident_id  uuid NOT NULL REFERENCES public.status_incident(id) ON DELETE CASCADE,
-  status       text NOT NULL,
-  body         text NOT NULL,
-  created_by   text REFERENCES public."user"(id) ON DELETE SET NULL,
-  created_at   timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS status_update_incident_idx ON public.status_update (incident_id, created_at);
-ALTER TABLE public.status_update ENABLE ROW LEVEL SECURITY;
-
-CREATE TABLE IF NOT EXISTS public.roadmap_item (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  title       text NOT NULL,
-  body        text,
-  stage       text NOT NULL DEFAULT 'later' CHECK (stage IN ('now', 'next', 'later', 'shipped')),
-  area        text,
-  position    integer NOT NULL DEFAULT 0,
-  is_public   boolean NOT NULL DEFAULT true,
-  shipped_at  timestamptz,
-  created_by  text REFERENCES public."user"(id) ON DELETE SET NULL,
-  created_at  timestamptz NOT NULL DEFAULT now(),
-  updated_at  timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS roadmap_item_stage_idx ON public.roadmap_item (stage, position);
-ALTER TABLE public.roadmap_item ENABLE ROW LEVEL SECURITY;
-
--- 051: roadmap stages
-ALTER TABLE public.roadmap_item DROP CONSTRAINT IF EXISTS roadmap_item_stage_check;
-UPDATE public.roadmap_item
-SET stage = CASE stage WHEN 'now' THEN 'development' WHEN 'next' THEN 'upcoming' WHEN 'later' THEN 'upcoming' ELSE stage END
-WHERE stage IN ('now', 'next', 'later');
-ALTER TABLE public.roadmap_item ALTER COLUMN stage SET DEFAULT 'upcoming';
-ALTER TABLE public.roadmap_item ADD CONSTRAINT roadmap_item_stage_check
-  CHECK (stage IN ('upcoming', 'development', 'testing', 'shipped'));
