@@ -7,6 +7,9 @@
 	 *
 	 * `variant`: 'rail' (the narrow desktop sidebar) or 'end' (full width,
 	 * after the article on phones and tablets).
+	 *
+	 * A long bio is cut to about six lines in the rail and four at the end,
+	 * fading out, with a More button that shows the rest.
 	 */
 	let { author, bioHtml = '', links = [], variant = 'end' } = $props();
 
@@ -20,6 +23,22 @@
 			.map((w) => w[0].toUpperCase())
 			.join('')
 	);
+	// ---- long bios: cut short until the reader asks for more ----
+	/** @type {HTMLElement | undefined} */
+	let bioEl = $state();
+	let bioOpen = $state(false);
+	let bioLong = $state(false);
+	$effect(() => {
+		if (!bioEl) return;
+		const measure = () => {
+			if (!bioOpen) bioLong = bioEl.scrollHeight > bioEl.clientHeight + 1;
+		};
+		measure();
+		const ro = new ResizeObserver(measure);
+		ro.observe(bioEl);
+		return () => ro.disconnect();
+	});
+
 	const piecesLabel = $derived(
 		author?.pieces > 0
 			? `${author.pieces} ${author.pieces === 1 ? 'piece' : 'pieces'}${rail ? '' : ' in the Library'}`
@@ -87,13 +106,42 @@
 	</div>
 
 	{#if bioHtml}
-		<div
-			class="mt-4 font-newsreader text-soft [&_a]:text-warm [&_a]:underline [&_p+p]:mt-2 {rail
-				? 'text-sm leading-normal'
-				: 'max-w-xl text-base leading-relaxed md:text-lg'}"
-		>
-			{@html bioHtml}
+		<div class="relative mt-4">
+			<div
+				bind:this={bioEl}
+				id="author-bio-{variant}"
+				class="font-newsreader text-soft [&_a]:text-warm [&_a]:underline [&_p+p]:mt-2 {rail
+					? 'text-sm leading-normal'
+					: 'max-w-xl text-base leading-relaxed md:text-lg'} {bioOpen
+					? ''
+					: rail
+						? 'max-h-[9em] overflow-hidden'
+						: 'max-h-[6.5em] overflow-hidden'}"
+			>
+				{@html bioHtml}
+			</div>
+			{#if bioLong && !bioOpen}
+				<div
+					class="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-linear-to-b from-transparent to-paper-bg"
+					aria-hidden="true"
+				></div>
+			{/if}
 		</div>
+		{#if bioLong}
+			<button
+				type="button"
+				onclick={() => (bioOpen = !bioOpen)}
+				aria-expanded={bioOpen}
+				aria-controls="author-bio-{variant}"
+				class="group mt-2 inline-flex cursor-pointer items-center gap-1.5 text-xs font-extrabold tracking-widest text-warm uppercase"
+			>
+				{bioOpen ? 'Less' : 'More'}
+				<span
+					class="transition-transform {bioOpen ? 'rotate-180' : 'group-hover:translate-y-0.5'}"
+					aria-hidden="true">↓</span
+				>
+			</button>
+		{/if}
 	{/if}
 
 	{#if links.length || href}
