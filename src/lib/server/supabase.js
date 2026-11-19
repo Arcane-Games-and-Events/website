@@ -33,6 +33,27 @@ function cleanEnv(v) {
 		.replace(/^['"]|['"]$/g, '');
 }
 
+// Storage keeps its own small pool of database connections. When a burst
+// of image requests fills it, Storage turns new requests away ("Too many
+// connections issued to the database") before doing anything with them,
+// so they're safe to send again: up to three more tries, a moment apart.
+const BUSY = /too many connections|remaining connection slots|timeout acquiring/i;
+const TRIES = 4;
+
+/** fetch that waits and tries again while Storage is out of connections. */
+export async function patientFetch(input, init) {
+	for (let attempt = 1; ; attempt++) {
+		const res = await fetch(input, init);
+		if (res.ok || attempt === TRIES) return res;
+		const text = await res
+			.clone()
+			.text()
+			.catch(() => '');
+		if (!BUSY.test(text)) return res;
+		await new Promise((r) => setTimeout(r, 250 * 2 ** (attempt - 1)));
+	}
+}
+
 export function getSupabase() {
 	if (g.__ageSupabaseClient) return g.__ageSupabaseClient;
 	const rawUrl = cleanEnv(env.SUPABASE_URL);
@@ -60,7 +81,8 @@ export function getSupabase() {
 	}
 
 	g.__ageSupabaseClient = createClient(url, rawKey, {
-		auth: { persistSession: false, autoRefreshToken: false }
+		auth: { persistSession: false, autoRefreshToken: false },
+		global: { fetch: patientFetch }
 	});
 	return g.__ageSupabaseClient;
 }
