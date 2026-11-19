@@ -10,7 +10,7 @@
 	import Picture from '$lib/components/media/Picture.svelte';
 	import PremiumTag from '$lib/components/age/PremiumTag.svelte';
 	import AuthorCard from '$lib/components/age/library/AuthorCard.svelte';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { fitTitle } from '$lib/actions/fitTitle.js';
 	import { fade, fly } from 'svelte/transition';
 	import CardHover from '$lib/components/CardHover.svelte';
@@ -174,6 +174,29 @@
 	})();
 	let activeSection = '';
 	let mobileTocOpen = false;
+	/** How much of the article body has been read, 0–1. */
+	let readProgress = 0;
+	/** @type {HTMLElement | undefined} */
+	let articleEl;
+	/** @type {HTMLElement | undefined} */
+	let sheetList;
+
+	// The section you're in: its top-level heading, numbered, of how many
+	$: activeIndex = tableOfContents.findIndex((h) => h.id === activeSection);
+	$: activeTopId = (() => {
+		for (let i = activeIndex; i >= 0; i--) {
+			if (tableOfContents[i].level === 2) return tableOfContents[i].id;
+		}
+		return '';
+	})();
+	$: sectionCount = Object.keys(topLevelNumbers).length;
+	$: sectionNow = topLevelNumbers[activeTopId] || 0;
+
+	async function openToc() {
+		mobileTocOpen = true;
+		await tick();
+		sheetList?.querySelector('[aria-current="location"]')?.scrollIntoView({ block: 'center' });
+	}
 	let expandedSections = {}; // Track which sections are expanded
 
 	// Check if a heading has children (next headings with higher level number)
@@ -292,15 +315,24 @@
 
 			headings.forEach((heading) => {
 				const rect = heading.getBoundingClientRect();
-				if (rect.top <= 150) {
+				// the section you're in starts above the reading line, a third of
+				// the way down the screen (the same line the progress bar uses)
+				if (rect.top <= innerHeight * 0.35) {
 					currentSection = heading.id;
 				}
 			});
 
 			activeSection = currentSection;
-		};
 
-		window.addEventListener('scroll', handleScroll);
+			if (articleEl) {
+				const r = articleEl.getBoundingClientRect();
+				const read = (innerHeight * 0.35 - r.top) / Math.max(1, r.height);
+				readProgress = Math.min(1, Math.max(0, read));
+			}
+		};
+		handleScroll();
+
+		window.addEventListener('scroll', handleScroll, { passive: true });
 		return () => window.removeEventListener('scroll', handleScroll);
 	});
 
@@ -579,7 +611,10 @@
 	</figure>
 {/if}
 
-<svelte:window bind:innerHeight={viewHeight} />
+<svelte:window
+	bind:innerHeight={viewHeight}
+	onkeydown={(e) => mobileTocOpen && e.key === 'Escape' && (mobileTocOpen = false)}
+/>
 
 <!-- ============ READING LAYOUT ============ -->
 <div
@@ -611,65 +646,9 @@
 			style="top: {railTop};"
 		>
 			{#if !data.isPreview && tableOfContents.length > 0}
-				<nav>
-					<div
-						class="mb-2.5 flex items-center gap-2 text-xs font-extrabold tracking-widest text-ink uppercase"
-					>
-						<span class="text-xs text-warm" aria-hidden="true">◆</span>
-						Contents
-					</div>
-					{#key expandedSections}
-						{#each tableOfContents as heading, index (heading.id)}
-							{#if isVisible(index)}
-								{@const _isTop = heading.level === 2}
-								{@const _isActive = activeSection === heading.id}
-								{#if _isTop}
-									<!--
-											Top-level: serif, large, ink, numbered.
-											The dominant element in the TOC.
-										-->
-									<a
-										href="#{heading.id}"
-										class="flex items-baseline gap-3 pt-3 pb-1.5 font-newsreader text-lg leading-tight font-semibold tracking-normal transition-colors {_isActive
-											? 'text-warm'
-											: 'text-ink hover:text-warm'}"
-									>
-										<span
-											class="font-mono-system text-xs font-bold {_isActive
-												? 'text-warm'
-												: 'text-fade'}"
-										>
-											{String(topLevelNumbers[heading.id] || '').padStart(2, '0')}
-										</span>
-										<span>{heading.text}</span>
-									</a>
-								{:else}
-									<!--
-											Sub-heading: mirror the parent h2's
-											flex structure but with an *invisible*
-											mono number placeholder. That spacer
-											consumes the same width as `01`/`02`
-											plus the gap, so the sub-text aligns
-											pixel-perfectly with the parent's
-											title text — no width guessing.
-											Deeper levels step in by 16px on top.
-										-->
-									<a
-										href="#{heading.id}"
-										style="padding-left: {(heading.level - 3) * 16}px"
-										class="flex items-baseline gap-3 py-1 text-xs leading-snug font-medium transition-colors {_isActive
-											? 'text-warm'
-											: 'text-soft hover:text-warm'}"
-									>
-										<span class="invisible font-mono-system text-xs font-bold" aria-hidden="true">
-											00
-										</span>
-										<span>{heading.text}</span>
-									</a>
-								{/if}
-							{/if}
-						{/each}
-					{/key}
+				<nav aria-label="Contents" class="font-libre">
+					{@render tocHead()}
+					{@render tocList(false)}
 				</nav>
 			{/if}
 
@@ -700,7 +679,7 @@
 	</aside>
 
 	<!-- ============ BODY ============ -->
-	<article class="min-w-0">
+	<article class="min-w-0" bind:this={articleEl}>
 		<div class="relative">
 			<!--
 					Editorial reading column. The Lexical renderer emits
@@ -803,13 +782,76 @@
 	</article>
 </div>
 
-<!-- ============ MOBILE TOC FAB ============ -->
+<!-- ============ CONTENTS (shared by the rail and the phone sheet) ============ -->
+{#snippet tocHead()}
+	<div class="flex items-baseline justify-between gap-3">
+		<p class="flex items-center gap-2 text-xs font-extrabold tracking-widest text-ink uppercase">
+			<span class="text-warm" aria-hidden="true">◆</span>Contents
+		</p>
+		{#if sectionCount > 1}
+			<p class="text-xs font-semibold text-fade tabular-nums">
+				<span class="sr-only">Section </span>{sectionNow}<span aria-hidden="true"> / </span><span
+					class="sr-only"
+				>
+					of
+				</span>{sectionCount}
+			</p>
+		{/if}
+	</div>
+	<div class="mt-3 h-0.5 bg-line" aria-hidden="true">
+		<div
+			class="h-full origin-left bg-warm transition-transform duration-150 ease-out"
+			style="transform: scaleX({readProgress});"
+		></div>
+	</div>
+{/snippet}
+
+{#snippet tocList(/** @type {boolean} */ sheet)}
+	<ol class="border-l border-line {sheet ? 'mt-2' : 'mt-4'}">
+		{#key expandedSections}
+			{#each tableOfContents as heading, index (heading.id)}
+				{#if isVisible(index)}
+					{@const top = heading.level === 2}
+					{@const here = activeSection === heading.id}
+					{@const inSection = top && activeTopId === heading.id}
+					<li>
+						<a
+							href="#{heading.id}"
+							onclick={() => (mobileTocOpen = false)}
+							aria-current={here ? 'location' : undefined}
+							style={top ? '' : `padding-left: ${3 + (heading.level - 3)}rem`}
+							class="-ml-px flex items-baseline gap-3 border-l-2 leading-snug transition-colors duration-150
+								{here ? 'border-warm' : 'border-transparent hover:border-line2'}
+								{sheet && here ? 'bg-panel' : ''}
+								{top
+								? `${sheet ? 'py-3 pl-4 text-base' : 'py-2 pl-4 text-sm'} font-semibold ${here || inSection ? 'text-ink' : 'text-soft hover:text-ink'}`
+								: `${sheet ? 'py-2.5 text-sm' : 'py-1.5 text-xs'} font-medium ${here ? 'text-ink' : 'text-soft hover:text-ink'}`}"
+						>
+							{#if top}
+								<span
+									class="w-5 shrink-0 text-xs font-semibold tabular-nums {here || inSection
+										? 'text-warm'
+										: 'text-fade'}"
+									>{String(topLevelNumbers[heading.id] || '').padStart(2, '0')}</span
+								>
+							{/if}
+							<span>{heading.text}</span>
+						</a>
+					</li>
+				{/if}
+			{/each}
+		{/key}
+	</ol>
+{/snippet}
+
+<!-- ============ PHONE: CONTENTS BUTTON ============ -->
 {#if !data.isPreview && tableOfContents.length > 0}
 	<button
 		type="button"
-		onclick={() => (mobileTocOpen = true)}
-		class="fixed right-4 bottom-6 z-40 flex cursor-pointer items-center gap-2 border-none bg-ink px-4 py-2.5 text-xs font-extrabold tracking-wider text-paper-bg uppercase shadow-xl hover:brightness-110 lg:hidden"
+		onclick={openToc}
+		class="fixed right-4 bottom-6 z-40 flex cursor-pointer items-center gap-2 border-none bg-ink px-4 py-2.5 font-libre text-xs font-extrabold tracking-wider text-paper-bg uppercase shadow-xl hover:brightness-110 lg:hidden"
 		aria-label="Table of contents"
+		aria-haspopup="dialog"
 	>
 		<svg
 			class="h-3.5 w-3.5"
@@ -817,6 +859,7 @@
 			stroke="currentColor"
 			stroke-width="1.7"
 			viewBox="0 0 24 24"
+			aria-hidden="true"
 		>
 			<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
 		</svg>
@@ -824,83 +867,45 @@
 	</button>
 {/if}
 
-<!-- ============ MOBILE TOC MODAL ============ -->
+<!-- ============ PHONE: CONTENTS SHEET ============ -->
 {#if mobileTocOpen}
-	<div class="fixed inset-0 z-50 lg:hidden">
-		<div
+	<div class="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Contents">
+		<button
+			type="button"
 			transition:fade={{ duration: 200 }}
-			class="absolute inset-0 bg-black/60"
+			class="absolute inset-0 cursor-default bg-ink/40"
 			onclick={() => (mobileTocOpen = false)}
-			onkeydown={(e) => e.key === 'Escape' && (mobileTocOpen = false)}
-			role="button"
-			tabindex="0"
-			aria-label="Close table of contents"
-		></div>
+			aria-label="Close contents"
+		></button>
 
 		<div
-			transition:fly={{ y: 300, duration: 300 }}
-			class="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-hidden border-t-2 border-ink bg-paper-bg shadow-up"
+			transition:fly={{ y: 320, duration: 280 }}
+			class="absolute inset-x-0 bottom-0 flex max-h-[75vh] flex-col bg-paper-bg pb-[env(safe-area-inset-bottom)] font-libre shadow-up"
 		>
-			<div
-				class="sticky top-0 z-10 flex items-center justify-between border-b border-line2 bg-paper-bg px-5 py-4"
-			>
-				<div>
-					<h3 class="font-newsreader text-lg font-semibold">Table of Contents</h3>
-					<p class="text-xs font-semibold tracking-wider text-fade uppercase">
-						{tableOfContents.length} sections
-					</p>
-				</div>
+			<div class="flex justify-center pt-2.5" aria-hidden="true">
+				<span class="h-1 w-10 bg-line2"></span>
+			</div>
+			<div class="flex items-start gap-3 px-5 pt-3 pb-4">
+				<div class="min-w-0 flex-1">{@render tocHead()}</div>
 				<button
 					type="button"
 					onclick={() => (mobileTocOpen = false)}
-					class="flex h-8 w-8 cursor-pointer items-center justify-center border border-line2 bg-transparent text-soft hover:border-ink"
+					class="-mt-2.5 -mr-2 flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center text-soft transition-colors hover:text-ink"
 					aria-label="Close"
 				>
-					✕
+					<svg
+						class="h-4 w-4"
+						viewBox="0 0 16 16"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.6"
+						stroke-linecap="round"
+						aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" /></svg
+					>
 				</button>
 			</div>
-
-			<nav class="overflow-y-auto px-3 py-3" style="max-height: calc(80vh - 90px);">
-				{#key expandedSections}
-					{#each tableOfContents as heading, index (heading.id)}
-						{#if isVisible(index)}
-							{@const _isTop = heading.level === 2}
-							{@const _isActive = activeSection === heading.id}
-							{#if _isTop}
-								<a
-									href="#{heading.id}"
-									onclick={() => (mobileTocOpen = false)}
-									class="flex items-baseline gap-3 pt-3.5 pb-2 font-newsreader text-2xl leading-tight font-semibold tracking-normal transition-colors {_isActive
-										? 'text-warm'
-										: 'text-ink hover:text-warm'}"
-								>
-									<span
-										class="font-mono-system text-xs font-bold {_isActive
-											? 'text-warm'
-											: 'text-fade'}"
-									>
-										{String(topLevelNumbers[heading.id] || '').padStart(2, '0')}
-									</span>
-									<span>{heading.text}</span>
-								</a>
-							{:else}
-								<a
-									href="#{heading.id}"
-									onclick={() => (mobileTocOpen = false)}
-									style="padding-left: {(heading.level - 3) * 18}px"
-									class="flex items-baseline gap-3 py-1.5 text-sm leading-snug font-medium transition-colors {_isActive
-										? 'text-warm'
-										: 'text-soft hover:text-warm'}"
-								>
-									<span class="invisible font-mono-system text-xs font-bold" aria-hidden="true">
-										00
-									</span>
-									<span>{heading.text}</span>
-								</a>
-							{/if}
-						{/if}
-					{/each}
-				{/key}
+			<nav class="overflow-y-auto overscroll-contain px-5 pb-6" bind:this={sheetList}>
+				{@render tocList(true)}
 			</nav>
 		</div>
 	</div>
