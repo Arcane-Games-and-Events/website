@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@flesh-and-blood/cards':
-        specifier: ^4.0.60
-        version: 4.0.60
+        specifier: ^7.3.21
+        version: 7.3.21
       '@flesh-and-blood/search':
-        specifier: ^4.0.60
-        version: 4.0.60(@flesh-and-blood/types@4.0.54)
+        specifier: ^7.3.21
+        version: 7.3.21(@flesh-and-blood/types@7.3.21)
       '@fontsource-variable/archivo':
         specifier: ^5.3.0
         version: 5.3.0
@@ -402,16 +402,16 @@ packages:
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@flesh-and-blood/cards@4.0.60':
-    resolution: {integrity: sha512-OI7cnXAODsjyFcbvAlmbRnXVO3F4ONV6T7UaXWkbXtVDseWs5JunOxlOK6Wkoz6ohTvU68dI/HKdk2DeXWZVpg==}
+  '@flesh-and-blood/cards@7.3.21':
+    resolution: {integrity: sha512-+g3CKZDID1PH+r7Sy1EkuiI7SKHHlrYYbP5loz9zih6t8F2E2Zm3Ld/YENcp3b2FAffkMKtlRe6WO0l+Cl5lRQ==}
 
-  '@flesh-and-blood/search@4.0.60':
-    resolution: {integrity: sha512-UUtjDsZCKfXDaqoEo8DEnvKT2kKBV1fBPkbXmgMQqg/TECEgmGBNejiS4CB4/fbOmV3eJ3TdgxMLaoiFkAdRRA==}
+  '@flesh-and-blood/search@7.3.21':
+    resolution: {integrity: sha512-W69oKw+q+NJ4NbkxFxASz069ihqokprQVHc6if01BvjWR4ofCMode5k+e9Qc1lZe47lAOfbZp8S0gjdeVbFKlg==}
     peerDependencies:
-      '@flesh-and-blood/types': ^4.0.0
+      '@flesh-and-blood/types': ^7.3.21
 
-  '@flesh-and-blood/types@4.0.54':
-    resolution: {integrity: sha512-ZuYouJF3exQsugdoJD/XKo2RJ/r4nRPKz6dEL/bXSJRfqe693ZFEWb+kgo+U2c3Gynv8hJkZc6FUKgYE7vEE0A==}
+  '@flesh-and-blood/types@7.3.21':
+    resolution: {integrity: sha512-A5e0leNLINa3nSCga3K1zVdy6zaxtNZcyMUu07BABXDPLAr/O6Rll1qD/5f23XcvGCSZvPYV9TLOuu/FpDY0ig==}
 
   '@fontsource-variable/archivo@5.3.0':
     resolution: {integrity: sha512-HogK8FJelrD1o7TlZlkIVtHgc20bO5PZRWE7mUeUTdMN055alznQV6/00J00IBeu8FQAH4s3zW9UJNvKExXf+g==}
@@ -1831,8 +1831,8 @@ packages:
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
-  fuse.js@6.6.2:
-    resolution: {integrity: sha512-cJaJkxCCxC8qIIcPBF9yGxY0W/tVZS3uEISDxhYIdtk8OL93pe+6Zj7LjCqVV4dzbqcriOZ+kQ/NE4RXZHsIGA==}
+  fuse.js@7.5.0:
+    resolution: {integrity: sha512-sQtrEfA+ez/3G0cCZecF70oqpCRttCexYUG4mUrtWL49ULUzUyxokt5kyqwtKzj1270RaKih+hcP3qLcumccow==}
     engines: {node: '>=10'}
 
   gel@2.2.0:
@@ -2988,16 +2988,16 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
-  '@flesh-and-blood/cards@4.0.60':
+  '@flesh-and-blood/cards@7.3.21':
     dependencies:
-      '@flesh-and-blood/types': 4.0.54
+      '@flesh-and-blood/types': 7.3.21
 
-  '@flesh-and-blood/search@4.0.60(@flesh-and-blood/types@4.0.54)':
+  '@flesh-and-blood/search@7.3.21(@flesh-and-blood/types@7.3.21)':
     dependencies:
-      '@flesh-and-blood/types': 4.0.54
-      fuse.js: 6.6.2
+      '@flesh-and-blood/types': 7.3.21
+      fuse.js: 7.5.0
 
-  '@flesh-and-blood/types@4.0.54': {}
+  '@flesh-and-blood/types@7.3.21': {}
 
   '@fontsource-variable/archivo@5.3.0': {}
 
@@ -4254,7 +4254,7 @@ snapshots:
 
   function-bind@1.1.2: {}
 
-  fuse.js@6.6.2: {}
+  fuse.js@7.5.0: {}
 
   gel@2.2.0:
     dependencies:

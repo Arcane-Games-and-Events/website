@@ -1,15 +1,14 @@
 /**
  * Card images straight from the `@flesh-and-blood/cards` package, so new
- * sets show up with `pnpm update @flesh-and-blood/cards` rather than a
- * manual upload to the `fab_card_lookup` table.
+ * sets show up with `pnpm update @flesh-and-blood/cards`.
  *
- * Images come from Legend Story's public bucket, which carries every
- * printing; the CloudFront CDN lags on new sets, so it is the fallback.
+ * Images come from Legend Story's public bucket. A card from a set still
+ * being revealed may only be there as its rainbow-foil scan (`-RF`), so
+ * that is the fallback.
  */
 import { cards } from '@flesh-and-blood/cards';
 
 const S3 = 'https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/large';
-const CDN = 'https://d2wlb52bya4y8z.cloudfront.net/media/cards/large';
 const SECTION_PITCH = { red: 1, yellow: 2, blue: 3 };
 
 /** Lowercase, drop commas and pitch suffixes, collapse spaces. */
@@ -49,7 +48,7 @@ export function resolveFromPackage({ name, color, pitch }) {
 	if (!image) return null;
 	return {
 		imageUrl: `${S3}/${image}.webp`,
-		fallbackUrl: `${CDN}/${image}.webp`,
+		fallbackUrl: `${S3}/${image}-RF.webp`,
 		name: card.name,
 		pitch: card.pitch ?? null,
 		found: true

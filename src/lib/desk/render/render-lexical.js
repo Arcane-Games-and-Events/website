@@ -174,18 +174,17 @@ function renderLink(node, ctx) {
 
 	const card = parseCardLinkUrl(rawUrl);
 	if (card) {
-		const linkUrl =
-			card.customUrl || `https://cards.fabtcg.com/results/?q=${encodeURIComponent(card.cardId)}`;
+		// A card link only shows the card (CardHover): no address, so nothing
+		// ever opens another site.
 		const pitchAttr = card.pitch ? ` data-card-pitch="${card.pitch}"` : '';
-		const customUrlAttr = card.customUrl ? ` data-card-url="${escapeHtml(card.customUrl)}"` : '';
 		const img = lookupCardImage(ctx.cardImages, card.cardId, card.pitch);
 		const imageAttr = img?.imageUrl ? ` data-card-image="${escapeHtml(img.imageUrl)}"` : '';
 		const fallbackAttr = img?.fallbackUrl
 			? ` data-card-fallback="${escapeHtml(img.fallbackUrl)}"`
 			: '';
 		return (
-			`<a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer"${tab} ` +
-			`data-card-name="${escapeHtml(card.cardId)}"${pitchAttr}${customUrlAttr}${imageAttr}${fallbackAttr} ` +
+			`<a role="button" tabindex="${ctx.inSpoiler ? '-1' : '0'}" ` +
+			`data-card-name="${escapeHtml(card.cardId)}"${pitchAttr}${imageAttr}${fallbackAttr} ` +
 			`class="card-link">${inner}</a>`
 		);
 	}

@@ -3,13 +3,15 @@
 	 * Card previews for `.card-link` elements: card links in article bodies
 	 * and the cards in decklist widgets.
 	 *
-	 * - Mouse: a small preview beside the link while hovering.
-	 * - Touch: the full-screen CardLightbox (the same viewer as the decklist
-	 *   page), stepping through every card on the page.
+	 * - Mouse: a small preview beside the link while hovering. A click
+	 *   stays on the page; the card shows and nothing opens elsewhere.
+	 * - Touch (and Enter on a focused link): the full-screen CardLightbox,
+	 *   the same viewer as the AGE Open decklist page, stepping through
+	 *   every card on the page, with "2× in deck" for decklist cards.
 	 *
 	 * Links carry server-resolved data attributes: data-card-name,
-	 * data-card-image, data-card-fallback, data-card-pitch ('1'|'2'|'3') and
-	 * data-card-url (a writer's custom link).
+	 * data-card-image, data-card-fallback, data-card-pitch ('1'|'2'|'3') and,
+	 * in decklists, data-card-qty.
 	 *
 	 * Listeners are delegated from `container` (default: the document), so
 	 * links rendered after mount are covered too.
@@ -33,8 +35,7 @@
 			imageUrl: d.cardImage,
 			fallbackUrl: d.cardFallback || null,
 			pitch: pitchStyle(d.cardPitch),
-			href: link.href,
-			custom: !!d.cardUrl
+			quantity: Number(d.cardQty) || null
 		};
 	}
 
@@ -46,7 +47,11 @@
 	let tipLoaded = $state(false);
 	let tipFailed = $state(false);
 
+	/** @type {Element | null} the link the preview belongs to */
+	let tipFor = null;
+
 	function showTip(link) {
+		tipFor = link;
 		const card = readLink(link);
 		tip = card;
 		tipSrc = card.imageUrl;
@@ -78,13 +83,18 @@
 
 	function openViewer(link) {
 		const all = [];
-		const seen = new Set();
+		const seen = new Map();
 		for (const el of (container || document).querySelectorAll(SELECTOR)) {
 			const c = readLink(el);
 			const key = `${c.name}|${el.dataset.cardPitch ?? ''}`;
-			if (seen.has(key)) continue;
-			seen.add(key);
-			all.push({ ...c, key });
+			const known = seen.get(key);
+			if (known) {
+				known.quantity ??= c.quantity;
+				continue;
+			}
+			const card = { ...c, key };
+			seen.set(key, card);
+			all.push(card);
 		}
 		const tapped = `${link.dataset.cardName}|${link.dataset.cardPitch ?? ''}`;
 		cards = all;
@@ -108,17 +118,25 @@
 		const onOver = (e) => {
 			if (e.pointerType !== 'mouse') return;
 			const link = linkFrom(e);
-			if (link && tip?.href !== link.href) showTip(link);
+			if (link && tipFor !== link) showTip(link);
 		};
 		const onOut = (e) => {
 			const link = linkFrom(e);
-			if (link && !link.contains(/** @type {Node} */ (e.relatedTarget))) tip = null;
+			if (link && !link.contains(/** @type {Node} */ (e.relatedTarget))) {
+				tip = null;
+				tipFor = null;
+			}
 		};
 		const onClick = (e) => {
-			if (lastPointer === 'mouse') return; // mouse clicks follow the link
 			const link = linkFrom(e);
 			if (!link) return;
+			// cards never leave the page: a mouse click shows the preview,
+			// a tap opens the viewer
 			e.preventDefault();
+			if (lastPointer === 'mouse' && e.detail > 0) {
+				if (tipFor !== link) showTip(link);
+				return;
+			}
 			tip = null;
 			openViewer(link);
 		};
@@ -126,8 +144,20 @@
 		root.addEventListener('pointerdown', onPointerDown, true);
 		root.addEventListener('pointerover', onOver);
 		root.addEventListener('pointerout', onOut);
+		// card links are buttons without an address: Enter or Space opens the viewer
+		const onKey = (e) => {
+			if (e.key !== 'Enter' && e.key !== ' ') return;
+			const link = linkFrom(e);
+			if (!link) return;
+			e.preventDefault();
+			tip = null;
+			openViewer(link);
+		};
+
 		root.addEventListener('click', onClick);
+		root.addEventListener('keydown', onKey);
 		return () => {
+			root.removeEventListener('keydown', onKey);
 			root.removeEventListener('pointerdown', onPointerDown, true);
 			root.removeEventListener('pointerover', onOver);
 			root.removeEventListener('pointerout', onOut);
@@ -166,13 +196,16 @@
 		onclose={() => (cards = [])}
 	>
 		{#snippet aside()}
-			<a
-				href={current.href}
-				target="_blank"
-				rel="noopener noreferrer"
-				class="flex min-h-10 shrink-0 items-center border border-paper-bg/30 px-3 text-xs font-extrabold tracking-widest whitespace-nowrap uppercase transition-colors hover:bg-paper-bg hover:text-ink"
-				>{current.custom ? 'Open link' : 'View card'} <span aria-hidden="true">&nbsp;↗</span></a
-			>
+			{#if current.quantity}
+				<p class="shrink-0 text-right">
+					<span class="ao-cond block text-4xl leading-none font-black tabular-nums"
+						>{current.quantity}×</span
+					>
+					<span class="text-xs font-extrabold tracking-widest text-paper-bg/55 uppercase"
+						>in deck</span
+					>
+				</p>
+			{/if}
 		{/snippet}
 	</CardLightbox>
 {/if}

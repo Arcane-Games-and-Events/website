@@ -6,7 +6,7 @@ import { resolveCardImage } from '$lib/server/cards/index.js';
  * GET /api/desk/cards/image?name=Snatch&pitch=r
  *
  * The image a card link shows readers, resolved the same way the article
- * page does (fab_card_lookup, Redis-cached). Used by the editor's card-link
+ * page does (the card package). Used by the editor's card-link
  * preview. Read-only.
  */
 export async function GET({ url, locals }) {
@@ -17,7 +17,7 @@ export async function GET({ url, locals }) {
 	const name = (url.searchParams.get('name') || '').trim().slice(0, 120);
 	if (!name) throw error(400, 'Missing card name');
 
-	const card = await resolveCardImage({ name, pitch: url.searchParams.get('pitch') || null });
+	const card = resolveCardImage({ name, pitch: url.searchParams.get('pitch') || null });
 	return json({
 		found: card.found,
 		name: card.name,

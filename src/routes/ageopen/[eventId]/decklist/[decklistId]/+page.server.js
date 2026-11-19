@@ -3,7 +3,6 @@ import { db } from '$lib/server/db/index.js';
 import { event, decklist } from '$lib/server/db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { resolveCardImage } from '$lib/server/cards/index.js';
-import { resolveFromPackage } from '$lib/server/cards/fromPackage.js';
 
 export async function load({ params }) {
 	try {
@@ -41,26 +40,18 @@ export async function load({ params }) {
 
 		// Resolve card images server-side using database lookup
 		const cards = Array.isArray(decklistData.cards) ? decklistData.cards : [];
-		const cardsWithImages = await Promise.all(
-			cards.map(async (card) => {
-				// The card package first; the uploaded lookup table only as a fallback
-				const resolved =
-					resolveFromPackage({ name: card.name, color: card.section }) ||
-					(await resolveCardImage({ name: card.name, color: card.section }));
-				return {
-					...card,
-					imageUrl: resolved.imageUrl,
-					fallbackUrl: resolved.fallbackUrl,
-					pitch: resolved.pitch
-				};
-			})
-		);
+		const cardsWithImages = cards.map((card) => {
+			const resolved = resolveCardImage({ name: card.name, color: card.section });
+			return {
+				...card,
+				imageUrl: resolved.imageUrl,
+				fallbackUrl: resolved.fallbackUrl,
+				pitch: resolved.pitch
+			};
+		});
 
 		// Resolve hero image
-		const heroResolved = decklistData.hero
-			? resolveFromPackage({ name: decklistData.hero }) ||
-				(await resolveCardImage({ name: decklistData.hero }))
-			: null;
+		const heroResolved = decklistData.hero ? resolveCardImage({ name: decklistData.hero }) : null;
 
 		return {
 			decklist: {

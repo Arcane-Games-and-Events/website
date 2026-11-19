@@ -53,8 +53,10 @@ function toggle(el) {
 	else el.setAttribute('aria-label', HIDDEN_LABEL);
 	el.title = open ? 'Hide spoiler' : '';
 	for (const a of el.querySelectorAll('a')) {
-		if (open) a.removeAttribute('tabindex');
-		else a.setAttribute('tabindex', '-1');
+		// card links have no address, so they need tabindex 0 to be reachable
+		if (!open) a.setAttribute('tabindex', '-1');
+		else if (a.classList.contains('card-link')) a.setAttribute('tabindex', '0');
+		else a.removeAttribute('tabindex');
 	}
 }
 

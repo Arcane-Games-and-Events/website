@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import Search from '@flesh-and-blood/search';
-import { cards } from '@flesh-and-blood/cards';
+import { cards, releases } from '@flesh-and-blood/cards';
 import { canEditEntries, canEditCourses } from '$lib/server/auth/roles.js';
 
 /**
@@ -12,9 +12,8 @@ import { canEditEntries, canEditCourses } from '$lib/server/auth/roles.js';
  * the InsertCardLinkDialog is a drop-in replacement.
  *
  * Backend: `@flesh-and-blood/search` on top of the `@flesh-and-blood/cards`
- * data set. Updates now ship via `npm update @flesh-and-blood/search` — no
- * manual CSV uploads, no custom `fab_card_lookup`
- * table to keep in sync as new sets release.
+ * data set. New sets ship with `pnpm update @flesh-and-blood/cards
+ * @flesh-and-blood/search`.
  */
 
 // The Search instance builds a Fuse index over ~2000 cards, ~50-200ms on first
@@ -24,7 +23,7 @@ const g = /** @type {any} */ (globalThis);
 
 function getFabSearch() {
 	if (g.__ageFabSearch) return g.__ageFabSearch;
-	g.__ageFabSearch = new Search(cards);
+	g.__ageFabSearch = new Search(cards, { releases });
 	return g.__ageFabSearch;
 }
 

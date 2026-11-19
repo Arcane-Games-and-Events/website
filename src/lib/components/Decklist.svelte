@@ -117,14 +117,6 @@
 		: (decklist.cards || []).reduce((sum, card) => sum + card.quantity, 0);
 
 	/**
-	 * Get the formatted search URL for cards.fabtcg.com
-	 */
-	function getSearchUrl(cardName) {
-		const searchQuery = cardName.replace(/\s+/g, '+').toLowerCase();
-		return `https://cards.fabtcg.com/results/?q=${searchQuery}`;
-	}
-
-	/**
 	 * Convert color to pitch value for data attribute
 	 */
 	function colorToPitch(color) {
@@ -278,18 +270,17 @@
 							>
 								{card.quantity}×
 							</span>
-							<a
-								href={getSearchUrl(card.name)}
-								target="_blank"
-								rel="noopener noreferrer"
+							<button
+								type="button"
 								data-card-name={card.name}
+								data-card-qty={card.quantity}
 								data-card-image={arenaCardImg?.imageUrl || null}
 								data-card-fallback={arenaCardImg?.fallbackUrl || null}
-								class="card-link truncate text-sm font-bold !text-ink !no-underline transition-colors hover:!text-warm"
+								class="card-link min-w-0 truncate text-left text-sm font-bold !text-ink !no-underline transition-colors hover:!text-warm"
 								title={card.name}
 							>
 								{card.name}
-							</a>
+							</button>
 						</div>
 					{/each}
 				</div>
@@ -332,19 +323,18 @@
 								>
 									{card.quantity}×
 								</span>
-								<a
-									href={getSearchUrl(card.name)}
-									target="_blank"
-									rel="noopener noreferrer"
+								<button
+									type="button"
 									data-card-name={card.name}
+									data-card-qty={card.quantity}
 									data-card-pitch={colorToPitch(color)}
 									data-card-image={deckCardImg?.imageUrl || null}
 									data-card-fallback={deckCardImg?.fallbackUrl || null}
-									class="card-link truncate text-sm font-bold !text-ink !no-underline transition-colors hover:!text-warm"
+									class="card-link min-w-0 truncate text-left text-sm font-bold !text-ink !no-underline transition-colors hover:!text-warm"
 									title={card.name}
 								>
 									{card.name}
-								</a>
+								</button>
 							</div>
 						{/each}
 					</div>
@@ -372,19 +362,17 @@
 								>
 									{card.quantity}×
 								</span>
-								<a
-									href={card.url ||
-										`https://cards.fabtcg.com/results/?q=${encodeURIComponent(card.id || card.name)}`}
-									target="_blank"
-									rel="noopener noreferrer"
+								<button
+									type="button"
 									data-card-name={card.name}
+									data-card-qty={card.quantity}
 									data-card-image={legacyCardImg?.imageUrl || null}
 									data-card-fallback={legacyCardImg?.fallbackUrl || null}
-									class="card-link truncate text-sm font-bold !text-ink !no-underline transition-colors hover:!text-warm"
+									class="card-link min-w-0 truncate text-left text-sm font-bold !text-ink !no-underline transition-colors hover:!text-warm"
 									title={card.name}
 								>
 									{card.name}
-								</a>
+								</button>
 							</div>
 						{/each}
 					</div>

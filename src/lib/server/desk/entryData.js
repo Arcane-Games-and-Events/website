@@ -10,7 +10,7 @@ import { getAuthorProfile, bioToHtml } from '$lib/server/desk/authorProfile.js';
 import { mediaImage } from '$lib/server/desk/image.js';
 import { handleFor } from '$lib/server/profile/handles.js';
 import { getMuxPlaybackToken, getMuxThumbnailToken } from '$lib/server/mux.js';
-import { resolveCardImage, mapWithConcurrency } from '$lib/server/cards/index.js';
+import { resolveCardImage } from '$lib/server/cards/index.js';
 import { extractCardNamesFromLexical } from '$lib/desk/render/lexical-utils.js';
 
 const PITCH_LETTER = { red: 'r', yellow: 'y', blue: 'b' };
@@ -44,22 +44,20 @@ export function extractEntryCardNames(body) {
 
 /**
  * Resolve card names to images, keyed `name` and `name:pitch` (lowercase),
- * the shape `lookupCardImage` reads. At most 8 lookups run at once so a
- * deck tech with 70+ cards doesn't saturate the DB pool on a cold cache.
+ * the shape `lookupCardImage` reads.
  */
 export async function resolveCardImages(namesSet) {
 	const cardImages = {};
-	const cards = Array.from(namesSet).map((json) => JSON.parse(json));
-
-	await mapWithConcurrency(cards, 8, async ({ name, pitch }) => {
-		const resolved = await resolveCardImage({ name, pitch: PITCH_NUMBER[pitch] ?? null });
-		if (!resolved.found) return;
+	for (const json of namesSet) {
+		const { name, pitch } = JSON.parse(json);
+		const resolved = resolveCardImage({ name, pitch: PITCH_NUMBER[pitch] ?? null });
+		if (!resolved.found) continue;
 		const image = { imageUrl: resolved.imageUrl, fallbackUrl: resolved.fallbackUrl };
 		const base = name.toLowerCase();
 		cardImages[pitch ? `${base}:${pitch}` : base] = image;
 		// A pitched card also answers for its bare name
 		if (pitch && !cardImages[base]) cardImages[base] = image;
-	});
+	}
 
 	return cardImages;
 }
